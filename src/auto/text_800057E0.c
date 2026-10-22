@@ -1199,6 +1199,10 @@ s32 AIGetStreamPlayState(void) {
     return *(s32 *)0xCC006C00 & 1;
 }
 
+s32 AIGetDSPSampleRate(void) {
+    return (((u32) *(u32 *)0xCC006C00 >> 6U) & 1) ^ 1;
+}
+
 s32 AIGetStreamSampleRate(void) {
     return ((u32) *(u32 *)0xCC006C00 >> 1U) & 1;
 }
