@@ -1329,6 +1329,26 @@ s32 AttachThing_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+#pragma push
+#pragma readonly_strings on
+void SoundManager_Create(void) {
+    extern s8 g_songLoaded_803C6F2C;
+    extern SoundSource *g_sources_803C6F38;
+    extern void *g_tracks_803C6F30;
+    s8 Audio_Create(void);
+    int printf(const char *, ...);
+    void *Allocate(u32, u32, const char *);
+
+    Dprintf("SoundManager_Create()");
+    if (!Audio_Create()) {
+        printf("Audio_Create() FAILED!!!!!!!!!!!!!!!\n");
+    }
+    Dprintf("SoundManager_Create() done");
+    g_songLoaded_803C6F2C = 0;
+    g_sources_803C6F38 = Allocate(0x1F40, 0, "");
+    g_tracks_803C6F30 = Allocate(0x500, 0, "");
+}
+#pragma pop
 void SoundManager_Destroy(void) {
     M2C_UNK Audio_Destroy();
     extern s32 g_sources_803C6F38;
