@@ -2766,6 +2766,21 @@ s32 Thing_GetSource(void *arg0) {
     return 0;
 }
 
+s32 TriggerP2PActivated(u32 *data) {
+    u32 n = data[0];
+    u32 i;
+    u32 j;
+
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < data[n + 1]; j++) {
+            if (M2C_FIELD(data[n + 1 + j + 1], s32 *, 0x74) & 0x800) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 f32 MagnitudeVector(void *v);
 void Thing_SetSlavePlayers(void *thing) {
     void *slave;
@@ -2822,6 +2837,17 @@ s32 Thing_AddToGrid(void *thing, s32 type) {
     Thing_GetDynamicMinMax(thing, &min, &max, 0.0f);
     M2C_FIELD(thing, s32 *, 0x84) = Grid_AddObject(type, thing, &min, &max);
     return M2C_FIELD(thing, s32 *, 0x84);
+}
+
+void Thing_GetStaticRotationalMinMax(void *thing, Vector4 *min, Vector4 *max) {
+    *max = *(Vector4 *)((u8 *)thing + 0x40);
+    *min = *max;
+    min->x -= M2C_FIELD(thing, f32 *, 0x70);
+    min->y -= M2C_FIELD(thing, f32 *, 0x70);
+    min->z -= M2C_FIELD(thing, f32 *, 0x70);
+    max->x += M2C_FIELD(thing, f32 *, 0x70);
+    max->y += M2C_FIELD(thing, f32 *, 0x70);
+    max->z += M2C_FIELD(thing, f32 *, 0x70);
 }
 
 void Thing_CollideWithRay(void) {
