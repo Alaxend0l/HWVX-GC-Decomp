@@ -4788,6 +4788,11 @@ void TRK_fill_mem_80093658(void *dst, int val, u32 n) {
     }
 }
 
+void TRKTargetSetInputPendingPtr(void *ptr) {
+    extern u8 gTRKState[];
+    *(void **)(gTRKState + 0xA0) = ptr;
+}
+
 s32 TRKTargetAddExceptionInfo(void *b) {
     extern u32 gTRKExceptionStatus_800DA0A4[];
     s32 err;
