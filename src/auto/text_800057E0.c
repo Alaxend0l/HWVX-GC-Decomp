@@ -903,6 +903,10 @@ s32 TriggerCreatureDroppedOff(void) {
     return 0;
 }
 
+void VertexColorSeqManager_Create(void) {
+
+}
+
 void World_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
