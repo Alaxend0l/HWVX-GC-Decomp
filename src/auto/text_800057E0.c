@@ -2014,6 +2014,10 @@ void World_Init(void) {
     fn_800957D4();
 }
 
+u32 World_GetTotalTiles_Car(void) {
+    return M2C_FIELD(g_worldData.world, u32 *, 0x8);
+}
+
 void PlayerManager_Create(void) {
 
 }
