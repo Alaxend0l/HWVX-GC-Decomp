@@ -55,6 +55,17 @@ extern s32 __aborting;
 extern s32 __atexit_curr_func_803C75DC;
 extern void (*__atexit_funcs_8030DC18[64])(void);
 extern void (*__console_exit)(void);
+void __unregister_fragment(s32 fragmentID) {
+    FragmentInfo *f;
+
+    if (fragmentID >= 0 && fragmentID < 1) {
+        f = &fragmentinfo_8030DC08[fragmentID];
+        f->eti_init_info = 0;
+        f->TOC = 0;
+        f->active = 0;
+    }
+}
+
 s32 __register_fragment(void *info, char *TOC) {
     FragmentInfo *f;
     s32 i;
