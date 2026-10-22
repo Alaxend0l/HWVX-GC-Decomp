@@ -1787,13 +1787,12 @@ void Thing_InitAllSlavesNow(s32 arg0) {
     ThingManagerList_InitAllSlavesNow(arg0 + 0x88);
 }
 
-void Thing_SlaveTransform(void *thing, void *mtx) {
-    void MultiplyMatrix(Matrix4 *a, void *b, Matrix4 *out);
+void Thing_SlaveTransform(Thing *thing, void *mtx) {
     Matrix4 local;
 
-    local = M2C_FIELD(thing, Matrix4 *, 0x10);
-    MultiplyMatrix(&local, mtx, (Matrix4 *)((s8 *)thing + 0x10));
-    SubMatrixToQuaternion((s8 *)thing + 0x10, (Vector4 *)((s8 *)thing + 0x50));
+    local = thing->mtx;
+    MultiplyMatrix(&local, mtx, &thing->mtx);
+    SubMatrixToQuaternion(&thing->mtx, &thing->quat);
 }
 
 void Thing_SlaveTransformQuaternionOnly(Thing *thing, void *mtx) {
