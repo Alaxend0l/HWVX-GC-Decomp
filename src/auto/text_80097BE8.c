@@ -186,6 +186,10 @@ typedef struct SubBlock {
     struct SubBlock *next_;
 } SubBlock;
 
+static inline void SubBlock_clear_flag(SubBlock *ths, u32 flag) {
+    ths->size_ &= ~flag;
+}
+
 extern u8 __lower_map[256];
 s32 fflush(FILE *file);
 void free(void *ptr);
@@ -732,8 +736,9 @@ void *malloc(u32 size) {
 }
 
 void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
-    SubBlock *next_sub_block;
     u32 this_cur_size;
+    SubBlock *next_sub_block;
+    SubBlock *after;
 
     next_sub_block = (SubBlock *)((u8 *)ths + (ths->size_ & 0xFFFFFFF8));
     if (!(next_sub_block->size_ & 2)) {
@@ -743,10 +748,11 @@ void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
         if (!(ths->size_ & 2)) {
             *(u32 *)((u8 *)ths + this_cur_size - sizeof(u32)) = this_cur_size;
         }
+        after = (SubBlock *)((u8 *)ths + this_cur_size);
         if (!(ths->size_ & 2)) {
-            ((SubBlock *)((u8 *)ths + this_cur_size))->size_ &= ~4;
+            *(s32 *)&after->size_ &= ~4;
         } else {
-            ((SubBlock *)((u8 *)ths + this_cur_size))->size_ |= 4;
+            after->size_ |= 4;
         }
         if (*start == next_sub_block) {
             *start = (*start)->next_;
