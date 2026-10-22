@@ -1,6 +1,9 @@
 /* Functions from 0x80097BE8 to 0x800CC320, found by decomp-toolkit. */
 #include "common.h"
 
+#define __HI(x) *(int *)&x
+#define __LO(x) *(1 + (int *)&x)
+
 s32 OSSendMessage(void *queue, void *msg, s32 flags);
 s32 OSReceiveMessage(void *queue, void **msg, s32 flags);
 
@@ -2780,6 +2783,28 @@ static void F29(s32 chan, s32 ret) {
         }
     }
     gba->ret = ret;
+}
+
+void __GBASyncCallback(s32 chan) {
+    void OSWakeupThread(void *);
+    OSWakeupThread(__GBA[chan].threadQueue);
+}
+
+s32 __GBASync(s32 chan) {
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32);
+    void OSSleepThread(void *);
+    GBAControl *gba = &__GBA[chan];
+    s32 enabled;
+    s32 ret;
+
+    enabled = OSDisableInterrupts();
+    while (gba->callback != NULL) {
+        OSSleepThread(gba->threadQueue);
+    }
+    ret = gba->ret;
+    OSRestoreInterrupts(enabled);
+    return ret;
 }
 
 s64 __GBASetDelay(s32 chan, s64 delay) {
