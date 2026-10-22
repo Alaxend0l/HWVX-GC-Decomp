@@ -3459,6 +3459,15 @@ void WildCardRack_Release(s32 arg0) {
     Thing_Release(arg0);
 }
 
+s32 World_Create(void) {
+    extern s32 m_VertIn;
+    extern s32 g_drawShadowsFlag;
+    m_VertIn = 0;
+    g_drawShadowsFlag = 1;
+    g_worldData.world = NULL;
+    return 1;
+}
+
 void World_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
