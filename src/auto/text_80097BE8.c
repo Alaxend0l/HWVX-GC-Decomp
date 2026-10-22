@@ -434,6 +434,12 @@ typedef struct GDL {
     u16 spriteHeads[1];
 } GDL;
 
+typedef struct RenderStats {
+    s32 numTris;
+    s32 debugTriCount;
+    u8 unk8[0x100 - 0x8];
+} RenderStats;
+
 typedef struct Texture {
     u8 unk0[0x32];
     u16 width;
