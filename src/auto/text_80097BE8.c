@@ -141,6 +141,15 @@ void Main_Shutdown_NGC(void) {
 
 }
 
+void EndThread(void) {
+    M2C_UNK OSExitThread(M2C_UNK *);
+    extern s8 NGC_Thread_On;
+    M2C_UNK sp8;
+
+    OSExitThread(&sp8);
+    NGC_Thread_On = 0;
+}
+
 void TextureManager_ReleaseCache(void) {
 
 }
