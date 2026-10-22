@@ -1612,6 +1612,10 @@ s32 Motion_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+s32 PPCMfmsr(void) {
+    return M2C_ERROR(/* unknown instruction: mfmsr $r3 */);
+}
+
 void OSCreateAlarm(s32 *arg0) {
     *arg0 = 0;
 }
@@ -1711,6 +1715,39 @@ void UnsetRun(void *arg0) {
     M2C_FIELD(arg0, void **, 0x2DC) = NULL;
 }
 
+s32 __get_time(void) {
+    M2C_UNK OSGetTime(M2C_UNK);
+    u64 __div2i(M2C_UNK, u32);
+    u32 temp_r31;
+
+    temp_r31 = (u32) *(u32 *)0x800000F8 >> 2U;
+    OSGetTime(0x80000000);
+    return (u32) __div2i(0, temp_r31) + 0xBC17C200;
+}
+
+void __init_user(void) {
+    void __init_cpp(void);
+    __init_cpp();
+}
+
+void __init_cpp(void) {
+    extern void (*_ctors[])(void);
+    void (**constructor)(void);
+
+    for (constructor = _ctors; *constructor; constructor++) {
+        (*constructor)();
+    }
+}
+
+void DBInit(void) {
+    extern u32 *__DBInterface;
+    extern s32 DBVerbose;
+    extern void __DBExceptionDestination(void);
+    __DBInterface = (u32 *)0x80000040;
+    __DBInterface[2] = (u32)__DBExceptionDestination + 0x80000000;
+    DBVerbose = 1;
+}
+
 s32 fn_8006E668(void) {
     return *(s32 *)0x800000E4;
 }
@@ -1718,6 +1755,211 @@ s32 fn_8006E668(void) {
 s32 __DBIsExceptionMarked(u8 arg0) {
     extern void *__DBInterface;
     return M2C_FIELD(__DBInterface, s32 *, 4) & (1 << arg0);
+}
+
+void DBPrintf(char *str, ...) {
+}
+
+void AlarmHandler(void *alarm, void *context) {
+    M2C_UNK DVDLowSeek(u32, void (*)(u32));
+    M2C_UNK Read(void *, u32, u32, void (*)(u32));
+    extern s32 CommandList_802EF860[][5];
+    extern s32 NextCommandNumber_803C72EC;
+    s32 *command;
+
+    command = CommandList_802EF860[NextCommandNumber_803C72EC];
+    if (command[0] == 1) {
+        NextCommandNumber_803C72EC++;
+        Read((void *)command[1], command[2], command[3], (void (*)(u32))command[4]);
+    } else if (command[0] == 2) {
+        NextCommandNumber_803C72EC++;
+        DVDLowSeek(command[3], (void (*)(u32))command[4]);
+    }
+}
+
+void stateCoverClosed_CMD(void *block) {
+    M2C_UNK DVDLowReadDiskID(void *, void (*)(u32));
+    void cbForStateCoverClosed(u32);
+    extern u8 tmpBuffer_802EF940[];
+    DVDLowReadDiskID(tmpBuffer_802EF940, cbForStateCoverClosed);
+}
+
+void cbForStateCoverClosed(u32 intType) {
+    M2C_UNK DVDLowRequestError(void (*)(u32));
+    M2C_UNK DVDReset();
+    M2C_UNK __DVDStoreErrorCode(u32);
+    void cbForStateError(u32);
+    void cbForStateGettingError(u32);
+    M2C_UNK stateCheckID();
+    extern s32 NumInternalRetry_803C7344;
+    extern void *executing_803C7310;
+    if (intType == 16) {
+        M2C_FIELD(executing_803C7310, s32 *, 0xC) = -1;
+        __DVDStoreErrorCode(0x01234568);
+        DVDReset();
+        cbForStateError(0);
+        return;
+    }
+    if (intType & 1) {
+        NumInternalRetry_803C7344 = 0;
+        stateCheckID();
+    } else {
+        DVDLowRequestError(cbForStateGettingError);
+    }
+}
+
+void cbForReadAsync(s32 result, void *block) {
+    if (M2C_FIELD(block, void (**)(s32, void *), 0x38)) {
+        M2C_FIELD(block, void (**)(s32, void *), 0x38)(result, block);
+    }
+}
+
+void cbForReadSync(void) {
+    M2C_UNK OSWakeupThread(M2C_UNK *);
+    extern M2C_UNK __DVDThreadQueue;
+    OSWakeupThread(&__DVDThreadQueue);
+}
+
+void stateReadingFST(void) {
+    M2C_UNK DVDLowRead(void *, u32, u32, void (*)(u32));
+    void cbForStateReadingFST(u32);
+    extern void (*LastState)(void);
+    extern void *bootInfo_803C7318;
+    extern u8 tmpBuffer_802EF940[];
+    LastState = stateReadingFST;
+    DVDLowRead(M2C_FIELD(bootInfo_803C7318, void **, 0x38), (M2C_FIELD(tmpBuffer_802EF940, u32 *, 8) + 31) & ~31, M2C_FIELD(tmpBuffer_802EF940, u32 *, 4), cbForStateReadingFST);
+}
+
+void cbForStateReadingFST(u32 intType) {
+    void stateGettingError(void);
+    M2C_UNK stateReady_800725A4();
+    void stateTimeout(void);
+    extern u8 DummyCommandBlock_802EF9C0[];
+    extern s32 NumInternalRetry_803C7344;
+    extern void *executing_803C7310;
+    void *finished;
+
+    if (intType == 16) {
+        M2C_FIELD(executing_803C7310, s32 *, 0xC) = -1;
+        stateTimeout();
+        return;
+    }
+    if (intType & 1) {
+        NumInternalRetry_803C7344 = 0;
+        finished = executing_803C7310;
+        executing_803C7310 = DummyCommandBlock_802EF9C0;
+        M2C_FIELD(finished, s32 *, 0xC) = 0;
+        if (M2C_FIELD(finished, void (**)(s32, void *), 0x28)) {
+            M2C_FIELD(finished, void (**)(s32, void *), 0x28)(0, finished);
+        }
+        stateReady_800725A4();
+    } else {
+        stateGettingError();
+    }
+}
+
+void cbForStateError(u32 intType) {
+    void stateTimeout(void);
+    M2C_UNK stateReady_800725A4();
+    extern void *executing_803C7310;
+    extern u8 DummyCommandBlock_802EF9C0[];
+    extern s32 FatalErrorFlag_803C7328;
+    extern s32 Canceling_803C7330;
+    extern void (*CancelCallback_803C7334)(s32, void *);
+    void *finished;
+
+    if (intType == 16) {
+        M2C_FIELD(executing_803C7310, s32 *, 0xC) = -1;
+        stateTimeout();
+        return;
+    }
+    finished = executing_803C7310;
+    executing_803C7310 = DummyCommandBlock_802EF9C0;
+    FatalErrorFlag_803C7328 = 1;
+    if (M2C_FIELD(finished, void (**)(s32, void *), 0x28)) {
+        M2C_FIELD(finished, void (**)(s32, void *), 0x28)(-1, finished);
+    }
+    if (Canceling_803C7330) {
+        Canceling_803C7330 = 0;
+        if (CancelCallback_803C7334) {
+            CancelCallback_803C7334(0, finished);
+        }
+    }
+    stateReady_800725A4();
+}
+
+void stateTimeout(void) {
+    M2C_UNK __DVDStoreErrorCode(u32);
+    M2C_UNK DVDReset();
+    __DVDStoreErrorCode(0x01234568);
+    DVDReset();
+    cbForStateError(0);
+}
+
+void stateGettingError(void) {
+    M2C_UNK DVDLowRequestError(void (*)(u32));
+    void cbForStateGettingError(u32);
+    DVDLowRequestError(cbForStateGettingError);
+}
+
+s32 CategorizeError(u32 error) {
+    extern u32 LastError_803C7340;
+    extern s32 NumInternalRetry_803C7344;
+    extern void *executing_803C7310;
+
+    if (error == 0x20400) {
+        LastError_803C7340 = error;
+        return 1;
+    }
+    error &= 0xFFFFFF;
+    if (error == 0x62800 || error == 0x23A00 || error == 0xB5A01) {
+        return 0;
+    }
+    NumInternalRetry_803C7344++;
+    if (NumInternalRetry_803C7344 == 2) {
+        if (error == LastError_803C7340) {
+            LastError_803C7340 = error;
+            return 1;
+        } else {
+            LastError_803C7340 = error;
+            return 2;
+        }
+    }
+    LastError_803C7340 = error;
+    if (error == 0x31100 || M2C_FIELD(executing_803C7310, u32 *, 8) == 5) {
+        return 2;
+    }
+    return 3;
+}
+
+void cbForStateCheckID2(u32 intType) {
+    M2C_UNK DVDLowRead(void *, u32, u32, void (*)(u32));
+    M2C_UNK DVDLowRequestError(void (*)(u32));
+    M2C_UNK DVDReset();
+    M2C_UNK __DVDStoreErrorCode(u32);
+    void cbForStateError(u32);
+    void cbForStateGettingError(u32);
+    void cbForStateReadingFST(u32);
+    void stateReadingFST(void);
+    extern void (*LastState)(void);
+    extern s32 NumInternalRetry_803C7344;
+    extern void *bootInfo_803C7318;
+    extern void *executing_803C7310;
+    extern u8 tmpBuffer_802EF940[];
+    if (intType == 16) {
+        M2C_FIELD(executing_803C7310, s32 *, 0xC) = -1;
+        __DVDStoreErrorCode(0x01234568);
+        DVDReset();
+        cbForStateError(0);
+        return;
+    }
+    if (intType & 1) {
+        NumInternalRetry_803C7344 = 0;
+        LastState = stateReadingFST;
+        DVDLowRead(M2C_FIELD(bootInfo_803C7318, void **, 0x38), (M2C_FIELD(tmpBuffer_802EF940, u32 *, 8) + 31) & ~31, M2C_FIELD(tmpBuffer_802EF940, u32 *, 4), cbForStateReadingFST);
+    } else {
+        DVDLowRequestError(cbForStateGettingError);
+    }
 }
 
 s32 DVDSetAutoInvalidation(s32 arg0) {
@@ -1731,6 +1973,96 @@ s32 DVDSetAutoInvalidation(s32 arg0) {
 
 s32 DVDGetCurrentDiskID(void) {
     return 0x80000000;
+}
+
+s32 __DVDDequeueWaitingQueue(void **block) {
+    s32 OSDisableInterrupts();
+    M2C_UNK OSRestoreInterrupts();
+    void **prev;
+    void **next;
+
+    OSDisableInterrupts();
+    prev = (void **)block[1];
+    next = (void **)block[0];
+    if (prev == NULL || next == NULL) {
+        OSRestoreInterrupts();
+        return 0;
+    }
+    prev[0] = next;
+    next[1] = prev;
+    OSRestoreInterrupts();
+    return 1;
+}
+
+void __DVDStoreErrorCode(u32 error) {
+    u8 ErrorCode2Num(u32);
+    u8 *__OSLockSramEx(void);
+    M2C_UNK __OSUnlockSramEx(s32);
+    u8 num;
+    u32 hi;
+
+    if (error == 0x01234567) {
+        num = 0xFF;
+    } else if (error == 0x01234568) {
+        num = 0xFE;
+    } else {
+        hi = error >> 24;
+        num = ErrorCode2Num(error & 0xFFFFFF);
+        if (hi >= 6) {
+            hi = 6;
+        }
+        num = num + hi * 30;
+    }
+    __OSLockSramEx()[0x24] = num;
+    __OSUnlockSramEx(1);
+}
+
+s32 VISetPostRetraceCallback(s32 cb) {
+    extern s32 PostCB_803C737C;
+    s32 OSDisableInterrupts();
+    M2C_UNK OSRestoreInterrupts(s32);
+    s32 enabled;
+    s32 old;
+
+    old = PostCB_803C737C;
+    enabled = OSDisableInterrupts();
+    PostCB_803C737C = cb;
+    OSRestoreInterrupts(enabled);
+    return old;
+}
+
+u8 *getTiming_800742A0(u32 mode) {
+    extern u8 timing_800D5850[][0x26];
+    u8 *timing = timing_800D5850[0];
+
+    switch (mode) {
+    case 0:
+        return timing;
+    case 1:
+        return timing + 0x26;
+    case 2:
+        return timing + 0x4C;
+    case 3:
+        return timing + 0x72;
+    case 20:
+        return timing;
+    case 21:
+        return timing + 0x26;
+    case 4:
+        return timing + 0x98;
+    case 5:
+        return timing + 0xBE;
+    case 6:
+        return timing + 0xE4;
+    case 7:
+        return timing + 0x10A;
+    case 8:
+        return timing + 0x4C;
+    case 9:
+        return timing + 0x72;
+    default:
+        return NULL;
+    }
 }
 
 s32 AIGetStreamPlayState(void) {
