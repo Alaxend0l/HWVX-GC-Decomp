@@ -858,6 +858,13 @@ f32 Creature_GetMass(void *arg0) {
     return M2C_FIELD(arg0, f32 *, 0x1BC);
 }
 
+void Creature_Release(s32 arg0) {
+    M2C_UNK MotionState_Release(s32);
+    M2C_UNK Thing_Release(s32);
+    MotionState_Release(arg0 + 0xCC);
+    Thing_Release(arg0);
+}
+
 s32 Creature_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
