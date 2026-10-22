@@ -4901,17 +4901,18 @@ s8 Audio_Create(void) {
 #pragma pop
 
 #pragma push
+#pragma optimization_level 1
 #pragma dont_inline on
 s8 Audio_Init(void) {
     extern void (*SongUpdate)(void);
-    extern s32 VoiceUpdate;
+    extern void (*VoiceUpdate)(void);
     s8 AudioMusic_Init(void);
     s8 AudioIT_Init(void);
     s8 AudioMIDI_Init(void);
     s8 AudioVoice_Init(void);
     s8 Audio_Init_(void);
 
-    VoiceUpdate = 0;
+    VoiceUpdate = NULL;
     SongUpdate = NULL;
     if (AudioMusic_Init() && AudioIT_Init() && AudioMIDI_Init() && AudioVoice_Init() && Audio_Init_()) {
         return 1;
