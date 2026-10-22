@@ -287,6 +287,8 @@ typedef struct WorldData {
 } WorldData;
 
 extern WorldData g_worldData;
+void World_Unload(void);
+void *World_GetGameData(void);
 
 s32 TRKTargetCPUMinorType(void);
 
