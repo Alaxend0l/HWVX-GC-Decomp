@@ -2683,15 +2683,32 @@ s32 __CARDGetFatBlock(void *arg0) {
     return M2C_FIELD(arg0, s32 *, 0x88);
 }
 
-extern u8 __CARDBlock[];
+typedef void (*CARDCallback)(s32 chan, s32 result);
+
+typedef struct CARDControl {
+    u8 unk0[0xC];
+    s32 sectorSize;
+    u8 unk10[0x80 - 0x10];
+    void *workArea;
+    u8 unk84[0x88 - 0x84];
+    void *buffer;
+    u8 unk8C[0xD0 - 0x8C];
+    CARDCallback apiCallback;
+    u8 unkD4[0xD8 - 0xD4];
+    CARDCallback eraseCallback;
+    u8 unkDC[0x110 - 0xDC];
+} CARDControl;
+
+extern CARDControl __CARDBlock[2];
 s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, void *callback);
 s32 __CARDPutControlBlock(void *card, s32 result);
 static void WriteCallback(s32 chan, s32 result);
+
 static void EraseCallback(s32 chan, s32 result) {
     u8 *card;
     void (*callback)(s32, s32);
 
-    card = &__CARDBlock[chan * 0x110];
+    card = (u8 *)&__CARDBlock[chan];
     if (result < 0) {
         goto error;
     }
