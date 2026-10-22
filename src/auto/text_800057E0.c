@@ -765,6 +765,11 @@ s32 ARGetSize(void) {
     return __AR_Size_803C7424;
 }
 
+s32 __AXGetCommandListCycles(void) {
+    extern s32 __AXCommandListCycles_803C74B0;
+    return __AXCommandListCycles_803C74B0;
+}
+
 f32 fn_8006FB1C(void) {
     M2C_ERROR(/* unknown instruction: ps_merge01 $f2, $f0, $f1 */);
     return M2C_ERROR(/* unknown instruction: ps_merge10 $f1, $f1, $f0 */);
