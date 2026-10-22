@@ -1091,6 +1091,20 @@ void Gfx_EndScene(void) {
     g_screenTextX = 0;
 }
 
+void RenderState_Init(void) {
+    extern GfxState g_state;
+    g_state.unk7C = 1;
+    g_state.numPointLights = 0;
+    g_state.unk80 = 1.0f;
+    g_state.unk91 = 0xFF;
+    g_state.lightChanged = 1;
+    g_state.unk8F = 1;
+    g_state.unk92 = 0xFF;
+    g_state.enviroMapMode = 0;
+    g_state.unk88 = 0;
+    g_state.farClippingPlane = 10000.0f;
+}
+
 void Gfx_EnableState(u32 state) {
     extern GfxState g_state;
     g_state.unk7C |= state;
