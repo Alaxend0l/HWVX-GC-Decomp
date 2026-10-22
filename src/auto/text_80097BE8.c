@@ -4481,6 +4481,23 @@ s32 __ct__5ForceFv(s32 arg0) {
     return arg0;
 }
 
+s32 Destroy__5ForceFll(Force *force, s32 chan, s32 effect) {
+    s32 LGDestroyForceEffect(u32 handle);
+    s32 result = 0;
+
+    if (force->effectIds[chan][effect] != 0xFFFFFFFF) {
+        result = LGDestroyForceEffect(force->effectIds[chan][effect]);
+        if (result < 0) {
+            OSReport("ERROR: Failed to destroy force effect on channel %d\n", chan);
+        } else {
+            force->playing[chan][effect] = 0;
+        }
+    } else {
+        OSReport("ERROR: Trying to destroy force effect on channel %d but we have an invalid effectid\n", chan);
+    }
+    return result;
+}
+
 s32 GetOverallForceGain__5ForceFRUl(void *force, u32 *effectId) {
     s32 LGGetDeviceProperty(u32 id, s32 prop, void *value);
     s32 gain;
