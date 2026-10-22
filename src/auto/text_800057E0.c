@@ -2946,6 +2946,189 @@ void ThingManagerList_Remove(void **arg0, void *arg1) {
     M2C_FIELD(arg1, void **, 0xA0) = NULL;
 }
 
+extern Vector4 g_zeroVector;
+extern void *g_pSourcePlayer;
+void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
+void ThingManagerList_InitAllSlavesNow(void *list, void *slaves, u8 player);
+static inline s32 SharedSlaveHolder_Get(void *shared) {
+    s32 i;
+
+    for (i = 0; i < 64; i++) {
+        if (g_aSharedSlaveHolder[i].key == shared) {
+            return i;
+        }
+    }
+    for (i = 0; i < 64; i++) {
+        if (g_aSharedSlaveHolder[i].key == NULL) {
+            g_aSharedSlaveHolder[i].key = shared;
+            ThingManagerList_InitAllSlavesNow(&g_aSharedSlaveHolder[i].slaves, (u8 *)shared + 4, 0xFF);
+            return i;
+        }
+    }
+    return 64;
+}
+
+#pragma push
+#pragma use_lmw_stmw on
+void ThingManagerList_TriggerSlaves(void **list, u8 *trigger, Vector4 *a, Vector4 *b, Vector4 *c, u8 player) {
+    void *slave = NULL;
+
+    switch (trigger[0x10]) {
+    case 1: {
+        struct { Vector4 a; Vector4 b; Vector4 c; Vector4 zero; void *ptr; void *player; f32 f; } p;
+        p.ptr = M2C_FIELD(trigger, void **, 0x18);
+        p.c = *c;
+        p.player = g_pSourcePlayer;
+        p.zero = g_zeroVector;
+        if (p.ptr != NULL && *(u32 *)p.ptr != 0) {
+            p.player = g_pSourcePlayer;
+            p.f = 0.0f;
+            p.a = *a;
+            p.b = *b;
+            slave = ThingManager_DARYL_CreateSlave(1, &p, M2C_FIELD(trigger, u16 *, 0x12));
+        }
+        break;
+    }
+    case 2: {
+        struct { Vector4 a; Vector4 b; Vector4 c; void *ptr; void *player; f32 f; } p;
+        if (M2C_FIELD(trigger, void **, 0x18) != NULL) {
+            p.ptr = M2C_FIELD(trigger, void **, 0x18);
+            p.f = 0.0f;
+            p.c = *c;
+            p.player = g_pSourcePlayer;
+            p.a = *a;
+            p.a.w = 1.0f;
+            p.b = *b;
+            slave = ThingManager_DARYL_CreateSlave(2, &p, M2C_FIELD(trigger, u16 *, 0x12));
+        }
+        break;
+    }
+    case 3: {
+        struct { Vector4 a; void *ptr; u8 flag; } p;
+        void *ptr = M2C_FIELD(trigger, void **, 0x18);
+        if (ptr != NULL && ptr != NULL) {
+            p.a = *a;
+            p.ptr = ptr;
+            p.flag = 1;
+            slave = ThingManager_DARYL_CreateSlave(0x10, &p, M2C_FIELD(trigger, u16 *, 0x12));
+        }
+        break;
+    }
+    case 4: {
+        Vector4 p;
+        p = *(Vector4 *)trigger;
+        p.w = 1.0f;
+        slave = ThingManager_DARYL_CreateSlave(8, &p, M2C_FIELD(trigger, u16 *, 0x12));
+        break;
+    }
+    case 5: {
+        struct { void *ptr; Vector4 pos; s32 flag; void *player; } p;
+        if (M2C_FIELD(trigger, void **, 0x18) != NULL) {
+            p.ptr = M2C_FIELD(trigger, void **, 0x18);
+            p.pos = *(Vector4 *)trigger;
+            p.flag = 1;
+            p.player = g_pSourcePlayer;
+            slave = ThingManager_DARYL_CreateSlave(5, &p, M2C_FIELD(trigger, u16 *, 0x12));
+        }
+        break;
+    }
+    case 6: {
+        struct { void *ptr; Vector4 pos; s32 flag; void *player; } p;
+        if ((u32)ViewManager_GetViewFormat() > 1 && *M2C_FIELD(trigger, u8 **, 0x18) != 0) {
+            break;
+        }
+        if (M2C_FIELD(trigger, void **, 0x18) != NULL) {
+            p.ptr = M2C_FIELD(trigger, void **, 0x18);
+            p.player = g_pSourcePlayer;
+            p.pos = *(Vector4 *)trigger;
+            p.flag = 0;
+            slave = ThingManager_DARYL_CreateSlave(5, &p, M2C_FIELD(trigger, u16 *, 0x12));
+        }
+        break;
+    }
+    case 7: {
+        struct { Vector4 a; Vector4 b; Vector4 c; void *ptr; s32 time; void *player; f32 f; } p;
+        if (M2C_FIELD(trigger, void **, 0x18) != NULL) {
+            p.ptr = M2C_FIELD(trigger, void **, 0x18);
+            p.f = 0.0f;
+            p.time = 0x14;
+            p.c = *c;
+            p.player = g_pSourcePlayer;
+            p.a = *a;
+            p.a.w = 1.0f;
+            p.b = *b;
+            slave = ThingManager_DARYL_CreateSlave(0xC, &p, M2C_FIELD(trigger, u16 *, 0x12));
+        }
+        break;
+    }
+    case 8: {
+        struct { Vector4 unk; Vector4 a; Vector4 b; void *ptr; s32 flag; } p;
+        void *ptr = M2C_FIELD(trigger, void **, 0x18);
+        if (ptr != NULL) {
+            p.a = *a;
+            p.b = *b;
+            p.ptr = ptr;
+            p.flag = 0;
+            slave = ThingManager_DARYL_CreateSlave(0xF, &p, M2C_FIELD(trigger, u16 *, 0x12));
+        }
+        break;
+    }
+    case 9: {
+        struct { void *ptr; Vector4 a; } p;
+        void *ptr = M2C_FIELD(trigger, void **, 0x18);
+        if (ptr != NULL) {
+            p.a = *a;
+            p.ptr = ptr;
+            slave = ThingManager_DARYL_CreateSlave(0x11, &p, M2C_FIELD(trigger, u16 *, 0x12));
+        }
+        break;
+    }
+    case 10: {
+        u8 *shared = M2C_FIELD(trigger, u8 **, 0x18);
+        s32 i;
+        if (shared != NULL && *(u32 *)shared == 0) {
+            *(u32 *)shared = 1;
+            for (i = 0; i < 64; i++) {
+                if (g_aSharedSlaveHolder[i].key == shared) {
+                    goto found;
+                }
+            }
+            for (i = 0; i < 64; i++) {
+                if (g_aSharedSlaveHolder[i].key == NULL) {
+                    g_aSharedSlaveHolder[i].key = shared;
+                    ThingManagerList_InitAllSlavesNow(&g_aSharedSlaveHolder[i].slaves, shared + 4, 0xFF);
+                    goto found;
+                }
+            }
+            i = 64;
+        found:
+            M2C_FIELD(M2C_FIELD(shared, void **, 8), u8 *, 0x1D) = i;
+        }
+        break;
+    }
+    case 0x63: {
+        void *thing;
+        u8 id = M2C_FIELD(trigger, u16 *, 0x12);
+        for (thing = *list; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
+            if (M2C_FIELD(thing, u8 *, 0x82) == id && M2C_FIELD(thing, u8 *, 0x83) == player) {
+                (*(void (**)(void *))(M2C_FIELD(thing, u8 **, 0x8C) + 4))(thing);
+            }
+        }
+        break;
+    }
+    }
+
+    if (slave != NULL) {
+        M2C_FIELD(slave, u8 *, 0x83) = player;
+        M2C_FIELD(slave, void **, 0xA4) = *list;
+        M2C_FIELD(slave, void **, 0xA0) = NULL;
+        if (M2C_FIELD(slave, void **, 0xA4) != NULL) {
+            M2C_FIELD(M2C_FIELD(slave, void **, 0xA4), void **, 0xA0) = slave;
+        }
+        *list = slave;
+    }
+}
+#pragma pop
 void ThingManager_DARYL_Init(void) {
     M2C_UNK ThingManager_DARYL_Release();
     M2C_UNK MatrixCache_Init();
