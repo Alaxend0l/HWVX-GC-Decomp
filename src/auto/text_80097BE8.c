@@ -1825,6 +1825,12 @@ s32 Input_GetContollersPluggedIn(void) {
     return 0xF;
 }
 
+void Wheel_PlayDamperForce(s32 chan, u8 coefficient, s16 offset) {
+    if (IsOpened__8LGWheelsFl(wheels, chan)) {
+        PlayDamperForce__8LGWheelsFlUcs(wheels, chan, coefficient, offset);
+    }
+}
+
 void Wheel_PlayCarAirborne(s32 chan) {
     if (IsOpened__8LGWheelsFl(wheels, chan)) {
         PlayCarAirborne__8LGWheelsFl(wheels, chan);
