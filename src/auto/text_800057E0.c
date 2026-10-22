@@ -84,6 +84,13 @@ typedef struct Thing {
 
 void MultiplyMatrix(Matrix4 *a, void *b, Matrix4 *out);
 
+typedef struct WorldData {
+    void *world;
+    s32 unk4[5];
+} WorldData;
+
+extern WorldData g_worldData;
+
 typedef s16 __OSInterrupt;
 typedef void (*__OSInterruptHandler)(__OSInterrupt interrupt, void *context);
 extern __OSInterruptHandler *InterruptHandlerTable_803C7240;
