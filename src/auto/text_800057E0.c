@@ -1891,6 +1891,37 @@ s32 FileStreaming_GetNumAvailableQuadPacks(void) {
     return 0xB;
 }
 
+void ForceFeedback_Play(void *effect, Vector4 *dir) {
+    typedef struct ForceFeedback {
+        void *effect;
+        u8 unk4[0x1C - 0x4];
+        u8 active;
+        u8 unk1D[0x30 - 0x1D];
+        u8 playing;
+        u8 unk31[0x40 - 0x31];
+        Vector4 dir;
+        s32 unk50;
+        s32 unk54;
+        s32 unk58;
+        u8 unk5C[0x60 - 0x5C];
+    } ForceFeedback;
+    extern ForceFeedback g_forcefeedback[24];
+    s32 i;
+
+    for (i = 0; i < 24; i++) {
+        if (g_forcefeedback[i].effect == NULL) {
+            g_forcefeedback[i].effect = effect;
+            g_forcefeedback[i].active = 1;
+            g_forcefeedback[i].playing = 1;
+            g_forcefeedback[i].dir = *dir;
+            g_forcefeedback[i].unk54 = M2C_FIELD(effect, s32 *, 0x14);
+            g_forcefeedback[i].unk58 = M2C_FIELD(effect, s32 *, 0x18);
+            g_forcefeedback[i].unk50 = M2C_FIELD(effect, s32 *, 0x10);
+            return;
+        }
+    }
+}
+
 void GameSettings_ResetGame(void) {
     s32 i;
 
