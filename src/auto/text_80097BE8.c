@@ -134,6 +134,11 @@ void HeapDump(void) {
 
 }
 
+s8 Timer_Interrupt300(void) {
+    extern u32 g_timer300;
+    return (s8) ((u32) g_timer300 >> 0x1FU);
+}
+
 void Performance_Start(void) {
 
 }
