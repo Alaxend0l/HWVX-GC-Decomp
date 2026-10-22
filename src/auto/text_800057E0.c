@@ -4809,6 +4809,16 @@ s32 TRKTargetStopped(void) {
     return *(s32 *)(gTRKState + 0x98);
 }
 
+s32 TRKTargetFlushCache(u8 space, u32 start, u32 end) {
+    void TRK_flush_cache(u32 start, u32 length);
+
+    if (start < end) {
+        TRK_flush_cache(start, end - start);
+        return 0;
+    }
+    return 0x700;
+}
+
 s32 TRKTargetAddExceptionInfo(void *b) {
     extern u32 gTRKExceptionStatus_800DA0A4[];
     s32 err;
