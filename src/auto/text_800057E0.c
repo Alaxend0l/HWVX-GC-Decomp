@@ -1418,6 +1418,11 @@ void StateGameManager_Release(void) {
     FileStreaming_ReleaseAllDataPacks(3, 1);
 }
 
+void Pod_Release(s32 arg0) {
+    MotionState_Release(arg0 + 0xB0);
+    Thing_Release(arg0);
+}
+
 s32 Pod_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
