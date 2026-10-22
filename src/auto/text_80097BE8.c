@@ -1400,8 +1400,8 @@ void ProcessVoice(void) {
 #pragma optimization_level 1
 u32 CreateSFX(void *desc) {
     u32 CreateSFX_(SFX *);
-    SFX *sfx;
     u32 idx;
+    SFX *sfx;
 
     if (g_freeSound_803C78D8 == 0xFFFFFFFF) {
         return 0;
@@ -1413,23 +1413,27 @@ u32 CreateSFX(void *desc) {
     }
     idx = g_freeSound_803C78D8;
     g_freeSound_803C78D8 = g_soundLst_80373460[g_freeSound_803C78D8];
-    g_soundLst_80373460[idx] = 0xFF;
-    return idx + 1;
+    g_soundLst_80373460[idx++] = 0xFF;
+    return idx;
 }
 #pragma pop
 
 #pragma push
 #pragma optimization_level 1
 s8 DestroySFX(u32 handle) {
-    s8 FreeA_(void *);
-    u32 idx = handle - 1;
+    s32 FreeA_(void *);
     void *data;
+    u32 next;
+    SFX *sfx;
+    u32 idx = handle - 1;
 
     if (idx < 0xFE && g_sound_80373560[idx].data != 0) {
-        g_soundLst_80373460[idx] = g_freeSound_803C78D8;
+        next = g_freeSound_803C78D8;
+        sfx = &g_sound_80373560[idx];
         g_freeSound_803C78D8 = idx;
-        data = g_sound_80373560[idx].data;
-        g_sound_80373560[idx].data = 0;
+        g_soundLst_80373460[idx] = next;
+        data = sfx->data;
+        sfx->data = 0;
         return FreeA_(data);
     }
     return 0;
