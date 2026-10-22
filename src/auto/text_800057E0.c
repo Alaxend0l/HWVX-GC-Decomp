@@ -1030,6 +1030,10 @@ void Mover_Init(void) {
     fn_800957D4();
 }
 
+s32 Player_InputHeartbeat(void *arg0) {
+    return M2C_FIELD(arg0, s8 (**)(), 0x20)() != 0;
+}
+
 void Player_DetachThingDeath(void *arg0) {
     void *temp_r5;
 
