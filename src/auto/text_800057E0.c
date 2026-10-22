@@ -73,7 +73,16 @@ void Thing_GetDynamicMinMax(void *thing, Vector4 *min, Vector4 *max, f32 expand)
 typedef union Matrix4 {
     f32 m[4][4];
     f64 d[8];
+    Vector4 v[4];
 } Matrix4;
+
+typedef struct Thing {
+    Vector4 pos;  /* 0x00 */
+    Matrix4 mtx;  /* 0x10 */
+    Vector4 quat; /* 0x50 */
+} Thing;
+
+void MultiplyMatrix(Matrix4 *a, void *b, Matrix4 *out);
 
 typedef s16 __OSInterrupt;
 typedef void (*__OSInterruptHandler)(__OSInterrupt interrupt, void *context);
@@ -1776,6 +1785,27 @@ s32 Thing_GetSource(void *arg0) {
 void Thing_InitAllSlavesNow(s32 arg0) {
     M2C_UNK ThingManagerList_InitAllSlavesNow(s32);
     ThingManagerList_InitAllSlavesNow(arg0 + 0x88);
+}
+
+void Thing_SlaveTransform(void *thing, void *mtx) {
+    void MultiplyMatrix(Matrix4 *a, void *b, Matrix4 *out);
+    Matrix4 local;
+
+    local = M2C_FIELD(thing, Matrix4 *, 0x10);
+    MultiplyMatrix(&local, mtx, (Matrix4 *)((s8 *)thing + 0x10));
+    SubMatrixToQuaternion((s8 *)thing + 0x10, (Vector4 *)((s8 *)thing + 0x50));
+}
+
+void Thing_SlaveTransformQuaternionOnly(void *thing, void *mtx) {
+    Vector4 rot;
+    Vector4 quat;
+    Vector4 pos;
+
+    quat = M2C_FIELD(thing, Vector4 *, 0x50);
+    pos = M2C_FIELD(thing, Vector4 *, 0x40);
+    XformVec(mtx, &pos, (Vector4 *)((s8 *)thing + 0x40));
+    SubMatrixToQuaternion(mtx, &rot);
+    QuaternionMult(&rot, &quat, (Vector4 *)((s8 *)thing + 0x50));
 }
 
 void *Thing_GetSurfaceScript(void) {
