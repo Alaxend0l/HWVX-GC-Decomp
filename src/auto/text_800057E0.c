@@ -1085,6 +1085,22 @@ void *SoundAudioSample_Play(void *sample) {
     return NULL;
 }
 
+void SoundAudioSample_Set(void *voice, s32 type, s32 value) {
+    switch (type) {
+    case 0:
+        SetVoiceVol(voice, (s16)value);
+        break;
+    case 1:
+        SetVoicePitch(voice, value);
+        break;
+    case 4:
+        SetVoicePos(voice, (s16)value, -0x7FFF);
+        break;
+    case 9:
+        break;
+    }
+}
+
 void SongManager_StopBKSong(void) {
 
 }
