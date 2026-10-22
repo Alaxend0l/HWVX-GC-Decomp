@@ -1727,6 +1727,117 @@ s32 LGStartForceEffect(u32 handle) {
     return VDevice_StartEffect(&device->vdev, handle);
 }
 
+s32 VDevice_DestroyEffect(VDevice *dev, u32 handle);
+s32 LGDestroyForceEffect(u32 handle) {
+    u32 index = handle >> 16;
+    LGDevice *device;
+
+    if (index >= 4) {
+        return -2;
+    }
+    device = &g_lgDevices_803771D8[index];
+    if (!device->opened) {
+        return -2;
+    }
+    if (device->started) {
+        if (device != NULL && (u32)device != 0xFFFFFFFF && device->opened) {
+            device->opened = 0;
+            device->started = 0;
+            VDevice_Shutdown(&device->vdev);
+            device->unk8 = -1;
+        }
+        return -2;
+    }
+    return VDevice_DestroyEffect(&device->vdev, handle);
+}
+
+void zero_mem_aligned(void *dst, u32 n) {
+    u8 *cdst = (u8 *)dst - 1;
+    u32 *ldst;
+    u32 i;
+
+    if (n >= 32) {
+        i = n >> 5;
+        ldst = (u32 *)dst - 1;
+        if (i) {
+            do {
+                *++ldst = 0;
+                *++ldst = 0;
+                *++ldst = 0;
+                *++ldst = 0;
+                *++ldst = 0;
+                *++ldst = 0;
+                *++ldst = 0;
+                *++ldst = 0;
+            } while (--i);
+        }
+        i = (n & 31) >> 2;
+        if (i) {
+            do {
+                *++ldst = 0;
+            } while (--i);
+        }
+        cdst = (u8 *)ldst + 3;
+        n &= 3;
+    }
+    if (n) {
+        do {
+            *++cdst = 0;
+        } while (--n);
+    }
+}
+
+void VDevice_Init(VDevice *dev) {
+    s32 i;
+
+    SimThread_Init(dev, dev);
+    dev->unk11F4 = 0xFF;
+    for (i = 0; i < 64; i++) {
+        dev->activeEffects[i] = NULL;
+    }
+    if (g_bGammaInitialized_803C794C == 0) {
+        VDevice_RecalcGammaTable();
+        g_bGammaInitialized_803C794C = 1;
+    }
+}
+
+s32 VDevice_DownloadEffect(VDevice *dev, u32 *handle, u8 *desc) {
+    s32 ret = 0;
+    Effect *effect;
+    u32 index;
+
+    *handle = VDevice_GetFreeEffect(dev);
+    if (*handle == 0xFFFFFFFF) {
+        ret = -5;
+    } else {
+        effect = &dev->effects[*handle & 0x3F];
+        index = *handle & 0x3F;
+        switch (desc[0]) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+            Effect_Init(effect);
+            effect->state = (EffectState *)dev;
+            Effect_UpdateEffect(effect, desc);
+            break;
+        default:
+            ret = -2;
+            *handle = -1;
+            break;
+        }
+        if (effect != NULL) {
+            dev->activeEffects[index] = effect;
+        }
+    }
+    return ret;
+}
+
 s32 Effect_StartEffect(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0x28) = (s32) (M2C_FIELD(arg0, s32 *, 0x28) | 1);
     M2C_FIELD(arg0, s32 *, 0x28) = (s32) (M2C_FIELD(arg0, s32 *, 0x28) & 0xFFFFFFFD);
