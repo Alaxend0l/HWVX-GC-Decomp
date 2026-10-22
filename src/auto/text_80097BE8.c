@@ -114,6 +114,10 @@ void Main_Shutdown_NGC(void) {
 
 }
 
+void TextureManager_ReleaseCache(void) {
+
+}
+
 void MemCpy32(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
