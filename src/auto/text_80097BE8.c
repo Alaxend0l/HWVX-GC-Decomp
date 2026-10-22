@@ -242,6 +242,10 @@ void FileManager_Destroy(void) {
     fn_800957D4();
 }
 
+void Input_SetAlternativeForceFeedback(void) {
+
+}
+
 void GBAConnectivityLoop__Fv(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
