@@ -1996,6 +1996,10 @@ void Callback(void) {
     Prepared_803C7260 = 1;
 }
 
+s32 __OSUnlockSram(s32 commit) {
+    return UnlockSram(commit, 0);
+}
+
 s32 __OSUnlockSramEx(s32 commit) {
     return UnlockSram(commit, 0x14);
 }
