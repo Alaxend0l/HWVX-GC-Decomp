@@ -2142,6 +2142,19 @@ s32 ViewManager_GetViewFormat(void) {
     return g_viewFormat;
 }
 
+void ViewManager_SetSinglePlayer(void) {
+    extern s32 g_viewFormat;
+    extern u8 g_CurrentViews;
+    void Gfx_SetRenderWindow(u32 view);
+    Gfx_SetRenderWindow(0);
+    g_CurrentViews |= 1 << 0;
+    g_viewFormat = 1;
+    g_CurrentViews &= ~(1 << 1);
+    g_CurrentViews &= ~(1 << 2);
+    g_CurrentViews &= ~(1 << 3);
+    g_CurrentViews &= ~(1 << 4);
+}
+
 s32 Tracer_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
