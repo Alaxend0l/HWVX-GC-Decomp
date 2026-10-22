@@ -3194,6 +3194,8 @@ u32 LCStoreData(void *destAddr, void *srcAddr, u32 nBytes) {
 }
 #pragma pop
 
+#pragma push
+#pragma peephole off
 void L2GlobalInvalidate(void) {
     u32 PPCMfl2cr(void);
     void PPCMtl2cr(u32 val);
@@ -3210,6 +3212,7 @@ void L2GlobalInvalidate(void) {
         DBPrintf(">>> L2 INVALIDATE : SHOULD NEVER HAPPEN\n");
     }
 }
+#pragma pop
 
 s32 OSGetCurrentContext(void) {
     return *(s32 *)0x800000D4;
