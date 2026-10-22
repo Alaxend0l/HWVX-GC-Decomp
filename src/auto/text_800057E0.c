@@ -1317,6 +1317,10 @@ void GXInitFifoLimits(void *arg0, s32 arg1, s32 arg2) {
     M2C_FIELD(arg0, s32 *, 0x10) = arg2;
 }
 
+void GXInvalidateVtxCache(void) {
+    *(s8 *)0xCC008000 = 0x48;
+}
+
 s32 GXGetTexObjData(void *arg0) {
     return (M2C_FIELD(arg0, s32 *, 0xC) << 5) & 0x03FFFFE0;
 }
