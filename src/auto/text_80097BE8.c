@@ -1850,6 +1850,28 @@ void *DisplayList_AddGroup_Skin(void) {
     return g_pDL + 0x109E0 + count * 0x14;
 }
 
+s32 Gfx_FrustrumCullSphereTestAllWindows(Vector *center, f32 radius) {
+    extern u8 g_CurrentViews;
+    void Gfx_SetRenderWindow(u32 view);
+    s32 Gfx_FrustrumCullSphereTest(Vector *center, f32 radius);
+    u32 i;
+    s32 ret;
+
+    if (g_CurrentViews != 1) {
+        for (i = 1; i < 5; i++) {
+            if (g_CurrentViews & (1 << i)) {
+                Gfx_SetRenderWindow(i);
+                ret = Gfx_FrustrumCullSphereTest(center, radius);
+                if (ret) {
+                    return ret;
+                }
+            }
+        }
+        return ret;
+    }
+    return Gfx_FrustrumCullSphereTest(center, radius);
+}
+
 s32 Gfx_AddWorldMatrixState_CacheMatrix(s32 matrix);
 s32 Gfx_GetLightState(void);
 #pragma push
