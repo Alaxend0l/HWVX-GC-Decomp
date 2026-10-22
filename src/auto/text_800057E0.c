@@ -1321,6 +1321,12 @@ void GXInvalidateVtxCache(void) {
     *(s8 *)0xCC008000 = 0x48;
 }
 
+void GXInitLightAttnK(void *arg0, f32 farg0, f32 farg1, f32 farg2) {
+    M2C_FIELD(arg0, f32 *, 0x1C) = farg0;
+    M2C_FIELD(arg0, f32 *, 0x20) = farg1;
+    M2C_FIELD(arg0, f32 *, 0x24) = farg2;
+}
+
 s32 GXGetTexObjData(void *arg0) {
     return (M2C_FIELD(arg0, s32 *, 0xC) << 5) & 0x03FFFFE0;
 }
