@@ -782,6 +782,10 @@ f32 Debris_GetMass(void *arg0) {
     return M2C_FIELD(arg0, f32 *, 0xCC);
 }
 
+f32 Destructible_GetMass(void *arg0) {
+    return M2C_FIELD(M2C_FIELD(M2C_FIELD(arg0, void **, 0xC0), void **, 0x10), f32 *, 0x20);
+}
+
 void EventSeq_Release(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
