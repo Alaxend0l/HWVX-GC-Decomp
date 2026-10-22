@@ -168,11 +168,13 @@ typedef struct _FILE {
     u32 handle;
     __file_modes mode;
     __file_state state;
-    u8 unkC[0x1C - 0xC];
+    u8 is_dynamically_allocated;
+    u8 unkD[0x1C - 0xD];
     u8 *buffer;
     u8 unk20[0x44 - 0x20];
     s32 (*close_fn)(u32 handle);
-    u8 unk48[0x50 - 0x48];
+    u8 unk48[0x4C - 0x48];
+    struct _FILE *next_file_struct;
 } FILE;
 
 extern u8 __lower_map[256];
@@ -5158,6 +5160,18 @@ void ShortCommandProc(s32 chan) {
         return;
     }
     *gba->status = gba->input[2] & 0x3A;
+}
+
+s32 GBAResetAsync(s32 chan, u8 *status, GBACallback callback) {
+    GBAControl *gba = &__GBA[chan];
+
+    if (gba->callback != NULL) {
+        return 2;
+    }
+    gba->output[0] = 0xFF;
+    gba->status = status;
+    gba->callback = callback;
+    return __GBATransfer(chan, 1, 3, ShortCommandProc);
 }
 
 s32 OnReset_800C4F14(void) {
