@@ -75,7 +75,8 @@ typedef struct THPPlayer {
     u8 unk9D;
     u8 playFlag;
     u8 audioExist;
-    u8 unkA0[0xA8 - 0xA0];
+    void *dispTextureSet;
+    void *playAudioBuffer;
     s32 onMemory;
     u8 *movieData;
     u8 unkB0[0xB4 - 0xB0];
