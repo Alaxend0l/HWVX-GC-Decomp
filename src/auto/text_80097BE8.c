@@ -4064,6 +4064,17 @@ void SetSFXVol(s32 vol) {
     }
 }
 
+#pragma push
+#pragma optimization_level 1
+void ReleaseVoice(u32 id) {
+    extern u8 g_voice[0x20][0x70];
+
+    if (id == *(u32 *)g_voice[(u8)id]) {
+        SetVoiceState_(g_voice[(u8)id], 3);
+    }
+}
+#pragma pop
+
 #pragma pop
 
 s32 SetVoicePitch(u32 id, s32 pitch) {
