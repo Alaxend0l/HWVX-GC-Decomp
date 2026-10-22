@@ -3427,21 +3427,27 @@ void PushDecodedAudioBuffer(void *arg0) {
 }
 
 s32 __THPAudioGetNewSample(u32 *info) {
+    struct THPAudioDecodeInfo {
+        u8 *encodeData;
+        u32 offsetNibbles;
+        u8 predictor;
+        u8 scale;
+    } *p = (struct THPAudioDecodeInfo *)info;
     s32 sample;
 
-    if (!(info[1] & 0xF)) {
-        ((u8 *)info)[8] = (*(u8 *)info[0] >> 4) & 7;
-        ((u8 *)info)[9] = *(u8 *)info[0] & 0xF;
-        info[0]++;
-        info[1] += 2;
+    if (!(p->offsetNibbles & 0xF)) {
+        p->predictor = (u8)((*p->encodeData >> 4) & 7);
+        p->scale = (u8)(*p->encodeData & 0xF);
+        p->encodeData++;
+        p->offsetNibbles += 2;
     }
-    if (info[1] & 1) {
-        sample = (s32)(*(u8 *)info[0] << 28) >> 28;
-        info[0]++;
+    if (p->offsetNibbles & 1) {
+        sample = (s32)((*p->encodeData & 0xF) << 28) >> 28;
+        p->encodeData++;
     } else {
-        sample = (s32)((*(u8 *)info[0] << 24) & 0xF0000000) >> 28;
+        sample = (s32)((*p->encodeData & 0xF0) << 24) >> 28;
     }
-    info[1]++;
+    p->offsetNibbles++;
     return sample;
 }
 
@@ -3461,8 +3467,8 @@ s32 AudioVoice_Create_(void) {
     u32 i;
 
     for (i = 0; i < 0x20; i++) {
-        *(s32 *)(g_voice[i] + 0x50) = 0;
-        *(u32 *)g_voice[i] = i;
+        *(s32 *)&g_voice[i][0x50] = 0;
+        *(u32 *)&g_voice[i][0] = i;
         g_voice[i][1] = 0xFF;
     }
     m_InitOnce_803C7898 = 1;
@@ -3483,6 +3489,29 @@ void AudioVoice_Destroy_(void) {
     AXFXDelayShutdown(g_reverb_803715B0[1]);
     AXFXDelayShutdown(g_reverb_803715B0[0]);
 }
+
+u32 CreateSFX_(u32 *sfx) {
+    u32 MAllocA_(u32 size);
+    u32 size;
+    u32 data;
+    u32 *pd = &data;
+
+    size = (sfx[1] + 0x1F) & ~0x1F;
+    *pd = MAllocA_(size);
+    if (*pd == 0) {
+        return 0;
+    }
+    DCFlushRange((void *)sfx[0], size);
+    MemCpyA_(*pd, sfx[0], size);
+    if (((u8 *)sfx)[0x11] == 0x10) {
+        sfx[1] >>= 1;
+        *pd >>= 1;
+        ((s32 *)sfx)[2] >>= 1;
+    }
+    sfx[0] = *pd;
+    return *pd;
+}
+
 #pragma pop
 
 void SetVoicePriority_(void *arg0) {
