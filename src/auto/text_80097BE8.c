@@ -690,6 +690,10 @@ void MemCpy32(void) {
     fn_800957D4();
 }
 
+void MemClr32(void *dst, u32 size) {
+    memset(dst, 0, size);
+}
+
 void HeapDump(void) {
 
 }
