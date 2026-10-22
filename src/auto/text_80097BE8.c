@@ -4498,7 +4498,7 @@ void SetMIDIMarker(u8 marker, s8 keep) {
 
     if (g_pHdr_803C78F4 != NULL && marker < 0x40 && *(u32 *)g_mrk_80376FB4[marker] != 0) {
         g_song_80376990[0x1E] = marker;
-        g_song_80376990[0x1F] = keep == 0;
+        g_song_80376990[0x1F] = !keep;
         return;
     }
     g_song_80376990[0x1E] = 0;
