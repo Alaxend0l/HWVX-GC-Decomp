@@ -82,7 +82,12 @@ typedef struct THPPlayer {
     u8 unkB0[0xB4 - 0xB0];
     s32 initReadSize;
     s32 initReadFrame;
-    u8 unkBC[0x198 - 0xBC];
+    u8 unkBC[0xC0 - 0xBC];
+    s32 unkC0;
+    s32 retraceCount;
+    s32 prevCount;
+    s32 curCount;
+    u8 unkD0[0x198 - 0xD0];
 } THPPlayer;
 
 typedef struct THPFileInfo {
