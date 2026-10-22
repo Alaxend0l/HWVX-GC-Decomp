@@ -57,9 +57,15 @@ typedef struct THPVideoInfo {
 } THPVideoInfo;
 
 typedef struct THPPlayer {
-    u8 unk0[0x50];
+    u8 fileInfo[0x3C];
+    u8 unk3C[0x44 - 0x3C];
+    u32 bufSize;
+    u32 audioMaxSamples;
+    u8 unk4C[0x50 - 0x4C];
     u32 numFrames;
-    u8 unk54[0x6C - 0x54];
+    u8 unk54[0x58 - 0x54];
+    u32 movieDataSize;
+    u8 unk5C[0x6C - 0x5C];
     u32 numComponents;
     u8 frameComp[16];
     THPVideoInfo videoInfo;
@@ -2044,10 +2050,10 @@ void TimeHandler_SetTimeElapsedSec_f32(f32 sec) {
     extern f32 g_fDeltaTimeSec_inv;
     extern u32 g_iDeltaTimeMS;
 
-    g_iDeltaTimeMS = (u32)(1000.0f * sec);
+    g_iDeltaTimeMS = 1000.0f * sec;
     g_fDeltaTimeSec = sec;
-    g_fDeltaTimeSec_inv = 1.0f / sec;
-    g_fDeltaTime60th = (f32)g_iDeltaTimeMS / (1000.0f / 60.0f);
+    g_fDeltaTimeSec_inv = 1.0f / g_fDeltaTimeSec;
+    g_fDeltaTime60th = g_iDeltaTimeMS / (1000.0f / 60.0f);
 }
 
 void Performance_Start(void) {
