@@ -1255,6 +1255,17 @@ void ThingManager_DARYL_Init(void) {
     MatrixCache_Init();
 }
 
+void ThingManager_DARYL_Heartbeat(void) {
+    M2C_UNK ThingManager_MoveLookerOnly();
+    M2C_UNK ThingManager_MoveThings_DARYL_SUBTICK();
+    extern u8 g_bFreezeWorld;
+    if ((s8) g_bFreezeWorld != 0) {
+        ThingManager_MoveLookerOnly();
+        return;
+    }
+    ThingManager_MoveThings_DARYL_SUBTICK();
+}
+
 void Trail_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
