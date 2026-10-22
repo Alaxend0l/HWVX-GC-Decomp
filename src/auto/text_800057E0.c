@@ -714,6 +714,11 @@ void EventSeq_Release(void) {
     fn_800957D4();
 }
 
+void Mover_Init(void) {
+    M2C_UNK fn_800957D4();
+    fn_800957D4();
+}
+
 void StateMovie_SetMovieToPlay(s32 arg0) {
     extern s32 g_moviePlaybackName;
     g_moviePlaybackName = arg0;
