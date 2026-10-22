@@ -606,10 +606,11 @@ f32 RandomNumberGenerator_GetRandomFloat(f32 min, f32 max) {
 }
 
 f32 RandomAdd(f32 base, f32 range) {
-    if (++g_randomNumberGenerator.index >= 0x400) {
-        g_randomNumberGenerator.index = 0;
+    RandomNumberGenerator *rng = &g_randomNumberGenerator;
+    if (++rng->index >= 0x400) {
+        rng->index = 0;
     }
-    return g_randomNumberGenerator.floats[g_randomNumberGenerator.index] * range + base;
+    return rng->floats[rng->index] * range + base;
 }
 
 s8 Timer_Interrupt300(void) {
