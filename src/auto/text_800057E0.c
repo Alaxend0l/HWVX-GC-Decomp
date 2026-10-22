@@ -1004,6 +1004,10 @@ s32 ARGetSize(void) {
     return __AR_Size_803C7424;
 }
 
+void __ARQCallbackHack(void) {
+
+}
+
 s32 __AXGetCommandListCycles(void) {
     extern s32 __AXCommandListCycles_803C74B0;
     return __AXCommandListCycles_803C74B0;
