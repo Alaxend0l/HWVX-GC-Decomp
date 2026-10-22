@@ -2146,6 +2146,19 @@ void InterfaceManager_SetInfoCallBackRoutine(s32 index, void *callback) {
     *(void **)(g_interface[index] + 0x94) = callback;
 }
 
+s32 InterfaceManager_GetTotalActiveInterfaces(void) {
+    extern u8 g_interface[][0x170];
+    s32 count = 0;
+    u32 i;
+
+    for (i = 0; i < 0x12; i++) {
+        if (*(void **)g_interface[i] != NULL) {
+            count++;
+        }
+    }
+    return count;
+}
+
 void InterfaceManager_PauseAllInterface(u8 pause) {
     extern u8 g_interface[][0x170];
     u32 i;
