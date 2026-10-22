@@ -264,6 +264,12 @@ void Mpeg_Destroy(void) {
 
 }
 
+void THPPlayerQuit(void) {
+    extern s32 Initialized_803C7758;
+    LCDisable();
+    Initialized_803C7758 = 0;
+}
+
 void Audio_Update_(void) {
     M2C_UNK Audio_Update(M2C_UNK);
     Audio_Update(0xD05);
