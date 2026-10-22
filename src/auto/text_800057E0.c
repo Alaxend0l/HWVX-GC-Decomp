@@ -1071,6 +1071,10 @@ void OSSetArenaLo(s32 arg0) {
     __OSArenaLo_803C6D78 = arg0;
 }
 
+s32 OSGetCurrentContext(void) {
+    return *(s32 *)0x800000D4;
+}
+
 s32 fn_8006AC34(void) {
     return *(s32 *)0x800000D4;
 }
