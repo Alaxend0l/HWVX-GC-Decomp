@@ -4314,6 +4314,18 @@ static void F25(s32 chan, s32 ret) {
     gba->ret = ret;
 }
 
+s32 FileManager_Create(void) {
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        g_files[i].slot = -1;
+    }
+    for (i = 0; i < 5; i++) {
+        g_appInfo[i][0] = 0;
+    }
+    return 1;
+}
+
 static void F29(s32 chan, s32 ret) {
     GBAControl *gba = &__GBA[chan];
     GBABootInfo *bootInfo = &gba->bootInfo;
