@@ -3920,6 +3920,37 @@ void SetITTrackOn(u32 mask, s8 deferred) {
         mask >>= 1;
     }
 }
+
+#pragma push
+#pragma optimization_level 1
+void SetITTrackOff(u32 mask, s8 deferred) {
+    extern u32 g_trkOff;
+    extern u8 g_trk_80375550[0x20][0x70];
+    u8 *trk;
+    u8 *voice;
+    u8 *next;
+
+    if (deferred) {
+        g_trkOff |= mask;
+        return;
+    }
+    for (trk = g_trk_80375550[0]; mask != 0; trk += 0x70) {
+        if (mask & 1) {
+            trk[0x11] = 0;
+            voice = *(u8 **)trk;
+            *(u8 **)trk = NULL;
+            *(u8 **)(trk + 4) = NULL;
+            while (voice != NULL) {
+                next = *(u8 **)(voice + 4);
+                SetVoiceState_(voice, 3);
+                voice = next;
+            }
+        }
+        mask >>= 1;
+    }
+}
+#pragma pop
+
 #pragma pop
 
 #pragma pop
