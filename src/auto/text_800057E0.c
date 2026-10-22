@@ -1079,8 +1079,8 @@ void SoundListener_SetTotalListeners(u32 arg0) {
 }
 
 s8 SoundSource_IsActive(s32 index) {
-    extern s32 g_sources_803C6F38;
-    return M2C_FIELD((u8 *)g_sources_803C6F38 + index * 0x50, s32 *, 0x2C) != -1;
+    extern SoundSource *g_sources_803C6F38;
+    return g_sources_803C6F38[index].voice != -1;
 }
 
 s8 SoundSource_IsLooping(s32 index) {
