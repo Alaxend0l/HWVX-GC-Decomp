@@ -789,6 +789,10 @@ s32 Item_PreMove(void) {
     return 1;
 }
 
+s32 Item_GetNearestNavPoint(void *arg0) {
+    return M2C_FIELD(arg0, s32 *, 0xD4);
+}
+
 s32 LogHandler_Create(void) {
     return 0;
 }
