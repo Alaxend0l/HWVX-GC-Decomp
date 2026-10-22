@@ -1139,6 +1139,11 @@ void __ARQCallbackHack(void) {
 
 }
 
+void ARQReset(void) {
+    extern s32 __ARQ_init_flag_803C7464;
+    __ARQ_init_flag_803C7464 = 0;
+}
+
 void AXRegisterAuxACallback(s32 arg0, s32 arg1) {
     extern s32 __AXCallbackAuxA_803C7470;
     extern s32 __AXContextAuxA_803C7478;
