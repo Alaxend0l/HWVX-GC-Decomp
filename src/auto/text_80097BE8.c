@@ -182,6 +182,10 @@ void Gfx_LoadPalettes_RAM(void) {
 
 }
 
+void MovieManager_Destroy(void) {
+
+}
+
 s32 MovieManager_GetTextureIndex(void) {
     return 0;
 }
