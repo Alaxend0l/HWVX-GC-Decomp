@@ -1538,12 +1538,19 @@ void CarA_GetInverseLocalInertiaTensor(void *arg0, void *arg1) {
 }
 
 f32 CarA_Transmission_GetTorqueAtWheels(void *car) {
-    f32 a = M2C_FIELD(car, f32 *, 0x4C0);
-    f32 b = M2C_FIELD(car, f32 *, 0x4C4);
-    f32 c = M2C_FIELD(car, f32 *, 0x4C8);
-    f32 d = M2C_FIELD(car, f32 *, 0x4CC);
-    f32 rpm = M2C_FIELD(car, f32 *, 0x4E4);
-    f32 scale = 1.0f;
+    f32 scale;
+    f32 rpm;
+    f32 d;
+    f32 c;
+    f32 b;
+    f32 a;
+
+    a = M2C_FIELD(car, f32 *, 0x4C0);
+    b = M2C_FIELD(car, f32 *, 0x4C4);
+    c = M2C_FIELD(car, f32 *, 0x4C8);
+    d = M2C_FIELD(car, f32 *, 0x4CC);
+    rpm = M2C_FIELD(car, f32 *, 0x4E4);
+    scale = 1.0f;
 
     if (M2C_FIELD(car, s32 *, 0x470) < 10000) {
         scale = 0.5f;
