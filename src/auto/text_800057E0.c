@@ -996,6 +996,19 @@ void AI_AsyncHeartbeat(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0xC8) = 0x1F4;
 }
 
+void MotionState_BuildMatricesWorld(void *arg0, void *arg1, void *motionState, f32 time) {
+    u8 frames[0x800];
+    void *anim;
+    s32 *skel;
+
+    if (M2C_FIELD(motionState, u32 *, 0x10) != 0) {
+        anim = M2C_FIELD(motionState, void **, 0);
+        skel = M2C_FIELD(anim, s32 **, 0x14);
+        MotionState_ExtractBlendedKeyFrame(motionState, frames);
+        TEST_AnimTraverseHeirarchyToMatricesWorld(arg0, arg1, frames, *skel, M2C_FIELD(motionState, u32 *, 0x10), time);
+    }
+}
+
 void AttachThing_Draw(void *arg0) {
     M2C_UNK AttachThing_DrawCorona(void *);
     void *Gfx_AddBillBoardSprite(u16);
