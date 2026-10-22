@@ -754,6 +754,10 @@ void Grid_Release(void) {
 
 }
 
+void InterfaceManager_SetControllerConfigInputString(void) {
+
+}
+
 s32 Item_PreMove(void) {
     return 1;
 }
