@@ -1527,10 +1527,36 @@ void CameraManager_Pause(s8 arg0) {
     g_cameraManagerPause = arg0;
 }
 
+void CarA_GetAngularVelocity(void *car, Vector4 *vel) {
+    *vel = M2C_FIELD(car, Vector4 *, 0x410);
+}
+
 void CarA_GetInverseLocalInertiaTensor(void *arg0, void *arg1) {
     M2C_FIELD(arg1, f32 *, 0) = (f32) M2C_FIELD(arg0, f32 *, 0x3C0);
     M2C_FIELD(arg1, f32 *, 4) = (f32) M2C_FIELD(arg0, f32 *, 0x3D4);
     M2C_FIELD(arg1, f32 *, 8) = (f32) M2C_FIELD(arg0, f32 *, 0x3E8);
+}
+
+f32 CarA_Transmission_GetTorqueAtWheels(void *car) {
+    f32 a = M2C_FIELD(car, f32 *, 0x4C0);
+    f32 b = M2C_FIELD(car, f32 *, 0x4C4);
+    f32 c = M2C_FIELD(car, f32 *, 0x4C8);
+    f32 d = M2C_FIELD(car, f32 *, 0x4CC);
+    f32 rpm = M2C_FIELD(car, f32 *, 0x4E4);
+    f32 scale = 1.0f;
+
+    if (M2C_FIELD(car, s32 *, 0x470) < 10000) {
+        scale = 0.5f;
+        rpm *= scale;
+    } else if (M2C_FIELD(car, u32 *, 0x48C) & 0x1000) {
+        rpm /= M2C_FIELD(M2C_FIELD(car, void **, 0x3BC), f32 *, 0x30);
+        scale *= M2C_FIELD(M2C_FIELD(car, void **, 0x3BC), f32 *, 0x34);
+    }
+    if (rpm < 0.0f) {
+        rpm *= -1.0f;
+    }
+    return (scale * (rpm * (rpm * (a * rpm + b) + c) + d)) /
+           M2C_FIELD(M2C_FIELD(car, void **, 0x3BC), f32 **, 0xDC)[M2C_FIELD(car, u8 *, 0x4E8) * 2];
 }
 
 void CarA_SetSlavePlayers(void *car) {
