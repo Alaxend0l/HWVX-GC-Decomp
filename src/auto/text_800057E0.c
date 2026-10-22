@@ -4942,9 +4942,9 @@ void TRKGetInput(void) {
 
 void usr_puts_serial(const char *msg) {
     void OSReport(const char *);
-    s32 connect_ = 0;
     char c;
     char buf[2];
+    s32 connect_ = 0;
 
     while (!connect_ && (c = *msg++) != '\0') {
         s32 connect = GetTRKConnected();
