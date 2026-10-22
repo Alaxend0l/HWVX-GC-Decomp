@@ -288,6 +288,28 @@ s32 CompareDistances(void *arg0, void *arg1, f32 farg0) {
     return 0;
 }
 
+void XformVec(Vector *m, Vector *v, Vector *out) {
+    f32 x = v->x;
+    f32 y = v->y;
+    f32 z = v->z;
+    f32 rx = m[0].x * x + m[1].x * y + m[2].x * z + m[3].x;
+    f32 ry = m[0].y * x + m[1].y * y + m[2].y * z + m[3].y;
+    f32 rz = m[0].z * x + m[1].z * y + m[2].z * z + m[3].z;
+    out->x = rx;
+    out->y = ry;
+    out->z = rz;
+}
+
+f32 PSVECDotProduct(Vector *a, Vector *b);
+void InverseXformVec(Vector *m, Vector *v, Vector *out) {
+    f32 x = v->x - m[3].x;
+    f32 y = v->y - m[3].y;
+    f32 z = v->z - m[3].z;
+    out->x = m[0].x * x + m[0].y * y + m[0].z * z;
+    out->y = m[1].x * x + m[1].y * y + m[1].z * z;
+    out->z = m[2].x * x + m[2].y * y + m[2].z * z;
+}
+
 void TransposeSubMatrix(void *arg0) {
     f32 temp_f1;
     f32 temp_f1_2;
@@ -1045,14 +1067,14 @@ s32 AudioIT_Create(void) {
     extern u8 g_song_80375520[0x30];
     extern u8 g_trk_80375550[0x20][0x70];
     u8 i;
-    u8 id;
 
     memset(g_song_80375520, 0, 0x30);
     memset(g_trk_80375550, 0, 0xE00);
     i = 0;
     while (i < 0x20) {
-        id = i++;
-        g_trk_80375550[id][0x10] = id;
+        u8 id = i++;
+        u8 *trk = g_trk_80375550[id];
+        trk[0x10] = id;
     }
     g_pHdr_803C78E8 = NULL;
     return 1;
