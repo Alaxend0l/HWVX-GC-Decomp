@@ -2211,6 +2211,15 @@ void Gfx_ClearScreen(void) {
     fn_800957D4();
 }
 
+void Gfx_SetTextureWrapMode(u16 id, s16 mode) {
+    extern u8 *m_texture;
+    void Render_CreateTextureSlot(u32 id, s32 arg1, void *texture);
+    u8 *tex = m_texture + id * 0x40;
+
+    *(s16 *)(tex + 0x3E) = mode;
+    Render_CreateTextureSlot(id, 1, tex);
+}
+
 void Gfx_LoadPalettes_RAM(void) {
 
 }
