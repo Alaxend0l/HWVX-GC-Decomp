@@ -229,6 +229,10 @@ void SetMIDITrackPriority(void) {
 
 }
 
+void SetMIDITrackVol(void) {
+
+}
+
 s32 AudioVoid(void) {
     return 0;
 }
