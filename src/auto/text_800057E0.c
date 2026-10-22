@@ -5749,6 +5749,19 @@ s32 TRKSetBufferPosition(void *arg0, u32 arg1) {
     return var_r5;
 }
 
+s32 TRKInitializeMessageBuffers(void) {
+    extern TRKBuffer gTRKMsgBufs[3];
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        TRKInitializeMutex(&gTRKMsgBufs[i]);
+        TRKAcquireMutex(&gTRKMsgBufs[i]);
+        gTRKMsgBufs[i].isInUse = 0;
+        TRKReleaseMutex(&gTRKMsgBufs[i]);
+    }
+    return 0;
+}
+
 s32 TRKTerminateSerialHandler(void) {
     return 0;
 }
