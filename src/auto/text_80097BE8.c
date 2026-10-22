@@ -727,12 +727,17 @@ void Mpeg_Create(void) {
     fn_800957D4();
 }
 
+void AudioInit(void);
 void Mpeg_Init(void) {
     void GXSetCopyClear(GXColor, u32);
     extern s32 m_rendermode_803C7754;
     extern s32 rmode;
-    GXColor black = { 0, 0, 0, 0xFF };
+    GXColor black;
 
+    black.r = 0;
+    black.g = 0;
+    black.b = 0;
+    black.a = 0xFF;
     GXSetDispCopyGamma(0);
     GXSetCopyFilter(0, 0, 0, 0);
     GXSetCopyClear(black, 0xFFFFFF);
