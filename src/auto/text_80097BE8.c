@@ -3922,6 +3922,30 @@ void Audio_Update_(void) {
     Audio_Update(0xD05);
 }
 
+#pragma push
+#pragma optimization_level 1
+u32 HAllocA_(s32 size) {
+    typedef struct MemBlk {
+        u32 addr;
+        s32 size;
+        u32 unk8;
+        u32 unkC;
+    } MemBlk;
+    extern MemBlk g_memblk_80371670[];
+    extern s32 g_last_803C78B4;
+    extern u32 g_heap_803C78C4;
+
+    size = (size + 0x1F) & ~0x1F;
+    if (g_memblk_80371670[g_last_803C78B4].size < 0 || g_heap_803C78C4 != g_memblk_80371670[g_last_803C78B4].addr ||
+        g_memblk_80371670[g_last_803C78B4].size < size) {
+        return 0;
+    }
+    g_memblk_80371670[g_last_803C78B4].addr += size;
+    g_memblk_80371670[g_last_803C78B4].size -= size;
+    return g_heap_803C78C4;
+}
+#pragma pop
+
 void MemCpyDone(void) {
     extern s32 g_arqWait_803C78B0;
     g_arqWait_803C78B0 = 0;
