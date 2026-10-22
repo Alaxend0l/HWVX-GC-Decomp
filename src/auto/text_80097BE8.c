@@ -4140,6 +4140,28 @@ s32 __ct__5ForceFv(s32 arg0) {
     return arg0;
 }
 
+#pragma push
+#pragma dont_inline on
+void *__ct__8LGWheelsFv(void *self) {
+    u8 *lg = self;
+
+    __ct__6WheelsFv((Wheels *)(lg + 0x82C));
+    __ct__5ForceFv((s32)(lg + 0x10AC));
+    __ct__9ConditionFv((s32)(lg + 0x114C));
+    __ct__8ConstantFv((s32)(lg + 0x11EC));
+    __ct__8PeriodicFv((s32)(lg + 0x128C));
+    __ct__4RampFv((s32)(lg + 0x132C));
+    lg[0x13CC] = 0xFF;
+    lg[0x13CD] = 0;
+    InitLGLibrary__8LGWheelsFv(lg);
+    lg[0x828] = 0;
+    lg[0x829] = 0;
+    lg[0x82A] = 0;
+    lg[0x82B] = 0;
+    return lg;
+}
+#pragma pop
+
 void InitLGLibrary__8LGWheelsFv(void *wheels) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
