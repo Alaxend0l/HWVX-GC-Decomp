@@ -457,6 +457,12 @@ void PedalsConnected__8LGWheelsFl(s32 arg0) {
     PedalsConnected__6WheelsFl(arg0 + 0x82C);
 }
 
+s32 __ct__4RampFv(s32 arg0) {
+    M2C_UNK __ct__5ForceFv();
+    __ct__5ForceFv();
+    return arg0;
+}
+
 f32 fn_800A08D4(void) {
     f64 fn_8009FAF8();
     return (f32) fn_8009FAF8();
