@@ -3145,6 +3145,17 @@ void *ThingManagerList_GetByType(void *list, s32 type) {
     return NULL;
 }
 
+s32 ThingManagerList_Get(void *list, void *target) {
+    void *thing;
+
+    for (thing = *(void **)list; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
+        if (target == thing) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 extern Vector4 g_zeroVector;
 extern void *g_pSourcePlayer;
 void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
