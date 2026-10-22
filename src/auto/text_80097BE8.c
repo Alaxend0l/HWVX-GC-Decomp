@@ -221,6 +221,10 @@ void AudioIT_Destroy(void) {
 
 }
 
+void AudioMIDI_Destroy(void) {
+
+}
+
 s32 AudioVoid(void) {
     return 0;
 }
