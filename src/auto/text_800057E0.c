@@ -58,6 +58,18 @@ typedef struct ProcessManager {
 
 extern ProcessManager g_processManager;
 
+typedef struct Vector4 {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 w;
+} Vector4 __attribute__((aligned(16)));
+
+void XformVec(void *mtx, Vector4 *out, Vector4 *in);
+void SubMatrixToQuaternion(void *mtx, Vector4 *quat);
+void QuaternionMult(Vector4 *a, Vector4 *b, Vector4 *out);
+void Thing_GetDynamicMinMax(void *thing, Vector4 *min, Vector4 *max, f32 expand);
+
 typedef union Matrix4 {
     f32 m[4][4];
     f64 d[8];
