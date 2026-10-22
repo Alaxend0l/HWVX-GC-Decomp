@@ -709,6 +709,30 @@ void abort(void) {
     _ExitProcess();
 }
 
+void *malloc(u32 size) {
+    void *allocate_from_fixed_pools(void *pool, u32 size);
+    void *allocate_from_var_pools(void *pool, u32 size);
+    extern u8 protopool_8030DD18[0x34];
+    extern u8 init_803C75E8;
+
+    if (!init_803C75E8) {
+        memset(protopool_8030DD18, 0, sizeof(protopool_8030DD18));
+        init_803C75E8 = 1;
+    }
+    if (size == 0) {
+        return NULL;
+    }
+    if (size > (u32)-0x31) {
+        return NULL;
+    }
+    if (size <= 0x44) {
+        return allocate_from_fixed_pools(protopool_8030DD18, size);
+    }
+    return allocate_from_var_pools(protopool_8030DD18, size);
+}
+
+#pragma push
+#pragma peephole off
 void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
     SubBlock *next_sub_block;
     u32 this_cur_size;
@@ -736,6 +760,7 @@ void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
         next_sub_block->prev_->next_ = next_sub_block->next_;
     }
 }
+#pragma pop
 
 s32 __flush_all(void) {
     extern FILE __files[];
