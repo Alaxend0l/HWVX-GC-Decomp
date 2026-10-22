@@ -264,6 +264,11 @@ void Mpeg_Destroy(void) {
 
 }
 
+void Audio_Update_(void) {
+    M2C_UNK Audio_Update(M2C_UNK);
+    Audio_Update(0xD05);
+}
+
 void MemCpyDone(void) {
     extern s32 g_arqWait_803C78B0;
     g_arqWait_803C78B0 = 0;
