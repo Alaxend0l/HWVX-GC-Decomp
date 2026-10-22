@@ -3140,6 +3140,20 @@ s8 AutoCalibrateAxisSigned(s8 *min, s8 *max, s8 value, s8 deadzone, s8 *out) {
     return result;
 }
 
+s32 LGClose(LGDevice *device) {
+    if (device == NULL || (u32)device == 0xFFFFFFFF) {
+        return -2;
+    }
+    if (!device->opened) {
+        return -2;
+    }
+    device->opened = 0;
+    device->started = 0;
+    VDevice_Shutdown(&device->vdev);
+    device->unk8 = -1;
+    return 0;
+}
+
 s32 LGStartForceEffect(u32 handle) {
     u32 index = handle >> 16;
     LGDevice *device;
