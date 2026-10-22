@@ -1040,6 +1040,10 @@ s32 DSPCheckInit(void) {
     return __DSP_init_flag_803C7528;
 }
 
+void __CARDDefaultApiCallback(void) {
+
+}
+
 s32 __CARDIsOpened(void) {
     return 0;
 }
