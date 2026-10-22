@@ -706,6 +706,10 @@ s32 ActionSetPlayerVehicle(void) {
     return 1;
 }
 
+s32 ActionVehicleRemoveCreature(void) {
+    return 1;
+}
+
 void Action_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
