@@ -215,6 +215,10 @@ s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, void *callback);
 s32 __CARDPutControlBlock(void *card, s32 result);
 void __CARDSyncCallback(s32 chan, s32 result);
 s32 __CARDSync(s32 chan);
+s32 CARDReadAsync(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset, CARDCallback callback);
+s32 CARDCreateAsync(s32 chan, const char *fileName, u32 size, CARDFileInfo *fileInfo, CARDCallback callback);
+s32 CARDDeleteAsync(s32 chan, const char *fileName, CARDCallback callback);
+s32 __CARDFreeBlock(s32 chan, u16 nBlock, CARDCallback callback);
 
 s32 fn_800057E0(void) {
     M2C_UNK fn_80012F7C();
