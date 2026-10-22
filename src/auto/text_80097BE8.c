@@ -3080,6 +3080,9 @@ void DestroyVoice_(void *arg0) {
     OSRestoreInterrupts(level);
 }
 #pragma pop
+
+#pragma push
+#pragma optimization_level 1
 s8 SetVoiceRate_(void *voice) {
     u32 rate = (1.0f / 48000.0f) * ((f32)M2C_FIELD(voice, u32 *, 0x30) * (f32)M2C_FIELD(voice, u32 *, 0x34));
 
@@ -3090,6 +3093,7 @@ s8 SetVoiceRate_(void *voice) {
     }
     return 0;
 }
+#pragma pop
 
 s8 SetVoiceOffset_(void *voice, u32 offset) {
     void *ax;
