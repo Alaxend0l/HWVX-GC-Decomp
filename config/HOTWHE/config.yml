@@ -1,0 +1,10 @@
+# Made by decompdecomp. See config.example.yml for every option.
+object_base: orig/HOTWHE
+object: sys/main.dol
+hash: 227ec09f53e56159b836a4180f85efacde495db6
+symbols: config/HOTWHE/symbols.txt
+splits: config/HOTWHE/splits.txt
+mw_comment_version: 11
+detect_objects: true
+detect_strings: true
+write_asm: true

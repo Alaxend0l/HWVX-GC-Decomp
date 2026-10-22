@@ -1,0 +1,38 @@
+{
+  "created": "from scratch",
+  "platform": "gc",
+  "version": "HOTWHE",
+  "compiler": "GC/2.7",
+  "game": {
+    "what": "your copy of the game",
+    "path": "orig/HOTWHE/sys/main.dol",
+    "sha1": "227ec09f53e56159b836a4180f85efacde495db6"
+  },
+  "setup": [
+    [
+      "python",
+      "configure.py",
+      "--dtk",
+      "/home/alaxendol/.local/share/decompnet/toolchains/dtk/dtk",
+      "--binutils",
+      "/home/alaxendol/.local/share/decompnet/toolchains/gc-wii-binutils",
+      "--compilers",
+      "/home/alaxendol/.local/share/decompnet/toolchains/mwcc",
+      "--objdiff",
+      "/home/alaxendol/.local/share/decompnet/toolchains/objdiff-cli/objdiff-cli",
+      "--sjiswrap",
+      "/home/alaxendol/.local/share/decompnet/toolchains/sjiswrap/sjiswrap.exe",
+      "--wrapper",
+      "/home/alaxendol/.local/share/decompnet/toolchains/wibo/wibo"
+    ],
+    [
+      "ninja",
+      "all_source",
+      "build/HOTWHE/report.json"
+    ]
+  ],
+  "rebuild": {
+    "identical": false,
+    "detail": "1 files differ: main.dol"
+  }
+}
