@@ -23,6 +23,16 @@ void srand(s32 arg0) {
     next_803C6EA0 = arg0;
 }
 
+void time(s32 *arg0) {
+    s32 __get_time();
+    s32 temp_r3;
+
+    temp_r3 = __get_time();
+    if (arg0 != NULL) {
+        *arg0 = temp_r3;
+    }
+}
+
 void acos(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
