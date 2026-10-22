@@ -3363,6 +3363,18 @@ static void F29(s32 chan, s32 ret) {
     gba->ret = ret;
 }
 
+s32 __GBATransfer(s32 chan, s32 w1, s32 r1, void *proc);
+void ReadProc(s32 chan);
+void WriteProc(s32 chan);
+void WriteProc(s32 chan) {
+    GBAControl *gba = &__GBA[chan];
+
+    if (gba->ret != 0) {
+        return;
+    }
+    *gba->status = gba->input[0] & 0x3A;
+}
+
 void __GBASyncCallback(s32 chan) {
     void OSWakeupThread(void *);
     OSWakeupThread(__GBA[chan].threadQueue);
