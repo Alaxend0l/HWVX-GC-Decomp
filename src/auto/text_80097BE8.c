@@ -4477,6 +4477,34 @@ void DestroyMIDI(void) {
     }
 }
 
+#pragma push
+#pragma optimization_level 1
+void SetMIDITempo(u32 tempo) {
+    extern void *g_pHdr_803C78F4;
+    extern u8 g_song_80376990[0x24];
+
+    *(u32 *)(g_song_80376990 + 0x10) = -1U / tempo;
+    *(u32 *)(g_song_80376990 + 4) = (u32)Mul16_(*(u32 *)(g_song_80376990 + 0xC), *(u32 *)(g_song_80376990 + 0x10)) / *(u16 *)((u8 *)g_pHdr_803C78F4 + 0x18);
+}
+#pragma pop
+
+#pragma push
+#pragma optimization_level 1
+void SetMIDIMarker(u8 marker, s8 keep) {
+    extern void *g_pHdr_803C78F4;
+    extern u8 g_mrk_80376FB4[0x40][8];
+    extern u8 g_song_80376990[0x24];
+
+    if (g_pHdr_803C78F4 != NULL && marker < 0x40 && *(u32 *)g_mrk_80376FB4[marker] != 0) {
+        g_song_80376990[0x1E] = marker;
+        g_song_80376990[0x1F] = keep == 0;
+        return;
+    }
+    g_song_80376990[0x1E] = 0;
+    g_song_80376990[0x1F] = 0;
+}
+#pragma pop
+
 void SetMIDITrackPriority(void) {
 
 }
@@ -4494,6 +4522,27 @@ void SetMIDITrackOn(u32 mask, s8 deferred) {
     }
     for (chn = g_chn_803769B4; mask != 0; chn += 0x20) {
         chn[4] |= mask & 1;
+        mask >>= 1;
+    }
+}
+
+void SetMIDITrackOff(u32 mask, s8 deferred) {
+    extern u32 g_trkOn;
+    extern u32 g_trkOff;
+    extern u8 g_chn_803769B4[0x200];
+    void ChannelOff(void *chn);
+    u8 *chn;
+
+    if (deferred) {
+        g_trkOn &= ~mask;
+        g_trkOff |= mask;
+        return;
+    }
+    for (chn = g_chn_803769B4; mask != 0; chn += 0x20) {
+        if (mask & 1) {
+            chn[4] = 0;
+            ChannelOff(chn);
+        }
         mask >>= 1;
     }
 }
