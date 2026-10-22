@@ -1859,6 +1859,11 @@ void GamePlay_Interface(void *arg0) {
     }
 }
 
+void ArmageddonDropShipInfo(void *arg0) {
+    M2C_FIELD(arg0, f32 *, 0x24) = InterfaceInputAnimator_GetLRCounter();
+    M2C_FIELD(arg0, f32 *, 0x28) = InterfaceInputAnimator_GetUDCounter();
+}
+
 void ProcessManager_Release(char *name);
 void InterfaceInputAnimator_HeartBeat(void);
 f32 InterfaceInputAnimator_GetLRCounter(void);
