@@ -512,6 +512,23 @@ void MatrixToMtxTranspose(void *arg0, void *arg1) {
     M2C_FIELD(arg0, f32 *, 0x2C) = (f32) M2C_FIELD(arg1, f32 *, 0x38);
 }
 
+s32 isInWindow(void *arg0) {
+    f32 temp_f1;
+    u32 temp_r3;
+
+    if (((f32) M2C_FIELD(GetRenderWindow(), u32 *, 0x2B0) > M2C_FIELD(arg0, f32 *, 0)) || ((f32) M2C_FIELD(GetRenderWindow(), u32 *, 0x2B4) < M2C_FIELD(arg0, f32 *, 0))) {
+        return 0;
+    }
+    if (((f32) M2C_FIELD(GetRenderWindow(), u32 *, 0x2B8) > M2C_FIELD(arg0, f32 *, 4)) || ((f32) M2C_FIELD(GetRenderWindow(), u32 *, 0x2BC) < M2C_FIELD(arg0, f32 *, 4))) {
+        return 0;
+    }
+    temp_r3 = M2C_FIELD(GetRenderWindow(), u32 *, 0x2B0);
+    temp_f1 = (f32) temp_r3;
+    M2C_FIELD(arg0, f32 *, 0) = (f32) (M2C_FIELD(arg0, f32 *, 0) - temp_f1);
+    M2C_FIELD(arg0, f32 *, 4) = (f32) (M2C_FIELD(arg0, f32 *, 4) - (f32) M2C_FIELD(GetRenderWindow(temp_r3, temp_f1), u32 *, 0x2B8));
+    return 1;
+}
+
 void Gfx_SetTextColor(s8 arg0, s8 arg1, s8 arg2, s8 arg3) {
     extern M2C_UNK g_textcolor;
     M2C_FIELD(&g_textcolor, s8 *, 0) = arg0;
