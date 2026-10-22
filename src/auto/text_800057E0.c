@@ -1320,6 +1320,14 @@ void ProcessManager_Create(void) {
 
 }
 
+char *strcpy(char *dst, const char *src);
+void FileStreaming_HeartBeat(void);
+s32 Playback_GetElement(void);
+void Playback_PutElement(s32 element);
+void ProcessManager_Init(void) {
+    g_processManager.count = 0;
+}
+
 f32 Projectile_GetMass(void *arg0) {
     return M2C_FIELD(M2C_FIELD(arg0, void **, 0x120), f32 *, 0x2C);
 }
