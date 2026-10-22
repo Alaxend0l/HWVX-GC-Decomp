@@ -13,6 +13,18 @@ typedef struct Vector {
 
 f32 PSVECMag(Vector *v);
 
+typedef struct RandomNumberGenerator {
+    Vector vectors[0x300];
+    u32 unk3000;
+    u32 unk3004;
+    u32 index;
+    f32 floats[0x400];
+    u32 unk400C;
+} RandomNumberGenerator;
+
+extern RandomNumberGenerator g_randomNumberGenerator;
+s32 RandomAdd_s32(s32 base, s32 range);
+
 typedef struct FragmentInfo {
     void *eti_init_info;
     char *TOC;
