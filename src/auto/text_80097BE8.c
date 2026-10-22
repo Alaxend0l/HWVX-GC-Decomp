@@ -3261,6 +3261,21 @@ void Render_SetConstColor(s32 *arg0) {
     GXSetChanMatColor(4, &sp8);
 }
 
+void Set2DLineVtxDesc(void) {
+    M2C_UNK GXClearVtxDesc();
+    M2C_UNK GXSetVtxAttrFmt(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK);
+    M2C_UNK GXSetVtxDesc(M2C_UNK, M2C_UNK);
+    extern u32 m_VtxDescFlag;
+    if ((u32) m_VtxDescFlag != 1U) {
+        m_VtxDescFlag = 1U;
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 1);
+        GXSetVtxDesc(0xB, 1);
+        GXSetVtxAttrFmt(0, 9, 0, 4, 0);
+        GXSetVtxAttrFmt(0, 0xB, 0, 1, 0);
+    }
+}
+
 void Set3DLineVtxDesc(void) {
     M2C_UNK GXClearVtxDesc();
     M2C_UNK GXSetVtxAttrFmt(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK);
