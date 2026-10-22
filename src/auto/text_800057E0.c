@@ -222,6 +222,26 @@ s32 TRKAppendBuffer1_ui32(void *b, u32 data);
 s32 TRKAppendBuffer1_ui16(void *b, u16 data);
 s32 TRKPostEvent(void *event);
 
+typedef struct TRKBuffer {
+    u32 mutex;
+    u32 isInUse;
+    u32 length;
+    u32 position;
+    u8 data[0x880];
+} TRKBuffer;
+
+void TRKResetBuffer(TRKBuffer *b, u8 keepData);
+s32 TRKMessageSend(TRKBuffer *b);
+
+static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
+    if (b->position >= 0x880) {
+        return 0x301;
+    }
+    b->data[b->position++] = data;
+    b->length++;
+    return 0;
+}
+
 typedef s16 __OSInterrupt;
 typedef void (*__OSInterruptHandler)(__OSInterrupt interrupt, void *context);
 extern __OSInterruptHandler *InterruptHandlerTable_803C7240;
@@ -4274,18 +4294,20 @@ void GXPokeAlphaUpdate(s32 arg0) {
 }
 
 void GXSetDispCopyGamma(s32 gamma) {
-    extern void *gx;
-    u32 *reg = &M2C_FIELD(gx, u32 *, 0x1EC);
-    *reg = (*reg & ~0x180) | (gamma << 7);
+    extern u8 *gx;
+    u8 *g = gx;
+    *(u32 *)(g + 0x1EC) = (*(u32 *)(g + 0x1EC) & ~0x180) | (gamma << 7);
 }
 
 void GXClearBoundingBox(void) {
-    extern void *gx;
+    extern u8 *gx;
+    u16 *bpSentNot = (u16 *)(gx + 2);
+
     GXWGFifo.u8 = 0x61;
     GXWGFifo.u32 = 0x550003FF;
     GXWGFifo.u8 = 0x61;
     GXWGFifo.u32 = 0x560003FF;
-    M2C_FIELD(gx, u16 *, 2) = 0;
+    *bpSentNot = 0;
 }
 
 void GXInitLightAttnK(void *arg0, f32 farg0, f32 farg1, f32 farg2) {
@@ -4305,12 +4327,13 @@ void GXInitLightColor(GXLightObjInt *lt_obj, GXColor color) {
 }
 
 void GXSetNumChans(u8 nChans) {
-    extern void *gx;
-    M2C_FIELD(gx, u32 *, 0x204) = (M2C_FIELD(gx, u32 *, 0x204) & ~0x70) | (nChans << 4);
+    extern u8 *gx;
+    u32 *reg = (u32 *)(gx + 0x204);
+    *reg = (*reg & ~0x70) | (nChans << 4);
     GXWGFifo.u8 = 0x10;
     GXWGFifo.u32 = 0x1009;
     GXWGFifo.u32 = nChans;
-    M2C_FIELD(gx, u32 *, 0x4F4) |= 4;
+    *(u32 *)(gx + 0x4F4) |= 4;
 }
 
 s32 GXGetTexObjData(void *arg0) {
@@ -4668,6 +4691,52 @@ s32 TRKAcquireMutex(void *mutex) {
 
 s32 TRKInitializeMutex(void *mutex) {
     return 0;
+}
+
+void TRK_fill_mem_80093658(void *dst, int val, u32 n) {
+    u32 i;
+    u32 v = (u8)val;
+
+    ((u8 *)dst) = ((u8 *)dst) - 1;
+    if (n >= 32) {
+        i = (~(u32)dst) & 3;
+        if (i) {
+            n -= i;
+            do {
+                *++(((u8 *)dst)) = v;
+            } while (--i);
+        }
+        if (v) {
+            v |= v << 24 | v << 16 | v << 8;
+        }
+        ((u32 *)dst) = ((u32 *)(((u8 *)dst) + 1)) - 1;
+        i = n >> 5;
+        if (i) {
+            do {
+                *++(((u32 *)dst)) = v;
+                *++(((u32 *)dst)) = v;
+                *++(((u32 *)dst)) = v;
+                *++(((u32 *)dst)) = v;
+                *++(((u32 *)dst)) = v;
+                *++(((u32 *)dst)) = v;
+                *++(((u32 *)dst)) = v;
+                *++(((u32 *)dst)) = v;
+            } while (--i);
+        }
+        i = (n & 31) >> 2;
+        if (i) {
+            do {
+                *++(((u32 *)dst)) = v;
+            } while (--i);
+        }
+        ((u8 *)dst) = ((u8 *)(((u32 *)dst) + 1)) - 1;
+        n &= 3;
+    }
+    if (n) {
+        do {
+            *++(((u8 *)dst)) = v;
+        } while (--n);
+    }
 }
 
 s32 TRKTargetAddExceptionInfo(void *b) {
