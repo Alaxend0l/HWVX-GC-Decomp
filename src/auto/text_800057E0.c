@@ -1938,6 +1938,36 @@ void OSSetArenaLo(s32 arg0) {
     __OSArenaLo_803C6D78 = arg0;
 }
 
+void DCZeroRange(void *addr, u32 nBytes) {
+    if (nBytes > 0) {
+        u32 n;
+        if ((u32)addr & 0x1F) {
+            nBytes += 0x20;
+        }
+        n = (nBytes + 0x1F) >> 5;
+        do {
+            __dcbz(addr, 0);
+            addr = (u8 *)addr + 0x20;
+        } while (--n);
+    }
+}
+
+void ICInvalidateRange(void *addr, u32 nBytes) {
+    if (nBytes > 0) {
+        u32 n;
+        if ((u32)addr & 0x1F) {
+            nBytes += 0x20;
+        }
+        n = (nBytes + 0x1F) >> 5;
+        do {
+            __icbi(addr, 0);
+            addr = (u8 *)addr + 0x20;
+        } while (--n);
+        __sync();
+        __isync();
+    }
+}
+
 void LCEnable(void) {
     M2C_UNK __LCEnable();
     s32 temp_r31;
@@ -1973,9 +2003,31 @@ void fn_8006D134(void) {
     lbl_803C7260 = 1;
 }
 
+typedef struct OSSram {
+    u16 checkSum;
+    u16 checkSumInv;
+    u32 ead0;
+    u32 ead1;
+    u32 counterBias;
+    s8 displayOffsetH;
+    u8 ntd;
+    u8 language;
+    u8 flags;
+} OSSram;
+
+typedef struct SramControlBlock {
+    u8 sram[64];
+    u32 offset;
+    s32 enabled;
+    s32 locked;
+    s32 sync;
+    void (*callback)(void);
+} SramControlBlock;
+
+extern SramControlBlock Scb_802EEE20;
+
 s32 __OSSyncSram(void) {
-    extern M2C_UNK Scb_802EEE20;
-    return M2C_FIELD(&Scb_802EEE20, s32 *, 0x4C);
+    return Scb_802EEE20.sync;
 }
 
 void OSInitThreadQueue(void *arg0) {
