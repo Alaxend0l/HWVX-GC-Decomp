@@ -3174,7 +3174,6 @@ void LCEnable(void) {
 
 #pragma push
 #pragma peephole off
-#pragma scheduling off
 u32 LCStoreData(void *destAddr, void *srcAddr, u32 nBytes) {
     void LCStoreBlocks(void *destTag, void *srcAddr, u32 numBlocks);
     u32 numBlocks = (nBytes + 31) / 32;
