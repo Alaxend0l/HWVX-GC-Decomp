@@ -905,6 +905,11 @@ void Trigger_Create(void) {
     fn_800957D4();
 }
 
+void Trigger_PauseTACSystem(s8 arg0) {
+    extern s8 g_bTACSystemPaused_803C7124;
+    g_bTACSystemPaused_803C7124 = arg0;
+}
+
 s32 TriggerLevelStart(void) {
     return 1;
 }
