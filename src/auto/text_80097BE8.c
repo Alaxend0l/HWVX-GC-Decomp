@@ -4624,6 +4624,8 @@ s32 MemCard_Read__FUllPv(u32 device, s32 size, void *data) {
     return size;
 }
 
+#pragma push
+#pragma readonly_strings on
 void LidHandler_Init(void) {
     s32 DVDOpen(const char *name, void *fileInfo);
     extern u32 m_isopen_803C7984;
