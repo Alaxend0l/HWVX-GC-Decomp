@@ -564,6 +564,14 @@ void Gfx_SetTextColor(s8 arg0, s8 arg1, s8 arg2, s8 arg3) {
     M2C_FIELD(&g_textcolor, s8 *, 3) = arg3;
 }
 
+void *PopFreeTextureSet(void) {
+    extern u8 FreeTextureSetQueue_8036E300[];
+    void *msg;
+
+    OSReceiveMessage(FreeTextureSetQueue_8036E300, &msg, 1);
+    return msg;
+}
+
 void PushFreeTextureSet(void *arg0) {
     extern u8 FreeTextureSetQueue_8036E300[];
     OSSendMessage(FreeTextureSetQueue_8036E300, arg0, 0);
