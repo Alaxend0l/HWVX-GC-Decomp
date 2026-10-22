@@ -1458,6 +1458,21 @@ void CollisionTriCache_Clear(void) {
     }
 }
 
+s32 CollisionTriCache_Get(u32 tri0, u32 tri1, Vector4 *a, Vector4 *b) {
+    extern u8 g_aCollisionTriPairCache[4][0x30];
+    s32 i;
+    for (i = 0; i < 4; i++) {
+        if (tri0 == *(u32 *)(g_aCollisionTriPairCache[i] + 0x24) &&
+            tri1 == *(u32 *)(g_aCollisionTriPairCache[i] + 0x20)) {
+            *a = *(Vector4 *)(g_aCollisionTriPairCache[i] + 0x0);
+            *b = *(Vector4 *)(g_aCollisionTriPairCache[i] + 0x10);
+            *(s32 *)(g_aCollisionTriPairCache[i] + 0x28) = 0;
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void ShaderHolder_RemoveGX(s32 gx);
 void VertexColorSeqManager_RemoveVertices(void *vertices);
 void Control_ClearControl(void *control) {
