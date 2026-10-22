@@ -41,6 +41,11 @@ f32 sinf(void) {
     return (f32) sin();
 }
 
+f32 cosf(void) {
+    f64 cos();
+    return (f32) cos();
+}
+
 void fn_8009C888(s32 arg0) {
     extern s32 lbl_803C6EA0;
     lbl_803C6EA0 = arg0;
