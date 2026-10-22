@@ -335,6 +335,11 @@ void InitLGLibrary__8LGWheelsFv(void) {
     fn_800957D4();
 }
 
+void IsOpened__8LGWheelsFl(s32 arg0) {
+    M2C_UNK IsOpened__6WheelsFl(s32);
+    IsOpened__6WheelsFl(arg0 + 0x82C);
+}
+
 f32 fn_800A08D4(void) {
     f64 fn_8009FAF8();
     return (f32) fn_8009FAF8();
