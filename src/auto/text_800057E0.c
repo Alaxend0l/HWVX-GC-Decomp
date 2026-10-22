@@ -2287,30 +2287,96 @@ void ExitStateGamePlay(s32 arg0) {
     g_bExitStateGamePlay = 1;
 }
 
-void GamePlay_Interface(void *arg0) {
-    M2C_UNK GamePlay_Startup();
-    extern M2C_UNK g_handleInterfaceGP;
-    u16 temp_r0;
+#pragma push
+#pragma dont_inline on
+void StateGamePlay_Pause(u8 pause) {
+    extern u8 g_bFreezeWorld;
+    void SoundManager_Pause(u8 pause);
+    void Input_ForceFeedbackPause(u8 pause);
+    void InterfaceManager_PauseAllInterface(u8 pause);
 
-    temp_r0 = M2C_FIELD(arg0, u16 *, 4);
-    switch (temp_r0) {                        /* irregular */
+    CameraManager_Pause(pause);
+    SoundManager_Pause(pause);
+    Input_ForceFeedbackPause(pause);
+    InterfaceManager_PauseAllInterface(pause);
+    g_bFreezeWorld = 1;
+}
+#pragma pop
+
+s32 StateGamePlay_Shutdown(void) {
+    extern s8 g_iTimeShift;
+    extern u8 g_bFreezeWorld;
+    extern void (*DestroyMusic)(void);
+    void Trigger_PauseTACSystem(s8 arg0);
+    void Gfx_BeginScene(void);
+    void Gfx_EndScene(void);
+    void Gfx_FlipBuffers(void);
+    void NavHolder_Release(void);
+    void CameraManager_ReleaseAllEmitters(void);
+    void ThingManager_DARYL_Release(void);
+    void MatrixCache_Init(void);
+    void Grid_Release(void);
+    void SongManager_StopBKSong(void);
+    void MovieManager_Destroy(void);
+    void ShowStats_Release(void);
+    void PlayerManager_Release(void);
+    void World_Unload(void);
+    void ViewManager_SetSinglePlayer(void);
+    void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
+    void Gfx_ClearScreen(void);
+
+    Trigger_PauseTACSystem(1);
+    while ((s8)IsLoadingThreadRunning()) {
+    }
+    g_iTimeShift = 0;
+    Gfx_BeginScene();
+    Gfx_EndScene();
+    Gfx_FlipBuffers();
+    Gfx_BeginScene();
+    Gfx_EndScene();
+    Gfx_FlipBuffers();
+    NavHolder_Release();
+    CameraManager_ReleaseAllEmitters();
+    ThingManager_DARYL_Release();
+    MatrixCache_Init();
+    Grid_Release();
+    DestroyMusic();
+    SongManager_StopBKSong();
+    MovieManager_Destroy();
+    ShowStats_Release();
+    PlayerManager_Release();
+    Trigger_PauseTACSystem(0);
+    World_Unload();
+    ViewManager_SetSinglePlayer();
+    GameSettings_SetCodeVariable(0x19B, 0, 1);
+    g_bFreezeWorld = 0;
+    Gfx_ClearScreen();
+    return 1;
+}
+
+void GamePlay_Interface(void *msg) {
+    void GamePlay_Startup(void);
+    extern struct {
+        void (*handleInput)(void *msg);
+        void (*update)(void);
+    } g_handleInterfaceGP;
+
+    switch (M2C_FIELD(msg, u16 *, 4)) {
     case 3:
         GamePlay_Startup();
-        if (((M2C_UNK (*)(void *)) M2C_FIELD(&g_handleInterfaceGP, M2C_UNK (**)(void *), 0)) != (short)NULL) {
-            M2C_FIELD(&g_handleInterfaceGP, M2C_UNK (**)(void *), 0)(arg0);
-            return;
+        if (g_handleInterfaceGP.handleInput != NULL) {
+            g_handleInterfaceGP.handleInput(msg);
         }
-        return;
+        break;
     case 1:
-        if (((M2C_UNK (*)()) M2C_FIELD(&g_handleInterfaceGP, M2C_UNK (**)(), 4)) != NULL) {
-            M2C_FIELD(&g_handleInterfaceGP, M2C_UNK (**)(), 4)();
-            return;
+        if (g_handleInterfaceGP.update != NULL) {
+            g_handleInterfaceGP.update();
         }
         break;
     default:
     case 2:
-        if (((M2C_UNK (*)(void *)) M2C_FIELD(&g_handleInterfaceGP, M2C_UNK (**)(void *), 0)) != NULL) {
-            M2C_FIELD(&g_handleInterfaceGP, M2C_UNK (**)(void *), 0)(arg0);
+        if (g_handleInterfaceGP.handleInput != NULL) {
+            g_handleInterfaceGP.handleInput(msg);
         }
         break;
     }
