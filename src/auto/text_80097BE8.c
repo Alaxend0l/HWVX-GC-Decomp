@@ -3685,6 +3685,25 @@ void DestroyIT(void) {
     }
 }
 
+#pragma push
+#pragma optimization_level 1
+void SetITPitch(s32 pitch) {
+    s8 SetVoiceRate_(void *voice);
+    extern u8 g_voice[0x20][0x70];
+    extern u8 g_song_80375520[0x30];
+    u8 *voice;
+    s32 i;
+
+    *(s32 *)(g_song_80375520 + 0x1C) = pitch;
+    for (voice = g_voice[0], i = 0x20; i != 0; voice += 0x70, i--) {
+        if (voice[0x15] != 0 && voice[0] == 0) {
+            *(s32 *)(voice + 0x34) = pitch;
+            SetVoiceRate_(voice);
+        }
+    }
+}
+#pragma pop
+
 void SetITTempo(u32 tempo) {
     extern u8 g_song_80375520[0x30];
 
@@ -3710,6 +3729,8 @@ void SetITOrder(u8 order, s8 keep) {
 }
 #pragma pop
 
+#pragma push
+#pragma optimization_level 1
 void SetITTrackPriority(u32 id, s32 prio) {
     void SetVoicePriority_(void *voice);
     extern u8 g_trk_80375550[0x20][0x70];
@@ -3734,7 +3755,7 @@ void SetITTrackPriority(u32 id, s32 prio) {
         voice = next;
     }
 }
-
+#pragma pop
 void StopActive(void *arg0) {
     M2C_UNK SetVoiceState_(s32, M2C_UNK);
     M2C_FIELD(arg0, void **, 0) = (void *) M2C_FIELD(M2C_FIELD(arg0, void **, 0), void **, 4);
