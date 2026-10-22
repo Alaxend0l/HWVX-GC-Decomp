@@ -4444,6 +4444,50 @@ void AlarmHandler(void *alarm, void *context) {
     }
 }
 
+#pragma push
+#pragma dont_inline on
+s32 DVDLowAudioBufferConfig(s32 enable, u32 size, void *callback) {
+    extern void *Callback_803C72B0;
+    extern s32 StopAtNextInt_803C72A8;
+    extern s32 AlarmForTimeout_802EF8C8[10];
+    void OSSetAlarm(void *alarm, s64 tick, void *handler);
+    void AlarmHandlerForTimeout(void *alarm, void *context);
+    u32 mask;
+    s64 timeout;
+
+    Callback_803C72B0 = callback;
+    StopAtNextInt_803C72A8 = 0;
+    mask = enable ? 0x10000 : 0;
+    ((volatile u32 *)0xCC006000)[2] = 0xE4000000 | mask | size;
+    ((volatile u32 *)0xCC006000)[7] = 1;
+    timeout = (*(u32 *)0x800000F8 / 4) * 10;
+    OSCreateAlarm(AlarmForTimeout_802EF8C8);
+    OSSetAlarm(AlarmForTimeout_802EF8C8, timeout, AlarmHandlerForTimeout);
+    return 1;
+}
+#pragma pop
+
+#pragma push
+#pragma dont_inline on
+#pragma use_lmw_stmw on
+void DVDLowReset(void) {
+    extern s32 ResetOccurred_803C72C0;
+    extern s64 LastResetEnd_803C72B8;
+    u32 reg;
+    s64 resetStart;
+
+    ((volatile u32 *)0xCC006000)[1] = 2;
+    reg = ((volatile u32 *)0xCC003000)[9];
+    ((volatile u32 *)0xCC003000)[9] = (reg & ~4) | 1;
+    resetStart = __OSGetSystemTime();
+    while ((__OSGetSystemTime() - resetStart) < (s64)((12 * ((*(u32 *)0x800000F8 / 4) / 125000)) / 8)) {
+    }
+    ((volatile u32 *)0xCC003000)[9] = reg | 5;
+    ResetOccurred_803C72C0 = 1;
+    LastResetEnd_803C72B8 = __OSGetSystemTime();
+}
+#pragma pop
+
 void SIProbe(void) {
     M2C_UNK SIDecodeType();
     M2C_UNK SIGetType();
@@ -4487,6 +4531,22 @@ void __DVDFSInit(void) {
         MaxEntryNum_803C72FC = FstStart_803C72F4[2];
         FstStringStart_803C72F8 = (char *)FstStart_803C72F4 + MaxEntryNum_803C72FC * 12;
     }
+}
+
+s32 DVDReadAsyncPrio(void *fileInfo, void *addr, s32 length, s32 offset, void *callback, s32 prio) {
+    void OSPanic(const char *file, s32 line, const char *msg, ...);
+    s32 DVDReadAbsAsyncPrio(void *block, void *addr, s32 length, s32 offset, void *callback, s32 prio);
+    void cbForReadAsync(s32 result, void *block);
+
+    if (!((0 <= offset) && ((u32)offset < M2C_FIELD(fileInfo, u32 *, 0x34)))) {
+        OSPanic("dvdfs.c", 0x2E3, "DVDReadAsync(): specified area is out of the file  ");
+    }
+    if (!((0 <= offset + length) && ((u32)(offset + length) < M2C_FIELD(fileInfo, u32 *, 0x34) + 32))) {
+        OSPanic("dvdfs.c", 0x2E9, "DVDReadAsync(): specified area is out of the file  ");
+    }
+    M2C_FIELD(fileInfo, void **, 0x38) = callback;
+    DVDReadAbsAsyncPrio(fileInfo, addr, length, M2C_FIELD(fileInfo, s32 *, 0x30) + offset, cbForReadAsync, prio);
+    return 1;
 }
 
 void stateCoverClosed_CMD(void *block) {
