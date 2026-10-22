@@ -4116,6 +4116,28 @@ void StopActive(void *arg0) {
     M2C_FIELD(arg0, s32 *, 4) = 0;
 }
 
+#pragma push
+#pragma optimization_level 1
+void DestroyITVoice(u8 *voice) {
+    extern u8 g_trk_80375550[0x20][0x70];
+    u8 *trk;
+    u8 *v;
+
+    if (voice[1] > 0x20) {
+        return;
+    }
+    trk = g_trk_80375550[voice[1]];
+    if (*(u8 **)(trk + 4) == voice) {
+        *(u8 **)(trk + 4) = NULL;
+        *(u8 **)trk = *(u8 **)(voice + 4);
+        return;
+    }
+    for (v = *(u8 **)trk; *(u8 **)(v + 4) != voice; v = *(u8 **)(v + 4)) {
+    }
+    *(u8 **)(v + 4) = *(u8 **)(voice + 4);
+}
+#pragma pop
+
 s32 AudioMIDI_Create(void) {
     extern u8 g_song_80376990[0x24];
     extern u8 g_chn_803769B4[0x200];
