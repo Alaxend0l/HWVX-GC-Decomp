@@ -576,6 +576,20 @@ void Init_Math3D(void) {
     g_identity[31] = 1.0f;
 }
 
+void SinCos(f32 *s, f32 *c, f32 angle) {
+    f32 r;
+
+    while (angle < 0.0f) {
+        angle += 360.0f;
+    }
+    while (angle >= 360.0f) {
+        angle -= 360.0f;
+    }
+    r = 0.017453292f * angle;
+    *s = sin(r);
+    *c = cos(r);
+}
+
 void SinCosRad(f32 *s, f32 *c, f32 rad) {
     f32 angle = rad * 57.29578f;
     f32 r;
