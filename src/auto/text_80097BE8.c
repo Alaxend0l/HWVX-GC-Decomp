@@ -789,12 +789,15 @@ void Gfx_AnimTraverseHeirarchyToMatrices(void) {
     fn_800957D4();
 }
 
+#pragma push
+#pragma dont_inline on
 void Gfx_DisplayList_Destroy(void) {
     extern s32 g_pDL;
     extern s32 g_pGDL;
     Deallocate(g_pGDL);
     Deallocate(g_pDL);
 }
+#pragma pop
 
 void Gfx_Add2DRectangleBack(void) {
     M2C_UNK fn_800957D4();
