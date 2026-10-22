@@ -125,6 +125,11 @@ void DBOpen(void) {
 
 }
 
+f32 ArcTan(void) {
+    f64 atan2();
+    return (f32) atan2();
+}
+
 void ForceIPLReset(void) {
     extern s32 m_ilpreset_803C7620;
     extern s32 m_reset;
