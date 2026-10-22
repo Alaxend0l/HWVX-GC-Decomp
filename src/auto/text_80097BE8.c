@@ -2774,6 +2774,17 @@ s32 VDevice_DownloadEffect(VDevice *dev, u32 *handle, u8 *desc) {
     }
     return ret;
 }
+
+s32 VDevice_DestroyEffect(VDevice *dev, u32 handle) {
+    s32 ret = -2;
+    u32 index = handle & 0x3F;
+    if (dev->activeEffects[index] != NULL) {
+        dev->activeEffects[index] = NULL;
+        ret = 0;
+    }
+    return ret;
+}
+
 #pragma pop
 s32 Effect_StartEffect(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0x28) = (s32) (M2C_FIELD(arg0, s32 *, 0x28) | 1);
