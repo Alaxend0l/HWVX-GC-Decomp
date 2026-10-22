@@ -101,6 +101,7 @@ extern u8 __lower_map[256];
 s32 fflush(FILE *file);
 void free(void *ptr);
 s32 unicode_to_UTF8(char *s, u16 wchar);
+char *strncpy(char *dst, const char *src, u32 n);
 
 enum __file_kinds { __closed_file, __disk_file, __console_file, __unavailable_file };
 enum __file_orientation { __unoriented, __char_oriented, __wide_oriented };
