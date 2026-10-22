@@ -288,7 +288,6 @@ s32 TRKTestForPacket(void);
 s32 TRKSetBufferPosition(void *arg0, u32 arg1);
 void SetTRKConnected(s32 connected);
 s32 GetTRKConnected(void);
-void OSReport(const char *, ...);
 
 static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
     if (b->position >= 0x880) {
@@ -4913,6 +4912,37 @@ s32 fn_8008FF1C(void) {
 
 void usr_put_initialize(void) {
 
+}
+
+void usr_puts_serial(const char *msg) {
+    s32 connect_ = 0;
+    char c;
+    char buf[2];
+
+    while (!connect_ && (c = *msg++) != '\0') {
+        s32 connect = GetTRKConnected();
+        buf[0] = c;
+        buf[1] = '\0';
+        SetTRKConnected(0);
+        OSReport(buf);
+        SetTRKConnected(connect);
+        connect_ = 0;
+    }
+}
+
+s32 TRKDispatchMessage(TRKBuffer *buffer) {
+    extern u32 gTRKDispatchTableSize[];
+    extern s32 (*gTRKDispatchTable[])(TRKBuffer *);
+    s32 error;
+    u8 command;
+
+    error = 0x500;
+    TRKSetBufferPosition(buffer, 0);
+    TRKReadBuffer1_ui8(buffer, &command);
+    if (command < gTRKDispatchTableSize[0]) {
+        error = gTRKDispatchTable[command](buffer);
+    }
+    return error;
 }
 
 s32 TRKReadBuffer1_ui8(TRKBuffer *b, u8 *data);
