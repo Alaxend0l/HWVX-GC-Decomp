@@ -3916,6 +3916,15 @@ void InitLGLibrary__8LGWheelsFv(void) {
     fn_800957D4();
 }
 
+u8 SameDamperForceParams__8LGWheelsFlUcs(void *wheels, s32 chan, u8 coefficient, s16 offset) {
+    u8 *p = (u8 *)wheels + chan * 4;
+
+    if (p[0x13EE] == coefficient && *(s16 *)(p + 0x13F0) == offset) {
+        return 1;
+    }
+    return 0;
+}
+
 u8 SameFrontalCollisionForceParams__8LGWheelsFls(LGWheels *wheels, s32 chan, s16 force) {
     return wheels->frontalCollisionParams[chan] == force;
 }
