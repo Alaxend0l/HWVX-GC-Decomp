@@ -216,6 +216,15 @@ void Gfx_CreateView(void) {
     fn_800957D4();
 }
 
+void Gfx_EndScene(void) {
+    M2C_UNK Render_EndScene();
+    extern s8 g_screenTextX;
+    extern s8 g_screenTextY;
+    Render_EndScene();
+    g_screenTextY = 0;
+    g_screenTextX = 0;
+}
+
 s32 Gfx_GetRenderWindowIndex(void) {
     extern s32 g_currentWindow;
     return g_currentWindow;
