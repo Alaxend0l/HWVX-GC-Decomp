@@ -1184,6 +1184,10 @@ s32 TRKReleaseMutex(void) {
     return 0;
 }
 
+s32 TRKAcquireMutex(void) {
+    return 0;
+}
+
 s32 fn_80093530(void) {
     return 0;
 }
