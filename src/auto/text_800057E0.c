@@ -4793,6 +4793,12 @@ void TRKTargetSetInputPendingPtr(void *ptr) {
     *(void **)(gTRKState + 0xA0) = ptr;
 }
 
+s32 TRKTargetStop(void) {
+    extern u8 gTRKState[];
+    *(s32 *)(gTRKState + 0x98) = 1;
+    return 0;
+}
+
 s32 TRKTargetAddExceptionInfo(void *b) {
     extern u32 gTRKExceptionStatus_800DA0A4[];
     s32 err;
