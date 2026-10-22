@@ -3433,6 +3433,21 @@ void __THPAudioInitialize(void *arg0, u8 *arg1) {
     M2C_FIELD(arg0, u8 **, 0) = (u8 *) (M2C_FIELD(arg0, u8 **, 0) + 1);
 }
 
+#pragma push
+#pragma optimization_level 1
+void AudioVoice_Destroy_(void) {
+    void AXRegisterAuxBCallback(void *callback, void *context);
+    void AXRegisterAuxACallback(void *callback, void *context);
+    s32 AXFXDelayShutdown(void *delay);
+    extern u8 g_reverb_803715B0[2][0x60];
+
+    AXRegisterAuxBCallback(NULL, NULL);
+    AXRegisterAuxACallback(NULL, NULL);
+    AXFXDelayShutdown(g_reverb_803715B0[1]);
+    AXFXDelayShutdown(g_reverb_803715B0[0]);
+}
+#pragma pop
+
 void SetVoicePriority_(void *arg0) {
     M2C_UNK AXSetVoicePriority(s32, u8);
     s32 OSDisableInterrupts();
@@ -3978,7 +3993,7 @@ void SetITTrackOff(u32 mask, s8 deferred) {
 #pragma optimization_level 1
 #pragma dont_inline on
 void SetITTrackVol(u32 id, s32 vol) {
-    void SetVoiceVol_(void *voice, s32 vol);
+    void SetVoiceVol_(void *voice, u16 vol);
     struct Trk {
         u8 *head;
         u8 *active;
@@ -3991,7 +4006,7 @@ void SetITTrackVol(u32 id, s32 vol) {
     extern u8 g_song_80375520[0x30];
     extern struct Trk g_trk_80375550[0x20];
     u8 *voice;
-    s32 gvol;
+    u16 gvol;
 
     voice = g_trk_80375550[id].head;
     g_trk_80375550[id].vol = vol;
