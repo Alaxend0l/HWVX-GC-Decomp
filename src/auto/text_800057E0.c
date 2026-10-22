@@ -1935,6 +1935,26 @@ void InterfaceManager_SetRadarBlip(u16 arg0) {
     g_radarTextureIndex = (s32) arg0;
 }
 
+void InterfaceManager_ReleaseAllInterfaces(void) {
+    extern u8 g_interface[][0x170];
+    extern s32 g_TargetArrow[7];
+    extern void *g_pInterfaceToEnd;
+    void InterfaceManager_ReleaseInterface(u32 index);
+    u32 i;
+
+    for (i = 0; i < 0x12; i++) {
+        if (*(void **)g_interface[i] != NULL) {
+            InterfaceManager_ReleaseInterface(i);
+        }
+    }
+    g_TargetArrow[0] = 0;
+    g_pInterfaceToEnd = NULL;
+    g_TargetArrow[1] = 0;
+    g_TargetArrow[3] = 0;
+    g_TargetArrow[4] = -1;
+    g_TargetArrow[5] = 0;
+}
+
 void InterfaceManager_ReleaseAllUnpausedInterfaces(void) {
     extern u8 g_interface[][0x170];
     void InterfaceManager_ReleaseInterface(u32 index);
