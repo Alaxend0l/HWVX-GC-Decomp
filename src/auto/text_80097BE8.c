@@ -3988,6 +3988,17 @@ s32 __ct__4RampFv(s32 arg0) {
     return arg0;
 }
 
+Wheels *__ct__6WheelsFv(Wheels *wheels) {
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        ((s32 *)wheels->unk828)[i] = -1;
+        wheels->status[i].err = -1;
+    }
+    memset((u8 *)wheels + 0x858, 0, 0x28);
+    return wheels;
+}
+
 u8 IsOpened__6WheelsFl(Wheels *wheels, s32 chan) {
     return wheels->status[chan].err == 0;
 }
