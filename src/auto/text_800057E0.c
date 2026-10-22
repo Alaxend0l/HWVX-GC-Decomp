@@ -42,6 +42,7 @@ void MotionState_Draw(void *state);
 f32 MagnitudeVector(void *v);
 void *Allocate(u32, u32, const char *);
 s32 ViewManager_GetViewFormat(void);
+void GXSetTevIndirect(s32 tev_stage, s32 ind_stage, s32 format, s32 bias_sel, s32 matrix_sel, s32 wrap_s, s32 wrap_t, u8 add_prev, u8 utc_lod, s32 alpha_sel);
 
 s32 AIGetStreamPlayState(void);
 s32 AIGetDSPSampleRate(void);
@@ -5040,6 +5041,59 @@ void __CARDDefaultApiCallback(void) {
 
 }
 
+s32 EXILock(s32 chan, u32 dev, void *unlockedCallback);
+s32 EXIUnlock(s32 chan);
+s32 OSCancelAlarm(void *alarm);
+s32 __CARDReadStatus(s32 chan, u8 *status);
+s32 __CARDClearStatus(s32 chan);
+static s32 Retry(s32 chan);
+static void __CARDExiHandler(s32 chan) {
+    CARDControl *card;
+    CARDCallback callback;
+    u8 status;
+    s32 result;
+
+    card = &__CARDBlock[chan];
+
+    OSCancelAlarm(card->alarm);
+
+    if (!card->attached) {
+        return;
+    }
+
+    if (!EXILock(chan, 0, 0)) {
+        result = -128;
+        goto fatal;
+    }
+
+    if ((result = __CARDReadStatus(chan, &status)) < 0 || (result = __CARDClearStatus(chan)) < 0) {
+        goto error;
+    }
+
+    if (status & 0x18) {
+        result = -5;
+    } else {
+        result = 0;
+    }
+    if (result == -5 && --card->retry > 0) {
+        result = Retry(chan);
+        if (result >= 0) {
+            return;
+        }
+        goto fatal;
+    }
+
+error:
+    EXIUnlock(chan);
+
+fatal:
+    callback = card->exiCallback;
+    if (callback) {
+        card->exiCallback = 0;
+        callback(chan, result);
+    }
+}
+
 s32 OnReset_8007DB90(s32 arg0) {
     s32 CARDUnmount(M2C_UNK);
     if ((arg0 == 0) && ((CARDUnmount(0) == -1) || (CARDUnmount(1) == -1))) {
@@ -5318,6 +5372,33 @@ void *GXSetTlutRegionCallback(void *f) {
     void *oldcb = M2C_FIELD(gx, void **, 0x414);
     M2C_FIELD(gx, void **, 0x414) = f;
     return oldcb;
+}
+
+void GXSetNumIndStages(u8 nIndStages) {
+    extern u8 *gx;
+    u32 *reg = (u32 *)(gx + 0x204);
+    *reg = (*reg & ~0x70000) | (nIndStages << 16);
+    *(u32 *)(gx + 0x4F4) |= 6;
+}
+
+void GXSetTevIndirect(s32 tev_stage, s32 ind_stage, s32 format, s32 bias_sel, s32 matrix_sel, s32 wrap_s, s32 wrap_t, u8 add_prev, u8 utc_lod, s32 alpha_sel);
+void __GXFlushTextureState(void) {
+    extern u8 *gx;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *(u32 *)(gx + 0x124);
+    *(u16 *)(gx + 2) = 0;
+}
+
+void GXSetTevColorIn(s32 stage, s32 a, s32 b, s32 c, s32 d) {
+    extern u8 *gx;
+    u32 *reg = (u32 *)(gx + (stage * 4 + 0x130));
+    *reg = (*reg & ~0xF000) | (a << 12);
+    *reg = (*reg & ~0xF00) | (b << 8);
+    *reg = (*reg & ~0xF0) | (c << 4);
+    *reg = (*reg & ~0xF) | d;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *reg;
+    *(u16 *)(gx + 2) = 0;
 }
 
 void __GXSetRange(void) {
