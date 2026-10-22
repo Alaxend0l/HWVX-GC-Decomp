@@ -568,6 +568,35 @@ void time(s32 *arg0) {
     }
 }
 
+s32 fwide(FILE *stream, s32 mode) {
+    s32 orientation;
+    s32 result;
+
+    if ((stream == NULL) || (stream->mode.file_kind == __closed_file)) {
+        return 0;
+    }
+
+    orientation = stream->mode.file_orientation;
+    switch (orientation) {
+    case __unoriented:
+        if (mode > 0) {
+            stream->mode.file_orientation = __wide_oriented;
+        } else if (mode < 0) {
+            stream->mode.file_orientation = __char_oriented;
+        }
+        result = mode;
+        break;
+    case __wide_oriented:
+        result = 1;
+        break;
+    case __char_oriented:
+        result = -1;
+        break;
+    }
+
+    return result;
+}
+
 void acos(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
