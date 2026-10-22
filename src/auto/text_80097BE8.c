@@ -247,10 +247,16 @@ typedef struct GfxState {
     GXColor unk74;
     GXColor ambientColor;
     u32 unk7C;
-    u8 unk80[0x8C - 0x80];
+    f32 unk80;
+    u8 unk84[0x88 - 0x84];
+    s32 unk88;
     s16 debugFont;
     u8 lightChanged;
-    u8 unk8F[0x94 - 0x8F];
+    u8 unk8F;
+    u8 numPointLights;
+    u8 unk91;
+    u8 unk92;
+    u8 unk93;
     u8 enviroMapMode;
     u8 unk95[0x98 - 0x95];
     f32 farClippingPlane;
