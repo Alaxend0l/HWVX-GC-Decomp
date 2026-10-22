@@ -3585,6 +3585,13 @@ static void SamplingHandler(s16 interrupt, void *context) {
     }
 }
 
+s32 EXIGetID(s32 chan, u32 dev, u32 *id);
+s32 OSGetConsoleType(void);
+s32 EXIGetState(s32 chan) {
+    extern u8 Ecb_80309980[3][0x40];
+    return *(s32 *)(Ecb_80309980[chan] + 0xC);
+}
+
 s32 InitializeUART(void) {
     s32 OSGetConsoleType();
     extern s32 BarnacleEnabled_803C75C4;
