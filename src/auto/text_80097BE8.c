@@ -153,6 +153,27 @@ void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0) {
     M2C_FIELD(arg2, f32 *, 8) = (f32) ((M2C_FIELD(arg0, f32 *, 8) * farg0) + M2C_FIELD(arg1, f32 *, 8));
 }
 
+s32 CompareDistances(void *arg0, void *arg1, f32 farg0) {
+    f32 temp_f0;
+    f32 temp_f1;
+    f32 temp_f3;
+    f32 temp_f4;
+    f32 temp_f5;
+
+    temp_f5 = farg0 * farg0;
+    temp_f4 = M2C_FIELD(arg0, f32 *, 4) - M2C_FIELD(arg1, f32 *, 4);
+    temp_f3 = M2C_FIELD(arg0, f32 *, 0) - M2C_FIELD(arg1, f32 *, 0);
+    temp_f1 = M2C_FIELD(arg0, f32 *, 8) - M2C_FIELD(arg1, f32 *, 8);
+    temp_f0 = (temp_f1 * temp_f1) + ((temp_f3 * temp_f3) + (temp_f4 * temp_f4));
+    if (temp_f0 > temp_f5) {
+        return 1;
+    }
+    if (temp_f0 < temp_f5) {
+        return -1;
+    }
+    return 0;
+}
+
 void TransposeSubMatrix(void *arg0) {
     f32 temp_f1;
     f32 temp_f1_2;
