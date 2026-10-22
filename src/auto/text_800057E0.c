@@ -4200,15 +4200,15 @@ s32 GetTRKConnected(void) {
     return IsTRKConnected_8030B440.difficulty;
 }
 
-s32 TRKReleaseMutex(void) {
+s32 TRKReleaseMutex(void *mutex) {
     return 0;
 }
 
-s32 TRKAcquireMutex(void) {
+s32 TRKAcquireMutex(void *mutex) {
     return 0;
 }
 
-s32 TRKInitializeMutex(void) {
+s32 TRKInitializeMutex(void *mutex) {
     return 0;
 }
 
