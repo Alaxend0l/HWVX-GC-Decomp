@@ -37,6 +37,8 @@ typedef struct NavHolder {
 
 extern NavHolder gs_NavHolder_803C6CD8;
 
+s32 UnlockSram(s32 commit, u32 offset);
+
 typedef void (*CARDCallback)(s32 chan, s32 result);
 
 typedef struct CARDControl {
