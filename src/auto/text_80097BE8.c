@@ -612,6 +612,13 @@ void TransposeSubMatrix(void *arg0) {
     M2C_FIELD(arg0, f32 *, 0x24) = temp_f1_3;
 }
 
+void QuaternionMult(Vector *a, Vector *b, Vector *out) {
+    out->w = a->w * b->w - a->x * b->x - a->y * b->y - a->z * b->z;
+    out->x = a->y * b->z - a->z * b->y + a->w * b->x + a->x * b->w;
+    out->y = a->z * b->x - a->x * b->z + a->w * b->y + a->y * b->w;
+    out->z = a->x * b->y - a->y * b->x + a->w * b->z + a->z * b->w;
+}
+
 void GetComponentOfVector(void *arg0, void *arg1) {
     f32 PSVECDotProduct();
     f32 temp_f1;
