@@ -13,6 +13,11 @@ typedef struct ShaderHolder {
     u32 numGX;
 } ShaderHolder;
 
+void *ThingManagerList_GetByType(void *list, s32 type);
+void WildCardRack_Add(void *rack, u8 *item, s16 count);
+void Item_Release(void *item);
+void MotionState_Draw(void *state);
+
 typedef struct FileTOCCacheEntry {
     u8 unk0[0x4B4];
     u8 valid;
@@ -1478,6 +1483,13 @@ s32 Creature_Invalidate(void *arg0, u32 arg1, u32 arg2) {
 void DataPack_EnableLoadingSounds(s8 arg0) {
     extern s8 g_bSoundLoadingEnabled;
     g_bSoundLoadingEnabled = arg0;
+}
+
+void DataPack_Initialize(void) {
+    s32 i;
+    for (i = 0; i < 11; i++) {
+        g_fileTOCCache[i].valid = 0;
+    }
 }
 
 extern s32 g_fileID;
