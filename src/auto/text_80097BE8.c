@@ -293,6 +293,13 @@ void MemCpyDone(void) {
     g_arqWait_803C78B0 = 0;
 }
 
+void AudioVoice_Destroy(void) {
+    M2C_UNK AudioVoice_Destroy_();
+    extern s32 VoiceUpdate;
+    VoiceUpdate = 0;
+    AudioVoice_Destroy_();
+}
+
 void SetSpeakerMode(s8 arg0) {
     extern s8 g_speakers;
     g_speakers = arg0;
