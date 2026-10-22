@@ -685,6 +685,11 @@ void Gfx_EndScene(void) {
     g_screenTextX = 0;
 }
 
+void Gfx_SetEnviroMapMode(u8 mode) {
+    extern GfxState g_state;
+    g_state.enviroMapMode = mode;
+}
+
 s32 Gfx_GetRenderWindowIndex(void) {
     extern s32 g_currentWindow;
     return g_currentWindow;
