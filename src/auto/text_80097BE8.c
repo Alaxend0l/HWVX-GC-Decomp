@@ -520,6 +520,32 @@ void Gfx_SetTextColor(s8 arg0, s8 arg1, s8 arg2, s8 arg3) {
     M2C_FIELD(&g_textcolor, s8 *, 3) = arg3;
 }
 
+void THPGXRestore(void) {
+    M2C_UNK GXSetBlendMode(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK);
+    M2C_UNK GXSetNumChans(M2C_UNK);
+    M2C_UNK GXSetNumTevStages(M2C_UNK);
+    M2C_UNK GXSetNumTexGens(M2C_UNK);
+    M2C_UNK GXSetTevOrder(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK);
+    M2C_UNK GXSetTevSwapMode(M2C_UNK, M2C_UNK, M2C_UNK);
+    M2C_UNK GXSetTevSwapModeTable(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK);
+    M2C_UNK GXSetZMode(M2C_UNK, M2C_UNK, M2C_UNK);
+    GXSetZMode(1, 7, 0);
+    GXSetBlendMode(0, 1, 0, 0xF);
+    GXSetNumTexGens(1);
+    GXSetNumChans(0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevOp(0, 3);
+    GXSetTevSwapMode(0, 0, 0);
+    GXSetTevSwapMode(1, 0, 0);
+    GXSetTevSwapMode(2, 0, 0);
+    GXSetTevSwapMode(3, 0, 0);
+    GXSetTevSwapModeTable(0, 0, 1, 2, 3);
+    GXSetTevSwapModeTable(1, 0, 0, 0, 3);
+    GXSetTevSwapModeTable(2, 1, 1, 1, 3);
+    GXSetTevSwapModeTable(3, 2, 2, 2, 3);
+}
+
 void Mpeg_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
