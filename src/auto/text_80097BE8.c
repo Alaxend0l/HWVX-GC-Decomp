@@ -928,16 +928,14 @@ void *memchr(const void *src, int val, unsigned long n) {
     return 0;
 }
 
-#pragma push
-#pragma peephole off
 void __copy_longs_rev_unaligned(void *dst, const void *src, unsigned long n) {
     unsigned long src_offset, left_shift, right_shift, v1, v2;
     unsigned char *cps;
     unsigned char *cpd;
     unsigned long i;
 
-    cpd = ((unsigned char *)dst) + n;
     cps = ((unsigned char *)src) + n;
+    cpd = ((unsigned char *)dst) + n;
 
     i = ((unsigned long)cpd) & 3;
 
@@ -981,7 +979,6 @@ void __copy_longs_rev_unaligned(void *dst, const void *src, unsigned long n) {
         while (--n);
     }
 }
-#pragma pop
 
 void __copy_longs_rev_aligned(void *dst, const void *src, unsigned long n) {
     unsigned char *cps;
