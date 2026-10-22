@@ -4201,3 +4201,8 @@ u8 GetUseSerialIO(void) {
     return bUseSerialIO_8030DC00[0];
 }
 
+void SetUseSerialIO(u8 sio) {
+    extern u8 bUseSerialIO_8030DC00[];
+    bUseSerialIO_8030DC00[0] = sio;
+}
+
