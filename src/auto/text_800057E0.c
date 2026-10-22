@@ -892,6 +892,11 @@ void StateTitleScreen_SetMenuFile(s32 arg0, s32 arg1) {
     g_mainMenuFileID = arg1;
 }
 
+s32 StateManager_CurrState(void) {
+    extern void *g_pStateManager;
+    return M2C_FIELD(g_pStateManager, s32 *, 0xD0);
+}
+
 s32 Thing_PreMove(void) {
     return 1;
 }
