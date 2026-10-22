@@ -45,13 +45,37 @@ typedef struct THPVideoInfo {
 } THPVideoInfo;
 
 typedef struct THPPlayer {
-    u8 unk0[0x80];
+    u8 unk0[0x50];
+    u32 numFrames;
+    u8 unk54[0x6C - 0x54];
+    u32 numComponents;
+    u8 frameComp[16];
     THPVideoInfo videoInfo;
     u8 unk88[0x10];
     s32 open;
     u8 state;
-    u8 unk9D[0xFB];
+    u8 unk9D;
+    u8 playFlag;
+    u8 unk9F[0xAC - 0x9F];
+    u8 *movieData;
+    u8 unkB0[0xB4 - 0xB0];
+    s32 initReadSize;
+    s32 initReadFrame;
+    u8 unkBC[0x198 - 0xBC];
 } THPPlayer;
+
+typedef struct THPReadBuffer {
+    u8 *ptr;
+    s32 frameNumber;
+    s32 isValid;
+} THPReadBuffer;
+
+typedef struct THPAudioBuffer {
+    s16 *buffer;
+    s16 *curPtr;
+    u32 validSample;
+    s32 frameNumber;
+} THPAudioBuffer;
 
 extern THPPlayer ActivePlayer;
 
