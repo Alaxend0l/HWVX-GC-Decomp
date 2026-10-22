@@ -739,6 +739,11 @@ void Trigger_Create(void) {
     fn_800957D4();
 }
 
+void World_Init(void) {
+    M2C_UNK fn_800957D4();
+    fn_800957D4();
+}
+
 s32 ViewManager_GetViewFormat(void) {
     extern s32 g_viewFormat;
     return g_viewFormat;
