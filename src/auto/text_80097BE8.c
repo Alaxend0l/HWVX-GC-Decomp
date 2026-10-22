@@ -2482,6 +2482,33 @@ void Gfx_ClearScreen(void) {
     fn_800957D4();
 }
 
+s32 Gfx_TextureHandler_Create(void) {
+    extern u8 *m_texture;
+    extern u32 m_totalTextures;
+
+    m_totalTextures = 0x1FF;
+    m_texture = Allocate(0x7FC0, 0, "");
+    memset(m_texture, 0, m_totalTextures << 6);
+    return 1;
+}
+
+void Gfx_TextureHandler_Destroy(void) {
+    extern u8 *m_texture;
+    extern u32 m_totalTextures;
+    void Render_DestroyTextureSlot(u32 id);
+    void Deallocate(void *p);
+    u32 i;
+
+    for (i = 1; i < m_totalTextures; i++) {
+        Render_DestroyTextureSlot(i);
+        if (*(void **)(m_texture + i * 0x40 + 0x24) != NULL && *(u16 *)(m_texture + i * 0x40 + 0x3A) == 0) {
+            Deallocate(*(void **)(m_texture + i * 0x40 + 0x24));
+        }
+    }
+    Deallocate(m_texture);
+    m_texture = NULL;
+}
+
 void Gfx_SetTextureWrapMode(u16 id, s16 mode) {
     extern u8 *m_texture;
     void Render_CreateTextureSlot(u32 id, s32 arg1, void *texture);
@@ -4426,12 +4453,14 @@ static void F29(s32 chan, s32 ret) {
 }
 
 void ReadProc(s32 chan) {
-    GBAControl *gba = &__GBA[chan];
+    GBAControl *gba;
 
-    if (gba->ret == 0) {
-        memcpy(gba->ptr, &gba->input[0], 4);
-        *gba->status = gba->input[4] & 0x3A;
+    gba = &__GBA[chan];
+    if (gba->ret != 0) {
+        return;
     }
+    memcpy(gba->ptr, gba->input, 4);
+    *gba->status = gba->input[4] & 0x3A;
 }
 
 s32 GBARead(s32 chan, u8 *dst, u8 *status) {
