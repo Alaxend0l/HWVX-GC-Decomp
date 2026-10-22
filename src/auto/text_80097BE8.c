@@ -611,21 +611,22 @@ f32 ArcTan(void) {
 }
 
 f32 Sqrt(f32 x) {
+    f64 d = x;
     f64 result;
 
-    if (x > 0.0) {
-        f64 guess = __frsqrte((f64)x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        result = x * guess;
-    } else if (x == 0.0) {
+    if (d > 0.0) {
+        f64 guess = __frsqrte(d);
+        guess = 0.5 * guess * (3.0 - guess * guess * d);
+        guess = 0.5 * guess * (3.0 - guess * guess * d);
+        guess = 0.5 * guess * (3.0 - guess * guess * d);
+        guess = 0.5 * guess * (3.0 - guess * guess * d);
+        result = d * guess;
+    } else if (d == 0.0) {
         result = 0.0;
-    } else if (x != 0.0) {
-        result = *(f32 *)&__float_nan;
+    } else if (d) {
+        result = *(f32 *)__float_nan;
     } else {
-        result = *(f32 *)&__float_huge;
+        result = *(f32 *)__float_huge;
     }
     return result;
 }
