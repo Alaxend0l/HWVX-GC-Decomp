@@ -1605,6 +1605,64 @@ s32 Effect_StartEffect(void *arg0) {
     return 0;
 }
 
+void Effect_PolarToRect(s32 magnitude, u8 angle, s32 *out) {
+    s32 sine;
+    s32 value;
+    s32 round;
+
+    if (angle < 0x40) {
+        sine = g_iQuarterSineTable_8037BB7C[angle];
+    } else if (angle < 0x80) {
+        sine = g_iQuarterSineTable_8037BB7C[0x7F - angle];
+    } else if (angle < 0xC0) {
+        sine = -g_iQuarterSineTable_8037BB7C[angle - 0x80];
+    } else {
+        sine = -g_iQuarterSineTable_8037BB7C[0xFF - angle];
+    }
+    value = magnitude * sine;
+    round = 0x1FE00;
+    if (value < 0) {
+        round = -0x1FE00;
+    }
+    *out = -((value * 0x7F + round) / 0x3FC00);
+}
+
+s32 Effect_UpdateDamper(Effect *effect, EffectCondition *cond) {
+    s32 vel = effect->state->velocity;
+    s32 coef;
+    s32 sat;
+    s32 force;
+
+    if (vel < 0) {
+        coef = -cond->negCoefficient;
+        sat = cond->negSaturation;
+    } else {
+        coef = -cond->posCoefficient;
+        sat = cond->posSaturation;
+    }
+    force = (vel * coef * 20) / 0xFF000;
+    if (-sat > force) {
+        force = -sat;
+    }
+    if (sat < force) {
+        force = sat;
+    }
+    return force;
+}
+
+void ShortCommandProc(s32 chan) {
+    GBAControl *gba = &__GBA[chan];
+
+    if (gba->ret != 0) {
+        return;
+    }
+    if (gba->input[0] != 0 || gba->input[1] != 4) {
+        gba->ret = 1;
+        return;
+    }
+    *gba->status = gba->input[2] & 0x3A;
+}
+
 s32 OnReset_800C4F14(void) {
     extern s32 __GBAReset;
     __GBAReset = 1;
