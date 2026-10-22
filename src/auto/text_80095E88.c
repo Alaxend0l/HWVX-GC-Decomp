@@ -5,3 +5,9 @@ void *what__Q23std9bad_allocCFv(void) {
     extern u8 g_cameraManager[];
     return g_cameraManager;
 }
+
+void *what__Q23std9exceptionCFv(void) {
+    extern u8 g_cameraManager[];
+    return g_cameraManager;
+}
+
