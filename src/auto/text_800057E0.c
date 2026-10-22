@@ -2306,6 +2306,23 @@ void *__OSGetExceptionHandler(u8 exception) {
     return *(OSExceptionTable_803C71F4 + exception);
 }
 
+volatile u32 __DIRegs[16] : 0xCC006000;
+u8 __OSGetDIConfig(void) {
+    volatile u32 *regs = (volatile u32 *)0xCC006000;
+    return (u8)regs[9];
+}
+
+void OSInitAlarm(void) {
+    extern void *AlarmQueue_803C7210[2];
+    void *__OSGetExceptionHandler(u8 exception);
+    void *__OSSetExceptionHandler(u8 exception, void *handler);
+    void DecrementerExceptionHandler(void);
+    if (__OSGetExceptionHandler(8) != DecrementerExceptionHandler) {
+        AlarmQueue_803C7210[0] = AlarmQueue_803C7210[1] = NULL;
+        __OSSetExceptionHandler(8, DecrementerExceptionHandler);
+    }
+}
+
 void OSCreateAlarm(s32 *arg0) {
     *arg0 = 0;
 }
@@ -2407,6 +2424,13 @@ __OSInterruptHandler __OSSetInterruptHandler(__OSInterrupt interrupt, __OSInterr
     oldHandler = table[interrupt];
     table[interrupt] = handler;
     return oldHandler;
+}
+
+u32 SetInterruptMask(u32 mask, u32 current);
+void ExternalInterruptHandler(void);
+u32 __OSMaskInterrupts(u32 global);
+__OSInterruptHandler __OSGetInterruptHandler(__OSInterrupt interrupt) {
+    return InterruptHandlerTable_803C7240[interrupt];
 }
 
 typedef struct OSSram {
