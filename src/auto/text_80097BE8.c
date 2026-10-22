@@ -2344,6 +2344,23 @@ s32 MemCard_Read__FUllPv(u32 device, s32 size, void *data) {
     return size;
 }
 
+u8 Input_KeyDown(s32 chan, u8 key) {
+    s32 i;
+    if (key == 0xFF) {
+        return 0;
+    }
+    if (chan == -1) {
+        for (i = 0; i < 4; i++) {
+            if ((g_VirtualPad[i].keyDown >> key) & 1) {
+                return g_VirtualPad[chan].keyValue[key];
+            }
+        }
+    } else if ((g_VirtualPad[chan].keyDown >> key) & 1) {
+        return g_VirtualPad[chan].keyValue[key];
+    }
+    return 0;
+}
+
 void InitTables__Fv(void);
 void Input_Init(void);
 void *__nw__FUl(u32 size);
