@@ -750,6 +750,10 @@ void CameraManager_Pause(s8 arg0) {
     g_cameraManagerPause = arg0;
 }
 
+f32 Creature_GetMass(void *arg0) {
+    return M2C_FIELD(arg0, f32 *, 0x1BC);
+}
+
 void EventSeq_Release(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
