@@ -341,11 +341,25 @@ typedef struct GDLDrawEntry {
     u8 pad13;
 } GDLDrawEntry;
 
+typedef struct GDLAlphaEntry {
+    void (*func)(u16 arg);
+    u16 arg;
+    u16 next;
+} GDLAlphaEntry;
+
 typedef struct GDL {
     u8 unk0[0x54];
     s32 numDrawEntries;
-    u8 unk58[0xDFCC0 - 0x58];
-    GDLDrawEntry drawEntries[1];
+    u8 unk58[0x6C - 0x58];
+    s32 numEnvmapStates;
+    u8 unk70[0x74 - 0x70];
+    u32 numMatrices;
+    u8 unk78[0x80 - 0x78];
+    u16 alphaTable[256];
+    GDLAlphaEntry alphaEntries[(0xDFCC0 - 0x280) / 8];
+    GDLDrawEntry drawEntries[(0xF3C00 - 0xDFCC0) / 0x14];
+    u8 unkF3BEC[0xF3C00 - 0xDFCC0 - ((0xF3C00 - 0xDFCC0) / 0x14) * 0x14];
+    u32 matrices[0x578];
 } GDL;
 
 typedef struct GfxState {
@@ -678,6 +692,118 @@ void *memchr(const void *src, int val, unsigned long n) {
     }
 
     return 0;
+}
+
+void __copy_longs_rev_aligned(void *dst, const void *src, unsigned long n) {
+    unsigned char *cps;
+    unsigned char *cpd;
+    unsigned long *lps;
+    unsigned long *lpd;
+    unsigned long i;
+
+    cps = ((unsigned char *)src) + n;
+    cpd = ((unsigned char *)dst) + n;
+
+    i = ((unsigned long)cpd) & 3;
+
+    if (i) {
+        n -= i;
+
+        do
+            *--cpd = *--cps;
+        while (--i);
+    }
+
+    lps = (unsigned long *)cps;
+    lpd = (unsigned long *)cpd;
+
+    i = n >> 5;
+
+    if (i)
+        do {
+            *--lpd = *--lps;
+            *--lpd = *--lps;
+            *--lpd = *--lps;
+            *--lpd = *--lps;
+            *--lpd = *--lps;
+            *--lpd = *--lps;
+            *--lpd = *--lps;
+            *--lpd = *--lps;
+        } while (--i);
+
+    i = (n & 31) >> 2;
+
+    if (i)
+        do
+            *--lpd = *--lps;
+        while (--i);
+
+    cps = (unsigned char *)lps;
+    cpd = (unsigned char *)lpd;
+
+    n &= sizeof(unsigned long) - 1;
+
+    if (n)
+        do
+            *--cpd = *--cps;
+        while (--n);
+
+    return;
+}
+
+void __copy_longs_aligned(void *dst, const void *src, unsigned long n) {
+    unsigned char *cps;
+    unsigned char *cpd;
+    unsigned long i;
+
+    cps = ((unsigned char *)src) - 1;
+    cpd = ((unsigned char *)dst) - 1;
+
+    i = (-(unsigned long)dst) & 3;
+
+    if (i) {
+        n -= i;
+
+        do
+            *++cpd = *++cps;
+        while (--i);
+    }
+
+    cps -= 3;
+    cpd -= 3;
+
+    i = n >> 5;
+
+    if (i)
+        do {
+            *++((unsigned long *)cpd) = *++((unsigned long *)cps);
+            *++((unsigned long *)cpd) = *++((unsigned long *)cps);
+            *++((unsigned long *)cpd) = *++((unsigned long *)cps);
+            *++((unsigned long *)cpd) = *++((unsigned long *)cps);
+            *++((unsigned long *)cpd) = *++((unsigned long *)cps);
+            *++((unsigned long *)cpd) = *++((unsigned long *)cps);
+            *++((unsigned long *)cpd) = *++((unsigned long *)cps);
+            *++((unsigned long *)cpd) = *++((unsigned long *)cps);
+        } while (--i);
+
+    i = (n & 31) >> 2;
+
+    if (i)
+        do
+            *++((unsigned long *)cpd) = *++((unsigned long *)cps);
+        while (--i);
+
+    cps += 3;
+    cpd += 3;
+
+    n &= 3;
+
+    if (n)
+        do
+            *++cpd = *++cps;
+        while (--n);
+
+    return;
 }
 
 #pragma pop
