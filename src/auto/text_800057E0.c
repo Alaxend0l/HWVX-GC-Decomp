@@ -2431,7 +2431,7 @@ s32 Playback_GetElement(void) {
     u32 File_Read(s32 file, u32 size);
     extern s32 g_fileIOHandle;
     extern s32 g_pauseState;
-    extern s32 g_playbackCache[0x1000];
+    extern s32 g_playbackCache[];
     extern u32 g_playbackFinish;
     extern u32 g_playbackPos;
     extern s32 g_playbackStatus;
@@ -2441,11 +2441,11 @@ s32 Playback_GetElement(void) {
     if (g_playbackPos == g_playbackFinish) {
         File_Close(g_fileIOHandle);
         g_fileIOHandle = -1;
-        element = g_playbackCache[g_playbackPos];
+        element = *(g_playbackCache + g_playbackPos);
         g_playbackStatus = 0;
         g_pauseState = 1;
     } else {
-        element = g_playbackCache[g_playbackPos++];
+        element = *(g_playbackCache + g_playbackPos++);
         if (g_playbackPos == 0x1000) {
             bytesRead = File_Read(g_fileIOHandle, 0x4000);
             g_playbackPos = 0;
@@ -2462,8 +2462,9 @@ void Playback_PutElement(s32 element) {
     extern s32 g_fileIOHandle;
     extern s32 g_playbackCache[0x1000];
     extern u32 g_playbackPos;
+    u32 pos = g_playbackPos++;
 
-    g_playbackCache[g_playbackPos++] = element;
+    g_playbackCache[pos] = element;
     if (g_playbackPos == 0x1000) {
         File_Write(g_fileIOHandle, 0x4000);
         g_playbackPos = 0;
@@ -3079,6 +3080,10 @@ void Thing_GetStaticRotationalMinMax(void *thing, Vector4 *min, Vector4 *max) {
 
 void Thing_CollideWithRay(void) {
 
+}
+
+void Thing_GetTargetPos(void *thing, Quaternion *pos) {
+    *pos = *(Quaternion *)((u8 *)thing + 0x40);
 }
 
 s32 Thing_GetOrientedCollision(void) {
