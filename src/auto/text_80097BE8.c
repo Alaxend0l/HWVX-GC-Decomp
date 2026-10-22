@@ -1807,6 +1807,33 @@ void ProjectVectorToNormal(Vector *n, Vector *v) {
     v->z = scale * n->z + v->z;
 }
 
+void MinMaxVec(Vector *min, Vector *max, Vector *v) {
+    if (min->x > v->x) {
+        min->x = v->x;
+    }
+    if (min->y > v->y) {
+        min->y = v->y;
+    }
+    if (min->z > v->z) {
+        min->z = v->z;
+    }
+    if (min->w > v->w) {
+        min->w = v->w;
+    }
+    if (max->x < v->x) {
+        max->x = v->x;
+    }
+    if (max->y < v->y) {
+        max->y = v->y;
+    }
+    if (max->z < v->z) {
+        max->z = v->z;
+    }
+    if (max->w < v->w) {
+        max->w = v->w;
+    }
+}
+
 void ScaleMatrix(void *arg0, void *arg1) {
     M2C_FIELD(arg0, f32 *, 0) = (f32) (M2C_FIELD(arg0, f32 *, 0) * M2C_FIELD(arg1, f32 *, 0));
     M2C_FIELD(arg0, f32 *, 4) = (f32) (M2C_FIELD(arg0, f32 *, 4) * M2C_FIELD(arg1, f32 *, 0));
