@@ -1079,6 +1079,15 @@ void OSCreateAlarm(s32 *arg0) {
     *arg0 = 0;
 }
 
+s32 OSSetCurrentHeap(s32 arg0) {
+    extern s32 __OSCurrHeap;
+    s32 temp_r0;
+
+    temp_r0 = __OSCurrHeap;
+    __OSCurrHeap = arg0;
+    return temp_r0;
+}
+
 s32 fn_80069F84(s32 arg0) {
     extern s32 lbl_803C6D70;
     s32 temp_r0;
