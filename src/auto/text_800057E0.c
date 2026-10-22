@@ -4179,6 +4179,11 @@ void TRKUARTInterruptHandler(void) {
 
 }
 
+void TRKEXICallBack(s16 chan, void *ctx) {
+    OSEnableScheduler();
+    TRKLoadContext(ctx, 0x500);
+}
+
 s32 TRKTargetContinue(void) {
     M2C_UNK ReserveEXI2Port();
     M2C_UNK TRKSwapAndGo();
