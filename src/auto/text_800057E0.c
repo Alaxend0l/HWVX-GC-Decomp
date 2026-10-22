@@ -4174,6 +4174,11 @@ void usr_put_initialize(void) {
 
 }
 
+extern GeneralGameSettings IsTRKConnected_8030B440;
+s32 GetTRKConnected(void) {
+    return IsTRKConnected_8030B440.difficulty;
+}
+
 s32 TRKReleaseMutex(void) {
     return 0;
 }
