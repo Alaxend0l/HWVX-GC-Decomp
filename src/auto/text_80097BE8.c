@@ -3964,6 +3964,13 @@ void SetOverallForceGain__8LGWheelsFll(void *wheels, s32 chan, s32 gain) {
     SetOverallForceGain__5ForceFRUll(lg->force, &lg->overallGainId[chan], gain);
 }
 
+s32 GetOverallForceGain__5ForceFRUl(void *force, u32 *effectId);
+s32 GetOverallForceGain__8LGWheelsFl(void *wheels, s32 chan) {
+    LGWheels *lg = wheels;
+
+    return GetOverallForceGain__5ForceFRUl(lg->force, &lg->overallGainId[chan]);
+}
+
 void GenerateNonLinValues__8LGWheelsFlUc(void *wheels, s32 chan, u8 coefficient) {
     GenerateNonLinValues__6WheelsFlUc((Wheels *)((u8 *)wheels + 0x82C), chan, coefficient);
     memcpy((u8 *)wheels + 0x28, (u8 *)wheels + 0x854, 0x800);
