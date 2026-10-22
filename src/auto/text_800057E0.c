@@ -1071,6 +1071,20 @@ void SoundListener_SetTotalListeners(u32 arg0) {
     }
 }
 
+void *SoundAudioSample_Play(void *sample) {
+    void *voice;
+
+    if (sample == NULL) {
+        return NULL;
+    }
+    voice = (void *)GetVoice(sample, (u8)(rand() % 10 + 5));
+    if (voice != NULL) {
+        SetVoiceState(voice, 1);
+        return voice;
+    }
+    return NULL;
+}
+
 void SongManager_StopBKSong(void) {
 
 }
@@ -4036,17 +4050,17 @@ void TRKPostInterruptEvent(void) {
 }
 #pragma pop
 
+__declspec(section ".data") extern s32 gTRKBigEndian;
 #pragma push
 #pragma dont_inline on
-s32 TRKTargetCPUType(u8 *cpuType) {
-    extern u32 gTRKBigEndian[];
-    cpuType[0] = 0;
-    cpuType[1] = TRKTargetCPUMinorType();
-    cpuType[2] = gTRKBigEndian[0];
-    cpuType[3] = 4;
-    cpuType[4] = 8;
-    cpuType[5] = 4;
-    cpuType[6] = 8;
+s32 TRKTargetCPUType(DSCPUType *cpuType) {
+    cpuType->cpuMajor = 0;
+    cpuType->cpuMinor = TRKTargetCPUMinorType();
+    cpuType->bigEndian = gTRKBigEndian;
+    cpuType->defaultTypeSize = 4;
+    cpuType->fpTypeSize = 8;
+    cpuType->extended1TypeSize = 4;
+    cpuType->extended2TypeSize = 8;
     return 0;
 }
 #pragma pop
