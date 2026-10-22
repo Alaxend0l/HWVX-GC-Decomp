@@ -4804,6 +4804,11 @@ void TRKTargetSetStopped(s32 stopped) {
     *(s32 *)(gTRKState + 0x98) = stopped;
 }
 
+s32 TRKTargetStopped(void) {
+    extern u8 gTRKState[];
+    return *(s32 *)(gTRKState + 0x98);
+}
+
 s32 TRKTargetAddExceptionInfo(void *b) {
     extern u32 gTRKExceptionStatus_800DA0A4[];
     s32 err;
