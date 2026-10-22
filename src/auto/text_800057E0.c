@@ -1299,6 +1299,11 @@ s32 Tracer_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+void StateGameManager_Release(void) {
+    M2C_UNK FileStreaming_ReleaseAllDataPacks(M2C_UNK, M2C_UNK);
+    FileStreaming_ReleaseAllDataPacks(3, 1);
+}
+
 s32 Pod_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
