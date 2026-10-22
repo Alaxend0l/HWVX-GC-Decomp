@@ -4914,7 +4914,34 @@ void usr_put_initialize(void) {
 
 }
 
+#pragma push
+#pragma dont_inline on
+void TRKGetInput(void) {
+    extern s32 gTRKFramingState_8030B424[];
+    TRKBuffer *msgBuffer;
+    s32 id;
+    u8 command;
+    TRKEvent event;
+
+    id = TRKTestForPacket();
+    if (id != -1) {
+        msgBuffer = TRKGetBuffer(id);
+        TRKSetBufferPosition(msgBuffer, 0);
+        TRKReadBuffer1_ui8(msgBuffer, &command);
+        if (command < 0x80) {
+            TRKConstructEvent(&event, 2);
+            event.msgBufID = id;
+            gTRKFramingState_8030B424[0] = -1;
+            TRKPostEvent(&event);
+        } else {
+            TRKReleaseBuffer(id);
+        }
+    }
+}
+#pragma pop
+
 void usr_puts_serial(const char *msg) {
+    void OSReport(const char *);
     s32 connect_ = 0;
     char c;
     char buf[2];
@@ -4930,6 +4957,8 @@ void usr_puts_serial(const char *msg) {
     }
 }
 
+#pragma push
+#pragma dont_inline on
 s32 TRKDispatchMessage(TRKBuffer *buffer) {
     extern u32 gTRKDispatchTableSize[];
     extern s32 (*gTRKDispatchTable[])(TRKBuffer *);
@@ -4944,7 +4973,7 @@ s32 TRKDispatchMessage(TRKBuffer *buffer) {
     }
     return error;
 }
-
+#pragma pop
 s32 TRKReadBuffer1_ui8(TRKBuffer *b, u8 *data);
 TRKBuffer *TRKGetBuffer(s32 idx);
 void TRKReleaseBuffer(s32 idx);
