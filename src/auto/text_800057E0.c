@@ -1824,6 +1824,12 @@ void __AXGetAuxBForDPL2(u32 **out) {
     *out = __AXBufferAuxB_802F13C0[__AXAuxDspWritePositionDpl2_803C7498];
 }
 
+void __AXGetAuxBOutputDPL2(u32 **out) {
+    extern u32 __AXAuxDspReadPositionDpl2_803C749C;
+    extern u32 __AXBufferAuxB_802F13C0[3][480];
+    *out = __AXBufferAuxB_802F13C0[__AXAuxDspReadPositionDpl2_803C749C];
+}
+
 void AXRegisterAuxACallback(s32 arg0, s32 arg1) {
     extern s32 __AXCallbackAuxA_803C7470;
     extern s32 __AXContextAuxA_803C7478;
