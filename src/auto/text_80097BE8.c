@@ -1456,6 +1456,23 @@ BOOL DBGReadStatus(u32 *status) {
     return !err;
 }
 
+s32 DBGReadMailbox(u32 *mailbox) {
+    s32 DBGEXIImm(void *buf, s32 len, u32 mode);
+    s32 err;
+    u32 cmd;
+
+    *(volatile u32 *)0xCC006828 = (*(volatile u32 *)0xCC006828 & 0x405) | 0xC0;
+    cmd = 0x60000000;
+    err = !DBGEXIImm(&cmd, 2, 1);
+    while (*(volatile u32 *)0xCC006834 & 1) {
+    }
+    err |= !DBGEXIImm(mailbox, 4, 0);
+    while (*(volatile u32 *)0xCC006834 & 1) {
+    }
+    *(volatile u32 *)0xCC006828 &= 0x405;
+    return !err;
+}
+
 f32 MagnitudeVector(Vector *v) {
     f32 zero = 0.0f;
 
@@ -2027,6 +2044,11 @@ void Performance_Start(void) {
 
 void Performance_End(void) {
 
+}
+
+void Release_Performance_Get(u32 *arg0) {
+    u32 OSGetTick(void);
+    *arg0 = (OSGetTick() * 8) / ((*(u32 *)0x800000F8 / 4) / 125000);
 }
 
 void AnimExtractKeyFrame_NonCompound(void) {
