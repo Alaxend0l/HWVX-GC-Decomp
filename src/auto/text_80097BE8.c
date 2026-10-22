@@ -13,6 +13,14 @@ typedef struct Vector {
 
 f32 PSVECMag(Vector *v);
 
+typedef struct FragmentInfo {
+    void *eti_init_info;
+    char *TOC;
+    s32 active;
+} FragmentInfo;
+
+extern FragmentInfo fragmentinfo_8030DC08[1];
+
 typedef struct GXColor {
     u8 r;
     u8 g;
@@ -269,10 +277,14 @@ void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0) {
 
 void ProjectVectorTangential(Vector *v, Vector *n, Vector *out) {
     f32 PSVECDotProduct();
-    f32 d = -PSVECDotProduct(v, n);
-    out->x = v->x + n->x * d;
-    out->y = v->y + n->y * d;
-    out->z = v->z + n->z * d;
+    f32 dot;
+    f32 scale;
+
+    dot = PSVECDotProduct(v, n);
+    scale = -dot;
+    out->x = v->x + n->x * scale;
+    out->y = v->y + n->y * scale;
+    out->z = v->z + n->z * scale;
 }
 
 s32 CompareDistances(void *arg0, void *arg1, f32 farg0) {
