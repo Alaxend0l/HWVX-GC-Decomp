@@ -237,6 +237,11 @@ void Gfx_GetViewport(s32 *arg0, s32 *arg1, s32 *arg2, s32 *arg3) {
     *arg3 = 0x1E0;
 }
 
+f32 Gfx_GetProjectionMatrix(void) {
+    void *GetRenderWindow();
+    return M2C_FIELD(GetRenderWindow(), f32 *, 0x270);
+}
+
 void Gfx_SetTextColor(s8 arg0, s8 arg1, s8 arg2, s8 arg3) {
     extern M2C_UNK g_textcolor;
     M2C_FIELD(&g_textcolor, s8 *, 0) = arg0;
