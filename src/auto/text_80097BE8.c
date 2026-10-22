@@ -150,6 +150,10 @@ void Gfx_ClearScreen(void) {
     fn_800957D4();
 }
 
+s32 MovieManager_GetTextureIndex(void) {
+    return 0;
+}
+
 void Mpeg_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
