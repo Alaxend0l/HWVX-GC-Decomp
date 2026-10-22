@@ -599,6 +599,11 @@ void FontManager_Destroy(void) {
 
 }
 
+void Gfx_SetDebugFont(s16 font) {
+    extern GfxState g_state;
+    g_state.debugFont = font;
+}
+
 void Gfx_AnimExtractKeyFrame(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
