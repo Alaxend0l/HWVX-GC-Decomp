@@ -4073,6 +4073,23 @@ void ReleaseVoice(u32 id) {
         SetVoiceState_(g_voice[(u8)id], 3);
     }
 }
+
+s32 SetVoiceVol(u32 id, s32 vol) {
+    extern u8 g_voice[0x20][0x70];
+    extern s32 g_sfxvol_803C78D4;
+    void SetVoiceVol_(void *voice, s32 vol);
+    u8 *voice = g_voice[(u8)id];
+
+    if (*(u32 *)voice == id) {
+        *(s32 *)(voice + 0x38) = vol;
+        if (voice[0x15] == 1) {
+            SetVoiceVol_(voice, g_sfxvol_803C78D4);
+        }
+        return 1;
+    }
+    return 0;
+}
+
 #pragma pop
 
 #pragma pop
