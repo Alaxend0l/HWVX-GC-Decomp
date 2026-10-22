@@ -1013,6 +1013,10 @@ s32 __AXGetCommandListCycles(void) {
     return __AXCommandListCycles_803C74B0;
 }
 
+void __AXClQuit(void) {
+
+}
+
 void AXRegisterCallback(s32 arg0) {
     extern s32 __AXUserFrameCallback_803C74D0;
     __AXUserFrameCallback_803C74D0 = arg0;
