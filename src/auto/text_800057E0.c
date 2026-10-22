@@ -2356,6 +2356,21 @@ void AXInit(void) {
     __AXOutInit();
 }
 
+void AXQuit(void) {
+    M2C_UNK __AXAllocQuit();
+    M2C_UNK __AXVPBQuit();
+    M2C_UNK __AXSPBQuit();
+    M2C_UNK __AXAuxQuit();
+    M2C_UNK __AXClQuit();
+    M2C_UNK __AXOutQuit();
+    __AXAllocQuit();
+    __AXVPBQuit();
+    __AXSPBQuit();
+    __AXAuxQuit();
+    __AXClQuit();
+    __AXOutQuit();
+}
+
 #pragma push
 #pragma peephole off
 void *__AXGetStackHead(u32 priority) {
