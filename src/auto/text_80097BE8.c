@@ -87,6 +87,7 @@ s8 IsConnected__8LGWheelsFl(void *wheels, s32 chan);
 void PlayCarAirborne__8LGWheelsFl(void *wheels, s32 chan);
 void PlayFrontalCollisionForce__8LGWheelsFlUc(void *wheels, s32 chan, u8 force);
 void PlayDamperForce__8LGWheelsFlUcs(void *wheels, s32 chan, u8 coefficient, s16 offset);
+void GenerateNonLinValues__8LGWheelsFlUc(void *wheels, s32 chan, u8 coefficient);
 
 typedef struct RandomNumberGenerator {
     Vector vectors[0x300];
@@ -2342,6 +2343,22 @@ s32 MemCard_Read__FUllPv(u32 device, s32 size, void *data) {
     m_memcardstatus_803C7970[chan] = CARDRead(&memCardfileInfo[chan], buffer, memCardBlockSize[chan], 0);
     memcpy(data, buffer + 0x840, size);
     return size;
+}
+
+s8 Input_KeyPress(s32 chan, u8 key) {
+    s32 i;
+    if (key > 0x14) {
+        return 0;
+    }
+    if (chan == -1) {
+        for (i = 0; i < 4; i++) {
+            if ((g_VirtualPad[i].keyPress >> key) & 1) {
+                return 1;
+            }
+        }
+        return 0;
+    }
+    return (g_VirtualPad[chan].keyPress >> key) & 1;
 }
 
 u8 Input_KeyDown(s32 chan, u8 key) {
