@@ -4132,7 +4132,7 @@ s32 __ct__5ForceFv(s32 arg0) {
     return arg0;
 }
 
-void InitLGLibrary__8LGWheelsFv(void) {
+void InitLGLibrary__8LGWheelsFv(void *wheels) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
 }
