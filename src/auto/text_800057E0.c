@@ -1166,11 +1166,34 @@ void MatrixCache_Init(void) {
 
 }
 
+extern MatrixCacheData *g_pMatrixCacheData;
 void MatrixCache_Destroy(void) {
-    M2C_UNK Deallocate(s32);
-    extern s32 g_pMatrixCacheData;
     Deallocate(g_pMatrixCacheData);
-    g_pMatrixCacheData = 0;
+    g_pMatrixCacheData = NULL;
+}
+
+void MatrixCache_Free(u32 key) {
+    MatrixCacheData *data = g_pMatrixCacheData;
+    u32 i;
+
+    for (i = 0; i < 4; i++) {
+        if (data->large[i].key == key) {
+            data->large[i].mtx = NULL;
+            return;
+        }
+    }
+    for (i = 0; i < 0x80; i++) {
+        if (data->medium[i].key == key) {
+            data->medium[i].mtx = NULL;
+            return;
+        }
+    }
+    for (i = 0; i < 0x60; i++) {
+        if (data->small[i].key == key) {
+            data->small[i].mtx = NULL;
+            return;
+        }
+    }
 }
 
 void NavHolder_UseMainRouteOnly(void) {
@@ -2785,6 +2808,16 @@ error:
         card->eraseCallback = NULL;
         callback(chan, result);
     }
+}
+
+s32 __CARDIsPublic(void *arg0) {
+    if ((u8) M2C_FIELD(arg0, u8 *, 0) == 0xFF) {
+        return -4;
+    }
+    if (M2C_FIELD(arg0, u8 *, 0x34) & 4) {
+        return 0;
+    }
+    return -0xA;
 }
 
 s32 __CARDGetDirBlock(void *arg0) {
