@@ -1259,7 +1259,7 @@ s32 FloatsEqual(f32 a, f32 b, f32 epsilon) {
 
 void GenerateQuaternion(Vector *axis, Vector *q, f32 angle) {
     f32 s;
-    if (0.0f != angle) {
+    if (angle) {
         angle *= 0.5f;
         q->w = cos(angle);
         s = sin(angle);
