@@ -1124,6 +1124,11 @@ s32 Thing_GetSource(void *arg0) {
     return 0;
 }
 
+void Thing_InitAllSlavesNow(s32 arg0) {
+    M2C_UNK ThingManagerList_InitAllSlavesNow(s32);
+    ThingManagerList_InitAllSlavesNow(arg0 + 0x88);
+}
+
 s32 Thing_GetNearestNavPoint(void) {
     return -1;
 }
