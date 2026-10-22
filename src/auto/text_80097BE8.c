@@ -3268,11 +3268,11 @@ BOOL THPPlayerInit(void) {
     memset(&ActivePlayer, 0, sizeof(THPPlayer));
     LCEnable();
     OSInitMessageQueue(UsedTextureSetQueue_8036EC78, UsedTextureSetMessage_8036EC98, 3);
-    if (!THPInit()) {
-        return FALSE;
+    if (THPInit()) {
+        Initialized_803C7758 = TRUE;
+        return TRUE;
     }
-    Initialized_803C7758 = TRUE;
-    return TRUE;
+    return FALSE;
 }
 
 void THPPlayerQuit(void) {
