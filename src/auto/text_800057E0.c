@@ -694,6 +694,11 @@ s32 fn_80068C98(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+void StateMovie_SetMovieToPlay(s32 arg0) {
+    extern s32 g_moviePlaybackName;
+    g_moviePlaybackName = arg0;
+}
+
 s32 ViewManager_GetViewFormat(void) {
     extern s32 g_viewFormat;
     return g_viewFormat;
