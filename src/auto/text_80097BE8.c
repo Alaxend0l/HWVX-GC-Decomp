@@ -4481,6 +4481,23 @@ s32 __ct__5ForceFv(s32 arg0) {
     return arg0;
 }
 
+s32 Start__5ForceFll(Force *force, s32 chan, s32 effect) {
+    s32 LGStartForceEffect(u32 handle);
+    s32 result = 0;
+
+    if (force->effectIds[chan][effect] != 0xFFFFFFFF) {
+        result = LGStartForceEffect(force->effectIds[chan][effect]);
+        if (result < 0) {
+            OSReport("ERROR: Failed to start force effect on channel %d\n", chan);
+        } else {
+            force->playing[chan][effect] = 1;
+        }
+    } else {
+        OSReport("ERROR: Trying to start force effect on channel %d but we have an invalid effectid\n", chan);
+    }
+    return result;
+}
+
 s32 Destroy__5ForceFll(Force *force, s32 chan, s32 effect) {
     s32 LGDestroyForceEffect(u32 handle);
     s32 result = 0;
