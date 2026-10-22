@@ -742,6 +742,10 @@ void EventSeq_Release(void) {
     fn_800957D4();
 }
 
+s32 Item_PreMove(void) {
+    return 1;
+}
+
 void Mover_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
