@@ -9,7 +9,7 @@ typedef union PPCWGPipe {
     f32 f32;
 } PPCWGPipe;
 
-#define GXWGFifo (*(PPCWGPipe *)0xCC008000)
+#define GXWGFifo (*(volatile PPCWGPipe *)0xCC008000)
 
 typedef struct GXColor {
     u8 r;
@@ -4281,13 +4281,10 @@ void GXSetDispCopyGamma(s32 gamma) {
 
 void GXClearBoundingBox(void) {
     extern void *gx;
-    u32 reg;
-    reg = 0x550003FF;
     GXWGFifo.u8 = 0x61;
-    GXWGFifo.u32 = reg;
-    reg = 0x560003FF;
+    GXWGFifo.u32 = 0x550003FF;
     GXWGFifo.u8 = 0x61;
-    GXWGFifo.u32 = reg;
+    GXWGFifo.u32 = 0x560003FF;
     M2C_FIELD(gx, u16 *, 2) = 0;
 }
 
@@ -4309,8 +4306,7 @@ void GXInitLightColor(GXLightObjInt *lt_obj, GXColor color) {
 
 void GXSetNumChans(u8 nChans) {
     extern void *gx;
-    u32 *reg = &M2C_FIELD(gx, u32 *, 0x204);
-    *reg = (*reg & ~0x70) | (nChans << 4);
+    M2C_FIELD(gx, u32 *, 0x204) = (M2C_FIELD(gx, u32 *, 0x204) & ~0x70) | (nChans << 4);
     GXWGFifo.u8 = 0x10;
     GXWGFifo.u32 = 0x1009;
     GXWGFifo.u32 = nChans;
