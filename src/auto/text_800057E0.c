@@ -1809,8 +1809,8 @@ s32 EventSeq_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
-u8 IsLoadingThreadRunning(void) {
-    extern u8 g_bLoadingThreadRunning;
+s8 IsLoadingThreadRunning(void) {
+    extern s8 g_bLoadingThreadRunning;
     return g_bLoadingThreadRunning;
 }
 
@@ -2372,12 +2372,12 @@ void GamePlay_Interface(void *msg) {
         }
         break;
     case 1:
-        if (g_handleInterfaceGP.update != NULL) {
+        if (g_handleInterfaceGP.update) {
             g_handleInterfaceGP.update();
         }
         break;
-    default:
     case 2:
+    default:
         if (g_handleInterfaceGP.handleInput != NULL) {
             g_handleInterfaceGP.handleInput(msg);
         }
