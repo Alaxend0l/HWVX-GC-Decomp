@@ -739,6 +739,13 @@ void AI_Init(void) {
     fn_800957D4();
 }
 
+void AI_AsyncProcess_80006C80(void) {
+    M2C_UNK AI_Car_AsyncProcess();
+    M2C_UNK AI_Creature_AsyncProcess();
+    AI_Car_AsyncProcess();
+    AI_Creature_AsyncProcess();
+}
+
 void AI_AsyncHeartbeat(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0xC8) = 0x1F4;
 }
