@@ -755,6 +755,15 @@ f32 fn_8006FB1C(void) {
     return M2C_ERROR(/* unknown instruction: ps_merge10 $f1, $f1, $f0 */);
 }
 
+s32 fn_8007350C(s32 arg0) {
+    extern s32 autoInvalidation_803C6DA8;
+    s32 temp_r0;
+
+    temp_r0 = autoInvalidation_803C6DA8;
+    autoInvalidation_803C6DA8 = arg0;
+    return temp_r0;
+}
+
 s32 fn_8007385C(void) {
     return 0x80000000;
 }
