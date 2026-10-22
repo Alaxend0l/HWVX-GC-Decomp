@@ -4116,6 +4116,17 @@ void StopActive(void *arg0) {
     M2C_FIELD(arg0, s32 *, 4) = 0;
 }
 
+s32 AudioMIDI_Create(void) {
+    extern u8 g_song_80376990[0x24];
+    extern u8 g_chn_803769B4[0x200];
+    extern void *g_pHdr_803C78F4;
+
+    memset(g_song_80376990, 0, 0x24);
+    memset(g_chn_803769B4, 0, 0x200);
+    g_pHdr_803C78F4 = NULL;
+    return 1;
+}
+
 s32 AudioMIDI_Init(void) {
     M2C_UNK DestroyMIDI();
     extern u32 g_pHdr_803C78F4;
