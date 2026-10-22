@@ -13,6 +13,28 @@ typedef struct Vector {
 
 f32 PSVECMag(Vector *v);
 
+typedef struct CARDFileInfo {
+    s32 chan;
+    s32 fileNo;
+    s32 offset;
+    s32 length;
+    u16 iBlock;
+    u16 pad;
+} CARDFileInfo;
+
+s32 CARDMount(s32 chan, void *workArea, void *detachCallback);
+s32 CARDUnmount(s32 chan);
+s32 CARDDelete(s32 chan, const char *fileName);
+s32 CARDClose(CARDFileInfo *fileInfo);
+s32 CARDRead(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset);
+
+extern u8 CardWorkArea[0xA000];
+extern CARDFileInfo memCardfileInfo[2];
+extern s32 memCardBlockSize[2];
+extern s32 m_memcardstatus_803C7970[2];
+
+s32 MemCard_Write__FUllPv(u32 id, s32 size, void *data);
+
 typedef struct RandomNumberGenerator {
     Vector vectors[0x300];
     u32 unk3000;
