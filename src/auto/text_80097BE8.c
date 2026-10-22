@@ -889,6 +889,31 @@ s32 RandomNumberGenerator_GetRandomInteger(s32 min, s32 max) {
     return RandomAdd_s32(min, max - min);
 }
 
+void TimeHandler_SetSlowMotion(void) {
+    extern u8 g_iTimeShift;
+    g_iTimeShift = !g_iTimeShift;
+}
+
+void Timer_Heartbeat(void) {
+    extern s32 g_timer300;
+    extern s32 g_timer163;
+    extern s32 g_timer78;
+    extern s32 g_iDeltaTimeMS;
+
+    if (g_timer300 < 0) {
+        g_timer300 += 300;
+    }
+    g_timer300 -= g_iDeltaTimeMS;
+    if (g_timer163 < 0) {
+        g_timer163 += 163;
+    }
+    g_timer163 -= g_iDeltaTimeMS;
+    if (g_timer78 < 0) {
+        g_timer78 += 78;
+    }
+    g_timer78 -= g_iDeltaTimeMS;
+}
+
 f32 RandomNumberGenerator_GetRandomFloat(f32 min, f32 max) {
     RandomNumberGenerator *rng = &g_randomNumberGenerator;
     if (++rng->index >= 0x400) {
