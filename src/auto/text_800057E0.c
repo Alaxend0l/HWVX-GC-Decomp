@@ -777,6 +777,10 @@ s32 Thing_PreMove(void) {
     return 1;
 }
 
+s32 Thing_Move(void) {
+    return 1;
+}
+
 void Trail_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
