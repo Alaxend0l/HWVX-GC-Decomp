@@ -4242,12 +4242,14 @@ void SetOverallForceGain__8LGWheelsFll(void *wheels, s32 chan, s32 gain) {
     SetOverallForceGain__5ForceFRUll(lg->force, &lg->overallGainId[chan], gain);
 }
 
-s32 GetOverallForceGain__5ForceFRUl(void *force, u32 *effectId);
+#pragma push
+#pragma dont_inline on
 s32 GetOverallForceGain__8LGWheelsFl(void *wheels, s32 chan) {
     LGWheels *lg = wheels;
 
     return GetOverallForceGain__5ForceFRUl(lg->force, &lg->overallGainId[chan]);
 }
+#pragma pop
 
 void GenerateNonLinValues__8LGWheelsFlUc(void *wheels, s32 chan, u8 coefficient) {
     GenerateNonLinValues__6WheelsFlUc((Wheels *)((u8 *)wheels + 0x82C), chan, coefficient);
