@@ -924,6 +924,10 @@ void PlayerManager_Render_DEBUG(void) {
 
 }
 
+void AI_Creature_Heartbeat(void) {
+
+}
+
 s32 ViewManager_GetViewFormat(void) {
     extern s32 g_viewFormat;
     return g_viewFormat;
