@@ -1823,6 +1823,14 @@ s32 TRKInitializeMutex(void) {
     return 0;
 }
 
+s32 TRKTargetVersions(void *arg0) {
+    M2C_FIELD(arg0, s8 *, 0) = 0;
+    M2C_FIELD(arg0, s8 *, 1) = 0xA;
+    M2C_FIELD(arg0, s8 *, 2) = 1;
+    M2C_FIELD(arg0, s8 *, 3) = 0xA;
+    return 0;
+}
+
 s32 fn_80093530(void) {
     return 0;
 }
