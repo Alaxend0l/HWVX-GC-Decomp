@@ -54,7 +54,9 @@ typedef struct GfxState {
     GXColor unk74;
     u8 unk78[0x7C - 0x78];
     u32 unk7C;
-    u8 unk80[0xA0 - 0x80];
+    u8 unk80[0x8C - 0x80];
+    s16 debugFont;
+    u8 unk8E[0xA0 - 0x8E];
 } GfxState;
 
 static inline void SetVector(Vector *v, f32 x, f32 y, f32 z, f32 w) {
