@@ -21,6 +21,9 @@ typedef struct FragmentInfo {
 
 extern FragmentInfo fragmentinfo_8030DC08[1];
 
+extern s32 __OSCurrHeap;
+s32 OSFreeToHeap(s32 heap, s32 ptr);
+
 typedef struct GXColor {
     u8 r;
     u8 g;
