@@ -802,6 +802,10 @@ s32 TriggerGameRoundsComplete(void) {
     return 1;
 }
 
+s32 TriggerGameRoundXComplete(void) {
+    return 1;
+}
+
 void Trigger_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
