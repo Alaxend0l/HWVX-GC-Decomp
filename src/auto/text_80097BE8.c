@@ -910,9 +910,9 @@ double tan(double x) {
     }
 }
 
-void acos(void) {
-    M2C_UNK fn_800957D4();
-    fn_800957D4();
+double acos(double x) {
+    double fn_800957D4(double);
+    return fn_800957D4(x);
 }
 
 void atan2(void) {
