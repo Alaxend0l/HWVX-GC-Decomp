@@ -576,9 +576,44 @@ void Init_Math3D(void) {
     g_identity[31] = 1.0f;
 }
 
+void SinCosRad(f32 *s, f32 *c, f32 rad) {
+    f32 angle = rad * 57.29578f;
+    f32 r;
+
+    while (angle < 0.0f) {
+        angle += 360.0f;
+    }
+    while (angle >= 360.0f) {
+        angle -= 360.0f;
+    }
+    r = 0.017453292f * angle;
+    *s = sin(r);
+    *c = cos(r);
+}
+
 f32 ArcTan(void) {
     f64 atan2();
     return (f32) atan2();
+}
+
+f32 Sqrt(f32 x) {
+    if (x > 0.0) {
+        f64 guess = __frsqrte((f64)x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        return x * guess;
+    } else if (x == 0.0) {
+        return 0.0;
+    } else if (x) {
+        return __float_nan;
+    }
+    return __float_huge;
+}
+
+f32 _fabs(f32 x) {
+    return __fabs(x);
 }
 
 void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0) {
