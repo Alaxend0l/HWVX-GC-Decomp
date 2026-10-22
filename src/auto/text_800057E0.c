@@ -6186,6 +6186,11 @@ void TRKUARTInterruptHandler(void) {
 
 }
 
+void TRK_board_display(char *str) {
+    void OSReport(const char *, ...);
+    OSReport(str);
+}
+
 void UnreserveEXI2Port(void) {
     extern void (*gDBCommTable[7])(void);
     gDBCommTable[6]();
