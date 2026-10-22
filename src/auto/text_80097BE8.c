@@ -2872,6 +2872,12 @@ u8 PedalsConnected__8LGWheelsFl(void *wheels, s32 chan) {
     return PedalsConnected__6WheelsFl((Wheels *)((u8 *)wheels + 0x82C), chan);
 }
 
+void SetOverallForceGain__8LGWheelsFll(void *wheels, s32 chan, s32 gain) {
+    LGWheels *lg = wheels;
+
+    SetOverallForceGain__5ForceFRUll(lg->force, &lg->overallGainId[chan], gain);
+}
+
 void GenerateNonLinValues__8LGWheelsFlUc(void *wheels, s32 chan, u8 coefficient) {
     GenerateNonLinValues__6WheelsFlUc((Wheels *)((u8 *)wheels + 0x82C), chan, coefficient);
     memcpy((u8 *)wheels + 0x28, (u8 *)wheels + 0x854, 0x800);
