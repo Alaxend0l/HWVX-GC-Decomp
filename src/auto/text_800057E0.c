@@ -1022,6 +1022,10 @@ void AXRegisterCallback(s32 arg0) {
     __AXUserFrameCallback_803C74D0 = arg0;
 }
 
+void __AXSPBQuit(void) {
+
+}
+
 s32 __AXGetNumVoices(void) {
     extern s32 __AXNumVoices_803C7510;
     return __AXNumVoices_803C7510;
