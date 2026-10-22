@@ -701,6 +701,11 @@ loop_1:
     goto loop_1;
 }
 
+void PushFreeAudioBuffer(void *arg0) {
+    extern u8 FreeAudioBufferQueue_80371418[];
+    OSSendMessage(FreeAudioBufferQueue_80371418, arg0, 0);
+}
+
 void *PopDecodedAudioBuffer(s32 arg0) {
     extern u8 DecodedAudioBufferQueue_80371444[];
     void *msg;
