@@ -178,6 +178,10 @@ void Gfx_ClearScreen(void) {
     fn_800957D4();
 }
 
+void Gfx_LoadPalettes_RAM(void) {
+
+}
+
 s32 MovieManager_GetTextureIndex(void) {
     return 0;
 }
