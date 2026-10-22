@@ -481,6 +481,31 @@ s32 rand(void) {
     return (next_803C6EA0 >> 16) & 0x7FFF;
 }
 
+s32 raise(s32 sig) {
+    __signal_func_ptr temp_r31;
+
+    if (sig < 1 || sig > 6) {
+        return -1;
+    }
+
+    temp_r31 = signal_funcs_8030E050[sig - 1];
+
+    if (temp_r31 != (__signal_func_ptr)1) {
+        signal_funcs_8030E050[sig - 1] = (__signal_func_ptr)0;
+    }
+
+    if (temp_r31 == (__signal_func_ptr)1 || (temp_r31 == (__signal_func_ptr)0 && sig == 1)) {
+        return 0;
+    }
+
+    if (temp_r31 == (__signal_func_ptr)0) {
+        exit(0);
+    }
+
+    (*temp_r31)(sig);
+    return 0;
+}
+
 typedef void (*__signal_func_ptr)(s32);
 extern __signal_func_ptr signal_funcs_8030E050[6];
 void exit(s32 status);
