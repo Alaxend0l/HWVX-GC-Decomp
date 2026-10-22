@@ -4158,6 +4158,10 @@ void TRKConstructEvent(void *arg0, s8 arg1) {
     M2C_FIELD(arg0, s32 *, 8) = -1;
 }
 
+void TRKNubWelcome(void) {
+    TRK_board_display("MetroTRK for GAMECUBE v0.10");
+}
+
 s32 TRKSetBufferPosition(void *arg0, u32 arg1) {
     s32 var_r5;
 
