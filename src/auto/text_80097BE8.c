@@ -677,6 +677,11 @@ loop_1:
     goto loop_1;
 }
 
+void PushDecodedAudioBuffer(void *arg0) {
+    extern u8 DecodedAudioBufferQueue_80371444[];
+    OSSendMessage(DecodedAudioBufferQueue_80371444, arg0, 1);
+}
+
 void __THPAudioInitialize(void *arg0, u8 *arg1) {
     M2C_FIELD(arg0, u8 **, 0) = arg1;
     M2C_FIELD(arg0, s32 *, 4) = 2;
