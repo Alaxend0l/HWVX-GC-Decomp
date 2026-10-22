@@ -893,6 +893,14 @@ u8 CameraManager_GetActiveCameras(void) {
     return g_cameraManager[0x640];
 }
 
+void *CameraManager_GetCameraByIndex(u32 arg0) {
+    extern u8 g_cameraManager[];
+    if (arg0 >= g_cameraManager[0x640] || arg0 >= 4U) {
+        return NULL;
+    }
+    return g_cameraManager + arg0 * 0x190;
+}
+
 void CameraManager_Pause(s8 arg0) {
     extern s8 g_cameraManagerPause;
     g_cameraManagerPause = arg0;
