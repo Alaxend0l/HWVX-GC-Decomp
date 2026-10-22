@@ -4378,6 +4378,16 @@ void GXInvalidateVtxCache(void) {
     *(s8 *)0xCC008000 = 0x48;
 }
 
+void GXPokeAlphaRead(s32 mode) {
+    extern volatile u16 *__peReg;
+    u32 reg;
+
+    reg = 0;
+    reg = (reg & ~3) | mode;
+    reg = (reg & ~4) | 4;
+    __peReg[4] = reg;
+}
+
 void GXPokeAlphaUpdate(s32 arg0) {
     extern void *__peReg;
     M2C_FIELD(__peReg, u16 *, 2) = (u16) ((M2C_FIELD(__peReg, u16 *, 2) & 0xFFFFFFEF) | ((arg0 * 0x10) & 0xFF0));
@@ -4473,7 +4483,8 @@ void SISetCommand(s32 chan, u32 command) {
 }
 
 void SITransferCommands(void) {
-    __SIRegs[14] = 0x80000000;
+    u32 *regs = (u32 *)__SIRegs;
+    regs[14] = 0x80000000;
 }
 
 u32 SISetXY(u32 x, u32 y) {
@@ -4486,7 +4497,7 @@ u32 SISetXY(u32 x, u32 y) {
     Si_800D9E70.poll &= ~(0x03FF0000 | 0x0000FF00);
     Si_800D9E70.poll |= poll;
     poll = Si_800D9E70.poll;
-    ((volatile u32 *)0xCC006400)[12] = poll;
+    __SIRegs[12] = poll;
     OSRestoreInterrupts(enabled);
     return poll;
 }
