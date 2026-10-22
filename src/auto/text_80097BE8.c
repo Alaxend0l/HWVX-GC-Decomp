@@ -2565,6 +2565,25 @@ void Gfx_StateTextureBlendMode(s32 arg0) {
     }
 }
 
+void Render_StateAlphaBlendEnable(s32 enable) {
+    void GXSetBlendMode(s32 type, s32 src, s32 dst, s32 op);
+    void GXSetFog(s32 type, f32 startz, f32 endz, f32 nearz, f32 farz, GXColor color);
+    void Render_StateFogEnable(s32 enable);
+    extern s32 m_fogMode_803C76CC;
+    extern GXColor m_fogColor_803C76C8;
+    extern s32 m_srcBlend_803C76D8;
+    s32 fogMode = m_fogMode_803C76CC;
+
+    if (enable == 1) {
+        GXSetBlendMode(1, m_srcBlend_803C76D8, m_srcBlend_803C76D8, 5);
+        GXSetFog(0, 1.0f, 10.0f, 1.0f, 10.0f, m_fogColor_803C76C8);
+    } else {
+        GXSetBlendMode(0, 4, 5, 5);
+        m_fogMode_803C76CC = !m_fogMode_803C76CC;
+        Render_StateFogEnable(fogMode);
+    }
+}
+
 void Render_StateCullMode(s32 arg0) {
     M2C_UNK GXSetCullMode(M2C_UNK);
     extern s32 m_cullMode;
