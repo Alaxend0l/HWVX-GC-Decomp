@@ -2521,9 +2521,22 @@ void FileManager_Destroy(void) {
     fn_800957D4();
 }
 
+s32 FileManager_GetDeviceFreeSpace(s32 device, u32 *freeBytes, u32 *totalBytes) {
+    freeBytes[1] = 0x32000;
+    freeBytes[0] = 0;
+    totalBytes[1] = 0x32000;
+    totalBytes[0] = 0;
+    return 1;
+}
+
 s32 CARDFormat(s32 chan);
 s32 tolower(s32 c);
 s8 FileManager_IsDeviceFormatted(s32 device) {
+    return m_memcardstatus_803C7970[device - 11] == 0;
+}
+
+s8 FileManager_FormatDevice(s32 device) {
+    m_memcardstatus_803C7970[device - 11] = CARDFormat(device - 11);
     return m_memcardstatus_803C7970[device - 11] == 0;
 }
 
