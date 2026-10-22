@@ -2701,6 +2701,15 @@ void Input_Destroy(void) {
     PADControlMotor(3, 0);
 }
 
+void Input_SetForceFeedback(s32 chan, f32 strength, f32 duration) {
+    void PADControlMotor(s32 chan, u32 command);
+    if (g_VirtualPad[chan].forceFeedbackActive) {
+        rumbleStatus[chan].duration = 32.0f * duration * strength;
+        rumbleStatus[chan].active = 1;
+        PADControlMotor(chan, 1);
+    }
+}
+
 void Input_SetAlternativeForceFeedback(void) {
 
 }
