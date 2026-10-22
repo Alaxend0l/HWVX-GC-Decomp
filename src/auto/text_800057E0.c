@@ -92,6 +92,8 @@ typedef struct WorldData {
 
 extern WorldData g_worldData;
 
+s32 TRKTargetCPUMinorType(void);
+
 typedef s16 __OSInterrupt;
 typedef void (*__OSInterruptHandler)(__OSInterrupt interrupt, void *context);
 extern __OSInterruptHandler *InterruptHandlerTable_803C7240;
