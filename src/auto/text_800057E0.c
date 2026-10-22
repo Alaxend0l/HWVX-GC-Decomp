@@ -754,6 +754,11 @@ f32 Creature_GetMass(void *arg0) {
     return M2C_FIELD(arg0, f32 *, 0x1BC);
 }
 
+void DataPack_EnableLoadingSounds(s8 arg0) {
+    extern s8 g_bSoundLoadingEnabled;
+    g_bSoundLoadingEnabled = arg0;
+}
+
 void EventSeq_Release(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
