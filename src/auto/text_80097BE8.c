@@ -4481,6 +4481,18 @@ s32 __ct__5ForceFv(s32 arg0) {
     return arg0;
 }
 
+void InitVars__5ForceFv(Force *force) {
+    s32 i;
+    s32 j;
+
+    for (i = 0; i < 4; i++) {
+        for (j = 0; j < 8; j++) {
+            force->playing[i][j] = 0;
+            force->effectIds[i][j] = 0xFFFFFFFF;
+        }
+    }
+}
+
 s32 Start__5ForceFll(Force *force, s32 chan, s32 effect) {
     s32 LGStartForceEffect(u32 handle);
     s32 result = 0;
