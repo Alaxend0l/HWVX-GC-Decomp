@@ -2771,10 +2771,11 @@ s32 TriggerP2PActivated(u32 *data) {
     u32 n = data[0];
     u32 i;
     u32 j;
+    u32 k = n + 1;
 
     for (i = 0; i < n; i++) {
-        for (j = 0; j < data[n + 1]; j++) {
-            if (M2C_FIELD(data[n + 1 + j + 1], s32 *, 0x74) & 0x800) {
+        for (j = 0; j < data[k]; j++) {
+            if (M2C_FIELD((data + 1)[j + k], s32 *, 0x74) & 0x800) {
                 return 1;
             }
         }
