@@ -5858,6 +5858,19 @@ void JBCallback__Fll(s32 chan, s32 result) {
     Param_803C6A40[chan].result = result;
 }
 
+void GBACloseCallback__FlP11DVDFileInfo(s32 result, void *fileInfo);
+void GBAConnectivityInit__Fv(void) {
+    extern u8 GBAfileInfo_803C6C10[0x3C];
+    extern u8 ClientImage_80386A40[0x40000];
+    extern s32 gLinkFinished;
+    extern u32 ImageSize_803C79A0;
+
+    gLinkFinished = 0;
+    DVDOpen("client_thread.bin", GBAfileInfo_803C6C10);
+    ImageSize_803C79A0 = *(u32 *)(GBAfileInfo_803C6C10 + 0x34);
+    DVDReadAsyncPrio(GBAfileInfo_803C6C10, ClientImage_80386A40, (*(u32 *)(GBAfileInfo_803C6C10 + 0x34) + 0x1F) & ~0x1F, 0, GBACloseCallback__FlP11DVDFileInfo, 2);
+}
+
 void GBAConnectivityLoop__Fv(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
