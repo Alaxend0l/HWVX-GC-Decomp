@@ -2725,6 +2725,12 @@ s32 Input_GetContollersPluggedIn(void) {
     return 0xF;
 }
 
+void Wheel_PlaySpringForce(s32 chan, s8 offset, u8 saturation, s16 coefficient) {
+    if (IsOpened__8LGWheelsFl(wheels, chan)) {
+        PlaySpringForce__8LGWheelsFlScUcs(wheels, chan, offset, saturation, coefficient);
+    }
+}
+
 void Wheel_PlayDamperForce(s32 chan, u8 coefficient, s16 offset) {
     if (IsOpened__8LGWheelsFl(wheels, chan)) {
         PlayDamperForce__8LGWheelsFlUcs(wheels, chan, coefficient, offset);
