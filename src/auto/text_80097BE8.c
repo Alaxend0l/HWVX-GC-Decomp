@@ -55,6 +55,12 @@ typedef struct FragmentInfo {
 
 extern FragmentInfo fragmentinfo_8030DC08[1];
 
+typedef struct __OutStrCtrl {
+    char *CharStr;
+    u32 MaxCharCount;
+    u32 CharsWritten;
+} __OutStrCtrl;
+
 extern s32 __OSCurrHeap;
 s32 OSFreeToHeap(s32 heap, s32 ptr);
 
