@@ -780,6 +780,12 @@ void OConvexHullHolder_Release(void *arg0) {
     }
 }
 
+void OBoxHolder_Release(void *arg0) {
+    if (arg0 != NULL) {
+        M2C_FIELD(arg0, s8 *, 0x9D) = 0;
+    }
+}
+
 void CoronaHolder_Init(void) {
     extern s32 g_coronaRayTest;
     extern s32 g_totalCoronas;
