@@ -713,6 +713,13 @@ void HeapDump(void) {
 
 }
 
+void Create_Plane3(Vector *plane, Vector *normal, Vector *point) {
+    plane->x = normal->x;
+    plane->y = normal->y;
+    plane->z = normal->z;
+    plane->w = -1.0f * (normal->z * point->z + (normal->x * point->x + normal->y * point->y));
+}
+
 f32 Distance_Plane(void *arg0, void *arg1) {
     return M2C_FIELD(arg0, f32 *, 0xC) + ((M2C_FIELD(arg0, f32 *, 8) * M2C_FIELD(arg1, f32 *, 8)) + ((M2C_FIELD(arg0, f32 *, 0) * M2C_FIELD(arg1, f32 *, 0)) + (M2C_FIELD(arg0, f32 *, 4) * M2C_FIELD(arg1, f32 *, 4))));
 }
