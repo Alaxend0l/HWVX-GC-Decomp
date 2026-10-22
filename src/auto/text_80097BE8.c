@@ -13,6 +13,12 @@ typedef struct Vector {
 
 f32 PSVECMag(Vector *v);
 
+extern u8 g_trk_80375550[0x20][0x70];
+
+static inline u8 *GetTrack(u8 i) {
+    return g_trk_80375550[i];
+}
+
 typedef struct GXColor {
     u8 r;
     u8 g;
@@ -1045,13 +1051,14 @@ s32 AudioIT_Create(void) {
     extern u8 g_song_80375520[0x30];
     extern u8 g_trk_80375550[0x20][0x70];
     u8 i;
+    u8 id;
 
     memset(g_song_80375520, 0, 0x30);
     memset(g_trk_80375550, 0, 0xE00);
     i = 0;
     while (i < 0x20) {
-        g_trk_80375550[i][0x10] = i;
-        i++;
+        id = i++;
+        g_trk_80375550[id][0x10] = id;
     }
     g_pHdr_803C78E8 = NULL;
     return 1;
