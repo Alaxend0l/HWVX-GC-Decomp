@@ -138,6 +138,7 @@ extern PADStatus ngcPad[4];
 void PADRead(PADStatus *status);
 void PADClamp(PADStatus *status);
 void PlaySpringForce__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 saturation, s16 coefficient);
+s32 Gfx_CreateView(s32 arg0, s32 width, s32 height, s32 arg3, s32 arg4, s32 arg5);
 
 typedef struct RumbleStatus {
     s32 duration;
