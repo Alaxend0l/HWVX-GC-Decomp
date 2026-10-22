@@ -2633,6 +2633,27 @@ s32 Pod_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+s8 Player_IsHuman(void *player);
+s32 CarA_DoFreeStyleStunts(void *car) {
+    s32 threshold;
+    s8 *pad;
+
+    threshold = M2C_FIELD(M2C_FIELD(M2C_FIELD(car, void **, 0x3BC), void **, 0x8C), s32 *, 0x28);
+    if (M2C_FIELD(car, void **, 0x94) == NULL || !Player_IsHuman(M2C_FIELD(car, void **, 0x94))) {
+        return 0;
+    }
+    pad = M2C_FIELD(car, s8 **, 0x94);
+    if (*(u8 *)(pad + 0x10) == 0 && *(u8 *)(pad + 0x1A) == 0 &&
+        pad[0] > -0x40 && pad[0] < 0x40 && pad[1] > -0x40 && pad[1] < 0x40) {
+        return 0;
+    }
+    if (M2C_FIELD(car, s32 *, 0x460) > threshold && M2C_FIELD(car, s32 *, 0x404) > threshold &&
+        !(M2C_FIELD(car, s32 *, 0x48C) & 0x40002)) {
+        return 1;
+    }
+    return 0;
+}
+
 void GameRules_ForceRoundEnd(u32 arg0) {
     extern s8 g_bRoundEnd_803C71CC;
     extern u32 g_playerNumThatWon_803C71C8;
