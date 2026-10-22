@@ -654,6 +654,11 @@ void PushReadedBuffer(void *arg0) {
     OSSendMessage(ReadedBufferQueue_80370078, arg0, 1);
 }
 
+void PushFreeReadBuffer(void *arg0) {
+    extern u8 FreeReadBufferQueue_80370030[];
+    OSSendMessage(FreeReadBufferQueue_80370030, arg0, 1);
+}
+
 void AudioDecoder(void) {
     M2C_UNK AudioDecode();
     s32 PopReadedBuffer();
