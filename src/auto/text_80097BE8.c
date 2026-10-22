@@ -4479,6 +4479,7 @@ void DestroyMIDI(void) {
 
 #pragma push
 #pragma optimization_level 1
+#pragma dont_inline on
 void SetMIDITempo(u32 tempo) {
     extern void *g_pHdr_803C78F4;
     extern u8 g_song_80376990[0x24];
