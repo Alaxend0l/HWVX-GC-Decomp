@@ -2015,16 +2015,16 @@ typedef struct SramControlBlock {
 extern SramControlBlock Scb_802EEE20;
 
 static inline void *LockSram(u32 offset) {
-    SramControlBlock *scb = &Scb_802EEE20;
+    u8 *sram = Scb_802EEE20.sram + offset;
     s32 enabled;
     enabled = OSDisableInterrupts();
-    if (scb->locked != 0) {
+    if (Scb_802EEE20.locked != 0) {
         OSRestoreInterrupts(enabled);
         return NULL;
     }
-    scb->enabled = enabled;
-    scb->locked = 1;
-    return scb->sram + offset;
+    Scb_802EEE20.enabled = enabled;
+    Scb_802EEE20.locked = 1;
+    return sram;
 }
 
 void Callback(void) {
