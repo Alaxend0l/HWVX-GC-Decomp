@@ -13,12 +13,6 @@ typedef struct Vector {
 
 f32 PSVECMag(Vector *v);
 
-extern u8 g_trk_80375550[0x20][0x70];
-
-static inline u8 *GetTrack(u8 i) {
-    return g_trk_80375550[i];
-}
-
 typedef struct GXColor {
     u8 r;
     u8 g;
