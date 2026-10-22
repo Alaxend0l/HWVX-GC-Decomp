@@ -364,6 +364,16 @@ void Gfx_GetViewport(s32 *arg0, s32 *arg1, s32 *arg2, s32 *arg3) {
     *arg3 = 0x1E0;
 }
 
+void Render_UseLighting(u8 arg0) {
+    M2C_UNK GXSetChanCtrl(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK, s32, M2C_UNK, M2C_UNK);
+    extern s32 m_pointLightMask_803C771C;
+    if (arg0 != 0) {
+        GXSetChanCtrl(4, 1, 0, 0, m_pointLightMask_803C771C | 1, 2, 2);
+        return;
+    }
+    GXSetChanCtrl(4, 0, 1, 1, 0, 0, 2);
+}
+
 f32 Gfx_GetProjectionMatrix(void) {
     void *GetRenderWindow();
     return M2C_FIELD(GetRenderWindow(), f32 *, 0x270);
