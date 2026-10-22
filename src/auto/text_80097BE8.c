@@ -874,6 +874,12 @@ s32 Effect_StartEffect(void *arg0) {
     return 0;
 }
 
+s32 OnReset_800C4F14(void) {
+    extern s32 __GBAReset;
+    __GBAReset = 1;
+    return 1;
+}
+
 void FileManager_Destroy(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
