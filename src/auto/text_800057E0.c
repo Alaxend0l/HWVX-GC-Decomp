@@ -18,6 +18,12 @@ void WildCardRack_Add(void *rack, u8 *item, s16 count);
 void Item_Release(void *item);
 void MotionState_Draw(void *state);
 
+s32 AIGetStreamPlayState(void);
+s32 AIGetDSPSampleRate(void);
+s32 AIGetStreamSampleRate(void);
+u8 AIGetStreamVolLeft(void);
+u8 AIGetStreamVolRight(void);
+
 typedef struct FileTOCCacheEntry {
     u8 unk0[0x4B4];
     u8 valid;
@@ -1484,15 +1490,21 @@ s32 Creature_ProcessItemPickup(void *creature, void *item) {
     switch (*M2C_FIELD(item, u8 **, 0xC0)) {
     case 3:
         rack = ThingManagerList_GetByType((u8 *)creature + 0xE0, 8);
-        if (rack != NULL) {
-            WildCardRack_Add(rack, M2C_FIELD(item, u8 **, 0xC0), M2C_FIELD(item, s16 *, 0xCE));
-            Item_Release(item);
-            motion = M2C_FIELD(item, void **, 0xD0);
-            if (motion != NULL) {
-                M2C_FIELD(motion, s32 *, 0x18) = M2C_FIELD(motion, s32 *, 0x14);
-            }
-            return 1;
+        if (rack == NULL) {
+            break;
         }
+        WildCardRack_Add(rack, M2C_FIELD(item, u8 **, 0xC0), M2C_FIELD(item, s16 *, 0xCE));
+        Item_Release(item);
+        motion = M2C_FIELD(item, void **, 0xD0);
+        if (motion != NULL) {
+            M2C_FIELD(motion, s32 *, 0x18) = M2C_FIELD(motion, s32 *, 0x14);
+        }
+        return 1;
+    case 0:
+    case 1:
+    case 2:
+        break;
+    default:
         break;
     }
     return 0;
