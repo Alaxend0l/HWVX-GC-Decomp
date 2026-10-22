@@ -246,6 +246,10 @@ void Input_SetAlternativeForceFeedback(void) {
 
 }
 
+void Input_ForceFeedbackPause(void) {
+
+}
+
 void GBAConnectivityLoop__Fv(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
