@@ -627,7 +627,8 @@ f32 Sqrt(f32 x) {
 }
 
 f32 _fabs(f32 x) {
-    return __fabs(x);
+    f64 result = __fabs((f64)x);
+    return result;
 }
 
 void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0) {
