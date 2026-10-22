@@ -1167,6 +1167,11 @@ void __AXClQuit(void) {
 
 }
 
+void __AXDSPInitCallback(void) {
+    extern s32 __AXDSPInitFlag_803C74D4;
+    __AXDSPInitFlag_803C74D4 = 1;
+}
+
 void AXRegisterCallback(s32 arg0) {
     extern s32 __AXUserFrameCallback_803C74D0;
     __AXUserFrameCallback_803C74D0 = arg0;
