@@ -2252,8 +2252,38 @@ void LightHolder_SetTexture(u16 index) {
 
 void LightHolder_Delete(s32 index) {
     extern u8 g_pLight[16][0x80];
-    if (index >= 0) {
-        *(void **)(g_pLight[index] + 0x60) = NULL;
+    if (index < 0) {
+        return;
+    }
+    *(void **)(g_pLight[index] + 0x60) = NULL;
+}
+
+void LightHolder_SetRenderState(void *camera) {
+    extern u8 g_pLight[16][0x80];
+    u32 CompareDistances(void *arg0, void *arg1, f32 farg0);
+    void Gfx_AddPointLight(GXColor *color, void *position, f32 radius);
+    void Gfx_RemovePointLights(void);
+    u8 *light;
+    u32 i;
+    u8 *pos;
+    u8 *owner;
+    GXColor color;
+
+    Gfx_RemovePointLights();
+    for (i = 0; i < 16; i++) {
+        light = g_pLight[i];
+        owner = *(u8 **)(light + 0x60);
+        if (owner != NULL && owner[1] != 0) {
+            if (*(u8 **)(light + 0x64) != NULL) {
+                pos = *(u8 **)(light + 0x64) + 0x40;
+            } else {
+                pos = light;
+            }
+            if (CompareDistances(camera, pos, *(f32 *)(light + 0x40)) != 1) {
+                color = *(GXColor *)(light + 0x34);
+                Gfx_AddPointLight(&color, pos, *(f32 *)(light + 0x40));
+            }
+        }
     }
 }
 
