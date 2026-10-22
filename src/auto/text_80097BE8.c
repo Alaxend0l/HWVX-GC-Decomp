@@ -1947,6 +1947,14 @@ void Gfx_EndScene(void) {
     g_screenTextX = 0;
 }
 
+void Gfx_FlipBuffers(void) {
+    void Render_FlipBuffers(void);
+    extern u8 g_screenText[0xA00];
+
+    Render_FlipBuffers();
+    memset(g_screenText, 0, sizeof(g_screenText));
+}
+
 void RenderState_Init(void) {
     extern GfxState g_state;
     g_state.unk7C = 1;
