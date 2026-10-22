@@ -1823,6 +1823,12 @@ void __AXGetAuxAOutputDpl2R(u32 **out) {
     *out = &__AXBufferAuxA_802EFD40[__AXAuxDspReadPosition_803C7494][160];
 }
 
+void __AXGetAuxAOutputDpl2Ls(u32 **out) {
+    extern u32 __AXAuxDspReadPosition_803C7494;
+    extern u32 __AXBufferAuxA_802EFD40[3][480];
+    *out = &__AXBufferAuxA_802EFD40[__AXAuxDspReadPosition_803C7494][320];
+}
+
 void __AXGetAuxBOutput(u32 **out) {
     extern u32 __AXAuxDspReadPosition_803C7494;
     extern u32 __AXBufferAuxB_802F13C0[3][480];
