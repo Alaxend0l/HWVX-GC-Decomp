@@ -719,6 +719,10 @@ void Action_Create(void) {
     fn_800957D4();
 }
 
+void Action_Destroy(void) {
+
+}
+
 void AI_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
