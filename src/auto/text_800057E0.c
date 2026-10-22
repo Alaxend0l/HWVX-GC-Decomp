@@ -2102,6 +2102,12 @@ s32 DVDSetAutoInvalidation(s32 arg0) {
     return temp_r0;
 }
 
+void cbForCancelSync(void) {
+    M2C_UNK OSWakeupThread(M2C_UNK *);
+    extern M2C_UNK __DVDThreadQueue;
+    OSWakeupThread(&__DVDThreadQueue);
+}
+
 s32 DVDGetCurrentDiskID(void) {
     return 0x80000000;
 }
