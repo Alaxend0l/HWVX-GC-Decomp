@@ -727,6 +727,21 @@ void Mpeg_Create(void) {
     fn_800957D4();
 }
 
+void Mpeg_Init(void) {
+    void GXSetCopyClear(GXColor, u32);
+    extern s32 m_rendermode_803C7754;
+    extern s32 rmode;
+    GXColor black = { 0, 0, 0, 0xFF };
+
+    GXSetDispCopyGamma(0);
+    GXSetCopyFilter(0, 0, 0, 0);
+    GXSetCopyClear(black, 0xFFFFFF);
+    GXSetCullMode(0);
+    THPPlayerInit();
+    AudioInit();
+    m_rendermode_803C7754 = rmode;
+}
+
 u32 Mpeg_Heartbeat(void) {
     M2C_UNK GXInvalidateVtxCache();
     M2C_UNK THPPlayerClose();
@@ -780,6 +795,14 @@ void PrepareReady(void *arg0) {
 void PushUsedTextureSet(void *arg0) {
     extern u8 UsedTextureSetQueue_8036EC78[];
     OSSendMessage(UsedTextureSetQueue_8036EC78, arg0, 0);
+}
+
+void ReadThreadStart(void) {
+    extern s32 ReadThreadCreated_803C7768;
+    extern u8 ReadThread_8036ED20[];
+    if (ReadThreadCreated_803C7768) {
+        OSResumeThread(ReadThread_8036ED20);
+    }
 }
 
 void *PopReadedBuffer(void) {
