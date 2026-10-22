@@ -4676,6 +4676,22 @@ void usr_put_initialize(void) {
 
 }
 
+void TRKDoConnect(TRKBuffer *b) {
+    extern GeneralGameSettings IsTRKConnected_8030B440;
+    s32 err;
+    s32 ackTries;
+
+    IsTRKConnected_8030B440.difficulty = 1;
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, 0);
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+}
+
 void TRKDoUnsupported(TRKBuffer *b) {
     s32 err;
     s32 ackTries;
