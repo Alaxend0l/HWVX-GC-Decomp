@@ -1630,6 +1630,41 @@ void Effect_PolarToRect(s32 magnitude, u8 angle, s32 *out) {
     *out = -((value * 0x7F + round) / 0x3FC00);
 }
 
+s32 Effect_UpdateSpring(Effect *effect, EffectCondition *cond) {
+    s32 low = effect->deadbandLow;
+    s32 pos = effect->state->position;
+    s32 high;
+    s32 force;
+    s32 sat;
+
+    if (pos < low) {
+        sat = cond->negSaturation;
+        force = pos - low;
+        force = (force * cond->negCoefficient) / 0x20000;
+        if (-sat > force) {
+            force = -sat;
+        }
+        if (sat < force) {
+            force = sat;
+        }
+        return -force;
+    }
+    high = effect->deadbandHigh;
+    if (pos > high) {
+        sat = cond->posSaturation;
+        force = pos - high;
+        force = (force * cond->posCoefficient) / 0x20000;
+        if (-sat > force) {
+            force = -sat;
+        }
+        if (sat < force) {
+            force = sat;
+        }
+        return -force;
+    }
+    return 0;
+}
+
 s32 Effect_UpdateDamper(Effect *effect, EffectCondition *cond) {
     s32 vel = effect->state->velocity;
     s32 coef;
