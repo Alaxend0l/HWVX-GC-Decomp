@@ -107,7 +107,28 @@ typedef struct GeneralGameSettings {
 extern GeneralGameSettings g_generalGameSettings;
 
 typedef struct CodeVariables {
-    u8 unk0[0x118];
+    s32 playerVehicle[4];
+    s32 playerItem[4];
+    s32 controllerState[4];
+    s32 unk30;
+    s32 unk34[4];
+    s32 unk44[4];
+    s32 unk54[4];
+    u8 unk64[4];
+    u8 unk68[0xE4 - 0x68];
+    u8 unkE4;
+    s32 unkE8;
+    s32 unkEC;
+    s32 unkF0;
+    s32 unkF4;
+    s32 unkF8;
+    u8 unkFC;
+    s32 unk100;
+    s32 unk104;
+    u8 unk108;
+    u8 unk109[0x111 - 0x109];
+    u8 unk111;
+    u8 unk112[0x118 - 0x112];
     s32 fileIndex;
     u8 unk11C[3];
     s8 bOverwritingFile;
