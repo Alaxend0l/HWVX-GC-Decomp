@@ -839,6 +839,10 @@ s32 TriggerInterfaceEnd(void) {
     return 1;
 }
 
+s32 TriggerCreatureKilled(void) {
+    return 0;
+}
+
 void World_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
