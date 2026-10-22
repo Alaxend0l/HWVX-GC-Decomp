@@ -4427,6 +4427,17 @@ void FileManager_Destroy(void) {
     fn_800957D4();
 }
 
+void FileManager_Release(void) {
+    void File_Close(s32 handle);
+    s16 i;
+
+    for (i = 0; i < 4; i++) {
+        if (g_files[i].slot != -1) {
+            File_Close((g_files[i].id << 16) | (g_files[i].slot << 8) | i);
+        }
+    }
+}
+
 s32 stricmp(const char *s1, const char *s2) {
     char c1, c2;
 
