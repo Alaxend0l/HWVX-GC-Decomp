@@ -4196,3 +4196,8 @@ s32 TRKTargetContinue(void) {
     return 0;
 }
 
+u8 GetUseSerialIO(void) {
+    extern u8 bUseSerialIO_8030DC00[];
+    return bUseSerialIO_8030DC00[0];
+}
+
