@@ -375,7 +375,7 @@ typedef struct GfxState {
     s32 unk88;
     s16 debugFont;
     u8 lightChanged;
-    u8 unk8F;
+    s8 unk8F;
     u8 numPointLights;
     u8 unk91;
     u8 unk92;
