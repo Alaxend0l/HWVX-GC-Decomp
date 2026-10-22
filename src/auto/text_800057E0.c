@@ -728,6 +728,10 @@ void AI_Init(void) {
     fn_800957D4();
 }
 
+void AI_AsyncHeartbeat(void *arg0) {
+    M2C_FIELD(arg0, s32 *, 0xC8) = 0x1F4;
+}
+
 void SongManager_StopBKSong(void) {
 
 }
