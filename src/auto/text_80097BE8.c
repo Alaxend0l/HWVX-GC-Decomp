@@ -362,6 +362,14 @@ loop_1:
     goto loop_1;
 }
 
+void __THPAudioInitialize(void *arg0, u8 *arg1) {
+    M2C_FIELD(arg0, u8 **, 0) = arg1;
+    M2C_FIELD(arg0, s32 *, 4) = 2;
+    M2C_FIELD(arg0, s8 *, 8) = (s8) (((u8) *M2C_FIELD(arg0, u8 **, 0) >> 4U) & 7);
+    M2C_FIELD(arg0, s8 *, 9) = (s8) (*M2C_FIELD(arg0, u8 **, 0) & 0xF);
+    M2C_FIELD(arg0, u8 **, 0) = (u8 *) (M2C_FIELD(arg0, u8 **, 0) + 1);
+}
+
 void DestroyMIDI_(s32 arg0) {
     M2C_UNK FreeA_(s32);
     M2C_UNK OSFreeToHeap(s32, s32);
