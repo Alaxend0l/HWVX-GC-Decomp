@@ -1025,6 +1025,36 @@ void ProcessVoice(void) {
     fn_800957D4();
 }
 
+s32 SetVoicePitch(u32 id, s32 pitch) {
+    s8 SetVoiceRate_(void *voice);
+    extern u8 g_voice[0x20][0x70];
+    u8 *voice = g_voice[(u8)id];
+
+    if (*(u32 *)voice == id) {
+        *(s32 *)(voice + 0x34) = pitch;
+        if (SetVoiceRate_(voice)) {
+            return 1;
+        }
+        SetVoiceState_(voice, 3);
+    }
+    return 0;
+}
+
+s32 AudioIT_Create(void) {
+    extern void *g_pHdr_803C78E8;
+    extern u8 g_song_80375520[0x30];
+    extern u8 g_trk_80375550[0x20][0x70];
+    u8 i;
+
+    memset(g_song_80375520, 0, 0x30);
+    memset(g_trk_80375550, 0, 0xE00);
+    for (i = 0; i < 0x20; i++) {
+        g_trk_80375550[i][0x10] = i;
+    }
+    g_pHdr_803C78E8 = NULL;
+    return 1;
+}
+
 void AudioIT_Destroy(void) {
 
 }
