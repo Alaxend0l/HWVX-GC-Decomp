@@ -67,7 +67,6 @@ typedef struct THPPlayer {
 typedef struct THPReadBuffer {
     u8 *ptr;
     s32 frameNumber;
-    s32 isValid;
 } THPReadBuffer;
 
 typedef struct THPAudioBuffer {
@@ -3075,6 +3074,24 @@ void THPPlayerDrawDone(void) {
         }
     }
 }
+
+s32 CreateReadThread(s32 priority) {
+    s32 OSCreateThread(void *thread, void *func, void *param, void *stack, u32 stackSize, s32 priority, u16 attr);
+    void OSInitMessageQueue(void *queue, void *msgArray, s32 msgCount);
+    void *Reader(void *param);
+    extern s32 ReadThreadCreated_803C7768;
+    extern u8 ReadThread_8036ED20[];
+
+    if (OSCreateThread(ReadThread_8036ED20, Reader, NULL, ReadThread_8036ED20 + 0x310 + 0x1000, 0x1000, priority, 1) == 0) {
+        return 0;
+    }
+    OSInitMessageQueue(ReadThread_8036ED20 + 0x1310, ReadThread_8036ED20 + 0x1330, 10);
+    OSInitMessageQueue(ReadThread_8036ED20 + 0x1358, ReadThread_8036ED20 + 0x1378, 10);
+    OSInitMessageQueue(ReadThread_8036ED20 + 0x13A0, ReadThread_8036ED20 + 0x13C0, 10);
+    ReadThreadCreated_803C7768 = 1;
+    return 1;
+}
+
 #pragma pop
 void ReadThreadStart(void) {
     extern s32 ReadThreadCreated_803C7768;
@@ -3160,6 +3177,63 @@ loop_1:
     AudioDecode();
     PushReadedBuffer2(temp_r31);
     goto loop_1;
+}
+
+void AudioDecoderForOnMemory(void *bufAddr) {
+    void AudioDecode(THPReadBuffer *readBuffer);
+    s32 OSSuspendThread(void *thread);
+    extern u8 AudioDecodeThread_80370108[];
+    THPReadBuffer readBuffer;
+    s32 tmp;
+    s32 size;
+    s32 i;
+
+    i = 0;
+    size = ActivePlayer.initReadSize;
+    readBuffer.ptr = bufAddr;
+    while (1) {
+        readBuffer.frameNumber = i;
+        AudioDecode(&readBuffer);
+        if ((i + ActivePlayer.initReadFrame) % ActivePlayer.numFrames == ActivePlayer.numFrames - 1) {
+            if (ActivePlayer.playFlag & 1) {
+                size = *(s32 *)readBuffer.ptr;
+                readBuffer.ptr = ActivePlayer.movieData;
+            } else {
+                OSSuspendThread(AudioDecodeThread_80370108);
+            }
+        } else {
+            tmp = *(s32 *)readBuffer.ptr;
+            readBuffer.ptr += size;
+            size = tmp;
+        }
+        i++;
+    }
+}
+
+void AudioDecode(THPReadBuffer *readBuffer) {
+    THPAudioBuffer *PopFreeAudioBuffer(void);
+    void PushDecodedAudioBuffer(THPAudioBuffer *buffer);
+    u32 THPAudioDecode(s16 *buffer, u8 *audioFrame, s32 flag);
+    THPAudioBuffer *audioBuf;
+    u32 i;
+    u32 *compSizePtr;
+    u8 *ptr;
+
+    compSizePtr = (u32 *)(readBuffer->ptr + 8);
+    ptr = readBuffer->ptr + ActivePlayer.numComponents * 4 + 8;
+    audioBuf = PopFreeAudioBuffer();
+    for (i = 0; i < ActivePlayer.numComponents; i++) {
+        switch (ActivePlayer.frameComp[i]) {
+        case 1:
+            audioBuf->validSample = THPAudioDecode(audioBuf->buffer, ptr, 0);
+            audioBuf->curPtr = audioBuf->buffer;
+            audioBuf->frameNumber = readBuffer->frameNumber;
+            PushDecodedAudioBuffer(audioBuf);
+            break;
+        }
+        ptr += *compSizePtr;
+        compSizePtr++;
+    }
 }
 
 void *PopFreeAudioBuffer(void) {
