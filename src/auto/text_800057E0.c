@@ -281,6 +281,14 @@ typedef struct TRKBuffer {
 
 void TRKResetBuffer(TRKBuffer *b, u8 keepData);
 s32 TRKMessageSend(TRKBuffer *b);
+s32 TRKReadBuffer1_ui8(TRKBuffer *b, u8 *data);
+TRKBuffer *TRKGetBuffer(s32 idx);
+void TRKReleaseBuffer(s32 idx);
+s32 TRKTestForPacket(void);
+s32 TRKSetBufferPosition(void *arg0, u32 arg1);
+void SetTRKConnected(s32 connected);
+s32 GetTRKConnected(void);
+void OSReport(const char *, ...);
 
 static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
     if (b->position >= 0x880) {
