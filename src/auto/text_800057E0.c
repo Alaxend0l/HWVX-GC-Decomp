@@ -60,7 +60,7 @@ extern ProcessManager g_processManager;
 
 typedef struct Matrix4 {
     f32 m[4][4];
-} Matrix4;
+} Matrix4 __attribute__((aligned(8)));
 
 typedef s16 __OSInterrupt;
 typedef void (*__OSInterruptHandler)(__OSInterrupt interrupt, void *context);
