@@ -4137,6 +4137,15 @@ void InitLGLibrary__8LGWheelsFv(void *wheels) {
     fn_800957D4();
 }
 
+u8 SameConstantForceParams__8LGWheelsFlsUs(void *wheels, s32 chan, s16 offset, u16 coefficient) {
+    u8 *p = (u8 *)wheels + chan * 4;
+
+    if (*(s16 *)(p + 0x13DE) == offset && *(u16 *)(p + 0x13E0) == coefficient) {
+        return 1;
+    }
+    return 0;
+}
+
 u8 SameDamperForceParams__8LGWheelsFlUcs(void *wheels, s32 chan, u8 coefficient, s16 offset) {
     u8 *p = (u8 *)wheels + chan * 4;
 
