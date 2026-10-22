@@ -2397,6 +2397,12 @@ s32 AudioVoid(void) {
     return 0;
 }
 
+void SteeringResetCallback(s32 index, s32 result) {
+    if (result != 0) {
+        g_lgDevices_803771D8[index].unk4D = -1;
+    }
+}
+
 s32 LGStartForceEffect(u32 handle) {
     u32 index = handle >> 16;
     LGDevice *device;
