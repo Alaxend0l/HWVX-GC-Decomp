@@ -1473,6 +1473,14 @@ s32 File_Delete(s32 device, const char *fileName) {
     return 0;
 }
 
+void MemCard_Close__Fl(s32 device) {
+    s32 chan = device - 11;
+
+    m_memcardstatus_803C7970[chan] = CARDClose(&memCardfileInfo[chan]);
+    m_memcardstatus_803C7970[chan] = CARDUnmount(chan);
+    OSReport("CARDClose\n");
+}
+
 void Input_Destroy(void) {
     M2C_UNK PADControlMotor(M2C_UNK, M2C_UNK);
     PADControlMotor(0, 0);
