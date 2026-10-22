@@ -1592,6 +1592,13 @@ void ForceIPLReset(void) {
     m_reset = 1;
 }
 
+s32 Init_Display(void) {
+    extern s32 g_viewID;
+
+    g_viewID = Gfx_CreateView(0, 640, 480, 16, 0, 0);
+    return g_viewID >= 0;
+}
+
 void Main_Shutdown_NGC(void) {
 
 }
