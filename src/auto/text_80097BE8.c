@@ -1092,6 +1092,19 @@ void AudioMIDI_Destroy(void) {
 
 }
 
+void DestroyMIDI(void) {
+    void SetMIDIState(s32 state);
+    void DestroyMIDI_(void *hdr);
+    extern u8 g_musicTitle[0x20];
+    extern void *g_pHdr_803C78F4;
+    if (g_pHdr_803C78F4 != NULL) {
+        SetMIDIState(3);
+        DestroyMIDI_(g_pHdr_803C78F4);
+        g_pHdr_803C78F4 = NULL;
+        memset(g_musicTitle, 0, 0x20);
+    }
+}
+
 void SetMIDITrackPriority(void) {
 
 }
