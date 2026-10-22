@@ -793,6 +793,10 @@ s32 Thing_Move(void) {
     return 1;
 }
 
+s32 Thing_GetOrientedCollision(void) {
+    return 0;
+}
+
 void Trail_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
