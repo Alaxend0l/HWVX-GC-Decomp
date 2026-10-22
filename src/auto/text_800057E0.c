@@ -4035,10 +4035,6 @@ s32 __CARDIsOpened(void) {
     return 0;
 }
 
-s32 CARDReadAsync(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset, CARDCallback callback);
-s32 CARDCreateAsync(s32 chan, const char *fileName, u32 size, CARDFileInfo *fileInfo, CARDCallback callback);
-s32 CARDDeleteAsync(s32 chan, const char *fileName, CARDCallback callback);
-s32 __CARDFreeBlock(s32 chan, u16 nBlock, CARDCallback callback);
 s32 CARDCreate(s32 chan, const char *fileName, u32 size, CARDFileInfo *fileInfo) {
     s32 result = CARDCreateAsync(chan, fileName, size, fileInfo, __CARDSyncCallback);
     if (result < 0) {
