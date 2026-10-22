@@ -55,6 +55,15 @@ typedef struct FragmentInfo {
 
 extern FragmentInfo fragmentinfo_8030DC08[1];
 
+typedef struct SFX {
+    void *data;
+    u8 unk4[0x1C];
+} SFX;
+
+extern SFX g_sound_80373560[0xFE];
+extern u8 g_soundLst_80373460[0xFE];
+extern u32 g_freeSound_803C78D8;
+
 typedef struct __OutStrCtrl {
     char *CharStr;
     u32 MaxCharCount;
