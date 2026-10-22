@@ -1843,6 +1843,10 @@ void Wheel_PlayFrontalCollisionForce(s32 chan, u8 force) {
     }
 }
 
+s32 Wheel_IsConnected(s32 chan) {
+    return IsConnected__8LGWheelsFl(wheels, chan);
+}
+
 void Wheel_PlayAllAirborne(void) {
 
 }
