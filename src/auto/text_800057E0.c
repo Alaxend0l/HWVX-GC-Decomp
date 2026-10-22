@@ -41,6 +41,7 @@ void Item_Release(void *item);
 void MotionState_Draw(void *state);
 f32 MagnitudeVector(void *v);
 void *Allocate(u32, u32, const char *);
+s32 ViewManager_GetViewFormat(void);
 
 s32 AIGetStreamPlayState(void);
 s32 AIGetDSPSampleRate(void);
