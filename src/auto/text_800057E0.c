@@ -2026,6 +2026,20 @@ typedef struct SramControlBlock {
 
 extern SramControlBlock Scb_802EEE20;
 
+s32 UnlockSram(s32 commit, u32 offset);
+
+static inline void *LockSram(u32 offset) {
+    s32 enabled;
+    enabled = OSDisableInterrupts();
+    if (Scb_802EEE20.locked != 0) {
+        OSRestoreInterrupts(enabled);
+        return NULL;
+    }
+    Scb_802EEE20.enabled = enabled;
+    Scb_802EEE20.locked = 1;
+    return Scb_802EEE20.sram + offset;
+}
+
 s32 __OSSyncSram(void) {
     return Scb_802EEE20.sync;
 }
