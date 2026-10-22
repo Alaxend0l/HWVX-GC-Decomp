@@ -2277,6 +2277,21 @@ void MemCpyDone(void) {
     g_arqWait_803C78B0 = 0;
 }
 
+s32 Mul16_(u32 a, u32 b) {
+    return ((u64)a * b) >> 16;
+}
+
+void AudioVoice_Create(void) {
+    extern u8 g_voice[0x20][0x70];
+    extern s32 g_sfxvol_803C78D4;
+    extern s8 g_speakers;
+    void AudioVoice_Create_(void *voices);
+    memset(g_voice, 0, sizeof(g_voice));
+    g_sfxvol_803C78D4 = 0x7FFF;
+    g_speakers = 1;
+    AudioVoice_Create_(g_voice);
+}
+
 #pragma push
 #pragma optimization_level 1
 s32 AudioVoice_Init(void) {
