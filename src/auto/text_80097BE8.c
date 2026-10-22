@@ -2278,7 +2278,7 @@ void MemCpyDone(void) {
 }
 
 u32 MemCpyA_(u32 dst, u32 src, u32 len) {
-    extern s32 g_arqWait_803C78B0;
+    extern u32 g_arqWait_803C78B0;
     void ARQPostRequest(void *req, u32 owner, u32 type, u32 prio, u32 src, u32 dst, u32 len, void (*cb)(void));
     void PPCSync(void);
     void MemCpyDone(void);
@@ -2297,7 +2297,9 @@ u32 MemCpyA_(u32 dst, u32 src, u32 len) {
 }
 
 s32 Mul16_(u32 a, u32 b) {
-    return ((u64)a * b) >> 16;
+    u32 hi = __mulhwu(a, b);
+    u32 lo = a * b;
+    return (lo >> 16) | (hi << 16);
 }
 
 void AudioVoice_Create(void) {
