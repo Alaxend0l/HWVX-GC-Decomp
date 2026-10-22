@@ -750,6 +750,10 @@ void EventSeq_Release(void) {
     fn_800957D4();
 }
 
+void Grid_Release(void) {
+
+}
+
 s32 Item_PreMove(void) {
     return 1;
 }
