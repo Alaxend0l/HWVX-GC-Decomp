@@ -196,10 +196,12 @@ void DBOpen(void) {
 }
 
 f32 MagnitudeVector(Vector *v) {
-    if (v->x != 0.0f || v->y != 0.0f || v->z != 0.0f) {
+    f32 zero = 0.0f;
+
+    if (v->x != zero || v->y != zero || v->z != zero) {
         return PSVECMag(v);
     }
-    return 0.0f;
+    return zero;
 }
 
 void CopyVector(Vector *dst, Vector *src) {
@@ -211,45 +213,13 @@ void CopyMatrix(void *dst, void *src) {
 }
 
 void Init_Math3D(void) {
-    extern f32 g_identity[];
-    f32 *m = &g_identity[0];
-    f32 *a = &g_identity[16];
-    f32 *b = &g_identity[20];
-    f32 *c = &g_identity[24];
-    f32 *d = &g_identity[28];
+    extern Vector g_identity[];
 
-    m[0] = 1.0f;
-    m[1] = 0.0f;
-    m[2] = 0.0f;
-    m[3] = 0.0f;
-    m[4] = 0.0f;
-    m[5] = 1.0f;
-    m[6] = 0.0f;
-    m[7] = 0.0f;
-    m[8] = 0.0f;
-    m[9] = 0.0f;
-    m[10] = 1.0f;
-    m[11] = 0.0f;
-    m[12] = 0.0f;
-    m[13] = 0.0f;
-    m[14] = 0.0f;
-    m[15] = 1.0f;
-    a[0] = 0.0f;
-    a[1] = 0.0f;
-    a[2] = 0.0f;
-    a[3] = 1.0f;
-    b[0] = 1.0f;
-    b[1] = 0.0f;
-    b[2] = 0.0f;
-    b[3] = 1.0f;
-    c[0] = 0.0f;
-    c[1] = 1.0f;
-    c[2] = 0.0f;
-    c[3] = 1.0f;
-    d[0] = 0.0f;
-    d[1] = 0.0f;
-    d[2] = 1.0f;
-    d[3] = 1.0f;
+    IdentityMatrix(&g_identity[0]);
+    SetVector(&g_identity[4], 0.0f, 0.0f, 0.0f, 1.0f);
+    SetVector(&g_identity[5], 1.0f, 0.0f, 0.0f, 1.0f);
+    SetVector(&g_identity[6], 0.0f, 1.0f, 0.0f, 1.0f);
+    SetVector(&g_identity[7], 0.0f, 0.0f, 1.0f, 1.0f);
 }
 
 f32 ArcTan(void) {
