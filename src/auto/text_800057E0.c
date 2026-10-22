@@ -1002,6 +1002,11 @@ void VertexColorSeqManager_Create(void) {
 
 }
 
+void VolumeManager_Create(void) {
+    extern s32 g_VolumeHolder;
+    g_VolumeHolder = 0;
+}
+
 void World_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
