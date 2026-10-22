@@ -1859,12 +1859,12 @@ void GamePlay_Interface(void *arg0) {
     }
 }
 
+static const char s_InterfaceInputName[] = "InterfaceInput";
+
 void ArmageddonDropShipInfo(void *arg0) {
     M2C_FIELD(arg0, f32 *, 0x24) = InterfaceInputAnimator_GetLRCounter();
     M2C_FIELD(arg0, f32 *, 0x28) = InterfaceInputAnimator_GetUDCounter();
 }
-
-static const char s_InterfaceInputName[] = "InterfaceInput";
 
 void InterfaceInputAnimator_Release(void) {
     ProcessManager_Release((char *)s_InterfaceInputName);
