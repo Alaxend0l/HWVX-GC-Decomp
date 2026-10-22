@@ -1448,6 +1448,11 @@ void GSI_Init(void) {
     fn_800957D4();
 }
 
+void Motion_Release(s32 arg0) {
+    MotionState_Release(arg0 + 0xB0);
+    Thing_Release(arg0);
+}
+
 s32 Motion_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
