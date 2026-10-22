@@ -1899,6 +1899,15 @@ void GameSettings_SetDefaultControllerState(void) {
     }
 }
 
+void GameSettings_ResetPlayerVehicleItem(void) {
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        g_codeVariables.playerVehicle[i] = -1;
+        g_codeVariables.playerItem[i] = -1;
+    }
+}
+
 u8 GameSettings_GetGameType(void) {
     void *GameSettings_GetMCP();
     void *temp_r3;
