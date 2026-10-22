@@ -1987,6 +1987,18 @@ void FontManager_Destroy(void) {
 
 }
 
+void Gfx_FontManager_Init(void) {
+    extern FontManager g_fontManager;
+    extern GfxState g_state;
+    u32 i;
+
+    g_state.debugFont = 0;
+    g_fontManager.numFonts = 0;
+    for (i = 0; i < 16; i++) {
+        g_fontManager.fonts[i].inUse = 0;
+    }
+}
+
 void Gfx_SetDebugFont(s16 font) {
     extern GfxState g_state;
     g_state.debugFont = font;
@@ -2012,7 +2024,8 @@ void Gfx_FontManager_SetCharacterSpacing(s32 id, u8 c, f32 x, f32 y) {
     extern FontManager g_fontManager;
     extern u8 *m_texture;
     Font *font = &g_fontManager.fonts[id];
-    f32 spacing = x / *(u16 *)(m_texture + font->texture * 0x40 + 0x32);
+    Texture *tex = (Texture *)(m_texture + font->texture * 0x40);
+    f32 spacing = x / tex->width;
 
     font->chars[c].spacingX = x;
     font->chars[c].spacingY = y;
