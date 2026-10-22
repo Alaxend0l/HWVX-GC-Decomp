@@ -1748,6 +1748,18 @@ void DBInit(void) {
     DBVerbose = 1;
 }
 
+void __DBExceptionDestinationAux(void) {
+    void OSReport(const char *, ...);
+    void OSDumpContext(void *);
+    void PPCHalt(void);
+    u32 *contextAddr = (u32 *)0xC0;
+    void *context = (void *)(*contextAddr + 0x80000000);
+
+    OSReport("DBExceptionDestination\n");
+    OSDumpContext(context);
+    PPCHalt();
+}
+
 s32 fn_8006E668(void) {
     return *(s32 *)0x800000E4;
 }
@@ -2293,6 +2305,9 @@ s32 DSPCheckInit(void) {
 
 s32 DSPGetDMAStatus(void) {
     return *(u16 *)0xCC00500A & 0x200;
+}
+
+void __DSP_debug_printf(char *str, ...) {
 }
 
 void __CARDDefaultApiCallback(void) {
