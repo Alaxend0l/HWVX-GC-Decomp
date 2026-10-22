@@ -4774,21 +4774,24 @@ void ChannelOff(void *arg0) {
     }
 }
 
+#pragma push
+#pragma optimization_level 1
 void DestroyMIDIVoice(u8 *voice) {
     extern u8 g_chn_803769B4[0x10][0x20];
     u8 *v;
 
-    if (*(u8 **)g_chn_803769B4[voice[1]] == voice) {
+    v = *(u8 **)g_chn_803769B4[voice[1]];
+    if (v == voice) {
         *(u8 **)g_chn_803769B4[voice[1]] = *(u8 **)(voice + 4);
     } else {
-        for (v = *(u8 **)g_chn_803769B4[voice[1]]; *(u8 **)(v + 4) != voice; v = *(u8 **)(v + 4)) {
+        for (; *(u8 **)(v + 4) != voice; v = *(u8 **)(v + 4)) {
         }
         *(u8 **)(v + 4) = *(u8 **)(voice + 4);
     }
     voice[0x15] = 0;
     voice[1] = 0xFF;
 }
-
+#pragma pop
 u8 *DestroyVoice(u8 *voice) {
     extern u8 g_chn_803769B4[0x10][0x20];
     u8 *next = *(u8 **)(voice + 4);
