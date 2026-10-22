@@ -1730,18 +1730,30 @@ f32 Distance_Plane(void *arg0, void *arg1) {
     return M2C_FIELD(arg0, f32 *, 0xC) + ((M2C_FIELD(arg0, f32 *, 8) * M2C_FIELD(arg1, f32 *, 8)) + ((M2C_FIELD(arg0, f32 *, 0) * M2C_FIELD(arg1, f32 *, 0)) + (M2C_FIELD(arg0, f32 *, 4) * M2C_FIELD(arg1, f32 *, 4))));
 }
 
+void RandomNumberGenerator_GetRandomQuaternion(Vector *q) {
+    Vector axis;
+    f32 angle;
+
+    angle = RandomAdd(0.0f, 6.2831855f);
+    RandomNumberGenerator_GetRandomVector(&axis);
+    GenerateQuaternion(&axis, q, angle);
+}
+
 void RandomNumberGenerator_GetRandomSubMatrix(Vector *m) {
     RandomNumberGenerator *rng = &g_randomNumberGenerator;
+    u32 i = rng->unk3000 * 3;
 
-    m[0].x = rng->vectors[rng->unk3000 * 3].x;
-    m[0].y = rng->vectors[rng->unk3000 * 3].y;
-    m[0].z = rng->vectors[rng->unk3000 * 3].z;
-    m[1].x = rng->vectors[rng->unk3000 * 3 + 1].x;
-    m[1].y = rng->vectors[rng->unk3000 * 3 + 1].y;
-    m[1].z = rng->vectors[rng->unk3000 * 3 + 1].z;
-    m[2].x = rng->vectors[rng->unk3000 * 3 + 2].x;
-    m[2].y = rng->vectors[rng->unk3000 * 3 + 2].y;
-    m[2].z = rng->vectors[rng->unk3000 * 3 + 2].z;
+    m[0].x = rng->vectors[i].x;
+    m[0].y = rng->vectors[i].y;
+    m[0].z = rng->vectors[i].z;
+    i++;
+    m[1].x = rng->vectors[i].x;
+    m[1].y = rng->vectors[i].y;
+    m[1].z = rng->vectors[i].z;
+    i++;
+    m[2].x = rng->vectors[i].x;
+    m[2].y = rng->vectors[i].y;
+    m[2].z = rng->vectors[i].z;
     if (++rng->unk3000 >= 0x100) {
         rng->unk3000 = 0;
     }
@@ -1753,6 +1765,14 @@ void RandomNumberGenerator_GetRandomVector(Vector *out) {
 
 s32 RandomNumberGenerator_GetRandomInteger(s32 min, s32 max) {
     return RandomAdd_s32(min, max - min);
+}
+
+s32 RandomAdd_s32(s32 base, s32 range) {
+    RandomNumberGenerator *rng = &g_randomNumberGenerator;
+    if (++rng->index >= 0x400) {
+        rng->index = 0;
+    }
+    return rng->floats[rng->index] * range + base;
 }
 
 f32 RandomDirVar(f32 base, f32 var) {
