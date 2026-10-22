@@ -135,6 +135,11 @@ void Gfx_Add2DRectangleBack(void) {
     fn_800957D4();
 }
 
+void Gfx_CreateView(void) {
+    M2C_UNK fn_800957D4();
+    fn_800957D4();
+}
+
 s32 Gfx_GetRenderWindowIndex(void) {
     extern s32 g_currentWindow;
     return g_currentWindow;
