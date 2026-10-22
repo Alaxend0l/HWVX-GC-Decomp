@@ -180,9 +180,13 @@ extern __OSInterruptHandler *InterruptHandlerTable_803C7240;
 typedef void (*CARDCallback)(s32 chan, s32 result);
 
 typedef struct CARDControl {
-    u8 unk0[0xC];
+    s32 attached;
+    s32 result;
+    u8 unk8[0xC - 0x8];
     s32 sectorSize;
-    u8 unk10[0x80 - 0x10];
+    u8 unk10[0x24 - 0x10];
+    s32 mountStep;
+    u8 unk28[0x80 - 0x28];
     void *workArea;
     u8 unk84[0x88 - 0x84];
     void *buffer;
