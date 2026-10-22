@@ -70,6 +70,17 @@ typedef struct Wheels {
     s32 type[4];
 } Wheels;
 
+typedef struct VirtualPad {
+    u8 unk0[3];
+    u8 forceFeedbackActive;
+    u32 keyDown;
+    u32 keyPress;
+    u8 unkC[4];
+    u8 keyValue[0x20];
+} VirtualPad;
+
+extern VirtualPad g_VirtualPad[4];
+
 extern void *wheels;
 u8 IsOpened__8LGWheelsFl(void *wheels, s32 chan);
 s8 IsConnected__8LGWheelsFl(void *wheels, s32 chan);
