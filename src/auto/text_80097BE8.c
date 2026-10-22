@@ -2504,6 +2504,8 @@ void Gfx_ClearScreen(void) {
     fn_800957D4();
 }
 
+#pragma push
+#pragma dont_inline on
 s32 Gfx_TextureHandler_Create(void) {
     extern u8 *m_texture;
     extern u32 m_totalTextures;
@@ -2513,6 +2515,7 @@ s32 Gfx_TextureHandler_Create(void) {
     memset(m_texture, 0, m_totalTextures << 6);
     return 1;
 }
+#pragma pop
 
 void Gfx_TextureHandler_Destroy(void) {
     extern u8 *m_texture;
@@ -2534,15 +2537,21 @@ void Gfx_TextureHandler_Destroy(void) {
 u8 *LoadBTF_RAM(u8 *data, u32 id) {
     extern u8 *m_texture;
     void Render_CreateTextureSlot(u32 id, s32 arg1, void *texture);
-    u16 v = *(u16 *)(data + 4);
+    Texture *tex;
 
-    *(u16 *)(m_texture + id * 0x40 + 0x32) = ((v & 0xFF00) >> 8) | ((v << 8) & 0xFF00);
-    __sthbrx(*(u16 *)(data + 2), m_texture + id * 0x40 + 0x30, 0);
-    __sthbrx(*(u16 *)(data + 6), m_texture + id * 0x40 + 0x34, 0);
-    *(u32 *)(m_texture + id * 0x40 + 0x24) = *(u32 *)(data + 8);
-    *(u32 *)(m_texture + id * 0x40 + 0x28) = *(u32 *)(data + 0xC);
-    __sthbrx(*(u16 *)(data + 0), m_texture + id * 0x40 + 0x38, 0);
-    Render_CreateTextureSlot(id, 1, m_texture + id * 0x40);
+    tex = &((Texture *)m_texture)[id];
+    tex->width = ((*(u16 *)(data + 4) & 0xFF00) / 256) | (*(u16 *)(data + 4) * 256);
+    tex = &((Texture *)m_texture)[id];
+    __sthbrx(*(u16 *)(data + 2), &tex->unk30, 0);
+    tex = &((Texture *)m_texture)[id];
+    __sthbrx(*(u16 *)(data + 6), &tex->height, 0);
+    tex = &((Texture *)m_texture)[id];
+    tex->data = *(void **)(data + 8);
+    tex = &((Texture *)m_texture)[id];
+    tex->unk28 = *(u32 *)(data + 0xC);
+    tex = &((Texture *)m_texture)[id];
+    __sthbrx(*(u16 *)(data + 0), &tex->unk38, 0);
+    Render_CreateTextureSlot(id, 1, tex);
     return data + 0x10;
 }
 
