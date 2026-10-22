@@ -1259,7 +1259,7 @@ s32 FloatsEqual(f32 a, f32 b, f32 epsilon) {
 
 void GenerateQuaternion(Vector *axis, Vector *q, f32 angle) {
     f32 s;
-    if (angle != 0.0f) {
+    if (0.0f != angle) {
         angle *= 0.5f;
         q->w = cos(angle);
         s = sin(angle);
@@ -1269,6 +1269,22 @@ void GenerateQuaternion(Vector *axis, Vector *q, f32 angle) {
     } else {
         q->w = 1.0f;
         q->x = q->y = q->z = 0.0f;
+    }
+}
+
+void GenerateSpinAngleFromQuaternion(Vector *q, Vector *axis, f32 *angle) {
+    f32 s;
+    *angle = acos(q->w);
+    s = sin(*angle);
+    if (0.0f == s) {
+        axis->x = 1.0f;
+        axis->y = 0.0f;
+        axis->z = 0.0f;
+    } else {
+        axis->x = q->x / s;
+        axis->y = q->y / s;
+        axis->z = q->z / s;
+        *angle *= 2.0f;
     }
 }
 
