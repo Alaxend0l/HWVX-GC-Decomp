@@ -2521,6 +2521,12 @@ void FileManager_Destroy(void) {
     fn_800957D4();
 }
 
+s32 CARDFormat(s32 chan);
+s32 tolower(s32 c);
+s8 FileManager_IsDeviceFormatted(s32 device) {
+    return m_memcardstatus_803C7970[device - 11] == 0;
+}
+
 s32 File_Write(u32 id, s32 size, void *data) {
     s8 device = (u8)(id >> 16);
 
