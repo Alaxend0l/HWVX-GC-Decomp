@@ -863,6 +863,16 @@ s32 Destructible_GetSurfaceScript(void *arg0) {
     return M2C_FIELD(M2C_FIELD(M2C_FIELD(arg0, void **, 0xC0), void **, 0x10), s32 *, 0x30);
 }
 
+s32 Destructible_Invalidate(void *arg0, u32 arg1, u32 arg2) {
+    u32 temp_r0;
+
+    temp_r0 = M2C_FIELD(arg0, u32 *, 0xC0);
+    if ((temp_r0 >= arg1) && (temp_r0 < arg2)) {
+        return 1;
+    }
+    return 0;
+}
+
 void EventSeq_Release(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
