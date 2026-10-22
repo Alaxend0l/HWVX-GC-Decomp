@@ -1025,6 +1025,13 @@ void VertexColorSeqManager_Create(void) {
 
 }
 
+void VertexColorSeqManager_Destroy(void) {
+    extern s32 g_iTotalVertexColorSeq;
+    extern s32 g_iTotalVertexColorTiles;
+    g_iTotalVertexColorSeq = 0;
+    g_iTotalVertexColorTiles = 0;
+}
+
 void VolumeManager_Create(void) {
     extern s32 g_VolumeHolder;
     g_VolumeHolder = 0;
