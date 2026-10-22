@@ -1891,6 +1891,29 @@ s32 FileStreaming_GetNumAvailableQuadPacks(void) {
     return 0xB;
 }
 
+void GameSettings_ResetGame(void) {
+    s32 i;
+
+    g_codeVariables.unk30 = 1;
+    for (i = 0; i < 4; i++) {
+        g_codeVariables.unk34[i] = 0;
+        g_codeVariables.unk44[i] = 0;
+        g_codeVariables.unk54[i] = 0;
+        g_codeVariables.unk64[i] = 0;
+    }
+    g_codeVariables.unkE4 = 0;
+    g_codeVariables.unkE8 = 0;
+    g_codeVariables.unkEC = 300000;
+    g_codeVariables.unkF0 = 10;
+    g_codeVariables.unkF4 = 1000;
+    g_codeVariables.unkF8 = 3;
+    g_codeVariables.unkFC = 0;
+    g_codeVariables.unk100 = 3;
+    g_codeVariables.unk104 = 1;
+    g_codeVariables.unk108 = 1;
+    g_codeVariables.unk111 = 1;
+}
+
 void GameSettings_SetDefaultControllerState(void) {
     s32 i;
 
