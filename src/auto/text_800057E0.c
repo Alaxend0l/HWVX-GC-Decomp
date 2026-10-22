@@ -140,6 +140,8 @@ typedef struct SIPacketBss {
     u32 inputBufferVcount[4];
 } SIPacketBss;
 
+volatile u32 __SIRegs[64] : 0xCC006400;
+
 extern SIControl Si_800D9E70;
 extern SIPacketBss Packet_803096E0;
 extern s8 g_bValidFileName_803C6CA4[8];
@@ -4456,6 +4458,37 @@ void GXGetViewportv(void *arg0) {
 void GXClearGPMetric(void) {
     extern void *__cpReg;
     M2C_FIELD(__cpReg, u16 *, 4) = 4;
+}
+
+BOOL SIIsChanBusy(s32 chan) {
+    BOOL rc = TRUE;
+    if (Packet_803096E0.packet[chan].chan == -1 && Si_800D9E70.chan != chan) {
+        rc = FALSE;
+    }
+    return rc;
+}
+
+void SISetCommand(s32 chan, u32 command) {
+    ((volatile u32 *)0xCC006400)[3 * chan] = command;
+}
+
+void SITransferCommands(void) {
+    ((volatile u32 *)0xCC006400)[14] = 0x80000000;
+}
+
+u32 SISetXY(u32 x, u32 y) {
+    u32 poll;
+    BOOL enabled;
+
+    poll = x << 16;
+    poll |= y << 8;
+    enabled = OSDisableInterrupts();
+    Si_800D9E70.poll &= ~(0x03FF0000 | 0x0000FF00);
+    Si_800D9E70.poll |= poll;
+    poll = Si_800D9E70.poll;
+    ((volatile u32 *)0xCC006400)[12] = poll;
+    OSRestoreInterrupts(enabled);
+    return poll;
 }
 
 void DefaultCallback(void) {
