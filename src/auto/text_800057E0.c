@@ -745,6 +745,11 @@ void CameraManager_Destroy(void) {
     fn_800957D4();
 }
 
+void CameraManager_Pause(s8 arg0) {
+    extern s8 g_cameraManagerPause;
+    g_cameraManagerPause = arg0;
+}
+
 void EventSeq_Release(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
