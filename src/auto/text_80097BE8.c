@@ -3244,7 +3244,8 @@ s32 AudioMusic_Create(void) {
     g_musicTitle[0x1F] = 0;
     return 1;
 }
-#pragma pop
+#pragma push
+#pragma optimization_level 1
 s32 AudioMusic_Init(void) {
     s32 AudioVoid(void);
     extern u8 g_musicTitle[0x20];
@@ -3272,9 +3273,7 @@ s32 AudioMusic_Init(void) {
     memset(g_musicTitle, 0, 0x20);
     return 1;
 }
-
-#pragma push
-#pragma optimization_level 1
+#pragma pop
 void SetMusicVol(u32 vol) {
     extern u32 g_musicVol;
     extern u32 g_musicVol1_803C7934;
