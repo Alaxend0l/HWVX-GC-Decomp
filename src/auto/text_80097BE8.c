@@ -589,6 +589,10 @@ f32 Distance_Plane(void *arg0, void *arg1) {
     return M2C_FIELD(arg0, f32 *, 0xC) + ((M2C_FIELD(arg0, f32 *, 8) * M2C_FIELD(arg1, f32 *, 8)) + ((M2C_FIELD(arg0, f32 *, 0) * M2C_FIELD(arg1, f32 *, 0)) + (M2C_FIELD(arg0, f32 *, 4) * M2C_FIELD(arg1, f32 *, 4))));
 }
 
+s32 RandomNumberGenerator_GetRandomInteger(s32 min, s32 max) {
+    return RandomAdd_s32(min, max - min);
+}
+
 s8 Timer_Interrupt300(void) {
     extern u32 g_timer300;
     return (s8) ((u32) g_timer300 >> 0x1FU);
