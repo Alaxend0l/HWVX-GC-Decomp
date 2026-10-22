@@ -2026,8 +2026,6 @@ typedef struct SramControlBlock {
 
 extern SramControlBlock Scb_802EEE20;
 
-s32 UnlockSram(s32 commit, u32 offset);
-
 static inline void *LockSram(u32 offset) {
     s32 enabled;
     enabled = OSDisableInterrupts();
@@ -2042,6 +2040,20 @@ static inline void *LockSram(u32 offset) {
 
 s32 __OSSyncSram(void) {
     return Scb_802EEE20.sync;
+}
+
+u32 OSGetSoundMode(void) {
+    OSSram *sram;
+    u32 mode;
+
+    sram = (OSSram *)LockSram(0);
+    if (sram->flags & 4) {
+        mode = 1;
+    } else {
+        mode = 0;
+    }
+    UnlockSram(0, 0);
+    return mode;
 }
 
 void OSInitThreadQueue(void *arg0) {
