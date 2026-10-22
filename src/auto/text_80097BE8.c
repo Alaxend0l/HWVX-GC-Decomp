@@ -445,7 +445,7 @@ typedef struct Font {
     s8 inUse;
     u8 unk11;
     u16 refCount;
-    FontChar chars[256];
+    FontChar chars[128];
 } Font;
 
 typedef struct FontManager {
@@ -1984,6 +1984,32 @@ void FontManager_Destroy(void) {
 void Gfx_SetDebugFont(s16 font) {
     extern GfxState g_state;
     g_state.debugFont = font;
+}
+
+s32 Gfx_FontManager_ReleaseFont(s32 id) {
+    extern FontManager g_fontManager;
+    Font *font = &g_fontManager.fonts[id];
+
+    if (font->inUse == 0) {
+        return 1;
+    }
+    if (--font->refCount == 0) {
+        font->inUse = 0;
+        g_fontManager.numFonts--;
+        return 1;
+    }
+    return 0;
+}
+
+void Gfx_FontManager_SetCharacterSpacing(s32 id, u8 c, f32 x, f32 y) {
+    extern FontManager g_fontManager;
+    extern u8 *m_texture;
+    Font *font = &g_fontManager.fonts[id];
+    FontChar *ch = &font->chars[c];
+
+    ch->spacingX = x;
+    ch->spacingY = y;
+    ch->unk8 = ch->unk0 + x / *(u16 *)(m_texture + font->texture * 0x40 + 0x32);
 }
 
 void Gfx_AnimExtractKeyFrame(void) {
