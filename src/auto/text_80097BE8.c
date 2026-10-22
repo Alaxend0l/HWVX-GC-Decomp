@@ -4527,6 +4527,14 @@ s32 Destroy__5ForceFll(Force *force, s32 chan, s32 effect) {
     return result;
 }
 
+void SetOverallForceGain__5ForceFRUll(void *force, u32 *effectId, s32 gain) {
+    s32 LGSetDeviceProperty(u32 id, s32 prop, s32 value);
+
+    if (LGSetDeviceProperty(*effectId, 3, gain) < 0) {
+        OSReport("ERROR: Failed to set overall force gain.\n");
+    }
+}
+
 s32 GetOverallForceGain__5ForceFRUl(void *force, u32 *effectId) {
     s32 LGGetDeviceProperty(u32 id, s32 prop, void *value);
     s32 gain;
