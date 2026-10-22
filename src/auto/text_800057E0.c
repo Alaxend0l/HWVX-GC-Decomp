@@ -2971,6 +2971,9 @@ static inline s32 SharedSlaveHolder_Get(void *shared) {
 #pragma push
 #pragma use_lmw_stmw on
 void ThingManagerList_TriggerSlaves(void **list, u8 *trigger, Vector4 *a, Vector4 *b, Vector4 *c, u8 player) {
+    u8 *shared;
+    u8 id;
+    void *thing;
     void *slave = NULL;
 
     switch (trigger[0x10]) {
@@ -3083,39 +3086,21 @@ void ThingManagerList_TriggerSlaves(void **list, u8 *trigger, Vector4 *a, Vector
         }
         break;
     }
-    case 10: {
-        u8 *shared = M2C_FIELD(trigger, u8 **, 0x18);
-        s32 i;
+    case 10:
+        shared = M2C_FIELD(trigger, u8 **, 0x18);
         if (shared != NULL && *(u32 *)shared == 0) {
             *(u32 *)shared = 1;
-            for (i = 0; i < 64; i++) {
-                if (g_aSharedSlaveHolder[i].key == shared) {
-                    goto found;
-                }
-            }
-            for (i = 0; i < 64; i++) {
-                if (g_aSharedSlaveHolder[i].key == NULL) {
-                    g_aSharedSlaveHolder[i].key = shared;
-                    ThingManagerList_InitAllSlavesNow(&g_aSharedSlaveHolder[i].slaves, shared + 4, 0xFF);
-                    goto found;
-                }
-            }
-            i = 64;
-        found:
-            M2C_FIELD(M2C_FIELD(shared, void **, 8), u8 *, 0x1D) = i;
+            M2C_FIELD(M2C_FIELD(shared, void **, 8), u8 *, 0x1D) = SharedSlaveHolder_Get(shared);
         }
         break;
-    }
-    case 0x63: {
-        void *thing;
-        u8 id = M2C_FIELD(trigger, u16 *, 0x12);
+    case 0x63:
+        id = M2C_FIELD(trigger, u16 *, 0x12);
         for (thing = *list; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
             if (M2C_FIELD(thing, u8 *, 0x82) == id && M2C_FIELD(thing, u8 *, 0x83) == player) {
                 (*(void (**)(void *))(M2C_FIELD(thing, u8 **, 0x8C) + 4))(thing);
             }
         }
         break;
-    }
     }
 
     if (slave != NULL) {
