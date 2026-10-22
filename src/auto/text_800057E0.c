@@ -1326,6 +1326,15 @@ void StateTitleScreen_SetMenuFile(s32 arg0, s32 arg1) {
     g_mainMenuFileID = arg1;
 }
 
+void StateManager_Destroy(void) {
+    M2C_UNK Deallocate(void *);
+    extern void *g_pStateManager;
+    if (g_pStateManager != NULL) {
+        Deallocate(g_pStateManager);
+        g_pStateManager = NULL;
+    }
+}
+
 s32 StateManager_CurrState(void) {
     extern void *g_pStateManager;
     return M2C_FIELD(g_pStateManager, s32 *, 0xD0);
