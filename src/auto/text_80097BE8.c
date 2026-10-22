@@ -2576,6 +2576,13 @@ s32 MovieManager_GetTextureIndex(void) {
     return 0;
 }
 
+void Render_DestroyTextureSlot(u32 id) {
+    void GXInitTexObj(void *obj, void *image, u16 width, u16 height, s32 format, s32 wrapS, s32 wrapT, u8 mipmap);
+    extern u8 m_gxTexObjArray_80322F30[][0x20];
+
+    GXInitTexObj(m_gxTexObjArray_80322F30[id], NULL, 0x20, 0x20, 6, 0, 0, 0);
+}
+
 void Render_FlipBuffers(void) {
     void PrintDVDMessage(void);
     void GXSetColorUpdate(u8 enable);
