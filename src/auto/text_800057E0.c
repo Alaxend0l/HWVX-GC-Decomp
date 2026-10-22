@@ -940,6 +940,14 @@ u8 GameSettings_GetGameType(void) {
     return 0U;
 }
 
+void Geometry_Destroy(void) {
+    M2C_UNK Geometry_Init(M2C_UNK);
+    extern s32 g_pGeometryHandler;
+    Geometry_Init(1);
+    Deallocate(g_pGeometryHandler);
+    g_pGeometryHandler = 0;
+}
+
 void Grid_Release(void) {
 
 }
