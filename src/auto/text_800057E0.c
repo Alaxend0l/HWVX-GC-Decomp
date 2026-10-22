@@ -1582,6 +1582,27 @@ void AXRegisterCallback(s32 arg0) {
     __AXUserFrameCallback_803C74D0 = arg0;
 }
 
+void __AXSPBInit(void) {
+    extern s32 __AXSpbAAL_803C74EC;
+    extern s32 __AXSpbAAR_803C74F0;
+    extern s32 __AXSpbAAS_803C74F4;
+    extern s32 __AXSpbABL_803C74F8;
+    extern s32 __AXSpbABR_803C74FC;
+    extern s32 __AXSpbABS_803C7500;
+    extern s32 __AXSpbAL_803C74E0;
+    extern s32 __AXSpbAR_803C74E4;
+    extern s32 __AXSpbAS_803C74E8;
+    __AXSpbABS_803C7500 = 0;
+    __AXSpbABR_803C74FC = 0;
+    __AXSpbABL_803C74F8 = 0;
+    __AXSpbAAS_803C74F4 = 0;
+    __AXSpbAAR_803C74F0 = 0;
+    __AXSpbAAL_803C74EC = 0;
+    __AXSpbAS_803C74E8 = 0;
+    __AXSpbAR_803C74E4 = 0;
+    __AXSpbAL_803C74E0 = 0;
+}
+
 void __AXSPBQuit(void) {
 
 }
