@@ -2097,6 +2097,21 @@ void ViewManager_SetCamera(void *camera, s32 view) {
     m_Views_802CD5E0[view] = camera;
 }
 
+void ViewManager_PrepForRender(void) {
+    extern void *m_Views_802CD5E0[5];
+    extern u8 g_CurrentViews;
+    void Gfx_SetRenderWindow(u32 view);
+    void Camera_PrepareForRender(void *camera);
+    u32 i;
+
+    for (i = 0; i < 5; i++) {
+        if (g_CurrentViews & (1 << i)) {
+            Gfx_SetRenderWindow(i);
+            Camera_PrepareForRender(m_Views_802CD5E0[i]);
+        }
+    }
+}
+
 void ViewManager_EnableView(s32 arg0, s8 arg1) {
     extern u8 g_CurrentViews;
     s32 temp_r3;
