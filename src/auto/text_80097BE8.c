@@ -1600,7 +1600,7 @@ void InitVI(void) {
     }
 }
 
-void *Allocate(u32 size) {
+void *Allocate(u32 size, u32 flags, const char *name) {
     void *OSAllocFromHeap(s32 heap, u32 size);
     void Dprintf(const char *fmt, ...);
     void *ptr;
