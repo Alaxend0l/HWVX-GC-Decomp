@@ -79,6 +79,7 @@ s32 TRKTerminateSerialHandler(void);
 s32 TRKInitializeMutex(void *mutex);
 s32 TRKAcquireMutex(void *mutex);
 s32 TRKReleaseMutex(void *mutex);
+void *TRK_memcpy(void *dst, const void *src, u32 n);
 
 s32 UnlockSram(s32 commit, u32 offset);
 
