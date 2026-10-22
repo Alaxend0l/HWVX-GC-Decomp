@@ -3506,7 +3506,7 @@ void World_Unload(void) {
     void FileStreaming_ReleaseQuadPacks(void);
     void VolumeManager_Release(void);
     void Gfx_SetFog(GXColor *color, s32 type, f32 start, f32 end);
-    GXColor color = {0, 0, 0, 0};
+    u32 color[2];
 
     FileStreaming_ReleaseQuadPacks();
     FileStreaming_ReleaseAllDataPacks(4, 1);
@@ -3522,7 +3522,9 @@ void World_Unload(void) {
     g_worldData.unk8[1] = 0;
     g_worldData.unk8[2] = 0;
     VolumeManager_Release();
-    Gfx_SetFog(&color, 0, 1.0f, 0.0f);
+    color[1] = 0;
+    color[0] = 0;
+    Gfx_SetFog((GXColor *)color, 0, 1.0f, 0.0f);
 }
 
 u32 World_GetTotalTiles_Car(void) {
