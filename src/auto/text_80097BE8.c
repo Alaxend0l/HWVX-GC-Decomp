@@ -85,6 +85,22 @@ typedef struct THPPlayer {
     u8 unkBC[0x198 - 0xBC];
 } THPPlayer;
 
+typedef struct THPFileInfo {
+    u8 unk0[0x69C];
+    u8 *c;
+    u32 currByte;
+    u32 cnt;
+    u8 validHuffmanTabs;
+    u8 RST;
+    u16 nMCU;
+    u16 currMCU;
+} THPFileInfo;
+
+extern THPFileInfo *__THPInfo_803C7890;
+extern u8 *__THPHuffmanSizeTab_803C7828;
+extern u16 *__THPHuffmanCodeTab_803C782C;
+extern void *OldVIPostCallback_803C775C;
+
 typedef struct THPReadBuffer {
     u8 *ptr;
     s32 frameNumber;
