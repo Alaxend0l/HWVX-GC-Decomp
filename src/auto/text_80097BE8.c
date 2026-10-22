@@ -3255,6 +3255,27 @@ BOOL THPPlayerClose(void) {
     return FALSE;
 }
 
+u32 THPPlayerCalcNeedMemory(void) {
+    u32 size;
+
+    if (ActivePlayer.open) {
+        if (ActivePlayer.onMemory) {
+            size = (ActivePlayer.movieDataSize + 0x1F) & ~0x1F;
+        } else {
+            size = ((ActivePlayer.bufSize + 0x1F) & ~0x1F) * 10;
+        }
+        size += ((ActivePlayer.videoInfo.xSize * ActivePlayer.videoInfo.ySize + 0x1F) & ~0x1F) * 3;
+        size += ((ActivePlayer.videoInfo.xSize * ActivePlayer.videoInfo.ySize / 4 + 0x1F) & ~0x1F) * 3;
+        size += ((ActivePlayer.videoInfo.xSize * ActivePlayer.videoInfo.ySize / 4 + 0x1F) & ~0x1F) * 3;
+        if (ActivePlayer.audioExist) {
+            size += ((ActivePlayer.audioMaxSamples * 4 + 0x1F) & ~0x1F) * 3;
+        }
+        size += 0x1000;
+        return size;
+    }
+    return 0;
+}
+
 void PrepareReady(void *arg0) {
     extern u8 PrepareReadyQueue_8036ED00[];
     OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
