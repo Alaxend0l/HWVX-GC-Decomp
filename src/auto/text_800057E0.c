@@ -58,9 +58,10 @@ typedef struct ProcessManager {
 
 extern ProcessManager g_processManager;
 
-typedef struct Matrix4 {
+typedef union Matrix4 {
     f32 m[4][4];
-} Matrix4 __attribute__((aligned(8)));
+    f64 d[8];
+} Matrix4;
 
 typedef s16 __OSInterrupt;
 typedef void (*__OSInterruptHandler)(__OSInterrupt interrupt, void *context);
@@ -885,6 +886,13 @@ s8 ActionLoadInterfacePack(s32 *arg0) {
 
     temp_r3 = FileStreaming_LoadDataPack(arg0 + 1, 1, *arg0, 1);
     return (s8) ((u32) ((-1 - temp_r3) | (temp_r3 + 1)) >> 0x1FU);
+}
+
+void ActionUnloadInterfacePack(s32 *arg0) {
+    M2C_UNK FileStreaming_GetPackID(void *, M2C_UNK, s32);
+    M2C_UNK FileStreaming_ReleaseDataPack(M2C_UNK);
+    FileStreaming_GetPackID(arg0 + 4, 1, *arg0);
+    FileStreaming_ReleaseDataPack(1);
 }
 
 void AI_Reset(void *arg0) {
