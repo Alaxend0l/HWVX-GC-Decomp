@@ -1939,6 +1939,12 @@ void cbForStateCoverClosed(u32 intType) {
     }
 }
 
+void stateMotorStopped(void) {
+    M2C_UNK DVDLowWaitCoverClose(void (*)(u32));
+    void cbForStateMotorStopped(u32);
+    DVDLowWaitCoverClose(cbForStateMotorStopped);
+}
+
 void cbForReadAsync(s32 result, void *block) {
     if (M2C_FIELD(block, void (**)(s32, void *), 0x38)) {
         M2C_FIELD(block, void (**)(s32, void *), 0x38)(result, block);
