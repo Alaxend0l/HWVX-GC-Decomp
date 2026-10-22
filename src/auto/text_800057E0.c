@@ -694,6 +694,10 @@ s32 fn_80068C98(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+s32 ActionSpeakerChangeMode(void) {
+    return 1;
+}
+
 void Action_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
