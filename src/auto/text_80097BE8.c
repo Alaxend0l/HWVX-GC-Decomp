@@ -644,6 +644,11 @@ void THPPlayerQuit(void) {
     Initialized_803C7758 = 0;
 }
 
+void PrepareReady(void *arg0) {
+    extern u8 PrepareReadyQueue_8036ED00[];
+    OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
+}
+
 void AudioDecoder(void) {
     M2C_UNK AudioDecode();
     s32 PopReadedBuffer();
