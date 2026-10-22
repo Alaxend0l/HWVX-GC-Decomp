@@ -475,6 +475,12 @@ void srand(s32 arg0) {
     next_803C6EA0 = arg0;
 }
 
+s32 rand(void) {
+    extern s32 next_803C6EA0;
+    next_803C6EA0 = next_803C6EA0 * 1103515245 + 12345;
+    return (next_803C6EA0 >> 16) & 0x7FFF;
+}
+
 typedef void (*__signal_func_ptr)(s32);
 extern __signal_func_ptr signal_funcs_8030E050[6];
 void exit(s32 status);
