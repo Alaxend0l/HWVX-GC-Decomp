@@ -3050,9 +3050,51 @@ void Render_SetConstColor(s32 *arg0) {
     GXSetChanMatColor(4, &sp8);
 }
 
+void Set3DLineVtxDesc(void) {
+    M2C_UNK GXClearVtxDesc();
+    M2C_UNK GXSetVtxAttrFmt(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK);
+    M2C_UNK GXSetVtxDesc(M2C_UNK, M2C_UNK);
+    extern u32 m_VtxDescFlag;
+    if ((u32) m_VtxDescFlag != 4U) {
+        m_VtxDescFlag = 4U;
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 1);
+        GXSetVtxDesc(0xB, 1);
+        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+        GXSetVtxAttrFmt(0, 0xB, 0, 1, 0);
+    }
+}
+
 f32 Gfx_GetProjectionMatrix(void) {
     void *GetRenderWindow();
     return M2C_FIELD(GetRenderWindow(), f32 *, 0x270);
+}
+
+void Gfx_SetOrthoMatrix(void) {
+    void C_MTXOrtho(f32 m[4][4], f32 t, f32 b, f32 l, f32 r, f32 n, f32 f);
+    void GXSetProjection(f32 m[4][4], s32 type);
+    void PSMTXIdentity(f32 m[3][4]);
+    void GXLoadPosMtxImm(f32 m[3][4], u32 id);
+    void GXSetCurrentMtx(u32 id);
+    f32 proj[4][4];
+    f32 mtx[3][4];
+    f32 width;
+
+    width = *(u32 *)((u8 *)GetRenderWindow() + 0x280);
+    C_MTXOrtho(proj, 0.0f, *(u32 *)((u8 *)GetRenderWindow() + 0x284), 0.0f, width, 1.0f, -1.0f);
+    GXSetProjection(proj, 1);
+    PSMTXIdentity(mtx);
+    GXLoadPosMtxImm(mtx, 0);
+    GXSetCurrentMtx(0);
+}
+
+void Render_SaveCamera(void) {
+    extern Vector GXCameraSpace_8036CF80[7];
+
+    GXCameraSpace_8036CF80[3] = *(Vector *)((u8 *)GetRenderWindow() + 0x180);
+    GXCameraSpace_8036CF80[4] = *(Vector *)((u8 *)GetRenderWindow() + 0x190);
+    GXCameraSpace_8036CF80[5] = *(Vector *)((u8 *)GetRenderWindow() + 0x1A0);
+    GXCameraSpace_8036CF80[6] = *(Vector *)((u8 *)GetRenderWindow() + 0x1B0);
 }
 
 void MultiplyMatrix4x4(void *arg0, void *arg1, void *arg2) {
