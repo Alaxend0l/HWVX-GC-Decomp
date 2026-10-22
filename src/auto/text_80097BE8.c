@@ -678,6 +678,14 @@ void PushUsedTextureSet(void *arg0) {
     OSSendMessage(UsedTextureSetQueue_8036EC78, arg0, 0);
 }
 
+void *PopReadedBuffer(void) {
+    extern u8 ReadedBufferQueue_80370078[];
+    void *msg;
+
+    OSReceiveMessage(ReadedBufferQueue_80370078, &msg, 1);
+    return msg;
+}
+
 void PushReadedBuffer(void *arg0) {
     extern u8 ReadedBufferQueue_80370078[];
     OSSendMessage(ReadedBufferQueue_80370078, arg0, 1);
