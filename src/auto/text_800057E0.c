@@ -1319,6 +1319,19 @@ void AI_Creature_Heartbeat(void) {
 
 }
 
+void ViewManager_EnableView(s32 arg0, s8 arg1) {
+    extern u8 g_CurrentViews;
+    s32 temp_r3;
+    u8 var_r0;
+
+    temp_r3 = 1 << arg0;
+    var_r0 = g_CurrentViews & ~temp_r3;
+    if (arg1 != 0) {
+        var_r0 = g_CurrentViews | temp_r3;
+    }
+    g_CurrentViews = var_r0;
+}
+
 s32 ViewManager_GetViewFormat(void) {
     extern s32 g_viewFormat;
     return g_viewFormat;
