@@ -52,7 +52,7 @@ typedef struct GDL {
 typedef struct GfxState {
     u8 unk0[0x74];
     GXColor unk74;
-    u8 unk78[0x7C - 0x78];
+    GXColor ambientColor;
     u32 unk7C;
     u8 unk80[0x8C - 0x80];
     s16 debugFont;
