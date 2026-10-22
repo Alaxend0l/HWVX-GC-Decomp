@@ -2630,7 +2630,6 @@ void *__AXGetStackHead(u32 priority) {
     return *head;
 }
 #pragma pop
-#pragma peephole on
 void __AXServiceCallbackStack(void) {
     void *__AXPopCallbackStack();
     M2C_UNK __AXPushFreeStack(void *);
