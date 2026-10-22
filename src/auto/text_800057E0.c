@@ -883,7 +883,7 @@ s8 ActionLoadInterfacePack(s32 *arg0) {
     s32 FileStreaming_LoadDataPack(void *, M2C_UNK, s32, M2C_UNK);
     s32 temp_r3;
 
-    temp_r3 = FileStreaming_LoadDataPack(arg0 + 10, 1, *arg0, 1);
+    temp_r3 = FileStreaming_LoadDataPack(arg0 + 1, 1, *arg0, 1);
     return (s8) ((u32) ((-1 - temp_r3) | (temp_r3 + 1)) >> 0x1FU);
 }
 
@@ -1658,6 +1658,30 @@ s32 StateManager_QueueChange(s32 state) {
         }
     }
     return M2C_FIELD(g_pStateManager, s32 *, 0xD4);
+}
+
+s32 Thing_Init(void *thing, s32 arg1) {
+    extern Matrix4 g_identity;
+    M2C_FIELD(thing, f32 *, 0x8) = 0.0f;
+    M2C_FIELD(thing, f32 *, 0x4) = 0.0f;
+    M2C_FIELD(thing, f32 *, 0x0) = 0.0f;
+    M2C_FIELD(thing, f32 *, 0x68) = 0.0f;
+    M2C_FIELD(thing, f32 *, 0x64) = 0.0f;
+    M2C_FIELD(thing, f32 *, 0x60) = 0.0f;
+    M2C_FIELD(thing, f32 *, 0x70) = 0.0f;
+    M2C_FIELD(thing, f32 *, 0x5C) = 1.0f;
+    M2C_FIELD(thing, f32 *, 0x50) = 0.0f;
+    M2C_FIELD(thing, f32 *, 0x54) = 0.0f;
+    M2C_FIELD(thing, f32 *, 0x58) = 0.0f;
+    M2C_FIELD(thing, s32 *, 0x74) = 0;
+    M2C_FIELD(thing, s16 *, 0x80) = 0;
+    M2C_FIELD(thing, Matrix4 *, 0x10) = g_identity;
+    M2C_FIELD(thing, s32 *, 0x94) = 0;
+    M2C_FIELD(thing, u8 *, 0x82) = 0xFF;
+    M2C_FIELD(thing, u8 *, 0x83) = 0xFF;
+    M2C_FIELD(thing, s32 *, 0x88) = 0;
+    M2C_FIELD(thing, s32 *, 0x84) = 0;
+    return 1;
 }
 
 s32 Thing_PreMove(void) {
