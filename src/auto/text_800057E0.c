@@ -1458,6 +1458,12 @@ void CollisionTriCache_Clear(void) {
     }
 }
 
+void ShaderHolder_RemoveGX(s32 gx);
+void VertexColorSeqManager_RemoveVertices(void *vertices);
+void Control_ClearControl(void *control) {
+    memset(control, 0, 0x20);
+}
+
 void CoronaHolder_Init(void) {
     extern s32 g_coronaRayTest;
     extern s32 g_totalCoronas;
