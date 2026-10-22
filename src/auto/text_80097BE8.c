@@ -1091,6 +1091,14 @@ void Gfx_SetBaseColor(GXColor *color) {
     g_state.unk74 = *color;
 }
 
+void Gfx_SetRenderWindow(s32 window) {
+    extern s32 g_currentWindow;
+    extern void *g_pWindow;
+    extern u8 g_window[][0x2D0];
+    g_currentWindow = window;
+    g_pWindow = g_window[window];
+}
+
 s32 Gfx_GetRenderWindowIndex(void) {
     extern s32 g_currentWindow;
     return g_currentWindow;
