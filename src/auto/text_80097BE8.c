@@ -106,20 +106,8 @@ void *what__Q23std13bad_exceptionCFv(void) {
 }
 
 void __sys_free(void *ptr) {
-    void *arenaLo;
-    void *arenaHi;
-
     if (__OSCurrHeap == -1) {
-        OSReport("GCN_Mem_Alloc.c : InitDefaultHeap. No Heap Available\n");
-        OSReport("Metrowerks CW runtime library initializing default heap\n");
-        arenaLo = OSGetArenaLo();
-        arenaHi = OSGetArenaHi();
-        arenaLo = OSInitAlloc(arenaLo, arenaHi, 1);
-        OSSetArenaLo(arenaLo);
-        arenaLo = (void *)(((u32)arenaLo + 0x1F) & ~0x1F);
-        arenaHi = (void *)((u32)arenaHi & ~0x1F);
-        OSSetCurrentHeap(OSCreateHeap(arenaLo, arenaHi));
-        OSSetArenaLo(arenaHi);
+        InitDefaultHeap();
     }
     OSFreeToHeap(__OSCurrHeap, (s32)ptr);
 }
