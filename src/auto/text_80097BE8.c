@@ -56,6 +56,20 @@ extern s32 __float_huge[];
 f64 sin(f64 x);
 f64 cos(f64 x);
 
+typedef struct WheelStatus {
+    u16 buttons;
+    u8 flags;
+    u8 unk3[6];
+    s8 err;
+} WheelStatus;
+
+typedef struct Wheels {
+    WheelStatus status[4];
+    s16 nonLinValues[4][256];
+    u8 unk828[0x10];
+    s32 type[4];
+} Wheels;
+
 extern void *wheels;
 u8 IsOpened__8LGWheelsFl(void *wheels, s32 chan);
 s8 IsConnected__8LGWheelsFl(void *wheels, s32 chan);
