@@ -709,6 +709,34 @@ void abort(void) {
     _ExitProcess();
 }
 
+void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
+    SubBlock *next_sub_block;
+    u32 this_cur_size;
+
+    next_sub_block = (SubBlock *)((u8 *)ths + (ths->size_ & 0xFFFFFFF8));
+    if (!(next_sub_block->size_ & 2)) {
+        this_cur_size = (ths->size_ & 0xFFFFFFF8) + (next_sub_block->size_ & 0xFFFFFFF8);
+        ths->size_ &= ~0xFFFFFFF8;
+        ths->size_ |= this_cur_size & 0xFFFFFFF8;
+        if (!(ths->size_ & 2)) {
+            *(u32 *)((u8 *)ths + this_cur_size - sizeof(u32)) = this_cur_size;
+        }
+        if (!(ths->size_ & 2)) {
+            ((SubBlock *)((u8 *)ths + this_cur_size))->size_ &= ~4;
+        } else {
+            ((SubBlock *)((u8 *)ths + this_cur_size))->size_ |= 4;
+        }
+        if (*start == next_sub_block) {
+            *start = (*start)->next_;
+        }
+        if (*start == next_sub_block) {
+            *start = NULL;
+        }
+        next_sub_block->next_->prev_ = next_sub_block->prev_;
+        next_sub_block->prev_->next_ = next_sub_block->next_;
+    }
+}
+
 s32 __flush_all(void) {
     extern FILE __files[];
     s32 retval = 0;
@@ -3161,6 +3189,23 @@ void SetTriVtxDescIdx(void) {
         GXSetVtxDesc(0xD, 3);
         GXSetVtxAttrFmt(0, 9, 1, 4, 0);
         GXSetVtxAttrFmt(0, 0xB, 0, 1, 0);
+        GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    }
+}
+
+void SetTriVtxDescIdxAlpha(void) {
+    M2C_UNK GXClearVtxDesc();
+    M2C_UNK GXSetVtxAttrFmt(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK);
+    M2C_UNK GXSetVtxDesc(M2C_UNK, M2C_UNK);
+    extern u32 m_VtxDescFlag;
+    if ((u32) m_VtxDescFlag != 0x400U) {
+        m_VtxDescFlag = 0x400U;
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 3);
+        GXSetVtxDesc(0xB, 3);
+        GXSetVtxDesc(0xD, 3);
+        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+        GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
         GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
     }
 }
