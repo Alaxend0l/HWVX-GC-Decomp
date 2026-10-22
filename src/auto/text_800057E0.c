@@ -1059,6 +1059,10 @@ s32 __DBIsExceptionMarked(u8 arg0) {
     return M2C_FIELD(__DBInterface, s32 *, 4) & (1 << arg0);
 }
 
+s32 DVDGetCurrentDiskID(void) {
+    return 0x80000000;
+}
+
 s32 ARGetSize(void) {
     extern s32 __AR_Size_803C7424;
     return __AR_Size_803C7424;
