@@ -18,6 +18,28 @@ void fseek(void) {
     fn_8009A088();
 }
 
+s32 ftell(void *arg0) {
+    extern s32 errno;
+    s32 temp_r3;
+    u32 temp_r0;
+    u32 temp_r5;
+
+    temp_r0 = ((u16) M2C_FIELD(arg0, u16 *, 4) >> 6U) & 7;
+    if (((temp_r0 != 1) && (temp_r0 != 2)) || ((u8) M2C_FIELD(arg0, u8 *, 0xA) != 0)) {
+        errno = 0x28;
+        return -1;
+    }
+    temp_r5 = ((u8) M2C_FIELD(arg0, u8 *, 8) >> 5U) & 7;
+    if (temp_r5 == 0) {
+        return M2C_FIELD(arg0, s32 *, 0x18);
+    }
+    temp_r3 = M2C_FIELD(arg0, s32 *, 0x34) + (M2C_FIELD(arg0, s32 *, 0x24) - M2C_FIELD(arg0, s32 *, 0x1C));
+    if (temp_r5 >= 3U) {
+        return temp_r3 - (temp_r5 - 2);
+    }
+    return temp_r3;
+}
+
 void srand(s32 arg0) {
     extern s32 next_803C6EA0;
     next_803C6EA0 = arg0;
