@@ -3057,13 +3057,15 @@ void SetVoicePriority_(void *arg0) {
     OSRestoreInterrupts(temp_r31);
 }
 
+#pragma push
+#pragma optimization_level 1
 void DestroyVoice_(void *arg0) {
     extern void (*DestroySongVoice)(void *);
     extern void *g_pFree_803C78A4;
     s32 OSDisableInterrupts();
     void OSRestoreInterrupts(s32);
-    s32 level;
     void *voice;
+    s32 level;
 
     level = OSDisableInterrupts();
     voice = M2C_FIELD(arg0, void **, 0x14);
@@ -3077,7 +3079,7 @@ void DestroyVoice_(void *arg0) {
     g_pFree_803C78A4 = voice;
     OSRestoreInterrupts(level);
 }
-
+#pragma pop
 s8 SetVoiceRate_(void *voice) {
     u32 rate = (1.0f / 48000.0f) * ((f32)M2C_FIELD(voice, u32 *, 0x30) * (f32)M2C_FIELD(voice, u32 *, 0x34));
 
