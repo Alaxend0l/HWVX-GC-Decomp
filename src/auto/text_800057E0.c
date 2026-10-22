@@ -2092,6 +2092,11 @@ void AI_Creature_Heartbeat(void) {
 
 }
 
+void ViewManager_SetCamera(void *camera, s32 view) {
+    extern void *m_Views_802CD5E0[5];
+    m_Views_802CD5E0[view] = camera;
+}
+
 void ViewManager_EnableView(s32 arg0, s8 arg1) {
     extern u8 g_CurrentViews;
     s32 temp_r3;
