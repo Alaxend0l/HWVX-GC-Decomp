@@ -2389,6 +2389,26 @@ void Input_SetForceFeedbackActive(s32 chan, u8 active) {
     g_VirtualPad[chan].forceFeedbackActive = active;
 }
 
+void SISetSamplingRate(u32 msec);
+s32 Input_Create(void) {
+    void *w;
+    InitTables__Fv();
+    Input_Init();
+    SISetSamplingRate(1);
+    w = __nw__FUl(0x1430);
+    if (w != NULL) {
+        w = __ct__8LGWheelsFv(w);
+    }
+    wheels = w;
+    GenerateNonLinValues__8LGWheelsFlUc(wheels, 0, 0x50);
+    GenerateNonLinValues__8LGWheelsFlUc(wheels, 1, 0x64);
+    GenerateNonLinValues__8LGWheelsFlUc(wheels, 2, 0x64);
+    GenerateNonLinValues__8LGWheelsFlUc(wheels, 3, 0x64);
+    PADSetSamplingCallback(PadSamplingCallback__Fv);
+    GBAConnectivityInit__Fv();
+    return 1;
+}
+
 void Input_Destroy(void) {
     M2C_UNK PADControlMotor(M2C_UNK, M2C_UNK);
     PADControlMotor(0, 0);
