@@ -4481,6 +4481,23 @@ void SetMIDITrackPriority(void) {
 
 }
 
+void SetMIDITrackOn(u32 mask, s8 deferred) {
+    extern u32 g_trkOn;
+    extern u32 g_trkOff;
+    extern u8 g_chn_803769B4[0x200];
+    u8 *chn;
+
+    if (deferred) {
+        g_trkOff &= ~mask;
+        g_trkOn |= mask;
+        return;
+    }
+    for (chn = g_chn_803769B4; mask != 0; chn += 0x20) {
+        chn[4] |= mask & 1;
+        mask >>= 1;
+    }
+}
+
 void SetMIDITrackVol(void) {
 
 }
