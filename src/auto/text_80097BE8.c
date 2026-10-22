@@ -1844,14 +1844,14 @@ void InitLGLibrary__8LGWheelsFv(void) {
     fn_800957D4();
 }
 
-void IsOpened__8LGWheelsFl(s32 arg0) {
-    M2C_UNK IsOpened__6WheelsFl(s32);
-    IsOpened__6WheelsFl(arg0 + 0x82C);
+u8 IsOpened__8LGWheelsFl(void *wheels, s32 chan) {
+    u8 IsOpened__6WheelsFl(void *, s32);
+    return IsOpened__6WheelsFl((u8 *)wheels + 0x82C, chan);
 }
 
-void IsConnected__8LGWheelsFl(s32 arg0) {
-    M2C_UNK IsConnected__6WheelsFl(s32);
-    IsConnected__6WheelsFl(arg0 + 0x82C);
+s8 IsConnected__8LGWheelsFl(void *wheels, s32 chan) {
+    s8 IsConnected__6WheelsFl(void *, s32);
+    return IsConnected__6WheelsFl((u8 *)wheels + 0x82C, chan);
 }
 
 void PedalsConnected__8LGWheelsFl(s32 arg0) {
