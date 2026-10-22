@@ -3685,6 +3685,56 @@ void DestroyIT(void) {
     }
 }
 
+void SetITTempo(u32 tempo) {
+    extern u8 g_song_80375520[0x30];
+
+    if (tempo > 0x1FFFF) {
+        tempo = 0x1FFFF;
+    }
+    *(u32 *)(g_song_80375520 + 0x28) = tempo;
+    *(u32 *)g_song_80375520 = (*(u32 *)(g_song_80375520 + 0x28) << 15) / (30000000 / (*(u32 *)(g_song_80375520 + 0x24) * 24));
+}
+
+#pragma push
+#pragma optimization_level 1
+void SetITOrder(u8 order, s8 keep) {
+    extern void *g_pHdr_803C78E8;
+    extern u8 g_song_80375520[0x30];
+
+    if (g_pHdr_803C78E8 != NULL && order < *(u16 *)((u8 *)g_pHdr_803C78E8 + 0x20)) {
+        g_song_80375520[0x15] = order;
+        if (keep == 0) {
+            *(s32 *)(g_song_80375520 + 0x10) = 1;
+        }
+    }
+}
+#pragma pop
+
+void SetITTrackPriority(u32 id, s32 prio) {
+    void SetVoicePriority_(void *voice);
+    extern u8 g_trk_80375550[0x20][0x70];
+    u8 *voice;
+    u8 *next;
+
+    prio *= 2;
+    g_trk_80375550[id][0x12] = prio;
+    voice = *(u8 **)(g_trk_80375550[id] + 4);
+    if (voice != NULL) {
+        voice[0x14] = prio;
+        SetVoicePriority_(voice);
+        voice = *(u8 **)(voice + 8);
+    } else {
+        voice = *(u8 **)g_trk_80375550[id];
+    }
+    prio--;
+    while (voice != NULL) {
+        next = *(u8 **)(voice + 4);
+        voice[0x14] = prio;
+        SetVoicePriority_(voice);
+        voice = next;
+    }
+}
+
 void StopActive(void *arg0) {
     M2C_UNK SetVoiceState_(s32, M2C_UNK);
     M2C_FIELD(arg0, void **, 0) = (void *) M2C_FIELD(M2C_FIELD(arg0, void **, 0), void **, 4);
