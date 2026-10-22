@@ -2583,6 +2583,27 @@ void Render_DestroyTextureSlot(u32 id) {
     GXInitTexObj(m_gxTexObjArray_80322F30[id], NULL, 0x20, 0x20, 6, 0, 0, 0);
 }
 
+void Render_SetTextureHandle(u16 id) {
+    void GXSetNumTexGens(u8 n);
+    void GXSetTevOrder(s32 stage, s32 coord, s32 map, s32 color);
+    void GXLoadTexObj(void *obj, s32 map);
+    extern u32 m_curTexture;
+    extern u8 m_gxTexObjArray_80322F30[][0x20];
+
+    if (id == 0xFFFF) {
+        GXSetNumTexGens(0);
+        GXSetTevOp(0, 4);
+        GXSetTevOrder(0, 0xFF, 0xFF, 4);
+        m_curTexture = 0xFFFF;
+    } else if (m_curTexture != id) {
+        GXSetNumTexGens(1);
+        GXSetTevOp(0, 0);
+        GXSetTevOrder(0, 0, 0, 4);
+        GXLoadTexObj(m_gxTexObjArray_80322F30[id], 0);
+        m_curTexture = id;
+    }
+}
+
 void Render_FlipBuffers(void) {
     void PrintDVDMessage(void);
     void GXSetColorUpdate(u8 enable);
