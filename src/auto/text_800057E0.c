@@ -1179,6 +1179,15 @@ s32 Projectile_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+void ShaderHolder_Destroy(void) {
+    M2C_UNK Deallocate(void *);
+    extern void *g_pShaderHolder;
+    if (g_pShaderHolder != NULL) {
+        Deallocate(g_pShaderHolder);
+        g_pShaderHolder = NULL;
+    }
+}
+
 void ShaderHolder_Init(void) {
     extern void *g_pShaderHolder;
     M2C_FIELD(g_pShaderHolder, s32 *, 0x2000) = 0;
