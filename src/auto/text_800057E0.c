@@ -969,6 +969,17 @@ void Mover_Init(void) {
     fn_800957D4();
 }
 
+void Player_DetachThingDeath(void *arg0) {
+    void *temp_r5;
+
+    temp_r5 = M2C_FIELD(arg0, void **, 0x2C);
+    M2C_FIELD(arg0, void **, 0x2C) = NULL;
+    M2C_FIELD(arg0, s8 *, 0x30) = 1;
+    if (temp_r5 != NULL) {
+        M2C_FIELD(temp_r5, s32 *, 0x94) = 0;
+    }
+}
+
 s32 Player_NULL(void) {
     return 0;
 }
