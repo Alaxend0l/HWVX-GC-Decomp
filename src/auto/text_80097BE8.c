@@ -193,6 +193,23 @@ void TextureManager_ReleaseCache(void) {
 
 }
 
+void InitVI(void) {
+    M2C_UNK VIFlush();
+    M2C_UNK VISetNextFrameBuffer(s32);
+    M2C_UNK VIWaitForRetrace();
+    extern s32 g_currentBuffer;
+    extern s32 g_frameBuffer1;
+    extern s32 g_frameBuffer2;
+    extern s32 *rmode;
+    VISetNextFrameBuffer(g_frameBuffer1);
+    g_currentBuffer = g_frameBuffer2;
+    VIFlush();
+    VIWaitForRetrace();
+    if (*rmode & 1) {
+        VIWaitForRetrace();
+    }
+}
+
 void MemCpy32(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
