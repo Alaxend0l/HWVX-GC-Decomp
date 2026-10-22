@@ -3508,7 +3508,7 @@ void DestroyIT_(void *data) {
     g_aheap = 0;
 }
 
-u32 GetITGVol_(u8 *trk, u8 *ch) {
+u16 GetITGVol_(u8 *trk, u8 *ch) {
     extern u32 g_musicVol;
     u8 **pt = &trk;
     u8 **pc = &ch;
@@ -3978,16 +3978,24 @@ void SetITTrackOff(u32 mask, s8 deferred) {
 #pragma optimization_level 1
 #pragma dont_inline on
 void SetITTrackVol(u32 id, s32 vol) {
-    void SetVoiceVol_(void *voice, s32 vol);
+    void SetVoiceVol_(void *voice, u16 vol);
+    struct Trk {
+        u8 *head;
+        u8 *active;
+        u8 pad8[0x12];
+        u16 gvol;
+        u8 pad1C[0xC];
+        s32 vol;
+        u8 pad2C[0x44];
+    };
     extern u8 g_song_80375520[0x30];
-    extern u8 g_trk_80375550[0x20][0x70];
+    extern struct Trk g_trk_80375550[0x20];
     u8 *voice;
-    u32 gvol;
+    u16 gvol;
 
-    voice = *(u8 **)g_trk_80375550[id];
-    *(s32 *)(g_trk_80375550[id] + 0x28) = vol;
-    gvol = GetITGVol_(g_song_80375520, g_trk_80375550[id]);
-    *(u16 *)(g_trk_80375550[id] + 0x1A) = gvol;
+    voice = g_trk_80375550[id].head;
+    g_trk_80375550[id].vol = vol;
+    g_trk_80375550[id].gvol = gvol = GetITGVol_(g_song_80375520, (u8 *)&g_trk_80375550[id]);
     while (voice != NULL) {
         SetVoiceVol_(voice, gvol);
         voice = *(u8 **)(voice + 4);
