@@ -1796,16 +1796,16 @@ void Thing_SlaveTransform(void *thing, void *mtx) {
     SubMatrixToQuaternion((s8 *)thing + 0x10, (Vector4 *)((s8 *)thing + 0x50));
 }
 
-void Thing_SlaveTransformQuaternionOnly(void *thing, void *mtx) {
+void Thing_SlaveTransformQuaternionOnly(Thing *thing, void *mtx) {
     Vector4 rot;
     Vector4 quat;
     Vector4 pos;
 
-    quat = M2C_FIELD(thing, Vector4 *, 0x50);
-    pos = M2C_FIELD(thing, Vector4 *, 0x40);
-    XformVec(mtx, &pos, (Vector4 *)((s8 *)thing + 0x40));
+    quat = thing->quat;
+    pos = thing->mtx.v[3];
+    XformVec(mtx, &pos, &thing->mtx.v[3]);
     SubMatrixToQuaternion(mtx, &rot);
-    QuaternionMult(&rot, &quat, (Vector4 *)((s8 *)thing + 0x50));
+    QuaternionMult(&rot, &quat, &thing->quat);
 }
 
 void *Thing_GetSurfaceScript(void) {
