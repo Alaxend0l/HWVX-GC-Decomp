@@ -4791,25 +4791,25 @@ void DestroyMIDIVoice(u8 *voice) {
     voice[0x15] = 0;
     voice[1] = 0xFF;
 }
-#pragma pop
+#pragma push
+#pragma optimization_level 1
 u8 *DestroyVoice(u8 *voice) {
     extern u8 g_chn_803769B4[0x10][0x20];
     u8 *next = *(u8 **)(voice + 4);
     u8 *v;
 
-    if (*(u8 **)g_chn_803769B4[voice[1]] == voice) {
+    v = *(u8 **)g_chn_803769B4[voice[1]];
+    if (v == voice) {
         *(u8 **)g_chn_803769B4[voice[1]] = next;
     } else {
-        for (v = *(u8 **)g_chn_803769B4[voice[1]]; *(u8 **)(v + 4) != voice; v = *(u8 **)(v + 4)) {
+        for (; *(u8 **)(v + 4) != voice; v = *(u8 **)(v + 4)) {
         }
         *(u8 **)(v + 4) = next;
     }
     SetVoiceState_(voice, 3);
     return next;
 }
-
-#pragma push
-#pragma optimization_level 1
+#pragma pop
 s32 AudioMusic_Create(void) {
     extern s32 g_musicState;
     extern u8 g_musicTitle[0x20];
