@@ -4767,6 +4767,25 @@ void DestroyMIDI(void) {
 
 #pragma push
 #pragma optimization_level 1
+void SetMIDIVol(void) {
+    extern u8 g_chn_803769B4[0x200];
+    void SetVoiceVol_(void *voice, s32 vol);
+    void SetGVol(void *chn);
+    u8 *chn;
+    u8 *voice;
+    s32 i;
+
+    for (chn = g_chn_803769B4, i = 0x10; i != 0; chn += 0x20, i--) {
+        SetGVol(chn);
+        for (voice = *(u8 **)chn; voice != NULL; voice = *(u8 **)(voice + 4)) {
+            SetVoiceVol_(voice, *(s32 *)(chn + 0x14));
+        }
+    }
+}
+#pragma pop
+
+#pragma push
+#pragma optimization_level 1
 #pragma dont_inline on
 void SetMIDITempo(u32 tempo) {
     extern void *g_pHdr_803C78F4;
