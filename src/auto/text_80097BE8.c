@@ -11,6 +11,11 @@ void fseek(void) {
     fn_8009A088();
 }
 
+void srand(s32 arg0) {
+    extern s32 next_803C6EA0;
+    next_803C6EA0 = arg0;
+}
+
 void fn_8009C888(s32 arg0) {
     extern s32 lbl_803C6EA0;
     lbl_803C6EA0 = arg0;
