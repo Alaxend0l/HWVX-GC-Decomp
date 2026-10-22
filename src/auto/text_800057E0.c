@@ -2170,6 +2170,13 @@ void StateGameManager_Release(void) {
     FileStreaming_ReleaseAllDataPacks(3, 1);
 }
 
+void StateProgressionManager_SetProgressionID(s32 id, s32 subID) {
+    extern s32 g_GameProgressionID;
+    extern s32 g_GameProgressionState[8];
+    g_GameProgressionID = id;
+    g_GameProgressionState[2] = subID;
+}
+
 s32 ActionEndLevel(s32 *arg0) {
     extern u8 g_bRestartCurrentLevel;
     extern s32 g_GameProgressionEndState[2];
