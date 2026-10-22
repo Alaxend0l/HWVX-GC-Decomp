@@ -194,7 +194,9 @@ typedef struct CARDControl {
     CARDCallback apiCallback;
     u8 unkD4[0xD8 - 0xD4];
     CARDCallback eraseCallback;
-    u8 unkDC[0x110 - 0xDC];
+    u8 unkDC[0xE0 - 0xDC];
+    u8 alarm[0x28];
+    u8 unk108[0x110 - 0x108];
 } CARDControl;
 
 extern CARDControl __CARDBlock[2];
