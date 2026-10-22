@@ -1232,6 +1232,19 @@ void NavHolder_Init(NavData *data) {
     }
 }
 
+void NavHolder_FillPointerArrayPath(u8 *point, u8 **array, u32 max) {
+    u8 **out = array;
+    u32 i = 0;
+    while (point != NULL && i < max) {
+        *out++ = point;
+        i++;
+        point = *(u8 **)(point + 0x38);
+    }
+    if (i < max) {
+        array[i] = NULL;
+    }
+}
+
 void NavHolder_UseMainRouteOnly(void) {
     extern s8 gs_useMainRouteOnly_803C7000;
     gs_useMainRouteOnly_803C7000 = 1;
@@ -3073,6 +3086,28 @@ void GXGetViewportv(void *arg0) {
 
 void DefaultCallback(void) {
 
+}
+
+void __SISteeringEnable(s32 arg0)
+{
+  int new_var2;
+  M2C_UNK SIEnablePolling(s32);
+  M2C_UNK SIGetResponse(s32, M2C_UNK *);
+  int new_var;
+  M2C_UNK SISetCommand(s32, M2C_UNK);
+  extern s32 __SISteeringEnableBits;
+  M2C_UNK spC;
+  u32 temp_r4;
+  temp_r4 = 0x80000000U >> arg0;
+  new_var2 = !(__SISteeringEnableBits & temp_r4);
+  if (new_var2)
+  {
+    __SISteeringEnableBits |= temp_r4;
+    SIGetResponse(arg0, &spC);
+    new_var = 0x300680;
+    SISetCommand(arg0, new_var);
+    SIEnablePolling(__SISteeringEnableBits);
+  }
 }
 
 f32 fn_8006FB1C(void) {
