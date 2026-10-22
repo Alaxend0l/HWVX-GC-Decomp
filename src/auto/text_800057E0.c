@@ -2602,6 +2602,12 @@ void *__AXFXAllocFunction_8007BC38(u32 size) {
     return OSAllocFromHeap(__OSCurrHeap, size);
 }
 
+void *__AXFXFreeFunction_8007BC60(u32 size) {
+    extern s32 __OSCurrHeap;
+    void *OSFreeToHeap(s32, u32);
+    return OSFreeToHeap(__OSCurrHeap, size);
+}
+
 s32 DSPCheckMailToDSP(void) {
     return ((u16) *(u16 *)0xCC005000 >> 0xFU) & 1;
 }
@@ -2639,6 +2645,33 @@ void __CARDDefaultApiCallback(void) {
 
 s32 __CARDGetFatBlock(void *arg0) {
     return M2C_FIELD(arg0, s32 *, 0x88);
+}
+
+extern u8 __CARDBlock[];
+s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, void *callback);
+s32 __CARDPutControlBlock(void *card, s32 result);
+static void WriteCallback(s32 chan, s32 result);
+static void EraseCallback(s32 chan, s32 result) {
+    u8 *card;
+    void (*callback)(s32, s32);
+
+    card = &__CARDBlock[chan * 0x110];
+    if (result < 0) {
+        goto error;
+    }
+    result = __CARDWrite(chan, M2C_FIELD(card, u32 *, 0xC) * ((M2C_FIELD(card, u32 *, 0x88) - M2C_FIELD(card, u32 *, 0x80)) / 0x2000), 0x2000, (void *)M2C_FIELD(card, u32 *, 0x88), WriteCallback);
+    if (result >= 0) {
+        return;
+    }
+error:
+    if (M2C_FIELD(card, void **, 0xD0) == NULL) {
+        __CARDPutControlBlock(card, result);
+    }
+    callback = M2C_FIELD(card, void (**)(s32, s32), 0xD8);
+    if (callback != NULL) {
+        M2C_FIELD(card, void (**)(s32, s32), 0xD8) = NULL;
+        callback(chan, result);
+    }
 }
 
 s32 __CARDGetDirBlock(void *arg0) {
