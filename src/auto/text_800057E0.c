@@ -1486,6 +1486,13 @@ void CoronaHolder_Init(void) {
     g_totalCoronas = 0;
 }
 
+void Creature_GetTargetPos(void *creature, Vector4 *pos) {
+    pos->x = M2C_FIELD(creature, f32 *, 0x40);
+    pos->y = 4.0f + M2C_FIELD(creature, f32 *, 0x44);
+    pos->z = M2C_FIELD(creature, f32 *, 0x48);
+    pos->w = 1.0f;
+}
+
 f32 Creature_GetMass(void *arg0) {
     return M2C_FIELD(arg0, f32 *, 0x1BC);
 }
