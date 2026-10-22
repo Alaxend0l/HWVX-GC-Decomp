@@ -98,6 +98,37 @@ typedef struct VirtualPad {
 
 extern VirtualPad g_VirtualPad[4];
 
+typedef struct PADStatus {
+    u16 button;
+    s8 stickX;
+    s8 stickY;
+    s8 substickX;
+    s8 substickY;
+    u8 triggerLeft;
+    u8 triggerRight;
+    u8 analogA;
+    u8 analogB;
+    s8 err;
+} PADStatus;
+
+extern PADStatus ngcPad[4];
+
+typedef struct RumbleStatus {
+    s32 duration;
+    s32 active;
+} RumbleStatus;
+
+extern RumbleStatus rumbleStatus[4];
+
+typedef struct JoyBusParam {
+    s32 state;
+    u8 unk4[0xC];
+    s32 result;
+    u8 unk14[0x74 - 0x14];
+} JoyBusParam;
+
+extern JoyBusParam Param_803C6A40[4];
+
 extern void *wheels;
 u8 IsOpened__8LGWheelsFl(void *wheels, s32 chan);
 s8 IsConnected__8LGWheelsFl(void *wheels, s32 chan);
