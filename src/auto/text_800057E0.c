@@ -1215,6 +1215,12 @@ void ARQReset(void) {
     __ARQ_init_flag_803C7464 = 0;
 }
 
+void __AXPushCallbackStack(void *arg0) {
+    extern void *__AXCallbackStack_803C7468;
+    M2C_FIELD(arg0, void **, 8) = (void *) __AXCallbackStack_803C7468;
+    __AXCallbackStack_803C7468 = arg0;
+}
+
 void __AXAuxQuit(void) {
     extern s32 __AXCallbackAuxA_803C7470;
     extern s32 __AXCallbackAuxB_803C7474;
