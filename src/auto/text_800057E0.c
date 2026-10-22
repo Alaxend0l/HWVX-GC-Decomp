@@ -1850,6 +1850,11 @@ s32 __AXGetNumVoices(void) {
     return __AXNumVoices_803C7510;
 }
 
+void *__AXGetPBs(void) {
+    extern u8 __AXPB_802F78A0[];
+    return __AXPB_802F78A0;
+}
+
 void __AXVPBQuit(void) {
 
 }
