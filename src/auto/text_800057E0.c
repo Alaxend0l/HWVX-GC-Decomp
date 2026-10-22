@@ -213,6 +213,7 @@ typedef struct TRKEventQueue {
 extern TRKEventQueue gTRKEventQueue;
 
 s32 TRKTerminateSerialHandler(void);
+void TRK_board_display(char *str);
 s32 TRKInitializeMutex(void *mutex);
 s32 TRKAcquireMutex(void *mutex);
 s32 TRKReleaseMutex(void *mutex);
