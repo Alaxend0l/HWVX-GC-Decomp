@@ -1783,6 +1783,12 @@ void *Thing_GetSurfaceScript(void) {
     return g_defaultSurfaceScript;
 }
 
+void Thing_GetInverseLocalInertiaTensor(void *thing, f32 *tensor) {
+    tensor[0] = 0.0f;
+    tensor[1] = 0.0f;
+    tensor[2] = 0.0f;
+}
+
 s32 Thing_GetNearestNavPoint(void) {
     return -1;
 }
