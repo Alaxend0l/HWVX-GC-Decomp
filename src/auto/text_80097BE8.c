@@ -1605,6 +1605,8 @@ s32 Effect_StartEffect(void *arg0) {
     return 0;
 }
 
+#pragma push
+#pragma optimization_level 1
 void Effect_PolarToRect(s32 magnitude, u8 angle, s32 *out) {
     s32 sine;
     s32 value;
@@ -1626,6 +1628,7 @@ void Effect_PolarToRect(s32 magnitude, u8 angle, s32 *out) {
     }
     *out = -((value * 0x7F + round) / 0x3FC00);
 }
+#pragma pop
 
 s32 Effect_UpdateDamper(Effect *effect, EffectCondition *cond) {
     s32 vel = effect->state->velocity;
