@@ -1322,6 +1322,12 @@ void NavHolder_Init(NavData *data) {
     }
 }
 
+void NavHolder_Release(void) {
+    Deallocate(M2C_FIELD(&gs_NavHolder_803C6CD8, s32 *, 4));
+    M2C_FIELD(&gs_NavHolder_803C6CD8, s32 *, 0) = 0;
+    M2C_FIELD(&gs_NavHolder_803C6CD8, s32 *, 4) = 0;
+}
+
 #pragma peephole on
 void CreateParticleGX();
 void CreateParticleSprite();
