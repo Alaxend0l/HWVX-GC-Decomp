@@ -212,6 +212,11 @@ void Mpeg_Destroy(void) {
 
 }
 
+void MemCpyDone(void) {
+    extern s32 g_arqWait_803C78B0;
+    g_arqWait_803C78B0 = 0;
+}
+
 void SetSpeakerMode(s8 arg0) {
     extern s8 g_speakers;
     g_speakers = arg0;
