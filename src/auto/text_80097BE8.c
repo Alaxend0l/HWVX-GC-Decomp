@@ -957,6 +957,30 @@ void DestroyMIDI_(s32 arg0) {
     FreeA_(g_aheap);
 }
 
+s32 GetID_(u8 *chunk) {
+    return (((((chunk[0] << 8) | chunk[1]) << 8) | chunk[2]) << 8) | chunk[3];
+}
+
+s32 GetType_(u8 *chunk) {
+    return (((((chunk[8] << 8) | chunk[9]) << 8) | chunk[10]) << 8) | chunk[11];
+}
+
+s32 GetID_(u8 *chunk);
+s8 CmpID_(u8 *chunk, s32 id) {
+    return GetID_(chunk) == id;
+}
+
+s32 Audio_Create_(void) {
+    void Audio_Update_(void);
+    ARInit(0, 0);
+    ARQInit();
+    AIInit(0);
+    AXInit();
+    AISetDSPSampleRate(1);
+    AXRegisterCallback(Audio_Update_);
+    return 1;
+}
+
 void Audio_Destroy_(void) {
     M2C_UNK AIReset();
     M2C_UNK ARQReset();
