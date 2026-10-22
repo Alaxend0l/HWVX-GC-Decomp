@@ -4615,6 +4615,36 @@ s32 MemCard_Read__FUllPv(u32 device, s32 size, void *data) {
     return size;
 }
 
+void LidHandler_Init(void) {
+    s32 DVDOpen(const char *name, void *fileInfo);
+    extern u32 m_isopen_803C7984;
+    extern u32 m_curtime_803C7988;
+    extern u8 m_fileInfo_803867E0[0x3C];
+
+    if (m_isopen_803C7984 == 0) {
+        DVDOpen("bsfile", m_fileInfo_803867E0);
+        m_isopen_803C7984 = 1;
+        m_curtime_803C7988 = 0;
+    }
+}
+
+void LidHandler_Heartbeat(void) {
+    s32 DVDGetCommandBlockStatus(void *block);
+    s32 DVDReadAsyncPrio(void *fileInfo, void *addr, s32 length, s32 offset, void *callback, s32 prio);
+    extern u8 cd_test_block[0x20];
+    extern s32 g_iDeltaTimeMS;
+    extern u32 m_curtime_803C7988;
+    extern u8 m_fileInfo_803867E0[0x3C];
+
+    m_curtime_803C7988 += g_iDeltaTimeMS;
+    if (m_curtime_803C7988 > 500) {
+        if (DVDGetCommandBlockStatus(m_fileInfo_803867E0) == 0) {
+            DVDReadAsyncPrio(m_fileInfo_803867E0, cd_test_block, 0x20, 0, NULL, 2);
+            m_curtime_803C7988 = 0;
+        }
+    }
+}
+
 s8 Input_KeyPress(s32 chan, u8 key) {
     s32 i;
     if (key > 0x14) {
