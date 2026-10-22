@@ -923,6 +923,11 @@ void Trigger_PauseTACSystem(s8 arg0) {
     g_bTACSystemPaused_803C7124 = arg0;
 }
 
+u8 Trigger_IsTACSystemPaused(void) {
+    extern u8 g_bTACSystemPaused_803C7124;
+    return g_bTACSystemPaused_803C7124;
+}
+
 s32 TriggerLevelStart(void) {
     return 1;
 }
