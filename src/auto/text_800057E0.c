@@ -1242,19 +1242,17 @@ void ShaderHolder_AddGX(void *gx, u32 index) {
     u32 i;
     u32 n;
 
-    if (gx == NULL) {
+    if (gx == NULL || index >= g_pShaderHolder->numShaders) {
         return;
     }
-    if (index < g_pShaderHolder->numShaders) {
-        for (i = 0; i < g_pShaderHolder->numGX; i++) {
-            if (g_pShaderHolder->gx[i].gx == gx) {
-                return;
-            }
+    for (i = 0; i < g_pShaderHolder->numGX; i++) {
+        if (g_pShaderHolder->gx[i].gx == gx) {
+            return;
         }
-        n = g_pShaderHolder->numGX++;
-        g_pShaderHolder->gx[n].gx = gx;
-        g_pShaderHolder->gx[n].shader = g_pShaderHolder->shaders[index];
     }
+    n = g_pShaderHolder->numGX++;
+    g_pShaderHolder->gx[n].gx = gx;
+    g_pShaderHolder->gx[n].shader = g_pShaderHolder->shaders[index];
 }
 
 void ShowStats_Create(void) {
