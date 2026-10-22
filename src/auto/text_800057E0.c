@@ -2705,24 +2705,30 @@ s32 __CARDPutControlBlock(void *card, s32 result);
 static void WriteCallback(s32 chan, s32 result);
 
 static void EraseCallback(s32 chan, s32 result) {
-    u8 *card;
-    void (*callback)(s32, s32);
+    CARDControl *card;
+    CARDCallback callback;
+    u32 temp[2];
+    u16 *fat;
+    u32 addr;
 
-    card = (u8 *)&__CARDBlock[chan];
+    card = &__CARDBlock[chan];
     if (result < 0) {
         goto error;
     }
-    result = __CARDWrite(chan, M2C_FIELD(card, u32 *, 0xC) * ((M2C_FIELD(card, u32 *, 0x88) - M2C_FIELD(card, u32 *, 0x80)) / 0x2000), 0x2000, (void *)M2C_FIELD(card, u32 *, 0x88), WriteCallback);
-    if (result >= 0) {
-        return;
+    fat = card->buffer;
+    addr = card->sectorSize * (((u32)fat - (u32)card->workArea) / 0x2000);
+    result = __CARDWrite(chan, addr, 0x2000, fat, WriteCallback);
+    if (result < 0) {
+        goto error;
     }
+    return;
 error:
-    if (M2C_FIELD(card, void **, 0xD0) == NULL) {
+    if (card->apiCallback == NULL) {
         __CARDPutControlBlock(card, result);
     }
-    callback = M2C_FIELD(card, void (**)(s32, s32), 0xD8);
-    if (callback != NULL) {
-        M2C_FIELD(card, void (**)(s32, s32), 0xD8) = NULL;
+    callback = card->eraseCallback;
+    if (callback) {
+        card->eraseCallback = NULL;
         callback(chan, result);
     }
 }
@@ -2742,6 +2748,11 @@ void GXInitFifoLimits(void *arg0, s32 arg1, s32 arg2) {
 
 void GXInvalidateVtxCache(void) {
     *(s8 *)0xCC008000 = 0x48;
+}
+
+void GXPokeAlphaUpdate(s32 arg0) {
+    extern void *__peReg;
+    M2C_FIELD(__peReg, u16 *, 2) = (u16) ((M2C_FIELD(__peReg, u16 *, 2) & 0xFFFFFFEF) | ((arg0 * 0x10) & 0xFF0));
 }
 
 void GXInitLightAttnK(void *arg0, f32 farg0, f32 farg1, f32 farg2) {
