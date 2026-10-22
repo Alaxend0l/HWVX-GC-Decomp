@@ -849,6 +849,10 @@ s32 Thing_GetOrientedCollision(void) {
     return 0;
 }
 
+void Thing_PassiveTargeting(void) {
+
+}
+
 void Trail_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
