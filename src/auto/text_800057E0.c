@@ -1180,6 +1180,10 @@ void usr_put_initialize(void) {
 
 }
 
+s32 TRKReleaseMutex(void) {
+    return 0;
+}
+
 s32 fn_80093530(void) {
     return 0;
 }
