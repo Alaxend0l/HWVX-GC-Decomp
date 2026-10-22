@@ -1908,6 +1908,13 @@ void AlarmHandler(void *alarm, void *context) {
     }
 }
 
+void SIProbe(void) {
+    M2C_UNK SIDecodeType();
+    M2C_UNK SIGetType();
+    SIGetType();
+    SIDecodeType();
+}
+
 s32 DVDLowBreak(void) {
     extern s32 Breaking_803C72C8;
     extern s32 StopAtNextInt_803C72A8;
@@ -2707,7 +2714,6 @@ static void WriteCallback(s32 chan, s32 result);
 static void EraseCallback(s32 chan, s32 result) {
     CARDControl *card;
     CARDCallback callback;
-    u32 temp[2];
     u16 *fat;
     u32 addr;
 
@@ -2715,13 +2721,12 @@ static void EraseCallback(s32 chan, s32 result) {
     if (result < 0) {
         goto error;
     }
-    fat = card->buffer;
-    addr = card->sectorSize * (((u32)fat - (u32)card->workArea) / 0x2000);
+    fat = (u16 *)__CARDGetFatBlock(card);
+    addr = ((u32)fat - (u32)card->workArea) / 0x2000 * card->sectorSize;
     result = __CARDWrite(chan, addr, 0x2000, fat, WriteCallback);
-    if (result < 0) {
-        goto error;
+    if (result >= 0) {
+        return;
     }
-    return;
 error:
     if (card->apiCallback == NULL) {
         __CARDPutControlBlock(card, result);
