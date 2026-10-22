@@ -2832,6 +2832,17 @@ void SetVoicePriority_(void *arg0) {
     OSRestoreInterrupts(temp_r31);
 }
 
+void DestroyIT_(void *data) {
+    void FreeA_(u32 addr);
+    void OSFreeToHeap(s32 heap, void *ptr);
+    extern s32 __OSCurrHeap;
+    extern u32 g_aheap;
+
+    OSFreeToHeap(__OSCurrHeap, data);
+    FreeA_(g_aheap);
+    g_aheap = 0;
+}
+
 void DestroyMIDI_(s32 arg0) {
     M2C_UNK FreeA_(s32);
     M2C_UNK OSFreeToHeap(s32, s32);
