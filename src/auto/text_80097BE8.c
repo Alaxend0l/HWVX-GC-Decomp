@@ -1237,6 +1237,14 @@ void TransposeSubMatrix(void *arg0) {
     M2C_FIELD(arg0, f32 *, 0x24) = temp_f1_3;
 }
 
+s32 FloatsEqual(f32 a, f32 b, f32 epsilon) {
+    f32 diff = a - b;
+    if (diff < 0.0f) {
+        diff *= -1.0f;
+    }
+    return diff < epsilon;
+}
+
 void QuaternionMult(Vector *a, Vector *b, Vector *out) {
     out->w = a->w * b->w - a->x * b->x - a->y * b->y - a->z * b->z;
     out->x = a->y * b->z - a->z * b->y + a->w * b->x + a->x * b->w;
