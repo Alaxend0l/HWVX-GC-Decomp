@@ -179,6 +179,13 @@ typedef struct _FILE {
 
 s32 fclose(FILE *file);
 
+typedef struct SubBlock {
+    u32 size_;
+    void *bp_;
+    struct SubBlock *prev_;
+    struct SubBlock *next_;
+} SubBlock;
+
 extern u8 __lower_map[256];
 s32 fflush(FILE *file);
 void free(void *ptr);
@@ -5395,6 +5402,19 @@ s32 GBAResetAsync(s32 chan, u8 *status, GBACallback callback) {
     gba->callback = callback;
     return __GBATransfer(chan, 1, 3, ShortCommandProc);
 }
+
+#pragma push
+#pragma peephole off
+s32 GBAReset(s32 chan, u8 *status) {
+    s32 ret;
+
+    ret = GBAResetAsync(chan, status, (GBACallback)__GBASyncCallback);
+    if (ret != 0) {
+        return ret;
+    }
+    return __GBASync(chan);
+}
+#pragma pop
 
 s32 OnReset_800C4F14(void) {
     extern s32 __GBAReset;
