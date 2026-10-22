@@ -2477,6 +2477,20 @@ void *GetRenderWindow() {
     return g_window[g_currentWindow];
 }
 
+s32 Gfx_GetCameraPositions(Vector *out) {
+    extern u8 g_CurrentViews;
+    extern u8 g_window[][0x2D0];
+    u32 i;
+    s32 count = 0;
+
+    for (i = 0; i < 5; i++) {
+        if (g_CurrentViews & (1 << i)) {
+            out[count++] = *(Vector *)(g_window[i] + 0x180);
+        }
+    }
+    return count;
+}
+
 void Gfx_ClearScreen(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
@@ -2507,6 +2521,21 @@ void Gfx_TextureHandler_Destroy(void) {
     }
     Deallocate(m_texture);
     m_texture = NULL;
+}
+
+u8 *LoadBTF_RAM(u8 *data, u32 id) {
+    extern u8 *m_texture;
+    void Render_CreateTextureSlot(u32 id, s32 arg1, void *texture);
+    u16 v = *(u16 *)(data + 4);
+
+    *(u16 *)(m_texture + id * 0x40 + 0x32) = ((v & 0xFF00) >> 8) | ((v << 8) & 0xFF00);
+    __sthbrx(*(u16 *)(data + 2), m_texture + id * 0x40 + 0x30, 0);
+    __sthbrx(*(u16 *)(data + 6), m_texture + id * 0x40 + 0x34, 0);
+    *(u32 *)(m_texture + id * 0x40 + 0x24) = *(u32 *)(data + 8);
+    *(u32 *)(m_texture + id * 0x40 + 0x28) = *(u32 *)(data + 0xC);
+    __sthbrx(*(u16 *)(data + 0), m_texture + id * 0x40 + 0x38, 0);
+    Render_CreateTextureSlot(id, 1, m_texture + id * 0x40);
+    return data + 0x10;
 }
 
 void Gfx_SetTextureWrapMode(u16 id, s16 mode) {
