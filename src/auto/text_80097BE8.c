@@ -210,6 +210,14 @@ void Render_Destroy(void) {
 
 }
 
+void Gfx_SetTextColor(s8 arg0, s8 arg1, s8 arg2, s8 arg3) {
+    extern M2C_UNK g_textcolor;
+    M2C_FIELD(&g_textcolor, s8 *, 0) = arg0;
+    M2C_FIELD(&g_textcolor, s8 *, 1) = arg1;
+    M2C_FIELD(&g_textcolor, s8 *, 2) = arg2;
+    M2C_FIELD(&g_textcolor, s8 *, 3) = arg3;
+}
+
 void Mpeg_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
