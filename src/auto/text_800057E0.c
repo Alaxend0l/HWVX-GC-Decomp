@@ -774,6 +774,10 @@ void Looker_Draw(void) {
 
 }
 
+void MatrixCache_Init(void) {
+
+}
+
 void Mover_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
