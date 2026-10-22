@@ -39,6 +39,7 @@ void *ThingManagerList_GetByType(void *list, s32 type);
 void WildCardRack_Add(void *rack, u8 *item, s16 count);
 void Item_Release(void *item);
 void MotionState_Draw(void *state);
+f32 MagnitudeVector(void *v);
 
 s32 AIGetStreamPlayState(void);
 s32 AIGetDSPSampleRate(void);
