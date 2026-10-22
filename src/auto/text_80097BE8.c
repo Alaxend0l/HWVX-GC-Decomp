@@ -1380,6 +1380,14 @@ void PrepareReady(void *arg0) {
     OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
 }
 
+BOOL THPPlayerGetVideoInfo(THPVideoInfo *videoInfo) {
+    if (ActivePlayer.open) {
+        memcpy(videoInfo, &ActivePlayer.videoInfo, sizeof(THPVideoInfo));
+        return TRUE;
+    }
+    return FALSE;
+}
+
 u8 THPPlayerGetState(void) {
     return ActivePlayer.state;
 }
