@@ -1996,23 +1996,6 @@ void Callback(void) {
     Prepared_803C7260 = 1;
 }
 
-s32 __OSUnlockSram(s32 commit) {
-    return UnlockSram(commit, 0);
-}
-
-s32 __OSUnlockSramEx(s32 commit) {
-    return UnlockSram(commit, 0x14);
-}
-
-s32 fn_8006AC34(void) {
-    return *(s32 *)0x800000D4;
-}
-
-void fn_8006D134(void) {
-    extern s32 lbl_803C7260;
-    lbl_803C7260 = 1;
-}
-
 typedef struct OSSram {
     u16 checkSum;
     u16 checkSumInv;
@@ -2046,6 +2029,23 @@ static inline void *LockSram(u32 offset) {
     Scb_802EEE20.enabled = enabled;
     Scb_802EEE20.locked = 1;
     return Scb_802EEE20.sram + offset;
+}
+
+s32 __OSUnlockSram(s32 commit) {
+    return UnlockSram(commit, 0);
+}
+
+s32 __OSUnlockSramEx(s32 commit) {
+    return UnlockSram(commit, 0x14);
+}
+
+s32 fn_8006AC34(void) {
+    return *(s32 *)0x800000D4;
+}
+
+void fn_8006D134(void) {
+    extern s32 lbl_803C7260;
+    lbl_803C7260 = 1;
 }
 
 s32 __OSSyncSram(void) {
