@@ -4986,6 +4986,35 @@ s8 AutoCalibrateAxisSigned(s8 *min, s8 *max, s8 value, s8 deadzone, s8 *out) {
     return result;
 }
 
+u8 AutoCalibrateAxisUnsigned(u8 *min, u8 *max, u8 value, u8 deadzone, u8 *out) {
+    s32 lo = *min;
+    s32 hi = *max;
+    s32 range;
+    s32 result;
+
+    if (value < lo) {
+        *min = value;
+        lo = value;
+    }
+    if (value > hi) {
+        hi = value;
+        *max = value;
+    }
+    range = hi - lo - deadzone * 2;
+    if (range == 0) {
+        range = 1;
+    }
+    result = (value - (lo + deadzone)) * 255 / range;
+    if (result < 0) {
+        result = 0;
+    }
+    if (result > 255) {
+        result = 255;
+    }
+    *out = result;
+    return result;
+}
+
 #pragma push
 #pragma optimize_for_size on
 #pragma use_lmw_stmw on
@@ -5440,6 +5469,23 @@ static void F29(s32 chan, s32 ret) {
             bootInfo->callback = NULL;
             callback(chan, ret);
         }
+    }
+    gba->ret = ret;
+}
+
+static void F39(s32 chan, s32 ret) {
+    GBAControl *gba = &__GBA[chan];
+    GBABootInfo *bootInfo = &gba->bootInfo;
+    GBACallback callback;
+
+    if (ret == 0) {
+        *bootInfo->status = 0;
+    }
+    bootInfo->begin = 0;
+    callback = bootInfo->callback;
+    if (callback != NULL) {
+        bootInfo->callback = NULL;
+        callback(chan, ret);
     }
     gba->ret = ret;
 }
