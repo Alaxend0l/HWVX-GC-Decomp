@@ -89,7 +89,7 @@ enum __file_orientation { __unoriented, __char_oriented, __wide_oriented };
 
 typedef struct VirtualPad {
     u8 unk0[3];
-    u8 forceFeedbackActive;
+    s8 forceFeedbackActive;
     u32 keyDown;
     u32 keyPress;
     u8 unkC[4];
