@@ -93,6 +93,16 @@ typedef struct WorldData {
 extern WorldData g_worldData;
 
 s32 TRKTargetCPUMinorType(void);
+
+typedef struct DSCPUType {
+    u8 cpuMajor;
+    u8 cpuMinor;
+    u8 bigEndian;
+    u8 defaultTypeSize;
+    u8 fpTypeSize;
+    u8 extended1TypeSize;
+    u8 extended2TypeSize;
+} DSCPUType;
 s32 TRKTargetAccessMemory(void *data, u32 start, u32 *length, s32 space, s32 read);
 s32 TRKAppendBuffer1_ui32(void *b, u32 data);
 s32 TRKAppendBuffer1_ui16(void *b, u16 data);
