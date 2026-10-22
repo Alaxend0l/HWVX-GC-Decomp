@@ -1986,6 +1986,12 @@ s32 MovieManager_GetTextureIndex(void) {
     return 0;
 }
 
+void DisplayList_Init(void) {
+    extern void *g_pDL;
+
+    memset(g_pDL, 0, 0x18);
+}
+
 void Gfx_StateTextureBlendMode(s32 arg0) {
     M2C_UNK GXSetTevOp(M2C_UNK, M2C_UNK);
     extern s32 m_blendMode_803C76D0;
