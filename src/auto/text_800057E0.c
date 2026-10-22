@@ -737,6 +737,13 @@ void AI_AsyncHeartbeat(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0xC8) = 0x1F4;
 }
 
+void SoundListener_SetTotalListeners(u32 arg0) {
+    extern s32 g_numListeners;
+    if (arg0 != 0U) {
+        g_numListeners = arg0 - 1;
+    }
+}
+
 void SongManager_StopBKSong(void) {
 
 }
