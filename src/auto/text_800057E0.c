@@ -1480,6 +1480,21 @@ void DataPack_EnableLoadingSounds(s8 arg0) {
     g_bSoundLoadingEnabled = arg0;
 }
 
+extern s32 g_fileID;
+extern s32 g_openFileDataPackType;
+void File_Close(s32 file);
+void *ThingManagerList_GetByType(void *list, s32 type);
+void WildCardRack_Add(void *rack, u8 *item, s16 count);
+void Item_Release(void *item);
+void MotionState_Draw(void *state);
+void DataPack_CloseFiles(void) {
+    if (g_fileID > 0) {
+        File_Close(g_fileID);
+        g_fileID = -1;
+        g_openFileDataPackType = 0xB;
+    }
+}
+
 f32 Debris_GetMass(void *arg0) {
     return M2C_FIELD(arg0, f32 *, 0xCC);
 }
