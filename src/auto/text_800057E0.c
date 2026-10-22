@@ -1232,6 +1232,10 @@ void NavHolder_Init(NavData *data) {
     }
 }
 
+#pragma peephole on
+void CreateParticleGX();
+void CreateParticleSprite();
+void LineManager_Add();
 void NavHolder_FillPointerArrayPath(u8 *point, u8 **array, u32 max) {
     u8 **out = array;
     u32 i = 0;
@@ -1244,7 +1248,6 @@ void NavHolder_FillPointerArrayPath(u8 *point, u8 **array, u32 max) {
         array[i] = NULL;
     }
 }
-
 void NavHolder_UseMainRouteOnly(void) {
     extern s8 gs_useMainRouteOnly_803C7000;
     gs_useMainRouteOnly_803C7000 = 1;
@@ -2630,6 +2633,7 @@ void *__AXGetStackHead(u32 priority) {
     return *head;
 }
 #pragma pop
+#pragma peephole on
 void __AXServiceCallbackStack(void) {
     void *__AXPopCallbackStack();
     M2C_UNK __AXPushFreeStack(void *);
