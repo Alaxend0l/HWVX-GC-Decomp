@@ -2170,6 +2170,22 @@ void StateGameManager_Release(void) {
     FileStreaming_ReleaseAllDataPacks(3, 1);
 }
 
+#pragma push
+#pragma dont_inline on
+void StateGameManager_InterfaceHandler(void *event) {
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    extern u8 g_bInterfacePlaying;
+    switch (M2C_FIELD(event, u16 *, 4)) {
+    case 5:
+        if (GameSettings_GetCodeVariable(0x198, 0) != 0) {
+            StateManager_QueueChange(0xB);
+        }
+        g_bInterfacePlaying = 0;
+        break;
+    }
+}
+#pragma pop
+
 void StateProgressionManager_SetProgressionID(s32 id, s32 subID) {
     extern s32 g_GameProgressionID;
     extern s32 g_GameProgressionState[8];
