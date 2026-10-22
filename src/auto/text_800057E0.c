@@ -1031,6 +1031,10 @@ s32 __AXGetNumVoices(void) {
     return __AXNumVoices_803C7510;
 }
 
+void __AXVPBQuit(void) {
+
+}
+
 s32 DSPCheckInit(void) {
     extern s32 __DSP_init_flag_803C7528;
     return __DSP_init_flag_803C7528;
