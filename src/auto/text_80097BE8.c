@@ -659,6 +659,15 @@ void VideoDecodeThreadStart(void) {
     }
 }
 
+void VideoDecodeThreadCancel(void) {
+    extern s32 VideoDecodeThreadCreated_803C7728;
+    extern u8 VideoDecodeThread_8036CFF0[];
+    if (VideoDecodeThreadCreated_803C7728) {
+        OSCancelThread(VideoDecodeThread_8036CFF0);
+        VideoDecodeThreadCreated_803C7728 = 0;
+    }
+}
+
 void *PopFreeTextureSet(void) {
     extern u8 FreeTextureSetQueue_8036E300[];
     void *msg;
