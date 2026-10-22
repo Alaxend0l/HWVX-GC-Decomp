@@ -4137,6 +4137,15 @@ void InitLGLibrary__8LGWheelsFv(void *wheels) {
     fn_800957D4();
 }
 
+u8 SameSpringForceParams__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 saturation, s16 coefficient) {
+    u8 *p = (u8 *)wheels + chan * 4;
+
+    if (*(s8 *)(p + 0x13CE) == offset && p[0x13CF] == saturation && *(s16 *)(p + 0x13D0) == coefficient) {
+        return 1;
+    }
+    return 0;
+}
+
 u8 SameConstantForceParams__8LGWheelsFlsUs(void *wheels, s32 chan, s16 offset, u16 coefficient) {
     u8 *p = (u8 *)wheels + chan * 4;
 
