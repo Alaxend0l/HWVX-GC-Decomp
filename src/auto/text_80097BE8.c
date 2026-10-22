@@ -4,6 +4,7 @@
 #define __HI(x) *(int *)&x
 #define __LO(x) *(1 + (int *)&x)
 
+void *GetRenderWindow();
 s32 OSSendMessage(void *queue, void *msg, s32 flags);
 s32 OSReceiveMessage(void *queue, void **msg, s32 flags);
 
