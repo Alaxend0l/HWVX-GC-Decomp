@@ -24,6 +24,32 @@ extern FragmentInfo fragmentinfo_8030DC08[1];
 extern s32 __OSCurrHeap;
 s32 OSFreeToHeap(s32 heap, s32 ptr);
 
+typedef struct GDLDrawEntry {
+    s32 geometry;
+    s32 unk4;
+    s32 matrix;
+    s32 lightState;
+    u8 unk10;
+    u8 unk11;
+    u8 envmapState;
+    u8 pad13;
+} GDLDrawEntry;
+
+typedef struct GDL {
+    u8 unk0[0x54];
+    s32 numDrawEntries;
+    u8 unk58[0xDFCC0 - 0x58];
+    GDLDrawEntry drawEntries[1];
+} GDL;
+
+typedef struct GfxState {
+    u8 unk0[0x74];
+    s32 unk74;
+    u8 unk78[0x7C - 0x78];
+    u32 unk7C;
+    u8 unk80[0xA0 - 0x80];
+} GfxState;
+
 typedef struct GXColor {
     u8 r;
     u8 g;
