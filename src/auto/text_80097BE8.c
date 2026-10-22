@@ -380,8 +380,15 @@ typedef struct DisplayList {
     DLSkinGroup skinGroups[0x100];
 } DisplayList;
 
+typedef struct GfxPointLight {
+    Vector position;
+    f32 radius;
+    GXColor color;
+    u8 unk18[0x20 - 0x18];
+} GfxPointLight;
+
 typedef struct GfxState {
-    u8 unk0[0x60];
+    GfxPointLight pointLights[3];
     Vector lightDir;
     GXColor lightColor;
     GXColor unk74;
