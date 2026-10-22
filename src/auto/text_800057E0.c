@@ -1243,6 +1243,13 @@ s32 NavHolder_GetTotalNavPoints(void) {
     return gs_NavHolder_803C6CD8.data->numNodes;
 }
 
+void CreateParticleGX(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 *arg4);
+void CreateParticleSprite(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 *arg4);
+void LineManager_Add(u8 *arg0, s32 arg1, s32 arg2, s32 arg3);
+void *NavHolder_GetFirstWayPoint(void) {
+    return gs_NavHolder_803C6CD8.data->firstWayPoint;
+}
+
 void Mover_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
