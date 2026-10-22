@@ -24,6 +24,14 @@ s32 AIGetStreamSampleRate(void);
 u8 AIGetStreamVolLeft(void);
 u8 AIGetStreamVolRight(void);
 
+typedef struct GXTexRegionInt {
+    u32 image1;
+    u32 image2;
+    u32 pad;
+    u8 is32bMipmap;
+    u8 isCached;
+} GXTexRegionInt;
+
 typedef struct FileTOCCacheEntry {
     u8 unk0[0x4B4];
     u8 valid;
