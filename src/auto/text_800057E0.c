@@ -2427,6 +2427,59 @@ void PhysicalObject_GetInverseLocalInertiaTensor(void *obj, Quaternion *out) {
     *out = *(Quaternion *)((u8 *)obj + 0x120);
 }
 
+s32 Playback_GetElement(void) {
+    u32 File_Read(s32 file, u32 size);
+    extern s32 g_fileIOHandle;
+    extern s32 g_pauseState;
+    extern s32 g_playbackCache[0x1000];
+    extern u32 g_playbackFinish;
+    extern u32 g_playbackPos;
+    extern s32 g_playbackStatus;
+    u32 bytesRead;
+    s32 element;
+
+    if (g_playbackPos == g_playbackFinish) {
+        File_Close(g_fileIOHandle);
+        g_fileIOHandle = -1;
+        element = g_playbackCache[g_playbackPos];
+        g_playbackStatus = 0;
+        g_pauseState = 1;
+    } else {
+        element = g_playbackCache[g_playbackPos++];
+        if (g_playbackPos == 0x1000) {
+            bytesRead = File_Read(g_fileIOHandle, 0x4000);
+            g_playbackPos = 0;
+            if (bytesRead != 0x4000) {
+                g_playbackFinish = bytesRead - 1;
+            }
+        }
+    }
+    return element;
+}
+
+void Playback_PutElement(s32 element) {
+    void File_Write(s32 file, u32 size);
+    extern s32 g_fileIOHandle;
+    extern s32 g_playbackCache[0x1000];
+    extern u32 g_playbackPos;
+
+    g_playbackCache[g_playbackPos++] = element;
+    if (g_playbackPos == 0x1000) {
+        File_Write(g_fileIOHandle, 0x4000);
+        g_playbackPos = 0;
+    }
+}
+
+s8 Player_IsHuman(void *player) {
+    extern void Player_DefaultControlReader(void);
+    s32 isHuman = 0;
+
+    if (player != NULL && *(void **)((u8 *)player + 0x20) == Player_DefaultControlReader) {
+        isHuman = 1;
+    }
+    return isHuman;
+}
+
 s32 Player_InputHeartbeat(void *arg0) {
     return M2C_FIELD(arg0, s8 (**)(), 0x20)() != 0;
 }
