@@ -912,6 +912,10 @@ void World_Init(void) {
     fn_800957D4();
 }
 
+void PlayerManager_Create(void) {
+
+}
+
 s32 ViewManager_GetViewFormat(void) {
     extern s32 g_viewFormat;
     return g_viewFormat;
