@@ -1243,6 +1243,14 @@ s32 NavHolder_GetTotalNavPoints(void) {
     return gs_NavHolder_803C6CD8.data->numNodes;
 }
 
+u8 *NavHolder_GetNavPoint(s32 index) {
+    u8 *point = NULL;
+    if (gs_NavHolder_803C6CD8.data != NULL && index < (s32)gs_NavHolder_803C6CD8.data->numNodes) {
+        point = gs_NavHolder_803C6CD8.data->nodes + index * 0x60;
+    }
+    return point;
+}
+
 void CreateParticleGX(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 *arg4);
 void CreateParticleSprite(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 *arg4);
 void LineManager_Add(u8 *arg0, s32 arg1, s32 arg2, s32 arg3);
