@@ -822,6 +822,67 @@ void Action_Destroy(void) {
 
 }
 
+void Action_Init(void) {
+    extern M2C_UNK m_Actions_800DBC80;
+    M2C_UNK *var_r4;
+    s32 var_ctr;
+
+    var_r4 = &m_Actions_800DBC80;
+    var_ctr = 2;
+    do {
+        M2C_FIELD(var_r4, s32 *, 0) = 0;
+        M2C_FIELD(var_r4, s32 *, 4) = 0;
+        M2C_FIELD(var_r4, s32 *, 8) = 0;
+        M2C_FIELD(var_r4, s32 *, 0xC) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x10) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x14) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x18) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x1C) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x20) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x24) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x28) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x2C) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x30) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x34) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x38) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x3C) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x40) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x44) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x48) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x4C) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x50) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x54) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x58) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x5C) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x60) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x64) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x68) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x6C) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x70) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x74) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x78) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x7C) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x80) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x84) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x88) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x8C) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x90) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x94) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x98) = 0;
+        M2C_FIELD(var_r4, s32 *, 0x9C) = 0;
+        var_r4 += 0xA0;
+        var_ctr -= 1;
+    } while (var_ctr != 0);
+}
+
+s8 ActionLoadInterfacePack(s32 *arg0) {
+    s32 FileStreaming_LoadDataPack(void *, M2C_UNK, s32, M2C_UNK);
+    s32 temp_r3;
+
+    temp_r3 = FileStreaming_LoadDataPack(arg0 + 4, 1, *arg0, 1);
+    return (s8) ((u32) ((-1 - temp_r3) | (temp_r3 + 1)) >> 0x1FU);
+}
+
 void AI_Reset(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0xC8) = 1;
     M2C_FIELD(arg0, s8 *, 0xCC) = 0;
@@ -1575,6 +1636,15 @@ s32 StateManager_CurrState(void) {
     return M2C_FIELD(g_pStateManager, s32 *, 0xD0);
 }
 
+s32 StateManager_QueuedState(void) {
+    extern void *g_pStateManager;
+    s32 state;
+
+    state = M2C_FIELD(g_pStateManager, s32 *, 0xD4);
+    M2C_FIELD(g_pStateManager, s32 *, 0xD4) = -1;
+    return state;
+}
+
 s32 Thing_PreMove(void) {
     return 1;
 }
@@ -2039,6 +2109,16 @@ void OSClearContext(register void *context) {
     if (context == *(void **)0x800000D8) {
         *(void **)0x800000D8 = NULL;
     }
+}
+
+__OSInterruptHandler __OSSetInterruptHandler(__OSInterrupt interrupt, __OSInterruptHandler handler) {
+    __OSInterruptHandler *table;
+    __OSInterruptHandler oldHandler;
+
+    table = InterruptHandlerTable_803C7240;
+    oldHandler = table[interrupt];
+    table[interrupt] = handler;
+    return oldHandler;
 }
 
 typedef struct OSSram {
