@@ -35,6 +35,11 @@ extern s32 m_memcardstatus_803C7970[2];
 
 s32 MemCard_Write__FUllPv(u32 id, s32 size, void *data);
 
+extern f32 __float_nan;
+extern f32 __float_huge;
+f64 sin(f64 x);
+f64 cos(f64 x);
+
 extern void *wheels;
 u8 IsOpened__8LGWheelsFl(void *wheels, s32 chan);
 s8 IsConnected__8LGWheelsFl(void *wheels, s32 chan);
@@ -1753,32 +1758,33 @@ s32 LGDestroyForceEffect(u32 handle) {
 
 #pragma push
 #pragma optimize_for_size on
-void zero_mem_aligned(u32 *dst, u32 n) {
-    u32 i;
+void zero_mem_aligned(void *dst, u32 n) {
     u8 *cdst = (u8 *)dst - 1;
+    u32 *ldst;
+    u32 i;
 
     if (n >= 32) {
         i = n >> 5;
-        dst--;
+        ldst = (u32 *)dst - 1;
         if (i) {
             do {
-                *++dst = 0;
-                *++dst = 0;
-                *++dst = 0;
-                *++dst = 0;
-                *++dst = 0;
-                *++dst = 0;
-                *++dst = 0;
-                *++dst = 0;
+                *++ldst = 0;
+                *++ldst = 0;
+                *++ldst = 0;
+                *++ldst = 0;
+                *++ldst = 0;
+                *++ldst = 0;
+                *++ldst = 0;
+                *++ldst = 0;
             } while (--i);
         }
         i = (n & 31) >> 2;
         if (i) {
             do {
-                *++dst = 0;
+                *++ldst = 0;
             } while (--i);
         }
-        cdst = (u8 *)dst + 3;
+        cdst = (u8 *)ldst + 3;
         n &= 3;
     }
     if (n) {
