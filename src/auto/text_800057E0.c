@@ -1178,9 +1178,10 @@ void NavHolder_UseMainRouteOnly(void) {
     gs_useMainRouteOnly_803C7000 = 1;
 }
 
+extern NavHolder gs_NavHolder_803C6CD8;
+
 s32 NavHolder_GetTotalNavPoints(void) {
-    extern void *gs_NavHolder_803C6CD8;
-    return M2C_FIELD(gs_NavHolder_803C6CD8, s32 *, 4);
+    return gs_NavHolder_803C6CD8.data->numNodes;
 }
 
 void Mover_Init(void) {
