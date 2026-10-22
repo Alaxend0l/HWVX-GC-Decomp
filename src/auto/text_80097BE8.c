@@ -4483,6 +4483,17 @@ s8 FileManager_FormatDevice(s32 device) {
     return m_memcardstatus_803C7970[device - 11] == 0;
 }
 
+s32 File_Seek(s32 handle, s32 offset, s8 mode) {
+    s8 idx = (u8)handle;
+
+    if (mode == 0) {
+        g_files[idx].position = offset;
+    } else {
+        g_files[idx].position += offset;
+    }
+    return 0;
+}
+
 s32 File_Write(u32 id, s32 size, void *data) {
     s8 device = (u8)(id >> 16);
 
