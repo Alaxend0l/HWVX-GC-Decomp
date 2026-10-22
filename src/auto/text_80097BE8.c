@@ -70,6 +70,23 @@ typedef struct Wheels {
     s32 type[4];
 } Wheels;
 
+typedef struct __file_modes {
+    u32 open_mode : 2;
+    u32 io_mode : 3;
+    u32 buffer_mode : 2;
+    u32 file_kind : 3;
+    u32 file_orientation : 2;
+    u32 binary_io : 1;
+} __file_modes;
+
+typedef struct _FILE {
+    u32 handle;
+    __file_modes mode;
+} FILE;
+
+enum __file_kinds { __closed_file, __disk_file, __console_file, __unavailable_file };
+enum __file_orientation { __unoriented, __char_oriented, __wide_oriented };
+
 typedef struct VirtualPad {
     u8 unk0[3];
     u8 forceFeedbackActive;
