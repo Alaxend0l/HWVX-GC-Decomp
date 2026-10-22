@@ -24,9 +24,16 @@ extern FragmentInfo fragmentinfo_8030DC08[1];
 extern s32 __OSCurrHeap;
 s32 OSFreeToHeap(s32 heap, s32 ptr);
 
+typedef struct GXColor {
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
+} GXColor;
+
 typedef struct GDLDrawEntry {
     s32 geometry;
-    s32 unk4;
+    GXColor unk4;
     s32 matrix;
     s32 lightState;
     u8 unk10;
@@ -44,18 +51,11 @@ typedef struct GDL {
 
 typedef struct GfxState {
     u8 unk0[0x74];
-    s32 unk74;
+    GXColor unk74;
     u8 unk78[0x7C - 0x78];
     u32 unk7C;
     u8 unk80[0xA0 - 0x80];
 } GfxState;
-
-typedef struct GXColor {
-    u8 r;
-    u8 g;
-    u8 b;
-    u8 a;
-} GXColor;
 
 static inline void SetVector(Vector *v, f32 x, f32 y, f32 z, f32 w) {
     v->x = x;
@@ -617,6 +617,23 @@ void Gfx_DisplayList_Destroy(void) {
 void Gfx_Add2DRectangleBack(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
+}
+
+s32 Gfx_AddWorldMatrixState_CacheMatrix(s32 matrix);
+s32 Gfx_GetLightState(void);
+u8 Gfx_GetEnvmapState(void);
+void Gfx_DrawGeometry(s32 geometry, s32 matrix) {
+    extern GDL *g_pGDL;
+    extern GfxState g_state;
+
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].geometry = geometry;
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].matrix = Gfx_AddWorldMatrixState_CacheMatrix(matrix);
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].unk10 = (g_state.unk7C >> 4) & 1;
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].unk4 = g_state.unk74;
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].lightState = Gfx_GetLightState();
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].envmapState = Gfx_GetEnvmapState();
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].unk11 = 0;
+    g_pGDL->numDrawEntries++;
 }
 
 void Gfx_Destroy(void) {
