@@ -93,6 +93,10 @@ typedef struct WorldData {
 extern WorldData g_worldData;
 
 s32 TRKTargetCPUMinorType(void);
+s32 TRKTargetAccessMemory(void *data, u32 start, u32 *length, s32 space, s32 read);
+s32 TRKAppendBuffer1_ui32(void *b, u32 data);
+s32 TRKAppendBuffer1_ui16(void *b, u16 data);
+s32 TRKPostEvent(void *event);
 
 typedef s16 __OSInterrupt;
 typedef void (*__OSInterruptHandler)(__OSInterrupt interrupt, void *context);
