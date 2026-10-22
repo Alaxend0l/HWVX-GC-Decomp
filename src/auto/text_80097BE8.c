@@ -21,6 +21,11 @@ void acos(void) {
     fn_800957D4();
 }
 
+void atan2(void) {
+    M2C_UNK fn_800957D4();
+    fn_800957D4();
+}
+
 void fn_8009C888(s32 arg0) {
     extern s32 lbl_803C6EA0;
     lbl_803C6EA0 = arg0;
