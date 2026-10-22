@@ -13,6 +13,27 @@ typedef struct ShaderHolder {
     u32 numGX;
 } ShaderHolder;
 
+typedef struct MatrixCacheEntry {
+    void *mtx;
+    u32 key;
+} MatrixCacheEntry;
+
+typedef struct MatrixCacheData {
+    MatrixCacheEntry small[0x60];
+    MatrixCacheEntry medium[0x80];
+    MatrixCacheEntry large[4];
+} MatrixCacheData;
+
+typedef struct NavData {
+    u8 *nodes;
+    u32 numNodes;
+} NavData;
+
+typedef struct NavHolder {
+    NavData *data;
+    void **objects;
+} NavHolder;
+
 s32 fn_800057E0(void) {
     M2C_UNK fn_80012F7C();
     fn_80012F7C();
