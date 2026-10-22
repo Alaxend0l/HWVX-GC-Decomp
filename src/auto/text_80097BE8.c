@@ -1081,6 +1081,21 @@ void Gfx_SetFarClippingPlane(f32 farPlane) {
     g_state.farClippingPlane = farPlane;
 }
 
+void Gfx_SetParallelLight(GXColor *color, Vector *dir) {
+    extern GfxState g_state;
+    f32 PSVECSquareMag(Vector *v);
+    void PSVECNormalize(Vector *src, Vector *dst);
+
+    g_state.lightColor = *color;
+    if (dir != NULL) {
+        g_state.lightDir = *dir;
+        if (0.0f != PSVECSquareMag(&g_state.lightDir)) {
+            PSVECNormalize(&g_state.lightDir, &g_state.lightDir);
+        }
+    }
+    g_state.lightChanged = 1;
+}
+
 void Gfx_SetAmbientColor(GXColor *color) {
     extern GfxState g_state;
     g_state.ambientColor = *color;
@@ -1262,6 +1277,8 @@ void MatrixToMtxTranspose(void *arg0, void *arg1) {
     M2C_FIELD(arg0, f32 *, 0x2C) = (f32) M2C_FIELD(arg1, f32 *, 0x38);
 }
 
+#pragma push
+#pragma dont_inline on
 s32 isInWindow(void *arg0) {
     f32 temp_f1;
     u32 temp_r3;
