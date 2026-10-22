@@ -1221,6 +1221,10 @@ void GXInitFifoLimits(void *arg0, s32 arg1, s32 arg2) {
     M2C_FIELD(arg0, s32 *, 0x10) = arg2;
 }
 
+s32 GXGetTexObjData(void *arg0) {
+    return (M2C_FIELD(arg0, s32 *, 0xC) << 5) & 0x03FFFFE0;
+}
+
 s32 GXGetTexObjFmt(void *arg0) {
     return M2C_FIELD(arg0, s32 *, 0x14);
 }
