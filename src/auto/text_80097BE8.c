@@ -2419,10 +2419,12 @@ s8 IsConnected__6WheelsFl(Wheels *wheels, s32 chan) {
     u32 SIProbe(s32 chan);
 
     wheels->type[chan] = SIProbe(chan);
-    if (wheels->type[chan] == 0x08000000) {
+    switch (wheels->type[chan]) {
+    case 0x08000000:
         return 1;
+    default:
+        return 0;
     }
-    return 0;
 }
 
 u8 PedalsConnected__6WheelsFl(Wheels *wheels, s32 chan) {
