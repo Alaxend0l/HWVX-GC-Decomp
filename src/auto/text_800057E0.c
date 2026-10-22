@@ -992,6 +992,16 @@ f32 Projectile_GetMass(void *arg0) {
     return M2C_FIELD(M2C_FIELD(arg0, void **, 0x120), f32 *, 0x2C);
 }
 
+s32 Projectile_Invalidate(void *arg0, u32 arg1, u32 arg2) {
+    u32 temp_r0;
+
+    temp_r0 = M2C_FIELD(arg0, u32 *, 0x120);
+    if ((temp_r0 >= arg1) && (temp_r0 < arg2)) {
+        return 1;
+    }
+    return 0;
+}
+
 void ShaderHolder_Init(void) {
     extern void *g_pShaderHolder;
     M2C_FIELD(g_pShaderHolder, s32 *, 0x2000) = 0;
