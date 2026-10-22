@@ -4638,6 +4638,7 @@ void LidHandler_Init(void) {
         m_curtime_803C7988 = 0;
     }
 }
+#pragma pop
 
 void LidHandler_Heartbeat(void) {
     s32 DVDGetCommandBlockStatus(void *block);
