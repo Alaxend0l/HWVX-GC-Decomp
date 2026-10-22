@@ -2251,11 +2251,14 @@ void LightHolder_SetTexture(u16 index) {
 }
 
 void LightHolder_Delete(s32 index) {
-    extern u8 g_pLight[16][0x80];
-    if (index < 0) {
-        return;
+    extern struct {
+        u8 unk0[0x60];
+        void *owner;
+        u8 unk64[0x1C];
+    } g_pLight[16];
+    if (index >= 0) {
+        g_pLight[index].owner = NULL;
     }
-    *(void **)(g_pLight[index] + 0x60) = NULL;
 }
 
 void LightHolder_SetRenderState(void *camera) {
