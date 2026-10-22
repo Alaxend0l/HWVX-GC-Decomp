@@ -958,11 +958,17 @@ void DestroyMIDI_(s32 arg0) {
 }
 
 s32 GetID_(u8 *chunk) {
-    return (((((chunk[0] << 8) | chunk[1]) << 8) | chunk[2]) << 8) | chunk[3];
+    s32 id = 0;
+    s32 i;
+    for (i = 0; i < 4; i++) {
+        id = (id << 8) | chunk[i];
+    }
+    return id;
 }
 
 s32 GetType_(u8 *chunk) {
-    return (((((chunk[8] << 8) | chunk[9]) << 8) | chunk[10]) << 8) | chunk[11];
+    u8 **p = &chunk;
+    return (((((*p)[8] << 8) | (*p)[9]) << 8 | (*p)[10]) << 8) | (*p)[11];
 }
 
 s32 GetID_(u8 *chunk);
@@ -1021,6 +1027,19 @@ void ProcessVoice(void) {
 
 void AudioIT_Destroy(void) {
 
+}
+
+void DestroyIT(void) {
+    void SetITState(s32 state);
+    void DestroyIT_(void *hdr);
+    extern u8 g_musicTitle[0x20];
+    extern void *g_pHdr_803C78E8;
+    if (g_pHdr_803C78E8 != NULL) {
+        SetITState(3);
+        DestroyIT_(g_pHdr_803C78E8);
+        g_pHdr_803C78E8 = NULL;
+        memset(g_musicTitle, 0, 0x20);
+    }
 }
 
 void StopActive(void *arg0) {
