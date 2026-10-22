@@ -106,6 +106,17 @@ typedef struct GeneralGameSettings {
 
 extern GeneralGameSettings g_generalGameSettings;
 
+typedef struct CodeVariables {
+    u8 unk0[0x118];
+    s32 fileIndex;
+    u8 unk11C[3];
+    s8 bOverwritingFile;
+    u8 unk120[0x134 - 0x120];
+} CodeVariables;
+
+extern CodeVariables g_codeVariables;
+extern s8 g_bValidFileName_803C6CA4[8];
+
 typedef struct HotWheelsGameData {
     u8 unk0;
     u8 unk1;
