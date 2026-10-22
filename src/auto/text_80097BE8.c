@@ -411,7 +411,8 @@ typedef struct GDL {
     u16 alphaTable[256];
     GDLAlphaEntry alphaEntries[(0x215C0 - 0x280) / 8];
     GDLSprite sprites[0x7CF];
-    u8 unk38C90[0x9FA00 - 0x38C90];
+    u8 unk38C90[0x7EA00 - 0x38C90];
+    GDLRect rects2D[0x400];
     GDLRect rects[0x20];
     u8 unkA0A80[0xC0040 - 0xA0A80];
     GDLLine lines[0x100];
