@@ -1793,6 +1793,14 @@ AudioSettings *GameSettings_GetAudioSettings(void) {
     return &g_generalGameSettings.audio;
 }
 
+void GameSettings_ApplyDefaultGameData(void) {
+    SetPlayerControls();
+    SetMusicGVol((f32)(g_generalGameSettings.audio.musicVolume * 0x7FFF) / 100.0f);
+    SetSFXVol((f32)(g_generalGameSettings.audio.sfxVolume * 0x7FFF) / 100.0f);
+    SetSpeakerMode(g_generalGameSettings.audio.speakerMode);
+    OSSetSoundMode(g_generalGameSettings.audio.speakerMode);
+}
+
 void Geometry_Destroy(void) {
     M2C_UNK Geometry_Init(M2C_UNK);
     extern s32 g_pGeometryHandler;
