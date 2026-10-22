@@ -39,6 +39,17 @@ extern s32 m_memcardstatus_803C7970[2];
 
 s32 MemCard_Write__FUllPv(u32 id, s32 size, void *data);
 
+typedef struct FileEntry {
+    s32 id;
+    u8 unk4[0x14 - 0x4];
+    s32 position;
+    s8 slot;
+    u8 unk19[0x1C - 0x19];
+} FileEntry;
+
+extern FileEntry g_files[4];
+extern char g_appInfo[5][0x40];
+
 typedef struct THPVideoInfo {
     u32 xSize;
     u32 ySize;
@@ -3081,13 +3092,23 @@ s32 CreateReadThread(s32 priority) {
     void *Reader(void *param);
     extern s32 ReadThreadCreated_803C7768;
     extern u8 ReadThread_8036ED20[];
+    struct ReadThreadData {
+        u8 thread[0x310];
+        u8 stack[0x1000];
+        u8 freeQueue[0x20];
+        void *freeMessage[10];
+        u8 readedQueue[0x20];
+        void *readedMessage[10];
+        u8 readedQueue2[0x20];
+        void *readedMessage2[10];
+    } *rt = (struct ReadThreadData *)ReadThread_8036ED20;
 
-    if (OSCreateThread(ReadThread_8036ED20, Reader, NULL, ReadThread_8036ED20 + 0x310 + 0x1000, 0x1000, priority, 1) == 0) {
+    if (OSCreateThread(rt->thread, Reader, NULL, rt->stack + 0x1000, 0x1000, priority, 1) == 0) {
         return 0;
     }
-    OSInitMessageQueue(ReadThread_8036ED20 + 0x1310, ReadThread_8036ED20 + 0x1330, 10);
-    OSInitMessageQueue(ReadThread_8036ED20 + 0x1358, ReadThread_8036ED20 + 0x1378, 10);
-    OSInitMessageQueue(ReadThread_8036ED20 + 0x13A0, ReadThread_8036ED20 + 0x13C0, 10);
+    OSInitMessageQueue(rt->freeQueue, rt->freeMessage, 10);
+    OSInitMessageQueue(rt->readedQueue, rt->readedMessage, 10);
+    OSInitMessageQueue(rt->readedQueue2, rt->readedMessage2, 10);
     ReadThreadCreated_803C7768 = 1;
     return 1;
 }
@@ -3194,7 +3215,7 @@ void AudioDecoderForOnMemory(void *bufAddr) {
     while (1) {
         readBuffer.frameNumber = i;
         AudioDecode(&readBuffer);
-        if ((i + ActivePlayer.initReadFrame) % ActivePlayer.numFrames == ActivePlayer.numFrames - 1) {
+        if (ActivePlayer.numFrames - 1 == (i + ActivePlayer.initReadFrame) % ActivePlayer.numFrames) {
             if (ActivePlayer.playFlag & 1) {
                 size = *(s32 *)readBuffer.ptr;
                 readBuffer.ptr = ActivePlayer.movieData;
