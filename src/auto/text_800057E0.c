@@ -202,6 +202,15 @@ typedef struct CARDControl {
 } CARDControl;
 
 extern CARDControl __CARDBlock[2];
+
+typedef struct CARDFileInfo {
+    s32 chan;
+    s32 fileNo;
+    s32 offset;
+    s32 length;
+    u16 iBlock;
+    u16 __padding;
+} CARDFileInfo;
 s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, void *callback);
 s32 __CARDPutControlBlock(void *card, s32 result);
 
