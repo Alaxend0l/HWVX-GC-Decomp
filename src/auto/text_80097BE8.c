@@ -249,6 +249,9 @@ void ScaleMatrix(void *arg0, void *arg1) {
     M2C_FIELD(arg0, f32 *, 0x3C) = (f32) (M2C_FIELD(arg0, f32 *, 0x3C) * M2C_FIELD(arg1, f32 *, 0xC));
 }
 
+void Dprintf(char *str, ...) {
+}
+
 void ForceIPLReset(void) {
     extern s32 m_ilpreset_803C7620;
     extern s32 m_reset;
