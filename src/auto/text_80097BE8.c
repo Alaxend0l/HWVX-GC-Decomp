@@ -1989,6 +1989,7 @@ void Gfx_SetDebugFont(s16 font) {
 s32 Gfx_FontManager_ReleaseFont(s32 id) {
     extern FontManager g_fontManager;
     Font *font = &g_fontManager.fonts[id];
+    s32 ret = 0;
 
     if (font->inUse == 0) {
         return 1;
@@ -1996,9 +1997,9 @@ s32 Gfx_FontManager_ReleaseFont(s32 id) {
     if (--font->refCount == 0) {
         font->inUse = 0;
         g_fontManager.numFonts--;
-        return 1;
+        ret = 1;
     }
-    return 0;
+    return ret;
 }
 
 void Gfx_FontManager_SetCharacterSpacing(s32 id, u8 c, f32 x, f32 y) {
