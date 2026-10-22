@@ -848,6 +848,13 @@ s32 fwide(FILE *stream, s32 mode) {
     return result;
 }
 
+double __kernel_tan(double x, double y, int iy);
+int __ieee754_rem_pio2(double x, double *y);
+double copysign(double x, double y) {
+    __HI(x) = (__HI(x) & 0x7fffffff) | (__HI(y) & 0x80000000);
+    return x;
+}
+
 void acos(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
