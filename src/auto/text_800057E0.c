@@ -1166,6 +1166,10 @@ s32 AIGetStreamPlayState(void) {
     return *(s32 *)0xCC006C00 & 1;
 }
 
+s32 AIGetStreamSampleRate(void) {
+    return ((u32) *(u32 *)0xCC006C00 >> 1U) & 1;
+}
+
 void AIReset(void) {
     extern s32 __AI_init_flag_803C73F0;
     __AI_init_flag_803C73F0 = 0;
