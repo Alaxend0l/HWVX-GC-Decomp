@@ -67,6 +67,11 @@ typedef struct WheelStatus {
     s8 err;
 } WheelStatus;
 
+typedef struct Force {
+    u8 playing[4][8];
+    u32 effectIds[4][8];
+} Force;
+
 typedef struct Wheels {
     WheelStatus status[4];
     s16 nonLinValues[4][256];
