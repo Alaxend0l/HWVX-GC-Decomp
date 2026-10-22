@@ -334,7 +334,9 @@ typedef struct GBAControl {
     void *proc;
     u8 unk3C[4];
     GBABootInfo bootInfo;
-    u8 unkA8[0x58];
+    u8 unkA8[0xF8 - 0xA8];
+    void *param;
+    u8 unkFC[4];
 } GBAControl;
 
 extern GBAControl __GBA[4];
@@ -3092,12 +3094,11 @@ void Gfx_SetOrthoMatrix(void) {
 
 void Render_SaveCamera(void) {
     extern Vector GXCameraSpace_8036CF80[7];
-    Vector *cam = GXCameraSpace_8036CF80;
 
-    cam[3] = *(Vector *)((u8 *)GetRenderWindow() + 0x180);
-    cam[4] = *(Vector *)((u8 *)GetRenderWindow() + 0x190);
-    cam[5] = *(Vector *)((u8 *)GetRenderWindow() + 0x1A0);
-    cam[6] = *(Vector *)((u8 *)GetRenderWindow() + 0x1B0);
+    GXCameraSpace_8036CF80[3] = *(Vector *)((u8 *)GetRenderWindow() + 0x180);
+    GXCameraSpace_8036CF80[4] = *(Vector *)((u8 *)GetRenderWindow() + 0x190);
+    GXCameraSpace_8036CF80[5] = *(Vector *)((u8 *)GetRenderWindow() + 0x1A0);
+    GXCameraSpace_8036CF80[6] = *(Vector *)((u8 *)GetRenderWindow() + 0x1B0);
 }
 #pragma pop
 
