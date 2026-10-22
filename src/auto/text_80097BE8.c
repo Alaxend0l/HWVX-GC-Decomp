@@ -701,6 +701,16 @@ loop_1:
     goto loop_1;
 }
 
+void *PopDecodedAudioBuffer(s32 arg0) {
+    extern u8 DecodedAudioBufferQueue_80371444[];
+    void *msg;
+
+    if (OSReceiveMessage(DecodedAudioBufferQueue_80371444, &msg, arg0) == 1) {
+        return msg;
+    }
+    return NULL;
+}
+
 void PushDecodedAudioBuffer(void *arg0) {
     extern u8 DecodedAudioBufferQueue_80371444[];
     OSSendMessage(DecodedAudioBufferQueue_80371444, arg0, 1);
