@@ -942,6 +942,12 @@ void InterfaceManager_SetControllerConfigInputString(void) {
 
 }
 
+s32 ActionInterfacePlay(s32 *arg0) {
+    M2C_UNK InterfaceManager_Create(s32, M2C_UNK, M2C_UNK);
+    InterfaceManager_Create(*arg0, 0, 0);
+    return 1;
+}
+
 s32 Item_PreMove(void) {
     return 1;
 }
