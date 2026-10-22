@@ -13,6 +13,14 @@ typedef struct ShaderHolder {
     u32 numGX;
 } ShaderHolder;
 
+typedef struct FileTOCCacheEntry {
+    u8 unk0[0x4B4];
+    u8 valid;
+    u8 unk4B5[0x500 - 0x4B5];
+} FileTOCCacheEntry;
+
+extern FileTOCCacheEntry g_fileTOCCache[11];
+
 typedef struct MatrixCacheEntry {
     void *mtx;
     u32 key;
