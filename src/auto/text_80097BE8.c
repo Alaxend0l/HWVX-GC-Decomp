@@ -2782,6 +2782,13 @@ static void F29(s32 chan, s32 ret) {
     gba->ret = ret;
 }
 
+s64 __GBASetDelay(s32 chan, s64 delay) {
+    GBAControl *gba = &__GBA[chan];
+    s64 oldDelay = gba->delay;
+    gba->delay = delay;
+    return oldDelay;
+}
+
 void FileManager_Destroy(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
