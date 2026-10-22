@@ -1606,7 +1606,7 @@ s32 Effect_StartEffect(void *arg0) {
 }
 
 #pragma push
-#pragma optimization_level 1
+#pragma optimize_for_size on
 void Effect_PolarToRect(s32 magnitude, u8 angle, s32 *out) {
     s32 sine;
     s32 value;
