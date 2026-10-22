@@ -2022,6 +2022,14 @@ u32 World_GetTotalTiles_Creature(void) {
     return M2C_FIELD(g_worldData.world, u32 *, 0x40);
 }
 
+void *World_GetTileCar(u32 index) {
+    void *world = g_worldData.world;
+    if (index < M2C_FIELD(world, u32 *, 0x8)) {
+        return M2C_FIELD(world, u8 **, 0xC) + index * 0x60;
+    }
+    return NULL;
+}
+
 void PlayerManager_Create(void) {
 
 }
