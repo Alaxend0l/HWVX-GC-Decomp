@@ -833,6 +833,10 @@ void Thing_Draw(void) {
 
 }
 
+void Thing_DynamicCollideImpact(void) {
+
+}
+
 s32 Thing_GetOrientedCollision(void) {
     return 0;
 }
