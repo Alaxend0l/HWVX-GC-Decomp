@@ -35,6 +35,13 @@ extern s32 m_memcardstatus_803C7970[2];
 
 s32 MemCard_Write__FUllPv(u32 id, s32 size, void *data);
 
+extern void *wheels;
+u8 IsOpened__8LGWheelsFl(void *wheels, s32 chan);
+s8 IsConnected__8LGWheelsFl(void *wheels, s32 chan);
+void PlayCarAirborne__8LGWheelsFl(void *wheels, s32 chan);
+void PlayFrontalCollisionForce__8LGWheelsFlUc(void *wheels, s32 chan, u8 force);
+void PlayDamperForce__8LGWheelsFlUcs(void *wheels, s32 chan, u8 coefficient, s16 offset);
+
 typedef struct RandomNumberGenerator {
     Vector vectors[0x300];
     u32 unk3000;
