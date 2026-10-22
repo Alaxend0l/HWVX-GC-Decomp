@@ -685,6 +685,21 @@ void InitVI(void) {
     }
 }
 
+void *Allocate(u32 size) {
+    void *OSAllocFromHeap(s32 heap, u32 size);
+    void Dprintf(const char *fmt, ...);
+    void *ptr;
+
+    if (size == 0) {
+        return 0;
+    }
+    ptr = OSAllocFromHeap(__OSCurrHeap, size);
+    if (ptr == 0) {
+        Dprintf("ALLOCATE ERROR Could not allocate the requested memory, going to crash!!\n");
+    }
+    return ptr;
+}
+
 void MemCpy32(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
