@@ -2822,6 +2822,7 @@ s32 __CARDGetFatBlock(void *arg0) {
     return M2C_FIELD(arg0, s32 *, 0x88);
 }
 
+#ifndef CARD_CONTROL_DEFINED
 typedef void (*CARDCallback)(s32 chan, s32 result);
 
 typedef struct CARDControl {
@@ -2839,6 +2840,7 @@ typedef struct CARDControl {
 } CARDControl;
 
 extern CARDControl __CARDBlock[2];
+#endif
 s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, void *callback);
 s32 __CARDPutControlBlock(void *card, s32 result);
 static void WriteCallback(s32 chan, s32 result);
