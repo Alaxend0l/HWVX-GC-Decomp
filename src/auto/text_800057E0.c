@@ -823,6 +823,11 @@ void NavHolder_UseMainRouteOnly(void) {
     gs_useMainRouteOnly_803C7000 = 1;
 }
 
+s32 NavHolder_GetTotalNavPoints(void) {
+    extern void *gs_NavHolder_803C6CD8;
+    return M2C_FIELD(gs_NavHolder_803C6CD8, s32 *, 4);
+}
+
 void Mover_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
