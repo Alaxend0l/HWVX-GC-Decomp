@@ -2905,6 +2905,23 @@ void SetVertexBuffer(u32 *vb) {
     }
 }
 
+void SetTriVtxDescIdx(void) {
+    M2C_UNK GXClearVtxDesc();
+    M2C_UNK GXSetVtxAttrFmt(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK);
+    M2C_UNK GXSetVtxDesc(M2C_UNK, M2C_UNK);
+    extern u32 m_VtxDescFlag;
+    if ((u32) m_VtxDescFlag != 0x100U) {
+        m_VtxDescFlag = 0x100U;
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 3);
+        GXSetVtxDesc(0xB, 3);
+        GXSetVtxDesc(0xD, 3);
+        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+        GXSetVtxAttrFmt(0, 0xB, 0, 1, 0);
+        GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    }
+}
+
 void Render_SetConstColor(s32 *arg0) {
     M2C_UNK GXSetChanAmbColor(M2C_UNK, s32 *);
     M2C_UNK GXSetChanMatColor(M2C_UNK, s32 *);
