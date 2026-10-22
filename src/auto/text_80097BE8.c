@@ -428,6 +428,31 @@ typedef struct GDL {
     u16 spriteHeads[1];
 } GDL;
 
+typedef struct FontChar {
+    f32 unk0;
+    f32 unk4;
+    f32 unk8;
+    f32 unkC;
+    s8 spacingX;
+    s8 spacingY;
+    u8 unk12[0x14 - 0x12];
+} FontChar;
+
+typedef struct Font {
+    u8 unk0[0xC];
+    u16 texture;
+    u8 unkE[0x10 - 0xE];
+    s8 inUse;
+    u8 unk11;
+    u16 refCount;
+    FontChar chars[256];
+} Font;
+
+typedef struct FontManager {
+    s32 numFonts;
+    Font fonts[16];
+} FontManager;
+
 typedef struct DLSkinGroup {
     u8 unk0[0x14];
 } DLSkinGroup;
