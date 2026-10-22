@@ -4676,6 +4676,20 @@ void usr_put_initialize(void) {
 
 }
 
+void TRKStandardACK(TRKBuffer *b, u8 commandID, u8 replyError) {
+    s32 err;
+    s32 ackTries;
+
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, commandID);
+    TRKAppendBuffer1_ui8(b, replyError);
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+}
+
 extern GeneralGameSettings IsTRKConnected_8030B440;
 s32 GetTRKConnected(void) {
     return IsTRKConnected_8030B440.difficulty;
