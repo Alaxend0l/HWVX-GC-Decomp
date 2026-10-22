@@ -273,6 +273,10 @@ void *__StringWrite(void *osc, const char *Buffer, u32 NumChars) {
     return (void *)1;
 }
 
+void *__FileWrite(void *File, const char *Buffer, u32 NumChars) {
+    return (fwrite(Buffer, 1, NumChars, File) == NumChars ? File : 0);
+}
+
 void srand(s32 arg0) {
     extern s32 next_803C6EA0;
     next_803C6EA0 = arg0;
