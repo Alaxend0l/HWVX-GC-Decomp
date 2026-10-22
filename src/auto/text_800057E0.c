@@ -1864,9 +1864,10 @@ void ArmageddonDropShipInfo(void *arg0) {
     M2C_FIELD(arg0, f32 *, 0x28) = InterfaceInputAnimator_GetUDCounter();
 }
 
+static const char s_InterfaceInputName[] = "InterfaceInput";
+
 void InterfaceInputAnimator_Release(void) {
-    static const char name[] = "InterfaceInput";
-    ProcessManager_Release((char *)name);
+    ProcessManager_Release((char *)s_InterfaceInputName);
 }
 
 void ProcessManager_Release(char *name);
