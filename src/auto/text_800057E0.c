@@ -1377,10 +1377,10 @@ void OConvexHullHolder_Release(void *arg0) {
 
 void *OBoxHolder_Get(void) {
     static const char msg[] = "OUT OF OBOXES!!!!\n";
-    extern u8 g_aOBox[0x200][0xF0];
+    extern s8 g_aOBox[0x200][0xF0];
     s32 i;
     for (i = 0; i < 0x200; i++) {
-        if (!(s8)g_aOBox[i][0x9D]) {
+        if (g_aOBox[i][0x9D] == 0) {
             g_aOBox[i][0x9D] = 1;
             return g_aOBox[i];
         }
