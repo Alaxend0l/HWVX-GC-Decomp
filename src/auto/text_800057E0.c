@@ -1748,6 +1748,21 @@ void StateGameManager_Release(void) {
     FileStreaming_ReleaseAllDataPacks(3, 1);
 }
 
+s32 ActionEndLevel(s32 *arg0) {
+    extern u8 g_bRestartCurrentLevel;
+    extern s32 g_GameProgressionEndState[2];
+
+    if (GameSettings_GetCodeVariable(0x198, 0) != 0) {
+        ExitStateGamePlay(0xC);
+    } else {
+        g_bRestartCurrentLevel = 0;
+        g_GameProgressionEndState[0] = arg0[0];
+        g_GameProgressionEndState[1] = arg0[1];
+        ExitStateGamePlay(0xB);
+    }
+    return 1;
+}
+
 s32 Pod_Init(u8 *pod, u8 *init) {
     u8 *motion;
 
@@ -2905,6 +2920,13 @@ s32 GXGetTexObjData(void *arg0) {
 
 s32 GXGetTexObjFmt(void *arg0) {
     return M2C_FIELD(arg0, s32 *, 0x14);
+}
+
+void GXInitTlutRegion(s32 *arg0, s32 arg1, s32 arg2) {
+    *arg0 = 0;
+    *arg0 = (*arg0 & 0xFFFFFC00) | ((u32) (arg1 + 0xFFF80000) >> 9U);
+    *arg0 = (*arg0 & 0xFFE003FF) | (arg2 << 0xA);
+    *arg0 = (*arg0 & 0xFFFFFF) | 0x65000000;
 }
 
 void __GXSetRange(void) {
