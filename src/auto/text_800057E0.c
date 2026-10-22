@@ -75,6 +75,11 @@ typedef struct TRKEventQueue {
 
 extern TRKEventQueue gTRKEventQueue;
 
+s32 TRKTerminateSerialHandler(void);
+s32 TRKInitializeMutex(void *mutex);
+s32 TRKAcquireMutex(void *mutex);
+s32 TRKReleaseMutex(void *mutex);
+
 s32 UnlockSram(s32 commit, u32 offset);
 
 typedef struct Process {
