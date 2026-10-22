@@ -448,6 +448,31 @@ void Render_UseLighting(u8 arg0) {
     GXSetChanCtrl(4, 0, 1, 1, 0, 0, 2);
 }
 
+void Render_SetConstColor(s32 *arg0) {
+    M2C_UNK GXSetChanAmbColor(M2C_UNK, s32 *);
+    M2C_UNK GXSetChanMatColor(M2C_UNK, s32 *);
+    extern s32 black_803C6EE4;
+    extern s32 white_803C6EE0;
+    s32 sp14;
+    s32 sp10;
+    s32 spC;
+    s32 sp8;
+
+    if (arg0 != NULL) {
+        sp14 = *arg0;
+        GXSetChanMatColor(4, &sp14);
+        sp10 = white_803C6EE0;
+        GXSetChanAmbColor(4, &sp10);
+        GXSetChanCtrl(4, 1, 0, 0, 1, 2, 2);
+        return;
+    }
+    GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+    spC = black_803C6EE4;
+    GXSetChanAmbColor(4, &spC);
+    sp8 = white_803C6EE0;
+    GXSetChanMatColor(4, &sp8);
+}
+
 f32 Gfx_GetProjectionMatrix(void) {
     void *GetRenderWindow();
     return M2C_FIELD(GetRenderWindow(), f32 *, 0x270);
