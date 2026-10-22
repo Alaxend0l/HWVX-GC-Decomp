@@ -1091,6 +1091,11 @@ void Gfx_EndScene(void) {
     g_screenTextX = 0;
 }
 
+void Gfx_EnableState(u32 state) {
+    extern GfxState g_state;
+    g_state.unk7C |= state;
+}
+
 void Gfx_SetEnviroMapMode(u8 mode) {
     extern GfxState g_state;
     g_state.enviroMapMode = mode;
