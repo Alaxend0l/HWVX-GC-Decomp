@@ -2534,8 +2534,6 @@ void Gfx_TextureHandler_Destroy(void) {
     m_texture = NULL;
 }
 
-#pragma push
-#pragma optimization_level 2
 u8 *LoadBTF_RAM(u8 *data, u32 id) {
     extern u8 *m_texture;
     void Render_CreateTextureSlot(u32 id, s32 arg1, void *texture);
@@ -2556,7 +2554,6 @@ u8 *LoadBTF_RAM(u8 *data, u32 id) {
     Render_CreateTextureSlot(id, 1, tex);
     return data + 0x10;
 }
-#pragma pop
 
 void Gfx_SetTextureWrapMode(u16 id, s16 mode) {
     extern u8 *m_texture;
