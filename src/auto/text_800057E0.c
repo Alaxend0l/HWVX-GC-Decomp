@@ -1891,6 +1891,14 @@ s32 FileStreaming_GetNumAvailableQuadPacks(void) {
     return 0xB;
 }
 
+void GameSettings_SetDefaultControllerState(void) {
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        g_codeVariables.controllerState[i] = 1;
+    }
+}
+
 u8 GameSettings_GetGameType(void) {
     void *GameSettings_GetMCP();
     void *temp_r3;
