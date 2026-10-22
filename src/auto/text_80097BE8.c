@@ -251,6 +251,12 @@ typedef struct GBAControl {
 } GBAControl;
 
 extern GBAControl __GBA[4];
+
+s32 __GBATransfer(s32 chan, s32 w1, s32 r1, void *proc);
+void ReadProc(s32 chan);
+void WriteProc(s32 chan);
+void __GBASyncCallback(s32 chan);
+s32 __GBASync(s32 chan);
 extern u8 D54_800DAFF8[];
 
 s32 GBAResetAsync(s32 chan, u8 *status, GBACallback callback);
@@ -3373,6 +3379,20 @@ void WriteProc(s32 chan) {
         return;
     }
     *gba->status = gba->input[0] & 0x3A;
+}
+
+s32 GBAWriteAsync(s32 chan, u8 *src, u8 *status, GBACallback callback) {
+    GBAControl *gba = &__GBA[chan];
+
+    if (gba->callback != NULL) {
+        return 2;
+    }
+    gba->output[0] = 0x15;
+    memcpy(&gba->output[1], src, 4);
+    gba->ptr = src;
+    gba->status = status;
+    gba->callback = callback;
+    return __GBATransfer(chan, 5, 1, WriteProc);
 }
 
 void __GBASyncCallback(s32 chan) {
