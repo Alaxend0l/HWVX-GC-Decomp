@@ -90,9 +90,16 @@ typedef struct ControllerSettings {
     u8 data[0x12];
 } ControllerSettings;
 
+typedef struct AudioSettings {
+    u8 sfxVolume;
+    u8 musicVolume;
+    u8 speakerMode;
+    u8 unk3;
+} AudioSettings;
+
 typedef struct GeneralGameSettings {
     s32 difficulty;
-    s32 unk4;
+    AudioSettings audio;
     ControllerSettings controllers[18];
     u8 unk14C[4];
 } GeneralGameSettings;
