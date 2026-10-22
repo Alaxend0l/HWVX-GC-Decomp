@@ -141,6 +141,34 @@ typedef struct Effect {
     s32 deadbandHigh;
 } Effect;
 
+typedef struct VDevice {
+    u8 unk0[0xF4];
+    Effect *activeEffects[64];
+    Effect effects[64];
+    s32 unk11F4;
+} VDevice;
+
+typedef struct LGDevice {
+    u8 unk0[4];
+    u8 opened : 1;
+    u8 started : 1;
+    u8 unk4_pad : 6;
+    s32 unk8;
+    u8 unkC[0x44];
+    VDevice vdev;
+} LGDevice;
+
+extern LGDevice g_lgDevices_803771D8[4];
+extern s32 g_bGammaInitialized_803C794C;
+
+void SimThread_Init(VDevice *dev, VDevice *owner);
+void VDevice_RecalcGammaTable(void);
+void VDevice_Shutdown(VDevice *dev);
+s32 VDevice_StartEffect(VDevice *dev, u32 handle);
+u32 VDevice_GetFreeEffect(VDevice *dev);
+void Effect_Init(Effect *effect);
+void Effect_UpdateEffect(Effect *effect, u8 *desc);
+
 extern s16 g_iQuarterSineTable_8037BB7C[0x40];
 
 typedef struct __OutStrCtrl {
@@ -1791,6 +1819,65 @@ s32 OnReset_800C4F14(void) {
     extern s32 __GBAReset;
     __GBAReset = 1;
     return 1;
+}
+
+static void F23(s32 chan, s32 ret) {
+    GBAControl *gba = &__GBA[chan];
+    GBABootInfo *bootInfo = &gba->bootInfo;
+    GBACallback callback;
+
+    if (ret == 0) {
+        ret = GBAResetAsync(chan, bootInfo->status, F25);
+    }
+    if (ret != 0) {
+        bootInfo->begin = 0;
+        callback = bootInfo->callback;
+        if (callback != NULL) {
+            bootInfo->callback = NULL;
+            callback(chan, ret);
+        }
+    }
+    gba->ret = ret;
+}
+
+static void F25(s32 chan, s32 ret) {
+    GBAControl *gba = &__GBA[chan];
+    GBABootInfo *bootInfo = &gba->bootInfo;
+    GBACallback callback;
+
+    if (ret == 0 && *bootInfo->status != D54_800DAFF8[0x25]) {
+        ret = 3;
+    }
+    if (ret == 0) {
+        ret = GBAGetStatusAsync(chan, bootInfo->status, F27);
+    }
+    if (ret != 0) {
+        bootInfo->begin = 0;
+        callback = bootInfo->callback;
+        if (callback != NULL) {
+            bootInfo->callback = NULL;
+            callback(chan, ret);
+        }
+    }
+    gba->ret = ret;
+}
+
+static void F29(s32 chan, s32 ret) {
+    GBAControl *gba = &__GBA[chan];
+    GBABootInfo *bootInfo = &gba->bootInfo;
+    GBACallback callback;
+
+    if (ret == 0) {
+        __GBAX02(chan, bootInfo->readbuf);
+    } else {
+        bootInfo->begin = 0;
+        callback = bootInfo->callback;
+        if (callback != NULL) {
+            bootInfo->callback = NULL;
+            callback(chan, ret);
+        }
+    }
+    gba->ret = ret;
 }
 
 void FileManager_Destroy(void) {
