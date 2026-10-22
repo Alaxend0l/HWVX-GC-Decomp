@@ -237,7 +237,11 @@ typedef struct GBAControl {
     u8 *ptr;
     void *callback;
     s32 ret;
-    u8 unk24[0x1C];
+    void *threadQueue[2];
+    u8 unk2C[4];
+    s64 delay;
+    void *proc;
+    u8 unk3C[4];
     GBABootInfo bootInfo;
     u8 unkA8[0x58];
 } GBAControl;
