@@ -36,7 +36,6 @@ typedef struct NavHolder {
 
 extern NavHolder gs_NavHolder_803C6CD8;
 
-#define CARD_CONTROL_DEFINED
 typedef void (*CARDCallback)(s32 chan, s32 result);
 
 typedef struct CARDControl {
