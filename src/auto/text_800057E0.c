@@ -2409,6 +2409,19 @@ void __AXAllocInit(void) {
     }
 }
 
+void __AXAllocQuit(void) {
+    extern void *__AXCallbackStack_803C7468;
+    extern void *__AXStackHead_802EFC40[32];
+    extern void *__AXStackTail_802EFCC0[32];
+    u32 i;
+
+    __AXCallbackStack_803C7468 = NULL;
+    for (i = 0; i < 32; i++) {
+        __AXStackTail_802EFCC0[i] = NULL;
+        __AXStackHead_802EFC40[i] = NULL;
+    }
+}
+
 void __AXPushFreeStack(void *p) {
     extern void *__AXStackHead_802EFC40[32];
     M2C_FIELD(p, void **, 0) = __AXStackHead_802EFC40[0];
