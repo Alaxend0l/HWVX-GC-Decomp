@@ -368,8 +368,40 @@ typedef struct GDLAlphaEntry {
     u16 next;
 } GDLAlphaEntry;
 
+typedef struct GDLSprite {
+    u8 unk0[0x20];
+    u32 next;
+    u8 unk24[0x30 - 0x24];
+} GDLSprite;
+
+typedef struct GDLRect {
+    u8 unk0[0x83];
+    u8 window;
+} GDLRect;
+
+typedef struct GDLLine {
+    u8 unk0[0x30];
+} GDLLine;
+
+typedef struct GDLGroupTri {
+    u8 type;
+    u8 unk1[0xC - 0x1];
+    u32 count;
+    u8 unk10[0x20 - 0x10];
+} GDLGroupTri;
+
 typedef struct GDL {
-    u8 unk0[0x54];
+    u8 unk0[0x8];
+    u32 numSprites;
+    u8 unkC[0x20 - 0xC];
+    u32 numRects;
+    u8 unk24[0x34 - 0x24];
+    u32 numLines;
+    s32 unk38;
+    s32 unk3C;
+    s32 unk40;
+    s32 numGroupTris;
+    u8 unk48[0x54 - 0x48];
     s32 numDrawEntries;
     u8 unk58[0x6C - 0x58];
     s32 numEnvmapStates;
@@ -377,10 +409,20 @@ typedef struct GDL {
     u32 numMatrices;
     u8 unk78[0x80 - 0x78];
     u16 alphaTable[256];
-    GDLAlphaEntry alphaEntries[(0xDFCC0 - 0x280) / 8];
+    GDLAlphaEntry alphaEntries[(0x215C0 - 0x280) / 8];
+    GDLSprite sprites[0x7CF];
+    u8 unk38C90[0x9FA00 - 0x38C90];
+    GDLRect rects[0x20];
+    u8 unkA0A80[0xC0040 - 0xA0A80];
+    GDLLine lines[0x100];
+    u8 unkC3040[0xDFCC0 - 0xC3040];
     GDLDrawEntry drawEntries[(0xF3C00 - 0xDFCC0) / 0x14];
     u8 unkF3BEC[0xF3C00 - 0xDFCC0 - ((0xF3C00 - 0xDFCC0) / 0x14) * 0x14];
     u32 matrices[0x578];
+    u8 unkF51E0[0x24CDE4 - 0xF51E0];
+    GDLGroupTri *groupTris;
+    u8 unk24CDE8[0x24CDF4 - 0x24CDE8];
+    u16 spriteHeads[1];
 } GDL;
 
 typedef struct DLSkinGroup {
@@ -1287,6 +1329,42 @@ void DBClose(void) {
 
 void DBOpen(void) {
 
+}
+
+void DBGHandler(s16 interrupt) {
+    extern void (*DBGCallback_803C7604)(s16);
+
+    *(u16 *)0xCC003000 = 0x1000;
+    if (DBGCallback_803C7604) {
+        DBGCallback_803C7604(interrupt);
+    }
+}
+
+void MWCallback(void) {
+    extern u8 EXIInputFlag_803C7614;
+    extern void (*MTRCallback_803C7600)(s32);
+
+    EXIInputFlag_803C7614 = 1;
+    if (MTRCallback_803C7600) {
+        MTRCallback_803C7600(0);
+    }
+}
+
+BOOL DBGReadStatus(u32 *status) {
+    BOOL DBGEXIImm(void *buffer, s32 bytecounter, u32 write);
+    BOOL err;
+    u32 cmd;
+
+    *(volatile u32 *)0xCC006828 = (*(volatile u32 *)0xCC006828 & 0x405) | 0xC0;
+    cmd = 0x40000000;
+    err = !DBGEXIImm(&cmd, 2, 1);
+    while (*(volatile u32 *)0xCC006834 & 1) {
+    }
+    err |= !DBGEXIImm(status, 4, 0);
+    while (*(volatile u32 *)0xCC006834 & 1) {
+    }
+    *(volatile u32 *)0xCC006828 &= 0x405;
+    return !err;
 }
 
 f32 MagnitudeVector(Vector *v) {
