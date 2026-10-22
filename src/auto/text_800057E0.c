@@ -1162,6 +1162,10 @@ s32 DVDGetCurrentDiskID(void) {
     return 0x80000000;
 }
 
+s32 AIGetStreamPlayState(void) {
+    return *(s32 *)0xCC006C00 & 1;
+}
+
 void AIReset(void) {
     extern s32 __AI_init_flag_803C73F0;
     __AI_init_flag_803C73F0 = 0;
