@@ -64,6 +64,45 @@ extern SFX g_sound_80373560[0xFE];
 extern u8 g_soundLst_80373460[0xFE];
 extern u32 g_freeSound_803C78D8;
 
+typedef struct GBAControl {
+    u8 output[5];
+    u8 input[5];
+    s32 outputBytes;
+    s32 inputBytes;
+    u8 *status;
+    u8 *ptr;
+    void *callback;
+    s32 ret;
+    u8 unk24[0xDC];
+} GBAControl;
+
+extern GBAControl __GBA[4];
+
+typedef struct EffectCondition {
+    u8 unk0[2];
+    u8 negSaturation;
+    u8 posSaturation;
+    s16 negCoefficient;
+    s16 posCoefficient;
+} EffectCondition;
+
+typedef struct EffectState {
+    u8 unk0[0xC];
+    s32 position;
+    u8 unk10[0x54];
+    s32 velocity;
+} EffectState;
+
+typedef struct Effect {
+    u8 unk0[0x24];
+    EffectState *state;
+    u8 unk28[0x10];
+    s32 deadbandLow;
+    s32 deadbandHigh;
+} Effect;
+
+extern s16 g_iQuarterSineTable_8037BB7C[0x40];
+
 typedef struct __OutStrCtrl {
     char *CharStr;
     u32 MaxCharCount;
@@ -1387,7 +1426,7 @@ void SetSpeakerMode(s8 arg0) {
 #pragma push
 #pragma optimization_level 1
 void SetReverb(s32 arg0, s32 arg1) {
-    void SetReverb_(s32, s32, s32, s32);
+    void SetReverb_(s32, s32, u16, u8);
     SetReverb_(arg0, arg1, 0x666, 0x28);
 }
 #pragma pop
@@ -1423,14 +1462,14 @@ u32 CreateSFX(void *desc) {
 s8 DestroySFX(u32 handle) {
     s32 FreeA_(void *);
     void *data;
-    u32 next;
     SFX *sfx;
+    u32 next;
     u32 idx = handle - 1;
 
     if (idx < 0xFE && g_sound_80373560[idx].data != 0) {
         next = g_freeSound_803C78D8;
-        sfx = &g_sound_80373560[idx];
         g_freeSound_803C78D8 = idx;
+        sfx = &g_sound_80373560[idx];
         g_soundLst_80373460[idx] = next;
         data = sfx->data;
         sfx->data = 0;
