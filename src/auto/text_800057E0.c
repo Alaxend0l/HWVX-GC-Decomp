@@ -1470,6 +1470,34 @@ void Creature_Release(s32 arg0) {
     Thing_Release(arg0);
 }
 
+void Creature_Draw(void *creature) {
+    if (M2C_FIELD(creature, f32 *, 0x1C0) > 0.0f) {
+        MotionState_Draw((u8 *)creature + 0xCC);
+    }
+    M2C_FIELD(creature, s32 *, 0x74) |= 0x4000;
+}
+
+s32 Creature_ProcessItemPickup(void *creature, void *item) {
+    void *rack;
+    void *motion;
+
+    switch (*M2C_FIELD(item, u8 **, 0xC0)) {
+    case 3:
+        rack = ThingManagerList_GetByType((u8 *)creature + 0xE0, 8);
+        if (rack != NULL) {
+            WildCardRack_Add(rack, M2C_FIELD(item, u8 **, 0xC0), M2C_FIELD(item, s16 *, 0xCE));
+            Item_Release(item);
+            motion = M2C_FIELD(item, void **, 0xD0);
+            if (motion != NULL) {
+                M2C_FIELD(motion, s32 *, 0x18) = M2C_FIELD(motion, s32 *, 0x14);
+            }
+            return 1;
+        }
+        break;
+    }
+    return 0;
+}
+
 s32 Creature_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
