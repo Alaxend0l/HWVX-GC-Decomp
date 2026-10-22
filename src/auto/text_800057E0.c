@@ -2316,6 +2316,17 @@ void GamePlay_Interface(void *arg0) {
     }
 }
 
+void GamePlay_Startup(void) {
+    extern void GamePlay_PauseOptions_HandleInput(void *msg);
+    extern struct {
+        void (*handleInput)(void *msg);
+        void (*update)(void);
+    } g_handleInterfaceGP;
+
+    g_handleInterfaceGP.handleInput = GamePlay_PauseOptions_HandleInput;
+    g_handleInterfaceGP.update = NULL;
+}
+
 static const char s_InterfaceInputName[] = "InterfaceInput";
 
 void ArmageddonDropShipInfo(void *arg0) {
@@ -3229,6 +3240,16 @@ void OSClearContext(register void *context) {
     }
 }
 
+void __OSContextInit(void) {
+    void OSSwitchFPUContext(void);
+    void *__OSSetExceptionHandler(u8 exception, void *handler);
+    void DBPrintf(const char *fmt, ...);
+
+    __OSSetExceptionHandler(7, OSSwitchFPUContext);
+    *(u32 *)0x800000D8 = 0;
+    DBPrintf("FPU-unavailable handler installed\n");
+}
+
 __OSInterruptHandler __OSSetInterruptHandler(__OSInterrupt interrupt, __OSInterruptHandler handler) {
     __OSInterruptHandler *table;
     __OSInterruptHandler oldHandler;
@@ -3998,7 +4019,7 @@ void AIInitDMA(u32 start_addr, u32 length) {
 }
 
 void AIStartDMA(void) {
-    __DSPRegs[27] = (u16)(__DSPRegs[27] | 0x8000);
+    M2C_FIELD((void *)0xCC005000, u16 *, 0x36) = (u16) (M2C_FIELD((void *)0xCC005000, u16 *, 0x36) | 0x8000);
 }
 
 s32 AIGetStreamPlayState(void) {
