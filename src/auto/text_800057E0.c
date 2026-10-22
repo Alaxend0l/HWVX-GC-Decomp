@@ -2063,6 +2063,12 @@ s32 CategorizeError(u32 error) {
     return 3;
 }
 
+void stateGoToRetry(void) {
+    M2C_UNK DVDLowStopMotor(void (*)(u32));
+    void cbForStateGoToRetry(u32);
+    DVDLowStopMotor(cbForStateGoToRetry);
+}
+
 void cbForStateCheckID2(u32 intType) {
     M2C_UNK DVDLowRead(void *, u32, u32, void (*)(u32));
     M2C_UNK DVDLowRequestError(void (*)(u32));
