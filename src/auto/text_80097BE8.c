@@ -702,6 +702,30 @@ void abort(void) {
     _ExitProcess();
 }
 
+void __close_all(void) {
+    extern FILE __files[];
+    FILE *p = &__files[0];
+    FILE *plast;
+
+    while (p) {
+        if (p->mode.file_kind != 0) {
+            fclose(p);
+        }
+
+        plast = p;
+        p = p->next_file_struct;
+
+        if (plast->is_dynamically_allocated) {
+            free(plast);
+        } else {
+            plast->mode.file_kind = 3;
+            if (p && p->is_dynamically_allocated) {
+                plast->next_file_struct = NULL;
+            }
+        }
+    }
+}
+
 s32 __count_trailing_zerol(u32 x) {
     s32 result = 0;
     s32 bits_not_checked = sizeof(u32) * 8;
