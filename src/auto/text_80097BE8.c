@@ -471,6 +471,17 @@ void srand(s32 arg0) {
     next_803C6EA0 = arg0;
 }
 
+u32 strlen(const char *str) {
+    u32 len = -1;
+    u8 *p = (u8 *)str - 1;
+
+    do {
+        len++;
+    } while (*++p);
+
+    return len;
+}
+
 void time(s32 *arg0) {
     s32 __get_time();
     s32 temp_r3;
