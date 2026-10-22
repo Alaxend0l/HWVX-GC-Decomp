@@ -112,6 +112,14 @@ void __sys_free(void *ptr) {
     OSFreeToHeap(__OSCurrHeap, (s32)ptr);
 }
 
+s32 OSAllocFromHeap(s32 heap, s32 ptr);
+void __sys_alloc(void *ptr) {
+    if (__OSCurrHeap == -1) {
+        InitDefaultHeap();
+    }
+    OSAllocFromHeap(__OSCurrHeap, (s32)ptr);
+}
+
 void abort(void) {
     raise(1);
     __aborting = 1;
