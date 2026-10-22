@@ -746,6 +746,10 @@ s32 Item_PreMove(void) {
     return 1;
 }
 
+s32 LogHandler_Create(void) {
+    return 0;
+}
+
 void Mover_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
