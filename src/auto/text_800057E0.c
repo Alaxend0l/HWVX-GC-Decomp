@@ -1801,6 +1801,14 @@ void GameSettings_ApplyDefaultGameData(void) {
     OSSetSoundMode(g_generalGameSettings.audio.speakerMode);
 }
 
+void GameSettings_DetermineIfOverwritingFile(void) {
+    if (g_bValidFileName_803C6CA4[g_codeVariables.fileIndex - 1]) {
+        g_codeVariables.bOverwritingFile = 1;
+    } else {
+        g_codeVariables.bOverwritingFile = 0;
+    }
+}
+
 void Geometry_Destroy(void) {
     M2C_UNK Geometry_Init(M2C_UNK);
     extern s32 g_pGeometryHandler;
