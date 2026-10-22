@@ -371,6 +371,26 @@ s32 MovieManager_GetTextureIndex(void) {
     return 0;
 }
 
+void Gfx_StateTextureBlendMode(s32 arg0) {
+    M2C_UNK GXSetTevOp(M2C_UNK, M2C_UNK);
+    extern s32 m_blendMode_803C76D0;
+    m_blendMode_803C76D0 = arg0;
+    switch (arg0) {                                 /* irregular */
+    case 1:
+        GXSetTevOp(0, 1);
+        return;
+    case 2:
+        GXSetTevOp(0, 0);
+        return;
+    case 3:
+        GXSetTevOp(0, 3);
+        return;
+    case 4:
+        GXSetTevOp(0, 2);
+        return;
+    }
+}
+
 void Render_StateCullMode(s32 arg0) {
     M2C_UNK GXSetCullMode(M2C_UNK);
     extern s32 m_cullMode;
