@@ -3341,6 +3341,18 @@ void PrepareReady(void *arg0) {
     OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
 }
 
+BOOL THPPlayerPlay(void) {
+    if (ActivePlayer.open && (ActivePlayer.state == 1 || ActivePlayer.state == 4)) {
+        ActivePlayer.state = 2;
+        ActivePlayer.prevCount = 0;
+        ActivePlayer.curCount = 0;
+        ActivePlayer.retraceCount = -1;
+        ActivePlayer.unkC0 = -1;
+        return TRUE;
+    }
+    return FALSE;
+}
+
 void THPPlayerStop(void) {
     void AudioDecodeThreadCancel(void);
     BOOL DVDCancel(void *block);
