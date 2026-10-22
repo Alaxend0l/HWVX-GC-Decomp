@@ -2303,6 +2303,8 @@ void StateGamePlay_Pause(u8 pause) {
 }
 #pragma pop
 
+#pragma push
+#pragma dont_inline on
 s32 StateGamePlay_Shutdown(void) {
     extern s8 g_iTimeShift;
     extern u8 g_bFreezeWorld;
@@ -2353,6 +2355,7 @@ s32 StateGamePlay_Shutdown(void) {
     Gfx_ClearScreen();
     return 1;
 }
+#pragma pop
 
 void GamePlay_Interface(void *msg) {
     void GamePlay_Startup(void);
