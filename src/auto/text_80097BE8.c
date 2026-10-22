@@ -1819,6 +1819,7 @@ void Gfx_DrawGeometry_MatrixNotCached(s32 geometry, s32 matrix) {
     g_pGDL->drawEntries[g_pGDL->numDrawEntries].unk11 = 0;
     g_pGDL->numDrawEntries++;
 }
+#pragma pop
 
 void Gfx_Destroy(void) {
     M2C_UNK Gfx_DisplayList_Destroy();
