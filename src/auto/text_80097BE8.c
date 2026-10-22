@@ -2415,6 +2415,15 @@ u8 PedalsConnected__6WheelsFl(Wheels *wheels, s32 chan) {
     return (wheels->status[chan].flags >> 3) & 1;
 }
 
+void GenerateNonLinValues__6WheelsFlUc(Wheels *wheels, s32 chan, u8 coefficient) {
+    f32 CalculateNonLinValue__6WheelsFlUcss(Wheels *wheels, s32 input, u8 coefficient, s16 min, s16 max);
+    s32 i;
+
+    for (i = 0; i < 256; i++) {
+        wheels->nonLinValues[chan][i] = CalculateNonLinValue__6WheelsFlUcss(wheels, i, coefficient, -128, 127);
+    }
+}
+
 s32 __ct__9ConditionFv(s32 arg0) {
     M2C_UNK __ct__5ForceFv();
     __ct__5ForceFv();
