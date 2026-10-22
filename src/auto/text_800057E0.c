@@ -1430,6 +1430,10 @@ u8 GameSettings_GetGameType(void) {
     return 0U;
 }
 
+s32 GameSettings_GetDifficulty(void) {
+    return g_generalGameSettings.difficulty;
+}
+
 void Geometry_Destroy(void) {
     M2C_UNK Geometry_Init(M2C_UNK);
     extern s32 g_pGeometryHandler;
