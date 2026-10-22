@@ -3073,13 +3073,13 @@ f32 Gfx_GetProjectionMatrix(void) {
 #pragma push
 #pragma dont_inline on
 void Gfx_SetOrthoMatrix(void) {
-    void C_MTXOrtho(f32 m[4][4], f32 t, f32 b, f32 l, f32 r, f32 n, f32 f);
-    void GXSetProjection(f32 m[4][4], s32 type);
+    void C_MTXOrtho(f32 m[3][4], f32 t, f32 b, f32 l, f32 r, f32 n, f32 f);
+    void GXSetProjection(f32 m[3][4], s32 type);
     void PSMTXIdentity(f32 m[3][4]);
     void GXLoadPosMtxImm(f32 m[3][4], u32 id);
     void GXSetCurrentMtx(u32 id);
-    f32 proj[4][4];
     f32 mtx[3][4];
+    f32 proj[3][4];
     f32 width;
 
     width = *(u32 *)((u8 *)GetRenderWindow() + 0x280);
@@ -3092,11 +3092,12 @@ void Gfx_SetOrthoMatrix(void) {
 
 void Render_SaveCamera(void) {
     extern Vector GXCameraSpace_8036CF80[7];
+    Vector *cam = GXCameraSpace_8036CF80;
 
-    GXCameraSpace_8036CF80[3] = *(Vector *)((u8 *)GetRenderWindow() + 0x180);
-    GXCameraSpace_8036CF80[4] = *(Vector *)((u8 *)GetRenderWindow() + 0x190);
-    GXCameraSpace_8036CF80[5] = *(Vector *)((u8 *)GetRenderWindow() + 0x1A0);
-    GXCameraSpace_8036CF80[6] = *(Vector *)((u8 *)GetRenderWindow() + 0x1B0);
+    cam[3] = *(Vector *)((u8 *)GetRenderWindow() + 0x180);
+    cam[4] = *(Vector *)((u8 *)GetRenderWindow() + 0x190);
+    cam[5] = *(Vector *)((u8 *)GetRenderWindow() + 0x1A0);
+    cam[6] = *(Vector *)((u8 *)GetRenderWindow() + 0x1B0);
 }
 #pragma pop
 
