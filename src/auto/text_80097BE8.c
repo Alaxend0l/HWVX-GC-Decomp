@@ -1829,6 +1829,23 @@ void *Gfx_GetWorldMatrixState(u32 index) {
     return (void *)g_pGDL->matrices[index];
 }
 
+void Gfx_GetCameraVector(Vector *right, Vector *up, Vector *at) {
+    *right = *(Vector *)((u8 *)GetRenderWindow() + 0x190);
+    *up = *(Vector *)((u8 *)GetRenderWindow() + 0x1A0);
+    *at = *(Vector *)((u8 *)GetRenderWindow() + 0x1B0);
+}
+
+void *DisplayList_AddGroup_Skin(void) {
+    extern u8 *g_pDL;
+    u16 count = *(u16 *)(g_pDL + 0x10);
+
+    if (count == 0x100) {
+        return NULL;
+    }
+    *(u16 *)(g_pDL + 0x10) = count + 1;
+    return g_pDL + 0x109E0 + count * 0x14;
+}
+
 s32 Gfx_AddWorldMatrixState_CacheMatrix(s32 matrix);
 s32 Gfx_GetLightState(void);
 #pragma push
