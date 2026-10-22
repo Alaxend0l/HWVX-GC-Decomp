@@ -4782,6 +4782,29 @@ void SetMIDIVol(void) {
         }
     }
 }
+
+#pragma push
+#pragma optimization_level 1
+#pragma dont_inline on
+void SetMIDIPitch(u32 pitch) {
+    extern u8 g_chn_803769B4[0x200];
+    extern u8 g_song_80376990[0x24];
+    s8 SetVoiceRate_(void *voice);
+    u32 i;
+    u8 *chn;
+    u8 *voice;
+
+    *(u32 *)(g_song_80376990 + 0x20) = pitch;
+    for (chn = g_chn_803769B4, i = 0x10; i != 0; chn += 0x20, i--) {
+        *(s32 *)(chn + 0x18) = Mul16_(GetPitchWheel_(chn[0x1D], chn[0x1C]), pitch);
+        for (voice = *(u8 **)chn; voice != NULL; voice = *(u8 **)(voice + 4)) {
+            *(s32 *)(voice + 0x34) = *(s32 *)(chn + 0x18);
+            SetVoiceRate_(voice);
+        }
+    }
+}
+#pragma pop
+
 #pragma pop
 
 #pragma push
