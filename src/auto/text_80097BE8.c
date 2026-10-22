@@ -3734,25 +3734,32 @@ void SetITOrder(u8 order, s8 keep) {
 
 #pragma push
 #pragma optimization_level 1
-void SetITTrackPriority(u32 id, s32 prio) {
+void SetITTrackPriority(s32 id, s32 prio) {
     void SetVoicePriority_(void *voice);
-    extern u8 g_trk_80375550[0x20][0x70];
+    struct Trk {
+        u8 *head;
+        u8 *active;
+        u8 pad[0xA];
+        u8 prio;
+        u8 pad2[0x5D];
+    };
+    extern struct Trk g_trk_80375550[0x20];
     u8 *voice;
     u8 *next;
 
     prio *= 2;
-    g_trk_80375550[id][0x12] = prio;
-    voice = *(u8 **)&g_trk_80375550[id][4];
+    g_trk_80375550[id].prio = prio;
+    voice = g_trk_80375550[id].active;
     if (voice != NULL) {
         voice[0x14] = prio;
         SetVoicePriority_(voice);
-        voice = *(u8 **)(voice + 8);
+        voice = ((u8 **)voice)[2];
     } else {
-        voice = *(u8 **)&g_trk_80375550[id][0];
+        voice = g_trk_80375550[id].head;
     }
     prio--;
     while (voice != NULL) {
-        next = *(u8 **)(voice + 4);
+        next = ((u8 **)voice)[1];
         voice[0x14] = prio;
         SetVoicePriority_(voice);
         voice = next;
