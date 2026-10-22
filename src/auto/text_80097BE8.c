@@ -1841,7 +1841,6 @@ void Gfx_DrawGeometry(s32 geometry, s32 matrix) {
     g_pGDL->numDrawEntries++;
 }
 
-s32 Gfx_AddWorldMatrixState_NonCached(s32 matrix);
 void Gfx_DrawGeometry_MatrixNotCached(s32 geometry, s32 matrix) {
     extern GDL *g_pGDL;
     extern GfxState g_state;
