@@ -2277,6 +2277,25 @@ void MemCpyDone(void) {
     g_arqWait_803C78B0 = 0;
 }
 
+u32 MemCpyA_(u32 dst, u32 src, u32 len) {
+    extern s32 g_arqWait_803C78B0;
+    void ARQPostRequest(void *req, u32 owner, u32 type, u32 prio, u32 src, u32 dst, u32 len, void (*cb)(void));
+    void PPCSync(void);
+    void MemCpyDone(void);
+    u8 req[0x20];
+
+    g_arqWait_803C78B0 = 1;
+    if (src & 0x80000000) {
+        ARQPostRequest(req, 0, 0, 1, src, dst, len, MemCpyDone);
+    } else {
+        ARQPostRequest(req, 0, 1, 1, src, dst, len, MemCpyDone);
+    }
+    while (g_arqWait_803C78B0 != 0) {
+        PPCSync();
+    }
+    return dst + len;
+}
+
 s32 Mul16_(u32 a, u32 b) {
     return ((u64)a * b) >> 16;
 }
@@ -2377,6 +2396,22 @@ s8 DestroySFX(u32 handle) {
     }
     return 0;
 }
+
+void SetSFXVol(s32 vol) {
+    extern u8 g_voice[0x20][0x70];
+    extern s32 g_sfxvol_803C78D4;
+    void SetVoiceVol_(void *voice, s32 vol);
+    u8 *voice;
+    u32 i;
+
+    g_sfxvol_803C78D4 = vol;
+    for (voice = g_voice[0], i = 0x20; i != 0; voice += 0x70, i--) {
+        if (voice[0] == 1 && voice[0x15] == 1) {
+            SetVoiceVol_(voice, g_sfxvol_803C78D4);
+        }
+    }
+}
+
 #pragma pop
 
 s32 SetVoicePitch(u32 id, s32 pitch) {
