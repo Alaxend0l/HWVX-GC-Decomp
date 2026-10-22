@@ -1837,6 +1837,13 @@ void Wheel_PlayCarAirborne(s32 chan) {
     }
 }
 
+void StopCarAirborne__8LGWheelsFl(void *wheels, s32 chan);
+void Wheel_StopCarAirborne(s32 chan) {
+    if (IsOpened__8LGWheelsFl(wheels, chan)) {
+        StopCarAirborne__8LGWheelsFl(wheels, chan);
+    }
+}
+
 void Wheel_PlayFrontalCollisionForce(s32 chan, u8 force) {
     if (IsOpened__8LGWheelsFl(wheels, chan)) {
         PlayFrontalCollisionForce__8LGWheelsFlUc(wheels, chan, force);
