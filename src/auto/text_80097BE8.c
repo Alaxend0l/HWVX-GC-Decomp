@@ -1754,8 +1754,8 @@ s32 LGDestroyForceEffect(u32 handle) {
 #pragma push
 #pragma optimize_for_size on
 void zero_mem_aligned(u32 *dst, u32 n) {
-    u8 *cdst = (u8 *)dst - 1;
     u32 i;
+    u8 *cdst = (u8 *)dst - 1;
 
     if (n >= 32) {
         i = n >> 5;
@@ -1788,6 +1788,9 @@ void zero_mem_aligned(u32 *dst, u32 n) {
     }
 }
 #pragma pop
+
+#pragma push
+#pragma optimize_for_size on
 void VDevice_Init(VDevice *dev) {
     s32 i;
 
@@ -1801,6 +1804,7 @@ void VDevice_Init(VDevice *dev) {
         g_bGammaInitialized_803C794C = 1;
     }
 }
+#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
