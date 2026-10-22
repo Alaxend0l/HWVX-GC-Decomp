@@ -1075,6 +1075,11 @@ s32 OSGetCurrentContext(void) {
     return *(s32 *)0x800000D4;
 }
 
+void Callback(void) {
+    extern s32 Prepared_803C7260;
+    Prepared_803C7260 = 1;
+}
+
 s32 fn_8006AC34(void) {
     return *(s32 *)0x800000D4;
 }
