@@ -481,6 +481,17 @@ s32 AudioVoid(void) {
     return 0;
 }
 
+s32 Effect_StartEffect(void *arg0) {
+    M2C_FIELD(arg0, s32 *, 0x28) = (s32) (M2C_FIELD(arg0, s32 *, 0x28) | 1);
+    M2C_FIELD(arg0, s32 *, 0x28) = (s32) (M2C_FIELD(arg0, s32 *, 0x28) & 0xFFFFFFFD);
+    M2C_FIELD(arg0, s32 *, 0x2C) = 0;
+    M2C_FIELD(arg0, s32 *, 0x30) = (s32) M2C_FIELD(arg0, s32 *, 8);
+    if (M2C_FIELD(arg0, s32 *, 0x28) & 0x40) {
+        M2C_FIELD(arg0, s32 *, 0x38) = (s32) (M2C_FIELD(arg0, u16 *, 0x12) << 0x10);
+    }
+    return 0;
+}
+
 void FileManager_Destroy(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
