@@ -929,6 +929,17 @@ s32 FileStreaming_GetNumAvailableQuadPacks(void) {
     return 0xB;
 }
 
+u8 GameSettings_GetGameType(void) {
+    void *GameSettings_GetMCP();
+    void *temp_r3;
+
+    temp_r3 = GameSettings_GetMCP();
+    if (temp_r3 != NULL) {
+        return M2C_FIELD(temp_r3, u8 *, 1);
+    }
+    return 0U;
+}
+
 void Grid_Release(void) {
 
 }
