@@ -2602,6 +2602,24 @@ void Render_StateZWriteEnable(s32 enable) {
     m_zwrite_803C76B0 = enable;
 }
 
+void Render_StateFogEnable(s32 enable) {
+    void GXSetFog(s32 type, f32 startz, f32 endz, f32 nearz, f32 farz, GXColor color);
+    extern s32 m_fogMode_803C76CC;
+    extern GXColor m_fogColor_803C76C8;
+    extern u8 m_fogType_803C76C4;
+    extern f32 m_fogRange1_803C76C0;
+    extern f32 m_fogRange2_803C76BC;
+
+    if (m_fogMode_803C76CC != enable) {
+        if (enable) {
+            GXSetFog(m_fogType_803C76C4, m_fogRange1_803C76C0, m_fogRange2_803C76BC, 1.0f, 15000.0f, m_fogColor_803C76C8);
+        } else {
+            GXSetFog(0, 1.0f, 10.0f, 1.0f, 10.0f, m_fogColor_803C76C8);
+        }
+        m_fogMode_803C76CC = enable;
+    }
+}
+
 void Render_ClearScreen(void) {
 
 }
