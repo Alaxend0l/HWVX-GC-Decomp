@@ -313,6 +313,18 @@ void InverseXformVec(Vector *m, Vector *v, Vector *out) {
     out->z = rz;
 }
 
+void XformVecOrientation(Vector *m, Vector *v, Vector *out) {
+    f32 x = v->x;
+    f32 y = v->y;
+    f32 z = v->z;
+    f32 rx = m[0].x * x + m[1].x * y + m[2].x * z;
+    f32 ry = m[0].y * x + m[1].y * y + m[2].y * z;
+    f32 rz = m[0].z * x + m[1].z * y + m[2].z * z;
+    out->x = rx;
+    out->y = ry;
+    out->z = rz;
+}
+
 void TransposeSubMatrix(void *arg0) {
     f32 temp_f1;
     f32 temp_f1_2;
