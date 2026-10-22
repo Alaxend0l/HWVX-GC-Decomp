@@ -208,6 +208,10 @@ void Mpeg_Render(void) {
     fn_800957D4();
 }
 
+void Mpeg_Destroy(void) {
+
+}
+
 void ProcessVoice(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
