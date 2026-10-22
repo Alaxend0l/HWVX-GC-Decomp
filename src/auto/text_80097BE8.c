@@ -7,6 +7,7 @@
 void *GetRenderWindow();
 s32 OSSendMessage(void *queue, void *msg, s32 flags);
 s32 OSReceiveMessage(void *queue, void **msg, s32 flags);
+u32 MemCpyA_(u32 dst, u32 src, u32 len);
 
 typedef struct Vector {
     f32 x;
@@ -3425,6 +3426,25 @@ void PushDecodedAudioBuffer(void *arg0) {
     OSSendMessage(DecodedAudioBufferQueue_80371444, arg0, 1);
 }
 
+s32 __THPAudioGetNewSample(u32 *info) {
+    s32 sample;
+
+    if (!(info[1] & 0xF)) {
+        ((u8 *)info)[8] = (*(u8 *)info[0] >> 4) & 7;
+        ((u8 *)info)[9] = *(u8 *)info[0] & 0xF;
+        info[0]++;
+        info[1] += 2;
+    }
+    if (info[1] & 1) {
+        sample = (s32)(*(u8 *)info[0] << 28) >> 28;
+        info[0]++;
+    } else {
+        sample = (s32)((*(u8 *)info[0] << 24) & 0xF0000000) >> 28;
+    }
+    info[1]++;
+    return sample;
+}
+
 void __THPAudioInitialize(void *arg0, u8 *arg1) {
     M2C_FIELD(arg0, u8 **, 0) = arg1;
     M2C_FIELD(arg0, s32 *, 4) = 2;
@@ -3432,6 +3452,23 @@ void __THPAudioInitialize(void *arg0, u8 *arg1) {
     M2C_FIELD(arg0, s8 *, 9) = (s8) (*M2C_FIELD(arg0, u8 **, 0) & 0xF);
     M2C_FIELD(arg0, u8 **, 0) = (u8 *) (M2C_FIELD(arg0, u8 **, 0) + 1);
 }
+
+#pragma push
+#pragma optimization_level 1
+s32 AudioVoice_Create_(void) {
+    extern u8 g_voice[0x20][0x70];
+    extern s32 m_InitOnce_803C7898;
+    u32 i;
+
+    for (i = 0; i < 0x20; i++) {
+        *(s32 *)(g_voice[i] + 0x50) = 0;
+        *(u32 *)g_voice[i] = i;
+        g_voice[i][1] = 0xFF;
+    }
+    m_InitOnce_803C7898 = 1;
+    return 1;
+}
+#pragma pop
 
 #pragma push
 #pragma optimization_level 1
