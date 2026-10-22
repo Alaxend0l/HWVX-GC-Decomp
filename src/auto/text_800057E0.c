@@ -77,6 +77,13 @@ typedef struct MatrixCacheData {
 
 extern MatrixCacheData *g_pMatrixCacheData;
 
+typedef struct SharedSlaveHolder {
+    void *key;
+    void *slaves;
+} SharedSlaveHolder;
+
+extern SharedSlaveHolder g_aSharedSlaveHolder[64];
+
 typedef struct NavData {
     u8 *nodes;
     u32 numNodes;
