@@ -3903,6 +3903,25 @@ void SetITTrackPriority(s32 id, s32 prio) {
         voice = next;
     }
 }
+
+#pragma push
+#pragma optimization_level 1
+void SetITTrackOn(u32 mask, s8 deferred) {
+    extern u32 g_trkOn;
+    extern u8 g_trk_80375550[0x20][0x70];
+    u8 *trk;
+
+    if (deferred) {
+        g_trkOn |= mask;
+        return;
+    }
+    for (trk = g_trk_80375550[0]; mask != 0; trk += 0x70) {
+        trk[0x11] |= mask & 1;
+        mask >>= 1;
+    }
+}
+#pragma pop
+
 #pragma pop
 void StopActive(void *arg0) {
     M2C_UNK SetVoiceState_(s32, M2C_UNK);
