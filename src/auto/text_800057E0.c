@@ -2433,6 +2433,44 @@ __OSInterruptHandler __OSGetInterruptHandler(__OSInterrupt interrupt) {
     return InterruptHandlerTable_803C7240[interrupt];
 }
 
+u32 __OSMaskInterrupts(u32 global) {
+    s32 enabled;
+    u32 prev;
+    u32 local;
+    u32 mask;
+
+    enabled = OSDisableInterrupts();
+    prev = *(u32 *)0x800000C4;
+    local = *(u32 *)0x800000C8;
+    mask = global & ~(prev | local);
+    global |= prev;
+    *(u32 *)0x800000C4 = global;
+    while (mask) {
+        mask = SetInterruptMask(mask, global | local);
+    }
+    OSRestoreInterrupts(enabled);
+    return prev;
+}
+
+u32 __OSUnmaskInterrupts(u32 global) {
+    s32 enabled;
+    u32 prev;
+    u32 local;
+    u32 mask;
+
+    enabled = OSDisableInterrupts();
+    prev = *(u32 *)0x800000C4;
+    local = *(u32 *)0x800000C8;
+    mask = global & (prev | local);
+    global = prev & ~global;
+    *(u32 *)0x800000C4 = global;
+    while (mask) {
+        mask = SetInterruptMask(mask, global | local);
+    }
+    OSRestoreInterrupts(enabled);
+    return prev;
+}
+
 typedef struct OSSram {
     u16 checkSum;
     u16 checkSumInv;
@@ -2668,6 +2706,30 @@ s32 DVDLowBreak(void) {
     StopAtNextInt_803C72A8 = 1;
     Breaking_803C72C8 = 1;
     return 1;
+}
+
+void *DVDLowClearCallback(void) {
+    extern void *Callback_803C72B0;
+    void *old;
+
+    ((volatile u32 *)0xCC006000)[1] = 0;
+    old = Callback_803C72B0;
+    Callback_803C72B0 = NULL;
+    return old;
+}
+
+void __DVDFSInit(void) {
+    extern void *BootInfo_803C72F0;
+    extern u32 *FstStart_803C72F4;
+    extern char *FstStringStart_803C72F8;
+    extern u32 MaxEntryNum_803C72FC;
+
+    BootInfo_803C72F0 = (void *)0x80000000;
+    FstStart_803C72F4 = *(u32 **)0x80000038;
+    if (FstStart_803C72F4) {
+        MaxEntryNum_803C72FC = FstStart_803C72F4[2];
+        FstStringStart_803C72F8 = (char *)FstStart_803C72F4 + MaxEntryNum_803C72FC * 12;
+    }
 }
 
 void stateCoverClosed_CMD(void *block) {
@@ -3898,6 +3960,50 @@ s32 TRKAcquireMutex(void) {
 }
 
 s32 TRKInitializeMutex(void) {
+    return 0;
+}
+
+s32 TRKTargetAccessMemory(void *data, u32 start, u32 *length, s32 space, s32 read);
+s32 TRKAppendBuffer1_ui32(void *b, u32 data);
+s32 TRKAppendBuffer1_ui16(void *b, u16 data);
+s32 TRKPostEvent(void *event);
+extern u32 gTRKBigEndian;
+extern u8 gTRKState[];
+extern u8 gTRKCPUState[];
+extern u32 gTRKExceptionStatus_800DA0A4[];
+s32 TRKTargetSupportMask(u8 *mask) {
+    mask[0] = 0x7A;
+    mask[1] = 0;
+    mask[2] = 0x4F;
+    mask[3] = 7;
+    mask[4] = 0;
+    mask[5] = 0;
+    mask[6] = 0;
+    mask[7] = 0;
+    mask[8] = 0;
+    mask[9] = 0;
+    mask[0xA] = 0;
+    mask[0xB] = 0;
+    mask[0xC] = 0;
+    mask[0xD] = 0;
+    mask[0xE] = 0;
+    mask[0xF] = 0;
+    mask[0x10] = 1;
+    mask[0x11] = 0;
+    mask[0x12] = 3;
+    mask[0x13] = 0;
+    mask[0x14] = 0;
+    mask[0x15] = 0;
+    mask[0x16] = 0;
+    mask[0x17] = 0;
+    mask[0x18] = 0;
+    mask[0x19] = 0;
+    mask[0x1A] = 3;
+    mask[0x1B] = 0;
+    mask[0x1C] = 0;
+    mask[0x1D] = 0;
+    mask[0x1E] = 0;
+    mask[0x1F] = 0x80;
     return 0;
 }
 
