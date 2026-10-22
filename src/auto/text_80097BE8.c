@@ -1643,7 +1643,8 @@ s32 Effect_UpdateDamper(Effect *effect, EffectCondition *cond) {
         coef = -cond->posCoefficient;
         sat = cond->posSaturation;
     }
-    force = (vel * coef * 20) / 0xFF000;
+    vel *= coef;
+    force = (vel * 20) / 0xFF000;
     if (-sat > force) {
         force = -sat;
     }
