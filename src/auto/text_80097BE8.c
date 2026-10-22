@@ -1825,6 +1825,12 @@ s32 Input_GetContollersPluggedIn(void) {
     return 0xF;
 }
 
+void Wheel_PlayCarAirborne(s32 chan) {
+    if (IsOpened__8LGWheelsFl(wheels, chan)) {
+        PlayCarAirborne__8LGWheelsFl(wheels, chan);
+    }
+}
+
 void Wheel_PlayAllAirborne(void) {
 
 }
