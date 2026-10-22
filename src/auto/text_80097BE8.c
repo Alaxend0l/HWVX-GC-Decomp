@@ -323,6 +323,15 @@ loop_1:
     goto loop_1;
 }
 
+void DestroyMIDI_(s32 arg0) {
+    M2C_UNK FreeA_(s32);
+    M2C_UNK OSFreeToHeap(s32, s32);
+    extern s32 __OSCurrHeap;
+    extern s32 g_aheap;
+    OSFreeToHeap(__OSCurrHeap, arg0);
+    FreeA_(g_aheap);
+}
+
 void Audio_Destroy_(void) {
     M2C_UNK AIReset();
     M2C_UNK ARQReset();
