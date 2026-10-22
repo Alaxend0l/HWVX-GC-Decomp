@@ -2665,6 +2665,23 @@ void Render_ClearScreen(void) {
 
 }
 
+void Set2DRectVtxDesc(void) {
+    M2C_UNK GXClearVtxDesc();
+    M2C_UNK GXSetVtxAttrFmt(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK);
+    M2C_UNK GXSetVtxDesc(M2C_UNK, M2C_UNK);
+    extern u32 m_VtxDescFlag;
+    if ((u32) m_VtxDescFlag != 2U) {
+        m_VtxDescFlag = 2U;
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 1);
+        GXSetVtxDesc(0xB, 1);
+        GXSetVtxDesc(0xD, 1);
+        GXSetVtxAttrFmt(0, 9, 0, 4, 0);
+        GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+        GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    }
+}
+
 void Set2DRectFlatVtxDesc(void) {
     M2C_UNK GXClearVtxDesc();
     M2C_UNK GXSetVtxAttrFmt(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK);
