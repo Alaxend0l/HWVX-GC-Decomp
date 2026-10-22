@@ -724,6 +724,10 @@ void AI_Init(void) {
     fn_800957D4();
 }
 
+s32 ActionMusicSetSong(void) {
+    return 1;
+}
+
 void CameraManager_Destroy(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
