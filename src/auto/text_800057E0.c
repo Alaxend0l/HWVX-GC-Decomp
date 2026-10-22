@@ -53,6 +53,8 @@ typedef struct CARDControl {
 } CARDControl;
 
 extern CARDControl __CARDBlock[2];
+s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, void *callback);
+s32 __CARDPutControlBlock(void *card, s32 result);
 
 s32 fn_800057E0(void) {
     M2C_UNK fn_80012F7C();
