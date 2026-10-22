@@ -227,13 +227,16 @@ typedef struct GDL {
 } GDL;
 
 typedef struct GfxState {
-    u8 unk0[0x74];
+    u8 unk0[0x60];
+    Vector lightDir;
+    GXColor lightColor;
     GXColor unk74;
     GXColor ambientColor;
     u32 unk7C;
     u8 unk80[0x8C - 0x80];
     s16 debugFont;
-    u8 unk8E[0x94 - 0x8E];
+    u8 lightChanged;
+    u8 unk8F[0x94 - 0x8F];
     u8 enviroMapMode;
     u8 unk95[0x98 - 0x95];
     f32 farClippingPlane;
@@ -894,7 +897,7 @@ f32 RandomDirVar(f32 base, f32 var) {
     if (++rng->index >= 0x400) {
         rng->index = 0;
     }
-    return (base - var) + rng->floats[rng->index] * (var * 2.0f);
+    return rng->floats[rng->index] * (var * 2.0f) + (base - var);
 }
 
 void TimeHandler_SetSlowMotion(void) {
