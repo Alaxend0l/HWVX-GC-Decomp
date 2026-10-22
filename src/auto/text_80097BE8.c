@@ -692,6 +692,11 @@ void Gfx_SetEnviroMapMode(u8 mode) {
     g_state.enviroMapMode = mode;
 }
 
+void Gfx_SetFarClippingPlane(f32 farPlane) {
+    extern GfxState g_state;
+    g_state.farClippingPlane = farPlane;
+}
+
 s32 Gfx_GetRenderWindowIndex(void) {
     extern s32 g_currentWindow;
     return g_currentWindow;
