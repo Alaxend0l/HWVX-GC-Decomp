@@ -5381,7 +5381,7 @@ void *GXSetTlutRegionCallback(void *f) {
 
 void GXSetNumIndStages(u8 nIndStages) {
     extern u8 *gx;
-    u32 *reg = (u32 *)((u32)gx + 0x204);
+    u32 *reg = (u32 *)(gx + 0x204);
     *reg = (*reg & ~0x70000) | (nIndStages << 16);
     *(u32 *)(gx + 0x4F4) |= 6;
 }
@@ -5750,6 +5750,14 @@ s32 TRKSetBufferPosition(void *arg0, u32 arg1) {
 }
 
 s32 TRKTerminateSerialHandler(void) {
+    return 0;
+}
+
+s32 TRKInitializeSerialHandler(void) {
+    extern s32 gTRKFramingState_8030B424[];
+    gTRKFramingState_8030B424[0] = -1;
+    ((u8 *)gTRKFramingState_8030B424)[8] = 0;
+    gTRKFramingState_8030B424[3] = 0;
     return 0;
 }
 
