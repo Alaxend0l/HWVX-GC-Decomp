@@ -4469,11 +4469,11 @@ BOOL SIIsChanBusy(s32 chan) {
 }
 
 void SISetCommand(s32 chan, u32 command) {
-    ((volatile u32 *)0xCC006400)[3 * chan] = command;
+    __SIRegs[3 * chan] = command;
 }
 
 void SITransferCommands(void) {
-    ((volatile u32 *)0xCC006400)[14] = 0x80000000;
+    __SIRegs[14] = 0x80000000;
 }
 
 u32 SISetXY(u32 x, u32 y) {
