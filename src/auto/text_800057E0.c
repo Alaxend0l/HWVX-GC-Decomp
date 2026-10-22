@@ -3681,6 +3681,8 @@ s32 Pod_Invalidate(void *arg0, u32 arg1, u32 arg2) {
 }
 
 s8 Player_IsHuman(void *player);
+#pragma push
+#pragma dont_inline on
 s32 CarA_DoFreeStyleStunts(void *car) {
     s32 threshold;
     s8 *pad;
@@ -3700,6 +3702,7 @@ s32 CarA_DoFreeStyleStunts(void *car) {
     }
     return 0;
 }
+#pragma pop
 
 void GameRules_ForceRoundEnd(u32 arg0) {
     extern s8 g_bRoundEnd_803C71CC;
