@@ -3334,6 +3334,23 @@ void PrepareReady(void *arg0) {
     OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
 }
 
+BOOL ProperTimingForStart(void) {
+    u32 VIGetNextField(void);
+
+    if (ActivePlayer.playFlag & 2) {
+        if (VIGetNextField() == 0) {
+            return TRUE;
+        }
+    } else if (ActivePlayer.playFlag & 4) {
+        if (VIGetNextField() == 1) {
+            return TRUE;
+        }
+    } else {
+        return TRUE;
+    }
+    return FALSE;
+}
+
 BOOL THPPlayerGetVideoInfo(THPVideoInfo *videoInfo) {
     if (ActivePlayer.open) {
         memcpy(videoInfo, &ActivePlayer.videoInfo, sizeof(THPVideoInfo));
@@ -3581,6 +3598,24 @@ void *PopDecodedAudioBuffer(s32 arg0) {
 void PushDecodedAudioBuffer(void *arg0) {
     extern u8 DecodedAudioBufferQueue_80371444[];
     OSSendMessage(DecodedAudioBufferQueue_80371444, arg0, 1);
+}
+
+void __THPHuffGenerateCodeTable(void) {
+    u8 si;
+    u16 p;
+    u16 code;
+
+    p = 0;
+    code = 0;
+    si = __THPHuffmanSizeTab_803C7828[0];
+    while (__THPHuffmanSizeTab_803C7828[p]) {
+        while (__THPHuffmanSizeTab_803C7828[p] == si) {
+            __THPHuffmanCodeTab_803C782C[p++] = code;
+            code++;
+        }
+        code <<= 1;
+        si++;
+    }
 }
 
 void __THPRestartDefinition(void) {
