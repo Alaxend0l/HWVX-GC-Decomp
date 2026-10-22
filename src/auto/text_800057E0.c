@@ -724,6 +724,10 @@ void AI_Init(void) {
     fn_800957D4();
 }
 
+void SongManager_StopBKSong(void) {
+
+}
+
 s32 ActionMusicSetSong(void) {
     return 1;
 }
