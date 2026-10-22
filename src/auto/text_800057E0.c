@@ -2020,11 +2020,10 @@ static inline void *LockSram(u32 offset) {
     enabled = OSDisableInterrupts();
     if (Scb_802EEE20.locked != 0) {
         OSRestoreInterrupts(enabled);
-        sram = NULL;
-    } else {
-        Scb_802EEE20.enabled = enabled;
-        Scb_802EEE20.locked = 1;
+        return NULL;
     }
+    Scb_802EEE20.enabled = enabled;
+    Scb_802EEE20.locked = 1;
     return sram;
 }
 
