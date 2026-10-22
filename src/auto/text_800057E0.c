@@ -4163,6 +4163,16 @@ void TRKConstructEvent(void *arg0, s8 arg1) {
     M2C_FIELD(arg0, s32 *, 8) = -1;
 }
 
+s32 TRKInitializeEventQueue(void) {
+    TRKInitializeMutex(&gTRKEventQueue);
+    TRKAcquireMutex(&gTRKEventQueue);
+    gTRKEventQueue.count = 0;
+    gTRKEventQueue.next = 0;
+    gTRKEventQueue.eventID = 0x100;
+    TRKReleaseMutex(&gTRKEventQueue);
+    return 0;
+}
+
 void TRKNubWelcome(void) {
     TRK_board_display("MetroTRK for GAMECUBE v0.10");
 }
