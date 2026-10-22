@@ -251,10 +251,14 @@ extern WorldData g_worldData;
 s32 TRKTargetCPUMinorType(void);
 
 typedef struct SoundSource {
-    u8 unk0[0x2C];
+    u8 unk0[0x24];
+    f32 unk24;
+    u8 unk28[0x2C - 0x28];
     s32 voice;
     s32 looping;
-    u8 unk34[0x50 - 0x34];
+    u8 unk34[0x49 - 0x34];
+    u8 playing;
+    u8 unk4A[0x50 - 0x4A];
 } SoundSource;
 
 typedef struct DSCPUType {
@@ -4942,9 +4946,9 @@ void TRKGetInput(void) {
 
 void usr_puts_serial(const char *msg) {
     void OSReport(const char *);
+    s32 connect_ = 0;
     char c;
     char buf[2];
-    s32 connect_ = 0;
 
     while (!connect_ && (c = *msg++) != '\0') {
         s32 connect = GetTRKConnected();
@@ -4960,8 +4964,11 @@ void usr_puts_serial(const char *msg) {
 #pragma push
 #pragma dont_inline on
 s32 TRKDispatchMessage(TRKBuffer *buffer) {
+    typedef struct DispatchEntry {
+        s32 (*fn)(TRKBuffer *);
+    } DispatchEntry;
     extern u32 gTRKDispatchTableSize[];
-    extern s32 (*gTRKDispatchTable[])(TRKBuffer *);
+    extern DispatchEntry gTRKDispatchTable[];
     s32 error;
     u8 command;
 
@@ -4969,7 +4976,7 @@ s32 TRKDispatchMessage(TRKBuffer *buffer) {
     TRKSetBufferPosition(buffer, 0);
     TRKReadBuffer1_ui8(buffer, &command);
     if (command < gTRKDispatchTableSize[0]) {
-        error = gTRKDispatchTable[command](buffer);
+        error = gTRKDispatchTable[command].fn(buffer);
     }
     return error;
 }
