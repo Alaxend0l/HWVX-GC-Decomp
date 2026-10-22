@@ -1908,6 +1908,14 @@ void AlarmHandler(void *alarm, void *context) {
     }
 }
 
+s32 DVDLowBreak(void) {
+    extern s32 Breaking_803C72C8;
+    extern s32 StopAtNextInt_803C72A8;
+    StopAtNextInt_803C72A8 = 1;
+    Breaking_803C72C8 = 1;
+    return 1;
+}
+
 void stateCoverClosed_CMD(void *block) {
     M2C_UNK DVDLowReadDiskID(void *, void (*)(u32));
     void cbForStateCoverClosed(u32);
