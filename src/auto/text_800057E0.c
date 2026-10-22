@@ -1593,6 +1593,12 @@ void TRKDestructEvent(void *arg0) {
     fn_8008FD50(M2C_FIELD(arg0, s32 *, 8));
 }
 
+void TRKConstructEvent(void *arg0, s8 arg1) {
+    M2C_FIELD(arg0, s8 *, 0) = arg1;
+    M2C_FIELD(arg0, s32 *, 4) = 0;
+    M2C_FIELD(arg0, s32 *, 8) = -1;
+}
+
 s32 TRKTerminateSerialHandler(void) {
     return 0;
 }
