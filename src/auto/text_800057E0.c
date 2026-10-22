@@ -4285,6 +4285,10 @@ void GXInitLightPos(void *arg0, f32 farg0, f32 farg1, f32 farg2) {
     M2C_FIELD(arg0, f32 *, 0x30) = farg2;
 }
 
+void GXInitLightColor(GXLightObjInt *lt_obj, GXColor color) {
+    lt_obj->Color = (color.r << 24) | (color.g << 16) | (color.b << 8) | color.a;
+}
+
 s32 GXGetTexObjData(void *arg0) {
     return (M2C_FIELD(arg0, s32 *, 0xC) << 5) & 0x03FFFFE0;
 }
