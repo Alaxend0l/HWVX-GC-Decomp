@@ -605,6 +605,20 @@ u32 wcstombs(char *s, const u16 *pwcs, u32 n) {
 
     return chars_written;
 }
+
+int memcmp(const void *src1, const void *src2, unsigned long n) {
+    const unsigned char *p1;
+    const unsigned char *p2;
+
+    for (p1 = (const unsigned char *)src1 - 1, p2 = (const unsigned char *)src2 - 1, n++; --n;) {
+        if (*++p1 != *++p2) {
+            return (*p1 < *p2) ? -1 : +1;
+        }
+    }
+
+    return 0;
+}
+
 #pragma pop
 void __stdio_atexit(void) {
     extern void __close_all(void);
