@@ -5749,6 +5749,16 @@ s32 TRKSetBufferPosition(void *arg0, u32 arg1) {
     return var_r5;
 }
 
+TRKBuffer *TRKGetBuffer(s32 idx) {
+    extern TRKBuffer gTRKMsgBufs[3];
+    TRKBuffer *buf = NULL;
+
+    if (idx >= 0 && idx < 3) {
+        buf = &gTRKMsgBufs[idx];
+    }
+    return buf;
+}
+
 s32 TRKInitializeMessageBuffers(void) {
     extern TRKBuffer gTRKMsgBufs[3];
     s32 i;
