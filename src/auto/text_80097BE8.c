@@ -4425,6 +4425,8 @@ static void F29(s32 chan, s32 ret) {
     gba->ret = ret;
 }
 
+#pragma push
+#pragma scheduling off
 void ReadProc(s32 chan) {
     GBAControl *gba = &__GBA[chan];
 
@@ -4433,6 +4435,7 @@ void ReadProc(s32 chan) {
         *gba->status = gba->input[4] & 0x3A;
     }
 }
+#pragma pop
 
 s32 GBARead(s32 chan, u8 *dst, u8 *status) {
     GBAControl *gba = &__GBA[chan];
