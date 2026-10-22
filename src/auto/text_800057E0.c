@@ -973,6 +973,15 @@ s32 ActionMissionObjChangeMode(u32 *action) {
     return 1;
 }
 
+s32 ActionNavPointChangeMode(u32 *action) {
+    u32 i;
+
+    for (i = 0; i < action[1]; i++) {
+        M2C_FIELD(action[i + 2], u8 *, 0x50) = action[0];
+    }
+    return 1;
+}
+
 void AI_Reset(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0xC8) = 1;
     M2C_FIELD(arg0, s8 *, 0xCC) = 0;
