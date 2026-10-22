@@ -287,7 +287,9 @@ typedef struct LGDevice {
     u8 started : 1;
     u8 unk4_pad : 6;
     s32 unk8;
-    u8 unkC[0x44];
+    u8 unkC[0x41];
+    s8 unk4D;
+    u8 unk4E[2];
     VDevice vdev;
 } LGDevice;
 
@@ -565,6 +567,37 @@ s32 ftell(void *arg0) {
     return temp_r3;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+u32 wcstombs(char *s, const u16 *pwcs, u32 n) {
+    s32 result;
+    s32 chars_written = 0;
+    char temp[3];
+    u16 *source;
+
+    if (!s || !pwcs) {
+        return 0;
+    }
+
+    source = (u16 *)pwcs;
+    while (chars_written <= n) {
+        if (!*source) {
+            *(s + chars_written) = '\0';
+            break;
+        } else {
+            result = unicode_to_UTF8(temp, *source++);
+            if ((chars_written + result) <= n) {
+                strncpy(s + chars_written, temp, result);
+                chars_written += result;
+            } else {
+                break;
+            }
+        }
+    }
+
+    return chars_written;
+}
+#pragma pop
 void __stdio_atexit(void) {
     extern void __close_all(void);
     extern void (*__stdio_exit)(void);
@@ -2320,6 +2353,44 @@ void SetMIDITrackPriority(void) {
 
 void SetMIDITrackVol(void) {
 
+}
+
+u32 GetEnvRate(u16 arg0) {
+    if (arg0 != 0) {
+        return -1U / (u32) (arg0 * 0x3E8);
+    }
+    return -1U;
+}
+
+void SetGVol(void *arg0) {
+    s32 Mul16_(s32, s32);
+    extern s32 g_musicVol;
+    s32 vol = M2C_FIELD(arg0, u8 *, 0xB) * M2C_FIELD(arg0, u8 *, 0xA);
+    M2C_FIELD(arg0, s32 *, 0x14) = Mul16_((u32)(vol * vol) / (u32)3970, g_musicVol);
+}
+
+void ReleaseMIDIVoice(void *arg0) {
+    void SetVoicePriority_(void *);
+    u32 rate;
+    if (M2C_FIELD(arg0, u8 *, 0x16) != 4) {
+        M2C_FIELD(arg0, u8 *, 0x16) = 4;
+        M2C_FIELD(arg0, u8 *, 0x17) = 0;
+        rate = GetEnvRate(M2C_FIELD(M2C_FIELD(arg0, void **, 0x10), u16 *, 0x1E));
+        if (rate + 0x10000 == 0xFFFF) {
+            rate = 0;
+            M2C_FIELD(arg0, s32 *, 0x1C) = 0x10000;
+        }
+        M2C_FIELD(arg0, u32 *, 0x18) = rate;
+        M2C_FIELD(arg0, u8 *, 0x14) -= 15;
+        SetVoicePriority_(arg0);
+    }
+}
+
+void ChannelOff(void *arg0) {
+    void *v;
+    for (v = M2C_FIELD(arg0, void **, 0); v != NULL; v = M2C_FIELD(v, void **, 4)) {
+        ReleaseMIDIVoice(v);
+    }
 }
 
 s32 AudioVoid(void) {
