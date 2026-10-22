@@ -741,6 +741,11 @@ s32 __OSSyncSram(void) {
     return M2C_FIELD(&Scb_802EEE20, s32 *, 0x4C);
 }
 
+void OSInitThreadQueue(void *arg0) {
+    M2C_FIELD(arg0, s32 *, 4) = 0;
+    M2C_FIELD(arg0, s32 *, 0) = 0;
+}
+
 s32 fn_8006E668(void) {
     return *(s32 *)0x800000E4;
 }
