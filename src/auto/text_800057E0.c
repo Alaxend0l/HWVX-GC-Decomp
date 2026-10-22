@@ -1794,6 +1794,17 @@ void __AXAuxQuit(void) {
     __AXCallbackAuxB_803C7474 = 0;
 }
 
+void __AXGetAuxAInput(u32 **out) {
+    extern void *__AXCallbackAuxA_803C7470;
+    extern u32 __AXAuxDspWritePosition_803C7490;
+    extern u32 __AXBufferAuxA_802EFD40[3][480];
+    if (__AXCallbackAuxA_803C7470) {
+        *out = __AXBufferAuxA_802EFD40[__AXAuxDspWritePosition_803C7490];
+    } else {
+        *out = NULL;
+    }
+}
+
 void __AXGetAuxAInputDpl2(u32 **out) {
     extern u32 __AXAuxDspWritePosition_803C7490;
     extern u32 __AXBufferAuxB_802F13C0[3][480];
