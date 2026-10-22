@@ -777,6 +777,13 @@ void SongManager_StopBKSong(void) {
 
 }
 
+void SongManager_LoadSong(void) {
+    M2C_UNK CreateMusic();
+    extern s8 g_songLoaded_803C6F2C;
+    CreateMusic();
+    g_songLoaded_803C6F2C = 1;
+}
+
 s32 ActionMusicSetSong(void) {
     return 1;
 }
