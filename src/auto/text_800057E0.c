@@ -1545,6 +1545,17 @@ f32 CarA_GetMass(void *arg0) {
     return M2C_FIELD(M2C_FIELD(M2C_FIELD(arg0, void **, 0x3BC), void **, 0xA0), f32 *, 0x20);
 }
 
+void CarA_GetTargetPos(void *car, Vector4 *pos) {
+    switch (M2C_FIELD(M2C_FIELD(M2C_FIELD(car, void **, 0x3BC), void **, 0xA0), u8 *, 0x10)) {
+    case 0:
+        *pos = M2C_FIELD(car, Vector4 *, 0xC0);
+        break;
+    case 1:
+        *pos = M2C_FIELD(M2C_FIELD(car, void **, 0x370), Vector4 *, 0x3D0);
+        break;
+    }
+}
+
 s32 CarA_GetSurfaceScript(void *arg0) {
     return M2C_FIELD(M2C_FIELD(M2C_FIELD(arg0, void **, 0x3BC), void **, 0xA0), s32 *, 0x30);
 }
