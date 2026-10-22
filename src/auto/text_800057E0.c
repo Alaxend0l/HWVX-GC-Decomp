@@ -787,6 +787,10 @@ s32 Player_NULL(void) {
     return 0;
 }
 
+void ProcessManager_Create(void) {
+
+}
+
 void ShowStats_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
