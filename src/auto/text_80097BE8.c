@@ -731,8 +731,6 @@ void *malloc(u32 size) {
     return allocate_from_var_pools(protopool_8030DD18, size);
 }
 
-#pragma push
-#pragma peephole off
 void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
     SubBlock *next_sub_block;
     u32 this_cur_size;
@@ -760,7 +758,6 @@ void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
         next_sub_block->prev_->next_ = next_sub_block->next_;
     }
 }
-#pragma pop
 
 s32 __flush_all(void) {
     extern FILE __files[];
