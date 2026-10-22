@@ -651,6 +651,14 @@ void Gfx_SetTextColor(s8 arg0, s8 arg1, s8 arg2, s8 arg3) {
     M2C_FIELD(&g_textcolor, s8 *, 3) = arg3;
 }
 
+void VideoDecodeThreadStart(void) {
+    extern s32 VideoDecodeThreadCreated_803C7728;
+    extern u8 VideoDecodeThread_8036CFF0[];
+    if (VideoDecodeThreadCreated_803C7728) {
+        OSResumeThread(VideoDecodeThread_8036CFF0);
+    }
+}
+
 void *PopFreeTextureSet(void) {
     extern u8 FreeTextureSetQueue_8036E300[];
     void *msg;
