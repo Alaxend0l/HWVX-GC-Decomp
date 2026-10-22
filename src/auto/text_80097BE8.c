@@ -194,6 +194,10 @@ void Render_ClearScreen(void) {
 
 }
 
+void Render_Destroy(void) {
+
+}
+
 void Mpeg_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
