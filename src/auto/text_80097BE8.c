@@ -1704,6 +1704,29 @@ s32 AudioVoid(void) {
     return 0;
 }
 
+s32 LGStartForceEffect(u32 handle) {
+    u32 index = handle >> 16;
+    LGDevice *device;
+
+    if (index >= 4) {
+        return -2;
+    }
+    device = &g_lgDevices_803771D8[index];
+    if (!device->opened) {
+        return -2;
+    }
+    if (device->started) {
+        if (device != NULL && (u32)device != 0xFFFFFFFF && device->opened) {
+            device->opened = 0;
+            device->started = 0;
+            VDevice_Shutdown(&device->vdev);
+            device->unk8 = -1;
+        }
+        return -2;
+    }
+    return VDevice_StartEffect(&device->vdev, handle);
+}
+
 s32 Effect_StartEffect(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0x28) = (s32) (M2C_FIELD(arg0, s32 *, 0x28) | 1);
     M2C_FIELD(arg0, s32 *, 0x28) = (s32) (M2C_FIELD(arg0, s32 *, 0x28) & 0xFFFFFFFD);
