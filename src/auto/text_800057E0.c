@@ -3134,6 +3134,17 @@ void ThingManagerList_Remove(void **arg0, void *arg1) {
     M2C_FIELD(arg1, void **, 0xA0) = NULL;
 }
 
+void *ThingManagerList_GetByType(void *list, s32 type) {
+    void *thing;
+
+    for (thing = *(void **)list; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
+        if (M2C_FIELD(thing, s32 *, 0xA8) == type) {
+            return thing;
+        }
+    }
+    return NULL;
+}
+
 extern Vector4 g_zeroVector;
 extern void *g_pSourcePlayer;
 void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
