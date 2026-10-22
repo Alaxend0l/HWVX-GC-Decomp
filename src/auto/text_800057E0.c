@@ -1784,6 +1784,15 @@ ControllerSettings *GameSettings_GetControllerSettings(s32 player) {
     return &g_generalGameSettings.controllers[player - 1];
 }
 
+void SetPlayerControls(void);
+void SetMusicGVol(u32);
+void SetSFXVol(u32);
+void SetSpeakerMode(u8);
+void OSSetSoundMode(u32);
+AudioSettings *GameSettings_GetAudioSettings(void) {
+    return &g_generalGameSettings.audio;
+}
+
 void Geometry_Destroy(void) {
     M2C_UNK Geometry_Init(M2C_UNK);
     extern s32 g_pGeometryHandler;
