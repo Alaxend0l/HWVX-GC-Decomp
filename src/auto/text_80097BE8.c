@@ -425,6 +425,12 @@ void GBAConnectivityLoop__Fv(void) {
     fn_800957D4();
 }
 
+s32 __ct__8ConstantFv(s32 arg0) {
+    M2C_UNK __ct__5ForceFv();
+    __ct__5ForceFv();
+    return arg0;
+}
+
 void InitLGLibrary__8LGWheelsFv(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
