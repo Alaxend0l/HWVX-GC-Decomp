@@ -916,6 +916,10 @@ void PlayerManager_Create(void) {
 
 }
 
+void PlayerManager_Destroy(void) {
+
+}
+
 s32 ViewManager_GetViewFormat(void) {
     extern s32 g_viewFormat;
     return g_viewFormat;
