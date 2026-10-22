@@ -3969,13 +3969,70 @@ s32 TRKInitializeMutex(void) {
     return 0;
 }
 
+s32 TRKTargetAddExceptionInfo(void *b) {
+    extern u32 gTRKExceptionStatus_800DA0A4[];
+    s32 err;
+    u32 inst;
+    u32 size;
+
+    err = TRKAppendBuffer1_ui32(b, gTRKExceptionStatus_800DA0A4[0]);
+    if (err == 0) {
+        size = 4;
+        err = TRKTargetAccessMemory(&inst, gTRKExceptionStatus_800DA0A4[0], &size, 0, 1);
+        if (err == 0 && size != 4) {
+            err = 0x700;
+        }
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui32(b, inst);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui16(b, *(u16 *)&gTRKExceptionStatus_800DA0A4[2]);
+    }
+    return err;
+}
+
+#pragma push
+#pragma dont_inline on
+void TRKPostInterruptEvent(void) {
+    extern u8 gTRKState[];
+    extern u8 gTRKCPUState[];
+    u8 eventType;
+    u32 inst;
+    u32 size;
+    u8 event[0x10];
+
+    if (*(s32 *)(gTRKState + 0x9C)) {
+        *(s32 *)(gTRKState + 0x9C) = 0;
+    } else {
+        switch (*(u32 *)(gTRKCPUState + 0x2F8) & 0xFFFF) {
+        case 0xD00:
+        case 0x700:
+            size = 4;
+            TRKTargetAccessMemory(&inst, *(u32 *)(gTRKCPUState + 0x80), &size, 0, 1);
+            if (inst == 0x0FE00000) {
+                eventType = 5;
+            } else {
+                eventType = 3;
+            }
+            break;
+        default:
+            eventType = 4;
+            break;
+        }
+        TRKConstructEvent(event, eventType);
+        TRKPostEvent(event);
+    }
+}
+#pragma pop
+
 #pragma push
 #pragma dont_inline on
 s32 TRKTargetCPUType(u8 *cpuType) {
-    extern u32 gTRKBigEndian;
+    extern u32 gTRKBigEndian[];
     cpuType[0] = 0;
     cpuType[1] = TRKTargetCPUMinorType();
-    cpuType[2] = gTRKBigEndian;
+    cpuType[2] = gTRKBigEndian[0];
     cpuType[3] = 4;
     cpuType[4] = 8;
     cpuType[5] = 4;
