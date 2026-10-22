@@ -1086,6 +1086,11 @@ void Gfx_SetAmbientColor(GXColor *color) {
     g_state.ambientColor = *color;
 }
 
+void Gfx_SetBaseColor(GXColor *color) {
+    extern GfxState g_state;
+    g_state.unk74 = *color;
+}
+
 s32 Gfx_GetRenderWindowIndex(void) {
     extern s32 g_currentWindow;
     return g_currentWindow;
