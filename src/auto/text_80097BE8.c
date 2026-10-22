@@ -143,6 +143,22 @@ void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0) {
     M2C_FIELD(arg2, f32 *, 8) = (f32) ((M2C_FIELD(arg0, f32 *, 8) * farg0) + M2C_FIELD(arg1, f32 *, 8));
 }
 
+void TransposeSubMatrix(void *arg0) {
+    f32 temp_f1;
+    f32 temp_f1_2;
+    f32 temp_f1_3;
+
+    temp_f1 = M2C_FIELD(arg0, f32 *, 4);
+    M2C_FIELD(arg0, f32 *, 4) = (f32) M2C_FIELD(arg0, f32 *, 0x10);
+    M2C_FIELD(arg0, f32 *, 0x10) = temp_f1;
+    temp_f1_2 = M2C_FIELD(arg0, f32 *, 8);
+    M2C_FIELD(arg0, f32 *, 8) = (f32) M2C_FIELD(arg0, f32 *, 0x20);
+    M2C_FIELD(arg0, f32 *, 0x20) = temp_f1_2;
+    temp_f1_3 = M2C_FIELD(arg0, f32 *, 0x18);
+    M2C_FIELD(arg0, f32 *, 0x18) = (f32) M2C_FIELD(arg0, f32 *, 0x24);
+    M2C_FIELD(arg0, f32 *, 0x24) = temp_f1_3;
+}
+
 void ForceIPLReset(void) {
     extern s32 m_ilpreset_803C7620;
     extern s32 m_reset;
