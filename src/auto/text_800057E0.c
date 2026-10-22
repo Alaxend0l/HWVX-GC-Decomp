@@ -59,6 +59,22 @@ typedef struct HotWheelsGameData {
 
 extern HotWheelsGameData g_HotWheelsGameData;
 
+typedef struct TRKEvent {
+    u8 eventType;
+    s32 eventID;
+    s32 msgBufID;
+} TRKEvent;
+
+typedef struct TRKEventQueue {
+    s32 mutex;
+    s32 count;
+    s32 next;
+    TRKEvent events[2];
+    u32 eventID;
+} TRKEventQueue;
+
+extern TRKEventQueue gTRKEventQueue;
+
 s32 UnlockSram(s32 commit, u32 offset);
 
 typedef struct Process {
