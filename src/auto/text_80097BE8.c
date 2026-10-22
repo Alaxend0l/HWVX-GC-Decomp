@@ -1618,7 +1618,7 @@ s8 isInThread(void) {
     void *OSGetCurrentThread(void);
     extern u8 Thread_8030E0F0[0x310];
 
-    return (s8)(OSGetCurrentThread() == Thread_8030E0F0);
+    return (s8)(Thread_8030E0F0 == OSGetCurrentThread());
 }
 
 void EndThread(void) {
