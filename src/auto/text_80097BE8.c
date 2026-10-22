@@ -110,6 +110,13 @@ void DBOpen(void) {
 
 }
 
+void ForceIPLReset(void) {
+    extern s32 m_ilpreset_803C7620;
+    extern s32 m_reset;
+    m_ilpreset_803C7620 = 1;
+    m_reset = 1;
+}
+
 void Main_Shutdown_NGC(void) {
 
 }
