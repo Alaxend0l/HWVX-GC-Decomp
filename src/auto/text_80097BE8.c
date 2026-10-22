@@ -1481,6 +1481,15 @@ void MemCard_Close__Fl(s32 device) {
     OSReport("CARDClose\n");
 }
 
+s32 MemCard_Read__FUllPv(u32 device, s32 size, void *data) {
+    u8 buffer[0x2000] __attribute__((aligned(32)));
+    s32 chan = device - 11;
+
+    m_memcardstatus_803C7970[chan] = CARDRead(&memCardfileInfo[chan], buffer, memCardBlockSize[chan], 0);
+    memcpy(data, buffer + 0x840, size);
+    return size;
+}
+
 void Input_Destroy(void) {
     M2C_UNK PADControlMotor(M2C_UNK, M2C_UNK);
     PADControlMotor(0, 0);
