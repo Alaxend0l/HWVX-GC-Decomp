@@ -766,6 +766,10 @@ s32 LogHandler_Create(void) {
     return 0;
 }
 
+void LogHandler_Destroy(void) {
+
+}
+
 void Mover_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
