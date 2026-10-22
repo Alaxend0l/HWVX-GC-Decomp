@@ -3619,6 +3619,17 @@ typedef struct SramControlBlock {
     void (*callback)(void);
 } SramControlBlock;
 
+typedef struct OSSramEx {
+    u8 flashID[2][12];
+    u32 wirelessKeyboardID;
+    u16 wirelessPadID[4];
+    u8 dvdErrorCode;
+    u8 _padding0;
+    u8 flashIDCheckSum[2];
+    u16 gbs;
+    u16 _padding1;
+} OSSramEx;
+
 extern SramControlBlock Scb_802EEE20;
 
 static inline void *LockSram(u32 offset) {
