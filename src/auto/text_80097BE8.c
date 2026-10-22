@@ -186,10 +186,6 @@ typedef struct SubBlock {
     struct SubBlock *next_;
 } SubBlock;
 
-static inline void SubBlock_clear_flag(SubBlock *ths, u32 flag) {
-    ths->size_ &= ~flag;
-}
-
 extern u8 __lower_map[256];
 s32 fflush(FILE *file);
 void free(void *ptr);
@@ -750,7 +746,7 @@ void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
         }
         after = (SubBlock *)((u8 *)ths + this_cur_size);
         if (!(ths->size_ & 2)) {
-            *(s32 *)&after->size_ &= ~4;
+            SubBlock_clear_flag(after, 4);
         } else {
             after->size_ |= 4;
         }
