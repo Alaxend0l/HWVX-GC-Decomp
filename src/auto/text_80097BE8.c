@@ -1085,12 +1085,14 @@ void Gfx_SetParallelLight(GXColor *color, Vector *dir) {
     extern GfxState g_state;
     f32 PSVECSquareMag(Vector *v);
     void PSVECNormalize(Vector *src, Vector *dst);
+    Vector *lightDir;
 
     g_state.lightColor = *color;
     if (dir != NULL) {
-        g_state.lightDir = *dir;
-        if (0.0f != PSVECSquareMag(&g_state.lightDir)) {
-            PSVECNormalize(&g_state.lightDir, &g_state.lightDir);
+        lightDir = &g_state.lightDir;
+        *lightDir = *dir;
+        if (PSVECSquareMag(lightDir)) {
+            PSVECNormalize(lightDir, lightDir);
         }
     }
     g_state.lightChanged = 1;
