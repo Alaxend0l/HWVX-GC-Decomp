@@ -1787,11 +1787,11 @@ void DrawAlphaTable(void) {
     }
 }
 
-u8 Gfx_GetEnvmapState(void) {
+s32 Gfx_GetEnvmapState(void) {
     extern GDL *g_pGDL;
     extern GfxState g_state;
 
-    if ((s8)g_state.unk8F) {
+    if (g_state.unk8F) {
         return 0;
     }
     return g_pGDL->numEnvmapStates - 1;
