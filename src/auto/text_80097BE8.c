@@ -96,9 +96,9 @@ typedef struct THPAudioBuffer {
     s32 frameNumber;
 } THPAudioBuffer;
 
-extern THPPlayer ActivePlayer;
-extern u8 UsedTextureSetQueue_8036EC78[];
-extern void *UsedTextureSetMessage_8036EC98[];
+THPPlayer ActivePlayer;
+u8 UsedTextureSetQueue_8036EC78[0x20];
+void *UsedTextureSetMessage_8036EC98[3];
 
 extern s32 __float_nan[];
 extern s32 __float_huge[];
