@@ -3210,6 +3210,8 @@ void AudioDecoderForOnMemory(void *bufAddr) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 void AudioDecode(THPReadBuffer *readBuffer) {
     THPAudioBuffer *PopFreeAudioBuffer(void);
     void PushDecodedAudioBuffer(THPAudioBuffer *buffer);
@@ -3219,8 +3221,8 @@ void AudioDecode(THPReadBuffer *readBuffer) {
     u32 *compSizePtr;
     u8 *ptr;
 
-    compSizePtr = (u32 *)(readBuffer->ptr + 8);
     ptr = readBuffer->ptr + ActivePlayer.numComponents * 4 + 8;
+    compSizePtr = (u32 *)(readBuffer->ptr + 8);
     audioBuf = PopFreeAudioBuffer();
     for (i = 0; i < ActivePlayer.numComponents; i++) {
         switch (ActivePlayer.frameComp[i]) {
@@ -3235,7 +3237,7 @@ void AudioDecode(THPReadBuffer *readBuffer) {
         compSizePtr++;
     }
 }
-
+#pragma pop
 void *PopFreeAudioBuffer(void) {
     extern u8 FreeAudioBufferQueue_80371418[];
     void *msg;
