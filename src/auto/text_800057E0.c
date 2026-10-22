@@ -1314,6 +1314,16 @@ s32 Pod_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+void GameRules_ForceRoundEnd(u32 arg0) {
+    extern s8 g_bRoundEnd_803C71CC;
+    extern u32 g_playerNumThatWon_803C71C8;
+    g_bRoundEnd_803C71CC = 1;
+    g_playerNumThatWon_803C71C8 = arg0;
+    if ((arg0 < 1U) && (arg0 > 4U)) {
+        g_playerNumThatWon_803C71C8 = -1U;
+    }
+}
+
 void GSI_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
