@@ -1401,6 +1401,10 @@ void EnableMetroTRKInterrupts(void) {
     fn_800957D4();
 }
 
+s32 TRKTargetCPUMinorType(void) {
+    return 0x54;
+}
+
 s32 fn_80095480(void) {
     return 0x54;
 }
