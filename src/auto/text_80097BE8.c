@@ -1774,6 +1774,18 @@ void Gfx_Add2DRectangleBack(void) {
     fn_800957D4();
 }
 
+void DrawAlphaTable(void) {
+    extern GDL *g_pGDL;
+    u16 i;
+    u16 idx;
+
+    for (i = 0; i < 0x100; i++) {
+        for (idx = g_pGDL->alphaTable[i]; idx != 0; idx = g_pGDL->alphaEntries[idx].next) {
+            g_pGDL->alphaEntries[idx].func(g_pGDL->alphaEntries[idx].arg);
+        }
+    }
+}
+
 s32 Gfx_AddWorldMatrixState_CacheMatrix(s32 matrix);
 s32 Gfx_GetLightState(void);
 u8 Gfx_GetEnvmapState(void);
