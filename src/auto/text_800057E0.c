@@ -1345,6 +1345,14 @@ s32 CarA_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+void OConvexHullHolder_Init(void) {
+    extern u8 g_aOConvexHull[8][0x3E0];
+    s32 i;
+    for (i = 0; i < 8; i++) {
+        *(void **)(g_aOConvexHull[i] + 0x300) = NULL;
+    }
+}
+
 void OConvexHullHolder_Release(void *arg0) {
     if (arg0 != NULL) {
         M2C_FIELD(arg0, s32 *, 0x300) = 0;
