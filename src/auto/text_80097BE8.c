@@ -3348,7 +3348,6 @@ void *PopUsedTextureSet(void) {
 #pragma dont_inline on
 void THPPlayerDrawDone(void) {
     extern s32 Initialized_803C7758;
-    extern u8 UsedTextureSetQueue_8036EC78[];
     void *msg;
     void *textureSet;
 
