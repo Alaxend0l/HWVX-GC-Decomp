@@ -1355,10 +1355,38 @@ void OConvexHullHolder_Init(void) {
     }
 }
 
+void *OConvexHullHolder_Get(void *owner) {
+    static const char msg[] = "OUT OF CONVEX HULLS!!!!\n";
+    extern u8 g_aOConvexHull[8][0x3E0];
+    s32 i;
+    for (i = 0; i < 8; i++) {
+        if (*(void **)(g_aOConvexHull[i] + 0x300) == NULL) {
+            *(void **)(g_aOConvexHull[i] + 0x300) = owner;
+            return g_aOConvexHull[i];
+        }
+    }
+    Dprintf(msg);
+    return NULL;
+}
+
 void OConvexHullHolder_Release(void *arg0) {
     if (arg0 != NULL) {
         M2C_FIELD(arg0, s32 *, 0x300) = 0;
     }
+}
+
+void *OBoxHolder_Get(void) {
+    static const char msg[] = "OUT OF OBOXES!!!!\n";
+    extern u8 g_aOBox[0x200][0xF0];
+    s32 i;
+    for (i = 0; i < 0x200; i++) {
+        if (!(s8)g_aOBox[i][0x9D]) {
+            g_aOBox[i][0x9D] = 1;
+            return g_aOBox[i];
+        }
+    }
+    Dprintf(msg);
+    return NULL;
 }
 
 void OBoxHolder_Release(void *arg0) {
