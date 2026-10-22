@@ -56,7 +56,9 @@ typedef struct GfxState {
     u32 unk7C;
     u8 unk80[0x8C - 0x80];
     s16 debugFont;
-    u8 unk8E[0xA0 - 0x8E];
+    u8 unk8E[0x94 - 0x8E];
+    u8 enviroMapMode;
+    u8 unk95[0xA0 - 0x95];
 } GfxState;
 
 static inline void SetVector(Vector *v, f32 x, f32 y, f32 z, f32 w) {
