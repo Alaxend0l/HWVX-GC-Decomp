@@ -2582,6 +2582,16 @@ void Render_StateCullMode(s32 arg0) {
     m_cullMode = arg0;
 }
 
+void Render_StateZEnable(s32 enable) {
+    void GXSetZMode(u8 compare_enable, s32 func, u8 update_enable);
+    extern s32 m_zmode_803C76B8;
+    extern s32 m_zstate_803C76B4;
+    extern s32 m_zwrite_803C76B0;
+
+    GXSetZMode(enable, m_zmode_803C76B8, m_zwrite_803C76B0);
+    m_zstate_803C76B4 = enable;
+}
+
 void Render_ClearScreen(void) {
 
 }
