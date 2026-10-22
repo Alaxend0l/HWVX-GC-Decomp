@@ -58,6 +58,10 @@ typedef struct ProcessManager {
 
 extern ProcessManager g_processManager;
 
+typedef s16 __OSInterrupt;
+typedef void (*__OSInterruptHandler)(__OSInterrupt interrupt, void *context);
+extern __OSInterruptHandler *InterruptHandlerTable_803C7240;
+
 typedef void (*CARDCallback)(s32 chan, s32 result);
 
 typedef struct CARDControl {
@@ -1326,6 +1330,25 @@ s32 Playback_GetElement(void);
 void Playback_PutElement(s32 element);
 void ProcessManager_Init(void) {
     g_processManager.count = 0;
+}
+
+void ProcessManager_Add(char *name, void (*init)(void), void (*update)(void), s32 arg, u32 flags) {
+    u32 index = g_processManager.count++;
+
+    if (name != NULL) {
+        strcpy(g_processManager.processes[index].name, name);
+    } else {
+        strcpy(g_processManager.processes[index].name, "");
+    }
+    if (init != NULL) {
+        init();
+    }
+    g_processManager.processes[index].init = init;
+    g_processManager.processes[index].update = update;
+    g_processManager.processes[index].arg = arg;
+    g_processManager.processes[index].flags = flags;
+    g_processManager.processes[index].unk10 = 0;
+    g_processManager.processes[index].unk14 = 0;
 }
 
 f32 Projectile_GetMass(void *arg0) {
