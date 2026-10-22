@@ -944,6 +944,11 @@ void Action_Init(void) {
     } while (var_ctr != 0);
 }
 
+void Action_ReleaseAllActions(void) {
+    extern u8 m_Actions_800DBC80[];
+    memset(m_Actions_800DBC80, 0, 0x140);
+}
+
 s8 ActionLoadInterfacePack(s32 *arg0) {
     s32 FileStreaming_LoadDataPack(void *, M2C_UNK, s32, M2C_UNK);
     s32 temp_r3;
