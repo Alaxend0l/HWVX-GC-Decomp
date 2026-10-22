@@ -3228,6 +3228,8 @@ void ChannelOff(void *arg0) {
     }
 }
 
+#pragma push
+#pragma optimization_level 1
 s32 AudioMusic_Create(void) {
     extern s32 g_musicState;
     extern u8 g_musicTitle[0x20];
@@ -3242,7 +3244,7 @@ s32 AudioMusic_Create(void) {
     g_musicTitle[0x1F] = 0;
     return 1;
 }
-
+#pragma pop
 s32 AudioMusic_Init(void) {
     s32 AudioVoid(void);
     extern u8 g_musicTitle[0x20];
