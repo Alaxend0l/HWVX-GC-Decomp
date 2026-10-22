@@ -818,6 +818,11 @@ void MatrixCache_Init(void) {
 
 }
 
+void NavHolder_UseMainRouteOnly(void) {
+    extern s8 gs_useMainRouteOnly_803C7000;
+    gs_useMainRouteOnly_803C7000 = 1;
+}
+
 void Mover_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
