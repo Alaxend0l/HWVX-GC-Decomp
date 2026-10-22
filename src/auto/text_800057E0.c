@@ -1158,6 +1158,15 @@ s32 __DBIsExceptionMarked(u8 arg0) {
     return M2C_FIELD(__DBInterface, s32 *, 4) & (1 << arg0);
 }
 
+s32 DVDSetAutoInvalidation(s32 arg0) {
+    extern s32 autoInvalidation_803C6DA8;
+    s32 temp_r0;
+
+    temp_r0 = autoInvalidation_803C6DA8;
+    autoInvalidation_803C6DA8 = arg0;
+    return temp_r0;
+}
+
 s32 DVDGetCurrentDiskID(void) {
     return 0x80000000;
 }
