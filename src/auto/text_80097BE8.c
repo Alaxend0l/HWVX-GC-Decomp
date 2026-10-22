@@ -90,6 +90,11 @@ void DBOpen(void) {
 
 }
 
+s32 Gfx_GetRenderWindowIndex(void) {
+    extern s32 g_currentWindow;
+    return g_currentWindow;
+}
+
 f32 fn_800A08D4(void) {
     f64 fn_8009FAF8();
     return (f32) fn_8009FAF8();
