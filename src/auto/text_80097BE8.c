@@ -244,6 +244,12 @@ s32 ftell(void *arg0) {
     return temp_r3;
 }
 
+void __stdio_atexit(void) {
+    extern void __close_all(void);
+    extern void (*__stdio_exit)(void);
+    __stdio_exit = __close_all;
+}
+
 int vprintf(const char *format, char *arg) {
     extern u8 __files[];
     extern void *__FileWrite(void *, const char *, u32);
