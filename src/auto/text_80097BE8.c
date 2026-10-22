@@ -165,6 +165,11 @@ void ProcessVoice(void) {
     fn_800957D4();
 }
 
+void FileManager_Destroy(void) {
+    M2C_UNK fn_800957D4();
+    fn_800957D4();
+}
+
 f32 fn_800A08D4(void) {
     f64 fn_8009FAF8();
     return (f32) fn_8009FAF8();
