@@ -4819,6 +4819,11 @@ s32 TRKTargetFlushCache(u8 space, u32 start, u32 end) {
     return 0x700;
 }
 
+u32 TRKTargetGetPC(void) {
+    extern u8 gTRKCPUState[];
+    return *(u32 *)(gTRKCPUState + 0x80);
+}
+
 s32 TRKTargetAddExceptionInfo(void *b) {
     extern u32 gTRKExceptionStatus_800DA0A4[];
     s32 err;
