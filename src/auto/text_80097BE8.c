@@ -2714,6 +2714,21 @@ void Set3DRectVtxDesc(void) {
     }
 }
 
+void SetTriFlatVtxDesc(void) {
+    M2C_UNK GXClearVtxDesc();
+    M2C_UNK GXSetVtxAttrFmt(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK);
+    M2C_UNK GXSetVtxDesc(M2C_UNK, M2C_UNK);
+    extern u32 m_VtxDescFlag;
+    if ((u32) m_VtxDescFlag != 0x20U) {
+        m_VtxDescFlag = 0x20U;
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 1);
+        GXSetVtxDesc(0xB, 1);
+        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+        GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+    }
+}
+
 void Render_Destroy(void) {
 
 }
