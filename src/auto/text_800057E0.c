@@ -6190,6 +6190,11 @@ void UnreserveEXI2Port(void) {
     gDBCommTable[6]();
 }
 
+void ReserveEXI2Port(void) {
+    extern void (*gDBCommTable[7])(void);
+    gDBCommTable[5]();
+}
+
 void TRKEXICallBack(s16 chan, void *ctx) {
     OSEnableScheduler();
     TRKLoadContext(ctx, 0x500);
