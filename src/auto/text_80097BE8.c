@@ -1986,6 +1986,50 @@ s32 MovieManager_GetTextureIndex(void) {
     return 0;
 }
 
+void Render_FlipBuffers(void) {
+    void PrintDVDMessage(void);
+    void GXSetColorUpdate(u8 enable);
+    void GXCopyDisp(void *dest, u8 clear);
+    void GXDrawDone(void);
+    void VISetNextFrameBuffer(void *fb);
+    void VISetBlack(s32 black);
+    void VIFlush(void);
+    void VIWaitForRetrace(void);
+    extern void *g_currentBuffer;
+    extern void *g_frameBuffer1;
+    extern void *g_frameBuffer2;
+    extern u8 m_firstFrame_803C6ED8;
+
+    PrintDVDMessage();
+    GXSetColorUpdate(1);
+    GXCopyDisp(g_currentBuffer, 1);
+    GXDrawDone();
+    VISetNextFrameBuffer(g_currentBuffer);
+    if (m_firstFrame_803C6ED8) {
+        VISetBlack(0);
+        m_firstFrame_803C6ED8 = 0;
+    }
+    VIFlush();
+    VIWaitForRetrace();
+    if (g_currentBuffer == g_frameBuffer1) {
+        g_currentBuffer = g_frameBuffer2;
+    } else {
+        g_currentBuffer = g_frameBuffer1;
+    }
+}
+
+s32 DisplayList_Create(void) {
+    void DisplayList_Init(void);
+    extern void *g_pDL;
+
+    g_pDL = Allocate(0x125DC, 0, "");
+    if (g_pDL != 0) {
+        DisplayList_Init();
+        return 1;
+    }
+    return 0;
+}
+
 void DisplayList_Init(void) {
     extern void *g_pDL;
 
