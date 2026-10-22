@@ -285,6 +285,9 @@ typedef struct TRKBuffer {
 
 void TRKResetBuffer(TRKBuffer *b, u8 keepData);
 s32 TRKMessageSend(TRKBuffer *b);
+
+volatile u16 __DSPRegs[32] : 0xCC005000;
+volatile u32 __AIRegs[8] : 0xCC006C00;
 s32 TRKReadBuffer1_ui8(TRKBuffer *b, u8 *data);
 TRKBuffer *TRKGetBuffer(s32 idx);
 void TRKReleaseBuffer(s32 idx);
