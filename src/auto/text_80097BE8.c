@@ -125,6 +125,11 @@ void Gfx_AnimExtractKeyFrame(void) {
     fn_800957D4();
 }
 
+void Gfx_AnimTraverseHeirarchyToMatrices(void) {
+    M2C_UNK fn_800957D4();
+    fn_800957D4();
+}
+
 s32 Gfx_GetRenderWindowIndex(void) {
     extern s32 g_currentWindow;
     return g_currentWindow;
