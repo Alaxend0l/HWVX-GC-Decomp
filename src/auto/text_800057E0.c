@@ -874,6 +874,11 @@ void Thing_Draw(void) {
 
 }
 
+f32 Thing_GetMass(void) {
+    extern f32 g_LR_Counter;
+    return g_LR_Counter;
+}
+
 void Thing_DynamicCollideImpact(void) {
 
 }
