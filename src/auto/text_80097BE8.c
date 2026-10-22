@@ -1459,6 +1459,15 @@ void FileManager_Destroy(void) {
     fn_800957D4();
 }
 
+s32 File_Write(u32 id, s32 size, void *data) {
+    s8 device = (u8)(id >> 16);
+
+    if (device >= 11) {
+        return MemCard_Write__FUllPv(device, size, data);
+    }
+    return 0;
+}
+
 s32 File_Delete(s32 device, const char *fileName) {
     s32 chan = device - 11;
 
