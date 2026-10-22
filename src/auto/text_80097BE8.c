@@ -2397,6 +2397,34 @@ s32 AudioVoid(void) {
     return 0;
 }
 
+void Audio_Destroy(void) {
+    extern void (*SongUpdate)(void);
+    extern void (*VoiceUpdate)(void);
+    extern u8 g_init_803C7938;
+    void AudioIT_Destroy(void);
+    void AudioMIDI_Destroy(void);
+    void AudioVoice_Destroy(void);
+    void Audio_Destroy_(void);
+    VoiceUpdate = NULL;
+    SongUpdate = NULL;
+    AudioIT_Destroy();
+    AudioMIDI_Destroy();
+    AudioVoice_Destroy();
+    Audio_Destroy_();
+    g_init_803C7938 = 0;
+}
+
+void Audio_Update(s32 arg0) {
+    extern void (*SongUpdate)(void);
+    extern void (*VoiceUpdate)(void);
+    if (SongUpdate) {
+        (*SongUpdate)();
+    }
+    if (VoiceUpdate) {
+        (*VoiceUpdate)();
+    }
+}
+
 void SteeringResetCallback(s32 index, s32 result) {
     if (result != 0) {
         g_lgDevices_803771D8[index].unk4D = -1;
