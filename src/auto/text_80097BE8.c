@@ -2013,6 +2013,19 @@ void Gfx_RemovePointLights(void) {
     }
 }
 
+void Gfx_AddPointLight(GXColor *color, Vector *position, f32 radius) {
+    extern GfxState g_state;
+
+    if (g_state.numPointLights >= 3) {
+        return;
+    }
+    g_state.pointLights[g_state.numPointLights].color = *color;
+    g_state.pointLights[g_state.numPointLights].position = *position;
+    g_state.pointLights[g_state.numPointLights].radius = radius;
+    g_state.lightChanged = 1;
+    g_state.numPointLights++;
+}
+
 void Gfx_SetParallelLight(GXColor *color, Vector *dir) {
     extern GfxState g_state;
     f32 PSVECSquareMag(Vector *v);
