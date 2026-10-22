@@ -1674,6 +1674,34 @@ s32 StateManager_QueueChange(s32 state) {
     return M2C_FIELD(g_pStateManager, s32 *, 0xD4);
 }
 
+void State_GetGameStateStr(s32 state, char *str) {
+    char *strcpy(char *dst, const char *src);
+    switch (state) {
+    case 0:
+        strcpy(str, "STATE_NONE");
+        break;
+    case 4:
+        strcpy(str, "STATE_XXXXXXXXXXX");
+        break;
+    case 5:
+        strcpy(str, "STATE_XXXXXXXA");
+        break;
+    case 8:
+        strcpy(str, "STATE_XXXXXXXB");
+        break;
+    case 11:
+        strcpy(str, "STATE_XXXXXXXXXXXXXXXXXXXX");
+        break;
+    case 12:
+        strcpy(str, "STATE_XXXX");
+        break;
+    case -1:
+    default:
+        strcpy(str, "STATE_NONE");
+        break;
+    }
+}
+
 s32 Thing_Init(void *thing, s32 arg1) {
     extern Matrix4 g_identity;
     M2C_FIELD(thing, f32 *, 0x8) = 0.0f;
