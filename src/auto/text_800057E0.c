@@ -37,6 +37,28 @@ typedef struct NavHolder {
 
 extern NavHolder gs_NavHolder_803C6CD8;
 
+typedef struct ControllerSettings {
+    u8 data[0x12];
+} ControllerSettings;
+
+typedef struct GeneralGameSettings {
+    s32 difficulty;
+    s32 unk4;
+    ControllerSettings controllers[18];
+    u8 unk14C[4];
+} GeneralGameSettings;
+
+extern GeneralGameSettings g_generalGameSettings;
+
+typedef struct HotWheelsGameData {
+    u8 unk0;
+    u8 unk1;
+    u8 unk2;
+    u8 unk3[0xF1];
+} HotWheelsGameData;
+
+extern HotWheelsGameData g_HotWheelsGameData;
+
 s32 UnlockSram(s32 commit, u32 offset);
 
 typedef struct Process {
