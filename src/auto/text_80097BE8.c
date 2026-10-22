@@ -112,6 +112,9 @@ typedef struct PADStatus {
 } PADStatus;
 
 extern PADStatus ngcPad[4];
+void PADRead(PADStatus *status);
+void PADClamp(PADStatus *status);
+void PlaySpringForce__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 saturation, s16 coefficient);
 
 typedef struct RumbleStatus {
     s32 duration;
