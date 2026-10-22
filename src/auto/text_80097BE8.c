@@ -471,6 +471,23 @@ void srand(s32 arg0) {
     next_803C6EA0 = arg0;
 }
 
+char *strncpy(char *dst, const char *src, u32 n) {
+    const u8 *p = (const u8 *)src - 1;
+    u8 *q = (u8 *)dst - 1;
+
+    n++;
+    while (--n) {
+        if (!(*++q = *++p)) {
+            while (--n) {
+                *++q = 0;
+            }
+            break;
+        }
+    }
+
+    return dst;
+}
+
 char *strcpy(char *dst, const char *src) {
     register u8 *destb, *fromb;
     register u32 w, t, align;
