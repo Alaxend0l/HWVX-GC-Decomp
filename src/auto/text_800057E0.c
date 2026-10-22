@@ -27,6 +27,7 @@ typedef struct MatrixCacheData {
 typedef struct NavData {
     u8 *nodes;
     u32 numNodes;
+    void *firstWayPoint;
 } NavData;
 
 typedef struct NavHolder {
@@ -1920,6 +1921,14 @@ void LCEnable(void) {
 
 s32 OSGetCurrentContext(void) {
     return *(s32 *)0x800000D4;
+}
+
+void OSClearContext(register void *context) {
+    M2C_FIELD(context, u16 *, 0x1A0) = 0;
+    M2C_FIELD(context, u16 *, 0x1A2) = 0;
+    if (context == *(void **)0x800000D8) {
+        *(void **)0x800000D8 = NULL;
+    }
 }
 
 void Callback(void) {
