@@ -1847,6 +1847,11 @@ void __init_cpp(void) {
     }
 }
 
+void _ExitProcess(void) {
+    void PPCHalt(void);
+    PPCHalt();
+}
+
 void DBInit(void) {
     extern u32 *__DBInterface;
     extern s32 DBVerbose;
@@ -1878,6 +1883,12 @@ s32 __DBIsExceptionMarked(u8 arg0) {
 }
 
 void DBPrintf(char *str, ...) {
+}
+
+f32 PSVECDotProduct(void) {
+    M2C_ERROR(/* unknown instruction: ps_mul $f2, $f2, $f3 */);
+    M2C_ERROR(/* unknown instruction: ps_madd $f3, $f5, $f4, $f2 */);
+    return M2C_ERROR(/* unknown instruction: ps_sum0 $f1, $f3, $f2, $f2 */);
 }
 
 void AlarmHandler(void *alarm, void *context) {
@@ -2185,6 +2196,66 @@ u8 *getTiming_800742A0(u32 mode) {
     }
 }
 
+static void SamplingHandler(s16 interrupt, void *context) {
+    M2C_UNK OSClearContext(void *);
+    M2C_UNK OSSetCurrentContext(void *);
+    extern void (*SamplingCallback_803C73D4)(void);
+    u32 exceptionContext[0x2C8 / 4];
+
+    if (SamplingCallback_803C73D4) {
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(exceptionContext);
+        SamplingCallback_803C73D4();
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(context);
+    }
+}
+
+static void SamplingHandler(s16 interrupt, void *context);
+void *PADSetSamplingCallback(void *callback) {
+    M2C_UNK SIRegisterPollingHandler(void *);
+    M2C_UNK SIUnregisterPollingHandler(void *);
+    extern void *SamplingCallback_803C73D4;
+    void *prev;
+
+    prev = SamplingCallback_803C73D4;
+    SamplingCallback_803C73D4 = callback;
+    if (callback) {
+        SIRegisterPollingHandler(SamplingHandler);
+    } else {
+        SIUnregisterPollingHandler(SamplingHandler);
+    }
+    return prev;
+}
+
+BOOL __PADDisableRecalibration(BOOL disable) {
+    BOOL enabled;
+    BOOL prev;
+
+    enabled = OSDisableInterrupts();
+    if (*(u8 *)0x800030E3 & 0x40) {
+        prev = TRUE;
+    } else {
+        prev = FALSE;
+    }
+    *(u8 *)0x800030E3 &= ~0x40;
+    if (disable) {
+        *(u8 *)0x800030E3 |= 0x40;
+    }
+    OSRestoreInterrupts(enabled);
+    return prev;
+}
+
+void AIInitDMA(u32 start_addr, u32 length) {
+    BOOL old;
+
+    old = OSDisableInterrupts();
+    *(u16 *)0xCC005030 = (u16)((*(u16 *)0xCC005030 & ~0x3FF) | (start_addr >> 16));
+    *(u16 *)0xCC005032 = (u16)((*(u16 *)0xCC005032 & ~0xFFE0) | (0xFFFF & start_addr));
+    *(u16 *)0xCC005036 = (u16)((*(u16 *)0xCC005036 & ~0x7FFF) | (u16)((length >> 5) & 0xFFFF));
+    OSRestoreInterrupts(old);
+}
+
 s32 AIGetStreamPlayState(void) {
     return *(s32 *)0xCC006C00 & 1;
 }
@@ -2231,6 +2302,85 @@ void __ARQCallbackHack(void) {
 void ARQReset(void) {
     extern s32 __ARQ_init_flag_803C7464;
     __ARQ_init_flag_803C7464 = 0;
+}
+
+void ARQFlushQueue(void) {
+    extern u32 __ARQCallbackLo_803C745C;
+    extern s32 __ARQRequestPendingLo_803C7454;
+    extern s32 __ARQRequestQueueHi_803C7440;
+    extern s32 __ARQRequestQueueLo_803C7448;
+    extern s32 __ARQRequestTailHi_803C7444;
+    extern s32 __ARQRequestTailLo_803C744C;
+    s32 level;
+    level = OSDisableInterrupts();
+    __ARQRequestQueueHi_803C7440 = 0;
+    __ARQRequestTailHi_803C7444 = 0;
+    __ARQRequestQueueLo_803C7448 = 0;
+    __ARQRequestTailLo_803C744C = 0;
+    if (__ARQCallbackLo_803C745C == 0) {
+        __ARQRequestPendingLo_803C7454 = 0;
+    }
+    OSRestoreInterrupts(level);
+}
+
+void AXInit(void) {
+    M2C_UNK __AXAllocInit();
+    M2C_UNK __AXVPBInit();
+    M2C_UNK __AXSPBInit();
+    M2C_UNK __AXAuxInit();
+    M2C_UNK __AXClInit();
+    M2C_UNK __AXOutInit();
+    __AXAllocInit();
+    __AXVPBInit();
+    __AXSPBInit();
+    __AXAuxInit();
+    __AXClInit();
+    __AXOutInit();
+}
+
+#pragma push
+#pragma peephole off
+void *__AXGetStackHead(u32 priority) {
+    extern void *__AXStackHead_802EFC40[32];
+    void **head = &__AXStackHead_802EFC40[priority];
+    return *head;
+}
+#pragma pop
+void __AXServiceCallbackStack(void) {
+    void *__AXPopCallbackStack();
+    M2C_UNK __AXPushFreeStack(void *);
+    M2C_UNK __AXRemoveFromStack(void *);
+    void *pvpb;
+
+    for (pvpb = __AXPopCallbackStack(); pvpb != NULL; pvpb = __AXPopCallbackStack()) {
+        if (M2C_FIELD(pvpb, u32 *, 0xC) != 0) {
+            if (M2C_FIELD(pvpb, void (**)(void *), 0x10) != NULL) {
+                M2C_FIELD(pvpb, void (**)(void *), 0x10)(pvpb);
+            }
+            __AXRemoveFromStack(pvpb);
+            __AXPushFreeStack(pvpb);
+        }
+    }
+}
+
+void __AXAllocInit(void) {
+    extern void *__AXCallbackStack_803C7468;
+    extern void *__AXStackHead_802EFC40[32];
+    extern void *__AXStackTail_802EFCC0[32];
+    u32 i;
+
+    __AXCallbackStack_803C7468 = NULL;
+    for (i = 0; i < 32; i++) {
+        __AXStackTail_802EFCC0[i] = NULL;
+        __AXStackHead_802EFC40[i] = NULL;
+    }
+}
+
+void __AXPushFreeStack(void *p) {
+    extern void *__AXStackHead_802EFC40[32];
+    M2C_FIELD(p, void **, 0) = __AXStackHead_802EFC40[0];
+    __AXStackHead_802EFC40[0] = p;
+    M2C_FIELD(p, u32 *, 0xC) = 0;
 }
 
 void __AXPushCallbackStack(void *arg0) {
