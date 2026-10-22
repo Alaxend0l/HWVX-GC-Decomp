@@ -2344,6 +2344,17 @@ s32 MemCard_Read__FUllPv(u32 device, s32 size, void *data) {
     return size;
 }
 
+void InitTables__Fv(void);
+void Input_Init(void);
+void *__nw__FUl(u32 size);
+void *__ct__8LGWheelsFv(void *self);
+void PadSamplingCallback__Fv(void);
+void GBAConnectivityInit__Fv(void);
+void *PADSetSamplingCallback(void *callback);
+void Input_SetForceFeedbackActive(s32 chan, u8 active) {
+    g_VirtualPad[chan].forceFeedbackActive = active;
+}
+
 void Input_Destroy(void) {
     M2C_UNK PADControlMotor(M2C_UNK, M2C_UNK);
     PADControlMotor(0, 0);
