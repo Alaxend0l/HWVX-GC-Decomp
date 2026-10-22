@@ -282,7 +282,8 @@ typedef struct Effect {
 } Effect;
 
 typedef struct VDevice {
-    u8 unk0[0xF4];
+    u8 unk0[0xF0];
+    s32 unkF0;
     Effect *activeEffects[64];
     Effect effects[64];
     s32 unk11F4;
