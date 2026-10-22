@@ -2830,8 +2830,8 @@ void InitLGLibrary__8LGWheelsFv(void) {
     fn_800957D4();
 }
 
-u8 SameFrontalCollisionForceParams__8LGWheelsFls(void *wheels, s32 chan, s16 force) {
-    return ((s16 *)((u8 *)wheels + 0x140E))[chan] == force;
+u8 SameFrontalCollisionForceParams__8LGWheelsFls(LGWheels *wheels, s32 chan, s16 force) {
+    return wheels->frontalCollisionParams[chan] == force;
 }
 
 void PlayCarAirborne__8LGWheelsFl(void *wheels, s32 chan) {
