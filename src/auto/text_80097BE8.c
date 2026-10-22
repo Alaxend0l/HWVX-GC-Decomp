@@ -2018,6 +2018,8 @@ void Render_FlipBuffers(void) {
     }
 }
 
+#pragma push
+#pragma dont_inline on
 s32 DisplayList_Create(void) {
     void DisplayList_Init(void);
     extern void *g_pDL;
@@ -2029,6 +2031,7 @@ s32 DisplayList_Create(void) {
     }
     return 0;
 }
+#pragma pop
 
 void DisplayList_Init(void) {
     extern void *g_pDL;
