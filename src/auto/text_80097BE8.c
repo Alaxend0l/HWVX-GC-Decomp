@@ -428,6 +428,12 @@ typedef struct GDL {
     u16 spriteHeads[1];
 } GDL;
 
+typedef struct Texture {
+    u8 unk0[0x32];
+    u16 width;
+    u8 unk34[0x40 - 0x34];
+} Texture;
+
 typedef struct FontChar {
     f32 unk0;
     f32 unk4;
@@ -2006,11 +2012,11 @@ void Gfx_FontManager_SetCharacterSpacing(s32 id, u8 c, f32 x, f32 y) {
     extern FontManager g_fontManager;
     extern u8 *m_texture;
     Font *font = &g_fontManager.fonts[id];
-    FontChar *ch = &font->chars[c];
+    f32 spacing = x / *(u16 *)(m_texture + font->texture * 0x40 + 0x32);
 
-    ch->spacingX = x;
-    ch->spacingY = y;
-    ch->unk8 = ch->unk0 + x / *(u16 *)(m_texture + font->texture * 0x40 + 0x32);
+    font->chars[c].spacingX = x;
+    font->chars[c].spacingY = y;
+    font->chars[c].unk8 = font->chars[c].unk0 + spacing;
 }
 
 void Gfx_AnimExtractKeyFrame(void) {
