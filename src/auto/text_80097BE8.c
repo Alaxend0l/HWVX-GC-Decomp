@@ -3704,6 +3704,8 @@ void SetITPitch(s32 pitch) {
 }
 #pragma pop
 
+#pragma push
+#pragma optimization_level 1
 void SetITTempo(u32 tempo) {
     extern u8 g_song_80375520[0x30];
 
@@ -3713,6 +3715,7 @@ void SetITTempo(u32 tempo) {
     *(u32 *)(g_song_80375520 + 0x28) = tempo;
     *(u32 *)g_song_80375520 = (*(u32 *)(g_song_80375520 + 0x28) << 15) / (30000000 / (*(u32 *)(g_song_80375520 + 0x24) * 24));
 }
+#pragma pop
 
 #pragma push
 #pragma optimization_level 1
@@ -3739,13 +3742,13 @@ void SetITTrackPriority(u32 id, s32 prio) {
 
     prio *= 2;
     g_trk_80375550[id][0x12] = prio;
-    voice = *(u8 **)(g_trk_80375550[id] + 4);
+    voice = *(u8 **)&g_trk_80375550[id][4];
     if (voice != NULL) {
         voice[0x14] = prio;
         SetVoicePriority_(voice);
         voice = *(u8 **)(voice + 8);
     } else {
-        voice = *(u8 **)g_trk_80375550[id];
+        voice = *(u8 **)&g_trk_80375550[id][0];
     }
     prio--;
     while (voice != NULL) {
