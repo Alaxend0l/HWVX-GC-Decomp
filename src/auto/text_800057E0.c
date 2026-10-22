@@ -1575,6 +1575,31 @@ void DataPack_CloseFiles(void) {
     }
 }
 
+void DataPack_ReleaseQuadPack(void *pack) {
+    s32 *gx;
+    s32 base;
+    u32 i;
+
+    if (M2C_FIELD(pack, void **, 0x28) != NULL) {
+        base = M2C_FIELD(pack, s32 *, 0x2C);
+        gx = M2C_FIELD(M2C_FIELD(pack, void **, 0x28), s32 **, 0x20);
+        for (i = 0; i < M2C_FIELD(M2C_FIELD(pack, void **, 0x28), u32 *, 0x1C); i++) {
+            ShaderHolder_RemoveGX(base + *gx);
+            gx += 2;
+        }
+        if (M2C_FIELD(pack, void **, 0x14) != NULL) {
+            VertexColorSeqManager_RemoveVertices(M2C_FIELD(pack, void **, 0x14));
+        }
+        Deallocate(M2C_FIELD(pack, void **, 0x44));
+        M2C_FIELD(pack, s32 *, 0x44) = 0;
+        M2C_FIELD(pack, s32 *, 0x10) = 0;
+        M2C_FIELD(pack, s32 *, 0x14) = 0;
+        M2C_FIELD(pack, s32 *, 0x2C) = 0;
+        M2C_FIELD(pack, s32 *, 0x28) = 0;
+        M2C_FIELD(pack, u8 *, 0x34) = 0;
+    }
+}
+
 f32 Debris_GetMass(void *arg0) {
     return M2C_FIELD(arg0, f32 *, 0xCC);
 }
