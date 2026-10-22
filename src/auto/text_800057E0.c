@@ -34,6 +34,8 @@ typedef struct NavHolder {
     void **objects;
 } NavHolder;
 
+extern NavHolder gs_NavHolder_803C6CD8;
+
 s32 fn_800057E0(void) {
     M2C_UNK fn_80012F7C();
     fn_80012F7C();
