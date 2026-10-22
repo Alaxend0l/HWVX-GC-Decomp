@@ -791,6 +791,19 @@ void AI_AsyncProcess_80006C80(void) {
     AI_Creature_AsyncProcess();
 }
 
+u32 AI_UpdateTimer(u32 *arg0) {
+    extern u32 g_iDeltaTimeMS;
+    u32 temp_r0;
+
+    temp_r0 = *arg0;
+    if (temp_r0 > (u32) g_iDeltaTimeMS) {
+        *arg0 = temp_r0 - g_iDeltaTimeMS;
+    } else {
+        *arg0 = 0U;
+    }
+    return *arg0;
+}
+
 void AI_AddEvent(void *arg0) {
     extern void *gs_pAsyncEventHead_803C6F08;
     extern void *gs_pAsyncEventTail_803C6F04;
