@@ -175,6 +175,11 @@ void GBAConnectivityLoop__Fv(void) {
     fn_800957D4();
 }
 
+void InitLGLibrary__8LGWheelsFv(void) {
+    M2C_UNK fn_800957D4();
+    fn_800957D4();
+}
+
 f32 fn_800A08D4(void) {
     f64 fn_8009FAF8();
     return (f32) fn_8009FAF8();
