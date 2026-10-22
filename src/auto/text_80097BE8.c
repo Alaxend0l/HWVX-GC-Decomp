@@ -3095,6 +3095,8 @@ s8 SetVoiceRate_(void *voice) {
 }
 #pragma pop
 
+#pragma push
+#pragma optimization_level 1
 s8 SetVoiceOffset_(void *voice, u32 offset) {
     void *ax;
 
@@ -3106,6 +3108,7 @@ s8 SetVoiceOffset_(void *voice, u32 offset) {
     }
     return 0;
 }
+#pragma pop
 
 void DestroyIT_(void *data) {
     void FreeA_(u32 addr);
