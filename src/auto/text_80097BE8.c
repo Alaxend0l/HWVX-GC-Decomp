@@ -1459,6 +1459,20 @@ void FileManager_Destroy(void) {
     fn_800957D4();
 }
 
+s32 File_Delete(s32 device, const char *fileName) {
+    s32 chan = device - 11;
+
+    if (CARDMount(chan, CardWorkArea, 0) != 0) {
+        return 0;
+    }
+    if (CARDDelete(chan, fileName) == 0) {
+        CARDUnmount(chan);
+        return 1;
+    }
+    CARDUnmount(chan);
+    return 0;
+}
+
 void Input_Destroy(void) {
     M2C_UNK PADControlMotor(M2C_UNK, M2C_UNK);
     PADControlMotor(0, 0);
