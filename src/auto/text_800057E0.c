@@ -4453,6 +4453,11 @@ void GXGetViewportv(void *arg0) {
     M2C_FIELD(arg0, f32 *, 0x14) = (f32) M2C_FIELD(gx, f32 *, 0x450);
 }
 
+void GXClearGPMetric(void) {
+    extern void *__cpReg;
+    M2C_FIELD(__cpReg, u16 *, 4) = 4;
+}
+
 void DefaultCallback(void) {
 
 }
