@@ -115,6 +115,33 @@ typedef struct CodeVariables {
 } CodeVariables;
 
 extern CodeVariables g_codeVariables;
+
+typedef struct SIControl {
+    s32 chan;
+    u32 poll;
+    u32 inputBytes;
+    void *input;
+    void *callback;
+} SIControl;
+
+typedef struct SIPacket {
+    s32 chan;
+    void *output;
+    u32 outputBytes;
+    void *input;
+    u32 inputBytes;
+    void *callback;
+    s64 fire;
+} SIPacket;
+
+typedef struct SIPacketBss {
+    SIPacket packet[4];
+    u8 unk80[0x1E0 - 0x80];
+    u32 inputBufferVcount[4];
+} SIPacketBss;
+
+extern SIControl Si_800D9E70;
+extern SIPacketBss Packet_803096E0;
 extern s8 g_bValidFileName_803C6CA4[8];
 
 typedef struct HotWheelsGameData {
