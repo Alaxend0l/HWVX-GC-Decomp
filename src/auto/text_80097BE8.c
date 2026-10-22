@@ -36,6 +36,11 @@ f32 tanf(void) {
     return (f32) tan();
 }
 
+f32 sinf(void) {
+    f64 sin();
+    return (f32) sin();
+}
+
 void fn_8009C888(s32 arg0) {
     extern s32 lbl_803C6EA0;
     lbl_803C6EA0 = arg0;
