@@ -3997,12 +3997,9 @@ void AIInitDMA(u32 start_addr, u32 length) {
     OSRestoreInterrupts(old);
 }
 
-#pragma push
-#pragma peephole off
 void AIStartDMA(void) {
     __DSPRegs[27] = (u16)(__DSPRegs[27] | 0x8000);
 }
-#pragma pop
 
 s32 AIGetStreamPlayState(void) {
     return *(s32 *)0xCC006C00 & 1;
