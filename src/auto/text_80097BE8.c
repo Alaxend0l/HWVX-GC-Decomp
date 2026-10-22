@@ -371,6 +371,23 @@ s32 MovieManager_GetTextureIndex(void) {
     return 0;
 }
 
+void Render_StateCullMode(s32 arg0) {
+    M2C_UNK GXSetCullMode(M2C_UNK);
+    extern s32 m_cullMode;
+    switch (arg0) {                                 /* irregular */
+    case 0:
+        GXSetCullMode(0);
+        break;
+    case 1:
+        GXSetCullMode(1);
+        break;
+    case 2:
+        GXSetCullMode(2);
+        break;
+    }
+    m_cullMode = arg0;
+}
+
 void Render_ClearScreen(void) {
 
 }
