@@ -1048,6 +1048,10 @@ s32 __CARDIsOpened(void) {
     return 0;
 }
 
+void __GXSetRange(void) {
+
+}
+
 f32 fn_8006FB1C(void) {
     M2C_ERROR(/* unknown instruction: ps_merge01 $f2, $f0, $f1 */);
     return M2C_ERROR(/* unknown instruction: ps_merge10 $f1, $f1, $f0 */);
