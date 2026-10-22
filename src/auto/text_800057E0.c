@@ -3137,6 +3137,40 @@ u32 __OSUnmaskInterrupts(u32 global) {
     return prev;
 }
 
+void __OSModuleInit(void) {
+    *(u32 *)0x800030C8 = *(u32 *)0x800030CC = 0;
+    *(u32 *)0x800030D0 = 0;
+}
+
+void OSInitMessageQueue(void *mq, void *msgArray, s32 msgCount) {
+    void OSInitThreadQueue(void *queue);
+    OSInitThreadQueue(mq);
+    OSInitThreadQueue((u8 *)mq + 8);
+    M2C_FIELD(mq, void **, 0x10) = msgArray;
+    M2C_FIELD(mq, s32 *, 0x14) = msgCount;
+    M2C_FIELD(mq, s32 *, 0x18) = 0;
+    M2C_FIELD(mq, s32 *, 0x1C) = 0;
+}
+
+void __OSUnlockAllMutex(void *thread) {
+    void OSWakeupThread(void *queue);
+    void *mutex;
+    void *next;
+
+    while ((mutex = M2C_FIELD(thread, void **, 0x2F4)) != NULL) {
+        next = M2C_FIELD(mutex, void **, 0x10);
+        if (next == NULL) {
+            M2C_FIELD(thread, void **, 0x2F8) = NULL;
+        } else {
+            M2C_FIELD(next, void **, 0x14) = NULL;
+        }
+        M2C_FIELD(thread, void **, 0x2F4) = next;
+        M2C_FIELD(mutex, s32 *, 0xC) = 0;
+        M2C_FIELD(mutex, void **, 0x8) = NULL;
+        OSWakeupThread(mutex);
+    }
+}
+
 typedef struct OSSram {
     u16 checkSum;
     u16 checkSumInv;
@@ -4479,7 +4513,21 @@ void GXInitTlutRegion(u32 *region, u32 tmem_addr, u32 tlut_size) {
     *t = 0;
     *t = (*t & ~0x3FF) | ((tmem_addr - 0x80000) >> 9);
     *t = (*t & ~0x1FFC00) | (tlut_size << 10);
-    *t = (*t & ~0xFF000000) | 0x65000000;
+    *t = (*t & ~0xFF000000) | (0x65 << 24);
+}
+
+void GXInvalidateTexAll(void) {
+    u32 reg0;
+    u32 reg1;
+
+    reg0 = 0x66001000;
+    reg1 = 0x66001100;
+    __GXFlushTextureState();
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg0;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg1;
+    __GXFlushTextureState();
 }
 
 void __GXFlushTextureState(void);
@@ -4857,6 +4905,16 @@ s32 fn_8008FF1C(void) {
 
 void usr_put_initialize(void) {
 
+}
+
+s32 TRKReadBuffer1_ui8(TRKBuffer *b, u8 *data);
+TRKBuffer *TRKGetBuffer(s32 idx);
+void TRKReleaseBuffer(s32 idx);
+s32 TRKTestForPacket(void);
+s32 TRKInitializeDispatcher(void) {
+    extern u32 gTRKDispatchTableSize[];
+    gTRKDispatchTableSize[0] = 0x20;
+    return 0;
 }
 
 void TRKDoConnect(TRKBuffer *b) {
