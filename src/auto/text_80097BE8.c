@@ -181,6 +181,10 @@ void DBOpen(void) {
 
 }
 
+void CopyVector(Vector *dst, Vector *src) {
+    *dst = *src;
+}
+
 void CopyMatrix(void *dst, void *src) {
     memcpy(dst, src, 0x40);
 }
