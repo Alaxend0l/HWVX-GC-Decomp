@@ -1292,6 +1292,10 @@ s32 DSPCheckInit(void) {
     return __DSP_init_flag_803C7528;
 }
 
+s32 DSPGetDMAStatus(void) {
+    return *(u16 *)0xCC00500A & 0x200;
+}
+
 void __CARDDefaultApiCallback(void) {
 
 }
