@@ -4092,6 +4092,16 @@ void SetTrackVol(u8 *trk) {
     }
 }
 
+void SetTrackPan(u8 *trk) {
+    void SetVoiceVol_(void *voice, s32 vol);
+    u8 *voice;
+
+    for (voice = *(u8 **)trk; voice != NULL; voice = *(u8 **)(voice + 4)) {
+        *(s32 *)(voice + 0x40) = *(s32 *)(trk + 0x2C);
+        SetVoiceVol_(voice, *(s16 *)(trk + 0x1A));
+    }
+}
+
 #pragma pop
 
 #pragma pop
