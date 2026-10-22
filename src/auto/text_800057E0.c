@@ -829,6 +829,10 @@ s32 Thing_Move(void) {
     return 1;
 }
 
+void Thing_Draw(void) {
+
+}
+
 s32 Thing_GetOrientedCollision(void) {
     return 0;
 }
