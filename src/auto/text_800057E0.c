@@ -1267,9 +1267,6 @@ u8 *NavHolder_GetNavPoint(s32 index) {
     return point;
 }
 
-void CreateParticleGX(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 *arg4);
-void CreateParticleSprite(s32 arg0, s32 arg1, s32 arg2, s32 arg3, u8 *arg4);
-void LineManager_Add(u8 *arg0, s32 arg1, s32 arg2, s32 arg3);
 void *NavHolder_GetFirstWayPoint(void) {
     return gs_NavHolder_803C6CD8.data->firstWayPoint;
 }
