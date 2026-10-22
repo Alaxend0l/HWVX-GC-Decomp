@@ -786,6 +786,19 @@ void Mpeg_Destroy(void) {
 
 }
 
+void *AIRegisterDMACallback(void (*callback)(void));
+void AudioInit(void) {
+    extern void AudioCallback(void);
+    extern s32 SoundBufferNumber_803C7730;
+    extern u8 SoundBuffer_8036E360[][0x3C0];
+    extern void *audio_restore_cb;
+    audio_restore_cb = AIRegisterDMACallback(AudioCallback);
+    memset(SoundBuffer_8036E360[SoundBufferNumber_803C7730], 0, 0x3C0);
+    DCFlushRange(SoundBuffer_8036E360[SoundBufferNumber_803C7730], 0x3C0);
+    AIInitDMA(SoundBuffer_8036E360[SoundBufferNumber_803C7730], 0x3C0);
+    AIStartDMA();
+}
+
 void THPPlayerQuit(void) {
     extern s32 Initialized_803C7758;
     LCDisable();
