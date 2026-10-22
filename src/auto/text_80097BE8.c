@@ -1119,6 +1119,12 @@ s32 Gfx_GetRenderWindowIndex(void) {
     return g_currentWindow;
 }
 
+void *GetRenderWindow() {
+    extern s32 g_currentWindow;
+    extern u8 g_window[][0x2D0];
+    return g_window[g_currentWindow];
+}
+
 void Gfx_ClearScreen(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
