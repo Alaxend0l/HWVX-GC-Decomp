@@ -2146,6 +2146,22 @@ void InterfaceManager_SetInfoCallBackRoutine(s32 index, void *callback) {
     *(void **)(g_interface[index] + 0x94) = callback;
 }
 
+void InterfaceManager_PauseAllInterface(u8 pause) {
+    extern u8 g_interface[][0x170];
+    u32 i;
+
+    for (i = 0; i < 0x12; i++) {
+        g_interface[i][0x83] = pause;
+    }
+}
+
+void InterfaceManager_SetOffset(s32 index, f32 x, f32 y) {
+    extern u8 g_interface[][0x170];
+    g_interface[index][0x82] = 1;
+    *(f32 *)(g_interface[index] + 0x60) = x;
+    *(f32 *)(g_interface[index] + 0x64) = y;
+}
+
 void InterfaceManager_SetControllerConfigInputString(void) {
 
 }
