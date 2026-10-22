@@ -177,6 +177,8 @@ typedef struct _FILE {
     struct _FILE *next_file_struct;
 } FILE;
 
+s32 fclose(FILE *file);
+
 extern u8 __lower_map[256];
 s32 fflush(FILE *file);
 void free(void *ptr);
@@ -900,6 +902,59 @@ void *memchr(const void *src, int val, unsigned long n) {
     }
 
     return 0;
+}
+
+void __copy_longs_rev_unaligned(void *dst, const void *src, unsigned long n) {
+    unsigned char *cps;
+    unsigned char *cpd;
+    unsigned long v1, v2, i, src_offset, left_shift, right_shift;
+
+    cps = ((unsigned char *)src) + n;
+    cpd = ((unsigned char *)dst) + n;
+
+    i = ((unsigned long)cpd) & 3;
+
+    if (i) {
+        n -= i;
+
+        do
+            *--cpd = *--cps;
+        while (--i);
+    }
+
+    src_offset = ((unsigned int)cps) & 3;
+
+    left_shift = src_offset << 3;
+    right_shift = 32 - left_shift;
+
+    cps += 4 - src_offset;
+
+    i = n >> 3;
+
+    v1 = *--((unsigned long *)cps);
+
+    do {
+        v2 = *--((unsigned long *)cps);
+        *--((unsigned long *)cpd) = (v2 << left_shift) | (v1 >> right_shift);
+        v1 = *--((unsigned long *)cps);
+        *--((unsigned long *)cpd) = (v1 << left_shift) | (v2 >> right_shift);
+    } while (--i);
+
+    if (n & 4) {
+        v2 = *--((unsigned long *)cps);
+        *--((unsigned long *)cpd) = (v2 << left_shift) | (v1 >> right_shift);
+    }
+
+    cps += src_offset;
+
+    n &= 3;
+
+    if (n)
+        do
+            *--cpd = *--cps;
+        while (--n);
+
+    return;
 }
 
 void __copy_longs_rev_aligned(void *dst, const void *src, unsigned long n) {
