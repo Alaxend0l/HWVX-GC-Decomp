@@ -1793,6 +1793,15 @@ s32 Thing_GetNearestNavPoint(void) {
     return -1;
 }
 
+s32 Thing_AddToGrid(void *thing, s32 type) {
+    Vector4 min;
+    Vector4 max;
+
+    Thing_GetDynamicMinMax(thing, &min, &max, 0.0f);
+    M2C_FIELD(thing, s32 *, 0x84) = Grid_AddObject(type, thing, &min, &max);
+    return M2C_FIELD(thing, s32 *, 0x84);
+}
+
 void Thing_CollideWithRay(void) {
 
 }
