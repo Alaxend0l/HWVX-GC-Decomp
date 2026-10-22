@@ -1353,6 +1353,25 @@ void MemCpyDone(void) {
     g_arqWait_803C78B0 = 0;
 }
 
+#pragma push
+#pragma optimization_level 1
+s32 AudioVoice_Init(void) {
+    void AudioVoice_Init_(void);
+    extern void (*VoiceUpdate)(void);
+    void ProcessVoice(void);
+    u32 i;
+
+    for (i = 0; i < 0xFE; i++) {
+        g_soundLst_80373460[i] = i + 1;
+        g_sound_80373560[i].data = 0;
+    }
+    g_soundLst_80373460[0xFD] = 0xFF;
+    g_freeSound_803C78D8 = 0;
+    AudioVoice_Init_();
+    VoiceUpdate = ProcessVoice;
+    return 1;
+}
+#pragma pop
 void AudioVoice_Destroy(void) {
     M2C_UNK AudioVoice_Destroy_();
     extern s32 VoiceUpdate;
@@ -1365,10 +1384,57 @@ void SetSpeakerMode(s8 arg0) {
     g_speakers = arg0;
 }
 
+#pragma push
+#pragma optimization_level 1
+void SetReverb(s32 arg0, s32 arg1) {
+    void SetReverb_(s32, s32, s32, s32);
+    SetReverb_(arg0, arg1, 0x666, 0x28);
+}
+#pragma pop
 void ProcessVoice(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
 }
+
+#pragma push
+#pragma optimization_level 1
+u32 CreateSFX(void *desc) {
+    u32 CreateSFX_(SFX *);
+    SFX *sfx;
+    u32 idx;
+
+    if (g_freeSound_803C78D8 == 0xFFFFFFFF) {
+        return 0;
+    }
+    sfx = &g_sound_80373560[g_freeSound_803C78D8];
+    memcpy(sfx, desc, sizeof(SFX));
+    if (CreateSFX_(sfx) == 0) {
+        return 0;
+    }
+    idx = g_freeSound_803C78D8;
+    g_freeSound_803C78D8 = g_soundLst_80373460[g_freeSound_803C78D8];
+    g_soundLst_80373460[idx] = 0xFF;
+    return idx + 1;
+}
+#pragma pop
+
+#pragma push
+#pragma optimization_level 1
+s8 DestroySFX(u32 handle) {
+    s8 FreeA_(void *);
+    u32 idx = handle - 1;
+    void *data;
+
+    if (idx < 0xFE && g_sound_80373560[idx].data != 0) {
+        g_soundLst_80373460[idx] = g_freeSound_803C78D8;
+        g_freeSound_803C78D8 = idx;
+        data = g_sound_80373560[idx].data;
+        g_sound_80373560[idx].data = 0;
+        return FreeA_(data);
+    }
+    return 0;
+}
+#pragma pop
 
 s32 SetVoicePitch(u32 id, s32 pitch) {
     s8 SetVoiceRate_(void *voice);
