@@ -74,6 +74,8 @@ typedef struct MatrixCacheData {
     MatrixCacheEntry large[4];
 } MatrixCacheData;
 
+extern MatrixCacheData *g_pMatrixCacheData;
+
 typedef struct NavData {
     u8 *nodes;
     u32 numNodes;
@@ -3654,6 +3656,10 @@ OSSram *__OSLockSram(void) {
     return LockSram(0);
 }
 
+OSSramEx *__OSLockSramEx(void) {
+    return LockSram(0x14);
+}
+
 s32 __OSUnlockSram(s32 commit) {
     return UnlockSram(commit, 0);
 }
@@ -3683,6 +3689,57 @@ u32 OSGetSoundMode(void) {
     __OSUnlockSram(0);
     return mode;
 }
+
+void OSSetSoundMode(u32 mode) {
+    OSSram *sram;
+
+    mode = (mode & 1) << 2;
+    sram = LockSram(0);
+    if (mode == (sram->flags & 4)) {
+        UnlockSram(0, 0);
+        return;
+    }
+    sram->flags &= ~4;
+    sram->flags |= mode;
+    UnlockSram(1, 0);
+}
+
+u16 OSGetWirelessID(s32 chan) {
+    OSSramEx *sram;
+    u16 id;
+
+    sram = LockSram(0x14);
+    id = sram->wirelessPadID[chan];
+    UnlockSram(0, 0x14);
+    return id;
+}
+
+extern u8 __OSSystemCallVectorStart[];
+extern u8 __OSSystemCallVectorEnd[];
+void DCFlushRangeNoSync(void *addr, u32 nBytes);
+void OSSetWirelessID(s32 chan, u16 id) {
+    OSSramEx *sram;
+
+    sram = LockSram(0x14);
+    if (sram->wirelessPadID[chan] != id) {
+        sram->wirelessPadID[chan] = id;
+        UnlockSram(1, 0x14);
+    } else {
+        UnlockSram(0, 0x14);
+    }
+}
+
+#pragma push
+#pragma dont_inline on
+void __OSInitSystemCall(void) {
+    void *addr = (void *)0x80000C00;
+
+    memcpy(addr, __OSSystemCallVectorStart, __OSSystemCallVectorEnd - __OSSystemCallVectorStart);
+    DCFlushRangeNoSync(addr, 0x100);
+    __sync();
+    ICInvalidateRange(addr, 0x100);
+}
+#pragma pop
 
 void OSInitThreadQueue(void *arg0) {
     M2C_FIELD(arg0, s32 *, 4) = 0;
