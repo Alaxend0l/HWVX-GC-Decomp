@@ -1111,6 +1111,13 @@ void __ARQCallbackHack(void) {
 
 }
 
+void AXRegisterAuxACallback(s32 arg0, s32 arg1) {
+    extern s32 __AXCallbackAuxA_803C7470;
+    extern s32 __AXContextAuxA_803C7478;
+    __AXCallbackAuxA_803C7470 = arg0;
+    __AXContextAuxA_803C7478 = arg1;
+}
+
 s32 __AXGetCommandListCycles(void) {
     extern s32 __AXCommandListCycles_803C74B0;
     return __AXCommandListCycles_803C74B0;
