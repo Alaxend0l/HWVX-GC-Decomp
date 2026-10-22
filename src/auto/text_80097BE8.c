@@ -481,6 +481,36 @@ void Mpeg_Create(void) {
     fn_800957D4();
 }
 
+u32 Mpeg_Heartbeat(void) {
+    M2C_UNK GXInvalidateVtxCache();
+    M2C_UNK THPPlayerClose();
+    M2C_UNK THPPlayerDrawCurrentFrame(s32, s32, s32, s32, s32);
+    M2C_UNK THPPlayerDrawDone();
+    s32 THPPlayerGetState();
+    M2C_UNK THPPlayerStop();
+    extern u8 badMojo_803C7734;
+    extern s32 m_movie_x_803C7740;
+    extern s32 m_movie_y_803C773C;
+    extern s32 m_rendermode_803C7754;
+    extern M2C_UNK m_videoInfo_803C7744;
+    s32 temp_r3;
+
+    if ((u8) badMojo_803C7734 != 0) {
+        return 0U;
+    }
+    GXInvalidateVtxCache();
+    THPPlayerDrawCurrentFrame(m_rendermode_803C7754, m_movie_x_803C7740, m_movie_y_803C773C, M2C_FIELD(&m_videoInfo_803C7744, s32 *, 0), M2C_FIELD(&m_videoInfo_803C7744, s32 *, 4));
+    THPPlayerDrawDone();
+    if (THPPlayerGetState() == 5) {
+        THPPlayerStop();
+        THPPlayerClose();
+        badMojo_803C7734 = 1;
+        return 0U;
+    }
+    temp_r3 = THPPlayerGetState();
+    return (u32) ((3 - temp_r3) | (temp_r3 - 3)) >> 0x1FU;
+}
+
 void Mpeg_Render(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
