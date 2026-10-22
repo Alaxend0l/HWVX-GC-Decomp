@@ -752,6 +752,21 @@ void AI_AsyncProcess_80006C80(void) {
     AI_Creature_AsyncProcess();
 }
 
+void AI_AddEvent(void *arg0) {
+    extern void *gs_pAsyncEventHead_803C6F08;
+    extern void *gs_pAsyncEventTail_803C6F04;
+    if ((s8) M2C_FIELD(arg0, u8 *, 0xC) == 0) {
+        M2C_FIELD(arg0, s32 *, 8) = 0;
+        if ((void *) gs_pAsyncEventTail_803C6F04 != NULL) {
+            M2C_FIELD(gs_pAsyncEventTail_803C6F04, void **, 8) = arg0;
+        } else {
+            gs_pAsyncEventHead_803C6F08 = arg0;
+        }
+        gs_pAsyncEventTail_803C6F04 = arg0;
+        M2C_FIELD(arg0, u8 *, 0xC) = 1U;
+    }
+}
+
 void AI_AsyncHeartbeat(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0xC8) = 0x1F4;
 }
