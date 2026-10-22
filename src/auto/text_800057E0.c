@@ -4533,6 +4533,8 @@ void __DVDFSInit(void) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 s32 DVDReadAsyncPrio(void *fileInfo, void *addr, s32 length, s32 offset, void *callback, s32 prio) {
     void OSPanic(const char *file, s32 line, const char *msg, ...);
     s32 DVDReadAbsAsyncPrio(void *block, void *addr, s32 length, s32 offset, void *callback, s32 prio);
@@ -4548,6 +4550,7 @@ s32 DVDReadAsyncPrio(void *fileInfo, void *addr, s32 length, s32 offset, void *c
     DVDReadAbsAsyncPrio(fileInfo, addr, length, M2C_FIELD(fileInfo, s32 *, 0x30) + offset, cbForReadAsync, prio);
     return 1;
 }
+#pragma pop
 
 void stateCoverClosed_CMD(void *block) {
     M2C_UNK DVDLowReadDiskID(void *, void (*)(u32));
