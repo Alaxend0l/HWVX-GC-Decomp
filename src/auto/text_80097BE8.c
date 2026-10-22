@@ -313,7 +313,11 @@ void OSSetArenaLo(void *newLo);
 void *OSInitAlloc(void *arenaStart, void *arenaEnd, s32 maxHeaps);
 s32 OSCreateHeap(void *start, void *end);
 s32 OSSetCurrentHeap(s32 heap);
-void raise(s32 sig);
+s32 raise(s32 sig);
+
+typedef void (*__signal_func_ptr)(s32);
+extern __signal_func_ptr signal_funcs_8030E050[6];
+void exit(s32 status);
 void _ExitProcess(void);
 extern s32 __aborting;
 extern s32 __atexit_curr_func_803C75DC;
