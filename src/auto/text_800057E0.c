@@ -1915,6 +1915,12 @@ void SIProbe(void) {
     SIDecodeType();
 }
 
+void SIRefreshSamplingRate(void) {
+    M2C_UNK SISetSamplingRate(s32);
+    extern s32 SamplingRate_803C75A0;
+    SISetSamplingRate(SamplingRate_803C75A0);
+}
+
 s32 DVDLowBreak(void) {
     extern s32 Breaking_803C72C8;
     extern s32 StopAtNextInt_803C72A8;
