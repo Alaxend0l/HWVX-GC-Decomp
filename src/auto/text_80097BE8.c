@@ -3143,6 +3143,7 @@ s8 AutoCalibrateAxisSigned(s8 *min, s8 *max, s8 value, s8 deadzone, s8 *out) {
 
 #pragma push
 #pragma optimize_for_size on
+#pragma use_lmw_stmw on
 void LGInit(void) {
     extern s32 g_lgInitialized_803C7948;
     void InitDevice(LGDevice *device, s32 index);
