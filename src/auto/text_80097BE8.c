@@ -190,6 +190,10 @@ s32 MovieManager_GetTextureIndex(void) {
     return 0;
 }
 
+void Render_ClearScreen(void) {
+
+}
+
 void Mpeg_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
