@@ -1407,6 +1407,30 @@ void *PopUsedTextureSet(void) {
     return NULL;
 }
 
+#pragma push
+#pragma dont_inline on
+void THPPlayerDrawDone(void) {
+    extern s32 Initialized_803C7758;
+    extern u8 UsedTextureSetQueue_8036EC78[];
+    void *msg;
+    void *textureSet;
+
+    GXDrawDone();
+    if (Initialized_803C7758) {
+        while (TRUE) {
+            if (OSReceiveMessage(UsedTextureSetQueue_8036EC78, &msg, 0) == 1) {
+                textureSet = msg;
+            } else {
+                textureSet = NULL;
+            }
+            if (textureSet == NULL) {
+                break;
+            }
+            PushFreeTextureSet(textureSet);
+        }
+    }
+}
+#pragma pop
 void ReadThreadStart(void) {
     extern s32 ReadThreadCreated_803C7768;
     extern u8 ReadThread_8036ED20[];
