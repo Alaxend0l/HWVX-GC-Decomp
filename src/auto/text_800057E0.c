@@ -1735,6 +1735,24 @@ u8 GameSettings_GetGameType(void) {
     return 0U;
 }
 
+u8 *GameSettings_GetMCP(void) {
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    void *pack;
+
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            return NULL;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    return pMCP;
+}
+
 void GameSettings_GameBoyConnected(void) {
     void *FileStreaming_InitializeDataPack(void *, s32, s32);
     u8 *DataPack_GetScript(void *, s32);
