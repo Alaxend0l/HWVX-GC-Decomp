@@ -1486,7 +1486,7 @@ void DataPack_EnableLoadingSounds(s8 arg0) {
 }
 
 void DataPack_Initialize(void) {
-    s32 i;
+    u32 i;
     for (i = 0; i < 11; i++) {
         g_fileTOCCache[i].valid = 0;
     }
