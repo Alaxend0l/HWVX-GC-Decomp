@@ -1430,8 +1430,52 @@ u8 GameSettings_GetGameType(void) {
     return 0U;
 }
 
+void GameSettings_GameBoyConnected(void) {
+    u32 FileStreaming_InitializeDataPack(s32, s32);
+    u8 *DataPack_GetScript(s32);
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    s32 state;
+
+    if (bFirstTime) {
+        bFirstTime = 0;
+        FileStreaming_LoadDataPack("mcp", 3, 0, 0);
+        if (FileStreaming_InitializeDataPack(3, 1) == 0) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        state = mcp[1];
+    } else {
+        state = 0;
+    }
+    switch (state) {
+    case 0:
+        g_HotWheelsGameData.unk0 = 1;
+        g_HotWheelsGameData.unk1 = 1;
+        g_HotWheelsGameData.unk2 = 1;
+        break;
+    case 1:
+        break;
+    }
+}
+
 s32 GameSettings_GetDifficulty(void) {
     return g_generalGameSettings.difficulty;
+}
+
+u8 GameSettings_GetNumOfPlayers(void) {
+    u8 PlayerManager_PlayerHumanCount(void);
+    return PlayerManager_PlayerHumanCount();
+}
+
+ControllerSettings *GameSettings_GetControllerSettings(s32 player) {
+    return &g_generalGameSettings.controllers[player - 1];
 }
 
 void Geometry_Destroy(void) {
