@@ -4438,6 +4438,16 @@ void FileManager_Release(void) {
     }
 }
 
+void FileManager_SetAppInfo(const char *a, const char *b, const char *c, const char *d, const char *e) {
+    char *strcpy(char *dst, const char *src);
+
+    strcpy(g_appInfo[0], a);
+    strcpy(g_appInfo[1], b);
+    strcpy(g_appInfo[2], c);
+    strcpy(g_appInfo[3], d);
+    strcpy(g_appInfo[4], e);
+}
+
 s32 stricmp(const char *s1, const char *s2) {
     char c1, c2;
 
