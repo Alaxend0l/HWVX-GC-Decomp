@@ -13,6 +13,13 @@ typedef struct Vector {
 
 f32 PSVECMag(Vector *v);
 
+typedef struct GXColor {
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
+} GXColor;
+
 static inline void SetVector(Vector *v, f32 x, f32 y, f32 z, f32 w) {
     v->x = x;
     v->y = y;
@@ -213,13 +220,40 @@ void CopyMatrix(void *dst, void *src) {
 }
 
 void Init_Math3D(void) {
-    extern Vector g_identity[];
+    extern f32 g_identity[];
 
-    IdentityMatrix(&g_identity[0]);
-    SetVector(&g_identity[4], 0.0f, 0.0f, 0.0f, 1.0f);
-    SetVector(&g_identity[5], 1.0f, 0.0f, 0.0f, 1.0f);
-    SetVector(&g_identity[6], 0.0f, 1.0f, 0.0f, 1.0f);
-    SetVector(&g_identity[7], 0.0f, 0.0f, 1.0f, 1.0f);
+    g_identity[0] = 1.0f;
+    g_identity[1] = 0.0f;
+    g_identity[2] = 0.0f;
+    g_identity[3] = 0.0f;
+    g_identity[4] = 0.0f;
+    g_identity[5] = 1.0f;
+    g_identity[6] = 0.0f;
+    g_identity[7] = 0.0f;
+    g_identity[8] = 0.0f;
+    g_identity[9] = 0.0f;
+    g_identity[10] = 1.0f;
+    g_identity[11] = 0.0f;
+    g_identity[12] = 0.0f;
+    g_identity[13] = 0.0f;
+    g_identity[14] = 0.0f;
+    g_identity[15] = 1.0f;
+    g_identity[16] = 0.0f;
+    g_identity[17] = 0.0f;
+    g_identity[18] = 0.0f;
+    g_identity[19] = 1.0f;
+    g_identity[20] = 1.0f;
+    g_identity[21] = 0.0f;
+    g_identity[22] = 0.0f;
+    g_identity[23] = 1.0f;
+    g_identity[24] = 0.0f;
+    g_identity[25] = 1.0f;
+    g_identity[26] = 0.0f;
+    g_identity[27] = 1.0f;
+    g_identity[28] = 0.0f;
+    g_identity[29] = 0.0f;
+    g_identity[30] = 1.0f;
+    g_identity[31] = 1.0f;
 }
 
 f32 ArcTan(void) {
