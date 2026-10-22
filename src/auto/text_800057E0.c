@@ -1470,7 +1470,7 @@ s32 GameSettings_GetDifficulty(void) {
 }
 
 u8 GameSettings_GetNumOfPlayers(void) {
-    u8 PlayerManager_PlayerHumanCount(void);
+    s32 PlayerManager_PlayerHumanCount(void);
     return PlayerManager_PlayerHumanCount();
 }
 
