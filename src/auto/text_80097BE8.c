@@ -3336,6 +3336,32 @@ void PrepareReady(void *arg0) {
     OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
 }
 
+void THPPlayerStop(void) {
+    void AudioDecodeThreadCancel(void);
+    BOOL DVDCancel(void *block);
+    void ReadThreadCancel(void);
+    void *VISetPostRetraceCallback(void *cb);
+    void VideoDecodeThreadCancel(void);
+
+    if (ActivePlayer.open && ActivePlayer.state) {
+        ActivePlayer.unk9D = 0;
+        ActivePlayer.state = 0;
+        VISetPostRetraceCallback(OldVIPostCallback_803C775C);
+        if (!ActivePlayer.onMemory) {
+            DVDCancel(ActivePlayer.fileInfo);
+            ReadThreadCancel();
+        }
+        VideoDecodeThreadCancel();
+        if (ActivePlayer.audioExist) {
+            AudioDecodeThreadCancel();
+        }
+        while (PopUsedTextureSet()) {
+        }
+        ActivePlayer.dispTextureSet = NULL;
+        ActivePlayer.playAudioBuffer = NULL;
+    }
+}
+
 BOOL ProperTimingForStart(void) {
     u32 VIGetNextField(void);
 
