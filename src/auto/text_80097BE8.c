@@ -4425,6 +4425,15 @@ static void F29(s32 chan, s32 ret) {
     gba->ret = ret;
 }
 
+void ReadProc(s32 chan) {
+    GBAControl *gba = &__GBA[chan];
+
+    if (gba->ret == 0) {
+        memcpy(gba->ptr, &gba->input[0], 4);
+        *gba->status = gba->input[4] & 0x3A;
+    }
+}
+
 s32 GBARead(s32 chan, u8 *dst, u8 *status) {
     GBAControl *gba = &__GBA[chan];
     s32 ret;
@@ -4643,6 +4652,25 @@ void LidHandler_Heartbeat(void) {
             m_curtime_803C7988 = 0;
         }
     }
+}
+
+s32 Input_GetPlayerDevice(s32 player) {
+    s16 i;
+
+    player--;
+    if ((u32)player > 4) {
+        for (i = 0; i < 4; i++) {
+            if ((s8)g_VirtualPad[i].unk0[1] == 0) {
+                g_VirtualPad[i].unk0[1] = 1;
+                g_VirtualPad[i].unk0[2] = 1;
+                return i;
+            }
+        }
+        return -2;
+    }
+    g_VirtualPad[player].unk0[1] = 1;
+    g_VirtualPad[player].unk0[2] = 1;
+    return player;
 }
 
 s8 Input_KeyPress(s32 chan, u8 key) {
