@@ -1999,6 +1999,28 @@ GDLSprite *Gfx_AddBillBoardSprite(u16 tex) {
     return sprite;
 }
 
+void Gfx_End_GroupTri(s32 n) {
+    extern GDL *g_pGDL;
+
+    g_pGDL->groupTris[g_pGDL->numGroupTris].count += n;
+    if (g_pGDL->groupTris[g_pGDL->numGroupTris].count != 0) {
+        switch (g_pGDL->groupTris[g_pGDL->numGroupTris].type) {
+        case 0:
+            g_pGDL->unk38 += n;
+            break;
+        case 1:
+            g_pGDL->unk3C += n;
+            break;
+        case 2:
+            break;
+        case 4:
+            g_pGDL->unk40 += n;
+            break;
+        }
+        g_pGDL->numGroupTris++;
+    }
+}
+
 #pragma pop
 
 void Gfx_Add2DRectangleBack(void) {
