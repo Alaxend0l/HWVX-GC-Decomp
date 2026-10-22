@@ -36,6 +36,25 @@ typedef struct NavHolder {
 
 extern NavHolder gs_NavHolder_803C6CD8;
 
+#define CARD_CONTROL_DEFINED
+typedef void (*CARDCallback)(s32 chan, s32 result);
+
+typedef struct CARDControl {
+    u8 unk0[0xC];
+    s32 sectorSize;
+    u8 unk10[0x80 - 0x10];
+    void *workArea;
+    u8 unk84[0x88 - 0x84];
+    void *buffer;
+    u8 unk8C[0xD0 - 0x8C];
+    CARDCallback apiCallback;
+    u8 unkD4[0xD8 - 0xD4];
+    CARDCallback eraseCallback;
+    u8 unkDC[0x110 - 0xDC];
+} CARDControl;
+
+extern CARDControl __CARDBlock[2];
+
 s32 fn_800057E0(void) {
     M2C_UNK fn_80012F7C();
     fn_80012F7C();
