@@ -314,6 +314,7 @@ void *OSInitAlloc(void *arenaStart, void *arenaEnd, s32 maxHeaps);
 s32 OSCreateHeap(void *start, void *end);
 s32 OSSetCurrentHeap(s32 heap);
 s32 raise(s32 sig);
+int tolower(int c);
 
 typedef void (*__signal_func_ptr)(s32);
 extern __signal_func_ptr signal_funcs_8030E050[6];
