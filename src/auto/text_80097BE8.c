@@ -475,9 +475,17 @@ typedef struct RenderStats {
 } RenderStats;
 
 typedef struct Texture {
-    u8 unk0[0x32];
+    u8 unk0[0x24];
+    void *data;
+    u32 unk28;
+    u8 unk2C[4];
+    u16 unk30;
     u16 width;
-    u8 unk34[0x40 - 0x34];
+    u16 height;
+    u8 unk36[2];
+    u16 unk38;
+    u16 unk3A;
+    u8 unk3C[0x40 - 0x3C];
 } Texture;
 
 typedef struct FontChar {
