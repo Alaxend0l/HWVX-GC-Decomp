@@ -803,6 +803,16 @@ s32 CarA_GetSurfaceScript(void *arg0) {
     return M2C_FIELD(M2C_FIELD(M2C_FIELD(arg0, void **, 0x3BC), void **, 0xA0), s32 *, 0x30);
 }
 
+s32 CarA_Invalidate(void *arg0, u32 arg1, u32 arg2) {
+    u32 temp_r0;
+
+    temp_r0 = M2C_FIELD(arg0, u32 *, 0x3BC);
+    if ((temp_r0 >= arg1) && (temp_r0 < arg2)) {
+        return 1;
+    }
+    return 0;
+}
+
 void OConvexHullHolder_Release(void *arg0) {
     if (arg0 != NULL) {
         M2C_FIELD(arg0, s32 *, 0x300) = 0;
