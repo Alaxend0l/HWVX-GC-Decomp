@@ -958,6 +958,12 @@ void StateMovie_SetMovieToPlay(s32 arg0) {
     g_moviePlaybackName = arg0;
 }
 
+s32 StateMovie_Shutdown(void) {
+    M2C_UNK StateGameManager_RefreshMCPTextures();
+    StateGameManager_RefreshMCPTextures();
+    return 1;
+}
+
 s32 StateRenderTest_Shutdown(void) {
     return 1;
 }
