@@ -3965,14 +3965,21 @@ s32 TRKInitializeMutex(void) {
     return 0;
 }
 
-s32 TRKTargetAccessMemory(void *data, u32 start, u32 *length, s32 space, s32 read);
-s32 TRKAppendBuffer1_ui32(void *b, u32 data);
-s32 TRKAppendBuffer1_ui16(void *b, u16 data);
-s32 TRKPostEvent(void *event);
-extern u32 gTRKBigEndian;
-extern u8 gTRKState[];
-extern u8 gTRKCPUState[];
-extern u32 gTRKExceptionStatus_800DA0A4[];
+#pragma push
+#pragma dont_inline on
+s32 TRKTargetCPUType(u8 *cpuType) {
+    extern u32 gTRKBigEndian;
+    cpuType[0] = 0;
+    cpuType[1] = TRKTargetCPUMinorType();
+    cpuType[2] = gTRKBigEndian;
+    cpuType[3] = 4;
+    cpuType[4] = 8;
+    cpuType[5] = 4;
+    cpuType[6] = 8;
+    return 0;
+}
+#pragma pop
+
 s32 TRKTargetSupportMask(u8 *mask) {
     mask[0] = 0x7A;
     mask[1] = 0;
