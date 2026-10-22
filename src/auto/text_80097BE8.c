@@ -1751,33 +1751,34 @@ s32 LGDestroyForceEffect(u32 handle) {
     return VDevice_DestroyEffect(&device->vdev, handle);
 }
 
-void zero_mem_aligned(void *dst, u32 n) {
+#pragma push
+#pragma optimize_for_size on
+void zero_mem_aligned(u32 *dst, u32 n) {
     u8 *cdst = (u8 *)dst - 1;
-    u32 *ldst;
     u32 i;
 
     if (n >= 32) {
         i = n >> 5;
-        ldst = (u32 *)dst - 1;
+        dst--;
         if (i) {
             do {
-                *++ldst = 0;
-                *++ldst = 0;
-                *++ldst = 0;
-                *++ldst = 0;
-                *++ldst = 0;
-                *++ldst = 0;
-                *++ldst = 0;
-                *++ldst = 0;
+                *++dst = 0;
+                *++dst = 0;
+                *++dst = 0;
+                *++dst = 0;
+                *++dst = 0;
+                *++dst = 0;
+                *++dst = 0;
+                *++dst = 0;
             } while (--i);
         }
         i = (n & 31) >> 2;
         if (i) {
             do {
-                *++ldst = 0;
+                *++dst = 0;
             } while (--i);
         }
-        cdst = (u8 *)ldst + 3;
+        cdst = (u8 *)dst + 3;
         n &= 3;
     }
     if (n) {
@@ -1786,7 +1787,7 @@ void zero_mem_aligned(void *dst, u32 n) {
         } while (--n);
     }
 }
-
+#pragma pop
 void VDevice_Init(VDevice *dev) {
     s32 i;
 
@@ -1801,17 +1802,19 @@ void VDevice_Init(VDevice *dev) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 s32 VDevice_DownloadEffect(VDevice *dev, u32 *handle, u8 *desc) {
     s32 ret = 0;
-    Effect *effect;
     u32 index;
+    Effect *effect;
 
     *handle = VDevice_GetFreeEffect(dev);
     if (*handle == 0xFFFFFFFF) {
         ret = -5;
     } else {
-        effect = &dev->effects[*handle & 0x3F];
         index = *handle & 0x3F;
+        effect = &dev->effects[index];
         switch (desc[0]) {
         case 0:
         case 1:
@@ -1837,7 +1840,7 @@ s32 VDevice_DownloadEffect(VDevice *dev, u32 *handle, u8 *desc) {
     }
     return ret;
 }
-
+#pragma pop
 s32 Effect_StartEffect(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0x28) = (s32) (M2C_FIELD(arg0, s32 *, 0x28) | 1);
     M2C_FIELD(arg0, s32 *, 0x28) = (s32) (M2C_FIELD(arg0, s32 *, 0x28) & 0xFFFFFFFD);
