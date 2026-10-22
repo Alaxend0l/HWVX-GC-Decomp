@@ -140,6 +140,8 @@ typedef struct SIPacketBss {
     u32 inputBufferVcount[4];
 } SIPacketBss;
 
+void __GXFlushTextureState(void);
+
 volatile u32 __SIRegs[64] : 0xCC006400;
 
 extern SIControl Si_800D9E70;
@@ -4378,6 +4380,13 @@ void GXInvalidateVtxCache(void) {
     *(s8 *)0xCC008000 = 0x48;
 }
 
+void GXPixModeSync(void) {
+    extern void *const gx;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.s32 = M2C_FIELD(gx, s32 *, 0x1DC);
+    M2C_FIELD(gx, u16 *, 2) = 0;
+}
+
 void GXPokeAlphaRead(s32 mode) {
     extern volatile u16 *__peReg;
     u32 reg;
@@ -4388,9 +4397,29 @@ void GXPokeAlphaRead(s32 mode) {
     __peReg[4] = reg;
 }
 
-void GXPokeAlphaUpdate(s32 arg0) {
+void GXPokeAlphaUpdate(u8 update_enable) {
+    extern volatile u16 *__peReg;
+    u16 reg;
+
+    reg = __peReg[1];
+    reg = (reg & ~0x10) | (update_enable << 4);
+    __peReg[1] = reg;
+}
+
+void GXPokeColorUpdate(u8 update_enable) {
+    extern volatile u16 *__peReg;
+    __peReg[1] = (__peReg[1] & ~0x8) | (update_enable << 3);
+}
+
+void GXPokeDither(u8 dither) {
     extern void *__peReg;
-    M2C_FIELD(__peReg, u16 *, 2) = (u16) ((M2C_FIELD(__peReg, u16 *, 2) & 0xFFFFFFEF) | ((arg0 * 0x10) & 0xFF0));
+    u16 *reg = (u16 *)__peReg + 1;
+    *reg = (*reg & ~0x4) | (dither << 2);
+}
+
+void GXPokeZMode(u8 compare_enable, s32 func, u8 update_enable) {
+    extern void *__peReg;
+    M2C_FIELD(__peReg, u16 *, 0) = (((compare_enable & ~0xE) | (func << 1)) & ~0x10) | (update_enable << 4);
 }
 
 void GXSetDispCopyGamma(s32 gamma) {
@@ -4444,11 +4473,28 @@ s32 GXGetTexObjFmt(void *arg0) {
     return M2C_FIELD(arg0, s32 *, 0x14);
 }
 
-void GXInitTlutRegion(s32 *arg0, s32 arg1, s32 arg2) {
-    *arg0 = 0;
-    *arg0 = (*arg0 & 0xFFFFFC00) | ((u32) (arg1 + 0xFFF80000) >> 9U);
-    *arg0 = (*arg0 & 0xFFE003FF) | (arg2 << 0xA);
-    *arg0 = (*arg0 & 0xFFFFFF) | 0x65000000;
+void GXInitTlutRegion(u32 *region, u32 tmem_addr, u32 tlut_size) {
+    u32 *t = region;
+
+    *t = 0;
+    *t = (*t & ~0x3FF) | ((tmem_addr - 0x80000) >> 9);
+    *t = (*t & ~0x1FFC00) | (tlut_size << 10);
+    *t = (*t & ~0xFF000000) | 0x65000000;
+}
+
+void __GXFlushTextureState(void);
+void *GXSetTexRegionCallback(void *f) {
+    extern void *const gx;
+    void *oldcb = M2C_FIELD(gx, void **, 0x410);
+    M2C_FIELD(gx, void **, 0x410) = f;
+    return oldcb;
+}
+
+void *GXSetTlutRegionCallback(void *f) {
+    extern void *const gx;
+    void *oldcb = M2C_FIELD(gx, void **, 0x414);
+    M2C_FIELD(gx, void **, 0x414) = f;
+    return oldcb;
 }
 
 void __GXSetRange(void) {
