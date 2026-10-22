@@ -86,6 +86,19 @@ void *what__Q23std13bad_exceptionCFv(void) {
     return g_cameraManager;
 }
 
+void abort(void) {
+    raise(1);
+    __aborting = 1;
+    while (__atexit_curr_func_803C75DC > 0) {
+        (*__atexit_funcs_8030DC18[--__atexit_curr_func_803C75DC])();
+    }
+    if (__console_exit) {
+        (*__console_exit)();
+        __console_exit = 0;
+    }
+    _ExitProcess();
+}
+
 void __prep_buffer(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0x24) = (s32) M2C_FIELD(arg0, s32 *, 0x1C);
     M2C_FIELD(arg0, s32 *, 0x28) = (s32) M2C_FIELD(arg0, s32 *, 0x20);
