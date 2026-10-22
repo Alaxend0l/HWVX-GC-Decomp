@@ -4636,11 +4636,14 @@ u8 PedalsConnected__8LGWheelsFl(void *wheels, s32 chan) {
     return PedalsConnected__6WheelsFl((Wheels *)((u8 *)wheels + 0x82C), chan);
 }
 
+#pragma push
+#pragma dont_inline on
 void SetOverallForceGain__8LGWheelsFll(void *wheels, s32 chan, s32 gain) {
     LGWheels *lg = wheels;
 
     SetOverallForceGain__5ForceFRUll(lg->force, &lg->overallGainId[chan], gain);
 }
+#pragma pop
 
 #pragma push
 #pragma dont_inline on
