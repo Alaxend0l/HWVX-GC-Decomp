@@ -3263,8 +3263,6 @@ BOOL THPPlayerInit(void) {
     void LCEnable(void);
     BOOL THPInit(void);
     void OSInitMessageQueue(void *queue, void *msgArray, s32 msgCount);
-    extern u8 UsedTextureSetQueue_8036EC78[];
-    extern void *UsedTextureSetMessage_8036EC98[];
     extern s32 Initialized_803C7758;
 
     memset(&ActivePlayer, 0, sizeof(THPPlayer));
