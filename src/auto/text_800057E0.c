@@ -1280,7 +1280,7 @@ void ShaderHolder_Create(void) {
 void ShaderHolder_Destroy(void) {
     M2C_UNK Deallocate(void *);
     extern void *g_pShaderHolder;
-    if (g_pShaderHolder != NULL) {
+    if (g_pShaderHolder) {
         Deallocate(g_pShaderHolder);
         g_pShaderHolder = NULL;
     }
@@ -1748,6 +1748,27 @@ void StateGameManager_Release(void) {
     FileStreaming_ReleaseAllDataPacks(3, 1);
 }
 
+s32 Pod_Init(u8 *pod, u8 *init) {
+    u8 *motion;
+
+    Thing_Init(pod, 0);
+    motion = pod + 0xB0;
+    M2C_FIELD(pod, void **, 0x110) = M2C_FIELD(init, void **, 0x20);
+    M2C_FIELD(pod, s32 *, 0x114) = 0;
+    M2C_FIELD(pod, s32 *, 0x118) = 0;
+    M2C_FIELD(pod, s32 *, 0x40) = M2C_FIELD(init, s32 *, 0x0);
+    M2C_FIELD(pod, s32 *, 0x44) = M2C_FIELD(init, s32 *, 0x4);
+    M2C_FIELD(pod, s32 *, 0x48) = M2C_FIELD(init, s32 *, 0x8);
+    M2C_FIELD(pod, s32 *, 0x4C) = M2C_FIELD(init, s32 *, 0xC);
+    M2C_FIELD(pod, s32 *, 0xB0) = M2C_FIELD(M2C_FIELD(pod, u8 **, 0x110), s32 *, 0x3C);
+    M2C_FIELD(pod, f32 *, 0xD4) = 0.0f;
+    MotionState_Init(motion, 0);
+    MotionState_BuildMatricesWorld(pod + 0x50, pod + 0x40, motion, 1.0f);
+    return 1;
+}
+
+extern u8 g_bRestartCurrentLevel;
+extern s32 g_GameProgressionEndState[2];
 void Pod_Release(s32 arg0) {
     MotionState_Release(arg0 + 0xB0);
     Thing_Release(arg0);
@@ -3129,7 +3150,7 @@ s32 TRKSetBufferPosition(void *arg0, u32 arg1) {
     } else {
         M2C_FIELD(arg0, u32 *, 0xC) = arg1;
         if (arg1 > (u32) M2C_FIELD(arg0, u32 *, 8)) {
-            M2C_FIELD(arg0, u32 *, 8) = arg1;
+            M2C_FIELD((s32)arg0, u32 *, 8) = arg1;
         }
     }
     return var_r5;
