@@ -1831,6 +1831,13 @@ void Wheel_PlayDamperForce(s32 chan, u8 coefficient, s16 offset) {
     }
 }
 
+void PlayConstantForce__8LGWheelsFlsUs(void *wheels, s32 chan, u8 coefficient, s16 offset);
+void Wheel_PlayConstantForce(s32 chan, u8 coefficient, s16 offset) {
+    if (IsOpened__8LGWheelsFl(wheels, chan)) {
+        PlayConstantForce__8LGWheelsFlsUs(wheels, chan, coefficient, offset);
+    }
+}
+
 void Wheel_PlayCarAirborne(s32 chan) {
     if (IsOpened__8LGWheelsFl(wheels, chan)) {
         PlayCarAirborne__8LGWheelsFl(wheels, chan);
