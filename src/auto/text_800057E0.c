@@ -1857,6 +1857,14 @@ void UnsetRun(void *arg0) {
     M2C_FIELD(arg0, void **, 0x2DC) = NULL;
 }
 
+void __OSReschedule(void) {
+    M2C_UNK SelectThread(M2C_UNK);
+    extern s32 RunQueueHint_803C7294;
+    if ((s32) RunQueueHint_803C7294 != 0) {
+        SelectThread(0);
+    }
+}
+
 s32 __get_time(void) {
     M2C_UNK OSGetTime(M2C_UNK);
     u64 __div2i(M2C_UNK, u32);
