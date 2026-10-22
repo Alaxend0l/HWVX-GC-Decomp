@@ -2171,7 +2171,6 @@ void MatrixCache_Init(void) {
 
 }
 
-extern MatrixCacheData *g_pMatrixCacheData;
 void MatrixCache_Destroy(void) {
     Deallocate(g_pMatrixCacheData);
     g_pMatrixCacheData = NULL;
