@@ -1850,17 +1850,14 @@ void Gfx_GetCameraVector(Vector *right, Vector *up, Vector *at) {
     *at = *(Vector *)((u8 *)GetRenderWindow() + 0x1B0);
 }
 
-void *DisplayList_AddGroup_Skin(void) {
-    extern u8 *g_pDL;
-    u16 count;
-    u8 *dl = g_pDL;
+DLSkinGroup *DisplayList_AddGroup_Skin(void) {
+    extern DisplayList *g_pDL;
+    DisplayList *dl = g_pDL;
 
-    count = *(u16 *)(dl + 0x10);
-    if (count == 0x100) {
+    if (dl->numSkinGroups == 0x100) {
         return NULL;
     }
-    *(u16 *)(dl + 0x10) = count + 1;
-    return dl + 0x109E0 + count * 0x14;
+    return &dl->skinGroups[dl->numSkinGroups++];
 }
 
 s32 Gfx_FrustrumCullSphereTestAllWindows(Vector *center, f32 radius) {
