@@ -1,6 +1,18 @@
 /* Functions from 0x800057E0 to 0x80095C8C, found by decomp-toolkit. */
 #include "common.h"
 
+typedef struct ShaderHolderGX {
+    void *gx;
+    void *shader;
+} ShaderHolderGX;
+
+typedef struct ShaderHolder {
+    void *shaders[0x700];
+    ShaderHolderGX gx[0x80];
+    u32 numShaders;
+    u32 numGX;
+} ShaderHolder;
+
 s32 fn_800057E0(void) {
     M2C_UNK fn_80012F7C();
     fn_80012F7C();
@@ -1192,6 +1204,45 @@ void ShaderHolder_Init(void) {
     extern void *g_pShaderHolder;
     M2C_FIELD(g_pShaderHolder, s32 *, 0x2000) = 0;
     M2C_FIELD(g_pShaderHolder, s32 *, 0x2004) = 0;
+}
+
+void ShaderHolder_RemoveShader(u32 id) {
+    extern void *g_pShaderHolder;
+    u32 i;
+
+    if (g_pShaderHolder == NULL) {
+        return;
+    }
+    for (i = 0; i < M2C_FIELD(g_pShaderHolder, u32 *, 0x2000); i++) {
+        if (M2C_FIELD(((void **)g_pShaderHolder)[i], u32 *, 0x5C) == id) {
+            if (--M2C_FIELD(((void **)g_pShaderHolder)[i], s32 *, 0x64) == 0) {
+                M2C_FIELD(g_pShaderHolder, u32 *, 0x2000)--;
+                ((void **)g_pShaderHolder)[i] = ((void **)g_pShaderHolder)[M2C_FIELD(g_pShaderHolder, u32 *, 0x2000)];
+            }
+            return;
+        }
+    }
+}
+
+void ShaderHolder_AddGX(void *gx, u32 index) {
+    extern void *g_pShaderHolder;
+    u32 i;
+    u32 n;
+
+    if (gx == NULL) {
+        return;
+    }
+    if (index >= M2C_FIELD(g_pShaderHolder, u32 *, 0x2000)) {
+        return;
+    }
+    for (i = 0; i < M2C_FIELD(g_pShaderHolder, u32 *, 0x2004); i++) {
+        if (M2C_FIELD(g_pShaderHolder, void **, 0x1C00 + i * 8) == gx) {
+            return;
+        }
+    }
+    n = M2C_FIELD(g_pShaderHolder, u32 *, 0x2004)++;
+    M2C_FIELD(g_pShaderHolder, void **, 0x1C00 + n * 8) = gx;
+    M2C_FIELD(g_pShaderHolder, void **, 0x1C04 + n * 8) = ((void **)g_pShaderHolder)[index];
 }
 
 void ShowStats_Create(void) {
