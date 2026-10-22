@@ -2377,25 +2377,26 @@ void InitLGLibrary__8LGWheelsFv(void) {
     fn_800957D4();
 }
 
+u8 IsOpened__6WheelsFl(Wheels *wheels, s32 chan);
+s8 IsConnected__6WheelsFl(Wheels *wheels, s32 chan);
+u8 PedalsConnected__6WheelsFl(Wheels *wheels, s32 chan);
+void GenerateNonLinValues__6WheelsFlUc(Wheels *wheels, s32 chan, u8 coefficient);
+
 u8 IsOpened__8LGWheelsFl(void *wheels, s32 chan) {
-    u8 IsOpened__6WheelsFl(void *, s32);
-    return IsOpened__6WheelsFl((u8 *)wheels + 0x82C, chan);
+    return IsOpened__6WheelsFl((Wheels *)((u8 *)wheels + 0x82C), chan);
 }
 
 s8 IsConnected__8LGWheelsFl(void *wheels, s32 chan) {
-    s8 IsConnected__6WheelsFl(void *, s32);
-    return IsConnected__6WheelsFl((u8 *)wheels + 0x82C, chan);
+    return IsConnected__6WheelsFl((Wheels *)((u8 *)wheels + 0x82C), chan);
 }
 
-void PedalsConnected__8LGWheelsFl(s32 arg0) {
-    M2C_UNK PedalsConnected__6WheelsFl(s32);
-    PedalsConnected__6WheelsFl(arg0 + 0x82C);
+u8 PedalsConnected__8LGWheelsFl(void *wheels, s32 chan) {
+    return PedalsConnected__6WheelsFl((Wheels *)((u8 *)wheels + 0x82C), chan);
 }
 
-void GenerateNonLinValues__8LGWheelsFlUc(s32 arg0) {
-    M2C_UNK GenerateNonLinValues__6WheelsFlUc(s32);
-    GenerateNonLinValues__6WheelsFlUc(arg0 + 0x82C);
-    memcpy(arg0 + 0x28, arg0 + 0x854, 0x800);
+void GenerateNonLinValues__8LGWheelsFlUc(void *wheels, s32 chan, u8 coefficient) {
+    GenerateNonLinValues__6WheelsFlUc((Wheels *)((u8 *)wheels + 0x82C), chan, coefficient);
+    memcpy((u8 *)wheels + 0x28, (u8 *)wheels + 0x854, 0x800);
 }
 
 s32 __ct__8PeriodicFv(s32 arg0) {
