@@ -836,6 +836,11 @@ f32 InterfaceInputAnimator_GetLRCounter(void) {
     return g_LR_Counter;
 }
 
+f32 InterfaceInputAnimator_GetUDCounter(void) {
+    extern f32 g_UD_Counter;
+    return g_UD_Counter;
+}
+
 void StateMovie_SetMovieToPlay(s32 arg0) {
     extern s32 g_moviePlaybackName;
     g_moviePlaybackName = arg0;
