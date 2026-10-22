@@ -1076,15 +1076,15 @@ void AttachGeometry_Draw(void *thing) {
 s32 AttachGeometry_Move(Thing *thing) {
     extern f32 g_fDeltaTimeMS;
     extern f32 g_fDeltaTimeSec;
-    Vector4 out;
-    Vector4 rot;
+    Quaternion rot;
+    Quaternion out;
 
     ExtractColorKey(M2C_FIELD(thing, u8 **, 0xB4) + 0x1C, (u8 *)thing + 0x130, g_fDeltaTimeMS);
     ExtractScaleKey(M2C_FIELD(thing, u8 **, 0xB4) + 0x14, (u8 *)thing + 0xD0, g_fDeltaTimeMS);
     GenerateQuaternion(M2C_FIELD(M2C_FIELD(thing, u8 **, 0xB4), void **, 0x2C), &rot,
                        6.2831855f * M2C_FIELD(thing, f32 *, 0xC0) * g_fDeltaTimeSec);
-    QuaternionMult(&rot, &thing->quat, &out);
-    thing->quat = out;
+    QuaternionMult((Vector4 *)&rot, &thing->quat, (Vector4 *)&out);
+    *(Quaternion *)&thing->quat = out;
     return 1;
 }
 
