@@ -749,6 +749,11 @@ s32 ViewManager_GetViewFormat(void) {
     return g_viewFormat;
 }
 
+void GSI_Init(void) {
+    M2C_UNK fn_800957D4();
+    fn_800957D4();
+}
+
 void OSCreateAlarm(s32 *arg0) {
     *arg0 = 0;
 }
