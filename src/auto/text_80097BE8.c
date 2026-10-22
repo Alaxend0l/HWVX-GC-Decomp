@@ -2753,6 +2753,14 @@ void Wheel_PlayAllAirborne(void) {
 
 }
 
+void PADRead(PADStatus *status);
+void PADClamp(PADStatus *status);
+void PlaySpringForce__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 saturation, s16 coefficient);
+void JBCallback__Fll(s32 chan, s32 result) {
+    Param_803C6A40[chan].state = 2;
+    Param_803C6A40[chan].result = result;
+}
+
 void GBAConnectivityLoop__Fv(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
