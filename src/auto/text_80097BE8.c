@@ -3070,6 +3070,8 @@ f32 Gfx_GetProjectionMatrix(void) {
     return M2C_FIELD(GetRenderWindow(), f32 *, 0x270);
 }
 
+#pragma push
+#pragma dont_inline on
 void Gfx_SetOrthoMatrix(void) {
     void C_MTXOrtho(f32 m[4][4], f32 t, f32 b, f32 l, f32 r, f32 n, f32 f);
     void GXSetProjection(f32 m[4][4], s32 type);
