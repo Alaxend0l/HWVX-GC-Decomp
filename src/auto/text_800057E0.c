@@ -1357,6 +1357,17 @@ void OBoxHolder_Release(void *arg0) {
     }
 }
 
+void Dprintf(const char *fmt, ...);
+void CollisionPairCache_Clear(void) {
+    extern u8 g_aCollisionPairCache[4][0x30];
+    s32 i;
+    for (i = 0; i < 4; i++) {
+        *(s32 *)(g_aCollisionPairCache[i] + 0x24) = 0;
+        *(s32 *)(g_aCollisionPairCache[i] + 0x20) = 0;
+        *(s32 *)(g_aCollisionPairCache[i] + 0x28) = 99999;
+    }
+}
+
 void CoronaHolder_Init(void) {
     extern s32 g_coronaRayTest;
     extern s32 g_totalCoronas;
