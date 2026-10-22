@@ -31,6 +31,11 @@ void pow(void) {
     fn_800957D4();
 }
 
+f32 tanf(void) {
+    f64 tan();
+    return (f32) tan();
+}
+
 void fn_8009C888(s32 arg0) {
     extern s32 lbl_803C6EA0;
     lbl_803C6EA0 = arg0;
