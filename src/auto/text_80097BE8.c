@@ -2356,9 +2356,10 @@ s8 Input_KeyPress(s32 chan, u8 key) {
                 return 1;
             }
         }
-        return 0;
+    } else {
+        return (g_VirtualPad[chan].keyPress >> key) & 1;
     }
-    return (g_VirtualPad[chan].keyPress >> key) & 1;
+    return 0;
 }
 
 u8 Input_KeyDown(s32 chan, u8 key) {
