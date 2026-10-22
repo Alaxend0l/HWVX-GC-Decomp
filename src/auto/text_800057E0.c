@@ -2018,6 +2018,10 @@ u32 World_GetTotalTiles_Car(void) {
     return M2C_FIELD(g_worldData.world, u32 *, 0x8);
 }
 
+u32 World_GetTotalTiles_Creature(void) {
+    return M2C_FIELD(g_worldData.world, u32 *, 0x40);
+}
+
 void PlayerManager_Create(void) {
 
 }
