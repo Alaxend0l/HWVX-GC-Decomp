@@ -697,6 +697,11 @@ void Gfx_SetFarClippingPlane(f32 farPlane) {
     g_state.farClippingPlane = farPlane;
 }
 
+void Gfx_SetAmbientColor(GXColor *color) {
+    extern GfxState g_state;
+    g_state.ambientColor = *color;
+}
+
 s32 Gfx_GetRenderWindowIndex(void) {
     extern s32 g_currentWindow;
     return g_currentWindow;
