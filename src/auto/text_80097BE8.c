@@ -2024,12 +2024,12 @@ void Gfx_FontManager_SetCharacterSpacing(s32 id, u8 c, f32 x, f32 y) {
     extern FontManager g_fontManager;
     extern u8 *m_texture;
     Font *font = &g_fontManager.fonts[id];
-    Texture *tex = (Texture *)(m_texture + font->texture * 0x40);
-    f32 spacing = x / tex->width;
+    Texture *tex = &((Texture *)m_texture)[font->texture];
+    u16 width = tex->width;
 
     font->chars[c].spacingX = x;
     font->chars[c].spacingY = y;
-    font->chars[c].unk8 = font->chars[c].unk0 + spacing;
+    font->chars[c].unk8 = font->chars[c].unk0 + x / width;
 }
 
 void Gfx_AnimExtractKeyFrame(void) {
@@ -3057,6 +3057,50 @@ void SetVoicePriority_(void *arg0) {
     OSRestoreInterrupts(temp_r31);
 }
 
+void DestroyVoice_(void *arg0) {
+    extern void (*DestroySongVoice)(void *);
+    extern void *g_pFree_803C78A4;
+    s32 OSDisableInterrupts();
+    void OSRestoreInterrupts(s32);
+    s32 level;
+    void *voice;
+
+    level = OSDisableInterrupts();
+    voice = M2C_FIELD(arg0, void **, 0x14);
+    if (M2C_FIELD(voice, u8 *, 0) == 0) {
+        DestroySongVoice(voice);
+    }
+    M2C_FIELD(voice, u8 *, 0x15) = 0;
+    M2C_FIELD(voice, u8 *, 1) = 0xFD;
+    M2C_FIELD(voice, void **, 0x50) = 0;
+    M2C_FIELD(voice, void **, 4) = g_pFree_803C78A4;
+    g_pFree_803C78A4 = voice;
+    OSRestoreInterrupts(level);
+}
+
+s8 SetVoiceRate_(void *voice) {
+    u32 rate = (1.0f / 48000.0f) * ((f32)M2C_FIELD(voice, u32 *, 0x30) * (f32)M2C_FIELD(voice, u32 *, 0x34));
+
+    if (rate <= 0x2EE00 && rate >= 0x60) {
+        M2C_FIELD(M2C_FIELD(voice, void **, 0x50), u32 *, 0x1DE) = rate;
+        M2C_FIELD(M2C_FIELD(voice, void **, 0x50), u32 *, 0x1C) |= 0x80000;
+        return 1;
+    }
+    return 0;
+}
+
+s8 SetVoiceOffset_(void *voice, u32 offset) {
+    void *ax;
+
+    if (offset < M2C_FIELD(voice, u32 *, 0x28)) {
+        ax = M2C_FIELD(voice, void **, 0x50);
+        M2C_FIELD(ax, u32 *, 0x1B2) = M2C_FIELD(voice, u32 *, 0x20) + offset;
+        M2C_FIELD(ax, u32 *, 0x1C) |= 0x1000;
+        return 1;
+    }
+    return 0;
+}
+
 void DestroyIT_(void *data) {
     void FreeA_(u32 addr);
     void OSFreeToHeap(s32 heap, void *ptr);
@@ -3113,6 +3157,15 @@ u32 GetPitchWheel_(u8 note, u8 count) {
     }
     return pitch >> 14;
 }
+
+#pragma push
+#pragma optimization_level 1
+u32 GetNoteRate_(u32 rate, u8 note) {
+    extern const f32 g_noteTab[128];
+
+    return rate * g_noteTab[note];
+}
+#pragma pop
 
 s32 GetID_(u8 *chunk) {
     s32 id = 0;
