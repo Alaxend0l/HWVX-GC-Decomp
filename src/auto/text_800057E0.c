@@ -3172,6 +3172,45 @@ void LCEnable(void) {
     OSRestoreInterrupts(temp_r31);
 }
 
+#pragma push
+#pragma peephole off
+u32 LCStoreData(void *destAddr, void *srcAddr, u32 nBytes) {
+    void LCStoreBlocks(void *destTag, void *srcAddr, u32 numBlocks);
+    u32 numBlocks = (nBytes + 31) / 32;
+    u32 numTransactions = (numBlocks + 128 - 1) / 128;
+
+    while (numBlocks > 0) {
+        if (numBlocks < 128) {
+            LCStoreBlocks(destAddr, srcAddr, numBlocks);
+            numBlocks = 0;
+        } else {
+            LCStoreBlocks(destAddr, srcAddr, 0);
+            numBlocks -= 128;
+            destAddr = (void *)((u32)destAddr + 4096);
+            srcAddr = (void *)((u32)srcAddr + 4096);
+        }
+    }
+    return numTransactions;
+}
+#pragma pop
+
+void L2GlobalInvalidate(void) {
+    u32 PPCMfl2cr(void);
+    void PPCMtl2cr(u32 val);
+    void DBPrintf(const char *fmt, ...);
+
+    __sync();
+    PPCMtl2cr(PPCMfl2cr() & ~0x80000000);
+    __sync();
+    PPCMtl2cr(PPCMfl2cr() | 0x00200000);
+    while (PPCMfl2cr() & 0x00000001) {
+    }
+    PPCMtl2cr(PPCMfl2cr() & ~0x00200000);
+    while (PPCMfl2cr() & 0x00000001) {
+        DBPrintf(">>> L2 INVALIDATE : SHOULD NEVER HAPPEN\n");
+    }
+}
+
 s32 OSGetCurrentContext(void) {
     return *(s32 *)0x800000D4;
 }
