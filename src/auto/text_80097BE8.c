@@ -212,6 +212,11 @@ void Mpeg_Destroy(void) {
 
 }
 
+void SetSpeakerMode(s8 arg0) {
+    extern s8 g_speakers;
+    g_speakers = arg0;
+}
+
 void ProcessVoice(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
