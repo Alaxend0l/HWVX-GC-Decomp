@@ -449,6 +449,13 @@ void AudioIT_Destroy(void) {
 
 }
 
+void StopActive(void *arg0) {
+    M2C_UNK SetVoiceState_(s32, M2C_UNK);
+    M2C_FIELD(arg0, void **, 0) = (void *) M2C_FIELD(M2C_FIELD(arg0, void **, 0), void **, 4);
+    SetVoiceState_(M2C_FIELD(arg0, s32 *, 4), 3);
+    M2C_FIELD(arg0, s32 *, 4) = 0;
+}
+
 s32 AudioMIDI_Init(void) {
     M2C_UNK DestroyMIDI();
     extern u32 g_pHdr_803C78F4;
