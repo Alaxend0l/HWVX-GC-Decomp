@@ -1825,7 +1825,6 @@ void *Gfx_GetWorldMatrixState(u32 index) {
 
 s32 Gfx_AddWorldMatrixState_CacheMatrix(s32 matrix);
 s32 Gfx_GetLightState(void);
-u8 Gfx_GetEnvmapState(void);
 #pragma push
 #pragma dont_inline on
 void Gfx_DrawGeometry(s32 geometry, s32 matrix) {
