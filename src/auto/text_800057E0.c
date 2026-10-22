@@ -39,6 +39,25 @@ extern NavHolder gs_NavHolder_803C6CD8;
 
 s32 UnlockSram(s32 commit, u32 offset);
 
+typedef struct Process {
+    void (*init)(void);
+    void (*update)(void);
+    s32 arg;
+    u32 flags;
+    s32 unk10;
+    s32 unk14;
+    char name[16];
+} Process;
+
+typedef struct ProcessManager {
+    u32 count;
+    s32 unk4;
+    s32 unk8;
+    Process processes[27];
+} ProcessManager;
+
+extern ProcessManager g_processManager;
+
 typedef void (*CARDCallback)(s32 chan, s32 result);
 
 typedef struct CARDControl {
@@ -2058,15 +2077,10 @@ s32 __OSSyncSram(void) {
 }
 
 u32 OSGetSoundMode(void) {
-    OSSram *sram;
     u32 mode;
+    OSSram *sram = __OSLockSram();
 
-    sram = __OSLockSram();
-    if (sram->flags & 4) {
-        mode = 1;
-    } else {
-        mode = 0;
-    }
+    mode = (sram->flags & 4) ? 1 : 0;
     __OSUnlockSram(0);
     return mode;
 }
