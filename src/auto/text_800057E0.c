@@ -1168,6 +1168,18 @@ u32 CollisionInfo_GetOther(void *arg0, u32 arg1) {
     return temp_r0;
 }
 
+void ThingManagerList_Append(void **arg0, void *arg1) {
+    void *temp_r5;
+
+    M2C_FIELD(arg1, void **, 0xA4) = (void *) *arg0;
+    M2C_FIELD(arg1, s32 *, 0xA0) = 0;
+    temp_r5 = M2C_FIELD(arg1, void **, 0xA4);
+    if (temp_r5 != NULL) {
+        M2C_FIELD(temp_r5, void **, 0xA0) = arg1;
+    }
+    *arg0 = arg1;
+}
+
 void ThingManager_DARYL_Init(void) {
     M2C_UNK ThingManager_DARYL_Release();
     M2C_UNK MatrixCache_Init();
