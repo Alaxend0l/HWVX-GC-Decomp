@@ -1107,6 +1107,11 @@ s32 DVDGetCurrentDiskID(void) {
     return 0x80000000;
 }
 
+void ARReset(void) {
+    extern s32 __AR_init_flag_803C743C;
+    __AR_init_flag_803C743C = 0;
+}
+
 s32 ARGetBaseAddress(void) {
     return 0x4000;
 }
