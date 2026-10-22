@@ -1295,6 +1295,7 @@ s32 isInWindow(void *arg0) {
     M2C_FIELD(arg0, f32 *, 4) = (f32) (M2C_FIELD(arg0, f32 *, 4) - (f32) M2C_FIELD(GetRenderWindow(temp_r3, temp_f1), u32 *, 0x2B8));
     return 1;
 }
+#pragma pop
 
 void Gfx_SetTextColor(s8 arg0, s8 arg1, s8 arg2, s8 arg3) {
     extern M2C_UNK g_textcolor;
