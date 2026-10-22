@@ -773,6 +773,10 @@ u8 IsLoadingThreadRunning(void) {
     return g_bLoadingThreadRunning;
 }
 
+s32 FileStreaming_GetNumAvailableQuadPacks(void) {
+    return 0xB;
+}
+
 void Grid_Release(void) {
 
 }
