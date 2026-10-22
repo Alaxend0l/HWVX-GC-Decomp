@@ -636,6 +636,21 @@ void Gfx_DrawGeometry(s32 geometry, s32 matrix) {
     g_pGDL->numDrawEntries++;
 }
 
+s32 Gfx_AddWorldMatrixState_NonCached(s32 matrix);
+void Gfx_DrawGeometry_MatrixNotCached(s32 geometry, s32 matrix) {
+    extern GDL *g_pGDL;
+    extern GfxState g_state;
+
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].geometry = geometry;
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].matrix = Gfx_AddWorldMatrixState_NonCached(matrix);
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].unk10 = (g_state.unk7C >> 4) & 1;
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].unk4 = g_state.unk74;
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].lightState = Gfx_GetLightState();
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].envmapState = Gfx_GetEnvmapState();
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].unk11 = 0;
+    g_pGDL->numDrawEntries++;
+}
+
 void Gfx_Destroy(void) {
     M2C_UNK Gfx_DisplayList_Destroy();
     M2C_UNK Gfx_TextureHandler_Destroy();
