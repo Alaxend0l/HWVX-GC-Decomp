@@ -1,6 +1,28 @@
 /* Functions from 0x800057E0 to 0x80095C8C, found by decomp-toolkit. */
 #include "common.h"
 
+typedef union PPCWGPipe {
+    u8 u8;
+    u16 u16;
+    u32 u32;
+    s32 s32;
+    f32 f32;
+} PPCWGPipe;
+
+#define GXWGFifo (*(volatile PPCWGPipe *)0xCC008000)
+
+typedef struct GXColor {
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
+} GXColor;
+
+typedef struct GXLightObjInt {
+    u32 reserved[3];
+    u32 Color;
+} GXLightObjInt;
+
 typedef struct ShaderHolderGX {
     void *gx;
     void *shader;
@@ -3583,6 +3605,32 @@ static void SamplingHandler(s16 interrupt, void *context) {
         OSClearContext(exceptionContext);
         OSSetCurrentContext(context);
     }
+}
+
+s32 EXIDetach(s32 arg0) {
+    M2C_UNK __OSMaskInterrupts(u32, s32);
+    extern M2C_UNK Ecb_80309980;
+    s32 temp_r30;
+    s32 temp_r4;
+    s32 temp_r4_2;
+    void *temp_r31;
+
+    temp_r4 = arg0 << 6;
+    temp_r31 = &Ecb_80309980 + temp_r4;
+    temp_r30 = OSDisableInterrupts(&Ecb_80309980, temp_r4);
+    if (!(M2C_FIELD(temp_r31, s32 *, 0xC) & 8)) {
+        OSRestoreInterrupts(temp_r30);
+        return 1;
+    }
+    if ((M2C_FIELD(temp_r31, s32 *, 0xC) & 0x10) && ((u32) M2C_FIELD(temp_r31, u32 *, 0x18) == 0U)) {
+        OSRestoreInterrupts(temp_r30);
+        return 0;
+    }
+    temp_r4_2 = M2C_FIELD(temp_r31, s32 *, 0xC) & 0xFFFFFFF7;
+    M2C_FIELD(temp_r31, s32 *, 0xC) = temp_r4_2;
+    __OSMaskInterrupts(0x500000U >> (arg0 * 3), temp_r4_2);
+    OSRestoreInterrupts(temp_r30);
+    return 1;
 }
 
 s32 EXIGetID(s32 chan, u32 dev, u32 *id);
