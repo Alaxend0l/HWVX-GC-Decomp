@@ -1308,6 +1308,11 @@ void Thing_InitAllSlavesNow(s32 arg0) {
     ThingManagerList_InitAllSlavesNow(arg0 + 0x88);
 }
 
+void *Thing_GetSurfaceScript(void) {
+    extern u8 g_defaultSurfaceScript[];
+    return g_defaultSurfaceScript;
+}
+
 s32 Thing_GetNearestNavPoint(void) {
     return -1;
 }
