@@ -1983,6 +1983,20 @@ void __OSReschedule(void) {
     }
 }
 
+s64 __OSGetSystemTime(void) {
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32);
+    s64 OSGetTime(void);
+    s32 enabled;
+    s64 *timeAdjustAddr = (s64 *)0x800030D8;
+    s64 result;
+
+    enabled = OSDisableInterrupts();
+    result = *timeAdjustAddr + OSGetTime();
+    OSRestoreInterrupts(enabled);
+    return result;
+}
+
 s32 __get_time(void) {
     M2C_UNK OSGetTime(M2C_UNK);
     u64 __div2i(M2C_UNK, u32);
@@ -2792,6 +2806,24 @@ void *__AXGetPBs(void) {
 
 void __AXVPBQuit(void) {
 
+}
+
+s32 __AXGetCurrentProfile(void)
+{
+  extern u32 __AXCurrentProfile_803C7520;
+  extern u32 __AXMaxProfiles_803C751C;
+  extern u32 __AXProfileInitialized_803C7524;
+  extern s32 __AXProfile_803C7518;
+  u32 temp_r3;
+  s32 new_var;
+  if (((u32) __AXProfileInitialized_803C7524) != 0U)
+  {
+    temp_r3 = __AXCurrentProfile_803C7520;
+    __AXCurrentProfile_803C7520 = temp_r3 + 1;
+    __AXCurrentProfile_803C7520 %= __AXMaxProfiles_803C751C;
+    return (new_var = __AXProfile_803C7518) + (temp_r3 * 0x38);
+  }
+  return 0;
 }
 
 void AXFXDelayInit(void *arg0) {
