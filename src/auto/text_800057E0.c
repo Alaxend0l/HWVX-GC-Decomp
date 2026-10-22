@@ -1853,6 +1853,20 @@ s32 PPCMfmsr(void) {
     return M2C_ERROR(/* unknown instruction: mfmsr $r3 */);
 }
 
+extern void **OSExceptionTable_803C71F4;
+void *__OSSetExceptionHandler(u8 exception, void *handler) {
+    void *oldHandler;
+    void **entry = &OSExceptionTable_803C71F4[exception];
+
+    oldHandler = *entry;
+    *entry = handler;
+    return oldHandler;
+}
+
+void *__OSGetExceptionHandler(u8 exception) {
+    return *(OSExceptionTable_803C71F4 + exception);
+}
+
 void OSCreateAlarm(s32 *arg0) {
     *arg0 = 0;
 }
@@ -2396,6 +2410,25 @@ static void SamplingHandler(s16 interrupt, void *context) {
     }
 }
 
+s32 InitializeUART(void) {
+    s32 OSGetConsoleType();
+    extern s32 BarnacleEnabled_803C75C4;
+    extern s32 Chan_803C75B8;
+    extern s32 Dev_803C75BC;
+    extern s32 Enabled_803C75C0;
+    if ((u32) (BarnacleEnabled_803C75C4 + 0x5A010000) == 0x5AU) {
+        return 0;
+    }
+    if (!(OSGetConsoleType() & 0x10000000)) {
+        Enabled_803C75C0 = 0;
+        return 2;
+    }
+    Enabled_803C75C0 = 0xA5FF005A;
+    Chan_803C75B8 = 0;
+    Dev_803C75BC = 1;
+    return 0;
+}
+
 static void SamplingHandler(s16 interrupt, void *context);
 void *PADSetSamplingCallback(void *callback) {
     M2C_UNK SIRegisterPollingHandler(void *);
@@ -2848,6 +2881,34 @@ s32 OnReset_8007DB90(s32 arg0) {
 
 s32 __CARDGetFatBlock(void *arg0) {
     return M2C_FIELD(arg0, s32 *, 0x88);
+}
+
+static void WriteCallback(s32 chan, s32 result) {
+    CARDControl *card;
+    CARDCallback callback;
+    u16 *fat;
+    u16 *fatBack;
+
+    card = &__CARDBlock[chan];
+    if (result >= 0) {
+        fat = (u16 *)((u8 *)card->workArea + 0x6000);
+        fatBack = (u16 *)((u8 *)card->workArea + 0x8000);
+        if (card->buffer == fat) {
+            card->buffer = fatBack;
+            memcpy(fatBack, fat, 0x2000);
+        } else {
+            card->buffer = fat;
+            memcpy(fat, fatBack, 0x2000);
+        }
+    }
+    if (card->apiCallback == NULL) {
+        __CARDPutControlBlock(card, result);
+    }
+    callback = card->eraseCallback;
+    if (callback) {
+        card->eraseCallback = NULL;
+        callback(chan, result);
+    }
 }
 
 s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, void *callback);
