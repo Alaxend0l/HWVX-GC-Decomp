@@ -1917,6 +1917,21 @@ void TRKConstructEvent(void *arg0, s8 arg1) {
     M2C_FIELD(arg0, s32 *, 8) = -1;
 }
 
+s32 TRKSetBufferPosition(void *arg0, u32 arg1) {
+    s32 var_r5;
+
+    var_r5 = 0;
+    if (arg1 > 0x880U) {
+        var_r5 = 0x301;
+    } else {
+        M2C_FIELD(arg0, u32 *, 0xC) = arg1;
+        if (arg1 > (u32) M2C_FIELD(arg0, u32 *, 8)) {
+            M2C_FIELD(arg0, u32 *, 8) = arg1;
+        }
+    }
+    return var_r5;
+}
+
 s32 TRKTerminateSerialHandler(void) {
     return 0;
 }
