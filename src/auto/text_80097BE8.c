@@ -1730,15 +1730,17 @@ f32 Distance_Plane(void *arg0, void *arg1) {
     return M2C_FIELD(arg0, f32 *, 0xC) + ((M2C_FIELD(arg0, f32 *, 8) * M2C_FIELD(arg1, f32 *, 8)) + ((M2C_FIELD(arg0, f32 *, 0) * M2C_FIELD(arg1, f32 *, 0)) + (M2C_FIELD(arg0, f32 *, 4) * M2C_FIELD(arg1, f32 *, 4))));
 }
 
+#pragma push
+#pragma dont_inline on
 void RandomNumberGenerator_GetRandomQuaternion(Vector *q) {
-    Vector axis;
+    Vector axis __attribute__((aligned(16)));
     f32 angle;
 
     angle = RandomAdd(0.0f, 6.2831855f);
     RandomNumberGenerator_GetRandomVector(&axis);
     GenerateQuaternion(&axis, q, angle);
 }
-
+#pragma pop
 void RandomNumberGenerator_GetRandomSubMatrix(Vector *m) {
     RandomNumberGenerator *rng = &g_randomNumberGenerator;
     u32 i = rng->unk3000 * 3;
