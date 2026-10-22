@@ -471,6 +471,35 @@ void srand(s32 arg0) {
     next_803C6EA0 = arg0;
 }
 
+typedef void (*__signal_func_ptr)(s32);
+extern __signal_func_ptr signal_funcs_8030E050[6];
+void exit(s32 status);
+char *strstr(const char *str, const char *pat) {
+    const u8 *s1 = (const u8 *)str - 1;
+    const u8 *p1 = (const u8 *)pat - 1;
+    u32 firstc, c1, c2;
+
+    if ((pat == 0) || (!(firstc = *++p1))) {
+        return (char *)str;
+    }
+
+    while (c1 = *++s1) {
+        if (c1 == firstc) {
+            const u8 *s2 = s1 - 1;
+            const u8 *p2 = p1 - 1;
+
+            while ((c1 = *++s2) == (c2 = *++p2) && c1)
+                ;
+
+            if (!c2) {
+                return (char *)s1;
+            }
+        }
+    }
+
+    return 0;
+}
+
 char *strncpy(char *dst, const char *src, u32 n) {
     const u8 *p = (const u8 *)src - 1;
     u8 *q = (u8 *)dst - 1;
