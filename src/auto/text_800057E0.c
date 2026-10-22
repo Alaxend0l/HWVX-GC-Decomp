@@ -4382,7 +4382,6 @@ s32 DSPCheckMailFromDSP(void) {
     return ((u16) *(u16 *)0xCC005004 >> 0xFU) & 1;
 }
 
-volatile u16 __DSPRegs[32] : 0xCC005000;
 u32 DSPReadMailFromDSP(void) {
     return (((volatile u16 *)0xCC005000)[2] << 16) | ((volatile u16 *)0xCC005000)[3];
 }
