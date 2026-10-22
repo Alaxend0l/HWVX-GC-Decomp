@@ -9,7 +9,7 @@ typedef union PPCWGPipe {
     f32 f32;
 } PPCWGPipe;
 
-#define GXWGFifo (*(volatile PPCWGPipe *)0xCC008000)
+#define GXWGFifo (*(PPCWGPipe *)0xCC008000)
 
 typedef struct GXColor {
     u8 r;
@@ -4273,6 +4273,24 @@ void GXPokeAlphaUpdate(s32 arg0) {
     M2C_FIELD(__peReg, u16 *, 2) = (u16) ((M2C_FIELD(__peReg, u16 *, 2) & 0xFFFFFFEF) | ((arg0 * 0x10) & 0xFF0));
 }
 
+void GXSetDispCopyGamma(s32 gamma) {
+    extern void *gx;
+    u32 *reg = &M2C_FIELD(gx, u32 *, 0x1EC);
+    *reg = (*reg & ~0x180) | (gamma << 7);
+}
+
+void GXClearBoundingBox(void) {
+    extern void *gx;
+    u32 reg;
+    reg = 0x550003FF;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    reg = 0x560003FF;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    M2C_FIELD(gx, u16 *, 2) = 0;
+}
+
 void GXInitLightAttnK(void *arg0, f32 farg0, f32 farg1, f32 farg2) {
     M2C_FIELD(arg0, f32 *, 0x1C) = farg0;
     M2C_FIELD(arg0, f32 *, 0x20) = farg1;
@@ -4287,6 +4305,16 @@ void GXInitLightPos(void *arg0, f32 farg0, f32 farg1, f32 farg2) {
 
 void GXInitLightColor(GXLightObjInt *lt_obj, GXColor color) {
     lt_obj->Color = (color.r << 24) | (color.g << 16) | (color.b << 8) | color.a;
+}
+
+void GXSetNumChans(u8 nChans) {
+    extern void *gx;
+    u32 *reg = &M2C_FIELD(gx, u32 *, 0x204);
+    *reg = (*reg & ~0x70) | (nChans << 4);
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = 0x1009;
+    GXWGFifo.u32 = nChans;
+    M2C_FIELD(gx, u32 *, 0x4F4) |= 4;
 }
 
 s32 GXGetTexObjData(void *arg0) {
