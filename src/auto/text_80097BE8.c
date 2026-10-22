@@ -2038,6 +2038,18 @@ void TimeHandler_Init(void) {
     OSTicksToCalendarTime(OSGetTime(), g_todaysDate);
 }
 
+void TimeHandler_SetTimeElapsedSec_f32(f32 sec) {
+    extern f32 g_fDeltaTime60th;
+    extern f32 g_fDeltaTimeSec;
+    extern f32 g_fDeltaTimeSec_inv;
+    extern u32 g_iDeltaTimeMS;
+
+    g_iDeltaTimeMS = (u32)(1000.0f * sec);
+    g_fDeltaTimeSec = sec;
+    g_fDeltaTimeSec_inv = 1.0f / sec;
+    g_fDeltaTime60th = (f32)g_iDeltaTimeMS / (1000.0f / 60.0f);
+}
+
 void Performance_Start(void) {
 
 }
@@ -2065,6 +2077,26 @@ void Release_Performance_Diff(u32 *arg0) {
 
 void AnimExtractKeyFrame_NonCompound(void) {
 
+}
+
+void AnimExtractKeyFrame(void *anim, s32 frame) {
+    void AnimExtractKeyFrame_Compound(void *anim, s32 frame);
+    void AnimExtractKeyFrame_CompoundHybrid(void *anim, s32 frame);
+    void AnimExtractKeyFrame_Hybrid(void *anim, s32 frame);
+    void AnimExtractKeyFrame_NonCompound(void *anim, s32 frame);
+    s32 flags = *(s32 *)((u8 *)anim + 4);
+
+    if (flags & 2) {
+        if (flags & 8) {
+            AnimExtractKeyFrame_CompoundHybrid(anim, frame);
+        } else {
+            AnimExtractKeyFrame_Compound(anim, frame);
+        }
+    } else if (flags & 8) {
+        AnimExtractKeyFrame_Hybrid(anim, frame);
+    } else {
+        AnimExtractKeyFrame_NonCompound(anim, frame);
+    }
 }
 
 void FontManager_Create(void) {
