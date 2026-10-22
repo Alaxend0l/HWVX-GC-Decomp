@@ -2021,6 +2021,17 @@ void Gfx_End_GroupTri(s32 n) {
     }
 }
 
+GDLRect *Gfx_Add2DRectangleRenderWindow(void) {
+    extern GDL *g_pGDL;
+    extern s32 g_currentWindow;
+
+    if (g_pGDL->numRects >= 0x20) {
+        g_pGDL->numRects = 0;
+    }
+    g_pGDL->rects[g_pGDL->numRects].window = g_currentWindow;
+    return &g_pGDL->rects[g_pGDL->numRects++];
+}
+
 #pragma pop
 
 void Gfx_Add2DRectangleBack(void) {
