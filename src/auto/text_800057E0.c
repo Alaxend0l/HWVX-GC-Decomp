@@ -882,6 +882,10 @@ void Thing_DynamicRotation(void) {
 
 }
 
+s32 Thing_GetNearestNavPoint(void) {
+    return -1;
+}
+
 void Thing_CollideWithRay(void) {
 
 }
