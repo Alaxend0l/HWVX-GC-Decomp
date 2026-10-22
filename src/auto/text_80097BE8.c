@@ -1992,6 +1992,41 @@ void DisplayList_Init(void) {
     memset(g_pDL, 0, 0x18);
 }
 
+void Render_StateBlendMode(u32 mode) {
+    void GXSetBlendMode(s32 type, s32 src, s32 dst, s32 op);
+    extern s32 m_srcBlend_803C76D8;
+    extern s32 m_dstBlend_803C76D4;
+
+    switch (mode) {
+    case 0:
+    case 1:
+        m_srcBlend_803C76D8 = 1;
+        m_dstBlend_803C76D4 = 0;
+        break;
+    case 2:
+        m_srcBlend_803C76D8 = 1;
+        m_dstBlend_803C76D4 = 1;
+        break;
+    case 3:
+    case 8:
+    case 10:
+        m_srcBlend_803C76D8 = 0;
+        m_dstBlend_803C76D4 = 3;
+        break;
+    case 5:
+    case 6:
+    case 7:
+        m_srcBlend_803C76D8 = 4;
+        m_dstBlend_803C76D4 = 5;
+        break;
+    default:
+        m_srcBlend_803C76D8 = 1;
+        m_dstBlend_803C76D4 = 0;
+        break;
+    }
+    GXSetBlendMode(1, m_srcBlend_803C76D8, m_dstBlend_803C76D4, 5);
+}
+
 void Gfx_StateTextureBlendMode(s32 arg0) {
     M2C_UNK GXSetTevOp(M2C_UNK, M2C_UNK);
     extern s32 m_blendMode_803C76D0;
