@@ -1389,6 +1389,16 @@ void PushUsedTextureSet(void *arg0) {
     OSSendMessage(UsedTextureSetQueue_8036EC78, arg0, 0);
 }
 
+void *PopUsedTextureSet(void) {
+    extern u8 UsedTextureSetQueue_8036EC78[];
+    void *msg;
+
+    if (OSReceiveMessage(UsedTextureSetQueue_8036EC78, &msg, 0) == 1) {
+        return msg;
+    }
+    return NULL;
+}
+
 void ReadThreadStart(void) {
     extern s32 ReadThreadCreated_803C7768;
     extern u8 ReadThread_8036ED20[];
