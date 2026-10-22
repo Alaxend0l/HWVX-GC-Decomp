@@ -3260,8 +3260,8 @@ s32 AudioMusic_Init(void) {
     extern s32 (*SetMusicTrackOff)();
     extern s32 (*SetMusicTrackVol)();
 
-    SetMusicState = AudioVoid;
     DestroyMusic = AudioVoid;
+    SetMusicState = AudioVoid;
     SetMusicVolume = AudioVoid;
     SetMusicPitch = AudioVoid;
     SetMusicTempo = AudioVoid;
