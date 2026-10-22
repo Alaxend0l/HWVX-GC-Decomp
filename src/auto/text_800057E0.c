@@ -4167,6 +4167,12 @@ void TRKNubWelcome(void) {
     TRK_board_display("MetroTRK for GAMECUBE v0.10");
 }
 
+void *TRK_memcpy(void *dst, const void *src, u32 n);
+s32 TRKTerminateNub(void) {
+    TRKTerminateSerialHandler();
+    return 0;
+}
+
 s32 TRKSetBufferPosition(void *arg0, u32 arg1) {
     s32 var_r5;
 
