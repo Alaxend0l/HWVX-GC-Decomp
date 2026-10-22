@@ -1221,6 +1221,18 @@ void XformVecOrientation(Vector *m, Vector *v, Vector *out) {
     out->z = rz;
 }
 
+void InverseXformVecOrientation(Vector *m, Vector *v, Vector *out) {
+    f32 x = v->x;
+    f32 y = v->y;
+    f32 z = v->z;
+    f32 rx = m[0].x * x + m[0].y * y + m[0].z * z;
+    f32 ry = m[1].x * x + m[1].y * y + m[1].z * z;
+    f32 rz = m[2].x * x + m[2].y * y + m[2].z * z;
+    out->x = rx;
+    out->y = ry;
+    out->z = rz;
+}
+
 void TransposeSubMatrix(void *arg0) {
     f32 temp_f1;
     f32 temp_f1_2;
@@ -1243,6 +1255,21 @@ s32 FloatsEqual(f32 a, f32 b, f32 epsilon) {
         diff *= -1.0f;
     }
     return diff < epsilon;
+}
+
+void GenerateQuaternion(Vector *axis, Vector *q, f32 angle) {
+    f32 s;
+    if (angle != 0.0f) {
+        angle *= 0.5f;
+        q->w = cos(angle);
+        s = sin(angle);
+        q->x = axis->x * s;
+        q->y = axis->y * s;
+        q->z = axis->z * s;
+    } else {
+        q->w = 1.0f;
+        q->x = q->y = q->z = 0.0f;
+    }
 }
 
 void QuaternionMult(Vector *a, Vector *b, Vector *out) {
