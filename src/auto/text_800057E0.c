@@ -4206,3 +4206,21 @@ void SetUseSerialIO(u8 sio) {
     bUseSerialIO_8030DC00[0] = sio;
 }
 
+s32 __close_console(s32 handle) {
+    s32 GetTRKConnected();
+    u8 fn_80094FC0(s32, s32);
+
+    if (GetTRKConnected() == 0) {
+        return 1;
+    }
+    switch (fn_80094FC0(0xD3, handle)) {
+    case 0:
+        return 0;
+    case 2:
+        return 2;
+    case 1:
+    default:
+        return 1;
+    }
+}
+
