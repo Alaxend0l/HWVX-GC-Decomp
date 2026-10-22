@@ -561,6 +561,13 @@ void Gfx_SetTextColor(s8 arg0, s8 arg1, s8 arg2, s8 arg3) {
     M2C_FIELD(&g_textcolor, s8 *, 3) = arg3;
 }
 
+s32 OSSendMessage(void *queue, void *msg, s32 flags);
+s32 OSReceiveMessage(void *queue, void **msg, s32 flags);
+void PushDecodedTextureSet(void *arg0) {
+    extern u8 DecodedTextureSetQueue_8036E32C[];
+    OSSendMessage(DecodedTextureSetQueue_8036E32C, arg0, 1);
+}
+
 void THPGXRestore(void) {
     M2C_UNK GXSetBlendMode(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK);
     M2C_UNK GXSetNumChans(M2C_UNK);
