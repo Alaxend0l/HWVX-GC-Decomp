@@ -1429,6 +1429,20 @@ void VolumeManager_Create(void) {
     g_VolumeHolder = 0;
 }
 
+void WildCardRack_Release(s32 arg0) {
+    s32 var_r31;
+    u32 var_r30;
+
+    var_r30 = 0U;
+    var_r31 = arg0;
+    do {
+        MotionState_Release(var_r31 + 0xB0);
+        var_r30 += 1;
+        var_r31 += 0x50;
+    } while (var_r30 < 0xCU);
+    Thing_Release(arg0);
+}
+
 void World_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
