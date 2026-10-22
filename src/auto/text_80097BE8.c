@@ -505,6 +505,28 @@ u32 fwrite(const void *ptr, u32 memb_size, u32 num_memb, void *file) {
     return __fwrite(ptr, memb_size, num_memb, file);
 }
 
+s32 fclose(FILE *file) {
+    s32 flush_result, close_result;
+
+    if (file == NULL) {
+        return -1;
+    }
+    if (file->mode.file_kind == __closed_file) {
+        return 0;
+    }
+
+    flush_result = fflush(file);
+    close_result = (*file->close_fn)(file->handle);
+    file->mode.file_kind = __closed_file;
+    file->handle = 0;
+
+    if (file->state.free_buffer) {
+        free(file->buffer);
+    }
+
+    return ((flush_result || close_result) ? -1 : 0);
+}
+
 void fseek(void) {
     M2C_UNK fn_8009A088();
     fn_8009A088();
