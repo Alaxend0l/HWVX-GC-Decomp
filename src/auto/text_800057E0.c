@@ -40,6 +40,7 @@ void WildCardRack_Add(void *rack, u8 *item, s16 count);
 void Item_Release(void *item);
 void MotionState_Draw(void *state);
 f32 MagnitudeVector(void *v);
+void *Allocate(u32, u32, const char *);
 
 s32 AIGetStreamPlayState(void);
 s32 AIGetDSPSampleRate(void);
