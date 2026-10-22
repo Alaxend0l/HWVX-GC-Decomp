@@ -1938,6 +1938,22 @@ void Gfx_CreateView(void) {
     fn_800957D4();
 }
 
+void Gfx_BeginScene(void) {
+    void Render_BeginScene(void);
+    void Render_InitDisplayList(void);
+    void Gfx_SetProjectionMatrix(f32 fov);
+    void Gfx_SetWorldMatrix(void *matrix);
+    extern GfxState g_state;
+    extern u8 g_renderStats[0x100];
+
+    g_state.unk7C = 0;
+    Render_BeginScene();
+    Render_InitDisplayList();
+    memset(g_renderStats, 0, sizeof(g_renderStats));
+    Gfx_SetProjectionMatrix(*(f32 *)((u8 *)GetRenderWindow() + 0x270));
+    Gfx_SetWorldMatrix(0);
+}
+
 void Gfx_EndScene(void) {
     M2C_UNK Render_EndScene();
     extern s8 g_screenTextX;
