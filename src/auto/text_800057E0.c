@@ -768,6 +768,11 @@ void EventSeq_Release(void) {
     fn_800957D4();
 }
 
+u8 IsLoadingThreadRunning(void) {
+    extern u8 g_bLoadingThreadRunning;
+    return g_bLoadingThreadRunning;
+}
+
 void Grid_Release(void) {
 
 }
