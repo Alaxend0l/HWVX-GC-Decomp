@@ -190,7 +190,9 @@ typedef struct CARDControl {
     void *workArea;
     u8 unk84[0x88 - 0x84];
     void *buffer;
-    u8 unk8C[0xD0 - 0x8C];
+    u8 unk8C[0xBE - 0x8C];
+    u16 startBlock;
+    u8 unkC0[0xD0 - 0xC0];
     CARDCallback apiCallback;
     u8 unkD4[0xD8 - 0xD4];
     CARDCallback eraseCallback;
@@ -3959,6 +3961,49 @@ error:
         card->eraseCallback = NULL;
         callback(chan, result);
     }
+}
+
+s32 CARDMountAsync(s32 chan, void *workArea, CARDCallback detachCallback, CARDCallback attachCallback);
+void __CARDSyncCallback(s32 chan, s32 result);
+s32 __CARDSync(s32 chan);
+s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard);
+s32 __CARDFormatRegionAsync(s32 chan, u16 encode, CARDCallback callback);
+u16 OSGetFontEncode(void);
+static void DoUnmount(s32 chan, s32 result) {
+    CARDControl *card;
+    int enabled;
+
+    card = &__CARDBlock[chan];
+    enabled = OSDisableInterrupts();
+    if (card->attached) {
+        EXISetExiCallback(chan, 0);
+        EXIDetach(chan);
+        OSCancelAlarm(card->alarm);
+        card->attached = 0;
+        card->result = result;
+        card->mountStep = 0;
+    }
+    OSRestoreInterrupts(enabled);
+}
+
+s32 CARDUnmount(s32 chan) {
+    CARDControl *card;
+    s32 result;
+
+    result = __CARDGetControlBlock(chan, &card);
+    if (result < 0) {
+        return result;
+    }
+    DoUnmount(chan, -3);
+    return 0;
+}
+
+s32 CARDFormat(s32 chan) {
+    s32 result = __CARDFormatRegionAsync(chan, OSGetFontEncode(), __CARDSyncCallback);
+    if (result < 0) {
+        return result;
+    }
+    return __CARDSync(chan);
 }
 
 s32 __CARDIsPublic(void *arg0) {
