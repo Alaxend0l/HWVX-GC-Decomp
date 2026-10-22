@@ -35,8 +35,8 @@ extern s32 m_memcardstatus_803C7970[2];
 
 s32 MemCard_Write__FUllPv(u32 id, s32 size, void *data);
 
-extern f32 __float_nan;
-extern f32 __float_huge;
+extern s32 __float_nan[];
+extern s32 __float_huge[];
 f64 sin(f64 x);
 f64 cos(f64 x);
 
@@ -611,19 +611,23 @@ f32 ArcTan(void) {
 }
 
 f32 Sqrt(f32 x) {
+    f64 result;
+
     if (x > 0.0) {
         f64 guess = __frsqrte((f64)x);
         guess = 0.5 * guess * (3.0 - guess * guess * x);
         guess = 0.5 * guess * (3.0 - guess * guess * x);
         guess = 0.5 * guess * (3.0 - guess * guess * x);
         guess = 0.5 * guess * (3.0 - guess * guess * x);
-        return x * guess;
+        result = x * guess;
     } else if (x == 0.0) {
-        return 0.0;
-    } else if (x) {
-        return __float_nan;
+        result = 0.0;
+    } else if (x != 0.0) {
+        result = *(f32 *)&__float_nan;
+    } else {
+        result = *(f32 *)&__float_huge;
     }
-    return __float_huge;
+    return result;
 }
 
 f32 _fabs(f32 x) {
