@@ -2015,20 +2015,25 @@ typedef struct SramControlBlock {
 extern SramControlBlock Scb_802EEE20;
 
 static inline void *LockSram(u32 offset) {
+    SramControlBlock *scb = &Scb_802EEE20;
     s32 enabled;
     enabled = OSDisableInterrupts();
-    if (Scb_802EEE20.locked != 0) {
+    if (scb->locked != 0) {
         OSRestoreInterrupts(enabled);
         return NULL;
     }
-    Scb_802EEE20.enabled = enabled;
-    Scb_802EEE20.locked = 1;
-    return Scb_802EEE20.sram + offset;
+    scb->enabled = enabled;
+    scb->locked = 1;
+    return scb->sram + offset;
 }
 
 void Callback(void) {
     extern s32 Prepared_803C7260;
     Prepared_803C7260 = 1;
+}
+
+OSSram *__OSLockSram(void) {
+    return LockSram(0);
 }
 
 s32 __OSUnlockSram(s32 commit) {
@@ -2056,13 +2061,13 @@ u32 OSGetSoundMode(void) {
     OSSram *sram;
     u32 mode;
 
-    sram = (OSSram *)LockSram(0);
+    sram = __OSLockSram();
     if (sram->flags & 4) {
         mode = 1;
     } else {
         mode = 0;
     }
-    UnlockSram(0, 0);
+    __OSUnlockSram(0);
     return mode;
 }
 
