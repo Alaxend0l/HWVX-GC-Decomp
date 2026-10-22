@@ -35,6 +35,22 @@ extern s32 m_memcardstatus_803C7970[2];
 
 s32 MemCard_Write__FUllPv(u32 id, s32 size, void *data);
 
+typedef struct THPVideoInfo {
+    u32 xSize;
+    u32 ySize;
+} THPVideoInfo;
+
+typedef struct THPPlayer {
+    u8 unk0[0x80];
+    THPVideoInfo videoInfo;
+    u8 unk88[0x10];
+    s32 open;
+    u8 state;
+    u8 unk9D[0xFB];
+} THPPlayer;
+
+extern THPPlayer ActivePlayer;
+
 extern s32 __float_nan[];
 extern s32 __float_huge[];
 f64 sin(f64 x);
