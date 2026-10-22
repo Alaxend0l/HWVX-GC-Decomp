@@ -144,6 +144,10 @@ void FontManager_Create(void) {
     fn_800957D4();
 }
 
+void FontManager_Destroy(void) {
+
+}
+
 void Gfx_AnimExtractKeyFrame(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
