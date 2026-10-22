@@ -709,6 +709,20 @@ void abort(void) {
     _ExitProcess();
 }
 
+s32 __flush_all(void) {
+    extern FILE __files[];
+    s32 retval = 0;
+    FILE *stream = &__files[0];
+
+    while (stream) {
+        if (stream->mode.file_kind && fflush(stream)) {
+            retval = -1;
+        }
+        stream = stream->next_file_struct;
+    }
+    return retval;
+}
+
 void __close_all(void) {
     extern FILE __files[];
     FILE *p = &__files[0];
