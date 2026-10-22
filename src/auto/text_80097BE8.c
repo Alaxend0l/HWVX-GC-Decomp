@@ -1595,6 +1595,31 @@ void Main_Shutdown_NGC(void) {
 
 }
 
+s32 RunThread(void *(*func)(void *)) {
+    s32 OSCreateThread(void *thread, void *(*func)(void *), void *param, void *stack, u32 stackSize, s32 priority, u16 attr);
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32 level);
+    s32 OSResumeThread(void *thread);
+    extern u8 Thread_8030E0F0[0x310];
+    extern u8 ThreadStack_8030E400[0x5000];
+    extern s8 NGC_Thread_On;
+    s32 enabled;
+
+    OSCreateThread(Thread_8030E0F0, func, 0, ThreadStack_8030E400 + 0x5000, 0x5000, 0x10, 1);
+    enabled = OSDisableInterrupts();
+    OSResumeThread(Thread_8030E0F0);
+    OSRestoreInterrupts(enabled);
+    NGC_Thread_On = 1;
+    return 1;
+}
+
+s8 isInThread(void) {
+    void *OSGetCurrentThread(void);
+    extern u8 Thread_8030E0F0[0x310];
+
+    return (s8)(OSGetCurrentThread() == Thread_8030E0F0);
+}
+
 void EndThread(void) {
     M2C_UNK OSExitThread(M2C_UNK *);
     extern s8 NGC_Thread_On;
