@@ -3481,6 +3481,50 @@ void World_Init(void) {
     fn_800957D4();
 }
 
+#pragma push
+#pragma dont_inline on
+void World_Refresh(void) {
+    void Gfx_SetEnvmap(u16 a, u16 b, s32 c, f32 d, f32 e);
+    void Gfx_SetFog(GXColor *color, s32 type, f32 start, f32 end);
+    void Gfx_SetFarClippingPlane(f32 farPlane);
+    u8 *gameData = World_GetGameData();
+    GXColor color;
+
+    if (gameData != NULL) {
+        Gfx_SetEnvmap(*(u32 *)(gameData + 0x8C), *(u32 *)(gameData + 0x90), 1, *(f32 *)(gameData + 0xC), *(f32 *)(gameData + 0x10));
+        color = **(GXColor **)(gameData + 0xC0);
+        Gfx_SetFog(&color, 0, *(f32 *)(gameData + 0x14), *(f32 *)(gameData + 0x18));
+        SongManager_PlaySong();
+        Gfx_SetFarClippingPlane(*(f32 *)(gameData + 0x20));
+    } else {
+        Gfx_SetFarClippingPlane(0.0f);
+    }
+}
+#pragma pop
+
+void World_Unload(void) {
+    void FileStreaming_ReleaseQuadPacks(void);
+    void VolumeManager_Release(void);
+    void Gfx_SetFog(GXColor *color, s32 type, f32 start, f32 end);
+    GXColor color = {0, 0, 0, 0};
+
+    FileStreaming_ReleaseQuadPacks();
+    FileStreaming_ReleaseAllDataPacks(4, 1);
+    FileStreaming_ReleaseAllDataPacks(5, 1);
+    FileStreaming_ReleaseAllDataPacks(6, 1);
+    FileStreaming_ReleaseAllDataPacks(0, 1);
+    FileStreaming_ReleaseAllDataPacks(2, 1);
+    FileStreaming_ReleaseAllDataPacks(8, 1);
+    FileStreaming_ReleaseAllDataPacks(1, 1);
+    FileStreaming_ReleaseAllDataPacks(9, 1);
+    g_worldData.world = NULL;
+    g_worldData.unk8[0] = 0;
+    g_worldData.unk8[1] = 0;
+    g_worldData.unk8[2] = 0;
+    VolumeManager_Release();
+    Gfx_SetFog(&color, 0, 1.0f, 0.0f);
+}
+
 u32 World_GetTotalTiles_Car(void) {
     return M2C_FIELD(g_worldData.world, u32 *, 0x8);
 }
