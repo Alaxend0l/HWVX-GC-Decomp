@@ -892,6 +892,12 @@ f32 Projectile_GetMass(void *arg0) {
     return M2C_FIELD(M2C_FIELD(arg0, void **, 0x120), f32 *, 0x2C);
 }
 
+void ShaderHolder_Init(void) {
+    extern void *g_pShaderHolder;
+    M2C_FIELD(g_pShaderHolder, s32 *, 0x2000) = 0;
+    M2C_FIELD(g_pShaderHolder, s32 *, 0x2004) = 0;
+}
+
 void ShowStats_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
