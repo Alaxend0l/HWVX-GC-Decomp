@@ -3583,6 +3583,14 @@ void PushDecodedAudioBuffer(void *arg0) {
     OSSendMessage(DecodedAudioBufferQueue_80371444, arg0, 1);
 }
 
+void __THPRestartDefinition(void) {
+    __THPInfo_803C7890->RST = TRUE;
+    __THPInfo_803C7890->c += 2;
+    __THPInfo_803C7890->nMCU = (u16)((__THPInfo_803C7890->c[0] << 8) | __THPInfo_803C7890->c[1]);
+    __THPInfo_803C7890->c += 2;
+    __THPInfo_803C7890->currMCU = __THPInfo_803C7890->nMCU;
+}
+
 s32 __THPAudioGetNewSample(u32 *info) {
     struct THPAudioDecodeInfo {
         u8 *encodeData;
