@@ -355,9 +355,12 @@ typedef struct CARDControl {
     void *workArea;
     u8 unk84[0x88 - 0x84];
     void *buffer;
-    u8 unk8C[0xBE - 0x8C];
+    u8 unk8C[0xA8 - 0x8C];
+    s32 retry;
+    u8 unkAC[0xBE - 0xAC];
     u16 startBlock;
-    u8 unkC0[0xD0 - 0xC0];
+    u8 unkC0[0xCC - 0xC0];
+    CARDCallback exiCallback;
     CARDCallback apiCallback;
     u8 unkD4[0xD8 - 0xD4];
     CARDCallback eraseCallback;
@@ -3387,6 +3390,75 @@ s32 Tracer_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     }
     return 0;
 }
+
+#pragma push
+#pragma readonly_strings on
+#pragma dont_inline on
+s32 StateGameManager_Init(void) {
+    extern struct { u8 *mcp; s32 unk4; } g_GameManagerState;
+    extern s32 g_gameDifficulty;
+    void ShowStats_Init(void);
+    void ProcessManager_Init(void);
+    void TimeHandler_Heartbeat(void);
+    void Input_Init(void);
+    void Input_Heartbeat(void);
+    void SoundManager_Init(void);
+    void SoundManager_Heartbeat(void);
+    void InterfaceManager_Init(void);
+    void InterfaceManager_Heartbeat(void);
+    void InterfaceManager_Render(void);
+    void ThingManager_DARYL_Init(void);
+    void ThingManager_DARYL_Heartbeat(void);
+    void ThingManager_DARYL_Render(void);
+    void LidHandler_Init(void);
+    void LidHandler_Heartbeat(void);
+    void CameraManager_Init(void);
+    void PlayerManager_Init(void);
+    void Grid_Init(Vector4 *min, Vector4 *max, s32 x, s32 z);
+    void *CameraManager_GetNewCamera(void);
+    void GameSetting_Init(void);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void *camera = NULL;
+    Vector4 min;
+    Vector4 max;
+
+    ShowStats_Init();
+    ProcessManager_Init();
+    ProcessManager_Add("TimeHandler", NULL, TimeHandler_Heartbeat, 0, 0);
+    ProcessManager_Add("Input", Input_Init, Input_Heartbeat, 0, 1);
+    ProcessManager_Add("SoundManager", SoundManager_Init, SoundManager_Heartbeat, 0, 1);
+    ProcessManager_Add("Interface", InterfaceManager_Init, InterfaceManager_Heartbeat, (s32)InterfaceManager_Render, 1);
+    ProcessManager_Add("ThingManager", ThingManager_DARYL_Init, ThingManager_DARYL_Heartbeat, (s32)ThingManager_DARYL_Render, 0);
+    ProcessManager_Add("LidHandler", LidHandler_Init, LidHandler_Heartbeat, 0, 1);
+    CameraManager_Init();
+    PlayerManager_Init();
+    min.x = min.y = min.z = -500.0f;
+    max.x = max.y = max.z = 500.0f;
+    Grid_Init(&min, &max, 0x10, 0x10);
+    if (M2C_FIELD(GetCameraManager(), u8 *, 0x640) == 0) {
+        camera = CameraManager_GetNewCamera();
+    }
+    ViewManager_SetCamera(camera, 0);
+    if (GameSettings_GetCodeVariable(0x198, 0) != 0) {
+        GameSettings_SetCodeVariable(0xC8, 0, g_gameDifficulty);
+        GameSettings_SetCodeVariable(0x198, 0, 0);
+        g_GameManagerState.unk4 = M2C_FIELD(g_GameManagerState.mcp, s32 *, 0x2C) - 1;
+    }
+    if (g_GameManagerState.mcp == NULL) {
+        GameSetting_Init();
+        if ((g_GameManagerState.mcp = GameSettings_GetMCP()) == NULL) {
+            StateManager_QueueChange(0xB);
+            return 1;
+        }
+        if (*g_GameManagerState.mcp != 0) {
+            StateManager_QueueChange(0xB);
+            return 1;
+        }
+        g_GameManagerState.unk4 = 0;
+    }
+    return 1;
+}
+#pragma pop
 
 void StateGameManager_Release(void) {
     M2C_UNK FileStreaming_ReleaseAllDataPacks(M2C_UNK, M2C_UNK);
