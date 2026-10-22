@@ -885,6 +885,13 @@ s32 StateShutdown_Shutdown(void) {
     return 1;
 }
 
+void StateTitleScreen_SetMenuFile(s32 arg0, s32 arg1) {
+    extern s32 g_mainMenuFile;
+    extern s32 g_mainMenuFileID;
+    g_mainMenuFile = arg0;
+    g_mainMenuFileID = arg1;
+}
+
 s32 Thing_PreMove(void) {
     return 1;
 }
