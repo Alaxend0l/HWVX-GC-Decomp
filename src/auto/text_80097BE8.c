@@ -501,6 +501,16 @@ void __prep_buffer(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0x34) = (s32) M2C_FIELD(arg0, s32 *, 0x18);
 }
 
+#pragma push
+#pragma dont_inline on
+int tolower(int c) {
+    if (c == -1) {
+        return -1;
+    }
+    return __lower_map[c & 0xFF];
+}
+#pragma pop
+
 u32 fwrite(const void *ptr, u32 memb_size, u32 num_memb, void *file) {
     u32 __fwrite(const void *, u32, u32, void *);
     return __fwrite(ptr, memb_size, num_memb, file);
