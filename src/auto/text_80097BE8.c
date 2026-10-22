@@ -71,6 +71,30 @@ extern SFX g_sound_80373560[0xFE];
 extern u8 g_soundLst_80373460[0xFE];
 extern u32 g_freeSound_803C78D8;
 
+typedef void (*GBACallback)(s32 chan, s32 ret);
+
+typedef struct GBABootInfo {
+    s32 paletteColor;
+    s32 paletteSpeed;
+    u8 *programp;
+    s32 length;
+    u8 *status;
+    GBACallback callback;
+    u8 readbuf[4];
+    u8 writebuf[4];
+    s32 i;
+    u32 start;
+    s64 begin;
+    s32 firstXfer;
+    s32 curOffset;
+    u32 crc;
+    u32 dummyWord[7];
+    u32 keyA;
+    u32 keyB;
+    u32 initialCode;
+    s32 realLength;
+} GBABootInfo;
+
 typedef struct GBAControl {
     u8 output[5];
     u8 input[5];
@@ -80,10 +104,19 @@ typedef struct GBAControl {
     u8 *ptr;
     void *callback;
     s32 ret;
-    u8 unk24[0xDC];
+    u8 unk24[0x1C];
+    GBABootInfo bootInfo;
+    u8 unkA8[0x58];
 } GBAControl;
 
 extern GBAControl __GBA[4];
+extern u8 D54_800DAFF8[];
+
+s32 GBAResetAsync(s32 chan, u8 *status, GBACallback callback);
+s32 GBAGetStatusAsync(s32 chan, u8 *status, GBACallback callback);
+void __GBAX02(s32 chan, u8 *readbuf);
+static void F25(s32 chan, s32 ret);
+void F27(s32 chan, s32 ret);
 
 typedef struct EffectCondition {
     u8 unk0[2];
