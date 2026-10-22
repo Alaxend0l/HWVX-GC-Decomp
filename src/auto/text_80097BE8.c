@@ -2417,11 +2417,11 @@ void Audio_Destroy(void) {
 void Audio_Update(s32 arg0) {
     extern void (*SongUpdate)(void);
     extern void (*VoiceUpdate)(void);
-    if (SongUpdate) {
-        (*SongUpdate)();
+    if (*(void (*volatile *)(void))&SongUpdate != NULL) {
+        SongUpdate();
     }
-    if (VoiceUpdate) {
-        (*VoiceUpdate)();
+    if (*(void (*volatile *)(void))&VoiceUpdate != NULL) {
+        VoiceUpdate();
     }
 }
 
