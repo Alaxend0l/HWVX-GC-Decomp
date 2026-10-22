@@ -1227,6 +1227,35 @@ void ExitStateGamePlay(s32 arg0) {
     g_bExitStateGamePlay = 1;
 }
 
+void GamePlay_Interface(void *arg0) {
+    M2C_UNK GamePlay_Startup();
+    extern M2C_UNK g_handleInterfaceGP;
+    u16 temp_r0;
+
+    temp_r0 = M2C_FIELD(arg0, u16 *, 4);
+    switch (temp_r0) {                        /* irregular */
+    case 3:
+        GamePlay_Startup();
+        if (((M2C_UNK (*)(void *)) M2C_FIELD(&g_handleInterfaceGP, M2C_UNK (**)(void *), 0)) != (short)NULL) {
+            M2C_FIELD(&g_handleInterfaceGP, M2C_UNK (**)(void *), 0)(arg0);
+            return;
+        }
+        return;
+    case 1:
+        if (((M2C_UNK (*)()) M2C_FIELD(&g_handleInterfaceGP, M2C_UNK (**)(), 4)) != NULL) {
+            M2C_FIELD(&g_handleInterfaceGP, M2C_UNK (**)(), 4)();
+            return;
+        }
+        break;
+    default:
+    case 2:
+        if (((M2C_UNK (*)(void *)) M2C_FIELD(&g_handleInterfaceGP, M2C_UNK (**)(void *), 0)) != NULL) {
+            M2C_FIELD(&g_handleInterfaceGP, M2C_UNK (**)(void *), 0)(arg0);
+        }
+        break;
+    }
+}
+
 void InterfaceInputAnimator_Count(s32 arg0, s32 arg1, f32 farg0) {
     extern s32 g_LR_Direction;
     extern f32 g_LR_Max_Min;
@@ -2290,12 +2319,59 @@ void __AXVPBQuit(void) {
 
 }
 
+void AXFXDelayInit(void *arg0) {
+    M2C_UNK AXFXDelaySettings(void *);
+    OSDisableInterrupts();
+    M2C_FIELD(arg0, s32 *, 0x30) = 0;
+    M2C_FIELD(arg0, s32 *, 0x34) = 0;
+    M2C_FIELD(arg0, s32 *, 0x38) = 0;
+    OSRestoreInterrupts();
+    AXFXDelaySettings(arg0);
+}
+
+s32 AXFXDelayShutdown(void *delay) {
+    extern void (*__AXFXFree)(void *);
+    s32 OSDisableInterrupts();
+    M2C_UNK OSRestoreInterrupts(s32);
+    s32 enabled;
+
+    enabled = OSDisableInterrupts();
+    if (M2C_FIELD(delay, void **, 0x30) != NULL) {
+        __AXFXFree(M2C_FIELD(delay, void **, 0x30));
+    }
+    if (M2C_FIELD(delay, void **, 0x34) != NULL) {
+        __AXFXFree(M2C_FIELD(delay, void **, 0x34));
+    }
+    if (M2C_FIELD(delay, void **, 0x38) != NULL) {
+        __AXFXFree(M2C_FIELD(delay, void **, 0x38));
+    }
+    OSRestoreInterrupts(enabled);
+    return 1;
+}
+
+void *__AXFXAllocFunction_8007BC38(u32 size) {
+    extern s32 __OSCurrHeap;
+    void *OSAllocFromHeap(s32, u32);
+    return OSAllocFromHeap(__OSCurrHeap, size);
+}
+
 s32 DSPCheckMailToDSP(void) {
     return ((u16) *(u16 *)0xCC005000 >> 0xFU) & 1;
 }
 
 s32 DSPCheckMailFromDSP(void) {
     return ((u16) *(u16 *)0xCC005004 >> 0xFU) & 1;
+}
+
+volatile u16 __DSPRegs[32] : 0xCC005000;
+u32 DSPReadMailFromDSP(void) {
+    return (((volatile u16 *)0xCC005000)[2] << 16) | ((volatile u16 *)0xCC005000)[3];
+}
+
+void DSPSendMailToDSP(u32 mail) {
+    volatile u16 *regs = (volatile u16 *)0xCC000000;
+    regs[0x2800] = mail >> 16;
+    regs[0x2801] = mail;
 }
 
 s32 DSPCheckInit(void) {
