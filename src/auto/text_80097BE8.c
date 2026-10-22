@@ -387,6 +387,17 @@ void __THPAudioInitialize(void *arg0, u8 *arg1) {
     M2C_FIELD(arg0, u8 **, 0) = (u8 *) (M2C_FIELD(arg0, u8 **, 0) + 1);
 }
 
+void SetVoicePriority_(void *arg0) {
+    M2C_UNK AXSetVoicePriority(s32, u8);
+    s32 OSDisableInterrupts();
+    M2C_UNK OSRestoreInterrupts(s32);
+    s32 temp_r31;
+
+    temp_r31 = OSDisableInterrupts();
+    AXSetVoicePriority(M2C_FIELD(arg0, s32 *, 0x50), M2C_FIELD(arg0, u8 *, 0x14));
+    OSRestoreInterrupts(temp_r31);
+}
+
 void DestroyMIDI_(s32 arg0) {
     M2C_UNK FreeA_(s32);
     M2C_UNK OSFreeToHeap(s32, s32);
