@@ -369,6 +369,17 @@ typedef struct GDL {
     u32 matrices[0x578];
 } GDL;
 
+typedef struct DLSkinGroup {
+    u8 unk0[0x14];
+} DLSkinGroup;
+
+typedef struct DisplayList {
+    u8 unk0[0x10];
+    u16 numSkinGroups;
+    u8 unk12[0x109E0 - 0x12];
+    DLSkinGroup skinGroups[0x100];
+} DisplayList;
+
 typedef struct GfxState {
     u8 unk0[0x60];
     Vector lightDir;
@@ -1841,13 +1852,15 @@ void Gfx_GetCameraVector(Vector *right, Vector *up, Vector *at) {
 
 void *DisplayList_AddGroup_Skin(void) {
     extern u8 *g_pDL;
-    u16 count = *(u16 *)(g_pDL + 0x10);
+    u16 count;
+    u8 *dl = g_pDL;
 
+    count = *(u16 *)(dl + 0x10);
     if (count == 0x100) {
         return NULL;
     }
-    *(u16 *)(g_pDL + 0x10) = count + 1;
-    return g_pDL + 0x109E0 + count * 0x14;
+    *(u16 *)(dl + 0x10) = count + 1;
+    return dl + 0x109E0 + count * 0x14;
 }
 
 s32 Gfx_FrustrumCullSphereTestAllWindows(Vector *center, f32 radius) {
