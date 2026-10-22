@@ -3141,6 +3141,32 @@ s8 AutoCalibrateAxisSigned(s8 *min, s8 *max, s8 value, s8 deadzone, s8 *out) {
     return result;
 }
 
+#pragma push
+#pragma optimize_for_size on
+void LGInit(void) {
+    extern s32 g_lgInitialized_803C7948;
+    void InitDevice(LGDevice *device, s32 index);
+    void SIResetSteeringAsync(s32 chan, void *callback);
+    void SIReadSteering(s32 chan, void *status);
+    void SISetSteeringSamplingCallback(void *callback);
+    void SteeringSamplingCallback(void);
+    LGDevice *device;
+    s32 i;
+
+    if (g_lgInitialized_803C7948 == 0) {
+        for (i = 0; i < 4; i++) {
+            device = &g_lgDevices_803771D8[i];
+            VDevice_Init(&device->vdev);
+            InitDevice(device, i);
+            SIResetSteeringAsync(i, SteeringResetCallback);
+            SIReadSteering(i, device->unkC);
+        }
+        SISetSteeringSamplingCallback(SteeringSamplingCallback);
+        g_lgInitialized_803C7948 = 1;
+    }
+}
+#pragma pop
+
 s32 LGClose(LGDevice *device) {
     if (device == NULL || (u32)device == 0xFFFFFFFF) {
         return -2;
