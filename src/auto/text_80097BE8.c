@@ -4090,6 +4090,23 @@ s32 SetVoiceVol(u32 id, s32 vol) {
     return 0;
 }
 
+s32 SetVoicePos(u32 id, s16 x, s16 y) {
+    extern u8 g_voice[0x20][0x70];
+    extern s32 g_sfxvol_803C78D4;
+    void SetVoiceVol_(void *voice, s32 vol);
+    u8 *voice = g_voice[(u8)id];
+
+    if (*(u32 *)voice == id) {
+        *(s32 *)(voice + 0x40) = x;
+        *(s32 *)(voice + 0x44) = y;
+        if (voice[0x15] == 1) {
+            SetVoiceVol_(voice, g_sfxvol_803C78D4);
+        }
+        return 1;
+    }
+    return 0;
+}
+
 #pragma pop
 
 #pragma pop
