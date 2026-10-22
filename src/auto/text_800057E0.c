@@ -1250,6 +1250,12 @@ void Trigger_Create(void) {
     fn_800957D4();
 }
 
+void Trigger_Destroy(void) {
+    extern s32 m_triggerData_803C7120;
+    Deallocate(m_triggerData_803C7120);
+    m_triggerData_803C7120 = 0;
+}
+
 void Trigger_PauseTACSystem(s8 arg0) {
     extern s8 g_bTACSystemPaused_803C7124;
     g_bTACSystemPaused_803C7124 = arg0;
