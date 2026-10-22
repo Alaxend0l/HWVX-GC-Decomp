@@ -94,6 +94,13 @@ extern WorldData g_worldData;
 
 s32 TRKTargetCPUMinorType(void);
 
+typedef struct SoundSource {
+    u8 unk0[0x2C];
+    s32 voice;
+    s32 looping;
+    u8 unk34[0x50 - 0x34];
+} SoundSource;
+
 typedef struct DSCPUType {
     u8 cpuMajor;
     u8 cpuMinor;
@@ -1069,6 +1076,16 @@ void SoundListener_SetTotalListeners(u32 arg0) {
     if (arg0 != 0U) {
         g_numListeners = arg0 - 1;
     }
+}
+
+s8 SoundSource_IsActive(s32 index) {
+    extern s32 g_sources_803C6F38;
+    return M2C_FIELD((u8 *)g_sources_803C6F38 + index * 0x50, s32 *, 0x2C) != -1;
+}
+
+s8 SoundSource_IsLooping(s32 index) {
+    extern s32 g_sources_803C6F38;
+    return M2C_FIELD((u8 *)g_sources_803C6F38 + index * 0x50, s32 *, 0x30);
 }
 
 void *SoundAudioSample_Play(void *sample) {
