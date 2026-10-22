@@ -2039,6 +2039,10 @@ void *World_GetTileCreature(u32 index) {
     return NULL;
 }
 
+void *World_GetNavHolder(void) {
+    return M2C_FIELD(g_worldData.world, void **, 0x78);
+}
+
 void PlayerManager_Create(void) {
 
 }
