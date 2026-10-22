@@ -2328,7 +2328,7 @@ s32 StateGamePlay_Shutdown(void) {
     void Gfx_ClearScreen(void);
 
     Trigger_PauseTACSystem(1);
-    while ((s8)IsLoadingThreadRunning()) {
+    while (IsLoadingThreadRunning()) {
     }
     g_iTimeShift = 0;
     Gfx_BeginScene();
