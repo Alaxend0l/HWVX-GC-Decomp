@@ -504,6 +504,12 @@ void PedalsConnected__8LGWheelsFl(s32 arg0) {
     PedalsConnected__6WheelsFl(arg0 + 0x82C);
 }
 
+void GenerateNonLinValues__8LGWheelsFlUc(s32 arg0) {
+    M2C_UNK GenerateNonLinValues__6WheelsFlUc(s32);
+    GenerateNonLinValues__6WheelsFlUc(arg0 + 0x82C);
+    memcpy(arg0 + 0x28, arg0 + 0x854, 0x800);
+}
+
 s32 __ct__8PeriodicFv(s32 arg0) {
     M2C_UNK __ct__5ForceFv();
     __ct__5ForceFv();
