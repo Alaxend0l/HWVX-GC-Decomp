@@ -345,6 +345,11 @@ void IsConnected__8LGWheelsFl(s32 arg0) {
     IsConnected__6WheelsFl(arg0 + 0x82C);
 }
 
+void PedalsConnected__8LGWheelsFl(s32 arg0) {
+    M2C_UNK PedalsConnected__6WheelsFl(s32);
+    PedalsConnected__6WheelsFl(arg0 + 0x82C);
+}
+
 f32 fn_800A08D4(void) {
     f64 fn_8009FAF8();
     return (f32) fn_8009FAF8();
