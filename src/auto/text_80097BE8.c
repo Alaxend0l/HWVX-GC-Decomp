@@ -1743,16 +1743,14 @@ void RandomNumberGenerator_GetRandomQuaternion(Vector *q) {
 #pragma pop
 void RandomNumberGenerator_GetRandomSubMatrix(Vector *m) {
     RandomNumberGenerator *rng = &g_randomNumberGenerator;
-    u32 i = rng->unk3000 * 3;
+    s32 i = rng->unk3000 * 3;
 
     m[0].x = rng->vectors[i].x;
     m[0].y = rng->vectors[i].y;
-    m[0].z = rng->vectors[i].z;
-    i++;
+    m[0].z = rng->vectors[i++].z;
     m[1].x = rng->vectors[i].x;
     m[1].y = rng->vectors[i].y;
-    m[1].z = rng->vectors[i].z;
-    i++;
+    m[1].z = rng->vectors[i++].z;
     m[2].x = rng->vectors[i].x;
     m[2].y = rng->vectors[i].y;
     m[2].z = rng->vectors[i].z;
