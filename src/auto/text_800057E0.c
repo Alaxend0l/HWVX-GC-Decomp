@@ -1376,6 +1376,18 @@ void SoundSource_Play(s32 index) {
     g_sources_803C6F38[index].playing = 1;
 }
 
+void SoundSource_Stop(s32 index) {
+    extern SoundSource *g_sources_803C6F38;
+    void ReleaseVoice(s32 voice);
+
+    if (g_sources_803C6F38[index].voice > 0) {
+        ReleaseVoice(g_sources_803C6F38[index].voice);
+    }
+    g_sources_803C6F38[index].voice = -1;
+    g_sources_803C6F38[index].unk24 = 0.0f;
+    g_sources_803C6F38[index].looping = 0;
+}
+
 s8 SoundSource_IsActive(s32 index) {
     extern SoundSource *g_sources_803C6F38;
     return g_sources_803C6F38[index].voice != -1;
