@@ -2363,7 +2363,7 @@ void GamePlay_Interface(void *msg) {
     void GamePlay_Startup(void);
     extern struct {
         void (*handleInput)(void *msg);
-        void (*update)(void);
+        void (*update)(void *msg);
     } g_handleInterfaceGP;
 
     switch (M2C_FIELD(msg, u16 *, 4)) {
@@ -2374,8 +2374,8 @@ void GamePlay_Interface(void *msg) {
         }
         break;
     case 1:
-        if (g_handleInterfaceGP.update) {
-            g_handleInterfaceGP.update();
+        if (g_handleInterfaceGP.update != NULL) {
+            g_handleInterfaceGP.update(msg);
         }
         break;
     case 2:
