@@ -181,6 +181,10 @@ void DBOpen(void) {
 
 }
 
+void CopyMatrix(void *dst, void *src) {
+    memcpy(dst, src, 0x40);
+}
+
 f32 ArcTan(void) {
     f64 atan2();
     return (f32) atan2();
