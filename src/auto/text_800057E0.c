@@ -1118,6 +1118,13 @@ void AXRegisterAuxACallback(s32 arg0, s32 arg1) {
     __AXContextAuxA_803C7478 = arg1;
 }
 
+void AXRegisterAuxBCallback(s32 arg0, s32 arg1) {
+    extern s32 __AXCallbackAuxB_803C7474;
+    extern s32 __AXContextAuxB_803C747C;
+    __AXCallbackAuxB_803C7474 = arg0;
+    __AXContextAuxB_803C747C = arg1;
+}
+
 s32 __AXGetCommandListCycles(void) {
     extern s32 __AXCommandListCycles_803C74B0;
     return __AXCommandListCycles_803C74B0;
