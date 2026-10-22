@@ -308,6 +308,17 @@ loop_1:
     goto loop_1;
 }
 
+void Audio_Destroy_(void) {
+    M2C_UNK AIReset();
+    M2C_UNK ARQReset();
+    M2C_UNK ARReset();
+    M2C_UNK AXQuit();
+    AXQuit();
+    AIReset();
+    ARQReset();
+    ARReset();
+}
+
 void Audio_Update_(void) {
     M2C_UNK Audio_Update(M2C_UNK);
     Audio_Update(0xD05);
