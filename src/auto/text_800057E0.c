@@ -1198,6 +1198,19 @@ void MatrixCache_Free(u32 key) {
     }
 }
 
+void NavHolder_Init(NavData *data) {
+    u32 i;
+
+    gs_NavHolder_803C6CD8.data = data;
+    gs_NavHolder_803C6CD8.objects = NULL;
+    if (data->numNodes != 0) {
+        gs_NavHolder_803C6CD8.objects = (void **)Allocate(data->numNodes * 4, 0, "");
+    }
+    for (i = 0; i < gs_NavHolder_803C6CD8.data->numNodes; i++) {
+        gs_NavHolder_803C6CD8.objects[i] = (void *)Grid_AddObject(5, i, gs_NavHolder_803C6CD8.data->nodes + i * 0x60, gs_NavHolder_803C6CD8.data->nodes + i * 0x60);
+    }
+}
+
 void NavHolder_UseMainRouteOnly(void) {
     extern s8 gs_useMainRouteOnly_803C7000;
     gs_useMainRouteOnly_803C7000 = 1;
@@ -1824,6 +1837,15 @@ void OSSetArenaHi(s32 arg0) {
 void OSSetArenaLo(s32 arg0) {
     extern s32 __OSArenaLo_803C6D78;
     __OSArenaLo_803C6D78 = arg0;
+}
+
+void LCEnable(void) {
+    M2C_UNK __LCEnable();
+    s32 temp_r31;
+
+    temp_r31 = OSDisableInterrupts();
+    __LCEnable();
+    OSRestoreInterrupts(temp_r31);
 }
 
 s32 OSGetCurrentContext(void) {
