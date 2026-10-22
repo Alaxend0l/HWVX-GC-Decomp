@@ -81,6 +81,11 @@ s32 TRKAcquireMutex(void *mutex);
 s32 TRKReleaseMutex(void *mutex);
 void *TRK_memcpy(void *dst, const void *src, u32 n);
 
+void ProcessManager_Release(char *name);
+void InterfaceInputAnimator_HeartBeat(void);
+f32 InterfaceInputAnimator_GetLRCounter(void);
+f32 InterfaceInputAnimator_GetUDCounter(void);
+
 s32 UnlockSram(s32 commit, u32 offset);
 
 typedef struct Process {
