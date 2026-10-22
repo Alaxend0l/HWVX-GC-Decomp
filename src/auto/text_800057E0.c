@@ -1371,6 +1371,11 @@ void SoundListener_SetTotalListeners(u32 arg0) {
     }
 }
 
+void SoundSource_Play(s32 index) {
+    extern SoundSource *g_sources_803C6F38;
+    g_sources_803C6F38[index].playing = 1;
+}
+
 s8 SoundSource_IsActive(s32 index) {
     extern SoundSource *g_sources_803C6F38;
     return g_sources_803C6F38[index].voice != -1;
