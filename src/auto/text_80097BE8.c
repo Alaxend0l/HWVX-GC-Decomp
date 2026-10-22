@@ -42,6 +42,34 @@ static inline void IdentityMatrix(Vector *m) {
     SetVector(&m[3], 0.0f, 0.0f, 0.0f, 1.0f);
 }
 
+void OSReport(const char *msg, ...);
+void *OSGetArenaLo(void);
+void *OSGetArenaHi(void);
+void OSSetArenaLo(void *newLo);
+void *OSInitAlloc(void *arenaStart, void *arenaEnd, s32 maxHeaps);
+s32 OSCreateHeap(void *start, void *end);
+s32 OSSetCurrentHeap(s32 heap);
+void raise(s32 sig);
+void _ExitProcess(void);
+extern s32 __aborting;
+extern s32 __atexit_curr_func_803C75DC;
+extern void (*__atexit_funcs_8030DC18[64])(void);
+extern void (*__console_exit)(void);
+s32 __register_fragment(void *info, char *TOC) {
+    FragmentInfo *f;
+    s32 i;
+
+    for (i = 0, f = fragmentinfo_8030DC08; i < 1; ++i, ++f) {
+        if (f->active == 0) {
+            f->eti_init_info = info;
+            f->TOC = TOC;
+            f->active = 1;
+            return i;
+        }
+    }
+    return -1;
+}
+
 void *what__Q23std13bad_exceptionCFv(void) {
     extern u8 g_cameraManager[];
     return g_cameraManager;
