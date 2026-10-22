@@ -139,6 +139,18 @@ void PlayCarAirborne__8LGWheelsFl(void *wheels, s32 chan);
 void PlayFrontalCollisionForce__8LGWheelsFlUc(void *wheels, s32 chan, u8 force);
 void PlayDamperForce__8LGWheelsFlUcs(void *wheels, s32 chan, u8 coefficient, s16 offset);
 void GenerateNonLinValues__8LGWheelsFlUc(void *wheels, s32 chan, u8 coefficient);
+typedef struct LGWheels {
+    u8 unk0[0x828];
+    u8 airborne[4];
+    u8 wheels[0x1054 - 0x82C];
+    u32 overallGainId[4];
+    u8 unk1064[0x10AC - 0x1064];
+    u8 force[0x13CC - 0x10AC];
+    u8 savedGain;
+    u8 unk13CD[0x140E - 0x13CD];
+    s16 frontalCollisionParams[4];
+} LGWheels;
+
 u8 IsOpened__6WheelsFl(Wheels *wheels, s32 chan);
 s32 GetOverallForceGain__8LGWheelsFl(void *wheels, s32 chan);
 void SetOverallForceGain__8LGWheelsFll(void *wheels, s32 chan, s32 gain);
@@ -2816,6 +2828,31 @@ s32 __ct__5ForceFv(s32 arg0) {
 void InitLGLibrary__8LGWheelsFv(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
+}
+
+u8 SameFrontalCollisionForceParams__8LGWheelsFls(void *wheels, s32 chan, s16 force) {
+    return ((s16 *)((u8 *)wheels + 0x140E))[chan] == force;
+}
+
+void PlayCarAirborne__8LGWheelsFl(void *wheels, s32 chan) {
+    if (IsOpened__6WheelsFl((Wheels *)((u8 *)wheels + 0x82C), chan)) {
+        if (GetOverallForceGain__8LGWheelsFl(wheels, chan) != 0) {
+            *((u8 *)wheels + 0x13CC) = GetOverallForceGain__8LGWheelsFl(wheels, chan);
+            SetOverallForceGain__8LGWheelsFll(wheels, chan, 0);
+            ((u8 *)wheels + 0x828)[chan] = 1;
+        }
+    } else {
+        OSReport("ERROR: trying to play a force on port %d but no wheel opened.\n", chan);
+    }
+}
+
+void StopCarAirborne__8LGWheelsFl(void *wheels, s32 chan) {
+    if (IsOpened__6WheelsFl((Wheels *)((u8 *)wheels + 0x82C), chan)) {
+        SetOverallForceGain__8LGWheelsFll(wheels, chan, *((u8 *)wheels + 0x13CC));
+        ((u8 *)wheels + 0x828)[chan] = 0;
+    } else {
+        OSReport("ERROR: trying to play a force on port %d but no wheel opened.\n", chan);
+    }
 }
 
 u8 IsOpened__6WheelsFl(Wheels *wheels, s32 chan);
