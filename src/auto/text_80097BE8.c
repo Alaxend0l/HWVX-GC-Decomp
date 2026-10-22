@@ -4140,6 +4140,19 @@ s32 __ct__5ForceFv(s32 arg0) {
     return arg0;
 }
 
+s32 GetOverallForceGain__5ForceFRUl(void *force, u32 *effectId) {
+    s32 LGGetDeviceProperty(u32 id, s32 prop, void *value);
+    s32 gain;
+    s32 result;
+
+    result = LGGetDeviceProperty(*effectId, 3, &gain);
+    if (result < 0) {
+        OSReport("ERROR: Failed to get overall force gain.\n");
+        return result;
+    }
+    return gain;
+}
+
 #pragma push
 #pragma dont_inline on
 void *__ct__8LGWheelsFv(void *self) {
