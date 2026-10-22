@@ -1616,6 +1616,31 @@ s32 OSGetCurrentThread(void) {
     return *(s32 *)0x800000E4;
 }
 
+void UnsetRun(void *arg0) {
+    extern s32 RunQueueBits_803C7290;
+    void *temp_r4;
+    void *temp_r5;
+    void *temp_r6;
+
+    temp_r4 = M2C_FIELD(arg0, void **, 0x2E0);
+    temp_r5 = M2C_FIELD(arg0, void **, 0x2DC);
+    temp_r6 = M2C_FIELD(arg0, void **, 0x2E4);
+    if (temp_r4 == NULL) {
+        M2C_FIELD(temp_r5, void **, 4) = temp_r6;
+    } else {
+        M2C_FIELD(temp_r4, void **, 0x2E4) = temp_r6;
+    }
+    if (temp_r6 == NULL) {
+        M2C_FIELD(temp_r5, void **, 0) = temp_r4;
+    } else {
+        M2C_FIELD(temp_r6, void **, 0x2E0) = temp_r4;
+    }
+    if ((void *) M2C_FIELD(temp_r5, void **, 0) == NULL) {
+        RunQueueBits_803C7290 &= ~(1 << (0x1F - M2C_FIELD(arg0, s32 *, 0x2D0)));
+    }
+    M2C_FIELD(arg0, void **, 0x2DC) = NULL;
+}
+
 s32 fn_8006E668(void) {
     return *(s32 *)0x800000E4;
 }
