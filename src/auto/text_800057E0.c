@@ -3997,7 +3997,7 @@ s32 TRKTargetAddExceptionInfo(void *b) {
 void TRKPostInterruptEvent(void) {
     extern u8 gTRKState[];
     extern u8 gTRKCPUState[];
-    u8 eventType;
+    s8 eventType;
     u32 inst;
     u32 size;
     u8 event[0x10];
