@@ -79,10 +79,28 @@ typedef struct __file_modes {
     u32 binary_io : 1;
 } __file_modes;
 
+typedef struct __file_state {
+    u32 io_state : 3;
+    u32 free_buffer : 1;
+    u8 eof;
+    u8 error;
+} __file_state;
+
 typedef struct _FILE {
     u32 handle;
     __file_modes mode;
+    __file_state state;
+    u8 unkC[0x1C - 0xC];
+    u8 *buffer;
+    u8 unk20[0x44 - 0x20];
+    s32 (*close_fn)(u32 handle);
+    u8 unk48[0x50 - 0x48];
 } FILE;
+
+extern u8 __lower_map[256];
+s32 fflush(FILE *file);
+void free(void *ptr);
+s32 unicode_to_UTF8(char *s, u16 wchar);
 
 enum __file_kinds { __closed_file, __disk_file, __console_file, __unavailable_file };
 enum __file_orientation { __unoriented, __char_oriented, __wide_oriented };
@@ -2847,9 +2865,9 @@ void PlayCarAirborne__8LGWheelsFl(void *wheels, s32 chan) {
 }
 
 void StopCarAirborne__8LGWheelsFl(void *wheels, s32 chan) {
-    if (IsOpened__6WheelsFl((Wheels *)((u8 *)wheels + 0x82C), chan)) {
-        SetOverallForceGain__8LGWheelsFll(wheels, chan, *((u8 *)wheels + 0x13CC));
-        ((u8 *)wheels + 0x828)[chan] = 0;
+    if (IsOpened__6WheelsFl((Wheels *)((LGWheels *)wheels)->wheels, chan)) {
+        SetOverallForceGain__8LGWheelsFll(wheels, chan, ((LGWheels *)wheels)->savedGain);
+        ((LGWheels *)wheels)->airborne[chan] = 0;
     } else {
         OSReport("ERROR: trying to play a force on port %d but no wheel opened.\n", chan);
     }
