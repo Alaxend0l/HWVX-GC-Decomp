@@ -970,7 +970,7 @@ void __copy_longs_rev_unaligned(void *dst, const void *src, unsigned long n) {
         *--((unsigned long *)cpd) = (v2 << left_shift) | (v1 >> right_shift);
     }
 
-    n &= 3;
+    n &= sizeof(unsigned long) - 1;
 
     if (n) {
         cps += src_offset;
@@ -4157,15 +4157,15 @@ s32 Mul16_(u32 a, u32 b) {
     return (lo >> 16) | (hi << 16);
 }
 
-void AudioVoice_Create(void) {
+s8 AudioVoice_Create(void) {
     extern u8 g_voice[0x20][0x70];
     extern s32 g_sfxvol_803C78D4;
     extern s8 g_speakers;
-    void AudioVoice_Create_(void *voices);
+    s8 AudioVoice_Create_(void *voices);
     memset(g_voice, 0, sizeof(g_voice));
     g_sfxvol_803C78D4 = 0x7FFF;
     g_speakers = 1;
-    AudioVoice_Create_(g_voice);
+    return AudioVoice_Create_(g_voice);
 }
 
 #pragma push
@@ -4774,6 +4774,37 @@ void ChannelOff(void *arg0) {
     }
 }
 
+void DestroyMIDIVoice(u8 *voice) {
+    extern u8 g_chn_803769B4[0x10][0x20];
+    u8 *v;
+
+    if (*(u8 **)g_chn_803769B4[voice[1]] == voice) {
+        *(u8 **)g_chn_803769B4[voice[1]] = *(u8 **)(voice + 4);
+    } else {
+        for (v = *(u8 **)g_chn_803769B4[voice[1]]; *(u8 **)(v + 4) != voice; v = *(u8 **)(v + 4)) {
+        }
+        *(u8 **)(v + 4) = *(u8 **)(voice + 4);
+    }
+    voice[0x15] = 0;
+    voice[1] = 0xFF;
+}
+
+u8 *DestroyVoice(u8 *voice) {
+    extern u8 g_chn_803769B4[0x10][0x20];
+    u8 *next = *(u8 **)(voice + 4);
+    u8 *v;
+
+    if (*(u8 **)g_chn_803769B4[voice[1]] == voice) {
+        *(u8 **)g_chn_803769B4[voice[1]] = next;
+    } else {
+        for (v = *(u8 **)g_chn_803769B4[voice[1]]; *(u8 **)(v + 4) != voice; v = *(u8 **)(v + 4)) {
+        }
+        *(u8 **)(v + 4) = next;
+    }
+    SetVoiceState_(voice, 3);
+    return next;
+}
+
 #pragma push
 #pragma optimization_level 1
 s32 AudioMusic_Create(void) {
@@ -4842,6 +4873,19 @@ void SetMusicGVol(u32 vol) {
 }
 #pragma pop
 s32 AudioVoid(void) {
+    return 0;
+}
+
+s8 Audio_Init(void) {
+    extern void (*SongUpdate)(void);
+    extern void (*VoiceUpdate)(void);
+    s8 Audio_Init_(void);
+
+    VoiceUpdate = NULL;
+    SongUpdate = NULL;
+    if (AudioMusic_Init() && AudioIT_Init() && AudioMIDI_Init() && AudioVoice_Init() && Audio_Init_()) {
+        return 1;
+    }
     return 0;
 }
 
