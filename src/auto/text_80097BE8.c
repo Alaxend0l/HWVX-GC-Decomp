@@ -3494,22 +3494,21 @@ u32 CreateSFX_(u32 *sfx) {
     u32 MAllocA_(u32 size);
     u32 size;
     u32 data;
-    u32 *pd = &data;
 
     size = (sfx[1] + 0x1F) & ~0x1F;
-    *pd = MAllocA_(size);
-    if (*pd == 0) {
+    data = MAllocA_(size);
+    if (data == 0) {
         return 0;
     }
     DCFlushRange((void *)sfx[0], size);
-    MemCpyA_(*pd, sfx[0], size);
+    MemCpyA_(data, sfx[0], size);
     if (((u8 *)sfx)[0x11] == 0x10) {
         sfx[1] >>= 1;
-        *pd >>= 1;
+        ((u32 *)&data)[0] >>= 1;
         ((s32 *)sfx)[2] >>= 1;
     }
-    sfx[0] = *pd;
-    return *pd;
+    sfx[0] = data;
+    return data;
 }
 
 #pragma pop
@@ -4083,6 +4082,16 @@ void SetITTrackVol(u32 id, s32 vol) {
         voice = *(u8 **)(voice + 4);
     }
 }
+
+void SetTrackVol(u8 *trk) {
+    void SetVoiceVol_(void *voice, s32 vol);
+    u8 *voice;
+
+    for (voice = *(u8 **)trk; voice != NULL; voice = *(u8 **)(voice + 4)) {
+        SetVoiceVol_(voice, *(s16 *)(trk + 0x1A));
+    }
+}
+
 #pragma pop
 
 #pragma pop
