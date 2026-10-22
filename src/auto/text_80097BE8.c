@@ -889,9 +889,21 @@ s32 RandomNumberGenerator_GetRandomInteger(s32 min, s32 max) {
     return RandomAdd_s32(min, max - min);
 }
 
+f32 RandomDirVar(f32 base, f32 var) {
+    RandomNumberGenerator *rng = &g_randomNumberGenerator;
+    if (++rng->index >= 0x400) {
+        rng->index = 0;
+    }
+    return rng->floats[rng->index] * (var * 2.0f) + (base - var);
+}
+
 void TimeHandler_SetSlowMotion(void) {
     extern u8 g_iTimeShift;
-    g_iTimeShift = !g_iTimeShift;
+    if (g_iTimeShift) {
+        g_iTimeShift = 0;
+    } else {
+        g_iTimeShift = 1;
+    }
 }
 
 void Timer_Heartbeat(void) {
@@ -933,6 +945,19 @@ f32 RandomAdd(f32 base, f32 range) {
 s8 Timer_Interrupt300(void) {
     extern u32 g_timer300;
     return (s8) ((u32) g_timer300 >> 0x1FU);
+}
+
+void TimeHandler_Init(void) {
+    u32 OSGetTick(void);
+    s64 OSGetTime(void);
+    void OSTicksToCalendarTime(s64 ticks, void *td);
+    extern u8 g_todaysDate[];
+    extern s32 m_iDeltaTimeUs;
+    extern u32 m_iLastTimeUs;
+
+    m_iDeltaTimeUs = 1;
+    m_iLastTimeUs = (OSGetTick() * 8) / ((*(u32 *)0x800000F8 / 4) / 125000);
+    OSTicksToCalendarTime(OSGetTime(), g_todaysDate);
 }
 
 void Performance_Start(void) {
