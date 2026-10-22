@@ -1797,7 +1797,7 @@ s32 Gfx_GetEnvmapState(void) {
     return g_pGDL->numEnvmapStates - 1;
 }
 
-s32 Gfx_AddWorldMatrixState_NonCached(s32 matrix) {
+s32 Gfx_AddWorldMatrixState_NonCached(u32 matrix) {
     extern GDL *g_pGDL;
 
     if (matrix == 0) {
