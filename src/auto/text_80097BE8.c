@@ -374,6 +374,15 @@ void AudioIT_Destroy(void) {
 
 }
 
+s32 AudioMIDI_Init(void) {
+    M2C_UNK DestroyMIDI();
+    extern u32 g_pHdr_803C78F4;
+    if ((u32) g_pHdr_803C78F4 != 0U) {
+        DestroyMIDI();
+    }
+    return 1;
+}
+
 void AudioMIDI_Destroy(void) {
 
 }
