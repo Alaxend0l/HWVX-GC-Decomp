@@ -694,6 +694,12 @@ s32 fn_80068C98(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+s32 ActionCameraSetTargets(void) {
+    M2C_UNK CameraManager_SetCameraGlobalMode();
+    CameraManager_SetCameraGlobalMode();
+    return 1;
+}
+
 s32 ActionSpeakerChangeMode(void) {
     return 1;
 }
