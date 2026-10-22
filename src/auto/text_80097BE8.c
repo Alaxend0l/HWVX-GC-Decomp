@@ -500,6 +500,25 @@ char *strstr(const char *str, const char *pat) {
     return 0;
 }
 
+char *strrchr(const char *str, s32 chr) {
+    const u8 *p = (const u8 *)str - 1;
+    const u8 *q = 0;
+    u32 c = (chr & 0xFF);
+    u32 ch;
+
+    while (ch = *++p) {
+        if (ch == c) {
+            q = p;
+        }
+    }
+
+    if (q) {
+        return (char *)q;
+    }
+
+    return c ? 0 : (char *)p;
+}
+
 char *strncpy(char *dst, const char *src, u32 n) {
     const u8 *p = (const u8 *)src - 1;
     u8 *q = (u8 *)dst - 1;
