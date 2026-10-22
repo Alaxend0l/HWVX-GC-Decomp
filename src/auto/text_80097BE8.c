@@ -1096,6 +1096,11 @@ void Gfx_EnableState(u32 state) {
     g_state.unk7C |= state;
 }
 
+void Gfx_DisableState(u32 state) {
+    extern GfxState g_state;
+    g_state.unk7C &= ~state;
+}
+
 void Gfx_SetEnviroMapMode(u8 mode) {
     extern GfxState g_state;
     g_state.enviroMapMode = mode;
