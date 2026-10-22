@@ -139,6 +139,9 @@ void PlayCarAirborne__8LGWheelsFl(void *wheels, s32 chan);
 void PlayFrontalCollisionForce__8LGWheelsFlUc(void *wheels, s32 chan, u8 force);
 void PlayDamperForce__8LGWheelsFlUcs(void *wheels, s32 chan, u8 coefficient, s16 offset);
 void GenerateNonLinValues__8LGWheelsFlUc(void *wheels, s32 chan, u8 coefficient);
+s32 GetOverallForceGain__8LGWheelsFl(void *wheels, s32 chan);
+void SetOverallForceGain__8LGWheelsFll(void *wheels, s32 chan, s32 gain);
+void SetOverallForceGain__5ForceFRUll(void *force, u32 *effectId, s32 gain);
 
 typedef struct RandomNumberGenerator {
     Vector vectors[0x300];
