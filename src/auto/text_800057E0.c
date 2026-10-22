@@ -58,6 +58,10 @@ typedef struct ProcessManager {
 
 extern ProcessManager g_processManager;
 
+typedef struct Matrix4 {
+    f32 m[4][4];
+} Matrix4;
+
 typedef s16 __OSInterrupt;
 typedef void (*__OSInterruptHandler)(__OSInterrupt interrupt, void *context);
 extern __OSInterruptHandler *InterruptHandlerTable_803C7240;
@@ -879,7 +883,7 @@ s8 ActionLoadInterfacePack(s32 *arg0) {
     s32 FileStreaming_LoadDataPack(void *, M2C_UNK, s32, M2C_UNK);
     s32 temp_r3;
 
-    temp_r3 = FileStreaming_LoadDataPack(arg0 + 4, 1, *arg0, 1);
+    temp_r3 = FileStreaming_LoadDataPack(arg0 + 10, 1, *arg0, 1);
     return (s8) ((u32) ((-1 - temp_r3) | (temp_r3 + 1)) >> 0x1FU);
 }
 
@@ -1643,6 +1647,17 @@ s32 StateManager_QueuedState(void) {
     state = M2C_FIELD(g_pStateManager, s32 *, 0xD4);
     M2C_FIELD(g_pStateManager, s32 *, 0xD4) = -1;
     return state;
+}
+
+s32 StateManager_QueueChange(s32 state) {
+    extern void *g_pStateManager;
+    M2C_UNK FileManager_GetDeviceStatus(s32);
+    if (M2C_FIELD(g_pStateManager, s32 *, 0xD4) == -1) {
+        if (state == 8 || FileManager_GetDeviceStatus(0) == 1) {
+            M2C_FIELD(g_pStateManager, s32 *, 0xD4) = state;
+        }
+    }
+    return M2C_FIELD(g_pStateManager, s32 *, 0xD4);
 }
 
 s32 Thing_PreMove(void) {
