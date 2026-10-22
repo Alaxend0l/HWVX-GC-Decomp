@@ -225,6 +225,10 @@ void AudioMIDI_Destroy(void) {
 
 }
 
+void SetMIDITrackPriority(void) {
+
+}
+
 s32 AudioVoid(void) {
     return 0;
 }
