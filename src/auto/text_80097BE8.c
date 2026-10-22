@@ -564,6 +564,16 @@ void Gfx_SetTextColor(s8 arg0, s8 arg1, s8 arg2, s8 arg3) {
     M2C_FIELD(&g_textcolor, s8 *, 3) = arg3;
 }
 
+void *PopDecodedTextureSet(s32 arg0) {
+    extern u8 DecodedTextureSetQueue_8036E32C[];
+    void *msg;
+
+    if (OSReceiveMessage(DecodedTextureSetQueue_8036E32C, &msg, arg0) == 1) {
+        return msg;
+    }
+    return NULL;
+}
+
 void PushDecodedTextureSet(void *arg0) {
     extern u8 DecodedTextureSetQueue_8036E32C[];
     OSSendMessage(DecodedTextureSetQueue_8036E32C, arg0, 1);
