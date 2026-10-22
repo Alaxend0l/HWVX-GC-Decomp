@@ -891,7 +891,7 @@ s8 ActionLoadInterfacePack(s32 *arg0) {
 void ActionUnloadInterfacePack(s32 *arg0) {
     M2C_UNK FileStreaming_GetPackID(void *, M2C_UNK, s32);
     M2C_UNK FileStreaming_ReleaseDataPack(M2C_UNK);
-    FileStreaming_GetPackID(arg0 + 4, 1, *arg0);
+    FileStreaming_GetPackID(arg0 + 1, 1, *arg0);
     FileStreaming_ReleaseDataPack(1);
 }
 
