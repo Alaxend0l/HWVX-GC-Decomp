@@ -191,6 +191,10 @@ typedef struct RandomNumberGenerator {
 
 extern RandomNumberGenerator g_randomNumberGenerator;
 s32 RandomAdd_s32(s32 base, s32 range);
+f32 RandomAdd(f32 base, f32 range);
+void RandomNumberGenerator_GetRandomVector(Vector *out);
+void GenerateQuaternion(Vector *axis, Vector *q, f32 angle);
+s32 RandomAdd_s32(s32 base, s32 range);
 
 typedef struct FragmentInfo {
     void *eti_init_info;
@@ -1724,6 +1728,23 @@ void Reverse_Plane(Vector *plane) {
 
 f32 Distance_Plane(void *arg0, void *arg1) {
     return M2C_FIELD(arg0, f32 *, 0xC) + ((M2C_FIELD(arg0, f32 *, 8) * M2C_FIELD(arg1, f32 *, 8)) + ((M2C_FIELD(arg0, f32 *, 0) * M2C_FIELD(arg1, f32 *, 0)) + (M2C_FIELD(arg0, f32 *, 4) * M2C_FIELD(arg1, f32 *, 4))));
+}
+
+void RandomNumberGenerator_GetRandomSubMatrix(Vector *m) {
+    RandomNumberGenerator *rng = &g_randomNumberGenerator;
+
+    m[0].x = rng->vectors[rng->unk3000 * 3].x;
+    m[0].y = rng->vectors[rng->unk3000 * 3].y;
+    m[0].z = rng->vectors[rng->unk3000 * 3].z;
+    m[1].x = rng->vectors[rng->unk3000 * 3 + 1].x;
+    m[1].y = rng->vectors[rng->unk3000 * 3 + 1].y;
+    m[1].z = rng->vectors[rng->unk3000 * 3 + 1].z;
+    m[2].x = rng->vectors[rng->unk3000 * 3 + 2].x;
+    m[2].y = rng->vectors[rng->unk3000 * 3 + 2].y;
+    m[2].z = rng->vectors[rng->unk3000 * 3 + 2].z;
+    if (++rng->unk3000 >= 0x100) {
+        rng->unk3000 = 0;
+    }
 }
 
 void RandomNumberGenerator_GetRandomVector(Vector *out) {
