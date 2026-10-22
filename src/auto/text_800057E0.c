@@ -2782,6 +2782,13 @@ s32 TriggerP2PActivated(u32 *data) {
     return 0;
 }
 
+void Thing_GetInterfaceInfo(void *thing, void *info) {
+    M2C_FIELD(info, s32 *, 0x10) = M2C_FIELD(thing, s32 *, 0x78);
+    M2C_FIELD(info, u32 *, 0x14) = 0.681818f * MagnitudeVector(thing);
+    M2C_FIELD(info, s32 *, 0x18) = 0;
+    M2C_FIELD(info, s32 *, 0x4) = 0;
+}
+
 f32 MagnitudeVector(void *v);
 void Thing_SetSlavePlayers(void *thing) {
     void *slave;
