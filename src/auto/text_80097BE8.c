@@ -3339,6 +3339,17 @@ s32 VDevice_Initialize(VDevice *dev, s32 arg1) {
     return 0;
 }
 
+s32 VDevice_Shutdown(VDevice *dev) {
+    s32 i;
+
+    for (i = 0; i < 64; i++) {
+        if (dev->activeEffects[i] != NULL) {
+            dev->activeEffects[i] = NULL;
+        }
+    }
+    return 0;
+}
+
 u32 VDevice_GetFreeEffect(VDevice *dev) {
     static u32 jumbleeffectid;
     static u32 createcount;
