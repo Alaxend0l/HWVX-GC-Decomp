@@ -310,7 +310,7 @@ void VDevice_Shutdown(VDevice *dev);
 s32 VDevice_StartEffect(VDevice *dev, u32 handle);
 u32 VDevice_GetFreeEffect(VDevice *dev);
 void Effect_Init(Effect *effect);
-void Effect_UpdateEffect(Effect *effect, u8 *desc);
+s32 Effect_UpdateEffect(Effect *effect, u8 *desc);
 
 extern s16 g_iQuarterSineTable_8037BB7C[0x40];
 
