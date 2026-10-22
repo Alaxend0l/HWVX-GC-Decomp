@@ -700,6 +700,12 @@ void *Allocate(u32 size) {
     return ptr;
 }
 
+void Deallocate(s32 ptr) {
+    if (ptr != 0) {
+        OSFreeToHeap(__OSCurrHeap, ptr);
+    }
+}
+
 void MemCpy32(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
