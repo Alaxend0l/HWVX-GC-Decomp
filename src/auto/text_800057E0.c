@@ -81,6 +81,8 @@ s32 TRKAcquireMutex(void *mutex);
 s32 TRKReleaseMutex(void *mutex);
 void *TRK_memcpy(void *dst, const void *src, u32 n);
 
+void Dprintf(const char *fmt, ...);
+
 void ProcessManager_Release(char *name);
 void InterfaceInputAnimator_HeartBeat(void);
 f32 InterfaceInputAnimator_GetLRCounter(void);
