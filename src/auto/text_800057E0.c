@@ -836,6 +836,16 @@ f32 Creature_GetMass(void *arg0) {
     return M2C_FIELD(arg0, f32 *, 0x1BC);
 }
 
+s32 Creature_Invalidate(void *arg0, u32 arg1, u32 arg2) {
+    u32 temp_r0;
+
+    temp_r0 = M2C_FIELD(arg0, u32 *, 0xB8);
+    if ((temp_r0 >= arg1) && (temp_r0 < arg2)) {
+        return 1;
+    }
+    return 0;
+}
+
 void DataPack_EnableLoadingSounds(s8 arg0) {
     extern s8 g_bSoundLoadingEnabled;
     g_bSoundLoadingEnabled = arg0;
