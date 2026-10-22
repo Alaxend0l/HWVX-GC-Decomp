@@ -2843,6 +2843,14 @@ void DestroyIT_(void *data) {
     g_aheap = 0;
 }
 
+u32 GetITGVol_(u8 *trk, u8 *ch) {
+    extern u32 g_musicVol;
+    u8 **pt = &trk;
+    u8 **pc = &ch;
+
+    return ((*(u32 *)(*pt + 0x18) * g_musicVol >> 7) * (*(u32 *)(*pc + 0x1C) * *(u32 *)(*pc + 0x28) >> 6)) >> 15;
+}
+
 void DestroyMIDI_(s32 arg0) {
     M2C_UNK FreeA_(s32);
     M2C_UNK OSFreeToHeap(s32, s32);
@@ -2850,6 +2858,35 @@ void DestroyMIDI_(s32 arg0) {
     extern s32 g_aheap;
     OSFreeToHeap(__OSCurrHeap, arg0);
     FreeA_(g_aheap);
+}
+
+u32 ReadVar_(u8 **pp) {
+    u8 ***ppp = &pp;
+    u32 value = 0;
+    u8 c;
+
+    do {
+        c = *(**ppp)++;
+        value = (value << 7) | (c & 0x7F);
+    } while ((c & 0x7F) != c);
+    return value;
+}
+
+u32 GetPitchWheel_(u8 note, u8 count) {
+    extern const u32 g_pitchTab[];
+    u8 *pn = &note;
+    u8 *pc = &count;
+    u32 pitch = g_pitchTab[*pn];
+    u32 base;
+    s32 i = *pc - 1;
+
+    if (i != 0) {
+        base = pitch;
+        do {
+            pitch = (u32)(((u64)pitch * base) >> 30);
+        } while (--i > 0);
+    }
+    return pitch >> 14;
 }
 
 s32 GetID_(u8 *chunk) {
@@ -3191,6 +3228,72 @@ void ChannelOff(void *arg0) {
     }
 }
 
+s32 AudioMusic_Create(void) {
+    extern s32 g_musicState;
+    extern u8 g_musicTitle[0x20];
+    extern u32 g_musicVol;
+    extern u32 g_musicVol1_803C7934;
+    extern u32 g_musicVol2_803C7930;
+
+    g_musicVol = 0x7FFF;
+    g_musicVol1_803C7934 = 0x7FFF;
+    g_musicVol2_803C7930 = 0x7FFF;
+    g_musicState = 0;
+    g_musicTitle[0x1F] = 0;
+    return 1;
+}
+
+s32 AudioMusic_Init(void) {
+    s32 AudioVoid(void);
+    extern u8 g_musicTitle[0x20];
+    extern s32 (*SetMusicState)();
+    extern s32 (*DestroyMusic)();
+    extern s32 (*SetMusicVolume)();
+    extern s32 (*SetMusicPitch)();
+    extern s32 (*SetMusicTempo)();
+    extern s32 (*SetMusicOrder)();
+    extern s32 (*SetMusicTrackPriority)();
+    extern s32 (*SetMusicTrackOn)();
+    extern s32 (*SetMusicTrackOff)();
+    extern s32 (*SetMusicTrackVol)();
+
+    SetMusicState = AudioVoid;
+    DestroyMusic = AudioVoid;
+    SetMusicVolume = AudioVoid;
+    SetMusicPitch = AudioVoid;
+    SetMusicTempo = AudioVoid;
+    SetMusicOrder = AudioVoid;
+    SetMusicTrackPriority = AudioVoid;
+    SetMusicTrackOn = AudioVoid;
+    SetMusicTrackOff = AudioVoid;
+    SetMusicTrackVol = AudioVoid;
+    memset(g_musicTitle, 0, 0x20);
+    return 1;
+}
+
+#pragma push
+#pragma optimization_level 1
+void SetMusicVol(u32 vol) {
+    extern u32 g_musicVol;
+    extern u32 g_musicVol1_803C7934;
+    extern u32 g_musicVol2_803C7930;
+    extern s32 (*SetMusicVolume)();
+
+    g_musicVol1_803C7934 = vol;
+    g_musicVol = (g_musicVol1_803C7934 * g_musicVol2_803C7930) >> 15;
+    SetMusicVolume(g_musicVol1_803C7934);
+}
+void SetMusicGVol(u32 vol) {
+    extern u32 g_musicVol;
+    extern u32 g_musicVol1_803C7934;
+    extern u32 g_musicVol2_803C7930;
+    extern s32 (*SetMusicVolume)();
+
+    g_musicVol2_803C7930 = vol;
+    g_musicVol = (g_musicVol1_803C7934 * g_musicVol2_803C7930) >> 15;
+    SetMusicVolume();
+}
+#pragma pop
 s32 AudioVoid(void) {
     return 0;
 }
