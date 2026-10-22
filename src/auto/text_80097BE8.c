@@ -244,6 +244,19 @@ s32 ftell(void *arg0) {
     return temp_r3;
 }
 
+int vprintf(const char *format, char *arg) {
+    extern u8 __files[];
+    extern void *__FileWrite(void *, const char *, u32);
+    int fwide(void *, int);
+    int __pformatter(void *(*)(void *, const char *, u32), void *, const char *, char *);
+    void *stream = __files + 0x50;
+
+    if (fwide(stream, -1) >= 0) {
+        return -1;
+    }
+    return __pformatter(&__FileWrite, stream, format, arg);
+}
+
 void *__StringWrite(void *osc, const char *Buffer, u32 NumChars) {
     u32 CharsToBeWritten;
     __OutStrCtrl *Oscp = (__OutStrCtrl *)osc;
