@@ -270,6 +270,19 @@ void THPPlayerQuit(void) {
     Initialized_803C7758 = 0;
 }
 
+void AudioDecoder(void) {
+    M2C_UNK AudioDecode();
+    s32 PopReadedBuffer();
+    M2C_UNK PushReadedBuffer2(s32);
+    s32 temp_r31;
+
+loop_1:
+    temp_r31 = PopReadedBuffer();
+    AudioDecode();
+    PushReadedBuffer2(temp_r31);
+    goto loop_1;
+}
+
 void Audio_Update_(void) {
     M2C_UNK Audio_Update(M2C_UNK);
     Audio_Update(0xD05);
