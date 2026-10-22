@@ -2060,6 +2060,15 @@ GDLRect *Gfx_Add2DRectangleRenderWindow(void) {
     return &g_pGDL->rects[g_pGDL->numRects++];
 }
 
+GDLRect *Gfx_Add2DRectangle(void) {
+    extern GDL *g_pGDL;
+
+    if (g_pGDL->numRects2D >= 0x400) {
+        g_pGDL->numRects2D = 0;
+    }
+    return &g_pGDL->rects2D[g_pGDL->numRects2D++];
+}
+
 #pragma pop
 
 void Gfx_Add2DRectangleBack(void) {
