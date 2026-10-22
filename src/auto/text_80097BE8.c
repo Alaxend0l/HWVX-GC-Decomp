@@ -4526,6 +4526,8 @@ void SetMIDITrackOn(u32 mask, s8 deferred) {
     }
 }
 
+#pragma push
+#pragma optimization_level 1
 void SetMIDITrackOff(u32 mask, s8 deferred) {
     extern u32 g_trkOn;
     extern u32 g_trkOff;
@@ -4546,6 +4548,7 @@ void SetMIDITrackOff(u32 mask, s8 deferred) {
         mask >>= 1;
     }
 }
+#pragma pop
 
 void SetMIDITrackVol(void) {
 
