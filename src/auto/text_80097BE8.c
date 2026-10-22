@@ -398,7 +398,8 @@ typedef struct GDLGroupTri {
 typedef struct GDL {
     u8 unk0[0x8];
     u32 numSprites;
-    u8 unkC[0x18 - 0xC];
+    u8 unkC[0x14 - 0xC];
+    s32 numTris;
     u32 numRects2D;
     u8 unk1C[0x20 - 0x1C];
     u32 numRects;
