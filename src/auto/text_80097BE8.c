@@ -1970,7 +1970,7 @@ void Gfx_Destroy(void) {
     Render_Destroy();
 }
 
-void Gfx_CreateView(void) {
+s32 Gfx_CreateView(s32 arg0, s32 width, s32 height, s32 arg3, s32 arg4, s32 arg5) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
 }
