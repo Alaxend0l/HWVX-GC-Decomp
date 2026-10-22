@@ -2885,6 +2885,26 @@ void Render_UseLighting(u8 arg0) {
     GXSetChanCtrl(4, 0, 1, 1, 0, 0, 2);
 }
 
+void SetVertexBuffer(u32 *vb) {
+    void GXSetArray(s32 attr, void *data, u8 stride);
+    extern u32 *m_vertexBuffer;
+    u8 *data;
+
+    if (vb != m_vertexBuffer) {
+        data = (u8 *)(vb + 4);
+        m_vertexBuffer = vb;
+        GXSetArray(9, data, 0xC);
+        GXSetArray(0xD, data + vb[0], 8);
+        if (vb[1] != 0) {
+            GXSetArray(0xB, data + vb[1], 4);
+        }
+        if (vb[2] != 0) {
+            GXSetArray(0xA, data + vb[2], 0xC);
+        }
+        DCFlushRange(vb, vb[3]);
+    }
+}
+
 void Render_SetConstColor(s32 *arg0) {
     M2C_UNK GXSetChanAmbColor(M2C_UNK, s32 *);
     M2C_UNK GXSetChanMatColor(M2C_UNK, s32 *);
