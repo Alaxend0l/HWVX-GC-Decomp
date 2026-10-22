@@ -86,7 +86,8 @@ void MultiplyMatrix(Matrix4 *a, void *b, Matrix4 *out);
 
 typedef struct WorldData {
     void *world;
-    s32 unk4[5];
+    s32 unk4;
+    s32 unk8[4];
 } WorldData;
 
 extern WorldData g_worldData;
