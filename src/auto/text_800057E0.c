@@ -698,6 +698,10 @@ s32 ActionSpeakerChangeMode(void) {
     return 1;
 }
 
+s32 ActionVehicleAISetNamedPath(void) {
+    return 1;
+}
+
 void Action_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
