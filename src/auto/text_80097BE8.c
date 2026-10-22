@@ -3336,7 +3336,6 @@ void PushUsedTextureSet(void *arg0) {
 }
 
 void *PopUsedTextureSet(void) {
-    extern u8 UsedTextureSetQueue_8036EC78[];
     void *msg;
 
     if (OSReceiveMessage(UsedTextureSetQueue_8036EC78, &msg, 0) == 1) {
