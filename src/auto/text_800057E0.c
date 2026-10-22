@@ -50,6 +50,11 @@ s32 AIGetStreamSampleRate(void);
 u8 AIGetStreamVolLeft(void);
 u8 AIGetStreamVolRight(void);
 
+typedef struct GXDataTev {
+    u8 unk0[0x130];
+    u32 tevc[16];
+} GXDataTev;
+
 typedef struct GXTexRegionInt {
     u32 image1;
     u32 image2;
@@ -5376,7 +5381,7 @@ void *GXSetTlutRegionCallback(void *f) {
 
 void GXSetNumIndStages(u8 nIndStages) {
     extern u8 *gx;
-    u32 *reg = (u32 *)(gx + 0x204);
+    u32 *reg = (u32 *)gx + 0x81;
     *reg = (*reg & ~0x70000) | (nIndStages << 16);
     *(u32 *)(gx + 0x4F4) |= 6;
 }
@@ -5391,7 +5396,7 @@ void __GXFlushTextureState(void) {
 
 void GXSetTevColorIn(s32 stage, s32 a, s32 b, s32 c, s32 d) {
     extern u8 *gx;
-    u32 *reg = (u32 *)(gx + (stage * 4 + 0x130));
+    u32 *reg = (u32 *)gx + (stage + 0x4C);
     *reg = (*reg & ~0xF000) | (a << 12);
     *reg = (*reg & ~0xF00) | (b << 8);
     *reg = (*reg & ~0xF0) | (c << 4);
