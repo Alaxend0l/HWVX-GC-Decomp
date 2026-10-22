@@ -2423,6 +2423,10 @@ void Mover_Init(void) {
     fn_800957D4();
 }
 
+void PhysicalObject_GetInverseLocalInertiaTensor(void *obj, Quaternion *out) {
+    *out = *(Quaternion *)((u8 *)obj + 0x120);
+}
+
 s32 Player_InputHeartbeat(void *arg0) {
     return M2C_FIELD(arg0, s8 (**)(), 0x20)() != 0;
 }
