@@ -1219,18 +1219,18 @@ void ShaderHolder_Init(void) {
     M2C_FIELD(g_pShaderHolder, s32 *, 0x2004) = 0;
 }
 
-void ShaderHolder_RemoveShader(u32 id) {
-    extern void *g_pShaderHolder;
+void ShaderHolder_RemoveShader(void *id) {
+    extern ShaderHolder *g_pShaderHolder;
     u32 i;
 
     if (g_pShaderHolder == NULL) {
         return;
     }
-    for (i = 0; i < M2C_FIELD(g_pShaderHolder, u32 *, 0x2000); i++) {
-        if (M2C_FIELD(((void **)g_pShaderHolder)[i], u32 *, 0x5C) == id) {
-            if (--M2C_FIELD(((void **)g_pShaderHolder)[i], s32 *, 0x64) == 0) {
-                M2C_FIELD(g_pShaderHolder, u32 *, 0x2000)--;
-                ((void **)g_pShaderHolder)[i] = ((void **)g_pShaderHolder)[M2C_FIELD(g_pShaderHolder, u32 *, 0x2000)];
+    for (i = 0; i < g_pShaderHolder->numShaders; i++) {
+        if (M2C_FIELD(g_pShaderHolder->shaders[i], void **, 0x5C) == id) {
+            if (--M2C_FIELD(g_pShaderHolder->shaders[i], s32 *, 0x64) == 0) {
+                g_pShaderHolder->numShaders--;
+                g_pShaderHolder->shaders[i] = g_pShaderHolder->shaders[g_pShaderHolder->numShaders];
             }
             return;
         }
@@ -1238,24 +1238,23 @@ void ShaderHolder_RemoveShader(u32 id) {
 }
 
 void ShaderHolder_AddGX(void *gx, u32 index) {
-    extern void *g_pShaderHolder;
+    extern ShaderHolder *g_pShaderHolder;
     u32 i;
     u32 n;
 
     if (gx == NULL) {
         return;
     }
-    if (index >= M2C_FIELD(g_pShaderHolder, u32 *, 0x2000)) {
-        return;
-    }
-    for (i = 0; i < M2C_FIELD(g_pShaderHolder, u32 *, 0x2004); i++) {
-        if (M2C_FIELD(g_pShaderHolder, void **, 0x1C00 + i * 8) == gx) {
-            return;
+    if (index < g_pShaderHolder->numShaders) {
+        for (i = 0; i < g_pShaderHolder->numGX; i++) {
+            if (g_pShaderHolder->gx[i].gx == gx) {
+                return;
+            }
         }
+        n = g_pShaderHolder->numGX++;
+        g_pShaderHolder->gx[n].gx = gx;
+        g_pShaderHolder->gx[n].shader = g_pShaderHolder->shaders[index];
     }
-    n = M2C_FIELD(g_pShaderHolder, u32 *, 0x2004)++;
-    M2C_FIELD(g_pShaderHolder, void **, 0x1C00 + n * 8) = gx;
-    M2C_FIELD(g_pShaderHolder, void **, 0x1C04 + n * 8) = ((void **)g_pShaderHolder)[index];
 }
 
 void ShowStats_Create(void) {
