@@ -101,6 +101,8 @@ extern u8 *__THPHuffmanSizeTab_803C7828;
 extern u16 *__THPHuffmanCodeTab_803C782C;
 extern void *OldVIPostCallback_803C775C;
 
+void *PopUsedTextureSet(void);
+
 typedef struct THPReadBuffer {
     u8 *ptr;
     s32 frameNumber;
@@ -3600,17 +3602,22 @@ void PushDecodedAudioBuffer(void *arg0) {
     OSSendMessage(DecodedAudioBufferQueue_80371444, arg0, 1);
 }
 
+void *PopUsedTextureSet(void);
 void __THPHuffGenerateCodeTable(void) {
+    u8 *sizeTab;
+    u16 *codeTab;
     u8 si;
     u16 p;
     u16 code;
 
+    sizeTab = __THPHuffmanSizeTab_803C7828;
+    codeTab = __THPHuffmanCodeTab_803C782C;
     p = 0;
     code = 0;
-    si = __THPHuffmanSizeTab_803C7828[0];
-    while (__THPHuffmanSizeTab_803C7828[p]) {
-        while (__THPHuffmanSizeTab_803C7828[p] == si) {
-            __THPHuffmanCodeTab_803C782C[p++] = code;
+    si = sizeTab[0];
+    while (sizeTab[p]) {
+        while (sizeTab[p] == si) {
+            codeTab[p++] = code;
             code++;
         }
         code <<= 1;
