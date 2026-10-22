@@ -3997,6 +3997,13 @@ void AIInitDMA(u32 start_addr, u32 length) {
     OSRestoreInterrupts(old);
 }
 
+#pragma push
+#pragma peephole off
+void AIStartDMA(void) {
+    __DSPRegs[27] = (u16)(__DSPRegs[27] | 0x8000);
+}
+#pragma pop
+
 s32 AIGetStreamPlayState(void) {
     return *(s32 *)0xCC006C00 & 1;
 }
@@ -4011,6 +4018,10 @@ s32 AIGetStreamSampleRate(void) {
 
 u8 AIGetStreamVolLeft(void) {
     return (u8) *(s32 *)0xCC006C04;
+}
+
+void AISetStreamVolRight(u8 vol) {
+    __AIRegs[1] = (__AIRegs[1] & ~0xFF00) | ((vol & 0xFF) << 8);
 }
 
 u8 AIGetStreamVolRight(void) {
