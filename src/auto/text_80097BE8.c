@@ -894,7 +894,7 @@ f32 RandomDirVar(f32 base, f32 var) {
     if (++rng->index >= 0x400) {
         rng->index = 0;
     }
-    return rng->floats[rng->index] * (var * 2.0f) + (base - var);
+    return (base - var) + rng->floats[rng->index] * (var * 2.0f);
 }
 
 void TimeHandler_SetSlowMotion(void) {
@@ -955,8 +955,8 @@ void TimeHandler_Init(void) {
     extern s32 m_iDeltaTimeUs;
     extern u32 m_iLastTimeUs;
 
-    m_iDeltaTimeUs = 1;
     m_iLastTimeUs = (OSGetTick() * 8) / ((*(u32 *)0x800000F8 / 4) / 125000);
+    m_iDeltaTimeUs = 1;
     OSTicksToCalendarTime(OSGetTime(), g_todaysDate);
 }
 
