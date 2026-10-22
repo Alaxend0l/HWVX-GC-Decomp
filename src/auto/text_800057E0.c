@@ -4676,6 +4676,20 @@ void usr_put_initialize(void) {
 
 }
 
+void TRKDoUnsupported(TRKBuffer *b) {
+    s32 err;
+    s32 ackTries;
+
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, 0x10);
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+}
+
 void TRKStandardACK(TRKBuffer *b, u8 commandID, u8 replyError) {
     s32 err;
     s32 ackTries;
