@@ -267,6 +267,14 @@ void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0) {
     M2C_FIELD(arg2, f32 *, 8) = (f32) ((M2C_FIELD(arg0, f32 *, 8) * farg0) + M2C_FIELD(arg1, f32 *, 8));
 }
 
+void ProjectVectorTangential(Vector *v, Vector *n, Vector *out) {
+    f32 PSVECDotProduct();
+    f32 d = -PSVECDotProduct(v, n);
+    out->x = v->x + n->x * d;
+    out->y = v->y + n->y * d;
+    out->z = v->z + n->z * d;
+}
+
 s32 CompareDistances(void *arg0, void *arg1, f32 farg0) {
     f32 temp_f0;
     f32 temp_f1;
@@ -289,6 +297,18 @@ s32 CompareDistances(void *arg0, void *arg1, f32 farg0) {
 }
 
 void XformVec(Vector *m, Vector *v, Vector *out) {
+    f32 x = v->x;
+    f32 y = v->y;
+    f32 z = v->z;
+    f32 rx = m[0].x * x + m[1].x * y + m[2].x * z + m[3].x;
+    f32 ry = m[0].y * x + m[1].y * y + m[2].y * z + m[3].y;
+    f32 rz = m[0].z * x + m[1].z * y + m[2].z * z + m[3].z;
+    out->x = rx;
+    out->y = ry;
+    out->z = rz;
+}
+
+void XformVec4x4(Vector *m, Vector *v, Vector *out) {
     f32 x = v->x;
     f32 y = v->y;
     f32 z = v->z;
