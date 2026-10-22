@@ -1009,6 +1009,16 @@ void MotionState_BuildMatricesWorld(void *arg0, void *arg1, void *motionState, f
     }
 }
 
+s32 AttachThing_Move(void *thing) {
+    extern f32 g_fDeltaTimeMS;
+    if (!(M2C_FIELD(thing, u32 *, 0x74) & 0x4000)) {
+        ExtractColorKey(M2C_FIELD(thing, u8 **, 0xB4) + 0x1C, (u8 *)thing + 0x130, g_fDeltaTimeMS);
+        ExtractScaleKey(M2C_FIELD(thing, u8 **, 0xB4) + 0x14, (u8 *)thing + 0xD0, g_fDeltaTimeMS);
+        ExtractScaleKey(M2C_FIELD(thing, u8 **, 0xB4) + 0xC, (u8 *)thing + 0x100, g_fDeltaTimeMS);
+    }
+    return 1;
+}
+
 void AttachThing_Draw(void *arg0) {
     M2C_UNK AttachThing_DrawCorona(void *);
     void *Gfx_AddBillBoardSprite(u16);
