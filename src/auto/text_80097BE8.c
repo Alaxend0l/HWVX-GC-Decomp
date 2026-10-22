@@ -2522,6 +2522,23 @@ void FileManager_Destroy(void) {
     fn_800957D4();
 }
 
+s32 stricmp(const char *s1, const char *s2) {
+    char c1, c2;
+
+    while (*s1) {
+        c2 = tolower(*(u8 *)s2);
+        c1 = tolower(*(u8 *)s1);
+        if (c1 != c2) {
+            c1 = tolower(*(u8 *)s1);
+            c2 = tolower(*(u8 *)s2);
+            return c1 - c2;
+        }
+        s1++;
+        s2++;
+    }
+    return *s2 ? -1 : 0;
+}
+
 s32 FileManager_GetDeviceFreeSpace(s32 device, u32 *freeBytes, u32 *totalBytes) {
     freeBytes[1] = 0x32000;
     freeBytes[0] = 0;
@@ -2537,7 +2554,7 @@ s8 FileManager_IsDeviceFormatted(s32 device) {
 
 s8 FileManager_FormatDevice(s32 device) {
     m_memcardstatus_803C7970[device - 11] = CARDFormat(device - 11);
-    return !m_memcardstatus_803C7970[device - 11];
+    return m_memcardstatus_803C7970[device - 11] == 0;
 }
 
 s32 File_Write(u32 id, s32 size, void *data) {
