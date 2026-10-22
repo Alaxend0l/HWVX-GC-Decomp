@@ -3323,6 +3323,26 @@ s32 VDevice_Initialize(VDevice *dev, s32 arg1) {
     dev->unkF0 = arg1;
     return 0;
 }
+
+u32 VDevice_GetFreeEffect(VDevice *dev) {
+    static u32 jumbleeffectid;
+    static u32 createcount;
+    u32 handle = 0xFFFFFFFF;
+    s32 i;
+    u32 index;
+
+    for (i = 0; i < 64; i++) {
+        index = (i + jumbleeffectid) & 0x3F;
+        if (dev->activeEffects[index] == NULL) {
+            jumbleeffectid = index + 1;
+            jumbleeffectid &= 0x3F;
+            handle = (*(s32 *)dev->unkF0 << 16) | ((createcount & 0xFF) << 8) | (index & 0x3F);
+            break;
+        }
+    }
+    return handle;
+}
+
 #pragma pop
 
 #pragma pop
