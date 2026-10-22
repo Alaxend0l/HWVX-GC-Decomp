@@ -844,6 +844,14 @@ void PushReadedBuffer2(void *arg0) {
     OSSendMessage(ReadedBufferQueue2_803700C0, arg0, 1);
 }
 
+void AudioDecodeThreadStart(void) {
+    extern s32 AudioDecodeThreadCreated_803C7770;
+    extern u8 AudioDecodeThread_80370108[];
+    if (AudioDecodeThreadCreated_803C7770) {
+        OSResumeThread(AudioDecodeThread_80370108);
+    }
+}
+
 void AudioDecoder(void) {
     M2C_UNK AudioDecode();
     s32 PopReadedBuffer();
