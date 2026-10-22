@@ -2099,6 +2099,36 @@ void Grid_Release(void) {
 
 }
 
+void InterfaceManager_Init(void) {
+    extern u8 g_interface[][0x170];
+    extern s32 g_TargetArrow[7];
+    extern void *g_pInterfaceToEnd;
+    extern s32 g_numInterfaceObjectsAllocated;
+    extern s32 g_numInterfaceObjectAllocations;
+    extern s32 g_numInterfacesToRender;
+    extern void *g_playerMessage1;
+    extern void *g_playerMessage2;
+    extern void *g_playerMessage3;
+    u32 i;
+
+    g_numInterfaceObjectsAllocated = 0;
+    g_numInterfaceObjectAllocations = 0;
+    g_numInterfacesToRender = 0;
+    g_pInterfaceToEnd = NULL;
+    for (i = 0; i < 0x12; i++) {
+        *(void **)g_interface[i] = NULL;
+        g_interface[i][0x7D] = i;
+    }
+    g_TargetArrow[0] = 0;
+    g_playerMessage1 = NULL;
+    g_TargetArrow[1] = 0;
+    g_TargetArrow[3] = 0;
+    g_TargetArrow[4] = -1;
+    g_TargetArrow[5] = 0;
+    g_playerMessage2 = NULL;
+    g_playerMessage3 = NULL;
+}
+
 void InterfaceManager_SetRadarBlip(u16 arg0) {
     extern s32 g_radarTextureIndex;
     g_radarTextureIndex = (s32) arg0;
