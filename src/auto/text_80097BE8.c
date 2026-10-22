@@ -1,6 +1,9 @@
 /* Functions from 0x80097BE8 to 0x800CC320, found by decomp-toolkit. */
 #include "common.h"
 
+s32 OSSendMessage(void *queue, void *msg, s32 flags);
+s32 OSReceiveMessage(void *queue, void **msg, s32 flags);
+
 void *what__Q23std13bad_exceptionCFv(void) {
     extern u8 g_cameraManager[];
     return g_cameraManager;
