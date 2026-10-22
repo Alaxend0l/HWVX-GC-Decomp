@@ -1991,11 +1991,6 @@ void OSClearContext(register void *context) {
     }
 }
 
-void Callback(void) {
-    extern s32 Prepared_803C7260;
-    Prepared_803C7260 = 1;
-}
-
 typedef struct OSSram {
     u16 checkSum;
     u16 checkSumInv;
@@ -2029,6 +2024,11 @@ static inline void *LockSram(u32 offset) {
     Scb_802EEE20.enabled = enabled;
     Scb_802EEE20.locked = 1;
     return Scb_802EEE20.sram + offset;
+}
+
+void Callback(void) {
+    extern s32 Prepared_803C7260;
+    Prepared_803C7260 = 1;
 }
 
 s32 __OSUnlockSram(s32 commit) {
