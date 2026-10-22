@@ -857,6 +857,11 @@ s32 ActionResetGameRound(void *arg0) {
     return 1;
 }
 
+s32 ActionSetPlayerOrder(void *action) {
+    GameRules_SetPlayerOrder(action, 4);
+    return 1;
+}
+
 s32 ActionSpeakerChangeMode(void) {
     return 1;
 }
