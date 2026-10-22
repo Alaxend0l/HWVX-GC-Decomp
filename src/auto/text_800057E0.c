@@ -1533,6 +1533,14 @@ void CarA_GetInverseLocalInertiaTensor(void *arg0, void *arg1) {
     M2C_FIELD(arg1, f32 *, 8) = (f32) M2C_FIELD(arg0, f32 *, 0x3E8);
 }
 
+void CarA_SetSlavePlayers(void *car) {
+    void *slave;
+
+    for (slave = M2C_FIELD(car, void **, 0x344); slave != NULL; slave = M2C_FIELD(slave, void **, 0xA4)) {
+        M2C_FIELD(slave, s32 *, 0x94) = M2C_FIELD(car, s32 *, 0x94);
+    }
+}
+
 f32 CarA_GetMass(void *arg0) {
     return M2C_FIELD(M2C_FIELD(M2C_FIELD(arg0, void **, 0x3BC), void **, 0xA0), f32 *, 0x20);
 }
