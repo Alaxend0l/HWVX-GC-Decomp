@@ -2289,16 +2289,18 @@ void ExitStateGamePlay(s32 arg0) {
 
 #pragma push
 #pragma dont_inline on
-void StateGamePlay_Pause(u8 pause) {
+void StateGamePlay_Pause(s32 pause) {
     extern u8 g_bFreezeWorld;
     void SoundManager_Pause(u8 pause);
     void Input_ForceFeedbackPause(u8 pause);
     void InterfaceManager_PauseAllInterface(u8 pause);
+    u8 bPause;
 
     CameraManager_Pause(pause);
-    SoundManager_Pause(pause);
-    Input_ForceFeedbackPause(pause);
-    InterfaceManager_PauseAllInterface(pause);
+    bPause = pause;
+    SoundManager_Pause(bPause);
+    Input_ForceFeedbackPause(bPause);
+    InterfaceManager_PauseAllInterface(bPause);
     g_bFreezeWorld = 1;
 }
 #pragma pop
