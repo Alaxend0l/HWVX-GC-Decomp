@@ -1608,10 +1608,10 @@ s32 Effect_StartEffect(void *arg0) {
 #pragma push
 #pragma optimize_for_size on
 void Effect_PolarToRect(s32 magnitude, u8 angle, s32 *out) {
-    u32 a = angle;
-    s32 sine;
-    s32 value;
     s32 round;
+    s32 value;
+    s32 sine;
+    u32 a = angle;
 
     if (a < 0x40) {
         sine = g_iQuarterSineTable_8037BB7C[a];
@@ -1622,12 +1622,14 @@ void Effect_PolarToRect(s32 magnitude, u8 angle, s32 *out) {
     } else {
         sine = -g_iQuarterSineTable_8037BB7C[0xFF - a];
     }
-    value = magnitude * sine;
+    sine = magnitude * sine;
     round = 0x1FE00;
-    if (value < 0) {
+    if (sine < 0) {
         round = -0x1FE00;
     }
-    *out = -((value * 0x7F + round) / 0x3FC00);
+    value = sine * 0x7F;
+    value += round;
+    *out = -(value / 0x3FC00);
 }
 
 s32 Effect_UpdateSpring(Effect *effect, EffectCondition *cond) {
