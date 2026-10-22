@@ -1608,18 +1608,19 @@ s32 Effect_StartEffect(void *arg0) {
 #pragma push
 #pragma optimize_for_size on
 void Effect_PolarToRect(s32 magnitude, u8 angle, s32 *out) {
+    u32 a = angle;
     s32 sine;
     s32 value;
     s32 round;
 
-    if (angle < 0x40) {
-        sine = g_iQuarterSineTable_8037BB7C[angle];
-    } else if (angle < 0x80) {
-        sine = g_iQuarterSineTable_8037BB7C[0x7F - angle];
-    } else if (angle < 0xC0) {
-        sine = -g_iQuarterSineTable_8037BB7C[angle - 0x80];
+    if (a < 0x40) {
+        sine = g_iQuarterSineTable_8037BB7C[a];
+    } else if (a < 0x80) {
+        sine = g_iQuarterSineTable_8037BB7C[0x7F - a];
+    } else if (a < 0xC0) {
+        sine = -g_iQuarterSineTable_8037BB7C[a - 0x80];
     } else {
-        sine = -g_iQuarterSineTable_8037BB7C[0xFF - angle];
+        sine = -g_iQuarterSineTable_8037BB7C[0xFF - a];
     }
     value = magnitude * sine;
     round = 0x1FE00;
@@ -1628,7 +1629,6 @@ void Effect_PolarToRect(s32 magnitude, u8 angle, s32 *out) {
     }
     *out = -((value * 0x7F + round) / 0x3FC00);
 }
-#pragma pop
 
 s32 Effect_UpdateDamper(Effect *effect, EffectCondition *cond) {
     s32 vel = effect->state->velocity;
@@ -1652,6 +1652,7 @@ s32 Effect_UpdateDamper(Effect *effect, EffectCondition *cond) {
     }
     return force;
 }
+#pragma pop
 
 void ShortCommandProc(s32 chan) {
     GBAControl *gba = &__GBA[chan];
