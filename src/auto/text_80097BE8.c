@@ -3369,6 +3369,25 @@ static void F29(s32 chan, s32 ret) {
     gba->ret = ret;
 }
 
+s32 GBARead(s32 chan, u8 *dst, u8 *status) {
+    GBAControl *gba = &__GBA[chan];
+    s32 ret;
+
+    if (gba->callback != NULL) {
+        ret = 2;
+    } else {
+        gba->output[0] = 0x14;
+        gba->ptr = dst;
+        gba->status = status;
+        gba->callback = __GBASyncCallback;
+        ret = __GBATransfer(chan, 1, 5, ReadProc);
+    }
+    if (ret != 0) {
+        return ret;
+    }
+    return __GBASync(chan);
+}
+
 s32 __GBATransfer(s32 chan, s32 w1, s32 r1, void *proc);
 void ReadProc(s32 chan);
 void WriteProc(s32 chan);
@@ -3381,6 +3400,9 @@ void WriteProc(s32 chan) {
     *gba->status = gba->input[0] & 0x3A;
 }
 
+#pragma push
+#pragma peephole off
+#pragma use_lmw_stmw on
 s32 GBAWriteAsync(s32 chan, u8 *src, u8 *status, GBACallback callback) {
     GBAControl *gba = &__GBA[chan];
 
@@ -3394,6 +3416,7 @@ s32 GBAWriteAsync(s32 chan, u8 *src, u8 *status, GBACallback callback) {
     gba->callback = callback;
     return __GBATransfer(chan, 5, 1, WriteProc);
 }
+#pragma pop
 
 void __GBASyncCallback(s32 chan) {
     void OSWakeupThread(void *);
