@@ -3281,7 +3281,7 @@ void SetMusicVol(u32 vol) {
 
     g_musicVol1_803C7934 = vol;
     g_musicVol = (g_musicVol1_803C7934 * g_musicVol2_803C7930) >> 15;
-    SetMusicVolume(g_musicVol1_803C7934);
+    SetMusicVolume();
 }
 void SetMusicGVol(u32 vol) {
     extern u32 g_musicVol;
