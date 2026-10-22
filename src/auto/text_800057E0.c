@@ -1053,6 +1053,13 @@ u32 CollisionInfo_GetOther(void *arg0, u32 arg1) {
     return temp_r0;
 }
 
+void ThingManager_DARYL_Init(void) {
+    M2C_UNK ThingManager_DARYL_Release();
+    M2C_UNK MatrixCache_Init();
+    ThingManager_DARYL_Release();
+    MatrixCache_Init();
+}
+
 void Trail_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
