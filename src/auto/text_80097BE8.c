@@ -1787,6 +1787,42 @@ void DrawAlphaTable(void) {
     }
 }
 
+u8 Gfx_GetEnvmapState(void) {
+    extern GDL *g_pGDL;
+    extern GfxState g_state;
+
+    if ((s8)g_state.unk8F) {
+        return 0;
+    }
+    return g_pGDL->numEnvmapStates - 1;
+}
+
+s32 Gfx_AddWorldMatrixState_NonCached(s32 matrix) {
+    extern GDL *g_pGDL;
+
+    if (matrix == 0) {
+        return 0xFFFE;
+    }
+    if (g_pGDL->numMatrices >= 0x578) {
+        g_pGDL->numMatrices = 0;
+    }
+    g_pGDL->matrices[g_pGDL->numMatrices] = matrix;
+    return g_pGDL->numMatrices++;
+}
+
+void *Gfx_GetWorldMatrixState(u32 index) {
+    extern GDL *g_pGDL;
+    extern f32 g_identity[];
+
+    if (index == 0xFFFE) {
+        return g_identity;
+    }
+    if (index == 0xFFFF) {
+        return (u8 *)GetRenderWindow() + 0x140;
+    }
+    return (void *)g_pGDL->matrices[index];
+}
+
 s32 Gfx_AddWorldMatrixState_CacheMatrix(s32 matrix);
 s32 Gfx_GetLightState(void);
 u8 Gfx_GetEnvmapState(void);
