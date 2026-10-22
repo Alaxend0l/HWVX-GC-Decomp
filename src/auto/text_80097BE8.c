@@ -244,6 +244,16 @@ s32 ftell(void *arg0) {
     return temp_r3;
 }
 
+void *__StringWrite(void *osc, const char *Buffer, u32 NumChars) {
+    u32 CharsToBeWritten;
+    __OutStrCtrl *Oscp = (__OutStrCtrl *)osc;
+
+    CharsToBeWritten = ((Oscp->CharsWritten + NumChars) <= Oscp->MaxCharCount) ? NumChars : Oscp->MaxCharCount - Oscp->CharsWritten;
+    memcpy(Oscp->CharStr + Oscp->CharsWritten, Buffer, CharsToBeWritten);
+    Oscp->CharsWritten += CharsToBeWritten;
+    return (void *)1;
+}
+
 void srand(s32 arg0) {
     extern s32 next_803C6EA0;
     next_803C6EA0 = arg0;
