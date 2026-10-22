@@ -1376,6 +1376,16 @@ void CollisionPairCache_Clear(void) {
     }
 }
 
+void CollisionTriCache_Clear(void) {
+    extern u8 g_aCollisionTriPairCache[4][0x30];
+    s32 i;
+    for (i = 0; i < 4; i++) {
+        *(s32 *)(g_aCollisionTriPairCache[i] + 0x24) = 0;
+        *(s32 *)(g_aCollisionTriPairCache[i] + 0x20) = 0;
+        *(s32 *)(g_aCollisionTriPairCache[i] + 0x28) = 99999;
+    }
+}
+
 void CoronaHolder_Init(void) {
     extern s32 g_coronaRayTest;
     extern s32 g_totalCoronas;
