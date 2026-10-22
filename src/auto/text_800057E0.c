@@ -967,6 +967,13 @@ void MatrixCache_Init(void) {
 
 }
 
+void MatrixCache_Destroy(void) {
+    M2C_UNK Deallocate(s32);
+    extern s32 g_pMatrixCacheData;
+    Deallocate(g_pMatrixCacheData);
+    g_pMatrixCacheData = 0;
+}
+
 void NavHolder_UseMainRouteOnly(void) {
     extern s8 gs_useMainRouteOnly_803C7000;
     gs_useMainRouteOnly_803C7000 = 1;
