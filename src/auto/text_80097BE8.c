@@ -179,6 +179,14 @@ u8 IsOpened__6WheelsFl(Wheels *wheels, s32 chan);
 s32 GetOverallForceGain__8LGWheelsFl(void *wheels, s32 chan);
 void SetOverallForceGain__8LGWheelsFll(void *wheels, s32 chan, s32 gain);
 void SetOverallForceGain__5ForceFRUll(void *force, u32 *effectId, s32 gain);
+s32 GetOverallForceGain__5ForceFRUl(void *force, u32 *effectId);
+void InitLGLibrary__8LGWheelsFv(void *wheels);
+Wheels *__ct__6WheelsFv(Wheels *wheels);
+s32 __ct__5ForceFv(s32 arg0);
+s32 __ct__9ConditionFv(s32 arg0);
+s32 __ct__8ConstantFv(s32 arg0);
+s32 __ct__8PeriodicFv(s32 arg0);
+s32 __ct__4RampFv(s32 arg0);
 
 typedef struct RandomNumberGenerator {
     Vector vectors[0x300];
