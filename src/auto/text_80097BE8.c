@@ -714,11 +714,13 @@ void *malloc(u32 size) {
     void *allocate_from_var_pools(void *pool, u32 size);
     extern u8 protopool_8030DD18[0x34];
     extern u8 init_803C75E8;
+    void *pool;
 
     if (!init_803C75E8) {
         memset(protopool_8030DD18, 0, sizeof(protopool_8030DD18));
         init_803C75E8 = 1;
     }
+    pool = protopool_8030DD18;
     if (size == 0) {
         return NULL;
     }
@@ -726,9 +728,9 @@ void *malloc(u32 size) {
         return NULL;
     }
     if (size <= 0x44) {
-        return allocate_from_fixed_pools(protopool_8030DD18, size);
+        return allocate_from_fixed_pools(pool, size);
     }
-    return allocate_from_var_pools(protopool_8030DD18, size);
+    return allocate_from_var_pools(pool, size);
 }
 
 void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
@@ -746,9 +748,9 @@ void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
         }
         after = (SubBlock *)((u8 *)ths + this_cur_size);
         if (!(ths->size_ & 2)) {
-            SubBlock_clear_flag(after, 4);
+            after->size_ &= ~0x04L;
         } else {
-            after->size_ |= 4;
+            after->size_ |= 0x04L;
         }
         if (*start == next_sub_block) {
             *start = (*start)->next_;
