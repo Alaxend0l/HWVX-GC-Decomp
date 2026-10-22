@@ -5784,6 +5784,19 @@ s32 TRKInitializeSerialHandler(void) {
     return 0;
 }
 
+#pragma push
+#pragma dont_inline on
+void TRKProcessInput(s32 bufferIdx) {
+    extern s32 gTRKFramingState_8030B424[];
+    TRKEvent event;
+
+    TRKConstructEvent(&event, 2);
+    event.msgBufID = bufferIdx;
+    gTRKFramingState_8030B424[0] = -1;
+    TRKPostEvent(&event);
+}
+#pragma pop
+
 void fn_8008EF90(void *arg0, s8 arg1) {
     M2C_FIELD(arg0, s8 *, 0) = arg1;
     M2C_FIELD(arg0, s32 *, 4) = 0;
