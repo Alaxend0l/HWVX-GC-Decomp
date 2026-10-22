@@ -805,6 +805,15 @@ void ReadThreadStart(void) {
     }
 }
 
+void ReadThreadCancel(void) {
+    extern s32 ReadThreadCreated_803C7768;
+    extern u8 ReadThread_8036ED20[];
+    if (ReadThreadCreated_803C7768) {
+        OSCancelThread(ReadThread_8036ED20);
+        ReadThreadCreated_803C7768 = 0;
+    }
+}
+
 void *PopReadedBuffer(void) {
     extern u8 ReadedBufferQueue_80370078[];
     void *msg;
