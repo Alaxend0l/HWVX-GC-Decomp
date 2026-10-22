@@ -837,6 +837,10 @@ void Thing_DynamicCollideImpact(void) {
 
 }
 
+void Thing_DynamicRotation(void) {
+
+}
+
 s32 Thing_GetOrientedCollision(void) {
     return 0;
 }
