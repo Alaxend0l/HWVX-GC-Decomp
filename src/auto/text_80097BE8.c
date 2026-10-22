@@ -217,6 +217,10 @@ void ProcessVoice(void) {
     fn_800957D4();
 }
 
+void AudioIT_Destroy(void) {
+
+}
+
 s32 AudioVoid(void) {
     return 0;
 }
