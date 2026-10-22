@@ -2837,6 +2837,14 @@ void __CARDDefaultApiCallback(void) {
 
 }
 
+s32 OnReset_8007DB90(s32 arg0) {
+    s32 CARDUnmount(M2C_UNK);
+    if ((arg0 == 0) && ((CARDUnmount(0) == -1) || (CARDUnmount(1) == -1))) {
+        return 0;
+    }
+    return 1;
+}
+
 s32 __CARDGetFatBlock(void *arg0) {
     return M2C_FIELD(arg0, s32 *, 0x88);
 }
