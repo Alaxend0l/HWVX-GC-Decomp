@@ -4,6 +4,15 @@
 s32 OSSendMessage(void *queue, void *msg, s32 flags);
 s32 OSReceiveMessage(void *queue, void **msg, s32 flags);
 
+typedef struct Vector {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 w;
+} Vector;
+
+f32 PSVECMag(Vector *v);
+
 void *what__Q23std13bad_exceptionCFv(void) {
     extern u8 g_cameraManager[];
     return g_cameraManager;
