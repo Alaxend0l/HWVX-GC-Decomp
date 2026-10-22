@@ -1125,6 +1125,14 @@ void Gfx_SetFarClippingPlane(f32 farPlane) {
     g_state.farClippingPlane = farPlane;
 }
 
+void Gfx_RemovePointLights(void) {
+    extern GfxState g_state;
+    if (g_state.numPointLights != 0) {
+        g_state.numPointLights = 0;
+        g_state.lightChanged = 1;
+    }
+}
+
 void Gfx_SetParallelLight(GXColor *color, Vector *dir) {
     extern GfxState g_state;
     f32 PSVECSquareMag(Vector *v);
