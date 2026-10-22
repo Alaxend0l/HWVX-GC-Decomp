@@ -1651,7 +1651,7 @@ s32 StateManager_QueuedState(void) {
 
 s32 StateManager_QueueChange(s32 state) {
     extern void *g_pStateManager;
-    M2C_UNK FileManager_GetDeviceStatus(s32);
+    u32 FileManager_GetDeviceStatus(s32);
     if (M2C_FIELD(g_pStateManager, s32 *, 0xD4) == -1) {
         if (state == 8 || FileManager_GetDeviceStatus(0) == 1) {
             M2C_FIELD(g_pStateManager, s32 *, 0xD4) = state;
