@@ -14725,7 +14725,7 @@ void __CARDExtHandler(s32 chan, void *context) {
 
 s32 EXILock(s32 chan, u32 dev, void *unlockedCallback);
 s32 EXIUnlock(s32 chan);
-s32 OSCancelAlarm(void *alarm);
+void OSCancelAlarm(void *alarm);
 s32 __CARDReadStatus(s32 chan, u8 *status);
 s32 __CARDClearStatus(s32 chan);
 static s32 Retry(s32 chan);
