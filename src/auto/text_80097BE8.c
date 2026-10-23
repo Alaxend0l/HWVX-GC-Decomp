@@ -600,7 +600,9 @@ static inline s32 Effect_MulDiv(s32 a, s32 b, s32 c) {
     if (a < 0) {
         half = -half;
     }
-    return (half + a * b) / c;
+    a *= b;
+    a += half;
+    return a / c;
 }
 
 static inline s32 Effect_WaveLookup(s16 *table, u32 a) {
@@ -9360,7 +9362,7 @@ s32 Effect_Update(Effect *effect, u32 dt) {
         } else if (effect->flags & 0x20) {
             Effect_PolarToRect(effect->params.ramp.start + Effect_MulDiv(effect->params.ramp.end - effect->params.ramp.start, effect->elapsed, effect->duration), effect->params.ramp.angle, &effect->force);
         } else if (effect->flags & 0x40) {
-            *(u32 *)&effect->deadbandLow += (dt << 24) / effect->params.periodic.period;
+            *(u32 *)&effect->deadbandLow = *(u32 *)&effect->deadbandLow + (dt << 24) / effect->params.periodic.period;
             if (*(u32 *)&effect->deadbandLow >= 0x1000000) {
                 *(u32 *)&effect->deadbandLow -= *(u32 *)&effect->deadbandLow & 0xFF000000;
             }
