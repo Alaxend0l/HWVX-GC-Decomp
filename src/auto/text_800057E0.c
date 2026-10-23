@@ -181,14 +181,20 @@ static inline void *AI_GetInitFunc(u8 *desc) {
     void AI_Car_Init();
     void AI_Creature_Init();
 
+    void *init;
+
     switch (desc[0xD]) {
     case 0:
-        return (void *)AI_Car_Init;
+        init = (void *)AI_Car_Init;
+        break;
     case 1:
-        return (void *)AI_Creature_Init;
+        init = (void *)AI_Creature_Init;
+        break;
     default:
-        return NULL;
+        init = NULL;
+        break;
     }
+    return init;
 }
 void GXSetTevIndirect(s32 tev_stage, s32 ind_stage, s32 format, s32 bias_sel, s32 matrix_sel, s32 wrap_s, s32 wrap_t, u8 add_prev, u8 utc_lod, s32 alpha_sel);
 
