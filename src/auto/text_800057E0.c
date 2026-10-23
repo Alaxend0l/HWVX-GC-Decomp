@@ -2185,6 +2185,29 @@ s8 RayHitsTerrain(Vector4 *start, Vector4 *end, void *arg2, void *arg3) {
     return RayHitsTerrain_Aux3(start, &dir, arg2, arg3);
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s8 OBoxHitsBSPZeroTimeEdgesOnly(void *obox, void *bsp, void *arg2) {
+    s8 OBoxHitsSegmentZeroTime(void *obox, void *edge, void *arg2);
+    u8 *edge;
+    u32 i;
+
+    if (M2C_FIELD(bsp, u32 *, 0x3C) == 0 && M2C_FIELD(bsp, u32 *, 0x40) == 0) {
+        return 0;
+    }
+    for (i = 0; i < M2C_FIELD(bsp, u32 *, 0x40); i++) {
+        edge = M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u8 **, 0x54) + M2C_FIELD(bsp, u16 **, 0x44)[i] * 0x30;
+        if (M2C_FIELD(edge, u32 *, 0x20) != g_worldData.unk4) {
+            M2C_FIELD(edge, u32 *, 0x20) = g_worldData.unk4;
+            if (OBoxHitsSegmentZeroTime(obox, edge, arg2)) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+#pragma pop
+
 void BuildOOBOffset(void *oob, void *pos, void *rot, void *out) {
     void BuildOOB(void *oob, void *pos, void *out);
     Matrix4 local;
