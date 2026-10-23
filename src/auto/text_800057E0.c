@@ -15604,6 +15604,120 @@ void Callback(void) {
     Prepared_803C7260 = 1;
 }
 
+void __OSReboot(u32 resetCode, u32 bootDol) {
+    typedef struct ApploaderHeader {
+        char date[16];
+        u32 entry;
+        u32 size;
+        u32 rebootSize;
+        u32 reserved2;
+    } ApploaderHeader;
+    typedef struct RebootCmd {
+        u8 pad[0xC];
+        volatile s32 state;
+        u8 pad2[0x30 - 0x10];
+    } RebootCmd;
+    extern ApploaderHeader Header_802EEE00;
+    extern u32 SaveStart_803C7258;
+    extern u32 SaveEnd_803C725C;
+    extern volatile s32 Prepared_803C7260;
+    s32 OSDisableInterrupts(void);
+    s32 OSEnableInterrupts(void);
+    void OSClearContext(void *context);
+    void OSSetCurrentContext(void *context);
+    void DVDInit(void);
+    s32 DVDSetAutoInvalidation(s32 autoInval);
+    s32 __DVDPrepareResetAsync(void *callback);
+    s32 DVDCheckDisk(void);
+    void __OSDoHotReset(u32 resetCode);
+    u32 __OSMaskInterrupts(u32 mask);
+    u32 __OSUnmaskInterrupts(u32 mask);
+    s32 DVDReadAbsAsyncForBS(void *block, void *addr, s32 length, s32 offset, void *callback);
+    void ICInvalidateRange(void *addr, u32 nBytes);
+    void Run(void *entry);
+    u8 exceptionContext[0x2C8];
+    RebootCmd dvdCmd;
+    RebootCmd dvdCmd2;
+    u32 numBytes;
+    u32 offset;
+
+    OSDisableInterrupts();
+    *(u32 *)0x817FFFFC = 0;
+    *(u32 *)0x817FFFF8 = 0;
+    *(u8 *)0x800030E2 = 1;
+    *(u32 *)0x812FDFF0 = SaveStart_803C7258;
+    *(u32 *)0x812FDFEC = SaveEnd_803C725C;
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(exceptionContext);
+    DVDInit();
+    DVDSetAutoInvalidation(1);
+    __DVDPrepareResetAsync(Callback);
+    if (!DVDCheckDisk()) {
+        __OSDoHotReset(*(u32 *)0x817FFFFC);
+    }
+    __OSMaskInterrupts(0xFFFFFFE0);
+    __OSUnmaskInterrupts(0x400);
+    OSEnableInterrupts();
+
+    while (!Prepared_803C7260) {
+    }
+    DVDReadAbsAsyncForBS(&dvdCmd, &Header_802EEE00, 0x20, 0x2440, NULL);
+    for (;;) {
+        switch (dvdCmd.state) {
+        case 0:
+            break;
+        case 1:
+        default:
+            continue;
+        case -1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+        case 11:
+            __OSDoHotReset(*(u32 *)0x817FFFFC);
+            continue;
+        }
+        break;
+    }
+
+    offset = Header_802EEE00.size + 0x20;
+    numBytes = (Header_802EEE00.rebootSize + 0x1F) & ~0x1F;
+    while (!Prepared_803C7260) {
+    }
+    DVDReadAbsAsyncForBS(&dvdCmd2, (void *)0x81300000, numBytes, offset + 0x2440, NULL);
+    for (;;) {
+        switch (dvdCmd2.state) {
+        case 0:
+            break;
+        case 1:
+        default:
+            continue;
+        case -1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+        case 11:
+            __OSDoHotReset(*(u32 *)0x817FFFFC);
+            continue;
+        }
+        break;
+    }
+    ICInvalidateRange((void *)0x81300000, numBytes);
+    Run((void *)0x81300000);
+}
+
 void OSRegisterResetFunction(void *func) {
     typedef struct OSResetFunctionInfo {
         void *func;
@@ -15946,6 +16060,138 @@ s32 __OSGetEffectivePriority(void *thread) {
     }
     return priority;
 }
+
+typedef struct RThread RThread;
+typedef struct { RThread *head; RThread *tail; } RQueue;
+struct RThread {
+    u8 pad[0x2C8];
+    u16 state;
+    u16 attr;
+    s32 suspend;
+    s32 priority;
+    s32 base;
+    void *val;
+    RQueue *queue;
+    RThread *next;
+    RThread *prev;
+};
+
+static inline void SetRun(RThread *thread) {
+    extern RQueue RunQueue_802EEE78[32];
+    extern u32 RunQueueBits_803C7290;
+    extern s32 RunQueueHint_803C7294;
+    RThread *prev;
+
+    thread->queue = &RunQueue_802EEE78[thread->priority];
+    prev = thread->queue->tail;
+    if (prev == NULL) {
+        thread->queue->head = thread;
+    } else {
+        prev->next = thread;
+    }
+    thread->prev = prev;
+    thread->next = NULL;
+    thread->queue->tail = thread;
+    RunQueueBits_803C7290 |= 1 << (31 - thread->priority);
+    RunQueueHint_803C7294 = 1;
+}
+
+void *SetEffectivePriority(void *thread, s32 priority) {
+    typedef struct PThread PThread;
+    typedef struct { PThread *head; PThread *tail; } PQueue;
+    typedef struct { PQueue queue; PThread *thread; } PMutex;
+    struct PThread {
+        u8 pad[0x2C8];
+        u16 state;
+        u16 attr;
+        s32 suspend;
+        s32 priority;
+        s32 base;
+        void *val;
+        PQueue *queue;
+        PThread *next;
+        PThread *prev;
+        PQueue queueJoin;
+        PMutex *mutex;
+    };
+    extern PQueue RunQueue_802EEE78[32];
+    extern u32 RunQueueBits_803C7290;
+    extern s32 RunQueueHint_803C7294;
+    PThread *t = thread;
+
+    switch (t->state) {
+    case 1: {
+        PThread *prev;
+
+        UnsetRun(t);
+        t->priority = priority;
+        t->queue = &RunQueue_802EEE78[t->priority];
+        prev = t->queue->tail;
+        if (prev == NULL) {
+            t->queue->head = t;
+        } else {
+            prev->next = t;
+        }
+        t->prev = prev;
+        t->next = NULL;
+        t->queue->tail = t;
+        RunQueueBits_803C7290 |= 1 << (31 - t->priority);
+        RunQueueHint_803C7294 = 1;
+        break;
+    }
+    case 4: {
+        PThread *next;
+        PThread *prev;
+
+        next = t->next;
+        prev = t->prev;
+        if (next == NULL) {
+            t->queue->tail = prev;
+        } else {
+            next->prev = prev;
+        }
+        if (prev == NULL) {
+            t->queue->head = next;
+        } else {
+            prev->next = next;
+        }
+        t->priority = priority;
+        for (next = t->queue->head; next && next->priority <= t->priority; next = next->next) {
+        }
+        if (next == NULL) {
+            prev = t->queue->tail;
+            if (prev == NULL) {
+                t->queue->head = t;
+            } else {
+                prev->next = t;
+            }
+            t->prev = prev;
+            t->next = NULL;
+            t->queue->tail = t;
+        } else {
+            t->next = next;
+            prev = next->prev;
+            next->prev = t;
+            t->prev = prev;
+            if (prev == NULL) {
+                t->queue->head = t;
+            } else {
+                prev->next = t;
+            }
+        }
+        if (t->mutex) {
+            return t->mutex->thread;
+        }
+        break;
+    }
+    case 2:
+        RunQueueHint_803C7294 = 1;
+        t->priority = priority;
+        break;
+    }
+    return NULL;
+}
+
 #pragma pop
 #pragma pop
 
