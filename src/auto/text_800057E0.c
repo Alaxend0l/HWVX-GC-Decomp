@@ -8381,7 +8381,7 @@ static inline char *StateMovie_GetNextMovieName(void) {
         return NULL;
     }
     len = strlen(g_moviePlaybackName);
-    if (g_curMovieIndex >= len) {
+    if (len <= g_curMovieIndex) {
         return NULL;
     }
     for (; g_curMovieIndex < len; g_curMovieIndex++) {
