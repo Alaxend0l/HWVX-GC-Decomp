@@ -8771,6 +8771,36 @@ s32 DSPCheckInit(void) {
     return __DSP_init_flag_803C7528;
 }
 
+DSPTaskInfo *DSPAssertTask(DSPTaskInfo *task) {
+    extern DSPTaskInfo *__DSP_rude_task;
+    extern s32 __DSP_rude_task_pending;
+    s32 OSDisableInterrupts(void);
+    void OSRestoreInterrupts(s32);
+    s32 old;
+    s32 old2;
+
+    old = OSDisableInterrupts();
+    if (__DSP_curr_task == task) {
+        __DSP_rude_task = task;
+        __DSP_rude_task_pending = 1;
+        OSRestoreInterrupts(old);
+        return task;
+    }
+    if (task->priority < __DSP_curr_task->priority) {
+        __DSP_rude_task = task;
+        __DSP_rude_task_pending = 1;
+        if (__DSP_curr_task->state == 1) {
+            old2 = OSDisableInterrupts();
+            __DSPRegs[5] = (u16)((__DSPRegs[5] & ~0xA8) | 2);
+            OSRestoreInterrupts(old2);
+        }
+        OSRestoreInterrupts(old);
+        return task;
+    }
+    OSRestoreInterrupts(old);
+    return NULL;
+}
+
 void DSPReset(void) {
     extern s32 __DSP_init_flag_803C7528;
     s32 OSDisableInterrupts(void);
@@ -8909,6 +8939,29 @@ fatal:
     }
 }
 
+void TimeoutHandler(void *alarm, void *context) {
+    void EXISetExiCallback(s32 chan, void *callback);
+    s32 chan;
+    CARDControl *card;
+    CARDCallback callback;
+
+    for (chan = 0; chan < 2; ++chan) {
+        card = &__CARDBlock[chan];
+        if (alarm == card->alarm) {
+            break;
+        }
+    }
+    if (!card->attached) {
+        return;
+    }
+    EXISetExiCallback(chan, NULL);
+    callback = card->exiCallback;
+    if (callback) {
+        card->exiCallback = NULL;
+        callback(chan, -5);
+    }
+}
+
 void CARDInit(void) {
     void DSPInit(void);
     void OSInitAlarm(void);
@@ -8990,6 +9043,60 @@ s32 OnReset_8007DB90(s32 arg0) {
         return 0;
     }
     return 1;
+}
+
+void InitCallback(void *task) {
+    void DSPSendMailToDSP(u32 mail);
+    u32 DSPCheckMailToDSP(void);
+    s32 chan;
+    CARDControl *card;
+    void *data;
+
+    for (chan = 0; chan < 2; ++chan) {
+        card = &__CARDBlock[chan];
+        if ((void *)((u8 *)card + 0x30) == task) {
+            break;
+        }
+    }
+    data = card->workArea;
+    DSPSendMailToDSP(0xFF000000);
+    while (DSPCheckMailToDSP()) {
+    }
+    DSPSendMailToDSP((u32)data);
+    while (DSPCheckMailToDSP()) {
+    }
+}
+
+s32 __CARDRead(s32 chan, void *addr, u32 length, void *dst, CARDCallback callback) {
+    s32 __CARDReadSegment(s32 chan, CARDCallback callback);
+    void BlockReadCallback(s32 chan, s32 result);
+    CARDControl *card;
+
+    card = &__CARDBlock[chan];
+    if (!card->attached) {
+        return -3;
+    }
+    card->xferCallback = callback;
+    card->repeat = length / 512;
+    card->addr = addr;
+    card->offset = (s32)dst;
+    return __CARDReadSegment(chan, BlockReadCallback);
+}
+
+s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, void *callback) {
+    s32 __CARDWritePage(s32 chan, CARDCallback callback);
+    void BlockWriteCallback(s32 chan, s32 result);
+    CARDControl *card;
+
+    card = &__CARDBlock[chan];
+    if (!card->attached) {
+        return -3;
+    }
+    card->xferCallback = (CARDCallback)callback;
+    card->repeat = (u32)length / 128;
+    card->addr = (void *)addr;
+    card->offset = (s32)dst;
+    return __CARDWritePage(chan, BlockWriteCallback);
 }
 
 s32 __CARDGetFatBlock(void *arg0) {
