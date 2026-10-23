@@ -8707,6 +8707,15 @@ u16 OSGetFontEncode(void) {
     return fontEncode;
 }
 
+extern u8 *FontData_803C7230;
+extern u8 *SheetImage_803C7234;
+u32 OSLoadFont(void *buf);
+void ExpandFontSheet(u8 *src, u8 *dst, u8 *font);
+
+BOOL OSInitFont(void *fontData) {
+    return 0;
+}
+
 __OSInterruptHandler __OSSetInterruptHandler(__OSInterrupt interrupt, __OSInterruptHandler handler) {
     __OSInterruptHandler *table;
     __OSInterruptHandler oldHandler;
