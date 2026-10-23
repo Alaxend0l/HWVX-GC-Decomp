@@ -8512,6 +8512,71 @@ s32 AudioVoid(void) {
 
 #pragma push
 #pragma optimization_level 1
+void CreateMusic(u8 *data, u32 size) {
+    s8 CmpType_(u8 *chunk, s32 type);
+    s8 CmpID_(u8 *chunk, s32 id);
+    void CreateMIDI(u8 *data, u32 size);
+    void CreateIT(u8 *data, u32 size);
+    extern void *DestroyMusic;
+    extern void *SetMusicState;
+    extern void *SetMusicVolume;
+    extern void *SetMusicPitch;
+    extern void *SetMusicTempo;
+    extern void *SetMusicOrder;
+    extern void *SetMusicTrackPriority;
+    extern void *SetMusicTrackOn;
+    extern void *SetMusicTrackOff;
+    extern void *SetMusicTrackVol;
+    void DestroyMIDI();
+    void SetMIDIState();
+    void SetMIDIVol();
+    void SetMIDIPitch();
+    void SetMIDITempo();
+    void SetMIDITrackPriority();
+    void SetMIDITrackOn();
+    void SetMIDITrackOff();
+    void SetMIDITrackVol();
+    void SetITState();
+    void SetITPitch();
+    void SetITTempo();
+    void SetITTrackPriority();
+    void SetITTrackOn();
+    void SetITTrackOff();
+    void SetITTrackVol();
+
+    if (data == NULL || size == 0) {
+        return;
+    }
+    if (CmpType_(data, 'MIDI')) {
+        DestroyMusic = DestroyMIDI;
+        SetMusicState = SetMIDIState;
+        SetMusicVolume = SetMIDIVol;
+        SetMusicPitch = SetMIDIPitch;
+        SetMusicTempo = SetMIDITempo;
+        SetMusicOrder = SetMIDIMarker;
+        SetMusicTrackPriority = SetMIDITrackPriority;
+        SetMusicTrackOn = SetMIDITrackOn;
+        SetMusicTrackOff = SetMIDITrackOff;
+        SetMusicTrackVol = SetMIDITrackVol;
+        CreateMIDI(data, size);
+    } else if (CmpID_(data, 'IMPM')) {
+        DestroyMusic = DestroyIT;
+        SetMusicState = SetITState;
+        SetMusicVolume = SetITVol;
+        SetMusicPitch = SetITPitch;
+        SetMusicTempo = SetITTempo;
+        SetMusicOrder = SetITOrder;
+        SetMusicTrackPriority = SetITTrackPriority;
+        SetMusicTrackOn = SetITTrackOn;
+        SetMusicTrackOff = SetITTrackOff;
+        SetMusicTrackVol = SetITTrackVol;
+        CreateIT(data, size);
+    }
+}
+#pragma pop
+
+#pragma push
+#pragma optimization_level 1
 #pragma dont_inline on
 s8 Audio_Create(void) {
     extern void (*SongUpdate)(void);
