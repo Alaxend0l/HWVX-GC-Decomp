@@ -3160,7 +3160,7 @@ s32 DropShip_IsChildInterfaceReady(s32 index) {
 
 #pragma push
 #pragma use_lmw_stmw on
-void DropShip_EndChildInterface(s32 index, u16 id) {
+void DropShip_EndChildInterface(s32 index, u32 id) {
     typedef struct DropShipSlot {
         u8 pad0[0x243];
         u8 type;
@@ -3174,12 +3174,13 @@ void DropShip_EndChildInterface(s32 index, u16 id) {
     void InterfaceManager_SetLoadState(void *iface, s32 state);
     u32 i;
     u8 *iface = g_interface[index];
+    DropShipSlot *slot;
 
     for (i = 0; i < *(u32 *)iface; i++) {
-        if ((*(DropShipSlot **)(iface + 0x88))[i].type == 6 &&
-            *(u16 *)((*(DropShipSlot **)(iface + 0x88))[i].anim + 0xA) == id &&
-            *(u32 *)(g_interface[(*(DropShipSlot **)(iface + 0x88))[i].child] + 4) != 1) {
-            InterfaceManager_SetLoadState(g_interface[(*(DropShipSlot **)(iface + 0x88))[i].child], 1);
+        slot = &(*(DropShipSlot **)(iface + 0x88))[i];
+        if (slot->type == 6 && *(u16 *)(slot->anim + 0xA) == id &&
+            *(u32 *)(g_interface[slot->child] + 4) != 1) {
+            InterfaceManager_SetLoadState(g_interface[slot->child], 1);
         }
     }
 }
