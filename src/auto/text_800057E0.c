@@ -14287,8 +14287,9 @@ void UnsetRun(void *arg0) {
     }
     M2C_FIELD(arg0, void **, 0x2DC) = NULL;
 }
-#pragma pop
 
+#pragma push
+#pragma auto_inline off
 s32 __OSGetEffectivePriority(void *thread) {
     s32 priority;
     void *blocked;
