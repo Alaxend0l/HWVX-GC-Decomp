@@ -2998,25 +2998,26 @@ void BuildOConvexHullOffset(void *out, void *hull, void *pos, void *rot) {
     } OConvexHull;
     void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
     void Create_Plane3(Vector4 *plane, Vector4 *normal, Vector4 *point);
-    Hull *h = hull;
-    OConvexHull *o = out;
     Vector4 normal;
     Matrix4 local;
     u32 i;
+    Vector4 *verts;
 
     local = *(Matrix4 *)pos;
     XformVec(pos, rot, &local.v[3]);
-    for (i = 0; i < h->numVerts; i++) {
-        XformVec(&local, &h->verts[i], &o->verts[i]);
+    verts = ((OConvexHull *)out)->verts;
+    for (i = 0; i < ((Hull *)hull)->numVerts; i++) {
+        XformVec(&local, &((Hull *)hull)->verts[i], &verts[i]);
     }
-    for (i = 0; i < h->numFaces; i++) {
-        XformVecOrientation(&local, &h->faces[i].normal, &normal);
-        Create_Plane3(&o->planes[i], &normal, &o->verts[*h->faces[i].verts]);
+    for (i = 0; i < ((Hull *)hull)->numFaces; i++) {
+        XformVecOrientation(&local, &((Hull *)hull)->faces[i].normal, &normal);
+        Create_Plane3(&((OConvexHull *)out)->planes[i], &normal,
+                      &((OConvexHull *)out)->verts[*((Hull *)hull)->faces[i].verts]);
     }
-    o->hull = h;
-    o->unk3C8 = 0;
-    o->unk3C4 = 0;
-    o->pos = local.v[3];
+    ((OConvexHull *)out)->hull = hull;
+    ((OConvexHull *)out)->unk3C8 = 0;
+    ((OConvexHull *)out)->unk3C4 = 0;
+    ((OConvexHull *)out)->pos = local.v[3];
 }
 #pragma pop
 
