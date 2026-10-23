@@ -1308,6 +1308,8 @@ static inline SubBlock *SubBlock_merge_prev(SubBlock *ths, SubBlock **start) {
     return ths;
 }
 
+#pragma push
+#pragma auto_inline off
 void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
     u32 this_cur_size;
     SubBlock *next_sub_block;
@@ -1337,7 +1339,37 @@ void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
         next_sub_block->prev_->next_ = next_sub_block->next_;
     }
 }
+#pragma pop
 
+#pragma push
+#pragma dont_inline on
+void Block_link(Block *ths, SubBlock *sb) {
+    SubBlock **st;
+    u32 size;
+
+    size = sb->size_ & 0xFFFFFFF8;
+    sb->size_ &= ~0x02;
+    ((SubBlock *)((u8 *)sb + size))->size_ &= ~0x04;
+    *(u32 *)((u8 *)sb + size - sizeof(u32)) = size;
+    st = (SubBlock **)((u8 *)ths + (ths->size_ & 0xFFFFFFF8) - sizeof(SubBlock *));
+    if (*st != NULL) {
+        sb->prev_ = (*st)->prev_;
+        sb->prev_->next_ = sb;
+        sb->next_ = *st;
+        (*st)->prev_ = sb;
+        *st = sb;
+        *st = SubBlock_merge_prev(*st, st);
+        SubBlock_merge_next(*st, st);
+    } else {
+        *st = sb;
+        sb->prev_ = sb;
+        sb->next_ = sb;
+    }
+    if (ths->max_size_ < ((*st)->size_ & 0xFFFFFFF8)) {
+        ths->max_size_ = (*st)->size_ & 0xFFFFFFF8;
+    }
+}
+#pragma pop
 s32 __flush_all(void) {
     extern FILE __files[];
     s32 retval = 0;
