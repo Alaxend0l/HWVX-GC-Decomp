@@ -3454,6 +3454,23 @@ void SetTriVtxDescIdxAlpha(void) {
     }
 }
 
+void SetTriNormVtxDescIdx(void) {
+    M2C_UNK GXClearVtxDesc();
+    M2C_UNK GXSetVtxAttrFmt(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK);
+    M2C_UNK GXSetVtxDesc(M2C_UNK, M2C_UNK);
+    extern u32 m_VtxDescFlag;
+    if ((u32) m_VtxDescFlag != 0x200U) {
+        m_VtxDescFlag = 0x200U;
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 3);
+        GXSetVtxDesc(0xA, 3);
+        GXSetVtxDesc(0xD, 3);
+        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+        GXSetVtxAttrFmt(0, 0xA, 0, 4, 0);
+        GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    }
+}
+
 void SetTriEnvVtxDescIdx(void) {
     M2C_UNK GXClearVtxDesc();
     M2C_UNK GXSetVtxAttrFmt(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK);
