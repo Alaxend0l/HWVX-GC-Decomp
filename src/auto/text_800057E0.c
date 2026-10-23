@@ -4137,16 +4137,6 @@ void ThingManager_DARYL_Heartbeat(void) {
     ThingManager_MoveThings_DARYL_SUBTICK();
 }
 
-#ifndef THINGMANAGERDARYL_DEFINED
-typedef struct ThingManagerDARYL {
-    u8 unk0[0x6AD10];
-    u8 looker[0xFE60];
-    void *activeList;
-    void *freeList[19];
-} ThingManagerDARYL;
-
-extern ThingManagerDARYL g_thingManager_DARYL;
-#endif
 
 void ThingManager_DARYL_Render(void) {
     extern void *g_pNoRayCollideThing;
