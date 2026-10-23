@@ -12548,6 +12548,31 @@ static inline BOOL __EXIAttach(s32 chan, void *extCallback) {
     return TRUE;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s32 EXIAttach(s32 chan, void *extCallback) {
+    extern u8 Ecb_80309980[3][0x40];
+    BOOL __EXIProbe(s32 chan);
+    s32 EXIGetID(s32 chan, u32 dev, u32 *id);
+    u8 *exi = Ecb_80309980[chan];
+    BOOL enabled;
+    BOOL rc;
+
+    if (__EXIProbe(chan) && *(s32 *)(exi + 0x20) == 0) {
+        u32 id;
+        EXIGetID(chan, 0, &id);
+    }
+    enabled = OSDisableInterrupts();
+    if (*(s32 *)(exi + 0x20) == 0) {
+        OSRestoreInterrupts(enabled);
+        return FALSE;
+    }
+    rc = __EXIAttach(chan, extCallback);
+    OSRestoreInterrupts(enabled);
+    return rc;
+}
+#pragma pop
+
 s32 EXIDetach(s32 arg0) {
     M2C_UNK __OSMaskInterrupts(u32, s32);
     extern M2C_UNK Ecb_80309980;
