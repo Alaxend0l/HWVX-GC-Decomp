@@ -3711,6 +3711,32 @@ s8 Thing_HasThing(u8 *thing, void *target) {
     return ThingManagerList_Get(thing + 0x88, target);
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s32 TriggerAirboxEntered(u32 *trigger) {
+    f32 dist;
+    u8 *thing;
+    u32 i;
+    u32 numThings;
+    u32 j;
+    u8 *volume;
+
+    numThings = trigger[0];
+    for (i = 0; i < numThings; i++) {
+        thing = (u8 *)trigger[i + 1];
+        if (M2C_FIELD(thing, u32 *, 4) == 1) {
+            for (j = 0; j < trigger[numThings + 1]; j++) {
+                volume = M2C_FIELD(trigger[numThings + j + 2], u8 **, 0x28);
+                if (volume != NULL && IsPointWithinVolume((Vector4 *)(volume + 0x40), thing, &dist)) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+#pragma pop
+
 s32 TriggerP2PActivated(u32 *data) {
     u32 n = data[0];
     u32 i;
