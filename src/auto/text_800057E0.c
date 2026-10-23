@@ -6404,7 +6404,7 @@ s32 Main_Init(void) {
     void GSI_Init(void);
     void Gfx_TextureManager_Init(void);
     void InterfaceManager_Init(void);
-    void GameSettings_GetGameInfo(GameInfo *info);
+    void GameSettings_GetGameInfo(void *info);
     void FileManager_SetAppInfo(const char *a, const char *b, const char *c, const char *d, const char *e);
     s32 StateManager_GotoState(s32 state);
     GameInfo info;
