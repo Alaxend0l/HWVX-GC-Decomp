@@ -10184,9 +10184,33 @@ void ViewManager_SetFourPlayer(void) {
     g_viewFormat = 5;
 }
 
-void Tracer_Release(void *thing) {
-    extern struct { u8 pad[0x4CE]; s16 active; u8 pad2[0x10]; } tracers_802CD600[];
+typedef struct TracerPoint {
+    f32 pos[4];
+    f32 vel[4];
+    u8 unk20[0x20];
+    f32 unk40;
+    u32 unk44;
+    struct TracerPoint *next;
+    u8 unk4C[4];
+} TracerPoint;
 
+typedef struct Tracer {
+    TracerPoint points[14];
+    u8 unk460[0x48];
+    TracerPoint *unk4A8;
+    u8 unk4AC[4];
+    TracerPoint *head;
+    TracerPoint *tail;
+    u8 unk4B8[0x14];
+    u16 unk4CC;
+    s16 active;
+    u16 unk4D0;
+    u8 unk4D2[0xE];
+} Tracer;
+
+extern Tracer tracers_802CD600[];
+
+void Tracer_Release(void *thing) {
     tracers_802CD600[M2C_FIELD(thing, u32 *, 0xB4)].active = 0;
     M2C_FIELD(thing, s32 *, 0xB0) = 0;
     Thing_Release((s32)thing);
