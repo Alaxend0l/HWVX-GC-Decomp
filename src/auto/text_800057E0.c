@@ -18967,7 +18967,7 @@ s32 HandleCloseFileSupportRequest(u32 fileHandle, u8 *ioResult) {
     TRKReleaseBuffer(bufferId);
     return error;
 }
-#pragma pop
+
 s32 TRKReleaseMutex(void *mutex) {
     return 0;
 }
