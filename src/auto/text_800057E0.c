@@ -9898,6 +9898,44 @@ void ThingManagerList_TriggerSlaves(void **list, u8 *trigger, Vector4 *a, Vector
     }
 }
 
+void ThingManagerList_InitAllSlavesNow(void *list, void *slaves, u8 player) {
+    extern Vector4 g_zeroVector;
+    void ThingManagerList_TriggerSlaves(void **list, u8 *trigger, Vector4 *a, Vector4 *b, Vector4 *c, u8 player);
+    typedef struct { f32 x, y, z, w; } Vec4;
+    typedef struct {
+        u8 unk0[0x20];
+    } SlaveTrigger;
+    typedef struct {
+        u32 count;
+        SlaveTrigger *triggers;
+    } SlaveList;
+    SlaveList *sl = slaves;
+    u32 i;
+    void *next;
+    void *thing;
+    void **freeList;
+
+    thing = *(void **)list;
+    while (thing != NULL) {
+        next = M2C_FIELD(thing, void **, 0xA4);
+        if (M2C_FIELD(thing, u8 *, 0x83) == player) {
+            M2C_FIELD(M2C_FIELD(thing, void **, 0x8C), void (**)(void *), 4)(thing);
+            ThingManagerList_Remove(list, thing);
+            M2C_FIELD(thing, u32 *, 0x74) &= ~0x200000;
+            M2C_FIELD(thing, u32 *, 0x74) |= 0x1000;
+            freeList = g_thingManager_DARYL.freeList + M2C_FIELD(thing, u32 *, 0xA8);
+            ThingManagerList_Append(freeList, thing);
+        }
+        thing = next;
+    }
+    for (i = 0; i < sl->count; i++) {
+        Vec4 dir = {0.0f, 0.0f, 0.0f, 1.0f};
+        SlaveTrigger *trigger = &sl->triggers[i];
+
+        ThingManagerList_TriggerSlaves(list, (u8 *)trigger, (Vector4 *)trigger, (Vector4 *)&dir, &g_zeroVector, player);
+    }
+}
+
 #pragma push
 #pragma dont_inline on
 void ThingManager_DARYL_Create(void) {
@@ -14223,6 +14261,8 @@ s32 OSGetCurrentThread(void) {
     return *(s32 *)0x800000E4;
 }
 
+#pragma push
+#pragma auto_inline off
 void UnsetRun(void *arg0) {
     extern s32 RunQueueBits_803C7290;
     void *temp_r4;
