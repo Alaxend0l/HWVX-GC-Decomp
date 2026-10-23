@@ -11129,8 +11129,6 @@ static void F29(s32 chan, s32 ret) {
     gba->ret = ret;
 }
 
-#pragma push
-#pragma peephole off
 void __GBAX01(s32 chan, s32 ret) {
     void F31(s32 chan, s32 ret);
     s32 GBAWriteAsync(s32 chan, u8 *src, u8 *status, GBACallback callback);
