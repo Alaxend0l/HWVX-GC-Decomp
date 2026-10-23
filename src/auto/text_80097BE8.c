@@ -4186,7 +4186,6 @@ s32 DBGReadMailbox(u32 *mailbox) {
 #pragma push
 #pragma use_lmw_stmw on
 #pragma scheduling 603
-#pragma opt_propagation off
 BOOL DBGEXIImm(void *buffer, s32 bytecounter, u32 write) {
     volatile u32 *regs = (volatile u32 *)0xCC000000;
     volatile u32 *cr;
