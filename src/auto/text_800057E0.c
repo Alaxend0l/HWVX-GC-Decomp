@@ -3362,6 +3362,33 @@ void ThingManager_DARYL_Heartbeat(void) {
     ThingManager_MoveThings_DARYL_SUBTICK();
 }
 
+void ThingManager_DARYL_Render(void) {
+    extern u8 g_thingManager_DARYL[];
+    extern void *g_pNoRayCollideThing;
+    s32 Gfx_FrustrumCullSphereTestAllWindows(void *, f32);
+    void Thing_DrawSlaves(void *);
+    void *thing;
+
+    for (thing = *(void **)(g_thingManager_DARYL + 0x7AB70); thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
+        if (!(M2C_FIELD(thing, u32 *, 0x74) & 0x200200) &&
+            Gfx_FrustrumCullSphereTestAllWindows((u8 *)thing + 0x40, M2C_FIELD(thing, f32 *, 0x70))) {
+            ((void (*)(void *))(M2C_FIELD(thing, void ***, 0x8C))[4])(thing);
+            g_pNoRayCollideThing = thing;
+            Thing_DrawSlaves(thing);
+        }
+    }
+    g_pNoRayCollideThing = NULL;
+}
+
+s8 OBoxHitsTerrainAndObjectsZeroTimeEdgesOnly(void *obox, void *thing, void *arg2) {
+    s8 OBoxHitsTerrainZeroTimeEdgesOnly(void *, void *);
+    s8 OBox_CollideAllThingsZeroTime(void *, void *, void *);
+    if (!(M2C_FIELD(thing, u32 *, 0x74) & 0x40000) && OBoxHitsTerrainZeroTimeEdgesOnly(obox, arg2)) {
+        return 1;
+    }
+    return OBox_CollideAllThingsZeroTime(obox, thing, arg2);
+}
+
 void Trail_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
@@ -5655,29 +5682,40 @@ void GXInitFifoLimits(void *arg0, s32 arg1, s32 arg2) {
 void __GXFifoReadEnable(void) {
     extern u8 *gx;
     extern volatile u16 *__cpReg;
-    *(u32 *)(gx + 8) = (*(u32 *)(gx + 8) & ~1) | 1;
+    u32 *reg = (u32 *)(gx + 8);
+    *reg = (*reg & ~1) | 1;
     __cpReg[1] = *(u32 *)(gx + 8);
 }
 
 void __GXFifoReadDisable(void) {
     extern u8 *gx;
     extern volatile u16 *__cpReg;
-    *(u32 *)(gx + 8) = *(u32 *)(gx + 8) & ~1;
+    u32 *reg = (u32 *)(gx + 8);
+    *reg = *reg & ~1;
     __cpReg[1] = *(u32 *)(gx + 8);
 }
 
 void __GXFifoLink(u8 en) {
     extern u8 *gx;
     extern volatile u16 *__cpReg;
-    *(u32 *)(gx + 8) = (*(u32 *)(gx + 8) & ~0x10) | ((en ? 1 : 0) << 4);
+    u32 bit;
+    if (en) {
+        bit = 1;
+    } else {
+        bit = 0;
+    }
+    *(u32 *)(gx + 8) = (*(u32 *)(gx + 8) & ~0x10) | (bit << 4);
     __cpReg[1] = *(u32 *)(gx + 8);
 }
 
 void __GXWriteFifoIntEnable(u8 hiWatermarkEn, u8 loWatermarkEn) {
     extern u8 *gx;
     extern volatile u16 *__cpReg;
-    *(u32 *)(gx + 8) = (*(u32 *)(gx + 8) & ~4) | ((u32)hiWatermarkEn << 2);
-    *(u32 *)(gx + 8) = (*(u32 *)(gx + 8) & ~8) | ((u32)loWatermarkEn << 3);
+    u32 *reg;
+    reg = (u32 *)(gx + 8);
+    *reg = (*reg & ~4) | ((u32)hiWatermarkEn << 2);
+    reg = (u32 *)(gx + 8);
+    *reg = (*reg & ~8) | ((u32)loWatermarkEn << 3);
     __cpReg[1] = *(u32 *)(gx + 8);
 }
 
@@ -5789,6 +5827,50 @@ void GXPokeDither(u8 dither) {
 void GXPokeZMode(u8 compare_enable, s32 func, u8 update_enable) {
     extern void *__peReg;
     M2C_FIELD(__peReg, u16 *, 0) = (((compare_enable & ~0xE) | (func << 1)) & ~0x10) | (update_enable << 4);
+}
+
+void GXEnableTexOffsets(s32 coord, u8 line_enable, u8 point_enable) {
+    extern u8 *gx;
+    ((u32 *)(gx + 0xB8))[coord] = (((u32 *)(gx + 0xB8))[coord] & ~0x40000) | ((u32)line_enable << 18);
+    ((u32 *)(gx + 0xB8))[coord] = (((u32 *)(gx + 0xB8))[coord] & ~0x80000) | ((u32)point_enable << 19);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = ((u32 *)(gx + 0xB8))[coord];
+    *(u16 *)(gx + 2) = 0;
+}
+
+void GXSetCullMode(s32 mode) {
+    extern u8 *gx;
+    s32 hwMode;
+
+    switch (mode) {
+    case 1:
+        hwMode = 2;
+        break;
+    case 2:
+        hwMode = 1;
+        break;
+    default:
+        hwMode = mode;
+        break;
+    }
+    *(u32 *)(gx + 0x204) = (*(u32 *)(gx + 0x204) & ~0xC000) | (hwMode << 14);
+    *(u32 *)(gx + 0x4F4) |= 4;
+}
+
+void GXSetCoPlanar(u8 enable) {
+    extern u8 *gx;
+    *(u32 *)(gx + 0x204) = (*(u32 *)(gx + 0x204) & ~0x80000) | ((u32)enable << 19);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = 0xFE080000;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *(u32 *)(gx + 0x204);
+}
+
+void __GXSetGenMode(void) {
+    extern u8 *const gx;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *(u32 *)(gx + 0x204);
+    *(u16 *)(gx + 2) = 0;
 }
 
 void GXSetDispCopyGamma(s32 gamma) {
