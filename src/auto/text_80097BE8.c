@@ -9200,6 +9200,72 @@ void AudioMIDI_Destroy(void) {
 
 }
 
+#pragma push
+#pragma optimization_level 1
+void CreateMIDI(u8 *hdr, u8 *snd) {
+    typedef struct {
+        u8 pad[0x14];
+        u8 prog;
+        u8 pad15;
+        u8 lo;
+        u8 hi;
+        u8 pad18[8];
+    } MIDIInst;
+    typedef struct {
+        u8 pad[0x10];
+        u32 count;
+        u32 size;
+        u8 pad18[8];
+        MIDIInst inst[1];
+    } MIDISnd;
+    extern u8 *g_pHdr_803C78F4;
+    extern MIDISnd *g_pSnd_803C78F0;
+    extern MIDIInst *g_pProg_80376BB4[0x80];
+    extern MIDIInst *g_pDrum_80376DB4[0x80];
+    extern s32 g_musicState;
+    extern void (*DestroySongVoice)(void *);
+    extern s32 __OSCurrHeap;
+    void *OSAllocFromHeap(s32 heap, u32 size);
+    void FindMarkers(u8 *p);
+    void DestroyMIDIVoice(u8 *voice);
+    s32 CreateMIDI_(u8 *hdr);
+    s32 last;
+    u32 i;
+    s32 j;
+    u32 hdrSize;
+
+    if (hdr == NULL || snd == NULL) {
+        return;
+    }
+    hdrSize = *(u32 *)(hdr + 4) + 8;
+    g_pHdr_803C78F4 = OSAllocFromHeap(__OSCurrHeap, hdrSize + ((MIDISnd *)snd)->size);
+    g_pSnd_803C78F0 = (MIDISnd *)(g_pHdr_803C78F4 + hdrSize);
+    memcpy(g_pHdr_803C78F4, hdr, hdrSize);
+    memcpy(g_pSnd_803C78F0, snd, ((MIDISnd *)snd)->size);
+    g_pSnd_803C78F0->size += (u32)snd;
+    FindMarkers(g_pHdr_803C78F4 + 0x22);
+    memset(g_pProg_80376BB4, 0, sizeof(g_pProg_80376BB4));
+    memset(g_pDrum_80376DB4, 0, sizeof(g_pDrum_80376DB4));
+    last = 0x80;
+    for (i = 0; i < g_pSnd_803C78F0->count; i++) {
+        if (g_pSnd_803C78F0->inst[i].prog != 0x80) {
+            if (last != g_pSnd_803C78F0->inst[i].prog) {
+                last = g_pSnd_803C78F0->inst[i].prog;
+                g_pProg_80376BB4[last] = &g_pSnd_803C78F0->inst[i];
+            }
+        } else {
+            for (j = g_pSnd_803C78F0->inst[i].lo; j <= g_pSnd_803C78F0->inst[i].hi; j++) {
+                g_pDrum_80376DB4[j] = &g_pSnd_803C78F0->inst[i];
+            }
+            last = 0x80;
+        }
+    }
+    CreateMIDI_((u8 *)g_pSnd_803C78F0);
+    g_musicState = 0;
+    DestroySongVoice = (void (*)(void *))DestroyMIDIVoice;
+}
+#pragma pop
+
 void DestroyMIDI(void) {
     void SetMIDIState(s32 state);
     void DestroyMIDI_(void *hdr);
