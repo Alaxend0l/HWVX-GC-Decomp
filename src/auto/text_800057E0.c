@@ -3253,6 +3253,16 @@ void *NavHolder_GetFirstWayPoint(void) {
     return gs_NavHolder_803C6CD8.data->firstWayPoint;
 }
 
+void Mover_GetTrackPos(void *mover, f32 *pos, f32 time) {
+    void Gfx_AnimExtractKeyFrame(void *anim, f32 time, void *keyFrame, u32 count);
+    f32 keyFrame[8];
+
+    Gfx_AnimExtractKeyFrame(M2C_FIELD(mover, void **, 0xD4), time, keyFrame, 1);
+    pos[0] = keyFrame[4];
+    pos[1] = keyFrame[5];
+    pos[2] = keyFrame[6];
+}
+
 void Mover_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
