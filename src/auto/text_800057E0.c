@@ -3706,6 +3706,42 @@ f32 DropShip_GetLRTime(s32 index) {
     return 0.0f;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void InterfaceManager_RestoreMissionObjString(u8 *mgr) {
+    u32 strlen(const char *s);
+    char *strcpy(char *dst, const char *src);
+    u32 i;
+    u32 id;
+    u8 *obj;
+    char **str;
+    f32 *val;
+
+    if (M2C_FIELD(mgr, u8 **, 0x25C) == NULL) {
+        return;
+    }
+    id = M2C_FIELD(M2C_FIELD(mgr, u8 **, 0x25C), u16 *, 0xA);
+    if (strlen((char *)(mgr + 0x290)) == 0) {
+        return;
+    }
+    if (g_worldData.world == NULL) {
+        return;
+    }
+    for (i = 0; i < M2C_FIELD(g_worldData.world, u32 *, 0x58); i++) {
+        obj = *(u8 **)(M2C_FIELD(g_worldData.world, u8 **, 0x5C) + i * 8 + 4);
+        if (obj[2] == id) {
+            val = M2C_FIELD(obj, f32 **, 0xC);
+            if (val[1]) {
+                str = M2C_FIELD(obj, char ***, 0x18);
+            } else {
+                str = M2C_FIELD(obj, char ***, 0x14);
+            }
+            strcpy(*str, (char *)(mgr + 0x290));
+        }
+    }
+}
+#pragma pop
+
 void InterfaceManager_SetPlayerMessage(void *message, u32 player) {
     extern void *g_playerMessage1;
     extern void *g_playerMessage2;
