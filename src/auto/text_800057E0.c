@@ -440,6 +440,7 @@ typedef struct TRKBuffer {
 
 void TRKResetBuffer(TRKBuffer *b, u8 keepData);
 s32 TRKMessageSend(TRKBuffer *b);
+s32 TRKAppendBuffer(TRKBuffer *b, const void *data, u32 length);
 
 volatile u16 __DSPRegs[32] : 0xCC005000;
 volatile u32 __AIRegs[8] : 0xCC006C00;
