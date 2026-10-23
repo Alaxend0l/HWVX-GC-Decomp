@@ -5269,7 +5269,7 @@ void C_MTXOrtho(f32 m[4][4], f32 t, f32 b, f32 l, f32 r, f32 n, f32 f) {
     m[3][3] = 1.0f;
 }
 
-f32 PSVECDotProduct(void) {
+f32 PSVECDotProduct(void *a, void *b) {
     M2C_ERROR(/* unknown instruction: ps_mul $f2, $f2, $f3 */);
     M2C_ERROR(/* unknown instruction: ps_madd $f3, $f5, $f4, $f2 */);
     return M2C_ERROR(/* unknown instruction: ps_sum0 $f1, $f3, $f2, $f2 */);
@@ -5333,6 +5333,62 @@ void AlarmHandlerForTimeout(void *alarm, void *context) {
     OSClearContext(tmpContext);
     OSSetCurrentContext(context);
 }
+
+#pragma push
+#pragma dont_inline on
+s32 DVDLowSeek(u32 offset, void *callback) {
+    extern void *Callback_803C72B0;
+    extern s32 StopAtNextInt_803C72A8;
+    extern s32 AlarmForTimeout_802EF8C8[10];
+    void OSSetAlarm(void *alarm, s64 tick, void *handler);
+    void AlarmHandlerForTimeout(void *alarm, void *context);
+    s64 timeout;
+
+    Callback_803C72B0 = callback;
+    StopAtNextInt_803C72A8 = 0;
+    ((volatile u32 *)0xCC006000)[2] = 0xAB000000;
+    ((volatile u32 *)0xCC006000)[3] = offset >> 2;
+    ((volatile u32 *)0xCC006000)[7] = 1;
+    timeout = (*(u32 *)0x800000F8 / 4) * 10;
+    OSCreateAlarm(AlarmForTimeout_802EF8C8);
+    OSSetAlarm(AlarmForTimeout_802EF8C8, timeout, AlarmHandlerForTimeout);
+    return 1;
+}
+#pragma pop
+
+s32 DVDLowWaitCoverClose(void *callback) {
+    extern void *Callback_803C72B0;
+    extern s32 WaitingCoverClose_803C72C4;
+    extern s32 StopAtNextInt_803C72A8;
+
+    Callback_803C72B0 = callback;
+    WaitingCoverClose_803C72C4 = 1;
+    StopAtNextInt_803C72A8 = 0;
+    __DIRegs[1] = 2;
+    return 1;
+}
+
+#pragma push
+#pragma dont_inline on
+s32 DVDLowStopMotor(void *callback) {
+    extern void *Callback_803C72B0;
+    extern s32 StopAtNextInt_803C72A8;
+    extern s32 AlarmForTimeout_802EF8C8[10];
+    void OSSetAlarm(void *alarm, s64 tick, void *handler);
+    void AlarmHandlerForTimeout(void *alarm, void *context);
+    s64 timeout;
+
+    Callback_803C72B0 = callback;
+    StopAtNextInt_803C72A8 = 0;
+    ((volatile u32 *)0xCC006000)[2] = 0xE3000000;
+    ((volatile u32 *)0xCC006000)[7] = 1;
+    timeout = (*(u32 *)0x800000F8 / 4) * 10;
+    OSCreateAlarm(AlarmForTimeout_802EF8C8);
+    OSSetAlarm(AlarmForTimeout_802EF8C8, timeout, AlarmHandlerForTimeout);
+    return 1;
+}
+#pragma pop
+
 #pragma pop
 
 #pragma push
