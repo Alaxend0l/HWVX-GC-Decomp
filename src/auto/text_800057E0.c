@@ -10740,8 +10740,6 @@ void __GXSetGenMode(void) {
     *(u16 *)(gx + 2) = 0;
 }
 
-#pragma push
-#pragma peephole off
 void GXSetDispCopySrc(u16 left, u16 top, u16 wd, u16 ht) {
     extern u8 *gx;
     u32 *reg;
@@ -10761,7 +10759,6 @@ void GXSetDispCopySrc(u16 left, u16 top, u16 wd, u16 ht) {
     reg = (u32 *)(gx + 0x1E4);
     *reg = (*reg & 0xFFFFFF) | 0x4A000000;
 }
-#pragma pop
 
 void GXSetTexCopySrc(u16 left, u16 top, u16 wd, u16 ht) {
     extern u8 *gx;
