@@ -14805,7 +14805,7 @@ s32 DVDOpen(char *fileName, void *fileInfo) {
     return 1;
 }
 
-static inline u32 myStrncpy(char *dest, char *src, u32 maxlen) {
+static u32 myStrncpy(char *dest, char *src, u32 maxlen) {
     u32 i = maxlen;
 
     while ((i > 0) && (*src != 0)) {
@@ -14815,11 +14815,14 @@ static inline u32 myStrncpy(char *dest, char *src, u32 maxlen) {
     return maxlen - i;
 }
 
+#pragma inline_depth(1)
 u32 entryToPath(u32 entry, char *path, u32 maxlen) {
     extern u32 *FstStart_803C72F4;
     extern char *FstStringStart_803C72F8;
     char *name;
     u32 loc;
+    char *dest;
+    u32 i;
 
     if (entry == 0) {
         return 0;
@@ -14830,10 +14833,16 @@ u32 entryToPath(u32 entry, char *path, u32 maxlen) {
         return loc;
     }
     *(path + loc++) = '/';
-    loc += myStrncpy(path + loc, name, maxlen - loc);
+    dest = path + loc;
+    i = maxlen - loc;
+    while ((i > 0) && (*name != 0)) {
+        *dest++ = *name++;
+        i--;
+    }
+    loc += (maxlen - loc) - i;
     return loc;
 }
-
+#pragma inline_depth(4)
 s32 DVDGetCurrentDir(char *path, u32 maxlen) {
     extern u32 *FstStart_803C72F4;
     extern u32 currentDirectory_803C7300;
