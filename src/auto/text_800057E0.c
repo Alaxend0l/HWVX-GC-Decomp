@@ -3546,6 +3546,55 @@ void FileStreaming_InitializeAllQuads(void) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void FileStreaming_LoadQuadPacks(void **quads, u32 count, s8 threaded) {
+    typedef struct QuadPack {
+        u8 pad0[0xC];
+        void *data;
+        void *loaded;
+        u8 pad14[0x34 - 0x14];
+        s8 inMemory;
+    } QuadPack;
+    extern s8 g_bLoadingThreadRunning;
+    extern s8 g_bLoadQuadrants;
+    extern u32 g_numQuadPacksToRelease;
+    extern u32 g_numQuadPacksToLoad;
+    extern QuadPack *g_QuadrantsToLoad[11];
+    extern s32 g_loadingThreadID;
+    void DataPack_RefreshQuadPackPtrs(s32 arg0);
+    void LoadQuadrants(s32);
+    void FileStreaming_LoadingThread(void);
+    s32 RunThread(void *func, s32 priority);
+    u32 i;
+    QuadPack *quad;
+
+    if (g_bLoadingThreadRunning || g_numQuadPacksToRelease != 0) {
+        return;
+    }
+    for (i = 0; i < count; i++) {
+        quad = quads[i];
+        if (quad->loaded != NULL && !quad->inMemory) {
+            DataPack_RefreshQuadPackPtrs(g_worldData.unk8[2]);
+            ((QuadPack *)quads[i])->inMemory = 1;
+        } else if (quad->data == NULL) {
+            quad->inMemory = 1;
+        } else if (!quad->inMemory) {
+            g_QuadrantsToLoad[g_numQuadPacksToLoad++] = quad;
+        }
+    }
+    if (g_numQuadPacksToLoad != 0) {
+        if (threaded) {
+            g_bLoadQuadrants = 1;
+            g_bLoadingThreadRunning = 1;
+            g_loadingThreadID = RunThread(FileStreaming_LoadingThread, 0x63);
+        } else {
+            LoadQuadrants(1);
+        }
+    }
+}
+#pragma pop
+
 #pragma pop
 void FileStreaming_LoadingThread(void) {
     extern s8 g_bLoadingThreadRunning;
@@ -6070,6 +6119,48 @@ s32 Player_AIControlReader(s8 *ctrl) {
     }
     return 1;
 }
+
+s32 ActionVehicleChangeControl(u32 *action) {
+    extern void Player_DefaultControlReader(void);
+    void Input_SetForceFeedbackActive(s32 input, u8 active);
+    u8 *GameSettings_GetControllerSettings(s32 index);
+    u8 i;
+    u8 *vehicle;
+    u8 *player;
+    s32 isHuman;
+
+    for (i = 0; i < action[2]; i++) {
+        vehicle = *(u8 **)(action[i + 3] + 0x28);
+        if (vehicle == NULL) {
+            continue;
+        }
+        player = *(u8 **)(vehicle + 0x94);
+        if (player == NULL) {
+            continue;
+        }
+        if (action[0] == 0x22) {
+            isHuman = 0;
+            if (player != NULL && *(void **)(player + 0x20) == Player_DefaultControlReader) {
+                isHuman = 1;
+            }
+            if (isHuman) {
+                Input_SetForceFeedbackActive(*(s32 *)(player + 0xC8), 0);
+            }
+            *(u32 *)(player + 0x6C) |= 1;
+        } else {
+            isHuman = 0;
+            if (player != NULL && *(void **)(player + 0x20) == Player_DefaultControlReader) {
+                isHuman = 1;
+            }
+            if (isHuman) {
+                Input_SetForceFeedbackActive(*(s32 *)(player + 0xC8), *GameSettings_GetControllerSettings(*(s32 *)(player + 0x60)));
+            }
+            *(u32 *)(player + 0x6C) &= ~1;
+        }
+    }
+    return 1;
+}
+
 #pragma pop
 
 void ProcessManager_Create(void) {
