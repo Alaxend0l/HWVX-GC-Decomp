@@ -3053,6 +3053,28 @@ s32 EventSeq_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+void ExtractTextureKey(TextureKeyAnim *anim, TextureKeyState *state, f32 dt) {
+    if (state->reset) {
+        if (anim->numKeys == 0) {
+            state->texture = 0;
+            return;
+        }
+        state->texture = anim->keys[0];
+        state->key = 0;
+        state->time = 0.0f;
+        state->reset = 0;
+    }
+    state->time += dt;
+    if (state->time >= anim->frameTime) {
+        state->key++;
+        if (state->key == anim->numKeys) {
+            state->key = 0;
+        }
+        state->texture = anim->keys[state->key];
+        state->time -= anim->frameTime;
+    }
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void FileStreaming_Initialize(void) {
