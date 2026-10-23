@@ -3062,8 +3062,8 @@ void TEST_AnimTraverseHeirarchyToMatricesWorld(Vector4 *quat, void *pos0, void *
 #pragma inline_depth(6)
 s32 AnimNodes_BlowBranch(u8 *node) {
     s32 count = 1;
-    u8 *child = node + 0x20;
     u32 i;
+    u8 *child = node + 0x20;
 
     if (node[0x1F] & 3) {
         return 0;
