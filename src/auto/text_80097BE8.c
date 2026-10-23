@@ -4211,6 +4211,7 @@ BOOL DBGEXIImm(void *buffer, s32 bytecounter, u32 write) {
     }
     return TRUE;
 }
+#pragma pop
 
 f32 MagnitudeVector(Vector *v) {
     f32 zero = 0.0f;
