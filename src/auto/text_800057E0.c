@@ -8636,6 +8636,23 @@ s32 TRKInitializeDispatcher(void) {
     return 0;
 }
 
+s32 TRKDoReset(TRKBuffer *b) {
+    void __TRK_reset(void);
+    s32 err;
+    s32 ackTries;
+
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, 0);
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+    __TRK_reset();
+    return 0;
+}
+
 void TRKDoConnect(TRKBuffer *b) {
     extern GeneralGameSettings IsTRKConnected_8030B440;
     s32 err;
