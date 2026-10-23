@@ -576,11 +576,26 @@ extern s8 g_padUpPos[4];
 extern s8 g_padDownPos[4];
 extern u32 g_StopInput;
 
+typedef struct JoyBusPacket {
+    u8 unk0;
+    u8 chan;
+    u8 unk2;
+    u8 unk3;
+    s32 hostId;
+    u32 key;
+    s32 unkC;
+    u8 unk10[0x20 - 0x10];
+} JoyBusPacket;
+
 typedef struct JoyBusParam {
     s32 state;
-    u8 unk4[0xC];
+    u8 status;
+    u8 unk5[0x10 - 0x5];
     s32 result;
-    u8 unk14[0x74 - 0x14];
+    JoyBusPacket send;
+    JoyBusPacket recv;
+    u32 key;
+    u8 unk58[0x74 - 0x58];
 } JoyBusParam;
 
 extern JoyBusParam Param_803C6A40[4];
