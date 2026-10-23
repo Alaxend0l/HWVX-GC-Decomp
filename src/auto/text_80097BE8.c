@@ -2213,9 +2213,8 @@ s32 fclose(FILE *file) {
     return ((flush_result || close_result) ? -1 : 0);
 }
 
-void fseek(void) {
-    M2C_UNK fn_8009A088();
-    fn_8009A088();
+s32 fseek(FILE *file, u32 offset, s32 file_mode) {
+    return _fseek(file, offset, file_mode);
 }
 
 s32 ftell(void *arg0) {
