@@ -6100,6 +6100,30 @@ s32 LGClose(LGDevice *device) {
     return 0;
 }
 
+s32 VDevice_DownloadEffect(VDevice *dev, u32 *handle, u8 *desc);
+#pragma push
+#pragma optimize_for_size on
+s32 LGDownloadForceEffect(LGDevice *device, u32 *handle, u8 *desc) {
+    if (device == NULL || (u32)device == 0xFFFFFFFF) {
+        return -2;
+    }
+    if (!device->opened) {
+        return -2;
+    }
+    if (handle == NULL) {
+        return -2;
+    }
+    if (desc == NULL) {
+        return -2;
+    }
+    if (device->started) {
+        LGClose(device);
+        return -2;
+    }
+    return VDevice_DownloadEffect(&device->vdev, handle, desc);
+}
+#pragma pop
+
 s32 LGStartForceEffect(u32 handle) {
     u32 index = handle >> 16;
     LGDevice *device;
