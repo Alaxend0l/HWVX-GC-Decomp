@@ -4,6 +4,7 @@
 
 #pragma cplusplus on
 #pragma exceptions on
+#pragma readonly_strings on
 
 namespace std {
 void unexpected();
