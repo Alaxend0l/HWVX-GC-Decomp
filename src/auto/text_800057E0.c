@@ -291,6 +291,7 @@ typedef struct WorldData {
 extern WorldData g_worldData;
 void World_Unload(void);
 void *World_GetGameData(void);
+void GameRules_SetPlayerOrder(u32 *order, u32 count);
 
 s32 TRKTargetCPUMinorType(void);
 
