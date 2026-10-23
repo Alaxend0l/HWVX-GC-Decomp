@@ -2498,6 +2498,33 @@ f32 CarA_Transmission_GetTorqueAtWheels(void *car) {
            M2C_FIELD(M2C_FIELD(car, void **, 0x3BC), f32 **, 0xDC)[M2C_FIELD(car, u8 *, 0x4E8) * 2];
 }
 
+void CarA_ProcessForce(u8 *car, Vector4 *pos, Vector4 *force, f32 scale) {
+    void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 GetComponentOfVector(Vector4 *v, Vector4 *dir);
+    Vector4 pointVel;
+    Vector4 cross;
+    Vector4 r;
+    Vector4 torque;
+    Vector4 vel = *(Vector4 *)car;
+    Vector4 f;
+
+    PSVECScale(force, &f, scale);
+    PSVECSubtract(pos, (Vector4 *)(car + 0x40), &r);
+    GetComponentOfVector(force, &vel);
+    PSVECCrossProduct((Vector4 *)(car + 0x410), &r, &cross);
+    PSVECAdd((Vector4 *)car, &cross, &pointVel);
+    PSVECCrossProduct(&r, &f, &torque);
+    *(f32 *)(car + 0x390) += f.x;
+    *(f32 *)(car + 0x394) += f.y;
+    *(f32 *)(car + 0x398) += f.z;
+    *(f32 *)(car + 0x3A0) += torque.x;
+    *(f32 *)(car + 0x3A4) += torque.y;
+    *(f32 *)(car + 0x3A8) += torque.z;
+}
+
 void CarA_SetSlavePlayers(void *car) {
     void *slave;
 
@@ -11724,6 +11751,87 @@ void __OSInitSystemCall(void) {
     __sync();
     ICInvalidateRange(addr, 0x100);
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void __OSThreadInit(void) {
+    typedef struct IThread IThread;
+    typedef struct { IThread *head; IThread *tail; } IQueue;
+    struct IThread {
+        u8 context[0x2C8];
+        u16 state;
+        u16 attr;
+        s32 suspend;
+        s32 priority;
+        s32 base;
+        void *val;
+        IQueue *queue;
+        IThread *next;
+        IThread *prev;
+        IQueue queueJoin;
+        void *mutex;
+        IQueue queueMutex;
+        IThread *linkNext;
+        IThread *linkPrev;
+        u8 *stackBase;
+        u32 *stackEnd;
+        s32 error;
+    };
+    typedef struct {
+        IQueue RunQueue[32];
+        IThread IdleThread;
+        IThread DefaultThread;
+        u8 IdleContext[0x2C8];
+    } IThreadData;
+    void OSInitThreadQueue(void *queue);
+    void OSClearContext(void *context);
+    void OSSetCurrentContext(void *context);
+    extern IThreadData RunQueue_802EEE78;
+    extern u8 _stack_addr[];
+    extern u8 _stack_end[];
+    extern u32 RunQueueBits_803C7290;
+    extern s32 RunQueueHint_803C7294;
+    extern s32 Reschedule_803C7298;
+    IThread *thread = &RunQueue_802EEE78.DefaultThread;
+    IQueue *active = (IQueue *)0x800000DC;
+    IThread *prev;
+    s32 prio;
+
+    thread->state = 2;
+    thread->attr = 1;
+    thread->priority = thread->base = 16;
+    thread->suspend = 0;
+    thread->val = (void *)-1;
+    thread->mutex = NULL;
+    OSInitThreadQueue(&thread->queueJoin);
+    thread->queueMutex.head = thread->queueMutex.tail = NULL;
+    *(void **)0x800000D8 = thread->context;
+    OSClearContext(thread->context);
+    OSSetCurrentContext(thread->context);
+    thread->stackBase = _stack_addr;
+    thread->stackEnd = (u32 *)_stack_end;
+    *thread->stackEnd = 0xDEADBABE;
+    *(IThread **)0x800000E4 = thread;
+    RunQueueBits_803C7290 = 0;
+    RunQueueHint_803C7294 = 0;
+    for (prio = 0; prio <= 31; prio++) {
+        OSInitThreadQueue(&RunQueue_802EEE78.RunQueue[prio]);
+    }
+    OSInitThreadQueue(active);
+    prev = active->tail;
+    if (prev == NULL) {
+        active->head = thread;
+    } else {
+        prev->linkNext = thread;
+    }
+    thread->linkPrev = prev;
+    thread->linkNext = NULL;
+    active->tail = thread;
+    OSClearContext(RunQueue_802EEE78.IdleContext);
+    Reschedule_803C7298 = 0;
+}
+#pragma pop
+
 #pragma pop
 
 void OSInitThreadQueue(void *arg0) {
