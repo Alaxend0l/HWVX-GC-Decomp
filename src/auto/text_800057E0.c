@@ -9379,7 +9379,10 @@ void Thing_GetCameraOrientationInfo(Thing *thing, u32 index, void *out) {
         info->mtx = thing->mtx;
     } else {
         info->unk84 = (u8 *)cams[1] + (index % cams[0]) * 0xC;
-        CameraOrientationInfo_SetDefaultUp((u8 *)info);
+        info->unk8C = 1.0f;
+        info->mtx.m[1][0] = 0.0f;
+        info->mtx.m[1][1] = 1.0f;
+        info->mtx.m[1][2] = 0.0f;
         info->unk14 = 90.0f;
         info->pos = thing->mtx.v[3];
         info->unk8 = 5.0f;
@@ -12057,6 +12060,64 @@ void TimerManager_Heartbeat(void) {
             timer->time += dt;
         }
     }
+}
+
+s32 TriggerVariableValueCheck(u32 *data) {
+    f32 GetCodeVariable(s32 var, u8 *thing);
+    u32 i;
+    f32 value;
+    s32 op;
+    u8 **var;
+
+    switch (data[data[0] + 1]) {
+    case 0:
+        op = data[data[0] + 3];
+        value = *(f32 *)&data[data[0] + 2];
+        break;
+    case 1:
+        op = data[data[0] + 3];
+        value = *(f32 *)(*(u8 **)data[data[0] + 2] + 4);
+        break;
+    case 2:
+        value = GetCodeVariable(data[data[0] + 2], (u8 *)data[data[0] + 3]);
+        if (data[data[0] + 2] < 20) {
+            op = data[data[0] + 4];
+        } else {
+            op = data[data[0] + 3];
+        }
+        break;
+    }
+    for (i = 0; i < data[0]; i++) {
+        var = (u8 **)data[i + 1];
+        switch (op) {
+        case 20:
+            if (*(f32 *)(*var + 4) < value) {
+                return 1;
+            }
+            break;
+        case 21:
+            if (*(f32 *)(*var + 4) > value) {
+                return 1;
+            }
+            break;
+        case 22:
+            if (*(f32 *)(*var + 4) == value) {
+                return 1;
+            }
+            break;
+        case 47:
+            if (*(f32 *)(*var + 4) >= value) {
+                return 1;
+            }
+            break;
+        case 48:
+            if (*(f32 *)(*var + 4) <= value) {
+                return 1;
+            }
+            break;
+        }
+    }
+    return 0;
 }
 
 s32 ActionVariableChangeValue(u32 *action) {
