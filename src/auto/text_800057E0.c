@@ -435,6 +435,12 @@ typedef struct Vector4 {
     f32 w;
 } Vector4 __attribute__((aligned(16)));
 
+static inline void Vector4_AddScaled(Vector4 *out, Vector4 *a, Vector4 *b, f32 s) {
+    out->x = s * b->x + a->x;
+    out->y = s * b->y + a->y;
+    out->z = s * b->z + a->z;
+}
+
 typedef struct Quaternion {
     f32 x;
     f32 y;
@@ -3479,6 +3485,54 @@ void OBoxHolder_Release(void *arg0) {
     if (arg0 != NULL) {
         M2C_FIELD(arg0, s8 *, 0x9D) = 0;
     }
+}
+
+f32 RayBoxTest(Vector4 *start, Vector4 *dir, Vector4 *box, f32 t, Vector4 *hit) {
+    typedef struct BoxNode {
+        Vector4 plane;
+        u8 type;
+        u8 pad;
+        s16 next;
+    } BoxNode;
+    Vector4 *BSPN0_CollideWithSegment(BoxNode *nodes, s32 node, Vector4 *p0, Vector4 *p1);
+    f32 Distance_Plane(void *plane, void *point);
+    Vector4 end;
+    Vector4 endPt;
+    BoxNode nodes[6] = {
+        { { 1.0f, 0.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, 1.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, 0.0f, 1.0f, 0.0f }, 2, 0, 1 },
+        { { -1.0f, 0.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, -1.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, 0.0f, -1.0f, 0.0f }, 0, 0, 0 },
+    };
+    Vector4 *plane;
+    f32 d0;
+
+    nodes[0].plane.w = -box[1].x;
+    nodes[1].plane.w = -box[1].y;
+    nodes[2].plane.w = -box[1].z;
+    nodes[3].plane.w = box[0].x;
+    nodes[4].plane.w = box[0].y;
+    nodes[5].plane.w = box[0].z;
+    end.x = t * dir->x + start->x;
+    endPt.x = end.x;
+    end.y = t * dir->y + start->y;
+    endPt.y = end.y;
+    end.z = t * dir->z + start->z;
+    endPt.z = end.z;
+    plane = BSPN0_CollideWithSegment(nodes, 0, start, &end);
+    if (plane != NULL) {
+        d0 = Distance_Plane(plane, start);
+        t *= d0 / (d0 - Distance_Plane(plane, &endPt));
+        if (hit != NULL) {
+            hit[0].x = dir->x * t + start->x;
+            hit[0].y = dir->y * t + start->y;
+            hit[0].z = dir->z * t + start->z;
+            hit[1] = *plane;
+        }
+    }
+    return t;
 }
 
 void Dprintf(const char *fmt, ...);
@@ -15945,6 +15999,113 @@ void OSExitThread(void *val) {
     OSRestoreInterrupts(enabled);
 }
 
+void OSCancelThread(void *thread) {
+    typedef struct XThread XThread;
+    typedef struct { XThread *head; XThread *tail; } XQueue;
+    typedef struct { XQueue queue; XThread *thread; } XMutex;
+    struct XThread {
+        u8 pad[0x2C8];
+        u16 state;
+        u16 attr;
+        s32 suspend;
+        s32 priority;
+        s32 base;
+        void *val;
+        XQueue *queue;
+        XThread *next;
+        XThread *prev;
+        XQueue queueJoin;
+        XMutex *mutex;
+        XQueue queueMutex;
+        XThread *linkNext;
+        XThread *linkPrev;
+    };
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32);
+    void OSClearContext(void *context);
+    void __OSUnlockAllMutex(void *thread);
+    void OSWakeupThread(void *queue);
+    XThread *SetEffectivePriority(XThread *thread, s32 priority);
+    extern s32 RunQueueHint_803C7294;
+    s32 enabled;
+    XThread *t = thread;
+    XQueue *active = (XQueue *)0x800000DC;
+
+    enabled = OSDisableInterrupts();
+    switch (t->state) {
+    case 1:
+        if (t->suspend <= 0) {
+            UnsetRun(t);
+        }
+        break;
+    case 2:
+        RunQueueHint_803C7294 = 1;
+        break;
+    case 4: {
+        XThread *next;
+        XThread *prev;
+
+        next = t->next;
+        prev = t->prev;
+        if (next == NULL) {
+            t->queue->tail = prev;
+        } else {
+            next->prev = prev;
+        }
+        if (prev == NULL) {
+            t->queue->head = next;
+        } else {
+            prev->next = next;
+        }
+        t->queue = NULL;
+        if (t->suspend <= 0 && t->mutex) {
+            XThread *owner = t->mutex->thread;
+            s32 priority;
+
+            do {
+                if (0 < owner->suspend) {
+                    break;
+                }
+                priority = __OSGetEffectivePriority(owner);
+                if (owner->priority == priority) {
+                    break;
+                }
+                owner = SetEffectivePriority(owner, priority);
+            } while (owner);
+        }
+        break;
+    }
+    default:
+        OSRestoreInterrupts(enabled);
+        return;
+    }
+    OSClearContext(t);
+    if (t->attr & 1) {
+        XThread *next;
+        XThread *prev;
+
+        next = t->linkNext;
+        prev = t->linkPrev;
+        if (next == NULL) {
+            active->tail = prev;
+        } else {
+            next->linkPrev = prev;
+        }
+        if (prev == NULL) {
+            active->head = next;
+        } else {
+            prev->linkNext = next;
+        }
+        t->state = 0;
+    } else {
+        t->state = 8;
+    }
+    __OSUnlockAllMutex(t);
+    OSWakeupThread(&t->queueJoin);
+    __OSReschedule();
+    OSRestoreInterrupts(enabled);
+}
+
 s32 OSSuspendThread(void *thread) {
     typedef struct SThread SThread;
     typedef struct { SThread *head; SThread *tail; } SQueue;
@@ -21809,6 +21970,62 @@ s32 CARDCreate(s32 chan, const char *fileName, u32 size, CARDFileInfo *fileInfo)
         return result;
     }
     return __CARDSync(chan);
+}
+
+s32 __CARDSeek(CARDFileInfo *fileInfo, s32 length, s32 offset, CARDControl **pcard) {
+    typedef struct CARDDir {
+        u8 gameName[4];
+        u8 company[2];
+        u8 _padding0;
+        u8 bannerFormat;
+        u8 fileName[32];
+        u8 rest[0x36 - 0x28];
+        u16 startBlock;
+        u16 length;
+        u8 rest2[0x40 - 0x3A];
+    } CARDDir;
+    s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard);
+    s32 __CARDGetFatBlock(void *card);
+    s32 __CARDGetDirBlock(void *card);
+    CARDControl *card;
+    CARDDir *dir;
+    CARDDir *ent;
+    s32 result;
+    u16 *fat;
+
+    result = __CARDGetControlBlock(fileInfo->chan, &card);
+    if (result < 0) {
+        return result;
+    }
+    if (!(5 <= fileInfo->iBlock && fileInfo->iBlock < card->cBlock) ||
+        card->cBlock * card->sectorSize <= fileInfo->offset) {
+        return __CARDPutControlBlock(card, -128);
+    }
+    dir = (CARDDir *)__CARDGetDirBlock(card);
+    ent = &dir[fileInfo->fileNo];
+    if (ent->length * card->sectorSize <= offset || ent->length * card->sectorSize < offset + length) {
+        return __CARDPutControlBlock(card, -11);
+    }
+    card->fileInfo = fileInfo;
+    fileInfo->length = length;
+    if (offset < fileInfo->offset) {
+        fileInfo->offset = 0;
+        fileInfo->iBlock = ent->startBlock;
+        if (!(5 <= fileInfo->iBlock && fileInfo->iBlock < card->cBlock)) {
+            return __CARDPutControlBlock(card, -6);
+        }
+    }
+    fat = (u16 *)__CARDGetFatBlock(card);
+    while (fileInfo->offset < ((u32)offset & ~(card->sectorSize - 1))) {
+        fileInfo->offset += card->sectorSize;
+        fileInfo->iBlock = fat[fileInfo->iBlock];
+        if (!(5 <= fileInfo->iBlock && fileInfo->iBlock < card->cBlock)) {
+            return __CARDPutControlBlock(card, -6);
+        }
+    }
+    fileInfo->offset = offset;
+    *pcard = card;
+    return 0;
 }
 
 s32 __CARDGetFatBlock(void *arg0);
