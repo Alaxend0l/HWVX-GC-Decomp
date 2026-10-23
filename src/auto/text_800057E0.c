@@ -4825,6 +4825,19 @@ void World_NextSweep(void) {
     }
 }
 
+s32 ActionVariableChangeMode(u32 *action) {
+    u32 i;
+    u8 *var;
+
+    for (i = 0; i < action[1]; i++) {
+        var = M2C_FIELD(*(void **)action[i + 2], u8 **, 0xC);
+        if (var != NULL) {
+            *var = action[0];
+        }
+    }
+    return 1;
+}
+
 s32 ActionTimerChangeMode(u32 *action) {
     u8 **item;
     u32 i;
