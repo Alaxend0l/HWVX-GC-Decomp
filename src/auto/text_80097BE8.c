@@ -1649,6 +1649,74 @@ void *allocate_from_fixed_pools(void *pool, u32 size) {
 }
 #pragma pop
 
+static inline Block *link_new_block(Block **pool_obj, u32 size) {
+    Block *bp;
+    SubBlock *sb;
+
+    size = (size + 24 + 7) & ~7;
+    if (size < 0x10000) {
+        size = 0x10000;
+    }
+    bp = __sys_alloc(size);
+    if (bp == NULL) {
+        return NULL;
+    }
+    bp->size_ = size | 3;
+    *(u32 *)((u8 *)bp + size - 8) = bp->size_;
+    sb = (SubBlock *)((u8 *)bp + 16);
+    sb->size_ = size - 24;
+    sb->bp_ = (void *)((u32)bp | 1);
+    *(u32 *)((u8 *)sb + (size - 24) - 4) = size - 24;
+    bp->max_size_ = size - 24;
+    *(u32 *)((u8 *)bp + (bp->size_ & ~7) - 4) = 0;
+    Block_link(bp, sb);
+    if (*pool_obj != NULL) {
+        bp->prev_ = (*pool_obj)->prev_;
+        bp->prev_->next_ = bp;
+        bp->next_ = *pool_obj;
+        (*pool_obj)->prev_ = bp;
+        *pool_obj = bp;
+    } else {
+        *pool_obj = bp;
+        bp->prev_ = bp;
+        bp->next_ = bp;
+    }
+    return bp;
+}
+
+void *allocate_from_var_pools(Block **pool_obj, u32 size) {
+    Block *bp;
+    void *ptr;
+
+    size = (size + 8 + 7) & ~7;
+    if (size < 0x50) {
+        size = 0x50;
+    }
+    bp = *pool_obj ? *pool_obj : link_new_block(pool_obj, size);
+    if (bp == NULL) {
+        return NULL;
+    }
+    for (;;) {
+        if (size <= bp->max_size_) {
+            ptr = Block_subBlock(bp, size);
+            if (ptr != NULL) {
+                *pool_obj = bp;
+                break;
+            }
+        }
+        bp = bp->next_;
+        if (bp == *pool_obj) {
+            bp = link_new_block(pool_obj, size);
+            if (bp == NULL) {
+                return NULL;
+            }
+            ptr = Block_subBlock(bp, size);
+            break;
+        }
+    }
+    return (u8 *)ptr + 8;
+}
+
 void *soft_allocate_from_var_pools(Block **pool_obj, u32 size, u32 *max_size) {
     Block *bp;
     void *ptr;
