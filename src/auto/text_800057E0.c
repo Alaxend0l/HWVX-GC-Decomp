@@ -2877,6 +2877,27 @@ void FileStreaming_HeartBeat(void) {
     }
     g_numQuadPacksToRelease = 0;
 }
+
+void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh) {
+    extern u8 *g_StreamingDataPacks[11];
+    extern u32 g_MaxStreamingDataPacks[11];
+    void DataPack_RefreshPtrs(void *pack);
+    u8 *pack;
+
+    if (type >= 11 || index >= g_MaxStreamingDataPacks[type]) {
+        return NULL;
+    }
+    pack = g_StreamingDataPacks[type] + index * 0xA8;
+    if ((s8)pack[0] == 0 || (s8)pack[1] == 0) {
+        return NULL;
+    }
+    if ((s8)pack[2] == 0 && refresh) {
+        DataPack_RefreshPtrs(pack + 0x14);
+    }
+    g_StreamingDataPacks[type][index * 0xA8 + 2] = 1;
+    return g_StreamingDataPacks[type] + index * 0xA8 + 0x14;
+}
+
 #pragma pop
 
 void LoadDataPack(void) {
