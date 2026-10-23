@@ -11556,6 +11556,57 @@ void cbForStateCheckID2(u32 intType) {
     }
 }
 
+void cbForStateCheckID3(u32 intType) {
+    void __DVDStoreErrorCode(u32);
+    void DVDReset(void);
+    void cbForStateError(u32);
+    void cbForStateGettingError(u32);
+    void DVDLowRequestError(void (*)(u32));
+    void stateReady_800725A4(void);
+    void stateBusy_800727EC(DVDCommandBlock *block);
+    extern DVDCommandBlock *executing_803C7310;
+    extern DVDCommandBlock DummyCommandBlock_802EF9C0;
+    extern s32 NumInternalRetry_803C7344;
+    extern u32 Canceling_803C7330;
+    extern u32 ResumeFromHere_803C7338;
+    extern void (*CancelCallback_803C7334)(s32, DVDCommandBlock *);
+    DVDCommandBlock *finished;
+    s32 canceled;
+
+    if (intType == 16) {
+        executing_803C7310->state = -1;
+        __DVDStoreErrorCode(0x01234568);
+        DVDReset();
+        cbForStateError(0);
+        return;
+    }
+    if (intType & 1) {
+        canceled = 0;
+        NumInternalRetry_803C7344 = 0;
+        if (Canceling_803C7330) {
+            ResumeFromHere_803C7338 = 0;
+            finished = executing_803C7310;
+            Canceling_803C7330 = 0;
+            executing_803C7310 = &DummyCommandBlock_802EF9C0;
+            finished->state = 10;
+            if (finished->callback) {
+                (*finished->callback)(-3, finished);
+            }
+            if (CancelCallback_803C7334) {
+                (*CancelCallback_803C7334)(0, finished);
+            }
+            stateReady_800725A4();
+            canceled = 1;
+        }
+        if (canceled == 0) {
+            executing_803C7310->state = 1;
+            stateBusy_800727EC(executing_803C7310);
+        }
+    } else {
+        DVDLowRequestError(cbForStateGettingError);
+    }
+}
+
 s32 DVDSetAutoInvalidation(s32 arg0) {
     extern s32 autoInvalidation_803C6DA8;
     s32 temp_r0;
@@ -16995,6 +17046,54 @@ s32 TRKInitializeIntDrivenUART(u32 param1, u32 param2, u32 param3, volatile u8 *
     ((void (*)(volatile u8 **, void *))gDBCommTable[0])(inputPendingPtrRef, TRKEXICallBack);
     return 0;
 }
+
+#pragma push
+#pragma readonly_strings on
+s32 InitMetroTRKCommTable(s32 hwId) {
+    void OSReport(const char *msg, ...);
+    s32 Hu_IsStub(void);
+    s32 AMC_IsStub(void);
+    void DBInitComm(void);
+    void DBInitInterrupts(void);
+    void DBQueryData(void);
+    void DBRead(void);
+    void DBWrite(void);
+    void DBOpen(void);
+    void DBClose(void);
+    void EXI2_Init(void);
+    void EXI2_EnableInterrupts(void);
+    void EXI2_Poll(void);
+    void EXI2_ReadN(void);
+    void EXI2_WriteN(void);
+    void EXI2_Reserve(void);
+    void EXI2_Unreserve(void);
+    extern void (*gDBCommTable[7])(void);
+    s32 result;
+
+    if (hwId == 1) {
+        OSReport("MetroTRK : Set to GDEV hardware\n");
+        result = Hu_IsStub();
+        gDBCommTable[0] = DBInitComm;
+        gDBCommTable[1] = DBInitInterrupts;
+        gDBCommTable[2] = DBQueryData;
+        gDBCommTable[3] = DBRead;
+        gDBCommTable[4] = DBWrite;
+        gDBCommTable[5] = DBOpen;
+        gDBCommTable[6] = DBClose;
+    } else {
+        OSReport("MetroTRK : Set to AMC DDH hardware\n");
+        result = AMC_IsStub();
+        gDBCommTable[0] = EXI2_Init;
+        gDBCommTable[1] = EXI2_EnableInterrupts;
+        gDBCommTable[2] = EXI2_Poll;
+        gDBCommTable[3] = EXI2_ReadN;
+        gDBCommTable[4] = EXI2_WriteN;
+        gDBCommTable[5] = EXI2_Reserve;
+        gDBCommTable[6] = EXI2_Unreserve;
+    }
+    return result;
+}
+#pragma pop
 
 void TRKEXICallBack(s16 chan, void *ctx) {
     OSEnableScheduler();
