@@ -15563,18 +15563,11 @@ s32 Tracer_Init(u8 *thing, u8 *data) {
     s32 Thing_Init(void *thing, s32 arg1);
     void Tracer_ClearTracer(s32 index);
     u8 *params;
-    u32 i;
-    Tracer *tracer;
 
     Thing_Init(thing, 0);
     *(u8 **)(thing + 0xB0) = *(u8 **)(data + 0x30);
     *(Vector4 *)(thing + 0x40) = *(Vector4 *)data;
-    for (i = 0, tracer = tracers_802CD600; i < 32; tracer++, i++) {
-        if (tracer->active == 0) {
-            break;
-        }
-    }
-    *(u32 *)(thing + 0xB4) = i;
+    *(u32 *)(thing + 0xB4) = Tracer_FindFree();
     Tracer_ClearTracer(*(u32 *)(thing + 0xB4));
     tracers_802CD600[*(u32 *)(thing + 0xB4)].active = 1;
     params = *(u8 **)(thing + 0xB0);
