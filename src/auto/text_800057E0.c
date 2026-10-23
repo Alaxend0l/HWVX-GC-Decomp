@@ -10187,6 +10187,40 @@ s32 AIGetDSPSampleRate(void) {
     return (((u32) *(u32 *)0xCC006C00 >> 6U) & 1) ^ 1;
 }
 
+void AISetStreamVolLeft(u8 vol);
+void AISetStreamVolRight(u8 vol);
+void AISetStreamPlayState(u32 state);
+void __AI_SRC_INIT(void);
+#pragma push
+#pragma use_lmw_stmw on
+#pragma peephole off
+void __AI_set_stream_sample_rate(u32 rate) {
+    BOOL old;
+    BOOL state;
+    u8 left;
+    u8 right;
+    u32 temp_r26;
+
+    if (rate != AIGetStreamSampleRate()) {
+        state = __AIRegs[0] & 1;
+        left = AIGetStreamVolLeft();
+        right = AIGetStreamVolRight();
+        AISetStreamVolRight(0);
+        AISetStreamVolLeft(0);
+        temp_r26 = __AIRegs[0] & 0x40;
+        __AIRegs[0] &= ~0x40;
+        old = OSDisableInterrupts();
+        __AI_SRC_INIT();
+        __AIRegs[0] |= temp_r26;
+        __AIRegs[0] = (__AIRegs[0] & ~0x20) | 0x20;
+        __AIRegs[0] = (__AIRegs[0] & ~2) | (rate << 1);
+        OSRestoreInterrupts(old);
+        AISetStreamPlayState(state);
+        AISetStreamVolLeft(left);
+        AISetStreamVolRight(right);
+    }
+}
+#pragma pop
 s32 AIGetStreamSampleRate(void) {
     return ((u32) *(u32 *)0xCC006C00 >> 1U) & 1;
 }
@@ -12132,6 +12166,44 @@ void GXSetCopyClamp(s32 clamp) {
     *(u32 *)(gx + 0x1FC) = (*(u32 *)(gx + 0x1FC) & ~2) | (clmpB << 1);
 }
 
+#pragma push
+#pragma peephole off
+u32 GXSetDispCopyYScale(f32 vscale) {
+    extern u8 *gx;
+    u32 iScale;
+    u8 enable;
+    u32 reg;
+    u32 height;
+    u32 numLines;
+    u32 scale;
+    u32 *cpDisp;
+
+    iScale = (u32)(256.0f / vscale) & 0x1FF;
+    enable = (iScale != 256);
+    reg = iScale | 0x4E000000;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    *(u16 *)(gx + 2) = 0;
+    cpDisp = (u32 *)(gx + 0x1EC);
+    *cpDisp = (*cpDisp & ~0x400) | (enable << 10);
+    reg = *(u32 *)(gx + 0x1E4);
+    height = ((reg >> 10) & 0x3FF) + 1;
+    numLines = ((((reg >> 10) & 0x3FF) << 8) / iScale) + 1;
+    scale = iScale;
+    if (scale > 0x80 && scale < 0x100) {
+        while (!(scale & 1)) {
+            scale >>= 1;
+        }
+        if (height % scale == 0) {
+            numLines++;
+        }
+    }
+    if (numLines > 0x400) {
+        numLines = 0x400;
+    }
+    return numLines;
+}
+#pragma pop
 void GXSetCopyClear(GXColor clear_clr, u32 clear_z) {
     extern u8 *gx;
     u32 reg;
@@ -12857,6 +12929,60 @@ void GXCallDisplayList(void *list, u32 nbytes) {
     GXWGFifo.u8 = 0x40;
     GXWGFifo.u32 = (u32)list;
     GXWGFifo.u32 = nbytes;
+}
+
+static inline void __GXSetProjection(void) {
+    extern u8 *gx;
+    u32 reg;
+
+    reg = 0x61020;
+    GXWGPipe.u8 = 0x10;
+    GXWGPipe.u32 = reg;
+    GXWGPipe.f32 = *(f32 *)(gx + 0x424);
+    GXWGPipe.f32 = *(f32 *)(gx + 0x428);
+    GXWGPipe.f32 = *(f32 *)(gx + 0x42C);
+    GXWGPipe.f32 = *(f32 *)(gx + 0x430);
+    GXWGPipe.f32 = *(f32 *)(gx + 0x434);
+    GXWGPipe.f32 = *(f32 *)(gx + 0x438);
+    GXWGPipe.u32 = *(u32 *)(gx + 0x420);
+}
+
+void GXSetProjection(f32 mtx[4][4], s32 type) {
+    typedef struct GXDataProj {
+        u8 unk0[2];
+        u16 bpSentNot;
+        u8 unk4[0x41C];
+        u32 projType;
+        f32 projMtx[6];
+    } GXDataProj;
+    extern GXDataProj *gx;
+    GXDataProj *g;
+    u32 reg;
+
+    gx->projType = type;
+    gx->projMtx[0] = mtx[0][0];
+    gx->projMtx[2] = mtx[1][1];
+    gx->projMtx[4] = mtx[2][2];
+    gx->projMtx[5] = mtx[2][3];
+    if (type == 1) {
+        gx->projMtx[1] = mtx[0][3];
+        gx->projMtx[3] = mtx[1][3];
+    } else {
+        gx->projMtx[1] = mtx[0][2];
+        gx->projMtx[3] = mtx[1][2];
+    }
+    g = gx;
+    reg = 0x61020;
+    GXWGPipe.u8 = 0x10;
+    GXWGPipe.u32 = reg;
+    GXWGPipe.f32 = g->projMtx[0];
+    GXWGPipe.f32 = g->projMtx[1];
+    GXWGPipe.f32 = g->projMtx[2];
+    GXWGPipe.f32 = g->projMtx[3];
+    GXWGPipe.f32 = g->projMtx[4];
+    GXWGPipe.f32 = g->projMtx[5];
+    GXWGPipe.u32 = g->projType;
+    g->bpSentNot = 1;
 }
 
 void GXGetProjectionv(f32 *p) {
