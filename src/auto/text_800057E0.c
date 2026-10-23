@@ -9267,6 +9267,28 @@ s32 fn_80094538(void *arg0) {
     return 0;
 }
 
+s32 TRKInitializeTarget(void) {
+    extern u8 gTRKState[];
+    extern u32 lc_base_8030B9C8[];
+    u32 __TRK_get_MSR(void);
+
+    *(s32 *)(gTRKState + 0x98) = 1;
+    *(u32 *)(gTRKState + 0x8C) = __TRK_get_MSR();
+    lc_base_8030B9C8[0] = 0xE0000000;
+    return 0;
+}
+
+u32 TRKTargetTranslate(u32 addr) {
+    extern u8 gTRKCPUState[];
+    extern u32 lc_base_8030B9C8[];
+
+    if (addr >= lc_base_8030B9C8[0] && addr < lc_base_8030B9C8[0] + 0x4000 &&
+        (*(u32 *)(gTRKCPUState + 0x238) & 3)) {
+        return addr;
+    }
+    return (addr & 0x3FFFFFFF) | 0x80000000;
+}
+
 void EnableMetroTRKInterrupts(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
