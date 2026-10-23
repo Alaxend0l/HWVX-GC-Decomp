@@ -7789,8 +7789,8 @@ void ReserveEXI2Port(void) {
 
 s32 WriteUART1(u8 c) {
     extern u8 gWriteBuf_8030CAF4[];
-    extern s32 gWritePos_8030B9D8;
-    gWriteBuf_8030CAF4[gWritePos_8030B9D8++] = c;
+    extern s32 gWritePos_8030B9D8[];
+    gWriteBuf_8030CAF4[gWritePos_8030B9D8[0]++] = c;
     return 0;
 }
 
