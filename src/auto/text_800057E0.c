@@ -78,6 +78,11 @@ void MotionState_Release(s32 state);
 s8 ThingManagerList_Get(void *list, void *target);
 void Trigger_PauseTACSystem(s8 paused);
 u8 Trigger_IsTACSystemPaused(void);
+void Thing_Release(s32 thing);
+void ShowStats(void);
+void LightHolder_Delete(s32 index);
+void Gfx_EndScene(void);
+void Gfx_FlipBuffers(void);
 s8 IsPointWithinVolume(struct Vector4 *point, u8 *volume, f32 *distSq);
 
 typedef struct InterfaceCallBackData {
