@@ -7972,6 +7972,37 @@ void Trail_Init(void) {
     g_trailTimer = 0.0f;
 }
 
+void Trail_Heartbeat(void) {
+    extern u8 g_TrialData[1000][0x60];
+    extern s32 g_iDeltaTimeMS;
+    extern f32 g_trailTimer;
+    extern f32 g_fDeltaTimeSec;
+    u8 *trail;
+    u32 alpha;
+    s32 i;
+    s32 delta;
+
+    delta = g_iDeltaTimeMS;
+    for (i = 0; i < 1000; i++) {
+        trail = g_TrialData[i];
+        if (*(s32 *)(trail + 0x50) > 0) {
+            *(s32 *)(trail + 0x50) -= delta;
+            if (*(s32 *)(trail + 0x50) <= 0) {
+                *(s32 *)(trail + 0x50) = 0;
+            } else if (*(s32 *)(trail + 0x50) < 2000) {
+                alpha = (*(s32 *)(trail + 0x50) << 7) / 2000;
+                if (alpha < *(u32 *)(trail + 0xC)) {
+                    *(u32 *)(trail + 0xC) = alpha;
+                }
+            }
+        }
+    }
+    if (g_trailTimer > 0.06666667f) {
+        g_trailTimer -= 0.06666667f;
+    }
+    g_trailTimer += g_fDeltaTimeSec;
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void Trail_Render(void) {
