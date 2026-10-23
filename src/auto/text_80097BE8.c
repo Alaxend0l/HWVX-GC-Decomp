@@ -2804,6 +2804,27 @@ void HeapDump(void) {
 
 }
 
+#pragma push
+#pragma dont_inline on
+void Create_Plane(Vector *plane, Vector *normal, Vector *point) {
+    f32 len;
+    f32 inv;
+
+    plane->x = normal->x;
+    plane->y = normal->y;
+    plane->z = normal->z;
+    plane->w = -1.0f * (normal->z * point->z + (normal->x * point->x + normal->y * point->y));
+    len = Sqrt(plane->z * plane->z + (plane->x * plane->x + plane->y * plane->y));
+    if (len != 1.0f && len != 0.0f) {
+        inv = 1.0f / len;
+        plane->x *= inv;
+        plane->y *= inv;
+        plane->z *= inv;
+        plane->w *= inv;
+    }
+}
+#pragma pop
+
 void Create_Plane3(Vector *plane, Vector *normal, Vector *point) {
     plane->x = normal->x;
     plane->y = normal->y;
