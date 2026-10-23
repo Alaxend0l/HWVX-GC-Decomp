@@ -650,6 +650,16 @@ typedef struct GDLGroupTri {
     u8 unk10[0x20 - 0x10];
 } GDLGroupTri;
 
+typedef struct GDLLightState {
+    GDLVec4 pointLights[3];
+    Vector lightDir;
+    u32 numPointLights;
+    GXColor pointColors[3];
+    GXColor lightColor;
+    GXColor ambientColor;
+    u8 unk58[0x60 - 0x58];
+} GDLLightState;
+
 typedef struct GDL {
     u8 unk0[0x8];
     u32 numSprites;
@@ -5851,7 +5861,7 @@ s32 CreateMIDI_(u8 *hdr) {
     data = hdr + 0x20 + *(u32 *)(hdr + 0x10) * 0x20;
     size = *(u32 *)(hdr + 4) - (data - hdr - 8);
     g_aheap = HAllocA_(size);
-    if (g_aheap == 0) {
+    if (*(void **)&g_aheap == NULL) {
         return 0;
     }
     DCFlushRange(hdr + 0x20 + *(u32 *)(hdr + 0x10) * 0x20, size);
