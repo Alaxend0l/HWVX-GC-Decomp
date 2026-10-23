@@ -3184,18 +3184,16 @@ void LineManager_Render(void) {
     } LineFX;
     extern Line g_lineManager[128];
     LineFX *Gfx_Add3DLineFX(void);
-    Line *line;
     u32 i;
     LineFX *fx;
 
-    line = g_lineManager;
-    for (i = 0; i < 128; i++, line++) {
-        if (line->active != 0) {
+    for (i = 0; i < 128; i++) {
+        if (g_lineManager[i].active != 0) {
             fx = Gfx_Add3DLineFX();
-            fx->points = line->points;
-            fx->colour = line->colour;
-            fx->unk24 = line->unk78;
-            fx->unk28 = line->unkE0;
+            fx->points = g_lineManager[i].points;
+            fx->colour = g_lineManager[i].colour;
+            fx->unk24 = g_lineManager[i].unk78;
+            fx->unk28 = g_lineManager[i].unkE0;
         }
     }
 }
