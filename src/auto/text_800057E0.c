@@ -11190,6 +11190,60 @@ void SetCodeVariable(s32 var, u8 *obj, f32 value) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void Trigger_ItemPickedUp(void *vehicle, void *item) {
+    extern u32 TriggerStats_800D3C58[][3];
+    extern u32 **m_Triggers_802C1890[];
+    extern s8 g_bTACSystemPaused_803C7124;
+    s8 TriggerCheckConditions(u8, s32, s32);
+    s32 Action_AddAction(s32);
+    u32 i;
+    u32 actions;
+    u32 *trigger;
+    u32 j;
+    u32 *list;
+    s8 foundItem;
+    s8 foundVehicle;
+    u32 count;
+    u32 count2;
+
+    if (!g_bTACSystemPaused_803C7124) {
+        for (i = 0; i < TriggerStats_800D3C58[6][0]; i++) {
+            trigger = m_Triggers_802C1890[6][i];
+            list = (u32 *)trigger[1];
+            count = list[0];
+            count2 = list[count + 1];
+            if (trigger[9] != 2) {
+                foundItem = 0;
+                foundVehicle = 0;
+                for (j = 0; j < count && !foundItem; j++) {
+                    if (((void **)((u32 *)m_Triggers_802C1890[6][i][1] + 1)[j])[9] == item) {
+                        foundItem = 1;
+                    }
+                }
+                if (foundItem) {
+                    for (j = 0; j < count2 && !foundVehicle; j++) {
+                        if (((void **)*(u32 *)(m_Triggers_802C1890[6][i][1] + (2 + count + j) * 4))[10] == vehicle) {
+                            foundVehicle = 1;
+                        }
+                    }
+                    if (foundVehicle && TriggerCheckConditions(((u8 *)trigger)[0x28], trigger[4], trigger[3])) {
+                        actions = 0;
+                        for (j = 0; j < m_Triggers_802C1890[6][i][7]; j++) {
+                            actions += Action_AddAction(m_Triggers_802C1890[6][i][5] + j * 0x18);
+                        }
+                        if (actions == 0) {
+                            m_Triggers_802C1890[6][i][9] = 2;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+#pragma pop
+
 #pragma pop
 
 s32 TriggerInterfaceEnd(void) {
