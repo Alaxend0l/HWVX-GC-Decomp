@@ -2171,6 +2171,7 @@ BOOL DBGWrite(u32 count, void *buffer, s32 size) {
     *(volatile u32 *)0xCC006828 &= 0x405;
     return !err;
 }
+#pragma pop
 
 s32 DBGReadMailbox(u32 *mailbox) {
     s32 DBGEXIImm(void *buf, s32 len, u32 mode);
