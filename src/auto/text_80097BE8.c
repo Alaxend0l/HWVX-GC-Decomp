@@ -137,6 +137,47 @@ static void __dorounddecup(decimal *d, int digits) {
     }
 }
 
+typedef struct decform {
+    char style;
+    char unk1;
+    s16 digits;
+} decform;
+
+static inline int __must_round(const decimal *d, int digits) {
+    const u8 *i = d->sig.text + digits;
+
+    if (*i > 5) {
+        return 1;
+    }
+    if (*i < 5) {
+        return -1;
+    }
+    {
+        const u8 *e = d->sig.text + d->sig.length;
+
+        for (i++; i < e; i++) {
+            if (*i != 0) {
+                return 1;
+            }
+        }
+    }
+    if (d->sig.text[digits - 1] & 1) {
+        return 1;
+    }
+    return -1;
+}
+
+static inline void __rounddec(decimal *d, int digits) {
+    if (digits > 0 && digits < d->sig.length) {
+        int unkBool = __must_round(d, digits);
+
+        d->sig.length = digits;
+        if (unkBool >= 0) {
+            __dorounddecup(d, digits);
+        }
+    }
+}
+
 extern u8 CardWorkArea[0xA000];
 extern CARDFileInfo memCardfileInfo[2];
 extern s32 memCardBlockSize[2];
@@ -3560,6 +3601,42 @@ f32 LinearPointTest(Vector *point, Vector *start, Vector *end) {
     return dot / (MagnitudeVector(&toPoint) * MagnitudeVector(&toEnd));
 }
 
+void PSVECCrossProduct(Vector *a, Vector *b, Vector *axb);
+s8 SegmentVsSphere(Vector *start, Vector *end, Vector *center, f32 radius) {
+    void PSVECSubtract(Vector *a, Vector *b, Vector *a_b);
+    f32 PSVECDotProduct(Vector *a, Vector *b);
+    f32 PSVECSquareDistance(Vector *a, Vector *b);
+    void PSVECCrossProduct(Vector *a, Vector *b, Vector *axb);
+    Vector toCenter __attribute__((aligned(16)));
+    Vector dir __attribute__((aligned(16)));
+    Vector negToCenter __attribute__((aligned(16)));
+    Vector startToCenter __attribute__((aligned(16)));
+    Vector cross __attribute__((aligned(16)));
+    f32 radiusSq = radius * radius;
+
+    PSVECSubtract(start, end, &dir);
+    if (dir.x * dir.x + dir.y * dir.y + dir.z * dir.z < radiusSq) {
+        return 1;
+    }
+    if (PSVECSquareDistance(start, center) < radiusSq) {
+        return 1;
+    }
+    PSVECSubtract(center, end, &toCenter);
+    if (PSVECDotProduct(&toCenter, &dir) < 0.0f) {
+        return 0;
+    }
+    negToCenter.x = -toCenter.x;
+    negToCenter.y = -toCenter.y;
+    negToCenter.z = -toCenter.z;
+    PSVECSubtract(start, center, &startToCenter);
+    if (PSVECDotProduct(&negToCenter, &startToCenter) < 0.0f) {
+        return 0;
+    }
+    PSVECCrossProduct(&toCenter, &dir, &cross);
+    return cross.x * cross.x + cross.y * cross.y + cross.z * cross.z <
+           radiusSq * (toCenter.z * toCenter.z + (toCenter.x * toCenter.x + toCenter.y * toCenter.y));
+}
+
 void MinMaxVec(Vector *min, Vector *max, Vector *v) {
     if (min->x > v->x) {
         min->x = v->x;
@@ -6199,7 +6276,6 @@ void Render_DrawRectangles(void) {
     u32 i;
     u32 j;
     s32 blend;
-    GDLRectVtx *v;
 
     if (g_pGDL->numRects2D == 0) {
         return;
@@ -6214,26 +6290,25 @@ void Render_DrawRectangles(void) {
         Render_SetTextureHandle(g_pGDL->rects2D[i].tex);
         GXBegin(0x80, 0, 4);
         for (j = 0; j < 4; j++) {
-            v = &g_pGDL->rects2D[i].v[j];
             {
-                f32 y = v->y;
-                f32 x = v->x;
+                f32 y = g_pGDL->rects2D[i].v[j].y;
+                f32 x = g_pGDL->rects2D[i].v[j].x;
                 GXWGFifo.f32 = x;
                 GXWGFifo.f32 = y;
             }
             {
-                u8 a = v->a;
-                u8 b = v->b;
-                u8 g = v->g;
-                u8 c = v->r;
+                u8 a = g_pGDL->rects2D[i].v[j].a;
+                u8 b = g_pGDL->rects2D[i].v[j].b;
+                u8 g = g_pGDL->rects2D[i].v[j].g;
+                u8 c = g_pGDL->rects2D[i].v[j].r;
                 GXWGFifo.u8 = c;
                 GXWGFifo.u8 = g;
                 GXWGFifo.u8 = b;
                 GXWGFifo.u8 = a;
             }
             {
-                f32 t = v->t;
-                f32 s = v->s;
+                f32 t = g_pGDL->rects2D[i].v[j].t;
+                f32 s = g_pGDL->rects2D[i].v[j].s;
                 GXWGFifo.f32 = s;
                 GXWGFifo.f32 = t;
             }
