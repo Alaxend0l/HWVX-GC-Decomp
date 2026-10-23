@@ -1028,6 +1028,19 @@ typedef struct GDLMatrix {
     f32 m[16];
 } GDLMatrix __attribute__((aligned(16)));
 
+typedef struct GDLTriVtx {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 w;
+    u8 unk10[0x20 - 0x10];
+} GDLTriVtx;
+
+typedef struct GDLTri {
+    GDLTriVtx v[3];
+    u8 unk60[0x64 - 0x60];
+} GDLTri;
+
 typedef struct GDL {
     u8 unk0[0x4];
     u32 num2DSprites;
@@ -5549,6 +5562,71 @@ void *GetRenderWindow() {
     extern s32 g_currentWindow;
     extern u8 g_window[][0x2D0];
     return g_window[g_currentWindow];
+}
+
+void Gfx_SetRenderWindowSize(s32 x0, s32 y0, s32 x1, s32 y1, s32 arg4) {
+    typedef struct {
+        u8 unk0[0x270];
+        f32 fov;
+        u8 unk274[4];
+        f32 scaleX;
+        f32 scaleY;
+        u32 width;
+        u32 height;
+        u32 halfWidth;
+        u32 halfHeight;
+        f32 offsetX;
+        f32 offsetY;
+        f32 sizeX;
+        f32 sizeY;
+        f32 unk2A0;
+        f32 unk2A4;
+        f32 centerX;
+        f32 centerY;
+        s32 left;
+        s32 right;
+        s32 top;
+        s32 bottom;
+        u8 unk2C0[4];
+        s32 unk2C4;
+        s32 unk2C8;
+        u8 unk2CC[4];
+    } Window;
+    extern Window g_window[];
+    extern s32 g_currentWindow;
+    void Gfx_SetCameraMatrix(void *a, void *b, void *c, void *d);
+    Window *win = &g_window[g_currentWindow];
+    u32 width = x1 - x0;
+    u32 height = y1 - y0;
+    u32 marginX = 0x1000 - width;
+    u32 marginY = 0x1000 - height;
+
+    win->unk2C8 = arg4;
+    win->left = x0 + 1;
+    win->top = y0 + 1;
+    win->right = x1 - 1;
+    win->bottom = y1 - 1;
+    win->width = width;
+    win->halfWidth = width >> 1;
+    win->height = height;
+    win->halfHeight = height >> 1;
+    win->scaleX = marginX / 2.0f;
+    win->scaleY = marginY / 2.0f;
+    win->sizeX = (width * 16) / 640.0f;
+    win->sizeY = (height * 16) / 480.0f;
+    win->offsetX = ((marginX >> 1) - x0) * 16;
+    win->offsetY = ((marginY >> 1) - y0) * 16;
+    win->unk2A0 = 1.0f;
+    win->unk2A4 = 2.0f;
+    win->centerX = (marginX >> 1) * 16;
+    win->centerY = (marginY >> 1) * 16;
+    Gfx_SetCameraMatrix(NULL, NULL, NULL, NULL);
+    memcpy((u8 *)&g_window[g_currentWindow] + 0x140, (u8 *)&g_window[g_currentWindow] + 0x40, 0x40);
+    {
+        s32 cur = g_currentWindow;
+        g_window[cur].unk2C4 = 0;
+        g_window[cur].fov = g_window[0].fov;
+    }
 }
 
 s32 Gfx_GetCameraPositions(Vector *out) {
