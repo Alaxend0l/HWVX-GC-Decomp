@@ -7171,10 +7171,10 @@ void Player_DetachThingDeath(void *arg0) {
 }
 
 void PlayerHuman_Heartbeat(void *player) {
-    void ForceFeedback_GetForce(void *ff, u8 *a, u8 *b, s32 *c);
+    void ForceFeedback_GetForce(void *ff, u8 *a, u8 *b, f32 *c);
     void Input_SetAlternativeForceFeedback(s32 input, u8 a, u8 b);
     void Player_Heartbeat(void *player);
-    s32 c;
+    f32 c;
     u8 a;
     u8 b;
     void *car;
