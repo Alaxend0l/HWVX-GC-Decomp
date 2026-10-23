@@ -2937,7 +2937,8 @@ void Gfx_TextureHandler_Destroy(void) {
 
 #pragma push
 #pragma readonly_strings on
-#pragma auto_inline off
+#pragma dont_inline on
+#pragma always_inline on
 u16 Gfx_LoadTexture(char *name) {
     extern u8 *m_texture;
     extern u32 m_totalTextures;
