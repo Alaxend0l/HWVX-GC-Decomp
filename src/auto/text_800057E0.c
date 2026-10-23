@@ -3198,6 +3198,37 @@ void EventSeq_Release(void) {
     fn_800957D4();
 }
 
+s32 EventSeq_InCameraRange(u8 *seq, f32 range) {
+    u32 Gfx_GetCameraPositions(Vector4 *positions);
+    f32 PSVECSquareDistance(f32 *a, f32 *b);
+    extern u8 g_CurrentViews;
+    Vector4 positions[5];
+    u32 count;
+    Vector4 *pos;
+    u32 i;
+    f32 dist;
+
+    if (range == 0.0f) {
+        return 1;
+    }
+    if (*(s8 *)(seq + 0xF1)) {
+        count = Gfx_GetCameraPositions(positions);
+        *(f32 *)(seq + 0xF4) = PSVECSquareDistance((f32 *)(seq + 0x40), (f32 *)&positions[0]);
+        if (count > 1) {
+            for (i = 0, pos = positions; i < 5; i++, pos++) {
+                if (g_CurrentViews & (1 << i)) {
+                    dist = PSVECSquareDistance((f32 *)(seq + 0x40), (f32 *)pos);
+                    if (dist < *(f32 *)(seq + 0xF4)) {
+                        *(f32 *)(seq + 0xF4) = dist;
+                    }
+                }
+            }
+        }
+        *(s8 *)(seq + 0xF1) = 0;
+    }
+    return range * range > *(f32 *)(seq + 0xF4);
+}
+
 s32 EventSeq_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
