@@ -2422,6 +2422,16 @@ void InterfaceManager_SetOffset(s32 index, f32 x, f32 y) {
     *(f32 *)(iface + 0x64) = y;
 }
 
+void InterfaceManager_EndInterface(s32 index) {
+    extern u8 g_interface[][0x170];
+    void InterfaceManager_SetLoadState(void *iface, s32 state);
+    u8 *iface = g_interface[index];
+
+    if (iface != NULL) {
+        InterfaceManager_SetLoadState(iface, 1);
+    }
+}
+
 void InterfaceManager_SetControllerConfigInputString(void) {
 
 }
@@ -6103,13 +6113,20 @@ s32 DVDGetCurrentDiskID(void) {
 #pragma push
 #pragma peephole off
 void __DVDClearWaitingQueue(void) {
-    u32 i;
+    DVDQueue *q;
 
-    for (i = 0; i < 4; i++) {
-        DVDQueue *q = &WaitingQueue_802EFA18[i];
-        q->next = q;
-        q->prev = q;
-    }
+    q = &WaitingQueue_802EFA18[0];
+    q->next = q;
+    q->prev = q;
+    q = &WaitingQueue_802EFA18[1];
+    q->next = q;
+    q->prev = q;
+    q = &WaitingQueue_802EFA18[2];
+    q->next = q;
+    q->prev = q;
+    q = &WaitingQueue_802EFA18[3];
+    q->next = q;
+    q->prev = q;
 }
 
 s32 __DVDPushWaitingQueue(s32 prio, DVDQueue *block) {
