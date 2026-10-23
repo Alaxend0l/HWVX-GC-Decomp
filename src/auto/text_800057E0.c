@@ -18935,9 +18935,6 @@ s32 GetTRKConnected(void) {
     return IsTRKConnected_8030B440.difficulty;
 }
 
-#pragma push
-#pragma dont_inline on
-#pragma always_inline on
 s32 HandleCloseFileSupportRequest(u32 fileHandle, u8 *ioResult) {
     s32 TRKGetFreeBuffer(s32 *msgID, TRKBuffer **outMsg);
     s32 TRKRequestSend(TRKBuffer *msgBuf, s32 *bufferId, u32 p1, u32 p2, s32 p3);
