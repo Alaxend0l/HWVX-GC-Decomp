@@ -5880,9 +5880,9 @@ s32 Destructible_Invalidate(void *arg0, u32 arg1, u32 arg2) {
 s32 ActionDestructibleChangeMode(u32 *action) {
     void Thing_ProcessEndEvent(u8 *thing, u8 *event, u8 *collision, Vector4 *vel);
     void ThingManagerList_ReleaseSlavesBySlaveType(void **list, u8 type);
-    u32 i;
     s32 mode;
     u32 count;
+    u32 i;
     u8 *thing;
     u8 *destructible;
 
