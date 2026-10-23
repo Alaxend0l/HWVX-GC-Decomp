@@ -10283,6 +10283,29 @@ s32 TRKDoReset(TRKBuffer *b) {
     return 0;
 }
 
+s32 TRKDoDisconnect(TRKBuffer *b) {
+    extern GeneralGameSettings IsTRKConnected_8030B440;
+    void TRKConstructEvent(void *arg0, s8 arg1);
+    TRKEvent event;
+    s32 ackTries;
+    s32 err;
+
+    IsTRKConnected_8030B440.difficulty = 0;
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, 0);
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+    if (err == 0) {
+        TRKConstructEvent(&event, 1);
+        TRKPostEvent(&event);
+    }
+    return err;
+}
+
 void TRKDoConnect(TRKBuffer *b) {
     extern GeneralGameSettings IsTRKConnected_8030B440;
     s32 err;
