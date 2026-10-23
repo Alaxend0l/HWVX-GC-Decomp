@@ -4917,12 +4917,12 @@ void ViewManager_SetFourPlayer(void) {
     g_viewFormat = 5;
 }
 
-void Tracer_Release(void *tracer) {
-    extern u8 tracers_802CD600[];
+void Tracer_Release(void *thing) {
+    extern struct { u8 pad[0x4CE]; s16 active; u8 pad2[0x10]; } tracers_802CD600[];
 
-    M2C_FIELD(tracers_802CD600 + M2C_FIELD(tracer, s32 *, 0xB4) * 0x4E0, s16 *, 0x4CE) = 0;
-    M2C_FIELD(tracer, s32 *, 0xB0) = 0;
-    Thing_Release((s32)tracer);
+    tracers_802CD600[M2C_FIELD(thing, u32 *, 0xB4)].active = 0;
+    M2C_FIELD(thing, s32 *, 0xB0) = 0;
+    Thing_Release((s32)thing);
 }
 
 s32 Tracer_Invalidate(void *arg0, u32 arg1, u32 arg2) {
