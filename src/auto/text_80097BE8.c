@@ -246,7 +246,24 @@ typedef struct THPPlayer {
     s32 prevCount;
     s32 curCount;
     s32 videoDecodeCount;
-    u8 unkD4[0x198 - 0xD4];
+    u8 unkD4[0xE4 - 0xD4];
+    struct {
+        u8 *ptr;
+        s32 frameNumber;
+    } readBuffer[10];
+    struct {
+        u8 *ytexture;
+        u8 *utexture;
+        u8 *vtexture;
+        s32 frameNumber;
+    } textureSet[3];
+    struct {
+        s16 *buffer;
+        s16 *curPtr;
+        u32 validSample;
+        s32 frameNumber;
+    } audioBuffer[3];
+    u8 unk194[0x198 - 0x194];
 } THPPlayer;
 
 typedef struct THPComponent {
