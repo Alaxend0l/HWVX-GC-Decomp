@@ -3101,6 +3101,26 @@ s32 ActionInterfacePlay(s32 *arg0) {
     return 1;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s32 ActionHUDChangeMode(u32 *action) {
+    extern u8 g_cameraManager[];
+    void Player_RefreshInterface(void *player);
+    void InterfaceManager_ReleaseInterface(u32 index);
+    s32 i;
+
+    for (i = 0; i < g_cameraManager[0x640]; i++) {
+        if (action[1] == 1) {
+            Player_RefreshInterface(M2C_FIELD(g_cameraManager + i * 0x190, void **, 0));
+        } else {
+            InterfaceManager_ReleaseInterface(M2C_FIELD(M2C_FIELD(g_cameraManager + i * 0x190, u8 **, 0), u32 *, 0x68));
+            M2C_FIELD(M2C_FIELD(g_cameraManager + i * 0x190, u8 **, 0), s32 *, 0x68) = -1;
+        }
+    }
+    return 1;
+}
+#pragma pop
+
 s32 InterfaceManager_GetTargetArrowNearestNavPoint(void) {
     extern s32 g_TargetArrow[7];
     s32 NavHolder_FindIndexOfNearestNavPoint(void *pos, s32 hint);
