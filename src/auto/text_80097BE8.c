@@ -11177,7 +11177,6 @@ void __GBAX01(s32 chan, s32 ret) {
     }
     gba->ret = ret;
 }
-#pragma pop
 
 static void F35(s32 chan, s32 ret);
 #pragma push
