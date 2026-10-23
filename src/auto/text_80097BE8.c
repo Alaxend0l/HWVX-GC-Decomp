@@ -5043,6 +5043,7 @@ void *Reader(void *param) {
         readFrame++;
     }
 }
+#pragma pop
 
 void *PopReadedBuffer(void) {
     extern u8 ReadedBufferQueue_80370078[];
