@@ -9306,6 +9306,115 @@ s32 Effect_StartEffect(void *arg0) {
 
 #pragma push
 #pragma optimize_for_size on
+s32 Effect_PerformEnvelope(Effect *effect, EffectEnvelope *env, s32 magnitude);
+void Effect_PolarToRect(s32 magnitude, s32 angle, s32 *out);
+s32 Effect_UpdateSpring(Effect *effect, EffectCondition *cond);
+s32 Effect_UpdateDamper(Effect *effect, EffectCondition *cond);
+s32 Effect_Update(Effect *effect, u32 dt) {
+    s32 active;
+    s16 magnitude;
+    s32 wave;
+    u32 a;
+
+    if (effect->flags & 1) {
+        if (effect->delay != 0) {
+            effect->delay -= dt;
+            if ((s32)effect->delay < 0) {
+                effect->delay = 0;
+            }
+        } else {
+            effect->elapsed += dt;
+            if (effect->duration != 0xFFFFFFFF && effect->duration < effect->elapsed && (effect->flags & 2)) {
+                effect->flags &= ~1;
+                effect->flags |= 2;
+            }
+        }
+    }
+
+    active = 0;
+    if ((effect->flags & 1) && effect->delay == 0) {
+        active = 1;
+    }
+    if (active) {
+        if (effect->flags & 0x10) {
+            Effect_PolarToRect(Effect_PerformEnvelope(effect, &effect->params.constant.envelope, effect->params.constant.magnitude), effect->params.constant.angle, &effect->force);
+        } else if (effect->flags & 0x20) {
+            Effect_PolarToRect(effect->params.ramp.start + Effect_MulDiv(effect->params.ramp.end - effect->params.ramp.start, effect->elapsed, effect->duration), effect->params.ramp.angle, &effect->force);
+        } else if (effect->flags & 0x40) {
+            *(u32 *)&effect->deadbandLow += (dt << 24) / effect->params.periodic.period;
+            if (*(u32 *)&effect->deadbandLow >= 0x1000000) {
+                *(u32 *)&effect->deadbandLow -= *(u32 *)&effect->deadbandLow & 0xFF000000;
+            }
+            magnitude = Effect_PerformEnvelope(effect, &effect->params.periodic.envelope, effect->params.periodic.magnitude);
+            switch (effect->type) {
+            case 2:
+                a = (*(u32 *)&effect->deadbandLow >> 16) & 0xFF;
+                if (a < 0x40) {
+                    wave = g_iQuarterSineTable_8037BB7C[a];
+                } else if (a < 0x80) {
+                    wave = g_iQuarterSineTable_8037BB7C[0x7F - a];
+                } else if (a < 0xC0) {
+                    wave = -g_iQuarterSineTable_8037BB7C[a - 0x80];
+                } else {
+                    wave = -g_iQuarterSineTable_8037BB7C[0xFF - a];
+                }
+                break;
+            case 3:
+                wave = -0x400;
+                if ((*(u32 *)&effect->deadbandLow >> 16) < 0x80) {
+                    wave = 0x400;
+                }
+                break;
+            case 4:
+                a = (*(u32 *)&effect->deadbandLow >> 16) & 0xFF;
+                if (a < 0x40) {
+                    wave = g_iRampUpTable_8037BBFC[a];
+                } else if (a < 0x80) {
+                    wave = g_iRampUpTable_8037BBFC[0x7F - a];
+                } else if (a < 0xC0) {
+                    wave = -g_iRampUpTable_8037BBFC[a - 0x80];
+                } else {
+                    wave = -g_iRampUpTable_8037BBFC[0xFF - a];
+                }
+                break;
+            case 5:
+                wave = g_iRampUpTable_8037BBFC[(*(u32 *)&effect->deadbandLow >> 17) & 0x3F];
+                break;
+            case 6:
+                wave = g_iRampUpTable_8037BBFC[(0xFF - ((*(u32 *)&effect->deadbandLow >> 16) & 0xFF)) >> 1];
+                break;
+            default:
+                wave = 0;
+                break;
+            }
+            Effect_PolarToRect(Effect_MulDiv(wave, magnitude, 0x400) + effect->params.periodic.offset, effect->params.periodic.angle, &effect->force);
+        } else if (effect->flags & 0x80) {
+            switch (effect->type) {
+            case 7:
+                effect->force = Effect_UpdateSpring(effect, &effect->params.condition);
+                break;
+            case 8:
+                effect->force = Effect_UpdateDamper(effect, &effect->params.condition);
+                if (effect->force == 0) {
+                    effect->force++;
+                }
+                break;
+            default:
+                effect->force = 0;
+                break;
+            }
+        } else {
+            return 0;
+        }
+    } else {
+        effect->force = 0;
+    }
+    return 1;
+}
+#pragma pop
+
+#pragma push
+#pragma optimize_for_size on
 s32 Effect_PerformEnvelope(Effect *effect, EffectEnvelope *env, s32 magnitude) {
     u32 elapsed = effect->elapsed;
     s32 start = magnitude < 0 ? -magnitude : magnitude;
@@ -9348,11 +9457,11 @@ s32 Effect_PerformEnvelope(Effect *effect, EffectEnvelope *env, s32 magnitude) {
 
 #pragma push
 #pragma optimize_for_size on
-void Effect_PolarToRect(s32 magnitude, u8 angle, s32 *out) {
+void Effect_PolarToRect(s32 magnitude, s32 angle, s32 *out) {
     s32 round;
     s32 value;
     s32 sine;
-    u32 a = angle;
+    u32 a = (u8)angle;
 
     if (a < 0x40) {
         sine = g_iQuarterSineTable_8037BB7C[a];
