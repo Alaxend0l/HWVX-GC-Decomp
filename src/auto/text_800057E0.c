@@ -3898,7 +3898,7 @@ void *VolumeManager_GetVolumeTypeByIndex(u32 type, u32 index) {
 
 s32 VolumeManager_GetNumVolumesOfTypeByCell(s32 type, s32 cell) {
     extern s32 g_VolumeHolder;
-    if (g_VolumeHolder != 0) {
+    if ((void *)g_VolumeHolder != NULL) {
         return M2C_FIELD(M2C_FIELD(g_VolumeHolder, u8 **, 0x10) + cell * 0x38 + type * 8, s32 *, 0x0);
     }
     return 0;
