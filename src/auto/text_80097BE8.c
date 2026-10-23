@@ -1441,7 +1441,6 @@ void *malloc(u32 size) {
 
 void *soft_allocate_from_var_pools(Block **pool_obj, u32 size, u32 *max_size);
 void FixBlock_construct(FixBlock *ths, FixBlock *prev, FixBlock *next, s32 index, FixSubBlock *chunk, u32 chunk_size);
-void Block_link(Block *ths, SubBlock *sb);
 #pragma push
 #pragma use_lmw_stmw on
 void *allocate_from_fixed_pools(void *pool, u32 size) {
