@@ -7567,6 +7567,28 @@ void __THPHuffGenerateCodeTable(void) {
     }
 }
 
+#pragma push
+#pragma opt_lifetimes off
+void __THPHuffGenerateDecoderTables(u8 tabIndex) {
+    s32 p, l;
+    THPHuffmanTab *h;
+
+    p = 0;
+    h = &__THPInfo_803C7890->huffmanTabs[tabIndex];
+    for (l = 1; l <= 16; l++) {
+        if (__THPHuffmanBits_803C7824[l - 1]) {
+            h->valPtr[l] = p - __THPHuffmanCodeTab_803C782C[p];
+            p += __THPHuffmanBits_803C7824[l - 1];
+            h->maxCode[l] = __THPHuffmanCodeTab_803C782C[p - 1];
+        } else {
+            h->maxCode[l] = -1;
+            h->valPtr[l] = -1;
+        }
+    }
+    h->maxCode[17] = 0xfffff;
+}
+#pragma pop
+
 void __THPRestartDefinition(void) {
     __THPInfo_803C7890->RST = TRUE;
     __THPInfo_803C7890->c += 2;
