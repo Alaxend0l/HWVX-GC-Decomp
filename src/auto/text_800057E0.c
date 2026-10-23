@@ -4282,19 +4282,22 @@ s32 PPCMfmsr(void) {
 
 #pragma push
 #pragma peephole off
+#pragma scheduling off
 s32 OSGetConsoleType(void) {
     extern u8 *BootInfo_803C71E0;
-    if (BootInfo_803C71E0 == NULL || M2C_FIELD(BootInfo_803C71E0, u32 *, 0x2C) == 0) {
-        return 0x10000002;
+    u32 type;
+
+    if (BootInfo_803C71E0 == NULL || (type = M2C_FIELD(BootInfo_803C71E0, u32 *, 0x2C)) == 0) {
+        type = 0x10000002;
     }
-    return M2C_FIELD(BootInfo_803C71E0, u32 *, 0x2C);
+    return type;
 }
 
 void InquiryCallback(s32 result, void *block) {
     extern u16 DriveInfo_802EED60[16];
     switch (M2C_FIELD(block, s32 *, 0xC)) {
     case 0:
-        *(u16 *)0x800030E6 = (u16)(0x8000 | DriveInfo_802EED60[1]);
+        *(u16 *)0x800030E6 = 0x8000 | DriveInfo_802EED60[1];
         break;
     default:
         *(u16 *)0x800030E6 = 1;
