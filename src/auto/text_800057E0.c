@@ -1611,6 +1611,34 @@ void AI_Car_AsyncScanDestructibles(u8 *car) {
     }
 }
 
+void AI_Car_Init(u8 *car, u8 *params) {
+    void AI_Car_AsyncHeartbeat(u8 *car);
+    void AI_Car_WeaponAsyncHeartbeat_80008210(u8 *car);
+    void *memset(void *dst, s32 c, u32 n);
+
+    M2C_FIELD(car, s32 *, 0xD0) = M2C_FIELD(params, s32 *, 0x0);
+    AI_Init();
+    M2C_FIELD(car, void **, 0xB8) = car;
+    M2C_FIELD(car, void **, 0xBC) = AI_Car_AsyncHeartbeat;
+    M2C_FIELD(car, u8 *, 0xC4) = 0;
+    M2C_FIELD(car, void **, 0x644) = car;
+    M2C_FIELD(car, void **, 0x648) = AI_Car_WeaponAsyncHeartbeat_80008210;
+    M2C_FIELD(car, u8 *, 0x650) = 0;
+    M2C_FIELD(car, void **, 0x5F8) = car;
+    M2C_FIELD(car, void **, 0x5FC) = AI_Car_AsyncScanDestructibles;
+    M2C_FIELD(car, u8 *, 0x604) = 0;
+    if (M2C_FIELD(params, s8 *, 0xC)) {
+        M2C_FIELD(car, u8 *, 0xCD) = 1;
+    } else {
+        M2C_FIELD(car, u8 *, 0xCD) = 3;
+    }
+    M2C_FIELD(car, f32 *, 0x65C) = M2C_FIELD(params, f32 *, 0x4);
+    M2C_FIELD(car, f32 *, 0x660) = M2C_FIELD(params, f32 *, 0x8);
+    M2C_FIELD(car, s32 *, 0x4A0) = -2;
+    memset(car + 0x3D4, 0, 0x60);
+    M2C_FIELD(car, u8 *, 0xCC) = 1;
+}
+
 void MotionState_ReleaseSlavesByType(s32 state, u8 type) {
     void ThingManagerList_Remove(void **arg0, void *arg1);
     void ThingManagerList_Append(void **arg0, void *arg1);
@@ -8897,37 +8925,15 @@ static inline BOOL issueCommand(s32 prio, u8 *block) {
 }
 
 BOOL DVDInquiryAsync(u8 *block, void *addr, void *callback) {
-    extern s32 autoInvalidation_803C6DA8;
-    extern void *executing_803C7310;
-    extern s32 PauseFlag_803C731C;
-    void DCInvalidateRange(void *addr, u32 nBytes);
-    s32 OSDisableInterrupts(void);
-    void OSRestoreInterrupts(s32);
-    BOOL __DVDPushWaitingQueue(s32 prio, void *block);
-    void stateReady_800725A4(void);
-    BOOL result;
-    s32 level;
-    u32 cmd;
+    BOOL idle;
 
     *(u32 *)(block + 0x8) = 14;
     *(void **)(block + 0x18) = addr;
     *(u32 *)(block + 0x14) = 0x20;
     *(u32 *)(block + 0x20) = 0;
     *(void **)(block + 0x28) = callback;
-    if (autoInvalidation_803C6DA8) {
-        cmd = *(u32 *)(block + 0x8);
-        if (cmd == 1 || cmd - 4 <= 1 || cmd == 14) {
-            DCInvalidateRange(*(void **)(block + 0x18), *(u32 *)(block + 0x14));
-        }
-    }
-    level = OSDisableInterrupts();
-    *(s32 *)(block + 0xC) = 2;
-    result = __DVDPushWaitingQueue(2, block);
-    if (executing_803C7310 == NULL && PauseFlag_803C731C == 0) {
-        stateReady_800725A4();
-    }
-    OSRestoreInterrupts(level);
-    return result;
+    idle = issueCommand(2, block);
+    return idle;
 }
 
 s32 DVDGetDriveStatus(void) {
@@ -9604,6 +9610,32 @@ void EXIIntrruptHandler(s16 interrupt, void *context) {
     if (callback) {
         OSClearContext(exceptionContext);
         OSSetCurrentContext(exceptionContext);
+        callback(chan, context);
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(context);
+    }
+}
+
+void EXTIntrruptHandler(s16 interrupt, void *context) {
+    extern u8 Ecb_80309980[3][0x40];
+    void OSClearContext(void *context);
+    void OSSetCurrentContext(void *context);
+    u32 __OSMaskInterrupts(u32 mask);
+    typedef void (*EXICallback)(s32 chan, void *context);
+    s32 chan;
+    u8 *exi;
+    EXICallback callback;
+    u8 exceptionContext[0x2C8];
+
+    chan = (interrupt - 11) / 3;
+    __OSMaskInterrupts(0x500000U >> (chan * 3));
+    exi = Ecb_80309980[chan];
+    callback = *(EXICallback *)(exi + 0x8);
+    *(u32 *)(exi + 0xC) &= ~8;
+    if (callback) {
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(exceptionContext);
+        *(EXICallback *)(exi + 0x8) = NULL;
         callback(chan, context);
         OSClearContext(exceptionContext);
         OSSetCurrentContext(context);
