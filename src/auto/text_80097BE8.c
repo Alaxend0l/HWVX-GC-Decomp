@@ -3870,6 +3870,31 @@ void Gfx_FontManager_SetCharacterSpacing(s32 id, u8 c, f32 x, f32 y) {
     font->chars[c].unk8 = font->chars[c].unk0 + x / width;
 }
 
+u32 strlen(const char *);
+#pragma push
+#pragma use_lmw_stmw on
+#pragma dont_inline on
+void Gfx_FontManager_GetPrintRect(char *str, s32 id, f32 *width, f32 *height, f32 spacing) {
+    extern FontManager g_fontManager;
+    Font *font = &g_fontManager.fonts[id];
+    u32 w = 0;
+    u32 i = 0;
+    u32 len = strlen(str);
+    u8 c;
+
+    while (i < len) {
+        c = str[i++];
+        if (font->caseMode == 1 || font->caseMode == 3) {
+            if (c >= 'a' && c <= 'z') {
+                c -= 0x20;
+            }
+        }
+        w = w + ((u8)font->chars[c].spacingX + spacing);
+    }
+    *width = (u32)(w - spacing);
+    *height = font->height;
+}
+#pragma pop
 void Gfx_AnimExtractKeyFrame(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
