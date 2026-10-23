@@ -7210,9 +7210,9 @@ void SteeringSamplingCallback(void) {
     void HandlePedals(void *cur, SISteeringStatus *status, SISteeringStatus *calib);
     void HandleTriggers(void *cur, SISteeringStatus *status, SISteeringStatus *calib);
     void SimThread_Step(VDevice *dev);
+    s32 i;
     LGDevice *device;
     SISteeringStatus *status;
-    s32 i;
 
     for (i = 0; i < 4; i++) {
         device = &g_lgDevices_803771D8[i];
