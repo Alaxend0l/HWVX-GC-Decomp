@@ -9926,14 +9926,6 @@ s32 __ct__9ConditionFv(s32 arg0) {
 #pragma dont_inline on
 s32 DownloadForce__9ConditionFllRUlUcUlUlScUcUcUcss(Force *force, s32 chan, s32 effect, u32 *device, u8 type, u32 duration, u32 startDelay, s8 offset, u8 deadband, u8 saturationPos, u8 saturationNeg, s16 coefficientPos, s16 coefficientNeg) {
     struct {
-        u8 offset;
-        u8 deadband;
-        u8 saturationPos;
-        u8 saturationNeg;
-        s16 coefficientPos;
-        s16 coefficientNeg;
-    } cond;
-    struct {
         u8 type;
         u32 duration;
         u32 startDelay;
