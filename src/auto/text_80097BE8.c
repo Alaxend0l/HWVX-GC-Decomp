@@ -9759,6 +9759,52 @@ void __THPRestartDefinition(void) {
     __THPInfo_803C7890->currMCU = __THPInfo_803C7890->nMCU;
 }
 
+void __THPPrepBitStream(void) {
+    extern THPHuffmanTab *Ydchuff_803C7780;
+    extern THPHuffmanTab *Udchuff_803C77A0;
+    extern THPHuffmanTab *Vdchuff_803C77C0;
+    extern THPHuffmanTab *Yachuff_803C77E0;
+    extern THPHuffmanTab *Uachuff_803C7800;
+    extern THPHuffmanTab *Vachuff_803C7820;
+    u32 *ptr;
+    u32 offset;
+    u32 i, j;
+    u32 code;
+
+    ptr = (u32 *)((u32)__THPInfo_803C7890->c & 0xFFFFFFFC);
+    offset = (u32)__THPInfo_803C7890->c & 3;
+    if (__THPInfo_803C7890->cnt != 33) {
+        __THPInfo_803C7890->cnt -= (3 - offset) * 8;
+    } else {
+        __THPInfo_803C7890->cnt = (offset * 8) + 1;
+    }
+    __THPInfo_803C7890->c = (u8 *)ptr;
+    __THPInfo_803C7890->currByte = *ptr;
+
+    for (i = 0; i < 4; i++) {
+        if (__THPInfo_803C7890->validHuffmanTabs & (1 << i)) {
+            for (code = 0; code < 32; code++) {
+                __THPInfo_803C7890->huffmanTabs[i].quick[code] = 0xFF;
+                for (j = 0; j < 5; j++) {
+                    if ((s32)(code >> (4 - j)) <= __THPInfo_803C7890->huffmanTabs[i].maxCode[j + 1]) {
+                        __THPInfo_803C7890->huffmanTabs[i].quick[code] =
+                            __THPInfo_803C7890->huffmanTabs[i].Vij[__THPInfo_803C7890->huffmanTabs[i].valPtr[j + 1] + (code >> (4 - j))];
+                        __THPInfo_803C7890->huffmanTabs[i].increment[code] = j + 1;
+                        j = 99;
+                    }
+                }
+            }
+        }
+    }
+
+    Ydchuff_803C7780 = &__THPInfo_803C7890->huffmanTabs[__THPInfo_803C7890->components[0].DCTableSelector << 1];
+    Udchuff_803C77A0 = &__THPInfo_803C7890->huffmanTabs[__THPInfo_803C7890->components[1].DCTableSelector << 1];
+    Vdchuff_803C77C0 = &__THPInfo_803C7890->huffmanTabs[__THPInfo_803C7890->components[2].DCTableSelector << 1];
+    Yachuff_803C77E0 = &__THPInfo_803C7890->huffmanTabs[(__THPInfo_803C7890->components[0].ACTableSelector << 1) + 1];
+    Uachuff_803C7800 = &__THPInfo_803C7890->huffmanTabs[(__THPInfo_803C7890->components[1].ACTableSelector << 1) + 1];
+    Vachuff_803C7820 = &__THPInfo_803C7890->huffmanTabs[(__THPInfo_803C7890->components[2].ACTableSelector << 1) + 1];
+}
+
 s32 __THPAudioGetNewSample(u32 *info) {
     struct THPAudioDecodeInfo {
         u8 *encodeData;
