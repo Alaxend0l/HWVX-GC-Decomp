@@ -21633,20 +21633,6 @@ void __fstLoad(void) {
     OSSetArenaHi(*(void **)(bb2_803C735C + 0x10));
 }
 
-s32 VISetPostRetraceCallback(s32 cb) {
-    extern s32 PostCB_803C737C;
-    s32 OSDisableInterrupts();
-    M2C_UNK OSRestoreInterrupts(s32);
-    s32 enabled;
-    s32 old;
-
-    old = PostCB_803C737C;
-    enabled = OSDisableInterrupts();
-    PostCB_803C737C = cb;
-    OSRestoreInterrupts(enabled);
-    return old;
-}
-
 static inline u32 cntlzd(u64 bit) {
     u32 hi;
     u32 lo;
@@ -21659,6 +21645,20 @@ static inline u32 cntlzd(u64 bit) {
         return value;
     }
     return 32 + __cntlzw(lo);
+}
+
+s32 VISetPostRetraceCallback(s32 cb) {
+    extern s32 PostCB_803C737C;
+    s32 OSDisableInterrupts();
+    M2C_UNK OSRestoreInterrupts(s32);
+    s32 enabled;
+    s32 old;
+
+    old = PostCB_803C737C;
+    enabled = OSDisableInterrupts();
+    PostCB_803C737C = cb;
+    OSRestoreInterrupts(enabled);
+    return old;
 }
 
 u8 *getTiming_800742A0(u32 mode) {
