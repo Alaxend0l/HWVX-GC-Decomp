@@ -443,10 +443,21 @@ typedef struct EffectState {
     s32 velocity;
 } EffectState;
 
+typedef struct EffectEnvelope {
+    u32 attackTime;
+    u32 fadeTime;
+    u8 attackLevel;
+    u8 fadeLevel;
+} EffectEnvelope;
+
 typedef struct Effect {
-    u8 unk0[0x24];
+    u8 unk0[4];
+    u32 duration;
+    u8 unk8[0x1C];
     EffectState *state;
-    u8 unk28[0x10];
+    u8 unk28[4];
+    u32 elapsed;
+    u8 unk30[8];
     s32 deadbandLow;
     s32 deadbandHigh;
 } Effect;
@@ -3519,6 +3530,42 @@ void SetTriFlatVtxDesc(void) {
         GXSetVtxDesc(0xB, 1);
         GXSetVtxAttrFmt(0, 9, 1, 4, 0);
         GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+    }
+}
+
+void Gfx_SetFog(GXColor *color, u8 type, f32 start, f32 end) {
+    extern GXColor m_fogColor_803C76C8;
+    extern u8 m_fogType_803C76C4;
+    extern f32 m_fogRange1_803C76C0;
+    extern f32 m_fogRange2_803C76BC;
+    u8 r, g, b, a;
+    f32 scale;
+    switch (type) {
+    case 0:
+        m_fogType_803C76C4 = 2;
+        break;
+    case 1:
+        m_fogType_803C76C4 = 4;
+        break;
+    case 2:
+        m_fogType_803C76C4 = 5;
+        break;
+    }
+    a = color->a;
+    b = color->b;
+    r = color->r;
+    g = color->g;
+    m_fogColor_803C76C8.g = g;
+    m_fogColor_803C76C8.r = r;
+    m_fogColor_803C76C8.b = b;
+    m_fogColor_803C76C8.a = 0xFF;
+    if (a != 0) {
+        scale = a / 255.0f;
+        m_fogRange2_803C76BC = end / scale;
+        m_fogRange1_803C76C0 = start / scale;
+    } else {
+        m_fogRange1_803C76C0 = 1.0f;
+        m_fogRange2_803C76BC = 1.0f;
     }
 }
 
