@@ -2844,6 +2844,44 @@ void MotionState_BuildMatricesWorld(void *arg0, void *arg1, void *motionState, f
     }
 }
 
+static inline void MotionState_BlendHeartbeat(void *state) {
+    extern f32 g_fDeltaTimeSec;
+    void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps);
+    typedef struct {
+        u8 unk0[0x18];
+        f32 fps;
+    } MotionAnim;
+    typedef struct {
+        MotionAnim *anim;
+        u8 unk4[0x8];
+        f32 weight;
+        u8 unk10[0x10];
+    } MotionLayer;
+    typedef struct {
+        u8 *data;
+        u8 unk4[0x14];
+        MotionLayer layers[2];
+    } MotionStateT;
+    MotionStateT *ms = state;
+    f32 rate = 0.0f;
+    u32 i;
+
+    ms->layers[0].weight += g_fDeltaTimeSec;
+    if (ms->layers[0].weight > 1.0f) {
+        ms->layers[0].weight = 1.0f;
+    }
+    Motion_BlendHeartbeat_FPS(&ms->layers[0], 2, ms->layers[0].anim, ms->layers[0].anim->fps);
+    for (i = 1; i < 1; i++) {
+        rate -= 1.0f;
+        ms->layers[i].weight += rate * g_fDeltaTimeSec;
+        if (ms->layers[i].weight <= 0.0f) {
+            ms->layers[i].weight = 0.0f;
+        } else {
+            Motion_BlendHeartbeat_FPS(&ms->layers[i], 2, ms->layers[i].anim, ms->layers[i].anim->fps);
+        }
+    }
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void MotionState_Heartbeat(void *state, void *arg1, void *thing) {
@@ -2891,6 +2929,101 @@ void MotionState_Heartbeat(void *state, void *arg1, void *thing) {
         MotionState_MoveSlaves(state, arg1, thing);
     }
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void WildcardState_Heartbeat(void *state, u8 *mtx, void *thing) {
+    extern f32 g_fDeltaTimeSec;
+    void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps);
+    void MotionState_BlendTriggerEvents(void *state, void *events, void *thing);
+    void MotionState_MoveSlaves(void *state, void *arg1, void *thing);
+    void MotionState_ExtractBlendedKeyFrame(u8 *state, void *keyFrame);
+    double cos(double x);
+    double sin(double x);
+    typedef struct {
+        u8 unk0[0x14];
+        s32 *skel;
+        f32 fps;
+        u8 unk1C[0xC];
+        f32 *unk28;
+    } MotionAnim;
+    typedef struct {
+        MotionAnim *anim;
+        u8 mode;
+        u8 unk5[0x3];
+        f32 time;
+        f32 weight;
+        u8 unk10[0x10];
+    } MotionLayer;
+    typedef struct {
+        u8 unk0[0x24];
+        u32 numFrames;
+        u8 unk28[0x4];
+        u8 spinType;
+        u8 unk2D;
+        u16 spinBone;
+    } WildcardData;
+    typedef struct {
+        u8 unk0[0x30];
+        WildcardData *data;
+    } WildcardThing;
+    typedef struct {
+        u8 *data;
+        u8 unk4[0xC];
+        void *matrices;
+        u8 unk14[0x4];
+        MotionLayer layers[2];
+    } MotionStateT;
+    MotionStateT *ms = state;
+    f32 rate = 0.0f;
+    s32 *skel;
+    f32 angle;
+    Quaternion quat;
+    Quaternion rot;
+    Quaternion out;
+    u8 frames[0x800];
+    u32 i;
+
+    ms->layers[0].weight += g_fDeltaTimeSec;
+    if (ms->layers[0].weight > 1.0f) {
+        ms->layers[0].weight = 1.0f;
+    }
+    Motion_BlendHeartbeat_FPS(&ms->layers[0], 2, ms->layers[0].anim, ms->layers[0].anim->fps);
+    i = 1;
+    while (i < 1) {
+        rate -= 1.0f;
+        ms->layers[i].weight += rate * g_fDeltaTimeSec;
+        if (ms->layers[i].weight <= 0.0f) {
+            ms->layers[i].weight = 0.0f;
+        } else {
+            Motion_BlendHeartbeat_FPS(&ms->layers[i], 2, ms->layers[i].anim, ms->layers[i].anim->fps);
+        }
+        i++;
+    }
+    if (ms->layers[0].mode == 2 &&
+        *(s16 *)((u8 *)state + 0x40) < (*(WildcardThing **)((u8 *)state + 0x4C))->data->numFrames) {
+        ms->layers[0].time = ms->layers[0].anim->unk28[1];
+    }
+    if (ms->matrices != NULL) {
+        skel = ms->layers[0].anim->skel;
+        MotionState_ExtractBlendedKeyFrame(state, frames);
+        if ((*(WildcardThing **)((u8 *)state + 0x4C))->data->spinType == 1 ||
+            (*(WildcardThing **)((u8 *)state + 0x4C))->data->spinType == 2) {
+            angle = 6.2831855f * *(f32 *)((u8 *)state + 0x48) * *(f32 *)((u8 *)state + 0x44);
+            rot.w = cos(angle);
+            rot.x = sin(angle);
+            rot.y = 0.0f;
+            rot.z = 0.0f;
+            QuaternionMult((Vector4 *)&rot, (Vector4 *)(frames + (*(WildcardThing **)((u8 *)state + 0x4C))->data->spinBone * 32), (Vector4 *)&out);
+            *(Quaternion *)(frames + (*(WildcardThing **)((u8 *)state + 0x4C))->data->spinBone * 32) = out;
+        }
+        SubMatrixToQuaternion(mtx, (Vector4 *)&quat);
+        TEST_AnimTraverseHeirarchyToMatricesWorld((Vector4 *)&quat, mtx + 0x30, frames, *skel, ms->matrices, 1.0f);
+    }
+    MotionState_BlendTriggerEvents(state, ms->data + 0x2C, thing);
+    MotionState_MoveSlaves(state, NULL, thing);
+}
+#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
