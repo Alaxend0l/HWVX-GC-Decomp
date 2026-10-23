@@ -23569,6 +23569,8 @@ s32 TRKTargetVersions(void *arg0) {
     return 0;
 }
 
+#pragma push
+#pragma dont_inline on
 s32 TRKTargetAccessExtended1(u32 firstRegister, u32 lastRegister, TRKBuffer *b, u32 *registersLengthPtr, s32 read) {
     extern u32 gTRKExceptionStatus_800DA0A4[];
     extern u8 gTRKCPUState[];
