@@ -3161,6 +3161,47 @@ void FileStreaming_ReleaseQuadPacks(void) {
         g_quadFileID = -1;
     }
 }
+
+void FileStreaming_InitializeAllQuads(void) {
+    typedef struct Quad {
+        u32 id;
+        u8 pad[0x18];
+        u32 unk1C;
+        u32 numNeighbors;
+        u32 *neighbors;
+        u8 pad2[0x28];
+    } Quad;
+    typedef struct QuadWorld {
+        u8 pad[0x20];
+        u32 numQuads;
+        Quad *quads;
+    } QuadWorld;
+    extern Quad *g_pWorldQuadrant;
+    u32 i;
+    u32 j;
+    u32 k;
+    Quad *quad;
+
+    if (g_worldData.world == NULL) {
+        return;
+    }
+    for (i = 0; i < ((QuadWorld *)g_worldData.world)->numQuads; i++) {
+        quad = &((QuadWorld *)g_worldData.world)->quads[i];
+        if (quad->unk1C == 0) {
+            g_pWorldQuadrant = quad;
+        } else {
+            for (j = 0; j < quad->numNeighbors; j++) {
+                for (k = 0; k < ((QuadWorld *)g_worldData.world)->numQuads; k++) {
+                    if (k != i && ((QuadWorld *)g_worldData.world)->quads[k].id == quad->neighbors[j]) {
+                        quad->neighbors[j] = k;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
 #pragma pop
 void FileStreaming_LoadingThread(void) {
     extern s8 g_bLoadingThreadRunning;
