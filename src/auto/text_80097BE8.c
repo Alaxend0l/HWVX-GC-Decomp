@@ -9257,6 +9257,12 @@ s8 CmpID_(u8 *chunk, s32 id) {
     return GetID_(chunk) == id;
 }
 
+s8 CmpType_(u8 *chunk, s32 type) {
+    s32 GetType_();
+    s8 result = GetType_(chunk) == type;
+    return result;
+}
+
 s32 Audio_Create_(void) {
     void Audio_Update_(void);
     ARInit(0, 0);
