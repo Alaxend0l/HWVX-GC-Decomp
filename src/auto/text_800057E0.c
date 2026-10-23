@@ -4113,18 +4113,19 @@ s32 TriggerPlayerVehicleGear(u32 *params) {
 s32 TriggerPlayerVehicleInAir(u32 *params) {
     extern u8 g_cameraManager[];
     u8 *vehicle;
-    u8 *player = *(u8 **)g_cameraManager;
+    u32 inAir;
 
-    if (player != NULL) {
-        vehicle = M2C_FIELD(player, u8 **, 0x2C);
+    if (*(u8 **)g_cameraManager != NULL) {
+        vehicle = M2C_FIELD(*(u8 **)g_cameraManager, u8 **, 0x2C);
     } else {
         vehicle = NULL;
     }
-    if (params[2] == 0 && vehicle != NULL && *(s32 *)(vehicle + 0x460) >= (s32)params[1]) {
+    inAir = params[2];
+    if (inAir == 0 && vehicle != NULL && *(s32 *)(vehicle + 0x460) >= (s32)params[1]) {
         params[2] = 1;
         return 1;
     }
-    if (params[2] != 0 && vehicle != NULL && *(s32 *)(vehicle + 0x460) == 0) {
+    if (inAir != 0 && vehicle != NULL && *(s32 *)(vehicle + 0x460) == 0) {
         params[2] = 0;
         return 1;
     }
