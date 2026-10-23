@@ -49,6 +49,17 @@ typedef struct DVDQueue {
 
 extern DVDQueue WaitingQueue_802EFA18[4];
 
+extern u32 next_803C6DF8;
+
+static inline void DummySRand(u32 seed) {
+    next_803C6DF8 = seed;
+}
+
+static inline u32 DummyRand(void) {
+    next_803C6DF8 = next_803C6DF8 * 1103515245 + 12345;
+    return (next_803C6DF8 >> 16) & 0x7FFF;
+}
+
 typedef struct TRKStepStatus {
     s32 active;
     u8 type;
@@ -8351,22 +8362,27 @@ s32 DVDGetCurrentDir(char *path, u32 maxlen) {
     u32 entryToPath(u32 entry, char *path, u32 maxlen);
     u32 loc;
     u32 entry;
+    s32 result;
 
     entry = currentDirectory_803C7300;
     loc = entryToPath(entry, path, maxlen);
     if (loc == maxlen) {
         path[maxlen - 1] = '\0';
-        return 0;
-    }
-    if ((FstStart_803C72F4[entry * 3] & 0xFF000000) ? 1 : 0) {
-        if (loc == maxlen - 1) {
-            path[loc] = '\0';
-            return 0;
+        result = 0;
+    } else {
+        if ((FstStart_803C72F4[entry * 3] & 0xFF000000) ? 1 : 0) {
+            if (loc == maxlen - 1) {
+                path[loc] = '\0';
+                result = 0;
+                goto end;
+            }
+            path[loc++] = '/';
         }
-        path[loc++] = '/';
+        path[loc] = '\0';
+        result = 1;
     }
-    path[loc] = '\0';
-    return 1;
+end:
+    return result;
 }
 
 #pragma push
@@ -9550,6 +9566,42 @@ void __AXDSPDoneCallback(void) {
     __AXDSPDoneFlag_803C74D8 = 1;
 }
 
+void __AXOutInitDSP(void) {
+    extern u8 axDspSlave[];
+    extern u16 axDspSlaveLength;
+    extern u8 __AXOutBuffer_802F3040[];
+    extern s32 __AXDSPInitFlag_803C74D4;
+    extern s32 __AXDSPDoneFlag_803C74D8;
+    void __AXDSPInitCallback(void *task);
+    void __AXDSPResumeCallback(void *task);
+    void __AXDSPDoneCallback(void *task);
+    s32 DSPCheckInit(void);
+    void DSPInit(void);
+    void *DSPAddTask(void *task);
+
+    M2C_FIELD(__AXOutBuffer_802F3040, void **, 0x7C4) = axDspSlave;
+    M2C_FIELD(__AXOutBuffer_802F3040, u32 *, 0x7C8) = axDspSlaveLength;
+    M2C_FIELD(__AXOutBuffer_802F3040, u32 *, 0x7CC) = 0;
+    M2C_FIELD(__AXOutBuffer_802F3040, void **, 0x7D0) = __AXOutBuffer_802F3040 + 0x808;
+    M2C_FIELD(__AXOutBuffer_802F3040, u32 *, 0x7D4) = 0x2000;
+    M2C_FIELD(__AXOutBuffer_802F3040, u32 *, 0x7D8) = 0;
+    M2C_FIELD(__AXOutBuffer_802F3040, u16 *, 0x7DC) = 0x10;
+    M2C_FIELD(__AXOutBuffer_802F3040, u16 *, 0x7DE) = 0x30;
+    M2C_FIELD(__AXOutBuffer_802F3040, void **, 0x7E0) = __AXDSPInitCallback;
+    M2C_FIELD(__AXOutBuffer_802F3040, void **, 0x7E4) = __AXDSPResumeCallback;
+    M2C_FIELD(__AXOutBuffer_802F3040, void **, 0x7E8) = __AXDSPDoneCallback;
+    M2C_FIELD(__AXOutBuffer_802F3040, u32 *, 0x7EC) = 0;
+    M2C_FIELD(__AXOutBuffer_802F3040, u32 *, 0x7BC) = 0;
+    __AXDSPInitFlag_803C74D4 = 0;
+    __AXDSPDoneFlag_803C74D8 = 0;
+    if (!DSPCheckInit()) {
+        DSPInit();
+    }
+    DSPAddTask(__AXOutBuffer_802F3040 + 0x7B8);
+    while (__AXDSPInitFlag_803C74D4 == 0) {
+    }
+}
+
 void __AXOutQuit(void) {
     s32 OSDisableInterrupts(void);
     s32 OSRestoreInterrupts(s32 level);
@@ -10039,6 +10091,35 @@ s32 OnReset_8007DB90(s32 arg0) {
         return 0;
     }
     return 1;
+}
+
+s32 DummyLen(void) {
+    u32 OSGetTick(void);
+    extern u32 next_803C6DF8;
+    u32 shift;
+    u32 tries;
+    s32 len;
+
+    shift = 1;
+    tries = 0;
+    next_803C6DF8 = OSGetTick();
+    next_803C6DF8 = next_803C6DF8 * 1103515245 + 12345;
+    len = ((next_803C6DF8 >> 16) & 0x1F) + 1;
+    while (len < 4 && tries < 10) {
+        u32 seed = OSGetTick() << shift;
+        shift++;
+        if (shift > 16) {
+            shift = 1;
+        }
+        next_803C6DF8 = seed;
+        tries++;
+        next_803C6DF8 = next_803C6DF8 * 1103515245 + 12345;
+        len = ((next_803C6DF8 >> 16) & 0x1F) + 1;
+    }
+    if (len < 4) {
+        len = 4;
+    }
+    return len;
 }
 
 void InitCallback(void *task) {
