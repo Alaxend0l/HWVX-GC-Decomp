@@ -4472,6 +4472,33 @@ void Set3DLineVtxDesc(void) {
     }
 }
 
+#pragma push
+#pragma dont_inline on
+void Gfx_SetWorldMatrix(f32 *matrix) {
+    extern GfxState g_state;
+    extern f32 g_identity[];
+    extern f32 GXCameraSpace_8036CF80[3][4];
+    void GXLoadPosMtxImm(f32 m[3][4], u32 id);
+    void GXSetCurrentMtx(u32 id);
+
+    if (matrix == NULL) {
+        if (g_state.unk93) {
+            return;
+        }
+        g_state.unk93 = 1;
+        matrix = g_identity;
+    } else {
+        g_state.unk93 = 0;
+    }
+    memcpy(GetRenderWindow(), matrix, 0x40);
+    MultiplyMatrix4x4(GetRenderWindow(), (u8 *)GetRenderWindow() + 0x40, (u8 *)GetRenderWindow() + 0x80);
+    MultiplyMatrix4x4((u8 *)GetRenderWindow() + 0x80, (u8 *)GetRenderWindow() + 0xC0, (u8 *)GetRenderWindow() + 0x100);
+    MatrixToMtxTranspose(GXCameraSpace_8036CF80, (u8 *)GetRenderWindow() + 0x80);
+    GXLoadPosMtxImm(GXCameraSpace_8036CF80, 0);
+    GXSetCurrentMtx(0);
+}
+#pragma pop
+
 f32 Gfx_GetProjectionMatrix(void) {
     void *GetRenderWindow();
     return M2C_FIELD(GetRenderWindow(), f32 *, 0x270);
