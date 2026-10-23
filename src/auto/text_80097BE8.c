@@ -4797,6 +4797,24 @@ void Gfx_DrawAnimGeometryAux_(Geometry *geometry, f32 *matrices, u32 count, f32 
 }
 #pragma pop
 
+s32 Gfx_DisplayList_Create(void) {
+    extern GDL *g_pGDL;
+    s32 i;
+    s32 j;
+
+    g_pGDL = Allocate(0x24D200, 0, "");
+    if (g_pGDL == NULL) {
+        return 0;
+    }
+    for (i = 0; i < 2000; i++) {
+        for (j = 0; j < 3; j++) {
+            g_pGDL->tris[i].v[j].w = 1.0f;
+        }
+    }
+    g_pGDL->unk24D1F2 = 0;
+    return 1;
+}
+
 #pragma push
 #pragma dont_inline on
 void Gfx_DisplayList_Destroy(void) {
