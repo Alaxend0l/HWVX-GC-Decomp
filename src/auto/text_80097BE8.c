@@ -6642,19 +6642,21 @@ void VDevice_Init(VDevice *dev) {
 #pragma pop
 
 #pragma push
+#pragma use_lmw_stmw on
 #pragma optimize_for_size on
 #pragma dont_inline on
 void VDevice_RecalcGammaTable(void) {
     s32 i;
     s8 *p;
+    f32 gamma = 0.6666667f;
 
     p = g_iGammaLookup_8037BAF8;
     for (i = 0; i < 129; i++) {
         f32 v;
         if (i < 0) {
-            v = -(128.0f * (f32)pow(-i * 0.0078125f, 0.6666667f) + 0.5f);
+            v = -(128.0f * (f32)pow(-i * 0.0078125f, gamma) + 0.5f);
         } else {
-            v = 128.0f * (f32)pow(i * 0.0078125f, 0.6666667f) + 0.5f;
+            v = 128.0f * (f32)pow(i * 0.0078125f, gamma) + 0.5f;
         }
         *p++ = v;
     }
