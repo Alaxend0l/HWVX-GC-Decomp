@@ -2184,6 +2184,62 @@ void MotionState_BlendTriggerEvents(void *state, void *events, Vector4 *vel) {
     }
 }
 
+void MotionState_DrawSlaves(void *state, s32 arg1) {
+    extern Matrix4 g_identity;
+    void Thing_DrawSlaves(Thing *thing);
+    void CopyVector(Vector4 *dst, Vector4 *src);
+    void CopyMatrix(void *dst, void *src);
+    typedef struct SlaveThing {
+        Thing base;
+        u8 pad60[0x74 - 0x60];
+        u32 flags;
+        u8 pad78[0x82 - 0x78];
+        u8 bone;
+        u8 pad83[0x8C - 0x83];
+        void (**vtbl)();
+        u8 pad90[0xA4 - 0x90];
+        struct SlaveThing *next;
+    } SlaveThing;
+    typedef struct {
+        u8 pad0[0x10];
+        Matrix4 *matrices;
+        SlaveThing *slaves;
+    } State;
+    Matrix4 *matrix = (Matrix4 *)arg1;
+    SlaveThing *slave;
+    Vector4 quat;
+    Matrix4 mtx;
+    Matrix4 out;
+
+    slave = ((State *)state)->slaves;
+    if (matrix != NULL && matrix != &g_identity) {
+        for (; slave != NULL; slave = slave->next) {
+            if (!(slave->flags & 0x200200)) {
+                CopyVector(&quat, &slave->base.quat);
+                CopyMatrix(&mtx, &slave->base.mtx);
+                MultiplyMatrix(&((State *)state)->matrices[slave->bone], matrix, &out);
+                slave->vtbl[9](slave, &out);
+                slave->vtbl[4](slave);
+                Thing_DrawSlaves(&slave->base);
+                CopyVector(&slave->base.quat, &quat);
+                CopyMatrix(&slave->base.mtx, &mtx);
+            }
+        }
+    } else {
+        for (; slave != NULL; slave = slave->next) {
+            if (!(slave->flags & 0x200200)) {
+                CopyVector(&quat, &slave->base.quat);
+                CopyMatrix(&mtx, &slave->base.mtx);
+                slave->vtbl[9](slave, &((State *)state)->matrices[slave->bone]);
+                slave->vtbl[4](slave);
+                Thing_DrawSlaves(&slave->base);
+                CopyVector(&slave->base.quat, &quat);
+                CopyMatrix(&slave->base.mtx, &mtx);
+            }
+        }
+    }
+}
+
 #pragma pop
 
 #pragma pop
@@ -25190,6 +25246,87 @@ s32 HandleCloseFileSupportRequest(u32 fileHandle, u8 *ioResult) {
     TRKReleaseBuffer(bufferId);
     return error;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 TRKRequestSend(TRKBuffer *msgBuf, s32 *bufferId, u32 p1, u32 p2, s32 p3) {
+    void TRKProcessInput(s32 bufferIdx);
+    s32 error;
+    TRKBuffer *buffer;
+    u32 timer;
+    s32 tries;
+    s32 badReply;
+    u8 msgCmd;
+    u8 msgReplyError;
+
+    error = 0;
+    badReply = 1;
+    *bufferId = -1;
+    tries = p2 + 1;
+    while (tries != 0 && *bufferId == -1 && error == 0) {
+        error = TRKMessageSend(msgBuf);
+        if (error == 0) {
+            if (p3) {
+                timer = 0;
+            }
+            while (1) {
+                do {
+                    *bufferId = TRKTestForPacket();
+                    if (*bufferId != -1) {
+                        break;
+                    }
+                    if (p3) {
+                        timer++;
+                        if (timer >= 79999980) {
+                            break;
+                        }
+                    }
+                } while (1);
+
+                if (*bufferId == -1) {
+                    break;
+                }
+
+                badReply = 0;
+                buffer = TRKGetBuffer(*bufferId);
+                TRKSetBufferPosition(buffer, 0);
+                if ((error = TRKReadBuffer1_ui8(buffer, &msgCmd)) != 0) {
+                    break;
+                }
+                if (msgCmd >= 0x80) {
+                    break;
+                }
+                TRKProcessInput(*bufferId);
+                *bufferId = -1;
+            }
+
+            if (*bufferId != -1) {
+                if (buffer->length < p1) {
+                    badReply = 1;
+                }
+                if (error == 0 && !badReply) {
+                    error = TRKReadBuffer1_ui8(buffer, &msgReplyError);
+                }
+                if (error == 0 && !badReply) {
+                    if (msgCmd != 0x80 || msgReplyError != 0) {
+                        badReply = 1;
+                    }
+                }
+                if (error != 0 || badReply) {
+                    TRKReleaseBuffer(*bufferId);
+                    *bufferId = -1;
+                }
+            }
+        }
+        tries--;
+    }
+
+    if (*bufferId == -1) {
+        error = 0x800;
+    }
+    return error;
+}
+#pragma pop
 
 s32 TRKReleaseMutex(void *mutex) {
     return 0;
