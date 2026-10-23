@@ -7422,6 +7422,7 @@ void ProcessManager_Init(void) {
 
 #pragma push
 #pragma use_lmw_stmw on
+#pragma auto_inline off
 void ProcessManager_Add(char *name, void (*init)(void), void (*update)(void), s32 arg, u32 flags) {
     u32 index = g_processManager.count++;
 
