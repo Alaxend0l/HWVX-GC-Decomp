@@ -5092,6 +5092,32 @@ void *NavHolder_GetFirstWayPoint(void) {
     return gs_NavHolder_803C6CD8.data->firstWayPoint;
 }
 
+s8 ParticleManager_CanCreatureParticle(void *creature) {
+    extern u32 g_numParticlesCreatedThisFrame;
+    u32 count;
+
+    count = ++g_numParticlesCreatedThisFrame;
+    if (count <= 11) {
+        return 1;
+    }
+    if (count <= 21) {
+        return ((u8 *)creature)[3] <= 8;
+    }
+    if (count <= 31) {
+        return ((u8 *)creature)[3] <= 6;
+    }
+    if (count <= 41) {
+        return ((u8 *)creature)[3] <= 4;
+    }
+    if (count <= 51) {
+        return ((u8 *)creature)[3] <= 2;
+    }
+    if (count <= 101) {
+        return ((u8 *)creature)[3] <= 1;
+    }
+    return 0;
+}
+
 void ParticleGX_Move(struct ParticleGX_Move_t {
         Vector4 pos;
         u8 unk10[0xDC - 0x10];
