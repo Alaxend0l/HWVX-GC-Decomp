@@ -9347,13 +9347,6 @@ s8 Thing_HasThing(u8 *thing, void *target) {
     return ThingManagerList_Get(thing + 0x88, target);
 }
 
-static inline void CameraOrientationInfo_SetDefaultUp(u8 *info) {
-    *(f32 *)(info + 0x8C) = 1.0f;
-    *(f32 *)(info + 0x30) = 0.0f;
-    *(f32 *)(info + 0x34) = 1.0f;
-    *(f32 *)(info + 0x38) = 0.0f;
-}
-
 void Thing_GetCameraOrientationInfo(Thing *thing, u32 index, void *out) {
     typedef struct CameraOrientationInfo {
         u8 pad00[0x8];
@@ -9386,10 +9379,7 @@ void Thing_GetCameraOrientationInfo(Thing *thing, u32 index, void *out) {
         info->mtx = thing->mtx;
     } else {
         info->unk84 = (u8 *)cams[1] + (index % cams[0]) * 0xC;
-        info->unk8C = 1.0f;
-        info->mtx.m[1][0] = 0.0f;
-        info->mtx.m[1][1] = 1.0f;
-        info->mtx.m[1][2] = 0.0f;
+        CameraOrientationInfo_SetDefaultUp((u8 *)info);
         info->unk14 = 90.0f;
         info->pos = thing->mtx.v[3];
         info->unk8 = 5.0f;
