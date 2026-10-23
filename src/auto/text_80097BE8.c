@@ -4309,7 +4309,7 @@ void Gfx_SetTextColor(s8 arg0, s8 arg1, s8 arg2, s8 arg3) {
 
 void VideoDecodeThreadStart(void) {
     extern s32 VideoDecodeThreadCreated_803C7728;
-    extern u8 VideoDecodeThread_8036CFF0[];
+    extern u8 VideoDecodeThread_8036CFF0[0x310];
     if (VideoDecodeThreadCreated_803C7728) {
         OSResumeThread(VideoDecodeThread_8036CFF0);
     }
