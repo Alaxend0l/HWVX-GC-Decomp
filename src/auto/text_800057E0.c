@@ -16194,6 +16194,60 @@ void __GXSetVCD(void) {
     __GXXfVtxSpecs();
 }
 
+void __GXCalculateVLim(void) {
+    typedef struct GXDataVLim {
+        u8 pad0[4];
+        u16 vNum;
+        u16 vLim;
+        u8 pad8[0xC];
+        u32 vcdLo;
+        u32 vcdHi;
+        u32 vatA[8];
+    } GXDataVLim;
+    extern GXDataVLim *gx;
+    static u8 tbl1[] = { 0, 4, 1, 2 };
+    static u8 tbl2[] = { 0, 8, 1, 2 };
+    static u8 tbl3[] = { 0, 12, 1, 2 };
+    u32 vlm;
+    u32 vl;
+    u32 vh;
+    u32 va;
+    s32 nc;
+
+    if (gx->vNum != 0) {
+        vl = gx->vcdLo;
+        va = gx->vatA[0];
+        vh = gx->vcdHi;
+        vlm = vl & 1;
+        vlm += (vl >> 1) & 1;
+        vlm += (vl >> 2) & 1;
+        vlm += (vl >> 3) & 1;
+        vlm += (vl >> 4) & 1;
+        vlm += (vl >> 5) & 1;
+        vlm += (vl >> 6) & 1;
+        vlm += (vl >> 7) & 1;
+        vlm += (vl >> 8) & 1;
+        vlm += tbl3[(vl >> 9) & 3];
+        if (((va >> 9) & 1) == 1) {
+            nc = 3;
+        } else {
+            nc = 1;
+        }
+        vlm += tbl3[(vl >> 11) & 3] * nc;
+        vlm += tbl1[(vl >> 13) & 3];
+        vlm += tbl1[(vl >> 15) & 3];
+        vlm += tbl2[vh & 3];
+        vlm += tbl2[(vh >> 2) & 3];
+        vlm += tbl2[(vh >> 4) & 3];
+        vlm += tbl2[(vh >> 6) & 3];
+        vlm += tbl2[(vh >> 8) & 3];
+        vlm += tbl2[(vh >> 10) & 3];
+        vlm += tbl2[(vh >> 12) & 3];
+        vlm += tbl2[(vh >> 14) & 3];
+        gx->vLim = vlm;
+    }
+}
+
 #pragma push
 #pragma scheduling off
 void GXGetVtxDesc(u32 attr, s32 *type) {
@@ -19283,6 +19337,44 @@ s32 TRKTargetAddExceptionInfo(void *b) {
     }
     if (err == 0) {
         err = TRKAppendBuffer1_ui16(b, *(u16 *)&gTRKExceptionStatus_800DA0A4[2]);
+    }
+    return err;
+}
+
+s32 TRKTargetAddStopInfo(void *b) {
+    typedef struct TRKCPURegs {
+        u32 gpr[32];
+        u8 pad80[0x18];
+        u64 fpr[32];
+    } TRKCPURegs;
+    extern u8 gTRKCPUState[];
+    s32 TRKAppendBuffer1_ui64(void *b, u64 data);
+    s32 err;
+    u32 inst;
+    u32 size;
+    s32 i;
+
+    err = TRKAppendBuffer1_ui32(b, *(u32 *)(gTRKCPUState + 0x80));
+    if (err == 0) {
+        size = 4;
+        err = TRKTargetAccessMemory(&inst, *(u32 *)(gTRKCPUState + 0x80), &size, 0, 1);
+        if (err == 0 && size != 4) {
+            err = 0x700;
+        }
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui32(b, inst);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui16(b, *(u32 *)(gTRKCPUState + 0x2F8));
+    }
+    if (err == 0) {
+        for (i = 0; i < 32; i++) {
+            err = TRKAppendBuffer1_ui32(b, (u16)((TRKCPURegs *)gTRKCPUState)->gpr[i]);
+        }
+        for (i = 0; i < 32; i++) {
+            err = TRKAppendBuffer1_ui64(b, (u16)((TRKCPURegs *)gTRKCPUState)->fpr[i]);
+        }
     }
     return err;
 }
