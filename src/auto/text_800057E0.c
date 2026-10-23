@@ -19359,7 +19359,7 @@ s32 CARDGetStatus(s32 chan, s32 fileNo, u8 *stat) {
 }
 
 #pragma push
-#pragma peephole off
+#pragma optimization_level 1
 s32 CARDSetStatusAsync(s32 chan, s32 fileNo, u8 *stat, CARDCallback callback) {
     void UpdateIconOffsets(u8 *ent, u8 *stat);
     s32 __CARDGetDirBlock(void *card);
