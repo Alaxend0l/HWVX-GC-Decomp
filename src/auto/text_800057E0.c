@@ -18047,33 +18047,36 @@ void *AXAcquireVoice(u32 priority, void (*callback)(void *), u32 userContext) {
         u8 pad24[0x146 - 0x24];
         u16 state;
     };
+    typedef struct {
+        AVPB *head[32];
+        AVPB *tail[32];
+    } AXStacks;
     s32 OSDisableInterrupts(void);
     s32 OSRestoreInterrupts(s32);
     void __AXSetPBDefault(void *p);
     extern AVPB *__AXStackHead_802EFC40[32];
-    AVPB **head = __AXStackHead_802EFC40;
-    AVPB **tail = __AXStackHead_802EFC40 + 32;
     s32 old;
     AVPB *pvpb;
     u32 i;
 
     old = OSDisableInterrupts();
-    pvpb = head[0];
+    pvpb = ((AXStacks *)__AXStackHead_802EFC40)->head[0];
     if (pvpb != NULL) {
-        head[0] = pvpb->next;
+        ((AXStacks *)__AXStackHead_802EFC40)->head[0] = pvpb->next;
     }
     if (pvpb == NULL) {
         for (i = 1; i < priority; i++) {
             AVPB *p = NULL;
+            AXStacks *s = (AXStacks *)__AXStackHead_802EFC40;
 
-            if (head[i]) {
-                if (head[i] == tail[i]) {
-                    p = head[i];
-                    head[i] = tail[i] = NULL;
-                } else if (tail[i]) {
-                    p = tail[i];
-                    tail[i] = p->prev;
-                    tail[i]->next = NULL;
+            if (s->head[i]) {
+                if (s->head[i] == s->tail[i]) {
+                    p = s->head[i];
+                    s->head[i] = s->tail[i] = NULL;
+                } else if (s->tail[i]) {
+                    p = s->tail[i];
+                    s->tail[i] = p->prev;
+                    s->tail[i]->next = NULL;
                 }
             }
             pvpb = p;
@@ -18089,14 +18092,16 @@ void *AXAcquireVoice(u32 priority, void (*callback)(void *), u32 userContext) {
         }
     }
     if (pvpb) {
-        pvpb->next = head[priority];
+        AXStacks *s = (AXStacks *)__AXStackHead_802EFC40;
+
+        pvpb->next = s->head[priority];
         pvpb->prev = NULL;
         if (pvpb->next) {
-            head[priority]->prev = pvpb;
-            head[priority] = pvpb;
+            s->head[priority]->prev = pvpb;
+            s->head[priority] = pvpb;
         } else {
-            tail[priority] = pvpb;
-            head[priority] = pvpb;
+            s->tail[priority] = pvpb;
+            s->head[priority] = pvpb;
         }
         pvpb->priority = priority;
         pvpb->callback = callback;
@@ -19352,6 +19357,50 @@ s32 CARDGetStatus(s32 chan, s32 fileNo, u8 *stat) {
     }
     return __CARDPutControlBlock(card, result);
 }
+
+#pragma push
+#pragma peephole off
+s32 CARDSetStatusAsync(s32 chan, s32 fileNo, u8 *stat, CARDCallback callback) {
+    void UpdateIconOffsets(u8 *ent, u8 *stat);
+    s32 __CARDGetDirBlock(void *card);
+    s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard);
+    s32 __CARDPutControlBlock(CARDControl *card, s32 result);
+    s64 OSGetTime(void);
+    CARDControl *card;
+    u8 *ent;
+    s32 result;
+
+    if (fileNo < 0 || 0x7F <= fileNo ||
+        (*(u32 *)(stat + 0x30) != 0xFFFFFFFF && 0x200 <= *(u32 *)(stat + 0x30)) ||
+        (*(u32 *)(stat + 0x38) != 0xFFFFFFFF && (*(u32 *)(stat + 0x38) & 0x1FFF) > 0x1FC0)) {
+        return -0x80;
+    }
+    result = __CARDGetControlBlock(chan, &card);
+    if (result < 0) {
+        return result;
+    }
+    ent = (u8 *)__CARDGetDirBlock(card) + fileNo * 0x40;
+    result = __CARDAccess(card, ent);
+    if (result < 0) {
+        return __CARDPutControlBlock(card, result);
+    }
+    *(u8 *)(ent + 0x7) = *(u8 *)(stat + 0x2E);
+    *(u32 *)(ent + 0x2C) = *(u32 *)(stat + 0x30);
+    *(u16 *)(ent + 0x30) = *(u16 *)(stat + 0x34);
+    *(u16 *)(ent + 0x32) = *(u16 *)(stat + 0x36);
+    *(u32 *)(ent + 0x3C) = *(u32 *)(stat + 0x38);
+    UpdateIconOffsets(ent, stat);
+    if (*(u32 *)(ent + 0x2C) == 0xFFFFFFFF) {
+        *(u16 *)(ent + 0x32) = (*(u16 *)(ent + 0x32) & ~3) | 1;
+    }
+    *(u32 *)(ent + 0x28) = (u32)(OSGetTime() / (*(u32 *)0x800000F8 / 4));
+    result = __CARDUpdateDir(chan, callback);
+    if (result < 0) {
+        __CARDPutControlBlock(card, result);
+    }
+    return result;
+}
+#pragma pop
 
 #pragma pop
 s32 __CARDUpdateDir(s32 chan, CARDCallback callback) {
