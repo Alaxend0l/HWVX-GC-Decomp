@@ -9727,6 +9727,60 @@ s32 ActionItemChangeMode(u32 *action) {
     return 1;
 }
 
+void TimerManager_Heartbeat(void) {
+    extern u32 g_iDeltaTimeMS;
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    typedef struct {
+        u8 unk0;
+        u8 type;
+    } TimerDef;
+    typedef struct {
+        u8 unk0[3];
+        u8 countUp;
+        u8 unk4[4];
+        f32 time;
+        TimerDef *def;
+    } Timer;
+    typedef struct {
+        u8 unk0[0x50];
+        u32 numTimers;
+        Timer **timers;
+    } TimerWorld;
+    TimerWorld *world;
+    Timer *timer;
+    u32 i;
+    u8 speed;
+    Timer **timers;
+    u32 dt;
+
+    world = g_worldData.world;
+    if (world == NULL) {
+        return;
+    }
+    speed = GameSettings_GetCodeVariable(0x6C, 7);
+    for (i = 0; i < world->numTimers; i++) {
+        timers = world->timers;
+        timer = timers[i];
+        if (timer->def->type == 7) {
+            continue;
+        }
+        dt = g_iDeltaTimeMS;
+        if (speed == 1) {
+            dt >>= 1;
+        } else if (speed == 2) {
+            dt = 0.1f * dt;
+        }
+        if (timer->countUp == 0) {
+            timer->time -= dt;
+            if (timers[i]->time < 0.0f) {
+                timers[i]->time = 0.0f;
+            }
+        } else {
+            timer->time += dt;
+        }
+    }
+}
+
 #pragma pop
 s32 ActionVariableChangeMode(u32 *action) {
     u32 i;
