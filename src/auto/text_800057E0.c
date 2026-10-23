@@ -15720,6 +15720,24 @@ s64 __OSGetSystemTime(void) {
 }
 
 void GetDates(s32 days, s32 *td) {
+    extern s32 LeapYearDays_800D54D0[];
+    extern s32 YearDays_800D54A0[];
+    s32 year;
+    s32 n;
+    s32 month;
+    s32 *p;
+
+    td[6] = (days + 6) % 7;
+    for (year = days / 365; days < (n = year * 365 + GetLeapDays(year)); year--) {
+    }
+    days -= n;
+    td[5] = year;
+    td[7] = days;
+    p = IsLeapYear(year) ? LeapYearDays_800D54D0 : YearDays_800D54A0;
+    for (month = 12; days < p[--month];) {
+    }
+    td[4] = month;
+    td[3] = days - p[month] + 1;
 }
 
 s32 __get_time(void) {
@@ -17788,6 +17806,67 @@ void PADClamp(void *status) {
     }
 }
 
+void UpdateOrigin(s32 chan) {
+    typedef struct {
+        u16 button;
+        s8 stickX;
+        s8 stickY;
+        s8 substickX;
+        s8 substickY;
+        u8 triggerLeft;
+        u8 triggerRight;
+        u8 analogA;
+        u8 analogB;
+        s8 err;
+    } PADStatus_;
+    u32 SIGetType(s32 chan);
+    extern u32 AnalogMode_803C6DD0;
+    extern u8 Origin_802EFC00[4][12];
+    extern u32 XPatchBits_803C6DCC;
+    PADStatus_ *origin;
+    u32 chanBit = 0x80000000 >> chan;
+
+    origin = (PADStatus_ *)Origin_802EFC00[chan];
+    switch (AnalogMode_803C6DD0 & 0x700) {
+    case 0x000:
+    case 0x500:
+    case 0x600:
+    case 0x700:
+        origin->triggerLeft &= ~15;
+        origin->triggerRight &= ~15;
+        origin->analogA &= ~15;
+        origin->analogB &= ~15;
+        break;
+    case 0x100:
+        origin->substickX &= ~15;
+        origin->substickY &= ~15;
+        origin->analogA &= ~15;
+        origin->analogB &= ~15;
+        break;
+    case 0x200:
+        origin->substickX &= ~15;
+        origin->substickY &= ~15;
+        origin->triggerLeft &= ~15;
+        origin->triggerRight &= ~15;
+        break;
+    case 0x300:
+        break;
+    case 0x400:
+        break;
+    }
+
+    origin->stickX -= 128;
+    origin->stickY -= 128;
+    origin->substickX -= 128;
+    origin->substickY -= 128;
+
+    if (XPatchBits_803C6DCC & chanBit) {
+        if (64 < origin->stickX && (SIGetType(chan) & 0xFFFF0000) == 0x09000000) {
+            origin->stickX = 0;
+        }
+    }
+}
+
 static void ClampS8(s8 *var, s8 org) {
     s8 v = *var;
 
@@ -19699,6 +19778,69 @@ s32 DSPGetDMAStatus(void) {
 void __DSP_debug_printf(char *str, ...) {
 }
 
+void __DSP_exec_task(DSPTaskInfo *curr, DSPTaskInfo *next) {
+    void DSPSendMailToDSP(u32 mail);
+    u32 DSPCheckMailToDSP(void);
+
+    if (curr != NULL) {
+        DSPSendMailToDSP(*(u32 *)((u8 *)curr + 0x18));
+        while (DSPCheckMailToDSP()) {
+        }
+        DSPSendMailToDSP(*(u32 *)((u8 *)curr + 0x1C));
+        while (DSPCheckMailToDSP()) {
+        }
+        DSPSendMailToDSP(*(u32 *)((u8 *)curr + 0x20));
+        while (DSPCheckMailToDSP()) {
+        }
+    } else {
+        DSPSendMailToDSP(0);
+        while (DSPCheckMailToDSP()) {
+        }
+        DSPSendMailToDSP(0);
+        while (DSPCheckMailToDSP()) {
+        }
+        DSPSendMailToDSP(0);
+        while (DSPCheckMailToDSP()) {
+        }
+    }
+    DSPSendMailToDSP(*(u32 *)((u8 *)next + 0xC));
+    while (DSPCheckMailToDSP()) {
+    }
+    DSPSendMailToDSP(*(u32 *)((u8 *)next + 0x10));
+    while (DSPCheckMailToDSP()) {
+    }
+    DSPSendMailToDSP(*(u32 *)((u8 *)next + 0x14));
+    while (DSPCheckMailToDSP()) {
+    }
+    if (next->state == 0) {
+        DSPSendMailToDSP(*(u16 *)((u8 *)next + 0x24));
+        while (DSPCheckMailToDSP()) {
+        }
+        DSPSendMailToDSP(0);
+        while (DSPCheckMailToDSP()) {
+        }
+        DSPSendMailToDSP(0);
+        while (DSPCheckMailToDSP()) {
+        }
+        DSPSendMailToDSP(0);
+        while (DSPCheckMailToDSP()) {
+        }
+    } else {
+        DSPSendMailToDSP(*(u16 *)((u8 *)next + 0x26));
+        while (DSPCheckMailToDSP()) {
+        }
+        DSPSendMailToDSP(*(u32 *)((u8 *)next + 0x18));
+        while (DSPCheckMailToDSP()) {
+        }
+        DSPSendMailToDSP(*(u32 *)((u8 *)next + 0x1C));
+        while (DSPCheckMailToDSP()) {
+        }
+        DSPSendMailToDSP(*(u32 *)((u8 *)next + 0x20));
+        while (DSPCheckMailToDSP()) {
+        }
+    }
+}
+
 void __DSP_boot_task(DSPTaskInfo *task) {
     u32 DSPCheckMailFromDSP(void);
     u32 DSPReadMailFromDSP(void);
@@ -20618,6 +20760,64 @@ void __CARDMountCallback(s32 chan, s32 result) {
     __CARDPutControlBlock(card, result);
     callback(chan, result);
 }
+
+s32 CARDMountAsync(s32 chan, void *workArea, CARDCallback detachCallback, CARDCallback attachCallback) {
+    s32 OSDisableInterrupts(void);
+    void OSRestoreInterrupts(s32);
+    void *EXISetExiCallback(s32 chan, void *exiCallback);
+    void __CARDExtHandler(s32 chan, void *context);
+    CARDControl *card;
+    s32 enabled;
+
+    if (chan < 0 || 2 <= chan) {
+        return -128;
+    }
+    if (*(u8 *)0x800030E3 & 0x80) {
+        return -3;
+    }
+    card = &__CARDBlock[chan];
+
+    enabled = OSDisableInterrupts();
+    if (card->result == -1) {
+        OSRestoreInterrupts(enabled);
+        return -1;
+    }
+    if (!card->attached && (EXIGetState(chan) & 8)) {
+        OSRestoreInterrupts(enabled);
+        return -2;
+    }
+
+    card->result = -1;
+    card->workArea = workArea;
+    card->extCallback = detachCallback;
+    card->apiCallback = attachCallback ? attachCallback : (CARDCallback)__CARDDefaultApiCallback;
+    card->exiCallback = 0;
+
+    if (!card->attached && !EXIAttach(chan, __CARDExtHandler)) {
+        card->result = -3;
+        OSRestoreInterrupts(enabled);
+        return -3;
+    }
+
+    card->mountStep = 0;
+    card->attached = 1;
+    EXISetExiCallback(chan, 0);
+    OSCancelAlarm(&card->alarm);
+
+    card->currentDir = 0;
+    card->buffer = 0;
+
+    OSRestoreInterrupts(enabled);
+
+    card->unlockCallback = (CARDCallback)__CARDMountCallback;
+    if (!EXILock(chan, 0, __CARDUnlockedHandler)) {
+        return 0;
+    }
+    card->unlockCallback = 0;
+
+    return DoMount(chan);
+}
+
 #pragma pop
 
 s32 __CARDFreeBlock(s32 chan, u16 nBlock, CARDCallback callback) {
@@ -22817,6 +23017,44 @@ void __GXFlushTextureState(void) {
     *(u16 *)(gx + 2) = 0;
 }
 
+void GXSetTevOp(s32 id, s32 mode) {
+    void GXSetTevColorIn(s32 stage, s32 a, s32 b, s32 c, s32 d);
+    void GXSetTevAlphaIn(s32 stage, s32 a, s32 b, s32 c, s32 d);
+    void GXSetTevColorOp(s32 stage, s32 op, s32 bias, s32 scale, s32 clamp, s32 out_reg);
+    void GXSetTevAlphaOp(s32 stage, s32 op, s32 bias, s32 scale, s32 clamp, s32 out_reg);
+    s32 carg = 10;
+    s32 aarg = 5;
+
+    if (id != 0) {
+        carg = 0;
+        aarg = 0;
+    }
+    switch (mode) {
+    case 0:
+        GXSetTevColorIn(id, 15, 8, carg, 15);
+        GXSetTevAlphaIn(id, 7, 4, aarg, 7);
+        break;
+    case 1:
+        GXSetTevColorIn(id, carg, 8, 9, 15);
+        GXSetTevAlphaIn(id, 7, 7, 7, aarg);
+        break;
+    case 2:
+        GXSetTevColorIn(id, carg, 12, 8, 15);
+        GXSetTevAlphaIn(id, 7, 4, aarg, 7);
+        break;
+    case 3:
+        GXSetTevColorIn(id, 15, 15, 15, 8);
+        GXSetTevAlphaIn(id, 7, 7, 7, 4);
+        break;
+    case 4:
+        GXSetTevColorIn(id, 15, 15, 15, carg);
+        GXSetTevAlphaIn(id, 7, 7, 7, aarg);
+        break;
+    }
+    GXSetTevColorOp(id, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(id, 0, 0, 0, 1, 0);
+}
+
 void GXSetTevColorIn(s32 stage, s32 a, s32 b, s32 c, s32 d) {
     extern GXDataTev *const gx;
     u32 *reg = &gx->tevc[stage];
@@ -24673,6 +24911,48 @@ s32 TRKInitializeDispatcher(void) {
     extern u32 gTRKDispatchTableSize[];
     gTRKDispatchTableSize[0] = 0x20;
     return 0;
+}
+
+void SetUseSerialIO(u8 sio);
+s32 TRKDoSetOption(TRKBuffer *b) {
+    s32 err;
+    s32 ackTries;
+    u8 spA;
+    u8 sp9;
+    u8 sp8;
+
+    spA = 0;
+    sp9 = 0;
+    sp8 = 0;
+    TRKSetBufferPosition(b, 0);
+    err = TRKReadBuffer1_ui8(b, &spA);
+    if (err == 0) {
+        err = TRKReadBuffer1_ui8(b, &sp9);
+    }
+    if (err == 0) {
+        err = TRKReadBuffer1_ui8(b, &sp8);
+    }
+    if (err != 0) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 1);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+    } else if (sp9 == 1) {
+        SetUseSerialIO(sp8);
+    }
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, 0);
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+    return err;
 }
 
 void TRKDoStop(TRKBuffer *b) {
