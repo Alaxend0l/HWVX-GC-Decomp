@@ -768,8 +768,9 @@ typedef struct GDL {
     u8 unkC3040[0xC6EC0 - 0xC3040];
     GDLLightState lightStates[0x80];
     f32 cachedMatrices[0x578][16];
-    GDLDrawEntry drawEntries[(0xF3C00 - 0xDFCC0) / 0x14];
-    u8 unkF3BEC[0xF3C00 - 0xDFCC0 - ((0xF3C00 - 0xDFCC0) / 0x14) * 0x14];
+    GDLDrawEntry drawEntries[(0xF3A80 - 0xDFCC0) / 0x14];
+    u8 unkF3A7C[0xF3A80 - 0xF3A7C];
+    GDLEnvmapState envmapStates[0x20];
     u32 matrices[0x578];
     u8 unkF51E0[0x24CDE4 - 0xF51E0];
     GDLGroupTri *groupTris;
