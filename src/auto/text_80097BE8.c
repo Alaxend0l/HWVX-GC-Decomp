@@ -598,6 +598,18 @@ static inline s32 Effect_MulDiv(s32 a, s32 b, s32 c) {
     return (a * b + (a < 0 ? -(c / 2) : c / 2)) / c;
 }
 
+static inline s32 Effect_WaveLookup(s16 *table, u32 a) {
+    if (a < 0x40) {
+        return table[a];
+    } else if (a < 0x80) {
+        return table[0x7F - a];
+    } else if (a < 0xC0) {
+        return -table[a - 0x80];
+    } else {
+        return -table[0xFF - a];
+    }
+}
+
 typedef struct EffectConstant {
     s16 magnitude;
     u16 angle;
