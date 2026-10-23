@@ -444,8 +444,8 @@ typedef struct EffectState {
 } EffectState;
 
 typedef struct EffectEnvelope {
-    u32 attackTime;
-    u32 fadeTime;
+    s32 attackTime;
+    s32 fadeTime;
     u8 attackLevel;
     u8 fadeLevel;
 } EffectEnvelope;
@@ -6058,6 +6058,42 @@ s32 Effect_StartEffect(void *arg0) {
         M2C_FIELD(arg0, s32 *, 0x38) = (s32) (M2C_FIELD(arg0, u16 *, 0x12) << 0x10);
     }
     return 0;
+}
+
+s32 Effect_PerformEnvelope(Effect *effect, EffectEnvelope *env, s32 magnitude) {
+    u32 elapsed = effect->elapsed;
+    s32 start = magnitude < 0 ? -magnitude : magnitude;
+    s32 negative = magnitude < 0;
+    s32 level = start;
+    u32 fadeStart;
+    s32 t;
+    s32 half;
+
+    if (elapsed < env->attackTime) {
+        half = (s32)env->attackTime / 2;
+        if ((s32)elapsed < 0) {
+            half = -half;
+        }
+        level = env->attackLevel + (s32)(elapsed * (start - env->attackLevel) + half) / (s32)env->attackTime;
+    } else if (effect->duration != 0xFFFFFFFF) {
+        fadeStart = effect->duration - env->fadeTime;
+        if (elapsed > fadeStart) {
+            if (elapsed < effect->duration) {
+                t = elapsed - fadeStart;
+                half = (s32)env->fadeTime / 2;
+                if (t < 0) {
+                    half = -half;
+                }
+                level = start + (t * (env->fadeLevel - start) + half) / (s32)env->fadeTime;
+            } else {
+                level = env->fadeLevel;
+            }
+        }
+    }
+    if (negative) {
+        level = -level;
+    }
+    return level;
 }
 
 #pragma push
