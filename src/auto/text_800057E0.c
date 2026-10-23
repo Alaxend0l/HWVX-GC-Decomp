@@ -2516,6 +2516,8 @@ void ProcessManager_Init(void) {
     g_processManager.count = 0;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 void ProcessManager_Add(char *name, void (*init)(void), void (*update)(void), s32 arg, u32 flags) {
     u32 index = g_processManager.count++;
 
@@ -2534,6 +2536,7 @@ void ProcessManager_Add(char *name, void (*init)(void), void (*update)(void), s3
     g_processManager.processes[index].unk10 = 0;
     g_processManager.processes[index].unk14 = 0;
 }
+#pragma pop
 
 void Projectile_DynamicCollideImpact(void *proj, void *dir, s32 damage, f32 force) {
     void Projectile_DynamicCollisionCorrection(void *);
