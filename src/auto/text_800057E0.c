@@ -431,6 +431,8 @@ typedef struct CARDControl {
 
 extern CARDControl __CARDBlock[2];
 
+void __CARDSetDiskID(u8 *id);
+
 typedef struct DSPTaskInfo {
     volatile u32 state;
     volatile u32 priority;
@@ -7174,6 +7176,39 @@ fatal:
         card->exiCallback = 0;
         callback(chan, result);
     }
+}
+
+void __CARDSetDiskID(u8 *id) {
+    extern u8 __CARDDiskNone[32];
+
+    *(u8 **)((u8 *)&__CARDBlock[0] + 0x10C) = id ? id : __CARDDiskNone;
+    *(u8 **)((u8 *)&__CARDBlock[1] + 0x10C) = id ? id : __CARDDiskNone;
+}
+
+s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard) {
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32);
+    CARDControl *card;
+    s32 enabled;
+    s32 result;
+
+    card = &__CARDBlock[chan];
+    if (chan < 0 || chan >= 2 || *(u8 **)((u8 *)card + 0x10C) == NULL) {
+        return -128;
+    }
+    enabled = OSDisableInterrupts();
+    if (!card->attached) {
+        result = -3;
+    } else if (card->result == -1) {
+        result = -1;
+    } else {
+        card->result = -1;
+        result = 0;
+        card->apiCallback = NULL;
+        *pcard = card;
+    }
+    OSRestoreInterrupts(enabled);
+    return result;
 }
 
 s32 OnReset_8007DB90(s32 arg0) {
