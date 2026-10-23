@@ -653,6 +653,8 @@ s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, void *callback);
 s32 __CARDPutControlBlock(void *card, s32 result);
 void __CARDSyncCallback(s32 chan, s32 result);
 s32 __CARDSync(s32 chan);
+s32 __CARDAccess(void *card, u8 *ent);
+s32 __CARDIsPublic(void *arg0);
 s32 CARDReadAsync(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset, CARDCallback callback);
 s32 CARDCreateAsync(s32 chan, const char *fileName, u32 size, CARDFileInfo *fileInfo, CARDCallback callback);
 s32 CARDDeleteAsync(s32 chan, const char *fileName, CARDCallback callback);
@@ -11347,6 +11349,36 @@ void __OSContextInit(void) {
     __OSSetExceptionHandler(7, OSSwitchFPUContext);
     *(u32 *)0x800000D8 = 0;
     DBPrintf("FPU-unavailable handler installed\n");
+}
+
+void OSPanic(const char *file, int line, const char *msg, ...) {
+    typedef struct __va_list_struct {
+        char gpr;
+        char fpr;
+        char reserved[2];
+        char *input_arg_area;
+        char *reg_save_area;
+    } va_list[1];
+    void OSReport(const char *msg, ...);
+    int vprintf(const char *format, va_list arg);
+    u32 *OSGetStackPointer(void);
+    BOOL OSDisableInterrupts(void);
+    void PPCHalt(void);
+    va_list marker;
+    u32 i;
+    u32 *p;
+
+    OSDisableInterrupts();
+    __builtin_va_info(&marker);
+    vprintf(msg, marker);
+    OSReport(" in \"%s\" on line %d.\n", file, line);
+
+    OSReport("\nAddress:      Back Chain    LR Save\n");
+    for (i = 0, p = OSGetStackPointer(); p && (u32)p != 0xFFFFFFFF && i++ < 16; p = (u32 *)*p) {
+        OSReport("0x%08x:   0x%08x    0x%08x\n", p, p[0], p[1]);
+    }
+
+    PPCHalt();
 }
 
 u16 OSGetFontEncode(void) {
