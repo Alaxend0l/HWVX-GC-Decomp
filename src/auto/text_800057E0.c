@@ -2335,6 +2335,42 @@ void Emitter_Release(void *emitter) {
     Thing_Release((s32)emitter);
 }
 
+s32 ActionFXPointChangeMode(s32 *data) {
+    u32 count = data[1];
+    s32 mode = data[0];
+    u32 i;
+
+    for (i = 0; i < count; i++) {
+        u8 *point = (u8 *)data[i + 2];
+        u8 *fx = M2C_FIELD(point, u8 **, 0x30);
+        switch (mode) {
+        case 0:
+            if (fx != NULL) {
+                M2C_FIELD(fx, u32 *, 0x74) |= 0x02000000;
+            }
+            break;
+        case 1:
+            if (fx != NULL) {
+                M2C_FIELD(fx, u32 *, 0x74) &= ~0x02000000;
+            }
+            break;
+        case 2:
+            if (M2C_FIELD(fx, u32 *, 0x74) & 0x02000000) {
+                if (fx != NULL) {
+                    M2C_FIELD(fx, u32 *, 0x74) &= ~0x02000000;
+                }
+            } else {
+                if (fx != NULL) {
+                    M2C_FIELD(fx, u32 *, 0x74) |= 0x02000000;
+                }
+            }
+            break;
+        }
+        M2C_FIELD(point, s32 *, 0x34) = mode;
+    }
+    return 1;
+}
+
 s32 Emitter_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
