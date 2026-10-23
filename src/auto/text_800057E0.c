@@ -11228,8 +11228,8 @@ s32 StateRenderTest_Init(void) {
     s32 Gfx_FontManager_AddFont(s32, s32, f32, f32, f32);
     void Gfx_SetDebugFont(s32 font);
     f32 RandomNumberGenerator_GetRandomFloat(f32 min, f32 max);
-    s32 i;
     s32 j;
+    s32 i;
 
     Geometry_Init(1);
     Gfx_SetEnviroMapMode(1);
@@ -21953,6 +21953,28 @@ s32 EXIDeselect(s32 chan) {
     return 1;
 }
 
+static inline BOOL CompleteTransfer(s32 chan) {
+    extern u8 Ecb_80309980[3][0x40];
+    u8 *exi = Ecb_80309980[chan];
+    u8 *buf;
+    u32 data;
+    s32 i;
+    s32 len;
+
+    if (*(u32 *)(exi + 0xC) & 3) {
+        if ((*(u32 *)(exi + 0xC) & 2) && (len = *(s32 *)(exi + 0x10)) != 0) {
+            buf = *(u8 **)(exi + 0x14);
+            data = ((volatile u32 *)0xCC006800)[chan * 5 + 4];
+            for (i = 0; i < len; i++) {
+                *buf++ = (u8)(data >> ((3 - i) * 8));
+            }
+        }
+        *(u32 *)(exi + 0xC) &= ~3;
+        return TRUE;
+    }
+    return FALSE;
+}
+
 void EXIIntrruptHandler(s16 interrupt, void *context) {
     extern u8 Ecb_80309980[3][0x40];
     void OSClearContext(void *context);
@@ -21966,6 +21988,47 @@ void EXIIntrruptHandler(s16 interrupt, void *context) {
     ((volatile u32 *)0xCC006800)[chan * 5] = ((volatile u32 *)0xCC006800)[chan * 5] & 0x7F5 | 2;
     callback = *(EXICallback *)(Ecb_80309980[chan] + 0);
     if (callback) {
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(exceptionContext);
+        callback(chan, context);
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(context);
+    }
+}
+
+void TCIntrruptHandler(s16 interrupt, void *context) {
+    extern u8 Ecb_80309980[3][0x40];
+    void OSClearContext(void *context);
+    void OSSetCurrentContext(void *context);
+    u32 __OSMaskInterrupts(u32 mask);
+    typedef void (*EXICallback)(s32 chan, void *context);
+    s32 chan;
+    u8 *exi;
+    EXICallback callback;
+    u8 exceptionContext[0x2C8];
+
+    chan = (interrupt - 10) / 3;
+    exi = Ecb_80309980[chan];
+    __OSMaskInterrupts(0x80000000U >> interrupt);
+    *(volatile u32 *)(0xCC006800 + chan * 0x14) = *(volatile u32 *)(0xCC006800 + chan * 0x14) & 0x7F5 | 8;
+    callback = *(EXICallback *)(exi + 0x4);
+    if (callback) {
+        u8 *buf;
+        u32 data;
+        s32 i;
+        s32 len;
+
+        *(EXICallback *)(exi + 0x4) = NULL;
+        if (*(u32 *)(exi + 0xC) & 3) {
+            if ((*(u32 *)(exi + 0xC) & 2) && (len = *(s32 *)(exi + 0x10)) != 0) {
+                buf = *(u8 **)(exi + 0x14);
+                data = *(volatile u32 *)(0xCC006800 + chan * 0x14 + 0x10);
+                for (i = 0; i < len; i++) {
+                    *buf++ = (u8)(data >> ((3 - i) * 8));
+                }
+            }
+            *(u32 *)(exi + 0xC) &= ~3;
+        }
         OSClearContext(exceptionContext);
         OSSetCurrentContext(exceptionContext);
         callback(chan, context);
