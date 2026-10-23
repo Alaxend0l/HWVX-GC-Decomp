@@ -695,7 +695,8 @@ typedef struct GDL {
     GDL2DFXLine fxLines2D[200];
     u8 unkBC800[0xC0040 - 0xBC800];
     GDLLine lines[0x100];
-    u8 unkC3040[0xC9EC0 - 0xC3040];
+    u8 unkC3040[0xC6EC0 - 0xC3040];
+    GDLLightState lightStates[0x80];
     f32 cachedMatrices[0x578][16];
     GDLDrawEntry drawEntries[(0xF3C00 - 0xDFCC0) / 0x14];
     u8 unkF3BEC[0xF3C00 - 0xDFCC0 - ((0xF3C00 - 0xDFCC0) / 0x14) * 0x14];
