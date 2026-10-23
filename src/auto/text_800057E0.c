@@ -19514,6 +19514,47 @@ s32 TRKTargetAccessDefault(u32 firstRegister, u32 lastRegister, TRKBuffer *b, u3
     *(TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4 = savedException;
     return error;
 }
+
+s32 TRKValidMemory32(const void *addr, u32 length, u8 readWriteable) {
+    typedef struct memRange {
+        u8 *start;
+        u8 *end;
+        s32 readable;
+        s32 writeable;
+    } memRange;
+    extern const memRange gTRKMemMap[1];
+    s32 err = 0x700;
+    const u8 *start;
+    const u8 *end;
+    s32 i;
+
+    start = (const u8 *)addr;
+    end = (const u8 *)addr + (length - 1);
+
+    if (end < start) {
+        return 0x700;
+    }
+
+    for (i = 0; i < (s32)(sizeof(gTRKMemMap) / sizeof(memRange)); i++) {
+        if (start <= gTRKMemMap[i].end && end >= gTRKMemMap[i].start) {
+            if ((readWriteable == 0 && !gTRKMemMap[i].readable) ||
+                (readWriteable == 1 && !gTRKMemMap[i].writeable)) {
+                err = 0x700;
+            } else {
+                err = 0;
+                if (start < gTRKMemMap[i].start) {
+                    err = TRKValidMemory32(start, (u32)(gTRKMemMap[i].start - start), readWriteable);
+                }
+                if (err == 0 && end > gTRKMemMap[i].end) {
+                    err = TRKValidMemory32(gTRKMemMap[i].end, (u32)(end - gTRKMemMap[i].end), readWriteable);
+                }
+            }
+            break;
+        }
+    }
+    return err;
+}
+
 #pragma pop
 
 s32 fn_80093530(void) {
