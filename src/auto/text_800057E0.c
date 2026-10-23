@@ -4749,6 +4749,34 @@ void MatrixCache_Destroy(void) {
     g_pMatrixCacheData = NULL;
 }
 
+u32 MatrixCache_Get(u32 size, void *mtx) {
+    u32 i;
+
+    if (size > 0x10) {
+        for (i = 0; i < 4; i++) {
+            if (g_pMatrixCacheData->large[i].mtx == NULL) {
+                g_pMatrixCacheData->large[i].mtx = mtx;
+                return g_pMatrixCacheData->large[i].key;
+            }
+        }
+    } else if (size > 4) {
+        for (i = 0; i < 0x80; i++) {
+            if (g_pMatrixCacheData->medium[i].mtx == NULL) {
+                g_pMatrixCacheData->medium[i].mtx = mtx;
+                return g_pMatrixCacheData->medium[i].key;
+            }
+        }
+    } else {
+        for (i = 0; i < 0x60; i++) {
+            if (g_pMatrixCacheData->small[i].mtx == NULL) {
+                g_pMatrixCacheData->small[i].mtx = mtx;
+                return g_pMatrixCacheData->small[i].key;
+            }
+        }
+    }
+    return 0;
+}
+
 void MatrixCache_Free(u32 key) {
     MatrixCacheData *data = g_pMatrixCacheData;
     u32 i;
@@ -9217,6 +9245,49 @@ void L2GlobalInvalidate(void) {
         DBPrintf(">>> L2 INVALIDATE : SHOULD NEVER HAPPEN\n");
     }
 }
+
+#pragma push
+#pragma peephole off
+void __OSCacheInit(void) {
+    u32 PPCMfhid0(void);
+    u32 PPCMfl2cr(void);
+    void PPCMtl2cr(u32 val);
+    u32 PPCMfmsr(void);
+    void PPCMtmsr(u32 val);
+    void ICEnable(void);
+    void DCEnable(void);
+    void L2GlobalInvalidate(void);
+    void DBPrintf(const char *fmt, ...);
+    void DMAErrorHandler(u16 error, void *context, ...);
+    void *OSSetErrorHandler(u16 error, void *handler);
+    u32 oldMSR;
+
+    if (!(PPCMfhid0() & 0x8000)) {
+        ICEnable();
+        DBPrintf("L1 i-caches initialized\n");
+    }
+    if (!(PPCMfhid0() & 0x4000)) {
+        DCEnable();
+        DBPrintf("L1 d-caches initialized\n");
+    }
+    if (!(PPCMfl2cr() & 0x80000000)) {
+        oldMSR = PPCMfmsr();
+        __sync();
+        PPCMtmsr(0x30);
+        __sync();
+        __sync();
+        PPCMtl2cr(PPCMfl2cr() & ~0x80000000);
+        __sync();
+        L2GlobalInvalidate();
+        PPCMtmsr(oldMSR);
+        PPCMtl2cr((PPCMfl2cr() | 0x80000000) & ~0x00200000);
+        DBPrintf("L2 cache initialized\n");
+    }
+    OSSetErrorHandler(1, DMAErrorHandler);
+    DBPrintf("Locked cache machine check handler installed\n");
+}
+#pragma pop
+
 #pragma pop
 
 s32 OSGetCurrentContext(void) {
@@ -9692,6 +9763,34 @@ u32 OSGetResetCode(void) {
     return (((volatile u32 *)0xCC003000)[9] & ~7) >> 3;
 }
 
+s64 __OSGetSystemTime(void);
+#pragma push
+#pragma dont_inline on
+void __OSResetSWInterruptHandler(s16 exception, void *context) {
+    extern s64 HoldDown_803C7288;
+    extern s32 Down_803C7274;
+    extern s32 LastState_803C7278;
+    extern void (*ResetCallback_803C7270)(void);
+    void (*callback)(void);
+    s64 timeout;
+
+    HoldDown_803C7288 = __OSGetSystemTime();
+    timeout = (s64)((100 * ((*(u32 *)0x800000F8 / 4) / 125000)) / 8);
+    while (__OSGetSystemTime() - HoldDown_803C7288 < timeout &&
+           !(((volatile u32 *)0xCC003000)[0] & 0x10000)) {
+    }
+    if (!(((volatile u32 *)0xCC003000)[0] & 0x10000)) {
+        LastState_803C7278 = Down_803C7274 = 1;
+        __OSMaskInterrupts(0x200);
+        if (ResetCallback_803C7270) {
+            callback = ResetCallback_803C7270;
+            ResetCallback_803C7270 = 0;
+            callback();
+        }
+    }
+    ((volatile u32 *)0xCC003000)[0] = 2;
+}
+#pragma pop
 void WriteSramCallback(void) {
     s32 WriteSram(void *, u32, u32);
 
@@ -11562,6 +11661,40 @@ void EXTIntrruptHandler(s16 interrupt, void *context) {
         OSClearContext(exceptionContext);
         OSSetCurrentContext(context);
     }
+}
+
+s32 EXILock(s32 chan, u32 dev, void *unlockedCallback) {
+    extern u8 Ecb_80309980[3][0x40];
+    void SetExiInterruptMask(s32 chan, u8 *exi);
+    typedef struct {
+        u32 dev;
+        void *callback;
+    } EXIQueue;
+    u8 *exi = Ecb_80309980[chan];
+    BOOL enabled;
+    s32 i;
+
+    enabled = OSDisableInterrupts();
+    if (*(u32 *)(exi + 0xC) & 0x10) {
+        if (unlockedCallback) {
+            for (i = 0; i < *(s32 *)(exi + 0x24); i++) {
+                if (((EXIQueue *)(exi + 0x28))[i].dev == dev) {
+                    OSRestoreInterrupts(enabled);
+                    return 0;
+                }
+            }
+            ((EXIQueue *)(exi + 0x28))[*(s32 *)(exi + 0x24)].callback = unlockedCallback;
+            ((EXIQueue *)(exi + 0x28))[*(s32 *)(exi + 0x24)].dev = dev;
+            (*(s32 *)(exi + 0x24))++;
+        }
+        OSRestoreInterrupts(enabled);
+        return 0;
+    }
+    *(u32 *)(exi + 0xC) |= 0x10;
+    *(u32 *)(exi + 0x18) = dev;
+    SetExiInterruptMask(chan, exi);
+    OSRestoreInterrupts(enabled);
+    return 1;
 }
 
 s32 EXIUnlock(s32 chan) {
