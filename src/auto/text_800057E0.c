@@ -2351,6 +2351,20 @@ s32 ActionInterfacePlay(s32 *arg0) {
     return 1;
 }
 
+void InterfaceManager_SetPlayerMessage(void *message, u32 player) {
+    extern void *g_playerMessage1;
+    extern void *g_playerMessage2;
+    extern void *g_playerMessage3;
+
+    if (player == 0) {
+        g_playerMessage1 = message;
+    } else if (player == 1) {
+        g_playerMessage2 = message;
+    } else if (player == 2) {
+        g_playerMessage3 = message;
+    }
+}
+
 s32 Item_PreMove(void) {
     return 1;
 }
@@ -5280,9 +5294,10 @@ s32 __OSGetEffectivePriority(void *thread) {
 }
 
 void __OSReschedule(void) {
-    M2C_UNK SelectThread(M2C_UNK);
+    void SelectThread(s32 yield);
     extern s32 RunQueueHint_803C7294;
-    if ((s32) RunQueueHint_803C7294 != 0) {
+
+    if (RunQueueHint_803C7294) {
         SelectThread(0);
     }
 }
