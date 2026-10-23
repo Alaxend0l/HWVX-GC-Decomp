@@ -5782,7 +5782,7 @@ void Render_DrawPointSprites(void) {
 }
 
 #pragma push
-#pragma dont_inline on
+#pragma inline_max_size(10)
 void Render_DrawRectangle(void *rect) {
     typedef struct RectVertex {
         f32 x;
@@ -5806,8 +5806,8 @@ void Render_DrawRectangle(void *rect) {
     extern s32 g_debugTriCount;
     void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
     void Render_LoadCamera(void);
-    Rectangle *r = rect;
     s32 cullMode;
+    Rectangle *r = rect;
     u32 i;
 
     cullMode = m_cullMode;
@@ -5822,14 +5822,29 @@ void Render_DrawRectangle(void *rect) {
     Set2DRectVtxDesc();
     GXBegin(0x80, 0, 4);
     for (i = 0; i < 4; i++) {
-        GXWGFifo.f32 = r->v[i].x;
-        GXWGFifo.f32 = r->v[i].y;
-        GXWGFifo.u8 = r->v[i].r;
-        GXWGFifo.u8 = r->v[i].g;
-        GXWGFifo.u8 = r->v[i].b;
-        GXWGFifo.u8 = r->v[i].a;
-        GXWGFifo.f32 = r->v[i].u;
-        GXWGFifo.f32 = r->v[i].v;
+        {
+            f32 y = r->v[i].y;
+            f32 x = r->v[i].x;
+            GXWGFifo.f32 = x;
+            GXWGFifo.f32 = y;
+        }
+        {
+            u8 a = r->v[i].a;
+            u8 b = r->v[i].b;
+            u8 g = r->v[i].g;
+            u8 c = r->v[i].r;
+            volatile PPCWGPipe *fifo = &GXWGFifo;
+            fifo->u8 = c;
+            fifo->u8 = g;
+            fifo->u8 = b;
+            fifo->u8 = a;
+        }
+        {
+            f32 t = r->v[i].v;
+            f32 s = r->v[i].u;
+            GXWGFifo.f32 = s;
+            GXWGFifo.f32 = t;
+        }
     }
     if (r->blendMode != 0) {
         Render_StateAlphaBlendEnable(0);
