@@ -5800,6 +5800,93 @@ void Render_SetTextureHandle(u16 id) {
 }
 
 #pragma push
+#pragma use_lmw_stmw on
+s32 DrawChar(s32 x, s32 y, u16 code) {
+    typedef struct {
+        u32 dummy[8];
+    } GXTexObj;
+    typedef struct {
+        u8 unk0[0x10];
+        u16 cellWidth;
+        u16 cellHeight;
+        u8 unk14[4];
+        u16 sheetFormat;
+        u8 unk1A[4];
+        u16 sheetWidth;
+        u16 sheetHeight;
+    } FontHeader;
+    extern FontHeader *FontData_803C76A4;
+    void GXInitTexObj(GXTexObj *obj, void *image, u16 width, u16 height, s32 format, s32 wrap_s, s32 wrap_t, u8 mipmap);
+    void GXInitTexObjLOD(GXTexObj *obj, s32 min_filt, s32 mag_filt, f32 min_lod, f32 max_lod, f32 lod_bias, u8 bias_clamp, u8 do_edge_lod, s32 max_aniso);
+    void GXLoadTexObj(GXTexObj *obj, s32 id);
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    void GXLoadTexMtxImm(f32 mtx[3][4], u32 id, s32 type);
+    void GXSetTexCoordGen2(s32 dst, s32 func, s32 src, u32 mtx, u8 normalize, u32 pt);
+    void PSMTXScale(f32 m[3][4], f32 x, f32 y, f32 z);
+    char *OSGetFontTexture(char *string, void **image, s32 *x, s32 *y, s32 *width);
+    s32 t;
+    s32 s;
+    void *image;
+    s32 width;
+    char str[3];
+    GXTexObj tobj;
+    f32 mtx[3][4];
+    s16 x0;
+    s16 y0;
+    s16 x1;
+    s16 y1;
+    u16 cw;
+    u16 ch;
+
+    if (code == 0) {
+        return 0;
+    }
+    if (code < 0x100) {
+        str[0] = code;
+        str[1] = 0;
+    } else {
+        str[0] = code >> 8;
+        str[1] = code;
+        str[2] = 0;
+    }
+    OSGetFontTexture(str, &image, &s, &t, &width);
+    GXInitTexObj(&tobj, image, FontData_803C76A4->sheetWidth, FontData_803C76A4->sheetHeight, FontData_803C76A4->sheetFormat, 0, 0, 0);
+    GXInitTexObjLOD(&tobj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+    GXLoadTexObj(&tobj, 0);
+    PSMTXScale(mtx, 1.0f / FontData_803C76A4->sheetWidth, 1.0f / FontData_803C76A4->sheetHeight, 1.0f);
+    GXLoadTexMtxImm(mtx, 30, 1);
+    GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
+    x0 = x;
+    y0 = y;
+    cw = FontData_803C76A4->cellWidth;
+    ch = FontData_803C76A4->cellHeight;
+    x1 = x0 + cw;
+    y1 = y0 + ch;
+    GXBegin(0x80, 0, 4);
+    GXWGFifo.s16 = x0;
+    GXWGFifo.s16 = y0;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.s16 = s;
+    GXWGFifo.s16 = t;
+    GXWGFifo.s16 = x1;
+    GXWGFifo.s16 = y0;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.s16 = s + cw;
+    GXWGFifo.s16 = t;
+    GXWGFifo.s16 = x1;
+    GXWGFifo.s16 = y1;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.s16 = s + cw;
+    GXWGFifo.s16 = t + ch;
+    GXWGFifo.s16 = x0;
+    GXWGFifo.s16 = y1;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.s16 = s;
+    GXWGFifo.s16 = t + ch;
+    return width;
+}
+
+#pragma push
 #pragma dont_inline on
 void Render_Create(void) {
     extern s32 m_fogMode_803C76CC;
