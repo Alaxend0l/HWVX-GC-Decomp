@@ -5496,18 +5496,16 @@ void SoundSeq_Release(u8 *seq) {
     void Trigger_SoundSequenceQueueEmptied(void);
     void SoundSource_Stop(s32 index);
     void Thing_Release(void *thing);
-    s32 *sources;
     u32 i;
 
     if (M2C_FIELD(seq, u32 *, 0x74) & 0x40000000) {
         SoundSeq_RemoveFromQueue(seq);
     }
-    sources = (s32 *)(seq + 0xD0);
     for (i = 0; i < 4; i++) {
-        if (sources[i] >= 0 && SoundSource_IsLooping(sources[i])) {
-            SoundSource_Stop(sources[i]);
+        if (((s32 *)(seq + 0xD0))[i] >= 0 && SoundSource_IsLooping(((s32 *)(seq + 0xD0))[i])) {
+            SoundSource_Stop(((s32 *)(seq + 0xD0))[i]);
         }
-        sources[i] = -1;
+        ((s32 *)(seq + 0xD0))[i] = -1;
     }
     Thing_Release(seq);
 }
