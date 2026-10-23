@@ -2251,6 +2251,15 @@ void LightHolder_SetRenderState(void *camera) {
     }
 }
 
+void LineManager_Init(void) {
+    extern u8 g_lineManager[128][0xF0];
+    u32 i;
+
+    for (i = 0; i < 128; i++) {
+        *(s32 *)(g_lineManager[i] + 0x50) = 0;
+    }
+}
+
 s32 LogHandler_Create(void) {
     return 0;
 }
