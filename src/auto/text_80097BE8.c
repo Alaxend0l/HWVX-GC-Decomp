@@ -7568,7 +7568,7 @@ void __THPHuffGenerateCodeTable(void) {
 }
 
 #pragma push
-#pragma opt_lifetimes off
+#pragma opt_strength_reduction off
 void __THPHuffGenerateDecoderTables(u8 tabIndex) {
     s32 p, l;
     THPHuffmanTab *h;
@@ -7585,7 +7585,7 @@ void __THPHuffGenerateDecoderTables(u8 tabIndex) {
             h->valPtr[l] = -1;
         }
     }
-    h->maxCode[17] = 0xfffff;
+    h->maxCode[17] = 0xfffffL;
 }
 #pragma pop
 
