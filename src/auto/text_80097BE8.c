@@ -2900,7 +2900,9 @@ s32 Gfx_AddWorldMatrixState_NonCached(u32 matrix) {
     return g_pGDL->numMatrices++;
 }
 
-s32 Gfx_AddWorldMatrixState_CacheMatrix(s32 matrix) {
+#pragma push
+#pragma dont_inline on
+s32 Gfx_AddWorldMatrixState_CacheMatrix(u32 matrix) {
     extern GDL *g_pGDL;
 
     if (matrix == 0) {
@@ -2917,6 +2919,7 @@ s32 Gfx_AddWorldMatrixState_CacheMatrix(s32 matrix) {
     g_pGDL->numCachedMatrices++;
     return g_pGDL->numMatrices++;
 }
+#pragma pop
 
 void *Gfx_GetWorldMatrixState(u32 index) {
     extern GDL *g_pGDL;
