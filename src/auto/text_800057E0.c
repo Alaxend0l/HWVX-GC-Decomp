@@ -4337,24 +4337,29 @@ s32 Drone_PreMove(u8 *drone) {
     void GenerateSpinAngleFromQuaternion(Vector4 *quat, void *axis, f32 *angle);
     void Drone_ComputeSuspensionForces(u8 *drone);
     void PhysicalObject_IntegrateNonLateral(u8 *obj);
+    typedef struct {
+        Quaternion rot;
+        f32 pos[4];
+    } KeyFrame;
     Matrix4 inv;
     Matrix4 rel;
     Matrix4 world;
     Matrix4 rot;
-    f32 keyFrame[8];
+    KeyFrame key;
     Quaternion delta;
     Quaternion quat;
     Quaternion tmp;
     f32 angle;
 
     if (drone[0x1DC] == 2) {
-        Gfx_AnimExtractKeyFrame(*(void **)(drone + 0xD4), *(f32 *)(drone + 0x1E4), keyFrame, 1);
-        ((Vector4 *)drone)->x = (keyFrame[4] - ((Thing *)drone)->mtx.m[3][0]) / g_fDeltaTimeSec;
-        ((Vector4 *)drone)->y = (keyFrame[5] - ((Thing *)drone)->mtx.m[3][1]) / g_fDeltaTimeSec;
-        ((Vector4 *)drone)->z = (keyFrame[6] - ((Thing *)drone)->mtx.m[3][2]) / g_fDeltaTimeSec;
-        quat = *(Quaternion *)keyFrame;
+        Gfx_AnimExtractKeyFrame(*(void **)(drone + 0xD4), *(f32 *)(drone + 0x1E4), &key, 1);
+        ((Vector4 *)drone)->x = (key.pos[0] - ((Thing *)drone)->mtx.m[3][0]) / g_fDeltaTimeSec;
+        ((Vector4 *)drone)->y = (key.pos[1] - ((Thing *)drone)->mtx.m[3][1]) / g_fDeltaTimeSec;
+        ((Vector4 *)drone)->z = (key.pos[2] - ((Thing *)drone)->mtx.m[3][2]) / g_fDeltaTimeSec;
+        quat = key.rot;
+        tmp = key.rot;
         inv = ((Thing *)drone)->mtx;
-        *(Quaternion *)(drone + 0xE0) = tmp = quat;
+        Mover_SetRotation(drone, tmp);
         QuaternionToSubMatrix(&quat, &rot);
         TransposeSubMatrix(&inv);
         MultiplySubMatrix(&inv, &rot, &rel);
