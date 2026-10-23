@@ -3454,6 +3454,23 @@ void SetTriVtxDescIdxAlpha(void) {
     }
 }
 
+void SetTriVtxDesc(void) {
+    M2C_UNK GXClearVtxDesc();
+    M2C_UNK GXSetVtxAttrFmt(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK);
+    M2C_UNK GXSetVtxDesc(M2C_UNK, M2C_UNK);
+    extern u32 m_VtxDescFlag;
+    if ((u32) m_VtxDescFlag != 8U) {
+        m_VtxDescFlag = 8U;
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 1);
+        GXSetVtxDesc(0xB, 1);
+        GXSetVtxDesc(0xD, 1);
+        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+        GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+        GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    }
+}
+
 void Render_SetConstColor(s32 *arg0) {
     M2C_UNK GXSetChanAmbColor(M2C_UNK, s32 *);
     M2C_UNK GXSetChanMatColor(M2C_UNK, s32 *);
@@ -3477,6 +3494,26 @@ void Render_SetConstColor(s32 *arg0) {
     GXSetChanAmbColor(4, &spC);
     sp8 = white_803C6EE0;
     GXSetChanMatColor(4, &sp8);
+}
+
+void Render_DrawLine2D(void *line) {
+    typedef struct Line2D {
+        Vector p0;
+        Vector p1;
+        u8 r;
+        u8 g;
+        u8 b;
+    } Line2D;
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    void Set2DLineVtxDesc(void);
+    Line2D *l = line;
+
+    Set2DLineVtxDesc();
+    GXBegin(0xA8, 0, 2);
+    GXPosition2f32(l->p0.x, l->p0.y);
+    GXColor3u8(l->r, l->g, l->b);
+    GXPosition2f32(l->p1.x, l->p1.y);
+    GXColor3u8(l->r, l->g, l->b);
 }
 
 void Set2DLineVtxDesc(void) {
