@@ -3249,6 +3249,47 @@ void TimeHandler_Init(void) {
     OSTicksToCalendarTime(OSGetTime(), g_todaysDate);
 }
 
+void TimeHandler_Heartbeat(void) {
+    u32 OSGetTick(void);
+    extern u32 max_time;
+    extern u32 m_iLastTimeUs;
+    extern u32 m_iDeltaTimeUs;
+    extern u32 g_iDeltaTimeMS;
+    extern u32 g_iLastDeltaTimeMS;
+    extern u32 g_iLastTimeMS;
+    extern u32 g_iDeltaTime60th;
+    extern f32 g_fDeltaTimeMS;
+    extern f32 g_fDeltaTime60th;
+    extern f32 g_fDeltaTimeSec;
+    extern f32 g_fDeltaTimeSec_inv;
+    u32 now;
+
+    now = (OSGetTick() * 8) / ((*(u32 *)0x800000F8 / 4) / 125000);
+    if (max_time < now) {
+        max_time = now;
+    }
+    if (m_iLastTimeUs > now) {
+        m_iDeltaTimeUs = now + max_time - m_iLastTimeUs;
+    } else {
+        m_iDeltaTimeUs = now - m_iLastTimeUs;
+    }
+    if (m_iDeltaTimeUs >= 34000) {
+        m_iDeltaTimeUs = 34000;
+    }
+    if (m_iDeltaTimeUs < 1000) {
+        m_iDeltaTimeUs = 1000;
+    }
+    m_iLastTimeUs = now;
+    g_iLastDeltaTimeMS = g_iDeltaTimeMS;
+    g_fDeltaTimeMS = (f32)m_iDeltaTimeUs / 1000.0f;
+    g_iDeltaTimeMS = m_iDeltaTimeUs / 1000;
+    g_iLastTimeMS = m_iLastTimeUs / 1000;
+    g_fDeltaTime60th = g_fDeltaTimeMS / (1000.0f / 60.0f);
+    g_fDeltaTimeSec = g_fDeltaTimeMS / 1000.0f;
+    g_iDeltaTime60th = g_fDeltaTime60th;
+    g_fDeltaTimeSec_inv = 1.0f / g_fDeltaTimeSec;
+}
+
 void TimeHandler_SetTimeElapsedSec_f32(f32 sec)
 {
   extern f32 g_fDeltaTime60th;
@@ -3661,6 +3702,28 @@ s32 Gfx_AddWorldMatrixState_CacheMatrix(u32 matrix) {
     g_pGDL->numCachedMatrices++;
     return g_pGDL->numMatrices++;
 }
+
+s32 Gfx_AddWorldMatrixState_CacheMatrixQuaternionScalePos(s32 quat, s32 scale, s32 pos) {
+    extern GDL *g_pGDL;
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+
+    ((Vector *)pos)->w = 1.0f;
+    if (g_pGDL->numMatrices >= 0x578) {
+        g_pGDL->numMatrices = 0;
+    }
+    if (g_pGDL->numCachedMatrices >= 0x578) {
+        g_pGDL->numCachedMatrices = 0;
+    }
+    QuaternionToSubMatrix((void *)quat, g_pGDL->cachedMatrices[g_pGDL->numCachedMatrices]);
+    if ((void *)scale != NULL) {
+        ScaleMatrix(g_pGDL->cachedMatrices[g_pGDL->numCachedMatrices], (void *)scale);
+    }
+    CopyVector((Vector *)&g_pGDL->cachedMatrices[g_pGDL->numCachedMatrices][12], (Vector *)pos);
+    g_pGDL->matrices[g_pGDL->numMatrices] = (u32)g_pGDL->cachedMatrices[g_pGDL->numCachedMatrices];
+    g_pGDL->numCachedMatrices++;
+    return g_pGDL->numMatrices++;
+}
+
 #pragma pop
 
 void *Gfx_GetWorldMatrixState(u32 index) {
