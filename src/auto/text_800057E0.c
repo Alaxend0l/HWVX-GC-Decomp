@@ -1612,7 +1612,7 @@ void AI_Car_AsyncScanDestructibles(u8 *car) {
 }
 
 #pragma push
-#pragma auto_inline off
+#pragma dont_inline on
 void AI_Car_Init(u8 *car, u8 *params) {
     void AI_Car_AsyncHeartbeat(u8 *car);
     void AI_Car_WeaponAsyncHeartbeat_80008210(u8 *car);
