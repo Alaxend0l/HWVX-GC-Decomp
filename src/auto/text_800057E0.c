@@ -11782,7 +11782,6 @@ void GXSetNumIndStages(u8 nIndStages) {
 }
 
 #pragma push
-#pragma scheduling off
 void __GXUpdateBPMask(void) {
     typedef struct GXDataBP {
         u8 unk0[2];
@@ -11794,14 +11793,13 @@ void __GXUpdateBPMask(void) {
         u32 genMode;
     } GXDataBP;
     extern GXDataBP *gx;
-    u32 nIndStages;
     u32 i;
     u32 tmap;
     u32 new_imask;
+    u32 *reg;
 
     new_imask = 0;
-    nIndStages = (gx->genMode >> 16) & 7;
-    for (i = 0; i < nIndStages; i++) {
+    for (i = 0; i < ((gx->genMode >> 16) & 7); i++) {
         switch (i) {
         case 0:
             tmap = gx->iref & 7;
@@ -11818,8 +11816,9 @@ void __GXUpdateBPMask(void) {
         }
         new_imask |= 1 << tmap;
     }
-    if ((u8)gx->bpMask != new_imask) {
-        gx->bpMask = (gx->bpMask & ~0xFF) | new_imask;
+    reg = &gx->bpMask;
+    if ((u8)*reg != new_imask) {
+        *reg = (*reg & ~0xFF) | new_imask;
         GXWGPipe.u8 = 0x61;
         GXWGPipe.u32 = gx->bpMask;
         gx->bpSentNot = 0;
