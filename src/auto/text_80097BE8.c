@@ -1077,8 +1077,6 @@ static inline void *get_malloc_pool(void) {
 void free(void *ptr) {
     void deallocate_from_fixed_pools(void *pool, void *ptr, u32 size);
     void Block_link(Block *ths, SubBlock *sb);
-    extern u8 protopool_8030DD18[0x34];
-    extern u8 init_803C75E8;
     void *pool;
     u32 size;
     Block *bp;
@@ -1086,11 +1084,7 @@ void free(void *ptr) {
     SubBlock *sb;
     s32 empty;
 
-    if (!init_803C75E8) {
-        memset(protopool_8030DD18, 0, sizeof(protopool_8030DD18));
-        init_803C75E8 = 1;
-    }
-    pool = protopool_8030DD18;
+    pool = get_malloc_pool();
     if (ptr == NULL) {
         return;
     }
