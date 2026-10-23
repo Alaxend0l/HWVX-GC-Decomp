@@ -1060,12 +1060,19 @@ typedef struct GDLTriVtx {
     f32 y;
     f32 z;
     f32 w;
-    u8 unk10[0x20 - 0x10];
+    f32 s;
+    f32 t;
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
+    u8 unk1C[0x20 - 0x1C];
 } GDLTriVtx;
 
 typedef struct GDLTri {
     GDLTriVtx v[3];
-    u8 unk60[0x64 - 0x60];
+    u16 tex;
+    s16 blendMode;
 } GDLTri;
 
 typedef struct GDL {
@@ -10032,10 +10039,10 @@ void StartVoice_(void *voice) {
     extern u32 g_silence;
     s32 OSDisableInterrupts();
     void OSRestoreInterrupts(s32);
-    u32 last;
     u8 *axv;
     s32 level;
     u8 *v;
+    u32 last;
 
     v = voice;
     level = OSDisableInterrupts();
