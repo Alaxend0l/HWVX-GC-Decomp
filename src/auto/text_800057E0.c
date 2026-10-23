@@ -7919,6 +7919,41 @@ void NavHolder_Release(void) {
     M2C_FIELD(&gs_NavHolder_803C6CD8, s32 *, 4) = 0;
 }
 
+s32 NavHolder_IsNavLinkNearer(f32 *pos, NavLink *link, f32 *nearest, u8 depth) {
+    s32 NavHolder_FindIndexOfNearestNavLink(f32 *pos, NavLink *link, f32 *nearest, u8 depth);
+    f32 PSVECSquareDistance(f32 *a, f32 *b);
+    s32 result = -1;
+    s32 i;
+    s32 found;
+    f32 dist;
+
+    if (!link->enabled) {
+        return -1;
+    }
+    for (i = 0; i < 64; i++) {
+        if (link->index == gs_aLinksDepth3_8019C450[i]) {
+            return -1;
+        }
+        if (gs_aLinksDepth3_8019C450[i] == -0x8000) {
+            break;
+        }
+    }
+    gs_aLinksDepth3_8019C450[i] = link->index;
+    gs_aLinksDepth3_8019C450[i + 1] = -0x8000;
+    dist = PSVECSquareDistance(pos, link->pos);
+    if (*nearest > dist) {
+        *nearest = dist;
+        result = link->index;
+    }
+    if (depth < 3) {
+        found = NavHolder_FindIndexOfNearestNavLink(pos, link, nearest, depth + 1);
+        if (found != -1) {
+            result = found;
+        }
+    }
+    return result;
+}
+
 s32 NavHolder_IsLinked(s32 from, s32 to) {
     u8 i;
 
