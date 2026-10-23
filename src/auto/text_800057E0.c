@@ -2125,6 +2125,111 @@ void AI_Car_Init(u8 *car, u8 *params) {
     memset(car + 0x3D4, 0, 0x60);
     M2C_FIELD(car, u8 *, 0xCC) = 1;
 }
+
+void MotionState_Init(void *arg0, s8 reset) {
+    typedef struct {
+        u8 pad0[0x14];
+        u32 *skel;
+        u8 pad18[4];
+        u8 loop[3];
+        u8 pad1F;
+        f32 *time[3];
+    } Anim;
+    typedef struct {
+        Anim *anim;
+        u8 mode;
+        u8 unk5;
+        u8 unk6;
+        u8 unk7;
+        u8 pad8[4];
+        f32 time;
+    } MotionState;
+    typedef struct {
+        Anim *anim;
+        u8 mode;
+        u8 unk5;
+        u8 unk6;
+        u8 pad7;
+        f32 time;
+        f32 blend;
+        u8 pad10[0x10];
+    } MotionHistory;
+    typedef struct {
+        MotionState cur;
+        u32 matrices;
+        u8 pad14[4];
+        MotionHistory hist[1];
+    } Motion;
+    void MotionState_ReleaseSlavesByType(s32 state, u8 type);
+    u32 MatrixCache_Get(u32 size, void *mtx);
+    Motion *motion = arg0;
+    s32 i;
+    u32 *skel;
+
+    motion->cur.unk5 = 0;
+    motion->cur.unk6 = 0;
+    motion->cur.mode = 0;
+    motion->cur.mode = 0;
+    if (motion->cur.anim == NULL) {
+        return;
+    }
+    if (!motion->cur.anim->loop[0]) {
+        motion->cur.mode++;
+        if (!motion->cur.anim->loop[1]) {
+            motion->cur.mode++;
+            if (motion->cur.anim->loop[2]) {
+                motion->cur.time = *motion->cur.anim->time[2];
+            }
+        } else {
+            motion->cur.time = *motion->cur.anim->time[1];
+        }
+    } else {
+        motion->cur.time = *motion->cur.anim->time[0];
+    }
+    for (;;) {
+        switch (motion->cur.mode) {
+        case 0:
+            if (motion->cur.anim->loop[0]) {
+                goto done;
+            }
+            motion->cur.mode = 1;
+        case 1:
+            if (motion->cur.anim->loop[1]) {
+                goto done;
+            }
+            motion->cur.mode = 2;
+        case 2:
+            if (motion->cur.anim->loop[2]) {
+                goto done;
+            }
+            motion->cur.mode = 0;
+        }
+    }
+done:
+    if (reset) {
+        for (i = 0; i > 0; i--) {
+            memcpy(&motion->hist[i], &motion->hist[i - 1], sizeof(MotionHistory));
+        }
+        motion->hist[0].blend = 0.0f;
+    } else {
+        motion->hist[0].blend = 1.0f;
+    }
+    motion->hist[0].anim = motion->cur.anim;
+    motion->hist[0].mode = motion->cur.mode;
+    motion->hist[0].unk5 = motion->cur.unk5;
+    motion->hist[0].unk6 = motion->cur.unk6;
+    motion->hist[0].time = motion->cur.time;
+    skel = motion->cur.anim->skel;
+    if (motion->cur.unk7 < *skel) {
+        if (motion->cur.unk7) {
+            MatrixCache_Free(motion->matrices);
+        }
+        motion->matrices = MatrixCache_Get(*skel, motion);
+        motion->cur.unk7 = *skel;
+    }
+    MotionState_ReleaseSlavesByType((s32)motion, 0xFF);
+}
+
 #pragma pop
 
 void MotionState_ReleaseSlavesByType(s32 state, u8 type) {
@@ -21451,6 +21556,82 @@ s32 InitializeUART(void) {
     return 0;
 }
 
+#pragma push
+#pragma optimize_for_size on
+s32 WriteUARTN(void *buf, u32 len) {
+    s32 EXILock(s32, s32, void *);
+    s32 EXISelect(s32, s32, s32);
+    s32 EXIImm(s32 chan, void *buf, s32 len, u32 type, void *callback);
+    s32 EXISync(s32);
+    s32 EXIDeselect(s32);
+    s32 EXIUnlock(s32);
+    extern s32 Chan_803C75B8;
+    extern s32 Dev_803C75BC;
+    extern s32 Enabled_803C75C0;
+    u32 cmd;
+    s32 qLen;
+    s32 xLen;
+    char *ptr;
+    s32 error;
+
+    if (Enabled_803C75C0 != 0xA5FF005A) {
+        return 2;
+    }
+    if (!EXILock(Chan_803C75B8, Dev_803C75BC, 0)) {
+        return 0;
+    }
+    for (ptr = (char *)buf; ptr - (char *)buf < len; ptr++) {
+        if (*ptr == '\n') {
+            *ptr = '\r';
+        }
+    }
+    error = 0;
+    cmd = 0xA0010000;
+    while (len) {
+        {
+            u32 qcmd;
+            if (!EXISelect(Chan_803C75B8, Dev_803C75BC, 3)) {
+                qLen = -1;
+            } else {
+                qcmd = 0x20010000;
+                EXIImm(Chan_803C75B8, &qcmd, 4, 1, 0);
+                EXISync(Chan_803C75B8);
+                EXIImm(Chan_803C75B8, &qcmd, 1, 0, 0);
+                EXISync(Chan_803C75B8);
+                EXIDeselect(Chan_803C75B8);
+                qLen = 16 - (qcmd >> 24);
+            }
+        }
+        if (qLen < 0) {
+            error = 3;
+            break;
+        }
+        if (qLen < 12 && qLen < len) {
+            continue;
+        }
+        if (!EXISelect(Chan_803C75B8, Dev_803C75BC, 3)) {
+            error = 3;
+            break;
+        }
+        EXIImm(Chan_803C75B8, &cmd, 4, 1, 0);
+        EXISync(Chan_803C75B8);
+        while (qLen && len) {
+            if (qLen < 4 && qLen < len) {
+                break;
+            }
+            xLen = (len < 4) ? (s32)len : 4;
+            EXIImm(Chan_803C75B8, buf, xLen, 1, 0);
+            buf = (char *)buf + xLen;
+            len -= xLen;
+            qLen -= xLen;
+            EXISync(Chan_803C75B8);
+        }
+        EXIDeselect(Chan_803C75B8);
+    }
+    EXIUnlock(Chan_803C75B8);
+    return error;
+}
+#pragma pop
 extern u8 *gTRKInputPendingPtr[];
 void TRKDestructEvent(void *arg0);
 s32 TRKGetNextEvent(TRKEvent *event);
