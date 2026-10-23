@@ -21647,6 +21647,20 @@ s32 VISetPostRetraceCallback(s32 cb) {
     return old;
 }
 
+static inline u32 cntlzd(u64 bit) {
+    u32 hi;
+    u32 lo;
+    s32 value;
+
+    hi = (u32)(bit >> 32);
+    lo = (u32)(bit & 0xFFFFFFFF);
+    value = __cntlzw(hi);
+    if (value < 32) {
+        return value;
+    }
+    return 32 + __cntlzw(lo);
+}
+
 u8 *getTiming_800742A0(u32 mode) {
     extern u8 timing_800D5850[][0x26];
     u8 *timing = timing_800D5850[0];
@@ -21679,20 +21693,6 @@ u8 *getTiming_800742A0(u32 mode) {
     default:
         return NULL;
     }
-}
-
-static inline u32 cntlzd(u64 bit) {
-    u32 hi;
-    u32 lo;
-    s32 value;
-
-    hi = (u32)(bit >> 32);
-    lo = (u32)(bit & 0xFFFFFFFF);
-    value = __cntlzw(hi);
-    if (value < 32) {
-        return value;
-    }
-    return 32 + __cntlzw(lo);
 }
 
 void VIFlush(void) {
