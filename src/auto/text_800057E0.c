@@ -3378,6 +3378,28 @@ s32 Emitter_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+s32 EventSeq_Init(u8 *seq, u8 *data) {
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+
+    Thing_Init(seq, (s32)data);
+    *(Vector4 *)(seq + 0x0) = *(Vector4 *)(data + 0x20);
+    *(Vector4 *)(seq + 0x50) = *(Vector4 *)(data + 0x10);
+    *(s32 *)(seq + 0x94) = *(s32 *)(data + 0x44);
+    *(Vector4 *)(seq + 0xC0) = *(Vector4 *)(data + 0x30);
+    *(f32 *)(seq + 0xF8) = *(f32 *)(data + 0x48);
+    QuaternionToSubMatrix(seq + 0x50, seq + 0x10);
+    *(Vector4 *)(seq + 0x40) = *(Vector4 *)(data + 0x0);
+    *(s32 *)(seq + 0xD0) = *(s32 *)(data + 0x40);
+    *(s32 *)(seq + 0xDC) = 0;
+    *(s32 *)(seq + 0xE0) = 0;
+    *(s32 *)(seq + 0xD4) = 0;
+    *(u8 *)(seq + 0xF0) = 0;
+    *(u16 *)(seq + 0x80) = 0;
+    *(Vector4 *)(seq + 0x50) = *(Vector4 *)(data + 0x10);
+    *(u32 *)(seq + 0x74) |= 0x80202;
+    return 1;
+}
+
 void EventSeq_Release(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
