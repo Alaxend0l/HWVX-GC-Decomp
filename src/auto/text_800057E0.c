@@ -529,16 +529,15 @@ s32 GetTRKConnected(void);
 
 static inline s32 TRKWriteEscapedByte(u8 c) {
     s32 WriteUART1(s8 c);
-    s32 err;
+    s32 err = 0;
 
     if (c == 0x7e || c == 0x7d) {
         err = WriteUART1(0x7d);
         c ^= 0x20;
-        if (err != 0) {
-            return err;
-        }
     }
-    err = WriteUART1(c);
+    if (err == 0) {
+        err = WriteUART1(c);
+    }
     return err;
 }
 
@@ -26509,7 +26508,7 @@ s32 TRKMessageSend(TRKBuffer *b) {
     s32 WriteUART1(s8 c);
     s32 WriteUARTFlush(void);
     u8 csum = 0;
-    u32 j;
+    int j;
     u32 i;
     u8 c;
     s32 err;
@@ -26538,15 +26537,19 @@ s32 TRKMessageSend(TRKBuffer *b) {
     }
     if (err == 0) {
         c = csum;
-        if (c == 0x7e || c == 0x7d) {
-            err = WriteUART1(0x7d);
-            c ^= 0x20;
+        for (i = 0; i < 1; i++) {
+            if (c == 0x7e || c == 0x7d) {
+                err = WriteUART1(0x7d);
+                c ^= 0x20;
+                if (err != 0) {
+                    break;
+                }
+            }
+            err = WriteUART1(c);
             if (err != 0) {
-                goto end;
+                break;
             }
         }
-        err = WriteUART1(c);
-    end:;
     }
     if (err == 0) {
         err = WriteUART1(0x7e);
