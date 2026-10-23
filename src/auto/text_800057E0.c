@@ -558,6 +558,17 @@ typedef struct CARDControl {
 
 extern CARDControl __CARDBlock[2];
 
+typedef struct CARDDirCheck {
+    u8 padding0[0x3A];
+    s16 checkCode;
+    u16 checkSum;
+    u16 checkSumInv;
+} CARDDirCheck;
+
+static inline CARDDirCheck *__CARDGetDirCheck(u8 *dir) {
+    return (CARDDirCheck *)(dir + 0x1FC0);
+}
+
 void __CARDSetDiskID(u8 *id);
 
 typedef struct DSPTaskInfo {
@@ -10239,6 +10250,36 @@ error:
     }
 }
 
+#pragma push
+#pragma optimization_level 2
+s32 __CARDUpdateDir(s32 chan, CARDCallback callback) {
+    typedef struct CARDDirCheck {
+        u8 padding0[0x3A];
+        s16 checkCode;
+        u16 checkSum;
+        u16 checkSumInv;
+    } CARDDirCheck;
+    void __CARDCheckSum(void *ptr, s32 length, u16 *checksum, u16 *checksumInv);
+    void DCStoreRange(void *addr, u32 nBytes);
+    s32 __CARDEraseSector(s32 chan, u32 addr, void *callback);
+    void EraseCallback(s32 chan, s32 result);
+    u8 *dir;
+    CARDDirCheck *check;
+    CARDControl *card;
+
+    card = &__CARDBlock[chan];
+    if (!card->attached) {
+        return -3;
+    }
+    dir = card->currentDir;
+    check = (CARDDirCheck *)(dir + 0x1FC0);
+    ++check->checkCode;
+    __CARDCheckSum(dir, 0x1FFC, &check->checkSum, &check->checkSumInv);
+    DCStoreRange(dir, 0x2000);
+    card->eraseCallback = callback;
+    return __CARDEraseSector(chan, card->sectorSize * ((u32)(dir - (u8 *)card->workArea) / 0x2000), EraseCallback);
+}
+#pragma pop
 s32 __CARDFreeBlock(s32 chan, u16 nBlock, CARDCallback callback) {
     s32 __CARDUpdateFatBlock(s32 chan, u16 *fat, CARDCallback callback);
     CARDControl *card;
