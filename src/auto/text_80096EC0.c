@@ -64,24 +64,14 @@ extern "C" void __unexpected(CatchInfo *catchinfo)
     try {
         std::unexpected();
     } catch (...) {
-        const char *throwtype = (const char *)((CatchInfo *)&__exception_magic)->typeinfo;
-        long offset;
-        int i;
-
-        for (i = 0; i < unexp->count; i++) {
-            if (__throw_catch_compare(throwtype, unexp->specs[i], &offset)) {
-                throw;
-            }
+        if (__is_exception_spec(unexp, (const char *)((CatchInfo *)&__exception_magic)->typeinfo)) {
+            throw;
         }
-        for (i = 0; i < unexp->count; i++) {
-            if (__throw_catch_compare("!bad_exception!!", unexp->specs[i], &offset)) {
-                throw std::bad_exception();
-            }
+        if (__is_exception_spec(unexp, "!bad_exception!!")) {
+            throw std::bad_exception();
         }
-        for (i = 0; i < unexp->count; i++) {
-            if (__throw_catch_compare("!std::bad_exception!!", unexp->specs[i], &offset)) {
-                throw std::bad_exception();
-            }
+        if (__is_exception_spec(unexp, "!std::bad_exception!!")) {
+            throw std::bad_exception();
         }
     }
     std::terminate();
