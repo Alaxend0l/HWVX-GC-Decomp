@@ -646,6 +646,7 @@ void SimThread_Init(VDevice *dev, VDevice *owner);
 static inline void SimThread_SetWeights(SimThread *t, const s32 *weights) {
     s32 i;
 
+    t->historyIdx = 0;
     for (i = 0; i < 10; i++) {
         t->weights[i] = weights[i];
         t->history[i] = 0;
@@ -8792,28 +8793,27 @@ void SimThread_Init(VDevice *dev, VDevice *owner) {
         0.1003241092f, 0.1002266929f, 0.1000645086f, 0.0998378024f, 0.0995392948f,
     };
     static s32 ia[10];
-    SimThread *t = &dev->sim;
     s32 w[1] = {0x1000};
     s32 i;
 
-    t->lastTick = 0;
-    t->historyIdx = 0;
-    t->deltaIdx = 0;
+    dev->sim.lastTick = 0;
+    dev->sim.historyIdx = 0;
+    dev->sim.deltaIdx = 0;
     for (i = 0; i < 16; i++) {
-        t->deltaPos[i] = 0;
-        t->deltaTime[i] = 0;
+        dev->sim.deltaPos[i] = 0;
+        dev->sim.deltaTime[i] = 0;
     }
-    t->owner = owner;
-    t->lastForce = 0;
-    t->posScaled = 0;
-    t->pos = 0;
-    t->accel = 0;
-    t->lastTick = OSGetTick() / ((*(u32 *)0x800000F8 / 4) / 1000);
-    SimThread_SetWeights(t, w);
+    dev->sim.owner = owner;
+    dev->sim.lastForce = 0;
+    dev->sim.posScaled = 0;
+    dev->sim.pos = 0;
+    dev->sim.accel = 0;
+    dev->sim.lastTick = OSGetTick() / ((*(u32 *)0x800000F8 / 4) / 1000);
+    SimThread_SetWeights(&dev->sim, w);
     for (i = 0; i < 10; i++) {
-        ia[i] = a[i] * 4096.0f;
+        ia[i] = 4096.0f * a[i];
     }
-    SimThread_SetWeights(t, ia);
+    SimThread_SetWeights(&dev->sim, ia);
 }
 
 #pragma pop
