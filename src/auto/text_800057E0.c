@@ -8025,6 +8025,95 @@ s32 DVDLowStopMotor(void *callback) {
 
 #pragma push
 #pragma dont_inline on
+s32 DVDLowRequestError(void *callback) {
+    extern void *Callback_803C72B0;
+    extern s32 StopAtNextInt_803C72A8;
+    extern s32 AlarmForTimeout_802EF8C8[10];
+    void OSSetAlarm(void *alarm, s64 tick, void *handler);
+    void AlarmHandlerForTimeout(void *alarm, void *context);
+    s64 timeout;
+
+    Callback_803C72B0 = callback;
+    StopAtNextInt_803C72A8 = 0;
+    ((volatile u32 *)0xCC006000)[2] = 0xE0000000;
+    ((volatile u32 *)0xCC006000)[7] = 1;
+    timeout = (*(u32 *)0x800000F8 / 4) * 10;
+    OSCreateAlarm(AlarmForTimeout_802EF8C8);
+    OSSetAlarm(AlarmForTimeout_802EF8C8, timeout, AlarmHandlerForTimeout);
+    return 1;
+}
+#pragma pop
+
+#pragma push
+#pragma dont_inline on
+s32 DVDLowInquiry(void *info, void *callback) {
+    extern void *Callback_803C72B0;
+    extern s32 StopAtNextInt_803C72A8;
+    extern s32 AlarmForTimeout_802EF8C8[10];
+    void OSSetAlarm(void *alarm, s64 tick, void *handler);
+    void AlarmHandlerForTimeout(void *alarm, void *context);
+    s64 timeout;
+
+    Callback_803C72B0 = callback;
+    StopAtNextInt_803C72A8 = 0;
+    ((volatile u32 *)0xCC006000)[2] = 0x12000000;
+    ((volatile u32 *)0xCC006000)[4] = 0x20;
+    ((volatile u32 *)0xCC006000)[5] = (u32)info;
+    ((volatile u32 *)0xCC006000)[6] = 0x20;
+    ((volatile u32 *)0xCC006000)[7] = 3;
+    timeout = (*(u32 *)0x800000F8 / 4) * 10;
+    OSCreateAlarm(AlarmForTimeout_802EF8C8);
+    OSSetAlarm(AlarmForTimeout_802EF8C8, timeout, AlarmHandlerForTimeout);
+    return 1;
+}
+#pragma pop
+
+#pragma push
+#pragma dont_inline on
+s32 DVDLowAudioStream(u32 subcmd, u32 length, u32 offset, void *callback) {
+    extern void *Callback_803C72B0;
+    extern s32 StopAtNextInt_803C72A8;
+    extern s32 AlarmForTimeout_802EF8C8[10];
+    void OSSetAlarm(void *alarm, s64 tick, void *handler);
+    void AlarmHandlerForTimeout(void *alarm, void *context);
+    s64 timeout;
+
+    Callback_803C72B0 = callback;
+    StopAtNextInt_803C72A8 = 0;
+    ((volatile u32 *)0xCC006000)[2] = subcmd | 0xE1000000;
+    ((volatile u32 *)0xCC006000)[3] = offset >> 2;
+    ((volatile u32 *)0xCC006000)[4] = length;
+    ((volatile u32 *)0xCC006000)[7] = 1;
+    timeout = (*(u32 *)0x800000F8 / 4) * 10;
+    OSCreateAlarm(AlarmForTimeout_802EF8C8);
+    OSSetAlarm(AlarmForTimeout_802EF8C8, timeout, AlarmHandlerForTimeout);
+    return 1;
+}
+#pragma pop
+
+#pragma push
+#pragma dont_inline on
+s32 DVDLowRequestAudioStatus(u32 subcmd, void *callback) {
+    extern void *Callback_803C72B0;
+    extern s32 StopAtNextInt_803C72A8;
+    extern s32 AlarmForTimeout_802EF8C8[10];
+    void OSSetAlarm(void *alarm, s64 tick, void *handler);
+    void AlarmHandlerForTimeout(void *alarm, void *context);
+    s64 timeout;
+
+    Callback_803C72B0 = callback;
+    StopAtNextInt_803C72A8 = 0;
+    ((volatile u32 *)0xCC006000)[2] = subcmd | 0xE2000000;
+    ((volatile u32 *)0xCC006000)[7] = 1;
+    timeout = (*(u32 *)0x800000F8 / 4) * 10;
+    OSCreateAlarm(AlarmForTimeout_802EF8C8);
+    OSSetAlarm(AlarmForTimeout_802EF8C8, timeout, AlarmHandlerForTimeout);
+    return 1;
+}
+#pragma pop
+
+#pragma push
+#pragma dont_inline on
 s32 DVDLowAudioBufferConfig(s32 enable, u32 size, void *callback) {
     extern void *Callback_803C72B0;
     extern s32 StopAtNextInt_803C72A8;
