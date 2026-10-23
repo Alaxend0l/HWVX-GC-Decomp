@@ -4997,6 +4997,53 @@ void ReadThreadCancel(void) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void *Reader(void *param) {
+    s32 DVDReadPrio(void *fileInfo, void *addr, s32 length, s32 offset, s32 prio);
+    s32 OSSuspendThread(void *thread);
+    void *PopFreeReadBuffer(void);
+    void PrepareReady(void *arg0);
+    void PushReadedBuffer(void *arg0);
+    extern u8 ReadThread_8036ED20[];
+    THPReadBuffer *readBuffer;
+    s32 offset;
+    s32 size;
+    s32 readFrame;
+    s32 result;
+    s32 frameNumber;
+
+    readFrame = 0;
+    offset = *(s32 *)ActivePlayer.unkB0;
+    size = ActivePlayer.initReadSize;
+    while (1) {
+        readBuffer = PopFreeReadBuffer();
+        result = DVDReadPrio(&ActivePlayer.fileInfo, readBuffer->ptr, size, offset, 2);
+        if (result != size) {
+            if (result == -1) {
+                *(s32 *)&ActivePlayer.dispTextureSet = -1;
+            }
+            if (readFrame == 0) {
+                PrepareReady(0);
+            }
+            OSSuspendThread(ReadThread_8036ED20);
+        }
+        readBuffer->frameNumber = readFrame;
+        PushReadedBuffer(readBuffer);
+        offset += size;
+        size = *(s32 *)readBuffer->ptr;
+        frameNumber = (readFrame + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+        if (frameNumber == ActivePlayer.numFrames - 1) {
+            if (ActivePlayer.playFlag & 1) {
+                offset = *(s32 *)&ActivePlayer.unk5C[0x64 - 0x5C];
+            } else {
+                OSSuspendThread(ReadThread_8036ED20);
+            }
+        }
+        readFrame++;
+    }
+}
+
 void *PopReadedBuffer(void) {
     extern u8 ReadedBufferQueue_80370078[];
     void *msg;
