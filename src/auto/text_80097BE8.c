@@ -3242,6 +3242,33 @@ void QuaternionMult(Vector *a, Vector *b, Vector *out) {
     out->z = a->x * b->y - a->y * b->x + a->w * b->z + a->z * b->w;
 }
 
+void QuaternionToSubMatrix(void *quat, void *mtx) {
+    f32 *q = (f32 *)quat;
+    f32 *m = (f32 *)mtx;
+    f32 s;
+    f32 ww, yy, zz, xx;
+
+    xx = q[0] * q[0];
+    yy = q[1] * q[1];
+    zz = q[2] * q[2];
+    ww = q[3] * q[3];
+    s = 1.0f / (xx + yy + zz + ww);
+    m[0] = s * (ww + xx - yy - zz);
+    m[5] = s * (ww - xx + yy - zz);
+    m[10] = s * (ww - xx - yy + zz);
+    s *= 2.0f;
+    m[1] = s * (q[0] * q[1] + q[3] * q[2]);
+    m[2] = s * (q[0] * q[2] - q[3] * q[1]);
+    m[4] = s * (q[0] * q[1] - q[3] * q[2]);
+    m[6] = s * (q[1] * q[2] + q[3] * q[0]);
+    m[8] = s * (q[0] * q[2] + q[3] * q[1]);
+    m[9] = s * (q[1] * q[2] - q[3] * q[0]);
+    m[11] = 0.0f;
+    m[7] = 0.0f;
+    m[3] = 0.0f;
+    m[15] = 1.0f;
+}
+
 void GetComponentOfVector(void *arg0, void *arg1) {
     f32 PSVECDotProduct();
     f32 temp_f1;
