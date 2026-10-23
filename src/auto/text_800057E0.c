@@ -8394,6 +8394,7 @@ static char *StateMovie_GetNextMovieName(void) {
 
 #pragma push
 #pragma readonly_strings on
+#pragma dont_inline on
 s32 StateMovie_Init(s32 returnState) {
     extern s32 g_returnState;
     extern u8 g_buttonUpCnt;
