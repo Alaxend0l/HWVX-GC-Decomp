@@ -19284,8 +19284,25 @@ void usr_put_initialize(void);
 void TRKTargetSetInputPendingPtr(void *ptr);
 s32 TRKInitializeIntDrivenUART(u32 param1, u32 param2, u32 param3, volatile u8 **inputPendingPtrRef);
 
-#pragma push
-#pragma dont_inline on
+static inline s32 TRK_InitializeEndian(void) {
+    u8 bendian[4];
+    s32 result = 0;
+
+    gTRKBigEndian = 1;
+    bendian[0] = 0x12;
+    bendian[1] = 0x34;
+    bendian[2] = 0x56;
+    bendian[3] = 0x78;
+    if (*(u32 *)bendian == 0x12345678) {
+        gTRKBigEndian = 1;
+    } else if (*(u32 *)bendian == 0x78563412) {
+        gTRKBigEndian = 0;
+    } else {
+        result = 1;
+    }
+    return result;
+}
+
 s32 TRKInitializeNub(void) {
     s32 result;
     s32 resultTemp;
