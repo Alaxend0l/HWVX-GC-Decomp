@@ -1345,7 +1345,7 @@ static inline void SubBlock_set_free(SubBlock *ths) {
     u32 this_size = ths->size_ & 0xFFFFFFF8;
 
     ths->size_ &= ~0x02L;
-    ((SubBlock *)((u8 *)ths + this_size))->size_ &= ~0x04L;
+    *(u32 *)((u8 *)ths + this_size) &= ~0x04L;
     *(u32 *)((u8 *)ths + this_size - sizeof(u32)) = this_size;
 }
 
