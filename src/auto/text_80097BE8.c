@@ -664,47 +664,6 @@ typedef struct Effect {
     s32 deadbandHigh;
 } Effect;
 
-s32 Effect_PerformEnvelope(Effect *effect, EffectEnvelope *env, s32 magnitude);
-extern s16 g_iQuarterSineTable_8037BB7C[0x40];
-extern s16 g_iRampUpTable_8037BBFC[0x40];
-
-static inline s32 Effect_GetPeriodicLevel(Effect *effect, u32 dt) {
-    s16 magnitude;
-    s32 wave;
-    u32 a;
-
-    effect->phase += (dt << 24) / effect->params.periodic.period;
-    if (effect->phase >= 0x1000000) {
-        effect->phase -= effect->phase & 0xFF000000;
-    }
-    magnitude = Effect_PerformEnvelope(effect, &effect->params.periodic.envelope, effect->params.periodic.magnitude);
-    switch (effect->type) {
-    case 2:
-        wave = Effect_WaveLookup(g_iQuarterSineTable_8037BB7C, (effect->phase >> 16) & 0xFF);
-        break;
-    case 3:
-        wave = -0x400;
-        if ((effect->phase >> 16) < 0x80) {
-            wave = 0x400;
-        }
-        break;
-    case 4:
-        wave = Effect_WaveLookup(g_iRampUpTable_8037BBFC, (effect->phase >> 16) & 0xFF);
-        break;
-    case 5:
-        a = (effect->phase >> 16) & 0xFF;
-        wave = g_iRampUpTable_8037BBFC[a >> 2];
-        break;
-    case 6:
-        a = (effect->phase >> 16) & 0xFF;
-        wave = g_iRampUpTable_8037BBFC[(0xFF - a) >> 2];
-        break;
-    default:
-        wave = 0;
-        break;
-    }
-    return Effect_MulDiv(wave, magnitude, 0x400) + effect->params.periodic.offset;
-}
 
 typedef struct SimThread {
     struct VDevice *owner;
