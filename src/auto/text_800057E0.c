@@ -1146,56 +1146,12 @@ void Action_Destroy(void) {
 }
 
 void Action_Init(void) {
-    extern M2C_UNK m_Actions_800DBC80;
-    M2C_UNK *var_r4;
-    s32 var_ctr;
+    extern void *m_Actions_800DBC80[80];
+    u32 i;
 
-    var_r4 = &m_Actions_800DBC80;
-    var_ctr = 2;
-    do {
-        M2C_FIELD(var_r4, s32 *, 0) = 0;
-        M2C_FIELD(var_r4, s32 *, 4) = 0;
-        M2C_FIELD(var_r4, s32 *, 8) = 0;
-        M2C_FIELD(var_r4, s32 *, 0xC) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x10) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x14) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x18) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x1C) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x20) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x24) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x28) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x2C) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x30) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x34) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x38) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x3C) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x40) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x44) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x48) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x4C) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x50) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x54) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x58) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x5C) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x60) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x64) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x68) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x6C) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x70) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x74) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x78) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x7C) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x80) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x84) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x88) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x8C) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x90) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x94) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x98) = 0;
-        M2C_FIELD(var_r4, s32 *, 0x9C) = 0;
-        var_r4 += 0xA0;
-        var_ctr -= 1;
-    } while (var_ctr != 0);
+    for (i = 0; i < 80; i++) {
+        m_Actions_800DBC80[i] = NULL;
+    }
 }
 
 void Action_ReleaseAllActions(void) {
@@ -4849,16 +4805,15 @@ void DVDLowReset(void) {
 }
 #pragma pop
 
-void SIProbe(void) {
-    M2C_UNK SIDecodeType();
-    M2C_UNK SIGetType();
-    SIGetType();
-    SIDecodeType();
+s32 SIGetType(s32 chan);
+s32 SIDecodeType(s32 type);
+void SISetSamplingRate(u32 msec);
+s32 SIProbe(s32 chan) {
+    return SIDecodeType(SIGetType(chan));
 }
 
 void SIRefreshSamplingRate(void) {
-    M2C_UNK SISetSamplingRate(s32);
-    extern s32 SamplingRate_803C75A0;
+    extern u32 SamplingRate_803C75A0;
     SISetSamplingRate(SamplingRate_803C75A0);
 }
 
@@ -6384,6 +6339,21 @@ void __GXSetRange(void) {
 
 }
 
+void WriteMTXPS3x3from3x4(f32 mtx[3][4], volatile f32 *dest) {
+    *dest = mtx[0][2];
+    *dest = mtx[1][2];
+    *dest = mtx[2][2];
+}
+
+void WriteMTXPS4x3(f32 mtx[3][4], volatile f32 *dest);
+void WriteMTXPS3x3from3x4(f32 mtx[3][4], volatile f32 *dest);
+void WriteMTXPS4x2(f32 mtx[2][4], volatile f32 *dest) {
+    f32 a = mtx[0][0];
+    f32 b = mtx[0][1];
+    *dest = a;
+    *dest = b;
+}
+
 void GXGetViewportv(void *arg0) {
     extern void *gx;
     M2C_FIELD(arg0, f32 *, 0) = (f32) M2C_FIELD(gx, f32 *, 0x43C);
@@ -6392,6 +6362,48 @@ void GXGetViewportv(void *arg0) {
     M2C_FIELD(arg0, f32 *, 0xC) = (f32) M2C_FIELD(gx, f32 *, 0x448);
     M2C_FIELD(arg0, f32 *, 0x10) = (f32) M2C_FIELD(gx, f32 *, 0x44C);
     M2C_FIELD(arg0, f32 *, 0x14) = (f32) M2C_FIELD(gx, f32 *, 0x450);
+}
+
+void GXSetViewportJitter(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz, u32 field);
+void GXSetScissor(u32 left, u32 top, u32 wd, u32 ht) {
+    extern u8 *gx;
+    u32 tp, lf, bm, rt;
+
+    tp = top + 0x156;
+    lf = left + 0x156;
+    bm = tp + ht - 1;
+    rt = lf + wd - 1;
+    *(u32 *)(gx + 0xF8) = (*(u32 *)(gx + 0xF8) & ~0x7FF) | tp;
+    *(u32 *)(gx + 0xF8) = (*(u32 *)(gx + 0xF8) & ~0x7FF000) | (lf << 12);
+    *(u32 *)(gx + 0xFC) = (*(u32 *)(gx + 0xFC) & ~0x7FF) | bm;
+    *(u32 *)(gx + 0xFC) = (*(u32 *)(gx + 0xFC) & ~0x7FF000) | (rt << 12);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *(u32 *)(gx + 0xF8);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *(u32 *)(gx + 0xFC);
+    *(u16 *)(gx + 2) = 0;
+}
+
+void GXSetScissorBoxOffset(s32 x_off, s32 y_off) {
+    extern u8 *gx;
+    u32 reg = 0;
+    u32 hx = (u32)(x_off + 0x156) >> 1;
+    u32 hy = (u32)(y_off + 0x156) >> 1;
+
+    reg = (reg & ~0x3FF) | hx;
+    reg = (reg & ~0xFFC00) | (hy << 10);
+    reg = (reg & ~0xFF000000) | (0x59 << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    *(u16 *)(gx + 2) = 0;
+}
+
+void GXSetClipMode(s32 mode) {
+    extern u8 *const gx;
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = 0x1005;
+    GXWGFifo.u32 = mode;
+    *(u16 *)(gx + 2) = 1;
 }
 
 void GXClearGPMetric(void) {
@@ -6433,6 +6445,32 @@ u32 SISetXY(u32 x, u32 y) {
 
 void DefaultCallback(void) {
 
+}
+
+void ResetProc(s32 chan);
+s32 SIResetSteeringAsync(s32 chan, void *callback) {
+    extern u8 __SISteering[];
+    extern void DefaultCallback(void);
+    s32 __SISteeringTransfer(s32, s32, s32, void *);
+    u8 *steering = __SISteering + chan * 0x28;
+    void *cb;
+    s32 enabled;
+    s32 ret;
+
+    cb = callback ? callback : (void *)DefaultCallback;
+    enabled = OSDisableInterrupts();
+    if (*(void **)(steering + 0x14) != NULL) {
+        ret = -2;
+    } else {
+        *(void **)(steering + 0x14) = cb;
+        ret = 0;
+    }
+    OSRestoreInterrupts(enabled);
+    if (ret != 0) {
+        return ret;
+    }
+    *steering = 0xFF;
+    return __SISteeringTransfer(chan, 1, 3, ResetProc);
 }
 
 void __SISteeringEnable(s32 arg0)
