@@ -476,11 +476,8 @@ static inline s32 TRKReadBuffer_inline(TRKBuffer *b, void *data, u32 length) {
     s32 error = 0;
     u32 bytesLeft;
 
-    if (length == 0) {
-        return 0;
-    }
     bytesLeft = b->length - b->position;
-    if (bytesLeft < length) {
+    if (length > bytesLeft) {
         error = 0x302;
         length = bytesLeft;
     }
