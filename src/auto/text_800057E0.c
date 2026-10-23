@@ -4117,6 +4117,21 @@ void ThingManagerList_TriggerSlaves(void **list, u8 *trigger, Vector4 *a, Vector
         *list = slave;
     }
 }
+
+#pragma push
+#pragma dont_inline on
+void ThingManager_DARYL_Create(void) {
+    void ThingManager_DARYL_CreateMain(void);
+
+    OBoxHolder_Init();
+    OConvexHullHolder_Init();
+    ThingManager_DARYL_CreateMain();
+    CollisionPairCache_Clear();
+    CollisionTriCache_Clear();
+    memset(g_aSharedSlaveHolder, 0, sizeof(g_aSharedSlaveHolder));
+}
+#pragma pop
+
 #pragma pop
 void ThingManager_DARYL_Init(void) {
     M2C_UNK ThingManager_DARYL_Release();
