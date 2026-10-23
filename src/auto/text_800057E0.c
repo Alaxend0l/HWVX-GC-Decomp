@@ -4236,6 +4236,17 @@ s32 TriggerInterfaceEnd(void) {
     return 1;
 }
 
+s32 TriggerDesructibleKilled(u32 *data) {
+    u32 i;
+
+    for (i = 0; i < data[0]; i++) {
+        if (M2C_FIELD((data + 1)[i], u32 *, 0x30) == 3) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 s32 TriggerCreatureKilled(void) {
     return 0;
 }
