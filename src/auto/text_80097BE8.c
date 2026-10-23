@@ -6879,16 +6879,18 @@ s32 LGRead(void *status) {
     } LGStatus;
     LGStatus *out = status;
     s32 i;
+    LGDevice *device;
 
     if (status == NULL) {
         return -2;
     }
     for (i = 0; i < 4; i++) {
-        if (g_lgDevices_803771D8[i].started) {
-            LGClose(&g_lgDevices_803771D8[i]);
+        device = &g_lgDevices_803771D8[i];
+        if (device->started) {
+            LGClose(device);
         }
-        if (g_lgDevices_803771D8[i].opened) {
-            out[i] = *(LGStatus *)&g_lgDevices_803771D8[i].unkC[0x38];
+        if (device->opened) {
+            out[i] = *(LGStatus *)&device->unkC[0x38];
         } else {
             out[i].err = -1;
         }
