@@ -8524,6 +8524,19 @@ s32 Thing_AddToGrid(void *thing, s32 type) {
     return M2C_FIELD(thing, s32 *, 0x84);
 }
 
+static inline void Thing_GetStaticRotationalMinMax_inline(void *thing, Vector4 *min, Vector4 *max) {
+    *max = *(Vector4 *)((u8 *)thing + 0x40);
+    *min = *max;
+    min->x -= M2C_FIELD(thing, f32 *, 0x70);
+    min->y -= M2C_FIELD(thing, f32 *, 0x70);
+    min->z -= M2C_FIELD(thing, f32 *, 0x70);
+    max->x += M2C_FIELD(thing, f32 *, 0x70);
+    max->y += M2C_FIELD(thing, f32 *, 0x70);
+    max->z += M2C_FIELD(thing, f32 *, 0x70);
+}
+
+#pragma push
+#pragma auto_inline off
 void Thing_GetStaticRotationalMinMax(void *thing, Vector4 *min, Vector4 *max) {
     *max = *(Vector4 *)((u8 *)thing + 0x40);
     *min = *max;
@@ -8534,6 +8547,7 @@ void Thing_GetStaticRotationalMinMax(void *thing, Vector4 *min, Vector4 *max) {
     max->y += M2C_FIELD(thing, f32 *, 0x70);
     max->z += M2C_FIELD(thing, f32 *, 0x70);
 }
+#pragma pop
 
 void Thing_DynamicGridMove(void *thing, f32 expand) {
     void Grid_MoveObject(s32 obj, Vector4 *min, Vector4 *max);
@@ -8563,7 +8577,7 @@ void Thing_RotationalGridMove(void *thing) {
     Vector4 max;
 
     if (M2C_FIELD(thing, u32 *, 0x84) != 0) {
-        Thing_GetStaticRotationalMinMax(thing, &min, &max);
+        Thing_GetStaticRotationalMinMax_inline(thing, &min, &max);
         Grid_MoveObject(M2C_FIELD(thing, s32 *, 0x84), &min, &max);
     }
 }
@@ -9097,6 +9111,49 @@ void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id) {
         return slave;
     }
     return NULL;
+}
+
+s32 OBox_CollideAllThingsZeroTime(void *obox, void *thing, void *info) {
+    u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults);
+    s8 OBoxHitsOBoxZeroTime(void *a, void *b, void *info);
+    f32 PSVECSquareDistance(f32 *a, f32 *b);
+    Vector4 max;
+    Vector4 min;
+    GridResult results[256];
+    u32 count;
+    GridResult *result;
+    u32 i;
+    u8 *other;
+    f32 t;
+    f32 r;
+
+    Thing_GetStaticRotationalMinMax(thing, &min, &max);
+    count = Grid_GetObjects(&min, &max, 5, results, 0x100);
+    result = results;
+    for (i = 0; i < count; result++, i++) {
+        other = (u8 *)result->id;
+        if (!(*(u32 *)(other + 0x74) & 2) && *(s16 *)(other + 0x80) != 0 && other != thing) {
+            r = *(f32 *)(other + 0x70) + *(f32 *)((u8 *)thing + 0x70);
+            if (r * r > PSVECSquareDistance((f32 *)((u8 *)thing + 0x40), (f32 *)(other + 0x40))) {
+                t = 1.0f;
+                if (*(s16 *)(other + 0x80) == 1) {
+                    if (OBoxHitsOBoxZeroTime(obox, (*(void *(**)(void *))(*(u8 **)(other + 0x8C) + 0x40))(other), info)) {
+                        if (info != NULL) {
+                            *(void **)((u8 *)info + 0x20) = thing;
+                            *(void **)((u8 *)info + 0x24) = other;
+                        }
+                        t = 0.0f;
+                    } else {
+                        t = 1.0f;
+                    }
+                }
+                if (t < 1.0f) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
 }
 
 s8 RayHitsTerrainAndObjects(void *arg0, void *arg1, void *arg2, void *arg3) {
