@@ -7667,7 +7667,7 @@ static inline s32 VolumeManager_GetCell(u8 *holder, Vector4 *point) {
     if (z < 0 || z >= M2C_FIELD(holder, s32 *, 0x34)) {
         return 0;
     }
-    return M2C_FIELD(holder, s32 **, 0x14)[x + M2C_FIELD(holder, s32 *, 0x34) * (y * M2C_FIELD(holder, s32 *, 0x2C)) + z * M2C_FIELD(holder, s32 *, 0x2C)];
+    return M2C_FIELD(holder, s32 **, 0x14)[z * M2C_FIELD(holder, s32 *, 0x2C) + M2C_FIELD(holder, s32 *, 0x34) * (y * M2C_FIELD(holder, s32 *, 0x2C)) + x];
 }
 
 static inline s32 VolumeManager_GetCellIndex(Vector4 *point) {
@@ -7719,13 +7719,14 @@ void VolumeManager_SetReverbLevel(Vector4 *point) {
     s32 level;
     s32 feedback;
     s32 delay;
+    u32 i;
     u32 count;
     u8 *volume;
     u8 *reverb;
-    u32 i;
     s32 cell;
     s8 inside;
     u8 *settings;
+    u8 *holder;
     f32 diff[3];
 
     settings = M2C_FIELD(g_worldData.world, u8 **, 0x9C);
@@ -7733,9 +7734,10 @@ void VolumeManager_SetReverbLevel(Vector4 *point) {
     feedback = 32767.0f * M2C_FIELD(settings, f32 *, 0x2C);
     delay = M2C_FIELD(settings, f32 *, 0x28);
 
-    cell = VolumeManager_GetCellIndex(point);
-    if (g_VolumeHolder != NULL) {
-        count = M2C_FIELD(g_VolumeHolder, VolumeCell **, 0x10)[cell].types[2].count;
+    holder = g_VolumeHolder;
+    cell = VolumeManager_GetCell(holder, point);
+    if (holder != NULL) {
+        count = M2C_FIELD(holder, VolumeCell **, 0x10)[cell].types[2].count;
     } else {
         count = 0;
     }
