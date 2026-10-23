@@ -13543,7 +13543,6 @@ void Decode(u8 *s, u8 *d) {
         flag--;
     } while (q < os);
 }
-#pragma pop
 
 u16 OSGetFontEncode(void) {
     static u16 fontEncode = 0xFFFF;
