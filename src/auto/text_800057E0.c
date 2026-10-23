@@ -15534,11 +15534,16 @@ typedef struct Tracer {
     u8 unk4AC[4];
     TracerPoint *head;
     TracerPoint *tail;
-    u8 unk4B8[0x14];
+    u8 unk4B8[0x4];
+    f32 unk4BC;
+    f32 unk4C0;
+    u32 unk4C4;
+    u32 unk4C8;
     u16 unk4CC;
     s16 active;
     u16 unk4D0;
-    u8 unk4D2[0xE];
+    u16 unk4D2;
+    u8 unk4D4[0xC];
 } Tracer;
 
 extern Tracer tracers_802CD600[];
