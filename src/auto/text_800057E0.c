@@ -18687,6 +18687,35 @@ void GetDates(s32 days, s32 *td) {
     td[3] = days - p[month] + 1;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void OSTicksToCalendarTime(s64 ticks, s32 *td) {
+    s32 days;
+    s32 secs;
+    s64 d;
+
+    d = ticks % (*(u32 *)0x800000F8 / 4);
+    if (d < 0) {
+        d += *(u32 *)0x800000F8 / 4;
+    }
+    td[9] = (s32)((d * 8) / (*(u32 *)0x800000F8 / 4 / 125000) % 1000);
+    td[8] = (s32)(d / (*(u32 *)0x800000F8 / 4 / 1000) % 1000);
+
+    ticks -= d;
+    days = (s32)(ticks / (*(u32 *)0x800000F8 / 4) / 86400 + 0xB2575);
+    secs = (s32)(ticks / (*(u32 *)0x800000F8 / 4) % 86400);
+    if (secs < 0) {
+        days -= 1;
+        secs += 86400;
+    }
+
+    GetDates(days, td);
+    td[2] = secs / 60 / 60;
+    td[1] = (secs / 60) % 60;
+    td[0] = secs % 60;
+}
+#pragma pop
+
 s32 __get_time(void) {
     M2C_UNK OSGetTime(M2C_UNK);
     u64 __div2i(M2C_UNK, u32);
@@ -22902,6 +22931,56 @@ void AXFXDelayCallback(void *bufferUpdate, void *data) {
     delay->currentPos[1] = (delay->currentPos[1] + 1) % delay->currentSize[1];
     delay->currentPos[2] = (delay->currentPos[2] + 1) % delay->currentSize[2];
 }
+
+s32 AXFXDelaySettings(void *arg0) {
+    typedef struct {
+        u32 length[3];
+        u32 active[3];
+        u32 feedback[3];
+        u32 output[3];
+        s32 *line[3];
+        u32 delay[3];
+        u32 feedbackPct[3];
+        u32 outputPct[3];
+    } Delay;
+    extern void *(*__AXFXAlloc)(u32);
+    s32 OSDisableInterrupts();
+    s32 OSRestoreInterrupts(s32);
+    s32 AXFXDelayShutdown(void *delay);
+    Delay *delay = arg0;
+    u32 i;
+    s32 *l;
+    s32 *r;
+    s32 *s;
+    s32 enabled;
+
+    AXFXDelayShutdown(delay);
+    enabled = OSDisableInterrupts();
+    for (i = 0; i < 3; i++) {
+        delay->length[i] = ((delay->delay[i] - 5) * 32 + 159) / 160;
+        delay->active[i] = 0;
+        delay->feedback[i] = (delay->feedbackPct[i] * 128) / 100;
+        delay->output[i] = (delay->outputPct[i] * 128) / 100;
+    }
+    delay->line[0] = __AXFXAlloc(delay->length[0] * 0x280);
+    delay->line[1] = __AXFXAlloc(delay->length[1] * 0x280);
+    delay->line[2] = __AXFXAlloc(delay->length[2] * 0x280);
+    l = delay->line[0];
+    r = delay->line[1];
+    s = delay->line[2];
+    for (i = 0; i < delay->length[0] * 160; i++) {
+        *l++ = 0;
+    }
+    for (i = 0; i < delay->length[1] * 160; i++) {
+        *r++ = 0;
+    }
+    for (i = 0; i < delay->length[2] * 160; i++) {
+        *s++ = 0;
+    }
+    OSRestoreInterrupts(enabled);
+    return 1;
+}
+
 #pragma opt_unroll_loops reset
 void AXFXDelayInit(void *arg0) {
     M2C_UNK AXFXDelaySettings(void *);
@@ -29268,6 +29347,68 @@ s32 TRKTargetFlushCache(u8 space, u32 start, u32 end) {
         return 0;
     }
     return 0x700;
+}
+
+s32 TRKTargetSupportRequest(void) {
+    typedef struct TRKCPURegs {
+        u32 gpr[32];
+        u32 pc;
+    } TRKCPURegs;
+    extern u8 gTRKCPUState[];
+    void TRKConstructEvent(void *arg0, s8 arg1);
+    s32 TRKPostEvent(void *event);
+    s32 HandleOpenFileSupportRequest(const char *path, u8 replyError, u32 *param, u8 *ioResult);
+    s32 HandleCloseFileSupportRequest(u32 fileHandle, u8 *ioResult);
+    s32 HandlePositionFileSupportRequest(u32 fileHandle, u32 *position, u8 mode, u8 *ioResult);
+    s32 TRKSuppAccessFile(u8 file, u8 *data, u32 *count, u8 *ioResult, BOOL needReply, BOOL read);
+    void TRK_flush_cache(u32 start, u32 length);
+    s32 err;
+    u8 command;
+    u32 *length;
+    u8 ioResult;
+    TRKEvent event;
+    u32 position;
+
+    command = ((TRKCPURegs *)gTRKCPUState)->gpr[3];
+    if (command != 0xD1 && command != 0xD0 && command != 0xD2 && command != 0xD3 && command != 0xD4) {
+        TRKConstructEvent(&event, 4);
+        TRKPostEvent(&event);
+        return 0;
+    }
+    if (command == 0xD2) {
+        err = HandleOpenFileSupportRequest((const char *)((TRKCPURegs *)gTRKCPUState)->gpr[4], ((TRKCPURegs *)gTRKCPUState)->gpr[5],
+                                           (u32 *)((TRKCPURegs *)gTRKCPUState)->gpr[6], &ioResult);
+        if (ioResult == 0 && err != 0) {
+            ioResult = 1;
+        }
+        ((TRKCPURegs *)gTRKCPUState)->gpr[3] = ioResult;
+    } else if (command == 0xD3) {
+        err = HandleCloseFileSupportRequest(((TRKCPURegs *)gTRKCPUState)->gpr[4], &ioResult);
+        if (ioResult == 0 && err != 0) {
+            ioResult = 1;
+        }
+        ((TRKCPURegs *)gTRKCPUState)->gpr[3] = ioResult;
+    } else if (command == 0xD4) {
+        position = *(u32 *)((TRKCPURegs *)gTRKCPUState)->gpr[5];
+        err = HandlePositionFileSupportRequest(((TRKCPURegs *)gTRKCPUState)->gpr[4], &position, ((TRKCPURegs *)gTRKCPUState)->gpr[6], &ioResult);
+        if (ioResult == 0 && err != 0) {
+            ioResult = 1;
+        }
+        ((TRKCPURegs *)gTRKCPUState)->gpr[3] = ioResult;
+        *(u32 *)((TRKCPURegs *)gTRKCPUState)->gpr[5] = position;
+    } else {
+        err = TRKSuppAccessFile(((TRKCPURegs *)gTRKCPUState)->gpr[4], (u8 *)((TRKCPURegs *)gTRKCPUState)->gpr[6],
+                                length = (u32 *)((TRKCPURegs *)gTRKCPUState)->gpr[5], &ioResult, 1, command == 0xD1);
+        if (ioResult == 0 && err != 0) {
+            ioResult = 1;
+        }
+        ((TRKCPURegs *)gTRKCPUState)->gpr[3] = ioResult;
+        if (command == 0xD1) {
+            TRK_flush_cache(((TRKCPURegs *)gTRKCPUState)->gpr[6], *length);
+        }
+    }
+    ((TRKCPURegs *)gTRKCPUState)->pc += 4;
+    return err;
 }
 
 u32 TRKTargetGetPC(void) {
