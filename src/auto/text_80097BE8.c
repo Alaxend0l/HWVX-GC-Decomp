@@ -4171,21 +4171,6 @@ GDLSprite *Gfx_AddBillBoardSprite(u16 tex) {
     return sprite;
 }
 
-static inline void Gfx_InitGroupTri(u32 n, u8 type, u16 tex, u16 arg1, u8 arg2, s32 start) {
-    extern GDL *g_pGDL;
-
-    g_pGDL->groupTris[n].type = type;
-    g_pGDL->groupTris[n].unk1 = 0;
-    g_pGDL->groupTris[n].unk2 = arg2;
-    g_pGDL->groupTris[n].unk8 = start;
-    g_pGDL->groupTris[n].count = 0;
-    g_pGDL->groupTris[n].tex = tex;
-    g_pGDL->groupTris[n].unk6 = arg1;
-    g_pGDL->groupTris[n].unk10 = 0xFFFE;
-    g_pGDL->groupTris[n].unk18 = 0.0f;
-    g_pGDL->groupTris[n].unk1C = 0.0f;
-}
-
 void *Gfx_Begin_GroupTriFlat(u16 tex, s32 arg1, s32 arg2) {
     extern GDL *g_pGDL;
     u32 n;
