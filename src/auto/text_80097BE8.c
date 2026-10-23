@@ -671,6 +671,17 @@ typedef struct GDLLightState {
     u8 unk58[0x60 - 0x58];
 } GDLLightState;
 
+typedef struct GDLAlphaGroup {
+    f32 matrix[16];
+    s32 unk40;
+    s32 unk44;
+    u8 unk48[0x4C - 0x48];
+    GXColor color;
+    u8 unk50;
+    u8 window;
+    u8 unk52[0x54 - 0x52];
+} GDLAlphaGroup;
+
 typedef struct GDL2DSprite {
     f32 x;
     f32 y;
