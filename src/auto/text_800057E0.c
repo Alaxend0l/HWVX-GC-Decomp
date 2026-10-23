@@ -9924,6 +9924,15 @@ void Creature_MotionStateInit(void *arg0, s32 state, u8 reset, u8 keepTime) {
     typedef struct { u32 anim; u8 pad4[0x5C]; } AnimEntry;
     typedef struct { u8 pad0[0x14]; u32 count; AnimEntry *entries; } Anims;
     typedef struct {
+        u32 anim;
+        u8 pad4[0x18];
+        u8 unk1C;
+        u8 unk1D;
+        u8 pad1E[2];
+        f32 unk20;
+        f32 time;
+    } MotionState;
+    typedef struct {
         u8 pad0[0x74];
         u32 flags;
         u8 pad78[0x3C];
@@ -9932,13 +9941,7 @@ void Creature_MotionStateInit(void *arg0, s32 state, u8 reset, u8 keepTime) {
         u8 padBC[8];
         s32 state;
         u8 padC8[4];
-        u32 motion;
-        u8 padD0[0x18];
-        u8 unkE8;
-        u8 unkE9;
-        u8 padEA[2];
-        f32 time;
-        f32 motionTime;
+        MotionState motion;
         u8 padF4[0x20];
         u32 index;
         AnimEntry *entry;
@@ -9947,14 +9950,14 @@ void Creature_MotionStateInit(void *arg0, s32 state, u8 reset, u8 keepTime) {
     Creature *creature = arg0;
     u32 index;
     AnimEntry *entry;
-    u32 *motion;
+    MotionState *motion;
     f32 time;
 
-    time = creature->time;
+    time = creature->motion.unk20;
     motion = &creature->motion;
     index = 0;
-    if (reset && state == creature->state && creature->unkE8 != 2) {
-        creature->unkE9 = 0;
+    if (reset && state == creature->state && creature->motion.unk1C != 2) {
+        creature->motion.unk1D = 0;
         return;
     }
     if (creature->flags & 0x10) {
@@ -10015,9 +10018,9 @@ void Creature_MotionStateInit(void *arg0, s32 state, u8 reset, u8 keepTime) {
         state = 0;
         index = 0;
     }
-    creature->motion = entry->anim;
+    creature->motion.anim = entry->anim;
     if (!reset) {
-        creature->motionTime = 0.0f;
+        motion->time = 0.0f;
         creature->index = 0xFFFF;
     }
     MotionState_Init(motion, reset);
@@ -10025,7 +10028,7 @@ void Creature_MotionStateInit(void *arg0, s32 state, u8 reset, u8 keepTime) {
     creature->index = index;
     creature->entry = entry;
     if (keepTime) {
-        creature->time = time;
+        creature->motion.unk20 = time;
     }
 }
 
