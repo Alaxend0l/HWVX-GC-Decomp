@@ -6049,6 +6049,44 @@ void Trail_Init(void) {
     g_trailTimer = 0.0f;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void Trail_Render(void) {
+    extern u8 g_TrialData[1000][0x60];
+    void *Gfx_Begin_GroupQuadFlat(u16 texture, s32 arg1, s32 arg2);
+    void Gfx_End_GroupTri(u32 count);
+    void MemCpy32(void *dst, void *src, u32 size);
+    u8 *trail;
+    u32 i;
+    u16 texture;
+    u32 count;
+    u8 *dst;
+
+    count = 0;
+    texture = 0xFFFF;
+    dst = NULL;
+    for (i = 0; i < 1000; i++) {
+        trail = g_TrialData[i];
+        if (*(s32 *)(trail + 0x50) > 0 && *(u16 *)(trail + 0x5E) != 0) {
+            if (texture != *(u16 *)(trail + 0x5C)) {
+                if (count != 0) {
+                    Gfx_End_GroupTri(count);
+                    count = 0;
+                }
+                dst = Gfx_Begin_GroupQuadFlat(*(u16 *)(trail + 0x5C), 7, 0);
+                texture = *(u16 *)(trail + 0x5C);
+            }
+            MemCpy32(dst, trail, 0x50);
+            dst += 0x50;
+            count++;
+        }
+    }
+    if (count != 0) {
+        Gfx_End_GroupTri(count);
+    }
+}
+#pragma pop
+
 s8 TriggerSoundSeqQueueEnd(void) {
     s32 SoundSequence_GetTotalElementsInQueue();
     return (s8) (SoundSequence_GetTotalElementsInQueue() == 0);
