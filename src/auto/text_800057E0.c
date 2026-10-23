@@ -7178,6 +7178,31 @@ fatal:
     }
 }
 
+void CARDInit(void) {
+    void DSPInit(void);
+    void OSInitAlarm(void);
+    void OSInitThreadQueue(void *queue);
+    void OSCreateAlarm(void *alarm);
+    void OSRegisterResetFunction(void *info);
+    extern u8 ResetFunctionInfo_800D96D8[];
+    s32 chan;
+    CARDControl *card;
+
+    if (*(u8 **)((u8 *)&__CARDBlock[0] + 0x10C) != NULL && *(u8 **)((u8 *)&__CARDBlock[1] + 0x10C) != NULL) {
+        return;
+    }
+    DSPInit();
+    OSInitAlarm();
+    for (chan = 0; chan < 2; chan++) {
+        card = &__CARDBlock[chan];
+        card->result = -3;
+        OSInitThreadQueue((u8 *)card + 0x8C);
+        OSCreateAlarm(card->alarm);
+    }
+    __CARDSetDiskID((u8 *)0x80000000);
+    OSRegisterResetFunction(ResetFunctionInfo_800D96D8);
+}
+
 void __CARDSetDiskID(u8 *id) {
     extern u8 __CARDDiskNone[32];
 
@@ -7943,6 +7968,66 @@ void GXSetAlphaUpdate(u8 updateEnable) {
     g = gx;
     GXWGFifo.u32 = *(u32 *)(g + 0x1D0);
     *(u16 *)(g + 2) = 0;
+}
+
+#pragma push
+#pragma peephole off
+void GXSetDither(u8 dither) {
+    extern u8 *gx;
+    u8 *g;
+    u32 *reg;
+
+    g = gx;
+    reg = (u32 *)(g + 0x1D0);
+    *reg = (*(u32 *)(g + 0x1D0) & ~4) | (dither << 2);
+    GXWGFifo.u8 = 0x61;
+    g = gx;
+    GXWGFifo.u32 = *(u32 *)(g + 0x1D0);
+    *(u16 *)(g + 2) = 0;
+}
+#pragma pop
+
+void GXSetDstAlpha(u8 enable, u8 alpha) {
+    extern u8 *gx;
+    u8 *g;
+    u32 *reg;
+
+    reg = (u32 *)(gx + 0x1D4);
+    *reg = (*reg & ~0xFF) | alpha;
+    g = gx;
+    reg = (u32 *)(g + 0x1D4);
+    *reg = (*(u32 *)(g + 0x1D4) & ~0x100) | (enable << 8);
+    GXWGFifo.u8 = 0x61;
+    g = gx;
+    GXWGFifo.u32 = *(u32 *)(g + 0x1D4);
+    *(u16 *)(g + 2) = 0;
+}
+
+void GXSetFieldMask(u8 odd_mask, u8 even_mask) {
+    extern u8 *gx;
+    u32 reg;
+
+    reg = even_mask;
+    reg = (reg & ~2) | (odd_mask << 1);
+    reg = (reg & 0xFFFFFF) | 0x44000000;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.s32 = reg;
+    *(u16 *)(gx + 2) = 0;
+}
+
+void GXSetFieldMode(u8 field_mode, u8 half_aspect_ratio) {
+    extern u8 *gx;
+    void __GXFlushTextureState(void);
+    u32 *reg;
+
+    reg = (u32 *)(gx + 0x7C);
+    *reg = (*reg & ~0x400000) | (half_aspect_ratio << 22);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *(u32 *)(gx + 0x7C);
+    __GXFlushTextureState();
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = field_mode | 0x68000000;
+    __GXFlushTextureState();
 }
 
 void __GXSetRange(void) {
