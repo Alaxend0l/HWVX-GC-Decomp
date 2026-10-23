@@ -6510,10 +6510,6 @@ void OSInitAlarm(void) {
     }
 }
 
-void OSCreateAlarm(s32 *arg0) {
-    *arg0 = 0;
-}
-
 typedef struct Cell {
     struct Cell *prev;
     struct Cell *next;
@@ -6532,12 +6528,36 @@ extern void *ArenaStart_803C7220;
 extern void *ArenaEnd_803C7224;
 extern s32 __OSCurrHeap;
 
+void OSCreateAlarm(s32 *arg0) {
+    *arg0 = 0;
+}
+
 s32 OSSetCurrentHeap(s32 arg0) {
     s32 temp_r0;
 
     temp_r0 = __OSCurrHeap;
     __OSCurrHeap = arg0;
     return temp_r0;
+}
+
+void *OSInitAlloc(void *arenaStart, void *arenaEnd, s32 maxHeaps) {
+    u32 arraySize;
+    s32 i;
+
+    arraySize = sizeof(HeapDesc) * maxHeaps;
+    HeapArray_803C7218 = arenaStart;
+    NumHeaps_803C721C = maxHeaps;
+    for (i = 0; i < NumHeaps_803C721C; i++) {
+        HeapDesc *hd = &HeapArray_803C7218[i];
+        hd->size = -1;
+        hd->free = hd->allocated = NULL;
+    }
+    __OSCurrHeap = -1;
+    arenaStart = (void *)((u8 *)HeapArray_803C7218 + arraySize);
+    arenaStart = (void *)(((u32)arenaStart + 0x1F) & ~0x1F);
+    ArenaStart_803C7220 = arenaStart;
+    ArenaEnd_803C7224 = (void *)((u32)arenaEnd & ~0x1F);
+    return arenaStart;
 }
 
 s32 OSCreateHeap(void *start, void *end) {
