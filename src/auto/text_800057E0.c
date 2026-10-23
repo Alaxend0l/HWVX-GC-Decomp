@@ -12931,22 +12931,6 @@ void GXCallDisplayList(void *list, u32 nbytes) {
     GXWGFifo.u32 = nbytes;
 }
 
-static inline void __GXSetProjection(void) {
-    extern u8 *gx;
-    u32 reg;
-
-    reg = 0x61020;
-    GXWGPipe.u8 = 0x10;
-    GXWGPipe.u32 = reg;
-    GXWGPipe.f32 = *(f32 *)(gx + 0x424);
-    GXWGPipe.f32 = *(f32 *)(gx + 0x428);
-    GXWGPipe.f32 = *(f32 *)(gx + 0x42C);
-    GXWGPipe.f32 = *(f32 *)(gx + 0x430);
-    GXWGPipe.f32 = *(f32 *)(gx + 0x434);
-    GXWGPipe.f32 = *(f32 *)(gx + 0x438);
-    GXWGPipe.u32 = *(u32 *)(gx + 0x420);
-}
-
 void GXSetProjection(f32 mtx[4][4], s32 type) {
     typedef struct GXDataProj {
         u8 unk0[2];
