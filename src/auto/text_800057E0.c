@@ -7652,23 +7652,25 @@ static inline s32 VolumeManager_GetCellIndex(Vector4 *point) {
     s32 x;
     s32 y;
     s32 z;
+    s32 cell;
 
     if (g_VolumeHolder == NULL) {
-        return 0;
+        cell = 0;
+    } else {
+        x = (point->x - M2C_FIELD(g_VolumeHolder, f32 *, 0x0)) / M2C_FIELD(g_VolumeHolder, f32 *, 0x20);
+        y = (point->y - M2C_FIELD(g_VolumeHolder, f32 *, 0x4)) / M2C_FIELD(g_VolumeHolder, f32 *, 0x24);
+        z = (point->z - M2C_FIELD(g_VolumeHolder, f32 *, 0x8)) / M2C_FIELD(g_VolumeHolder, f32 *, 0x28);
+        if (x < 0 || x >= M2C_FIELD(g_VolumeHolder, s32 *, 0x2C)) {
+            cell = 0;
+        } else if (y < 0 || y >= M2C_FIELD(g_VolumeHolder, s32 *, 0x30)) {
+            cell = 0;
+        } else if (z < 0 || z >= M2C_FIELD(g_VolumeHolder, s32 *, 0x34)) {
+            cell = 0;
+        } else {
+            cell = M2C_FIELD(g_VolumeHolder, s32 **, 0x14)[x + y * M2C_FIELD(g_VolumeHolder, s32 *, 0x2C) * M2C_FIELD(g_VolumeHolder, s32 *, 0x34) + z * M2C_FIELD(g_VolumeHolder, s32 *, 0x2C)];
+        }
     }
-    x = (point->x - M2C_FIELD(g_VolumeHolder, f32 *, 0x0)) / M2C_FIELD(g_VolumeHolder, f32 *, 0x20);
-    y = (point->y - M2C_FIELD(g_VolumeHolder, f32 *, 0x4)) / M2C_FIELD(g_VolumeHolder, f32 *, 0x24);
-    z = (point->z - M2C_FIELD(g_VolumeHolder, f32 *, 0x8)) / M2C_FIELD(g_VolumeHolder, f32 *, 0x28);
-    if (x < 0 || x >= M2C_FIELD(g_VolumeHolder, s32 *, 0x2C)) {
-        return 0;
-    }
-    if (y < 0 || y >= M2C_FIELD(g_VolumeHolder, s32 *, 0x30)) {
-        return 0;
-    }
-    if (z < 0 || z >= M2C_FIELD(g_VolumeHolder, s32 *, 0x34)) {
-        return 0;
-    }
-    return M2C_FIELD(g_VolumeHolder, s32 **, 0x14)[z * M2C_FIELD(g_VolumeHolder, s32 *, 0x2C) + (M2C_FIELD(g_VolumeHolder, s32 *, 0x34) * (y * M2C_FIELD(g_VolumeHolder, s32 *, 0x2C)) + x)];
+    return cell;
 }
 
 #pragma push
