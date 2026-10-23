@@ -2632,6 +2632,27 @@ void ShowStats_Create(void) {
     fn_800957D4();
 }
 
+void ShowStats_Init(void) {
+    s32 Gfx_FontManager_AddFont(u16, u8, f32, f32, f32);
+    void Gfx_SetDebugFont(void);
+    extern s32 debugFont;
+    extern s32 g_debugDataFlag;
+    extern u8 g_timeBar[0x20];
+    extern s32 g_timeBarOn;
+    u8 *font;
+
+    if (World_GetGameData() != NULL) {
+        font = M2C_FIELD(World_GetGameData(), u8 **, 0xC8);
+        g_debugDataFlag = 1;
+        memset(g_timeBar, 0, 0x20);
+        g_timeBarOn = 0;
+        if (font != NULL) {
+            debugFont = Gfx_FontManager_AddFont(M2C_FIELD(font, u32 *, 0), font[0xB], font[9], font[0xA], M2C_FIELD(font, f32 *, 0x28));
+            Gfx_SetDebugFont();
+        }
+    }
+}
+
 void ShowStats_Release(void) {
     M2C_UNK Gfx_FontManager_ReleaseFont(s32);
     extern s32 debugFont;
