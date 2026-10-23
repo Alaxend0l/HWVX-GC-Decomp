@@ -4133,6 +4133,31 @@ void ShowStats(void) {
 
 }
 
+void SoundSeq_Release(u8 *seq) {
+    void Trigger_SoundSequenceQueueEmptied(void);
+    void SoundSource_Stop(s32 index);
+    void Thing_Release(void *thing);
+    u8 *next;
+    u32 i;
+
+    if (M2C_FIELD(seq, u32 *, 0x74) & 0x40000000) {
+        next = M2C_FIELD(seq, u8 **, 0xC8);
+        if (next != NULL) {
+            M2C_FIELD(next, u32 *, 0x74) &= ~0x80000000;
+            M2C_FIELD(seq, u8 **, 0xC8) = NULL;
+        } else {
+            Trigger_SoundSequenceQueueEmptied();
+        }
+    }
+    for (i = 0; i < 4; i++) {
+        if (((s32 *)(seq + 0xD0))[i] >= 0 && SoundSource_IsLooping(((s32 *)(seq + 0xD0))[i])) {
+            SoundSource_Stop(((s32 *)(seq + 0xD0))[i]);
+        }
+        ((s32 *)(seq + 0xD0))[i] = -1;
+    }
+    Thing_Release(seq);
+}
+
 s32 SoundSeq_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
@@ -4642,6 +4667,30 @@ s32 TriggerAirboxEntered(u32 *trigger) {
     }
     return 0;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 TriggerMovableVolumeEntered(u32 *trigger) {
+    f32 dist;
+    u8 *thing;
+    u32 i;
+    u32 numThings;
+    u32 j;
+    u8 *volume;
+
+    numThings = trigger[0];
+    for (i = 0; i < numThings; i++) {
+        thing = (u8 *)trigger[i + 1];
+        for (j = 0; j < trigger[numThings + 1]; j++) {
+            volume = M2C_FIELD(trigger[numThings + 2 + j], u8 **, 0x10);
+            if (volume != NULL && M2C_FIELD(thing, u32 *, 4) == 1 && IsPointWithinVolume((Vector4 *)(volume + 0x40), thing, &dist)) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+#pragma pop
 
 s32 ActionAirboxChangeMode(s32 *data) {
     u32 count = data[1];
