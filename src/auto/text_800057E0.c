@@ -8345,8 +8345,6 @@ void __DVDFSInit(void) {
     }
 }
 
-#pragma push
-#pragma peephole off
 s32 DVDGetCurrentDir(char *path, u32 maxlen) {
     extern u32 *FstStart_803C72F4;
     extern u32 currentDirectory_803C7300;
@@ -8370,7 +8368,6 @@ s32 DVDGetCurrentDir(char *path, u32 maxlen) {
     path[loc] = '\0';
     return 1;
 }
-#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
