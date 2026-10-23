@@ -832,8 +832,6 @@ void __close_all(void) {
     }
 }
 
-#pragma push
-#pragma optimize_for_size on
 void __timesdec(decimal *result, const decimal *x, const decimal *y) {
     u32 accumulator = 0;
     u8 mantissa[SIGDIGLEN * 2];
@@ -867,13 +865,13 @@ void __timesdec(decimal *result, const decimal *x, const decimal *y) {
             accumulator += *ip * *jp;
         }
         *--pDigit = accumulator % 10;
-        accumulator = accumulator / 10;
+        accumulator /= 10;
         --i;
     }
 
     result->exp = x->exp + y->exp;
 
-    if (accumulator) {
+    if (accumulator > 0) {
         *--pDigit = accumulator;
         result->exp++;
     }
@@ -899,7 +897,6 @@ void __timesdec(decimal *result, const decimal *x, const decimal *y) {
         __dorounddecup(result, result->sig.length);
     }
 }
-#pragma pop
 
 s32 __count_trailing_zerol(u32 x) {
     s32 result = 0;
