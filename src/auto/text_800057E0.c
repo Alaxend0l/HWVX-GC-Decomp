@@ -1470,6 +1470,37 @@ s32 ActionVehicleRemoveItem(s32 *action) {
     }
     return 1;
 }
+
+void ActionPlaySoundSequence(void *arg0) {
+    void SoundSequence_ClearQueue();
+    void SoundSequence_Play(u32, s32);
+    void SoundSequence_PlayQueued(u32, s32);
+    extern u8 g_soundSeqVTable[];
+    u32 id;
+    void *thing;
+    void **vtable;
+
+    id = M2C_FIELD(arg0, u32 *, 8);
+    if (M2C_FIELD(arg0, u32 *, 0) != 0) {
+        if (id != 0) {
+            if (M2C_FIELD(arg0, u32 *, 4) != 0) {
+                SoundSequence_PlayQueued(id, 0);
+            } else {
+                SoundSequence_Play(id, 0);
+            }
+        }
+    } else if (M2C_FIELD(arg0, u32 *, 4) != 0) {
+        SoundSequence_ClearQueue();
+    } else {
+        for (thing = g_thingManager_DARYL.activeList; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
+            vtable = M2C_FIELD(thing, void ***, 0x8C);
+            if ((u8 *)vtable == g_soundSeqVTable && M2C_FIELD(thing, u32 *, 0xB0) == id) {
+                ((void (*)(void *))vtable[1])(thing);
+            }
+        }
+    }
+}
+
 #pragma pop
 
 void AI_Create(void) {
@@ -10225,6 +10256,34 @@ void EXTIntrruptHandler(s16 interrupt, void *context) {
     }
 }
 
+s32 EXIUnlock(s32 chan) {
+    extern u8 Ecb_80309980[3][0x40];
+    void SetExiInterruptMask(s32 chan, u8 *exi);
+    void *memmove(void *dst, const void *src, u32 n);
+    typedef void (*EXICallback)(s32 chan, void *context);
+    u8 *exi;
+    BOOL enabled;
+    EXICallback unlockedCallback;
+
+    exi = Ecb_80309980[chan];
+    enabled = OSDisableInterrupts();
+    if (!(*(u32 *)(exi + 0xC) & 0x10)) {
+        OSRestoreInterrupts(enabled);
+        return 0;
+    }
+    *(u32 *)(exi + 0xC) &= ~0x10;
+    SetExiInterruptMask(chan, exi);
+    if (0 < *(s32 *)(exi + 0x24)) {
+        unlockedCallback = *(EXICallback *)(exi + 0x2C);
+        if (0 < --*(s32 *)(exi + 0x24)) {
+            memmove(exi + 0x28, exi + 0x30, *(s32 *)(exi + 0x24) * 8);
+        }
+        unlockedCallback(chan, 0);
+    }
+    OSRestoreInterrupts(enabled);
+    return 1;
+}
+
 s32 EXIGetID(s32 chan, u32 dev, u32 *id);
 s32 OSGetConsoleType(void);
 s32 EXIGetState(s32 chan) {
@@ -14718,4 +14777,14 @@ void *__va_arg(void *ap, s32 type) {
         addr = *(char **)addr;
     }
     return addr;
+}
+static inline void SoundSequence_StopAllWithId(u32 id) {
+    extern u8 g_soundSeqVTable[];
+    void *thing;
+
+    for (thing = g_thingManager_DARYL.activeList; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
+        if (M2C_FIELD(thing, u8 **, 0x8C) == g_soundSeqVTable && M2C_FIELD(thing, u32 *, 0xB0) == id) {
+            ((void (*)(void *))(M2C_FIELD(thing, void ***, 0x8C))[1])(thing);
+        }
+    }
 }
