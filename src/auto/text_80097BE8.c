@@ -615,12 +615,6 @@ typedef struct Texture {
     s16 wrapMode;
 } Texture;
 
-extern u8 *m_texture;
-
-static inline Texture *Gfx_TexturePtr(u32 id) {
-    return &((Texture *)m_texture)[id];
-}
-
 typedef struct FontChar {
     f32 unk0;
     f32 unk4;
