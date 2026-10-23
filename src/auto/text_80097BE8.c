@@ -2554,6 +2554,68 @@ double cos(double x) {
         }
     }
 }
+
+double floor(double x)
+{
+    int i0, i1, j0;
+    unsigned i, j;
+    i0 = __HI(x);
+    i1 = __LO(x);
+    j0 = ((i0 >> 20) & 0x7ff) - 0x3ff;
+    if (j0 < 20) {
+        if (j0 < 0) {
+            if (1.0e300 + x > 0.0) {
+                if (i0 >= 0) {
+                    i0 = i1 = 0;
+                } else if (((i0 & 0x7fffffff) | i1) != 0) {
+                    i0 = 0xbff00000;
+                    i1 = 0;
+                }
+            }
+        } else {
+            i = (0x000fffff) >> j0;
+            if (((i0 & i) | i1) == 0) {
+                return x;
+            }
+            if (1.0e300 + x > 0.0) {
+                if (i0 < 0) {
+                    i0 += (0x00100000) >> j0;
+                }
+                i0 &= (~i);
+                i1 = 0;
+            }
+        }
+    } else if (j0 > 51) {
+        if (j0 == 0x400) {
+            return x + x;
+        } else {
+            return x;
+        }
+    } else {
+        i = ((unsigned)(0xffffffff)) >> (j0 - 20);
+        if ((i1 & i) == 0) {
+            return x;
+        }
+        if (1.0e300 + x > 0.0) {
+            if (i0 < 0) {
+                if (j0 == 20) {
+                    i0 += 1;
+                } else {
+                    j = i1 + (1 << (52 - j0));
+                    if (j < i1) {
+                        i0 += 1;
+                    }
+                    i1 = j;
+                }
+            }
+            i1 &= (~i);
+        }
+    }
+    __HI(x) = i0;
+    __LO(x) = i1;
+    return x;
+}
+
 #pragma pop
 
 double frexp(double x, int *eptr) {
@@ -8792,27 +8854,28 @@ void SimThread_Init(VDevice *dev, VDevice *owner) {
         0.1003241092f, 0.1002266929f, 0.1000645086f, 0.0998378024f, 0.0995392948f,
     };
     static s32 ia[10];
+    SimThread *t = &dev->sim;
     s32 w[1] = {0x1000};
     s32 i;
 
-    dev->sim.lastTick = 0;
-    dev->sim.historyIdx = 0;
-    dev->sim.deltaIdx = 0;
+    t->lastTick = 0;
+    t->historyIdx = 0;
+    t->deltaIdx = 0;
     for (i = 0; i < 16; i++) {
-        dev->sim.deltaPos[i] = 0;
-        dev->sim.deltaTime[i] = 0;
+        t->deltaPos[i] = 0;
+        t->deltaTime[i] = 0;
     }
-    dev->sim.owner = owner;
-    dev->sim.lastForce = 0;
-    dev->sim.posScaled = 0;
-    dev->sim.pos = 0;
-    dev->sim.accel = 0;
-    dev->sim.lastTick = OSGetTick() / ((*(u32 *)0x800000F8 / 4) / 1000);
-    SimThread_SetWeights(&dev->sim, w);
+    t->owner = owner;
+    t->lastForce = 0;
+    t->posScaled = 0;
+    t->pos = 0;
+    t->accel = 0;
+    t->lastTick = OSGetTick() / ((*(u32 *)0x800000F8 / 4) / 1000);
+    SimThread_SetWeights(t, w);
     for (i = 0; i < 10; i++) {
         ia[i] = 4096.0f * a[i];
     }
-    SimThread_SetWeights(&dev->sim, ia);
+    SimThread_SetWeights(t, ia);
 }
 
 #pragma pop
