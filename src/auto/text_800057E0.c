@@ -4500,6 +4500,49 @@ void CollisionPairCache_Heartbeat(void) {
     }
 }
 
+void OBoxCache_Set(u32 box0, u32 box1, Vector4 *a, Vector4 *b) {
+    extern u8 g_aCollisionPairCache[4][0x30];
+    s32 i;
+    u32 maxTime;
+    s32 slot;
+
+    maxTime = 0;
+    slot = 0;
+    for (i = 0; i < 4; i++) {
+        if (box0 == *(u32 *)(g_aCollisionPairCache[i] + 0x20) &&
+            box1 == *(u32 *)(g_aCollisionPairCache[i] + 0x24)) {
+            *(s32 *)(g_aCollisionPairCache[i] + 0x28) = 0;
+            *(Vector4 *)(g_aCollisionPairCache[i] + 0x10) = *b;
+            *(Vector4 *)(g_aCollisionPairCache[i] + 0x0) = *a;
+            return;
+        }
+        if (box1 == *(u32 *)(g_aCollisionPairCache[i] + 0x20) &&
+            box0 == *(u32 *)(g_aCollisionPairCache[i] + 0x24)) {
+            *(s32 *)(g_aCollisionPairCache[i] + 0x28) = 0;
+            ((Vector4 *)(g_aCollisionPairCache[i] + 0x10))->x = -b->x;
+            ((Vector4 *)(g_aCollisionPairCache[i] + 0x10))->y = -b->y;
+            ((Vector4 *)(g_aCollisionPairCache[i] + 0x10))->z = -b->z;
+            *(Vector4 *)(g_aCollisionPairCache[i] + 0x0) = *a;
+            return;
+        }
+    }
+    for (i = 0; i < 4; i++) {
+        if (*(u32 *)(g_aCollisionPairCache[i] + 0x20) == 0) {
+            slot = i;
+            break;
+        }
+        if (*(u32 *)(g_aCollisionPairCache[i] + 0x28) > maxTime) {
+            maxTime = *(u32 *)(g_aCollisionPairCache[i] + 0x28);
+            slot = i;
+        }
+    }
+    *(s32 *)(g_aCollisionPairCache[slot] + 0x28) = 0;
+    *(Vector4 *)(g_aCollisionPairCache[slot] + 0x10) = *b;
+    *(Vector4 *)(g_aCollisionPairCache[slot] + 0x0) = *a;
+    *(u32 *)(g_aCollisionPairCache[slot] + 0x20) = box0;
+    *(u32 *)(g_aCollisionPairCache[slot] + 0x24) = box1;
+}
+
 void CollisionTriCache_Clear(void) {
     extern u8 g_aCollisionTriPairCache[4][0x30];
     s32 i;
