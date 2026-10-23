@@ -4181,6 +4181,45 @@ f32 Distance_Plane(void *arg0, void *arg1) {
 
 #pragma push
 #pragma dont_inline on
+void RandomNumberGenerator_Init(void) {
+    u32 OSGetTick(void);
+    void srand(u32 seed);
+    int rand(void);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    RandomNumberGenerator *rng = &g_randomNumberGenerator;
+    Vector q __attribute__((aligned(16)));
+    Vector axis __attribute__((aligned(16)));
+    f32 mtx[3][4] __attribute__((aligned(16)));
+    u32 i;
+
+    srand(OSGetTick());
+    for (i = 0; i < 0x100; i++) {
+        axis.x = (rand() & 0xFF) - 127;
+        axis.y = (rand() & 0xFF) - 127;
+        axis.z = (rand() & 0xFF) - 127;
+        GenerateQuaternion(&axis, &q, (6.2831855f * rand()) / 32767.0f);
+        QuaternionToSubMatrix(&q, mtx);
+        rng->vectors[i * 3 + 0].x = mtx[0][0];
+        rng->vectors[i * 3 + 0].y = mtx[0][1];
+        rng->vectors[i * 3 + 0].z = mtx[0][2];
+        rng->vectors[i * 3 + 1].x = mtx[1][0];
+        rng->vectors[i * 3 + 1].y = mtx[1][1];
+        rng->vectors[i * 3 + 1].z = mtx[1][2];
+        rng->vectors[i * 3 + 2].x = mtx[2][0];
+        rng->vectors[i * 3 + 2].y = mtx[2][1];
+        rng->vectors[i * 3 + 2].z = mtx[2][2];
+    }
+    rng->unk3000 = 0;
+    rng->unk3004 = 0;
+    rng->index = 0;
+    for (i = 0; i < 0x400; i++) {
+        rng->floats[i] = rand() / 32767.0f;
+    }
+}
+#pragma pop
+
+#pragma push
+#pragma dont_inline on
 void RandomNumberGenerator_GetRandomQuaternion(Vector *q) {
     Vector axis __attribute__((aligned(16)));
     f32 angle;
@@ -5878,21 +5917,13 @@ s32 DrawChar(s32 x, s32 y, u16 code) {
     x1 = x0 + cw;
     y1 = y0 + ch;
     GXBegin(0x80, 0, 4);
-    GXWGFifo.s16 = x0;
-    GXWGFifo.s16 = y0;
-    GXWGFifo.s16 = 0;
+    GXPosition3s16(x0, y0, 0);
     GXTexCoord2s16(s0, t0);
-    GXWGFifo.s16 = x1;
-    GXWGFifo.s16 = y0;
-    GXWGFifo.s16 = 0;
+    GXPosition3s16(x1, y0, 0);
     GXTexCoord2s16(s0 + cw, t0);
-    GXWGFifo.s16 = x1;
-    GXWGFifo.s16 = y1;
-    GXWGFifo.s16 = 0;
+    GXPosition3s16(x1, y1, 0);
     GXTexCoord2s16(s0 + cw, t0 + ch);
-    GXWGFifo.s16 = x0;
-    GXWGFifo.s16 = y1;
-    GXWGFifo.s16 = 0;
+    GXPosition3s16(x0, y1, 0);
     GXTexCoord2s16(s0, t0 + ch);
     return width;
 }
