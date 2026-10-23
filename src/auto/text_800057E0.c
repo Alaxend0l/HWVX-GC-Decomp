@@ -8143,13 +8143,29 @@ u8 *getTiming_800742A0(u32 mode) {
     }
 }
 
+typedef struct VITiming {
+    u8 unk0[0x18];
+    u16 nhlines;
+    u16 hlw;
+} VITiming;
+
+extern VITiming *CurrTiming_803C73A8;
+
+static u32 getCurrentHalfLine(void) {
+    u32 hcount;
+    u32 vcount0;
+    u32 vcount;
+
+    vcount = ((volatile u16 *)0xCC002000)[22] & 0x7FF;
+    do {
+        vcount0 = vcount;
+        hcount = ((volatile u16 *)0xCC002000)[23] & 0x7FF;
+        vcount = ((volatile u16 *)0xCC002000)[22] & 0x7FF;
+    } while (vcount0 != vcount);
+    return ((vcount - 1) << 1) + ((hcount - 1) / CurrTiming_803C73A8->hlw);
+}
+
 static u32 getCurrentFieldEvenOdd(void) {
-    typedef struct VITiming {
-        u8 unk0[0x18];
-        u16 nhlines;
-        u16 hlw;
-    } VITiming;
-    extern VITiming *CurrTiming_803C73A8;
     u32 hcount;
     u32 vcount0;
     u32 vcount;
