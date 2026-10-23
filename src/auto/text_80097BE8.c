@@ -6330,6 +6330,7 @@ void DisplayList_RenderGXList(void) {
         }
     }
 }
+#pragma pop
 
 s32 Gfx_FrustrumCullSphereTestAllWindows(Vector *center, f32 radius) {
     extern u8 g_CurrentViews;
