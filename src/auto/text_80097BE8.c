@@ -595,7 +595,12 @@ typedef struct EffectEnvelope {
 } EffectEnvelope;
 
 static inline s32 Effect_MulDiv(s32 a, s32 b, s32 c) {
-    return (a * b + (a < 0 ? -(c / 2) : c / 2)) / c;
+    s32 half = c / 2;
+
+    if (a < 0) {
+        half = -half;
+    }
+    return (a * b + half) / c;
 }
 
 static inline s32 Effect_WaveLookup(s16 *table, u32 a) {
@@ -9326,7 +9331,11 @@ s32 Effect_Update(Effect *effect, u32 dt) {
     s32 active;
     s16 magnitude;
     s32 wave;
+    s32 delta;
+    s32 half;
+    s32 round;
     u32 a;
+    EffectCondition *cond;
 
     if (effect->flags & 1) {
         if (effect->delay != 0) {
@@ -9351,7 +9360,12 @@ s32 Effect_Update(Effect *effect, u32 dt) {
         if (effect->flags & 0x10) {
             Effect_PolarToRect(Effect_PerformEnvelope(effect, &effect->params.constant.envelope, effect->params.constant.magnitude), effect->params.constant.angle, &effect->force);
         } else if (effect->flags & 0x20) {
-            Effect_PolarToRect(effect->params.ramp.start + Effect_MulDiv(effect->params.ramp.end - effect->params.ramp.start, effect->elapsed, effect->duration), effect->params.ramp.angle, &effect->force);
+            delta = effect->params.ramp.end - effect->params.ramp.start;
+            half = (s32)effect->duration / 2;
+            if (delta < 0) {
+                half = -half;
+            }
+            Effect_PolarToRect(effect->params.ramp.start + (s32)(half + delta * effect->elapsed) / (s32)effect->duration, effect->params.ramp.angle, &effect->force);
         } else if (effect->flags & 0x40) {
             *(u32 *)&effect->deadbandLow += (dt << 24) / effect->params.periodic.period;
             if (*(u32 *)&effect->deadbandLow >= 0x1000000) {
@@ -9360,16 +9374,7 @@ s32 Effect_Update(Effect *effect, u32 dt) {
             magnitude = Effect_PerformEnvelope(effect, &effect->params.periodic.envelope, effect->params.periodic.magnitude);
             switch (effect->type) {
             case 2:
-                a = (*(u32 *)&effect->deadbandLow >> 16) & 0xFF;
-                if (a < 0x40) {
-                    wave = g_iQuarterSineTable_8037BB7C[a];
-                } else if (a < 0x80) {
-                    wave = g_iQuarterSineTable_8037BB7C[0x7F - a];
-                } else if (a < 0xC0) {
-                    wave = -g_iQuarterSineTable_8037BB7C[a - 0x80];
-                } else {
-                    wave = -g_iQuarterSineTable_8037BB7C[0xFF - a];
-                }
+                wave = Effect_WaveLookup(g_iQuarterSineTable_8037BB7C, (*(u32 *)&effect->deadbandLow >> 16) & 0xFF);
                 break;
             case 3:
                 wave = -0x400;
@@ -9378,35 +9383,33 @@ s32 Effect_Update(Effect *effect, u32 dt) {
                 }
                 break;
             case 4:
-                a = (*(u32 *)&effect->deadbandLow >> 16) & 0xFF;
-                if (a < 0x40) {
-                    wave = g_iRampUpTable_8037BBFC[a];
-                } else if (a < 0x80) {
-                    wave = g_iRampUpTable_8037BBFC[0x7F - a];
-                } else if (a < 0xC0) {
-                    wave = -g_iRampUpTable_8037BBFC[a - 0x80];
-                } else {
-                    wave = -g_iRampUpTable_8037BBFC[0xFF - a];
-                }
+                wave = Effect_WaveLookup(g_iRampUpTable_8037BBFC, (*(u32 *)&effect->deadbandLow >> 16) & 0xFF);
                 break;
             case 5:
-                wave = g_iRampUpTable_8037BBFC[(*(u32 *)&effect->deadbandLow >> 17) & 0x3F];
+                a = (*(u32 *)&effect->deadbandLow >> 16) & 0xFF;
+                wave = g_iRampUpTable_8037BBFC[a >> 2];
                 break;
             case 6:
-                wave = g_iRampUpTable_8037BBFC[(0xFF - ((*(u32 *)&effect->deadbandLow >> 16) & 0xFF)) >> 1];
+                a = (*(u32 *)&effect->deadbandLow >> 16) & 0xFF;
+                wave = g_iRampUpTable_8037BBFC[(0xFF - a) >> 2];
                 break;
             default:
                 wave = 0;
                 break;
             }
-            Effect_PolarToRect(Effect_MulDiv(wave, magnitude, 0x400) + effect->params.periodic.offset, effect->params.periodic.angle, &effect->force);
+            round = 0x200;
+            if (wave < 0) {
+                round = -0x200;
+            }
+            Effect_PolarToRect((round + wave * magnitude) / 0x400 + effect->params.periodic.offset, effect->params.periodic.angle, &effect->force);
         } else if (effect->flags & 0x80) {
+            cond = &effect->params.condition;
             switch (effect->type) {
             case 7:
-                effect->force = Effect_UpdateSpring(effect, &effect->params.condition);
+                effect->force = Effect_UpdateSpring(effect, cond);
                 break;
             case 8:
-                effect->force = Effect_UpdateDamper(effect, &effect->params.condition);
+                effect->force = Effect_UpdateDamper(effect, cond);
                 if (effect->force == 0) {
                     effect->force++;
                 }
