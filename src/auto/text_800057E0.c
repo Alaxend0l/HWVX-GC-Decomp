@@ -15719,6 +15719,9 @@ s64 __OSGetSystemTime(void) {
     return result;
 }
 
+void GetDates(s32 days, s32 *td) {
+}
+
 s32 __get_time(void) {
     M2C_UNK OSGetTime(M2C_UNK);
     u64 __div2i(M2C_UNK, u32);
