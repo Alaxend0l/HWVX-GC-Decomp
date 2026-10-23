@@ -592,7 +592,8 @@ typedef struct CARDControl {
     s32 latency;
     u8 unk18[0x24 - 0x18];
     s32 mountStep;
-    u8 unk28[0x80 - 0x28];
+    s32 formatStep;
+    u8 unk2C[0x80 - 0x2C];
     void *workArea;
     u8 *currentDir;
     void *buffer;
@@ -9116,7 +9117,7 @@ void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id) {
 s32 OBox_CollideAllThingsZeroTime(void *obox, void *thing, void *info) {
     u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults);
     s8 OBoxHitsOBoxZeroTime(void *a, void *b, void *info);
-    f32 PSVECSquareDistance(f32 *a, f32 *b);
+    f32 PSVECSquareDistance(Vector4 *a, Vector4 *b);
     Vector4 min;
     Vector4 max;
     GridResult results[256];
@@ -9133,7 +9134,7 @@ s32 OBox_CollideAllThingsZeroTime(void *obox, void *thing, void *info) {
     for (i = 0; i < count; i++) {
         other = (u8 *)results[i].id;
         if (!(*(u32 *)(other + 0x74) & 2) && *(s16 *)(other + 0x80) != 0 && other != thing) {
-            dist = PSVECSquareDistance(&((f32 *)thing)[16], (f32 *)(other + 0x40));
+            dist = PSVECSquareDistance(&((Thing *)thing)->mtx.v[3], &((Thing *)other)->mtx.v[3]);
             r = *(f32 *)(other + 0x70) + *(f32 *)((u8 *)thing + 0x70);
             if (r * r > dist) {
                 t = 1.0f;
@@ -17071,6 +17072,43 @@ s32 OnReset_8007DB90(s32 arg0) {
     return 1;
 }
 
+s32 ReadArrayUnlock(s32 chan, u32 data, void *rbuf, s32 rlen, s32 mode) {
+    s32 EXISelect(s32 chan, u32 dev, u32 freq);
+    s32 EXIImmEx(s32 chan, void *buf, s32 len, u32 mode);
+    s32 EXIDeselect(s32 chan);
+    CARDControl *card;
+    s32 err;
+    u8 cmd[5];
+
+    card = &__CARDBlock[chan];
+    if (!EXISelect(chan, 0, 4)) {
+        return -3;
+    }
+
+    data &= 0xFFFFF000;
+    memset(cmd, 0, 5);
+    cmd[0] = 0x52;
+    if (mode == 0) {
+        cmd[1] = (u8)((data & 0x60000000) >> 29);
+        cmd[2] = (u8)((data & 0x1FE00000) >> 21);
+        cmd[3] = (u8)((data & 0x00180000) >> 19);
+        cmd[4] = (u8)((data & 0x0007F000) >> 12);
+    } else {
+        cmd[1] = (u8)(data >> 24);
+        cmd[2] = (u8)((data & 0x00FF0000) >> 16);
+    }
+
+    err = 0;
+    err |= !EXIImmEx(chan, cmd, 5, 1);
+    err |= !EXIImmEx(chan, (u8 *)card->workArea + 0x200, card->latency, 1);
+    err |= !EXIImmEx(chan, rbuf, rlen, 0);
+    err |= !EXIDeselect(chan);
+    if (err) {
+        return -3;
+    }
+    return 0;
+}
+
 s32 DummyLen(void) {
     u32 OSGetTick(void);
     u32 shift;
@@ -17618,6 +17656,44 @@ s32 CARDUnmount(s32 chan) {
     }
     DoUnmount(chan, -3);
     return 0;
+}
+
+void FormatCallback(s32 chan, s32 result) {
+    s32 __CARDEraseSector(s32 chan, u32 addr, CARDCallback callback);
+    s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, CARDCallback callback);
+    s32 __CARDPutControlBlock(CARDControl *card, s32 result);
+    CARDControl *card;
+    CARDCallback callback;
+
+    card = &__CARDBlock[chan];
+    if (result < 0) {
+        goto error;
+    }
+
+    ++card->mountStep;
+    if (card->mountStep < 5) {
+        result = __CARDEraseSector(chan, card->sectorSize * card->mountStep, FormatCallback);
+        if (0 <= result) {
+            return;
+        }
+    } else if (card->mountStep < 10) {
+        s32 step = card->mountStep - 5;
+        result = __CARDWrite(chan, card->sectorSize * step, 0x2000, (u8 *)card->workArea + step * 0x2000, FormatCallback);
+        if (0 <= result) {
+            return;
+        }
+    } else {
+        card->currentDir = (u8 *)card->workArea + 0x2000;
+        memcpy(card->currentDir, (u8 *)card->workArea + 0x4000, 0x2000);
+        card->buffer = (u8 *)card->workArea + 0x6000;
+        memcpy(card->buffer, (u8 *)card->workArea + 0x8000, 0x2000);
+    }
+
+error:
+    callback = card->apiCallback;
+    card->apiCallback = NULL;
+    __CARDPutControlBlock(card, result);
+    callback(chan, result);
 }
 
 s32 CARDFormat(s32 chan) {
