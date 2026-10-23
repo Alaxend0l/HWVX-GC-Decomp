@@ -8078,6 +8078,7 @@ BOOL THPPlayerSetBuffer(u8 *buffer) {
     }
     return FALSE;
 }
+#pragma pop
 
 void PrepareReady(void *arg0) {
     extern u8 PrepareReadyQueue_8036ED00[];
