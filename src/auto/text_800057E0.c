@@ -3996,6 +3996,57 @@ void Geometry_FreeGeometry(void *geometry) {
     }
 }
 
+typedef struct GridNode {
+    u32 data;
+    u32 id;
+    struct GridNode *next;
+} GridNode;
+
+typedef struct GridResult {
+    u32 data;
+    u32 id;
+} GridResult;
+
+typedef struct GridCell {
+    GridNode *head;
+    s32 count;
+} GridCell;
+
+typedef struct GridManager {
+    GridCell cells[7][256];
+    u32 numX;
+    u32 numZ;
+    u8 pad3808[0x3810 - 0x3808];
+    f32 minX;
+    f32 minY;
+    f32 minZ;
+    u8 pad381C[0x3830 - 0x381C];
+    f32 cellSizeX;
+    f32 cellSizeZ;
+} GridManager;
+
+extern u8 gGridManager[];
+
+static inline void Grid_GetCellCoords(Vector4 *pos, u32 *x, u32 *z) {
+    f32 fx;
+    f32 fz;
+
+    fx = (pos->x - ((GridManager *)gGridManager)->minX) / ((GridManager *)gGridManager)->cellSizeX;
+    if (fx < 0.0f) {
+        fx = 0.0f;
+    } else if (fx >= (f32)((GridManager *)gGridManager)->numX) {
+        fx = (f32)((GridManager *)gGridManager)->numX - 1.0f;
+    }
+    fz = (pos->z - ((GridManager *)gGridManager)->minZ) / ((GridManager *)gGridManager)->cellSizeZ;
+    if (fz < 0.0f) {
+        fz = 0.0f;
+    } else if (fz >= (f32)((GridManager *)gGridManager)->numZ) {
+        fz = (f32)((GridManager *)gGridManager)->numZ - 1.0f;
+    }
+    *x = (s32)fx;
+    *z = (s32)fz;
+}
+
 void Grid_Release(void) {
 
 }
@@ -10410,6 +10461,97 @@ u32 __OSUnmaskInterrupts(u32 global) {
     return prev;
 }
 
+extern u32 InterruptPrioTable_800D5460[];
+extern s16 __OSLastInterrupt;
+extern s64 __OSLastInterruptTime;
+extern u32 __OSLastInterruptSrr0;
+s32 OSDisableScheduler(void);
+s32 OSEnableScheduler(void);
+void __OSReschedule(void);
+void __OSDispatchInterrupt(s16 exception, void *context) {
+    u32 intsr;
+    u32 reg;
+    u32 cause;
+    u32 unmasked;
+    u32 *prio;
+    __OSInterrupt interrupt;
+    __OSInterruptHandler handler;
+
+    intsr = *(volatile u32 *)0xCC003000;
+    intsr &= ~0x10000;
+    if (intsr == 0 || (intsr & *(volatile u32 *)0xCC003004) == 0) {
+        OSLoadContext(context);
+    }
+
+    cause = 0;
+
+    if (intsr & 0x80) {
+        reg = *(volatile u16 *)0xCC00401E;
+        if (reg & 0x1) cause |= 0x80000000;
+        if (reg & 0x2) cause |= 0x40000000;
+        if (reg & 0x4) cause |= 0x20000000;
+        if (reg & 0x8) cause |= 0x10000000;
+        if (reg & 0x10) cause |= 0x08000000;
+    }
+    if (intsr & 0x40) {
+        reg = *(volatile u16 *)0xCC00500A;
+        if (reg & 0x8) cause |= 0x04000000;
+        if (reg & 0x20) cause |= 0x02000000;
+        if (reg & 0x80) cause |= 0x01000000;
+    }
+    if (intsr & 0x20) {
+        reg = *(volatile u32 *)0xCC006C00;
+        if (reg & 0x8) cause |= 0x00800000;
+    }
+    if (intsr & 0x10) {
+        reg = *(volatile u32 *)0xCC006800;
+        if (reg & 0x2) cause |= 0x00400000;
+        if (reg & 0x8) cause |= 0x00200000;
+        if (reg & 0x800) cause |= 0x00100000;
+        reg = *(volatile u32 *)0xCC006814;
+        if (reg & 0x2) cause |= 0x00080000;
+        if (reg & 0x8) cause |= 0x00040000;
+        if (reg & 0x800) cause |= 0x00020000;
+        reg = *(volatile u32 *)0xCC006828;
+        if (reg & 0x2) cause |= 0x00010000;
+        if (reg & 0x8) cause |= 0x00008000;
+    }
+    if (intsr & 0x2000) cause |= 0x20;
+    if (intsr & 0x1000) cause |= 0x40;
+    if (intsr & 0x400) cause |= 0x1000;
+    if (intsr & 0x200) cause |= 0x2000;
+    if (intsr & 0x100) cause |= 0x80;
+    if (intsr & 0x8) cause |= 0x800;
+    if (intsr & 0x4) cause |= 0x400;
+    if (intsr & 0x2) cause |= 0x200;
+    if (intsr & 0x800) cause |= 0x4000;
+    if (intsr & 0x1) cause |= 0x100;
+
+    unmasked = cause & ~(*(u32 *)0x800000C4 | *(u32 *)0x800000C8);
+    if (unmasked) {
+        for (prio = InterruptPrioTable_800D5460;; ++prio) {
+            if (unmasked & *prio) {
+                interrupt = (__OSInterrupt)__cntlzw(unmasked & *prio);
+                break;
+            }
+        }
+        handler = InterruptHandlerTable_803C7240[interrupt];
+        if (handler) {
+            if (4 < interrupt) {
+                __OSLastInterrupt = interrupt;
+                __OSLastInterruptTime = OSGetTime();
+                __OSLastInterruptSrr0 = *(u32 *)((u8 *)context + 0x198);
+            }
+            OSDisableScheduler();
+            handler(interrupt, context);
+            OSEnableScheduler();
+            __OSReschedule();
+            OSLoadContext(context);
+        }
+    }
+    OSLoadContext(context);
+}
+
 void __OSModuleInit(void) {
     *(u32 *)0x800030C8 = *(u32 *)0x800030CC = 0;
     *(u32 *)0x800030D0 = 0;
@@ -14401,6 +14543,43 @@ error:
     }
 }
 
+s32 __CARDGetFileNo(CARDControl *card, const char *fileName, s32 *pfileNo);
+void DeleteCallback(s32 chan, s32 result);
+s32 __CARDUpdateDir(s32 chan, CARDCallback callback);
+s32 __CARDGetDirBlock(void *arg0);
+s32 __CARDIsOpened();
+#pragma push
+#pragma dont_inline on
+s32 CARDDeleteAsync(s32 chan, const char *fileName, CARDCallback callback) {
+    CARDControl *card;
+    s32 fileNo;
+    s32 result;
+    u8 *ent;
+
+    result = __CARDGetControlBlock(chan, &card);
+    if (result < 0) {
+        return result;
+    }
+    result = __CARDGetFileNo(card, fileName, &fileNo);
+    if (result < 0) {
+        return __CARDPutControlBlock(card, result);
+    }
+    if (__CARDIsOpened(card, fileNo)) {
+        return __CARDPutControlBlock(card, -1);
+    }
+
+    ent = (u8 *)__CARDGetDirBlock(card) + fileNo * 0x40;
+    card->startBlock = *(u16 *)(ent + 0x36);
+    memset(ent, 0xFF, 0x40);
+
+    card->apiCallback = callback ? callback : (CARDCallback)__CARDDefaultApiCallback;
+    result = __CARDUpdateDir(chan, DeleteCallback);
+    if (result < 0) {
+        __CARDPutControlBlock(card, result);
+    }
+    return result;
+}
+#pragma pop
 s32 __CARDUpdateDir(s32 chan, CARDCallback callback) {
     void __CARDCheckSum(void *ptr, s32 length, u16 *checksum, u16 *checksumInv);
     void DCStoreRange(void *addr, u32 nBytes);
@@ -16084,6 +16263,47 @@ void GXSetZCompLoc(u8 before_tex) {
     g = gx;
     GXWGFifo.u32 = *(u32 *)(g + 0x1DC);
     *(u16 *)(g + 2) = 0;
+}
+
+void GXSetPixelFmt(s32 pix_fmt, s32 z_fmt) {
+    extern u8 *gx;
+    static u32 p2f[8] = { 0, 1, 2, 3, 4, 4, 4, 5 };
+    u8 *g;
+    u32 *reg;
+    u32 oldPeCtrl;
+    u8 aa;
+
+    g = gx;
+    oldPeCtrl = *(u32 *)(g + 0x1DC);
+    reg = (u32 *)(g + 0x1DC);
+    *reg = (oldPeCtrl & ~7) | p2f[pix_fmt];
+    g = gx;
+    reg = (u32 *)(g + 0x1DC);
+    *reg = (*(u32 *)(g + 0x1DC) & ~0x38) | (z_fmt << 3);
+    if (oldPeCtrl != *(u32 *)(gx + 0x1DC)) {
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x1DC);
+        if (pix_fmt == 2) {
+            aa = 1;
+        } else {
+            aa = 0;
+        }
+        g = gx;
+        reg = (u32 *)(g + 0x204);
+        *reg = (*(u32 *)(g + 0x204) & ~0x200) | (aa << 9);
+        *(u32 *)(gx + 0x4F4) |= 4;
+    }
+    if (p2f[pix_fmt] == 4) {
+        g = gx;
+        reg = (u32 *)(g + 0x1D4);
+        *reg = (*(u32 *)(g + 0x1D4) & ~0x600) | ((pix_fmt - 4) << 9);
+        g = gx;
+        reg = (u32 *)(g + 0x1D4);
+        *reg = (*(u32 *)(g + 0x1D4) & 0xFFFFFF) | 0x42000000;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x1D4);
+    }
+    *(u16 *)(gx + 2) = 0;
 }
 
 void GXSetDither(u8 dither) {
