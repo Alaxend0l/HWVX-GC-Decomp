@@ -597,7 +597,8 @@ typedef struct CARDControl {
     s32 result;
     u8 unk8[0xC - 0x8];
     s32 sectorSize;
-    u8 unk10[0x14 - 0x10];
+    u16 cBlock;
+    u8 unk12[0x14 - 0x12];
     s32 latency;
     u8 unk18[0x24 - 0x18];
     s32 mountStep;
