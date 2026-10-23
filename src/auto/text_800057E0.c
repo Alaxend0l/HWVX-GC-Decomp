@@ -12519,6 +12519,8 @@ s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data) {
 #pragma opt_propagation off
 s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data) {
     s32 err;
+    u32 length;
+    u32 bytesLeft;
     u8 *bigEndianData;
     u8 *byteData;
     u8 swapBuffer[sizeof(data)];
@@ -12528,7 +12530,15 @@ s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data) {
     } else {
         bigEndianData = swapBuffer;
     }
-    err = TRKReadBuffer_inline(b, bigEndianData, sizeof(*data));
+    length = sizeof(*data);
+    err = 0;
+    bytesLeft = b->length - b->position;
+    if (length > bytesLeft) {
+        err = 0x302;
+        length = bytesLeft;
+    }
+    TRK_memcpy(bigEndianData, b->data + b->position, length);
+    b->position += length;
     if (!gTRKBigEndian && err == 0) {
         byteData = (u8 *)data;
         byteData[0] = bigEndianData[3];
