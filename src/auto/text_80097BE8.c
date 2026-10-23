@@ -7939,6 +7939,42 @@ void Render_DrawPointSprites(void) {
     Render_StateAlphaBlendEnable(0);
 }
 
+void Render_ScreenFlash(void) {
+    void *GetRenderWindow();
+    void Render_StateZWriteEnable(s32 enable);
+    void Render_StateAlphaBlendEnable(s32 enable);
+    void Render_StateBlendMode(u32 mode);
+    void Render_SetTextureHandle(u16 id);
+    void Set2DRectFlatVtxDesc(void);
+    void GXBegin(s32 type, s32 fmt, u16 nverts);
+    f32 w;
+    f32 zero = 0.0f;
+
+    if (*(u32 *)((u8 *)GetRenderWindow() + 0x2C4) != 0) {
+        Render_StateZWriteEnable(0);
+        Render_StateAlphaBlendEnable(1);
+        Render_StateBlendMode(*(u32 *)((u8 *)GetRenderWindow() + 0x2C4));
+        Render_SetTextureHandle(0xFFFF);
+        Set2DRectFlatVtxDesc();
+        GXBegin(0x80, 0, 4);
+        GXPosition2f32(zero, zero);
+        GXColor4u8(((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->r, ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->g,
+                   ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->b, ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->a);
+        GXPosition2f32(zero, *(u32 *)((u8 *)GetRenderWindow() + 0x2B8));
+        GXColor4u8(((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->r, ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->g,
+                   ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->b, ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->a);
+        w = *(u32 *)((u8 *)GetRenderWindow() + 0x2B0);
+        GXPosition2f32(w, *(u32 *)((u8 *)GetRenderWindow() + 0x2B8));
+        GXColor4u8(((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->r, ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->g,
+                   ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->b, ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->a);
+        GXPosition2f32(*(u32 *)((u8 *)GetRenderWindow() + 0x2B0), zero);
+        GXColor4u8(((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->r, ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->g,
+                   ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->b, ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->a);
+        Render_StateZWriteEnable(1);
+        Render_StateAlphaBlendEnable(0);
+    }
+}
+
 #pragma push
 #pragma dont_inline on
 void Render_DrawRectanglesWindow(void) {
