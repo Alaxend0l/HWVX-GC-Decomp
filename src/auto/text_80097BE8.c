@@ -8588,14 +8588,14 @@ void ReadAll__8LGWheelsFv(void *wheels) {
     memcpy(lg, lg->wheels, 0x28);
     if (chan != -1) {
         for (i = 0; i < 8; i++) {
-            ((Force *)lg->force)[1].effectIds[chan][i] = 0xFFFFFFFF;
-            ((Force *)lg->force)[1].playing[chan][i] = 0;
-            ((Force *)lg->force)[2].effectIds[chan][i] = 0xFFFFFFFF;
-            ((Force *)lg->force)[2].playing[chan][i] = 0;
-            ((Force *)lg->force)[3].effectIds[chan][i] = 0xFFFFFFFF;
-            ((Force *)lg->force)[3].playing[chan][i] = 0;
-            ((Force *)lg->force)[4].effectIds[chan][i] = 0xFFFFFFFF;
-            ((Force *)lg->force)[4].playing[chan][i] = 0;
+            lg->condition.effectIds[chan][i] = 0xFFFFFFFF;
+            lg->condition.playing[chan][i] = 0;
+            lg->constant.effectIds[chan][i] = 0xFFFFFFFF;
+            lg->constant.playing[chan][i] = 0;
+            lg->periodic.effectIds[chan][i] = 0xFFFFFFFF;
+            lg->periodic.playing[chan][i] = 0;
+            lg->ramp.effectIds[chan][i] = 0xFFFFFFFF;
+            lg->ramp.playing[chan][i] = 0;
         }
     }
 }
