@@ -2981,6 +2981,81 @@ s8 OBoxHitsCellZeroTimeEdgesOnly(void *obox, void *cell, void *arg2) {
     }
     return hit;
 }
+
+static inline s8 PointInsideBSP(void *bsp, void *point) {
+    f32 Distance_Plane(void *arg0, void *arg1);
+    u32 node;
+
+    node = 0;
+    if (*(u8 **)((u8 *)bsp + 0x30) == NULL) {
+        return 0;
+    }
+    while (1) {
+        if (Distance_Plane(*(u8 **)((u8 *)bsp + 0x30) + node * 0x20, point) >= 0.0f) {
+            node = *(u16 *)(*(u8 **)((u8 *)bsp + 0x30) + node * 0x20 + 0x14);
+            if (node == 0xFFFF) {
+                return 0;
+            }
+        } else {
+            node = *(u16 *)(*(u8 **)((u8 *)bsp + 0x30) + node * 0x20 + 0x16);
+            if (node == 0xFFFF) {
+                return 1;
+            }
+        }
+    }
+}
+
+s8 OBoxHitsBSPZeroTime(void *obox, void *bsp, void *arg2) {
+    s8 OBoxHitsSegmentZeroTime(void *obox, void *edge, void *arg2);
+    f32 Distance_Plane(void *arg0, void *arg1);
+    u8 *edge;
+    u32 i;
+    u8 *corner;
+    u32 node;
+    s8 inside;
+
+    if (*(u32 *)((u8 *)bsp + 0x3C) == 0 && *(u32 *)((u8 *)bsp + 0x40) == 0) {
+        return 0;
+    }
+    for (i = 0; i < *(u32 *)((u8 *)bsp + 0x40); i++) {
+        edge = *(u8 **)((u8 *)*(void **)g_worldData.world + 0x54) + (*(u16 **)((u8 *)bsp + 0x44))[i] * 0x30;
+        if (*(u32 *)(edge + 0x20) != g_worldData.unk4) {
+            *(u32 *)(edge + 0x20) = g_worldData.unk4;
+            if (OBoxHitsSegmentZeroTime(obox, edge, arg2)) {
+                return 1;
+            }
+        }
+    }
+    corner = obox;
+    for (i = 0; i < 8; i++) {
+        node = 0;
+        if (*(u8 **)((u8 *)bsp + 0x30) == NULL) {
+            inside = 0;
+        } else {
+            while (1) {
+                if (Distance_Plane(*(u8 **)((u8 *)bsp + 0x30) + node * 0x20, corner + 0x10) >= 0.0f) {
+                    node = *(u16 *)(*(u8 **)((u8 *)bsp + 0x30) + node * 0x20 + 0x14);
+                    if (node == 0xFFFF) {
+                        inside = 0;
+                        break;
+                    }
+                } else {
+                    node = *(u16 *)(*(u8 **)((u8 *)bsp + 0x30) + node * 0x20 + 0x16);
+                    if (node == 0xFFFF) {
+                        inside = 1;
+                        break;
+                    }
+                }
+            }
+        }
+        if (inside) {
+            return 1;
+        }
+        corner += 0x10;
+    }
+    return 0;
+}
+
 #pragma pop
 
 #pragma push
@@ -19365,6 +19440,7 @@ s32 CARDSetStatusAsync(s32 chan, s32 fileNo, u8 *stat, CARDCallback callback) {
     s32 __CARDPutControlBlock(CARDControl *card, s32 result);
     s64 OSGetTime(void);
     CARDControl *card;
+    u8 *dir;
     u8 *ent;
     s32 result;
 
@@ -19377,7 +19453,8 @@ s32 CARDSetStatusAsync(s32 chan, s32 fileNo, u8 *stat, CARDCallback callback) {
     if (result < 0) {
         return result;
     }
-    ent = (u8 *)__CARDGetDirBlock(card) + fileNo * 0x40;
+    dir = (u8 *)__CARDGetDirBlock(card);
+    ent = dir + fileNo * 0x40;
     result = __CARDAccess(card, ent);
     if (result < 0) {
         return __CARDPutControlBlock(card, result);
@@ -19948,6 +20025,51 @@ void GXSetCPUFifo(void *fifo) {
         __piReg[5] = reg;
     }
     __sync();
+    OSRestoreInterrupts(enabled);
+}
+
+void GXSetGPFifo(void *fifo) {
+    extern void *CPUFifo_803C7558;
+    extern void *GPFifo_803C755C;
+    extern volatile u16 *__cpReg;
+    extern u8 CPGPLinked_803C7564;
+    void __GXFifoLink(u8 en);
+    void __GXFifoReadEnable(void);
+    void __GXFifoReadDisable(void);
+    void __GXWriteFifoIntEnable(u8 hiWatermarkEn, u8 loWatermarkEn);
+    void __GXWriteFifoIntReset(u8 hiWatermarkClr, u8 loWatermarkClr);
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    __GXFifoReadDisable();
+    __GXWriteFifoIntEnable(0, 0);
+    GPFifo_803C755C = fifo;
+    __cpReg[16] = *(u32 *)((u8 *)fifo + 0x0);
+    __cpReg[18] = *(u32 *)((u8 *)fifo + 0x4);
+    __cpReg[24] = *(s32 *)((u8 *)fifo + 0x1C);
+    __cpReg[26] = *(u32 *)((u8 *)fifo + 0x18);
+    __cpReg[28] = *(u32 *)((u8 *)fifo + 0x14);
+    __cpReg[20] = *(u32 *)((u8 *)fifo + 0xC);
+    __cpReg[22] = *(u32 *)((u8 *)fifo + 0x10);
+    __cpReg[17] = (*(u32 *)((u8 *)fifo + 0x0) >> 16) & 0x3FFF;
+    __cpReg[19] = (*(u32 *)((u8 *)fifo + 0x4) >> 16) & 0x3FFF;
+    __cpReg[25] = *(s32 *)((u8 *)fifo + 0x1C) >> 16;
+    __cpReg[27] = (*(u32 *)((u8 *)fifo + 0x18) >> 16) & 0x3FFF;
+    __cpReg[29] = (*(u32 *)((u8 *)fifo + 0x14) >> 16) & 0x3FFF;
+    __cpReg[21] = *(u32 *)((u8 *)fifo + 0xC) >> 16;
+    __cpReg[23] = *(u32 *)((u8 *)fifo + 0x10) >> 16;
+    __sync();
+    if (CPUFifo_803C7558 == GPFifo_803C755C) {
+        CPGPLinked_803C7564 = 1;
+        __GXWriteFifoIntEnable(1, 0);
+        __GXFifoLink(1);
+    } else {
+        CPGPLinked_803C7564 = 0;
+        __GXWriteFifoIntEnable(0, 0);
+        __GXFifoLink(0);
+    }
+    __GXWriteFifoIntReset(1, 1);
+    __GXFifoReadEnable();
     OSRestoreInterrupts(enabled);
 }
 
