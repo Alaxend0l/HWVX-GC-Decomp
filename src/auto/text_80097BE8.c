@@ -2900,6 +2900,24 @@ s32 Gfx_AddWorldMatrixState_NonCached(u32 matrix) {
     return g_pGDL->numMatrices++;
 }
 
+s32 Gfx_AddWorldMatrixState_CacheMatrix(s32 matrix) {
+    extern GDL *g_pGDL;
+
+    if (matrix == 0) {
+        return 0xFFFE;
+    }
+    if (g_pGDL->numMatrices >= 0x578) {
+        g_pGDL->numMatrices = 0;
+    }
+    if (g_pGDL->numCachedMatrices >= 0x578) {
+        g_pGDL->numCachedMatrices = 0;
+    }
+    CopyMatrix(g_pGDL->cachedMatrices[g_pGDL->numCachedMatrices], (void *)matrix);
+    g_pGDL->matrices[g_pGDL->numMatrices] = (u32)g_pGDL->cachedMatrices[g_pGDL->numCachedMatrices];
+    g_pGDL->numCachedMatrices++;
+    return g_pGDL->numMatrices++;
+}
+
 void *Gfx_GetWorldMatrixState(u32 index) {
     extern GDL *g_pGDL;
     extern f32 g_identity[];
@@ -2955,7 +2973,6 @@ s32 Gfx_FrustrumCullSphereTestAllWindows(Vector *center, f32 radius) {
     return Gfx_FrustrumCullSphereTest(center, radius);
 }
 
-s32 Gfx_AddWorldMatrixState_CacheMatrix(s32 matrix);
 s32 Gfx_GetLightState(void);
 #pragma push
 #pragma dont_inline on
