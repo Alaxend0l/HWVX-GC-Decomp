@@ -50,6 +50,18 @@ static inline void GXColor3u8(const u8 r, const u8 g, const u8 b) {
     GXWGFifo.u8 = b;
 }
 
+static inline void GXColor4u8(const u8 r, const u8 g, const u8 b, const u8 a) {
+    GXWGFifo.u8 = r;
+    GXWGFifo.u8 = g;
+    GXWGFifo.u8 = b;
+    GXWGFifo.u8 = a;
+}
+
+static inline void GXTexCoord2f32(f32 s, f32 t) {
+    GXWGFifo.f32 = s;
+    GXWGFifo.f32 = t;
+}
+
 typedef struct CARDFileInfo {
     s32 chan;
     s32 fileNo;
