@@ -1441,6 +1441,7 @@ void *malloc(u32 size) {
 
 void *soft_allocate_from_var_pools(Block **pool_obj, u32 size, u32 *max_size);
 void FixBlock_construct(FixBlock *ths, FixBlock *prev, FixBlock *next, s32 index, FixSubBlock *chunk, u32 chunk_size);
+void Block_link(Block *ths, SubBlock *sb);
 #pragma push
 #pragma use_lmw_stmw on
 void *allocate_from_fixed_pools(void *pool, u32 size) {
@@ -10142,7 +10143,21 @@ u8 *DestroyVoice(u8 *voice) {
 #pragma optimization_level 1
 void JumpToMarker(void) {
     typedef struct {
-        u8 song[0x24];
+        u32 time;
+        u32 unk4;
+        u32 unk8;
+        u32 unkC;
+        u32 unk10;
+        u8 *pos;
+        u32 delta;
+        u8 unk1C;
+        u8 unk1D;
+        u8 marker;
+        u8 unk1F;
+        u32 pitch;
+    } MIDISong;
+    typedef struct {
+        MIDISong song;
         u8 chn[0x10][0x20];
         u8 prog[0x200];
         u8 drum[0x200];
@@ -10165,19 +10180,19 @@ void JumpToMarker(void) {
     }
     g_trkOn = 0;
     g_trkOff = 0;
-    *(u32 *)(m->song + 0x14) = *(u32 *)m->mrk[m->song[0x1E]];
-    *(u32 *)(m->song + 0x0) = 0;
-    *(u32 *)(m->song + 0x8) = 0;
-    *(u32 *)(m->song + 0x18) = ReadVar_((u8 **)(m->song + 0x14));
-    m->song[0x1D] = m->mrk[m->song[0x1E]][5];
-    m->song[0x1C] = m->mrk[m->song[0x1E]][4];
+    m->song.pos = *(u8 **)m->mrk[m->song.marker];
+    m->song.time = 0;
+    m->song.unk8 = 0;
+    m->song.delta = ReadVar_(&m->song.pos);
+    m->song.unk1D = m->mrk[m->song.marker][5];
+    m->song.unk1C = m->mrk[m->song.marker][4];
     for (chn = m->chn[0], i = 0x10; i != 0; chn += 0x20, i--) {
         ChannelOff(chn);
         chn[0x1F] = 0;
         chn[0x1D] = 0x40;
         *(u32 *)(chn + 0x18) = 0x10000;
     }
-    m->song[0x1E] = 0;
+    m->song.marker = 0;
 }
 #pragma pop
 
