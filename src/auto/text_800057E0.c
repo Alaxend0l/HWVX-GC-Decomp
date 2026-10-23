@@ -12550,6 +12550,7 @@ static inline BOOL __EXIAttach(s32 chan, void *extCallback) {
 
 #pragma push
 #pragma use_lmw_stmw on
+#pragma dont_inline on
 s32 EXIAttach(s32 chan, void *extCallback) {
     extern u8 Ecb_80309980[3][0x40];
     BOOL __EXIProbe(s32 chan);
