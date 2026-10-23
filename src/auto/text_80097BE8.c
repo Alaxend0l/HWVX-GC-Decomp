@@ -7384,21 +7384,22 @@ void File_Close(s32 handle) {
     extern struct { s32 fileInfo; u8 pad[0x100]; } g_filedata_PC[4];
     s32 DVDClose(void *fileInfo);
     void MemCard_Close__Fl(s32 device);
-    s8 device = (u8)(handle >> 16);
-    s8 slot = (u8)(handle >> 8);
-    s8 idx = (u8)handle;
+    s32 slot = (s8)(u8)((u32)handle >> 8);
+    s32 idx = (s8)(u8)handle;
+    s32 device = (s8)(u8)((u32)handle >> 16);
 
     if (device >= 11) {
         MemCard_Close__Fl(device);
         g_files[idx].slot = -1;
-    } else if (idx >= 0 && idx < 4) {
-        if (slot == g_files[idx].slot) {
-            DVDClose((void *)g_filedata_PC[idx].fileInfo);
-            Deallocate(g_filedata_PC[idx].fileInfo);
-            g_filedata_PC[idx].fileInfo = 0;
-            g_files[idx].slot = -1;
-        }
+        return;
     }
+    if (!(idx >= 0 && idx < 4 && slot == g_files[idx].slot)) {
+        return;
+    }
+    DVDClose((void *)g_filedata_PC[idx].fileInfo);
+    Deallocate(g_filedata_PC[idx].fileInfo);
+    g_filedata_PC[idx].fileInfo = 0;
+    g_files[idx].slot = -1;
 }
 #pragma pop
 
