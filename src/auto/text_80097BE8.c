@@ -2038,6 +2038,14 @@ void ProjectVectorTangential(Vector *v, Vector *n, Vector *out) {
     out->z = v->z + n->z * scale;
 }
 
+void DistanceXYZ(Vector *a, Vector *b, f32 *dist) {
+    f32 dx = a->x - b->x;
+    f32 dy = a->y - b->y;
+    f32 dz = a->z - b->z;
+
+    *dist = Sqrt(dx * dx + dy * dy + dz * dz);
+}
+
 s32 CompareDistances(void *arg0, void *arg1, f32 farg0) {
     f32 temp_f0;
     f32 temp_f1;
