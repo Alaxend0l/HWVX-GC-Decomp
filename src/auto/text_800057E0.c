@@ -4122,31 +4122,10 @@ void PlayerManager_Release(void) {
     extern u8 g_playerManager[0x20E0];
     void Player_ReleaseInterface(void *player);
     u8 *player;
-    u8 *next;
 
-    for (;;) {
-        player = M2C_FIELD(g_playerManager, u8 **, 0x20D8);
-        if (player == NULL) {
-            player = NULL;
-        } else {
-            next = M2C_FIELD(player, u8 **, 0xB0);
-            M2C_FIELD(g_playerManager, u8 **, 0x20D8) = next;
-            if (next != NULL) {
-                M2C_FIELD(next, u8 **, 0xB4) = NULL;
-            }
-            M2C_FIELD(player, u8 **, 0xB0) = NULL;
-        }
-        if (player == NULL) {
-            break;
-        }
+    while ((player = PlayerManager_PopActive(g_playerManager)) != NULL) {
         Player_ReleaseInterface(player);
-        M2C_FIELD(player, u8 **, 0xB0) = M2C_FIELD(g_playerManager, u8 **, 0x20DC);
-        M2C_FIELD(player, u8 **, 0xB4) = NULL;
-        next = M2C_FIELD(player, u8 **, 0xB0);
-        if (next != NULL) {
-            M2C_FIELD(next, u8 **, 0xB4) = player;
-        }
-        M2C_FIELD(g_playerManager, u8 **, 0x20DC) = player;
+        PlayerManager_PushFree(g_playerManager, player);
     }
 }
 
@@ -4227,7 +4206,7 @@ s32 PlayerManager_RemovePlayer(void *player) {
     extern u8 g_playerManager[0x20E0];
     extern u8 *g_pPlayerManager;
     u8 *p;
-    u8 *other;
+    u8 *pm;
 
     for (p = M2C_FIELD(g_playerManager, u8 **, 0x20D8); p != NULL; p = M2C_FIELD(p, u8 **, 0xB0)) {
         if (p == player) {
@@ -4237,25 +4216,18 @@ s32 PlayerManager_RemovePlayer(void *player) {
     if (p == NULL) {
         return 0;
     }
-    other = M2C_FIELD(p, u8 **, 0xB4);
-    if (other == NULL) {
-        M2C_FIELD(g_pPlayerManager, u8 **, 0x20D8) = M2C_FIELD(p, u8 **, 0xB0);
+    pm = g_pPlayerManager;
+    if (M2C_FIELD(p, u8 **, 0xB4) == NULL) {
+        M2C_FIELD(pm, u8 **, 0x20D8) = M2C_FIELD(p, u8 **, 0xB0);
     } else {
-        M2C_FIELD(other, u8 **, 0xB0) = M2C_FIELD(p, u8 **, 0xB0);
+        M2C_FIELD(M2C_FIELD(p, u8 **, 0xB4), u8 **, 0xB0) = M2C_FIELD(p, u8 **, 0xB0);
     }
-    other = M2C_FIELD(p, u8 **, 0xB0);
-    if (other != NULL) {
-        M2C_FIELD(other, u8 **, 0xB4) = M2C_FIELD(p, u8 **, 0xB4);
+    if (M2C_FIELD(p, u8 **, 0xB0) != NULL) {
+        M2C_FIELD(M2C_FIELD(p, u8 **, 0xB0), u8 **, 0xB4) = M2C_FIELD(p, u8 **, 0xB4);
         M2C_FIELD(p, u8 **, 0xB0) = NULL;
     }
     M2C_FIELD(p, u8 **, 0xB4) = NULL;
-    M2C_FIELD(p, u8 **, 0xB0) = M2C_FIELD(g_pPlayerManager, u8 **, 0x20DC);
-    M2C_FIELD(p, u8 **, 0xB4) = NULL;
-    other = M2C_FIELD(p, u8 **, 0xB0);
-    if (other != NULL) {
-        M2C_FIELD(other, u8 **, 0xB4) = p;
-    }
-    M2C_FIELD(g_pPlayerManager, u8 **, 0x20DC) = p;
+    PlayerManager_PushFree(pm, p);
     return 1;
 }
 
