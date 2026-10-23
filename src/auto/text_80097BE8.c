@@ -727,7 +727,8 @@ typedef struct GDL {
     GDLAlphaEntry alphaEntries[(0x9EC0 - 0x280) / 8];
     GDL2DSprite sprites2D[2000];
     GDLSprite sprites[0x7CF];
-    u8 unk38C90[0x7EA00 - 0x38C90];
+    u8 unk38C90[0x69A00 - 0x38C90];
+    GDLAlphaGroup alphaGroups[0x400];
     GDLRect rects2D[0x400];
     GDLRect rects[0x20];
     u8 unkA0A80[0xA2B80 - 0xA0A80];
