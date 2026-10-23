@@ -1202,10 +1202,28 @@ typedef struct DLSkinGroup {
     u8 window;
 } DLSkinGroup;
 
+typedef struct DLGroup {
+    Geometry *geometry;
+    s32 lightState;
+    u16 matrix;
+    u16 unkA;
+    u8 group;
+    u8 unkD;
+    u8 unkE;
+    u8 window;
+} DLGroup;
+
 typedef struct DisplayList {
-    u8 unk0[0x10];
+    u16 numOpaqueGroups;
+    u16 numLitGroups;
+    u16 unk4;
+    u16 numAlphaGroups;
+    u8 unk8[0x10 - 0x8];
     u16 numSkinGroups;
-    u8 unk12[0x109E0 - 0x12];
+    u8 unk12[0x20 - 0x12];
+    DLGroup opaqueGroups[0x9C4];
+    DLGroup litGroups[0x358];
+    DLGroup alphaGroups[0x380];
     DLSkinGroup skinGroups[0x100];
     u16 unk11DE0[0x1FF];
     u16 unk121DE[0x1FF];
@@ -6244,15 +6262,15 @@ void Render_CreateTextureSlot(u32 id) {
     void DCFlushRange(void *addr, u32 len);
     extern u8 *m_texture;
     extern u8 m_gxTexObjArray_80322F30[][0x20];
-    Texture *texs;
-    void *data;
-    s32 format;
-    s32 wrap;
     void *obj;
+    s32 wrap;
+    s32 format;
+    void *data;
+    Texture *texs;
     Texture *tex;
-    u8 mipmap;
 
-    wrap = (u16)((Texture *)m_texture)[id].wrapMode == 0;
+    tex = &((Texture *)m_texture)[id];
+    wrap = tex->wrapMode == 0;
     obj = m_gxTexObjArray_80322F30[id];
     if (GXGetTexObjData(obj) != NULL) {
         texs = (Texture *)m_texture;
@@ -6267,8 +6285,7 @@ void Render_CreateTextureSlot(u32 id) {
             format = 0xE;
             break;
         }
-        mipmap = texs[id].height > 1;
-        GXInitTexObj(obj, GXGetTexObjData(obj), texs[id].unk30, texs[id].width, format, wrap, wrap, mipmap);
+        GXInitTexObj(obj, GXGetTexObjData(obj), texs[id].unk30, texs[id].width, format, wrap, wrap, texs[id].height > 1 ? 1 : 0);
         return;
     }
     tex = &((Texture *)m_texture)[id];
@@ -6285,17 +6302,19 @@ void Render_CreateTextureSlot(u32 id) {
         break;
     case 4:
         DCFlushRange(tex->data, tex->unk30 * tex->width);
+        texs = (Texture *)m_texture;
         format = 0xE;
-        data = ((Texture *)m_texture)[id].data;
+        data = texs[id].data;
         break;
     }
     tex = &((Texture *)m_texture)[id];
     if (tex->unk30 > 0x200 || tex->width > 0x200) {
         return;
     }
-    GXInitTexObj(obj, data, tex->unk30, tex->width, format, wrap, wrap, tex->height > 1);
-    if (((Texture *)m_texture)[id].height > 1) {
-        GXInitTexObjLOD(obj, 5, 1, 0.0f, (s32)(((Texture *)m_texture)[id].height - 1) / 1.15f, -1.0f, 1, 1, 0);
+    GXInitTexObj(obj, data, tex->unk30, tex->width, format, wrap, wrap, ((Texture *)m_texture)[id].height > 1 ? 1 : 0);
+    texs = (Texture *)m_texture;
+    if (texs[id].height > 1) {
+        GXInitTexObjLOD(obj, 5, 1, 0.0f, (s32)(texs[id].height - 1) / 1.15f, -1.0f, 1, 1, 0);
     }
 }
 #pragma pop
