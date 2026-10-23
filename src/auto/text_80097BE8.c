@@ -748,9 +748,17 @@ typedef struct GDL2DFXLine {
 
 typedef struct GDLGroupTri {
     u8 type;
-    u8 unk1[0xC - 0x1];
+    u8 unk1;
+    u8 unk2;
+    u8 pad3;
+    u16 tex;
+    u16 unk6;
+    s32 unk8;
     u32 count;
-    u8 unk10[0x20 - 0x10];
+    u32 unk10;
+    u8 unk14[0x18 - 0x14];
+    f32 unk18;
+    f32 unk1C;
 } GDLGroupTri;
 
 typedef struct GDLLightState {
@@ -9169,6 +9177,42 @@ s32 OnReset_800C4F14(void) {
     return 1;
 }
 
+s32 GBAGetProcessStatus(s32 chan, u8 *percentp) {
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32 level);
+    s64 OSGetTime(void);
+    GBAControl *gba = &__GBA[chan];
+    GBABootInfo *bootInfo = &gba->bootInfo;
+    s32 enabled;
+    s32 ret;
+    u8 percent;
+    s64 t;
+
+    enabled = OSDisableInterrupts();
+    if (bootInfo->callback != NULL) {
+        ret = 2;
+        percent = (bootInfo->curOffset * 100) / bootInfo->realLength;
+        if (bootInfo->begin != 0) {
+            t = OSGetTime();
+            if ((t - bootInfo->begin) / ((*(u32 *)0x800000F8 / 4) / 1000) < 5500) {
+                percent = (percent * (t - bootInfo->begin)) / (((*(u32 *)0x800000F8 / 4) / 1000) * 5500);
+            }
+            if (percent >= 100) {
+                percent = 100;
+            }
+        }
+        if (percentp != NULL) {
+            *percentp = percent;
+        }
+    } else if (gba->callback != NULL) {
+        ret = 2;
+    } else {
+        ret = 0;
+    }
+    OSRestoreInterrupts(enabled);
+    return ret;
+}
+
 s32 GBAGetProcessStatus(s32 chan, u8 *percentp);
 #pragma push
 #pragma optimize_for_size on
@@ -9349,6 +9393,42 @@ static void F29(s32 chan, s32 ret) {
     gba->ret = ret;
 }
 
+static void F35(s32 chan, s32 ret);
+#pragma push
+#pragma opt_common_subs off
+static void F33(s32 chan, s32 ret) {
+    GBAControl *gba = &__GBA[chan];
+    GBABootInfo *bootInfo = &gba->bootInfo;
+    GBACallback callback;
+
+    if (ret == 0) {
+        for (bootInfo->i = 33; bootInfo->i < 36; bootInfo->i++) {
+            ret = (u8)((bootInfo->readbuf[3] ^ (bootInfo->dummyWord[D54_800DAFF8[bootInfo->i]] >> 24)) |
+                       (bootInfo->readbuf[2] ^ (bootInfo->dummyWord[D54_800DAFF8[bootInfo->i]] >> 16)) |
+                       (bootInfo->readbuf[1] ^ (bootInfo->dummyWord[D54_800DAFF8[bootInfo->i]] >> 8)) |
+                       (bootInfo->readbuf[0] ^ bootInfo->dummyWord[D54_800DAFF8[bootInfo->i]])) << 24;
+            if (ret != 0) {
+                break;
+            }
+        }
+        if (ret != 0) {
+            ret = 3;
+        } else {
+            bootInfo->start = OSGetTick();
+            ret = GBAGetStatusAsync(chan, bootInfo->status, F35);
+        }
+    }
+    if (ret != 0) {
+        bootInfo->begin = 0;
+        callback = bootInfo->callback;
+        if (callback != NULL) {
+            bootInfo->callback = NULL;
+            callback(chan, ret);
+        }
+    }
+    gba->ret = ret;
+}
+#pragma pop
 static void F37(s32 chan, s32 ret);
 s64 __GBASetDelay(s32 chan, s64 delay);
 static void F35(s32 chan, s32 ret) {
