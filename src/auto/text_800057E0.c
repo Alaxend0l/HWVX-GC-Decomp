@@ -19829,6 +19829,8 @@ s32 CARDFormat(s32 chan) {
     return __CARDSync(chan);
 }
 
+#pragma push
+#pragma auto_inline off
 s32 __CARDCompareFileName(void *ent, const char *fileName) {
     char *entName;
     char c1;
@@ -19849,6 +19851,7 @@ s32 __CARDCompareFileName(void *ent, const char *fileName) {
     }
     return 0;
 }
+#pragma pop
 
 s32 __CARDAccess(void *card, u8 *ent) {
     extern u8 __CARDDiskNone[32];
