@@ -600,7 +600,7 @@ static inline s32 Effect_MulDiv(s32 a, s32 b, s32 c) {
     if (a < 0) {
         half = -half;
     }
-    return (a * b + half) / c;
+    return (half + a * b) / c;
 }
 
 static inline s32 Effect_WaveLookup(s16 *table, u32 a) {
@@ -9331,8 +9331,6 @@ s32 Effect_Update(Effect *effect, u32 dt) {
     s32 active;
     s16 magnitude;
     s32 wave;
-    s32 delta;
-    s32 half;
     s32 round;
     u32 a;
     EffectCondition *cond;
@@ -9360,12 +9358,7 @@ s32 Effect_Update(Effect *effect, u32 dt) {
         if (effect->flags & 0x10) {
             Effect_PolarToRect(Effect_PerformEnvelope(effect, &effect->params.constant.envelope, effect->params.constant.magnitude), effect->params.constant.angle, &effect->force);
         } else if (effect->flags & 0x20) {
-            delta = effect->params.ramp.end - effect->params.ramp.start;
-            half = (s32)effect->duration / 2;
-            if (delta < 0) {
-                half = -half;
-            }
-            Effect_PolarToRect(effect->params.ramp.start + (s32)(half + delta * effect->elapsed) / (s32)effect->duration, effect->params.ramp.angle, &effect->force);
+            Effect_PolarToRect(effect->params.ramp.start + Effect_MulDiv(effect->params.ramp.end - effect->params.ramp.start, effect->elapsed, effect->duration), effect->params.ramp.angle, &effect->force);
         } else if (effect->flags & 0x40) {
             *(u32 *)&effect->deadbandLow += (dt << 24) / effect->params.periodic.period;
             if (*(u32 *)&effect->deadbandLow >= 0x1000000) {
@@ -9401,7 +9394,7 @@ s32 Effect_Update(Effect *effect, u32 dt) {
             if (wave < 0) {
                 round = -0x200;
             }
-            Effect_PolarToRect((round + wave * magnitude) / 0x400 + effect->params.periodic.offset, effect->params.periodic.angle, &effect->force);
+            Effect_PolarToRect((wave * magnitude + round) / 0x400 + effect->params.periodic.offset, effect->params.periodic.angle, &effect->force);
         } else if (effect->flags & 0x80) {
             cond = &effect->params.condition;
             switch (effect->type) {
