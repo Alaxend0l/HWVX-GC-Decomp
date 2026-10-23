@@ -3525,6 +3525,11 @@ typedef struct DataPackRef {
     struct DataPack *pack;
 } DataPackRef;
 
+typedef struct DataPackShader {
+    s32 shader;
+    u8 pad04[0x8];
+} DataPackShader;
+
 typedef struct DataPack {
     u8 *base;
     u32 numRelocs;
