@@ -5546,6 +5546,62 @@ void *VideoDecoder(void *param) {
     }
 }
 
+void VideoDecoderForOnMemory(void *bufAddr) {
+    void VideoDecode(THPReadBuffer *readBuffer);
+    void OSSuspendThread(void *thread);
+    s32 OSDisableInterrupts(void);
+    void OSRestoreInterrupts(s32 level);
+    extern u8 VideoDecodeThread_8036CFF0[0x310];
+    THPReadBuffer readBuffer;
+    s32 tmp;
+    s32 size;
+    s32 readFrame;
+    s32 old;
+
+    size = ActivePlayer.initReadSize;
+    readBuffer.ptr = bufAddr;
+    readFrame = 0;
+    while (1) {
+        if (ActivePlayer.audioExist) {
+            while (ActivePlayer.videoDecodeCount < 0) {
+                old = OSDisableInterrupts();
+                ActivePlayer.videoDecodeCount++;
+                OSRestoreInterrupts(old);
+                tmp = (readFrame + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+                if (tmp == ActivePlayer.numFrames - 1) {
+                    if (ActivePlayer.playFlag & 1) {
+                        size = *(s32 *)readBuffer.ptr;
+                        readBuffer.ptr = ActivePlayer.movieData;
+                    } else {
+                        break;
+                    }
+                } else {
+                    tmp = *(s32 *)readBuffer.ptr;
+                    readBuffer.ptr += size;
+                    size = tmp;
+                }
+                readFrame++;
+            }
+        }
+        readBuffer.frameNumber = readFrame;
+        VideoDecode(&readBuffer);
+        tmp = (readFrame + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+        if (tmp == ActivePlayer.numFrames - 1) {
+            if (ActivePlayer.playFlag & 1) {
+                size = *(s32 *)readBuffer.ptr;
+                readBuffer.ptr = ActivePlayer.movieData;
+            } else {
+                OSSuspendThread(VideoDecodeThread_8036CFF0);
+            }
+        } else {
+            tmp = *(s32 *)readBuffer.ptr;
+            readBuffer.ptr += size;
+            size = tmp;
+        }
+        readFrame++;
+    }
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void VideoDecode(THPReadBuffer *readBuffer) {
