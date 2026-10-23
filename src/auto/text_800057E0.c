@@ -9113,35 +9113,6 @@ void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id) {
     return NULL;
 }
 
-static inline f32 OBox_CollideThingZeroTime(void *obox, void *thing, u8 *other, void *info) {
-    s8 OBoxHitsOBoxZeroTime(void *a, void *b, void *info);
-    f32 PSVECSquareDistance(f32 *a, f32 *b);
-    void *otherBox;
-    f32 dist;
-    f32 r;
-
-    if ((*(u32 *)(other + 0x74) & 2) || *(s16 *)(other + 0x80) == 0 || other == thing) {
-        return 1.0f;
-    }
-    dist = PSVECSquareDistance((f32 *)((u8 *)thing + 0x40), (f32 *)(other + 0x40));
-    r = *(f32 *)(other + 0x70) + *(f32 *)((u8 *)thing + 0x70);
-    if (r * r <= dist) {
-        return 1.0f;
-    }
-    if (*(s16 *)(other + 0x80) == 1) {
-        otherBox = (*(void *(**)(void *))(*(u8 **)(other + 0x8C) + 0x40))(other);
-        if (OBoxHitsOBoxZeroTime(obox, otherBox, info)) {
-            if (info != NULL) {
-                *(void **)((u8 *)info + 0x20) = thing;
-                *(void **)((u8 *)info + 0x24) = other;
-            }
-            return 0.0f;
-        }
-        return 1.0f;
-    }
-    return 1.0f;
-}
-
 s32 OBox_CollideAllThingsZeroTime(void *obox, void *thing, void *info) {
     u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults);
     s8 OBoxHitsOBoxZeroTime(void *a, void *b, void *info);
