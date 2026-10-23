@@ -6777,6 +6777,16 @@ void FileManager_SetAppInfo(const char *a, const char *b, const char *c, const c
     strcpy(g_appInfo[4], e);
 }
 
+s32 FileManager_GetChecksum(u32 size, u8 *data) {
+    u32 i;
+    s32 sum = 0;
+
+    for (i = 0; i < size; i++) {
+        sum += data[i] + 1;
+    }
+    return sum;
+}
+
 s32 stricmp(const char *s1, const char *s2) {
     char c1, c2;
 
