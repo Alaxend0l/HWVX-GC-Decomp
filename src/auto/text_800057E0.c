@@ -2129,6 +2129,39 @@ void Creature_Release(s32 arg0) {
     Thing_Release(arg0);
 }
 
+void Creature_MicroStep(void *arg0, f32 dt) {
+    void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0);
+    struct CreatureModel {
+        u8 unk0[0x14];
+        u32 *numBones;
+    };
+    struct Creature {
+        u8 unk0[0x40];
+        Vector4 pos;
+        u8 unk50[0x74 - 0x50];
+        u32 flags;
+        u8 unk78[0xCC - 0x78];
+        struct CreatureModel *model;
+        u8 unkD0[0xDC - 0xD0];
+        Matrix4 *bones;
+        u8 unkE0[0x1A0 - 0xE0];
+        Vector4 vel;
+    } *creature = arg0;
+    Vector4 pos;
+    u32 i;
+    u32 *numBones;
+
+    AccumulateVector(&creature->vel, &creature->pos, &pos, dt);
+    creature->pos = pos;
+    numBones = creature->model->numBones;
+    for (i = 0; i < *numBones; i++) {
+        creature->bones[i].v[3].x += creature->vel.x * dt;
+        creature->bones[i].v[3].y += creature->vel.y * dt;
+        creature->bones[i].v[3].z += creature->vel.z * dt;
+    }
+    creature->flags &= ~0x4000;
+}
+
 void Creature_Draw(void *creature) {
     if (M2C_FIELD(creature, f32 *, 0x1C0) > 0.0f) {
         MotionState_Draw((u8 *)creature + 0xCC);
@@ -6832,6 +6865,159 @@ __OSInterruptHandler __OSGetInterruptHandler(__OSInterrupt interrupt) {
     return InterruptHandlerTable_803C7240[interrupt];
 }
 
+#pragma push
+#pragma peephole off
+u32 SetInterruptMask(u32 mask, u32 current) {
+    u32 reg;
+
+    switch (__cntlzw(mask)) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+        reg = 0;
+        if (!(current & 0x80000000)) {
+            reg |= 0x1;
+        }
+        if (!(current & 0x40000000)) {
+            reg |= 0x2;
+        }
+        if (!(current & 0x20000000)) {
+            reg |= 0x4;
+        }
+        if (!(current & 0x10000000)) {
+            reg |= 0x8;
+        }
+        if (!(current & 0x08000000)) {
+            reg |= 0x10;
+        }
+        ((volatile u16 *)0xCC004000)[0xE] = (u16)reg;
+        mask &= ~0xF8000000;
+        break;
+    case 5:
+    case 6:
+    case 7:
+        reg = __DSPRegs[5];
+        reg &= ~0x1F8;
+        if (!(current & 0x04000000)) {
+            reg |= 0x10;
+        }
+        if (!(current & 0x02000000)) {
+            reg |= 0x40;
+        }
+        if (!(current & 0x01000000)) {
+            reg |= 0x100;
+        }
+        __DSPRegs[5] = (u16)reg;
+        mask &= ~0x07000000;
+        break;
+    case 8:
+        reg = __AIRegs[0];
+        reg &= ~0x2C;
+        if (!(current & 0x00800000)) {
+            reg |= 0x4;
+        }
+        __AIRegs[0] = reg;
+        mask &= ~0x00800000;
+        break;
+    case 9:
+    case 10:
+    case 11:
+        reg = ((volatile u32 *)0xCC006800)[0];
+        reg &= ~0x2C0F;
+        if (!(current & 0x00400000)) {
+            reg |= 0x1;
+        }
+        if (!(current & 0x00200000)) {
+            reg |= 0x4;
+        }
+        if (!(current & 0x00100000)) {
+            reg |= 0x400;
+        }
+        ((volatile u32 *)0xCC006800)[0] = reg;
+        mask &= ~0x00700000;
+        break;
+    case 12:
+    case 13:
+    case 14:
+        reg = ((volatile u32 *)0xCC006800)[5];
+        reg &= ~0xC0F;
+        if (!(current & 0x00080000)) {
+            reg |= 0x1;
+        }
+        if (!(current & 0x00040000)) {
+            reg |= 0x4;
+        }
+        if (!(current & 0x00020000)) {
+            reg |= 0x400;
+        }
+        ((volatile u32 *)0xCC006800)[5] = reg;
+        mask &= ~0x000E0000;
+        break;
+    case 15:
+    case 16:
+        reg = ((volatile u32 *)0xCC006800)[10];
+        reg &= ~0xF;
+        if (!(current & 0x00010000)) {
+            reg |= 0x1;
+        }
+        if (!(current & 0x00008000)) {
+            reg |= 0x4;
+        }
+        ((volatile u32 *)0xCC006800)[10] = reg;
+        mask &= ~0x00018000;
+        break;
+    case 17:
+    case 18:
+    case 19:
+    case 20:
+    case 21:
+    case 22:
+    case 23:
+    case 24:
+    case 25:
+    case 26:
+        reg = 0xF0;
+        if (!(current & 0x00004000)) {
+            reg |= 0x800;
+        }
+        if (!(current & 0x00000800)) {
+            reg |= 0x8;
+        }
+        if (!(current & 0x00000400)) {
+            reg |= 0x4;
+        }
+        if (!(current & 0x00000200)) {
+            reg |= 0x2;
+        }
+        if (!(current & 0x00000100)) {
+            reg |= 0x1;
+        }
+        if (!(current & 0x00000080)) {
+            reg |= 0x100;
+        }
+        if (!(current & 0x00000040)) {
+            reg |= 0x1000;
+        }
+        if (!(current & 0x00002000)) {
+            reg |= 0x200;
+        }
+        if (!(current & 0x00001000)) {
+            reg |= 0x400;
+        }
+        if (!(current & 0x00000020)) {
+            reg |= 0x2000;
+        }
+        ((volatile u32 *)0xCC003000)[1] = reg;
+        mask &= ~0x00007FE0;
+        break;
+    default:
+        break;
+    }
+    return mask;
+}
+#pragma pop
 u32 __OSMaskInterrupts(u32 global) {
     s32 enabled;
     u32 prev;
