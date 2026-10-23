@@ -675,7 +675,8 @@ typedef struct GDL {
     s32 unk3C;
     s32 unk40;
     s32 numGroupTris;
-    u8 unk48[0x50 - 0x48];
+    u8 unk48[0x4C - 0x48];
+    u32 numLightStates;
     u32 numCachedMatrices;
     s32 numDrawEntries;
     u8 unk58[0x6C - 0x58];
