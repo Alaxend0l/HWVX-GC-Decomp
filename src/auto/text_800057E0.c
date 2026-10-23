@@ -12829,6 +12829,9 @@ s32 VolumeManager_GetVolumeTypeByIndexByCell(s32 type, s32 index, s32 cell) {
     return cells[cell].types[type].volumes[index];
 }
 
+static inline s8 VolumeManager_IsPointInVolume(Vector4 *point, u8 *volume);
+static inline s32 VolumeManager_GetCell(u8 *holder, Vector4 *point);
+
 s8 IsPointWithinVolume(Vector4 *point, u8 *volume, f32 *distSq) {
     s8 BSPN0_CollideWithVector(void *bsp, Vector4 *point);
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
