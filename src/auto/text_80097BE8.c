@@ -12596,6 +12596,38 @@ u8 SameFrontalCollisionForceParams__8LGWheelsFls(LGWheels *wheels, s32 chan, s16
 #pragma readonly_strings on
 #pragma dont_inline on
 void PlayConstantForce__8LGWheelsFlsUs(void *wheels, s32 chan, s16 magnitude, u16 direction) {
+    LGWheels *lg = wheels;
+    u8 *p;
+
+    if (IsOpened__6WheelsFl((Wheels *)lg->wheels, chan)) {
+        if (lg->constant.playing[chan][0]) {
+            if (!SameConstantForceParams__8LGWheelsFlsUs(wheels, chan, magnitude, direction)) {
+                if (UpdateForce__8ConstantFllUlUlsUsUlUlUcUc(&lg->constant, chan, 0, -1, 0, magnitude, direction, 0, 0, 0, 0) >= 0) {
+                    p = (u8 *)wheels + chan * 4;
+                    *(s16 *)(p + 0x13DE) = magnitude;
+                    *(u16 *)(p + 0x13E0) = direction;
+                }
+            }
+        } else if (lg->constant.effectIds[chan][0] == 0xFFFFFFFF) {
+            if (DownloadForce__8ConstantFllRUlUlUlsUsUlUlUcUc(&lg->constant, chan, 0, &lg->overallGainId[chan], -1, 0, magnitude, direction, 0, 0, 0, 0) >= 0) {
+                p = (u8 *)wheels + chan * 4;
+                *(s16 *)(p + 0x13DE) = magnitude;
+                *(u16 *)(p + 0x13E0) = direction;
+            }
+            Start__5ForceFll(&lg->constant, chan, 0);
+        } else if (SameConstantForceParams__8LGWheelsFlsUs(wheels, chan, magnitude, direction)) {
+            Start__5ForceFll(&lg->constant, chan, 0);
+        } else {
+            if (UpdateForce__8ConstantFllUlUlsUsUlUlUcUc(&lg->constant, chan, 0, -1, 0, magnitude, direction, 0, 0, 0, 0) >= 0) {
+                p = (u8 *)wheels + chan * 4;
+                *(s16 *)(p + 0x13DE) = magnitude;
+                *(u16 *)(p + 0x13E0) = direction;
+            }
+            Start__5ForceFll(&lg->constant, chan, 0);
+        }
+    } else {
+        OSReport("ERROR: trying to play a force on port %d but no wheel opened.\n", chan);
+    }
 }
 #pragma pop
 
