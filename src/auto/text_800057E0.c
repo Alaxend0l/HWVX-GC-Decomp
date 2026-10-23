@@ -2454,6 +2454,32 @@ s32 EventSeq_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+void FileStreaming_Initialize(void) {
+    extern u8 *g_StreamingDataPacks[11];
+    extern u32 g_MaxStreamingDataPacks[11];
+    extern s32 g_numQuadPacksInMemory;
+    extern s32 g_numQuadPacksToLoad;
+    extern s32 g_itemTimer;
+    extern void *g_pDataPackToLoad;
+    void *memset(void *, s32, u32);
+    u32 i;
+    u32 size;
+
+    g_numQuadPacksInMemory = 0;
+    g_numQuadPacksToLoad = 0;
+    g_itemTimer = 0;
+    for (i = 0; i < 11; i++) {
+        if (i != 7 && g_MaxStreamingDataPacks[i] != 0) {
+            size = g_MaxStreamingDataPacks[i] * 0xA8;
+            g_StreamingDataPacks[i] = Allocate(size, 0, "");
+            memset(g_StreamingDataPacks[i], 0, size);
+        } else {
+            g_StreamingDataPacks[i] = NULL;
+        }
+    }
+    g_pDataPackToLoad = NULL;
+}
+
 void FileStreaming_Destroy(void) {
     extern u8 *g_StreamingDataPacks[11];
     s32 FileStreaming_ReleaseAllDataPacks(s32 type, s8 wait);
@@ -2473,6 +2499,27 @@ s8 IsLoadingThreadRunning(void) {
 
 s32 FileStreaming_GetNumAvailableQuadPacks(void) {
     return 0xB;
+}
+
+void FileStreaming_LoadingThread(void) {
+    extern s8 g_bLoadingThreadRunning;
+    extern s8 g_bLoadQuadrants;
+    extern s8 g_bLoadDataPack;
+    void LoadQuadrants(s32);
+    void LoadDataPack(void);
+    void EndThread(void);
+
+    g_bLoadingThreadRunning = 1;
+    if (g_bLoadQuadrants) {
+        LoadQuadrants(0);
+    }
+    if (g_bLoadDataPack) {
+        LoadDataPack();
+    }
+    g_bLoadQuadrants = 0;
+    g_bLoadDataPack = 0;
+    g_bLoadingThreadRunning = 0;
+    EndThread();
 }
 
 #pragma push
