@@ -18646,6 +18646,19 @@ void TRKReleaseBuffer(s32 idx) {
 }
 #pragma pop
 
+/* TRKGetBuffer, inlined into TRKGetFreeBuffer (same original file); other files call it */
+static inline TRKBuffer *TRKGetBuffer_inline(s32 idx) {
+    extern TRKBuffer gTRKMsgBufs[3];
+    TRKBuffer *buf = NULL;
+
+    if (idx >= 0 && idx < 3) {
+        buf = &gTRKMsgBufs[idx];
+    }
+    return buf;
+}
+
+#pragma push
+#pragma auto_inline off
 TRKBuffer *TRKGetBuffer(s32 idx) {
     extern TRKBuffer gTRKMsgBufs[3];
     TRKBuffer *buf = NULL;
@@ -18655,6 +18668,7 @@ TRKBuffer *TRKGetBuffer(s32 idx) {
     }
     return buf;
 }
+#pragma pop
 
 void usr_puts_serial(const char *msg);
 #pragma push
@@ -18667,7 +18681,7 @@ s32 TRKGetFreeBuffer(s32 *msgID, TRKBuffer **outMsg) {
 
     *outMsg = NULL;
     for (i = 0; i < 3; i++) {
-        buf = TRKGetBuffer(i);
+        buf = TRKGetBuffer_inline(i);
         TRKAcquireMutex(buf);
         if (!buf->isInUse) {
             buf->length = 0;
