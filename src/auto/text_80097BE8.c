@@ -7367,13 +7367,10 @@ u8 AutoCalibrateAxisUnsigned(u8 *min, u8 *max, u8 value, u8 deadzone, u8 *out) {
     return result;
 }
 
-static inline s32 MaxS32(s32 a, s32 b) {
-    return a < b ? b : a;
-}
-
 #pragma push
 #pragma optimize_for_size on
 #pragma use_lmw_stmw on
+#pragma dont_inline on
 void HandleTriggers(u8 *cur, SISteeringStatus *status, SISteeringStatus *calib) {
     s32 diff;
 
