@@ -482,6 +482,7 @@ typedef struct Quaternion {
 void XformVec(void *mtx, Vector4 *out, Vector4 *in);
 void SubMatrixToQuaternion(void *mtx, Vector4 *quat);
 void QuaternionMult(Vector4 *a, Vector4 *b, Vector4 *out);
+void TEST_AnimTraverseHeirarchyToMatricesWorld(Vector4 *quat, void *pos, void *frames, s32 skel, void *matrices, f32 time);
 void Thing_GetDynamicMinMax(void *thing, Vector4 *min, Vector4 *max, f32 expand);
 
 typedef union Matrix4 {
