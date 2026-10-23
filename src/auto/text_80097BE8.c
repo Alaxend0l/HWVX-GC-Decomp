@@ -9253,8 +9253,10 @@ s32 GetType_(u8 *chunk) {
 }
 
 s32 GetID_(u8 *chunk);
-s8 CmpID_(u8 *chunk, s32 id) {
-    return GetID_(chunk) == id;
+s8 CmpID_(u8 *chunk, s32 type) {
+    s32 GetID_();
+    s8 result = GetID_(chunk) == type;
+    return result;
 }
 
 s8 CmpType_(u8 *chunk, s32 type) {
