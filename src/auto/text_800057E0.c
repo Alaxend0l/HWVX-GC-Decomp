@@ -11846,6 +11846,7 @@ BOOL SIGetResponse(s32 chan, void *data) {
     OSRestoreInterrupts(enabled);
     return rc;
 }
+#pragma pop
 
 void DefaultCallback(void) {
 
