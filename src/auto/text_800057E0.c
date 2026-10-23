@@ -7820,6 +7820,72 @@ void State_GetGameStateStr(s32 state, char *str) {
     }
 }
 
+void GamePlay_PauseOptions_HandleInput(void *msg) {
+    typedef struct {
+        u8 unk0[4];
+        u16 command;
+        u16 value;
+        u8 unk8[0x18];
+        s32 result;
+    } InterfaceMsg;
+    extern s8 g_bExitStateGamePlay;
+    extern s32 g_targetGameState;
+    extern s32 g_gamePlayCallback;
+    s32 ActionEndLevel(s32 *arg0);
+    void StateProgressionManager_RestartCurrentLevel(void);
+    static u16 endCommand;
+    static s32 params[2];
+    InterfaceMsg *m = (InterfaceMsg *)msg;
+
+    switch (m->command) {
+    case 3:
+        endCommand = 0xFFFF;
+        break;
+    case 7:
+        params[0] = 4;
+        params[1] = m->value;
+        m->result = 4;
+        endCommand = 7;
+        break;
+    case 8:
+        params[0] = 5;
+        params[1] = m->value;
+        m->result = 4;
+        endCommand = 8;
+        break;
+    case 9:
+        m->result = 4;
+        endCommand = 9;
+        break;
+    case 10:
+        m->result = 4;
+        endCommand = 10;
+        break;
+    case 16:
+        m->result = 4;
+        endCommand = 16;
+        break;
+    case 5:
+        switch (endCommand) {
+        case 7:
+        case 8:
+            ActionEndLevel(params);
+            break;
+        case 9:
+            g_targetGameState = 2;
+            g_bExitStateGamePlay = 1;
+            break;
+        case 10:
+            StateProgressionManager_RestartCurrentLevel();
+            break;
+        case 16:
+            g_gamePlayCallback = 3;
+            break;
+        }
+        break;
+    }
+}
+
 s32 Thing_Init(void *thing, s32 arg1) {
     extern Matrix4 g_identity;
     M2C_FIELD(thing, f32 *, 0x8) = 0.0f;
