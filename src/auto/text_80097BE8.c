@@ -11912,10 +11912,10 @@ static void F25(s32 chan, s32 ret) {
     if (ret == 0) {
         ret = GBAGetStatusAsync(chan, bootInfo->status, F27);
     }
-    if (ret != 0) {
+    if (ret) {
         bootInfo->begin = 0;
         callback = bootInfo->callback;
-        if (callback != NULL) {
+        if (callback) {
             bootInfo->callback = NULL;
             callback(chan, ret);
         }
@@ -13347,6 +13347,46 @@ void ReadAll__8LGWheelsFv(void *wheels) {
             lg->ramp.effectIds[chan][i] = 0xFFFFFFFF;
             lg->ramp.playing[chan][i] = 0;
         }
+    }
+}
+
+u8 SameSpringForceParams__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 saturation, s16 coefficient);
+void PlaySpringForce__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 saturation, s16 coefficient) {
+    LGWheels *lg = wheels;
+    u8 *p;
+    s32 Start__5ForceFll();
+
+    if (IsOpened__6WheelsFl((Wheels *)lg->wheels, chan)) {
+        if (lg->condition.playing[chan][0]) {
+            if (!SameSpringForceParams__8LGWheelsFlScUcs(wheels, chan, offset, saturation, coefficient)) {
+                if (UpdateForce__9ConditionFllUcUlUlScUcUcUcss(&lg->condition, chan, 0, 7, -1, 0, offset, 0, saturation, saturation, coefficient, coefficient) >= 0) {
+                    p = (u8 *)wheels + chan * 4;
+                    p[0x13CE] = offset;
+                    p[0x13CF] = saturation;
+                    *(s16 *)(p + 0x13D0) = coefficient;
+                }
+            }
+        } else if (lg->condition.effectIds[chan][0] == 0xFFFFFFFF) {
+            if (DownloadForce__9ConditionFllRUlUcUlUlScUcUcUcss(&lg->condition, chan, 0, &lg->overallGainId[chan], 7, -1, 0, offset, 0, saturation, saturation, coefficient, coefficient) >= 0) {
+                p = (u8 *)wheels + chan * 4;
+                p[0x13CE] = offset;
+                p[0x13CF] = saturation;
+                *(s16 *)(p + 0x13D0) = coefficient;
+            }
+            Start__5ForceFll(&lg->condition, chan, 0);
+        } else if (SameSpringForceParams__8LGWheelsFlScUcs(wheels, chan, offset, saturation, coefficient)) {
+            Start__5ForceFll(&lg->condition, chan, 0);
+        } else {
+            if (UpdateForce__9ConditionFllUcUlUlScUcUcUcss(&lg->condition, chan, 0, 7, -1, 0, offset, 0, saturation, saturation, coefficient, coefficient) >= 0) {
+                p = (u8 *)wheels + chan * 4;
+                p[0x13CE] = offset;
+                p[0x13CF] = saturation;
+                *(s16 *)(p + 0x13D0) = coefficient;
+            }
+            Start__5ForceFll(&lg->condition, chan, 0);
+        }
+    } else {
+        OSReport("ERROR: trying to play a force on port %d but no wheel opened.\n", chan);
     }
 }
 
