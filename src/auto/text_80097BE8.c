@@ -10139,7 +10139,7 @@ u8 *DestroyVoice(u8 *voice) {
 }
 
 #pragma push
-#pragma optimization_level 3
+#pragma optimization_level 1
 void JumpToMarker(void) {
     typedef struct {
         u8 song[0x24];
