@@ -3905,8 +3905,16 @@ s32 VolumeManager_GetNumVolumesOfTypeByCell(s32 type, s32 cell) {
 }
 
 s32 VolumeManager_GetVolumeTypeByIndexByCell(s32 type, s32 index, s32 cell) {
+    typedef struct VolumeList {
+        s32 count;
+        s32 *volumes;
+    } VolumeList;
+    typedef struct VolumeCell {
+        VolumeList types[7];
+    } VolumeCell;
     extern s32 g_VolumeHolder;
-    return M2C_FIELD(M2C_FIELD(M2C_FIELD(g_VolumeHolder, u8 **, 0x10) + cell * 0x38 + type * 8, s32 **, 0x4), s32 *, index * 4);
+    VolumeCell *cells = M2C_FIELD(g_VolumeHolder, VolumeCell **, 0x10);
+    return cells[cell].types[type].volumes[index];
 }
 
 s8 IsPointWithinVolume(Vector4 *point, u8 *volume, f32 *distSq) {
