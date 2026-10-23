@@ -3271,6 +3271,27 @@ void QuaternionToSubMatrix(void *quat, void *mtx) {
     m[15] = 1.0f;
 }
 
+void SubMatrixToQuaternion(void *mtx, void *quat) {
+    f32 *m = (f32 *)mtx;
+    f32 *q = (f32 *)quat;
+    f32 c;
+    f32 s;
+
+    c = 0.5f * (m[0] + m[5] + m[10] - 1.0f);
+    if (c <= -1.0f) {
+        q[3] = 0.0f;
+        q[0] = m[6] - m[9];
+        q[1] = m[8] - m[2];
+        q[2] = m[1] - m[4];
+        return;
+    }
+    q[3] = Sqrt(0.5f * (1.0f + c));
+    s = 1.0f / (4.0f * q[3]);
+    q[0] = s * (m[6] - m[9]);
+    q[1] = s * (m[8] - m[2]);
+    q[2] = s * (m[1] - m[4]);
+}
+
 void GetComponentOfVector(void *arg0, void *arg1) {
     f32 PSVECDotProduct();
     f32 temp_f1;
