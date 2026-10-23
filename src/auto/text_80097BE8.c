@@ -10138,39 +10138,48 @@ u8 *DestroyVoice(u8 *voice) {
     return next;
 }
 
+#pragma push
+#pragma optimization_level 4
 void JumpToMarker(void) {
-    extern u8 g_song_80376990[0x24];
+    typedef struct {
+        u8 song[0x24];
+        u8 chn[0x10][0x20];
+        u8 prog[0x200];
+        u8 drum[0x200];
+        u8 mrk[0x40][8];
+    } MIDIState;
     extern u32 g_trkOn;
     extern u32 g_trkOff;
     u32 ReadVar_(u8 **pp);
-    u8 *song = g_song_80376990;
+    MIDIState *m = (MIDIState *)g_song_80376990;
     u32 mask;
     u8 *chn;
     u32 i;
 
-    for (chn = song + 0x24, mask = g_trkOn; mask != 0; chn += 0x20) {
+    for (chn = m->chn[0], mask = g_trkOn; mask != 0; chn += 0x20) {
         chn[4] |= mask & 1;
         mask >>= 1;
     }
-    for (chn = song + 0x24; g_trkOff != 0; chn += 0x20) {
+    for (chn = m->chn[0]; g_trkOff != 0; chn += 0x20) {
         chn[4] &= ~(g_trkOff & 1);
     }
     g_trkOn = 0;
     g_trkOff = 0;
-    *(u32 *)(song + 0x14) = *(u32 *)(song + 0x624 + song[0x1E] * 8);
-    *(u32 *)(song + 0x0) = 0;
-    *(u32 *)(song + 0x8) = 0;
-    *(u32 *)(song + 0x18) = ReadVar_((u8 **)(song + 0x14));
-    song[0x1D] = (song + 0x624 + song[0x1E] * 8)[5];
-    song[0x1C] = (song + 0x624 + song[0x1E] * 8)[4];
-    for (chn = song + 0x24, i = 0x10; i != 0; chn += 0x20, i--) {
+    *(u32 *)(m->song + 0x14) = *(u32 *)m->mrk[m->song[0x1E]];
+    *(u32 *)(m->song + 0x0) = 0;
+    *(u32 *)(m->song + 0x8) = 0;
+    *(u32 *)(m->song + 0x18) = ReadVar_((u8 **)(m->song + 0x14));
+    m->song[0x1D] = m->mrk[m->song[0x1E]][5];
+    m->song[0x1C] = m->mrk[m->song[0x1E]][4];
+    for (chn = m->chn[0], i = 0x10; i != 0; chn += 0x20, i--) {
         ChannelOff(chn);
         chn[0x1F] = 0;
         chn[0x1D] = 0x40;
         *(u32 *)(chn + 0x18) = 0x10000;
     }
-    song[0x1E] = 0;
+    m->song[0x1E] = 0;
 }
+#pragma pop
 
 #pragma pop
 s32 AudioMusic_Create(void) {
