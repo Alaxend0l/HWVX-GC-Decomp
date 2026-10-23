@@ -7258,6 +7258,36 @@ s32 TriggerInterfaceEnd(void) {
     return 1;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void Trigger_InterfaceEnd(u32 id) {
+    extern u32 TriggerStats_800D3C58[][3];
+    extern u32 **m_Triggers_802C1890[];
+    extern s8 g_bTACSystemPaused_803C7124;
+    s8 TriggerCheckConditions(u8, s32, s32);
+    s32 Action_AddAction(s32);
+    u32 j;
+    u32 actions;
+    u32 i;
+
+    if (!g_bTACSystemPaused_803C7124) {
+        for (i = 0; i < TriggerStats_800D3C58[7][0]; i++) {
+            u32 *trigger = m_Triggers_802C1890[7][i];
+            u32 param = *(u32 *)trigger[1];
+            if (trigger[9] != 2 && param == id && TriggerCheckConditions(((u8 *)trigger)[0x28], trigger[4], trigger[3])) {
+                actions = 0;
+                for (j = 0; j < m_Triggers_802C1890[7][i][7]; j++) {
+                    actions += Action_AddAction(m_Triggers_802C1890[7][i][5] + j * 0x18);
+                }
+                if (actions == 0) {
+                    m_Triggers_802C1890[7][i][9] = 2;
+                }
+            }
+        }
+    }
+}
+#pragma pop
+
 s32 TriggerVehicleKilled(u32 *data) {
     u32 i;
 
