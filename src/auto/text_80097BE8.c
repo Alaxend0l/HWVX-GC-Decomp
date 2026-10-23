@@ -794,8 +794,23 @@ typedef struct GDLSprite {
     u8 unk24[0x30 - 0x24];
 } GDLSprite;
 
+typedef struct GDLRectVtx {
+    f32 x;
+    f32 y;
+    u8 unk8[0x10 - 0x8];
+    f32 s;
+    f32 t;
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
+    u8 unk1C[0x20 - 0x1C];
+} GDLRectVtx;
+
 typedef struct GDLRect {
-    u8 unk0[0x83];
+    GDLRectVtx v[4];
+    u16 tex;
+    u8 blendMode;
     u8 window;
 } GDLRect;
 
