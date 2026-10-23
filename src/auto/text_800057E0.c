@@ -310,7 +310,8 @@ typedef struct CodeVariables {
     u8 unk108;
     u8 unk109[0x111 - 0x109];
     u8 unk111;
-    u8 unk112[0x118 - 0x112];
+    u8 unk112[0x114 - 0x112];
+    char *device;
     s32 fileIndex;
     u8 unk11C[3];
     s8 bOverwritingFile;
@@ -18611,6 +18612,40 @@ s32 EXIDetach(s32 arg0) {
     M2C_FIELD(temp_r31, s32 *, 0xC) = temp_r4_2;
     __OSMaskInterrupts(0x500000U >> (arg0 * 3), temp_r4_2);
     OSRestoreInterrupts(temp_r30);
+    return 1;
+}
+
+s32 EXISelect(s32 chan, u32 dev, u32 freq) {
+    extern u8 Ecb_80309980[3][0x40];
+    BOOL __EXIProbe(s32 chan);
+    u32 __OSMaskInterrupts(u32 mask);
+    u8 *exi = Ecb_80309980[chan];
+    u32 cpr;
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    if ((*(u32 *)(exi + 0xC) & 4) ||
+        chan != 2 && (dev == 0 && !(*(u32 *)(exi + 0xC) & 8) && !__EXIProbe(chan) ||
+                      !(*(u32 *)(exi + 0xC) & 0x10) || *(u32 *)(exi + 0x18) != dev)) {
+        OSRestoreInterrupts(enabled);
+        return 0;
+    }
+    *(u32 *)(exi + 0xC) |= 4;
+    cpr = ((volatile u32 *)0xCC006800)[chan * 5];
+    cpr &= 0x405;
+    cpr |= ((1 << dev) << 7) | (freq << 4);
+    ((volatile u32 *)0xCC006800)[chan * 5] = cpr;
+    if (*(u32 *)(exi + 0xC) & 8) {
+        switch (chan) {
+        case 0:
+            __OSMaskInterrupts(0x100000);
+            break;
+        case 1:
+            __OSMaskInterrupts(0x20000);
+            break;
+        }
+    }
+    OSRestoreInterrupts(enabled);
     return 1;
 }
 
