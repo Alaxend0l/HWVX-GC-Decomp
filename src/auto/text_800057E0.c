@@ -7647,6 +7647,153 @@ s8 IsPointWithinVolume(Vector4 *point, u8 *volume, f32 *distSq) {
     return 0;
 }
 
+static inline s32 VolumeManager_GetCellIndex(Vector4 *point) {
+    extern u8 *g_VolumeHolder;
+    s32 x;
+    s32 y;
+    s32 z;
+
+    if (g_VolumeHolder == NULL) {
+        return 0;
+    }
+    x = (point->x - M2C_FIELD(g_VolumeHolder, f32 *, 0x0)) / M2C_FIELD(g_VolumeHolder, f32 *, 0x20);
+    y = (point->y - M2C_FIELD(g_VolumeHolder, f32 *, 0x4)) / M2C_FIELD(g_VolumeHolder, f32 *, 0x24);
+    z = (point->z - M2C_FIELD(g_VolumeHolder, f32 *, 0x8)) / M2C_FIELD(g_VolumeHolder, f32 *, 0x28);
+    if (x < 0 || x >= M2C_FIELD(g_VolumeHolder, s32 *, 0x2C)) {
+        return 0;
+    }
+    if (y < 0 || y >= M2C_FIELD(g_VolumeHolder, s32 *, 0x30)) {
+        return 0;
+    }
+    if (z < 0 || z >= M2C_FIELD(g_VolumeHolder, s32 *, 0x34)) {
+        return 0;
+    }
+    return M2C_FIELD(g_VolumeHolder, s32 **, 0x14)[x + M2C_FIELD(g_VolumeHolder, s32 *, 0x34) * (y * M2C_FIELD(g_VolumeHolder, s32 *, 0x2C)) + z * M2C_FIELD(g_VolumeHolder, s32 *, 0x2C)];
+}
+
+#pragma push
+#pragma use_lmw_stmw on
+void VolumeManager_SetReverbLevel(Vector4 *point) {
+    typedef struct VolumeList {
+        s32 count;
+        s32 *volumes;
+    } VolumeList;
+    typedef struct VolumeCell {
+        VolumeList types[7];
+    } VolumeCell;
+    extern u8 *g_VolumeHolder;
+    extern s8 g_bReset;
+    void SetReverb(s32 a, s32 b, s32 c, s32 d);
+    s8 BSPN0_CollideWithVector(void *bsp, Vector4 *point);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    static u16 sfx_volume = 0xFFFF;
+    static u16 sfx_feedback = 0xFFFF;
+    static u16 music_volume = 0xFFFF;
+    static u16 music_feedback = 0xFFFF;
+    s32 level;
+    s32 feedback;
+    s32 delay;
+    u32 count;
+    u8 *volume;
+    u8 *reverb;
+    u32 i;
+    s32 cell;
+    s32 x;
+    s32 y;
+    s32 z;
+    s8 inside;
+    u8 *settings;
+    f32 diff[3];
+
+    settings = M2C_FIELD(g_worldData.world, u8 **, 0x9C);
+    level = 32767.0f * M2C_FIELD(settings, f32 *, 0x24);
+    feedback = 32767.0f * M2C_FIELD(settings, f32 *, 0x2C);
+    delay = M2C_FIELD(settings, f32 *, 0x28);
+
+    if (g_VolumeHolder == NULL) {
+        cell = 0;
+    } else {
+        x = (point->x - M2C_FIELD(g_VolumeHolder, f32 *, 0x0)) / M2C_FIELD(g_VolumeHolder, f32 *, 0x20);
+        y = (point->y - M2C_FIELD(g_VolumeHolder, f32 *, 0x4)) / M2C_FIELD(g_VolumeHolder, f32 *, 0x24);
+        z = (point->z - M2C_FIELD(g_VolumeHolder, f32 *, 0x8)) / M2C_FIELD(g_VolumeHolder, f32 *, 0x28);
+        if (x < 0 || x >= M2C_FIELD(g_VolumeHolder, s32 *, 0x2C)) {
+            cell = 0;
+        } else if (y < 0 || y >= M2C_FIELD(g_VolumeHolder, s32 *, 0x30)) {
+            cell = 0;
+        } else if (z < 0 || z >= M2C_FIELD(g_VolumeHolder, s32 *, 0x34)) {
+            cell = 0;
+        } else {
+            cell = M2C_FIELD(g_VolumeHolder, s32 **, 0x14)[x + M2C_FIELD(g_VolumeHolder, s32 *, 0x34) * (y * M2C_FIELD(g_VolumeHolder, s32 *, 0x2C)) + z * M2C_FIELD(g_VolumeHolder, s32 *, 0x2C)];
+        }
+    }
+
+    if (g_VolumeHolder != NULL) {
+        count = M2C_FIELD(g_VolumeHolder, VolumeCell **, 0x10)[cell].types[2].count;
+    } else {
+        count = 0;
+    }
+    for (i = 0; i < count; i++) {
+        volume = (u8 *)VolumeManager_GetVolumeTypeByIndexByCell(2, i, cell);
+        switch (M2C_FIELD(volume, s32 *, 0x8)) {
+        case 0:
+            inside = BSPN0_CollideWithVector(M2C_FIELD(volume, void **, 0x28), point);
+            break;
+        case 1:
+            PSVECSubtract(point, (Vector4 *)(volume + 0x10), (Vector4 *)diff);
+            if (PSVECSquareMag((Vector4 *)diff) < M2C_FIELD(volume, f32 *, 0x24)) {
+                inside = 1;
+            } else {
+                inside = 0;
+            }
+            break;
+        default:
+            inside = 0;
+            break;
+        }
+        if (inside) {
+            reverb = M2C_FIELD(volume, u8 **, 0x2C);
+            if (M2C_FIELD(reverb, u32 *, 0x0) == 0) {
+                if (M2C_FIELD(reverb, u16 *, 0x4) != music_volume || M2C_FIELD(reverb, u16 *, 0x6) != music_feedback) {
+                    SetReverb(0, M2C_FIELD(reverb, u16 *, 0x4), M2C_FIELD(reverb, u16 *, 0x6), (u16)delay);
+                    music_volume = M2C_FIELD(reverb, u16 *, 0x4);
+                    music_feedback = M2C_FIELD(reverb, u16 *, 0x6);
+                }
+            } else if (M2C_FIELD(reverb, u32 *, 0x0) == 1) {
+                if (M2C_FIELD(reverb, u16 *, 0x4) != sfx_volume || M2C_FIELD(reverb, u16 *, 0x6) != sfx_feedback) {
+                    SetReverb(1, M2C_FIELD(reverb, u16 *, 0x4), M2C_FIELD(reverb, u16 *, 0x6), (u16)delay);
+                    sfx_volume = M2C_FIELD(reverb, u16 *, 0x4);
+                    sfx_feedback = M2C_FIELD(reverb, u16 *, 0x6);
+                }
+            } else {
+                if (M2C_FIELD(reverb, u16 *, 0x4) != music_volume || M2C_FIELD(reverb, u16 *, 0x6) != music_feedback) {
+                    SetReverb(0, (u16)level, M2C_FIELD(reverb, u16 *, 0x6), (u16)delay);
+                    music_volume = M2C_FIELD(reverb, u16 *, 0x4);
+                    music_feedback = M2C_FIELD(reverb, u16 *, 0x6);
+                }
+                if (M2C_FIELD(reverb, u16 *, 0x4) != sfx_volume || M2C_FIELD(reverb, u16 *, 0x6) != sfx_feedback) {
+                    SetReverb(1, (u16)level, M2C_FIELD(reverb, u16 *, 0x6), (u16)delay);
+                    sfx_volume = M2C_FIELD(reverb, u16 *, 0x4);
+                    sfx_feedback = M2C_FIELD(reverb, u16 *, 0x6);
+                }
+            }
+            return;
+        }
+    }
+
+    if (g_bReset || (u16)level != music_volume || (u16)feedback != music_feedback) {
+        SetReverb(0, (u16)level, (u16)feedback, (u16)delay);
+        music_volume = level;
+        music_feedback = feedback;
+    }
+    if (g_bReset || (u16)level != sfx_volume || (u16)feedback != sfx_feedback) {
+        SetReverb(1, (u16)level, (u16)feedback, (u16)delay);
+        sfx_volume = level;
+        sfx_feedback = feedback;
+    }
+    g_bReset = 0;
+}
+#pragma pop
 void WildCardRack_Release(s32 arg0) {
     s32 var_r31;
     u32 var_r30;
@@ -11649,6 +11796,18 @@ void __AIDHandler(s16 interrupt, void *context) {
     OSSetCurrentContext(context);
 }
 
+void ARStartDMA(u32 type, u32 mainmem_addr, u32 aram_addr, u32 length) {
+    BOOL enabled = OSDisableInterrupts();
+    __DSPRegs[16] = (u16)((__DSPRegs[16] & ~0x3ff) | (mainmem_addr >> 16));
+    __DSPRegs[17] = (u16)((__DSPRegs[17] & ~0xffe0) | (0xffff & mainmem_addr));
+    __DSPRegs[18] = (u16)((__DSPRegs[18] & ~0x3ff) | (aram_addr >> 16));
+    __DSPRegs[19] = (u16)((__DSPRegs[19] & ~0xffe0) | (0xffff & aram_addr));
+    __DSPRegs[20] = (u16)((__DSPRegs[20] & ~0x8000) | (type << 15));
+    __DSPRegs[20] = (u16)((__DSPRegs[20] & ~0x3ff) | (length >> 16));
+    __DSPRegs[21] = (u16)((__DSPRegs[21] & ~0xffe0) | (0xffff & length));
+    OSRestoreInterrupts(enabled);
+}
+
 #pragma push
 #pragma dont_inline on
 u32 ARInit(u32 *stack_index_addr, u32 num_entries) {
@@ -13472,6 +13631,48 @@ void __GXSetDirtyState(void) {
     *(u32 *)(gx + 0x4F4) = 0;
 }
 
+#pragma push
+#pragma peephole off
+void GXBegin(u8 type, u8 vtxfmt, u16 nverts) {
+    extern u8 *gx;
+    void __GXSetSUTexRegs();
+    void __GXUpdateBPMask();
+    void __GXSetGenMode();
+    void __GXSetVCD();
+    void __GXSetVAT();
+    void __GXCalculateVLim();
+    void __GXSendFlushPrim(void);
+    u32 dirty;
+
+    dirty = *(u32 *)(gx + 0x4F4);
+    if (dirty != 0) {
+        if (dirty & 1) {
+            __GXSetSUTexRegs();
+        }
+        if (*(u32 *)(gx + 0x4F4) & 2) {
+            __GXUpdateBPMask();
+        }
+        if (*(u32 *)(gx + 0x4F4) & 4) {
+            __GXSetGenMode();
+        }
+        if (*(u32 *)(gx + 0x4F4) & 8) {
+            __GXSetVCD();
+        }
+        if (*(u32 *)(gx + 0x4F4) & 0x10) {
+            __GXSetVAT();
+        }
+        if (*(u32 *)(gx + 0x4F4) & 0x18) {
+            __GXCalculateVLim();
+        }
+        *(u32 *)(gx + 0x4F4) = 0;
+    }
+    if (*(u32 *)gx == 0) {
+        __GXSendFlushPrim();
+    }
+    GXWGFifo.u8 = vtxfmt | type;
+    GXWGFifo.u16 = nverts;
+}
+#pragma pop
 void __GXSendFlushPrim(void) {
     extern u8 *gx;
     u32 i;
@@ -14726,6 +14927,42 @@ s32 SIResetSteeringAsync(s32 chan, void *callback) {
     }
     *steering = 0xFF;
     return __SISteeringTransfer(chan, 1, 3, ResetProc);
+}
+
+void __SISteeringHandler(s32 arg0, s32 arg1, M2C_UNK *arg2) {
+    M2C_UNK OSClearContext(M2C_UNK *);
+    M2C_UNK OSSetCurrentContext(M2C_UNK *);
+    extern s32 __SIResetSteering;
+    extern M2C_UNK __SISteering;
+    M2C_UNK sp18;
+    M2C_UNK (*temp_r12)(s32);
+    M2C_UNK (*temp_r12_2)(s32, s32);
+    void *temp_r31;
+
+    temp_r31 = &__SISteering + (arg0 * 0x28);
+    if ((s32) __SIResetSteering == 0) {
+        if (arg1 & 8) {
+            M2C_FIELD(temp_r31, s32 *, 0x18) = -1;
+        } else if (arg1 & 7) {
+            M2C_FIELD(temp_r31, s32 *, 0x18) = -3;
+        } else {
+            M2C_FIELD(temp_r31, s32 *, 0x18) = 0;
+        }
+        temp_r12 = M2C_FIELD(temp_r31, M2C_UNK (**)(s32), 0x24);
+        if (temp_r12 != NULL) {
+            M2C_FIELD(temp_r31, M2C_UNK (**)(s32), 0x24) = NULL;
+            temp_r12(arg0);
+        }
+        if (((M2C_UNK (*)(s32, s32)) M2C_FIELD(temp_r31, M2C_UNK (**)(s32, s32), 0x14)) != NULL) {
+            OSClearContext(&sp18);
+            OSSetCurrentContext(&sp18);
+            temp_r12_2 = M2C_FIELD(temp_r31, M2C_UNK (**)(s32, s32), 0x14);
+            M2C_FIELD(temp_r31, M2C_UNK (**)(s32, s32), 0x14) = NULL;
+            temp_r12_2(arg0, M2C_FIELD(temp_r31, s32 *, 0x18));
+            OSClearContext(&sp18);
+            OSSetCurrentContext(arg2);
+        }
+    }
 }
 
 void __SISteeringEnable(s32 chan) {
