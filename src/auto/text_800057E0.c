@@ -3828,7 +3828,7 @@ void *ThingManagerList_GetByType(void *list, s32 type) {
     return NULL;
 }
 
-s32 ThingManagerList_Get(void *list, void *target) {
+s8 ThingManagerList_Get(void *list, void *target) {
     void *thing;
 
     for (thing = *(void **)list; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
@@ -6249,6 +6249,39 @@ void stateMotorStopped(void) {
     DVDLowWaitCoverClose(cbForStateMotorStopped);
 }
 
+s32 DVDGetDriveStatus(void) {
+    extern M2C_UNK DummyCommandBlock_802EF9C0;
+    extern s32 FatalErrorFlag_803C7328;
+    extern s32 PausingFlag_803C7320;
+    extern void *executing_803C7310;
+    s32 temp_r30;
+    s32 var_r31;
+    void *temp_r31;
+
+    temp_r30 = OSDisableInterrupts();
+    if ((s32) FatalErrorFlag_803C7328 != 0) {
+        var_r31 = -1;
+    } else if ((s32) PausingFlag_803C7320 != 0) {
+        var_r31 = 8;
+    } else {
+        temp_r31 = executing_803C7310;
+        if (temp_r31 == NULL) {
+            var_r31 = 0;
+        } else if (temp_r31 == &DummyCommandBlock_802EF9C0) {
+            var_r31 = 0;
+        } else {
+            OSDisableInterrupts();
+            var_r31 = M2C_FIELD(temp_r31, s32 *, 0xC);
+            if (var_r31 == 3) {
+                var_r31 = 1;
+            }
+            OSRestoreInterrupts();
+        }
+    }
+    OSRestoreInterrupts(temp_r30);
+    return var_r31;
+}
+
 void cbForReadAsync(s32 result, void *block) {
     if (M2C_FIELD(block, void (**)(s32, void *), 0x38)) {
         M2C_FIELD(block, void (**)(s32, void *), 0x38)(result, block);
@@ -6448,6 +6481,29 @@ s32 DVDSetAutoInvalidation(s32 arg0) {
     temp_r0 = autoInvalidation_803C6DA8;
     autoInvalidation_803C6DA8 = arg0;
     return temp_r0;
+}
+
+s32 DVDCancel(void *arg0) {
+    s32 DVDCancelAsync(M2C_UNK *);
+    M2C_UNK OSSleepThread(M2C_UNK *);
+    extern M2C_UNK __DVDThreadQueue;
+    extern M2C_UNK cbForCancelSync;
+    s32 temp_r31;
+    s32 temp_r3;
+    u32 temp_r3_2;
+
+    if (DVDCancelAsync(&cbForCancelSync) == 0) {
+        return -1;
+    }
+    temp_r31 = OSDisableInterrupts();
+loop_3:
+    temp_r3 = M2C_FIELD(arg0, s32 *, 0xC);
+    if (((u32) (temp_r3 + 1) > 1U) && (temp_r3 != 0xA) && ((temp_r3 != 3) || ((temp_r3_2 = M2C_FIELD(arg0, u32 *, 8), (((u32) (temp_r3_2 - 4) > 1U) != 0)) && (temp_r3_2 != 0xDU) && (temp_r3_2 != 0xFU)))) {
+        OSSleepThread(&__DVDThreadQueue);
+        goto loop_3;
+    }
+    OSRestoreInterrupts(temp_r31);
+    return 0;
 }
 
 void cbForCancelSync(void) {
