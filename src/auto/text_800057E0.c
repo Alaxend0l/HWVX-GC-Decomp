@@ -537,7 +537,7 @@ typedef struct CARDControl {
     s32 mountStep;
     u8 unk28[0x80 - 0x28];
     void *workArea;
-    u8 unk84[0x88 - 0x84];
+    u8 *currentDir;
     void *buffer;
     u8 unk8C[0xA8 - 0x8C];
     s32 retry;
@@ -10101,20 +10101,20 @@ s32 DummyLen(void) {
     u32 shift;
     u32 tries;
     s32 len;
-    u32 seed;
 
     shift = 1;
     tries = 0;
     DummySRand(OSGetTick());
-    len = DummyRand() % 32 + 1;
+    len = (DummyRand() & 0x1F) + 1;
     while (len < 4 && tries < 10) {
-        seed = OSGetTick() << shift;
-        if (++shift > 16) {
+        u32 seed = OSGetTick() << shift;
+        shift++;
+        if (shift > 16) {
             shift = 1;
         }
         DummySRand(seed);
         tries++;
-        len = DummyRand() % 32 + 1;
+        len = (DummyRand() & 0x1F) + 1;
     }
     if (len < 4) {
         len = 4;
