@@ -4112,6 +4112,32 @@ void Gfx_GetViewport(s32 *arg0, s32 *arg1, s32 *arg2, s32 *arg3) {
     *arg3 = 0x1E0;
 }
 
+void CreateSilhouette(void *edges, u32 count, Vector *dir) {
+    f32 PSVECDotProduct(Vector *a, Vector *b);
+    struct Edge {
+        Vector n0;
+        f32 n1[3];
+        s32 type;
+    } *e;
+    u32 i;
+    f32 d0;
+    f32 d1;
+
+    e = edges;
+    for (i = 0; i < count; i++) {
+        d0 = PSVECDotProduct(&e->n0, dir);
+        d1 = PSVECDotProduct((Vector *)e->n1, dir);
+        if (d0 < 0.0f && d1 > 0.0f) {
+            e->type = 2;
+        } else if (d0 > 0.0f && d1 < 0.0f) {
+            e->type = 1;
+        } else {
+            e->type = 0;
+        }
+        e++;
+    }
+}
+
 void RenderGroup(Geometry *geometry, u32 group, void *matrix);
 void Gfx_DrawGeometryLOD_Immediate(Geometry *geometry, void *matrix) {
     extern f32 g_identity[];
