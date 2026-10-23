@@ -40,8 +40,35 @@ typedef struct ShaderHolderGX {
     void *shader;
 } ShaderHolderGX;
 
+typedef struct ShaderDef {
+    u8 pad0[4];
+    u32 numColorKeys;
+    u8 pad8[4];
+    u32 numPointKeys;
+    u8 pad10[4];
+    u32 *textureKeys;
+} ShaderDef;
+
+typedef struct Shader {
+    u8 pad0[0x2C];
+    u8 unk2C;
+    u8 pad2D[0x38 - 0x2D];
+    u8 unk38;
+    u8 pad39[0x58 - 0x39];
+    u8 unk58;
+    u8 pad59[0x5C - 0x59];
+    ShaderDef *def;
+    u8 hasColorKey;
+    u8 hasTextureKey;
+    u8 hasPointKey;
+    u8 pad63;
+    s32 refCount;
+    u8 pad68[4];
+} Shader;
+
 typedef struct ShaderHolder {
-    void *shaders[0x700];
+    void *shaders[0x40];
+    Shader slots[0x40];
     ShaderHolderGX gx[0x80];
     u32 numShaders;
     u32 numGX;
@@ -20732,6 +20759,73 @@ void __AIDHandler(s16 interrupt, void *context) {
     OSSetCurrentContext(context);
 }
 
+#pragma push
+#pragma peephole off
+#pragma opt_loop_invariants off
+void __AI_SRC_INIT(void) {
+    s64 OSGetTime(void);
+    extern s64 bound_32KHz_803C73F8;
+    extern s64 bound_48KHz_803C7400;
+    extern s64 min_wait_803C7408;
+    extern s64 max_wait_803C7410;
+    extern s64 buffer_803C7418;
+    s64 rise32 = 0;
+    s64 rise48 = 0;
+    s64 diff = 0;
+    s64 t1 = 0;
+    s64 temp = 0;
+    u32 temp0 = 0;
+    u32 temp1 = 0;
+    u32 done = 0;
+    u32 volume = 0;
+    u32 Init_Cnt = 0;
+    u32 walking = 0;
+
+    walking = 0;
+    Init_Cnt = 0;
+    temp = 0;
+
+    while (!done) {
+        __AIRegs[0] = (__AIRegs[0] & ~0x20) | 0x20;
+        __AIRegs[0] = (__AIRegs[0] & ~2) | 0;
+        __AIRegs[0] = (__AIRegs[0] & ~1) | 1;
+
+        temp0 = __AIRegs[2];
+        while (temp0 == __AIRegs[2]) {
+        }
+        rise32 = OSGetTime();
+
+        __AIRegs[0] = (__AIRegs[0] & ~2) | 2;
+        __AIRegs[0] = (__AIRegs[0] & ~1) | 1;
+
+        temp1 = __AIRegs[2];
+        while (temp1 == __AIRegs[2]) {
+        }
+        rise48 = OSGetTime();
+
+        diff = rise48 - rise32;
+        __AIRegs[0] = (__AIRegs[0] & ~2) | 0;
+        __AIRegs[0] = (__AIRegs[0] & ~1) | 0;
+
+        if (diff < (bound_32KHz_803C73F8 - buffer_803C7418)) {
+            temp = min_wait_803C7408;
+            done = 1;
+            ++Init_Cnt;
+        } else if (diff >= (bound_32KHz_803C73F8 + buffer_803C7418) && diff < (bound_48KHz_803C7400 - buffer_803C7418)) {
+            temp = max_wait_803C7410;
+            done = 1;
+            ++Init_Cnt;
+        } else {
+            done = 0;
+            walking = 1;
+            ++Init_Cnt;
+        }
+    }
+
+    while ((rise48 + temp) > OSGetTime()) {
+    }
+}
+#pragma pop
 void ARStartDMA(u32 type, u32 mainmem_addr, u32 aram_addr, u32 length) {
     BOOL enabled = OSDisableInterrupts();
     __DSPRegs[16] = (u16)((__DSPRegs[16] & ~0x3ff) | (mainmem_addr >> 16));
@@ -24830,6 +24924,54 @@ void GXSetNumChans(u8 nChans) {
 
 #pragma push
 #pragma peephole off
+void GXSetChanCtrl(s32 chan, u8 enable, s32 amb_src, s32 mat_src, u32 light_mask, s32 diff_fn, s32 attn_fn) {
+    typedef struct GXDataChan {
+        u8 unk0[2];
+        u16 bpSentNot;
+    } GXDataChan;
+    extern GXDataChan *gx;
+    u32 reg;
+    u32 idx;
+
+    if (chan == 4) {
+        idx = 0;
+    } else if (chan == 5) {
+        idx = 1;
+    } else {
+        idx = chan;
+    }
+
+    reg = 0;
+    reg = (reg & ~0x2) | (enable << 1);
+    reg = (reg & ~0x1) | mat_src;
+    reg = (reg & ~0x40) | (amb_src << 6);
+    reg = (reg & ~0x4) | ((0 != (light_mask & 0x1)) << 2);
+    reg = (reg & ~0x8) | ((0 != (light_mask & 0x2)) << 3);
+    reg = (reg & ~0x10) | ((0 != (light_mask & 0x4)) << 4);
+    reg = (reg & ~0x20) | ((0 != (light_mask & 0x8)) << 5);
+    reg = (reg & ~0x800) | ((0 != (light_mask & 0x10)) << 11);
+    reg = (reg & ~0x1000) | ((0 != (light_mask & 0x20)) << 12);
+    reg = (reg & ~0x2000) | ((0 != (light_mask & 0x40)) << 13);
+    reg = (reg & ~0x4000) | ((0 != (light_mask & 0x80)) << 14);
+    reg = (reg & ~0x180) | ((attn_fn == 0 ? 0 : diff_fn) << 7);
+    reg = (reg & ~0x200) | ((attn_fn != 2) << 9);
+    reg = (reg & ~0x400) | ((attn_fn != 0) << 10);
+
+    GXWGPipe.u8 = 0x10;
+    GXWGPipe.u32 = idx + 0x100E;
+    GXWGPipe.u32 = reg;
+    gx->bpSentNot = 1;
+    if (chan == 4) {
+        GXWGPipe.u8 = 0x10;
+        GXWGPipe.u32 = 0x1010;
+        GXWGPipe.u32 = reg;
+    } else if (chan == 5) {
+        GXWGPipe.u8 = 0x10;
+        GXWGPipe.u32 = 0x1011;
+        GXWGPipe.u32 = reg;
+    }
+}
+#pragma pop
 void __GetImageTileCount(s32 fmt, u16 wd, u16 ht, u32 *rowTiles, u32 *colTiles, u32 *cmpTiles) {
     u32 texRowShift;
     u32 texColShift;
