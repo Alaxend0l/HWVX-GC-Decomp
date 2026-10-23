@@ -520,11 +520,11 @@ static inline s32 TRKReadBuffer1_ui8_inline(TRKBuffer *b, u8 *data) {
 }
 
 static inline s32 TRKReadBuffer1_ui32_inline(TRKBuffer *b, u32 *data) {
-    s32 err;
     u32 length;
     u32 bytesLeft;
     u8 *bigEndianData;
     u8 *byteData;
+    s32 err;
     u8 swapBuffer[sizeof(data)];
 
     if (gTRKBigEndian) {
@@ -15276,6 +15276,19 @@ s32 TRKTerminateNub(void) {
     TRKTerminateSerialHandler();
     return 0;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 TRKReadBuffer_ui32(TRKBuffer *b, u32 *data, s32 count) {
+    s32 err;
+    s32 i;
+
+    for (i = 0, err = 0; err == 0 && i < count; i++) {
+        err = TRKReadBuffer1_ui32_inline(b, &data[i]);
+    }
+    return err;
+}
+#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
