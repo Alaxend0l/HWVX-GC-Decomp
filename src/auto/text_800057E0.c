@@ -435,12 +435,6 @@ typedef struct Vector4 {
     f32 w;
 } Vector4 __attribute__((aligned(16)));
 
-static inline void Vector4_AddScaled(Vector4 *out, Vector4 *a, Vector4 *b, f32 s) {
-    out->x = s * b->x + a->x;
-    out->y = s * b->y + a->y;
-    out->z = s * b->z + a->z;
-}
-
 typedef struct Quaternion {
     f32 x;
     f32 y;
