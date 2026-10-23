@@ -8,6 +8,20 @@
 namespace std {
 void unexpected();
 void terminate();
+
+class exception {
+public:
+    exception() {}
+    virtual ~exception() {}
+    virtual const char *what() const;
+};
+
+class bad_exception : public exception {
+public:
+    bad_exception() {}
+    virtual ~bad_exception();
+    virtual const char *what() const;
+};
 }
 
 typedef struct CatchInfo {
