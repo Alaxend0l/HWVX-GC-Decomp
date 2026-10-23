@@ -14906,7 +14906,7 @@ s32 UpdateForce__8PeriodicFllUcUlUlUcUsUsUssUlUlUcUc(Force *force, s32 chan, s32
 #pragma push
 #pragma readonly_strings on
 #pragma dont_inline on
-void PlayFrontalCollisionForce_tmp(LGWheels *lg, s32 chan, u8 force) {
+void PlayFrontalCollisionForce__8LGWheelsFlUc(LGWheels *lg, s32 chan, u8 force) {
     s32 Start__5ForceFll();
 
     if (IsOpened__6WheelsFl((Wheels *)lg->wheels, chan)) {
