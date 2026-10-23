@@ -56,6 +56,7 @@ static inline int __is_exception_spec(ExSpec *spec, const char *type)
     return 0;
 }
 
+#pragma use_lmw_stmw on
 extern "C" void __unexpected(CatchInfo *catchinfo)
 {
     ExSpec *unexp = (ExSpec *)catchinfo->stacktop;
