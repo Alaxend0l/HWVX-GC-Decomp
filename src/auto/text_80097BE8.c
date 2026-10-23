@@ -925,9 +925,11 @@ typedef struct FontChar {
 } FontChar;
 
 typedef struct Font {
-    u8 unk0[0xC];
+    f32 height;
+    u8 unk4[0xC - 0x4];
     u16 texture;
-    u8 unkE[0x10 - 0xE];
+    u8 caseMode;
+    u8 unkF;
     s8 inUse;
     u8 unk11;
     u16 refCount;
