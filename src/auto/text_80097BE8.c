@@ -719,6 +719,13 @@ typedef struct GDL2DSprite {
     u8 unk2C[0x30 - 0x2C];
 } GDL2DSprite;
 
+typedef struct GDLEnvmapState {
+    f32 unk0;
+    f32 unk4;
+    u16 unk8;
+    u16 unkA;
+} GDLEnvmapState;
+
 typedef struct GDL {
     u8 unk0[0x4];
     u32 num2DSprites;
