@@ -7008,6 +7008,35 @@ void World_NextSweep(void) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+#pragma dont_inline on
+void World_InitTeleporters(void) {
+    struct {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        u32 model;
+        s32 unk44;
+        f32 unk48;
+    } params;
+    u32 i;
+    u8 *teleporter;
+
+    for (i = 0; i < M2C_FIELD(g_worldData.world, u32 *, 0x30); i++) {
+        teleporter = M2C_FIELD(g_worldData.world, u8 **, 0x34) + i * 0x70;
+        if (M2C_FIELD(teleporter, u32 *, 0x48) != 0) {
+            params.model = M2C_FIELD(teleporter, u32 *, 0x48);
+            params.unk48 = 0.0f;
+            params.pos = ((Matrix4 *)teleporter)->v[3];
+            params.vel.x = params.vel.y = params.vel.z = 0.0f;
+            SubMatrixToQuaternion(teleporter, &params.quat);
+            params.unk44 = 0;
+            M2C_FIELD(teleporter, void **, 0x60) = ThingManager_DARYL_CreateThing(2, &params);
+        }
+    }
+}
+#pragma pop
 s32 ActionVariableChangeMode(u32 *action) {
     u32 i;
     u8 *var;
