@@ -21970,8 +21970,8 @@ typedef struct EXIControl {
 volatile u32 __EXIRegs[15] : 0xCC006800;
 
 static inline BOOL CompleteTransfer(s32 chan) {
-    extern u8 Ecb_80309980[3][0x40];
-    EXIControl *exi = (EXIControl *)Ecb_80309980[chan];
+    extern EXIControl Ecb_80309980[3];
+    EXIControl *exi = &Ecb_80309980[chan];
     u8 *buf;
     u32 data;
     s32 i;
