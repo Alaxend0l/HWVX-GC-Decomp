@@ -1341,7 +1341,6 @@ void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
 }
 #pragma pop
 
-#pragma push
 static inline void SubBlock_set_free(SubBlock *ths) {
     u32 this_size = ths->size_ & 0xFFFFFFF8;
 
@@ -1350,14 +1349,12 @@ static inline void SubBlock_set_free(SubBlock *ths) {
     *(u32 *)((u8 *)ths + this_size - sizeof(u32)) = this_size;
 }
 
+#pragma push
+#pragma peephole off
 void Block_link(Block *ths, SubBlock *sb) {
     SubBlock **st;
-    u32 size;
 
-    size = sb->size_ & 0xFFFFFFF8;
-    sb->size_ &= ~0x02;
-    ((SubBlock *)((u8 *)sb + size))->size_ &= ~0x04;
-    *(u32 *)((u8 *)sb + size - sizeof(u32)) = size;
+    SubBlock_set_free(sb);
     st = (SubBlock **)((u8 *)ths + (ths->size_ & 0xFFFFFFF8) - sizeof(SubBlock *));
     if (*st != NULL) {
         sb->prev_ = (*st)->prev_;
