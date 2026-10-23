@@ -7833,6 +7833,64 @@ void Player_ReleaseInterface(void *player) {
     }
 }
 
+#pragma push
+#pragma dont_inline on
+void Player_SetThing(u8 *player, u8 *thing) {
+    extern void Player_DefaultControlReader(void);
+    void CarA_SetSlavePlayers(void *car);
+    void Thing_SetSlavePlayers(void *thing);
+    void AI_Car_Reset(u8 *car);
+    u32 InterfaceManager_Create();
+    void InterfaceManager_ReleaseInterface(u32 index);
+    struct {
+        u32 unk0;
+        u8 *script;
+        u32 x;
+        u32 y;
+        u8 unk10[0xC0];
+    } info;
+    u8 *vtable;
+    u8 *t;
+    s32 isHuman;
+
+    *(u8 **)(player + 0x2C) = thing;
+    if (thing != NULL) {
+        *(u8 **)(*(u8 **)(player + 0x2C) + 0x94) = player;
+        *(u32 *)(player + 0x38) = *(u32 *)(thing + 0xA8);
+        vtable = *(u8 **)(thing + 0x8C);
+        if (vtable == g_carAVTable) {
+            *(u32 *)(player + 0x3C) = *(u32 *)(thing + 0x3BC);
+            CarA_SetSlavePlayers(thing);
+            isHuman = 0;
+            if (player != NULL && *(void **)(player + 0x20) == Player_DefaultControlReader) {
+                isHuman = 1;
+            }
+            if (!isHuman) {
+                AI_Car_Reset(player);
+            }
+        } else if (vtable == g_creatureVTable) {
+            *(u32 *)(player + 0x3C) = *(u32 *)(thing + 0xB8);
+        }
+        Thing_SetSlavePlayers(thing);
+        if (*(u8 **)(player + 0x2C) != NULL && (*(u32 *)(player + 0x6C) & 0x10)) {
+            memset(&info, 0, sizeof(info));
+            *(u32 *)(player + 0x6C) |= 0x200;
+            t = *(u8 **)(player + 0x2C);
+            (*(void (**)(void *, void *))(*(u8 **)(t + 0x8C) + 0x20))(t, &info);
+            if (*(u32 *)(player + 0x68) < 0xFFFFFFFF) {
+                InterfaceManager_ReleaseInterface(*(u32 *)(player + 0x68));
+                *(u32 *)(player + 0x68) = 0xFFFFFFFF;
+            }
+            if (info.script != NULL) {
+                *(u32 *)(player + 0x68) = InterfaceManager_Create(info.script, player, 0);
+                InterfaceManager_SetOffset(*(u32 *)(player + 0x68), info.x, info.y);
+                *(u8 *)(player + 0x71) = 1;
+            }
+            *(u32 *)(player + 0x6C) &= ~0x200;
+        }
+    }
+}
+#pragma pop
 s32 Player_InputHeartbeat(void *arg0) {
     return M2C_FIELD(arg0, s8 (**)(), 0x20)() != 0;
 }
