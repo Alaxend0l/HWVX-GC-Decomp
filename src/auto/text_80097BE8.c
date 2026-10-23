@@ -9475,6 +9475,7 @@ BOOL THPPlayerOpen(char *fileName, BOOL onMemory) {
     ActivePlayer.open = TRUE;
     return TRUE;
 }
+#pragma pop
 
 BOOL THPPlayerClose(void) {
     s32 DVDClose(void *fileInfo);
