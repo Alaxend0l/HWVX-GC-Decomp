@@ -3379,7 +3379,7 @@ s32 TriggerInterfacePackEnd(u32 *pack) {
 
     i = 0;
     id = pack[0];
-    for (entry = g_InterfacePackData; i < g_NumInterfacesPlaying; entry++, i++) {
+    for (entry = &g_InterfacePackData[0]; i < g_NumInterfacesPlaying; entry++, i++) {
         if (id == entry->id && strcmp(entry->name, (char *)(pack + 1)) == 0) {
             return 0;
         }
@@ -3726,7 +3726,7 @@ s32 TriggerAirboxEntered(u32 *trigger) {
         thing = (u8 *)trigger[i + 1];
         if (M2C_FIELD(thing, u32 *, 4) == 1) {
             for (j = 0; j < trigger[numThings + 1]; j++) {
-                volume = M2C_FIELD(trigger[numThings + j + 2], u8 **, 0x28);
+                volume = M2C_FIELD(trigger[numThings + 2 + j], u8 **, 0x28);
                 if (volume != NULL && IsPointWithinVolume((Vector4 *)(volume + 0x40), thing, &dist)) {
                     return 1;
                 }
