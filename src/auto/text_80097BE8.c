@@ -1363,12 +1363,15 @@ void __sys_free(void *ptr) {
 #pragma pop
 
 s32 OSAllocFromHeap(s32 heap, s32 ptr);
+#pragma push
+#pragma auto_inline off
 void *__sys_alloc(u32 size) {
     if (__OSCurrHeap == -1) {
         InitDefaultHeap();
     }
     return (void *)OSAllocFromHeap(__OSCurrHeap, size);
 }
+#pragma pop
 
 #pragma push
 #pragma auto_inline off
