@@ -3881,6 +3881,29 @@ s32 VolumeManager_GetNumVolumesOfType(u32 type) {
     return count;
 }
 
+void *VolumeManager_GetVolumeTypeByIndex(u32 type, u32 index) {
+    void *world = g_worldData.world;
+    u32 i;
+
+    for (i = 0; i < M2C_FIELD(world, u32 *, 0x68); i++) {
+        if (type == M2C_FIELD(M2C_FIELD(world, u8 **, 0x6C) + i * 0x30, u32 *, 0xC)) {
+            if (index == 0) {
+                return M2C_FIELD(world, u8 **, 0x6C) + i * 0x30;
+            }
+            index--;
+        }
+    }
+    return NULL;
+}
+
+s32 VolumeManager_GetNumVolumesOfTypeByCell(s32 type, s32 cell) {
+    extern s32 g_VolumeHolder;
+    if (g_VolumeHolder != 0) {
+        return M2C_FIELD(M2C_FIELD(g_VolumeHolder, u8 **, 0x10) + cell * 0x38 + type * 8, s32 *, 0x0);
+    }
+    return 0;
+}
+
 s32 VolumeManager_GetVolumeTypeByIndexByCell(s32 type, s32 index, s32 cell) {
     extern s32 g_VolumeHolder;
     return M2C_FIELD(M2C_FIELD(M2C_FIELD(g_VolumeHolder, u8 **, 0x10) + cell * 0x38 + type * 8, s32 **, 0x4), s32 *, index * 4);
