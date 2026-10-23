@@ -1493,6 +1493,50 @@ u32 fwrite(const void *ptr, u32 memb_size, u32 num_memb, void *file) {
     return __fwrite(ptr, memb_size, num_memb, file);
 }
 
+#pragma push
+#pragma auto_inline off
+s32 fflush(FILE *file) {
+    s32 __flush_all(void);
+    s32 __flush_buffer(FILE *file, u32 *bytes_flushed);
+    s32 ftell(FILE *file);
+    s32 pos;
+
+    if (file == NULL) {
+        return __flush_all();
+    }
+    if (file->state.error || file->mode.file_kind == __closed_file) {
+        return -1;
+    }
+    if (file->mode.io_mode == 1) {
+        return 0;
+    }
+    if (file->state.io_state >= 3) {
+        file->state.io_state = 2;
+    }
+    if (file->state.io_state == 2) {
+        file->buffer_len = 0;
+    }
+    if (file->state.io_state != 1) {
+        file->state.io_state = 0;
+        return 0;
+    }
+    if (file->mode.file_kind != __disk_file) {
+        pos = 0;
+    } else {
+        pos = ftell(file);
+    }
+    if (__flush_buffer(file, NULL)) {
+        file->state.error = 1;
+        file->buffer_len = 0;
+        return -1;
+    }
+    file->state.io_state = 0;
+    file->position = pos;
+    file->buffer_len = 0;
+    return 0;
+}
+#pragma pop
+
 s32 fclose(FILE *file) {
     s32 flush_result, close_result;
 
