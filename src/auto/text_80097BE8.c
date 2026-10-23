@@ -762,6 +762,17 @@ typedef struct GDLSphere {
     u8 unk18[0x20 - 0x18];
 } GDLSphere;
 
+typedef struct GDLPointSprite {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 size;
+    u32 color;
+    u16 tex;
+    u8 blendMode;
+    u8 pad17;
+} GDLPointSprite;
+
 typedef struct GDLMatrix {
     f32 m[16];
 } GDLMatrix __attribute__((aligned(16)));
