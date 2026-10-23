@@ -11758,6 +11758,55 @@ void Pod_Release(s32 arg0) {
     Thing_Release(arg0);
 }
 
+void Pod_Draw(u8 *pod) {
+    typedef struct PodPart {
+        u8 flags;
+        u8 xform;
+        u8 pad2[2];
+        u16 mtxIndex;
+        u8 pad6[2];
+        void *geom;
+        Vector4 *offset;
+        u8 pad10[0xC];
+    } PodPart;
+    typedef struct PodPartList {
+        u32 count;
+        PodPart *parts;
+    } PodPartList;
+    void MotionState_Draw2(void *state, void *arg1, void *matStack);
+    PodPartList *list;
+    u32 i;
+    PodPart *part;
+    u32 bit;
+    void *geom;
+    Matrix4 mtx;
+
+    if (*(Matrix4 **)(pod + 0xC0) != NULL) {
+        MotionState_Draw(pod + 0xB0);
+    } else {
+        MotionState_Draw2(pod + 0xB0, pod + 0x10, *(Matrix4 **)(pod + 0xC0));
+    }
+    list = *(PodPartList **)(*(u8 **)(pod + 0xB0) + 0x38);
+    if (list != NULL) {
+        for (i = 0; i < list->count; i++) {
+            part = &list->parts[i];
+            geom = part->geom;
+            bit = *(u32 *)(pod + 0x114) & (1 << i);
+            if (bit && !(part->flags & 1)) {
+                continue;
+            }
+            if (!bit && (part->flags & 1)) {
+                continue;
+            }
+            mtx = (*(Matrix4 **)(pod + 0xC0))[part->mtxIndex];
+            if (list->parts[i].xform) {
+                XformVec(&mtx, list->parts[i].offset, &mtx.v[3]);
+            }
+            Gfx_DrawGeometry(geom, &mtx);
+        }
+    }
+}
+
 s32 Pod_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
