@@ -805,7 +805,7 @@ typedef struct GDL {
     u8 unkA0A80[0xA2B80 - 0xA0A80];
     GDL3DLine lines3D[2000];
     GDL2DFXLine fxLines2D[200];
-    u8 unkBC800[0xC0040 - 0xBC800];
+    GDLSphere spheres[(0xC0040 - 0xBC800) / 0x20];
     GDLLine lines[0x100];
     u8 unkC3040[0xC6EC0 - 0xC3040];
     GDLLightState lightStates[0x80];
