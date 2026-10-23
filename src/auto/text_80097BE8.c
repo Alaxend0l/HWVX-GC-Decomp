@@ -999,12 +999,15 @@ void *what__Q23std13bad_exceptionCFv(void) {
     return g_cameraManager;
 }
 
+#pragma push
+#pragma auto_inline off
 void __sys_free(void *ptr) {
     if (__OSCurrHeap == -1) {
         InitDefaultHeap();
     }
     OSFreeToHeap(__OSCurrHeap, (s32)ptr);
 }
+#pragma pop
 
 s32 OSAllocFromHeap(s32 heap, s32 ptr);
 void __sys_alloc(void *ptr) {
