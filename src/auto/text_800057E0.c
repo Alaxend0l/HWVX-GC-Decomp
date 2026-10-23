@@ -278,6 +278,16 @@ typedef struct NavHolder {
 
 extern NavHolder gs_NavHolder_803C6CD8;
 
+typedef struct NavLink {
+    f32 pos[3];
+    u8 pad0C[0x1C];
+    s32 index;
+    u8 pad2C[0x24];
+    u8 enabled;
+} NavLink;
+
+extern s32 gs_aLinksDepth3_8019C450[64];
+
 typedef struct ControllerSettings {
     u8 data[0x12];
 } ControllerSettings;
