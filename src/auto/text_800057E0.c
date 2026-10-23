@@ -2995,6 +2995,104 @@ void CameraManager_Init(void) {
     M2C_FIELD(g_springProxy, s32 *, 0x1C4) = 0;
 }
 
+void *CameraManager_GetNewCamera(void) {
+    typedef struct Camera {
+        void *player;
+        u8 pad4[0x60 - 0x4];
+        Vector4 pos;
+        u8 pad70[0x80 - 0x70];
+        Vector4 fwd;
+        Vector4 up;
+        Vector4 right;
+        u8 padB0[0xB4 - 0xB0];
+        u32 *mode;
+        f32 modeTime;
+        f32 unkBC;
+        Vector4 unkC0;
+        Vector4 unkD0;
+        Vector4 unkE0;
+        u8 padF0[0x100 - 0xF0];
+        s32 unk100;
+        u8 pad104[0x110 - 0x104];
+        Vector4 unk110;
+        Vector4 unk120;
+        Vector4 unk130;
+        Vector4 unk140;
+        Vector4 unk150;
+        Vector4 unk160;
+        u8 pad170[0x17C - 0x170];
+        s32 unk17C;
+        void *emitter;
+        u8 pad184[0x190 - 0x184];
+    } Camera;
+    typedef struct {
+        Vector4 a;
+        Vector4 b;
+        Vector4 c;
+        void *id;
+        s32 unk34;
+        f32 unk38;
+    } EmitterParams;
+    extern u8 g_cameraManager[];
+    extern u32 g_triggerAction_params_default;
+    extern Vector4 g_zeroVector;
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    Camera *cam;
+    void *id;
+    EmitterParams params;
+
+    if (g_cameraManager[0x640] < 4) {
+        cam = &((Camera *)g_cameraManager)[g_cameraManager[0x640]++];
+        SoundListener_SetTotalListeners(g_cameraManager[0x640]);
+        cam->pos.x = 0.0f;
+        cam->pos.y = 0.0f;
+        cam->pos.z = 0.0f;
+        cam->fwd.x = 0.0f;
+        cam->fwd.y = 0.0f;
+        cam->fwd.z = 1.0f;
+        cam->up.x = 0.0f;
+        cam->up.y = 1.0f;
+        cam->up.z = 0.0f;
+        cam->right.x = 1.0f;
+        cam->right.y = 0.0f;
+        cam->right.z = 0.0f;
+        cam->mode = &g_triggerAction_params_default;
+        cam->modeTime = 0.0f;
+        cam->unkBC = 0.0f;
+        cam->unkE0.x = 0.0f;
+        cam->unkE0.y = 0.0f;
+        cam->unkE0.z = 10.0f;
+        cam->unk110.x = 0.0f;
+        cam->unk110.y = 0.0f;
+        cam->unk110.z = 1.0f;
+        cam->unk120 = g_zeroVector;
+        cam->unkC0 = g_zeroVector;
+        cam->unkD0 = g_zeroVector;
+        cam->unk140 = g_zeroVector;
+        cam->unk160 = g_zeroVector;
+        cam->unk130.x = 0.0f;
+        cam->unk130.y = 1.0f;
+        cam->unk130.z = 0.0f;
+        cam->unk150 = cam->unk130;
+        if (g_worldData.world != NULL) {
+            id = M2C_FIELD(M2C_FIELD(g_worldData.world, u8 **, 0x9C), void **, 0xC4);
+            if (id != NULL) {
+                params.id = id;
+                params.unk38 = 0.0f;
+                params.b = g_zeroVector;
+                params.a = g_zeroVector;
+                params.unk34 = 0;
+                params.c = params.a;
+                cam->emitter = ThingManager_DARYL_CreateThing(2, &params);
+            }
+        }
+        cam->unk100 = -1;
+        cam->unk17C = -1;
+        return cam;
+    }
+    return NULL;
+}
+
 void CameraManager_ResetAllCameras(void) {
     extern u8 g_cameraManager[];
     u32 i;
@@ -8883,6 +8981,25 @@ void PlayerHuman_Heartbeat(void *player) {
     Player_Heartbeat(player);
 }
 
+void PlayerHuman_SetDefaultControls(void *arg0, s32 index) {
+    typedef struct { u8 unk0; u8 unk1; u8 keys[14]; } KeyBinding;
+    typedef struct { u8 pad0[0xB8]; u8 keys[14]; u8 unkC6; u8 unkC7; } PlayerHuman;
+    extern KeyBinding g_keyBinding[9];
+    void *memset(void *dst, int c, u32 n);
+    PlayerHuman *player = arg0;
+    u16 i;
+
+    memset(player->keys, 0, 0x10);
+    for (i = 0; i < 14; i++) {
+        player->keys[i] = 0xFF;
+    }
+    for (i = 0; i < 14; i++) {
+        player->keys[g_keyBinding[0].keys[i]] = g_keyBinding[index + 1].keys[i];
+    }
+    player->unkC6 = g_keyBinding[index + 1].unk0;
+    player->unkC7 = g_keyBinding[index + 1].unk1;
+}
+
 #pragma push
 #pragma opt_unroll_loops on
 void PlayerHuman_SetControlBinding(void *arg0, void *arg1) {
@@ -11111,6 +11228,85 @@ s32 TriggerP2PActivated(u32 *data) {
     }
     return 0;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 ActionVehicleTeleport(u32 *action) {
+    extern Vector4 g_zeroVector;
+    s8 Player_IsHuman(void *player);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    typedef struct {
+        Matrix4 mtx;
+        u8 pad40[0x44 - 0x40];
+        u32 fx;
+        u8 pad48[0x54 - 0x48];
+        u32 flags;
+    } TeleportData;
+    typedef struct {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        Vector4 angVel;
+        u32 id;
+        s32 unk44;
+        f32 unk48;
+        f32 unk4C;
+    } FxParams;
+    typedef struct {
+        Vector4 vel;
+        Matrix4 mtx;
+        Vector4 quat;
+        u8 pad60[0x74 - 0x60];
+        u32 flags;
+        u8 pad78[0x8C - 0x78];
+        void (**vtbl)(void *);
+        u8 pad90[0x94 - 0x90];
+        u8 *player;
+        u8 pad98[0x3B0 - 0x98];
+        s32 unk3B0;
+    } Car;
+    TeleportData *data;
+    u32 i;
+    Car *car;
+    Vector4 local;
+    FxParams params;
+
+    data = (TeleportData *)action[1];
+    for (i = 0; i < action[2]; i++) {
+        car = *(Car **)(action[i + 3] + 0x28);
+        if (data->fx != 0) {
+            params.id = data->fx;
+            params.pos = data->mtx.v[3];
+            SubMatrixToQuaternion(data, &params.quat);
+            params.vel.x = params.vel.y = params.vel.z = 0.0f;
+            params.unk44 = 0;
+            params.unk48 = 0.0f;
+            params.unk4C = 0.0f;
+            params.angVel = g_zeroVector;
+            ThingManager_DARYL_CreateThing(1, &params);
+        }
+        if (data->flags & 2) {
+            InverseXformVecOrientation(&car->mtx, &car->vel, &local);
+            XformVecOrientation(data, &local, &car->vel);
+        } else if (car->player != NULL && *(Car **)(car->player + 0x2C) != NULL &&
+                   *(Car **)(car->player + 0x2C) == car) {
+            car->player[0x32] = 5;
+        }
+        car->mtx = data->mtx;
+        SubMatrixToQuaternion(&car->mtx, &car->quat);
+        car->vtbl[3](car);
+        car->flags |= 0x800;
+        car->unk3B0 = -1;
+        if (!Player_IsHuman(car->player)) {
+            *(s32 *)(car->player + 0x4A4) = 0x20;
+            *(s32 *)(car->player + 0x634) = -0x78;
+        }
+    }
+    return 1;
+}
+#pragma pop
 
 void Thing_GetInterfaceInfo(void *thing, void *info) {
     M2C_FIELD(info, s32 *, 0x10) = M2C_FIELD(thing, s32 *, 0x78);
