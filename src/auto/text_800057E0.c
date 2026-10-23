@@ -11655,6 +11655,77 @@ void __OSReschedule(void) {
     }
 }
 
+s32 OSCreateThread(void *thread, void *(*func)(void *), void *param, void *stack, u32 stackSize, s32 priority, u16 attr) {
+    typedef struct CThread CThread;
+    typedef struct { CThread *head; CThread *tail; } CQueue;
+    struct CThread {
+        u8 context[0x2C8];
+        u16 state;
+        u16 attr;
+        s32 suspend;
+        s32 priority;
+        s32 base;
+        void *val;
+        CQueue *queue;
+        CThread *next;
+        CThread *prev;
+        CQueue queueJoin;
+        void *mutex;
+        CQueue queueMutex;
+        CThread *linkNext;
+        CThread *linkPrev;
+        u8 *stackBase;
+        u32 *stackEnd;
+    };
+    void OSInitContext(void *context, u32 pc, u32 sp);
+    void OSExitThread(void *val);
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32);
+    CThread *t = thread;
+    CQueue *active = (CQueue *)0x800000DC;
+    s32 enabled;
+    u32 sp;
+    CThread *prev;
+
+    if (priority < 0 || 31 < priority) {
+        return 0;
+    }
+    t->state = 1;
+    t->attr = (u16)(attr & 1);
+    t->base = priority;
+    t->priority = priority;
+    t->suspend = 1;
+    t->val = (void *)-1;
+    t->mutex = NULL;
+    t->queueJoin.tail = NULL;
+    t->queueJoin.head = NULL;
+    t->queueMutex.tail = NULL;
+    t->queueMutex.head = NULL;
+    sp = (u32)stack;
+    sp &= ~7;
+    sp -= 8;
+    ((u32 *)sp)[0] = 0;
+    ((u32 *)sp)[1] = 0;
+    OSInitContext(t, (u32)func, sp);
+    *(u32 *)(t->context + 0x84) = (u32)OSExitThread;
+    *(u32 *)(t->context + 0xC) = (u32)param;
+    t->stackBase = stack;
+    t->stackEnd = (u32 *)((u32)stack - stackSize);
+    *t->stackEnd = 0xDEADBABE;
+    enabled = OSDisableInterrupts();
+    prev = active->tail;
+    if (prev == NULL) {
+        active->head = t;
+    } else {
+        prev->linkNext = t;
+    }
+    t->linkPrev = prev;
+    t->linkNext = NULL;
+    active->tail = t;
+    OSRestoreInterrupts(enabled);
+    return 1;
+}
+
 #pragma push
 #pragma scheduling off
 void OSExitThread(void *val) {
@@ -16522,6 +16593,45 @@ void __GXSetGenMode(void) {
     GXWGFifo.u8 = 0x61;
     GXWGFifo.u32 = *(u32 *)(gx + 0x204);
     *(u16 *)(gx + 2) = 0;
+}
+
+void GXAdjustForOverscan(void *in, void *out, u16 hor, u16 ver) {
+    typedef struct {
+        s32 viTVmode;
+        u16 fbWidth;
+        u16 efbHeight;
+        u16 xfbHeight;
+        u16 viXOrigin;
+        u16 viYOrigin;
+        u16 viWidth;
+        u16 viHeight;
+        s32 xFBmode;
+        u8 field_rendering;
+        u8 aa;
+        u8 sample_pattern[12][2];
+        u8 vfilter[7];
+    } RenderModeObj;
+    RenderModeObj *rmin = in;
+    RenderModeObj *rmout = out;
+    u16 hor2 = (u16)(hor * 2);
+    u16 ver2 = (u16)(ver * 2);
+    u32 verf;
+
+    if (rmin != rmout) {
+        *rmout = *rmin;
+    }
+    rmout->fbWidth = (u16)(rmin->fbWidth - hor2);
+    verf = (u32)(ver2 * rmin->efbHeight) / rmin->xfbHeight;
+    rmout->efbHeight = (u16)(rmin->efbHeight - verf);
+    if (rmin->xFBmode == 0 && (rmin->viTVmode & 2) != 2) {
+        rmout->xfbHeight = (u16)(rmin->xfbHeight - ver);
+    } else {
+        rmout->xfbHeight = (u16)(rmin->xfbHeight - ver2);
+    }
+    rmout->viWidth = (u16)(rmin->viWidth - hor2);
+    rmout->viHeight = (u16)(rmin->viHeight - ver2);
+    rmout->viXOrigin = (u16)(rmin->viXOrigin + hor);
+    rmout->viYOrigin = (u16)(rmin->viYOrigin + ver);
 }
 
 void GXSetDispCopySrc(u16 left, u16 top, u16 wd, u16 ht) {
