@@ -30306,6 +30306,54 @@ void TRKTargetSetInputPendingPtr(void *ptr) {
     *(void **)(gTRKState + 0xA0) = ptr;
 }
 
+s32 TRKPPCAccessFPRegister(void *srcDestPtr, u32 fpr, s32 read) {
+    extern u8 TRKvalue128_temp[16];
+    void TRK_flush_cache(u32 start, u32 length);
+    typedef void (*RegAccessFunc)(void *src, void *dst);
+    s32 error = 0;
+    u32 instructionData1[10] = {
+        0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
+        0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
+    };
+
+    if (fpr < 0x20) {
+        if (read) {
+            instructionData1[0] = 0xD8030000 | (fpr << 21);
+        } else {
+            instructionData1[0] = 0xC8030000 | (fpr << 21);
+        }
+        instructionData1[9] = 0x4E800020;
+        TRK_flush_cache((u32)instructionData1, sizeof(instructionData1));
+        ((RegAccessFunc)instructionData1)(srcDestPtr, TRKvalue128_temp);
+    } else if (fpr == 0x20) {
+        *(u64 *)srcDestPtr &= 0xFFFFFFFF;
+    } else if (fpr == 0x21) {
+        u32 instructionData2[10] = {
+            0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
+            0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
+        };
+
+        if (!read) {
+            *(u32 *)srcDestPtr = *((u32 *)srcDestPtr + 1);
+        }
+        if (read) {
+            instructionData2[0] = 0x7C9EFAA6;
+            instructionData2[1] = 0x90830000;
+        } else {
+            instructionData2[0] = 0x80830000;
+            instructionData2[1] = 0x7C9EFBA6;
+        }
+        instructionData2[9] = 0x4E800020;
+        TRK_flush_cache((u32)instructionData2, sizeof(instructionData2));
+        ((RegAccessFunc)instructionData2)(srcDestPtr, TRKvalue128_temp);
+        error = 0;
+        if (read) {
+            *(u64 *)srcDestPtr = *(u32 *)srcDestPtr & 0xFFFFFFFF;
+        }
+    }
+    return error;
+}
+
 s32 TRKTargetStop(void) {
     extern u8 gTRKState[];
     *(s32 *)(gTRKState + 0x98) = 1;
@@ -30685,6 +30733,35 @@ s32 TRKTargetAccessExtended1(u32 firstRegister, u32 lastRegister, TRKBuffer *b, 
 u32 __TRK_get_MSR(void);
 void __TRK_set_MSR(u32 val);
 s32 TRKPPCAccessFPRegister(void *srcDestPtr, u32 fpr, s32 read);
+
+static inline s32 TRKPPCAccessSpecialReg(void *value, u32 *access_func, s32 read) {
+    extern u8 TRKvalue128_temp[16];
+    void TRK_flush_cache(u32 start, u32 length);
+    typedef void (*asm_access_type)(void *, void *);
+    asm_access_type asm_access;
+
+    access_func[9] = 0x4E800020;
+    TRK_flush_cache((u32)access_func, 10 * sizeof(u32));
+    asm_access = (asm_access_type)access_func;
+    asm_access(value, TRKvalue128_temp);
+    return 0;
+}
+
+static inline s32 TRKPPCAccessSPR(void *value, u32 spr, s32 read) {
+    u32 access_func[10] = {
+        0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
+        0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
+    };
+
+    if (read) {
+        access_func[0] = 0x7C8002A6 | ((spr & 0x1F) << 16) | ((spr >> 5) << 11);
+        access_func[1] = 0x90830000;
+    } else {
+        access_func[0] = 0x80830000;
+        access_func[1] = 0x7C8003A6 | ((spr & 0x1F) << 16) | ((spr >> 5) << 11);
+    }
+    return TRKPPCAccessSpecialReg(value, access_func, read);
+}
 
 #pragma push
 #pragma dont_inline on
