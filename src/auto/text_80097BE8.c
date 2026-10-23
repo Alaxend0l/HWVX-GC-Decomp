@@ -7,6 +7,7 @@ static inline double fabs(double x) { return __fabs(x); }
 
 void *GetRenderWindow();
 void Gfx_SetWorldMatrix(f32 *matrix);
+void Gfx_SetProjectionMatrix(f32 fov);
 void MultiplyMatrix4x4(void *arg0, void *arg1, void *arg2);
 void MatrixToMtxTranspose(void *arg0, void *arg1);
 s32 OSSendMessage(void *queue, void *msg, s32 flags);
