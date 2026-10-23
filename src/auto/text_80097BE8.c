@@ -4118,6 +4118,44 @@ u16 Gfx_LoadTexture(char *name) {
     tex->unk3A = 0;
     return i;
 }
+
+#pragma push
+#pragma readonly_strings on
+#pragma opt_propagation off
+u16 Gfx_LoadTexture_RAM(u8 **data) {
+    extern u8 *m_texture;
+    extern u32 m_totalTextures;
+    extern s32 m_currentView;
+    u8 *LoadBTF_RAM(u8 *data, u32 id);
+    char buf[32];
+    Texture *tex;
+    u16 i;
+
+    for (i = 1; i < m_totalTextures; i++) {
+        if (((Texture *)m_texture)[i].data == NULL) {
+            break;
+        }
+    }
+    if (i >= m_totalTextures) {
+        i = m_totalTextures - 1;
+    }
+    *data = LoadBTF_RAM(*data, i);
+    sprintf(buf, "/pack:%d", i);
+    memcpy(&((Texture *)m_texture)[i], buf, 0x20);
+    tex = &((Texture *)m_texture)[i];
+    tex->refCount++;
+    tex = &((Texture *)m_texture)[i];
+    tex->view = (s8)m_currentView;
+    tex = &((Texture *)m_texture)[i];
+    tex->unk2C = 0.25f;
+    tex = &((Texture *)m_texture)[i];
+    tex->unk3A = 1;
+    tex = &((Texture *)m_texture)[i];
+    tex->wrapMode = 0;
+    return i;
+}
+#pragma pop
+
 #pragma pop
 
 u8 *LoadBTF_RAM(u8 *data, u32 id) {
@@ -8308,6 +8346,48 @@ s32 stricmp(const char *s1, const char *s2) {
         s2++;
     }
     return *s2 ? -1 : 0;
+}
+
+s32 FileManager_GetDeviceLastError(u32 device) {
+    extern s32 m_cd_drive_status;
+    s32 chan;
+
+    if (device == 11 || device == 12) {
+        chan = device - 11;
+        if (chan < 0) {
+            return 0;
+        }
+        switch (m_memcardstatus_803C7970[chan]) {
+        case -6:
+            return -3;
+        case -128:
+        case -5:
+            return -4;
+        case -2:
+            return -6;
+        case -9:
+            return -1;
+        case -100:
+            return -2;
+        case -13:
+            return -5;
+        }
+    }
+    if (device == 1) {
+        switch (m_cd_drive_status) {
+        case -1:
+            return -11;
+        case 11:
+            return -10;
+        case 6:
+            return -9;
+        case 5:
+            return -7;
+        case 4:
+            return -8;
+        }
+    }
+    return 0;
 }
 
 s32 FileManager_GetDeviceFreeSpace(s32 device, u32 *freeBytes, u32 *totalBytes) {
