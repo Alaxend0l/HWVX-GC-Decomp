@@ -12893,6 +12893,40 @@ static inline s32 VolumeManager_GetCell(u8 *holder, Vector4 *point) {
 
 #pragma push
 #pragma use_lmw_stmw on
+u8 *IsPointWithinForceBox(Vector4 *point) {
+    typedef struct VolumeList {
+        u32 count;
+        s32 *volumes;
+    } VolumeList;
+    typedef struct VolumeCell {
+        VolumeList types[7];
+    } VolumeCell;
+    extern u8 *g_VolumeHolder;
+    u8 *holder;
+    s32 cell;
+    u32 count;
+    u8 *volume;
+    u32 i;
+
+    holder = g_VolumeHolder;
+    cell = VolumeManager_GetCell(holder, point);
+    if (holder != NULL) {
+        count = M2C_FIELD(holder, VolumeCell **, 0x10)[cell].types[1].count;
+    } else {
+        count = 0;
+    }
+    for (i = 0; i < count; i++) {
+        volume = (u8 *)VolumeManager_GetVolumeTypeByIndexByCell(1, i, cell);
+        if (VolumeManager_IsPointInVolume(point, volume)) {
+            return volume;
+        }
+    }
+    return NULL;
+}
+#pragma pop
+
+#pragma push
+#pragma use_lmw_stmw on
 void VolumeManager_SetReverbLevel(Vector4 *point) {
     typedef struct VolumeList {
         u32 count;
