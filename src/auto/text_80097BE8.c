@@ -8351,6 +8351,54 @@ void AudioIT_Destroy(void) {
 
 }
 
+#pragma push
+#pragma optimization_level 1
+#pragma dont_inline on
+void CreateIT(u8 *data, u32 arg1) {
+    extern u8 *g_pHdr_803C78E8;
+    extern u8 *g_pOrder_803C78E4;
+    extern u8 g_song_80375520[0x30];
+    extern u8 g_musicTitle[0x20];
+    extern void (*DestroySongVoice)(void *);
+    extern s32 __OSCurrHeap;
+    void *OSAllocFromHeap(s32 heap, u32 size);
+    void DestroyITVoice(void *voice);
+    u8 *hdr;
+    s32 i;
+    u32 size;
+    u32 *insOff;
+    u32 *smpOff;
+    u32 *patOff;
+
+    if (data == NULL || arg1 == 0) {
+        return;
+    }
+    size = *(u32 *)(data + 0x38);
+    g_pHdr_803C78E8 = OSAllocFromHeap(__OSCurrHeap, size);
+    memcpy(g_pHdr_803C78E8, data, size);
+    hdr = g_pHdr_803C78E8;
+    *(s32 *)(g_pHdr_803C78E8 + 0x3C) = 1;
+    g_pOrder_803C78E4 = hdr + 0xC0;
+    insOff = (u32 *)(hdr + *(u16 *)(g_pHdr_803C78E8 + 0x20) + 0xC0);
+    smpOff = insOff + *(u16 *)(g_pHdr_803C78E8 + 0x22);
+    patOff = smpOff + *(u16 *)(g_pHdr_803C78E8 + 0x24);
+    for (i = 0; i < *(u16 *)(g_pHdr_803C78E8 + 0x22); i++) {
+        ((u8 **)(g_song_80375520 + 0xE30))[i] = hdr + insOff[i];
+    }
+    for (i = 0; i < *(u16 *)(g_pHdr_803C78E8 + 0x24); i++) {
+        ((u8 **)(g_song_80375520 + 0xFC0))[i] = hdr + smpOff[i];
+    }
+    for (i = 0; i < *(u16 *)(g_pHdr_803C78E8 + 0x26); i++) {
+        ((u8 **)(g_song_80375520 + 0x1150))[i] = hdr + patOff[i];
+    }
+    *(u32 *)(((u8 **)(g_song_80375520 + 0xFC0))[0] + 0x48) = arg1;
+    CreateIT_(g_pHdr_803C78E8, (u8 **)(g_song_80375520 + 0xFC0));
+    memcpy(g_musicTitle, g_pHdr_803C78E8 + 4, 0x1A);
+    DestroySongVoice = DestroyITVoice;
+    g_musicTitle[0x1A] = 0;
+}
+#pragma pop
+
 void DestroyIT(void) {
     void SetITState(s32 state);
     void DestroyIT_(void *hdr);
