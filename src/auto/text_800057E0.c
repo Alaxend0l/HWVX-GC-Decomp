@@ -19358,6 +19358,8 @@ s32 CARDGetStatus(s32 chan, s32 fileNo, u8 *stat) {
     return __CARDPutControlBlock(card, result);
 }
 
+#pragma push
+#pragma scheduling 603
 s32 CARDSetStatusAsync(s32 chan, s32 fileNo, u8 *stat, CARDCallback callback) {
     void UpdateIconOffsets(u8 *ent, u8 *stat);
     s32 __CARDGetDirBlock(void *card);
@@ -19398,6 +19400,7 @@ s32 CARDSetStatusAsync(s32 chan, s32 fileNo, u8 *stat, CARDCallback callback) {
     }
     return result;
 }
+#pragma pop
 
 #pragma pop
 s32 __CARDUpdateDir(s32 chan, CARDCallback callback) {
