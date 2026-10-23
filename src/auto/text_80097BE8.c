@@ -5218,6 +5218,12 @@ void *VideoDecoder(void *param) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void VideoDecode(THPReadBuffer *readBuffer) {
+}
+#pragma pop
+
 void *PopFreeTextureSet(void) {
     extern u8 FreeTextureSetQueue_8036E300[0x20];
     void *msg;
@@ -5891,6 +5897,34 @@ void *PopDecodedAudioBuffer(s32 arg0) {
 void PushDecodedAudioBuffer(void *arg0) {
     extern u8 DecodedAudioBufferQueue_80371444[0x20];
     OSSendMessage(DecodedAudioBufferQueue_80371444, arg0, 1);
+}
+
+u8 __THPReadScaneHeader(void) {
+    s32 i;
+    s32 compId;
+
+    __THPInfo_803C7890->c += 2;
+    if (*(__THPInfo_803C7890->c)++ != 3) {
+        return 12;
+    }
+    for (i = 0; (u8)i < 3; i++) {
+        __THPInfo_803C7890->c++;
+        compId = *(__THPInfo_803C7890->c)++;
+        __THPInfo_803C7890->components[i].DCTableSelector = compId >> 4;
+        __THPInfo_803C7890->components[i].ACTableSelector = compId & 15;
+        if ((__THPInfo_803C7890->validHuffmanTabs & (1U << (compId >> 4))) == 0) {
+            return 15;
+        }
+        if ((__THPInfo_803C7890->validHuffmanTabs & (1U << ((compId & 15) + 1))) == 0) {
+            return 15;
+        }
+    }
+    __THPInfo_803C7890->c += 3;
+    __THPInfo_803C7890->MCUsPerRow = (u16)((__THPInfo_803C7890->xPixelSize + 15) / 16);
+    __THPInfo_803C7890->components[0].predDC = 0;
+    __THPInfo_803C7890->components[1].predDC = 0;
+    __THPInfo_803C7890->components[2].predDC = 0;
+    return 0;
 }
 
 #pragma push
