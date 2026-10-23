@@ -8846,6 +8846,30 @@ s32 OSSendMessage(void *mq, void *msg, s32 flags) {
     return 1;
 }
 
+s32 OSReceiveMessage(void *mq, void **msg, s32 flags) {
+    void OSSleepThread(void *queue);
+    void OSWakeupThread(void *queue);
+    s32 enabled;
+
+    enabled = OSDisableInterrupts();
+    while (M2C_FIELD(mq, s32 *, 0x1C) == 0) {
+        if (!(flags & 1)) {
+            OSRestoreInterrupts(enabled);
+            return 0;
+        } else {
+            OSSleepThread((u8 *)mq + 8);
+        }
+    }
+    if (msg != NULL) {
+        *msg = M2C_FIELD(mq, void ***, 0x10)[M2C_FIELD(mq, s32 *, 0x18)];
+    }
+    M2C_FIELD(mq, s32 *, 0x18) = (M2C_FIELD(mq, s32 *, 0x18) + 1) % M2C_FIELD(mq, s32 *, 0x14);
+    M2C_FIELD(mq, s32 *, 0x1C)--;
+    OSWakeupThread(mq);
+    OSRestoreInterrupts(enabled);
+    return 1;
+}
+
 void __OSUnlockAllMutex(void *thread) {
     void OSWakeupThread(void *queue);
     void *mutex;
@@ -9750,6 +9774,19 @@ static inline BOOL issueCommand(s32 prio, u8 *block) {
     }
     OSRestoreInterrupts(level);
     return result;
+}
+
+BOOL DVDReadAbsAsyncPrio(u8 *block, void *addr, s32 length, s32 offset, void *callback, s32 prio) {
+    BOOL idle;
+
+    *(u32 *)(block + 0x8) = 1;
+    *(void **)(block + 0x18) = addr;
+    *(s32 *)(block + 0x14) = length;
+    *(s32 *)(block + 0x10) = offset;
+    *(u32 *)(block + 0x20) = 0;
+    *(void **)(block + 0x28) = callback;
+    idle = issueCommand(prio, block);
+    return idle;
 }
 
 BOOL DVDReadAbsAsyncForBS(u8 *block, void *addr, s32 length, s32 offset, void *callback) {
