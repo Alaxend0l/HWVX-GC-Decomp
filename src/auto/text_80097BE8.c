@@ -753,6 +753,19 @@ typedef struct GDLEnvmapState {
     u16 unkA;
 } GDLEnvmapState;
 
+typedef struct GDLSphere {
+    f32 x;
+    f32 y;
+    f32 z;
+    u8 unkC[0x14 - 0xC];
+    f32 radius;
+    u8 unk18[0x20 - 0x18];
+} GDLSphere;
+
+typedef struct GDLMatrix {
+    f32 m[16];
+} GDLMatrix;
+
 typedef struct GDL {
     u8 unk0[0x4];
     u32 num2DSprites;
