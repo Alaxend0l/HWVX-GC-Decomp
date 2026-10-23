@@ -28,6 +28,10 @@ typedef struct GXColorS10 {
 typedef struct GXLightObjInt {
     u32 reserved[3];
     u32 Color;
+    f32 a[3];
+    f32 k[3];
+    f32 lpos[3];
+    f32 ldir[3];
 } GXLightObjInt;
 
 typedef struct ShaderHolderGX {
@@ -17976,6 +17980,47 @@ error:
     __CARDPutControlBlock(card, result);
     callback(chan, result);
 }
+
+s32 CARDReadAsync(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset, CARDCallback callback) {
+    s32 __CARDSeek(CARDFileInfo *fileInfo, s32 length, s32 offset, CARDControl **pcard);
+    s32 __CARDGetDirBlock(void *card);
+    s32 __CARDAccess(void *card, u8 *ent);
+    s32 __CARDIsPublic(u8 *ent);
+    s32 __CARDRead(s32 chan, u32 addr, s32 length, void *dst, void *callback);
+    void DCInvalidateRange(void *addr, u32 nBytes);
+    void ReadCallback(s32 chan, s32 result);
+    CARDControl *card;
+    s32 result;
+    u8 *dir;
+    u8 *ent;
+
+    if ((offset & 0x1FF) != 0 || (length & 0x1FF) != 0) {
+        return -128;
+    }
+    result = __CARDSeek(fileInfo, length, offset, &card);
+    if (result < 0) {
+        return result;
+    }
+    dir = (u8 *)__CARDGetDirBlock(card);
+    ent = dir + fileInfo->fileNo * 0x40;
+    result = __CARDAccess(card, ent);
+    if (result == -10) {
+        result = __CARDIsPublic(ent);
+    }
+    if (result < 0) {
+        return __CARDPutControlBlock(card, result);
+    }
+    DCInvalidateRange(buf, length);
+    card->apiCallback = callback ? callback : (CARDCallback)__CARDDefaultApiCallback;
+    offset = fileInfo->offset & (card->sectorSize - 1);
+    length = (length < card->sectorSize - offset) ? length : card->sectorSize - offset;
+    result = __CARDRead(fileInfo->chan, card->sectorSize * fileInfo->iBlock + offset, length, buf, ReadCallback);
+    if (result < 0) {
+        __CARDPutControlBlock(card, result);
+    }
+    return result;
+}
+
 #pragma pop
 void GXInitFifoLimits(void *arg0, s32 arg1, s32 arg2) {
     M2C_FIELD(arg0, s32 *, 0xC) = arg1;
