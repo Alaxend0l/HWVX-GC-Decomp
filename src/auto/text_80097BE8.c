@@ -1593,6 +1593,7 @@ int sprintf(char *s, const char *format, ...) {
     }
     return end;
 }
+#pragma pop
 
 int vprintf(const char *format, char *arg) {
     extern u8 __files[];
