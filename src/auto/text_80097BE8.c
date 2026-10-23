@@ -7400,6 +7400,7 @@ void File_Close(s32 handle) {
         }
     }
 }
+#pragma pop
 
 s32 File_Seek(s32 handle, s32 offset, s8 mode) {
     s8 idx = (u8)handle;
