@@ -7305,6 +7305,7 @@ void Input_Init(void) {
     state->rumbleTime[1] = 200;
     g_StopInput = 0;
 }
+#pragma pop
 
 void Input_Destroy(void) {
     M2C_UNK PADControlMotor(M2C_UNK, M2C_UNK);
