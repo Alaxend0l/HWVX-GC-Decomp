@@ -832,6 +832,8 @@ void __close_all(void) {
     }
 }
 
+#pragma push
+#pragma opt_common_subs off
 void __timesdec(decimal *result, const decimal *x, const decimal *y) {
     u32 accumulator = 0;
     u8 mantissa[SIGDIGLEN * 2];
@@ -894,24 +896,10 @@ void __timesdec(decimal *result, const decimal *x, const decimal *y) {
             }
         }
     round:
-        {
-            u8 *b = result->sig.text;
-            u8 *p = b + (result->sig.length - 1);
-            while (1) {
-                if (*p < 9) {
-                    ++*p;
-                    break;
-                }
-                if (p == b) {
-                    *p = 1;
-                    ++result->exp;
-                    break;
-                }
-                *p-- = 0;
-            }
-        }
+        __dorounddecup(result, result->sig.length);
     }
 }
+#pragma pop
 
 s32 __count_trailing_zerol(u32 x) {
     s32 result = 0;
