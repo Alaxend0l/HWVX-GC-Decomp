@@ -200,11 +200,20 @@ typedef struct _FILE {
     __file_modes mode;
     __file_state state;
     u8 is_dynamically_allocated;
-    u8 unkD[0x1C - 0xD];
+    u8 unkD[0x18 - 0xD];
+    u32 position;
     u8 *buffer;
-    u8 unk20[0x44 - 0x20];
+    u32 buffer_size;
+    u8 *buffer_ptr;
+    u32 buffer_len;
+    u32 buffer_alignment;
+    u32 saved_buffer_len;
+    u32 buffer_pos;
+    void *position_fn;
+    void *read_fn;
+    s32 (*write_fn)(u32 handle, u8 *buffer, u32 *count, void *ref_con);
     s32 (*close_fn)(u32 handle);
-    u8 unk48[0x4C - 0x48];
+    void *ref_con;
     struct _FILE *next_file_struct;
 } FILE;
 
