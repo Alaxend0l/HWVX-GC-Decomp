@@ -15540,7 +15540,7 @@ typedef struct Tracer {
     u32 unk4C4;
     u32 unk4C8;
     u16 unk4CC;
-    s16 active;
+    u16 active;
     u16 unk4D0;
     u16 unk4D2;
     u8 unk4D4[0xC];
