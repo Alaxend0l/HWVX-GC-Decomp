@@ -14727,6 +14727,39 @@ BOOL OSInitFont(void *fontData) {
     return TRUE;
 }
 
+char *OSGetFontTexture(char *string, void **image, s32 *x, s32 *y, s32 *width) {
+    extern s32 CharsInSheet_803C723C;
+    extern u8 *WidthTable_803C7238;
+    u16 code;
+    s32 sheet;
+    s32 numRows;
+
+    code = (u8)*string;
+    if (code == '\0') {
+        *image = 0;
+        return string;
+    }
+    string++;
+    if (OSGetFontEncode() == 1) {
+        if (IsSjisLeadByte(code) && *string) {
+            code = (code << 8) | (u8)*string++;
+        }
+    }
+    code = GetFontCode(code);
+
+    sheet = code / CharsInSheet_803C723C;
+    *image = SheetImage_803C7234 + *(s32 *)(FontData_803C7230 + 0x14) * sheet;
+
+    numRows = code - sheet * CharsInSheet_803C723C;
+    *x = (numRows % *(u16 *)(FontData_803C7230 + 0x1A)) * *(u16 *)(FontData_803C7230 + 0x10);
+    *y = (numRows / *(u16 *)(FontData_803C7230 + 0x1A)) * *(u16 *)(FontData_803C7230 + 0x12);
+
+    if (width) {
+        *width = WidthTable_803C7238[code];
+    }
+    return string;
+}
+
 __OSInterruptHandler __OSSetInterruptHandler(__OSInterrupt interrupt, __OSInterruptHandler handler) {
     __OSInterruptHandler *table;
     __OSInterruptHandler oldHandler;
@@ -22959,6 +22992,50 @@ s32 GXGetTexObjFmt(void *arg0) {
     return M2C_FIELD(arg0, s32 *, 0x14);
 }
 
+void GXLoadTexObjPreLoaded(u32 *obj, u32 *region, u32 id) {
+    extern u8 *gx;
+    extern u8 GXTexMode0Ids[8];
+    extern u8 GXTexMode1Ids[8];
+    extern u8 GXTexImage0Ids[8];
+    extern u8 GXTexImage1Ids[8];
+    extern u8 GXTexImage2Ids[8];
+    extern u8 GXTexImage3Ids[8];
+    extern u8 GXTexTlutIds[8];
+    u32 *tlr;
+
+    obj[0] = (obj[0] & 0xFFFFFF) | (GXTexMode0Ids[id] << 24);
+    obj[1] = (obj[1] & 0xFFFFFF) | (GXTexMode1Ids[id] << 24);
+    obj[2] = (obj[2] & 0xFFFFFF) | (GXTexImage0Ids[id] << 24);
+    region[0] = (region[0] & 0xFFFFFF) | (GXTexImage1Ids[id] << 24);
+    region[1] = (region[1] & 0xFFFFFF) | (GXTexImage2Ids[id] << 24);
+    obj[3] = (obj[3] & 0xFFFFFF) | (GXTexImage3Ids[id] << 24);
+
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = obj[0];
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = obj[1];
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = obj[2];
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = region[0];
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = region[1];
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = obj[3];
+
+    if (!(((u8 *)obj)[0x1F] & 2)) {
+        tlr = (*(u32 *(**)(u32))(gx + 0x414))(obj[6]);
+        tlr[1] = (tlr[1] & 0xFFFFFF) | (GXTexTlutIds[id] << 24);
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = tlr[1];
+    }
+
+    ((u32 *)(gx + 0x45C))[id] = obj[2];
+    ((u32 *)(gx + 0x47C))[id] = obj[0];
+    *(u32 *)(gx + 0x4F4) |= 1;
+    *(u16 *)(gx + 0x2) = 0;
+}
+
 void GXLoadTexObj(void *obj, u32 id) {
     typedef struct GXDataTex {
         u8 unk0[0x410];
@@ -25359,6 +25436,53 @@ s32 HandleCloseFileSupportRequest(u32 fileHandle, u8 *ioResult) {
     TRKReleaseBuffer(bufferId);
     return error;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 HandleOpenFileSupportRequest(const char *path, u8 replyError, u32 *param, u8 *ioResult) {
+    s32 TRKGetFreeBuffer(s32 *msgID, TRKBuffer **outMsg);
+    s32 TRKRequestSend(TRKBuffer *msgBuf, s32 *bufferId, u32 p1, u32 p2, s32 p3);
+    s32 TRKAppendBuffer_ui8(TRKBuffer *b, const u8 *data, s32 count);
+    u32 strlen(const char *s);
+    s32 error;
+    s32 replyBufferId;
+    TRKBuffer *replyBuffer;
+    s32 bufferId;
+    TRKBuffer *buffer;
+
+    *param = 0;
+    error = TRKGetFreeBuffer(&bufferId, &buffer);
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui8(buffer, 0xD2);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui8(buffer, replyError);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui16(buffer, strlen(path) + 1);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer_ui8(buffer, (const u8 *)path, strlen(path) + 1);
+    }
+    if (error == 0) {
+        *ioResult = 0;
+        error = TRKRequestSend(buffer, &replyBufferId, 7, 3, 0);
+        if (error == 0) {
+            replyBuffer = TRKGetBuffer(replyBufferId);
+            TRKSetBufferPosition(replyBuffer, 2);
+        }
+        if (error == 0) {
+            error = TRKReadBuffer1_ui8(replyBuffer, ioResult);
+        }
+        if (error == 0) {
+            error = TRKReadBuffer1_ui32(replyBuffer, param);
+        }
+        TRKReleaseBuffer(replyBufferId);
+    }
+    TRKReleaseBuffer(bufferId);
+    return error;
+}
+#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
