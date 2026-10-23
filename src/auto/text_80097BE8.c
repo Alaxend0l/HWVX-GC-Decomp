@@ -615,6 +615,12 @@ typedef struct Texture {
     s16 wrapMode;
 } Texture;
 
+extern u8 *m_texture;
+
+static inline Texture *Gfx_TexturePtr(u32 id) {
+    return &((Texture *)m_texture)[id];
+}
+
 typedef struct FontChar {
     f32 unk0;
     f32 unk4;
@@ -3239,6 +3245,35 @@ void Gfx_SetTextureWrapMode(u16 id, s16 mode) {
 
 void Gfx_LoadPalettes_RAM(void) {
 
+}
+
+void Gfx_UnLoadTexture(u16 id) {
+    extern u8 *m_texture;
+    extern u32 m_totalTextures;
+    void Render_DestroyTextureSlot(u32 id);
+    void Deallocate(void *p);
+    Texture *tex;
+
+    if (id < m_totalTextures && m_texture != NULL) {
+        tex = &((Texture *)m_texture)[id];
+        if (--tex->refCount == 0) {
+            Render_DestroyTextureSlot(id);
+            tex = &((Texture *)m_texture)[id];
+            if (tex->unk3A == 0) {
+                Deallocate(tex->data);
+            }
+            tex = &((Texture *)m_texture)[id];
+            memset(tex, 0, 0x20);
+            tex = &((Texture *)m_texture)[id];
+            tex->refCount = 0;
+            tex = &((Texture *)m_texture)[id];
+            tex->unk30 = 0;
+            tex = &((Texture *)m_texture)[id];
+            tex->width = 0;
+            tex = &((Texture *)m_texture)[id];
+            tex->data = 0;
+        }
+    }
 }
 
 void MovieManager_Destroy(void) {
