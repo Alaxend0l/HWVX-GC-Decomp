@@ -176,6 +176,20 @@ static inline void PlayerManager_PushFree(u8 *pm, u8 *player) {
     }
     M2C_FIELD(pm, u8 **, 0x20DC) = player;
 }
+
+static inline void *AI_GetInitFunc(u8 *desc) {
+    void AI_Car_Init();
+    void AI_Creature_Init();
+
+    switch (desc[0xD]) {
+    case 0:
+        return (void *)AI_Car_Init;
+    case 1:
+        return (void *)AI_Creature_Init;
+    default:
+        return NULL;
+    }
+}
 void GXSetTevIndirect(s32 tev_stage, s32 ind_stage, s32 format, s32 bias_sel, s32 matrix_sel, s32 wrap_s, s32 wrap_t, u8 add_prev, u8 utc_lod, s32 alpha_sel);
 
 s32 AIGetStreamPlayState(void);
@@ -9713,6 +9727,54 @@ void *PlayerManager_NewHumanPlayer(void) {
     M2C_FIELD(g_playerManager, u8 **, 0x20D8) = player;
     return player;
 }
+
+void *PlayerManager_NewAIPlayer(u8 *desc) {
+    extern u8 g_playerManager[0x20E0];
+    void AI_Car_Init(void *player);
+    void AI_Creature_Init(void *player);
+    void (*init)(void *);
+    u8 *player;
+
+    player = *(u8 **)(g_playerManager + 0x20DC);
+    switch (desc[0xD]) {
+    case 0:
+        init = AI_Car_Init;
+        break;
+    case 1:
+        init = AI_Creature_Init;
+        break;
+    default:
+        init = NULL;
+        break;
+    }
+    for (; player != NULL; player = *(u8 **)(player + 0xB0)) {
+        if (*(void (**)(void *))(player + 0x24) == init) {
+            if (*(u8 **)(player + 0xB4) == NULL) {
+                *(u8 **)(g_playerManager + 0x20DC) = *(u8 **)(player + 0xB0);
+            } else {
+                *(u8 **)(*(u8 **)(player + 0xB4) + 0xB0) = *(u8 **)(player + 0xB0);
+            }
+            if (*(u8 **)(player + 0xB0) != NULL) {
+                *(u8 **)(*(u8 **)(player + 0xB0) + 0xB4) = *(u8 **)(player + 0xB4);
+                *(u8 **)(player + 0xB0) = NULL;
+            }
+            *(u8 **)(player + 0xB4) = NULL;
+            break;
+        }
+    }
+    if (player == NULL) {
+        return NULL;
+    }
+    (*(void (**)(void *))(player + 0x24))(player);
+    *(u8 **)(player + 0xB0) = *(u8 **)(g_playerManager + 0x20D8);
+    *(u8 **)(player + 0xB4) = NULL;
+    if (*(u8 **)(player + 0xB0) != NULL) {
+        *(u8 **)(*(u8 **)(player + 0xB0) + 0xB4) = player;
+    }
+    *(u8 **)(g_playerManager + 0x20D8) = player;
+    return player;
+}
+
 #pragma pop
 
 #pragma push
