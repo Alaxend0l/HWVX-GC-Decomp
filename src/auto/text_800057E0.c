@@ -4226,6 +4226,22 @@ s32 Trigger_AddTrigger(s32 *trigger) {
     g_bTACSystemPaused_803C7124 = 0;
     return 1;
 }
+
+s32 Trigger_ReleaseTrigger(s32 *trigger) {
+    extern u32 TriggerStats_800D3C58[][3];
+    extern s32 **m_Triggers_802C1890[];
+    u32 i;
+
+    for (i = 0; i < TriggerStats_800D3C58[trigger[0]][0]; i++) {
+        if (m_Triggers_802C1890[trigger[0]][i] == trigger) {
+            TriggerStats_800D3C58[trigger[0]][0]--;
+            m_Triggers_802C1890[trigger[0]][i] = m_Triggers_802C1890[trigger[0]][TriggerStats_800D3C58[trigger[0]][0]];
+            return 1;
+        }
+    }
+    return 0;
+}
+
 #pragma pop
 
 s32 TriggerLevelStart(void) {
@@ -4265,6 +4281,30 @@ s32 TriggerCreatureKilled(void) {
 
 s32 TriggerCreatureDroppedOff(void) {
     return 0;
+}
+
+s32 ActionVertexColorSeqChangeMode(s32 *data) {
+    u32 i;
+
+    for (i = 0; i < data[1]; i++) {
+        u8 *seq = (u8 *)data[i + 2];
+        switch (data[0]) {
+        case 0:
+            *(u32 *)(seq + 8) = 0;
+            break;
+        case 1:
+            *(u32 *)(seq + 8) = 1;
+            break;
+        case 2:
+            if (*(u32 *)(seq + 8) == 0) {
+                *(u32 *)(seq + 8) = 1;
+            } else {
+                *(u32 *)(seq + 8) = 0;
+            }
+            break;
+        }
+    }
+    return 1;
 }
 
 void VertexColorSeqManager_Create(void) {
