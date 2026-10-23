@@ -9074,6 +9074,50 @@ u32 HAllocA_(s32 size) {
     g_memblk_80371670[g_last_803C78B4].size -= size;
     return g_heap_803C78C4;
 }
+
+u32 MAllocA_(s32 size) {
+    typedef struct MemBlk {
+        u32 addr;
+        s32 size;
+        u32 unk8;
+        u32 unkC;
+    } MemBlk;
+    extern MemBlk g_memblk_80371670[];
+    extern s32 g_last_803C78B4;
+    extern u32 g_free_803C78B8;
+    int printf();
+    u32 i;
+    u32 n;
+
+    i = 0;
+    size = (size + 0x1F) & ~0x1F;
+    while (i != 0xFFFFFFFF) {
+        if (g_memblk_80371670[i].size >= size) {
+            if (g_memblk_80371670[i].size > size) {
+                if (g_free_803C78B8 == 0xFFFFFFFF) {
+                    return 0;
+                }
+                n = g_free_803C78B8;
+                g_free_803C78B8 = g_memblk_80371670[n].unkC;
+                g_memblk_80371670[n].addr = g_memblk_80371670[i].addr;
+                g_memblk_80371670[n].size = g_memblk_80371670[i].size - size;
+                g_memblk_80371670[n].unk8 = i;
+                g_memblk_80371670[n].unkC = g_memblk_80371670[i].unkC;
+                if (g_memblk_80371670[n].unkC == 0xFFFFFFFF) {
+                    g_last_803C78B4 = n;
+                }
+                g_memblk_80371670[i].unkC = n;
+            }
+            g_memblk_80371670[i].addr += g_memblk_80371670[i].size - size;
+            g_memblk_80371670[i].size = -size;
+            return g_memblk_80371670[i].addr;
+        }
+        i = g_memblk_80371670[i].unkC;
+    }
+    printf("Audio :: MAllocA_ - Insufficient ARAM  size: %i\n", size);
+    return 0;
+}
+
 #pragma pop
 
 void MemCpyDone(void) {
