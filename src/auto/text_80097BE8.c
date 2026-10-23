@@ -550,13 +550,35 @@ typedef struct VDevice {
     s32 unk11F4;
 } VDevice;
 
+typedef struct SISteeringStatus {
+    u16 button;
+    u8 misc;
+    s8 steering;
+    u8 gas;
+    u8 brake;
+    u8 left;
+    u8 right;
+    s8 err;
+    u8 unk9;
+} SISteeringStatus;
+
 typedef struct LGDevice {
     u8 unk0[4];
     u8 opened : 1;
     u8 started : 1;
     u8 unk4_pad : 6;
     s32 unk8;
-    u8 unkC[0x41];
+    SISteeringStatus status;
+    u8 unk16[2];
+    SISteeringStatus calibMin;
+    SISteeringStatus calibMax;
+    SISteeringStatus calibDeadzone;
+    SISteeringStatus prev;
+    u8 unk40[4];
+    u16 curButton;
+    u8 curMisc;
+    s8 curSteering;
+    u8 unk48[5];
     s8 unk4D;
     u8 unk4E[2];
     VDevice vdev;
