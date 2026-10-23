@@ -586,7 +586,7 @@ extern void *wheels;
 u8 IsOpened__8LGWheelsFl(void *wheels, s32 chan);
 s8 IsConnected__8LGWheelsFl(void *wheels, s32 chan);
 void PlayCarAirborne__8LGWheelsFl(void *wheels, s32 chan);
-void PlayFrontalCollisionForce__8LGWheelsFlUc(void *wheels, s32 chan, u8 force);
+void PlayFrontalCollisionForce__8LGWheelsFlUc(struct LGWheels *wheels, s32 chan, u8 force);
 void PlayDamperForce__8LGWheelsFlUcs(void *wheels, s32 chan, u8 coefficient, s16 offset);
 void GenerateNonLinValues__8LGWheelsFlUc(void *wheels, s32 chan, u8 coefficient);
 typedef struct LGWheels {
