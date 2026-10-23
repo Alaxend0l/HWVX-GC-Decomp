@@ -5496,20 +5496,18 @@ void SoundSeq_Release(u8 *seq) {
     void Trigger_SoundSequenceQueueEmptied(void);
     void SoundSource_Stop(s32 index);
     void Thing_Release(void *thing);
-    u8 *next;
-    u8 *p;
+    s32 *sources;
     u32 i;
 
     if (M2C_FIELD(seq, u32 *, 0x74) & 0x40000000) {
         SoundSeq_RemoveFromQueue(seq);
     }
-    p = seq;
+    sources = (s32 *)(seq + 0xD0);
     for (i = 0; i < 4; i++) {
-        if (M2C_FIELD(p, s32 *, 0xD0) >= 0 && SoundSource_IsLooping(M2C_FIELD(p, s32 *, 0xD0))) {
-            SoundSource_Stop(M2C_FIELD(p, s32 *, 0xD0));
+        if (sources[i] >= 0 && SoundSource_IsLooping(sources[i])) {
+            SoundSource_Stop(sources[i]);
         }
-        M2C_FIELD(p, s32 *, 0xD0) = -1;
-        p += 4;
+        sources[i] = -1;
     }
     Thing_Release(seq);
 }
@@ -5527,13 +5525,8 @@ s32 SoundSeq_Invalidate(void *arg0, u32 arg1, u32 arg2) {
 #pragma use_lmw_stmw on
 void SoundSequence_ClearQueue(void) {
     u32 ThingManager_GetActiveSoundSequences(u8 **list, u32 max);
-    void SoundSource_Stop(s32 index);
-    void Thing_Release(void *thing);
     u8 *list[128];
     u32 count;
-    u8 *seq;
-    u8 *p;
-    u32 i;
 
     count = ThingManager_GetActiveSoundSequences(list, 128);
     while (count != 0) {
@@ -5541,19 +5534,7 @@ void SoundSequence_ClearQueue(void) {
         if (M2C_FIELD(list[count], u32 *, 0x74) & 0x40000000) {
             M2C_FIELD(list[count], u32 *, 0x74) &= ~0x40000000;
             M2C_FIELD(list[count], u8 **, 0xC8) = NULL;
-            seq = list[count];
-            if (M2C_FIELD(seq, u32 *, 0x74) & 0x40000000) {
-                SoundSeq_RemoveFromQueue(seq);
-            }
-            p = seq;
-            for (i = 0; i < 4; i++) {
-                if (M2C_FIELD(p, s32 *, 0xD0) >= 0 && SoundSource_IsLooping(M2C_FIELD(p, s32 *, 0xD0))) {
-                    SoundSource_Stop(M2C_FIELD(p, s32 *, 0xD0));
-                }
-                M2C_FIELD(p, s32 *, 0xD0) = -1;
-                p += 4;
-            }
-            Thing_Release(seq);
+            SoundSeq_Release(list[count]);
         }
     }
 }
