@@ -10199,6 +10199,58 @@ void OSCreateAlarm(s32 *arg0) {
     *arg0 = 0;
 }
 
+#pragma push
+#pragma scheduling off
+void OSCancelAlarm(void *arg0) {
+    typedef struct OSAlarm {
+        void *handler;
+        u32 tag;
+        s64 fire;
+        struct OSAlarm *prev;
+        struct OSAlarm *next;
+    } OSAlarm;
+    typedef struct OSAlarmQueue {
+        OSAlarm *head;
+        OSAlarm *tail;
+    } OSAlarmQueue;
+    void PPCMtdec(u32 newDec);
+    s64 __OSGetSystemTime(void);
+    extern OSAlarmQueue AlarmQueue_803C7210;
+    OSAlarm *alarm = arg0;
+    OSAlarm *next;
+    BOOL enabled;
+    s64 delta;
+
+    enabled = OSDisableInterrupts();
+    if (alarm->handler == NULL) {
+        OSRestoreInterrupts(enabled);
+        return;
+    }
+    next = alarm->next;
+    if (next == NULL) {
+        AlarmQueue_803C7210.tail = alarm->prev;
+    } else {
+        next->prev = alarm->prev;
+    }
+    if (alarm->prev) {
+        alarm->prev->next = next;
+    } else {
+        AlarmQueue_803C7210.head = next;
+        if (next) {
+            delta = next->fire - __OSGetSystemTime();
+            if (delta < 0) {
+                PPCMtdec(0);
+            } else if (delta < 0x80000000) {
+                PPCMtdec((u32)delta);
+            } else {
+                PPCMtdec(0x7fffffff);
+            }
+        }
+    }
+    alarm->handler = NULL;
+    OSRestoreInterrupts(enabled);
+}
+
 static inline Cell *DLExtract(Cell *list, Cell *cell) {
     if (cell->next) {
         cell->next->prev = cell->prev;
