@@ -464,8 +464,8 @@ void GameRules_SetPlayerOrder(u32 *order, u32 count);
 s32 TRKTargetCPUMinorType(void);
 
 typedef struct SoundSource {
-    u8 pos[0x10];
-    u8 vel[0x10];
+    Vector4 pos;
+    Vector4 vel;
     f32 unk20;
     f32 unk24;
     s32 unk28;
