@@ -4913,6 +4913,47 @@ void DropShip_PullCameraBack(s32 index) {
     }
 }
 
+void DropShip_PullCameraForward(s32 index) {
+    typedef struct InterfaceSlot {
+        u8 pad0[0x240];
+        u8 flag;
+        u8 pad241[0x245 - 0x241];
+        u8 type;
+        u8 pad246[0x25C - 0x246];
+        u8 *object;
+        u8 pad260[0x300 - 0x260];
+    } InterfaceSlot;
+    typedef struct ObjectEntry {
+        u8 type;
+        u8 pad1[3];
+        s32 value;
+        u8 pad8[4];
+    } ObjectEntry;
+    extern u8 g_interface[][0x170];
+    void InterfaceManager_SetObjectState(u8 *iface, u8 *obj, s32 state, s32 arg3);
+    u32 i;
+    u8 *iface;
+    u8 *info;
+    u32 j;
+
+    iface = g_interface[index];
+    for (i = 0; i < *(u32 *)iface; i++) {
+        if ((*(InterfaceSlot **)(iface + 0x88))[i].type == 4) {
+            InterfaceManager_SetObjectState(iface, (u8 *)&(*(InterfaceSlot **)(iface + 0x88))[i], 3, 0);
+            (*(InterfaceSlot **)(iface + 0x88))[i].flag = 0;
+            info = (*(InterfaceSlot **)(iface + 0x88))[i].object;
+            for (j = 0; j < *(u32 *)(info + 0x64); j++) {
+                if ((*(ObjectEntry **)((*(InterfaceSlot **)(iface + 0x88))[i].object + 0x68))[j].type == 3) {
+                    *(f32 *)(iface + 0x18) = (*(ObjectEntry **)(info + 0x68))[j].value;
+                    break;
+                }
+            }
+            *(u16 *)(*(u8 **)(*(u8 **)(iface + 0x1C) + 8) + 6) = 10;
+            *(u32 *)(iface + 4) = 2;
+        }
+    }
+}
+
 f32 DropShip_GetLRTime(s32 index) {
     typedef struct DropShipSlot {
         u8 pad0[0x245];
