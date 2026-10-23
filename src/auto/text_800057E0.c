@@ -2351,6 +2351,19 @@ s32 ActionInterfacePlay(s32 *arg0) {
     return 1;
 }
 
+void DropShip_EndInterface(s32 index) {
+    extern u8 g_interface[][0x170];
+    void InterfaceManager_SetLoadState(void *iface, s32 state);
+    void InterfaceManager_MoveInterface(void *iface, f32 time);
+    u8 *iface = g_interface[index];
+
+    *(u16 *)(*(u8 **)(*(u8 **)(iface + 0x1C) + 8) + 6) = 8;
+    if (*(u32 *)(iface + 4) != 1) {
+        InterfaceManager_SetLoadState(iface, 1);
+        InterfaceManager_MoveInterface(iface, 0.0f);
+    }
+}
+
 f32 DropShip_GetLRTime(s32 index) {
     extern u8 g_interface[][0x170];
     u8 *iface = g_interface[index];
