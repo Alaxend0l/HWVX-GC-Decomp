@@ -12487,6 +12487,82 @@ u8 *DestroyVoice(u8 *voice) {
     return next;
 }
 
+void FindMarkers(u8 *p) {
+    extern u8 g_mrk_80376FB4[0x40][8];
+    u32 ReadVar_(u8 **pp);
+    u32 n = 1;
+    u8 status = 8;
+    u8 chan = 0;
+
+    *(u8 **)g_mrk_80376FB4[0] = p;
+    g_mrk_80376FB4[0][4] = status;
+    g_mrk_80376FB4[0][5] = chan;
+    for (;;) {
+        if (*p < 0xF0) {
+            if ((s8)*p < 0) {
+                status = (*p & 0xF0) >> 4;
+                chan = *p & 0xF;
+                p++;
+            }
+            if (status == 0xB) {
+                p += 2;
+                if ((s32)p[-2] == 0x6E) {
+                    *(u8 **)g_mrk_80376FB4[n] = p;
+                    g_mrk_80376FB4[n][4] = status;
+                    g_mrk_80376FB4[n][5] = chan;
+                    if (++n >= 0x40) {
+                        return;
+                    }
+                }
+            } else {
+                p++;
+                if (status < 0xB || status == 0xE) {
+                    p++;
+                }
+            }
+        } else if ((*p & 0xF) == 0xF) {
+            p++;
+            switch ((s8)*p++) {
+            case 0x2F:
+                return;
+            case 0x51:
+                p += 4;
+                break;
+            case 0x54:
+            case 0x58:
+            case 0x59:
+                p += *p;
+                p++;
+                break;
+            default:
+                p += ReadVar_(&p);
+                break;
+            }
+        } else {
+            switch (*p++ & 0xF) {
+            case 0:
+            case 4:
+            case 5:
+                while ((s8)*p++ >= -8) {
+                }
+                if ((s8)p[-1] != 0xF7) {
+                    p--;
+                    continue;
+                }
+                break;
+            case 2:
+                p += 2;
+                break;
+            case 1:
+            case 3:
+                p++;
+                break;
+            }
+        }
+        ReadVar_(&p);
+    }
+}
+
 #pragma push
 #pragma optimization_level 1
 void JumpToMarker(void) {
