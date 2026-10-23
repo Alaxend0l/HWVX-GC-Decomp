@@ -291,6 +291,7 @@ s32 TRKInitializeMutex(void *mutex);
 s32 TRKAcquireMutex(void *mutex);
 s32 TRKReleaseMutex(void *mutex);
 void *TRK_memcpy(void *dst, const void *src, u32 n);
+void *TRK_memset(void *dst, s32 val, u32 n);
 
 void Dprintf(const char *fmt, ...);
 
