@@ -2881,6 +2881,46 @@ s32 CoronaHolder_Add(void *corona, Vector4 *pos) {
     return g_totalCoronas++;
 }
 
+void CoronaHolder_Heartbeat(void) {
+    typedef struct Corona {
+        u8 *corona;
+        u8 unk4[0x10 - 0x4];
+        Vector4 pos;
+        u8 color[0x4C - 0x20];
+        u8 unk4C;
+        u8 unk4D[0x50 - 0x4D];
+        s32 flare;
+        u32 unk54;
+        u8 unk58;
+        u8 unk59[0x60 - 0x59];
+    } Corona;
+    extern Corona g_aCorona[64];
+    extern u32 g_totalCoronas;
+    extern u32 g_iDeltaTimeMS;
+    void ExtractColorKey(void *keys, void *out, f32 time);
+    u32 i;
+    u32 delta;
+
+    delta = g_iDeltaTimeMS;
+    for (i = 0; i < g_totalCoronas; i++) {
+        if (g_aCorona[i].unk58 != 0) {
+            if (g_aCorona[i].unk54 < *(u16 *)(g_aCorona[i].corona + 2)) {
+                g_aCorona[i].unk4C = 1;
+                g_aCorona[i].unk54 += delta;
+                ExtractColorKey(g_aCorona[i].corona + 0x18, g_aCorona[i].color, g_aCorona[i].unk54);
+            }
+        } else if (g_aCorona[i].unk54 != 0) {
+            g_aCorona[i].unk4C = 1;
+            if (delta < g_aCorona[i].unk54) {
+                g_aCorona[i].unk54 -= delta;
+                ExtractColorKey(g_aCorona[i].corona + 0x18, g_aCorona[i].color, g_aCorona[i].unk54);
+            } else {
+                g_aCorona[i].unk54 = 0;
+            }
+        }
+    }
+}
+
 void Creature_GetTargetPos(void *creature, Vector4 *pos) {
     pos->x = M2C_FIELD(creature, f32 *, 0x40);
     pos->y = 4.0f + M2C_FIELD(creature, f32 *, 0x44);
