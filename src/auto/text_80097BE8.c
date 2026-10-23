@@ -4708,7 +4708,7 @@ void AudioDecodeThreadStart(void) {
 
 void AudioDecodeThreadCancel(void) {
     extern s32 AudioDecodeThreadCreated_803C7770;
-    extern u8 AudioDecodeThread_80370108[];
+    extern u8 AudioDecodeThread_80370108[0x310];
     if (AudioDecodeThreadCreated_803C7770) {
         OSCancelThread(AudioDecodeThread_80370108);
         AudioDecodeThreadCreated_803C7770 = 0;
