@@ -13032,6 +13032,66 @@ s32 PlayerManager_RemovePlayer(void *player) {
     return 1;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s32 AI_Creature_Deactivate(u8 *creature) {
+    extern u8 g_cameraManager[];
+    void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
+    void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareDistance(void *a, void *b);
+    void Creature_Release(s32 arg0);
+    u8 *thing;
+    u8 *spawner;
+    u8 *cam;
+    u32 i;
+    u8 *pos;
+    f32 dist;
+    f32 minDist;
+    Vector4 p;
+
+    thing = *(u8 **)(creature + 0x2C);
+    if (thing != NULL && !(*(u32 *)(thing + 0x74) & 0x1000)) {
+        minDist = 360000.0f;
+        pos = thing + 0x40;
+        cam = g_cameraManager;
+        for (i = 0; i < g_cameraManager[0x640]; cam += 0x190, i++) {
+            PSVECScale((Vector4 *)(cam + 0x80), &p, 150.0f);
+            PSVECAdd((Vector4 *)(cam + 0x60), &p, &p);
+            dist = PSVECSquareDistance(&p, pos);
+            if (minDist > dist) {
+                minDist = dist;
+            }
+        }
+        if (360000.0f == minDist) {
+            *(u8 *)(creature + 0xCD) = 0;
+            spawner = *(u8 **)(creature + 0xD8);
+            if (spawner != NULL) {
+                (*(s32 *)(spawner + 0x4))--;
+                ((s32 *)(*(u8 **)(creature + 0xD8) + 0xC))[*(s32 *)(creature + 0xDC)]--;
+            } else {
+                thing = *(u8 **)(creature + 0x2C);
+                spawner = *(u8 **)(thing + 0x90);
+                if (spawner != NULL && *(s32 *)(thing + 0x1B4) == 0 && *(u32 *)(creature + 0xF8) == 0) {
+                    *(s32 *)(spawner + 0x20) = 1;
+                    *(s32 *)(*(u8 **)(*(u8 **)(creature + 0x2C) + 0x90) + 0x1C) = 0;
+                }
+            }
+            Creature_Release(*(s32 *)(creature + 0x2C));
+            return 1;
+        }
+    } else {
+        *(u8 *)(creature + 0xCD) = 0;
+        spawner = *(u8 **)(creature + 0xD8);
+        if (spawner != NULL) {
+            (*(s32 *)(spawner + 0x4))--;
+            ((s32 *)(*(u8 **)(creature + 0xD8) + 0xC))[*(s32 *)(creature + 0xDC)]--;
+        }
+        return 1;
+    }
+    return 0;
+}
+#pragma pop
+
 void AI_Creature_Heartbeat(void) {
 
 }
