@@ -380,8 +380,8 @@ void *DecodedAudioBufferMessage[3];
 THPPlayer ActivePlayer;
 u8 UsedTextureSetQueue_8036EC78[0x20];
 void *UsedTextureSetMessage_8036EC98[3];
-s32 WorkBuffer_8036ECC0[16] __attribute__((aligned(32)));
 u8 PrepareReadyQueue_8036ED00[0x20] __attribute__((aligned(32)));
+s32 WorkBuffer_8036ECC0[16] __attribute__((aligned(32)));
 
 extern s32 __float_nan[];
 extern s32 __float_huge[];
@@ -9442,7 +9442,7 @@ void PrepareReady(void *arg0) {
 #pragma push
 #pragma use_lmw_stmw on
 BOOL THPPlayerPrepare(s32 frameNum, u8 playFlag) {
-    extern u8 PrepareReadyMessage_803C7760[];
+    extern void *PrepareReadyMessage_803C7760;
     void PlayControl(u32 retraceCount);
     s32 DVDReadPrio(void *fileInfo, void *addr, s32 length, s32 offset, s32 prio);
     void CreateVideoDecodeThread(s32 priority, u8 *ptr);
@@ -9512,7 +9512,7 @@ BOOL THPPlayerPrepare(s32 frameNum, u8 playFlag) {
                 PushFreeAudioBuffer(&ActivePlayer.audioBuffer[i]);
             }
         }
-        OSInitMessageQueue(PrepareReadyQueue_8036ED00, PrepareReadyMessage_803C7760, 1);
+        OSInitMessageQueue(PrepareReadyQueue_8036ED00, &PrepareReadyMessage_803C7760, 1);
         VideoDecodeThreadStart();
         if (ActivePlayer.audioExist) {
             AudioDecodeThreadStart();
