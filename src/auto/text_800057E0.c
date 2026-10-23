@@ -4897,6 +4897,30 @@ s32 TriggerMovableVolumeEntered(u32 *trigger) {
 }
 #pragma pop
 
+#pragma push
+#pragma use_lmw_stmw on
+s32 TriggerAirboxExited(u32 *trigger) {
+    f32 dist;
+    u8 *thing;
+    u32 i;
+    u32 numThings;
+    u32 j;
+    u8 *volume;
+
+    numThings = trigger[0];
+    for (i = 0; i < numThings; i++) {
+        thing = (u8 *)trigger[i + 1];
+        for (j = 0; j < trigger[numThings + 1]; j++) {
+            volume = M2C_FIELD(trigger[numThings + 2 + j], u8 **, 0x28);
+            if (M2C_FIELD(thing, u32 *, 4) == 1 && IsPointWithinVolume((Vector4 *)(volume + 0x40), thing, &dist)) {
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+#pragma pop
+
 s32 ActionAirboxChangeMode(s32 *data) {
     u32 count = data[1];
     s32 mode = data[0];
@@ -10713,12 +10737,36 @@ void GXSetTevColor(s32 id, GXColor color) {
     regRA = (regRA & ~0x7FF) | color.r;
     regRA = (regRA & ~0x7FF000) | (color.a << 12);
     regRA = (regRA & ~0xFF000000) | ((0xE0 + id * 2) << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = regRA;
     regBG = 0;
     regBG = (regBG & ~0x7FF) | color.b;
     regBG = (regBG & ~0x7FF000) | (color.g << 12);
     regBG = (regBG & ~0xFF000000) | ((0xE1 + id * 2) << 24);
     GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = regBG;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = regBG;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = regBG;
+    *(u16 *)(gx + 2) = 0;
+}
+
+void GXSetTevColorS10(s32 id, GXColorS10 color) {
+    extern u8 *gx;
+    u32 regRA;
+    u32 regBG;
+
+    regRA = 0;
+    regRA = (regRA & ~0x7FF) | (color.r & 0x7FF);
+    regRA = (regRA & ~0x7FF000) | ((color.a & 0x7FF) << 12);
+    regRA = (regRA & ~0xFF000000) | ((0xE0 + id * 2) << 24);
+    GXWGFifo.u8 = 0x61;
     GXWGFifo.u32 = regRA;
+    regBG = 0;
+    regBG = (regBG & ~0x7FF) | (color.b & 0x7FF);
+    regBG = (regBG & ~0x7FF000) | ((color.g & 0x7FF) << 12);
+    regBG = (regBG & ~0xFF000000) | ((0xE1 + id * 2) << 24);
     GXWGFifo.u8 = 0x61;
     GXWGFifo.u32 = regBG;
     GXWGFifo.u8 = 0x61;
@@ -10738,13 +10786,13 @@ void GXSetTevKColor(s32 id, GXColor color) {
     regRA = (regRA & ~0xFF000) | (color.a << 12);
     regRA = (regRA & ~0xF00000) | (8 << 20);
     regRA = (regRA & ~0xFF000000) | ((0xE0 + id * 2) << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = regRA;
     regBG = 0;
     regBG = (regBG & ~0xFF) | color.b;
     regBG = (regBG & ~0xFF000) | (color.g << 12);
     regBG = (regBG & ~0xF00000) | (8 << 20);
     regBG = (regBG & ~0xFF000000) | ((0xE1 + id * 2) << 24);
-    GXWGFifo.u8 = 0x61;
-    GXWGFifo.u32 = regRA;
     GXWGFifo.u8 = 0x61;
     GXWGFifo.u32 = regBG;
     *(u16 *)(gx + 2) = 0;
