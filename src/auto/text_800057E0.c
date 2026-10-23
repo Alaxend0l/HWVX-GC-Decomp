@@ -11249,6 +11249,88 @@ void SoundSeq_Release(u8 *seq) {
     }
     Thing_Release(seq);
 }
+
+s32 SoundSeq_Move(u8 *seq) {
+    extern s32 g_iDeltaTimeMS;
+    extern f32 g_fDeltaTimeMS;
+    s32 ExtractSoundKey(void *keys, void *state, void *pos, f32 time);
+    s8 SoundSource_IsActive(s32 index);
+    void SoundSource_Set(s32 index, s32 type, void *value);
+    void SoundSource_Stop(s32 index);
+    void Thing_Release(void *thing);
+    s32 key;
+    s8 found;
+    u32 i;
+    s8 playing;
+
+    playing = 0;
+    if (*(u32 *)(seq + 0x74) & 0x80000000) {
+        return 1;
+    }
+    if (!(*(u32 *)(seq + 0x74) & 0x10000000)) {
+        if (*(s32 *)(seq + 0xC4) < 0) {
+            SoundSeq_Release(seq);
+            return 0;
+        }
+        *(s32 *)(seq + 0xC4) -= g_iDeltaTimeMS;
+    }
+    key = ExtractSoundKey(*(u8 **)(seq + 0xB0) + 8, seq + 0xB4, seq + 0x40, g_fDeltaTimeMS * *(f32 *)(seq + 0xCC));
+    if (key >= 0) {
+        found = 0;
+        for (i = 0; i < 4; i++) {
+            if (((s32 *)seq)[0x34 + i] == -1) {
+                found = 1;
+                ((s32 *)seq)[0x34 + i] = key;
+                if (SoundSource_IsLooping(key)) {
+                    *(u32 *)(seq + 0x74) |= 0x4000;
+                }
+                break;
+            }
+        }
+        if (!found) {
+            SoundSource_Stop(key);
+        }
+    } else if (key == -2) {
+        if (!(*(u32 *)(seq + 0x74) & 0x40000000)) {
+            *(u32 *)(seq + 0x74) |= 0x20;
+        }
+    }
+    if (*(u32 *)(seq + 0x74) & 0x10) {
+        for (i = 0; i < 4; i++) {
+            if (((s32 *)seq)[0x34 + i] != -1) {
+                if (SoundSource_IsLooping(((s32 *)seq)[0x34 + i]) || SoundSource_IsActive(((s32 *)seq)[0x34 + i])) {
+                    SoundSource_Set(((s32 *)seq)[0x34 + i], 5, seq + 0x40);
+                    playing = 1;
+                } else {
+                    SoundSource_Stop(((s32 *)seq)[0x34 + i]);
+                    ((s32 *)seq)[0x34 + i] = -1;
+                }
+            }
+        }
+    }
+    if (!playing) {
+        if ((*(u32 *)(seq + 0x74) & 0x20) && !(*(u32 *)(seq + 0x74) & 0x40000000)) {
+            Thing_Release(seq);
+        }
+    }
+    return 1;
+}
+
+static inline void SoundSeq_StopSounds(u8 *seq) {
+    void SoundSource_Stop(s32 index);
+    u32 i;
+
+    if (M2C_FIELD(seq, u32 *, 0x74) & 0x40000000) {
+        SoundSeq_RemoveFromQueue(seq);
+    }
+    for (i = 0; i < 4; i++) {
+        if (((s32 *)seq)[0x34 + i] >= 0 && SoundSource_IsLooping(((s32 *)seq)[0x34 + i])) {
+            SoundSource_Stop(((s32 *)seq)[0x34 + i]);
+        }
+        ((s32 *)seq)[0x34 + i] = -1;
+    }
+}
+
 s32 SoundSeq_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
