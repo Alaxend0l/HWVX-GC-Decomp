@@ -662,6 +662,20 @@ typedef struct CARDFileInfo {
 } CARDFileInfo;
 s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, void *callback);
 s32 __CARDPutControlBlock(void *card, s32 result);
+
+static inline s32 __CARDPutControlBlock_inline(CARDControl *card, s32 result) {
+    int enabled;
+
+    enabled = OSDisableInterrupts();
+    if (card->attached) {
+        card->result = result;
+    } else if (card->result == -1) {
+        card->result = result;
+    }
+    OSRestoreInterrupts(enabled);
+    return result;
+}
+
 void __CARDSyncCallback(s32 chan, s32 result);
 s32 __CARDSync(s32 chan);
 s32 __CARDAccess(void *card, u8 *ent);
