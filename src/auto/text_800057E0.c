@@ -17666,6 +17666,49 @@ s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard) {
     return result;
 }
 
+s32 CARDFreeBlocks(s32 chan, s32 *byteNotUsed, s32 *filesNotUsed) {
+    typedef struct CARDDir {
+        u8 gameName[4];
+        u8 company[2];
+        u8 _padding0;
+        u8 bannerFormat;
+        u8 fileName[32];
+        u8 rest[0x40 - 0x28];
+    } CARDDir;
+    s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard);
+    s32 __CARDGetFatBlock(void *card);
+    s32 __CARDGetDirBlock(void *card);
+    CARDControl *card;
+    s32 result;
+    u16 *fat;
+    CARDDir *dir;
+    CARDDir *ent;
+    u16 fileNo;
+
+    result = __CARDGetControlBlock(chan, &card);
+    if (result < 0) {
+        return result;
+    }
+    fat = (u16 *)__CARDGetFatBlock(card);
+    dir = (CARDDir *)__CARDGetDirBlock(card);
+    if (fat == NULL || dir == NULL) {
+        return __CARDPutControlBlock_inline(card, -6);
+    }
+    if (byteNotUsed) {
+        *byteNotUsed = (s32)(card->sectorSize * fat[3]);
+    }
+    if (filesNotUsed) {
+        *filesNotUsed = 0;
+        for (fileNo = 0; fileNo < 127; fileNo++) {
+            ent = &dir[fileNo];
+            if (ent->fileName[0] == 0xFF) {
+                ++*filesNotUsed;
+            }
+        }
+    }
+    return __CARDPutControlBlock_inline(card, 0);
+}
+
 s32 __CARDSync(s32 chan) {
     s32 OSDisableInterrupts(void);
     s32 OSRestoreInterrupts(s32);
@@ -18368,6 +18411,31 @@ s32 __CARDIsPublic(void *arg0) {
         return 0;
     }
     return -0xA;
+}
+
+s32 __CARDGetFileNo(CARDControl *card, const char *fileName, s32 *pfileNo) {
+    s32 __CARDGetDirBlock(void *card);
+    u8 *dir;
+    u8 *ent;
+    s32 fileNo;
+    s32 result;
+
+    if (!card->attached) {
+        return -3;
+    }
+    dir = (u8 *)__CARDGetDirBlock(card);
+    for (fileNo = 0; fileNo < 127; fileNo++) {
+        ent = dir + fileNo * 0x40;
+        result = __CARDAccess(card, ent);
+        if (result < 0) {
+            continue;
+        }
+        if (__CARDCompareFileName(ent, fileName)) {
+            *pfileNo = fileNo;
+            return 0;
+        }
+    }
+    return -4;
 }
 
 s32 CARDClose(CARDFileInfo *fileInfo) {
@@ -21625,6 +21693,35 @@ void TRKDoStop(TRKBuffer *b) {
         err = TRKMessageSend(b);
         ackTries--;
     } while (err != 0 && ackTries > 0);
+}
+
+s32 TRKDoContinue(TRKBuffer *b) {
+    s32 err;
+    s32 ackTries;
+
+    if (!TRKTargetStopped()) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 0x16);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return err;
+    }
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, 0);
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+    if (err == 0) {
+        err = TRKTargetContinue();
+    }
+    return err;
 }
 
 s32 TRKDoReset(TRKBuffer *b) {
