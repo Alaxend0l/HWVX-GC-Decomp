@@ -2458,6 +2458,28 @@ void Drone_GetCameraOrientationInfo(void *drone, void *camera, void *info) {
     M2C_FIELD(info, f32 *, 0x38) = 0.0f;
 }
 
+void Drone_DynamicRotation(u8 *drone) {
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void PhysicalObject_DynamicRotation(u8 *obj);
+    Vector4 quat;
+    Matrix4 mtx;
+
+    if (*(u8 *)(drone + 0x1DC) == 2) {
+        if (!(*(u32 *)(drone + 0x74) & 0x10)) {
+            *(u32 *)(drone + 0x74) |= 0x10;
+            quat = *(Vector4 *)(drone + 0xE0);
+            QuaternionToSubMatrix(&quat, &mtx);
+            mtx.m[3][0] = ((Thing *)drone)->mtx.m[3][0];
+            mtx.m[3][1] = ((Thing *)drone)->mtx.m[3][1];
+            mtx.m[3][2] = ((Thing *)drone)->mtx.m[3][2];
+            ((Thing *)drone)->quat = quat;
+            ((Thing *)drone)->mtx = mtx;
+        }
+    } else {
+        PhysicalObject_DynamicRotation(drone);
+    }
+}
+
 f32 CarA_GetImpactMultiplier(void *car, void *other, f32 scale) {
     f32 PSVECDotProduct(void *a, void *b);
     f32 impact;
