@@ -669,8 +669,24 @@ typedef struct GDLLightState {
     u8 unk58[0x60 - 0x58];
 } GDLLightState;
 
+typedef struct GDL2DSprite {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 unkC;
+    u8 unk10[0x1C - 0x10];
+    f32 unk1C;
+    u8 unk20[0x24 - 0x20];
+    GXColor color;
+    u16 tex;
+    u8 flag;
+    u8 window;
+    u8 unk2C[0x30 - 0x2C];
+} GDL2DSprite;
+
 typedef struct GDL {
-    u8 unk0[0x8];
+    u8 unk0[0x4];
+    u32 num2DSprites;
     u32 numSprites;
     u8 unkC[0x14 - 0xC];
     s32 numTris;
