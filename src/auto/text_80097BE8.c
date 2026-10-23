@@ -975,7 +975,7 @@ typedef struct GfxState {
     f32 unk80;
     u8 unk84[0x88 - 0x84];
     s32 unk88;
-    s16 debugFont;
+    u16 debugFont;
     s8 lightChanged;
     s8 unk8F;
     u8 numPointLights;
@@ -5771,7 +5771,7 @@ void Render_Print(void) {
             buf[j] = g_screenText[i * 80 + j];
         }
         buf[j] = 0;
-        y += FontManager_Print(buf, g_state.debugFont, 10.0f, y);
+        y += FontManager_Print(buf, (u16)g_state.debugFont, 10.0f, y);
     }
 }
 #pragma pop
