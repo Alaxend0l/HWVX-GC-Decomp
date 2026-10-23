@@ -6397,6 +6397,10 @@ void SetReverb_(u32 idx, u32 output, u32 feedback, u32 delay) {
 
 #pragma pop
 
+s32 CreateIT_(u8 *hdr, u8 **smp) {
+    return 0;
+}
+
 void DestroyIT_(void *data) {
     void FreeA_(u32 addr);
     void OSFreeToHeap(s32 heap, void *ptr);
