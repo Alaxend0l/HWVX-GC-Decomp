@@ -7879,6 +7879,29 @@ void OSInitMessageQueue(void *mq, void *msgArray, s32 msgCount) {
     M2C_FIELD(mq, s32 *, 0x1C) = 0;
 }
 
+s32 OSSendMessage(void *mq, void *msg, s32 flags) {
+    void OSSleepThread(void *queue);
+    void OSWakeupThread(void *queue);
+    s32 enabled;
+    s32 lastIndex;
+
+    enabled = OSDisableInterrupts();
+    while (M2C_FIELD(mq, s32 *, 0x14) <= M2C_FIELD(mq, s32 *, 0x1C)) {
+        if (!(flags & 1)) {
+            OSRestoreInterrupts(enabled);
+            return 0;
+        } else {
+            OSSleepThread(mq);
+        }
+    }
+    lastIndex = (M2C_FIELD(mq, s32 *, 0x18) + M2C_FIELD(mq, s32 *, 0x1C)) % M2C_FIELD(mq, s32 *, 0x14);
+    M2C_FIELD(mq, void ***, 0x10)[lastIndex] = msg;
+    M2C_FIELD(mq, s32 *, 0x1C)++;
+    OSWakeupThread((u8 *)mq + 8);
+    OSRestoreInterrupts(enabled);
+    return 1;
+}
+
 void __OSUnlockAllMutex(void *thread) {
     void OSWakeupThread(void *queue);
     void *mutex;
@@ -8576,6 +8599,30 @@ void __DVDFSInit(void) {
         MaxEntryNum_803C72FC = FstStart_803C72F4[2];
         FstStringStart_803C72F8 = (char *)FstStart_803C72F4 + MaxEntryNum_803C72FC * 12;
     }
+}
+
+s32 DVDOpen(char *fileName, void *fileInfo) {
+    extern u32 *FstStart_803C72F4;
+    s32 DVDConvertPathToEntrynum(char *pathPtr);
+    s32 DVDGetCurrentDir(char *path, u32 maxlen);
+    void OSReport(const char *msg, ...);
+    s32 entry;
+    char currentDir[128];
+
+    entry = DVDConvertPathToEntrynum(fileName);
+    if (0 > entry) {
+        DVDGetCurrentDir(currentDir, 128);
+        OSReport("Warning: DVDOpen(): file '%s' was not found under %s.\n", fileName, currentDir);
+        return 0;
+    }
+    if ((FstStart_803C72F4[entry * 3] & 0xFF000000) ? 1 : 0) {
+        return 0;
+    }
+    M2C_FIELD(fileInfo, u32 *, 0x30) = FstStart_803C72F4[entry * 3 + 1];
+    M2C_FIELD(fileInfo, u32 *, 0x34) = FstStart_803C72F4[entry * 3 + 2];
+    M2C_FIELD(fileInfo, void **, 0x38) = NULL;
+    M2C_FIELD(fileInfo, s32 *, 0xC) = 0;
+    return 1;
 }
 
 s32 DVDGetCurrentDir(char *path, u32 maxlen) {
@@ -11392,6 +11439,64 @@ void GXSetNumChans(u8 nChans) {
     *(u32 *)(gx + 0x4F4) |= 4;
 }
 
+#pragma push
+#pragma peephole off
+void __GetImageTileCount(s32 fmt, u16 wd, u16 ht, u32 *rowTiles, u32 *colTiles, u32 *cmpTiles) {
+    u32 texRowShift;
+    u32 texColShift;
+
+    switch (fmt) {
+    case 0x0:
+    case 0x8:
+    case 0xE:
+    case 0x20:
+    case 0x30:
+        texRowShift = 3;
+        texColShift = 3;
+        break;
+    case 0x1:
+    case 0x2:
+    case 0x9:
+    case 0x11:
+    case 0x22:
+    case 0x27:
+    case 0x28:
+    case 0x29:
+    case 0x2A:
+    case 0x39:
+    case 0x3A:
+        texRowShift = 3;
+        texColShift = 2;
+        break;
+    case 0x3:
+    case 0x4:
+    case 0x5:
+    case 0x6:
+    case 0xA:
+    case 0x13:
+    case 0x16:
+    case 0x23:
+    case 0x2B:
+    case 0x2C:
+    case 0x3C:
+        texRowShift = 2;
+        texColShift = 2;
+        break;
+    default:
+        texRowShift = texColShift = 0;
+        break;
+    }
+    if (wd == 0) {
+        wd = 1;
+    }
+    if (ht == 0) {
+        ht = 1;
+    }
+    *rowTiles = (wd + (1 << texRowShift) - 1) >> texRowShift;
+    *colTiles = (ht + (1 << texColShift) - 1) >> texColShift;
+    *cmpTiles = (fmt == 0x6 || fmt == 0x16) ? 2 : 1;
+}
+#pragma pop
 s32 GXGetTexObjData(void *arg0) {
     return (M2C_FIELD(arg0, s32 *, 0xC) << 5) & 0x03FFFFE0;
 }
@@ -12406,6 +12511,28 @@ s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data) {
         byteData = (u8 *)data;
         byteData[0] = bigEndianData[1];
         byteData[1] = bigEndianData[0];
+    }
+    return err;
+}
+
+s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data) {
+    s32 err;
+    u8 *bigEndianData;
+    u8 *byteData;
+    u8 swapBuffer[sizeof(data)];
+
+    if (gTRKBigEndian) {
+        bigEndianData = (u8 *)data;
+    } else {
+        bigEndianData = swapBuffer;
+    }
+    err = TRKReadBuffer_inline(b, bigEndianData, sizeof(*data));
+    if (!gTRKBigEndian && err == 0) {
+        byteData = (u8 *)data;
+        byteData[0] = bigEndianData[3];
+        byteData[1] = bigEndianData[2];
+        byteData[2] = bigEndianData[1];
+        byteData[3] = bigEndianData[0];
     }
     return err;
 }
