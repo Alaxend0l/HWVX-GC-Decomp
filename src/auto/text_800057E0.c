@@ -18611,6 +18611,7 @@ s32 TRKSetBufferPosition(void *arg0, u32 arg1) {
     }
     return var_r5;
 }
+#pragma pop
 
 #pragma push
 #pragma auto_inline off
