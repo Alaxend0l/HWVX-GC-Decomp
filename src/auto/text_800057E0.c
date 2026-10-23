@@ -9330,6 +9330,51 @@ void __OSReschedule(void) {
     }
 }
 
+#pragma push
+#pragma scheduling off
+void OSExitThread(void *val) {
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32);
+    void OSClearContext(void *context);
+    void __OSUnlockAllMutex(void *thread);
+    void OSWakeupThread(void *queue);
+    void SelectThread(s32 yield);
+    extern volatile s32 RunQueueHint_803C7294;
+    s32 enabled;
+    void *currentThread;
+    void *next;
+    void *prev;
+
+    enabled = OSDisableInterrupts();
+    currentThread = *(void **)0x800000E4;
+    OSClearContext(currentThread);
+    if (M2C_FIELD(currentThread, u16 *, 0x2CA) & 1) {
+        next = M2C_FIELD(currentThread, void **, 0x2FC);
+        prev = M2C_FIELD(currentThread, void **, 0x300);
+        if (next == NULL) {
+            *(void **)0x800000E0 = prev;
+        } else {
+            M2C_FIELD(next, void **, 0x300) = prev;
+        }
+        if (prev == NULL) {
+            *(void **)0x800000DC = next;
+        } else {
+            M2C_FIELD(prev, void **, 0x2FC) = next;
+        }
+        M2C_FIELD(currentThread, u16 *, 0x2C8) = 0;
+    } else {
+        M2C_FIELD(currentThread, u16 *, 0x2C8) = 8;
+        M2C_FIELD(currentThread, void **, 0x2D8) = val;
+    }
+    __OSUnlockAllMutex(currentThread);
+    OSWakeupThread((u8 *)currentThread + 0x2E8);
+    RunQueueHint_803C7294 = 1;
+    if (RunQueueHint_803C7294) {
+        SelectThread(0);
+    }
+    OSRestoreInterrupts(enabled);
+}
+#pragma pop
 s64 __OSGetSystemTime(void) {
     s32 OSDisableInterrupts(void);
     s32 OSRestoreInterrupts(s32);
@@ -10361,6 +10406,58 @@ s32 DVDGetCurrentDiskID(void) {
     return 0x80000000;
 }
 
+s32 DVDCheckDisk(void) {
+    extern u8 DummyCommandBlock_802EF9C0[];
+    extern s32 FatalErrorFlag_803C7328;
+    extern s32 PausingFlag_803C7320;
+    extern void *executing_803C7310;
+    s32 enabled;
+    s32 result;
+    s32 state;
+    u32 coverReg;
+
+    enabled = OSDisableInterrupts();
+    if (FatalErrorFlag_803C7328) {
+        state = -1;
+    } else if (PausingFlag_803C7320) {
+        state = 8;
+    } else if (executing_803C7310 == NULL) {
+        state = 0;
+    } else if (executing_803C7310 == DummyCommandBlock_802EF9C0) {
+        state = 0;
+    } else {
+        state = M2C_FIELD(executing_803C7310, s32 *, 0xC);
+    }
+    switch (state) {
+    case 1:
+    case 9:
+    case 10:
+    case 2:
+        result = 1;
+        break;
+    case -1:
+    case 11:
+    case 7:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+        result = 0;
+        break;
+    case 0:
+    case 8:
+        coverReg = __DIRegs[1];
+        if (((coverReg >> 2) & 1) || (coverReg & 1)) {
+            result = 0;
+        } else {
+            result = 1;
+        }
+        break;
+    }
+    OSRestoreInterrupts(enabled);
+    return result;
+}
+
 #pragma push
 #pragma peephole off
 void __DVDClearWaitingQueue(void) {
@@ -11331,6 +11428,41 @@ void __AXPushCallbackStack(void *arg0) {
     extern void *__AXCallbackStack_803C7468;
     M2C_FIELD(arg0, void **, 8) = (void *) __AXCallbackStack_803C7468;
     __AXCallbackStack_803C7468 = arg0;
+}
+
+void __AXAuxInit(void) {
+    extern void *__AXCallbackAuxA_803C7470;
+    extern void *__AXCallbackAuxB_803C7474;
+    extern void *__AXContextAuxA_803C7478;
+    extern void *__AXContextAuxB_803C747C;
+    extern u32 __AXBufferAuxA_802EFD40[3][480];
+    extern u32 __AXBufferAuxB_802F13C0[3][480];
+    extern u32 __AXAuxDspWritePosition_803C7490;
+    extern u32 __AXAuxDspReadPosition_803C7494;
+    extern u32 __AXAuxDspWritePositionDpl2_803C7498;
+    extern u32 __AXAuxDspReadPositionDpl2_803C749C;
+    extern u32 __AXAuxCpuReadWritePosition_803C74A0;
+    u32 i;
+    u32 *pA;
+    u32 *pB;
+
+    __AXCallbackAuxA_803C7470 = NULL;
+    __AXCallbackAuxB_803C7474 = NULL;
+    __AXContextAuxA_803C7478 = NULL;
+    __AXContextAuxB_803C747C = NULL;
+    __AXAuxDspWritePosition_803C7490 = 0;
+    __AXAuxDspReadPosition_803C7494 = 1;
+    __AXAuxDspWritePositionDpl2_803C7498 = 0;
+    __AXAuxDspReadPositionDpl2_803C749C = 1;
+    __AXAuxCpuReadWritePosition_803C74A0 = 2;
+    pA = __AXBufferAuxA_802EFD40[0];
+    pB = __AXBufferAuxB_802F13C0[0];
+    for (i = 0; i < 480; i++) {
+        *pA = 0;
+        pA++;
+        *pB = 0;
+        pB++;
+    }
 }
 
 void __AXAuxQuit(void) {
