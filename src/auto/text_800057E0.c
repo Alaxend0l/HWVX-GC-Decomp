@@ -2447,6 +2447,29 @@ s32 FileStreaming_GetNumAvailableQuadPacks(void) {
 
 #pragma push
 #pragma use_lmw_stmw on
+s32 FileStreaming_GetPackID(char *name, s32 type, u32 id) {
+    extern u8 *g_StreamingDataPacks[11];
+    extern u32 g_MaxStreamingDataPacks[11];
+    u8 *pack;
+    u32 i;
+
+    if (type >= 11) {
+        return -1;
+    }
+    for (i = 0; i < g_MaxStreamingDataPacks[type]; i++) {
+        pack = g_StreamingDataPacks[type] + i * 0xA8;
+        if ((s8)pack[0] != 0 && id == M2C_FIELD(pack, u32 *, 8)) {
+            if (name == M2C_FIELD(pack, char **, 4) || strcmp(name, M2C_FIELD(pack, char **, 4)) == 0) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+#pragma pop
+
+#pragma push
+#pragma use_lmw_stmw on
 #pragma auto_inline off
 s32 FileStreaming_ReleaseAllDataPacks(s32 type, s8 wait) {
     s32 FileStreaming_ReleaseDataPack(u32 index, s32 type);
