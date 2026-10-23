@@ -468,7 +468,7 @@ typedef struct SoundSource {
     u8 vel[0x10];
     f32 unk20;
     f32 unk24;
-    f32 unk28;
+    s32 unk28;
     s32 voice;
     s32 looping;
     f32 unk34;
