@@ -15491,6 +15491,134 @@ void PadSamplingCallback__Fv(void) {
     }
 }
 
+static inline void GbaHandshake(s32 chan, s32 retry, u32 key, u32 *sendKey) {
+    s32 GBAGetStatus(s32 chan, u8 *status);
+    s32 GBARead(s32 chan, void *dst, u8 *status);
+    s32 GBAWrite(s32 chan, void *src, u8 *status);
+    u32 OSGetTick(void);
+    JoyBusParam *q;
+    u8 *status;
+    s32 result;
+    u32 tick;
+    u32 recvTick;
+
+    q = &Param_803C6A40[chan];
+    status = &q->status;
+    if (GBAGetStatus(chan, status) != 0 || Param_803C6A40[chan].status != 0x30) {
+        return;
+    }
+    if (retry) {
+        tick = key;
+    } else {
+        tick = OSGetTick();
+        *sendKey = tick;
+    }
+    if (GBAWrite(chan, &tick, status) != 0 || (Param_803C6A40[chan].status & 0x30) != 0x30) {
+        return;
+    }
+    if (GBAGetStatus(chan, status) != 0 || Param_803C6A40[chan].status != 0x38) {
+        return;
+    }
+    result = GBARead(chan, &recvTick, status);
+    if (retry || result != 0 || tick != recvTick || (Param_803C6A40[chan].status & 0x30) != 0x30) {
+        return;
+    }
+    Param_803C6A40[chan].key = tick;
+    q->state = 3;
+}
+
+void GbaOpen__Fl(s32 chan) {
+    extern s32 HostId_803C79A4;
+    int memcmp(const void *src1, const void *src2, unsigned long n);
+    s32 GBAGetStatus(s32 chan, u8 *status);
+    s32 GBARead(s32 chan, void *dst, u8 *status);
+    s32 GBAWrite(s32 chan, void *src, u8 *status);
+    u32 OSGetTick(void);
+    JoyBusParam *p;
+    u32 *sendKey;
+    u8 *pUnk2;
+    s32 *pUnkC;
+    u8 unk2;
+    s32 unkC;
+    u32 key;
+    s32 ok;
+    s32 retry;
+    s32 result;
+    u32 tick;
+    u32 recvTick;
+
+    ok = 0;
+    retry = 0;
+    p = &Param_803C6A40[chan];
+    sendKey = &p->send.key;
+    key = p->recv.key;
+    p->recv.key = p->send.key;
+    if (p->recv.unk0 == 0) {
+        if (p->recv.unk3 == 0) {
+            memset(&p->send, 0, 0x20);
+            Param_803C6A40[chan].send.chan = chan;
+            Param_803C6A40[chan].send.unk3 = 1;
+            Param_803C6A40[chan].send.hostId = HostId_803C79A4;
+            Param_803C6A40[chan].send.unk2 = Param_803C6A40[chan].recv.unk2;
+            Param_803C6A40[chan].send.unkC = Param_803C6A40[chan].recv.unkC;
+            Param_803C6A40[chan].key = OSGetTick();
+            *sendKey = Param_803C6A40[chan].key;
+            p->state = 4;
+        } else {
+            if (memcmp(&p->recv, &p->send, 0x20) == 0 && (key == *sendKey || key == Param_803C6A40[chan].key)) {
+                *sendKey = key;
+                ok = 1;
+                Param_803C6A40[chan].key = key;
+            }
+            if (!ok) {
+                retry = 1;
+                p->state = 5;
+            }
+        }
+    } else {
+        unk2 = p->recv.unk2;
+        p->recv.unk2 = p->send.unk2;
+        unkC = p->recv.unkC;
+        p->recv.unkC = p->send.unkC;
+        pUnk2 = &p->send.unk2;
+        pUnkC = &p->send.unkC;
+        if (memcmp(&p->recv, &p->send, 0x20) == 0 && (key == *sendKey || key == Param_803C6A40[chan].key)) {
+            *sendKey = key;
+            ok = 1;
+            Param_803C6A40[chan].key = key;
+            *pUnk2 = unk2;
+            *pUnkC = unkC;
+        }
+        if (!ok) {
+            p->state = 7;
+        }
+    }
+    if (!ok && !retry) {
+        return;
+    }
+    if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0 || Param_803C6A40[chan].status != 0x30) {
+        return;
+    }
+    if (retry) {
+        tick = key;
+    } else {
+        tick = OSGetTick();
+        *sendKey = tick;
+    }
+    if (GBAWrite(chan, &tick, &Param_803C6A40[chan].status) != 0 || (Param_803C6A40[chan].status & 0x30) != 0x30) {
+        return;
+    }
+    if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0 || Param_803C6A40[chan].status != 0x38) {
+        return;
+    }
+    result = GBARead(chan, &recvTick, &Param_803C6A40[chan].status);
+    if (retry || result != 0 || tick != recvTick || (Param_803C6A40[chan].status & 0x30) != 0x30) {
+        return;
+    }
+    Param_803C6A40[chan].key = tick;
+    Param_803C6A40[chan].state = 3;
+}
+
 void PADRead(PADStatus *status);
 void PADClamp(PADStatus *status);
 void PlaySpringForce__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 saturation, s16 coefficient);
