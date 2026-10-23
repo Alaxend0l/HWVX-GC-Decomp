@@ -14587,4 +14587,37 @@ void *__va_arg(void *ap, s32 type) {
     }
     return addr;
 }
+extern u32 AnalogMode_803C6DD0;
+extern u32 EnabledBits_803C73BC;
+extern u8 Origin_802EFC00[4][12];
+extern u32 ResettingBits_803C73C0;
+extern s32 ResettingChan_803C6DC8;
+extern u32 WaitingBits_803C73C8;
+void PADTypeAndStatusCallback(s32 chan, u32 type);
+s32 SIGetTypeAsync(s32 chan, void (*callback)(s32, u32));
 
+static void PADEnable(s32 chan) {
+    u32 cmd;
+    u32 chanBit;
+    u32 data[2];
+
+    chanBit = 0x80000000 >> chan;
+    EnabledBits_803C73BC |= chanBit;
+    SIGetResponse(chan, data);
+    cmd = (0x40 << 16) | AnalogMode_803C6DD0;
+    SISetCommand(chan, cmd);
+    SIEnablePolling(EnabledBits_803C73BC);
+}
+
+static void DoReset(void) {
+    u32 chanBit;
+
+    ResettingChan_803C6DC8 = __cntlzw(ResettingBits_803C73C0);
+    if (ResettingChan_803C6DC8 == 32) {
+        return;
+    }
+    chanBit = 0x80000000 >> ResettingChan_803C6DC8;
+    ResettingBits_803C73C0 &= ~chanBit;
+    memset(&Origin_802EFC00[ResettingChan_803C6DC8], 0, 12);
+    SIGetTypeAsync(ResettingChan_803C6DC8, PADTypeAndStatusCallback);
+}
