@@ -4260,6 +4260,18 @@ s8 ThingManagerList_Get(void *list, void *target) {
     return 0;
 }
 
+void ThingManagerList_ReleaseAll(void **list) {
+    void *thing;
+    void *next;
+
+    thing = *list;
+    while (thing != NULL) {
+        next = M2C_FIELD(thing, void **, 0xA4);
+        M2C_FIELD(M2C_FIELD(thing, void **, 0x8C), void (**)(void *), 4)(thing);
+        thing = next;
+    }
+}
+
 void SharedSlaveHolder_Release(void) {
     M2C_UNK ThingManagerList_RemoveReleasedThings(s32);
     void *thing;
