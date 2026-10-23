@@ -1363,11 +1363,11 @@ void __sys_free(void *ptr) {
 #pragma pop
 
 s32 OSAllocFromHeap(s32 heap, s32 ptr);
-void __sys_alloc(void *ptr) {
+void *__sys_alloc(u32 size) {
     if (__OSCurrHeap == -1) {
         InitDefaultHeap();
     }
-    OSAllocFromHeap(__OSCurrHeap, (s32)ptr);
+    return (void *)OSAllocFromHeap(__OSCurrHeap, size);
 }
 
 #pragma push
@@ -9428,9 +9428,9 @@ s32 THPVideoDecode(void *file, void *tileY, void *tileU, void *tileV, void *work
     __THPWorkArea_803C788C = (u8 *)((u32)__THPInfo_803C7890 + sizeof(THPFileInfo));
     DCZeroRange(__THPInfo_803C7890, sizeof(THPFileInfo));
     __THPInfo_803C7890->cnt = 33;
-    all_done = FALSE;
     __THPInfo_803C7890->decompressedY = 0;
     __THPInfo_803C7890->c = file;
+    all_done = FALSE;
 
     for (;;) {
         if (*(__THPInfo_803C7890->c)++ != 255) {
