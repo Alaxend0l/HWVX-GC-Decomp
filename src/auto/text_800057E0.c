@@ -5757,6 +5757,8 @@ void Destructible_Release(u8 *destructible) {
 
 static inline void Destructible_Release_inline(u8 *destructible) {
     void Trigger_DestructibleKilled(void *thing);
+    void OBoxHolder_Release(void *box);
+    void OConvexHullHolder_Release(void *hull);
     extern u8 g_destructibleVTable[];
     u8 *trigger;
     s8 paused;
@@ -5873,6 +5875,52 @@ s32 Destructible_Invalidate(void *arg0, u32 arg1, u32 arg2) {
         return 1;
     }
     return 0;
+}
+
+s32 ActionDestructibleChangeMode(u32 *action) {
+    void Thing_ProcessEndEvent(u8 *thing, u8 *event, u8 *collision, Vector4 *vel);
+    void ThingManagerList_ReleaseSlavesBySlaveType(void **list, u8 type);
+    u32 i;
+    s32 mode;
+    u32 count;
+    u8 *thing;
+    u8 *destructible;
+
+    mode = action[0];
+    count = action[1];
+    for (i = 0; i < count; i++) {
+        thing = (u8 *)action[i + 2];
+        destructible = *(u8 **)(thing + 0x2C);
+        if (destructible != NULL) {
+            switch (mode) {
+            case 3:
+                Thing_ProcessEndEvent(destructible, *(u8 **)(*(u8 **)(destructible + 0xC0) + 0x10), NULL, NULL);
+                Destructible_Release_inline(destructible);
+                break;
+            case 0:
+                ThingManagerList_ReleaseSlavesBySlaveType((void **)(destructible + 0x88), 0xFF);
+                *(u32 *)(destructible + 0x74) |= 0x200;
+                *(u32 *)(destructible + 0x74) |= 0x2;
+                break;
+            case 1:
+                Thing_InitAllSlavesNow(destructible, *(u8 **)(destructible + 0xC0) + 0x18, 0xFF);
+                *(u32 *)(destructible + 0x74) &= ~0x200;
+                *(u32 *)(destructible + 0x74) &= ~0x2;
+                break;
+            case 25:
+                Destructible_Release_inline(destructible);
+                break;
+            case 26:
+                ThingManagerList_ReleaseSlavesBySlaveType((void **)(destructible + 0x88), 0xFF);
+                Thing_ProcessEndEvent(destructible, *(u8 **)(*(u8 **)(destructible + 0xC0) + 0x10), NULL, NULL);
+                *(u32 *)(destructible + 0x74) |= 0x200;
+                *(u32 *)(destructible + 0x74) |= 0x2;
+                break;
+            }
+        }
+        *(s32 *)(thing + 0x30) = mode;
+    }
+    return 1;
 }
 
 void Mover_GetTrackPos(void *mover, f32 *pos, f32 time);
