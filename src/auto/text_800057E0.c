@@ -1268,6 +1268,8 @@ void AI_AsyncHeartbeat(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0xC8) = 0x1F4;
 }
 
+#pragma push
+#pragma dont_inline on
 void MotionState_BuildMatricesWorld(void *arg0, void *arg1, void *motionState, f32 time) {
     u8 frames[0x800];
     void *anim;
@@ -1280,6 +1282,7 @@ void MotionState_BuildMatricesWorld(void *arg0, void *arg1, void *motionState, f
         TEST_AnimTraverseHeirarchyToMatricesWorld(arg0, arg1, frames, *skel, M2C_FIELD(motionState, u32 *, 0x10), time);
     }
 }
+#pragma pop
 
 s32 AttachThing_Move(void *thing) {
     extern f32 g_fDeltaTimeMS;
