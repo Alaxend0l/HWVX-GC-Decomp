@@ -5190,6 +5190,66 @@ u8 GameSettings_GetNumOfPlayers(void) {
     return PlayerManager_PlayerHumanCount();
 }
 
+s8 GameSettings_IsCheatEnabled(s32 cheat) {
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *vars;
+    u8 *mcp;
+    void *pack;
+    s32 state;
+    s8 *cheats;
+    u32 i;
+    u8 result;
+
+    vars = (u8 *)&g_codeVariables;
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        state = mcp[1];
+    } else {
+        state = 0;
+    }
+    switch (state) {
+    case 0:
+        cheats = (s8 *)&vars[0x284];
+        cheats = &cheats[0x9F];
+        break;
+    case 1:
+        cheats = (s8 *)&vars[0xC74];
+        cheats = &cheats[0x1E];
+        break;
+    }
+    if (cheat == 9) {
+        for (i = 0; i < 11; i++) {
+            if (i != 9 && cheats[i]) {
+                return 1;
+            }
+        }
+        if (i == 11) {
+            return 0;
+        }
+    }
+    if (((u32)(cheat - 1) <= 2 || cheat == 4) && cheats[10] && ((CodeVariables *)&vars[0])->unk120[0x12]) {
+        return 1;
+    }
+    result = 0;
+    if ((cheats[10] || cheats != NULL) && ((CodeVariables *)&vars[0])->unk120[cheat + 8]) {
+        result = 1;
+    }
+    return result;
+}
+
 ControllerSettings *GameSettings_GetControllerSettings(s32 player) {
     return &g_generalGameSettings.controllers[player - 1];
 }
@@ -21666,6 +21726,70 @@ void GXCopyDisp(void *dest, u8 clear) {
     gx->bpSentNot = 0;
 }
 
+void GXCopyTex(void *dest, u8 clear) {
+    extern u8 *gx;
+    u32 reg;
+    u32 tempPeCtrl;
+    u8 changePeCtrl;
+    u32 *p;
+
+    if (clear) {
+        reg = *(u32 *)(gx + 0x1D8);
+        reg = (reg & ~1) | 1;
+        reg = (reg & ~0xE) | (7 << 1);
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = reg;
+        reg = *(u32 *)(gx + 0x1D0);
+        reg = reg & ~1;
+        reg = reg & ~2;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = reg;
+    }
+    changePeCtrl = 0;
+    tempPeCtrl = *(u32 *)(gx + 0x1DC);
+    if (*(u8 *)(gx + 0x200) && (tempPeCtrl & 7) != 3) {
+        changePeCtrl = 1;
+        tempPeCtrl = (tempPeCtrl & ~7) | 3;
+    }
+    if ((clear || (tempPeCtrl & 7) == 3) && ((tempPeCtrl >> 6) & 1) == 1) {
+        changePeCtrl = 1;
+        tempPeCtrl = tempPeCtrl & ~0x40;
+    }
+    if (changePeCtrl) {
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = tempPeCtrl;
+    }
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = *(u32 *)(gx + 0x1F0);
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = *(u32 *)(gx + 0x1F4);
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = *(u32 *)(gx + 0x1F8);
+    reg = 0;
+    reg = (reg & ~0xFFFFFF) | (((u32)dest >> 5) & 0xFFFFFF);
+    reg = (reg & 0xFFFFFF) | 0x4B000000;
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = reg;
+    *(u32 *)(gx + 0x1FC) = (*(u32 *)(gx + 0x1FC) & ~0x800) | (clear << 11);
+    p = (u32 *)(gx + 0x1FC);
+    *p = *p & ~0x4000;
+    p = (u32 *)(gx + 0x1FC);
+    *p = (*p & 0xFFFFFF) | 0x52000000;
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = *(u32 *)(gx + 0x1FC);
+    if (clear) {
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = *(u32 *)(gx + 0x1D8);
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = *(u32 *)(gx + 0x1D0);
+    }
+    if (changePeCtrl) {
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = *(u32 *)(gx + 0x1DC);
+    }
+    *(u16 *)(gx + 2) = 0;
+}
+
 void GXClearBoundingBox(void) {
     extern u8 *gx;
     u16 *bpSentNot = (u16 *)(gx + 2);
@@ -23689,6 +23813,7 @@ s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data) {
 
 #pragma push
 #pragma opt_propagation off
+#pragma auto_inline off
 s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data) {
     s32 err;
     u32 length;
@@ -24235,6 +24360,53 @@ extern GeneralGameSettings IsTRKConnected_8030B440;
 s32 GetTRKConnected(void) {
     return IsTRKConnected_8030B440.difficulty;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 HandlePositionFileSupportRequest(u32 fileHandle, u32 *position, u8 mode, u8 *ioResult) {
+    s32 TRKGetFreeBuffer(s32 *msgID, TRKBuffer **outMsg);
+    s32 TRKRequestSend(TRKBuffer *msgBuf, s32 *bufferId, u32 p1, u32 p2, s32 p3);
+    s32 TRKAppendBuffer1_ui32(TRKBuffer *b, u32 data);
+    s32 error;
+    s32 replyBufferId;
+    TRKBuffer *replyBuffer;
+    s32 bufferId;
+    TRKBuffer *buffer;
+
+    error = TRKGetFreeBuffer(&bufferId, &buffer);
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui8(buffer, 0xD4);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui32(buffer, fileHandle);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui32(buffer, *position);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui8(buffer, mode);
+    }
+    if (error == 0) {
+        *ioResult = 0;
+        error = TRKRequestSend(buffer, &replyBufferId, 3, 3, 0);
+        if (error == 0) {
+            replyBuffer = TRKGetBuffer(replyBufferId);
+            TRKSetBufferPosition(replyBuffer, 2);
+        }
+        if (error == 0) {
+            error = TRKReadBuffer1_ui8(replyBuffer, ioResult);
+        }
+        if (error == 0) {
+            error = TRKReadBuffer1_ui32(replyBuffer, position);
+        } else {
+            *position = -1;
+        }
+        TRKReleaseBuffer(replyBufferId);
+    }
+    TRKReleaseBuffer(bufferId);
+    return error;
+}
+#pragma pop
 
 s32 HandleCloseFileSupportRequest(u32 fileHandle, u8 *ioResult) {
     s32 TRKGetFreeBuffer(s32 *msgID, TRKBuffer **outMsg);
