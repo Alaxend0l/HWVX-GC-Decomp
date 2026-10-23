@@ -9440,6 +9440,8 @@ void PrepareReady(void *arg0) {
     OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 BOOL THPPlayerPrepare(s32 frameNum, u8 playFlag) {
     extern u8 PrepareReadyMessage_803C7760[];
     void PlayControl(u32 retraceCount);
