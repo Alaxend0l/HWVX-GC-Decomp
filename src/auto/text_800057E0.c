@@ -4051,6 +4051,8 @@ void ExtractActiveKey(u8 *track, u8 *state, f32 dt) {
     s->value = t->keys[s->current].value;
 }
 
+#pragma push
+#pragma auto_inline off
 void ExtractTextureKey(TextureKeyAnim *anim, TextureKeyState *state, f32 dt) {
     if (state->reset) {
         if (anim->numKeys == 0) {
@@ -4072,6 +4074,7 @@ void ExtractTextureKey(TextureKeyAnim *anim, TextureKeyState *state, f32 dt) {
         state->time -= anim->frameTime;
     }
 }
+#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
@@ -7715,6 +7718,56 @@ void ShaderHolder_RemoveGX(s32 gx) {
             g_pShaderHolder->numGX--;
             g_pShaderHolder->gx[i] = g_pShaderHolder->gx[g_pShaderHolder->numGX];
             return;
+        }
+    }
+}
+
+void ShaderHolder_Heartbeat(void) {
+    extern ShaderHolder *g_pShaderHolder;
+    extern f32 g_fDeltaTimeMS;
+    void ExtractColorKey(void *keys, void *out, f32 time);
+    void ExtractPointKey(void *keys, void *out, f32 time);
+    u16 MovieManager_GetTextureIndex(void);
+    u8 *shader;
+    u8 *gx;
+    u8 *mtx;
+    u32 i;
+    f32 dt;
+
+    dt = g_fDeltaTimeMS;
+    for (i = 0; i < g_pShaderHolder->numShaders; i++) {
+        shader = g_pShaderHolder->shaders[i];
+        if (shader[0x60] != 0) {
+            ExtractColorKey(*(u8 **)(shader + 0x5C) + 4, shader + 0x24, dt);
+        }
+        shader = g_pShaderHolder->shaders[i];
+        if (shader[0x62] != 0) {
+            ExtractPointKey(*(u8 **)(shader + 0x5C) + 0xC, shader + 0x40, dt);
+        }
+        shader = g_pShaderHolder->shaders[i];
+        if (shader[0x61] != 0) {
+            ExtractTextureKey(*(TextureKeyAnim **)(*(u8 **)(shader + 0x5C) + 0x14), (TextureKeyState *)(shader + 0x30), dt);
+        }
+    }
+    for (i = 0; i < g_pShaderHolder->numGX; i++) {
+        shader = g_pShaderHolder->gx[i].shader;
+        gx = g_pShaderHolder->gx[i].gx;
+        mtx = *(u8 **)(gx + 0xC);
+        if (**(u8 **)(shader + 0x5C) != 0) {
+            *(u16 *)(gx + 0x18) = MovieManager_GetTextureIndex();
+        }
+        if (*(u16 *)(shader + 0x30) != 0) {
+            *(u16 *)(gx + 0x18) = *(u16 *)(shader + 0x30);
+        }
+        if (mtx != NULL) {
+            if (shader[0x60] != 0) {
+                *(u32 *)(mtx + 0x8) = *(u32 *)(shader + 0x24);
+                *(u32 *)(mtx + 0xC) = 2;
+            }
+            if (shader[0x62] != 0) {
+                *(f32 *)(mtx + 0x0) = *(f32 *)(shader + 0x40);
+                *(f32 *)(mtx + 0x4) = *(f32 *)(shader + 0x44);
+            }
         }
     }
 }
@@ -15885,6 +15938,45 @@ void __DVDStoreErrorCode(u32 error) {
     __OSUnlockSramEx(1);
 }
 
+void __fstLoad(void) {
+    extern u8 bb2Buf_802EFA38[63];
+    extern u8 *idTmp_803C7360;
+    extern u8 *bb2_803C735C;
+    void *OSGetArenaHi(void);
+    void OSSetArenaHi(void *);
+    void DVDReset(void);
+    s32 DVDReadDiskID(void *block, void *id, void *callback);
+    s32 DVDGetDriveStatus(void);
+    void OSReport(const char *msg, ...);
+    void *memcpy(void *, const void *, u32);
+    void cb(s32 result, void *block);
+    static u8 block[48];
+    u8 *bootInfo;
+    u8 *idTmp;
+    u8 idTmpBuf[0x20 + 0x1F];
+
+    OSGetArenaHi();
+    bootInfo = (u8 *)0x80000000;
+    idTmp_803C7360 = (u8 *)(((u32)idTmpBuf + 0x1F) & ~0x1F);
+    bb2_803C735C = (u8 *)(((u32)bb2Buf_802EFA38 + 0x1F) & ~0x1F);
+    DVDReset();
+    DVDReadDiskID(block, idTmp_803C7360, cb);
+    while (DVDGetDriveStatus() != 0) {
+    }
+    *(u32 *)(bootInfo + 0x38) = *(u32 *)(bb2_803C735C + 0x10);
+    *(u32 *)(bootInfo + 0x3C) = *(u32 *)(bb2_803C735C + 0xC);
+    idTmp = (u8 *)0x80000000;
+    memcpy(idTmp, idTmp_803C7360, 0x20);
+    OSReport("\n");
+    OSReport("  Game Name ... %c%c%c%c\n", idTmp[0], idTmp[1], idTmp[2], idTmp[3]);
+    OSReport("  Company ..... %c%c\n", idTmp[4], idTmp[5]);
+    OSReport("  Disk # ...... %d\n", idTmp[6]);
+    OSReport("  Game ver .... %d\n", idTmp[7]);
+    OSReport("  Streaming ... %s\n", (bootInfo[8] == 0) ? "OFF" : "ON");
+    OSReport("\n");
+    OSSetArenaHi(*(void **)(bb2_803C735C + 0x10));
+}
+
 s32 VISetPostRetraceCallback(s32 cb) {
     extern s32 PostCB_803C737C;
     s32 OSDisableInterrupts();
@@ -16949,6 +17041,49 @@ void AISetStreamVolRight(u8 vol) {
 u8 AIGetStreamVolRight(void) {
     return (u8) ((u32) *(u32 *)0xCC006C04 >> 8U);
 }
+
+#pragma peephole off
+void AIInit(u8 *stack) {
+    extern s32 __AI_init_flag_803C73F0;
+    extern s64 bound_32KHz_803C73F8;
+    extern s64 bound_48KHz_803C7400;
+    extern s64 min_wait_803C7408;
+    extern s64 max_wait_803C7410;
+    extern s64 buffer_803C7418;
+    extern void (*__AIS_Callback_803C73E0)(u32);
+    extern void (*__AID_Callback_803C73E4)(void);
+    extern u8 *__CallbackStack_803C73E8;
+    void AISetDSPSampleRate(u32 rate);
+    void __AI_set_stream_sample_rate(u32 rate);
+    void __OSSetInterruptHandler(s16 interrupt, void *handler);
+    u32 __OSUnmaskInterrupts(u32 mask);
+    void __AISHandler(s16 interrupt, void *context);
+    void __AIDHandler(s16 interrupt, void *context);
+
+    if (__AI_init_flag_803C73F0 == 1) {
+        return;
+    }
+    bound_32KHz_803C73F8 = (31524 * ((*(u32 *)0x800000F8 / 4) / 125000)) / 8000;
+    bound_48KHz_803C7400 = (42024 * ((*(u32 *)0x800000F8 / 4) / 125000)) / 8000;
+    min_wait_803C7408 = (42000 * ((*(u32 *)0x800000F8 / 4) / 125000)) / 8000;
+    max_wait_803C7410 = (63000 * ((*(u32 *)0x800000F8 / 4) / 125000)) / 8000;
+    buffer_803C7418 = (3000 * ((*(u32 *)0x800000F8 / 4) / 125000)) / 8000;
+    __AIRegs[0] = (__AIRegs[0] & ~0x20) | 0x20;
+    AISetStreamVolRight(0);
+    __AIRegs[1] = (__AIRegs[1] & ~0xFF) | (0 & 0xFF);
+    __AIRegs[3] = 0;
+    __AI_set_stream_sample_rate(1);
+    AISetDSPSampleRate(0);
+    __AIS_Callback_803C73E0 = NULL;
+    __AID_Callback_803C73E4 = NULL;
+    __CallbackStack_803C73E8 = stack;
+    __OSSetInterruptHandler(5, __AIDHandler);
+    __OSUnmaskInterrupts(0x04000000);
+    __OSSetInterruptHandler(8, __AISHandler);
+    __OSUnmaskInterrupts(0x00800000);
+    __AI_init_flag_803C73F0 = 1;
+}
+#pragma peephole reset
 
 void AIReset(void) {
     extern s32 __AI_init_flag_803C73F0;
