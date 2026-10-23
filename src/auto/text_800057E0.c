@@ -3773,6 +3773,14 @@ void VertexColorSeqManager_Destroy(void) {
     g_iTotalVertexColorTiles = 0;
 }
 
+void VertexColorSeqManager_AddVertices(void *vertices) {
+    extern s32 g_iTotalVertexColorSeq;
+    extern void *g_pVertexColorSeqList[64];
+    if (vertices != NULL) {
+        g_pVertexColorSeqList[g_iTotalVertexColorSeq++] = vertices;
+    }
+}
+
 void VolumeManager_Create(void) {
     extern s32 g_VolumeHolder;
     g_VolumeHolder = 0;
