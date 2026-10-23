@@ -3379,8 +3379,7 @@ s32 TriggerInterfacePackEnd(u32 *pack) {
 
     i = 0;
     id = pack[0];
-    entry = g_InterfacePackData;
-    for (; i < g_NumInterfacesPlaying; i++, entry++) {
+    for (entry = g_InterfacePackData; i < g_NumInterfacesPlaying; entry++, i++) {
         if (id == entry->id && strcmp(entry->name, (char *)(pack + 1)) == 0) {
             return 0;
         }
@@ -3694,6 +3693,22 @@ s32 Thing_GetSource(void *arg0) {
         return M2C_FIELD(temp_r3, s32 *, 0x2C);
     }
     return 0;
+}
+
+s8 Thing_HasThing(u8 *thing, void *target) {
+    s8 found;
+    u8 *vtable = M2C_FIELD(thing, u8 **, 0x8C);
+
+    if (vtable == g_carAVTable) {
+        if ((found = ThingManagerList_Get(thing + 0x344, target)) != 0) {
+            return found;
+        }
+    } else if (vtable == g_creatureVTable) {
+        if ((found = ThingManagerList_Get(thing + 0xE0, target)) != 0) {
+            return found;
+        }
+    }
+    return ThingManagerList_Get(thing + 0x88, target);
 }
 
 s32 TriggerP2PActivated(u32 *data) {
