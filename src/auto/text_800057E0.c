@@ -25551,7 +25551,7 @@ void SoundSource_Set(s32 index, u32 param, void *value) {
         memcpy(&g_sources_803C6F38[index], value, 0x10);
         break;
     case 6:
-        memcpy(g_sources_803C6F38[index].vel, value, 0x10);
+        memcpy(&g_sources_803C6F38[index].vel, value, 0x10);
         break;
     case 0:
         memcpy(&g_sources_803C6F38[index].unk24, value, 4);
@@ -25570,3 +25570,32 @@ void SoundSource_Set(s32 index, u32 param, void *value) {
         break;
     }
 }
+
+s32 SoundManager_CreateSource(s32 owner) {
+    extern SoundSource *g_sources_803C6F38;
+    extern u32 g_nextSource_803C6F34;
+    extern Vector4 g_zeroVector;
+    u32 start;
+
+    start = g_nextSource_803C6F34;
+    while (g_nextSource_803C6F34 >= 100 || (u32)g_sources_803C6F38[g_nextSource_803C6F34].looping != 0) {
+        if (++g_nextSource_803C6F34 >= 100) {
+            g_nextSource_803C6F34 = 0;
+        }
+        if (g_nextSource_803C6F34 == start) {
+            return -1;
+        }
+    }
+    g_sources_803C6F38[g_nextSource_803C6F34].looping = owner;
+    *(Vector4 *)g_sources_803C6F38[g_nextSource_803C6F34].pos = *(Vector4 *)g_sources_803C6F38[g_nextSource_803C6F34].vel = g_zeroVector;
+    g_sources_803C6F38[g_nextSource_803C6F34].voice = -1;
+    g_sources_803C6F38[g_nextSource_803C6F34].unk28 = -1;
+    g_sources_803C6F38[g_nextSource_803C6F34].unk20 = 1.0f;
+    g_sources_803C6F38[g_nextSource_803C6F34].unk24 = 0.0f;
+    g_sources_803C6F38[g_nextSource_803C6F34].unk34 = 100.0f;
+    g_sources_803C6F38[g_nextSource_803C6F34].unk38 = 500.0f;
+    g_sources_803C6F38[g_nextSource_803C6F34].paused = 0;
+    g_sources_803C6F38[g_nextSource_803C6F34].playing = 0;
+    return ++g_nextSource_803C6F34 - 1;
+}
+
