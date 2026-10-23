@@ -8381,22 +8381,19 @@ static inline char *StateMovie_GetNextMovieName(void) {
         return NULL;
     }
     len = strlen(g_moviePlaybackName);
-    if (g_curMovieIndex >= len) {
-        return NULL;
-    }
-    while (g_curMovieIndex < len) {
-        char c = g_moviePlaybackName[g_curMovieIndex];
-
-        if (c != ',') {
-            buffer[n++] = c;
-        } else {
-            g_curMovieIndex++;
-            break;
+    if (g_curMovieIndex < len) {
+        for (; g_curMovieIndex < len; g_curMovieIndex++) {
+            if (g_moviePlaybackName[g_curMovieIndex] != ',') {
+                buffer[n++] = g_moviePlaybackName[g_curMovieIndex];
+            } else {
+                g_curMovieIndex++;
+                break;
+            }
         }
-        g_curMovieIndex++;
+        buffer[n] = '\0';
+        return buffer;
     }
-    buffer[n] = '\0';
-    return buffer;
+    return NULL;
 }
 
 #pragma push
