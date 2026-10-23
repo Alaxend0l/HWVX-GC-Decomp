@@ -9089,6 +9089,71 @@ void LGInit(void) {
         g_lgInitialized_803C7948 = 1;
     }
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+#pragma dont_inline on
+s32 LGOpen(s32 chan, LGDevice **out) {
+    void InitDevice(LGDevice *device, s32 index);
+    s32 SIResetSteeringAsync(s32 chan, void *callback);
+    void SIReadSteering(s32 chan, void *status);
+    void HandlePedals(void *cur, SISteeringStatus *status, SISteeringStatus *calib);
+    void HandleTriggers(void *cur, SISteeringStatus *status, SISteeringStatus *calib);
+    s32 VDevice_Initialize(VDevice *dev, s32 arg1);
+    s32 LGClose(LGDevice *device);
+    LGDevice *device;
+    SISteeringStatus *calib;
+    SISteeringStatus *status;
+    u8 *cur;
+
+    if (chan >= 4 || chan < 0) {
+        return -2;
+    }
+    if (out == NULL) {
+        return -2;
+    }
+    device = &g_lgDevices_803771D8[chan];
+    if (device->started) {
+        LGClose(device);
+    }
+    if (device->opened) {
+        *out = (LGDevice *)device->unk8;
+        return -3;
+    }
+    if (SIResetSteeringAsync(chan, SteeringResetCallback) != -1) {
+        InitDevice(device, chan);
+        status = &device->status;
+        SIReadSteering(chan, status);
+        switch (g_lgDevices_803771D8[chan].status.err) {
+        case -1:
+            g_lgDevices_803771D8[chan].unk4D = -1;
+            return -4;
+        case 0:
+            calib = &device->calibMin;
+            cur = (u8 *)&device->curButton;
+            AutoCalibrateAxisSigned(&calib->steering, &calib[1].steering,
+                                    g_lgDevices_803771D8[chan].status.steering,
+                                    g_lgDevices_803771D8[chan].calibDeadzone.steering, (s8 *)cur + 3);
+            HandlePedals(cur, status, calib);
+            HandleTriggers(cur, status, calib);
+            g_lgDevices_803771D8[chan].curButton = g_lgDevices_803771D8[chan].status.button;
+            g_lgDevices_803771D8[chan].curMisc = g_lgDevices_803771D8[chan].status.misc;
+            g_lgDevices_803771D8[chan].prev = g_lgDevices_803771D8[chan].status;
+            g_lgDevices_803771D8[chan].unk4D = 0;
+            break;
+        }
+        g_lgDevices_803771D8[chan].unk4D = 0;
+        *out = device;
+        *(s32 *)device->unk0 = chan;
+        device->unk8 = (s32)*out;
+        VDevice_Initialize(&device->vdev, (s32)device);
+        device->opened = 1;
+        return 0;
+    }
+    return -4;
+}
+#pragma pop
+
 #pragma pop
 
 s32 LGClose(LGDevice *device) {
