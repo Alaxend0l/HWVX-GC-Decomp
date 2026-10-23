@@ -4368,7 +4368,7 @@ void *PopFreeTextureSet(void) {
 }
 
 void PushFreeTextureSet(void *arg0) {
-    extern u8 FreeTextureSetQueue_8036E300[];
+    extern u8 FreeTextureSetQueue_8036E300[0x20];
     OSSendMessage(FreeTextureSetQueue_8036E300, arg0, 0);
 }
 
