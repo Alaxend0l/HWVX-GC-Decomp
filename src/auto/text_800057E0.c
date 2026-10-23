@@ -4377,10 +4377,6 @@ s32 Drone_PreMove(u8 *drone) {
     return 1;
 }
 
-static inline void Mover_SetRotation(u8 *mover, Quaternion quat) {
-    *(Quaternion *)(mover + 0xE0) = quat;
-}
-
 void Drone_DynamicCollideImpact(u8 *drone, u8 *collision, f32 force) {
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
     void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
