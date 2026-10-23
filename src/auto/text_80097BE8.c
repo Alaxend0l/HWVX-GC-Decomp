@@ -1444,6 +1444,7 @@ void *allocate_from_fixed_pools(void *pool, u32 size) {
     }
     return (u8 *)p + 4;
 }
+#pragma pop
 
 void *soft_allocate_from_var_pools(Block **pool_obj, u32 size, u32 *max_size) {
     Block *bp;
