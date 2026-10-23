@@ -5,6 +5,9 @@
 #define __LO(x) *(1 + (int *)&x)
 
 void *GetRenderWindow();
+void Gfx_SetWorldMatrix(f32 *matrix);
+void MultiplyMatrix4x4(void *arg0, void *arg1, void *arg2);
+void MatrixToMtxTranspose(void *arg0, void *arg1);
 s32 OSSendMessage(void *queue, void *msg, s32 flags);
 s32 OSReceiveMessage(void *queue, void **msg, s32 flags);
 u32 MemCpyA_(u32 dst, u32 src, u32 len);
