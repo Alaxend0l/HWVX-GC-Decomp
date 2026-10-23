@@ -19285,8 +19285,8 @@ void TRKTargetSetInputPendingPtr(void *ptr);
 s32 TRKInitializeIntDrivenUART(u32 param1, u32 param2, u32 param3, volatile u8 **inputPendingPtrRef);
 
 static inline s32 TRK_InitializeEndian(void) {
-    u8 bendian[4];
     s32 result = 0;
+    u8 bendian[4];
 
     gTRKBigEndian = 1;
     bendian[0] = 0x12;
