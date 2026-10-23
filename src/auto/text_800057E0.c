@@ -424,6 +424,19 @@ typedef struct CARDControl {
 
 extern CARDControl __CARDBlock[2];
 
+typedef struct DSPTaskInfo {
+    volatile u32 state;
+    volatile u32 priority;
+    volatile u32 flags;
+    u8 unkC[0x38 - 0xC];
+    struct DSPTaskInfo *next;
+    struct DSPTaskInfo *prev;
+} DSPTaskInfo;
+
+extern DSPTaskInfo *__DSP_first_task;
+extern DSPTaskInfo *__DSP_last_task;
+extern DSPTaskInfo *__DSP_curr_task;
+
 typedef struct CARDFileInfo {
     s32 chan;
     s32 fileNo;
@@ -5993,10 +6006,42 @@ s32 CategorizeError(u32 error) {
     return 3;
 }
 
+void cbForUnrecoveredErrorRetry(u32 intType) {
+    void __DVDStoreErrorCode(u32 error);
+    void DVDReset(void);
+    void cbForStateError(u32 intType);
+    void DVDLowStopMotor(void (*callback)(u32));
+    extern u8 *executing_803C7310;
+
+    if (intType == 16) {
+        M2C_FIELD(executing_803C7310, s32 *, 0xC) = -1;
+        __DVDStoreErrorCode(0x1234568);
+        DVDReset();
+        cbForStateError(0);
+        return;
+    }
+    M2C_FIELD(executing_803C7310, s32 *, 0xC) = -1;
+    if (intType & 2) {
+        __DVDStoreErrorCode(0x1234567);
+        DVDLowStopMotor(cbForStateError);
+    } else {
+        __DVDStoreErrorCode(*(volatile u32 *)(0xCC006000 + 0x20));
+        DVDLowStopMotor(cbForStateError);
+    }
+}
+
 void stateGoToRetry(void) {
     M2C_UNK DVDLowStopMotor(void (*)(u32));
     void cbForStateGoToRetry(u32);
     DVDLowStopMotor(cbForStateGoToRetry);
+}
+
+void stateCheckID2(void) {
+    void DVDLowRead(void *addr, u32 length, u32 offset, void (*callback)(u32));
+    void cbForStateCheckID2(u32 intType);
+    extern u8 tmpBuffer_802EF940[128];
+
+    DVDLowRead(tmpBuffer_802EF940, 0x20, 0x420, cbForStateCheckID2);
 }
 
 void cbForStateCheckID2(u32 intType) {
