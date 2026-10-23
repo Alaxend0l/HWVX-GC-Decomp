@@ -5194,6 +5194,21 @@ s32 StateGameManager_Init(void) {
     }
     return 1;
 }
+
+s32 StateGameManager_Shutdown(void) {
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void FileStreaming_HeartBeat(void);
+    void ShowStats_Release(void);
+    M2C_UNK FileStreaming_ReleaseAllDataPacks(M2C_UNK, M2C_UNK);
+
+    if (GameSettings_GetCodeVariable(0x198, 0) != 0) {
+        FileStreaming_ReleaseAllDataPacks(1, 1);
+    }
+    FileStreaming_HeartBeat();
+    ShowStats_Release();
+    return 1;
+}
+
 #pragma pop
 
 void StateGameManager_Release(void) {
