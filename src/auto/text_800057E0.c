@@ -519,11 +519,7 @@ static inline s32 TRKReadBuffer1_ui8_inline(TRKBuffer *b, u8 *data) {
     return TRKReadBuffer_inline(b, data, 1);
 }
 
-#pragma push
-#pragma opt_propagation off
 static inline s32 TRKReadBuffer1_ui32_inline(TRKBuffer *b, u32 *data) {
-    u32 length;
-    u32 bytesLeft;
     u8 *bigEndianData;
     u8 *byteData;
     s32 err;
@@ -534,15 +530,7 @@ static inline s32 TRKReadBuffer1_ui32_inline(TRKBuffer *b, u32 *data) {
     } else {
         bigEndianData = swapBuffer;
     }
-    length = sizeof(*data);
-    err = 0;
-    bytesLeft = b->length - b->position;
-    if (length > bytesLeft) {
-        err = 0x302;
-        length = bytesLeft;
-    }
-    TRK_memcpy(bigEndianData, b->data + b->position, length);
-    b->position += length;
+    err = TRKReadBuffer_inline(b, bigEndianData, sizeof(*data));
     if (!gTRKBigEndian && err == 0) {
         byteData = (u8 *)data;
         byteData[0] = bigEndianData[3];
@@ -552,7 +540,6 @@ static inline s32 TRKReadBuffer1_ui32_inline(TRKBuffer *b, u32 *data) {
     }
     return err;
 }
-#pragma pop
 
 static inline s32 TRKAppendBuffer1_ui32_inline(TRKBuffer *b, u32 data) {
     u8 *bigEndianData;
@@ -15282,13 +15269,12 @@ s32 TRKTerminateNub(void) {
 
 #pragma push
 #pragma use_lmw_stmw on
-#pragma opt_propagation off
 s32 TRKReadBuffer_ui32(TRKBuffer *b, u32 *data, s32 count) {
     s32 err;
     s32 i;
 
-    for (i = 0, err = 0; err == 0 && i < count; i++, data++) {
-        err = TRKReadBuffer1_ui32_inline(b, data);
+    for (i = 0, err = 0; err == 0 && i < count; i++) {
+        err = TRKReadBuffer1_ui32_inline(b, &data[i]);
     }
     return err;
 }
