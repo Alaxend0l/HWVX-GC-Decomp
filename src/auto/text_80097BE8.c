@@ -2008,7 +2008,7 @@ void atan2(void) {
     fn_800957D4();
 }
 
-void pow(void) {
+double pow(double x, double y) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
 }
