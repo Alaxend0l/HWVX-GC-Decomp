@@ -5672,6 +5672,32 @@ s32 TriggerMovableVolumeEntered(u32 *trigger) {
     }
     return 0;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 TriggerAirboxStopIn(u32 *trigger) {
+    f32 PSVECSquareMag(Vector4 *v);
+    f32 dist;
+    u8 *volume;
+    u8 *thing;
+    u32 i;
+    u32 numThings;
+    u32 j;
+
+    numThings = trigger[0];
+    for (i = 0; i < numThings; i++) {
+        thing = (u8 *)trigger[i + 1];
+        for (j = 0; j < trigger[numThings + 1]; j++) {
+            volume = M2C_FIELD(trigger[numThings + 2 + j], u8 **, 0x28);
+            if (M2C_FIELD(thing, u32 *, 4) == 1 && PSVECSquareMag((Vector4 *)volume) < 50.0f && IsPointWithinVolume((Vector4 *)(volume + 0x40), thing, &dist)) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+#pragma pop
+
 #pragma pop
 
 #pragma push
