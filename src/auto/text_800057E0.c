@@ -6944,6 +6944,48 @@ void VertexColorSeqManager_Destroy(void) {
     g_iTotalVertexColorTiles = 0;
 }
 
+void VertexColorSeqManager_AddVertices(void *vertices);
+void VertexColorSeqManager_Init(void) {
+    typedef struct VertexColorTile {
+        u8 *light;
+        u8 key[0x2C];
+        u8 active;
+        u8 unk31[3];
+    } VertexColorTile;
+    typedef struct WorldObject {
+        u8 unk0[0x14];
+        void *vertices;
+        u8 unk18[0x4];
+        u32 unk1C;
+        u8 unk20[0x30];
+    } WorldObject;
+    extern VertexColorTile g_VertexColorTiles[64];
+    extern s32 g_iTotalVertexColorSeq;
+    extern s32 g_iTotalVertexColorTiles;
+    u8 *world;
+    u32 i;
+
+    g_iTotalVertexColorSeq = 0;
+    g_iTotalVertexColorTiles = 0;
+    world = g_worldData.world;
+    if (world != NULL) {
+        for (i = 0; i < M2C_FIELD(world, u32 *, 0x60); i++) {
+            g_VertexColorTiles[i].light = M2C_FIELD(world, u8 **, 0x64) + i * 0x10;
+            g_VertexColorTiles[i].active = 1;
+            g_iTotalVertexColorTiles++;
+        }
+        world = g_worldData.world;
+        for (i = 0; i < M2C_FIELD(world, u32 *, 0x20); i++) {
+            if (M2C_FIELD(world, WorldObject **, 0x24)[i].unk1C == 0) {
+                if (M2C_FIELD(world, WorldObject **, 0x24)[i].vertices != NULL) {
+                    VertexColorSeqManager_AddVertices(M2C_FIELD(world, WorldObject **, 0x24)[i].vertices);
+                }
+                break;
+            }
+        }
+    }
+}
+
 void VertexColorSeqManager_Heartbeat(void) {
     typedef struct VertexColorTile {
         u8 *light;
