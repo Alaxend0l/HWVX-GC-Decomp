@@ -2518,6 +2518,39 @@ f32 Creature_GetMass(void *arg0) {
     return M2C_FIELD(arg0, f32 *, 0x1BC);
 }
 
+void Creature_MotionStateInitDeath(u8 *creature) {
+    s32 state;
+    u32 index;
+    u32 *entry;
+    u8 *motion;
+    u8 *anims;
+
+    motion = creature + 0xCC;
+    index = M2C_FIELD(creature, u32 *, 0x1CC);
+    state = 0xFFFF;
+    if (M2C_FIELD(creature, s32 *, 0x1B4) == 0) {
+        anims = M2C_FIELD(creature, u8 **, 0xB8);
+        if (M2C_FIELD(anims, u8 **, 0x30) != NULL) {
+            entry = (u32 *)(M2C_FIELD(anims, u8 **, 0x30) + index * 0x60);
+            if (index >= M2C_FIELD(anims, u32 *, 0x2C) || *entry == 0) {
+                entry = M2C_FIELD(anims, u32 **, 0x18);
+                state = 0;
+                index = 0;
+            }
+            M2C_FIELD(creature, u32 *, 0xCC) = *entry;
+            MotionState_Init(motion, 0);
+            M2C_FIELD(creature, s32 *, 0xC4) = state;
+            M2C_FIELD(creature, u32 *, 0x114) = index;
+            M2C_FIELD(creature, u32 **, 0x118) = entry;
+            M2C_FIELD(creature, u32 *, 0x74) |= 0x20;
+            if (M2C_FIELD(creature, u8 **, 0x90) != NULL) {
+                M2C_FIELD(M2C_FIELD(creature, u8 **, 0x90), s32 *, 0x1C) = 0;
+            }
+            M2C_FIELD(creature, u32 *, 0x1CC) = 0;
+        }
+    }
+}
+
 void Creature_Release(s32 arg0) {
     M2C_UNK MotionState_Release(s32);
     M2C_UNK Thing_Release(s32);
