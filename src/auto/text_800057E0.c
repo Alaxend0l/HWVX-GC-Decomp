@@ -5252,12 +5252,12 @@ void C_MTXOrtho(f32 m[4][4], f32 t, f32 b, f32 l, f32 r, f32 n, f32 f) {
     m[0][0] = 2.0f * tmp;
     m[0][1] = 0.0f;
     m[0][2] = 0.0f;
-    m[0][3] = -(r + l) * tmp;
+    m[0][3] = tmp * -(r + l);
     tmp = 1.0f / (t - b);
     m[1][0] = 0.0f;
     m[1][1] = 2.0f * tmp;
     m[1][2] = 0.0f;
-    m[1][3] = -(t + b) * tmp;
+    m[1][3] = tmp * -(t + b);
     tmp = 1.0f / (f - n);
     m[2][0] = 0.0f;
     m[2][1] = 0.0f;
@@ -7785,6 +7785,18 @@ void UnreserveEXI2Port(void) {
 void ReserveEXI2Port(void) {
     extern void (*gDBCommTable[7])(void);
     gDBCommTable[5]();
+}
+
+s32 WriteUART1(u8 c) {
+    extern u8 gWriteBuf_8030CAF4[];
+    extern s32 gWritePos_8030B9D8;
+    gWriteBuf_8030CAF4[gWritePos_8030B9D8++] = c;
+    return 0;
+}
+
+void EnableEXI2Interrupts(void) {
+    extern void (*gDBCommTable[7])(void);
+    gDBCommTable[1]();
 }
 
 void TRKEXICallBack(s16 chan, void *ctx) {
