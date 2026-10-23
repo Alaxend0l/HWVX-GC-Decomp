@@ -653,14 +653,6 @@ static inline void SimThread_SetWeights(SimThread *t, const s32 *weights) {
     t->historyIdx = 0;
 }
 
-static inline void SimThread_SetFloatWeights(SimThread *t, const f32 *weights, s32 *iweights) {
-    s32 i;
-
-    for (i = 0; i < 10; i++) {
-        iweights[i] = 4096.0f * weights[i];
-    }
-    SimThread_SetWeights(t, iweights);
-}
 void VDevice_RecalcGammaTable(void);
 extern s8 g_iGammaLookup_8037BAF8[129];
 s32 VDevice_Shutdown(VDevice *dev);
@@ -8819,7 +8811,7 @@ void SimThread_Init(VDevice *dev, VDevice *owner) {
     t->lastTick = OSGetTick() / ((*(u32 *)0x800000F8 / 4) / 1000);
     SimThread_SetWeights(t, w);
     for (i = 0; i < 10; i++) {
-        ia[i] = (s32)(a[i] * 4096.0f);
+        ia[i] = a[i] * 4096.0f;
     }
     SimThread_SetWeights(t, ia);
 }
