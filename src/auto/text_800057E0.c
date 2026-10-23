@@ -4202,6 +4202,8 @@ u8 Trigger_IsTACSystemPaused(void) {
     return g_bTACSystemPaused_803C7124;
 }
 
+#pragma push
+#pragma readonly_strings on
 s32 Trigger_AddTrigger(s32 *trigger) {
     extern u32 TriggerStats_800D3C58[][3];
     extern char *triggerLabelsArray_800D3BE8[];
@@ -4224,6 +4226,7 @@ s32 Trigger_AddTrigger(s32 *trigger) {
     g_bTACSystemPaused_803C7124 = 0;
     return 1;
 }
+#pragma pop
 
 s32 TriggerLevelStart(void) {
     return 1;
