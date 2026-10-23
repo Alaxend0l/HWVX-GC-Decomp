@@ -9102,6 +9102,19 @@ static inline BOOL issueCommand(s32 prio, u8 *block) {
     return result;
 }
 
+BOOL DVDReadAbsAsyncForBS(u8 *block, void *addr, s32 length, s32 offset, void *callback) {
+    BOOL idle;
+
+    *(u32 *)(block + 0x8) = 4;
+    *(void **)(block + 0x18) = addr;
+    *(s32 *)(block + 0x14) = length;
+    *(s32 *)(block + 0x10) = offset;
+    *(u32 *)(block + 0x20) = 0;
+    *(void **)(block + 0x28) = callback;
+    idle = issueCommand(2, block);
+    return idle;
+}
+
 BOOL DVDInquiryAsync(u8 *block, void *addr, void *callback) {
     BOOL idle;
 
