@@ -2212,6 +2212,21 @@ void DataPack_ReleaseQuadPack(void *pack) {
     }
 }
 
+u8 *DataPack_GetScript(void *pack, s32 id) {
+    u32 i;
+    u8 *table = *(u8 **)pack;
+
+    if (table == NULL) {
+        return NULL;
+    }
+    for (i = 0; i < M2C_FIELD(table, u32 *, 0); i++) {
+        if (id == M2C_FIELD(table, u32 **, 4)[i * 2 + 1]) {
+            return M2C_FIELD(table, u8 ***, 4)[i * 2];
+        }
+    }
+    return NULL;
+}
+
 void Debris_Draw(u8 *debris) {
     void Gfx_DrawGeometry(void *geom, void *mtx);
     void Gfx_DrawGeometry_MatrixNotCached(void *geom, void *mtx);
@@ -2227,6 +2242,58 @@ void Debris_Draw(u8 *debris) {
 
 f32 Debris_GetMass(void *arg0) {
     return M2C_FIELD(arg0, f32 *, 0xCC);
+}
+
+#pragma push
+#pragma dont_inline on
+void Destructible_Release(u8 *destructible) {
+    void Trigger_DestructibleKilled(void *thing);
+    void Thing_Release(s32 thing);
+    extern u8 g_destructibleVTable[];
+    u8 *trigger;
+
+    Trigger_DestructibleKilled(destructible);
+    if (M2C_FIELD(destructible, u8 **, 0x8C) == g_destructibleVTable) {
+        trigger = M2C_FIELD(destructible, u8 **, 0x90);
+        if (trigger != NULL) {
+            M2C_FIELD(destructible, u8 **, 0x90) = NULL;
+            M2C_FIELD(trigger, u32 *, 0x2C) = 0;
+            if (!(s8)Trigger_IsTACSystemPaused()) {
+                M2C_FIELD(trigger, u32 *, 0x30) = 0;
+            }
+        }
+    }
+    OBoxHolder_Release(M2C_FIELD(destructible, void **, 0xD0));
+    M2C_FIELD(destructible, void **, 0xD0) = NULL;
+    OConvexHullHolder_Release(M2C_FIELD(destructible, void **, 0xCC));
+    M2C_FIELD(destructible, void **, 0xCC) = NULL;
+    Thing_Release((s32)destructible);
+}
+#pragma pop
+
+void Destructible_Draw(u8 *destructible) {
+    f32 Gfx_GetMinCameraDistSquared(void *pos);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void Gfx_DrawGeometry_MatrixNotCached(void *geom, void *mtx);
+    void Thing_DrawSharedSlaves(void *thing, void *slaves);
+    f32 distSq;
+    u8 *data;
+
+    if (0.0f != M2C_FIELD(destructible, f32 *, 0xC4)) {
+        distSq = Gfx_GetMinCameraDistSquared(destructible + 0x40);
+        if ((u32)ViewManager_GetViewFormat() > 1) {
+            distSq *= 4.0f;
+        }
+        if (distSq > M2C_FIELD(destructible, f32 *, 0xC4) * M2C_FIELD(destructible, f32 *, 0xC4)) {
+            return;
+        }
+    }
+    QuaternionToSubMatrix(destructible + 0x50, destructible + 0x10);
+    data = M2C_FIELD(destructible, u8 **, 0xC0);
+    if (data[4] == 0) {
+        Gfx_DrawGeometry_MatrixNotCached(*(void **)data, destructible + 0x10);
+    }
+    Thing_DrawSharedSlaves(destructible, M2C_FIELD(destructible, u8 **, 0xC0) + 0x18);
 }
 
 f32 Destructible_GetMass(void *arg0) {
