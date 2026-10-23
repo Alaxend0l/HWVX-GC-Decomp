@@ -163,6 +163,7 @@ typedef struct THPFileInfo {
 } THPFileInfo;
 
 extern THPFileInfo *__THPInfo_803C7890;
+extern u8 *__THPHuffmanBits_803C7824;
 extern u8 *__THPHuffmanSizeTab_803C7828;
 extern u16 *__THPHuffmanCodeTab_803C782C;
 extern void *OldVIPostCallback_803C775C;
