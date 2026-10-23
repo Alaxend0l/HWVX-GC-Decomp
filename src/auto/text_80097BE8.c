@@ -4688,6 +4688,15 @@ void CreateSilhouette(void *edges, u32 count, Vector *dir) {
 }
 
 void RenderGroup(Geometry *geometry, u32 group, void *matrix);
+void EnvMap(Geometry *geometry, u32 group, void *matrix, s32 mode);
+void Render_DrawOpaqueGroup(Geometry *geometry, u32 group, void *matrix);
+static inline void RenderOpaqueGroup(Geometry *geometry, u32 group, void *matrix) {
+    extern u8 g_CurrentViews;
+    Render_DrawOpaqueGroup(geometry, group, matrix);
+    if ((geometry->groups[group].flags & 0x10) && g_CurrentViews == 1) {
+        EnvMap(geometry, group, matrix, 2);
+    }
+}
 void Gfx_DrawGeometryLOD_Immediate(Geometry *geometry, void *matrix) {
     extern f32 g_identity[];
     extern u32 m_fillMode;
@@ -4707,6 +4716,42 @@ void Gfx_DrawGeometryLOD_Immediate(Geometry *geometry, void *matrix) {
     }
 }
 
+#pragma push
+#pragma dont_inline on
+void RenderGroup(Geometry *geometry, u32 group, void *matrix) {
+    extern GfxState g_state;
+    extern u8 g_CurrentViews;
+    void EnvMap(Geometry *geometry, u32 group, void *matrix, s32 mode);
+    void DrawGroupWireframe(Geometry *geometry, u32 group, void *matrix);
+    void Render_DrawOpaqueGroup(Geometry *geometry, u32 group, void *matrix);
+
+    if (geometry->groups[group].flags & 0x4000) {
+        return;
+    }
+    if (geometry->groups[group].flags & 0x80) {
+        GXColor color = g_state.unk74;
+        DisplayList_AddAlphaGroup((s32)geometry, group, 0, (g_state.unk7C >> 4) & 1, &color);
+        return;
+    }
+    if (geometry->groups[group].flags & 1) {
+        GXColor color = g_state.unk74;
+        DisplayList_AddAlphaGroup((s32)geometry, group, 0, (g_state.unk7C >> 4) & 1, &color);
+        return;
+    }
+    if (geometry->groups[group].flags & 2) {
+        EnvMap(geometry, group, matrix, 1);
+        return;
+    }
+    if (geometry->groups[group].flags & 0x100) {
+        DrawGroupWireframe(geometry, group, matrix);
+        return;
+    }
+    Render_DrawOpaqueGroup(geometry, group, matrix);
+    if ((geometry->groups[group].flags & 0x10) && g_CurrentViews == 1) {
+        EnvMap(geometry, group, matrix, 2);
+    }
+}
+#pragma pop
 void Render_UseLighting(u8 arg0) {
     M2C_UNK GXSetChanCtrl(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK, s32, M2C_UNK, M2C_UNK);
     extern s32 m_pointLightMask_803C771C;
