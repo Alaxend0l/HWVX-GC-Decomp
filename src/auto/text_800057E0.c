@@ -5231,6 +5231,17 @@ void Thing_StaticGridMove(void *thing) {
     }
 }
 
+void Thing_RotationalGridMove(void *thing) {
+    void Grid_MoveObject(s32 obj, Vector4 *min, Vector4 *max);
+    Vector4 min;
+    Vector4 max;
+
+    if (M2C_FIELD(thing, u32 *, 0x84) != 0) {
+        Thing_GetStaticRotationalMinMax(thing, &min, &max);
+        Grid_MoveObject(M2C_FIELD(thing, s32 *, 0x84), &min, &max);
+    }
+}
+
 void Thing_CollideWithRay(void) {
 
 }
