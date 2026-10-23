@@ -2340,10 +2340,7 @@ void Destructible_CollideWithRay(void *thing, void *start, void *end, void *hit,
 
     dist = PhysicalProperties_CollideWithRay(M2C_FIELD(M2C_FIELD(thing, void **, 0xC0), void **, 0x10), (u8 *)thing + 0x10, start, end, hit);
     if (hit != NULL && dist < maxDist) {
-        M2C_FIELD(hit, s32 *, 0x30) = M2C_FIELD(thing, s32 *, 0x0);
-        M2C_FIELD(hit, s32 *, 0x34) = M2C_FIELD(thing, s32 *, 0x4);
-        M2C_FIELD(hit, s32 *, 0x38) = M2C_FIELD(thing, s32 *, 0x8);
-        M2C_FIELD(hit, s32 *, 0x3C) = M2C_FIELD(thing, s32 *, 0xC);
+        M2C_FIELD(hit, Vector4 *, 0x30) = *(Vector4 *)thing;
     }
 }
 
