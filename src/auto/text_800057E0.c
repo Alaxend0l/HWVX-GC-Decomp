@@ -425,9 +425,9 @@ typedef struct CARDControl {
 extern CARDControl __CARDBlock[2];
 
 typedef struct DSPTaskInfo {
-    u32 state;
-    u32 priority;
-    u32 flags;
+    volatile u32 state;
+    volatile u32 priority;
+    volatile u32 flags;
     u8 unkC[0x38 - 0xC];
     struct DSPTaskInfo *next;
     struct DSPTaskInfo *prev;
