@@ -14698,7 +14698,7 @@ void __CARDSyncCallback(s32 chan, s32 result) {
 
 void __CARDExtHandler(s32 chan, void *context) {
     void *EXISetExiCallback(s32 chan, void *exiCallback);
-    s32 OSCancelAlarm(void *alarm);
+    void OSCancelAlarm(void *alarm);
     CARDControl *card;
     CARDCallback callback;
 
