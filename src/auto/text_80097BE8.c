@@ -9389,6 +9389,133 @@ void PushDecodedAudioBuffer(void *arg0) {
     OSSendMessage(DecodedAudioBufferQueue_80371444, arg0, 1);
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s32 THPVideoDecode(void *file, void *tileY, void *tileU, void *tileV, void *work) {
+    extern u8 *__THPWorkArea_803C788C;
+    extern s32 __THPInitFlag_803C7894;
+    u32 PPCMfhid2(void);
+    void DCZeroRange(void *addr, u32 nBytes);
+    s32 __THPReadHuffmanTableSpecification(void);
+    s32 __THPReadFrameHeader(void);
+    void __THPRestartDefinition(void);
+    u8 __THPReadQuantizationTable(void);
+    u8 __THPReadScaneHeader(void);
+    void __THPSetupBuffers(void);
+    void __THPDecompressYUV(void *tileY, void *tileU, void *tileV);
+    u8 all_done, status;
+    s32 errorCode;
+
+    if (!file) {
+        goto _err_no_input;
+    }
+    if (tileY == NULL || tileU == NULL || tileV == NULL) {
+        goto _err_no_output;
+    }
+    if (!work) {
+        goto _err_no_work;
+    }
+    if (!(PPCMfhid2() & 0x10000000)) {
+        goto _err_lc_not_enabled;
+    }
+    if (__THPInitFlag_803C7894 == FALSE) {
+        goto _err_not_initialized;
+    }
+
+    __THPWorkArea_803C788C = work;
+    __THPInfo_803C7890 = (THPFileInfo *)(((u32)__THPWorkArea_803C788C + 31) & ~31);
+    __THPWorkArea_803C788C = (u8 *)((u32)__THPInfo_803C7890 + sizeof(THPFileInfo));
+    DCZeroRange(__THPInfo_803C7890, sizeof(THPFileInfo));
+    __THPInfo_803C7890->cnt = 33;
+    all_done = FALSE;
+    __THPInfo_803C7890->decompressedY = 0;
+    __THPInfo_803C7890->c = file;
+
+    for (;;) {
+        if (*(__THPInfo_803C7890->c)++ != 255) {
+            goto _err_bad_syntax;
+        }
+        while (*__THPInfo_803C7890->c == 255) {
+            __THPInfo_803C7890->c++;
+        }
+        status = *(__THPInfo_803C7890->c)++;
+
+        if (status <= 0xD7) {
+            if (status == 196) {
+                status = __THPReadHuffmanTableSpecification();
+                if (status != 0) {
+                    goto _err_bad_status;
+                }
+            } else if (status == 192) {
+                status = __THPReadFrameHeader();
+                if (status != 0) {
+                    goto _err_bad_status;
+                }
+            } else {
+                goto _err_unsupported_marker;
+            }
+        } else if (0xD8 <= status && status <= 0xDF) {
+            if (status == 221) {
+                __THPRestartDefinition();
+            } else if (status == 219) {
+                status = __THPReadQuantizationTable();
+                if (status != 0) {
+                    goto _err_bad_status;
+                }
+            } else if (status == 218) {
+                status = __THPReadScaneHeader();
+                if (status != 0) {
+                    goto _err_bad_status;
+                }
+                all_done = TRUE;
+            } else if (status == 216) {
+            } else {
+                goto _err_unsupported_marker;
+            }
+        } else if (0xE0 <= status) {
+            if ((224 <= status && status <= 239) || status == 254) {
+                __THPInfo_803C7890->c += (__THPInfo_803C7890->c)[0] << 8 | (__THPInfo_803C7890->c)[1];
+            } else {
+                goto _err_unsupported_marker;
+            }
+        }
+        if (all_done) {
+            break;
+        }
+    }
+
+    __THPSetupBuffers();
+    __THPDecompressYUV(tileY, tileU, tileV);
+    return 0;
+
+_err_no_input:
+    errorCode = 25;
+    goto _err_exit;
+_err_no_output:
+    errorCode = 27;
+    goto _err_exit;
+_err_no_work:
+    errorCode = 26;
+    goto _err_exit;
+_err_unsupported_marker:
+    errorCode = 11;
+    goto _err_exit;
+_err_bad_syntax:
+    errorCode = 3;
+    goto _err_exit;
+_err_bad_status:
+    errorCode = status;
+    goto _err_exit;
+_err_lc_not_enabled:
+    errorCode = 28;
+    goto _err_exit;
+_err_not_initialized:
+    errorCode = 29;
+_err_exit:
+    return errorCode;
+}
+#pragma pop
+
 s32 __THPReadFrameHeader(void) {
     s32 i;
     u8 utmp8;
