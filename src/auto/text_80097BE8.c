@@ -8352,7 +8352,7 @@ void AudioIT_Destroy(void) {
 }
 
 #pragma push
-#pragma optimization_level 2
+#pragma optimization_level 1
 #pragma dont_inline on
 void CreateIT(u8 *data, u32 arg1) {
     typedef struct ITSong {
