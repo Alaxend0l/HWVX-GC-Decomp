@@ -4179,6 +4179,36 @@ void GSI_VehicleItemInit(void) {
     PlayerManager_Init();
 }
 
+void GSI_VehicleSelectionInfo(u8 *info) {
+    typedef struct VehicleInterfaceData {
+        u32 unk0;
+        s32 unk4;
+        s32 unk8;
+        s32 unkC;
+        s32 unk10;
+        s32 unk14;
+        u8 unk18[0x24 - 0x18];
+        void *car;
+        u8 unk28[0x2C - 0x28];
+        u8 unk2C[8];
+        u8 unk34[0x38 - 0x34];
+    } VehicleInterfaceData;
+    extern VehicleInterfaceData g_vehicleInterfaceData[4];
+    u32 i;
+    void *vehicle;
+
+    for (i = 0; i < 4; i++) {
+        if (*(u32 *)info == g_vehicleInterfaceData[i].unk0 && g_vehicleInterfaceData[i].car != NULL) {
+            vehicle = M2C_FIELD(g_vehicleInterfaceData[i].car, void **, 0x3BC);
+            info[0xC9] = M2C_FIELD(M2C_FIELD(vehicle, u8 **, 0x84), u8 *, 0x34);
+            info[0xCA] = M2C_FIELD(M2C_FIELD(vehicle, u8 **, 0x84), u8 *, 0x35);
+            info[0xCB] = M2C_FIELD(M2C_FIELD(vehicle, u8 **, 0x84), u8 *, 0x36);
+            info[0xCC] = M2C_FIELD(M2C_FIELD(vehicle, u8 **, 0x84), u8 *, 0x37);
+            return;
+        }
+    }
+}
+
 void Motion_Release(s32 arg0) {
     MotionState_Release(arg0 + 0xB0);
     Thing_Release(arg0);
