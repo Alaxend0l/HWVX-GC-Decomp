@@ -9536,6 +9536,7 @@ BOOL THPPlayerPrepare(s32 frameNum, u8 playFlag) {
     }
     return FALSE;
 }
+#pragma pop
 
 BOOL THPPlayerPlay(void) {
     if (ActivePlayer.open && (ActivePlayer.state == 1 || ActivePlayer.state == 4)) {
