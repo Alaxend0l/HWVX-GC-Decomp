@@ -7098,6 +7098,54 @@ s32 Projectile_PreMove(u8 *proj) {
     return 1;
 }
 
+void Projectile_Draw(u8 *proj) {
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void *Gfx_AddBillBoardSprite(u16);
+    void Gfx_SetBaseColor(void *color);
+    void Gfx_EnableState(s32 state);
+    void Gfx_DisableState(s32 state);
+    void Gfx_DrawGeometry(void *geom, void *mtx);
+    u32 color;
+    Matrix4 mtx;
+    Matrix4 scale;
+    u8 *info;
+    u8 *bb;
+
+    if (*M2C_FIELD(proj, u8 **, 0x120) == 1) {
+        QuaternionToSubMatrix(proj + 0x50, proj + 0x10);
+        memset(&scale, 0, sizeof(Matrix4));
+        scale.m[0][0] = M2C_FIELD(proj, f32 *, 0xC0);
+        scale.m[1][1] = M2C_FIELD(proj, f32 *, 0xC4);
+        scale.m[2][2] = M2C_FIELD(proj, f32 *, 0xC8);
+        scale.m[3][3] = 1.0f;
+        MultiplyMatrix(&scale, proj + 0x10, &mtx);
+        switch (M2C_FIELD(proj, u8 **, 0x120)[1]) {
+        case 0:
+            if (M2C_FIELD(proj, u32 *, 0x74) & 0x4000) {
+                color = M2C_FIELD(proj, u32 *, 0x114);
+                Gfx_SetBaseColor(&color);
+                Gfx_EnableState(0x10);
+            }
+            Gfx_DrawGeometry(M2C_FIELD(M2C_FIELD(proj, u8 **, 0x120), void **, 0x10), &mtx);
+            if (M2C_FIELD(proj, u32 *, 0x74) & 0x4000) {
+                Gfx_DisableState(0x10);
+            }
+            break;
+        case 1:
+            bb = Gfx_AddBillBoardSprite(0);
+            info = M2C_FIELD(proj, u8 **, 0x120);
+            M2C_FIELD(bb, u8 *, 0x2A) = *M2C_FIELD(info, u8 **, 0x60);
+            M2C_FIELD(bb, u32 *, 0x24) = M2C_FIELD(proj, u32 *, 0x114);
+            M2C_FIELD(bb, f32 *, 0xC) = M2C_FIELD(proj, f32 *, 0xC0);
+            M2C_FIELD(bb, f32 *, 0x0) = M2C_FIELD(proj, f32 *, 0x40);
+            M2C_FIELD(bb, f32 *, 0x4) = M2C_FIELD(proj, f32 *, 0x44);
+            M2C_FIELD(bb, f32 *, 0x8) = M2C_FIELD(proj, f32 *, 0x48);
+            M2C_FIELD(bb, f32 *, 0x1C) = 360.0f;
+            break;
+        }
+    }
+}
+
 void Projectile_YAim(u8 *proj, Vector4 *target) {
     void InverseXformVec(void *mtx, Vector4 *in, Vector4 *out);
     f32 ArcTan(f32 y, f32 x);
