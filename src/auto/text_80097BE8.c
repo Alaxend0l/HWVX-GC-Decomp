@@ -7149,6 +7149,7 @@ void THPGXYuv2RgbDraw(u32 *yImage, u32 *uImage, u32 *vImage, s16 x, s16 y, s16 t
     GXWGFifo.u16 = 0;
     GXWGFifo.u16 = 1;
 }
+#pragma pop
 
 void Mpeg_Create(void) {
     M2C_UNK fn_800957D4();
