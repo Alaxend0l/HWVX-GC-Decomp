@@ -11232,6 +11232,21 @@ static void SoundSeq_RemoveFromQueue(u8 *seq) {
     }
 }
 
+static inline void SoundSeq_StopSounds(u8 *seq) {
+    void SoundSource_Stop(s32 index);
+    u32 i;
+
+    if (*(u32 *)(seq + 0x74) & 0x40000000) {
+        SoundSeq_RemoveFromQueue(seq);
+    }
+    for (i = 0; i < 4; i++) {
+        if (((s32 *)seq)[0x34 + i] >= 0 && SoundSource_IsLooping(((s32 *)seq)[0x34 + i])) {
+            SoundSource_Stop(((s32 *)seq)[0x34 + i]);
+        }
+        ((s32 *)seq)[0x34 + i] = -1;
+    }
+}
+
 void SoundSeq_Release(u8 *seq) {
     void Trigger_SoundSequenceQueueEmptied(void);
     void SoundSource_Stop(s32 index);
