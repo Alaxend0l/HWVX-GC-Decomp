@@ -2888,10 +2888,13 @@ double __kernel_sin(double x, double y, int iy) {
 
 double __kernel_tan(double x, double y, int iy);
 int __ieee754_rem_pio2(double x, double *y);
+#pragma push
+#pragma auto_inline off
 double copysign(double x, double y) {
     __HI(x) = (__HI(x) & 0x7fffffff) | (__HI(y) & 0x80000000);
     return x;
 }
+#pragma pop
 
 double __kernel_cos(double x, double y);
 double __kernel_sin(double x, double y, int iy);
@@ -3004,6 +3007,49 @@ double frexp(double x, int *eptr) {
     hx = (hx & 0x800fffff) | 0x3fe00000;
     __HI(x) = hx;
     return x;
+}
+
+double ldexp(double x, int n) {
+    int k, hx, lx;
+
+    if (!(__fpclassifyd(x) > 2) || x == 0.0) {
+        return x;
+    }
+    hx = __HI(x);
+    lx = __LO(x);
+    k = (hx & 0x7ff00000) >> 20;
+    if (k == 0) {
+        if ((lx | (hx & 0x7fffffff)) == 0) {
+            return x;
+        }
+        x *= 1.80143985094819840000e+16;
+        hx = __HI(x);
+        k = ((hx & 0x7ff00000) >> 20) - 54;
+        if (n < -50000) {
+            return 1.0e-300 * x;
+        }
+    }
+    if (k == 0x7ff) {
+        return x + x;
+    }
+    k = k + n;
+    if (k > 0x7fe) {
+        return 1.0e+300 * copysign(1.0e+300, x);
+    }
+    if (k > 0) {
+        __HI(x) = (hx & 0x800fffff) | (k << 20);
+        return x;
+    }
+    if (k <= -54) {
+        if (n > 50000) {
+            return 1.0e+300 * copysign(1.0e+300, x);
+        } else {
+            return 1.0e-300 * copysign(1.0e-300, x);
+        }
+    }
+    k += 54;
+    __HI(x) = (hx & 0x800fffff) | (k << 20);
+    return x * 5.55111512312578270212e-17;
 }
 
 double modf(double x, double *iptr)
