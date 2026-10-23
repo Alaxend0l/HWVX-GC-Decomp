@@ -3736,6 +3736,40 @@ void InterfaceManager_SetOffset(s32 index, f32 x, f32 y) {
     *(f32 *)(iface + 0x64) = y;
 }
 
+void InterfaceManager_SetObjectString(u8 *obj, char *str) {
+    u32 strlen(const char *s);
+    char *strncpy(char *dst, const char *src, u32 n);
+    char *strcpy(char *dst, const char *src);
+    u8 *info = *(u8 **)(*(u8 **)(obj + 0x258) + 4);
+
+    obj[0x248] = 1;
+    obj[0x84] = 1;
+    obj[0x2C] = 1;
+    obj[0x164] = 1;
+    obj[0x194] = 1;
+    *(u16 *)(obj + 0x1AA) = 0;
+    *(u32 *)(obj + 0x1AC) = *(u32 *)(info + 0x14);
+    *(u16 *)(obj + 0x1A8) = 0;
+    obj[0x1C0] = 0;
+    *(void **)(obj + 0x1A0) = NULL;
+    *(char **)(obj + 0x1A4) = NULL;
+    obj[0x1B1] = 0;
+    if (str != NULL) {
+        if (strlen(str) > 0x80) {
+            strncpy((char *)(obj + 0x1C0), str, 0x80);
+        } else {
+            strcpy((char *)(obj + 0x1C0), str);
+        }
+        *(u16 *)(obj + 0x1A8) = strlen(str);
+        if (*(s32 *)(obj + 0x1AC) == 0) {
+            *(u16 *)(obj + 0x1AA) = *(u16 *)(obj + 0x1A8);
+        }
+        if (*(u8 *)(*(u8 **)(obj + 0x258) + 0x12) != 0) {
+            obj[0x1B1] = 1;
+        }
+    }
+}
+
 void InterfaceManager_SetObjectText(u8 *obj, char **text) {
     u32 strlen(const char *s);
     char *str;
@@ -9730,6 +9764,51 @@ s32 SIProbe(s32 chan) {
     return SIDecodeType(SIGetType(chan));
 }
 
+void SISetSamplingRate(u32 arg0) {
+    M2C_UNK OSReport(void *);
+    M2C_UNK SISetXY(s32, u8);
+    s32 VIGetTvFormat();
+    extern u32 SamplingRate_803C75A0;
+    extern M2C_UNK XYNTSC_800D9F40;
+    M2C_UNK *var_r4;
+    s32 temp_r3;
+    s32 temp_r3_2;
+    s32 temp_r3_3;
+    s32 var_r5;
+    u32 var_r29;
+
+    var_r29 = arg0;
+    if (var_r29 > 0xBU) {
+        var_r29 = 0xB;
+    }
+    temp_r3 = OSDisableInterrupts();
+    SamplingRate_803C75A0 = var_r29;
+    temp_r3_2 = VIGetTvFormat();
+    switch (temp_r3_2) {                            /* irregular */
+    case 2:
+    case 5:
+    case 0:
+        var_r4 = &XYNTSC_800D9F40;
+        break;
+    case 1:
+        var_r4 = &XYNTSC_800D9F40 + 0x30;
+        break;
+    default:
+        OSReport(&XYNTSC_800D9F40 + 0x60);
+        var_r29 = 0;
+        var_r4 = &XYNTSC_800D9F40;
+        break;
+    }
+    if (*(u16 *)0xCC00206C & 1) {
+        var_r5 = 2;
+    } else {
+        var_r5 = 1;
+    }
+    temp_r3_3 = var_r29 * 4;
+    SISetXY(var_r5 * *(var_r4 + temp_r3_3), M2C_FIELD((var_r4 + temp_r3_3), u8 *, 2));
+    OSRestoreInterrupts(temp_r3);
+}
+
 void SIRefreshSamplingRate(void) {
     extern u32 SamplingRate_803C75A0;
     SISetSamplingRate(SamplingRate_803C75A0);
@@ -9874,6 +9953,43 @@ void stateMotorStopped(void) {
     M2C_UNK DVDLowWaitCoverClose(void (*)(u32));
     void cbForStateMotorStopped(u32);
     DVDLowWaitCoverClose(cbForStateMotorStopped);
+}
+
+void cbForStateMotorStopped(u32 intType) {
+    void DVDReset(void);
+    void OSCreateAlarm(void *alarm);
+    void OSSetAlarm(void *alarm, s64 tick, void *handler);
+    void __DVDClearWaitingQueue(void);
+    void stateReady_800725A4(void);
+    void AlarmHandler(void *alarm, void *context);
+    extern s32 CurrCommand_803C732C;
+    extern u8 *executing_803C7310;
+    extern u8 tmpBuffer_802EF940[];
+    u8 *finished;
+    void (*callback)(s32, void *);
+
+    *(volatile u32 *)0xCC006004 = 0;
+    *(s32 *)(executing_803C7310 + 0xC) = 3;
+    switch (CurrCommand_803C732C) {
+    case 4:
+    case 5:
+    case 13:
+    case 15:
+        __DVDClearWaitingQueue();
+        finished = executing_803C7310;
+        executing_803C7310 = tmpBuffer_802EF940 + 0x80;
+        callback = *(void (**)(s32, void *))(finished + 0x28);
+        if (callback) {
+            callback(-4, finished);
+        }
+        stateReady_800725A4();
+        break;
+    default:
+        DVDReset();
+        OSCreateAlarm(tmpBuffer_802EF940 + 0xB0);
+        OSSetAlarm(tmpBuffer_802EF940 + 0xB0, (*(u32 *)0x800000F8 / 4) / 1000 * 1150, AlarmHandler);
+        break;
+    }
 }
 
 static inline BOOL issueCommand(s32 prio, u8 *block) {
@@ -15143,6 +15259,25 @@ s32 WriteUART1(u8 c) {
     return 0;
 }
 
+#pragma push
+#pragma opt_propagation off
+s32 WriteUARTFlush(void) {
+    extern u8 gWriteBuf_8030CAF4[];
+    extern s32 gWritePos_8030B9D8[];
+    extern void (*gDBCommTable[7])(void);
+    s32 result = 0;
+
+    while (gWritePos_8030B9D8[0] < 0x800) {
+        gWriteBuf_8030CAF4[gWritePos_8030B9D8[0]++] = '\0';
+    }
+    if (gWritePos_8030B9D8[0] != 0) {
+        result = ((s32 (*)(u8 *, s32))gDBCommTable[4])(gWriteBuf_8030CAF4, gWritePos_8030B9D8[0]);
+        gWritePos_8030B9D8[0] = 0;
+        result = result != 0 ? -1 : 0;
+    }
+    return result;
+}
+#pragma pop
 void EnableEXI2Interrupts(void) {
     extern void (*gDBCommTable[7])(void);
     gDBCommTable[1]();
