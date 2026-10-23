@@ -9182,6 +9182,75 @@ void ParticleGX_MicroStep(void *arg0) {
     }
 }
 
+void ParticleSprite_Move(u8 *sprite) {
+    extern Vector4 g_zeroVector;
+    extern f32 g_fDeltaTimeMS;
+    extern f32 g_fDeltaTimeSec;
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    void ExtractColorKey(void *keys, void *out, f32 time);
+    void ExtractF32Key(void *keys, void *out, f32 time);
+    typedef struct {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        Vector4 angVel;
+        u32 id;
+        s32 unk44;
+        f32 unk48;
+        f32 unk4C;
+    } FxParams;
+    FxParams params;
+    f32 dt;
+    u8 *anim;
+    s32 idx;
+    u32 fx;
+    s32 step;
+
+    dt = g_fDeltaTimeMS * *(f32 *)(sprite + 0x98);
+    anim = *(u8 **)(*(u8 **)(sprite + 0x90) + 0x4);
+    idx = RandomAdd_s32(0, *(s32 *)(*(u8 **)(sprite + 0x90) + 0x1C));
+    if (*(s32 *)(sprite + 0x88) < 0) {
+        if (*(u32 *)(*(u8 **)(sprite + 0x90) + 0x1C) != 0) {
+            fx = (*(u32 **)(*(u8 **)(sprite + 0x90) + 0x20))[idx];
+            if (fx != 0) {
+                params.id = fx;
+                params.pos = *(Vector4 *)(sprite + 0x0);
+                params.vel = *(Vector4 *)(sprite + 0x10);
+                params.quat.x = 0.0f;
+                params.quat.y = 0.0f;
+                params.quat.z = 0.0f;
+                params.quat.w = 1.0f;
+                params.unk44 = 0;
+                params.unk48 = 0.0f;
+                params.unk4C = 0.0f;
+                params.angVel = g_zeroVector;
+                ThingManager_DARYL_CreateThing(1, &params);
+            }
+        }
+        sprite[0x94] |= 8;
+        return;
+    }
+    step = dt;
+    *(s32 *)(sprite + 0x88) -= step;
+    if (anim != NULL && anim[1] != 0) {
+        if (*(s32 *)(sprite + 0xA0) < 0) {
+            *(s32 *)(sprite + 0xA0) = *(s32 *)(anim + 0x1C);
+            sprite[0x97]++;
+            if (sprite[0x97] >= *(u32 *)(anim + 0x20)) {
+                sprite[0x97] = 0;
+            }
+        } else {
+            *(s32 *)(sprite + 0xA0) -= step;
+        }
+    }
+    ExtractColorKey(*(u8 **)(sprite + 0x90) + 0x14, sprite + 0x30, dt * *(f32 *)(sprite + 0x9C));
+    ExtractF32Key(anim + 0x28, sprite + 0x60, dt * *(f32 *)(sprite + 0x9C));
+    if (*(f32 *)(sprite + 0x84)) {
+        *(f32 *)(sprite + 0x80) += *(f32 *)(sprite + 0x98) * (*(f32 *)(sprite + 0x84) * g_fDeltaTimeSec);
+    }
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void ParticleManager_Render(void) {
