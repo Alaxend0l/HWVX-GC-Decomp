@@ -1342,7 +1342,6 @@ void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
 #pragma pop
 
 #pragma push
-#pragma dont_inline on
 void Block_link(Block *ths, SubBlock *sb) {
     SubBlock **st;
     u32 size;
