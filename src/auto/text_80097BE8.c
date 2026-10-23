@@ -1229,6 +1229,36 @@ void __timesdec(decimal *result, const decimal *x, const decimal *y) {
     }
 }
 
+void __ull2dec(decimal *result, unsigned long long val) {
+    result->sign = 0;
+
+    if (val == 0) {
+        result->exp = 0;
+        result->sig.length = 1;
+        result->sig.text[0] = 0;
+        return;
+    }
+
+    result->sig.length = 0;
+
+    for (; val != 0; val /= 10) {
+        result->sig.text[result->sig.length++] = val % 10;
+    }
+
+    {
+        u8 *i = result->sig.text;
+        u8 *j = result->sig.text + result->sig.length;
+
+        for (; i < --j; ++i) {
+            u8 t = *i;
+            *i = *j;
+            *j = t;
+        }
+    }
+
+    result->exp = result->sig.length - 1;
+}
+
 s32 __count_trailing_zerol(u32 x) {
     s32 result = 0;
     s32 bits_not_checked = sizeof(u32) * 8;
