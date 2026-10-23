@@ -3934,20 +3934,25 @@ s8 ThingManagerList_Get(void *list, void *target) {
 
 void SharedSlaveHolder_Release(void) {
     M2C_UNK ThingManagerList_RemoveReleasedThings(s32);
-    u32 i;
     void *thing;
     void *next;
+    SharedSlaveHolder *holder;
+    u32 i;
 
-    for (i = 0; i < 64; i++) {
-        if (g_aSharedSlaveHolder[i].key != NULL) {
-            for (thing = g_aSharedSlaveHolder[i].slaves; thing != NULL; thing = next) {
+    holder = g_aSharedSlaveHolder;
+    i = 0;
+    do {
+        if (holder->key != NULL) {
+            for (thing = holder->slaves; thing != NULL; thing = next) {
                 next = M2C_FIELD(thing, void **, 0xA4);
                 ((void (*)(void *))(M2C_FIELD(thing, void ***, 0x8C))[1])(thing);
             }
-            ThingManagerList_RemoveReleasedThings((s32)&g_aSharedSlaveHolder[i].slaves);
-            g_aSharedSlaveHolder[i].key = NULL;
+            ThingManagerList_RemoveReleasedThings((s32)&holder->slaves);
+            holder->key = NULL;
         }
-    }
+        i++;
+        holder++;
+    } while (i < 64);
 }
 
 extern Vector4 g_zeroVector;
@@ -4158,7 +4163,7 @@ void ThingManager_MoveLookerOnly(void) {
     extern u8 g_soundSeqVTable[];
     void *thing;
 
-    ((void (*)(void *))(M2C_FIELD(g_thingManager_DARYL.looker, void ***, 0x8C))[2])(g_thingManager_DARYL.looker);
+    ((void (*)(void *))(M2C_FIELD(&g_thingManager_DARYL, void ***, 0x6AD9C))[2])(g_thingManager_DARYL.looker);
     for (thing = g_thingManager_DARYL.activeList; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
         if (M2C_FIELD(thing, u8 **, 0x8C) == g_soundSeqVTable && (M2C_FIELD(thing, u32 *, 0x74) & 0x100000)) {
             ((void (*)(void *))(M2C_FIELD(thing, void ***, 0x8C))[3])(thing);
