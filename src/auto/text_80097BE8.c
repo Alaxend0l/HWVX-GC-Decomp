@@ -6397,10 +6397,32 @@ void SetReverb_(u32 idx, u32 output, u32 feedback, u32 delay) {
 
 #pragma pop
 
+#pragma push
+#pragma optimization_level 1
 s32 CreateIT_(u8 *hdr, u8 **smp) {
-    return 0;
-}
+    u32 HAllocA_(s32 size);
+    extern u32 g_aheap;
+    s32 size;
+    u32 i;
 
+    i = *(u16 *)(hdr + 0x24) - 1;
+    size = (*(u32 *)(smp[i] + 0x30) << ((smp[i][0x12] >> 1) & 1)) + *(u32 *)(smp[i] + 0x48);
+    g_aheap = HAllocA_(size);
+    if (*(void **)&g_aheap == NULL) {
+        return 0;
+    }
+    DCFlushRange(*(void **)(smp[0] + 0x48), size);
+    MemCpyA_(g_aheap, *(u32 *)(smp[0] + 0x48), size);
+    *(u32 *)(smp[0] + 0x48) = 0;
+    for (i = 0; i < *(u16 *)(hdr + 0x24); i++) {
+        *(u32 *)(smp[i] + 0x48) += g_aheap;
+        if (smp[i][0x12] & 2) {
+            *(u32 *)(smp[i] + 0x48) >>= 1;
+        }
+    }
+    return 1;
+}
+#pragma pop
 void DestroyIT_(void *data) {
     void FreeA_(u32 addr);
     void OSFreeToHeap(s32 heap, void *ptr);
@@ -8544,6 +8566,9 @@ s32 __GBASync(s32 chan) {
     ret = gba->ret;
     OSRestoreInterrupts(enabled);
     return ret;
+}
+
+void TypeAndStatusCallback(s32 chan, u32 type) {
 }
 
 s64 __GBASetDelay(s32 chan, s64 delay) {
