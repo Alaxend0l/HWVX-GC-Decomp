@@ -2938,13 +2938,13 @@ void WildcardState_Heartbeat(void *state, u8 *mtx, void *thing) {
     } MotionStateT;
     MotionStateT *ms = state;
     f32 rate = 0.0f;
+    u32 i;
     s32 *skel;
     f32 angle;
     Quaternion quat;
     Quaternion rot;
     Quaternion out;
     u8 frames[0x800];
-    u32 i;
 
     ms->layers[0].weight += g_fDeltaTimeSec;
     if (ms->layers[0].weight > 1.0f) {
@@ -10916,6 +10916,51 @@ void PhysicalObject_IntegrateNonLateral(u8 *obj) {
     scaled[1] = ((Vector4 *)(obj + 0x120))->y * local[1];
     scaled[2] = ((Vector4 *)(obj + 0x120))->z * local[2];
     XformVecOrientation(obj + 0x10, scaled, (Vector4 *)(obj + 0x130));
+}
+
+s32 PhysicalObject_PreMove(u8 *obj) {
+    extern Vector4 g_zeroVector;
+    extern f32 g_fDeltaTimeSec;
+    void XformVecOrientation(void *mtx, f32 *in, f32 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, f32 *out);
+    f32 angVel[4];
+    f32 scaled[4];
+    f32 local[4];
+    f32 damping;
+    f32 scaled2[4];
+    f32 local2[4];
+    f32 invMass;
+
+    if (!(*(u32 *)(obj + 0x74) & 8)) {
+        *(Vector4 *)(obj + 0x100) = g_zeroVector;
+        *(Vector4 *)(obj + 0xF0) = *(Vector4 *)(obj + 0x100);
+        ((Vector4 *)(obj + 0xF0))->y += *(f32 *)(*(u8 **)(*(u8 **)(obj + 0xC0) + 0x10) + 0x24) *
+                                        *(f32 *)(*(u8 **)(*(u8 **)(obj + 0xC0) + 0x10) + 0x20);
+        damping = *(f32 *)(*(u8 **)(*(u8 **)(obj + 0xC0) + 0x10) + 0x2C);
+        InverseXformVecOrientation(obj + 0x10, (Vector4 *)(obj + 0x110), local);
+        scaled[0] = ((Vector4 *)(obj + 0x120))->x * local[0];
+        scaled[1] = ((Vector4 *)(obj + 0x120))->y * local[1];
+        scaled[2] = ((Vector4 *)(obj + 0x120))->z * local[2];
+        XformVecOrientation(obj + 0x10, scaled, angVel);
+        ((Vector4 *)(obj + 0x100))->x += -damping * angVel[0];
+        ((Vector4 *)(obj + 0x100))->y += -damping * angVel[1];
+        ((Vector4 *)(obj + 0x100))->z += -damping * angVel[2];
+        invMass = g_fDeltaTimeSec / *(f32 *)(*(u8 **)(*(u8 **)(obj + 0xC0) + 0x10) + 0x20);
+        ((Vector4 *)obj)->x += invMass * ((Vector4 *)(obj + 0xF0))->x;
+        ((Vector4 *)obj)->y += invMass * ((Vector4 *)(obj + 0xF0))->y;
+        ((Vector4 *)obj)->z += invMass * ((Vector4 *)(obj + 0xF0))->z;
+        ((Vector4 *)(obj + 0x110))->x += g_fDeltaTimeSec * ((Vector4 *)(obj + 0x100))->x;
+        ((Vector4 *)(obj + 0x110))->y += g_fDeltaTimeSec * ((Vector4 *)(obj + 0x100))->y;
+        ((Vector4 *)(obj + 0x110))->z += g_fDeltaTimeSec * ((Vector4 *)(obj + 0x100))->z;
+        *(Vector4 *)(obj + 0x100) = g_zeroVector;
+        *(Vector4 *)(obj + 0xF0) = *(Vector4 *)(obj + 0x100);
+        InverseXformVecOrientation(obj + 0x10, (Vector4 *)(obj + 0x110), local2);
+        scaled2[0] = ((Vector4 *)(obj + 0x120))->x * local2[0];
+        scaled2[1] = ((Vector4 *)(obj + 0x120))->y * local2[1];
+        scaled2[2] = ((Vector4 *)(obj + 0x120))->z * local2[2];
+        XformVecOrientation(obj + 0x10, scaled2, (f32 *)(obj + 0x130));
+    }
+    return 1;
 }
 
 void Mover_DynamicRotation(u8 *mover) {
