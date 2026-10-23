@@ -306,7 +306,7 @@ typedef struct GeneralGameSettings {
     u8 unk14C[4];
 } GeneralGameSettings;
 
-extern GeneralGameSettings g_generalGameSettings;
+static GeneralGameSettings g_generalGameSettings;
 
 typedef struct CodeVariables {
     s32 playerVehicle[4];
