@@ -339,6 +339,7 @@ typedef struct CodeVariables {
 } CodeVariables;
 
 CodeVariables g_codeVariables;
+GeneralGameSettings g_generalGameSettings;
 
 typedef struct SIControl {
     s32 chan;
