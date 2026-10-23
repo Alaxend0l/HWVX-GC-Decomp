@@ -14264,12 +14264,20 @@ static inline s8 Thing_ProcessItemPickup(u8 *thing, u8 *item) {
             *(s32 *)((u8 *)motion + 0x18) = *(s32 *)((u8 *)motion + 0x14);
         }
         return 1;
-    default:
+        default:
         break;
     }
     return 0;
 }
 
+static inline s8 Thing_TouchesItem(u8 *thing, u8 *item) {
+    f32 PSVECSquareDistance(f32 *a, f32 *b);
+
+    if (*(s16 *)(item + 0xCC) > 0) {
+        return 0;
+    }
+    return PSVECSquareDistance((f32 *)(thing + 0x40), (f32 *)(item + 0x40)) < *(f32 *)(item + 0xE8);
+}
 
 #pragma push
 #pragma use_lmw_stmw on
