@@ -4092,6 +4092,8 @@ void GetSystemDate(s32 *year, s32 *month, s32 *day, s32 *hour, s32 *minute) {
 }
 #pragma pop
 
+#pragma push
+#pragma auto_inline off
 void *Allocate(u32 size, u32 flags, const char *name) {
     void *OSAllocFromHeap(s32 heap, u32 size);
     void Dprintf(const char *fmt, ...);
@@ -4112,6 +4114,7 @@ void Deallocate(s32 ptr) {
         OSFreeToHeap(__OSCurrHeap, ptr);
     }
 }
+#pragma pop
 
 void MemCpy32(void) {
     M2C_UNK fn_800957D4();
@@ -11259,6 +11262,43 @@ void UpdatePointers(u32 *offsets, u32 count, u32 base) {
     for (i = 0; i < count; i++) {
         *(u32 *)(base + offsets[i]) += base;
     }
+}
+
+void *LoadDataChunkFile(const char *name) {
+    s32 File_Open(s32 dev, const char *name, s32 mode, s32 flags);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    void Deallocate(void *p);
+    struct {
+        u32 count;
+        u32 size;
+    } header;
+    s32 handle;
+    u8 *data;
+    u32 *relocs;
+    u32 i;
+
+    handle = File_Open(0, name, 0, 0);
+    if (handle == -1) {
+        return NULL;
+    }
+    header.size = 0;
+    header.count = 0;
+    File_Read(handle, 8, &header);
+    data = Allocate(header.size, 0, "");
+    relocs = Allocate(header.count * 4, 0, "");
+    if (File_Read(handle, header.count * 4, relocs) == 0) {
+        return NULL;
+    }
+    if (File_Read(handle, header.size, data) == 0) {
+        return NULL;
+    }
+    File_Close(handle);
+    for (i = 0; i < header.count; i++) {
+        *(u32 *)(data + relocs[i]) += (u32)data;
+    }
+    Deallocate(relocs);
+    return data;
 }
 
 s32 GBAReadAsync(s32 chan, u8 *dst, u8 *status, GBACallback callback);
