@@ -5731,6 +5731,44 @@ u32 CreateSFX_(u32 *sfx) {
     return data;
 }
 
+void DestroyVoice_(void *arg0);
+void *GetVoice_(u8 type, u32 priority) {
+    extern void *g_pFree_803C78A4;
+    s32 OSDisableInterrupts();
+    void OSRestoreInterrupts(s32);
+    void *AXAcquireVoice(u32 priority, void (*callback)(void *), u32 userContext);
+    u8 *voice;
+    void *axv;
+    s32 level;
+
+    if (g_pFree_803C78A4 == NULL) {
+        OSReport("g_pFree NULL\n");
+        return NULL;
+    }
+    level = OSDisableInterrupts();
+    axv = AXAcquireVoice(priority, DestroyVoice_, (u32)g_pFree_803C78A4);
+    if (axv == NULL) {
+        return NULL;
+    }
+    voice = g_pFree_803C78A4;
+    g_pFree_803C78A4 = *(void **)((u8 *)g_pFree_803C78A4 + 4);
+    *(void **)(voice + 4) = NULL;
+    *(void **)(voice + 0x50) = axv;
+    voice[0] = type;
+    voice[0x15] = 3;
+    voice[0x14] = priority;
+    voice[0x54] = 1;
+    *(s16 *)(voice + 0x5A) = -1;
+    *(s16 *)(voice + 0x64) = -1;
+    *(s16 *)(voice + 0x6C) = -1;
+    voice[0x55] = 0;
+    voice[0x56] = 0;
+    voice[0x57] = 0;
+    *(s32 *)(voice + 0x48) = 0x7FFF;
+    OSRestoreInterrupts(level);
+    return voice;
+}
+
 #pragma push
 #pragma auto_inline off
 void SetVoiceState_(void *voice, s32 state) {
