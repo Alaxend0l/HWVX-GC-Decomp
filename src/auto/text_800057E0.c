@@ -8179,6 +8179,22 @@ static u32 getCurrentFieldEvenOdd(void) {
     return ((((vcount - 1) << 1) + ((hcount - 1) / CurrTiming_803C73A8->hlw)) < CurrTiming_803C73A8->nhlines) ? 1 : 0;
 }
 
+u32 VIGetCurrentLine(void) {
+    void OSRestoreInterrupts(s32);
+    u32 halfLine;
+    VITiming *tm;
+    s32 enabled;
+
+    tm = CurrTiming_803C73A8;
+    enabled = OSDisableInterrupts();
+    halfLine = getCurrentHalfLine();
+    OSRestoreInterrupts(enabled);
+    if (halfLine >= tm->nhlines) {
+        halfLine -= tm->nhlines;
+    }
+    return halfLine >> 1;
+}
+
 u32 VIGetTvFormat(void) {
     void OSRestoreInterrupts(s32);
     extern s32 CurrTvMode_803C73AC;
@@ -8521,6 +8537,25 @@ s32 ARGetSize(void) {
     return __AR_Size_803C7424;
 }
 
+void __ARHandler(s16 interrupt, void *context) {
+    void OSClearContext(void *);
+    void OSSetCurrentContext(void *);
+    extern void (*__AR_Callback_803C7420)(void);
+    u32 exceptionContext[0x2C8 / 4];
+    u16 tmp;
+
+    tmp = __DSPRegs[5];
+    tmp = (u16)((tmp & ~0x88) | 0x20);
+    __DSPRegs[5] = tmp;
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(exceptionContext);
+    if (__AR_Callback_803C7420) {
+        __AR_Callback_803C7420();
+    }
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(context);
+}
+
 void __ARQCallbackHack(void) {
 
 }
@@ -8831,6 +8866,28 @@ void __AXSPBInit(void) {
 
 void __AXSPBQuit(void) {
 
+}
+
+void __AXDepopVoice(void *pvpb) {
+    extern s32 __AXSpbAL_803C74E0;
+    extern s32 __AXSpbAR_803C74E4;
+    extern s32 __AXSpbAS_803C74E8;
+    extern s32 __AXSpbAAL_803C74EC;
+    extern s32 __AXSpbAAR_803C74F0;
+    extern s32 __AXSpbAAS_803C74F4;
+    extern s32 __AXSpbABL_803C74F8;
+    extern s32 __AXSpbABR_803C74FC;
+    extern s32 __AXSpbABS_803C7500;
+
+    __AXSpbAL_803C74E0 += M2C_FIELD(pvpb, s16 *, 0x52);
+    __AXSpbAAL_803C74EC += M2C_FIELD(pvpb, s16 *, 0x54);
+    __AXSpbABL_803C74F8 += M2C_FIELD(pvpb, s16 *, 0x56);
+    __AXSpbAR_803C74E4 += M2C_FIELD(pvpb, s16 *, 0x58);
+    __AXSpbAAR_803C74F0 += M2C_FIELD(pvpb, s16 *, 0x5A);
+    __AXSpbABR_803C74FC += M2C_FIELD(pvpb, s16 *, 0x5C);
+    __AXSpbAS_803C74E8 += M2C_FIELD(pvpb, s16 *, 0x5E);
+    __AXSpbAAS_803C74F4 += M2C_FIELD(pvpb, s16 *, 0x60);
+    __AXSpbABS_803C7500 += M2C_FIELD(pvpb, s16 *, 0x62);
 }
 
 s32 __AXGetNumVoices(void) {
