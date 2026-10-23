@@ -11891,7 +11891,7 @@ void UpdatePointers(u32 *offsets, u32 count, u32 base) {
 }
 
 void *LoadDataChunkFile(const char *name) {
-    s32 File_Open(s32 dev, const char *name, s32 mode, s32 flags);
+    s32 File_Open(u32 dev, const char *name, u32 flags, s32 *size);
     u32 File_Read(s32 handle, u32 size, void *buf);
     void File_Close(s32 handle);
     struct {
