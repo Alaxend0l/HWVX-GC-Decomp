@@ -3868,6 +3868,19 @@ void VolumeManager_Initialize(void) {
     g_bReset = 1;
 }
 
+s32 VolumeManager_GetNumVolumesOfType(u32 type) {
+    void *world = g_worldData.world;
+    s32 count = 0;
+    u32 i;
+
+    for (i = 0; i < M2C_FIELD(world, u32 *, 0x68); i++) {
+        if (type == M2C_FIELD(M2C_FIELD(world, u8 **, 0x6C) + i * 0x30, u32 *, 0xC)) {
+            count++;
+        }
+    }
+    return count;
+}
+
 void WildCardRack_Release(s32 arg0) {
     s32 var_r31;
     u32 var_r30;
