@@ -7610,9 +7610,16 @@ void *VolumeManager_GetVolumeTypeByIndex(u32 type, u32 index) {
 }
 
 s32 VolumeManager_GetNumVolumesOfTypeByCell(s32 type, s32 cell) {
+    typedef struct VolumeList {
+        s32 count;
+        s32 *volumes;
+    } VolumeList;
+    typedef struct VolumeCell {
+        VolumeList types[7];
+    } VolumeCell;
     extern s32 g_VolumeHolder;
     if ((void *)g_VolumeHolder != NULL) {
-        return M2C_FIELD(M2C_FIELD(g_VolumeHolder, u8 **, 0x10) + cell * 0x38 + type * 8, s32 *, 0x0);
+        return M2C_FIELD(g_VolumeHolder, VolumeCell **, 0x10)[cell].types[type].count;
     }
     return 0;
 }
@@ -7728,9 +7735,6 @@ void VolumeManager_SetReverbLevel(Vector4 *point) {
     extern u8 *g_VolumeHolder;
     extern s8 g_bReset;
     void SetReverb(s32 a, s32 b, s32 c, s32 d);
-    s8 BSPN0_CollideWithVector(void *bsp, Vector4 *point);
-    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
-    f32 PSVECSquareMag(Vector4 *v);
     static u16 sfx_volume = 0xFFFF;
     static u16 sfx_feedback = 0xFFFF;
     static u16 music_volume = 0xFFFF;
@@ -7743,10 +7747,8 @@ void VolumeManager_SetReverbLevel(Vector4 *point) {
     u8 *reverb;
     s32 i;
     s32 cell;
-    s8 inside;
     u8 *settings;
     u8 *holder;
-    f32 diff[3];
 
     settings = M2C_FIELD(g_worldData.world, u8 **, 0x9C);
     level = 32767.0f * M2C_FIELD(settings, f32 *, 0x24);
@@ -7761,24 +7763,8 @@ void VolumeManager_SetReverbLevel(Vector4 *point) {
         count = 0;
     }
     for (i = 0; i < count; i++) {
-        volume = (u8 *)M2C_FIELD(g_VolumeHolder, VolumeCell **, 0x10)[cell].types[2].volumes[i];
-        switch (M2C_FIELD(volume, s32 *, 0x8)) {
-        case 0:
-            inside = BSPN0_CollideWithVector(M2C_FIELD(volume, void **, 0x28), point);
-            break;
-        case 1:
-            PSVECSubtract(point, (Vector4 *)(volume + 0x10), (Vector4 *)diff);
-            if (PSVECSquareMag((Vector4 *)diff) < M2C_FIELD(volume, f32 *, 0x24)) {
-                inside = 1;
-            } else {
-                inside = 0;
-            }
-            break;
-        default:
-            inside = 0;
-            break;
-        }
-        if (inside) {
+        volume = (u8 *)VolumeManager_GetVolumeTypeByIndexByCell(2, i, cell);
+        if (VolumeManager_IsPointInVolume(point, volume)) {
             reverb = M2C_FIELD(volume, u8 **, 0x2C);
             if (M2C_FIELD(reverb, u32 *, 0x0) == 0) {
                 if (M2C_FIELD(reverb, u16 *, 0x4) != music_volume || M2C_FIELD(reverb, u16 *, 0x6) != music_feedback) {
