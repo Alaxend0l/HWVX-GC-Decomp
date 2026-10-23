@@ -18054,6 +18054,74 @@ void CarA_StuntImpulse(u8 *car, Vector4 *linImpulse, Vector4 *angImpulse) {
     }
 }
 
+void CarA_StuntFail(u8 *car) {
+    extern Vector4 g_zeroVector;
+    extern char stunt_msg_buffer[];
+    extern char *g_stuntLossString;
+    int sprintf(char *buf, const char *fmt, ...);
+    void MotionState_InitAllSlavesNow(void *motionState, void *slaves, s32 arg2);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    typedef struct {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        Vector4 angVel;
+        u32 id;
+        s32 unk44;
+        f32 unk48;
+        f32 unk4C;
+    } FxParams;
+    u8 *data;
+    u32 count;
+    u32 secs;
+    u32 idx;
+    f32 minTime;
+    f32 maxTime;
+    FxParams params;
+
+    data = *(u8 **)(*(u8 **)(car + 0x3BC) + 0x8C);
+    minTime = *(f32 *)(data + 0x2C);
+    if (*(f32 *)(car + 0x554) > minTime) {
+        count = *(u32 *)(data + 0x4C);
+        maxTime = *(f32 *)(data + 0x30);
+        secs = *(f32 *)(car + 0x554);
+        if (*(char **)(data + 0x48) != NULL) {
+            *(char **)(car + 0x4A0) = *(char **)(data + 0x48);
+        } else {
+            sprintf(stunt_msg_buffer, "Stunt Failed");
+            *(char ***)(car + 0x4A0) = &g_stuntLossString;
+        }
+        if (*(u32 *)(*(u8 **)(car + 0x3BC) + 0xE0) > 10) {
+            MotionState_InitAllSlavesNow(car + 0x330, *(u8 **)(*(u8 **)(car + 0x3BC) + 0xE4) + 0x7C, 10);
+        }
+        if (count != 0 && (f32)secs > minTime) {
+            idx = 0;
+            if (count > 1) {
+                idx = (f32)count * (((f32)secs - minTime) / (maxTime - minTime)) + 0.5f;
+                if (idx >= count) {
+                    idx = count - 1;
+                }
+            }
+            params.id = (*(u32 **)(data + 0x50))[idx];
+            if (params.id != 0) {
+                params.pos = ((Thing *)car)->mtx.v[3];
+                params.quat = ((Thing *)car)->quat;
+                params.vel.x = ((Vector4 *)car)->x;
+                params.vel.y = 0.0f;
+                params.vel.z = ((Vector4 *)car)->z;
+                params.unk44 = 0;
+                params.unk48 = 0.0f;
+                params.unk4C = 0.0f;
+                params.angVel = g_zeroVector;
+                ThingManager_DARYL_CreateThing(1, &params);
+            }
+        }
+    }
+    *(f32 *)(car + 0x554) = 0.0f;
+    *(Vector4 *)(car + 0x4B0) = g_zeroVector;
+    *(u32 *)(car + 0x48C) |= 0x40000;
+}
+
 void CarA_SlaveWeaponHeartbeat(s32 car) {
     void MotionState_InitSlavesTimed(s32 state, s32 slaves, u8 type);
     void ThingManagerList_RemoveReleasedThings(s32 list);
