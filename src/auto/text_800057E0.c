@@ -14391,6 +14391,12 @@ void __OSContextInit(void) {
     DBPrintf("FPU-unavailable handler installed\n");
 }
 
+u16 OSGetFontEncode(void);
+
+static inline BOOL IsSjisTrailByte(u8 c) {
+    return 0x40 <= c && c <= 0xFC && c != 0x7F;
+}
+
 void OSPanic(const char *file, int line, const char *msg, ...) {
     typedef struct __va_list_struct {
         char gpr;
