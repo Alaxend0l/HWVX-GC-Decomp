@@ -13497,8 +13497,6 @@ void OSPanic(const char *file, int line, const char *msg, ...) {
     PPCHalt();
 }
 
-#pragma push
-#pragma opt_strength_reduction off
 void Decode(u8 *s, u8 *d) {
     int i;
     int j;
