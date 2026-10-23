@@ -3881,6 +3881,28 @@ s32 VolumeManager_GetNumVolumesOfType(u32 type) {
     return count;
 }
 
+s32 VolumeManager_GetVolumeTypeByIndexByCell(s32 type, s32 index, s32 cell) {
+    extern s32 g_VolumeHolder;
+    return M2C_FIELD(M2C_FIELD(M2C_FIELD(g_VolumeHolder, u8 **, 0x10) + cell * 0x38 + type * 8, s32 **, 0x4), s32 *, index * 4);
+}
+
+s8 IsPointWithinVolume(Vector4 *point, u8 *volume, f32 *distSq) {
+    s8 BSPN0_CollideWithVector(void *bsp, Vector4 *point);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    Vector4 diff;
+
+    switch (M2C_FIELD(volume, s32 *, 0x8)) {
+    case 0:
+        return BSPN0_CollideWithVector(M2C_FIELD(volume, void **, 0x28), point);
+    case 1:
+        PSVECSubtract(point, (Vector4 *)(volume + 0x10), &diff);
+        *distSq = PSVECSquareMag(&diff);
+        return *distSq < M2C_FIELD(volume, f32 *, 0x24);
+    }
+    return 0;
+}
+
 void WildCardRack_Release(s32 arg0) {
     s32 var_r31;
     u32 var_r30;
