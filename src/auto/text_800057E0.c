@@ -76,6 +76,8 @@ s32 Thing_Init(void *thing, s32 arg1);
 void MatrixCache_Free(u32 key);
 void MotionState_Release(s32 state);
 s8 ThingManagerList_Get(void *list, void *target);
+void Trigger_PauseTACSystem(s8 paused);
+u8 Trigger_IsTACSystemPaused(void);
 s8 IsPointWithinVolume(struct Vector4 *point, u8 *volume, f32 *distSq);
 
 typedef struct InterfaceCallBackData {
@@ -7996,6 +7998,15 @@ void __GXWriteFifoIntEnable(u8 hiWatermarkEn, u8 loWatermarkEn) {
     __cpReg[1] = *(u32 *)(gx + 8);
 }
 
+void __GXWriteFifoIntReset(u8 hiWatermarkClr, u8 loWatermarkClr) {
+    extern u8 *gx;
+    extern u16 *__cpReg;
+
+    *(u32 *)(gx + 0x10) = (*(u32 *)(gx + 0x10) & ~1) | hiWatermarkClr;
+    *(u32 *)(gx + 0x10) = (*(u32 *)(gx + 0x10) & ~2) | (loWatermarkClr << 1);
+    __cpReg[2] = *(u32 *)(gx + 0x10);
+}
+
 void __GXSetVCD(void) {
     extern void *const gx;
     void __GXXfVtxSpecs(void);
@@ -8058,6 +8069,34 @@ void __GXSetVAT(void) {
         }
     }
     gx->dirtyVAT = 0;
+}
+
+void GXSetArray(s32 attr, void *base_ptr, u8 stride) {
+    extern u8 *gx;
+    s32 cpAttr;
+    u32 phyAddr;
+    s32 idx;
+
+    cpAttr = attr;
+    if (cpAttr == 0x19) {
+        cpAttr = 10;
+    }
+    cpAttr -= 9;
+    phyAddr = (u32)base_ptr & 0x3FFFFFFF;
+    GXWGFifo.u8 = 8;
+    GXWGFifo.u8 = cpAttr | 0xA0;
+    GXWGFifo.u32 = phyAddr;
+    idx = cpAttr - 12;
+    if (idx >= 0 && idx < 4) {
+        ((u32 *)(gx + 0x88))[idx] = phyAddr;
+    }
+    GXWGFifo.u8 = 8;
+    GXWGFifo.u8 = cpAttr | 0xB0;
+    GXWGFifo.u32 = stride;
+    idx = cpAttr - 12;
+    if (idx >= 0 && idx < 4) {
+        ((u32 *)(gx + 0x98))[idx] = stride;
+    }
 }
 
 void GXInvalidateVtxCache(void) {
