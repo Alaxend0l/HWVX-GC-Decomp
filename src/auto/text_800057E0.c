@@ -3147,6 +3147,37 @@ void Emitter_Release(void *emitter) {
     Thing_Release((s32)emitter);
 }
 
+s32 Emitter_InCameraRange(u8 *emitter, f32 range) {
+    u32 Gfx_GetCameraPositions(Vector4 *positions);
+    f32 PSVECSquareDistance(f32 *a, f32 *b);
+    extern u8 g_CurrentViews;
+    Vector4 positions[5];
+    u32 count;
+    Vector4 *pos;
+    u32 i;
+    f32 dist;
+
+    if (range == 0.0f) {
+        return 1;
+    }
+    if (*(u32 *)(emitter + 0x74) & 0x10) {
+        count = Gfx_GetCameraPositions(positions);
+        *(f32 *)(emitter + 0xCC) = PSVECSquareDistance((f32 *)(emitter + 0x40), (f32 *)&positions[0]);
+        if (count > 1) {
+            for (i = 0, pos = positions; i < 5; i++, pos++) {
+                if (g_CurrentViews & (1 << i)) {
+                    dist = PSVECSquareDistance((f32 *)(emitter + 0x40), (f32 *)pos);
+                    if (dist < *(f32 *)(emitter + 0xCC)) {
+                        *(f32 *)(emitter + 0xCC) = dist;
+                    }
+                }
+            }
+        }
+        *(u32 *)(emitter + 0x74) &= ~0x10;
+    }
+    return range * range > *(f32 *)(emitter + 0xCC);
+}
+
 s32 ActionFXPointChangeMode(s32 *data) {
     u32 count = data[1];
     s32 mode = data[0];
@@ -12599,6 +12630,42 @@ s32 EXIDetach(s32 arg0) {
     return 1;
 }
 
+s32 EXIDeselect(s32 chan) {
+    extern u8 Ecb_80309980[3][0x40];
+    BOOL __EXIProbe(s32 chan);
+    void __OSUnmaskInterrupts(u32 mask);
+    u8 *exi = Ecb_80309980[chan];
+    u32 cpr;
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    if (!(*(u32 *)(exi + 0xC) & 4)) {
+        OSRestoreInterrupts(enabled);
+        return 0;
+    }
+    *(u32 *)(exi + 0xC) &= ~4;
+    cpr = *(volatile u32 *)(0xCC006800 + chan * 0x14);
+    *(volatile u32 *)(0xCC006800 + chan * 0x14) = cpr & 0x405;
+    if (*(u32 *)(exi + 0xC) & 8) {
+        switch (chan) {
+        case 0:
+            __OSUnmaskInterrupts(0x100000);
+            break;
+        case 1:
+            __OSUnmaskInterrupts(0x20000);
+            break;
+        }
+    }
+    OSRestoreInterrupts(enabled);
+    if (chan != 2 && (cpr & 0x80)) {
+        if (__EXIProbe(chan)) {
+            return 1;
+        }
+        return 0;
+    }
+    return 1;
+}
+
 void EXIIntrruptHandler(s16 interrupt, void *context) {
     extern u8 Ecb_80309980[3][0x40];
     void OSClearContext(void *context);
@@ -14399,6 +14466,45 @@ s32 CARDCreate(s32 chan, const char *fileName, u32 size, CARDFileInfo *fileInfo)
 void GXInitFifoLimits(void *arg0, s32 arg1, s32 arg2) {
     M2C_FIELD(arg0, s32 *, 0xC) = arg1;
     M2C_FIELD(arg0, s32 *, 0x10) = arg2;
+}
+
+void GXSetCPUFifo(void *fifo) {
+    extern void *CPUFifo_803C7558;
+    extern void *GPFifo_803C755C;
+    extern volatile u32 *__piReg;
+    extern u8 CPGPLinked_803C7564;
+    void __GXFifoLink(u8 en);
+    void __GXWriteFifoIntEnable(u8 hiWatermarkEn, u8 loWatermarkEn);
+    void __GXWriteFifoIntReset(u8 hiWatermarkClr, u8 loWatermarkClr);
+    BOOL enabled;
+    u32 reg;
+
+    enabled = OSDisableInterrupts();
+    CPUFifo_803C7558 = fifo;
+    if (fifo == GPFifo_803C755C) {
+        __piReg[3] = *(u32 *)((u8 *)fifo + 0x0) & 0x3FFFFFFF;
+        __piReg[4] = *(u32 *)((u8 *)fifo + 0x4) & 0x3FFFFFFF;
+        reg = *(u32 *)((u8 *)fifo + 0x18) & 0x3FFFFFE0;
+        reg &= ~0x04000000;
+        __piReg[5] = reg;
+        CPGPLinked_803C7564 = 1;
+        __GXWriteFifoIntReset(1, 1);
+        __GXWriteFifoIntEnable(1, 0);
+        __GXFifoLink(1);
+    } else {
+        if (CPGPLinked_803C7564) {
+            __GXFifoLink(0);
+            CPGPLinked_803C7564 = 0;
+        }
+        __GXWriteFifoIntEnable(0, 0);
+        __piReg[3] = *(u32 *)((u8 *)fifo + 0x0) & 0x3FFFFFFF;
+        __piReg[4] = *(u32 *)((u8 *)fifo + 0x4) & 0x3FFFFFFF;
+        reg = *(u32 *)((u8 *)fifo + 0x18) & 0x3FFFFFE0;
+        reg &= ~0x04000000;
+        __piReg[5] = reg;
+    }
+    __sync();
+    OSRestoreInterrupts(enabled);
 }
 
 void __GXFifoReadEnable(void) {
