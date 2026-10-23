@@ -4047,26 +4047,6 @@ static inline void Grid_GetCell(Vector4 *pos, s32 *cellX, s32 *cellZ) {
     *cellZ = fz;
 }
 
-static inline void Grid_GetCellCoords(Vector4 *pos, u32 *x, u32 *z) {
-    f32 fx;
-    f32 fz;
-
-    fx = (pos->x - ((GridManager *)gGridManager)->minX) / ((GridManager *)gGridManager)->cellSizeX;
-    if (fx < 0.0f) {
-        fx = 0.0f;
-    } else if (fx >= (f32)((GridManager *)gGridManager)->numX) {
-        fx = (f32)((GridManager *)gGridManager)->numX - 1.0f;
-    }
-    fz = (pos->z - ((GridManager *)gGridManager)->minZ) / ((GridManager *)gGridManager)->cellSizeZ;
-    if (fz < 0.0f) {
-        fz = 0.0f;
-    } else if (fz >= (f32)((GridManager *)gGridManager)->numZ) {
-        fz = (f32)((GridManager *)gGridManager)->numZ - 1.0f;
-    }
-    *x = (s32)fx;
-    *z = (s32)fz;
-}
-
 void Grid_Release(void) {
 
 }
