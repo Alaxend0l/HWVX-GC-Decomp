@@ -2545,6 +2545,22 @@ void CollisionTriCache_Clear(void) {
     }
 }
 
+void CollisionTriCache_Heartbeat(void) {
+    extern s32 g_iDeltaTimeMS;
+    extern struct { u8 pad[0x20]; s32 other; u32 active; u32 timer; u8 pad2[4]; } g_aCollisionTriPairCache[4];
+    s32 i;
+    for (i = 0; i < 4; i++) {
+        if (g_aCollisionTriPairCache[i].active != 0) {
+            g_aCollisionTriPairCache[i].timer += g_iDeltaTimeMS;
+        }
+        if (g_aCollisionTriPairCache[i].timer > 1000) {
+            g_aCollisionTriPairCache[i].active = 0;
+            g_aCollisionTriPairCache[i].other = 0;
+            g_aCollisionTriPairCache[i].timer = 99999;
+        }
+    }
+}
+
 s32 CollisionTriCache_Get(u32 tri0, u32 tri1, Vector4 *a, Vector4 *b) {
     extern u8 g_aCollisionTriPairCache[4][0x30];
     s32 i;
