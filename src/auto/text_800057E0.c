@@ -14443,6 +14443,83 @@ void PADSetSpec(s32 spec) {
     Spec_803C6DD4 = spec;
 }
 
+void SPEC2_MakeStatus_80076F6C(s32 chan, void *arg1, u32 *data) {
+    typedef struct {
+        u16 button;
+        s8 stickX;
+        s8 stickY;
+        s8 substickX;
+        s8 substickY;
+        u8 triggerLeft;
+        u8 triggerRight;
+        u8 analogA;
+        u8 analogB;
+        s8 err;
+    } PADStatus_;
+    PADStatus_ *status = arg1;
+    PADStatus_ *origin;
+
+    status->button = (u16)((data[0] >> 16) & 0x3FFF);
+    status->stickX = (s8)(data[0] >> 8);
+    status->stickY = (s8)(data[0]);
+    switch (AnalogMode_803C6DD0 & 0x700) {
+    case 0x000:
+    case 0x500:
+    case 0x600:
+    case 0x700:
+        status->substickX = (s8)(data[1] >> 24);
+        status->substickY = (s8)(data[1] >> 16);
+        status->triggerLeft = (u8)(((data[1] >> 12) & 0x0F) << 4);
+        status->triggerRight = (u8)(((data[1] >> 8) & 0x0F) << 4);
+        status->analogA = (u8)(((data[1] >> 4) & 0x0F) << 4);
+        status->analogB = (u8)(((data[1] >> 0) & 0x0F) << 4);
+        break;
+    case 0x100:
+        status->substickX = (s8)(((data[1] >> 28) & 0x0F) << 4);
+        status->substickY = (s8)(((data[1] >> 24) & 0x0F) << 4);
+        status->triggerLeft = (u8)(data[1] >> 16);
+        status->triggerRight = (u8)(data[1] >> 8);
+        status->analogA = (u8)(((data[1] >> 4) & 0x0F) << 4);
+        status->analogB = (u8)(((data[1] >> 0) & 0x0F) << 4);
+        break;
+    case 0x200:
+        status->substickX = (s8)(((data[1] >> 28) & 0x0F) << 4);
+        status->substickY = (s8)(((data[1] >> 24) & 0x0F) << 4);
+        status->triggerLeft = (u8)(((data[1] >> 20) & 0x0F) << 4);
+        status->triggerRight = (u8)(((data[1] >> 16) & 0x0F) << 4);
+        status->analogA = (u8)(data[1] >> 8);
+        status->analogB = (u8)(data[1] >> 0);
+        break;
+    case 0x300:
+        status->substickX = (s8)(data[1] >> 24);
+        status->substickY = (s8)(data[1] >> 16);
+        status->triggerLeft = (u8)(data[1] >> 8);
+        status->triggerRight = (u8)(data[1] >> 0);
+        status->analogA = 0;
+        status->analogB = 0;
+        break;
+    case 0x400:
+        status->substickX = (s8)(data[1] >> 24);
+        status->substickY = (s8)(data[1] >> 16);
+        status->triggerLeft = 0;
+        status->triggerRight = 0;
+        status->analogA = (u8)(data[1] >> 8);
+        status->analogB = (u8)(data[1] >> 0);
+        break;
+    }
+    status->stickX -= 128;
+    status->stickY -= 128;
+    status->substickX -= 128;
+    status->substickY -= 128;
+    origin = (PADStatus_ *)Origin_802EFC00[chan];
+    ClampS8(&status->stickX, origin->stickX);
+    ClampS8(&status->stickY, origin->stickY);
+    ClampS8(&status->substickX, origin->substickX);
+    ClampS8(&status->substickY, origin->substickY);
+    ClampU8(&status->triggerLeft, origin->triggerLeft);
+    ClampU8(&status->triggerRight, origin->triggerRight);
+}
+
 static void SamplingHandler(s16 interrupt, void *context) {
     M2C_UNK OSClearContext(void *);
     M2C_UNK OSSetCurrentContext(void *);
@@ -19194,6 +19271,62 @@ s32 TRKTerminateNub(void) {
     TRKTerminateSerialHandler();
     return 0;
 }
+
+s32 TRKInitializeEventQueue(void);
+s32 TRKInitializeMessageBuffers(void);
+s32 TRKInitializeDispatcher(void);
+s32 TRKInitializeSerialHandler(void);
+s32 TRKInitializeTarget(void);
+void usr_put_initialize(void);
+void TRKTargetSetInputPendingPtr(void *ptr);
+s32 TRKInitializeIntDrivenUART(u32 param1, u32 param2, u32 param3, volatile u8 **inputPendingPtrRef);
+s32 TRKInitializeNub(void) {
+    s32 result;
+    s32 resultTemp;
+    u8 bendian[4];
+
+    result = 0;
+    gTRKBigEndian = 1;
+    bendian[0] = 0x12;
+    bendian[1] = 0x34;
+    bendian[2] = 0x56;
+    bendian[3] = 0x78;
+    if (*(u32 *)bendian == 0x12345678) {
+        gTRKBigEndian = 1;
+    } else if (*(u32 *)bendian == 0x78563412) {
+        gTRKBigEndian = 0;
+    } else {
+        result = 1;
+    }
+
+    if (result == 0) {
+        usr_put_initialize();
+    }
+    if (result == 0) {
+        result = TRKInitializeEventQueue();
+    }
+    if (result == 0) {
+        result = TRKInitializeMessageBuffers();
+    }
+    if (result == 0) {
+        result = TRKInitializeDispatcher();
+    }
+    if (result == 0) {
+        resultTemp = TRKInitializeIntDrivenUART(0xE100, 1, 0, (volatile u8 **)gTRKInputPendingPtr);
+        TRKTargetSetInputPendingPtr(gTRKInputPendingPtr[0]);
+        if (resultTemp != 0) {
+            result = resultTemp;
+        }
+    }
+    if (result == 0) {
+        result = TRKInitializeSerialHandler();
+    }
+    if (result == 0) {
+        result = TRKInitializeTarget();
+    }
+    return result;
+}
+#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
