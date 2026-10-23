@@ -4227,6 +4227,47 @@ u32 CreateSFX_(u32 *sfx) {
     return data;
 }
 
+#pragma push
+#pragma auto_inline off
+void SetVoiceState_(void *voice, s32 state) {
+    extern void *g_pFree_803C78A4;
+    s32 OSDisableInterrupts();
+    void OSRestoreInterrupts(s32);
+    void AXFreeVoice(void *);
+    s32 level;
+    s32 level2;
+
+    switch (state) {
+    case 3:
+        level = OSDisableInterrupts();
+        M2C_FIELD(voice, u8 *, 0x15) = 0;
+        M2C_FIELD(voice, u8 *, 1) = 0xFE;
+        if (M2C_FIELD(voice, void **, 0x50) != NULL) {
+            level2 = OSDisableInterrupts();
+            if (M2C_FIELD(M2C_FIELD(voice, void **, 0x50), void **, 0xC) != NULL) {
+                AXFreeVoice(M2C_FIELD(voice, void **, 0x50));
+            }
+            M2C_FIELD(voice, void **, 0x50) = NULL;
+            OSRestoreInterrupts(level2);
+        }
+        M2C_FIELD(voice, void **, 4) = g_pFree_803C78A4;
+        g_pFree_803C78A4 = voice;
+        OSRestoreInterrupts(level);
+        break;
+    case 2:
+        M2C_FIELD(voice, u8 *, 0x15) = 2;
+        M2C_FIELD(M2C_FIELD(voice, void **, 0x50), u16 *, 0x146) = 0;
+        M2C_FIELD(M2C_FIELD(voice, void **, 0x50), u32 *, 0x1C) |= 4;
+        break;
+    case 1:
+        M2C_FIELD(voice, u8 *, 0x15) = 1;
+        M2C_FIELD(M2C_FIELD(voice, void **, 0x50), u16 *, 0x146) = 1;
+        M2C_FIELD(M2C_FIELD(voice, void **, 0x50), u32 *, 0x1C) |= 4;
+        break;
+    }
+}
+#pragma pop
+
 #pragma pop
 
 void SetVoicePriority_(void *arg0) {
