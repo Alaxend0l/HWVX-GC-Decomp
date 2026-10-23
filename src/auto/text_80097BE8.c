@@ -154,8 +154,20 @@ typedef struct THPPlayer {
     u8 unkD4[0x198 - 0xD4];
 } THPPlayer;
 
+typedef struct THPComponent {
+    u8 quantizationTableSelector;
+    u8 DCTableSelector;
+    u8 ACTableSelector;
+    s16 predDC;
+} THPComponent;
+
 typedef struct THPFileInfo {
-    u8 unk0[0x69C];
+    u8 unk0[0x680];
+    THPComponent components[3];
+    u16 xPixelSize;
+    u16 yPixelSize;
+    u16 MCUsPerRow;
+    u8 unk698[0x69C - 0x698];
     u8 *c;
     u32 currByte;
     u32 cnt;
@@ -4722,6 +4734,7 @@ void Gfx_DrawGeometryLOD_Immediate(Geometry *geometry, void *matrix) {
 void RenderGroup(Geometry *geometry, u32 group, void *matrix) {
     extern GfxState g_state;
     void DrawGroupWireframe(Geometry *geometry, u32 group, void *matrix);
+    GeometryGroup *groups;
 
     if (geometry->groups[group].flags & 0x4000) {
         return;
