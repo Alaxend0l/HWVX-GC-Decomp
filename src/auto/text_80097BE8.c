@@ -6240,6 +6240,38 @@ void *Gfx_GetWorldMatrixState(u32 index) {
     return (void *)g_pGDL->matrices[index];
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void DrawGroupWireframe(Geometry *geometry, u32 group, void *matrix) {
+    extern GDL *g_pGDL;
+    void XformVec(Vector *m, Vector *v, Vector *out);
+    GDLVec4 v[3] __attribute__((aligned(16)));
+    u8 *grp;
+    u32 count;
+    u32 i;
+    s32 j;
+
+    grp = (u8 *)&geometry->groups[group];
+    count = *(u32 *)(grp + 0x10);
+    for (i = 0; i < count; i++) {
+        for (j = 0; j < 3; j++) {
+            XformVec(matrix, (Vector *)((u8 *)geometry->lodDistances + (*(u16 **)(grp + 0x1C))[i * 3 + j] * 0x30), (Vector *)&v[j]);
+        }
+        g_pGDL->lines3D[g_pGDL->num3DLines].p0 = v[0];
+        g_pGDL->lines3D[g_pGDL->num3DLines].p1 = v[1];
+        *(u32 *)&g_pGDL->lines3D[g_pGDL->num3DLines].r = *(u32 *)((u8 *)geometry->lodDistances + (*(u16 **)(grp + 0x1C))[i * 3 + 0] * 0x30 + 0x1C);
+        g_pGDL->num3DLines++;
+        g_pGDL->lines3D[g_pGDL->num3DLines].p0 = v[1];
+        g_pGDL->lines3D[g_pGDL->num3DLines].p1 = v[2];
+        *(u32 *)&g_pGDL->lines3D[g_pGDL->num3DLines].r = *(u32 *)((u8 *)geometry->lodDistances + (*(u16 **)(grp + 0x1C))[i * 3 + 1] * 0x30 + 0x1C);
+        g_pGDL->num3DLines++;
+        g_pGDL->lines3D[g_pGDL->num3DLines].p0 = v[2];
+        g_pGDL->lines3D[g_pGDL->num3DLines].p1 = v[0];
+        *(u32 *)&g_pGDL->lines3D[g_pGDL->num3DLines].r = *(u32 *)((u8 *)geometry->lodDistances + (*(u16 **)(grp + 0x1C))[i * 3 + 2] * 0x30 + 0x1C);
+        g_pGDL->num3DLines++;
+    }
+}
+
 void Gfx_GetCameraPosition(Vector *pos) {
     *pos = *(Vector *)((u8 *)GetRenderWindow() + 0x180);
 }
