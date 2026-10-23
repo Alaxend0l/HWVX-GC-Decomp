@@ -191,7 +191,6 @@ typedef struct ThingManagerDARYL {
 } ThingManagerDARYL;
 
 extern ThingManagerDARYL g_thingManager_DARYL;
-#define THINGMANAGERDARYL_DEFINED
 
 typedef struct NavData {
     u8 *nodes;
