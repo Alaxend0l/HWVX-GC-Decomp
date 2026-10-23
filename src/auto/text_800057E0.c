@@ -7647,6 +7647,29 @@ s8 IsPointWithinVolume(Vector4 *point, u8 *volume, f32 *distSq) {
     return 0;
 }
 
+static inline s32 VolumeManager_GetCell(u8 *holder, Vector4 *point) {
+    s32 x;
+    s32 y;
+    s32 z;
+
+    if (holder == NULL) {
+        return 0;
+    }
+    x = (point->x - M2C_FIELD(holder, f32 *, 0x0)) / M2C_FIELD(holder, f32 *, 0x20);
+    y = (point->y - M2C_FIELD(holder, f32 *, 0x4)) / M2C_FIELD(holder, f32 *, 0x24);
+    z = (point->z - M2C_FIELD(holder, f32 *, 0x8)) / M2C_FIELD(holder, f32 *, 0x28);
+    if (x < 0 || x >= M2C_FIELD(holder, s32 *, 0x2C)) {
+        return 0;
+    }
+    if (y < 0 || y >= M2C_FIELD(holder, s32 *, 0x30)) {
+        return 0;
+    }
+    if (z < 0 || z >= M2C_FIELD(holder, s32 *, 0x34)) {
+        return 0;
+    }
+    return M2C_FIELD(holder, s32 **, 0x14)[x + M2C_FIELD(holder, s32 *, 0x34) * (y * M2C_FIELD(holder, s32 *, 0x2C)) + z * M2C_FIELD(holder, s32 *, 0x2C)];
+}
+
 static inline s32 VolumeManager_GetCellIndex(Vector4 *point) {
     extern u8 *g_VolumeHolder;
     s32 x;
