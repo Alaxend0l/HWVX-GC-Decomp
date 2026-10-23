@@ -20511,6 +20511,9 @@ void GXSetDispCopyDst(u16 wd, u16 ht) {
     *reg = (*reg & 0xFFFFFF) | 0x4D000000;
 }
 
+#pragma push
+#pragma peephole off
+#pragma scheduling off
 void GXSetTexCopyDst(u16 wd, u16 ht, s32 fmt, u8 mipmap) {
     extern u8 *gx;
     void __GetImageTileCount(s32 fmt, u16 wd, u16 ht, u32 *rowTiles, u32 *colTiles, u32 *cmpTiles);
@@ -20556,6 +20559,7 @@ void GXSetTexCopyDst(u16 wd, u16 ht, s32 fmt, u8 mipmap) {
     reg = (u32 *)(gx + 0x1FC);
     *reg = (*reg & ~0x70) | (peTexFmt << 4);
 }
+#pragma pop
 
 void GXSetDispCopyFrame2Field(s32 mode) {
     extern u8 *gx;
