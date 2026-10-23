@@ -3429,6 +3429,27 @@ void Gfx_Add2DRectangleBack(void) {
     fn_800957D4();
 }
 
+void *Gfx_GetWorldMatrixState(u32 index);
+void DisplayList_AddAlphaGroup(s32 arg0, s32 arg1, u32 matrix, u8 arg3, GXColor *color) {
+    extern GDL *g_pGDL;
+    extern s32 g_currentWindow;
+    extern u8 g_CurrentViews;
+
+    if (g_pGDL->numAlphaGroups == 0x400) {
+        return;
+    }
+    g_pGDL->alphaGroups[g_pGDL->numAlphaGroups].unk40 = arg0;
+    g_pGDL->alphaGroups[g_pGDL->numAlphaGroups].unk44 = arg1;
+    g_pGDL->alphaGroups[g_pGDL->numAlphaGroups].window = g_currentWindow;
+    if (g_CurrentViews != 1) {
+        Gfx_SetWorldMatrix(Gfx_GetWorldMatrixState(matrix));
+    }
+    memcpy(g_pGDL->alphaGroups[g_pGDL->numAlphaGroups].matrix, (u8 *)GetRenderWindow() + 0x80, 0x40);
+    g_pGDL->alphaGroups[g_pGDL->numAlphaGroups].unk50 = arg3;
+    g_pGDL->alphaGroups[g_pGDL->numAlphaGroups].color = *color;
+    g_pGDL->numAlphaGroups++;
+}
+
 void DrawAlphaTable(void) {
     extern GDL *g_pGDL;
     u16 i;
