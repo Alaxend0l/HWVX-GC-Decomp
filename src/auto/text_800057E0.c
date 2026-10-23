@@ -14231,14 +14231,6 @@ void FlashHolder_Render(void) {
     }
 }
 
-static inline void FlashHolder_Remove(s32 index) {
-    extern u8 g_pFlash[16][0x80];
-
-    if (index >= 0) {
-        *(void **)(g_pFlash[index] + 0x5C) = NULL;
-    }
-}
-
 void BulletHole_Init(void) {
     extern u8 g_bulletData[512][0x60];
     extern s32 g_nextBullet;
