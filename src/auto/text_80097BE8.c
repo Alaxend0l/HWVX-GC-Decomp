@@ -1135,7 +1135,8 @@ typedef struct GeometryGroup {
 typedef struct Geometry {
     u16 unk0;
     u16 numGroups;
-    u32 unk4;
+    u16 unk4;
+    u16 unk6;
     GeometryGroup *groups;
     f32 *lodDistances;
     f32 bboxMin[4];
@@ -6794,6 +6795,70 @@ void Render_GeometryList(void) {
         Gfx_DrawGeometryLOD_Immediate(lod, lodMatrix);
     }
 }
+
+void Render_Geometry(s32 geometry, void *matrix) {
+    void PSVECAdd(Vector *a, Vector *b, Vector *ab);
+    void PSVECScale(Vector *src, Vector *dst, f32 scale);
+    void PSVECSubtract(Vector *a, Vector *b, Vector *a_b);
+    f32 PSVECDotProduct(Vector *a, Vector *b);
+    f32 _fabs(f32 x);
+    s32 Gfx_FrustrumCullSphereTest(Vector *center, f32 radius);
+    void Gfx_DisableState(u32 state);
+    void Gfx_DrawGeometryLOD_Immediate(Geometry *geometry, void *matrix);
+    Geometry *geom = (Geometry *)geometry;
+    Vector min __attribute__((aligned(16)));
+    Vector max __attribute__((aligned(16)));
+    Vector center __attribute__((aligned(16)));
+    f32 scale[4] __attribute__((aligned(16)));
+    Vector out __attribute__((aligned(16)));
+    f32 radius;
+    u16 i;
+
+    if (geom->unk4 >> 16 == 0) {
+        PSVECAdd((Vector *)((f32 *)matrix + 12), (Vector *)geom->bboxMin, &min);
+        PSVECAdd((Vector *)((f32 *)matrix + 12), (Vector *)geom->bboxMax, &max);
+        PSVECAdd(&min, &max, &center);
+        PSVECScale(&center, &center, 0.5f);
+        scale[0] = scale[1] = scale[2] = geom->bboxMin[3];
+        scale[3] = 0.0f;
+        XformVecOrientation((Vector *)matrix, (Vector *)scale, &out);
+        radius = _fabs(out.x);
+        out.y = _fabs(out.y);
+        out.z = _fabs(out.z);
+        if (out.y > radius) {
+            radius = out.y;
+        }
+        if (out.z > radius) {
+            radius = out.z;
+        }
+        switch (Gfx_FrustrumCullSphereTest(&center, radius)) {
+        case 1:
+            Gfx_EnableState(0x20000);
+            break;
+        case 2:
+            Gfx_DisableState(0x20000);
+            break;
+        default:
+            return;
+        }
+        PSVECSubtract(&center, (Vector *)((u8 *)GetRenderWindow() + 0x180), &min);
+        radius = PSVECDotProduct(&min, (Vector *)((u8 *)GetRenderWindow() + 0x190));
+        radius *= ((f32 *)GetRenderWindow())[0x9D];
+        for (i = 0; i < geom->numGroups; i++) {
+            if (radius < geom->lodDistances[i]) {
+                break;
+            }
+        }
+        if (geom->numGroups == 1 && geom->lodDistances[0] == 0.0f) {
+            i = 0;
+        }
+        if (i < geom->numGroups) {
+            Gfx_DrawGeometryLOD_Immediate((Geometry *)((u8 *)geom->groups + i * 0x18), matrix);
+        }
+        Gfx_EnableState(0x20000);
+    }
+}
+
 #pragma pop
 void RenderGroup(Geometry *geometry, u32 group, void *matrix);
 void EnvMap(Geometry *geometry, u32 group, void *matrix, s32 mode);
