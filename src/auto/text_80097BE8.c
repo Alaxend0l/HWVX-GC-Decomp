@@ -3084,6 +3084,64 @@ double __kernel_sin(double x, double y, int iy) {
     }
 }
 
+double atan(double x) {
+    extern const double atanhi_800CDCF0[];
+    extern const double atanlo[];
+    extern const double aT[];
+    double w, s1, s2, z;
+    int ix, hx, id;
+
+    hx = __HI(x);
+    ix = hx & 0x7fffffff;
+    if (ix >= 0x44100000) {
+        if (ix > 0x7ff00000 || (ix == 0x7ff00000 && (__LO(x) != 0))) {
+            return x + x;
+        }
+        if (hx > 0) {
+            return atanhi_800CDCF0[3] + atanlo[3];
+        } else {
+            return -atanhi_800CDCF0[3] - atanlo[3];
+        }
+    }
+    if (ix < 0x3fdc0000) {
+        if (ix < 0x3e200000) {
+            if (1.0e300 + x > 1.0) {
+                return x;
+            }
+        }
+        id = -1;
+    } else {
+        x = fabs(x);
+        if (ix < 0x3ff30000) {
+            if (ix < 0x3fe60000) {
+                id = 0;
+                x = (2.0 * x - 1.0) / (2.0 + x);
+            } else {
+                id = 1;
+                x = (x - 1.0) / (x + 1.0);
+            }
+        } else {
+            if (ix < 0x40038000) {
+                id = 2;
+                x = (x - 1.5) / (1.0 + 1.5 * x);
+            } else {
+                id = 3;
+                x = -1.0 / x;
+            }
+        }
+    }
+    z = x * x;
+    w = z * z;
+    s1 = z * (aT[0] + w * (aT[2] + w * (aT[4] + w * (aT[6] + w * (aT[8] + w * aT[10])))));
+    s2 = w * (aT[1] + w * (aT[3] + w * (aT[5] + w * (aT[7] + w * aT[9]))));
+    if (id < 0) {
+        return x - x * (s1 + s2);
+    } else {
+        z = atanhi_800CDCF0[id] - ((x * (s1 + s2) - atanlo[id]) - x);
+        return (hx < 0) ? -z : z;
+    }
+}
+
 double __kernel_tan(double x, double y, int iy);
 int __ieee754_rem_pio2(double x, double *y);
 #pragma push
@@ -4040,6 +4098,82 @@ void ScaleMatrix(void *arg0, void *arg1) {
 }
 
 void Dprintf(char *str, ...) {
+}
+
+void InitRenderMode(void *mode);
+s32 main(void) {
+    extern s64 g_resetTicks;
+    extern s32 shithack;
+    extern void *rmode;
+    extern u32 m_ilpreset_803C7620;
+    extern s32 m_reset;
+    extern s32 m_cd_drive_status;
+    extern s8 g_bBlockReset;
+    void OSInit(void);
+    void DVDInit(void);
+    void VIInit(void);
+    void PADInit(void);
+    void CARDInit(void);
+    void InitMem(void);
+    s32 time(s32 *t);
+    void srand(u32 seed);
+    s8 Main_Init(void);
+    s8 Main_Loop(void);
+    void Main_Shutdown(void);
+    void Main_Shutdown_NGC(void);
+    s64 OSGetTime(void);
+    s32 DVDGetDriveStatus(void);
+    s32 OSGetResetButtonState(void);
+    void VISetBlack(s32 black);
+    void VIWaitForRetrace(void);
+    void VIFlush(void);
+    void OSResetSystem(s32 reset, u32 resetCode, s32 forceMenu);
+    s32 running = 1;
+
+    g_resetTicks = 0;
+    shithack = 0;
+    OSInit();
+    DVDInit();
+    VIInit();
+    PADInit();
+    CARDInit();
+    InitRenderMode(rmode);
+    InitMem();
+    srand(time(NULL));
+    if (!Main_Init()) {
+        return 0;
+    }
+    Dprintf("Main Init\n");
+    m_ilpreset_803C7620 = 0;
+    m_reset = 0;
+    g_resetTicks = OSGetTime() - (*(u32 *)0x800000F8 / 4) * 10;
+    while (running) {
+        m_cd_drive_status = DVDGetDriveStatus();
+        if (!Main_Loop()) {
+            running = 0;
+        }
+        if (m_reset && !g_bBlockReset && OSGetResetButtonState() == 0) {
+            VISetBlack(1);
+            VIWaitForRetrace();
+            VIFlush();
+            VIWaitForRetrace();
+            VIFlush();
+            VIWaitForRetrace();
+            if ((OSGetTime() - g_resetTicks) / (*(u32 *)0x800000F8 / 4) < 8) {
+                OSResetSystem(1, 0, 0);
+            }
+            if (m_ilpreset_803C7620 == 0) {
+                OSResetSystem(0, 0, 0);
+            } else {
+                OSResetSystem(1, 0, 1);
+            }
+        }
+        shithack = 1;
+    }
+    Dprintf("Main Shutdown\n");
+    Main_Shutdown();
+    Main_Shutdown_NGC();
+    return 1;
 }
 
 void ForceIPLReset(void) {
@@ -13774,4 +13908,30 @@ void fn_800CBA14(s32 arg0) {
     M2C_UNK fn_800CBF78(s32);
     fn_800CBF78(arg0 + 0x82C);
 }
+static const double atanhi_800CDCF0[] = {
+    4.63647609000806093515e-01,
+    7.85398163397448278999e-01,
+    9.82793723247329054082e-01,
+    1.57079632679489655800e+00,
+};
 
+static const double atanlo[] = {
+    2.26987774529616870924e-17,
+    3.06161699786838301793e-17,
+    1.39033110312309984516e-17,
+    6.12323399573676603587e-17,
+};
+
+static const double aT[] = {
+    3.33333333333329318027e-01,
+    -1.99999999998764832476e-01,
+    1.42857142725034663711e-01,
+    -1.11111104054623557880e-01,
+    9.09088713343650656196e-02,
+    -7.69187620504482999495e-02,
+    6.66107313738753120669e-02,
+    -5.83357013379057348645e-02,
+    4.97687799461593236017e-02,
+    -3.65315727442169155270e-02,
+    1.62858201153657823623e-02,
+};
