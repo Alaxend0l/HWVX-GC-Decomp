@@ -30336,9 +30336,6 @@ static inline s32 TRKPPCAccessSPR(void *value, u32 spr, s32 read) {
 }
 
 s32 TRKPPCAccessFPRegister(void *srcDestPtr, u32 fpr, s32 read) {
-    extern u8 TRKvalue128_temp[16];
-    void TRK_flush_cache(u32 start, u32 length);
-    typedef void (*RegAccessFunc)(void *src, void *dst);
     s32 error = 0;
     u32 instructionData1[10] = {
         0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
@@ -30351,33 +30348,16 @@ s32 TRKPPCAccessFPRegister(void *srcDestPtr, u32 fpr, s32 read) {
         } else {
             instructionData1[0] = 0xC8030000 | (fpr << 21);
         }
-        instructionData1[9] = 0x4E800020;
-        TRK_flush_cache((u32)instructionData1, sizeof(instructionData1));
-        ((RegAccessFunc)instructionData1)(srcDestPtr, TRKvalue128_temp);
+        error = TRKPPCAccessSpecialReg(srcDestPtr, instructionData1, read);
     } else if (fpr == 0x20) {
         *(u64 *)srcDestPtr &= 0xFFFFFFFF;
     } else if (fpr == 0x21) {
-        u32 instructionData2[10] = {
-            0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
-            0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
-        };
-
         if (!read) {
             *(u32 *)srcDestPtr = *((u32 *)srcDestPtr + 1);
         }
+        error = TRKPPCAccessSPR(srcDestPtr, 1022, read);
         if (read) {
-            instructionData2[0] = 0x7C9EFAA6;
-            instructionData2[1] = 0x90830000;
-        } else {
-            instructionData2[0] = 0x80830000;
-            instructionData2[1] = 0x7C9EFBA6;
-        }
-        instructionData2[9] = 0x4E800020;
-        TRK_flush_cache((u32)instructionData2, sizeof(instructionData2));
-        ((RegAccessFunc)instructionData2)(srcDestPtr, TRKvalue128_temp);
-        error = 0;
-        if (read) {
-            *(u64 *)srcDestPtr = *(u32 *)srcDestPtr & 0xFFFFFFFF;
+            *(u64 *)srcDestPtr = (*(u64 *)srcDestPtr >> 32) & 0xFFFFFFFF;
         }
     }
     return error;
