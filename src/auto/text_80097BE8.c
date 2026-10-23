@@ -8089,6 +8089,65 @@ s32 Audio_Create_(void) {
     return 1;
 }
 
+#pragma push
+#pragma optimization_level 1
+s32 Audio_Init_(void) {
+    typedef struct MemBlk {
+        u32 addr;
+        s32 size;
+        u32 unk8;
+        u32 unkC;
+    } MemBlk;
+    extern MemBlk g_memblk_80371670[];
+    extern s32 g_last_803C78B4;
+    extern u32 g_heap_803C78C4;
+    extern s32 g_size_803C78C0;
+    extern u32 g_silence;
+    extern s32 g_free_803C78B8;
+    void ARQFlushQueue(void);
+    u32 ARGetBaseAddress(void);
+    u32 ARGetSize(void);
+    void *OSAllocFromHeap(s32 heap, u32 size);
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32 level);
+    void *memset(void *dst, int c, u32 n);
+    int printf(const char *fmt, ...);
+    u32 i;
+    s32 level;
+    void *buf;
+
+    ARQFlushQueue();
+    g_silence = ARGetBaseAddress();
+    g_heap_803C78C4 = g_silence + 0x800;
+    g_size_803C78C0 = ARGetSize() - g_heap_803C78C4;
+    g_memblk_80371670[0].addr = g_heap_803C78C4;
+    g_memblk_80371670[0].size = g_size_803C78C0;
+    g_memblk_80371670[0].unk8 = -1;
+    g_memblk_80371670[0].unkC = -1;
+    g_last_803C78B4 = 0;
+    g_memblk_80371670[1].size = 0;
+    g_memblk_80371670[1].unk8 = -1;
+    g_memblk_80371670[1].unkC = 2;
+    g_free_803C78B8 = 1;
+    for (i = 2; i < 0xFF; i++) {
+        g_memblk_80371670[i].size = 0;
+        g_memblk_80371670[i].unk8 = i - 1;
+        g_memblk_80371670[i].unkC = i + 1;
+    }
+    g_memblk_80371670[0xFE].unkC = -1;
+    level = OSDisableInterrupts();
+    buf = OSAllocFromHeap(__OSCurrHeap, 0x800);
+    OSRestoreInterrupts(level);
+    memset(buf, 0, 0x800);
+    MemCpyA_(g_silence, (u32)buf, 0x800);
+    level = OSDisableInterrupts();
+    OSFreeToHeap(__OSCurrHeap, (s32)buf);
+    OSRestoreInterrupts(level);
+    printf("Audio :: Initialized (%ik available RAM)\n", g_size_803C78C0 >> 10);
+    return 1;
+}
+#pragma pop
+
 void Audio_Destroy_(void) {
     M2C_UNK AIReset();
     M2C_UNK ARQReset();
