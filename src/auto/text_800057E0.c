@@ -339,7 +339,10 @@ typedef struct SIPacket {
 
 typedef struct SIPacketBss {
     SIPacket packet[4];
-    u8 unk80[0x1B0 - 0x80];
+    u8 alarm[4][0x28];
+    u8 unk120[0x140 - 0x120];
+    s64 xferTime[4];
+    u8 unk160[0x1B0 - 0x160];
     BOOL inputBufferValid[4];
     u32 inputBuffer[4][2];
     u32 inputBufferVcount[4];
@@ -20408,6 +20411,132 @@ void GXLoadLightObjImm(GXLightObjInt *lt_obj, s32 light) {
     GXWGFifo.f32 = lt_obj->ldir[1];
     GXWGFifo.f32 = lt_obj->ldir[2];
     data->bpSentNot = 1;
+}
+
+void GXSetChanAmbColor(s32 chan, GXColor amb_color) {
+    typedef struct GXDataAmb {
+        u8 unk0[2];
+        u16 bpSentNot;
+        u8 unk4[0xA4];
+        u32 ambColor[2];
+    } GXDataAmb;
+    extern GXDataAmb *gx;
+    u32 reg = 0;
+    u32 colIdx;
+    u32 alpha;
+
+    switch (chan) {
+    case 0:
+        alpha = gx->ambColor[0] & 0xFF;
+        reg = (reg & ~0xFF) | alpha;
+        reg = (reg & ~0xFF00) | (amb_color.b << 8);
+        reg = (reg & ~0xFF0000) | (amb_color.g << 16);
+        reg = (reg & ~0xFF000000) | (amb_color.r << 24);
+        colIdx = 0;
+        break;
+    case 1:
+        alpha = gx->ambColor[1] & 0xFF;
+        reg = (reg & ~0xFF) | alpha;
+        reg = (reg & ~0xFF00) | (amb_color.b << 8);
+        reg = (reg & ~0xFF0000) | (amb_color.g << 16);
+        reg = (reg & ~0xFF000000) | (amb_color.r << 24);
+        colIdx = 1;
+        break;
+    case 2:
+        reg = gx->ambColor[0];
+        reg = (reg & ~0xFF) | amb_color.a;
+        colIdx = 0;
+        break;
+    case 3:
+        reg = gx->ambColor[1];
+        reg = (reg & ~0xFF) | amb_color.a;
+        colIdx = 1;
+        break;
+    case 4:
+        reg = (reg & ~0xFF) | amb_color.a;
+        reg = (reg & ~0xFF00) | (amb_color.b << 8);
+        reg = (reg & ~0xFF0000) | (amb_color.g << 16);
+        reg = (reg & ~0xFF000000) | (amb_color.r << 24);
+        colIdx = 0;
+        break;
+    case 5:
+        reg = (reg & ~0xFF) | amb_color.a;
+        reg = (reg & ~0xFF00) | (amb_color.b << 8);
+        reg = (reg & ~0xFF0000) | (amb_color.g << 16);
+        reg = (reg & ~0xFF000000) | (amb_color.r << 24);
+        colIdx = 1;
+        break;
+    default:
+        return;
+    }
+    GXWGPipe.u8 = 0x10;
+    GXWGPipe.u32 = colIdx + 0x100A;
+    GXWGPipe.u32 = reg;
+    gx->bpSentNot = 1;
+    gx->ambColor[colIdx] = reg;
+}
+
+void GXSetChanMatColor(s32 chan, GXColor mat_color) {
+    typedef struct GXDataMat {
+        u8 unk0[2];
+        u16 bpSentNot;
+        u8 unk4[0xAC];
+        u32 matColor[2];
+    } GXDataMat;
+    extern GXDataMat *gx;
+    u32 reg = 0;
+    u32 colIdx;
+    u32 alpha;
+
+    switch (chan) {
+    case 0:
+        alpha = gx->matColor[0] & 0xFF;
+        reg = (reg & ~0xFF) | alpha;
+        reg = (reg & ~0xFF00) | (mat_color.b << 8);
+        reg = (reg & ~0xFF0000) | (mat_color.g << 16);
+        reg = (reg & ~0xFF000000) | (mat_color.r << 24);
+        colIdx = 0;
+        break;
+    case 1:
+        alpha = gx->matColor[1] & 0xFF;
+        reg = (reg & ~0xFF) | alpha;
+        reg = (reg & ~0xFF00) | (mat_color.b << 8);
+        reg = (reg & ~0xFF0000) | (mat_color.g << 16);
+        reg = (reg & ~0xFF000000) | (mat_color.r << 24);
+        colIdx = 1;
+        break;
+    case 2:
+        reg = gx->matColor[0];
+        reg = (reg & ~0xFF) | mat_color.a;
+        colIdx = 0;
+        break;
+    case 3:
+        reg = gx->matColor[1];
+        reg = (reg & ~0xFF) | mat_color.a;
+        colIdx = 1;
+        break;
+    case 4:
+        reg = (reg & ~0xFF) | mat_color.a;
+        reg = (reg & ~0xFF00) | (mat_color.b << 8);
+        reg = (reg & ~0xFF0000) | (mat_color.g << 16);
+        reg = (reg & ~0xFF000000) | (mat_color.r << 24);
+        colIdx = 0;
+        break;
+    case 5:
+        reg = (reg & ~0xFF) | mat_color.a;
+        reg = (reg & ~0xFF00) | (mat_color.b << 8);
+        reg = (reg & ~0xFF0000) | (mat_color.g << 16);
+        reg = (reg & ~0xFF000000) | (mat_color.r << 24);
+        colIdx = 1;
+        break;
+    default:
+        return;
+    }
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = 0x1000 + (colIdx + 12);
+    GXWGFifo.u32 = reg;
+    gx->bpSentNot = 1;
+    gx->matColor[colIdx] = reg;
 }
 
 void GXSetNumChans(u8 nChans) {
