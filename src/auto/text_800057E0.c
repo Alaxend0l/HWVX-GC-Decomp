@@ -11709,6 +11709,8 @@ s32 TRKTerminateNub(void) {
 
 #pragma push
 #pragma use_lmw_stmw on
+#pragma push
+#pragma opt_propagation off
 s32 TRKReadBuffer_ui8(TRKBuffer *b, u8 *data, s32 count) {
     s32 err;
     s32 i;
@@ -11738,6 +11740,7 @@ s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data) {
     }
     return err;
 }
+#pragma pop
 
 #pragma push
 #pragma opt_propagation off
