@@ -6100,6 +6100,73 @@ s32 DVDGetCurrentDiskID(void) {
     return 0x80000000;
 }
 
+#pragma push
+#pragma peephole off
+void __DVDClearWaitingQueue(void) {
+    u32 i;
+
+    for (i = 0; i < 4; i++) {
+        DVDQueue *q = &WaitingQueue_802EFA18[i];
+        q->next = q;
+        q->prev = q;
+    }
+}
+
+s32 __DVDPushWaitingQueue(s32 prio, DVDQueue *block) {
+    s32 enabled;
+    DVDQueue *q;
+
+    enabled = OSDisableInterrupts();
+    q = &WaitingQueue_802EFA18[prio];
+    q->prev->next = block;
+    block->prev = q->prev;
+    block->next = q;
+    q->prev = block;
+    OSRestoreInterrupts(enabled);
+    return 1;
+}
+#pragma pop
+
+DVDQueue *__DVDPopWaitingQueue(void) {
+    s32 enabled;
+    s32 i;
+    DVDQueue *q;
+    DVDQueue *tmp;
+
+    enabled = OSDisableInterrupts();
+    for (i = 0; i < 4; i++) {
+        if (WaitingQueue_802EFA18[i].next != &WaitingQueue_802EFA18[i]) {
+            OSRestoreInterrupts(enabled);
+            enabled = OSDisableInterrupts();
+            q = &WaitingQueue_802EFA18[i];
+            tmp = q->next;
+            q->next = tmp->next;
+            tmp->next->prev = q;
+            OSRestoreInterrupts(enabled);
+            tmp->next = NULL;
+            tmp->prev = NULL;
+            return tmp;
+        }
+    }
+    OSRestoreInterrupts(enabled);
+    return NULL;
+}
+
+s32 __DVDCheckWaitingQueue(void) {
+    s32 enabled;
+    u32 i;
+
+    enabled = OSDisableInterrupts();
+    for (i = 0; i < 4; i++) {
+        if (WaitingQueue_802EFA18[i].next != &WaitingQueue_802EFA18[i]) {
+            OSRestoreInterrupts(enabled);
+            return 1;
+        }
+    }
+    OSRestoreInterrupts(enabled);
+    return 0;
+}
+
 s32 __DVDDequeueWaitingQueue(void **block) {
     s32 OSDisableInterrupts();
     M2C_UNK OSRestoreInterrupts();
