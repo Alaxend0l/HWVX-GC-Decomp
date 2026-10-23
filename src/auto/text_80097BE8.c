@@ -300,20 +300,7 @@ typedef struct RumbleStatus {
     s32 active;
 } RumbleStatus;
 
-typedef struct InputUnk108 {
-    u8 unk0[0xA];
-    u8 unkA;
-    u8 unkB;
-} InputUnk108;
-
-static RumbleStatus rumbleStatus[4];
-static s32 s_rumbleTime[2];
-static u8 s_unk28[8];
-static u8 s_unk30[8];
-static u8 s_unk38[0x38];
-static u8 s_unk70[8];
-static u8 s_unk78[0x90];
-static InputUnk108 s_unk108[4];
+extern RumbleStatus rumbleStatus[4];
 extern s8 g_padUpPos[4];
 extern s8 g_padDownPos[4];
 extern u32 g_StopInput;
