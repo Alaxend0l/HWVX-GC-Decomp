@@ -5088,6 +5088,43 @@ void CreateSilhouette(void *edges, u32 count, Vector *dir) {
     }
 }
 
+#pragma push
+#pragma dont_inline on
+void Render_GeometryList(void) {
+    extern GDL *g_pGDL;
+    extern s32 m_curLightState;
+    extern s32 m_curEnvmapState;
+    void Render_Geometry(s32 geometry, void *matrix);
+    void Gfx_DisableState(u32 state);
+    void *Gfx_GetWorldMatrixState(u32 index);
+    void Gfx_DrawGeometryLOD_Immediate(Geometry *geometry, void *matrix);
+    u32 i;
+    s32 geometry;
+    void *matrix;
+    GXColor color;
+
+    for (i = 0; i < g_pGDL->numDrawEntries; i++) {
+        geometry = g_pGDL->drawEntries[i].geometry;
+        matrix = Gfx_GetWorldMatrixState(g_pGDL->drawEntries[i].matrix);
+        if (g_pGDL->drawEntries[i].unk10) {
+            Gfx_EnableState(0x10);
+            color = g_pGDL->drawEntries[i].unk4;
+            Gfx_SetBaseColor(&color);
+        }
+        m_curLightState = g_pGDL->drawEntries[i].lightState;
+        m_curEnvmapState = g_pGDL->drawEntries[i].envmapState;
+        Render_Geometry(geometry, matrix);
+        if (g_pGDL->drawEntries[i].unk10) {
+            Gfx_DisableState(0x10);
+        }
+    }
+    for (i = 0; i < g_pGDL->numLODEntries; i++) {
+        Geometry *lod = (Geometry *)g_pGDL->lodEntries[i].geometry;
+        void *lodMatrix = Gfx_GetWorldMatrixState(g_pGDL->lodEntries[i].matrix);
+        Gfx_DrawGeometryLOD_Immediate(lod, lodMatrix);
+    }
+}
+#pragma pop
 void RenderGroup(Geometry *geometry, u32 group, void *matrix);
 void EnvMap(Geometry *geometry, u32 group, void *matrix, s32 mode);
 void Render_DrawOpaqueGroup(Geometry *geometry, u32 group, void *matrix);
