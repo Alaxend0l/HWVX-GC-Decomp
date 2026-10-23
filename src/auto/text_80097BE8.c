@@ -581,8 +581,23 @@ typedef struct Effect {
     s32 deadbandHigh;
 } Effect;
 
+typedef struct SimThread {
+    struct VDevice *owner;
+    u32 lastTick;
+    s32 pos;
+    s32 posScaled;
+    s32 weights[10];
+    s32 history[10];
+    s32 historyIdx;
+    s32 accel;
+    s32 deltaPos[16];
+    s32 deltaTime[16];
+    s32 deltaIdx;
+    s32 lastForce;
+} SimThread;
+
 typedef struct VDevice {
-    u8 unk0[0xF0];
+    SimThread sim;
     s32 unkF0;
     Effect *activeEffects[64];
     Effect effects[64];
