@@ -12528,6 +12528,26 @@ s32 EXIProbeEx(s32 chan) {
     }
 }
 
+static inline BOOL __EXIAttach(s32 chan, void *extCallback) {
+    extern u8 Ecb_80309980[3][0x40];
+    BOOL __EXIProbe(s32 chan);
+    u32 __OSUnmaskInterrupts(u32 mask);
+    u8 *exi = Ecb_80309980[chan];
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    if ((*(u32 *)(exi + 0xC) & 8) || __EXIProbe(chan) == FALSE) {
+        OSRestoreInterrupts(enabled);
+        return FALSE;
+    }
+    EXIClearInterrupts(chan, TRUE, FALSE, FALSE);
+    *(void **)(exi + 0x8) = extCallback;
+    __OSUnmaskInterrupts(0x100000U >> (chan * 3));
+    *(u32 *)(exi + 0xC) |= 8;
+    OSRestoreInterrupts(enabled);
+    return TRUE;
+}
+
 s32 EXIDetach(s32 arg0) {
     M2C_UNK __OSMaskInterrupts(u32, s32);
     extern M2C_UNK Ecb_80309980;
