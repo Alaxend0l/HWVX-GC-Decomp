@@ -2687,6 +2687,15 @@ s8 Player_IsHuman(void *player) {
     return isHuman;
 }
 
+void Player_ReleaseInterface(void *player) {
+    void InterfaceManager_ReleaseInterface(u32 index);
+    u32 index = M2C_FIELD(player, u32 *, 0x68);
+
+    if (index != 0xFFFFFFFF) {
+        InterfaceManager_ReleaseInterface(index);
+    }
+}
+
 s32 Player_InputHeartbeat(void *arg0) {
     return M2C_FIELD(arg0, s8 (**)(), 0x20)() != 0;
 }
