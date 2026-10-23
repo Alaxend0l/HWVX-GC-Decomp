@@ -3896,6 +3896,93 @@ void Creature_Release(s32 arg0) {
     Thing_Release(arg0);
 }
 
+typedef struct CreatureMove {
+    u8 unk0[0x40];
+    Vector4 pos;
+    u8 unk50[0x74 - 0x50];
+    u32 flags;
+    s32 unk78;
+    u8 unk7C[0xCC - 0x7C];
+    u8 motion[0xE8 - 0xCC];
+    u8 unkE8;
+    u8 unkE9[0x190 - 0xE9];
+    Vector4 startPos;
+    u8 unk1A0[0x1B0 - 0x1A0];
+    s32 unk1B0;
+    s32 unk1B4;
+    u8 unk1B8[0x1C0 - 0x1B8];
+    f32 unk1C0;
+} CreatureMove;
+
+s32 Creature_Move(void *arg0) {
+    extern s32 g_iDeltaTimeMS;
+    extern f32 g_fDeltaTimeMS;
+    f32 Gfx_GetMinCameraDistSquared(void *pos);
+    f32 Sqrt(f32 x);
+    f32 RandomAdd(f32 base, f32 range);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    void Creature_MacroStep(void *creature, f32 dt);
+    void Creature_MicroStep(void *creature, f32 dt);
+    struct Creature {
+        u8 unk0[0x40];
+        Vector4 pos;
+        u8 unk50[0x74 - 0x50];
+        u32 flags;
+        s32 unk78;
+        u8 unk7C[0xCC - 0x7C];
+        u8 motion[0xE8 - 0xCC];
+        u8 unkE8;
+        u8 unkE9[0x190 - 0xE9];
+        Vector4 startPos;
+        u8 unk1A0[0x1B0 - 0x1A0];
+        s32 unk1B0;
+        s32 unk1B4;
+        u8 unk1B8[0x1C0 - 0x1B8];
+        f32 unk1C0;
+    } *creature = arg0;
+    f32 dt;
+    f32 dist;
+
+    if (creature->unk1C0 < 1.0f) {
+        return 1;
+    }
+    if (creature->unk1B0 <= 0) {
+        dt = 500.0f;
+        creature->pos = creature->startPos;
+        dist = Sqrt(Gfx_GetMinCameraDistSquared(&creature->pos));
+        if (dist > 900.0f) {
+            creature->unk1B0 = RandomAdd_s32(500, 50);
+        } else {
+            dt = RandomAdd(0.0f, 50.0f);
+            dt += ((dist - 60.0f) / 840.0f) * 500.0f;
+            creature->unk1B0 = dt;
+        }
+        if (creature->unk1B0 < g_iDeltaTimeMS) {
+            creature->unk1B0 = g_iDeltaTimeMS;
+            dt = g_fDeltaTimeMS;
+        }
+        Creature_MacroStep(creature, 0.001f * dt);
+    }
+    dt = g_fDeltaTimeMS;
+    if (creature->unk1B0 < g_iDeltaTimeMS) {
+        dt = creature->unk1B0;
+    }
+    Creature_MicroStep(creature, 0.001f * dt);
+    creature->unk1B0 -= g_iDeltaTimeMS;
+    if (creature->unk78 < 0) {
+        creature->unk1B4 += g_iDeltaTimeMS;
+        if (creature->unkE8 == 2) {
+            creature->flags &= ~0x20;
+        }
+        if (creature->unk1B4 > 20000) {
+            MotionState_Release((s32)creature->motion);
+            Thing_Release((s32)creature);
+            return 0;
+        }
+    }
+    return 1;
+}
+
 void Creature_MicroStep(void *arg0, f32 dt) {
     void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0);
     struct CreatureModel {
@@ -16850,6 +16937,45 @@ BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputB
 
     OSRestoreInterrupts(enabled);
     return TRUE;
+}
+
+u32 SIGetType(s32 chan) {
+    extern u32 Type_800D9E84[4];
+    extern s64 TypeTime_80309800[4];
+    BOOL OSDisableInterrupts(void);
+    BOOL OSRestoreInterrupts(BOOL level);
+    s64 __OSGetSystemTime(void);
+    void GetTypeCallback(s32 chan, u32 error, void *context);
+    BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback, s64 delay);
+    static u32 cmdTypeAndStatus;
+    BOOL enabled;
+    u32 type;
+    s64 diff;
+
+    enabled = OSDisableInterrupts();
+    type = Type_800D9E84[chan];
+    diff = __OSGetSystemTime() - TypeTime_80309800[chan];
+    if (Si_800D9E70.poll & (0x80 >> chan)) {
+        if (type != 8) {
+            TypeTime_80309800[chan] = __OSGetSystemTime();
+            OSRestoreInterrupts(enabled);
+            return type;
+        } else {
+            type = Type_800D9E84[chan] = 0x80;
+        }
+    } else if (diff <= (s64)(50 * ((*(u32 *)0x800000F8 / 4) / 1000)) && type != 8) {
+        OSRestoreInterrupts(enabled);
+        return type;
+    } else if (diff <= (s64)(75 * ((*(u32 *)0x800000F8 / 4) / 1000))) {
+        Type_800D9E84[chan] = 0x80;
+    } else {
+        type = Type_800D9E84[chan] = 0x80;
+    }
+    TypeTime_80309800[chan] = __OSGetSystemTime();
+    SITransfer(chan, &cmdTypeAndStatus, 1, &Type_800D9E84[chan], 3, GetTypeCallback,
+               (65 * ((*(u32 *)0x800000F8 / 4) / 125000)) / 8);
+    OSRestoreInterrupts(enabled);
+    return type;
 }
 
 s32 SIGetTypeAsync(s32 chan, void (*callback)(s32, u32)) {
