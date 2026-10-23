@@ -6191,7 +6191,7 @@ void Render_DrawPointSprites(void) {
 }
 
 #pragma push
-#pragma auto_inline off
+#pragma dont_inline on
 void Render_DrawRectangles(void) {
     extern GDL *g_pGDL;
     extern s32 g_debugTriCount;
