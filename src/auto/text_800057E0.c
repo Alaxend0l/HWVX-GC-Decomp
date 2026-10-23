@@ -3949,6 +3949,63 @@ void CameraManager_ReleaseAllEmitters(void) {
     ThingManagerList_RemoveReleasedThings((s32)&g_thingManager_DARYL.activeList);
 }
 
+void CarA_InitInverseBodyInertiaTensor(u8 *car) {
+    extern Matrix4 g_identity;
+    void PSVECAdd(void *a, void *b, Vector4 *out);
+    Vector4 ext[4];
+    Vector4 bounds[2];
+    u8 *coll;
+    u8 *hull;
+    u32 i;
+
+    *(Matrix4 *)(car + 0x3C0) = g_identity;
+    coll = *(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0);
+    switch (coll[0x10]) {
+    case 0:
+        hull = *(u8 **)(coll + 0x44);
+        PSVECAdd(hull + 0x10, car + 0x520, &ext[2]);
+        PSVECAdd(hull, car + 0x520, &ext[1]);
+        break;
+    case 1:
+        hull = *(u8 **)(coll + 0x48);
+        bounds[0].x = 1000000.0f;
+        bounds[0].y = 1000000.0f;
+        bounds[0].z = 1000000.0f;
+        bounds[1].x = -1000000.0f;
+        bounds[1].y = -1000000.0f;
+        bounds[1].z = -1000000.0f;
+        for (i = 0; i < *(u32 *)(hull + 0xC); i++) {
+            if (bounds[0].x > (*(Vector4 **)(hull + 0x1C))[i].x) {
+                bounds[0].x = (*(Vector4 **)(hull + 0x1C))[i].x;
+            }
+            if (bounds[0].y > (*(Vector4 **)(hull + 0x1C))[i].y) {
+                bounds[0].y = (*(Vector4 **)(hull + 0x1C))[i].y;
+            }
+            if (bounds[0].z > (*(Vector4 **)(hull + 0x1C))[i].z) {
+                bounds[0].z = (*(Vector4 **)(hull + 0x1C))[i].z;
+            }
+            if (bounds[1].x < (*(Vector4 **)(hull + 0x1C))[i].x) {
+                bounds[1].x = (*(Vector4 **)(hull + 0x1C))[i].x;
+            }
+            if (bounds[1].y < (*(Vector4 **)(hull + 0x1C))[i].y) {
+                bounds[1].y = (*(Vector4 **)(hull + 0x1C))[i].y;
+            }
+            if (bounds[1].z < (*(Vector4 **)(hull + 0x1C))[i].z) {
+                bounds[1].z = (*(Vector4 **)(hull + 0x1C))[i].z;
+            }
+        }
+        PSVECAdd(&bounds[1], car + 0x520, &ext[2]);
+        PSVECAdd(&bounds[0], car + 0x520, &ext[1]);
+        break;
+    }
+    coll = *(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0);
+    *(f32 *)(car + 0x3C0) = 1.0f / (*(f32 *)(coll + 0x0) * *(f32 *)(coll + 0x20) * (ext[2].y * ext[2].y + ext[2].z * ext[2].z));
+    coll = *(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0);
+    *(f32 *)(car + 0x3D4) = 1.0f / (*(f32 *)(coll + 0x4) * *(f32 *)(coll + 0x20) * (ext[2].x * ext[2].x + ext[2].z * ext[2].z));
+    coll = *(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0);
+    *(f32 *)(car + 0x3E8) = 1.0f / (*(f32 *)(coll + 0x8) * *(f32 *)(coll + 0x20) * (ext[2].x * ext[2].x + ext[2].y * ext[2].y));
+}
+
 void CarA_GetAngularVelocity(void *car, Vector4 *vel) {
     *vel = M2C_FIELD(car, Vector4 *, 0x410);
 }
@@ -8719,6 +8776,36 @@ void InterfaceManager_SetInfoCallBackRoutine(s32 index, void *callback) {
     *(void **)(g_interface[index] + 0x94) = callback;
 }
 
+#pragma push
+#pragma inline_depth(5)
+void InterfaceManager_PauseInterface(u8 pause, s32 index) {
+    typedef struct InterfaceSlot {
+        u8 pad0[0x243];
+        u8 type;
+        u8 pad244[0x270 - 0x244];
+        s32 child;
+        u8 pad274[0x300 - 0x274];
+    } InterfaceSlot;
+    typedef struct Interface {
+        u32 count;
+        u8 pad4[0x83 - 0x4];
+        u8 paused;
+        u8 pad84[0x88 - 0x84];
+        InterfaceSlot *slots;
+        u8 pad8C[0x170 - 0x8C];
+    } Interface;
+    extern Interface g_interface[];
+    u32 i;
+
+    g_interface[index].paused = pause;
+    for (i = 0; i < g_interface[index].count; i++) {
+        if (g_interface[index].slots[i].type != 6) {
+            continue;
+        }
+        InterfaceManager_PauseInterface(pause, g_interface[index].slots[i].child);
+    }
+}
+#pragma pop
 s32 InterfaceManager_GetTotalActiveInterfaces(void) {
     extern u8 g_interface[][0x170];
     s32 count = 0;
@@ -20180,6 +20267,97 @@ void OSRegisterResetFunction(void *func) {
     }
 }
 
+void OSResetSystem(s32 reset, u32 resetCode, BOOL forceMenu) {
+    typedef struct OSResetFunctionInfo {
+        BOOL (*func)(BOOL final);
+        u32 priority;
+        struct OSResetFunctionInfo *next;
+        struct OSResetFunctionInfo *prev;
+    } OSResetFunctionInfo;
+    extern OSResetFunctionInfo *ResetFunctionQueue_803C7268;
+    BOOL OSDisableInterrupts(void);
+    s32 OSDisableScheduler(void);
+    s32 OSEnableScheduler(void);
+    void __OSStopAudioSystem(void);
+    BOOL __PADDisableRecalibration(BOOL disable);
+    BOOL __OSSyncSram(void);
+    u8 *__OSLockSram(void);
+    BOOL __OSUnlockSram(BOOL commit);
+    void LCDisable(void);
+    void ICFlashInvalidate(void);
+    void Reset(u32 code);
+    void OSCancelThread(void *thread);
+    void __OSReboot(u32 resetCode, BOOL forceMenu);
+    OSResetFunctionInfo *info;
+    BOOL err;
+    BOOL rc;
+    u8 *thread;
+    u8 *next;
+    BOOL disableRecalibration;
+
+    OSDisableScheduler();
+    __OSStopAudioSystem();
+    if (reset == 2) {
+        disableRecalibration = __PADDisableRecalibration(TRUE);
+    }
+    do {
+        err = FALSE;
+        for (info = ResetFunctionQueue_803C7268; info; info = info->next) {
+            err |= !info->func(FALSE);
+        }
+        err |= !__OSSyncSram();
+        rc = err ? FALSE : TRUE;
+    } while (!rc);
+    if (reset == 1 && forceMenu) {
+        u8 *sram = __OSLockSram();
+        sram[0x13] |= 0x40;
+        __OSUnlockSram(TRUE);
+        while (!__OSSyncSram()) {
+        }
+    }
+    OSDisableInterrupts();
+    err = FALSE;
+    for (info = ResetFunctionQueue_803C7268; info; info = info->next) {
+        err |= !info->func(TRUE);
+    }
+    __OSSyncSram();
+    LCDisable();
+    if (reset == 1) {
+        OSDisableInterrupts();
+        ((u16 *)0xCC002000)[1] = 0;
+        ICFlashInvalidate();
+        Reset(resetCode << 3);
+    } else if (reset == 0) {
+        for (thread = *(u8 **)0x800000DC; thread; thread = next) {
+            next = *(u8 **)(thread + 0x2FC);
+            switch (*(u16 *)(thread + 0x2C8)) {
+            case 1:
+            case 4:
+                OSCancelThread(thread);
+                break;
+            }
+        }
+        OSEnableScheduler();
+        __OSReboot(resetCode, forceMenu);
+    }
+    for (thread = *(u8 **)0x800000DC; thread; thread = next) {
+        next = *(u8 **)(thread + 0x2FC);
+        switch (*(u16 *)(thread + 0x2C8)) {
+        case 1:
+        case 4:
+            OSCancelThread(thread);
+            break;
+        }
+    }
+    memset((void *)0x80000040, 0, 0x8C);
+    memset((void *)0x800000D4, 0, 0x14);
+    memset((void *)0x800000F4, 0, 4);
+    memset((void *)0x80003000, 0, 0xC0);
+    memset((void *)0x800030C8, 0, 0xC);
+    memset((void *)0x800030E2, 0, 1);
+    __PADDisableRecalibration(disableRecalibration);
+}
+
 u32 OSGetResetCode(void) {
     if (*(u8 *)0x800030E2 != 0) {
         return 0x80000000;
@@ -22799,6 +22977,109 @@ s32 DVDSetAutoInvalidation(s32 arg0) {
     temp_r0 = autoInvalidation_803C6DA8;
     autoInvalidation_803C6DA8 = arg0;
     return temp_r0;
+}
+
+BOOL DVDCancelAsync(DVDCommandBlock *block, void (*callback)(s32 result, DVDCommandBlock *block)) {
+    extern u32 Canceling_803C7330;
+    extern void (*CancelCallback_803C7334)(s32, DVDCommandBlock *);
+    extern u32 ResumeFromHere_803C7338;
+    BOOL OSDisableInterrupts(void);
+    BOOL OSRestoreInterrupts(BOOL level);
+    void DVDLowBreak(void);
+    void *DVDLowClearCallback(void);
+    BOOL __DVDDequeueWaitingQueue(DVDCommandBlock *block);
+    void cbForStateMotorStopped(u32);
+    void stateReady_800725A4(void);
+    BOOL enabled;
+    void *old;
+
+    enabled = OSDisableInterrupts();
+    switch (block->state) {
+    case -1:
+    case 0:
+    case 10:
+        if (callback) {
+            callback(0, block);
+        }
+        break;
+    case 1:
+        if (Canceling_803C7330) {
+            OSRestoreInterrupts(enabled);
+            return FALSE;
+        }
+        Canceling_803C7330 = TRUE;
+        CancelCallback_803C7334 = callback;
+        if (block->command == 4 || block->command == 1) {
+            DVDLowBreak();
+        }
+        break;
+    case 2:
+        __DVDDequeueWaitingQueue(block);
+        block->state = 10;
+        if (block->callback) {
+            block->callback(-3, block);
+        }
+        if (callback) {
+            callback(0, block);
+        }
+        break;
+    case 3:
+        switch (block->command) {
+        case 5:
+        case 4:
+        case 13:
+        case 15:
+            if (callback) {
+                callback(0, block);
+            }
+            break;
+        default:
+            if (Canceling_803C7330) {
+                OSRestoreInterrupts(enabled);
+                return FALSE;
+            }
+            Canceling_803C7330 = TRUE;
+            CancelCallback_803C7334 = callback;
+            break;
+        }
+        break;
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 11:
+        old = DVDLowClearCallback();
+        if (old != (void *)cbForStateMotorStopped) {
+            OSRestoreInterrupts(enabled);
+            return FALSE;
+        }
+        if (block->state == 4) {
+            ResumeFromHere_803C7338 = 3;
+        }
+        if (block->state == 5) {
+            ResumeFromHere_803C7338 = 4;
+        }
+        if (block->state == 6) {
+            ResumeFromHere_803C7338 = 1;
+        }
+        if (block->state == 11) {
+            ResumeFromHere_803C7338 = 2;
+        }
+        if (block->state == 7) {
+            ResumeFromHere_803C7338 = 7;
+        }
+        block->state = 10;
+        if (block->callback) {
+            block->callback(-3, block);
+        }
+        if (callback) {
+            callback(0, block);
+        }
+        stateReady_800725A4();
+        break;
+    }
+    OSRestoreInterrupts(enabled);
+    return TRUE;
 }
 
 s32 DVDCancel(void *arg0) {
@@ -25609,6 +25890,93 @@ void __AXDepopVoice(void *pvpb) {
 s32 __AXGetNumVoices(void) {
     extern s32 __AXNumVoices_803C7510;
     return __AXNumVoices_803C7510;
+}
+
+void __AXSyncPBs(u32 lessDspCycles) {
+    typedef struct AXCycles {
+        u32 src[5];
+        u32 mix[16];
+        u32 aux[32];
+    } AXCycles;
+    extern u8 __AXPB_802F78A0[];
+    extern AXCycles __AXSrcCycles_800D5B28;
+    extern s32 __AXNumVoices_803C7510;
+    extern u32 __AXMaxDspCycles_803C7508;
+    extern u32 __AXRecDspCycles_803C750C;
+    void DCInvalidateRange(void *addr, u32 nBytes);
+    void DCFlushRange(void *addr, u32 nBytes);
+    void __AXServiceVPB(void *pvpb);
+    s32 __AXGetCommandListCycles(void);
+    void *__AXGetStackHead(u32 priority);
+    void __AXDepopVoice(void *pvpb);
+    void __AXPushCallbackStack(void *pvpb);
+    AXCycles *tbl;
+    u8 *pbs;
+    u32 cycles;
+    u32 i;
+    u8 *pvpb;
+    u8 *ppb;
+    u16 ctrl;
+
+    pbs = __AXPB_802F78A0;
+    tbl = &__AXSrcCycles_800D5B28;
+    __AXNumVoices_803C7510 = 0;
+    DCInvalidateRange(pbs, 0x3B00);
+    DCInvalidateRange(pbs + 0x3B00, 0x1000);
+    cycles = __AXGetCommandListCycles() + 0xAA10 + lessDspCycles;
+    for (i = 31; i; i--) {
+        for (pvpb = __AXGetStackHead(i); pvpb; pvpb = *(u8 **)pvpb) {
+            if (*(u32 *)(pvpb + 0x20)) {
+                __AXDepopVoice(pbs + *(u32 *)(pvpb + 0x18) * 0xEC);
+            }
+            if (*(u16 *)(pvpb + 0x146) == 1 || *(u32 *)(pvpb + 0x28)) {
+                if (*(u16 *)(pvpb + 0x140) != 2) {
+                    cycles += tbl->src[*(u16 *)(pvpb + 0x1DE)];
+                }
+                ctrl = *(u16 *)(pvpb + 0x144);
+                cycles += tbl->aux[(ctrl >> 9) & 0x1F] + tbl->aux[(ctrl >> 4) & 0x1F] + 0x8C + tbl->mix[ctrl & 0xF];
+                if (__AXMaxDspCycles_803C7508 > cycles) {
+                    __AXServiceVPB(pvpb);
+                } else {
+                    ppb = pbs + *(u32 *)(pvpb + 0x18) * 0xEC;
+                    if (*(u16 *)(ppb + 0xE) == 1) {
+                        __AXDepopVoice(ppb);
+                    }
+                    *(u16 *)(ppb + 0x4C) = 0;
+                    *(u16 *)(ppb + 0x4A) = 0;
+                    *(u16 *)(ppb + 0x48) = 0;
+                    *(u16 *)(ppb + 0x46) = 0;
+                    *(u16 *)(ppb + 0x44) = 0;
+                    *(u16 *)(ppb + 0xE) = 0;
+                    *(u16 *)(pvpb + 0x146) = 0;
+                    __AXPushCallbackStack(pvpb);
+                }
+            } else {
+                __AXServiceVPB(pvpb);
+            }
+            *(u32 *)(pvpb + 0x1C) = 0;
+            *(u32 *)(pvpb + 0x20) = 0;
+            *(u32 *)(pvpb + 0x28) = 0;
+            *(u32 *)(pvpb + 0x24) = 0;
+            *(u8 **)(pvpb + 0x30) = pvpb + 0x34;
+        }
+    }
+    __AXRecDspCycles_803C750C = cycles;
+    for (pvpb = __AXGetStackHead(0); pvpb; pvpb = *(u8 **)pvpb) {
+        if (*(u32 *)(pvpb + 0x20)) {
+            __AXDepopVoice(pbs + *(u32 *)(pvpb + 0x18) * 0xEC);
+        }
+        *(u32 *)(pvpb + 0x20) = 0;
+        *(u16 *)(pbs + *(u32 *)(pvpb + 0x18) * 0xEC + 0x4C) = 0;
+        *(u16 *)(pbs + *(u32 *)(pvpb + 0x18) * 0xEC + 0x4A) = 0;
+        *(u16 *)(pbs + *(u32 *)(pvpb + 0x18) * 0xEC + 0x48) = 0;
+        *(u16 *)(pbs + *(u32 *)(pvpb + 0x18) * 0xEC + 0x46) = 0;
+        *(u16 *)(pbs + *(u32 *)(pvpb + 0x18) * 0xEC + 0x44) = 0;
+        *(u16 *)(pbs + *(u32 *)(pvpb + 0x18) * 0xEC + 0xE) = 0;
+    }
+    DCFlushRange(pbs, 0x3B00);
+    DCFlushRange(pbs + 0x3B00, 0x1000);
+    DCFlushRange(pbs + 0x4B00, 0x4000);
 }
 
 void *__AXGetPBs(void) {
@@ -29574,6 +29942,91 @@ void __GetImageTileCount(s32 fmt, u16 wd, u16 ht, u32 *rowTiles, u32 *colTiles, 
     *rowTiles = (wd + (1 << texRowShift) - 1) >> texRowShift;
     *colTiles = (ht + (1 << texColShift) - 1) >> texColShift;
     *cmpTiles = (fmt == 0x6 || fmt == 0x16) ? 2 : 1;
+}
+
+void GXInitTexObj(void *obj, void *image, u16 width, u16 height, s32 format, s32 wrap_s, s32 wrap_t, u8 mipmap) {
+    typedef struct {
+        u32 mode0;
+        u32 mode1;
+        u32 image0;
+        u32 image3;
+        void *userData;
+        s32 fmt;
+        u32 tlutName;
+        u16 loadCnt;
+        u8 loadFmt;
+        u8 flags;
+    } GXTexObjPriv;
+    GXTexObjPriv *t = obj;
+    u32 maxLOD;
+    u16 rowT;
+    u16 colT;
+
+    memset(t, 0, 0x20);
+    t->mode0 = (t->mode0 & 0xFFFFFFFC) | wrap_s;
+    t->mode0 = (t->mode0 & 0xFFFFFFF3) | (wrap_t << 2);
+    t->mode0 = (t->mode0 & 0xFFFFFFEF) | 0x10;
+    if (mipmap) {
+        t->flags |= 1;
+        if ((u32)(format - 8) <= 2) {
+            t->mode0 = (t->mode0 & 0xFFFFFF1F) | 0xA0;
+        } else {
+            t->mode0 = (t->mode0 & 0xFFFFFF1F) | 0xC0;
+        }
+        if (width > height) {
+            maxLOD = 31 - __cntlzw(width);
+        } else {
+            maxLOD = 31 - __cntlzw(height);
+        }
+        t->mode1 = (t->mode1 & 0xFFFF00FF) | (((s32)(16.0f * maxLOD) << 8) & 0xFF00);
+    } else {
+        t->mode0 = (t->mode0 & 0xFFFFFF1F) | 0x80;
+    }
+    t->fmt = format;
+    t->image0 = (t->image0 & 0xFFFFFC00) | (width - 1);
+    t->image0 = (t->image0 & 0xFFF003FF) | ((height - 1) << 10);
+    t->image0 = (t->image0 & 0xFF0FFFFF) | ((format & 0xF) << 20);
+    t->image3 = (t->image3 & 0xFFE00000) | (((u32)image & 0x3FFFFFFF) >> 5);
+    switch (format & 0xF) {
+    case 0:
+    case 8:
+        t->loadFmt = 1;
+        rowT = 3;
+        colT = 3;
+        break;
+    case 1:
+    case 2:
+    case 9:
+        t->loadFmt = 2;
+        rowT = 3;
+        colT = 2;
+        break;
+    case 3:
+    case 4:
+    case 5:
+    case 10:
+        t->loadFmt = 2;
+        rowT = 2;
+        colT = 2;
+        break;
+    case 6:
+        t->loadFmt = 3;
+        rowT = 2;
+        colT = 2;
+        break;
+    case 14:
+        t->loadFmt = 0;
+        rowT = 3;
+        colT = 3;
+        break;
+    default:
+        t->loadFmt = 2;
+        rowT = 2;
+        colT = 2;
+        break;
+    }
+    t->loadCnt = (((width + (1 << rowT) - 1) >> rowT) * ((height + (1 << colT) - 1) >> colT)) & 0x7FFF;
+    t->flags |= 2;
 }
 
 void GXInitTexObjLOD(void *obj, s32 min_filt, s32 mag_filt, f32 min_lod, f32 max_lod, f32 lod_bias, u8 bias_clamp, u8 do_edge_lod, s32 max_aniso) {
