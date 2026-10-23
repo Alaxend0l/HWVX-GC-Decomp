@@ -2450,6 +2450,46 @@ void CameraManager_Pause(s8 arg0) {
     g_cameraManagerPause = arg0;
 }
 
+#pragma push
+#pragma dont_inline on
+void Camera_PrepareForRender(u8 *camera) {
+    extern s8 g_cameraManagerPause;
+    s32 Gfx_GetRenderWindowIndex(void);
+    void Camera_UpdatePosition(u8 *camera);
+    void Gfx_SetCameraMatrix(Vector4 *pos, Vector4 *fwd, Vector4 *up, Vector4 *right);
+    Matrix4 mtx;
+    s32 window;
+
+    window = Gfx_GetRenderWindowIndex();
+    if (window != 0) {
+        window--;
+    }
+    if (!g_cameraManagerPause) {
+        Camera_UpdatePosition(camera);
+    }
+    Gfx_SetCameraMatrix((Vector4 *)(camera + 0x60), (Vector4 *)(camera + 0x80), (Vector4 *)(camera + 0x90), (Vector4 *)(camera + 0xA0));
+    mtx.m[0][0] = ((Vector4 *)(camera + 0xA0))->x;
+    mtx.m[1][0] = ((Vector4 *)(camera + 0xA0))->y;
+    mtx.m[2][0] = ((Vector4 *)(camera + 0xA0))->z;
+    mtx.m[0][1] = ((Vector4 *)(camera + 0x90))->x;
+    mtx.m[1][1] = ((Vector4 *)(camera + 0x90))->y;
+    mtx.m[2][1] = ((Vector4 *)(camera + 0x90))->z;
+    mtx.m[0][2] = ((Vector4 *)(camera + 0x80))->x;
+    mtx.m[1][2] = ((Vector4 *)(camera + 0x80))->y;
+    mtx.m[2][2] = ((Vector4 *)(camera + 0x80))->z;
+    mtx.m[2][3] = 0.0f;
+    mtx.m[1][3] = 0.0f;
+    mtx.m[0][3] = 0.0f;
+    mtx.m[3][3] = 1.0f;
+    mtx.m[3][0] = -(mtx.m[0][0] * ((Vector4 *)(camera + 0x60))->x + mtx.m[1][0] * ((Vector4 *)(camera + 0x60))->y + mtx.m[2][0] * ((Vector4 *)(camera + 0x60))->z);
+    mtx.m[3][1] = -(mtx.m[0][1] * ((Vector4 *)(camera + 0x60))->x + mtx.m[1][1] * ((Vector4 *)(camera + 0x60))->y + mtx.m[2][1] * ((Vector4 *)(camera + 0x60))->z);
+    mtx.m[3][2] = -(mtx.m[0][2] * ((Vector4 *)(camera + 0x60))->x + mtx.m[1][2] * ((Vector4 *)(camera + 0x60))->y + mtx.m[2][2] * ((Vector4 *)(camera + 0x60))->z);
+    SoundListener_Set(window, 5, camera + 0x60);
+    SoundListener_Set(window, 6, camera + 0x70);
+    SoundListener_Set(window, 7, &mtx);
+}
+#pragma pop
+
 void Camera_SetPlayer(void **camera, void *player) {
     extern u8 g_cameraManager[];
     void PlayerManager_ClearAllCameraFlags_PRIVATE(void);
