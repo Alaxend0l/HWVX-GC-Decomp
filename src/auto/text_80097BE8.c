@@ -8112,6 +8112,7 @@ s32 Audio_Init_(void) {
     s32 OSDisableInterrupts(void);
     s32 OSRestoreInterrupts(s32 level);
     void *memset(void *dst, int c, u32 n);
+    int printf();
     u32 i;
     s32 level;
     void *buf;
