@@ -8213,6 +8213,60 @@ s32 AudioVoice_Create_(void) {
     m_InitOnce_803C7898 = 1;
     return 1;
 }
+
+s32 AudioVoice_Init_(void) {
+    typedef struct {
+        u8 unk0[0x3C];
+        u32 delay[3];
+        u32 feedback[3];
+        u32 output[3];
+    } AXFX_DELAY;
+    typedef struct VOICE {
+        u8 unk0[4];
+        struct VOICE *next;
+        u8 unk8[0x68];
+    } VOICE;
+    extern VOICE g_voice[0x20];
+    extern AXFX_DELAY g_reverb_803715B0[2];
+    extern u32 m_InitOnce_803C7898;
+    extern VOICE *g_pFree_803C78A4;
+    extern s32 g_active_803C78A0;
+    extern void AXFXDelayCallback(void);
+    void SetVoiceState_(void *voice, s32 state);
+    void AudioVoice_Destroy_(void);
+    s32 AXFXDelayInit(void *delay);
+    void AXRegisterAuxBCallback(void *callback, void *context);
+    void AXRegisterAuxACallback(void *callback, void *context);
+    u32 i;
+
+    for (i = 0; i < 0x20; i++) {
+        SetVoiceState_(&g_voice[i], 3);
+        g_voice[i].next = &g_voice[i + 1];
+    }
+    g_voice[0x1F].next = NULL;
+    g_pFree_803C78A4 = g_voice;
+    g_active_803C78A0 = -1;
+    if (m_InitOnce_803C7898 == 0) {
+        AudioVoice_Destroy_();
+    }
+    m_InitOnce_803C7898 = 0;
+    for (i = 0; i < 2; i++) {
+        g_reverb_803715B0[i].delay[0] = 10;
+        g_reverb_803715B0[i].delay[1] = 10;
+        g_reverb_803715B0[i].delay[2] = 10;
+        g_reverb_803715B0[i].feedback[0] = 0;
+        g_reverb_803715B0[i].feedback[1] = 0;
+        g_reverb_803715B0[i].feedback[2] = 0;
+        g_reverb_803715B0[i].output[0] = 0;
+        g_reverb_803715B0[i].output[1] = 0;
+        g_reverb_803715B0[i].output[2] = 0;
+        AXFXDelayInit(&g_reverb_803715B0[i]);
+    }
+    AXRegisterAuxACallback(AXFXDelayCallback, &g_reverb_803715B0[0]);
+    AXRegisterAuxBCallback(AXFXDelayCallback, &g_reverb_803715B0[1]);
+    return 1;
+}
+
 #pragma pop
 
 #pragma push
