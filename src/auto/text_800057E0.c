@@ -1551,6 +1551,26 @@ void AI_Car_AsyncScanDestructibles(u8 *car) {
     }
 }
 
+void MotionState_ReleaseSlavesByType(s32 state, u8 type) {
+    void ThingManagerList_Remove(void **arg0, void *arg1);
+    void ThingManagerList_Append(void **arg0, void *arg1);
+    void *thing;
+    void *next;
+
+    thing = M2C_FIELD(state, void **, 0x14);
+    while (thing != NULL) {
+        next = M2C_FIELD(thing, void **, 0xA4);
+        if (M2C_FIELD(thing, u8 *, 0x83) == type) {
+            ((void (*)(void *))M2C_FIELD(thing, void ***, 0x8C)[1])(thing);
+            ThingManagerList_Remove((void **)(state + 0x14), thing);
+            M2C_FIELD(thing, u32 *, 0x74) &= ~0x200000;
+            M2C_FIELD(thing, u32 *, 0x74) |= 0x1000;
+            ThingManagerList_Append(&g_thingManager_DARYL.freeList[M2C_FIELD(thing, s32 *, 0xA8)], thing);
+        }
+        thing = next;
+    }
+}
+
 #pragma push
 #pragma auto_inline off
 void MotionState_Release(s32 state) {
