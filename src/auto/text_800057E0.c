@@ -3175,7 +3175,7 @@ s8 Player_IsHuman(void *player) {
 
 #pragma push
 #pragma dont_inline on
-void Player_Init(void *player) {
+void Player_Init(void *player, s32 arg1) {
     s32 i;
 
     Control_ClearControl(player);
