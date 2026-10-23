@@ -5538,6 +5538,46 @@ error:
     }
 }
 
+void *__GXDefaultTexRegionCallback(void *obj, s32 mapID) {
+    extern u8 *gx;
+    s32 GXGetTexObjFmt(void *arg0);
+    s32 fmt;
+    u32 n;
+
+    fmt = GXGetTexObjFmt(obj);
+    if (fmt != 8 && fmt != 9 && fmt != 10) {
+        n = (*(u32 *)(gx + 0x2C8))++;
+        return gx + ((n & 7) * 0x10 + 0x208);
+    }
+    n = (*(u32 *)(gx + 0x2CC))++;
+    return gx + ((n & 3) * 0x10 + 0x288);
+}
+
+#pragma push
+#pragma peephole off
+void *__GXDefaultTlutRegionCallback(u32 idx) {
+    extern u8 *gx;
+    void *ret;
+    if (idx >= 0x14) {
+        ret = 0;
+    } else {
+        ret = gx + (idx * 0x10 + 0x2D0);
+    }
+    return ret;
+}
+#pragma pop
+void GXInitFifoBase(void *fifo, void *base, u32 size) {
+    void GXInitFifoLimits(void *arg0, s32 arg1, s32 arg2);
+    void GXInitFifoPtrs(void *fifo, void *readPtr, void *writePtr);
+    u8 *f = fifo;
+    *(void **)(f + 0x0) = base;
+    *(void **)(f + 0x4) = (u8 *)base + size - 4;
+    *(u32 *)(f + 0x8) = size;
+    *(s32 *)(f + 0x1C) = 0;
+    GXInitFifoLimits(fifo, size - 0x4000, (size >> 1) & ~0x1F);
+    GXInitFifoPtrs(fifo, base, base);
+}
+
 s32 CARDMountAsync(s32 chan, void *workArea, CARDCallback detachCallback, CARDCallback attachCallback);
 void __CARDSyncCallback(s32 chan, s32 result);
 s32 __CARDSync(s32 chan);
@@ -5610,6 +5650,38 @@ s32 CARDCreate(s32 chan, const char *fileName, u32 size, CARDFileInfo *fileInfo)
 void GXInitFifoLimits(void *arg0, s32 arg1, s32 arg2) {
     M2C_FIELD(arg0, s32 *, 0xC) = arg1;
     M2C_FIELD(arg0, s32 *, 0x10) = arg2;
+}
+
+void __GXFifoReadEnable(void) {
+    extern u8 *gx;
+    extern volatile u16 *__cpReg;
+    *(u32 *)(gx + 8) = (*(u32 *)(gx + 8) & ~1) | 1;
+    __cpReg[1] = *(u32 *)(gx + 8);
+}
+
+#pragma push
+#pragma peephole off
+void __GXFifoReadDisable(void) {
+    extern u8 *gx;
+    extern volatile u16 *__cpReg;
+    *(u32 *)(gx + 8) = *(u32 *)(gx + 8) & ~1;
+    __cpReg[1] = *(u32 *)(gx + 8);
+}
+#pragma pop
+
+void __GXFifoLink(u8 en) {
+    extern u8 *gx;
+    extern volatile u16 *__cpReg;
+    *(u32 *)(gx + 8) = (*(u32 *)(gx + 8) & ~0x10) | ((en ? 1 : 0) << 4);
+    __cpReg[1] = *(u32 *)(gx + 8);
+}
+
+void __GXWriteFifoIntEnable(u8 hiWatermarkEn, u8 loWatermarkEn) {
+    extern u8 *gx;
+    extern volatile u16 *__cpReg;
+    *(u32 *)(gx + 8) = (*(u32 *)(gx + 8) & ~4) | ((u32)hiWatermarkEn << 2);
+    *(u32 *)(gx + 8) = (*(u32 *)(gx + 8) & ~8) | ((u32)loWatermarkEn << 3);
+    __cpReg[1] = *(u32 *)(gx + 8);
 }
 
 void __GXSetVCD(void) {
@@ -5835,6 +5907,66 @@ void GXSetTevColorIn(s32 stage, s32 a, s32 b, s32 c, s32 d) {
     GXWGFifo.u8 = 0x61;
     GXWGFifo.u32 = *reg;
     *(u16 *)((u8 *)gx + 2) = 0;
+}
+
+void GXSetTevKAlphaSel(s32 stage, s32 sel) {
+    extern GXDataTev *const gx;
+    u32 *Kreg;
+
+    Kreg = &gx->tevKsel[stage >> 1];
+    if (stage & 1) {
+        *Kreg = (*Kreg & ~0xF80000) | (sel << 19);
+    } else {
+        *Kreg = (*Kreg & ~0x3E00) | (sel << 9);
+    }
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *Kreg;
+    *(u16 *)((u8 *)gx + 2) = 0;
+}
+
+void GXSetTevSwapMode(s32 stage, s32 ras_sel, s32 tex_sel) {
+    extern GXDataTev *const gx;
+    u32 *reg;
+
+    reg = &gx->teva[stage];
+    *reg = (*reg & ~0x3) | ras_sel;
+    *reg = (*reg & ~0xC) | (tex_sel << 2);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *reg;
+    *(u16 *)((u8 *)gx + 2) = 0;
+}
+
+void GXSetTevSwapModeTable(s32 table, s32 red, s32 green, s32 blue, s32 alpha) {
+    extern GXDataTev *const gx;
+    u32 *Kreg;
+
+    Kreg = &gx->tevKsel[table * 2];
+    *Kreg = (*Kreg & ~0x3) | red;
+    *Kreg = (*Kreg & ~0xC) | (green << 2);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *Kreg;
+
+    Kreg = &gx->tevKsel[table * 2 + 1];
+    *Kreg = (*Kreg & ~0x3) | blue;
+    *Kreg = (*Kreg & ~0xC) | (alpha << 2);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *Kreg;
+    *(u16 *)((u8 *)gx + 2) = 0;
+}
+
+void GXSetAlphaCompare(s32 comp0, u8 ref0, s32 op, s32 comp1, u8 ref1) {
+    extern u8 *const gx;
+    u32 reg = 0;
+
+    reg = (reg & ~0xFF) | ref0;
+    reg = (reg & ~0xFF00) | (ref1 << 8);
+    reg = (reg & ~0x70000) | (comp0 << 16);
+    reg = (reg & ~0x380000) | (comp1 << 19);
+    reg = (reg & ~0xC00000) | (op << 22);
+    reg = (reg & ~0xFF000000) | (0xF3 << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    *(u16 *)(gx + 2) = 0;
 }
 
 void __GXSetRange(void) {
