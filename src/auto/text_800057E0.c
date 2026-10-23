@@ -3060,6 +3060,41 @@ s32 Item_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+s32 LensFlare_Add(void *flare, s32 arg1, Vector4 *pos) {
+    typedef struct Flare {
+        void *flare;
+        s32 unk4;
+        u8 unk8[0x10 - 0x8];
+        Vector4 pos;
+        u8 unk20;
+        u8 unk21[0x30 - 0x21];
+    } Flare;
+    extern Flare g_pFlare[64];
+    extern u32 g_activeFlares;
+    u32 i;
+
+    if (flare != NULL) {
+        for (i = 0; i < 64; i++) {
+            if (g_pFlare[i].flare == NULL) {
+                g_pFlare[i].unk4 = arg1;
+                g_pFlare[i].flare = flare;
+                g_pFlare[i].unk20 = 0;
+                if (pos != NULL) {
+                    g_pFlare[i].pos = *pos;
+                }
+                break;
+            }
+        }
+        if (i != 64) {
+            if (i >= g_activeFlares) {
+                g_activeFlares = i + 1;
+            }
+            return i;
+        }
+    }
+    return -1;
+}
+
 void LightHolder_Init(void) {
     extern u8 g_pLight[16][0x80];
     u32 i;
@@ -3122,6 +3157,46 @@ void LineManager_Init(void) {
 
     for (i = 0; i < 128; i++) {
         *(s32 *)(g_lineManager[i] + 0x50) = 0;
+    }
+}
+
+void LineManager_Render(void) {
+    typedef struct LinePoints {
+        u32 data[8];
+    } LinePoints;
+    typedef struct Line {
+        LinePoints points;
+        u8 unk20[0x50 - 0x20];
+        u32 active;
+        u8 unk54[0x78 - 0x54];
+        u32 unk78;
+        u8 unk7C[0xA8 - 0x7C];
+        u32 colour;
+        u8 unkAC[0xE0 - 0xAC];
+        u8 unkE0;
+        u8 unkE1[0xF0 - 0xE1];
+    } Line;
+    typedef struct LineFX {
+        LinePoints points;
+        u32 colour;
+        u32 unk24;
+        u8 unk28;
+    } LineFX;
+    extern Line g_lineManager[128];
+    LineFX *Gfx_Add3DLineFX(void);
+    Line *line;
+    u32 i;
+    LineFX *fx;
+
+    line = g_lineManager;
+    for (i = 0; i < 128; i++, line++) {
+        if (line->active != 0) {
+            fx = Gfx_Add3DLineFX();
+            fx->points = line->points;
+            fx->colour = line->colour;
+            fx->unk24 = line->unk78;
+            fx->unk28 = line->unkE0;
+        }
     }
 }
 
