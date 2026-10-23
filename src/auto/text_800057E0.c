@@ -5513,6 +5513,30 @@ void __OSContextInit(void) {
     DBPrintf("FPU-unavailable handler installed\n");
 }
 
+u16 OSGetFontEncode(void) {
+    static u16 fontEncode = 0xFFFF;
+    u16 encode;
+
+    if (fontEncode <= 1) {
+        return fontEncode;
+    }
+    switch (*(u32 *)0x800000CC) {
+    case 0:
+        if (*(volatile u16 *)0xCC00206E & 2) {
+            encode = 1;
+        } else {
+            encode = 0;
+        }
+        fontEncode = encode;
+        break;
+    case 1:
+    case 2:
+    default:
+        fontEncode = 0;
+    }
+    return fontEncode;
+}
+
 __OSInterruptHandler __OSSetInterruptHandler(__OSInterrupt interrupt, __OSInterruptHandler handler) {
     __OSInterruptHandler *table;
     __OSInterruptHandler oldHandler;
@@ -5700,6 +5724,15 @@ u32 OSGetResetCode(void) {
         return 0x80000000;
     }
     return (((volatile u32 *)0xCC003000)[9] & ~7) >> 3;
+}
+
+void WriteSramCallback(void) {
+    s32 WriteSram(void *, u32, u32);
+
+    Scb_802EEE20.sync = WriteSram(Scb_802EEE20.sram + Scb_802EEE20.offset, Scb_802EEE20.offset, 0x40 - Scb_802EEE20.offset);
+    if (Scb_802EEE20.sync) {
+        Scb_802EEE20.offset = 0x40;
+    }
 }
 
 OSSram *__OSLockSram(void) {
@@ -7997,6 +8030,21 @@ void GXSetTevColorIn(s32 stage, s32 a, s32 b, s32 c, s32 d) {
     *(u16 *)((u8 *)gx + 2) = 0;
 }
 
+void GXSetTevKColorSel(s32 stage, s32 sel) {
+    extern u8 *gx;
+    u32 *Kreg;
+
+    Kreg = (u32 *)(gx + ((stage >> 1) * 4 + 0x1B0));
+    if (stage & 1) {
+        *Kreg = (*Kreg & ~0x7C000) | (sel << 14);
+    } else {
+        *Kreg = (*Kreg & ~0x1F0) | (sel << 4);
+    }
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *Kreg;
+    *(u16 *)(gx + 2) = 0;
+}
+
 void GXSetTevKAlphaSel(s32 stage, s32 sel) {
     extern GXDataTev *const gx;
     u32 *Kreg;
@@ -8131,6 +8179,40 @@ void GXSetAlphaUpdate(u8 updateEnable) {
     *(u16 *)(g + 2) = 0;
 }
 
+void GXSetZMode(u8 compare_enable, s32 func, u8 update_enable) {
+    extern u8 *gx;
+    u8 *g;
+    u32 *reg;
+
+    g = gx;
+    reg = (u32 *)(g + 0x1D8);
+    *reg = (*(u32 *)(g + 0x1D8) & ~1) | compare_enable;
+    g = gx;
+    reg = (u32 *)(g + 0x1D8);
+    *reg = (*(u32 *)(g + 0x1D8) & ~0xE) | (func << 1);
+    g = gx;
+    reg = (u32 *)(g + 0x1D8);
+    *reg = (*(u32 *)(g + 0x1D8) & ~0x10) | (update_enable << 4);
+    GXWGFifo.u8 = 0x61;
+    g = gx;
+    GXWGFifo.u32 = *(u32 *)(g + 0x1D8);
+    *(u16 *)(g + 2) = 0;
+}
+
+void GXSetZCompLoc(u8 before_tex) {
+    extern u8 *gx;
+    u8 *g;
+    u32 *reg;
+
+    g = gx;
+    reg = (u32 *)(g + 0x1DC);
+    *reg = (*(u32 *)(g + 0x1DC) & ~0x40) | (before_tex << 6);
+    GXWGFifo.u8 = 0x61;
+    g = gx;
+    GXWGFifo.u32 = *(u32 *)(g + 0x1DC);
+    *(u16 *)(g + 2) = 0;
+}
+
 void GXSetDither(u8 dither) {
     extern u8 *gx;
     u8 *g;
@@ -8190,6 +8272,22 @@ void GXSetFieldMode(u8 field_mode, u8 half_aspect_ratio) {
 
 void __GXSetRange(void) {
 
+}
+
+void GXCallDisplayList(void *list, u32 nbytes) {
+    extern u8 *gx;
+    void __GXSetDirtyState(void);
+    void __GXSendFlushPrim(void);
+
+    if (*(u32 *)(gx + 0x4F4) != 0) {
+        __GXSetDirtyState();
+    }
+    if (*(u32 *)gx == 0) {
+        __GXSendFlushPrim();
+    }
+    GXWGFifo.u8 = 0x40;
+    GXWGFifo.u32 = (u32)list;
+    GXWGFifo.u32 = nbytes;
 }
 
 void GXGetProjectionv(f32 *p) {
@@ -8637,6 +8735,22 @@ s32 TRKSetBufferPosition(void *arg0, u32 arg1) {
         }
     }
     return var_r5;
+}
+
+void *TRK_memset(void *dst, s32 val, u32 n);
+void TRKReleaseBuffer(s32 idx) {
+    extern TRKBuffer gTRKMsgBufs[3];
+    TRKBuffer *b;
+
+    if (idx == -1) {
+        return;
+    }
+    if (idx >= 0 && idx < 3) {
+        b = &gTRKMsgBufs[idx];
+        TRKAcquireMutex(b);
+        b->isInUse = 0;
+        TRKReleaseMutex(b);
+    }
 }
 
 TRKBuffer *TRKGetBuffer(s32 idx) {
