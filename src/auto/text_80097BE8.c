@@ -4385,6 +4385,70 @@ void AnimExtractKeyFrame(void *anim, s32 frame) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void AnimTraverseHeirarchyToMatrices(void *bones, u32 count, f32 *matrices) {
+    typedef struct {
+        Vector rot;
+        f32 pos[3];
+        u8 numChildren;
+        u8 pop;
+        u8 next;
+        u8 pad[1];
+    } Bone;
+    void QuaternionMult(Vector *a, Vector *b, Vector *out);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void XformVec(Vector *m, Vector *v, Vector *out);
+    Vector posStack[64] __attribute__((aligned(16)));
+    Vector rotStack[64];
+    Vector rot;
+    Vector q;
+    Vector pos;
+    Bone *bone = (Bone *)bones;
+    Vector *posSp = posStack;
+    Vector *rotSp = rotStack;
+    Bone *child;
+    Vector *p;
+    u32 n;
+    u32 i;
+    u32 j;
+
+    rot.x = rot.y = rot.z = 0.0f;
+    rot.w = 1.0f;
+    memcpy(&pos, bone->pos, 12);
+    for (i = 0; i < count; i++) {
+        QuaternionMult(&rot, &bone->rot, &q);
+        rot = q;
+        QuaternionToSubMatrix(&q, matrices);
+        matrices[12] = pos.x;
+        matrices[13] = pos.y;
+        matrices[14] = pos.z;
+        if (bone->numChildren != 0) {
+            child = bone + 1;
+            n = bone->numChildren - 1;
+            XformVec((Vector *)matrices, (Vector *)child->pos, &pos);
+            if (n != 0) {
+                posSp += n;
+                p = posSp;
+                *rotSp++ = q;
+                child += child->next;
+                for (j = 0; j < n; j++) {
+                    p--;
+                    XformVec((Vector *)matrices, (Vector *)child->pos, p);
+                    child += child->next;
+                }
+            }
+        } else {
+            pos = *--posSp;
+            rotSp -= bone->pop + 1;
+            rot = *rotSp++;
+        }
+        bone++;
+        matrices += 16;
+    }
+}
+#pragma pop
+
 void FontManager_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
