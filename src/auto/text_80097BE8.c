@@ -291,7 +291,8 @@ typedef struct THPFileInfo {
     u16 xPixelSize;
     u16 yPixelSize;
     u16 MCUsPerRow;
-    u8 unk698[0x69C - 0x698];
+    u16 decompressedY;
+    u8 unk69A[0x69C - 0x69A];
     u8 *c;
     u32 currByte;
     u32 cnt;
