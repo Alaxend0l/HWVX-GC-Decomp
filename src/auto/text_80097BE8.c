@@ -6285,36 +6285,48 @@ DLSkinGroup *DisplayList_AddGroup_Skin(void) {
 void DisplayList_RenderGXList(void) {
     extern GDL *g_pGDL;
     extern u8 g_CurrentViews;
+    extern f32 g_identity[];
     void Gfx_SetRenderWindow(u32 view);
     u32 Gfx_GetCullLODGX(s32 geometry, void *matrix, u8 *lod, u8 flag);
-    void DisplayList_AddGeometry(s32 geometry, u16 matrix, s32 lightState, u8 lod, u8 flag, GXColor color);
+    void DisplayList_AddGeometry(u32 geometry, u16 matrix, s32 lightState, u8 lod, u8 flag, GXColor color);
     GXColor color = {0, 0, 0, 0};
+    u32 j;
     u32 i;
     u32 view;
     void *matrix;
+    u32 index;
+    u32 geometry;
     u8 lod;
+    u8 lod2;
 
     if (g_CurrentViews == 1) {
-        for (i = 0; i < g_pGDL->numDrawEntries; i++) {
-            matrix = Gfx_GetWorldMatrixState(g_pGDL->drawEntries[i].matrix);
-            if (Gfx_GetCullLODGX(g_pGDL->drawEntries[i].geometry, matrix, &lod, g_pGDL->drawEntries[i].unk11)) {
-                DisplayList_AddGeometry(g_pGDL->drawEntries[i].geometry, g_pGDL->drawEntries[i].matrix,
-                                        g_pGDL->drawEntries[i].lightState, lod, g_pGDL->drawEntries[i].unk10,
-                                        g_pGDL->drawEntries[i].unk4);
+        for (j = 0; j < g_pGDL->numDrawEntries; j++) {
+            index = g_pGDL->drawEntries[j].matrix;
+            matrix = index == 0xFFFE ? g_identity
+                   : index == 0xFFFF ? (void *)((u8 *)GetRenderWindow() + 0x140)
+                   : (void *)g_pGDL->matrices[index];
+            geometry = Gfx_GetCullLODGX(g_pGDL->drawEntries[j].geometry, matrix, &lod, g_pGDL->drawEntries[j].unk11);
+            if (geometry) {
+                DisplayList_AddGeometry(geometry, g_pGDL->drawEntries[j].matrix, g_pGDL->drawEntries[j].lightState,
+                                        lod, g_pGDL->drawEntries[j].unk10, g_pGDL->drawEntries[j].unk4);
             }
         }
-        for (i = 0; i < g_pGDL->numLODEntries; i++) {
-            DisplayList_AddGeometry(g_pGDL->lodEntries[i].geometry, g_pGDL->lodEntries[i].matrix, -1, 1, 0, color);
+        for (j = 0; j < g_pGDL->numLODEntries; j++) {
+            DisplayList_AddGeometry(g_pGDL->lodEntries[j].geometry, g_pGDL->lodEntries[j].matrix, -1, 1, 0, color);
         }
     } else {
         for (i = 0; i < g_pGDL->numDrawEntries; i++) {
-            matrix = Gfx_GetWorldMatrixState(g_pGDL->drawEntries[i].matrix);
+            index = g_pGDL->drawEntries[i].matrix;
+            matrix = index == 0xFFFE ? g_identity
+                   : index == 0xFFFF ? (void *)((u8 *)GetRenderWindow() + 0x140)
+                   : (void *)g_pGDL->matrices[index];
             for (view = 1; view < 5; view++) {
                 if (g_CurrentViews & (1 << view)) {
                     Gfx_SetRenderWindow(view);
-                    if (Gfx_GetCullLODGX(g_pGDL->drawEntries[i].geometry, matrix, &lod, g_pGDL->drawEntries[i].unk11)) {
-                        DisplayList_AddGeometry(g_pGDL->drawEntries[i].geometry, g_pGDL->drawEntries[i].matrix,
-                                                g_pGDL->drawEntries[i].lightState, lod, g_pGDL->drawEntries[i].unk10,
+                    geometry = Gfx_GetCullLODGX(g_pGDL->drawEntries[i].geometry, matrix, &lod2, g_pGDL->drawEntries[i].unk11);
+                    if (geometry) {
+                        DisplayList_AddGeometry(geometry, g_pGDL->drawEntries[i].matrix,
+                                                g_pGDL->drawEntries[i].lightState, lod2, g_pGDL->drawEntries[i].unk10,
                                                 g_pGDL->drawEntries[i].unk4);
                     }
                 }
