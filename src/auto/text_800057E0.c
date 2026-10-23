@@ -5962,17 +5962,19 @@ s32 CarA_DoFreeStyleStunts(void *car) {
     return 0;
 }
 
-void CarA_SlaveWeaponHeartbeat(void *car) {
-    void MotionState_InitSlavesTimed(void *state, void *slaves, u8 type);
-    void ThingManagerList_RemoveReleasedThings(void *list);
+void CarA_SlaveWeaponHeartbeat(s32 car) {
+    void MotionState_InitSlavesTimed(s32 state, s32 slaves, u8 type);
+    void ThingManagerList_RemoveReleasedThings(s32 list);
     extern s32 g_iDeltaTimeMS;
+    s32 *timer;
     u32 i;
 
-    for (i = 0; i < M2C_FIELD(M2C_FIELD(car, void **, 0x3BC), u32 *, 0xE8); i++) {
-        if (((s32 *)((u8 *)car + 0x46C))[i] < 10000) {
-            MotionState_InitSlavesTimed((u8 *)car + 0x330, M2C_FIELD(M2C_FIELD(car, void **, 0x3BC), u8 **, 0xEC) + i * 0xC + 4, i + 0xF0);
-            ThingManagerList_RemoveReleasedThings((u8 *)car + 0x344);
-            ((s32 *)((u8 *)car + 0x46C))[i] += g_iDeltaTimeMS;
+    for (i = 0; i < M2C_FIELD(M2C_FIELD(car, s32 *, 0x3BC), u32 *, 0xE8); i++) {
+        timer = (s32 *)(car + i * 4 + 0x46C);
+        if (*timer < 10000) {
+            MotionState_InitSlavesTimed(car + 0x330, M2C_FIELD(M2C_FIELD(car, s32 *, 0x3BC), s32 *, 0xEC) + i * 0xC + 4, i + 0xF0);
+            ThingManagerList_RemoveReleasedThings(car + 0x344);
+            *timer += g_iDeltaTimeMS;
         }
     }
 }
@@ -8416,6 +8418,26 @@ s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard) {
     return result;
 }
 
+s32 __CARDSync(s32 chan) {
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32);
+    void OSSleepThread(void *queue);
+    CARDControl *block;
+    s32 result;
+    s32 enabled;
+
+    block = &__CARDBlock[chan];
+    enabled = OSDisableInterrupts();
+    while ((result = (chan < 0 || chan >= 2) ? -128 : block->result) == -1) {
+        OSSleepThread((u8 *)block + 0x8C);
+    }
+    OSRestoreInterrupts(enabled);
+    return result;
+}
+
+#pragma push
+#pragma scheduling off
+#pragma peephole off
 s32 OnReset_8007DB90(s32 arg0) {
     s32 CARDUnmount(M2C_UNK);
     if ((arg0 == 0) && ((CARDUnmount(0) == -1) || (CARDUnmount(1) == -1))) {
@@ -8423,6 +8445,7 @@ s32 OnReset_8007DB90(s32 arg0) {
     }
     return 1;
 }
+#pragma pop
 
 s32 __CARDGetFatBlock(void *arg0) {
     return M2C_FIELD(arg0, s32 *, 0x88);
