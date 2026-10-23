@@ -4997,6 +4997,42 @@ s32 ActionPlayInterfacePack(u32 *pack) {
     }
     return result;
 }
+
+void InterfaceDataPackRouter(void *arg0) {
+    M2C_UNK ArmageddonDropShip(void *);
+    M2C_UNK GSI_VehicleItemSelection(void *);
+    M2C_UNK InterfaceManager_SetCallBackRoutine(s32, M2C_UNK (*)(void *));
+    s32 GameSettings_GetGameType(void);
+
+    switch (M2C_FIELD(arg0, u16 *, 6)) {
+    case 0:
+        InterfaceManager_SetCallBackRoutine(M2C_FIELD(arg0, s32 *, 0), NULL);
+        break;
+    case 1:
+        break;
+    case 2:
+        if (GameSettings_GetGameType() == 0) {
+            GSI_VehicleItemSelection(arg0);
+            InterfaceManager_SetCallBackRoutine(M2C_FIELD(arg0, s32 *, 0), GSI_VehicleItemSelection);
+        } else if (GameSettings_GetGameType() == 1) {
+            ArmageddonDropShip(arg0);
+            InterfaceManager_SetCallBackRoutine(M2C_FIELD(arg0, s32 *, 0), ArmageddonDropShip);
+        } else {
+            InterfaceManager_SetCallBackRoutine(M2C_FIELD(arg0, s32 *, 0), NULL);
+        }
+        break;
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+        break;
+    default:
+        InterfaceManager_SetCallBackRoutine(M2C_FIELD(arg0, s32 *, 0), NULL);
+        break;
+    }
+}
+
 #pragma pop
 static const char s_InterfaceInputName[] = "InterfaceInput";
 
