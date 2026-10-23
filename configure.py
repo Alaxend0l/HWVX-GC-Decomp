@@ -293,7 +293,7 @@ config.libs = [
         "progress_category": "game",
         "objects": [
             Object(NonMatching, "auto/text_800057E0.c"),
-            Object(NonMatching, "auto/text_80095E88.c"),
+            Object(Matching, "auto/text_80095E88.c"),
             Object(NonMatching, "auto/text_80096164.c"),
             Object(NonMatching, "auto/text_80096824.c"),
             Object(NonMatching, "auto/text_800975DC.c"),
