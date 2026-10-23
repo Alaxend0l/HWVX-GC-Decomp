@@ -9353,6 +9353,129 @@ void THPPlayerQuit(void) {
     Initialized_803C7758 = 0;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+BOOL THPPlayerOpen(char *fileName, BOOL onMemory) {
+    extern s32 Initialized_803C7758;
+    extern s64 g_resetTicks;
+    extern s32 m_reset;
+    extern s32 m_cd_drive_status;
+    BOOL DVDOpen(char *fileName, void *fileInfo);
+    BOOL DVDClose(void *fileInfo);
+    s32 DVDReadPrio(void *fileInfo, void *addr, s32 length, s32 offset, s32 prio);
+    BOOL DVDReadAsyncPrio(void *fileInfo, void *addr, s32 length, s32 offset, void *callback, s32 prio);
+    s32 DVDGetDriveStatus(void);
+    void Render_BeginScene(void);
+    void Render_EndScene(void);
+    void Render_FlipBuffers(void);
+    s64 OSGetTime(void);
+    s32 OSGetResetButtonState(void);
+    void VISetBlack(s32 black);
+    void VIWaitForRetrace(void);
+    void VIFlush(void);
+    void OSResetSystem(s32 reset, u32 resetCode, s32 forceMenu);
+    void *memset(void *dst, s32 c, u32 n);
+    void *memcpy(void *dst, const void *src, u32 n);
+    s32 strcmp(const char *a, const char *b);
+    s32 offset;
+    u32 i;
+
+    if (!Initialized_803C7758) {
+        return FALSE;
+    }
+    if (ActivePlayer.open) {
+        return FALSE;
+    }
+    memset(&ActivePlayer.videoInfo, 0, sizeof(THPVideoInfo));
+    memset(ActivePlayer.unk88, 0, 0xC);
+    if (!DVDOpen(fileName, ActivePlayer.fileInfo)) {
+        return FALSE;
+    }
+    DVDReadAsyncPrio(ActivePlayer.fileInfo, WorkBuffer_8036ECC0, 0x40, 0, NULL, 2);
+    do {
+        m_cd_drive_status = DVDGetDriveStatus();
+        switch (m_cd_drive_status) {
+        case -1:
+        case 4:
+        case 5:
+        case 6:
+        case 11:
+            Render_BeginScene();
+            Render_EndScene();
+            Render_FlipBuffers();
+            break;
+        }
+        if (OSGetResetButtonState()) {
+            m_reset = 1;
+        }
+        if (m_reset && OSGetResetButtonState() == 0) {
+            VISetBlack(1);
+            VIWaitForRetrace();
+            VIFlush();
+            VIWaitForRetrace();
+            VIFlush();
+            VIWaitForRetrace();
+            VISetBlack(1);
+            VIWaitForRetrace();
+            VIFlush();
+            VIWaitForRetrace();
+            VIFlush();
+            VIWaitForRetrace();
+            if ((OSGetTime() - g_resetTicks) / (*(u32 *)0x800000F8 / 4) < 8) {
+                OSResetSystem(1, 0, 0);
+            } else {
+                OSResetSystem(0, 0, 0);
+            }
+        }
+    } while (m_cd_drive_status != 0);
+    memcpy(ActivePlayer.unk3C, WorkBuffer_8036ECC0, 0x30);
+    if (strcmp((char *)ActivePlayer.unk3C, "THP") != 0) {
+        DVDClose(ActivePlayer.fileInfo);
+        return FALSE;
+    }
+    if (*(u32 *)&ActivePlayer.unk3C[4] != 0x10000) {
+        DVDClose(ActivePlayer.fileInfo);
+        return FALSE;
+    }
+    offset = *(s32 *)ActivePlayer.unk5C;
+    if (DVDReadPrio(ActivePlayer.fileInfo, WorkBuffer_8036ECC0, 0x20, offset, 2) < 0) {
+        DVDClose(ActivePlayer.fileInfo);
+        return FALSE;
+    }
+    memcpy(&ActivePlayer.numComponents, WorkBuffer_8036ECC0, 0x14);
+    offset += 0x14;
+    ActivePlayer.audioExist = 0;
+    for (i = 0; i < ActivePlayer.numComponents; i++) {
+        switch (ActivePlayer.frameComp[i]) {
+        case 0:
+            if (DVDReadPrio(ActivePlayer.fileInfo, WorkBuffer_8036ECC0, 0x20, offset, 2) < 0) {
+                DVDClose(ActivePlayer.fileInfo);
+                return FALSE;
+            }
+            memcpy(&ActivePlayer.videoInfo, WorkBuffer_8036ECC0, sizeof(THPVideoInfo));
+            offset += sizeof(THPVideoInfo);
+            break;
+        case 1:
+            if (DVDReadPrio(ActivePlayer.fileInfo, WorkBuffer_8036ECC0, 0x20, offset, 2) < 0) {
+                DVDClose(ActivePlayer.fileInfo);
+                return FALSE;
+            }
+            memcpy(ActivePlayer.unk88, WorkBuffer_8036ECC0, 0xC);
+            offset += 0xC;
+            ActivePlayer.audioExist = 1;
+            break;
+        default:
+            return FALSE;
+        }
+    }
+    ActivePlayer.unk9D = 0;
+    ActivePlayer.state = 0;
+    ActivePlayer.playFlag = 0;
+    ActivePlayer.onMemory = onMemory;
+    ActivePlayer.open = TRUE;
+    return TRUE;
+}
+
 BOOL THPPlayerClose(void) {
     s32 DVDClose(void *fileInfo);
     if (ActivePlayer.open && ActivePlayer.state == 0) {
