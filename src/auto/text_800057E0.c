@@ -473,7 +473,8 @@ typedef struct SoundSource {
     s32 looping;
     f32 unk34;
     f32 unk38;
-    u8 unk3C[0x49 - 0x3C];
+    u8 unk3C[0x48 - 0x3C];
+    u8 paused;
     u8 playing;
     u8 unk4A[0x50 - 0x4A];
 } SoundSource;
@@ -1905,9 +1906,13 @@ void AI_Car_Reset(u8 *car) {
         u8 unk10[0x18];
         u8 state[1];
     } AICarParams;
+    typedef struct AICarTarget {
+        u32 timer;
+        u8 unk4[0x10];
+    } AICarTarget;
     typedef struct AICarTargets {
         u8 unk0[0x4B0];
-        u32 targets[16][5];
+        AICarTarget targets[16];
     } AICarTargets;
     void AI_Car_ResetState(u8 *car, void *state);
     s32 RandomAdd_s32(s32 base, s32 range);
@@ -1935,7 +1940,7 @@ void AI_Car_Reset(u8 *car) {
     *(s32 *)(car + 0x4A0) = -2;
     memset(car + 0x420, 0, 0x80);
     for (i = 0; i < 16; i++) {
-        ((AICarTargets *)car)->targets[i][0] = 0;
+        *(u32 *)&((AICarTargets *)car)->targets[i] = 0;
     }
     *(s32 *)(car + 0x608) = RandomAdd_s32(1000, 1000);
     *(s32 *)(car + 0x3E8) = 0;
