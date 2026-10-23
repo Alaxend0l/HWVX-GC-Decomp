@@ -3555,11 +3555,11 @@ void ShowStats_EndScene(void) {
     void Release_Performance_Diff(s32);
     void Release_Performance_Get(s32);
     void Performance_End(void);
-    extern s32 g_debugDataFlag;
+    extern u32 g_debugDataFlag;
     extern u8 g_timeBar[0x20];
     extern s32 g_timeBarOn;
     extern s32 g_pActiveTimeBar;
-    extern s32 g_bDrawTimeBars;
+    extern u32 g_bDrawTimeBars;
     extern s32 g_TripleBufferSleepQTime;
     u8 *bar = g_timeBar + !g_timeBarOn * 0x10;
 
