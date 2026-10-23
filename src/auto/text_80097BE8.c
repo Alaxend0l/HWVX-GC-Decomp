@@ -9923,6 +9923,67 @@ s32 __ct__9ConditionFv(s32 arg0) {
 #pragma push
 #pragma use_lmw_stmw on
 #pragma readonly_strings on
+#pragma dont_inline on
+s32 DownloadForce__9ConditionFllRUlUcUlUlScUcUcUcss(Force *force, s32 chan, s32 effect, u32 *device, u8 type, u32 duration, u32 startDelay, s8 offset, u8 deadband, u8 saturationPos, u8 saturationNeg, s16 coefficientPos, s16 coefficientNeg) {
+    struct {
+        u8 offset;
+        u8 deadband;
+        u8 saturationPos;
+        u8 saturationNeg;
+        s16 coefficientPos;
+        s16 coefficientNeg;
+    } cond;
+    struct {
+        u8 type;
+        u32 duration;
+        u32 startDelay;
+        struct {
+            s8 offset;
+            u8 deadband;
+            u8 saturationPos;
+            u8 saturationNeg;
+            s16 coefficientPos;
+            s16 coefficientNeg;
+        } condition[2];
+        u8 pad[8];
+    } desc;
+    s32 result = 0;
+
+    if (force->effectIds[chan][effect] != 0xFFFFFFFF) {
+        Destroy__5ForceFll(force, chan, effect);
+    }
+    if (*device != 0xFFFFFFFF) {
+        memset(&desc, 0, sizeof(desc));
+        desc.type = type;
+        desc.duration = duration;
+        desc.startDelay = startDelay;
+        desc.condition[0].offset = offset;
+        desc.condition[0].deadband = deadband;
+        desc.condition[0].saturationPos = saturationPos;
+        desc.condition[0].saturationNeg = saturationNeg;
+        desc.condition[0].coefficientPos = coefficientPos;
+        desc.condition[0].coefficientNeg = coefficientNeg;
+        desc.condition[1].offset = offset;
+        desc.condition[1].deadband = deadband;
+        desc.condition[1].saturationPos = saturationPos;
+        desc.condition[1].saturationNeg = saturationNeg;
+        desc.condition[1].coefficientPos = coefficientPos;
+        desc.condition[1].coefficientNeg = coefficientNeg;
+        result = LGDownloadForceEffect((LGDevice *)*device, &force->effectIds[chan][effect], (u8 *)&desc);
+        if (result < 0) {
+            OSReport("ERROR: DownloadForce(condition force) on channel %d returned %d\n", chan, result);
+            force->effectIds[chan][effect] = 0xFFFFFFFF;
+        }
+    } else {
+        OSReport("ERROR: Trying to download a condition force to channel %d but wheel has not been opened.\n", chan);
+    }
+    return result;
+}
+#pragma pop
+
+#pragma push
+#pragma use_lmw_stmw on
+#pragma readonly_strings on
 s32 UpdateForce__9ConditionFllUcUlUlScUcUcUcss(Force *force, s32 chan, s32 effect, u8 type, u32 duration, u32 startDelay, s8 offset, u8 deadband, u8 posSaturation, u8 negSaturation, s16 posCoefficient, s16 negCoefficient)
 {
   s32 LGUpdateForceEffect(u32 handle, u8 *desc);
