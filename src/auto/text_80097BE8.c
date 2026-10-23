@@ -8284,6 +8284,52 @@ void SetITTrackVol(u32 id, s32 vol) {
     }
 }
 
+s32 PlayNote(u8 *trk) {
+    extern u8 g_song_80375520[0x30];
+    void SetVoiceVol_(void *voice, s32 vol);
+    void StartVoice_(void *voice);
+    void StopActive(void *arg0);
+    u32 rate;
+    u8 stolen;
+    u8 *voice;
+    u8 *sample;
+
+    stolen = 0;
+    rate = GetNoteRate_(*(u32 *)(*(u8 **)(trk + 8) + 0x3C), trk[0x19]);
+    if (rate > 0x2EE00 || rate < 0x60) {
+        if (!stolen && *(u8 **)(trk + 4) != NULL) {
+            StopActive(trk);
+        }
+        return 0;
+    }
+    if (*(u8 **)(trk + 4) == NULL) {
+        *(u8 **)(trk + 4) = GetVoice_(0, trk[0x12]);
+        if (*(u8 **)(trk + 4) == NULL) {
+            return 0;
+        }
+        (*(u8 **)(trk + 4))[1] = trk[0x10];
+        (*(u8 **)(trk + 4))[2] = trk[0x14];
+        *(u8 **)(*(u8 **)(trk + 4) + 4) = *(u8 **)trk;
+        *(u8 **)trk = *(u8 **)(trk + 4);
+    }
+    voice = *(u8 **)(trk + 4);
+    *(u8 **)(voice + 0x10) = *(u8 **)(trk + 8);
+    sample = *(u8 **)(trk + 8);
+    *(s32 *)(voice + 0x20) = *(s32 *)(sample + 0x48);
+    *(s32 *)(voice + 0x24) = (sample[0x12] & 0x10) ? *(s32 *)(sample + 0x34) : -1;
+    *(s32 *)(voice + 0x28) = (sample[0x12] & 0x10) ? *(s32 *)(sample + 0x38) : *(s32 *)(sample + 0x30);
+    voice[0x2C] = (sample[0x12] & 2) ? 0x10 : 8;
+    *(u32 *)(voice + 0x30) = rate;
+    *(s32 *)(voice + 0x34) = *(s32 *)(g_song_80375520 + 0x1C);
+    *(s32 *)(voice + 0x38) = *(s32 *)(trk + 0x44);
+    *(s32 *)(voice + 0x3C) = sample[0x11] << 9;
+    *(s32 *)(voice + 0x40) = *(s32 *)(trk + 0x2C);
+    *(s32 *)(voice + 0x44) = -0x7FFF;
+    StartVoice_(voice);
+    SetVoiceVol_(voice, *(s16 *)(trk + 0x1A));
+    return 1;
+}
+
 void SetTrackVol(u8 *trk) {
     void SetVoiceVol_(void *voice, s32 vol);
     u8 *voice;
