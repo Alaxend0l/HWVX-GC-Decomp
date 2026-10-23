@@ -4323,6 +4323,64 @@ void Drone_GetCameraOrientationInfo(void *drone, void *camera, void *info) {
     M2C_FIELD(info, f32 *, 0x38) = 0.0f;
 }
 
+s32 Drone_PreMove(u8 *drone) {
+    extern Vector4 g_zeroVector;
+    extern f32 g_fDeltaTimeSec;
+    void Gfx_AnimExtractKeyFrame(void *anim, f32 time, void *keyFrame, u32 count);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void TransposeSubMatrix(Matrix4 *mtx);
+    void MultiplySubMatrix(void *a, Matrix4 *b, Matrix4 *out);
+    void GenerateSpinAngleFromQuaternion(Vector4 *quat, void *axis, f32 *angle);
+    void Drone_ComputeSuspensionForces(u8 *drone);
+    void PhysicalObject_IntegrateNonLateral(u8 *obj);
+    Matrix4 inv;
+    Matrix4 rel;
+    Matrix4 world;
+    Matrix4 rot;
+    f32 keyFrame[8];
+    Quaternion delta;
+    Quaternion quat;
+    Quaternion tmp;
+    f32 angle;
+
+    if (drone[0x1DC] == 2) {
+        Gfx_AnimExtractKeyFrame(*(void **)(drone + 0xD4), *(f32 *)(drone + 0x1E4), keyFrame, 1);
+        ((Vector4 *)drone)->x = (keyFrame[4] - ((Thing *)drone)->mtx.m[3][0]) / g_fDeltaTimeSec;
+        ((Vector4 *)drone)->y = (keyFrame[5] - ((Thing *)drone)->mtx.m[3][1]) / g_fDeltaTimeSec;
+        ((Vector4 *)drone)->z = (keyFrame[6] - ((Thing *)drone)->mtx.m[3][2]) / g_fDeltaTimeSec;
+        quat = *(Quaternion *)keyFrame;
+        inv = ((Thing *)drone)->mtx;
+        *(Quaternion *)(drone + 0xE0) = tmp = quat;
+        QuaternionToSubMatrix(&quat, &rot);
+        TransposeSubMatrix(&inv);
+        MultiplySubMatrix(&inv, &rot, &rel);
+        MultiplySubMatrix(drone + 0x10, &rel, &world);
+        SubMatrixToQuaternion(&rel, (Vector4 *)&delta);
+        GenerateSpinAngleFromQuaternion((Vector4 *)&delta, drone + 0x130, &angle);
+        angle /= g_fDeltaTimeSec;
+        *(f32 *)(drone + 0x130) *= angle;
+        *(f32 *)(drone + 0x134) *= angle;
+        *(f32 *)(drone + 0x138) *= angle;
+        *(u32 *)(drone + 0x74) &= ~0x10;
+        *(f32 *)(drone + 0x1E4) += g_fDeltaTimeSec;
+        if (*(f32 *)(drone + 0x1E4) > *(f32 *)(*(u8 **)(drone + 0xD4) + 0xC)) {
+            *(f32 *)(drone + 0x1E4) = *(f32 *)(*(u8 **)(drone + 0xD4) + 0x8);
+        }
+    } else {
+        *(Vector4 *)(drone + 0x100) = g_zeroVector;
+        *(Vector4 *)(drone + 0xF0) = *(Vector4 *)(drone + 0x100);
+        ((Vector4 *)(drone + 0xF0))->y += *(f32 *)(*(u8 **)(*(u8 **)(drone + 0xC0) + 0x10) + 0x24) *
+                                          *(f32 *)(*(u8 **)(*(u8 **)(drone + 0xC0) + 0x10) + 0x20);
+        Drone_ComputeSuspensionForces(drone);
+        PhysicalObject_IntegrateNonLateral(drone);
+    }
+    return 1;
+}
+
+static inline void Mover_SetRotation(u8 *mover, Quaternion quat) {
+    *(Quaternion *)(mover + 0xE0) = quat;
+}
+
 void Drone_DynamicCollideImpact(u8 *drone, u8 *collision, f32 force) {
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
     void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
