@@ -3690,7 +3690,8 @@ typedef struct DataPack {
     u8 *base;
     u32 numRelocs;
     u32 *relocs;
-    u8 pad0C[0x8];
+    u32 numSoundRelocs;
+    u32 *soundRelocs;
     void *palettes;
     u32 numShaders;
     u32 numGX;
