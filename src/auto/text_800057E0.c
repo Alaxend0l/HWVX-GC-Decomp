@@ -4688,6 +4688,88 @@ void Creature_Release(s32 arg0) {
     Thing_Release(arg0);
 }
 
+void Creature_InterpretControls(void *arg0) {
+    void Creature_MotionStateInit(void *creature, s32 state, u8 reset, u8 keepTime);
+    void Creature_PartialGibb(void *creature, s32 arg1, s32 arg2);
+    struct CreatureControls {
+        s8 x;
+        s8 y;
+        u8 unk2[0x14 - 0x2];
+        u8 unk14;
+        u8 unk15[0x1A - 0x15];
+        u8 unk1A;
+        u8 unk1B;
+        u8 unk1C[0x32 - 0x1C];
+        u8 unk32;
+    };
+    struct CreatureCtl {
+        u8 unk0[0x78];
+        s32 unk78;
+        u8 unk7C[0x94 - 0x7C];
+        struct CreatureControls *controls;
+        u8 unk98[0xBF - 0x98];
+        s8 unkBF;
+        u8 unkC0[0xC4 - 0xC0];
+        s32 state;
+        f32 unkC8;
+        u8 unkCC[0xE4 - 0xCC];
+        u8 *motion;
+        u8 unkE8[0xEC - 0xE8];
+        f32 time;
+    } *creature = arg0;
+    s32 state;
+
+    state = creature->state;
+    if (creature->unk78 < 0) {
+        return;
+    }
+    if (creature->unkBF) {
+        if (!((state == 4 || state == 10) &&
+              creature->time < *(f32 *)(*(u8 **)(creature->motion + 0x28) + 4))) {
+            if (creature->controls->unk1B) {
+                Creature_MotionStateInit(creature, 7, 1, 0);
+            } else if (creature->controls->unk1A) {
+                Creature_MotionStateInit(creature, 9, 1, 0);
+            } else if (creature->controls->y > 0x20) {
+                if (creature->controls->unk14) {
+                    Creature_MotionStateInit(creature, 2, 1, 1);
+                } else {
+                    Creature_MotionStateInit(creature, 1, 1, 1);
+                }
+            } else if (creature->controls->y < -0x20) {
+                Creature_MotionStateInit(creature, 5, 1, 1);
+            } else if (creature->controls->x > 0x20) {
+                Creature_MotionStateInit(creature, 6, 1, 1);
+            } else {
+                Creature_MotionStateInit(creature, 0, 1, 1);
+            }
+        }
+        switch (creature->controls->unk32) {
+        case 17:
+            Creature_MotionStateInit(creature, 14, 0, 0);
+            break;
+        case 18:
+            Creature_MotionStateInit(creature, 15, 0, 0);
+            break;
+        case 3:
+            Creature_PartialGibb(creature, 2, 0);
+            break;
+        }
+        creature->controls->unk32 = 0;
+        creature->unkC8 = 2.0f;
+    } else {
+        switch (state) {
+        case 4:
+        case 7:
+            break;
+        default:
+            Creature_MotionStateInit(creature, 4, 1, 0);
+            break;
+        }
+        creature->unkC8 = 5.0f;
+    }
+}
+
 typedef struct CreatureMove {
     u8 unk0[0x40];
     Vector4 pos;
