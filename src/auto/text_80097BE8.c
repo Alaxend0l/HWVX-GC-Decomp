@@ -7300,6 +7300,40 @@ static void F25(s32 chan, s32 ret) {
     gba->ret = ret;
 }
 
+#pragma push
+#pragma peephole off
+void __GBAX02(s32 chan, u8 *readbuf) {
+    void DSPAddTask(GBADSPTaskInfo *task);
+    GBAControl *gba;
+    GBABootInfo *bootInfo;
+    GBASecParam *param;
+    GBADSPTaskInfo *task;
+
+    gba = &__GBA[chan];
+    bootInfo = &gba->bootInfo;
+    param = gba->param;
+    memcpy(param, readbuf, 4);
+    param->paletteColor = bootInfo->paletteColor;
+    param->paletteSpeed = bootInfo->paletteSpeed;
+    param->length = bootInfo->length;
+    param->out = &param->keyA;
+    DCInvalidateRange(&param->keyA, 32);
+    DCFlushRange(param, 32);
+
+    task = &gba->task;
+    task->priority = 255;
+    task->iram_mmem_addr = (void *)((u32)D35_800DB028 - 0x80000000);
+    task->iram_length = sizeof(D35_800DB028);
+    task->iram_addr = 0;
+    task->dsp_init_vector = 16;
+    task->init_cb = F23;
+    task->res_cb = NULL;
+    task->done_cb = F25;
+    task->req_cb = NULL;
+    DSPAddTask(task);
+}
+#pragma pop
+
 s32 GBAReadAsync(s32 chan, u8 *dst, u8 *status, GBACallback callback);
 static void F29(s32 chan, s32 ret);
 void F27(s32 chan, s32 ret) {
