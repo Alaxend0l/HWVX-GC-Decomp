@@ -75,6 +75,8 @@ s32 ViewManager_GetViewFormat(void);
 s32 Thing_Init(void *thing, s32 arg1);
 void MatrixCache_Free(u32 key);
 void MotionState_Release(s32 state);
+s8 ThingManagerList_Get(void *list, void *target);
+s8 IsPointWithinVolume(struct Vector4 *point, u8 *volume, f32 *distSq);
 
 typedef struct InterfaceCallBackData {
     u32 data[17];
@@ -3367,6 +3369,23 @@ void GamePlay_Startup(void) {
 
     g_handleInterfaceGP.handleInput = GamePlay_PauseOptions_HandleInput;
     g_handleInterfaceGP.update = NULL;
+}
+
+s32 TriggerInterfacePackEnd(u32 *pack) {
+    int strcmp(const char *, const char *);
+    u32 i;
+    u32 id;
+    InterfacePackEntry *entry;
+
+    i = 0;
+    id = pack[0];
+    entry = g_InterfacePackData;
+    for (; i < g_NumInterfacesPlaying; i++, entry++) {
+        if (id == entry->id && strcmp(entry->name, (char *)(pack + 1)) == 0) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 static const char s_InterfaceInputName[] = "InterfaceInput";
