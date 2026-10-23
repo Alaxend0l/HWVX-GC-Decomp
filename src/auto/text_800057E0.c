@@ -2644,6 +2644,37 @@ void CarA_SetSlavePlayers(void *car) {
     }
 }
 
+void CarA_Draw(u8 *car) {
+    extern void *g_pNoRayCollideThing;
+    void CarA_DrawScript(u8 *car);
+    s8 Player_IsHuman(void *player);
+    s32 StateManager_CurrState(void);
+    void Gfx_DrawGeometry(void *geom, void *mtx);
+    Matrix4 mtx;
+    u8 *player;
+    u8 *table;
+
+    player = *(u8 **)(car + 0x94);
+    if (player != NULL && (*(u32 *)(player + 0x6C) & 0x10) && !(*(u32 *)(player + 0x6C) & 0x80) &&
+        (u32)ViewManager_GetViewFormat() <= 1) {
+        table = *(u8 **)(*(u8 **)(car + 0x3BC) + 0x80);
+        if ((*(u8 **)(table + 0x84))[((*(u8 **)(car + 0x94))[0x31] % *(u32 *)(table + 0x80)) * 0xC] == 4) {
+            return;
+        }
+    }
+    CarA_DrawScript(car);
+    if (*(void **)(*(u8 **)(car + 0x3BC) + 0x54) != NULL && StateManager_CurrState() == 5) {
+        mtx = *(Matrix4 *)(car + 0x10);
+        XformVec(car + 0x10, (Vector4 *)(car + 0x520), &mtx.v[3]);
+        if (Player_IsHuman(*(void **)(car + 0x94))) {
+            Gfx_DrawGeometry(*(void **)(*(u8 **)(car + 0x3BC) + 0x54), &mtx);
+        }
+    }
+    g_pNoRayCollideThing = car;
+    MotionState_DrawSlaves(car + 0x330, 0);
+    g_pNoRayCollideThing = NULL;
+}
+
 f32 CarA_GetMass(void *arg0) {
     return M2C_FIELD(M2C_FIELD(M2C_FIELD(arg0, void **, 0x3BC), void **, 0xA0), f32 *, 0x20);
 }
