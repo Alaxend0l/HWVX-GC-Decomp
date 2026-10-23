@@ -21005,6 +21005,7 @@ s32 TRKTargetAccessFP(u32 firstRegister, u32 lastRegister, TRKBuffer *b, u32 *re
     *(TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4 = savedException;
     return error;
 }
+#pragma pop
 
 #pragma push
 #pragma dont_inline on
