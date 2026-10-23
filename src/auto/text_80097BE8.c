@@ -2960,7 +2960,7 @@ u16 Gfx_LoadTexture(char *name) {
     }
 
     for (i = 1; i < m_totalTextures; i++) {
-        if (stricmp(buf, (char *)((Texture *)m_texture)[i].unk0) == 0 && m_currentView == ((Texture *)m_texture)[i].view) {
+        if (stricmp(buf, (char *)((Texture *)m_texture)[i].unk0) == 0 && m_currentView == *(u16 *)(m_texture + (i * sizeof(Texture) + 0x3C))) {
             tex = &((Texture *)m_texture)[i];
             tex->refCount++;
             return i;
@@ -2985,8 +2985,7 @@ u16 Gfx_LoadTexture(char *name) {
     strncpy((char *)tex->unk0, buf, 0x24);
     tex = &((Texture *)m_texture)[i];
     tex->refCount++;
-    tex = &((Texture *)m_texture)[i];
-    tex->view = (s8)m_currentView;
+    ((Texture *)m_texture)[i].view = (s8)m_currentView;
     tex = &((Texture *)m_texture)[i];
     tex->unk2C = 0.25f;
     tex = &((Texture *)m_texture)[i];
@@ -4231,6 +4230,113 @@ void DestroyVoice_(void *arg0) {
     g_pFree_803C78A4 = voice;
     OSRestoreInterrupts(level);
 }
+
+#pragma push
+#pragma optimization_level 1
+void ProcessVoice_(void) {
+    extern u8 g_voice[0x20][0x70];
+    extern s32 g_active_803C78A0;
+    extern void (*DestroySongVoice)(void *);
+    extern void *g_pFree_803C78A4;
+    extern const u16 g_volTab[64];
+    s32 OSDisableInterrupts();
+    void OSRestoreInterrupts(s32);
+    void AXFreeVoice(void *);
+    u8 *voice;
+    void *axv;
+    s32 i;
+    s32 level2;
+    s32 level;
+    s32 steps;
+
+    g_active_803C78A0 = -1;
+    for (voice = g_voice[0], i = 0x20; i != 0; i--) {
+        u8 state = voice[0x15];
+        voice += 0x70;
+        if (state == 1) {
+            g_active_803C78A0++;
+        }
+    }
+
+    for (voice = g_voice[0], i = 0x20; i != 0; voice += 0x70, i--) {
+        if (voice[0x15] != 1) {
+            continue;
+        }
+        axv = M2C_FIELD(voice, void **, 0x50);
+        if (M2C_FIELD(axv, u16 *, 0x146) == 0) {
+            if (voice[0] == 0) {
+                DestroySongVoice(voice);
+            }
+            level = OSDisableInterrupts();
+            voice[0x15] = 0;
+            voice[1] = 0xFE;
+            if (M2C_FIELD(voice, void **, 0x50) != NULL) {
+                level2 = OSDisableInterrupts();
+                if (M2C_FIELD(M2C_FIELD(voice, void **, 0x50), void **, 0xC) != NULL) {
+                    AXFreeVoice(M2C_FIELD(voice, void **, 0x50));
+                }
+                M2C_FIELD(voice, void **, 0x50) = NULL;
+                OSRestoreInterrupts(level2);
+            }
+            M2C_FIELD(voice, void **, 4) = g_pFree_803C78A4;
+            g_pFree_803C78A4 = voice;
+            OSRestoreInterrupts(level);
+            continue;
+        }
+
+        M2C_FIELD(axv, u32 *, 0x1C) |= 0x200;
+        if (M2C_FIELD(voice, s16 *, 0x5A) < 0) {
+            M2C_FIELD(voice, s16 *, 0x5A) = (M2C_FIELD(voice, s32 *, 0x38) * g_volTab[g_active_803C78A0]) >> 15;
+            M2C_FIELD(axv, s16 *, 0x19C) = M2C_FIELD(voice, s16 *, 0x5A);
+            M2C_FIELD(axv, s16 *, 0x19E) = 0;
+        } else {
+            steps = (((M2C_FIELD(voice, s32 *, 0x38) * g_volTab[g_active_803C78A0]) >> 15) - M2C_FIELD(voice, s16 *, 0x5A)) / 160;
+            if (steps != 0) {
+                M2C_FIELD(axv, s16 *, 0x19C) = M2C_FIELD(voice, s16 *, 0x5A);
+                M2C_FIELD(axv, s16 *, 0x19E) = (u16)steps;
+                M2C_FIELD(voice, s16 *, 0x5A) += steps * 160;
+            } else {
+                M2C_FIELD(voice, s16 *, 0x5A) = (M2C_FIELD(voice, s32 *, 0x38) * g_volTab[g_active_803C78A0]) >> 15;
+                M2C_FIELD(axv, s16 *, 0x19C) = M2C_FIELD(voice, s16 *, 0x5A);
+                M2C_FIELD(axv, s16 *, 0x19E) = 0;
+            }
+        }
+
+        if (voice[0x56] != 0) {
+            voice[0x56] = 0;
+            M2C_FIELD(voice, s16 *, 0x64) = M2C_FIELD(voice, s16 *, 0x60);
+            M2C_FIELD(voice, s16 *, 0x66) = M2C_FIELD(voice, s16 *, 0x62);
+            M2C_FIELD(axv, s16 *, 0x14A) = M2C_FIELD(voice, s16 *, 0x60);
+            M2C_FIELD(axv, s16 *, 0x14E) = M2C_FIELD(voice, s16 *, 0x62);
+            M2C_FIELD(axv, s16 *, 0x14C) = 0;
+            M2C_FIELD(axv, s16 *, 0x150) = 0;
+            M2C_FIELD(axv, u16 *, 0x144) &= ~0x8;
+            M2C_FIELD(axv, u32 *, 0x1C) |= 0x12;
+        }
+
+        if (voice[0x57] != 0) {
+            voice[0x57] = 0;
+            M2C_FIELD(voice, s16 *, 0x6C) = M2C_FIELD(voice, s16 *, 0x68);
+            M2C_FIELD(voice, s16 *, 0x6E) = M2C_FIELD(voice, s16 *, 0x6A);
+            if (voice[0] != 0) {
+                M2C_FIELD(axv, s16 *, 0x15A) = M2C_FIELD(voice, s16 *, 0x68);
+                M2C_FIELD(axv, s16 *, 0x15E) = M2C_FIELD(voice, s16 *, 0x6A);
+                M2C_FIELD(axv, s16 *, 0x15C) = 0;
+                M2C_FIELD(axv, s16 *, 0x160) = 0;
+                M2C_FIELD(axv, u16 *, 0x144) &= ~0x800;
+            } else {
+                M2C_FIELD(axv, s16 *, 0x152) = M2C_FIELD(voice, s16 *, 0x68);
+                M2C_FIELD(axv, s16 *, 0x156) = M2C_FIELD(voice, s16 *, 0x6A);
+                M2C_FIELD(axv, s16 *, 0x154) = 0;
+                M2C_FIELD(axv, s16 *, 0x158) = 0;
+                M2C_FIELD(axv, u16 *, 0x144) &= ~0x40;
+            }
+            M2C_FIELD(axv, u32 *, 0x1C) |= 0x12;
+        }
+    }
+}
+#pragma pop
+
 #pragma pop
 
 #pragma push
