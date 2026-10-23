@@ -4105,6 +4105,7 @@ u32 Grid_GetNearestObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult 
     u32 x;
     u32 z;
     u32 type;
+    GridResult *result;
     u32 i;
     s8 found;
     GridNode *node;
@@ -4115,8 +4116,8 @@ u32 Grid_GetNearestObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult 
 
     first = 1;
     count = 0;
-    Grid_GetCellCoords(min, &x0, &z0);
-    Grid_GetCellCoords(max, &x1, &z1);
+    Grid_GetCell(min, (s32 *)&x0, (s32 *)&z0);
+    Grid_GetCell(max, (s32 *)&x1, (s32 *)&z1);
     while (count == 0) {
         for (x = x0; x <= x1; x++) {
             for (z = z0; z <= z1; z++) {
@@ -4125,11 +4126,13 @@ u32 Grid_GetNearestObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult 
                         if (typeMask & (1 << type)) {
                             node = ((GridManager *)gGridManager)->cells[type][x * ((GridManager *)gGridManager)->numZ + z].head;
                             while (node != NULL) {
+                                result = results;
                                 found = 0;
                                 for (i = 0; i < count && !found; i++) {
-                                    if (results[i].id == node->id) {
+                                    if (result->id == node->id) {
                                         found = 1;
                                     }
+                                    result++;
                                 }
                                 if (!found) {
                                     if (count < maxResults) {
