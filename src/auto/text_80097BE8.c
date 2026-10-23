@@ -6533,29 +6533,28 @@ void Render_DrawRectanglesWindow(void) {
         Render_StateBlendMode(g_pGDL->rects[i].blendMode);
         GXBegin(0x80, 0, 4);
         for (j = 0; j < 4; j++) {
-            f32 y = g_pGDL->rects[i].v[j].y;
-            f32 x = g_pGDL->rects[i].v[j].x;
-            u8 a;
-            u8 b;
-            u8 g;
-            u8 c;
-            f32 t;
-            f32 s;
-
-            GXWGFifo.f32 = x;
-            GXWGFifo.f32 = y;
-            a = g_pGDL->rects[i].v[j].a;
-            b = g_pGDL->rects[i].v[j].b;
-            g = g_pGDL->rects[i].v[j].g;
-            c = g_pGDL->rects[i].v[j].r;
-            GXWGFifo.u8 = c;
-            GXWGFifo.u8 = g;
-            GXWGFifo.u8 = b;
-            GXWGFifo.u8 = a;
-            t = g_pGDL->rects[i].v[j].t;
-            s = g_pGDL->rects[i].v[j].s;
-            GXWGFifo.f32 = s;
-            GXWGFifo.f32 = t;
+            {
+                f32 y = g_pGDL->rects[i].v[j].y;
+                f32 x = g_pGDL->rects[i].v[j].x;
+                GXWGFifo.f32 = x;
+                GXWGFifo.f32 = y;
+            }
+            {
+                u8 a = g_pGDL->rects[i].v[j].a;
+                u8 b = g_pGDL->rects[i].v[j].b;
+                u8 g = g_pGDL->rects[i].v[j].g;
+                u8 c = g_pGDL->rects[i].v[j].r;
+                GXWGFifo.u8 = c;
+                GXWGFifo.u8 = g;
+                GXWGFifo.u8 = b;
+                GXWGFifo.u8 = a;
+            }
+            {
+                f32 t = g_pGDL->rects[i].v[j].t;
+                f32 s = g_pGDL->rects[i].v[j].s;
+                GXWGFifo.f32 = s;
+                GXWGFifo.f32 = t;
+            }
         }
     }
     if (window != 0) {
@@ -6973,6 +6972,60 @@ void Mpeg_Init(void) {
     THPPlayerInit();
     AudioInit();
     m_rendermode_803C7754 = rmode;
+}
+
+u32 THPPlayerCalcNeedMemory(void);
+BOOL THPPlayerGetVideoInfo(THPVideoInfo *videoInfo);
+BOOL THPPlayerPlay(void);
+s32 Mpeg_StartMovie(char *name, f32 volume) {
+    typedef struct {
+        u32 viTVmode;
+        u16 fbWidth;
+        u16 efbHeight;
+    } RenderMode;
+    BOOL THPPlayerOpen(char *fileName, BOOL onMemory);
+    BOOL THPPlayerSetBuffer(void *buffer);
+    BOOL THPPlayerPrepare(s32 frameNum, s32 playFlag);
+    void *OSAllocFromHeap(s32 heap, u32 size);
+    void GXSetViewport(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz);
+    void OSPanic(const char *file, int line, const char *msg, ...);
+    extern u8 badMojo_803C7734;
+    extern RenderMode *m_rendermode_803C7754;
+    extern THPVideoInfo m_videoInfo_803C7744;
+    extern u32 m_movie_x_803C7740;
+    extern u32 m_movie_y_803C773C;
+    extern void *m_movie_buffer_803C774C;
+    extern u32 m_movieVolume_803C7738;
+    char *p = name;
+    u32 size;
+
+    if (badMojo_803C7734) {
+        return 0;
+    }
+    for (; *p; p++) {
+        *p = tolower(*p);
+        if (*p == '\\') {
+            *p = '/';
+        }
+    }
+    if (!THPPlayerOpen(name, FALSE)) {
+        OSPanic("THPPlay.c", 93, "Fail to open the thp file\n");
+    }
+    GXSetViewport(0.0f, 0.0f, m_rendermode_803C7754->fbWidth, m_rendermode_803C7754->efbHeight, 0.0f, 1.0f);
+    THPPlayerGetVideoInfo(&m_videoInfo_803C7744);
+    m_movie_x_803C7740 = (m_rendermode_803C7754->fbWidth - m_videoInfo_803C7744.xSize) / 2;
+    m_movie_y_803C773C = (m_rendermode_803C7754->efbHeight - m_videoInfo_803C7744.ySize) / 2;
+    size = THPPlayerCalcNeedMemory();
+    m_movie_buffer_803C774C = OSAllocFromHeap(__OSCurrHeap, size);
+    if (m_movie_buffer_803C774C == NULL) {
+        OSPanic("THPPlay.c", 113, "Can't allocate the memory\n");
+    }
+    THPPlayerSetBuffer(m_movie_buffer_803C774C);
+    if (!THPPlayerPrepare(0, 0)) {
+        OSPanic("THPPlay.c", 122, "Fail to prepare\n");
+    }
+    THPPlayerPlay();
+    m_movieVolume_803C7738 = 46.0f * volume;
 }
 
 #pragma push
@@ -8543,6 +8596,69 @@ void SetSFXVol(s32 vol) {
             SetVoiceVol_(voice, g_sfxvol_803C78D4);
         }
     }
+}
+
+s32 SetSFXState(s32 state) {
+    extern u8 g_voice[0x20][0x70];
+    extern s32 g_sfxState_803C78D0;
+    extern s32 g_sfxvol_803C78D4;
+    extern void (*VoiceUpdate)(void);
+    void ProcessVoice(void);
+    void SetVoiceVol_(void *voice, s32 vol);
+    void StartVoice_(void *voice);
+    void SetVoiceState_(void *voice, s32 state);
+    u32 i;
+    u8 *voice;
+    s32 old;
+
+    if (state == 0 || state == g_sfxState_803C78D0) {
+        return g_sfxState_803C78D0;
+    }
+    if (state != 1) {
+        VoiceUpdate = NULL;
+    }
+    voice = g_voice[0];
+    switch (state) {
+    case 2:
+        for (i = 0x20; i != 0; voice += 0x70, i--) {
+            if (voice[0] == 1 && voice[0x15] == 1) {
+                SetVoiceState_(voice, 2);
+            }
+        }
+        break;
+    case 3:
+        for (i = 0x20; i != 0; voice += 0x70, i--) {
+            if (voice[0] == 1 && voice[0x15] != 0) {
+                SetVoiceState_(voice, 2);
+                voice[0x15] = 3;
+            }
+        }
+        break;
+    case 4:
+        for (i = 0x20; i != 0; voice += 0x70, i--) {
+            if (voice[0] == 1) {
+                voice[0x15] = 3;
+            }
+        }
+        voice = g_voice[0];
+    case 1:
+        for (i = 0x20; i != 0; voice += 0x70, i--) {
+            if (voice[0] == 1) {
+                if (voice[0x15] == 2) {
+                    SetVoiceState_(voice, 1);
+                } else if (voice[0x15] == 3) {
+                    StartVoice_(voice);
+                    SetVoiceVol_(voice, g_sfxvol_803C78D4);
+                }
+            }
+        }
+        state = 1;
+        VoiceUpdate = ProcessVoice;
+        break;
+    }
+    old = g_sfxState_803C78D0;
+    g_sfxState_803C78D0 = state;
+    return old;
 }
 
 u32 GetVoice(u32 handle, u8 priority) {
