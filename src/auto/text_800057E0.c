@@ -3438,6 +3438,13 @@ f32 InterfaceInputAnimator_GetUDCounter(void) {
     return g_UD_Counter;
 }
 
+void InterfaceInputAnimator_SetCallBack(void *callBack, InterfaceCallBackData *data) {
+    g_pCallBack = callBack;
+    if (callBack != NULL) {
+        g_CallBackData = *data;
+    }
+}
+
 void StateMovie_SetMovieToPlay(s32 arg0) {
     extern s32 g_moviePlaybackName;
     g_moviePlaybackName = arg0;
