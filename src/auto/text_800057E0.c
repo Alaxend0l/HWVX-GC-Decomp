@@ -10839,6 +10839,47 @@ void TimerManager_Heartbeat(void) {
     }
 }
 
+s32 ActionVariableChangeValue(u32 *action) {
+    u32 i;
+    f32 value;
+    u8 **var;
+
+    switch (action[action[1] + 2]) {
+    case 0:
+        value = *(f32 *)&action[action[1] + 3];
+        break;
+    case 1:
+        value = *(f32 *)(*(u8 **)action[action[1] + 3] + 4);
+        break;
+    case 2:
+        value = GetCodeVariable(action[action[1] + 3], (u8 *)action[action[1] + 4]);
+        break;
+    }
+    for (i = 0; i < action[1]; i++) {
+        var = (u8 **)action[i + 2];
+        switch (action[0]) {
+        case 0xF:
+            *(f32 *)(*var + 4) += value;
+            break;
+        case 0x10:
+            *(f32 *)(*var + 4) -= value;
+            break;
+        case 0x2D:
+            *(f32 *)(*var + 4) *= value;
+            break;
+        case 0x2E:
+            if (value) {
+                *(f32 *)(*var + 4) /= value;
+            }
+            break;
+        case 0x11:
+            *(f32 *)(*var + 4) = value;
+            break;
+        }
+    }
+    return 1;
+}
+
 #pragma pop
 s32 ActionVariableChangeMode(u32 *action) {
     u32 i;
