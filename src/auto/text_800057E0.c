@@ -3849,6 +3849,14 @@ void VolumeManager_Create(void) {
     g_VolumeHolder = 0;
 }
 
+void VolumeManager_Release(void) {
+    extern s32 g_VolumeHolder;
+    void SetReverb(s32 a, s32 b, s32 c, s32 d);
+    g_VolumeHolder = 0;
+    SetReverb(0, 0, 0, 0);
+    SetReverb(1, 0, 0, 0);
+}
+
 void WildCardRack_Release(s32 arg0) {
     s32 var_r31;
     u32 var_r30;
