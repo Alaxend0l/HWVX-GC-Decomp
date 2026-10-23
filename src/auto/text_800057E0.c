@@ -4726,6 +4726,93 @@ s32 CoronaHolder_Add(void *corona, Vector4 *pos) {
     return g_totalCoronas++;
 }
 
+void CoronaHolder_Render(void) {
+    typedef struct CoronaData {
+        u8 type;
+        u8 rotate;
+        u16 fadeTime;
+        u8 distCheck;
+        u8 pad5[0x8 - 0x5];
+        f32 maxDist;
+        f32 size;
+        s32 spin;
+        u32 texture;
+    } CoronaData;
+    typedef struct Corona {
+        CoronaData *corona;
+        u8 unk4[0x10 - 0x4];
+        Vector4 pos;
+        u8 unk20[0x44 - 0x20];
+        u32 color;
+        u8 unk48[0x4C - 0x48];
+        u8 unk4C;
+        u8 unk4D[0x50 - 0x4D];
+        s32 flare;
+        u32 unk54;
+        u8 unk58;
+        u8 unk59[0x60 - 0x59];
+    } Corona;
+    extern Corona g_aCorona[64];
+    extern u32 g_totalCoronas;
+    extern u32 g_coronaRayTest;
+    void Gfx_TransformVector(Vector4 *in, Vector4 *out);
+    void Gfx_GetCameraPosition(Vector4 *pos);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    s8 RayHitsTerrainAndObjects(void *start, void *dir, void *dist, void *hit);
+    void DistanceXYZ(void *a, void *b, f32 *dist);
+    u32 GameSettings_GetNumOfPlayers(void);
+    void Gfx_Add2DSprite(Vector4 *pos, u16 tex, void *color, f32 size, u8 flag, f32 rot);
+    Vector4 camera;
+    Vector4 screen;
+    Vector4 dir;
+    f32 len;
+    f32 dist;
+    u32 color;
+    Corona *c;
+    u32 i;
+    f32 rot;
+
+    Gfx_GetCameraPosition(&camera);
+    if (++g_coronaRayTest > g_totalCoronas) {
+        g_coronaRayTest = 0;
+    }
+    for (i = 0; i < g_totalCoronas; i++) {
+        c = &g_aCorona[i];
+        Gfx_TransformVector(&c->pos, &screen);
+        if (screen.z <= 0.0f) {
+            c->unk54 = 0;
+            continue;
+        }
+        if (screen.x < -50.0f || screen.y < -50.0f || screen.x > 690.0f || screen.y > 530.0f) {
+            c->unk54 = 0;
+            continue;
+        }
+        if (c->corona->distCheck && GameSettings_GetNumOfPlayers() == 1) {
+            DistanceXYZ(&c->pos, &camera, &dist);
+            if (dist > c->corona->maxDist) {
+                continue;
+            }
+        }
+        if (i == g_coronaRayTest) {
+            PSVECSubtract(&c->pos, &camera, &dir);
+            len = 1.0f;
+            if (RayHitsTerrainAndObjects(&camera, &dir, &len, NULL)) {
+                c->unk58 = 0;
+            } else {
+                c->unk58 = 1;
+            }
+        }
+        if (c->unk54 && c->unk58) {
+            rot = 0.0f;
+            if (c->corona->rotate) {
+                rot = (screen.x - 320.0f) * (0.0174533f * (0.25f * -(f32)c->corona->spin));
+            }
+            color = c->color;
+            Gfx_Add2DSprite(&screen, c->corona->texture, &color, c->corona->size, c->corona->type, rot);
+        }
+    }
+}
+
 void CoronaHolder_Heartbeat(void) {
     typedef struct Corona {
         u8 *corona;
