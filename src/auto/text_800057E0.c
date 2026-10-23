@@ -4209,6 +4209,15 @@ void GSI_VehicleSelectionInfo(u8 *info) {
     }
 }
 
+void FlashHolder_Init(void) {
+    extern u8 g_pFlash[16][0x80];
+    u32 i;
+
+    for (i = 0; i < 16; i++) {
+        *(void **)(g_pFlash[i] + 0x5C) = NULL;
+    }
+}
+
 void Motion_Release(s32 arg0) {
     MotionState_Release(arg0 + 0xB0);
     Thing_Release(arg0);
