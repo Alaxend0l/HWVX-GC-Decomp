@@ -2536,6 +2536,25 @@ void ProcessManager_Add(char *name, void (*init)(void), void (*update)(void), s3
     g_processManager.processes[index].unk10 = 0;
     g_processManager.processes[index].unk14 = 0;
 }
+
+void ProcessManager_Heartbeat(u32 activeOnly) {
+    s32 StateManager_CurrState(void);
+    extern u32 g_StopInput;
+    u32 i;
+
+    if (g_StopInput != 0 && StateManager_CurrState() != 5) {
+        return;
+    }
+    FileStreaming_HeartBeat();
+    for (i = 0; i < g_processManager.count; i++) {
+        if (activeOnly == 0 || (g_processManager.processes[i].flags & 1)) {
+            if (g_processManager.processes[i].update != NULL) {
+                g_processManager.processes[i].update();
+            }
+        }
+    }
+}
+
 #pragma pop
 
 void Projectile_DynamicCollideImpact(void *proj, void *dir, s32 damage, f32 force) {
