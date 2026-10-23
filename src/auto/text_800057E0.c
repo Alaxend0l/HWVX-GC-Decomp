@@ -21928,13 +21928,13 @@ void GXCallDisplayList(void *list, u32 nbytes) {
 #pragma fp_contract off
 #pragma scheduling 603
 void GXProject(f32 x, f32 y, f32 z, f32 mtx[3][4], f32 *pm, f32 *vp, f32 *sx, f32 *sy, f32 *sz) {
+    f32 peye_x;
+    f32 peye_y;
+    f32 peye_z;
     f32 xc;
     f32 yc;
     f32 zc;
     f32 wc;
-    f32 peye_x;
-    f32 peye_y;
-    f32 peye_z;
 
     peye_x = mtx[0][3] + ((mtx[0][2] * z) + ((mtx[0][0] * x) + (mtx[0][1] * y)));
     peye_y = mtx[1][3] + ((mtx[1][2] * z) + ((mtx[1][0] * x) + (mtx[1][1] * y)));
