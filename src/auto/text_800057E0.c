@@ -11980,6 +11980,41 @@ void WriteSramCallback(void) {
     }
 }
 
+void __OSInitSram(void) {
+    void DCInvalidateRange(void *addr, u32 nBytes);
+    s32 EXILock(s32 chan, u32 dev, void *unlockedCallback);
+    s32 EXIUnlock(s32 chan);
+    s32 EXISelect(s32 chan, u32 dev, u32 freq);
+    s32 EXIDeselect(s32 chan);
+    s32 EXIImm(s32 chan, void *buf, s32 len, u32 type, void *callback);
+    s32 EXIDma(s32 chan, void *buf, s32 len, u32 type, void *callback);
+    s32 EXISync(s32 chan);
+    BOOL err;
+    u32 cmd;
+
+    Scb_802EEE20.locked = Scb_802EEE20.enabled = FALSE;
+    DCInvalidateRange(Scb_802EEE20.sram, 0x40);
+    err = FALSE;
+    if (!EXILock(0, 1, 0)) {
+        goto done;
+    }
+    if (!EXISelect(0, 1, 3)) {
+        EXIUnlock(0);
+        goto done;
+    }
+    cmd = 0x20000000 | 0x100;
+    err |= !EXIImm(0, &cmd, 4, 1, 0);
+    err |= !EXISync(0);
+    err |= !EXIDma(0, Scb_802EEE20.sram, 0x40, 0, 0);
+    err |= !EXISync(0);
+    err |= !EXIDeselect(0);
+    EXIUnlock(0);
+    err = !err;
+done:
+    Scb_802EEE20.sync = err;
+    Scb_802EEE20.offset = 0x40;
+}
+
 OSSram *__OSLockSram(void) {
     return LockSram(0);
 }
@@ -14245,6 +14280,28 @@ void PADClamp(void *status) {
             pad->triggerRight -= ClampRegion_803C6DC0.minTrigger;
         }
     }
+}
+
+static void ClampS8(s8 *var, s8 org) {
+    if (0 < org) {
+        s8 min = (s8)(-128 + org);
+        if (*var < min) {
+            *var = min;
+        }
+    } else if (org < 0) {
+        s8 max = (s8)(127 + org);
+        if (max < *var) {
+            *var = max;
+        }
+    }
+    *var -= org;
+}
+
+static void ClampU8(u8 *var, u8 org) {
+    if (*var < org) {
+        *var = org;
+    }
+    *var -= org;
 }
 
 extern u32 AnalogMode_803C6DD0;
@@ -16649,6 +16706,55 @@ s32 CARDCreate(s32 chan, const char *fileName, u32 size, CARDFileInfo *fileInfo)
     return __CARDSync(chan);
 }
 
+s32 __CARDGetFatBlock(void *arg0);
+s32 __CARDRead(s32 chan, void *addr, u32 length, void *dst, CARDCallback callback);
+#pragma push
+#pragma dont_inline on
+#pragma use_lmw_stmw on
+#pragma peephole off
+#pragma scheduling off
+static void ReadCallback(s32 chan, s32 result) {
+    CARDControl *card;
+    CARDCallback callback;
+    u16 *fat;
+    CARDFileInfo *fileInfo;
+    s32 length;
+
+    card = &__CARDBlock[chan];
+    if (result < 0) {
+        goto error;
+    }
+    fileInfo = card->fileInfo;
+    if (fileInfo->length < 0) {
+        result = -14;
+        goto error;
+    }
+    length = (s32)((fileInfo->offset + card->sectorSize) & ~(card->sectorSize - 1)) - fileInfo->offset;
+    fileInfo->length -= length;
+    if (fileInfo->length <= 0) {
+        goto error;
+    }
+    fat = (u16 *)__CARDGetFatBlock(card);
+    fileInfo->offset += length;
+    fileInfo->iBlock = fat[fileInfo->iBlock];
+    if (fileInfo->iBlock < 5 || fileInfo->iBlock >= *(u16 *)((u8 *)card + 0x10)) {
+        result = -6;
+        goto error;
+    }
+    result = __CARDRead(chan, (void *)(card->sectorSize * (u32)fileInfo->iBlock),
+                        (fileInfo->length < card->sectorSize) ? fileInfo->length : card->sectorSize,
+                        (void *)card->offset, ReadCallback);
+    if (result < 0) {
+        goto error;
+    }
+    return;
+error:
+    callback = card->apiCallback;
+    card->apiCallback = NULL;
+    __CARDPutControlBlock(card, result);
+    callback(chan, result);
+}
+#pragma pop
 void GXInitFifoLimits(void *arg0, s32 arg1, s32 arg2) {
     M2C_FIELD(arg0, s32 *, 0xC) = arg1;
     M2C_FIELD(arg0, s32 *, 0x10) = arg2;
