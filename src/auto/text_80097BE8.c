@@ -5885,6 +5885,7 @@ s32 DrawChar(s32 x, s32 y, u16 code) {
     GXWGFifo.s16 = t + ch;
     return width;
 }
+#pragma pop
 
 #pragma push
 #pragma dont_inline on
