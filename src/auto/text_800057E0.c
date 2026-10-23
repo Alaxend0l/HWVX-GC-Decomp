@@ -4879,8 +4879,8 @@ void ViewManager_SetTwoPlayerHorizontal(void) {
     Gfx_SetRenderWindowSize(0, 0, 0x27F, 0xEF, 0);
     Gfx_SetRenderWindow(2);
     Gfx_SetRenderWindowSize(0, 0xF0, 0x27F, 0x1DF, 0);
-    g_viewFormat = 2;
     g_CurrentViews &= ~(1 << 3);
+    g_viewFormat = 2;
     g_CurrentViews &= ~(1 << 4);
 }
 
