@@ -3677,6 +3677,74 @@ s32 CarA_GetSurfaceScript(void *arg0) {
     return M2C_FIELD(M2C_FIELD(M2C_FIELD(arg0, void **, 0x3BC), void **, 0xA0), s32 *, 0x30);
 }
 
+void CarA_GetCameraOrientationInfo(void *arg0, u32 index, void *out) {
+    void Thing_GetCameraOrientationInfo(Thing *thing, u32 index, void *out);
+    u32 ViewManager_GetViewFormat(void);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *in, Vector4 *out);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    typedef struct CameraOrientationInfo {
+        u8 pad00[0x30];
+        Vector4 up;
+        u8 pad40[0x60 - 0x40];
+        Vector4 pos;
+        Vector4 target;
+        u8 pad80[0x84 - 0x80];
+        u8 *unk84;
+        u32 unk88;
+        f32 unk8C;
+    } CameraOrientationInfo;
+    typedef struct CarCameras {
+        u32 count;
+        u8 *list;
+    } CarCameras;
+    CameraOrientationInfo *info = out;
+    struct CarCam {
+        u8 pad00[0x10];
+        u8 mtx[0x74 - 0x10];
+        u32 flags;
+        u8 pad78[0x3BC - 0x78];
+        u8 *data;
+        u8 pad3C0[0x46C - 0x3C0];
+        s32 unk46C;
+        u8 pad470[0x508 - 0x470];
+        f32 unk508;
+        u8 pad50C[0x520 - 0x50C];
+        Vector4 center;
+        Vector4 up;
+    } *car = arg0;
+    CarCameras *cams;
+    Vector4 offset;
+
+    cams = (CarCameras *)(*(u8 **)(car->data + 0x80) + 0x80);
+    if (ViewManager_GetViewFormat() > 1) {
+        cams = (CarCameras *)(*(u8 **)(car->data + 0x80) + 0x88);
+    }
+    info->unk88 = cams->count;
+    if (cams->count == 0) {
+        Thing_GetCameraOrientationInfo((Thing *)car, index, info);
+    } else {
+        info->unk84 = cams->list + (index % cams->count) * 0xC;
+        info->unk8C = car->unk508;
+        info->up = car->up;
+        if (info->up.x && info->up.y && info->up.z && PSVECSquareMag(&info->up)) {
+            PSVECNormalize(&info->up, &info->up);
+        }
+    }
+    if (car->unk46C < 10000) {
+        info->unk8C = 0.0f;
+    }
+    PSVECSubtract(&car->center, *(Vector4 **)(car->data + 0x80), &offset);
+    XformVec(car->mtx, &offset, &info->pos);
+    switch (*(u8 *)(*(u8 **)(car->data + 0xA0) + 0x10)) {
+    case 0:
+        info->target = *(Vector4 *)CarA_GetOrientedCollision(car);
+        break;
+    case 1:
+        break;
+    }
+}
+
 s32 CarA_GetNearestNavPoint(void *car) {
     s32 NavHolder_FindIndexOfNearestNavPoint(void *navHolder);
     s32 RandomAdd_s32(s32 base, s32 range);
@@ -22013,37 +22081,37 @@ void EXIIntrruptHandler(s16 interrupt, void *context) {
 }
 
 void TCIntrruptHandler(s16 interrupt, void *context) {
-    extern u8 Ecb_80309980[3][0x40];
+    extern EXIControl Ecb_80309980[3];
     void OSClearContext(void *context);
     void OSSetCurrentContext(void *context);
     u32 __OSMaskInterrupts(u32 mask);
     typedef void (*EXICallback)(s32 chan, void *context);
-    s32 chan;
-    u8 *exi;
-    EXICallback callback;
     u8 exceptionContext[0x2C8];
+    s32 chan;
+    EXIControl *exi;
+    EXICallback callback;
 
     chan = (interrupt - 10) / 3;
-    exi = Ecb_80309980[chan];
+    exi = &Ecb_80309980[chan];
     __OSMaskInterrupts(0x80000000U >> interrupt);
-    *(volatile u32 *)(0xCC006800 + chan * 0x14) = *(volatile u32 *)(0xCC006800 + chan * 0x14) & 0x7F5 | 8;
-    callback = *(EXICallback *)(exi + 0x4);
+    __EXIRegs[chan * 5] = __EXIRegs[chan * 5] & 0x7F5 | 8;
+    callback = exi->tcCallback;
     if (callback) {
         u8 *buf;
         u32 data;
         s32 i;
         s32 len;
 
-        *(EXICallback *)(exi + 0x4) = NULL;
-        if (*(u32 *)(exi + 0xC) & 3) {
-            if ((*(u32 *)(exi + 0xC) & 2) && (len = *(s32 *)(exi + 0x10)) != 0) {
-                buf = *(u8 **)(exi + 0x14);
-                data = *(volatile u32 *)(0xCC006800 + chan * 0x14 + 0x10);
+        exi->tcCallback = NULL;
+        if (exi->state & 3) {
+            if ((exi->state & 2) && (len = exi->immLen) != 0) {
+                buf = exi->immBuf;
+                data = __EXIRegs[chan * 5 + 4];
                 for (i = 0; i < len; i++) {
                     *buf++ = (u8)(data >> ((3 - i) * 8));
                 }
             }
-            *(u32 *)(exi + 0xC) &= ~3;
+            exi->state &= ~3;
         }
         OSClearContext(exceptionContext);
         OSSetCurrentContext(exceptionContext);
