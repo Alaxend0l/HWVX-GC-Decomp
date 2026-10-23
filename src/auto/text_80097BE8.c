@@ -3793,34 +3793,22 @@ void Gfx_GetViewport(s32 *arg0, s32 *arg1, s32 *arg2, s32 *arg3) {
     *arg3 = 0x1E0;
 }
 
-void RenderGroup(void *geometry, u16 group, void *matrix);
-void Gfx_DrawGeometryLOD_Immediate(void *geometry, void *matrix) {
-    typedef struct {
-        u16 unk0;
-        u16 flags;
-        u8 unk4[0x20 - 0x4];
-    } Group;
-    typedef struct {
-        u16 unk0;
-        u16 numGroups;
-        u32 unk4;
-        Group *groups;
-    } Geom;
+void RenderGroup(Geometry *geometry, u32 group, void *matrix);
+void Gfx_DrawGeometryLOD_Immediate(Geometry *geometry, void *matrix) {
     extern f32 g_identity[];
     extern u32 m_fillMode;
-    Geom *geom = geometry;
     u16 i;
 
-    if (geom != NULL) {
+    if (geometry != NULL) {
         if (matrix == g_identity) {
             Gfx_SetWorldMatrix(0);
         } else {
             Gfx_SetWorldMatrix(matrix);
         }
-        for (i = 0; i < geom->numGroups; i++) {
-            geom->groups[i].flags |= m_fillMode;
-            RenderGroup(geom, i, matrix);
-            geom->groups[i].flags &= ~m_fillMode;
+        for (i = 0; i < geometry->numGroups; i++) {
+            geometry->groups[i].flags |= m_fillMode;
+            RenderGroup(geometry, i, matrix);
+            geometry->groups[i].flags &= ~m_fillMode;
         }
     }
 }
