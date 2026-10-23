@@ -30734,35 +30734,6 @@ u32 __TRK_get_MSR(void);
 void __TRK_set_MSR(u32 val);
 s32 TRKPPCAccessFPRegister(void *srcDestPtr, u32 fpr, s32 read);
 
-static inline s32 TRKPPCAccessSpecialReg(void *value, u32 *access_func, s32 read) {
-    extern u8 TRKvalue128_temp[16];
-    void TRK_flush_cache(u32 start, u32 length);
-    typedef void (*asm_access_type)(void *, void *);
-    asm_access_type asm_access;
-
-    access_func[9] = 0x4E800020;
-    TRK_flush_cache((u32)access_func, 10 * sizeof(u32));
-    asm_access = (asm_access_type)access_func;
-    asm_access(value, TRKvalue128_temp);
-    return 0;
-}
-
-static inline s32 TRKPPCAccessSPR(void *value, u32 spr, s32 read) {
-    u32 access_func[10] = {
-        0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
-        0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
-    };
-
-    if (read) {
-        access_func[0] = 0x7C8002A6 | ((spr & 0x1F) << 16) | ((spr >> 5) << 11);
-        access_func[1] = 0x90830000;
-    } else {
-        access_func[0] = 0x80830000;
-        access_func[1] = 0x7C8003A6 | ((spr & 0x1F) << 16) | ((spr >> 5) << 11);
-    }
-    return TRKPPCAccessSpecialReg(value, access_func, read);
-}
-
 #pragma push
 #pragma dont_inline on
 s32 TRKTargetAccessFP(u32 firstRegister, u32 lastRegister, TRKBuffer *b, u32 *registersLengthPtr, s32 read) {
