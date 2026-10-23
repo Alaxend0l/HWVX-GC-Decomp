@@ -380,8 +380,8 @@ void *DecodedAudioBufferMessage[3];
 THPPlayer ActivePlayer;
 u8 UsedTextureSetQueue_8036EC78[0x20];
 void *UsedTextureSetMessage_8036EC98[3];
-u8 PrepareReadyQueue_8036ED00[0x20] __attribute__((aligned(32)));
 s32 WorkBuffer_8036ECC0[16] __attribute__((aligned(32)));
+u8 PrepareReadyQueue_8036ED00[0x20];
 
 extern s32 __float_nan[];
 extern s32 __float_huge[];
@@ -9455,9 +9455,9 @@ BOOL THPPlayerPrepare(s32 frameNum, u8 playFlag) {
     void AudioDecodeThreadStart(void);
     void ReadThreadStart(void);
     void *VISetPostRetraceCallback(void *callback);
+    void *msg;
     s32 i;
     u8 *ptr;
-    void *msg;
 
     if (ActivePlayer.open && ActivePlayer.state == 0) {
         if (frameNum > 0) {
