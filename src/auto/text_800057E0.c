@@ -6337,6 +6337,36 @@ s32 SoundSeq_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+s32 SoundSequence_Play(s8 *seq, Vector4 *pos) {
+    u8 PlayerManager_PlayerHumanCount(void);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    extern Vector4 g_zeroVector;
+    extern s8 g_bFreezeWorld;
+    Vector4 p;
+    struct { Vector4 pos; s8 *seq; u8 flag; } params;
+    u8 *thing;
+
+    if (!seq[4] && PlayerManager_PlayerHumanCount() > 1) {
+        return -1;
+    }
+    if (pos != NULL) {
+        p = *pos;
+    } else {
+        p = g_zeroVector;
+    }
+    params.pos = p;
+    params.seq = seq;
+    params.flag = 0;
+    thing = ThingManager_DARYL_CreateThing(0x10, &params);
+    if (thing != NULL) {
+        if (g_bFreezeWorld) {
+            *(u32 *)(thing + 0x74) |= 0x100000;
+        }
+        return (s32)thing;
+    }
+    return -1;
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void SoundSequence_ClearQueue(void) {
