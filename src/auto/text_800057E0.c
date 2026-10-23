@@ -4659,6 +4659,28 @@ void ParticleManager_Render(void) {
     }
     g_numParticlesCreatedThisFrame = 0;
 }
+
+void ParticleGX_Render(void *particle) {
+    u32 color;
+    Vector4 scale;
+
+    M2C_FIELD(particle, void **, 0xC0) = M2C_FIELD(M2C_FIELD(M2C_FIELD(particle, void **, 0xBC), void **, 4), void ***, 0x24)[M2C_FIELD(particle, u8 *, 0xB7)];
+    if (M2C_FIELD(particle, u8 *, 0xB6) != 0) {
+        color = M2C_FIELD(particle, u32 *, 0x74);
+        Gfx_SetBaseColor(&color);
+        Gfx_EnableState(0x10);
+    }
+    M2C_FIELD(particle, f32 *, 0xC) = 1.0f;
+    scale.x = M2C_FIELD(particle, f32 *, 0xD8) * (M2C_FIELD(particle, f32 *, 0x80) * M2C_FIELD(particle, f32 *, 0xC4));
+    scale.y = M2C_FIELD(particle, f32 *, 0xD8) * (M2C_FIELD(particle, f32 *, 0x84) * M2C_FIELD(particle, f32 *, 0xC4));
+    scale.z = M2C_FIELD(particle, f32 *, 0xD8) * (M2C_FIELD(particle, f32 *, 0x88) * M2C_FIELD(particle, f32 *, 0xC4));
+    scale.w = 1.0f;
+    Gfx_DrawGeometry_QuaternionScalePos(M2C_FIELD(particle, void **, 0xC0), (u8 *)particle + 0x30, &scale, particle);
+    if (M2C_FIELD(particle, u8 *, 0xB6) != 0) {
+        Gfx_DisableState(0x10);
+    }
+}
+
 #pragma pop
 
 void ParticleSprite_Render(void *sprite) {
