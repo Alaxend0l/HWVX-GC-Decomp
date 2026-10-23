@@ -3409,7 +3409,7 @@ void Item_Draw(u8 *item) {
     void QuaternionToSubMatrix(void *quat, void *mtx);
     void Thing_DrawSharedSlaves(void *thing, void *slaves);
 
-    if (M2C_FIELD(item, f32 *, 0xC8) != 0.0f &&
+    if (0.0f != M2C_FIELD(item, f32 *, 0xC8) &&
         Gfx_GetMinCameraDistSquared(item + 0x40) > M2C_FIELD(item, f32 *, 0xC8) * M2C_FIELD(item, f32 *, 0xC8)) {
         return;
     }
@@ -7902,6 +7902,31 @@ void AlarmHandlerForTimeout(void *alarm, void *context) {
     OSSetCurrentContext(context);
 }
 
+void SeekTwiceBeforeRead(void *addr, u32 length, u32 offset, void *callback) {
+    void DVDLowSeek(u32 offset, void *callback);
+    extern s32 CommandList_802EF860[15];
+    extern u32 WorkAroundSeekLocation_803C72D0;
+    extern s32 NextCommandNumber_803C72EC;
+    u32 offsetToSeek;
+
+    if ((offset & ~0x7FFF) == 0) {
+        offsetToSeek = 0;
+    } else {
+        offsetToSeek = (offset & ~0x7FFF) + WorkAroundSeekLocation_803C72D0;
+    }
+    CommandList_802EF860[0] = 2;
+    CommandList_802EF860[3] = offsetToSeek;
+    CommandList_802EF860[4] = (s32)callback;
+    CommandList_802EF860[5] = 1;
+    CommandList_802EF860[6] = (s32)addr;
+    CommandList_802EF860[7] = length;
+    CommandList_802EF860[8] = offset;
+    CommandList_802EF860[9] = (s32)callback;
+    CommandList_802EF860[10] = -1;
+    NextCommandNumber_803C72EC = 0;
+    DVDLowSeek(offsetToSeek, callback);
+}
+
 #pragma push
 #pragma dont_inline on
 s32 DVDLowSeek(u32 offset, void *callback) {
@@ -10347,6 +10372,29 @@ void GXPokeAlphaUpdate(u8 update_enable) {
     __peReg[1] = reg;
 }
 
+#pragma push
+#pragma scheduling off
+void GXPokeBlendMode(s32 type, s32 src_factor, s32 dst_factor, s32 op) {
+    extern volatile u16 *__peReg;
+    u32 reg;
+    u32 blend;
+
+    blend = 1;
+    reg = __peReg[1];
+    if (type != 1 && type != 3) {
+        blend = 0;
+    }
+    reg = (reg & ~1) | blend;
+    reg = (reg & ~0x800) | ((type == 3) << 11);
+    reg = (reg & ~2) | ((type == 2) << 1);
+    reg = (reg & ~0xF000) | (op << 12);
+    reg = (reg & ~0x700) | (src_factor << 8);
+    reg = (reg & ~0xE0) | (dst_factor << 5);
+    reg = (reg & 0xFFFFFF) | 0x41000000;
+    __peReg[1] = reg;
+}
+#pragma pop
+
 void GXPokeColorUpdate(u8 update_enable) {
     extern volatile u16 *__peReg;
     __peReg[1] = (__peReg[1] & ~0x8) | (update_enable << 3);
@@ -10361,6 +10409,76 @@ void GXPokeDither(u8 dither) {
 void GXPokeZMode(u8 compare_enable, s32 func, u8 update_enable) {
     extern void *__peReg;
     M2C_FIELD(__peReg, u16 *, 0) = (((compare_enable & ~0xE) | (func << 1)) & ~0x10) | (update_enable << 4);
+}
+
+void GXTokenInterruptHandler(s16 interrupt, void *context) {
+    void OSClearContext(void *);
+    void OSSetCurrentContext(void *);
+    extern void (*TokenCB_803C7578)(u16);
+    extern volatile u16 *__peReg;
+    u16 token;
+    u32 exceptionContext[0x2C8 / 4];
+    u32 reg;
+
+    token = __peReg[7];
+    if (TokenCB_803C7578) {
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(exceptionContext);
+        TokenCB_803C7578(token);
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(context);
+    }
+    reg = __peReg[5];
+    reg = (reg & ~4) | 4;
+    __peReg[5] = reg;
+}
+
+void GXFinishInterruptHandler(s16 interrupt, void *context) {
+    void OSClearContext(void *);
+    void OSSetCurrentContext(void *);
+    void OSWakeupThread(void *);
+    extern void (*DrawDoneCB_803C757C)(void);
+    extern u8 DrawDone_803C7580;
+    extern u8 FinishQueue_803C7584[8];
+    extern volatile u16 *__peReg;
+    u32 exceptionContext[0x2C8 / 4];
+    u32 reg;
+
+    reg = __peReg[5];
+    reg = (reg & ~8) | 8;
+    __peReg[5] = reg;
+    DrawDone_803C7580 = 1;
+    if (DrawDoneCB_803C757C) {
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(exceptionContext);
+        DrawDoneCB_803C757C();
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(context);
+    }
+    OSWakeupThread(FinishQueue_803C7584);
+}
+
+void GXTokenInterruptHandler(s16 interrupt, void *context);
+void GXFinishInterruptHandler(s16 interrupt, void *context);
+void __GXPEInit(void) {
+    void *__OSSetInterruptHandler(s16, void *);
+    void __OSUnmaskInterrupts(u32);
+    void OSInitThreadQueue(void *queue);
+    extern u8 FinishQueue_803C7584[8];
+    extern volatile u16 *__peReg;
+    u32 reg;
+
+    __OSSetInterruptHandler(0x12, GXTokenInterruptHandler);
+    __OSSetInterruptHandler(0x13, GXFinishInterruptHandler);
+    OSInitThreadQueue(FinishQueue_803C7584);
+    __OSUnmaskInterrupts(0x2000);
+    __OSUnmaskInterrupts(0x1000);
+    reg = __peReg[5];
+    reg = (reg & ~4) | 4;
+    reg = (reg & ~8) | 8;
+    reg = (reg & ~1) | 1;
+    reg = (reg & ~2) | 2;
+    __peReg[5] = reg;
 }
 
 void __GXSetDirtyState(void) {
