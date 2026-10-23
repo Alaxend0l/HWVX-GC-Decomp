@@ -1539,6 +1539,86 @@ void ActionUnloadInterfacePack(s32 *arg0) {
     FileStreaming_ReleaseDataPack(FileStreaming_GetPackID((char *)(arg0 + 1), 1, *arg0), 1);
 }
 
+s32 ActionCodeVariableModifyValue(u32 *data) {
+    f32 GetCodeVariable(s32 var, u8 *thing);
+    void SetCodeVariable(s32 var, u8 *obj, f32 value);
+    f32 value;
+    f32 operand;
+    f32 cur;
+    u32 i;
+
+    if (data[1] < 100) {
+        switch (data[data[2] + 3]) {
+        case 0:
+            value = *(f32 *)&data[data[2] + 4];
+            break;
+        case 1:
+            value = *(f32 *)(*(u8 **)data[data[2] + 4] + 4);
+            break;
+        case 2:
+            value = GetCodeVariable(data[data[2] + 4], (u8 *)data[data[2] + 5]);
+            break;
+        }
+        for (i = 0; i < data[2]; i++) {
+            cur = GetCodeVariable(data[1], (u8 *)data[i + 3]);
+            switch (data[0]) {
+            case 15:
+                cur += value;
+                break;
+            case 16:
+                cur -= value;
+                break;
+            case 45:
+                cur *= value;
+                break;
+            case 46:
+                if (value) {
+                    cur /= value;
+                }
+                break;
+            case 17:
+                cur = value;
+                break;
+            }
+            SetCodeVariable(data[1], (u8 *)data[i + 3], cur);
+        }
+    } else {
+        value = GetCodeVariable(data[1], (u8 *)data[2]);
+        switch (data[3]) {
+        case 0:
+            operand = *(f32 *)&data[4];
+            break;
+        case 1:
+            operand = *(f32 *)(*(u8 **)data[4] + 4);
+            break;
+        case 2:
+            operand = GetCodeVariable(data[4], (u8 *)data[5]);
+            break;
+        }
+        switch (data[0]) {
+        case 15:
+            value += operand;
+            break;
+        case 16:
+            value -= operand;
+            break;
+        case 45:
+            value *= operand;
+            break;
+        case 46:
+            if (operand) {
+                value /= operand;
+            }
+            break;
+        case 17:
+            value = operand;
+            break;
+        }
+        SetCodeVariable(data[1], (u8 *)data[2], value);
+    }
+    return 1;
+}
+
 s32 ActionMissionObjChangeMode(u32 *action) {
     u32 i;
 
@@ -26461,6 +26541,47 @@ block_4:
     if ((u16) *arg3 == -1U) {
         *arg3 = 0;
     }
+}
+
+s32 VerifyDir(CARDControl *card, s32 *outCurrent) {
+    void *memcpy(void *dst, const void *src, u32 n);
+    u8 *dir[2];
+    CARDDirCheck *check[2];
+    u16 checkSum;
+    u16 checkSumInv;
+    s32 i;
+    s32 errors;
+    s32 current;
+
+    errors = 0;
+    current = 0;
+    for (i = 0; i < 2; i++) {
+        dir[i] = (u8 *)card->workArea + (1 + i) * 0x2000;
+        check[i] = __CARDGetDirCheck(dir[i]);
+        __CARDCheckSum((u16 *)dir[i], 0x2000 - sizeof(u32), &checkSum, &checkSumInv);
+        if (check[i]->checkSum != checkSum || check[i]->checkSumInv != checkSumInv) {
+            card->currentDir = NULL;
+            current = i;
+            errors++;
+        }
+    }
+    if (errors == 0) {
+        if (card->currentDir == NULL) {
+            if ((check[0]->checkCode - check[1]->checkCode) < 0) {
+                current = 0;
+            } else {
+                current = 1;
+            }
+            card->currentDir = dir[current];
+            memcpy(dir[current], dir[current ^ 1], 0x2000);
+        } else {
+            current = (card->currentDir == dir[0]) ? 0 : 1;
+        }
+    }
+    if (outCurrent) {
+        *outCurrent = current;
+    }
+    return errors;
 }
 
 static s32 DoMount(s32 chan);
