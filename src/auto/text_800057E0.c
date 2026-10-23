@@ -4280,6 +4280,26 @@ s32 PPCMfmsr(void) {
     return M2C_ERROR(/* unknown instruction: mfmsr $r3 */);
 }
 
+s32 OSGetConsoleType(void) {
+    extern u8 *BootInfo_803C71E0;
+    if (BootInfo_803C71E0 == NULL || M2C_FIELD(BootInfo_803C71E0, s32 *, 0x2C) == 0) {
+        return 0x10000002;
+    }
+    return M2C_FIELD(BootInfo_803C71E0, s32 *, 0x2C);
+}
+
+void InquiryCallback(s32 result, void *block) {
+    extern u16 DriveInfo_802EED60[16];
+    switch (M2C_FIELD(block, s32 *, 0xC)) {
+    case 0:
+        *(u16 *)0x800030E6 = (u16)(0x8000 | DriveInfo_802EED60[1]);
+        break;
+    default:
+        *(u16 *)0x800030E6 = 1;
+        break;
+    }
+}
+
 extern void **OSExceptionTable_803C71F4;
 void *__OSSetExceptionHandler(u8 exception, void *handler) {
     void *oldHandler;
