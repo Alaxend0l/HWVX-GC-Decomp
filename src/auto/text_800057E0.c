@@ -4367,6 +4367,37 @@ s8 RayHitsTerrain(Vector4 *start, Vector4 *end, void *arg2, void *arg3) {
 }
 
 s8 OBoxHitsBSPZeroTimeEdgesOnly(void *obox, void *bsp, void *arg2);
+s8 OBoxHitsPolyZeroTime(void *obox, void *poly, void *arg2);
+s8 OBoxHitsBSPZeroTime(void *obox, void *bsp, void *arg2);
+
+static inline s8 OBoxHitsCellZeroTime(void *obox, void *cell, void *arg2) {
+    s8 hit = 0;
+    u32 i;
+    u8 *poly;
+
+    M2C_FIELD(obox, f32 *, 0xB0) = 0.0f;
+    M2C_FIELD(obox, f32 *, 0xB4) = 0.0f;
+    M2C_FIELD(obox, f32 *, 0xB8) = 0.0f;
+    M2C_FIELD(obox, f32 *, 0xC0) = 0.0f;
+    M2C_FIELD(obox, f32 *, 0xC4) = 0.0f;
+    M2C_FIELD(obox, f32 *, 0xC8) = 0.0f;
+    if (M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u32 *, 0x58) == 1) {
+        hit = OBoxHitsBSPZeroTime(obox, cell, arg2);
+    } else {
+        for (i = 0; i < M2C_FIELD(cell, u32 *, 0x3C); i++) {
+            poly = M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u8 **, 0x4C) + M2C_FIELD(cell, u32 **, 0x38)[i] * 0x20;
+            if (M2C_FIELD(poly, u32 *, 0x18) != g_worldData.unk4) {
+                M2C_FIELD(poly, u32 *, 0x18) = g_worldData.unk4;
+                hit = OBoxHitsPolyZeroTime(obox, poly, arg2);
+                if (hit) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return hit;
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 s8 OBoxHitsCellZeroTimeEdgesOnly(void *obox, void *cell, void *arg2) {
@@ -4397,6 +4428,75 @@ s8 OBoxHitsCellZeroTimeEdgesOnly(void *obox, void *cell, void *arg2) {
     }
     return hit;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s8 OBoxHitsCell(void *obox, Vector4 *vel, void *cell, f32 *time, void *arg4) {
+    s8 OBoxHitsPolyZeroTime(void *obox, void *poly, void *arg2);
+    s8 OBoxHitsBSPZeroTime(void *obox, void *bsp, void *arg2);
+    s8 OBoxHitsBSP(void *obox, Vector4 *vel, void *bsp, f32 *time, void *arg4);
+    f32 OOBHitsPoly(void *obox, void *poly, Vector4 *vel, void *arg4, f32 t);
+    f32 PSVECDotProduct(void *a, void *b);
+    extern Vector4 g_zeroVector;
+    s8 hit = 0;
+    u32 i;
+    u8 *poly;
+    f32 best;
+    f32 t;
+
+    if (vel == &g_zeroVector) {
+        s8 zhit = 0;
+        M2C_FIELD(obox, f32 *, 0xB0) = 0.0f;
+        M2C_FIELD(obox, f32 *, 0xB4) = 0.0f;
+        M2C_FIELD(obox, f32 *, 0xB8) = 0.0f;
+        M2C_FIELD(obox, f32 *, 0xC0) = 0.0f;
+        M2C_FIELD(obox, f32 *, 0xC4) = 0.0f;
+        M2C_FIELD(obox, f32 *, 0xC8) = 0.0f;
+        if (M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u32 *, 0x58) == 1) {
+            zhit = OBoxHitsBSPZeroTime(obox, cell, arg4);
+        } else {
+            for (i = 0; i < M2C_FIELD(cell, u32 *, 0x3C); i++) {
+                poly = M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u8 **, 0x4C) + M2C_FIELD(cell, u32 **, 0x38)[i] * 0x20;
+                if (M2C_FIELD(poly, u32 *, 0x18) != g_worldData.unk4) {
+                    M2C_FIELD(poly, u32 *, 0x18) = g_worldData.unk4;
+                    zhit = OBoxHitsPolyZeroTime(obox, poly, arg4);
+                    if (zhit) {
+                        zhit = 1;
+                        break;
+                    }
+                }
+            }
+        }
+        return zhit;
+    }
+    M2C_FIELD(obox, f32 *, 0xB0) = PSVECDotProduct(M2C_FIELD(obox, void **, 0xA0), obox);
+    M2C_FIELD(obox, f32 *, 0xB4) = PSVECDotProduct(M2C_FIELD(obox, void **, 0xA4), obox);
+    M2C_FIELD(obox, f32 *, 0xB8) = PSVECDotProduct(M2C_FIELD(obox, void **, 0xA8), obox);
+    M2C_FIELD(obox, f32 *, 0xC0) = -PSVECDotProduct(M2C_FIELD(obox, void **, 0xA0), vel);
+    M2C_FIELD(obox, f32 *, 0xC4) = -PSVECDotProduct(M2C_FIELD(obox, void **, 0xA4), vel);
+    M2C_FIELD(obox, f32 *, 0xC8) = -PSVECDotProduct(M2C_FIELD(obox, void **, 0xA8), vel);
+    if (M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u32 *, 0x58) == 1) {
+        hit = OBoxHitsBSP(obox, vel, cell, time, arg4);
+    } else {
+        best = *time;
+        for (i = 0; i < M2C_FIELD(cell, u32 *, 0x3C); i++) {
+            poly = M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u8 **, 0x4C) + M2C_FIELD(cell, u32 **, 0x38)[i] * 0x20;
+            if (M2C_FIELD(poly, u32 *, 0x18) != g_worldData.unk4) {
+                M2C_FIELD(poly, u32 *, 0x18) = g_worldData.unk4;
+                t = OOBHitsPoly(obox, poly, vel, arg4, best);
+                if (t < best) {
+                    best = t;
+                    hit = 1;
+                }
+            }
+        }
+        if (hit) {
+            *time = best;
+        }
+    }
+    return hit;
+}
+#pragma pop
 
 static inline s8 PointInsideBSP(void *bsp, void *point) {
     f32 Distance_Plane(void *arg0, void *arg1);
@@ -8334,6 +8434,79 @@ u32 Grid_GetNearestObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult 
     }
     return count;
 }
+
+void *InterfaceManager_GetInterfaceObjects(u32 num) {
+    typedef struct ObjectAllocation {
+        u32 start;
+        u32 count;
+        s8 free;
+    } ObjectAllocation;
+    typedef struct InterfaceObject {
+        u8 pad[0x2FC];
+        u32 index;
+    } InterfaceObject;
+    extern ObjectAllocation g_objectAllocations[28];
+    extern u32 g_numInterfaceObjectAllocations;
+    extern InterfaceObject g_MasterInterfaceObjectList[500];
+    extern u32 g_numInterfaceObjectsAllocated;
+    void *memset(void *dst, int c, u32 n);
+    InterfaceObject *obj;
+    ObjectAllocation *alloc;
+    u32 j;
+    u32 total;
+    u32 i;
+    u32 idx;
+    u32 n;
+
+    for (i = 0; g_numInterfaceObjectAllocations != 0 && i < g_numInterfaceObjectAllocations - 1; i++) {
+        alloc = &g_objectAllocations[i];
+        if (alloc->free) {
+            total = 0;
+            for (j = i + 1; j < g_numInterfaceObjectAllocations &&
+                            (g_objectAllocations[j].free || g_objectAllocations[j].count == 0);
+                 j++) {
+                total += g_objectAllocations[j].count;
+                memset(&g_objectAllocations[j], 0, sizeof(ObjectAllocation));
+            }
+            alloc->count += total;
+            i = j - 1;
+        }
+    }
+    for (i = 0; i < g_numInterfaceObjectAllocations; i++) {
+        if (g_objectAllocations[i].free && g_objectAllocations[i].count >= num) {
+            if (i + 1 < g_numInterfaceObjectAllocations &&
+                (g_objectAllocations[i + 1].free || g_objectAllocations[i + 1].count == 0)) {
+                g_objectAllocations[i].free = 0;
+                idx = g_objectAllocations[i].start;
+                g_objectAllocations[i + 1].start = num + idx;
+                g_MasterInterfaceObjectList[idx].index = idx;
+                g_objectAllocations[i + 1].count = g_objectAllocations[i].count - num;
+                g_objectAllocations[i + 1].free = 1;
+                g_objectAllocations[i].count = num;
+                return &g_MasterInterfaceObjectList[idx];
+            }
+            g_objectAllocations[i].free = 0;
+            idx = g_objectAllocations[i].start;
+            g_MasterInterfaceObjectList[idx].index = idx;
+            return &g_MasterInterfaceObjectList[idx];
+        }
+    }
+    if (g_numInterfaceObjectAllocations + num > 500) {
+        return NULL;
+    }
+    if (g_numInterfaceObjectAllocations >= 28) {
+        return NULL;
+    }
+    obj = &g_MasterInterfaceObjectList[g_numInterfaceObjectsAllocated];
+    obj->index = g_numInterfaceObjectsAllocated;
+    g_numInterfaceObjectsAllocated += num;
+    n = g_numInterfaceObjectAllocations++;
+    g_objectAllocations[n].start = obj->index;
+    g_objectAllocations[n].count = num;
+    g_objectAllocations[n].free = 0;
+    return obj;
+}
+
 #pragma pop
 void InterfaceManager_Init(void) {
     extern u8 g_interface[][0x170];
@@ -21558,6 +21731,85 @@ void cbForStateMotorStopped(u32 intType) {
     }
 }
 
+#pragma push
+#pragma scheduling 603
+void stateReady_800725A4(void) {
+    BOOL __DVDCheckWaitingQueue(void);
+    DVDCommandBlock *__DVDPopWaitingQueue(void);
+    void __DVDStoreErrorCode(u32);
+    void cbForStateError(u32);
+    void DVDLowStopMotor(void (*)(u32));
+    void stateBusy_800727EC(DVDCommandBlock *block);
+    extern DVDCommandBlock *executing_803C7310;
+    extern u8 tmpBuffer_802EF940[];
+    extern s32 PauseFlag_803C731C;
+    extern s32 PausingFlag_803C7320;
+    extern s32 FatalErrorFlag_803C7328;
+    extern u32 CurrCommand_803C732C;
+    extern u32 ResumeFromHere_803C7338;
+    extern u32 CancelLastError_803C733C;
+    DVDCommandBlock *finished;
+
+    if (!__DVDCheckWaitingQueue()) {
+        executing_803C7310 = NULL;
+        return;
+    }
+    if (PauseFlag_803C731C) {
+        PausingFlag_803C7320 = 1;
+        executing_803C7310 = NULL;
+        return;
+    }
+    executing_803C7310 = __DVDPopWaitingQueue();
+    if (FatalErrorFlag_803C7328) {
+        executing_803C7310->state = -1;
+        finished = executing_803C7310;
+        executing_803C7310 = (DVDCommandBlock *)(tmpBuffer_802EF940 + 0x80);
+        if (finished->callback) {
+            (*finished->callback)(-1, finished);
+        }
+        stateReady_800725A4();
+        return;
+    }
+    CurrCommand_803C732C = executing_803C7310->command;
+    if (ResumeFromHere_803C7338) {
+        switch (ResumeFromHere_803C7338) {
+        case 1:
+            executing_803C7310->state = 6;
+            stateMotorStopped();
+            break;
+        case 2:
+            executing_803C7310->state = 11;
+            stateMotorStopped();
+            break;
+        case 3:
+            executing_803C7310->state = 4;
+            stateMotorStopped();
+            break;
+        case 4:
+            executing_803C7310->state = 7;
+            stateMotorStopped();
+            break;
+        case 5:
+            executing_803C7310->state = 5;
+            stateMotorStopped();
+            break;
+        case 6:
+            executing_803C7310->state = 3;
+            stateCoverClosed();
+            break;
+        case 7:
+            executing_803C7310->state = -1;
+            __DVDStoreErrorCode(CancelLastError_803C733C);
+            DVDLowStopMotor(cbForStateError);
+            break;
+        }
+        ResumeFromHere_803C7338 = 0;
+    } else {
+        executing_803C7310->state = 1;
+        stateBusy_800727EC(executing_803C7310);
+    }
+}
+#pragma pop
 static inline BOOL issueCommand(s32 prio, u8 *block) {
     extern s32 autoInvalidation_803C6DA8;
     extern void *executing_803C7310;
@@ -27660,6 +27912,88 @@ void __GXSetVAT(void) {
     gx->dirtyVAT = 0;
 }
 
+#pragma push
+#pragma optimization_level 2
+void GXGetVtxAttrFmt(u32 fmt, u32 attr, s32 *cnt, s32 *type, u8 *frac) {
+    extern u8 *gx;
+    u32 *va;
+    u32 *vb;
+    u32 *vc;
+
+    va = (u32 *)(gx + 0x1C) + fmt;
+    vb = (u32 *)(gx + 0x3C) + fmt;
+    vc = (u32 *)(gx + 0x5C) + fmt;
+    switch (attr) {
+    case 9:
+        *cnt = *va & 1;
+        *type = (*va >> 1) & 7;
+        *frac = (*va >> 4) & 0x1F;
+        return;
+    case 10:
+    case 25:
+        *cnt = (*va >> 9) & 1;
+        if (*cnt == 1 && (*va >> 31)) {
+            *cnt = 2;
+        }
+        *type = (*va >> 10) & 7;
+        *frac = 0;
+        return;
+    case 11:
+        *cnt = (*va >> 13) & 1;
+        *type = (*va >> 14) & 7;
+        *frac = 0;
+        return;
+    case 12:
+        *cnt = (*va >> 17) & 1;
+        *type = (*va >> 18) & 7;
+        *frac = 0;
+        return;
+    case 13:
+        *cnt = (*va >> 21) & 1;
+        *type = (*va >> 22) & 7;
+        *frac = (*va >> 25) & 0x1F;
+        return;
+    case 14:
+        *cnt = *vb & 1;
+        *type = (*vb >> 1) & 7;
+        *frac = (*vb >> 4) & 0x1F;
+        return;
+    case 15:
+        *cnt = (*vb >> 9) & 1;
+        *type = (*vb >> 10) & 7;
+        *frac = (*vb >> 13) & 0x1F;
+        return;
+    case 16:
+        *cnt = (*vb >> 18) & 1;
+        *type = (*vb >> 19) & 7;
+        *frac = (*vb >> 22) & 0x1F;
+        return;
+    case 17:
+        *cnt = (*vb >> 27) & 1;
+        *type = (*vb >> 28) & 7;
+        *frac = *vc & 0x1F;
+        return;
+    case 18:
+        *cnt = (*vc >> 5) & 1;
+        *type = (*vc >> 6) & 7;
+        *frac = (*vc >> 9) & 0x1F;
+        return;
+    case 19:
+        *cnt = (*vc >> 14) & 1;
+        *type = (*vc >> 15) & 7;
+        *frac = (*vc >> 18) & 0x1F;
+        return;
+    case 20:
+        *cnt = (*vc >> 23) & 1;
+        *type = (*vc >> 24) & 7;
+        *frac = (*vc >> 27) & 0x1F;
+        return;
+    }
+    *cnt = 1;
+    *type = 0;
+    *frac = 0;
+}
+#pragma pop
 void GXSetArray(s32 attr, void *base_ptr, u8 stride) {
     extern u8 *gx;
     s32 cpAttr;
