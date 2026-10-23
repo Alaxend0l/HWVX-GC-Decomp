@@ -7647,6 +7647,25 @@ s8 IsPointWithinVolume(Vector4 *point, u8 *volume, f32 *distSq) {
     return 0;
 }
 
+static inline s8 VolumeManager_IsPointInVolume(Vector4 *point, u8 *volume) {
+    s8 BSPN0_CollideWithVector(void *bsp, Vector4 *point);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    f32 diff[3];
+
+    switch (M2C_FIELD(volume, s32 *, 0x8)) {
+    case 0:
+        return BSPN0_CollideWithVector(M2C_FIELD(volume, void **, 0x28), point);
+    case 1:
+        PSVECSubtract(point, (Vector4 *)(volume + 0x10), (Vector4 *)diff);
+        if (PSVECSquareMag((Vector4 *)diff) < M2C_FIELD(volume, f32 *, 0x24)) {
+            return 1;
+        }
+        return 0;
+    }
+    return 0;
+}
+
 static inline s32 VolumeManager_GetCell(u8 *holder, Vector4 *point) {
     s32 x;
     s32 y;
@@ -7700,7 +7719,7 @@ static inline s32 VolumeManager_GetCellIndex(Vector4 *point) {
 #pragma use_lmw_stmw on
 void VolumeManager_SetReverbLevel(Vector4 *point) {
     typedef struct VolumeList {
-        s32 count;
+        u32 count;
         s32 *volumes;
     } VolumeList;
     typedef struct VolumeCell {
@@ -7719,10 +7738,10 @@ void VolumeManager_SetReverbLevel(Vector4 *point) {
     s32 level;
     s32 feedback;
     s32 delay;
-    u32 i;
     u32 count;
     u8 *volume;
     u8 *reverb;
+    s32 i;
     s32 cell;
     s8 inside;
     u8 *settings;
@@ -7742,7 +7761,7 @@ void VolumeManager_SetReverbLevel(Vector4 *point) {
         count = 0;
     }
     for (i = 0; i < count; i++) {
-        volume = (u8 *)VolumeManager_GetVolumeTypeByIndexByCell(2, i, cell);
+        volume = (u8 *)M2C_FIELD(g_VolumeHolder, VolumeCell **, 0x10)[cell].types[2].volumes[i];
         switch (M2C_FIELD(volume, s32 *, 0x8)) {
         case 0:
             inside = BSPN0_CollideWithVector(M2C_FIELD(volume, void **, 0x28), point);
