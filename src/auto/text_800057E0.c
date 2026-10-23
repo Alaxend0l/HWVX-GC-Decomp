@@ -4027,7 +4027,7 @@ typedef struct GridManager {
 
 extern u8 gGridManager[];
 
-static inline void Grid_GetCell(Vector4 *pos, u32 *cell) {
+static inline void Grid_GetCell(Vector4 *pos, s32 *cellX, s32 *cellZ) {
     f32 fx;
     f32 fz;
 
@@ -4043,8 +4043,8 @@ static inline void Grid_GetCell(Vector4 *pos, u32 *cell) {
     } else if (fz >= (f32)((GridManager *)gGridManager)->numZ) {
         fz = (f32)((GridManager *)gGridManager)->numZ - 1.0f;
     }
-    cell[0] = (s32)fx;
-    cell[1] = (s32)fz;
+    *cellX = fx;
+    *cellZ = fz;
 }
 
 static inline void Grid_GetCellCoords(Vector4 *pos, u32 *x, u32 *z) {
