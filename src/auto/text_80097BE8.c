@@ -12591,6 +12591,14 @@ u8 SameFrontalCollisionForceParams__8LGWheelsFls(LGWheels *wheels, s32 chan, s16
     return wheels->frontalCollisionParams[chan] == force;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+#pragma readonly_strings on
+#pragma dont_inline on
+void PlayConstantForce__8LGWheelsFlsUs(void *wheels, s32 chan, s16 magnitude, u16 direction) {
+}
+#pragma pop
+
 void PlayCarAirborne__8LGWheelsFl(void *wheels, s32 chan) {
     if (IsOpened__6WheelsFl((Wheels *)((u8 *)wheels + 0x82C), chan)) {
         if (GetOverallForceGain__8LGWheelsFl(wheels, chan) != 0) {
