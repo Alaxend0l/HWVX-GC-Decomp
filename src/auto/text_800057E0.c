@@ -9417,12 +9417,13 @@ Cell *DLInsert(Cell *list, Cell *cell) {
     }
 }
 
+#pragma push
+#pragma opt_common_subs off
 void *OSAllocFromHeap(s32 heap, u32 size) {
     HeapDesc *hd;
     Cell *cell;
     Cell *newCell;
-    Cell *list;
-    u32 leftoverSize;
+    s32 leftoverSize;
 
     hd = &HeapArray_803C7218[heap];
     size += 0x20;
@@ -9435,20 +9436,11 @@ void *OSAllocFromHeap(s32 heap, u32 size) {
     if (cell == NULL) {
         return NULL;
     }
-    leftoverSize = cell->size - size;
-    if (leftoverSize < 0x40) {
-        list = hd->free;
-        if (cell->next) {
-            cell->next->prev = cell->prev;
-        }
-        if (cell->prev == NULL) {
-            list = cell->next;
-        } else {
-            cell->prev->next = cell->next;
-        }
-        hd->free = list;
+    leftoverSize = cell->size - (s32)size;
+    if ((u32)leftoverSize < 0x40) {
+        hd->free = DLExtract(hd->free, cell);
     } else {
-        cell->size = size;
+        cell->size = (s32)size;
         newCell = (Cell *)((u8 *)cell + size);
         newCell->size = leftoverSize;
         newCell->prev = cell->prev;
@@ -9462,18 +9454,10 @@ void *OSAllocFromHeap(s32 heap, u32 size) {
             hd->free = newCell;
         }
     }
-    list = hd->allocated;
-    cell->next = list;
-    cell->prev = NULL;
-    if (list != NULL) {
-        list->prev = cell;
-    }
-    hd->allocated = cell;
+    hd->allocated = DLAddFront(hd->allocated, cell);
     return (u8 *)cell + 0x20;
 }
-
-#pragma push
-#pragma dont_inline on
+#pragma pop
 void OSFreeToHeap(s32 heap, void *ptr) {
     HeapDesc *hd;
     Cell *cell;
@@ -10664,6 +10648,21 @@ void AlarmHandler(void *alarm, void *context) {
         DVDLowSeek(command[3], (void (*)(u32))command[4]);
     }
 }
+
+typedef struct DVDCommandBlock {
+    struct DVDCommandBlock *next;
+    struct DVDCommandBlock *prev;
+    u32 command;
+    s32 state;
+    u32 offset;
+    u32 length;
+    void *addr;
+    u32 currTransferSize;
+    u32 transferredSize;
+    void *id;
+    void (*callback)(s32 result, struct DVDCommandBlock *block);
+    void *userData;
+} DVDCommandBlock;
 
 void stateCoverClosed(void) {
     extern s32 CurrCommand_803C732C;
