@@ -4140,6 +4140,33 @@ void ThingManager_DARYL_Init(void) {
     MatrixCache_Init();
 }
 
+#pragma push
+#pragma dont_inline on
+void ThingManager_DARYL_Release(void) {
+    void ThingManagerList_ReleaseAndRemoveAll(void *list);
+    void ThingManager_DARYL_CreateMain(void);
+
+    SharedSlaveHolder_Release();
+    ThingManagerList_ReleaseAndRemoveAll(&g_thingManager_DARYL.activeList);
+    ThingManagerList_ReleaseAndRemoveAll(&g_thingManager_DARYL.activeList);
+    ThingManager_DARYL_CreateMain();
+}
+#pragma pop
+
+void ThingManager_MoveLookerOnly(void) {
+    M2C_UNK ThingManagerList_RemoveReleasedThings(s32);
+    extern u8 g_soundSeqVTable[];
+    void *thing;
+
+    ((void (*)(void *))(M2C_FIELD(g_thingManager_DARYL.looker, void ***, 0x8C))[2])(g_thingManager_DARYL.looker);
+    for (thing = g_thingManager_DARYL.activeList; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
+        if (M2C_FIELD(thing, u8 **, 0x8C) == g_soundSeqVTable && (M2C_FIELD(thing, u32 *, 0x74) & 0x100000)) {
+            ((void (*)(void *))(M2C_FIELD(thing, void ***, 0x8C))[3])(thing);
+        }
+    }
+    ThingManagerList_RemoveReleasedThings((s32)&g_thingManager_DARYL.activeList);
+}
+
 void ThingManager_DARYL_Heartbeat(void) {
     M2C_UNK ThingManager_MoveLookerOnly();
     M2C_UNK ThingManager_MoveThings_DARYL_SUBTICK();
