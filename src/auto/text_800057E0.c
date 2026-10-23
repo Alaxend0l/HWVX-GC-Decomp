@@ -2445,6 +2445,29 @@ s32 FileStreaming_GetNumAvailableQuadPacks(void) {
     return 0xB;
 }
 
+#pragma push
+#pragma auto_inline off
+#pragma dont_inline on
+void FileStreaming_HeartBeat(void) {
+    void DataPack_ReleaseDataPack(void *pack);
+    extern u32 g_numDataPacksToRelease;
+    extern u32 g_numQuadPacksToRelease;
+    extern u8 *g_pPacksToBeReleased[10];
+    extern void *g_pQuadPackToBeReleased[11];
+    u32 i;
+
+    for (i = 0; i < g_numDataPacksToRelease; i++) {
+        DataPack_ReleaseDataPack(g_pPacksToBeReleased[i] + 0x14);
+        g_pPacksToBeReleased[i][0] = 0;
+    }
+    g_numDataPacksToRelease = 0;
+    for (i = 0; i < g_numQuadPacksToRelease; i++) {
+        DataPack_ReleaseQuadPack(g_pQuadPackToBeReleased[i]);
+    }
+    g_numQuadPacksToRelease = 0;
+}
+#pragma pop
+
 void LoadDataPack(void) {
     void DataPack_LoadFile(s32 file, void *pack, s32 type, s32 size, s32 *out);
     extern u8 *g_pDataPackToLoad;
