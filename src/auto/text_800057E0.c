@@ -9316,6 +9316,37 @@ void AI_Creature_Heartbeat(void) {
 
 }
 
+#pragma push
+#pragma dont_inline on
+void AI_Creature_Init(u8 *creature, u8 *params) {
+    void AI_Creature_AsyncHeartbeat(u8 *creature);
+    int rand(void);
+
+    AI_Init();
+    *(s32 *)(creature + 0xD0) = *(s32 *)(params + 0x0);
+    *(void **)(creature + 0xB8) = creature;
+    *(void **)(creature + 0xBC) = AI_Creature_AsyncHeartbeat;
+    *(u8 *)(creature + 0xC4) = 0;
+    AI_Reset(creature);
+    *(s32 *)(creature + 0xE4) = 0;
+    *(u8 *)(creature + 0xEC) = 0;
+    *(s32 *)(creature + 0xFC) = 0;
+    *(s32 *)(creature + 0xF8) = 0;
+    *(u8 *)(creature + 0xCD) = 0;
+    *(s32 *)(creature + 0xC8) = 0;
+    *(s32 *)(creature + 0xD8) = 0;
+    *(s32 *)(creature + 0xDC) = -1;
+    *(s32 *)(creature + 0xE0) = 0;
+    *(f32 *)(creature + 0xF0) = (f32)(rand() % 251 + 750) / 1000.0f;
+    if (rand() % 4) {
+        *(u8 *)(creature + 0xED) = 1;
+    } else {
+        *(u8 *)(creature + 0xED) = 0;
+    }
+    *(u8 *)(creature + 0xCD) = 3;
+}
+#pragma pop
+
 void ViewManager_Init(void) {
     extern void *m_Views_802CD5E0[5];
     extern u8 g_cameraManager[];
