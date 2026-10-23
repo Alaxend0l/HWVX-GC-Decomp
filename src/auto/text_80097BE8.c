@@ -13068,6 +13068,49 @@ u8 SameConstantForceParams__8LGWheelsFlsUs(void *wheels, s32 chan, s16 offset, u
     return 0;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+#pragma readonly_strings on
+#pragma dont_inline on
+void PlayDamperForce__8LGWheelsFlUcs(void *wheels, s32 chan, u8 coefficient, s16 offset) {
+    LGWheels *lg = wheels;
+    u8 *p;
+
+    if (lg->condition.playing[chan][2]) {
+        return;
+    }
+    if (IsOpened__6WheelsFl((Wheels *)lg->wheels, chan)) {
+        if (lg->condition.playing[chan][1]) {
+            if (!SameDamperForceParams__8LGWheelsFlUcs(wheels, chan, coefficient, offset)) {
+                if (UpdateForce__9ConditionFllUcUlUlScUcUcUcss(&lg->condition, chan, 1, 8, -1, 0, 0, 0, coefficient, coefficient, offset, offset) >= 0) {
+                    p = (u8 *)wheels + chan * 4;
+                    p[0x13EE] = coefficient;
+                    *(s16 *)(p + 0x13F0) = offset;
+                }
+            }
+        } else if (lg->condition.effectIds[chan][1] == 0xFFFFFFFF) {
+            if (DownloadForce__9ConditionFllRUlUcUlUlScUcUcUcss(&lg->condition, chan, 1, &lg->overallGainId[chan], 8, -1, 0, 0, 0, coefficient, coefficient, offset, offset) >= 0) {
+                p = (u8 *)wheels + chan * 4;
+                p[0x13EE] = coefficient;
+                *(s16 *)(p + 0x13F0) = offset;
+            }
+            Start__5ForceFll(&lg->condition, chan, 1);
+        } else if (SameDamperForceParams__8LGWheelsFlUcs(wheels, chan, coefficient, offset)) {
+            Start__5ForceFll(&lg->condition, chan, 1);
+        } else {
+            if (UpdateForce__9ConditionFllUcUlUlScUcUcUcss(&lg->condition, chan, 1, 8, -1, 0, 0, 0, coefficient, coefficient, offset, offset) >= 0) {
+                p = (u8 *)wheels + chan * 4;
+                p[0x13EE] = coefficient;
+                *(s16 *)(p + 0x13F0) = offset;
+            }
+            Start__5ForceFll(&lg->condition, chan, 1);
+        }
+    } else {
+        OSReport("ERROR: trying to play a force on port %d but no wheel opened.\n", chan);
+    }
+}
+#pragma pop
+
 u8 SameDamperForceParams__8LGWheelsFlUcs(void *wheels, s32 chan, u8 coefficient, s16 offset) {
     u8 *p = (u8 *)wheels + chan * 4;
 
