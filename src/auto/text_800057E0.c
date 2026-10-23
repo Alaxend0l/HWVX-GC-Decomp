@@ -1680,6 +1680,10 @@ void AI_Create(void) {
     }
 }
 
+static inline void AI_ClearTimer(u32 *timer) {
+    *timer = 0;
+}
+
 #pragma push
 #pragma auto_inline off
 void AI_Reset(void *arg0) {
@@ -1909,10 +1913,15 @@ void AI_Car_Reset(u8 *car) {
         s32 value;
         u8 unk4[0x10];
     } AICarTarget;
+    typedef struct AICarTargets {
+        u8 unk0[0x4B0];
+        AICarTarget targets[16];
+    } AICarTargets;
     void AI_Car_ResetState(u8 *car, void *state);
     s32 RandomAdd_s32(s32 base, s32 range);
     void *memset(void *dst, s32 c, u32 n);
     u8 *vehicle;
+    AICarTarget *target;
     u16 i;
 
     AI_Reset(car);
@@ -1935,7 +1944,8 @@ void AI_Car_Reset(u8 *car) {
     *(s32 *)(car + 0x4A0) = -2;
     memset(car + 0x420, 0, 0x80);
     for (i = 0; i < 16; i++) {
-        ((AICarTarget *)(car + 0x4B0))[i].value = 0;
+        target = &((AICarTargets *)car)->targets[i];
+        target->value = 0;
     }
     *(s32 *)(car + 0x608) = RandomAdd_s32(1000, 1000);
     *(s32 *)(car + 0x3E8) = 0;
