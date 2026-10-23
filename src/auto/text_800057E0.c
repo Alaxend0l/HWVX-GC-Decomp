@@ -4762,9 +4762,12 @@ void SetMusicGVol(u32);
 void SetSFXVol(u32);
 void SetSpeakerMode(u8);
 void OSSetSoundMode(u32);
+#pragma push
+#pragma auto_inline off
 AudioSettings *GameSettings_GetAudioSettings(void) {
     return &g_generalGameSettings.audio;
 }
+#pragma pop
 
 void GameSettings_ApplyDefaultGameData(void) {
     SetPlayerControls();
