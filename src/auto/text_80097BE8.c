@@ -4365,6 +4365,97 @@ void AnimExtractKeyFrame_NonCompound(void) {
 
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void AnimExtractKeyFrame_CompoundHybrid(void *animp, void *outp, f32 time) {
+    typedef struct {
+        u8 pad0[8];
+        f32 minTime;
+        f32 maxTime;
+        u32 numBones;
+        u32 numKeysPerFrame;
+        u32 *mask;
+        u16 *flags;
+        f32 *times;
+        u8 *data;
+        u32 numFrames;
+        u8 pad2C[4];
+        u32 numCompound;
+    } Anim;
+    typedef struct {
+        Vector rot;
+        f32 pos[3];
+        u32 info;
+    } Bone;
+    void CopyVector(Vector *dst, Vector *src);
+    void Distance_Plane_4(Vector *planes, Vector *point, f32 *out);
+    Anim *anim = (Anim *)animp;
+    Bone *out = (Bone *)outp;
+    Vector tv __attribute__((aligned(16)));
+    u32 *mask;
+    u8 *data;
+    u32 i;
+    u32 bit;
+    u32 k;
+    s32 idx;
+    u32 save;
+
+    idx = 0;
+    mask = anim->mask;
+    if (time < anim->minTime) {
+        time = anim->minTime;
+    }
+    if (time > anim->maxTime) {
+        time = anim->maxTime;
+    }
+    for (k = 1; k < anim->numFrames; k++) {
+        if (time <= anim->times[k]) {
+            idx = k - 1;
+            break;
+        }
+    }
+    tv.y = time * time;
+    tv.x = time * tv.y;
+    tv.z = time;
+    tv.w = 1.0f;
+    data = anim->data + idx * (((anim->numKeysPerFrame - anim->numCompound) << 5) + (anim->numCompound << 6));
+    bit = 0;
+    for (i = 0; i < anim->numBones; i++) {
+        if (anim->flags[i] & 7) {
+            if (*mask & (1 << bit++)) {
+                save = out->info;
+                Distance_Plane_4((Vector *)data, &tv, out->pos);
+                out->info = save;
+                data += 0x40;
+            } else {
+                out->pos[0] = ((Bone *)data)->pos[0];
+                out->pos[1] = ((Bone *)data)->pos[1];
+                out->pos[2] = ((Bone *)data)->pos[2];
+                data += 0x20;
+            }
+            if (bit == 32) {
+                bit = 0;
+                mask++;
+            }
+        }
+        if (anim->flags[i] & 0x78) {
+            if (*mask & (1 << bit++)) {
+                Distance_Plane_4((Vector *)data, &tv, (f32 *)&out->rot);
+                data += 0x40;
+            } else {
+                CopyVector(&out->rot, (Vector *)(data + 0x10));
+                data += 0x20;
+            }
+            if (bit == 32) {
+                bit = 0;
+                mask++;
+            }
+        }
+        out++;
+    }
+}
+#pragma pop
+
 void AnimExtractKeyFrame(void *anim, s32 frame) {
     void AnimExtractKeyFrame_Compound(void *anim, s32 frame);
     void AnimExtractKeyFrame_CompoundHybrid(void *anim, s32 frame);
