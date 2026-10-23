@@ -1648,6 +1648,10 @@ void AI_AsyncHeartbeat(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0xC8) = 0x1F4;
 }
 
+s32 AI_Heartbeat(u8 *ai) {
+    return 0;
+}
+
 void AI_Car_AsyncScanDestructibles(u8 *car) {
     s32 RandomAdd_s32(s32 base, s32 range);
     void *RayHitsObjects_GetObject(void *pos, void *target, f32 *dist, s32 arg3, s32 arg4);
