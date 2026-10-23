@@ -2716,7 +2716,7 @@ void GameSettings_DetermineIfOverwritingFile(void) {
     }
 }
 
-u8 GameSettings_FormatMemoryCard(void) {
+s32 GameSettings_FormatMemoryCard(void) {
     u8 FileManager_FormatDevice(char *device);
     extern s8 g_bRefreshMC_803C6F78;
     extern s8 g_bRefreshMC_FileList_803C6F79;
