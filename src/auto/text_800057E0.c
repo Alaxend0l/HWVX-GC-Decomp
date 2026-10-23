@@ -2315,6 +2315,36 @@ void Grid_Release(void) {
 
 }
 
+void Grid_FreeObject(u8 *object) {
+    extern u8 gGridManager[];
+    u8 *node;
+    u8 *next;
+    u8 *list;
+
+    if (object != NULL) {
+        node = *(u8 **)(object + 8);
+        while (node != NULL) {
+            next = *(u8 **)(node + 0x10);
+            if (*(u8 **)(node + 8) != NULL) {
+                *(u8 **)(*(u8 **)(node + 8) + 0xC) = *(u8 **)(node + 0xC);
+            }
+            if (*(u8 **)(node + 0xC) != NULL) {
+                *(u8 **)(*(u8 **)(node + 0xC) + 8) = *(u8 **)(node + 8);
+            } else {
+                **(u8 ***)(node + 0x14) = *(u8 **)(node + 8);
+            }
+            list = *(u8 **)(node + 0x14);
+            *(s32 *)(list + 4) = *(s32 *)(list + 4) - 1;
+            *(u8 **)(node + 8) = *(u8 **)(gGridManager + 0x1B3B8);
+            *(u8 **)(gGridManager + 0x1B3B8) = node;
+            node = next;
+        }
+        *(u8 **)(object + 0x1C) = *(u8 **)(gGridManager + 0x233BC);
+        *(u8 **)(gGridManager + 0x233BC) = object;
+        *(s32 *)(gGridManager + 0x233C0) = *(s32 *)(gGridManager + 0x233C0) + 1;
+    }
+}
+
 void InterfaceManager_Init(void) {
     extern u8 g_interface[][0x170];
     extern s32 g_TargetArrow[7];
@@ -2422,6 +2452,39 @@ void InterfaceManager_SetOffset(s32 index, f32 x, f32 y) {
     *(f32 *)(iface + 0x64) = y;
 }
 
+void InterfaceManager_SetObjectText(u8 *obj, char **text) {
+    u32 strlen(const char *s);
+    char *str;
+
+    if (text != NULL) {
+        u8 *info = *(u8 **)(*(u8 **)(obj + 0x258) + 4);
+        obj[0x248] = 1;
+        obj[0x2C] = 1;
+        obj[0x54] = 1;
+        obj[0x84] = 1;
+        obj[0x164] = 1;
+        obj[0x194] = 1;
+        *(u16 *)(obj + 0x1AA) = 0;
+        *(u32 *)(obj + 0x1AC) = *(u32 *)(info + 0x14);
+        *(u16 *)(obj + 0x1A8) = 0;
+        obj[0x1C0] = 0;
+        *(char ***)(obj + 0x1A0) = text;
+        *(char **)(obj + 0x1A4) = NULL;
+        obj[0x1B1] = 0;
+        str = *text;
+        if (str != NULL) {
+            *(char **)(obj + 0x1A4) = str;
+            *(u16 *)(obj + 0x1A8) = strlen(str);
+            if (*(s32 *)(obj + 0x1AC) == 0) {
+                *(u16 *)(obj + 0x1AA) = *(u16 *)(obj + 0x1A8);
+            }
+            if (*(u8 *)(*(u8 **)(obj + 0x258) + 0x12) != 0) {
+                obj[0x1B1] = 1;
+            }
+        }
+    }
+}
+
 void InterfaceManager_EndInterface(s32 index) {
     extern u8 g_interface[][0x170];
     void InterfaceManager_SetLoadState(void *iface, s32 state);
@@ -2429,6 +2492,27 @@ void InterfaceManager_EndInterface(s32 index) {
 
     if (iface != NULL) {
         InterfaceManager_SetLoadState(iface, 1);
+    }
+}
+
+void InterfaceManager_LinkThingToObject(s32 index, u32 id, void *thing) {
+    typedef struct InterfaceSlot {
+        u8 pad0[0x25C];
+        u8 *object;
+        u8 pad260[0x288 - 0x260];
+        void *thing;
+        u8 pad28C[0x300 - 0x28C];
+    } InterfaceSlot;
+    extern u8 g_interface[][0x170];
+    u32 i;
+    u8 *iface = g_interface[index];
+
+    if (iface != NULL) {
+        for (i = 0; i < *(u32 *)iface; i++) {
+            if (id == *(u32 *)((*(InterfaceSlot **)(iface + 0x88))[i].object + 0x10)) {
+                (*(InterfaceSlot **)(iface + 0x88))[i].thing = thing;
+            }
+        }
     }
 }
 
