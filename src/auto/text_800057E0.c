@@ -6452,6 +6452,27 @@ s32 FlashHolder_Add(void *flash, Vector4 *pos, s32 arg2, f32 time) {
     return -1;
 }
 
+void FlashHolder_Render(void) {
+    extern u8 g_pFlash[16][0x80];
+    void Gfx_GetCameraPosition(Vector4 *pos);
+    void Gfx_ScreenOverlay(GXColor *color, u8 mode);
+    Vector4 camera;
+    GXColor color;
+    u8 *flash;
+    u8 *owner;
+    u32 i;
+
+    Gfx_GetCameraPosition(&camera);
+    for (i = 0; i < 16; i++) {
+        flash = g_pFlash[i];
+        owner = *(u8 **)(flash + 0x5C);
+        if (owner != NULL && owner[1] != 0) {
+            color = *(GXColor *)(flash + 0x34);
+            Gfx_ScreenOverlay(&color, **(u8 **)(owner + 0x20));
+        }
+    }
+}
+
 void BulletHole_Init(void) {
     extern u8 g_bulletData[512][0x60];
     extern s32 g_nextBullet;
