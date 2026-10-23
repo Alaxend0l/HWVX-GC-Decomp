@@ -1650,6 +1650,61 @@ void CameraManager_Pause(s8 arg0) {
     g_cameraManagerPause = arg0;
 }
 
+void Camera_SetPlayer(void **camera, void *player) {
+    extern u8 g_cameraManager[];
+    void PlayerManager_ClearAllCameraFlags_PRIVATE(void);
+    void Player_RefreshInterface(void *player);
+    u32 i;
+    void *p;
+
+    *camera = player;
+    PlayerManager_ClearAllCameraFlags_PRIVATE();
+    for (i = 0; i < g_cameraManager[0x640]; i++) {
+        p = M2C_FIELD(g_cameraManager + i * 0x190, void **, 0);
+        if (p != NULL) {
+            M2C_FIELD(p, u32 *, 0x6C) |= 0x10;
+        }
+    }
+    Player_RefreshInterface(player);
+}
+
+void CameraManager_ReturnAllToPlayer(void) {
+    extern u8 g_cameraManager[];
+    extern u8 g_triggerAction_params_default[];
+    u32 i;
+
+    for (i = 0; i < g_cameraManager[0x640]; i++) {
+        M2C_FIELD(g_cameraManager + i * 0x190, u8 **, 0xB4) = g_triggerAction_params_default;
+    }
+}
+
+void CameraManager_SetCameraGlobalMode(u32 *mode) {
+    extern u8 g_cameraManager[];
+    u32 i;
+
+    if (mode[0] >= 1 && mode[0] <= 4) {
+        M2C_FIELD(g_cameraManager + (mode[0] - 1) * 0x190, u32 **, 0xB4) = mode + 1;
+        M2C_FIELD(g_cameraManager + (mode[0] - 1) * 0x190, f32 *, 0xB8) = 0.0f;
+        return;
+    }
+    for (i = 0; i < g_cameraManager[0x640]; i++) {
+        M2C_FIELD(g_cameraManager + i * 0x190, u32 **, 0xB4) = mode + (mode[0] == 0);
+        M2C_FIELD(g_cameraManager + i * 0x190, f32 *, 0xB8) = 0.0f;
+    }
+}
+
+void *CameraManager_GetCameraFromPlayer(void *player) {
+    extern u8 g_cameraManager[];
+    u32 i;
+
+    for (i = 0; i < g_cameraManager[0x640]; i++) {
+        if (M2C_FIELD(g_cameraManager + i * 0x190, void **, 0) == player) {
+            return g_cameraManager + i * 0x190;
+        }
+    }
+    return NULL;
+}
+
 void CarA_GetAngularVelocity(void *car, Vector4 *vel) {
     *vel = M2C_FIELD(car, Vector4 *, 0x410);
 }
@@ -6838,6 +6893,43 @@ s32 CARDFormat(s32 chan) {
     return __CARDSync(chan);
 }
 
+s32 __CARDCompareFileName(void *ent, const char *fileName) {
+    char *entName;
+    char c1;
+    char c2;
+    int n;
+
+    entName = (char *)ent + 8;
+    n = 32;
+    while (0 <= --n) {
+        if ((c1 = *entName++) != (c2 = *fileName++)) {
+            return 0;
+        } else if (c2 == '\0') {
+            return 1;
+        }
+    }
+    if (*fileName == '\0') {
+        return 1;
+    }
+    return 0;
+}
+
+s32 __CARDAccess(void *card, u8 *ent) {
+    extern u8 __CARDDiskNone[32];
+    int memcmp(const void *a, const void *b, u32 n);
+    u8 *diskID;
+
+    if (ent[0] == 0xFF) {
+        return -4;
+    }
+    if (M2C_FIELD(card, u8 **, 0x10C) == __CARDDiskNone
+        || (memcmp(ent, M2C_FIELD(card, u8 **, 0x10C), 4) == 0
+            && memcmp(ent + 4, M2C_FIELD(card, u8 **, 0x10C) + 4, 2) == 0)) {
+        return 0;
+    }
+    return -10;
+}
+
 s32 __CARDIsPublic(void *arg0) {
     if ((u8) M2C_FIELD(arg0, u8 *, 0) == 0xFF) {
         return -4;
@@ -6846,6 +6938,18 @@ s32 __CARDIsPublic(void *arg0) {
         return 0;
     }
     return -0xA;
+}
+
+s32 CARDClose(CARDFileInfo *fileInfo) {
+    CARDControl *card;
+    s32 result;
+
+    result = __CARDGetControlBlock(M2C_FIELD(fileInfo, s32 *, 0), &card);
+    if (result < 0) {
+        return result;
+    }
+    M2C_FIELD(fileInfo, s32 *, 0) = -1;
+    return __CARDPutControlBlock(card, 0);
 }
 
 s32 __CARDGetDirBlock(void *arg0) {
