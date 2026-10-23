@@ -3214,6 +3214,23 @@ void NavHolder_Release(void) {
     M2C_FIELD(&gs_NavHolder_803C6CD8, s32 *, 4) = 0;
 }
 
+s32 NavHolder_IsLinked(s32 from, s32 to) {
+    u8 i;
+
+    if (from < 0 || to < 0) {
+        return 0;
+    }
+    if (from == to) {
+        return 1;
+    }
+    for (i = 0; i < M2C_FIELD(gs_NavHolder_803C6CD8.data->nodes + from * 0x60, u32 *, 0x1C); i++) {
+        if (to == M2C_FIELD(gs_NavHolder_803C6CD8.data->nodes + from * 0x60, s32 **, 0x20)[i]) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 #pragma peephole on
 void CreateParticleGX();
 void CreateParticleSprite();
