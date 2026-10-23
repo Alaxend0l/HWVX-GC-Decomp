@@ -5221,6 +5221,55 @@ void *VideoDecoder(void *param) {
 #pragma push
 #pragma use_lmw_stmw on
 void VideoDecode(THPReadBuffer *readBuffer) {
+    typedef struct THPTextureSet {
+        u8 *ytexture;
+        u8 *utexture;
+        u8 *vtexture;
+        s32 frameNumber;
+    } THPTextureSet;
+    void *PopFreeTextureSet(void);
+    void PushDecodedTextureSet(void *arg0);
+    s32 THPVideoDecode(void *file, void *tileY, void *tileU, void *tileV, void *work);
+    void PrepareReady(void *arg0);
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32 level);
+    s32 OSSuspendThread(void *thread);
+    extern u8 VideoDecodeThread_8036CFF0[0x310];
+    extern s32 First_803C772C;
+    THPTextureSet *textureSet;
+    s32 old;
+    u32 i;
+    u32 *compSizePtr;
+    u8 *ptr;
+
+    ptr = readBuffer->ptr + ActivePlayer.numComponents * 4 + 8;
+    compSizePtr = (u32 *)(readBuffer->ptr + 8);
+    textureSet = PopFreeTextureSet();
+    for (i = 0; i < ActivePlayer.numComponents; i++) {
+        switch (ActivePlayer.frameComp[i]) {
+        case 0:
+            *(s32 *)&ActivePlayer.playAudioBuffer = THPVideoDecode(ptr, textureSet->ytexture, textureSet->utexture, textureSet->vtexture, *(void **)&ActivePlayer.unk88[0xC]);
+            if (*(s32 *)&ActivePlayer.playAudioBuffer) {
+                if (First_803C772C) {
+                    PrepareReady((void *)0);
+                    First_803C772C = 0;
+                }
+                OSSuspendThread(VideoDecodeThread_8036CFF0);
+            }
+            textureSet->frameNumber = readBuffer->frameNumber;
+            PushDecodedTextureSet(textureSet);
+            old = OSDisableInterrupts();
+            ActivePlayer.videoDecodeCount++;
+            OSRestoreInterrupts(old);
+            break;
+        }
+        ptr += *compSizePtr;
+        compSizePtr++;
+    }
+    if (First_803C772C) {
+        PrepareReady((void *)1);
+        First_803C772C = 0;
+    }
 }
 #pragma pop
 
