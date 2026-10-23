@@ -4047,7 +4047,7 @@ static inline void Grid_GetCell(Vector4 *pos, u32 *cell) {
     cell[1] = (s32)fz;
 }
 
-static inline void Grid_GetCellCoords(Vector4 *pos, u32 *x, u32 *z) {
+static void Grid_GetCellCoords(Vector4 *pos, u32 *x, u32 *z) {
     f32 fx;
     f32 fz;
 
@@ -4127,15 +4127,14 @@ u32 Grid_GetNearestObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult 
                             while (node != NULL) {
                                 found = 0;
                                 for (i = 0; i < count && !found; i++) {
-                                    if (node->id == results[i].id) {
+                                    if (results[i].id == node->id) {
                                         found = 1;
                                     }
                                 }
                                 if (!found) {
                                     if (count < maxResults) {
                                         if (filter == NULL || filter(node, filterArg) == 1) {
-                                            results[count].data = node->data;
-                                            results[count].id = node->id;
+                                            results[count] = *(GridResult *)node;
                                             count++;
                                         }
                                     } else {
