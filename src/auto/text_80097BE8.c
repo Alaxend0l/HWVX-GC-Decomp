@@ -5838,6 +5838,38 @@ u32 GetITGVol_(u8 *trk, u8 *ch) {
     return ((*(u32 *)(*pt + 0x18) * g_musicVol >> 7) * (*(u32 *)(*pc + 0x1C) * *(u32 *)(*pc + 0x28) >> 6)) >> 15;
 }
 
+#pragma push
+#pragma opt_propagation off
+s32 CreateMIDI_(u8 *hdr) {
+    u32 HAllocA_(s32 size);
+    extern u32 g_aheap;
+    u8 *data;
+    s32 size;
+    u32 i;
+    u32 *smp;
+
+    data = hdr + 0x20 + *(u32 *)(hdr + 0x10) * 0x20;
+    size = *(u32 *)(hdr + 4) - (data - hdr - 8);
+    g_aheap = HAllocA_(size);
+    if (g_aheap == 0) {
+        return 0;
+    }
+    DCFlushRange(hdr + 0x20 + *(u32 *)(hdr + 0x10) * 0x20, size);
+    MemCpyA_(g_aheap, *(u32 *)(hdr + 0x14), size);
+    smp = (u32 *)(hdr + 0x20);
+    for (i = 0; i < *(u32 *)(hdr + 0x10); i++) {
+        smp[0] += g_aheap;
+        if (((u8 *)smp)[0x11] == 0x10) {
+            smp[0] >>= 1;
+            smp[1] >>= 1;
+            ((s32 *)smp)[2] >>= 1;
+        }
+        smp += 8;
+    }
+    return 1;
+}
+#pragma pop
+
 void DestroyMIDI_(s32 arg0) {
     M2C_UNK FreeA_(s32);
     M2C_UNK OSFreeToHeap(s32, s32);
