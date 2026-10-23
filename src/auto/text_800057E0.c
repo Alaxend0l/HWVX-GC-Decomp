@@ -14558,6 +14558,10 @@ void __OSContextInit(void) {
 
 u16 OSGetFontEncode(void);
 
+static inline BOOL IsSjisLeadByte(u8 c) {
+    return (0x81 <= c && c <= 0x9F) || (0xE0 <= c && c <= 0xFC);
+}
+
 static inline BOOL IsSjisTrailByte(u8 c) {
     return 0x40 <= c && c <= 0xFC && c != 0x7F;
 }
