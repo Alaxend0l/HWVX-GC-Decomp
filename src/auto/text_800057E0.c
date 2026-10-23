@@ -62,6 +62,19 @@ static inline u8 *PlayerManager_PopActive(u8 *pm) {
     return player;
 }
 
+static inline void PlayerManager_UnlinkActive(u8 *pm, u8 *player) {
+    if (M2C_FIELD(player, u8 **, 0xB4) == NULL) {
+        M2C_FIELD(pm, u8 **, 0x20D8) = M2C_FIELD(player, u8 **, 0xB0);
+    } else {
+        M2C_FIELD(M2C_FIELD(player, u8 **, 0xB4), u8 **, 0xB0) = M2C_FIELD(player, u8 **, 0xB0);
+    }
+    if (M2C_FIELD(player, u8 **, 0xB0) != NULL) {
+        M2C_FIELD(M2C_FIELD(player, u8 **, 0xB0), u8 **, 0xB4) = M2C_FIELD(player, u8 **, 0xB4);
+        M2C_FIELD(player, u8 **, 0xB0) = NULL;
+    }
+    M2C_FIELD(player, u8 **, 0xB4) = NULL;
+}
+
 static inline void PlayerManager_PushFree(u8 *pm, u8 *player) {
     M2C_FIELD(player, u8 **, 0xB0) = M2C_FIELD(pm, u8 **, 0x20DC);
     M2C_FIELD(player, u8 **, 0xB4) = NULL;
