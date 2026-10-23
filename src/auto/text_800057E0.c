@@ -20646,62 +20646,71 @@ void GXSetDispCopyGamma(s32 gamma) {
 }
 
 void GXCopyDisp(void *dest, u8 clear) {
-    extern u8 *gx;
+    typedef struct {
+        u16 vNumNot;
+        u16 bpSentNot;
+        u8 pad4[0x1D0 - 0x4];
+        u32 cmode0;
+        u32 cmode1;
+        u32 zmode;
+        u32 peCtrl;
+        u32 cpDispSrc;
+        u32 cpDispSize;
+        u32 cpDispStride;
+        u32 cpDisp;
+    } GXDataCopy;
+    extern GXDataCopy *gx;
     u32 reg;
     u32 tempPeCtrl;
     u8 changePeCtrl;
-    u32 *cpDisp;
 
     if (clear) {
-        reg = *(u32 *)(gx + 0x1D8);
+        reg = gx->zmode;
         reg = (reg & ~1) | 1;
         reg = (reg & ~0xE) | (7 << 1);
-        GXWGFifo.u8 = 0x61;
-        GXWGFifo.u32 = reg;
-        reg = *(u32 *)(gx + 0x1D0);
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = reg;
+        reg = gx->cmode0;
         reg = reg & ~1;
         reg = reg & ~2;
-        GXWGFifo.u8 = 0x61;
-        GXWGFifo.u32 = reg;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = reg;
     }
     changePeCtrl = 0;
-    if ((clear || (*(u32 *)(gx + 0x1DC) & 7) == 3) && ((*(u32 *)(gx + 0x1DC) >> 6) & 1) == 1) {
+    if ((clear || (gx->peCtrl & 7) == 3) && ((gx->peCtrl >> 6) & 1) == 1) {
         changePeCtrl = 1;
-        tempPeCtrl = *(u32 *)(gx + 0x1DC);
+        tempPeCtrl = gx->peCtrl;
         tempPeCtrl = tempPeCtrl & ~0x40;
-        GXWGFifo.u8 = 0x61;
-        GXWGFifo.u32 = tempPeCtrl;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = tempPeCtrl;
     }
-    GXWGFifo.u8 = 0x61;
-    GXWGFifo.u32 = *(u32 *)(gx + 0x1E0);
-    GXWGFifo.u8 = 0x61;
-    GXWGFifo.u32 = *(u32 *)(gx + 0x1E4);
-    GXWGFifo.u8 = 0x61;
-    GXWGFifo.u32 = *(u32 *)(gx + 0x1E8);
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = gx->cpDispSrc;
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = gx->cpDispSize;
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = gx->cpDispStride;
     reg = 0;
     reg = (reg & ~0xFFFFFF) | (((u32)dest >> 5) & 0xFFFFFF);
     reg = (reg & 0xFFFFFF) | 0x4B000000;
-    GXWGFifo.u8 = 0x61;
-    GXWGFifo.u32 = reg;
-    cpDisp = (u32 *)(gx + 0x1EC);
-    *cpDisp = (*cpDisp & ~0x800) | (clear << 11);
-    cpDisp = (u32 *)(gx + 0x1EC);
-    *cpDisp = (*cpDisp & ~0x4000) | 0x4000;
-    cpDisp = (u32 *)(gx + 0x1EC);
-    *cpDisp = (*cpDisp & 0xFFFFFF) | 0x52000000;
-    GXWGFifo.u8 = 0x61;
-    GXWGFifo.u32 = *(u32 *)(gx + 0x1EC);
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = reg;
+    gx->cpDisp = (gx->cpDisp & ~0x800) | (clear << 11);
+    gx->cpDisp = (gx->cpDisp & ~0x4000) | 0x4000;
+    gx->cpDisp = (gx->cpDisp & 0xFFFFFF) | 0x52000000;
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = gx->cpDisp;
     if (clear) {
-        GXWGFifo.u8 = 0x61;
-        GXWGFifo.u32 = *(u32 *)(gx + 0x1D8);
-        GXWGFifo.u8 = 0x61;
-        GXWGFifo.u32 = *(u32 *)(gx + 0x1D0);
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = gx->zmode;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = gx->cmode0;
     }
     if (changePeCtrl) {
-        GXWGFifo.u8 = 0x61;
-        GXWGFifo.u32 = *(u32 *)(gx + 0x1DC);
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = gx->peCtrl;
     }
-    *(u16 *)(gx + 2) = 0;
+    gx->bpSentNot = 0;
 }
 
 void GXClearBoundingBox(void) {
@@ -23559,6 +23568,58 @@ s32 TRKTargetVersions(void *arg0) {
     M2C_FIELD(arg0, s8 *, 3) = 0xA;
     return 0;
 }
+
+s32 TRKTargetAccessExtended1(u32 firstRegister, u32 lastRegister, TRKBuffer *b, u32 *registersLengthPtr, s32 read) {
+    extern u32 gTRKExceptionStatus_800DA0A4[];
+    extern u8 gTRKCPUState[];
+    extern u8 gTRKRestoreFlags[];
+    typedef struct {
+        u32 PC;
+        u32 PCInstruction;
+        u16 exceptionID;
+        u8 pad[2];
+        u8 inTRK;
+        u8 exceptionDetected;
+    } TRKExceptionStatus;
+    s32 error;
+    u32 count;
+    u32 *data;
+    TRKExceptionStatus savedException;
+
+    if (lastRegister > 0x60) {
+        return 0x701;
+    }
+
+    savedException = *(TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4;
+    ((TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4)->exceptionDetected = 0;
+    *registersLengthPtr = 0;
+
+    if (firstRegister <= lastRegister) {
+        data = (u32 *)(gTRKCPUState + 0x1A8) + firstRegister;
+        count = (lastRegister - firstRegister) + 1;
+        *registersLengthPtr += count * sizeof(u32);
+
+        if (read) {
+            error = TRKAppendBuffer_ui32(b, data, count);
+        } else {
+            if (data <= (u32 *)(gTRKCPUState + 0x1EC) && data + count - 1 >= (u32 *)(gTRKCPUState + 0x1E8)) {
+                gTRKRestoreFlags[0] = 1;
+            }
+            if (data <= (u32 *)(gTRKCPUState + 0x278) && data + count - 1 >= (u32 *)(gTRKCPUState + 0x278)) {
+                gTRKRestoreFlags[1] = 1;
+            }
+            error = TRKReadBuffer_ui32(b, data, count);
+        }
+    }
+
+    if (((TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4)->exceptionDetected) {
+        *registersLengthPtr = 0;
+        error = 0x702;
+    }
+    *(TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4 = savedException;
+    return error;
+}
+#pragma pop
 
 u32 __TRK_get_MSR(void);
 void __TRK_set_MSR(u32 val);
