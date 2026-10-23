@@ -4083,6 +4083,17 @@ void PlayerManager_Destroy(void) {
 
 }
 
+u8 PlayerManager_PlayerCount(void) {
+    extern u8 g_playerManager[0x20E0];
+    u8 count = 0;
+    void *player;
+
+    for (player = M2C_FIELD(g_playerManager, void **, 0x20D8); player != NULL; player = M2C_FIELD(player, void **, 0xB0)) {
+        count++;
+    }
+    return count;
+}
+
 void PlayerManager_Render_DEBUG(void) {
 
 }
