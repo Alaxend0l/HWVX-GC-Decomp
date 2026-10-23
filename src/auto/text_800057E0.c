@@ -4432,8 +4432,6 @@ s8 OBoxHitsCellZeroTimeEdgesOnly(void *obox, void *cell, void *arg2) {
 #pragma push
 #pragma use_lmw_stmw on
 s8 OBoxHitsCell(void *obox, Vector4 *vel, void *cell, f32 *time, void *arg4) {
-    s8 OBoxHitsPolyZeroTime(void *obox, void *poly, void *arg2);
-    s8 OBoxHitsBSPZeroTime(void *obox, void *bsp, void *arg2);
     s8 OBoxHitsBSP(void *obox, Vector4 *vel, void *bsp, f32 *time, void *arg4);
     f32 OOBHitsPoly(void *obox, void *poly, Vector4 *vel, void *arg4, f32 t);
     f32 PSVECDotProduct(void *a, void *b);
@@ -4445,44 +4443,22 @@ s8 OBoxHitsCell(void *obox, Vector4 *vel, void *cell, f32 *time, void *arg4) {
     f32 t;
 
     if (vel == &g_zeroVector) {
-        s8 zhit = 0;
-        M2C_FIELD(obox, f32 *, 0xB0) = 0.0f;
-        M2C_FIELD(obox, f32 *, 0xB4) = 0.0f;
-        M2C_FIELD(obox, f32 *, 0xB8) = 0.0f;
-        M2C_FIELD(obox, f32 *, 0xC0) = 0.0f;
-        M2C_FIELD(obox, f32 *, 0xC4) = 0.0f;
-        M2C_FIELD(obox, f32 *, 0xC8) = 0.0f;
-        if (M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u32 *, 0x58) == 1) {
-            zhit = OBoxHitsBSPZeroTime(obox, cell, arg4);
-        } else {
-            for (i = 0; i < M2C_FIELD(cell, u32 *, 0x3C); i++) {
-                poly = M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u8 **, 0x4C) + M2C_FIELD(cell, u32 **, 0x38)[i] * 0x20;
-                if (M2C_FIELD(poly, u32 *, 0x18) != g_worldData.unk4) {
-                    M2C_FIELD(poly, u32 *, 0x18) = g_worldData.unk4;
-                    zhit = OBoxHitsPolyZeroTime(obox, poly, arg4);
-                    if (zhit) {
-                        zhit = 1;
-                        break;
-                    }
-                }
-            }
-        }
-        return zhit;
+        return OBoxHitsCellZeroTime(obox, cell, arg4);
     }
-    M2C_FIELD(obox, f32 *, 0xB0) = PSVECDotProduct(M2C_FIELD(obox, void **, 0xA0), obox);
-    M2C_FIELD(obox, f32 *, 0xB4) = PSVECDotProduct(M2C_FIELD(obox, void **, 0xA4), obox);
-    M2C_FIELD(obox, f32 *, 0xB8) = PSVECDotProduct(M2C_FIELD(obox, void **, 0xA8), obox);
-    M2C_FIELD(obox, f32 *, 0xC0) = -PSVECDotProduct(M2C_FIELD(obox, void **, 0xA0), vel);
-    M2C_FIELD(obox, f32 *, 0xC4) = -PSVECDotProduct(M2C_FIELD(obox, void **, 0xA4), vel);
-    M2C_FIELD(obox, f32 *, 0xC8) = -PSVECDotProduct(M2C_FIELD(obox, void **, 0xA8), vel);
-    if (M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u32 *, 0x58) == 1) {
+    *(f32 *)((u8 *)obox + 0xB0) = PSVECDotProduct(*(void **)((u8 *)obox + 0xA0), obox);
+    *(f32 *)((u8 *)obox + 0xB4) = PSVECDotProduct(*(void **)((u8 *)obox + 0xA4), obox);
+    *(f32 *)((u8 *)obox + 0xB8) = PSVECDotProduct(*(void **)((u8 *)obox + 0xA8), obox);
+    *(f32 *)((u8 *)obox + 0xC0) = -PSVECDotProduct(*(void **)((u8 *)obox + 0xA0), vel);
+    *(f32 *)((u8 *)obox + 0xC4) = -PSVECDotProduct(*(void **)((u8 *)obox + 0xA4), vel);
+    *(f32 *)((u8 *)obox + 0xC8) = -PSVECDotProduct(*(void **)((u8 *)obox + 0xA8), vel);
+    if (*(u32 *)((u8 *)*(void **)g_worldData.world + 0x58) == 1) {
         hit = OBoxHitsBSP(obox, vel, cell, time, arg4);
     } else {
         best = *time;
-        for (i = 0; i < M2C_FIELD(cell, u32 *, 0x3C); i++) {
-            poly = M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u8 **, 0x4C) + M2C_FIELD(cell, u32 **, 0x38)[i] * 0x20;
-            if (M2C_FIELD(poly, u32 *, 0x18) != g_worldData.unk4) {
-                M2C_FIELD(poly, u32 *, 0x18) = g_worldData.unk4;
+        for (i = 0; i < *(u32 *)((u8 *)cell + 0x3C); i++) {
+            poly = *(u8 **)((u8 *)*(void **)g_worldData.world + 0x4C) + (*(u32 **)((u8 *)cell + 0x38))[i] * 0x20;
+            if (*(u32 *)(poly + 0x18) != g_worldData.unk4) {
+                *(u32 *)(poly + 0x18) = g_worldData.unk4;
                 t = OOBHitsPoly(obox, poly, vel, arg4, best);
                 if (t < best) {
                     best = t;
