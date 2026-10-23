@@ -5746,6 +5746,35 @@ s32 InterfaceManager_AddFont(u8 *font) {
     return id;
 }
 
+void InterfaceManager_AddInterfaceToRender(u32 index, u32 priority) {
+    extern u8 g_interface[][0x170];
+    extern u32 g_interfaceRenderOrder[18];
+    extern u32 g_numInterfacesToRender;
+    u32 i;
+    u32 pos;
+
+    if (g_numInterfacesToRender == 0) {
+        g_interfaceRenderOrder[g_numInterfacesToRender++] = index;
+        return;
+    }
+    pos = -1;
+    for (i = 0; i < g_numInterfacesToRender; i++) {
+        if (priority > *(u32 *)(*(u8 **)(g_interface[g_interfaceRenderOrder[i]] + 0x20) + 0x34)) {
+            pos = i;
+            break;
+        }
+    }
+    if (pos != -1) {
+        for (i = g_numInterfacesToRender; i > pos; i--) {
+            g_interfaceRenderOrder[i] = g_interfaceRenderOrder[i - 1];
+        }
+        g_interfaceRenderOrder[pos] = index;
+        g_numInterfacesToRender++;
+        return;
+    }
+    g_interfaceRenderOrder[g_numInterfacesToRender++] = index;
+}
+
 void InterfaceManager_RemoveInterfaceFromRender(u32 id) {
     extern u32 g_interfaceRenderOrder[];
     extern u32 g_numInterfacesToRender;
