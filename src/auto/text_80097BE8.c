@@ -385,8 +385,8 @@ static inline void SubBlock_split(SubBlock *ths, u32 sz) {
     s32 isfree = !(ths->size_ & 2);
     s32 isalloc = !isfree;
     s32 isprevalloc = ths->size_ & 4;
-    u32 origsize = ths->size_ & 0xFFFFFFF8;
     void *bp = (void *)(((u32)ths->bp_ & ~1) | 1);
+    u32 origsize = ths->size_ & 0xFFFFFFF8;
 
     ths->bp_ = bp;
     ths->size_ = sz;
