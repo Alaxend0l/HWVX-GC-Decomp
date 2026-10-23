@@ -3379,7 +3379,7 @@ s32 TriggerInterfacePackEnd(u32 *pack) {
 
     i = 0;
     id = pack[0];
-    for (entry = &g_InterfacePackData[0]; i < g_NumInterfacesPlaying; entry++, i++) {
+    for (entry = g_InterfacePackData; i < g_NumInterfacesPlaying; entry++, i++) {
         if (id == entry->id && strcmp(entry->name, (char *)(pack + 1)) == 0) {
             return 0;
         }
@@ -4110,7 +4110,8 @@ void ThingManager_DARYL_Heartbeat(void) {
 }
 
 typedef struct ThingManagerDARYL {
-    u8 unk0[0x7AB70];
+    u8 unk0[0x6AD10];
+    u8 looker[0xFE60];
     void *activeList;
     void *freeList[19];
 } ThingManagerDARYL;
