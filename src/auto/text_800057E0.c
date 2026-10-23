@@ -53,6 +53,8 @@ u8 AIGetStreamVolRight(void);
 typedef struct GXDataTev {
     u8 unk0[0x130];
     u32 tevc[16];
+    u32 teva[16];
+    u32 tevKsel[8];
 } GXDataTev;
 
 typedef struct GXTexRegionInt {
@@ -5249,6 +5251,26 @@ void __AXDSPDoneCallback(void) {
     __AXDSPDoneFlag_803C74D8 = 1;
 }
 
+void __AXOutQuit(void) {
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32 level);
+    void AIStopDMA(void);
+    void DSPHalt(void);
+    u32 DSPGetDMAStatus(void);
+    void DSPReset(void);
+    extern void *__AXUserFrameCallback_803C74D0;
+    s32 old;
+
+    old = OSDisableInterrupts();
+    __AXUserFrameCallback_803C74D0 = NULL;
+    AIStopDMA();
+    DSPHalt();
+    while (DSPGetDMAStatus()) {
+    }
+    DSPReset();
+    OSRestoreInterrupts(old);
+}
+
 void AXRegisterCallback(s32 arg0) {
     extern s32 __AXUserFrameCallback_803C74D0;
     __AXUserFrameCallback_803C74D0 = arg0;
@@ -5588,6 +5610,70 @@ s32 CARDCreate(s32 chan, const char *fileName, u32 size, CARDFileInfo *fileInfo)
 void GXInitFifoLimits(void *arg0, s32 arg1, s32 arg2) {
     M2C_FIELD(arg0, s32 *, 0xC) = arg1;
     M2C_FIELD(arg0, s32 *, 0x10) = arg2;
+}
+
+void __GXSetVCD(void) {
+    extern void *const gx;
+    void __GXXfVtxSpecs(void);
+
+    GXWGFifo.u8 = 8;
+    GXWGFifo.u8 = 0x50;
+    GXWGFifo.u32 = M2C_FIELD(gx, u32 *, 0x14);
+    GXWGFifo.u8 = 8;
+    GXWGFifo.u8 = 0x60;
+    GXWGFifo.u32 = M2C_FIELD(gx, u32 *, 0x18);
+    __GXXfVtxSpecs();
+}
+
+void GXGetVtxDescv(s32 *vcd) {
+    void GXGetVtxDesc(s32 attr, s32 *type);
+    s32 attr;
+
+    for (attr = 0; attr < 26; attr++) {
+        vcd[attr * 2] = attr;
+        GXGetVtxDesc(attr, &vcd[attr * 2 + 1]);
+    }
+    vcd[attr * 2] = 0xFF;
+}
+
+#pragma push
+#pragma peephole off
+void GXClearVtxDesc(void) {
+    extern void *gx;
+    M2C_FIELD(gx, u32 *, 0x14) = 0;
+    M2C_FIELD(gx, u32 *, 0x14) = (M2C_FIELD(gx, u32 *, 0x14) & ~0x600) | 0x200;
+    M2C_FIELD(gx, u32 *, 0x18) = 0;
+    M2C_FIELD(gx, u8 *, 0x41C) = 0;
+    M2C_FIELD(gx, u8 *, 0x41D) = 0;
+    M2C_FIELD(gx, u32 *, 0x4F4) |= 8;
+}
+#pragma pop
+void __GXSetVAT(void) {
+    typedef struct {
+        u8 pad0[0x1C];
+        u32 vatA[8];
+        u32 vatB[8];
+        u32 vatC[8];
+        u8 pad7C[0x4F2 - 0x7C];
+        u8 dirtyVAT;
+    } GXVatData;
+    extern GXVatData *const gx;
+    u8 i;
+
+    for (i = 0; i < 8; i++) {
+        if (gx->dirtyVAT & (1 << i)) {
+            GXWGFifo.u8 = 8;
+            GXWGFifo.u8 = i | 0x70;
+            GXWGFifo.u32 = gx->vatA[i];
+            GXWGFifo.u8 = 8;
+            GXWGFifo.u8 = i | 0x80;
+            GXWGFifo.u32 = gx->vatB[i];
+            GXWGFifo.u8 = 8;
+            GXWGFifo.u8 = i | 0x90;
+            GXWGFifo.u32 = gx->vatC[i];
+        }
+    }
+    gx->dirtyVAT = 0;
 }
 
 void GXInvalidateVtxCache(void) {
