@@ -56,8 +56,11 @@ static void DummySRand(u32 seed) {
 }
 
 static u32 DummyRand(void) {
+    u32 result;
+
     next_803C6DF8 = next_803C6DF8 * 1103515245 + 12345;
-    return (next_803C6DF8 >> 16) & 0x7FFF;
+    result = (next_803C6DF8 >> 16) & 0x7FFF;
+    return result;
 }
 
 typedef struct TRKStepStatus {
