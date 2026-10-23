@@ -480,7 +480,7 @@ static inline s32 TRKReadBuffer_inline(TRKBuffer *b, void *data, u32 length) {
         return 0;
     }
     bytesLeft = b->length - b->position;
-    if (length > bytesLeft) {
+    if (bytesLeft < length) {
         error = 0x302;
         length = bytesLeft;
     }
@@ -11717,15 +11717,46 @@ s32 TRKReadBuffer_ui8(TRKBuffer *b, u8 *data, s32 count) {
     s32 i;
 
     for (i = 0, err = 0; err == 0 && i < count; i++) {
-        err = TRKReadBuffer1_ui8(b, &data[i]);
+        err = TRKReadBuffer1_ui8_inline(b, &data[i]);
     }
     return err;
 }
+
+s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data) {
+    s32 err;
+    u8 *bigEndianData;
+    u8 *byteData;
+    u8 swapBuffer[sizeof(data)];
+
+    if (gTRKBigEndian) {
+        bigEndianData = (u8 *)data;
+    } else {
+        bigEndianData = swapBuffer;
+    }
+    err = TRKReadBuffer_inline(b, bigEndianData, sizeof(*data));
+    if (!gTRKBigEndian && err == 0) {
+        byteData = (u8 *)data;
+        byteData[0] = bigEndianData[1];
+        byteData[1] = bigEndianData[0];
+    }
+    return err;
+}
+
 #pragma pop
 
 s32 TRKReadBuffer(TRKBuffer *b, void *data, u32 length);
 s32 TRKReadBuffer1_ui8(TRKBuffer *b, u8 *data) {
-    return TRKReadBuffer(b, data, 1);
+    return TRKReadBuffer_inline(b, data, 1);
+}
+
+s32 TRKAppendBuffer_ui32(TRKBuffer *b, const u32 *data, s32 count) {
+    s32 err;
+    s32 i;
+
+    for (i = 0, err = 0; err == 0 && i < count; i++) {
+        err = TRKAppendBuffer1_ui32_inline(b, data[i]);
+    }
+    return err;
 }
 
 s32 TRKAppendBuffer_ui8(TRKBuffer *b, const u8 *data, s32 count) {
