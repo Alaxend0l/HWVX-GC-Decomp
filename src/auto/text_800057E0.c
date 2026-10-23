@@ -11722,6 +11722,9 @@ s32 TRKReadBuffer_ui8(TRKBuffer *b, u8 *data, s32 count) {
 }
 #pragma pop
 
+#pragma push
+#pragma opt_propagation off
+#pragma opt_common_subs off
 s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data) {
     s32 err;
     u8 *bigEndianData;
@@ -11741,6 +11744,7 @@ s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data) {
     }
     return err;
 }
+#pragma pop
 
 #pragma push
 #pragma opt_propagation off
