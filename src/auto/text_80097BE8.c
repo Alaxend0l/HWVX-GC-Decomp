@@ -1208,6 +1208,71 @@ void __copy_longs_rev_unaligned(void *dst, const void *src, unsigned long n) {
     }
 }
 
+void __copy_longs_unaligned(void *dst, const void *src, u32 n) {
+    u32 i, v1, v2;
+    u32 src_offset, left_shift, right_shift;
+
+#define cps ((u8 *)src)
+#define cpd ((u8 *)dst)
+#define lps ((u32 *)src)
+#define lpd ((u32 *)dst)
+#define deref_auto_inc(p) *++(p)
+
+    i = (-(u32)dst) & 3;
+
+    cps = ((u8 *)src) - 1;
+    cpd = ((u8 *)dst) - 1;
+
+    if (i) {
+        n -= i;
+        do {
+            deref_auto_inc(cpd) = deref_auto_inc(cps);
+        } while (--i);
+    }
+
+    src_offset = ((u32)(cps + 1)) & 3;
+
+    left_shift = src_offset << 3;
+    right_shift = 32 - left_shift;
+
+    cps -= src_offset;
+
+    lps = ((u32 *)(cps + 1)) - 1;
+    lpd = ((u32 *)(cpd + 1)) - 1;
+
+    i = n >> 3;
+
+    v1 = deref_auto_inc(lps);
+
+    do {
+        v2 = deref_auto_inc(lps);
+        deref_auto_inc(lpd) = (v1 << left_shift) | (v2 >> right_shift);
+        v1 = deref_auto_inc(lps);
+        deref_auto_inc(lpd) = (v2 << left_shift) | (v1 >> right_shift);
+    } while (--i);
+
+    if (n & 4) {
+        v2 = deref_auto_inc(lps);
+        deref_auto_inc(lpd) = (v1 << left_shift) | (v2 >> right_shift);
+    }
+
+    cps = ((u8 *)(lps + 1)) - 1;
+    cpd = ((u8 *)(lpd + 1)) - 1;
+
+    if (n &= 3) {
+        cps -= 4 - src_offset;
+        do {
+            deref_auto_inc(cpd) = deref_auto_inc(cps);
+        } while (--n);
+    }
+
+#undef cps
+#undef cpd
+#undef lps
+#undef lpd
+#undef deref_auto_inc
+}
+
 void __copy_longs_rev_aligned(void *dst, const void *src, unsigned long n) {
     unsigned char *cps;
     unsigned char *cpd;
@@ -1562,6 +1627,30 @@ void time(s32 *arg0) {
     if (arg0 != NULL) {
         *arg0 = temp_r3;
     }
+}
+
+s32 InitializeUART(u32 baudRate);
+s32 WriteUARTN(const void *buf, u32 len);
+void __TRK_write_console(s32 handle, u8 *buffer, u32 *count, void *idle_proc);
+int __write_console(s32 handle, u8 *buffer, u32 *count, void *idle_proc) {
+    static int initialized;
+    s32 status = 0;
+
+    if (initialized == 0) {
+        status = InitializeUART(0xE100);
+        if (status == 0) {
+            initialized = 1;
+        }
+    }
+    if (status != 0) {
+        return 1;
+    }
+    if (WriteUARTN(buffer, *count) != 0) {
+        *count = 0;
+        return 1;
+    }
+    __TRK_write_console(handle, buffer, count, idle_proc);
+    return 0;
 }
 
 s32 fwide(FILE *stream, s32 mode) {
