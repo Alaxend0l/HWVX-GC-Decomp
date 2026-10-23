@@ -1680,10 +1680,13 @@ void AI_Create(void) {
     }
 }
 
+#pragma push
+#pragma auto_inline off
 void AI_Reset(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0xC8) = 1;
     M2C_FIELD(arg0, s8 *, 0xCC) = 0;
 }
+#pragma pop
 
 void AI_Init(void) {
     M2C_UNK fn_800957D4();
@@ -1891,6 +1894,56 @@ void AI_Car_AsyncScanDestructibles(u8 *car) {
             M2C_FIELD(car, s32 *, 0x608) = RandomAdd_s32(400, 400);
         }
     }
+}
+
+void AI_Car_Reset(u8 *car) {
+    typedef struct AICarParams {
+        f32 speedScale;
+        f32 gripScale;
+        u8 unk8[4];
+        f32 unkC;
+        u8 unk10[0x18];
+        u8 state[1];
+    } AICarParams;
+    typedef struct AICarTarget {
+        s32 value;
+        u8 unk4[0x10];
+    } AICarTarget;
+    void AI_Car_ResetState(u8 *car, void *state);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    void *memset(void *dst, s32 c, u32 n);
+    u8 *vehicle;
+    u16 i;
+
+    AI_Reset(car);
+    if (*(AICarParams **)(car + 0xD0) != NULL) {
+        *(f32 *)(car + 0x63C) = (*(AICarParams **)(car + 0xD0))->unkC;
+        vehicle = *(u8 **)(car + 0x2C);
+        if (vehicle != NULL) {
+            *(s32 *)(vehicle + 0x78) = *(s32 *)(vehicle + 0x78) * (*(AICarParams **)(car + 0xD0))->speedScale;
+            *(f32 *)(*(u8 **)(car + 0x2C) + 0x468) *= (*(AICarParams **)(car + 0xD0))->gripScale;
+        }
+        AI_Car_ResetState(car, (*(AICarParams **)(car + 0xD0))->state);
+    }
+    *(s32 *)(car + 0x3EC) = 0;
+    *(s32 *)(car + 0x3F0) = 0;
+    *(s32 *)(car + 0x5F0) = 0;
+    *(s32 *)(car + 0x5F4) = 0;
+    *(s32 *)(car + 0x4A8) = -1;
+    *(s32 *)(car + 0x4A4) = 0;
+    *(s32 *)(car + 0x4AC) = 0;
+    *(s32 *)(car + 0x4A0) = -2;
+    memset(car + 0x420, 0, 0x80);
+    for (i = 0; i < 16; i++) {
+        ((AICarTarget *)(car + 0x4B0))[i].value = 0;
+    }
+    *(s32 *)(car + 0x608) = RandomAdd_s32(1000, 1000);
+    *(s32 *)(car + 0x3E8) = 0;
+    *(s32 *)(car + 0x3E4) = 0;
+    *(s32 *)(car + 0x630) = 0;
+    *(s32 *)(car + 0x634) = -120;
+    *(s32 *)(car + 0x654) = 1;
+    *(s32 *)(car + 0x658) = 3000;
 }
 
 #pragma push
@@ -14535,6 +14588,50 @@ void AlarmHandler(void *alarm, void *context) {
         NextCommandNumber_803C72EC++;
         DVDLowSeek(command[3], (void (*)(u32))command[4]);
     }
+}
+
+BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback, s64 delay) {
+    BOOL OSDisableInterrupts(void);
+    BOOL OSRestoreInterrupts(BOOL level);
+    s64 __OSGetSystemTime(void);
+    void OSSetAlarm(void *alarm, s64 tick, void *handler);
+    BOOL __SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback);
+    void AlarmHandler(void *alarm, void *context);
+    BOOL enabled;
+    SIPacket *packet = &Packet_803096E0.packet[chan];
+    s64 now;
+    s64 fire;
+
+    enabled = OSDisableInterrupts();
+    if (packet->chan != -1 || Si_800D9E70.chan == chan) {
+        OSRestoreInterrupts(enabled);
+        return FALSE;
+    }
+
+    now = __OSGetSystemTime();
+    if (delay == 0) {
+        fire = now;
+    } else {
+        fire = Packet_803096E0.xferTime[chan] + delay;
+    }
+    if (now < fire) {
+        delay = fire - now;
+        OSSetAlarm(Packet_803096E0.alarm[chan], delay, AlarmHandler);
+    } else if (__SITransfer(chan, output, outputBytes, input, inputBytes, callback)) {
+        OSRestoreInterrupts(enabled);
+        return TRUE;
+    }
+
+    packet->chan = chan;
+    packet->output = output;
+    packet->outputBytes = outputBytes;
+    packet->input = input;
+    packet->inputBytes = inputBytes;
+    packet->callback = callback;
+    packet->fire = fire;
+
+    OSRestoreInterrupts(enabled);
+    return TRUE;
 }
 
 s32 SIGetTypeAsync(s32 chan, void (*callback)(s32, u32)) {
