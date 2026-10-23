@@ -8368,7 +8368,7 @@ void StateMovie_SetMovieToPlay(s32 arg0) {
     g_moviePlaybackName = (char *)arg0;
 }
 
-static char *StateMovie_GetNextMovieName(void) {
+static inline char *StateMovie_GetNextMovieName(void) {
     static char buffer[32];
     u32 n = 0;
     u32 len;
