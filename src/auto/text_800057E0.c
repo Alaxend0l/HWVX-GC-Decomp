@@ -307,7 +307,9 @@ typedef struct SIPacket {
 
 typedef struct SIPacketBss {
     SIPacket packet[4];
-    u8 unk80[0x1E0 - 0x80];
+    u8 unk80[0x1B0 - 0x80];
+    BOOL inputBufferValid[4];
+    u32 inputBuffer[4][2];
     u32 inputBufferVcount[4];
 } SIPacketBss;
 
