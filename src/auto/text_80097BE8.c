@@ -549,6 +549,19 @@ typedef struct GDLLine {
     u8 unk0[0x30];
 } GDLLine;
 
+typedef struct GDLVec4 {
+    f32 x, y, z, w;
+} GDLVec4;
+
+typedef struct GDL2DFXLine {
+    GDLVec4 p0;
+    GDLVec4 p1;
+    GXColor c0;
+    GXColor c1;
+    u8 unk28;
+    u8 pad29[0x30 - 0x29];
+} GDL2DFXLine;
+
 typedef struct GDLGroupTri {
     u8 type;
     u8 unk1[0xC - 0x1];
