@@ -3263,10 +3263,11 @@ static inline s8 PointInsideBSP(void *bsp, void *point) {
         } else {
             node = *(u16 *)(*(u8 **)((u8 *)bsp + 0x30) + node * 0x20 + 0x16);
             if (node == 0xFFFF) {
-                return 1;
+                break;
             }
         }
     }
+    return 1;
 }
 
 s8 OBoxHitsBSPZeroTime(void *obox, void *bsp, void *arg2) {
@@ -3399,30 +3400,18 @@ static inline u8 *TerrainGrid_GetCell(TerrainGrid *grid, Vector4 *point) {
 
 s8 VectorHitsTerrain(Vector4 *point) {
     f32 Distance_Plane(void *arg0, void *arg1);
-    typedef struct TerrainGrid {
-        Vector4 origin;
-        u8 unk10[0x20 - 0x10];
-        u8 *cells;
-        u8 unk24[0x28 - 0x24];
-        f32 sizeX;
-        f32 sizeY;
-        f32 sizeZ;
-        s32 numX;
-        s32 numY;
-        s32 numZ;
-        s32 *cellIndex;
-    } TerrainGrid;
-    u32 node;
-    u8 *cell;
     TerrainGrid *grid;
-    s32 index;
     s32 x;
     s32 y;
     s32 z;
+    s32 index;
+    u8 *cell;
+    u32 node;
 
-    if (g_worldData.world == NULL || (grid = *(TerrainGrid **)g_worldData.world) == NULL) {
+    if (g_worldData.world == NULL || *(TerrainGrid **)g_worldData.world == NULL) {
         return 0;
     }
+    grid = *(TerrainGrid **)g_worldData.world;
     x = (point->x - grid->origin.x) / grid->sizeX;
     y = (point->y - grid->origin.y) / grid->sizeY;
     z = (point->z - grid->origin.z) / grid->sizeZ;
@@ -3442,7 +3431,7 @@ s8 VectorHitsTerrain(Vector4 *point) {
     }
     node = 0;
     if (*(u8 **)(cell + 0x30) == NULL) {
-        return 0;
+        return node;
     }
     while (1) {
         if (Distance_Plane(*(u8 **)(cell + 0x30) + node * 0x20, point) >= 0.0f) {
@@ -3453,10 +3442,11 @@ s8 VectorHitsTerrain(Vector4 *point) {
         } else {
             node = *(u16 *)(*(u8 **)(cell + 0x30) + node * 0x20 + 0x16);
             if (node == 0xFFFF) {
-                return 1;
+                break;
             }
         }
     }
+    return 1;
 }
 
 #pragma pop
