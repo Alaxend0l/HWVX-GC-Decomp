@@ -390,6 +390,7 @@ typedef struct Block {
 } Block;
 
 SubBlock *Block_subBlock(Block *ths, u32 size);
+void Block_link(Block *ths, SubBlock *sb);
 
 static inline void SubBlock_split(SubBlock *ths, u32 sz) {
     SubBlock *np = (SubBlock *)((u8 *)ths + sz);
