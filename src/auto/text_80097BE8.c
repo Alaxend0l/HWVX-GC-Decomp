@@ -5323,15 +5323,17 @@ void PushDecodedAudioBuffer(void *arg0) {
 }
 
 #pragma push
-#pragma opt_propagation off
+#pragma opt_lifetimes off
 static void __THPHuffGenerateSizeTable(void) {
     s32 p, l, i;
+    u8 size;
 
     p = 0;
     for (l = 1; l <= 16; l++) {
-        i = (s32)__THPHuffmanBits_803C7824[l - 1];
+        i = __THPHuffmanBits_803C7824[l - 1];
+        size = l;
         while (i--) {
-            __THPHuffmanSizeTab_803C7828[p++] = (u8)l;
+            __THPHuffmanSizeTab_803C7828[p++] = size;
         }
     }
     __THPHuffmanSizeTab_803C7828[p] = 0;
