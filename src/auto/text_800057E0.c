@@ -6750,6 +6750,97 @@ void Geometry_FreeGeometry(void *geometry) {
     }
 }
 
+void *Geometry_Get(char *name) {
+    typedef struct {
+        void *geometry;
+        char name[0x40];
+        s16 refCount;
+    } GeoEntry;
+    typedef struct {
+        GeoEntry entries[0x800];
+        s32 numLoaded;
+        u32 maxEntries;
+    } GeometryHandler;
+    typedef struct {
+        u8 pad0[0x16];
+        u16 texIndex;
+        u16 texHandle;
+        u8 pad1a[6];
+    } GeoMaterial;
+    typedef struct {
+        u16 unk0;
+        u16 numMaterials;
+        u32 unk4;
+        GeoMaterial *materials;
+        u32 unkC;
+        u32 unk10;
+        u8 *textures;
+    } GeoMesh;
+    typedef struct {
+        u16 unk0;
+        u16 numMeshes;
+        u32 unk4;
+        GeoMesh *meshes;
+    } Geometry;
+    extern GeometryHandler *g_pGeometryHandler;
+    char *strcpy(char *dst, const char *src);
+    char *strcat(char *dst, const char *src);
+    char *strrchr(const char *s, int c);
+    u32 strlen(const char *s);
+    int stricmp(const char *a, const char *b);
+    void *LoadDataChunkFile(char *name);
+    u16 Gfx_LoadTexture(void *tex);
+    u32 slot = -1;
+    char path[256];
+    char *ext;
+    Geometry *geo;
+    u32 i;
+    u32 k;
+    GeoMesh *mesh;
+
+    if (name == NULL) {
+        return NULL;
+    }
+    strcpy(path, name);
+    ext = strrchr(path, '.');
+    if (ext != NULL && ext[1] == 'g') {
+        *ext = 0;
+    } else {
+        ext = path + strlen(path);
+    }
+    for (k = 0; k < g_pGeometryHandler->maxEntries; k++) {
+        if (g_pGeometryHandler->entries[k].geometry != NULL &&
+            stricmp(g_pGeometryHandler->entries[k].name, path) == 0) {
+            g_pGeometryHandler->entries[k].refCount++;
+            return g_pGeometryHandler->entries[k].geometry;
+        }
+        if (g_pGeometryHandler->entries[k].geometry == NULL && slot == -1) {
+            slot = k;
+        }
+    }
+    if (slot == -1) {
+        return NULL;
+    }
+    strcpy(g_pGeometryHandler->entries[slot].name, path);
+    strcat(path, ".gn");
+    geo = LoadDataChunkFile(path);
+    if (geo == NULL) {
+        return NULL;
+    }
+    g_pGeometryHandler->entries[slot].refCount++;
+    g_pGeometryHandler->entries[slot].geometry = geo;
+    g_pGeometryHandler->numLoaded++;
+    for (i = 0; i < geo->numMeshes; i++) {
+        mesh = &geo->meshes[i];
+        for (k = 0; k < mesh->numMaterials; k++) {
+            if (mesh->materials[k].texIndex != 0xFFFF) {
+                mesh->materials[k].texHandle = Gfx_LoadTexture(mesh->textures + mesh->materials[k].texIndex);
+            }
+        }
+    }
+    return geo;
+}
+
 typedef struct GridNode {
     u32 data;
     u32 id;
@@ -8574,6 +8665,48 @@ u8 *NavHolder_GetNavPoint(s32 index) {
 
 void *NavHolder_GetFirstWayPoint(void) {
     return gs_NavHolder_803C6CD8.data->firstWayPoint;
+}
+
+void ParticleManager_Init(void) {
+    typedef struct {
+        u8 unk0[0x94];
+        u8 flags;
+        u8 unk95[0xB0 - 0x95];
+    } ParticleSprite;
+    typedef struct {
+        u8 unk0[0xB4];
+        u8 flags;
+        u8 unkB5[0x100 - 0xB5];
+    } ParticleGX;
+    typedef struct {
+        struct {
+            ParticleGX particles[0x280];
+            s32 unk28000;
+            s32 unk28004;
+            u8 unk28008[0x8];
+        } groups[3];
+        ParticleSprite sprites[0x200];
+        s32 unk8E030;
+        u8 unk8E034[0xC];
+    } ParticleManager;
+    extern ParticleManager g_particleManager;
+    extern s32 g_numParticlesCreatedThisFrame;
+    ParticleManager *pm = &g_particleManager;
+    u32 j;
+    u32 i;
+
+    for (i = 0; i < 3; i++) {
+        for (j = 0; j < 0x280; j++) {
+            pm->groups[i].particles[j].flags |= 0xC;
+        }
+        pm->groups[i].unk28004 = 0;
+        pm->groups[i].unk28000 = 0;
+    }
+    for (j = 0; j < 0x200; j++) {
+        pm->sprites[j].flags |= 0xC;
+    }
+    pm->unk8E030 = 0;
+    g_numParticlesCreatedThisFrame = 0;
 }
 
 s8 ParticleManager_CanCreatureParticle(void *creature) {
