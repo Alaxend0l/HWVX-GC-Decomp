@@ -4307,6 +4307,40 @@ void Gfx_SetTextColor(s8 arg0, s8 arg1, s8 arg2, s8 arg3) {
     M2C_FIELD(&g_textcolor, s8 *, 3) = arg3;
 }
 
+s32 CreateVideoDecodeThread(s32 priority, void *param) {
+    typedef struct VideoDecodeData {
+        u8 thread[0x310];
+        u8 stack[0x1000];
+        u8 freeQueue[0x20];
+        void *freeMessage[3];
+        u8 decodedQueue[0x20];
+        void *decodedMessage[3];
+    } VideoDecodeData;
+    s32 OSCreateThread(void *thread, void *func, void *param, void *stack, u32 stackSize, s32 priority, u16 attr);
+    void OSInitMessageQueue(void *queue, void *msgArray, s32 msgCount);
+    void VideoDecoderForOnMemory(void *bufAddr);
+    void *VideoDecoder(void *param);
+    extern u8 VideoDecodeThread_8036CFF0[0x310];
+    extern s32 VideoDecodeThreadCreated_803C7728;
+    extern s32 First_803C772C;
+    VideoDecodeData *data = (VideoDecodeData *)VideoDecodeThread_8036CFF0;
+
+    if (param) {
+        if (OSCreateThread(data->thread, VideoDecoderForOnMemory, param, data->stack + 0x1000, 0x1000, priority, 1) == 0) {
+            return 0;
+        }
+    } else {
+        if (OSCreateThread(data->thread, VideoDecoder, NULL, data->stack + 0x1000, 0x1000, priority, 1) == 0) {
+            return 0;
+        }
+    }
+    OSInitMessageQueue(data->freeQueue, data->freeMessage, 3);
+    OSInitMessageQueue(data->decodedQueue, data->decodedMessage, 3);
+    VideoDecodeThreadCreated_803C7728 = 1;
+    First_803C772C = 1;
+    return 1;
+}
+
 void VideoDecodeThreadStart(void) {
     extern s32 VideoDecodeThreadCreated_803C7728;
     extern u8 VideoDecodeThread_8036CFF0[0x310];
@@ -4642,6 +4676,32 @@ BOOL ProperTimingForGettingNextFrame(void) {
         }
     }
     return FALSE;
+}
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 THPPlayerDrawCurrentFrame(void *rmode, u32 x, u32 y, u32 polygonW, u32 polygonH) {
+    typedef struct THPTextureSet {
+        u8 *ytexture;
+        u8 *utexture;
+        u8 *vtexture;
+        s32 frameNumber;
+    } THPTextureSet;
+    void THPGXYuv2RgbSetup(void *rmode);
+    void THPGXYuv2RgbDraw(u8 *y_data, u8 *u_data, u8 *v_data, s16 x, s16 y, s16 textureWidth, s16 textureHeight, s16 polygonWidth, s16 polygonHeight);
+    void THPGXRestore(void);
+    s32 currFrame;
+
+    if (ActivePlayer.open && ActivePlayer.state != 0 && *(THPTextureSet **)&ActivePlayer.unkD4[0x8] != NULL) {
+        THPGXYuv2RgbSetup(rmode);
+        THPGXYuv2RgbDraw((*(THPTextureSet **)&ActivePlayer.unkD4[0x8])->ytexture, (*(THPTextureSet **)&ActivePlayer.unkD4[0x8])->utexture,
+                         (*(THPTextureSet **)&ActivePlayer.unkD4[0x8])->vtexture, x, y, ActivePlayer.videoInfo.xSize,
+                         ActivePlayer.videoInfo.ySize, polygonW, polygonH);
+        THPGXRestore();
+        currFrame = ((*(THPTextureSet **)&ActivePlayer.unkD4[0x8])->frameNumber + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+        return currFrame;
+    }
+    return -1;
 }
 
 BOOL THPPlayerGetVideoInfo(THPVideoInfo *videoInfo) {
