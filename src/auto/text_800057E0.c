@@ -2244,6 +2244,43 @@ void CoronaHolder_Init(void) {
     g_totalCoronas = 0;
 }
 
+s32 CoronaHolder_Add(void *corona, Vector4 *pos) {
+    typedef struct Corona {
+        void *corona;
+        u8 unk4[0x10 - 0x4];
+        Vector4 pos;
+        u8 unk20[0x4C - 0x20];
+        u8 unk4C;
+        u8 unk4D[0x50 - 0x4D];
+        s32 flare;
+        s32 unk54;
+        u8 unk58;
+        u8 unk59[0x60 - 0x59];
+    } Corona;
+    extern Corona g_aCorona[64];
+    extern u32 g_totalCoronas;
+    s32 LensFlare_Add(void *flare, s32 arg1, Vector4 *pos);
+    Corona *c;
+
+    if (g_totalCoronas >= 64) {
+        return -1;
+    }
+    if (corona == NULL) {
+        return -1;
+    }
+    g_aCorona[g_totalCoronas].corona = corona;
+    c = &g_aCorona[g_totalCoronas];
+    c->pos = *pos;
+    c->flare = -1;
+    c->unk58 = 0;
+    c->unk54 = 0;
+    c->unk4C = 1;
+    if (M2C_FIELD(corona, void **, 0x20) != NULL) {
+        c->flare = LensFlare_Add(M2C_FIELD(corona, void **, 0x20), 0, pos);
+    }
+    return g_totalCoronas++;
+}
+
 void Creature_GetTargetPos(void *creature, Vector4 *pos) {
     pos->x = M2C_FIELD(creature, f32 *, 0x40);
     pos->y = 4.0f + M2C_FIELD(creature, f32 *, 0x44);
@@ -4468,6 +4505,39 @@ void ExitStateGamePlay(s32 arg0) {
     g_targetGameState = arg0;
     g_bExitStateGamePlay = 1;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+#pragma dont_inline on
+void SetPlayerControls(void) {
+    u8 PlayerManager_PlayerHumanCount(void);
+    void *PlayerManager_GetHumanPlayerByIndex(u8 index);
+    void PlayerHuman_SetControlBinding(void *player, s32 binding);
+    void PlayerHuman_SetDefaultControls(void *player, s32 arg);
+    void Input_SetForceFeedbackActive(s32 chan, u8 active);
+    u8 *mcp;
+    u32 i;
+    u32 count;
+    void *player;
+    ControllerSettings *settings;
+
+    mcp = GameSettings_GetMCP();
+    count = PlayerManager_PlayerHumanCount();
+    for (i = 0; i < count; i++) {
+        player = PlayerManager_GetHumanPlayerByIndex(i);
+        settings = GameSettings_GetControllerSettings(M2C_FIELD(player, s32 *, 0x60));
+        if (mcp != NULL && M2C_FIELD(mcp, u32 *, 0x3C) != 0) {
+            if (settings->data[1] >= M2C_FIELD(mcp, u32 *, 0x3C)) {
+                settings->data[1] = 0;
+            }
+            PlayerHuman_SetControlBinding(player, M2C_FIELD(*M2C_FIELD(mcp, void ****, 0x40)[settings->data[1]], s32 *, 0x8));
+        } else {
+            PlayerHuman_SetDefaultControls(player, settings->data[1]);
+        }
+        Input_SetForceFeedbackActive(M2C_FIELD(player, s32 *, 0xC8), settings->data[0]);
+    }
+}
+#pragma pop
 
 #pragma push
 #pragma dont_inline on
