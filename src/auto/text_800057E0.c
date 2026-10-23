@@ -5690,6 +5690,10 @@ s32 ThingManager_GetActiveSoundSequences(void **seqs) {
     return count;
 }
 
+s32 GetAllTargets(void **targets) {
+    return ThingManager_GetActiveCars(targets);
+}
+
 s8 TriggerVehicleDamage(u32 *params) {
     u32 i;
     u32 count;
