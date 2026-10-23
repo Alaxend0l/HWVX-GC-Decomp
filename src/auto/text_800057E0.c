@@ -4869,6 +4869,31 @@ void ViewManager_SetSinglePlayer(void) {
     g_CurrentViews &= ~(1 << 4);
 }
 
+void ViewManager_SetFourPlayer(void) {
+    extern s32 g_viewFormat;
+    extern u8 g_CurrentViews;
+    void Gfx_SetRenderWindow(u32 view);
+    void Gfx_SetRenderWindowSize(s32 x0, s32 y0, s32 x1, s32 y1, s32 arg4);
+    g_CurrentViews &= ~(1 << 0);
+    Gfx_SetRenderWindow(1);
+    Gfx_SetRenderWindowSize(0, 0, 0x13F, 0xEF, 0);
+    Gfx_SetRenderWindow(2);
+    Gfx_SetRenderWindowSize(0x140, 0, 0x27F, 0xEF, 0);
+    Gfx_SetRenderWindow(3);
+    Gfx_SetRenderWindowSize(0, 0xF0, 0x13F, 0x1DF, 0);
+    Gfx_SetRenderWindow(4);
+    Gfx_SetRenderWindowSize(0x140, 0xF0, 0x27F, 0x1DF, 0);
+    g_viewFormat = 5;
+}
+
+void Tracer_Release(void *tracer) {
+    extern u8 tracers_802CD600[][0x4E0];
+
+    M2C_FIELD(tracers_802CD600[M2C_FIELD(tracer, s32 *, 0xB4)], s16 *, 0x4CE) = 0;
+    M2C_FIELD(tracer, s32 *, 0xB0) = 0;
+    Thing_Release((s32)tracer);
+}
+
 s32 Tracer_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
@@ -6697,6 +6722,31 @@ void __ARQCallbackHack(void) {
 
 }
 
+void ARQInit(void) {
+    extern s32 __ARQ_init_flag_803C7464;
+    extern u32 __ARQRequestQueueHi_803C7440;
+    extern u32 __ARQRequestQueueLo_803C7448;
+    extern u32 __ARQChunkSize_803C7460;
+    extern u32 __ARQRequestPendingHi_803C7450;
+    extern u32 __ARQRequestPendingLo_803C7454;
+    extern u32 __ARQCallbackHi_803C7458;
+    extern u32 __ARQCallbackLo_803C745C;
+    void __ARQInterruptServiceRoutine(void);
+    void *ARRegisterDMACallback(void *callback);
+
+    if (__ARQ_init_flag_803C7464 == 1) {
+        return;
+    }
+    __ARQRequestQueueHi_803C7440 = __ARQRequestQueueLo_803C7448 = 0;
+    __ARQChunkSize_803C7460 = 0x1000;
+    ARRegisterDMACallback(__ARQInterruptServiceRoutine);
+    __ARQRequestPendingHi_803C7450 = 0;
+    __ARQRequestPendingLo_803C7454 = 0;
+    __ARQCallbackHi_803C7458 = 0;
+    __ARQCallbackLo_803C745C = 0;
+    __ARQ_init_flag_803C7464 = 1;
+}
+
 void ARQReset(void) {
     extern s32 __ARQ_init_flag_803C7464;
     __ARQ_init_flag_803C7464 = 0;
@@ -6990,26 +7040,38 @@ void *__AXGetPBs(void) {
     return __AXPB_802F78A0;
 }
 
+void __AXSetPBDefault(void *p) {
+    u8 *pb = p;
+    *(u16 *)(pb + 0x146) = 0;
+    *(u16 *)(pb + 0x16E) = 0;
+    *(u32 *)(pb + 0x1C) = 0xA4;
+    *(u32 *)(pb + 0x28) = 0;
+    *(u32 *)(pb + 0x24) = 0;
+    *(u8 **)(pb + 0x30) = pb + 0x34;
+    *(u16 *)(pb + 0x184) = 0;
+    *(u16 *)(pb + 0x182) = 0;
+    *(u16 *)(pb + 0x180) = 0;
+    *(u16 *)(pb + 0x17E) = 0;
+    *(u16 *)(pb + 0x17C) = 0;
+}
+
 void __AXVPBQuit(void) {
 
 }
 
-s32 __AXGetCurrentProfile(void)
-{
-  extern u32 __AXCurrentProfile_803C7520;
-  extern u32 __AXMaxProfiles_803C751C;
-  extern u32 __AXProfileInitialized_803C7524;
-  extern s32 __AXProfile_803C7518;
-  u32 temp_r3;
-  s32 new_var;
-  if (((u32) __AXProfileInitialized_803C7524) != 0U)
-  {
-    temp_r3 = __AXCurrentProfile_803C7520;
-    __AXCurrentProfile_803C7520 = temp_r3 + 1;
-    __AXCurrentProfile_803C7520 %= __AXMaxProfiles_803C751C;
-    return (new_var = __AXProfile_803C7518) + (temp_r3 * 0x38);
-  }
-  return 0;
+void *__AXGetCurrentProfile(void) {
+    extern u32 __AXCurrentProfile_803C7520;
+    extern u32 __AXMaxProfiles_803C751C;
+    extern u32 __AXProfileInitialized_803C7524;
+    extern u8 (*__AXProfile_803C7518)[0x38];
+    u8 (*profile)[0x38];
+
+    if (__AXProfileInitialized_803C7524) {
+        profile = __AXProfile_803C7518 + __AXCurrentProfile_803C7520++;
+        __AXCurrentProfile_803C7520 %= __AXMaxProfiles_803C751C;
+        return profile;
+    }
+    return NULL;
 }
 
 void AXFXDelayInit(void *arg0) {
@@ -7072,9 +7134,54 @@ void DSPSendMailToDSP(u32 mail) {
     regs[0x2801] = mail;
 }
 
+void __DSP_debug_printf(char *str, ...);
+void DSPInit(void) {
+    extern s32 __DSP_init_flag_803C7528;
+    extern DSPTaskInfo *__DSP_tmp_task;
+    extern void __DSPHandler(__OSInterrupt, void *);
+    s32 OSDisableInterrupts(void);
+    void OSRestoreInterrupts(s32);
+    s32 oldInt;
+    u16 reg;
+
+    __DSP_debug_printf("DSPInit(): Build Date: %s %s\n", "Apr  5 2004", "04:15:32");
+    if (__DSP_init_flag_803C7528 == 1) {
+        return;
+    }
+    oldInt = OSDisableInterrupts();
+    __OSSetInterruptHandler(7, __DSPHandler);
+    __OSUnmaskInterrupts(0x01000000);
+    reg = ((volatile u16 *)0xCC005000)[5];
+    reg = (reg & ~0xA8) | 0x800;
+    ((volatile u16 *)0xCC005000)[5] = reg;
+    reg = ((volatile u16 *)0xCC005000)[5];
+    reg = reg & ~0xAC;
+    ((volatile u16 *)0xCC005000)[5] = reg;
+    __DSP_tmp_task = NULL;
+    __DSP_curr_task = NULL;
+    __DSP_last_task = NULL;
+    __DSP_first_task = NULL;
+    __DSP_init_flag_803C7528 = 1;
+    OSRestoreInterrupts(oldInt);
+}
+
 s32 DSPCheckInit(void) {
     extern s32 __DSP_init_flag_803C7528;
     return __DSP_init_flag_803C7528;
+}
+
+void DSPReset(void) {
+    extern s32 __DSP_init_flag_803C7528;
+    s32 OSDisableInterrupts(void);
+    void OSRestoreInterrupts(s32);
+    s32 oldInt;
+    u16 reg;
+
+    oldInt = OSDisableInterrupts();
+    reg = ((volatile u16 *)0xCC005000)[5];
+    ((volatile u16 *)0xCC005000)[5] = (reg & ~0xA8) | 0x801;
+    __DSP_init_flag_803C7528 = 0;
+    OSRestoreInterrupts(oldInt);
 }
 
 s32 DSPGetDMAStatus(void) {
