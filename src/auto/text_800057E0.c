@@ -20556,7 +20556,6 @@ void GXSetTexCopyDst(u16 wd, u16 ht, s32 fmt, u8 mipmap) {
     reg = (u32 *)(gx + 0x1FC);
     *reg = (*reg & ~0x70) | (peTexFmt << 4);
 }
-#pragma pop
 
 void GXSetDispCopyFrame2Field(s32 mode) {
     extern u8 *gx;
