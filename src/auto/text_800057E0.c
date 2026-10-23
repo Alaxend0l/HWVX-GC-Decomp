@@ -1718,6 +1718,40 @@ void AI_AsyncHeartbeat(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0xC8) = 0x1F4;
 }
 
+s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest) {
+    void *memset(void *dst, s32 val, u32 n);
+    u8 *NavHolder_FindPath(void *holder, s32 dest);
+    void NavHolder_FillPointerArrayPath(u8 *point, u8 **array, u32 max);
+    void AI_Car_ClearedNavPoint_800087C8(u8 *car, s32 arg1);
+    f32 LinearPointTest(void *pos, void *a, void *b);
+    s32 result = 1;
+    u8 *point;
+
+    memset(car + 0x420, 0, 0x80);
+    *(u32 *)(car + 0x4A4) = 0;
+    point = NavHolder_FindPath(holder, dest);
+    if (point != NULL) {
+        NavHolder_FillPointerArrayPath(point, (u8 **)(car + 0x420), 0x20);
+        *(s32 *)(car + 0x4A8) = dest;
+        AI_Car_ClearedNavPoint_800087C8(car, 1);
+        while (*(u32 *)(car + 0x4A4) < 31) {
+            u8 *a = ((u8 **)(car + 0x420))[*(u32 *)(car + 0x4A4)];
+            u8 *b = ((u8 **)(car + 0x420))[*(u32 *)(car + 0x4A4) + 1];
+            if (a == NULL || b == NULL) {
+                break;
+            }
+            if (LinearPointTest(*(u8 **)(car + 0x2C) + 0x40, a, b) < 0.0f) {
+                break;
+            }
+            AI_Car_ClearedNavPoint_800087C8(car, 0);
+        }
+    } else {
+        result = 0;
+        *(s32 *)(car + 0x4A8) = -1;
+    }
+    return result;
+}
+
 s32 AI_Heartbeat(u8 *ai) {
     s8 Player_AIControlReader(u8 *ai);
 
@@ -12088,6 +12122,59 @@ u32 VIGetTvFormat(void) {
     }
     OSRestoreInterrupts(enabled);
     return format;
+}
+
+void PADClamp(void *status) {
+    typedef struct {
+        u16 button;
+        s8 stickX;
+        s8 stickY;
+        s8 substickX;
+        s8 substickY;
+        u8 triggerLeft;
+        u8 triggerRight;
+        u8 analogA;
+        u8 analogB;
+        s8 err;
+    } PADStatus_;
+    typedef struct {
+        u8 minTrigger;
+        u8 maxTrigger;
+        s8 minStick;
+        s8 maxStick;
+        s8 xyStick;
+        s8 minSubstick;
+        s8 maxSubstick;
+        s8 xySubstick;
+    } PADClampRegion;
+    void ClampStick(s8 *px, s8 *py, s8 max, s8 xy, s8 min);
+    extern PADClampRegion ClampRegion_803C6DC0;
+    s32 i;
+    PADStatus_ *pad;
+
+    for (i = 0, pad = status; i < 4; i++, pad++) {
+        if (pad->err != 0) {
+            continue;
+        }
+        ClampStick(&pad->stickX, &pad->stickY, ClampRegion_803C6DC0.maxStick, ClampRegion_803C6DC0.xyStick, ClampRegion_803C6DC0.minStick);
+        ClampStick(&pad->substickX, &pad->substickY, ClampRegion_803C6DC0.maxSubstick, ClampRegion_803C6DC0.xySubstick, ClampRegion_803C6DC0.minSubstick);
+        if (pad->triggerLeft <= ClampRegion_803C6DC0.minTrigger) {
+            pad->triggerLeft = 0;
+        } else {
+            if (ClampRegion_803C6DC0.maxTrigger < pad->triggerLeft) {
+                pad->triggerLeft = ClampRegion_803C6DC0.maxTrigger;
+            }
+            pad->triggerLeft -= ClampRegion_803C6DC0.minTrigger;
+        }
+        if (pad->triggerRight <= ClampRegion_803C6DC0.minTrigger) {
+            pad->triggerRight = 0;
+        } else {
+            if (ClampRegion_803C6DC0.maxTrigger < pad->triggerRight) {
+                pad->triggerRight = ClampRegion_803C6DC0.maxTrigger;
+            }
+            pad->triggerRight -= ClampRegion_803C6DC0.minTrigger;
+        }
+    }
 }
 
 extern u32 AnalogMode_803C6DD0;
