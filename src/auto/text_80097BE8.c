@@ -141,7 +141,8 @@ typedef struct THPPlayer {
     s32 retraceCount;
     s32 prevCount;
     s32 curCount;
-    u8 unkD0[0x198 - 0xD0];
+    s32 videoDecodeCount;
+    u8 unkD4[0x198 - 0xD4];
 } THPPlayer;
 
 typedef struct THPFileInfo {
@@ -3265,7 +3266,7 @@ void Gfx_UnLoadTexture(u16 id) {
             tex = &((Texture *)m_texture)[id];
             tex->width = 0;
             tex = &((Texture *)m_texture)[id];
-            tex->data = 0;
+            tex->data = NULL;
         }
     }
 }
