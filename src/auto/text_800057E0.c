@@ -42,6 +42,29 @@ typedef struct DVDQueue {
 
 extern DVDQueue WaitingQueue_802EFA18[4];
 
+typedef struct TRKStepStatus {
+    s32 active;
+    u8 type;
+    u32 count;
+    u32 rangeStart;
+    u32 rangeEnd;
+} TRKStepStatus;
+
+extern TRKStepStatus gTRKStepStatus_800DA0B4;
+
+static s32 TRKTargetDoStep(void) {
+    extern u8 gTRKCPUState[];
+    extern u8 gTRKState[];
+
+    gTRKStepStatus_800DA0B4.active = 1;
+    *(u32 *)(gTRKCPUState + 0x1F8) |= 0x400;
+    if (gTRKStepStatus_800DA0B4.type == 0 || gTRKStepStatus_800DA0B4.type == 0x10) {
+        gTRKStepStatus_800DA0B4.count--;
+    }
+    *(s32 *)(gTRKState + 0x98) = 0;
+    return 0;
+}
+
 void *ThingManagerList_GetByType(void *list, s32 type);
 void WildCardRack_Add(void *rack, u8 *item, s16 count);
 void Item_Release(void *item);
@@ -8008,7 +8031,7 @@ void GXSetFieldMask(u8 odd_mask, u8 even_mask) {
     reg = (reg & ~2) | (odd_mask << 1);
     reg = (reg & 0xFFFFFF) | 0x44000000;
     GXWGFifo.u8 = 0x61;
-    GXWGFifo.s32 = reg;
+    GXWGFifo.u32 = reg;
     *(u16 *)(gx + 2) = 0;
 }
 
