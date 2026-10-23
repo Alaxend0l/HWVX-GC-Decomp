@@ -62,7 +62,7 @@ typedef struct Shader {
     u8 hasTextureKey;
     u8 hasPointKey;
     u8 pad63;
-    s32 refCount;
+    u32 refCount;
     u8 pad68[4];
 } Shader;
 
@@ -9165,6 +9165,36 @@ void ShaderHolder_Init(void) {
     extern void *g_pShaderHolder;
     M2C_FIELD(g_pShaderHolder, s32 *, 0x2000) = 0;
     M2C_FIELD(g_pShaderHolder, s32 *, 0x2004) = 0;
+}
+
+s32 ShaderHolder_AddShader(ShaderDef *def) {
+    extern ShaderHolder *g_pShaderHolder;
+    u32 i;
+    s32 slot = -1;
+    u32 n;
+
+    for (i = 0; i < g_pShaderHolder->numShaders; i++) {
+        if (((Shader *)g_pShaderHolder->shaders[i])->def == def) {
+            return i;
+        }
+    }
+    for (i = 0; i < 0x40; i++) {
+        if (g_pShaderHolder->slots[i].refCount == 0) {
+            slot = i;
+            break;
+        }
+    }
+    n = g_pShaderHolder->numShaders++;
+    g_pShaderHolder->shaders[n] = &g_pShaderHolder->slots[slot];
+    ((Shader *)g_pShaderHolder->shaders[n])->def = def;
+    ((Shader *)g_pShaderHolder->shaders[n])->unk2C = 1;
+    ((Shader *)g_pShaderHolder->shaders[n])->unk38 = 1;
+    ((Shader *)g_pShaderHolder->shaders[n])->unk58 = 1;
+    ((Shader *)g_pShaderHolder->shaders[n])->hasColorKey = def->numColorKeys > 1;
+    ((Shader *)g_pShaderHolder->shaders[n])->hasTextureKey = *def->textureKeys != 0;
+    ((Shader *)g_pShaderHolder->shaders[n])->hasPointKey = def->numPointKeys > 1;
+    ((Shader *)g_pShaderHolder->shaders[n])->refCount = 1;
+    return n;
 }
 
 void ShaderHolder_RemoveShader(void *id) {
