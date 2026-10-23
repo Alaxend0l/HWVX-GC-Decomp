@@ -5784,6 +5784,20 @@ void ThingManager_DARYL_Create(void) {
     CollisionTriCache_Clear();
     memset(g_aSharedSlaveHolder, 0, sizeof(g_aSharedSlaveHolder));
 }
+
+void ThingManager_DARYL_Destroy(void) {
+    void *thing;
+    u32 i;
+
+    for (thing = g_thingManager_DARYL.activeList; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
+        ((void (*)(void *))(M2C_FIELD(thing, void ***, 0x8C))[1])(thing);
+    }
+    g_thingManager_DARYL.activeList = NULL;
+    for (i = 0; i < 18; i++) {
+        g_thingManager_DARYL.freeList[i] = NULL;
+    }
+}
+
 #pragma pop
 
 #pragma pop
