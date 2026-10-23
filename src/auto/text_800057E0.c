@@ -3594,6 +3594,48 @@ void ForceFeedback_Play(void *effect, Vector4 *dir) {
     }
 }
 
+void ForceFeedback_Heartbeat(void) {
+    typedef struct ForceFeedback {
+        u8 *effect;
+        u8 point[0x20 - 0x4];
+        u8 value[0x50 - 0x20];
+        s32 unk50;
+        s32 unk54;
+        s32 unk58;
+        u8 unk5C[0x60 - 0x5C];
+    } ForceFeedback;
+    extern ForceFeedback g_forcefeedback[24];
+    extern f32 g_fDeltaTimeMS;
+    extern s32 g_iDeltaTimeMS;
+    void ExtractPointKey(void *keys, void *out, f32 time);
+    void ExtractF32Key(void *keys, void *out, f32 time);
+    s32 i;
+
+    for (i = 0; i < 24; i++) {
+        if (g_forcefeedback[i].effect != NULL) {
+            ExtractPointKey(g_forcefeedback[i].effect + 0x2C, g_forcefeedback[i].point, g_fDeltaTimeMS);
+            if (g_forcefeedback[i].unk54 > 0) {
+                g_forcefeedback[i].unk54 -= g_iDeltaTimeMS;
+            }
+            if (g_forcefeedback[i].unk58 > 0) {
+                g_forcefeedback[i].unk58 -= g_iDeltaTimeMS;
+                if (g_forcefeedback[i].unk58 >= 0) {
+                    ExtractF32Key(*(void **)(g_forcefeedback[i].effect + 0x28), g_forcefeedback[i].value, g_fDeltaTimeMS);
+                }
+            }
+            if (g_forcefeedback[i].unk50 > 0) {
+                g_forcefeedback[i].unk50 -= g_iDeltaTimeMS;
+                if (g_forcefeedback[i].unk50 >= 0) {
+                    ExtractF32Key(*(void **)(g_forcefeedback[i].effect + 0x24), g_forcefeedback[i].value, g_fDeltaTimeMS);
+                }
+            }
+        }
+        if (g_forcefeedback[i].unk54 <= 0 && g_forcefeedback[i].unk58 <= 0 && g_forcefeedback[i].unk50 <= 0) {
+            g_forcefeedback[i].effect = NULL;
+        }
+    }
+}
+
 void GameSettings_ResetGame(void) {
     s32 i;
 
@@ -12346,6 +12388,60 @@ void stateCheckID2(void) {
     DVDLowRead(tmpBuffer_802EF940, 0x20, 0x420, cbForStateCheckID2);
 }
 
+#pragma push
+#pragma optimization_level 2
+void cbForStateCheckID1(u32 intType) {
+    void __DVDStoreErrorCode(u32);
+    void DVDReset(void);
+    void cbForStateError(u32);
+    void DVDLowStopMotor(void (*)(u32));
+    void stateReady_800725A4(void);
+    void stateMotorStopped(DVDCommandBlock *block);
+    extern DVDCommandBlock *executing_803C7310;
+    extern DVDCommandBlock DummyCommandBlock_802EF9C0;
+    extern s32 NumInternalRetry_803C7344;
+    extern u32 Canceling_803C7330;
+    extern u32 ResumeFromHere_803C7338;
+    extern void (*CancelCallback_803C7334)(s32, DVDCommandBlock *);
+    DVDCommandBlock *finished;
+    s32 canceled;
+
+    if (intType == 16) {
+        executing_803C7310->state = -1;
+        __DVDStoreErrorCode(0x01234568);
+        DVDReset();
+        cbForStateError(0);
+        return;
+    }
+    if (intType & 2) {
+        executing_803C7310->state = -1;
+        __DVDStoreErrorCode(0x01234567);
+        DVDLowStopMotor(cbForStateError);
+        return;
+    }
+    canceled = 0;
+    NumInternalRetry_803C7344 = 0;
+    if (Canceling_803C7330) {
+        ResumeFromHere_803C7338 = 1;
+        finished = executing_803C7310;
+        Canceling_803C7330 = 0;
+        executing_803C7310 = &DummyCommandBlock_802EF9C0;
+        finished->state = 10;
+        if (finished->callback) {
+            (*finished->callback)(-3, finished);
+        }
+        if (CancelCallback_803C7334) {
+            (*CancelCallback_803C7334)(0, finished);
+        }
+        stateReady_800725A4();
+        canceled = 1;
+    }
+    if (canceled == 0) {
+        executing_803C7310->state = 6;
+        stateMotorStopped(executing_803C7310);
+    }
+}
+#pragma pop
 void cbForStateCheckID2(u32 intType) {
     M2C_UNK DVDLowRead(void *, u32, u32, void (*)(u32));
     M2C_UNK DVDLowRequestError(void (*)(u32));
@@ -14760,6 +14856,40 @@ error:
         card->eraseCallback = NULL;
         callback(chan, result);
     }
+}
+
+s32 CARDWriteAsync(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset, CARDCallback callback) {
+    s32 __CARDSeek(CARDFileInfo *fileInfo, s32 length, s32 offset, CARDControl **pcard);
+    s32 __CARDGetDirBlock(void *card);
+    s32 __CARDAccess(void *card, u8 *ent);
+    s32 __CARDEraseSector(s32 chan, u32 addr, void *callback);
+    void DCStoreRange(void *addr, u32 nBytes);
+    CARDControl *card;
+    s32 result;
+    u8 *dir;
+    u8 *ent;
+
+    result = __CARDSeek(fileInfo, length, offset, &card);
+    if (result < 0) {
+        return result;
+    }
+    if ((offset & (card->sectorSize - 1)) != 0 || (length & (card->sectorSize - 1)) != 0) {
+        return __CARDPutControlBlock(card, -128);
+    }
+    dir = (u8 *)__CARDGetDirBlock(card);
+    ent = dir + fileInfo->fileNo * 0x40;
+    result = __CARDAccess(card, ent);
+    if (result < 0) {
+        return __CARDPutControlBlock(card, result);
+    }
+    DCStoreRange(buf, length);
+    card->apiCallback = callback ? callback : (CARDCallback)__CARDDefaultApiCallback;
+    card->offset = (s32)buf;
+    result = __CARDEraseSector(fileInfo->chan, card->sectorSize * fileInfo->iBlock, EraseCallback);
+    if (result < 0) {
+        __CARDPutControlBlock(card, result);
+    }
+    return result;
 }
 
 s32 __CARDGetFileNo(CARDControl *card, const char *fileName, s32 *pfileNo);
