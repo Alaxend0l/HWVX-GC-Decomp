@@ -764,7 +764,7 @@ typedef struct GDLSphere {
 
 typedef struct GDLMatrix {
     f32 m[16];
-} GDLMatrix;
+} GDLMatrix __attribute__((aligned(16)));
 
 typedef struct GDL {
     u8 unk0[0x4];
@@ -4950,6 +4950,31 @@ void Render_UseLighting(u8 arg0) {
         return;
     }
     GXSetChanCtrl(4, 0, 1, 1, 0, 0, 2);
+}
+
+void Render_DrawSpheres(void) {
+    extern s32 m_cullMode;
+    extern GDL *g_pGDL;
+    extern GDLMatrix g_identity;
+    void Render_SetTextureHandle(s32 handle);
+    void GXDrawSphere(s32 numMajor, s32 numMinor);
+    GDLMatrix mtx __attribute__((aligned(16)));
+    s32 cullMode;
+    u32 i;
+
+    cullMode = m_cullMode;
+    Render_SetTextureHandle(0xFFFF);
+    Render_StateCullMode(2);
+    mtx = g_identity;
+    for (i = 0; i < g_pGDL->numSpheres; i++) {
+        mtx.m[12] = g_pGDL->spheres[i].x;
+        mtx.m[13] = g_pGDL->spheres[i].y;
+        mtx.m[14] = g_pGDL->spheres[i].z;
+        mtx.m[10] = mtx.m[5] = mtx.m[0] = g_pGDL->spheres[i].radius;
+        Gfx_SetWorldMatrix(mtx.m);
+        GXDrawSphere(8, 16);
+    }
+    Render_StateCullMode(cullMode);
 }
 
 void SetVertexBuffer(u32 *vb) {
