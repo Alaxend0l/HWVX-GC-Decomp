@@ -2744,6 +2744,73 @@ void MotionState_Heartbeat(void *state, void *arg1, void *thing) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void TEST_AnimTraverseHeirarchyToMatricesWorld(Vector4 *quat, void *pos0, void *frames, s32 skel, void *matrices, f32 time) {
+    typedef struct AnimBone {
+        Quaternion rot;
+        f32 pos[3];
+        u8 numChildren;
+        u8 pop;
+        u8 next;
+        u8 pad[1];
+    } AnimBone;
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    Vector4 posStack[64];
+    Quaternion rotStack[64];
+    Matrix4 m;
+    Quaternion rot;
+    Quaternion q;
+    Vector4 pos;
+    Vector4 *mtx;
+    u32 i;
+    Vector4 *posSp;
+    Quaternion *rotSp;
+    AnimBone *bone;
+    u32 n;
+    Vector4 *p;
+    u32 j;
+
+    pos.w = 1.0f;
+    bone = frames;
+    mtx = matrices;
+    posSp = posStack;
+    rotSp = rotStack;
+    rot = *(Quaternion *)quat;
+    QuaternionToSubMatrix(quat, &m);
+    m.v[3] = *(Vector4 *)pos0;
+    XformVec(&m, (Vector4 *)((AnimBone *)frames)->pos, &pos);
+    for (i = 0; i < skel; i++) {
+        QuaternionMult((Vector4 *)&rot, (Vector4 *)&bone->rot, (Vector4 *)&q);
+        rot = q;
+        QuaternionToSubMatrix(&q, mtx);
+        mtx[3] = pos;
+        mtx[3].w = 1.0f;
+        if (bone->numChildren != 0) {
+            frames = &bone[1];
+            n = bone->numChildren - 1;
+            XformVec(mtx, (Vector4 *)((AnimBone *)frames)->pos, &pos);
+            if (n != 0) {
+                posSp += n;
+                p = posSp;
+                frames = &((AnimBone *)frames)[((AnimBone *)frames)->next];
+                *rotSp++ = q;
+                for (j = 0; j < n; j++) {
+                    XformVec(mtx, (Vector4 *)((AnimBone *)frames)->pos, --p);
+                    frames = &((AnimBone *)frames)[((AnimBone *)frames)->next];
+                }
+            }
+        } else {
+            pos = *--posSp;
+            rotSp -= bone->pop + 1;
+            rot = *rotSp++;
+        }
+        bone++;
+        mtx += 4;
+    }
+}
+#pragma pop
+
 s32 AttachThing_Init(u8 *attach, u8 *data) {
     f32 RandomAdd(f32 base, f32 range);
     void ExtractColorKey(void *keys, void *out, f32 time);
@@ -8605,6 +8672,101 @@ void InterfaceManager_Render(void) {
         if (*(void **)iface != NULL && (*(u32 *)(iface + 4) != 1 || *(u32 *)(iface + 0x10) != 0) && iface[0x7F] == 0) {
             InterfaceManager_RenderInterface(iface);
         }
+    }
+}
+
+void InterfaceManager_DrawObject_Standard_Image(u8 *obj) {
+    typedef struct RectVtx {
+        f32 x;
+        f32 y;
+        f32 z;
+        f32 pad;
+        f32 s;
+        f32 t;
+        u32 color;
+        u32 pad2;
+    } RectVtx;
+    typedef struct Rect {
+        RectVtx v[4];
+        u16 tex;
+        u8 blendMode;
+        u8 window;
+    } Rect;
+    Rect *Gfx_Add2DRectangle(void);
+    void Gfx_Add2DRectangleBack(Rect *rect);
+    void SinCos(f32 *s, f32 *c, f32 angle);
+    Rect local;
+    Rect *rect;
+    f32 x0, y0;
+    f32 s, c;
+    f32 tx, ty;
+    u8 *anchor;
+
+    if (*(u16 *)(obj + 0x24A) == 0xFFFF) {
+        return;
+    }
+    if (*(f32 *)(obj + 0x68) != 0.0f) {
+        rect = &local;
+    } else {
+        rect = Gfx_Add2DRectangle();
+    }
+    rect->blendMode = obj[0x241];
+    rect->tex = *(u16 *)(obj + 0x24A);
+    anchor = *(u8 **)(obj + 0x25C);
+    x0 = 0.5f * *(f32 *)(obj + 0x30) + 0.5f * (*(f32 *)(anchor + 0x30) * *(f32 *)(obj + 0x30));
+    y0 = 0.5f * *(f32 *)(obj + 0x34) + 0.5f * (*(f32 *)(anchor + 0x34) * *(f32 *)(obj + 0x34));
+    x0 = -x0;
+    y0 = -y0;
+    rect->v[0].x = x0;
+    rect->v[0].y = y0;
+    rect->v[1].x = x0 + *(f32 *)(obj + 0x30);
+    rect->v[1].y = y0;
+    rect->v[2].x = x0 + *(f32 *)(obj + 0x30);
+    rect->v[2].y = y0 + *(f32 *)(obj + 0x34);
+    rect->v[3].x = x0;
+    rect->v[3].y = y0 + *(f32 *)(obj + 0x34);
+    rect->v[0].s = *(f32 *)(obj + 0xC0);
+    rect->v[0].t = *(f32 *)(obj + 0xDC);
+    rect->v[1].s = *(f32 *)(obj + 0xD8);
+    rect->v[1].t = *(f32 *)(obj + 0xDC);
+    rect->v[2].s = *(f32 *)(obj + 0xD8);
+    rect->v[2].t = *(f32 *)(obj + 0xC4);
+    rect->v[3].s = *(f32 *)(obj + 0xC0);
+    rect->v[3].t = *(f32 *)(obj + 0xC4);
+    rect->v[0].color = *(u32 *)(obj + 0x24);
+    rect->v[1].color = *(u32 *)(obj + 0x24);
+    rect->v[2].color = *(u32 *)(obj + 0x24);
+    rect->v[3].color = *(u32 *)(obj + 0x24);
+    if (*(f32 *)(obj + 0x90)) {
+        SinCos(&s, &c, *(f32 *)(obj + 0x90));
+        tx = rect->v[0].x;
+        ty = rect->v[0].y;
+        rect->v[0].x = *(f32 *)(obj + 0x60) + (tx * c - ty * s);
+        rect->v[0].y = *(f32 *)(obj + 0x64) + (tx * s + ty * c);
+        tx = rect->v[1].x;
+        ty = rect->v[1].y;
+        rect->v[1].x = *(f32 *)(obj + 0x60) + (tx * c - ty * s);
+        rect->v[1].y = *(f32 *)(obj + 0x64) + (tx * s + ty * c);
+        tx = rect->v[2].x;
+        ty = rect->v[2].y;
+        rect->v[2].x = *(f32 *)(obj + 0x60) + (tx * c - ty * s);
+        rect->v[2].y = *(f32 *)(obj + 0x64) + (tx * s + ty * c);
+        tx = rect->v[3].x;
+        ty = rect->v[3].y;
+        rect->v[3].x = *(f32 *)(obj + 0x60) + (tx * c - ty * s);
+        rect->v[3].y = *(f32 *)(obj + 0x64) + (tx * s + ty * c);
+    } else {
+        rect->v[0].x += *(f32 *)(obj + 0x60);
+        rect->v[0].y += *(f32 *)(obj + 0x64);
+        rect->v[1].x += *(f32 *)(obj + 0x60);
+        rect->v[1].y += *(f32 *)(obj + 0x64);
+        rect->v[2].x += *(f32 *)(obj + 0x60);
+        rect->v[2].y += *(f32 *)(obj + 0x64);
+        rect->v[3].x += *(f32 *)(obj + 0x60);
+        rect->v[3].y += *(f32 *)(obj + 0x64);
+    }
+    if (*(f32 *)(obj + 0x68) != 0.0f) {
+        Gfx_Add2DRectangleBack(rect);
     }
 }
 
