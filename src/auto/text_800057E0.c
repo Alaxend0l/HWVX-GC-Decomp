@@ -3056,6 +3056,26 @@ void TEST_AnimTraverseHeirarchyToMatricesWorld(Vector4 *quat, void *pos0, void *
         mtx += 4;
     }
 }
+
+#pragma push
+#pragma inline_depth(6)
+s32 AnimNodes_BlowBranch(u8 *node) {
+    s32 count = 1;
+    u8 *child = node + 0x20;
+    u32 i;
+
+    if (node[0x1F] & 3) {
+        return 0;
+    }
+    node[0x1F] |= 2;
+    for (i = 0; i < node[0x1C]; i++) {
+        count += AnimNodes_BlowBranch(child);
+        child += child[0x1E] << 5;
+    }
+    return count;
+}
+#pragma pop
+
 #pragma pop
 
 s32 AttachThing_Init(u8 *attach, u8 *data) {
@@ -14282,6 +14302,7 @@ void Thing_CollideWithItems(u8 *thing) {
     f32 PSVECSquareDistance(f32 *a, f32 *b);
     s8 Creature_ProcessItemPickup(void *creature, void *item);
     s8 CarA_ProcessItemPickup(void *car, void *item);
+    void Item_Release(void *item);
     void *ThingManager_DARYL_CreateThing(s32 type, void *params);
     Vector4 min;
     Vector4 max;
@@ -14291,6 +14312,8 @@ void Thing_CollideWithItems(u8 *thing) {
     s32 i;
     u8 *item;
     s8 picked;
+    void *rack;
+    void *motion;
 
     max = *(Vector4 *)(thing + 0x40);
     min = max;
@@ -14313,7 +14336,29 @@ void Thing_CollideWithItems(u8 *thing) {
                 picked = CarA_ProcessItemPickup(thing, item);
                 break;
             case 11:
-                picked = Thing_ProcessItemPickup(thing, item);
+                switch (**(u8 **)(item + 0xC0)) {
+                case 3:
+                    rack = ThingManagerList_GetByType(thing + 0x88, 8);
+                    if (rack == NULL) {
+                        break;
+                    }
+                    WildCardRack_Add(rack, *(u8 **)(item + 0xC0), *(s16 *)(item + 0xCE));
+                    Item_Release(item);
+                    motion = *(void **)(item + 0xD0);
+                    if (motion != NULL) {
+                        *(s32 *)((u8 *)motion + 0x18) = *(s32 *)((u8 *)motion + 0x14);
+                    }
+                    picked = 1;
+                    goto done;
+                case 0:
+                case 1:
+                case 2:
+                    break;
+                default:
+                    break;
+                }
+                picked = 0;
+            done:
                 break;
             }
             if (picked && *(u32 *)(*(u8 **)(item + 0xC0) + 0x24) != 0) {
