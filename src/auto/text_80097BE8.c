@@ -612,7 +612,8 @@ typedef struct GDL {
     u32 numRects2D;
     u8 unk1C[0x20 - 0x1C];
     u32 numRects;
-    u8 unk24[0x34 - 0x24];
+    u32 num3DLines;
+    u8 unk28[0x34 - 0x28];
     u32 numLines;
     s32 unk38;
     s32 unk3C;
