@@ -4095,6 +4095,57 @@ s8 VectorHitsTerrain(Vector4 *point) {
     }
 }
 
+void BuildOOB(Vector4 *bounds, Matrix4 *mtx, u8 *oob) {
+    void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
+    void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0);
+    Vector4 z;
+    Vector4 f;
+    Vector4 b;
+    Vector4 y;
+    Vector4 x;
+    Vector4 fr;
+    Vector4 fl;
+    Vector4 br;
+    Vector4 bl;
+    Vector4 center;
+    Vector4 *corners = (Vector4 *)oob;
+    f32 *ext = (f32 *)(oob + 0x90);
+    Vector4 **axes = (Vector4 **)(oob + 0xA0);
+
+    ext[0] = 0.5f * (bounds[1].z - bounds[0].z);
+    ext[1] = 0.5f * (bounds[1].x - bounds[0].x);
+    ext[2] = 0.5f * (bounds[1].y - bounds[0].y);
+    axes[0] = &mtx->v[2];
+    axes[1] = &mtx->v[0];
+    axes[2] = &mtx->v[1];
+    PSVECAdd(&bounds[0], &bounds[1], &center);
+    PSVECScale(&center, &center, 0.5f);
+    PSVECScale(&mtx->v[2], &corners[0], center.z);
+    AccumulateVector(&mtx->v[0], &corners[0], &corners[0], center.x);
+    AccumulateVector(&mtx->v[1], &corners[0], &corners[0], center.y);
+    PSVECAdd(&mtx->v[3], &corners[0], &corners[0]);
+    PSVECScale(axes[0], &z, ext[0]);
+    PSVECAdd(&corners[0], &z, &f);
+    PSVECSubtract(&corners[0], &z, &b);
+    PSVECScale(axes[2], &y, ext[2]);
+    PSVECAdd(&f, &y, &fr);
+    PSVECSubtract(&f, &y, &fl);
+    PSVECAdd(&b, &y, &br);
+    PSVECSubtract(&b, &y, &bl);
+    PSVECScale(axes[1], &x, ext[1]);
+    PSVECAdd(&fr, &x, &corners[1]);
+    PSVECSubtract(&fr, &x, &corners[2]);
+    PSVECSubtract(&fl, &x, &corners[3]);
+    PSVECAdd(&fl, &x, &corners[4]);
+    PSVECAdd(&br, &x, &corners[5]);
+    PSVECSubtract(&br, &x, &corners[6]);
+    PSVECSubtract(&bl, &x, &corners[7]);
+    PSVECAdd(&bl, &x, &corners[8]);
+    *(u32 *)(oob + 0xCC) = 0;
+}
+
 #pragma pop
 
 void BuildOOBOffset(void *oob, void *pos, void *rot, void *out) {
@@ -21319,6 +21370,43 @@ s32 PADReset(u32 mask) {
     }
     OSRestoreInterrupts(enabled);
     return 1;
+}
+
+BOOL PADInit(void) {
+    extern s32 Initialized_803C73B8;
+    extern u32 __PADSpec;
+    extern u32 __PADFixBits;
+    extern u32 RecalibrateBits_803C73C4;
+    extern u32 CmdProbeDevice_802EFC30[4];
+    extern u8 ResetFunctionInfo_800D5B18[];
+    s64 OSGetTime(void);
+    void SIRefreshSamplingRate(void);
+    void OSRegisterResetFunction(void *info);
+    void PADSetSpec(s32 spec);
+    s32 PADReset(u32 mask);
+    s32 chan;
+    s64 time;
+    u16 id;
+
+    if (Initialized_803C73B8) {
+        return TRUE;
+    }
+    if (__PADSpec) {
+        PADSetSpec(__PADSpec);
+    }
+    Initialized_803C73B8 = TRUE;
+    if (__PADFixBits != 0) {
+        time = OSGetTime();
+        id = (u16)((time & 0xffff) + ((time >> 16) & 0xffff) + ((time >> 32) & 0xffff) + ((time >> 48) & 0xffff));
+        RecalibrateBits_803C73C4 = 0xF0000000;
+        *(u16 *)0x800030E0 = id & 0x3fff;
+    }
+    for (chan = 0; chan < 4; chan++) {
+        CmdProbeDevice_802EFC30[chan] = (0x4D << 24) | (chan << 22) | ((*(u16 *)0x800030E0 & 0x3fff) << 8);
+    }
+    SIRefreshSamplingRate();
+    OSRegisterResetFunction(ResetFunctionInfo_800D5B18);
+    return PADReset(0xF0000000);
 }
 
 void PADSetSpec(s32 spec) {
