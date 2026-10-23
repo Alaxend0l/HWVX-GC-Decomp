@@ -356,7 +356,11 @@ typedef struct LGWheels {
     u8 wheels[0x1054 - 0x82C];
     u32 overallGainId[4];
     u8 unk1064[0x10AC - 0x1064];
-    u8 force[0x13CC - 0x10AC];
+    u8 force[0x114C - 0x10AC];
+    Force condition;
+    Force constant;
+    Force periodic;
+    Force ramp;
     u8 savedGain;
     u8 unk13CD[0x140E - 0x13CD];
     s16 frontalCollisionParams[4];
@@ -8572,6 +8576,28 @@ void *__ct__8LGWheelsFv(void *self) {
 void InitLGLibrary__8LGWheelsFv(void *wheels) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
+}
+
+void ReadAll__8LGWheelsFv(void *wheels) {
+    s16 ReadAll__6WheelsFv(Wheels *wheels);
+    LGWheels *lg = wheels;
+    s16 chan;
+    s32 i;
+
+    chan = ReadAll__6WheelsFv((Wheels *)lg->wheels);
+    memcpy(lg, lg->wheels, 0x28);
+    if (chan != -1) {
+        for (i = 0; i < 8; i++) {
+            ((Force *)lg->force)[1].effectIds[chan][i] = 0xFFFFFFFF;
+            ((Force *)lg->force)[1].playing[chan][i] = 0;
+            ((Force *)lg->force)[2].effectIds[chan][i] = 0xFFFFFFFF;
+            ((Force *)lg->force)[2].playing[chan][i] = 0;
+            ((Force *)lg->force)[3].effectIds[chan][i] = 0xFFFFFFFF;
+            ((Force *)lg->force)[3].playing[chan][i] = 0;
+            ((Force *)lg->force)[4].effectIds[chan][i] = 0xFFFFFFFF;
+            ((Force *)lg->force)[4].playing[chan][i] = 0;
+        }
+    }
 }
 
 u8 SameSpringForceParams__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 saturation, s16 coefficient) {
