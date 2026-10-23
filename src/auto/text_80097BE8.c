@@ -46,6 +46,24 @@ typedef struct decimal {
     } sig;
 } decimal;
 
+static void __dorounddecup(decimal *d, int digits) {
+    u8 *b = d->sig.text;
+    u8 *i = b + digits - 1;
+
+    while (1) {
+        if (*i < 9) {
+            *i += 1;
+            break;
+        }
+        if (i == b) {
+            *i = 1;
+            d->exp++;
+            break;
+        }
+        *i-- = 0;
+    }
+}
+
 extern u8 CardWorkArea[0xA000];
 extern CARDFileInfo memCardfileInfo[2];
 extern s32 memCardBlockSize[2];
@@ -809,6 +827,87 @@ void __close_all(void) {
             plast->mode.file_kind = 3;
             if (p && p->is_dynamically_allocated) {
                 plast->next_file_struct = NULL;
+            }
+        }
+    }
+}
+
+void __timesdec(decimal *result, const decimal *x, const decimal *y) {
+    u32 accumulator = 0;
+    u8 mantissa[SIGDIGLEN * 2];
+    int i = x->sig.length + y->sig.length - 1;
+    u8 *pDigit;
+    u8 *ip;
+    u8 *jp;
+    u8 *end;
+
+    result->sign = 0;
+    end = pDigit = mantissa + i + 1;
+
+    while (i > 0) {
+        int k = y->sig.length - 1;
+        int j = i - k - 1;
+        int l;
+        int t;
+
+        if (j < 0) {
+            j = 0;
+            k = i - 1;
+        }
+        ip = (u8 *)&x->sig.text[j];
+        jp = (u8 *)&y->sig.text[k];
+        l = k + 1;
+        t = x->sig.length - j;
+        if (l > t) {
+            l = t;
+        }
+        for (; l > 0; --l, ++ip, --jp) {
+            accumulator += *ip * *jp;
+        }
+        *--pDigit = accumulator % 10;
+        accumulator /= 10;
+        --i;
+    }
+
+    result->exp = x->exp + y->exp;
+
+    if (accumulator > 0) {
+        *--pDigit = accumulator;
+        result->exp++;
+    }
+
+    for (i = 0; i < SIGDIGLEN && pDigit < end; ++i, ++pDigit) {
+        result->sig.text[i] = *pDigit;
+    }
+    result->sig.length = i;
+
+    if (pDigit < end && *pDigit >= 5) {
+        if (*pDigit == 5) {
+            u8 *q = pDigit + 1;
+            for (; q < end; ++q) {
+                if (*q != 0) {
+                    goto round;
+                }
+            }
+            if ((*(pDigit - 1) & 1) == 0) {
+                return;
+            }
+        }
+    round:
+        {
+            u8 *b = result->sig.text;
+            u8 *p = b + (result->sig.length - 1);
+            while (1) {
+                if (*p < 9) {
+                    ++*p;
+                    break;
+                }
+                if (p == b) {
+                    *p = 1;
+                    ++result->exp;
+                    break;
+                }
+                *p-- = 0;
             }
         }
     }
