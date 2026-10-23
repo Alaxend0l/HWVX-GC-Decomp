@@ -13142,6 +13142,63 @@ s32 ActionItemChangeMode(u32 *action) {
     return 1;
 }
 
+#pragma use_lmw_stmw on
+void RenderQuadrant(u8 *quadrant) {
+    typedef struct { void *pad0; void *pad4; void *geom; } StaticGeom;
+    typedef struct { u8 *geom; u8 noDraw; u8 pad5; u8 hasDist; u8 visible; f32 dist; u8 padC[0xC]; u32 slaves[2]; } Model;
+    typedef struct { Vector4 pos; Vector4 quat; u8 pad20[4]; Model *model; f32 dist; u8 pad2C[8]; u8 useDist; u8 pad35[7]; f32 radius; } Instance;
+    typedef struct { u32 pad0; u32 count; Instance *instances; } InstanceList;
+    typedef struct { u8 pad0[0x10]; f32 mtx[3][4]; Vector4 pos; Vector4 quat; u8 pad60[0x14]; u32 unk74; u8 pad78[0x78]; } DrawThing;
+    void Gfx_DrawGeometry(void *geom, void *mtx);
+    f32 Gfx_GetMinCameraDistSquared(void *pos);
+    s32 Gfx_FrustrumCullSphereTestAllWindows(void *, f32);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void Thing_DrawSharedSlaves(void *thing, void *slaves);
+    u32 i;
+    u32 j;
+    Instance *inst;
+    Model *model;
+    DrawThing *t;
+    f32 distSq;
+    DrawThing thing;
+
+    if (quadrant == NULL || *(s8 *)(quadrant + 0x34) == 0 || *(StaticGeom **)(quadrant + 0x10) == NULL) {
+        return;
+    }
+    for (i = 0; i < *(u32 *)(quadrant + 0xC); i++) {
+        Gfx_DrawGeometry((*(StaticGeom **)(quadrant + 0x10))[i].geom, NULL);
+    }
+    for (j = 0; j < (*(InstanceList **)(quadrant + 0x30))->count; j++) {
+        inst = &(*(InstanceList **)(quadrant + 0x30))->instances[j];
+        model = inst->model;
+        if (model->visible == 0) {
+            continue;
+        }
+        t = &thing;
+        distSq = Gfx_GetMinCameraDistSquared(inst);
+        if ((u32)ViewManager_GetViewFormat() > 1) {
+            distSq *= 4.0f;
+        }
+        if (inst->useDist) {
+            if (distSq > inst->dist * inst->dist) {
+                continue;
+            }
+        } else if (inst->model->hasDist && distSq > inst->model->dist * inst->model->dist) {
+            continue;
+        }
+        if (Gfx_FrustrumCullSphereTestAllWindows(inst, inst->radius)) {
+            t->unk74 = 0;
+            t->quat = inst->quat;
+            QuaternionToSubMatrix(&t->quat, t->mtx);
+            inst->pos.w = 1.0f;
+            t->pos = inst->pos;
+            Thing_DrawSharedSlaves(t, model->slaves);
+            if (model->noDraw == 0) {
+                Gfx_DrawGeometry(model->geom, t->mtx);
+            }
+        }
+    }
+}
 void TimerManager_Heartbeat(void) {
     extern u32 g_iDeltaTimeMS;
     u32 GameSettings_GetCodeVariable(s32, s32);
