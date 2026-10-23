@@ -33,6 +33,19 @@ s32 CARDDelete(s32 chan, const char *fileName);
 s32 CARDClose(CARDFileInfo *fileInfo);
 s32 CARDRead(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset);
 
+#define SIGDIGLEN 36
+
+typedef struct decimal {
+    char sign;
+    char unk1;
+    s16 exp;
+    struct {
+        u8 length;
+        u8 text[SIGDIGLEN];
+        u8 unk25;
+    } sig;
+} decimal;
+
 extern u8 CardWorkArea[0xA000];
 extern CARDFileInfo memCardfileInfo[2];
 extern s32 memCardBlockSize[2];
@@ -5625,6 +5638,34 @@ static void F29(s32 chan, s32 ret) {
     if (ret == 0) {
         __GBAX02(chan, bootInfo->readbuf);
     } else {
+        bootInfo->begin = 0;
+        callback = bootInfo->callback;
+        if (callback != NULL) {
+            bootInfo->callback = NULL;
+            callback(chan, ret);
+        }
+    }
+    gba->ret = ret;
+}
+
+static void F39(s32 chan, s32 ret);
+s32 GBAWriteAsync(s32 chan, u8 *src, u8 *status, GBACallback callback);
+static void F37(s32 chan, s32 ret) {
+    GBAControl *gba = &__GBA[chan];
+    GBABootInfo *bootInfo = &gba->bootInfo;
+    GBACallback callback;
+
+    if (ret == 0) {
+        if ((u8)((bootInfo->readbuf[0] ^ bootInfo->initialCode) |
+                 (bootInfo->readbuf[1] ^ (bootInfo->initialCode >> 8)) |
+                 ((bootInfo->readbuf[3] ^ (bootInfo->initialCode >> 24)) |
+                  (bootInfo->readbuf[2] ^ (bootInfo->initialCode >> 16))))) {
+            ret = 3;
+        } else {
+            ret = GBAWriteAsync(chan, bootInfo->readbuf, bootInfo->status, F39);
+        }
+    }
+    if (ret != 0) {
         bootInfo->begin = 0;
         callback = bootInfo->callback;
         if (callback != NULL) {
