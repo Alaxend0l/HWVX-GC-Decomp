@@ -12875,6 +12875,56 @@ s32 DVDCheckDisk(void) {
     return result;
 }
 
+void __DVDPrepareResetAsync(void (*callback)(s32, void *)) {
+    void __DVDClearWaitingQueue(void);
+    void *__DVDPopWaitingQueue(void);
+    void stateReady_800725A4(void);
+    s32 DVDCancelAsync(void *block, void (*callback)(s32, void *));
+    extern u8 *executing_803C7310;
+    extern u32 Canceling_803C7330;
+    extern void (*CancelCallback_803C7334)(s32, void *);
+    extern s32 PauseFlag_803C731C;
+    extern s32 PausingFlag_803C7320;
+    BOOL enabled;
+    BOOL enabled2;
+    BOOL enabled3;
+    void *block;
+
+    enabled = OSDisableInterrupts();
+    __DVDClearWaitingQueue();
+    if (Canceling_803C7330) {
+        CancelCallback_803C7334 = callback;
+    } else {
+        if (executing_803C7310) {
+            *(void **)(executing_803C7310 + 0x28) = NULL;
+        }
+        enabled2 = OSDisableInterrupts();
+        enabled3 = OSDisableInterrupts();
+        PauseFlag_803C731C = 1;
+        if (executing_803C7310 == NULL) {
+            PausingFlag_803C7320 = 1;
+        }
+        OSRestoreInterrupts(enabled3);
+        while ((block = __DVDPopWaitingQueue()) != NULL) {
+            DVDCancelAsync(block, NULL);
+        }
+        if (executing_803C7310) {
+            DVDCancelAsync(executing_803C7310, callback);
+        } else if (callback) {
+            (*callback)(0, NULL);
+        }
+        enabled3 = OSDisableInterrupts();
+        PauseFlag_803C731C = 0;
+        if (PausingFlag_803C7320) {
+            PausingFlag_803C7320 = 0;
+            stateReady_800725A4();
+        }
+        OSRestoreInterrupts(enabled3);
+        OSRestoreInterrupts(enabled2);
+    }
+    OSRestoreInterrupts(enabled);
+}
+
 #pragma push
 #pragma peephole off
 void __DVDClearWaitingQueue(void) {
@@ -13054,6 +13104,51 @@ u8 *getTiming_800742A0(u32 mode) {
     default:
         return NULL;
     }
+}
+
+static inline u32 cntlzd(u64 bit) {
+    u32 hi;
+    u32 lo;
+    s32 value;
+
+    hi = (u32)(bit >> 32);
+    lo = (u32)(bit & 0xFFFFFFFF);
+    value = __cntlzw(hi);
+    if (value < 32) {
+        return value;
+    }
+    return 32 + __cntlzw(lo);
+}
+
+void VIFlush(void) {
+    extern u32 changeMode_803C7388;
+    extern u64 changed_803C7390;
+    extern s32 flushFlag_803C736C;
+    extern u16 regs_802EFAA8[59];
+    extern u32 shdwChangeMode_803C7398;
+    extern u64 shdwChanged_803C73A0;
+    extern u16 shdwRegs_802EFB20[59];
+    BOOL enabled;
+    s32 regIndex;
+    u32 hi;
+    u32 lo;
+
+    enabled = OSDisableInterrupts();
+    shdwChangeMode_803C7398 |= changeMode_803C7388;
+    changeMode_803C7388 = 0;
+    shdwChanged_803C73A0 |= changed_803C7390;
+    while (changed_803C7390) {
+        hi = (u32)(changed_803C7390 >> 32);
+        lo = (u32)(changed_803C7390 & 0xFFFFFFFF);
+        regIndex = __cntlzw(hi);
+        if (regIndex >= 32) {
+            regIndex = 32 + __cntlzw(lo);
+        }
+        shdwRegs_802EFB20[regIndex] = regs_802EFAA8[regIndex];
+        changed_803C7390 &= ~((u64)1 << (63 - regIndex));
+    }
+    flushFlag_803C736C = 1;
+    OSRestoreInterrupts(enabled);
 }
 
 typedef struct VITiming {
