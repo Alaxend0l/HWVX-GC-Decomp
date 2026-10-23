@@ -959,6 +959,8 @@ typedef struct DisplayList {
     u16 numSkinGroups;
     u8 unk12[0x109E0 - 0x12];
     DLSkinGroup skinGroups[0x100];
+    u16 unk11DE0[0x1FF];
+    u16 unk121DE[0x1FF];
 } DisplayList;
 
 typedef struct GfxPointLight {
