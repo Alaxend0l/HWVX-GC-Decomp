@@ -8484,6 +8484,29 @@ void PlayerHuman_Heartbeat(void *player) {
     Player_Heartbeat(player);
 }
 
+#pragma push
+#pragma opt_unroll_loops on
+void PlayerHuman_SetControlBinding(void *arg0, void *arg1) {
+    typedef struct { u8 unk0; u8 unk1; u8 keys[14]; } KeyBinding;
+    typedef struct { u8 pad0[0xB8]; u8 keys[14]; u8 unkC6; u8 unkC7; } PlayerHuman;
+    extern KeyBinding g_keyBinding[9];
+    void *memset(void *dst, int c, u32 n);
+    PlayerHuman *player = arg0;
+    KeyBinding *binding = arg1;
+    u16 i;
+
+    memset(player->keys, 0, 0x10);
+    for (i = 0; i < 14; i++) {
+        player->keys[i] = 0xFF;
+    }
+    for (i = 0; i < 14; i++) {
+        player->keys[g_keyBinding[0].keys[i]] = binding->keys[i];
+    }
+    player->unkC6 = binding->unk0;
+    player->unkC7 = binding->unk1;
+}
+#pragma pop
+
 s32 Player_NULL(void) {
     return 0;
 }
