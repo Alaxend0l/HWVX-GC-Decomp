@@ -588,6 +588,15 @@ typedef struct GDLVec4 {
     f32 x, y, z, w;
 } GDLVec4;
 
+typedef struct GDL3DLine {
+    GDLVec4 p0;
+    GDLVec4 p1;
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 pad23[0x30 - 0x23];
+} GDL3DLine;
+
 typedef struct GDL2DFXLine {
     GDLVec4 p0;
     GDLVec4 p1;
