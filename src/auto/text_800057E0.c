@@ -11316,21 +11316,6 @@ s32 SoundSeq_Move(u8 *seq) {
     return 1;
 }
 
-static inline void SoundSeq_StopSounds(u8 *seq) {
-    void SoundSource_Stop(s32 index);
-    u32 i;
-
-    if (M2C_FIELD(seq, u32 *, 0x74) & 0x40000000) {
-        SoundSeq_RemoveFromQueue(seq);
-    }
-    for (i = 0; i < 4; i++) {
-        if (((s32 *)seq)[0x34 + i] >= 0 && SoundSource_IsLooping(((s32 *)seq)[0x34 + i])) {
-            SoundSource_Stop(((s32 *)seq)[0x34 + i]);
-        }
-        ((s32 *)seq)[0x34 + i] = -1;
-    }
-}
-
 s32 SoundSeq_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
