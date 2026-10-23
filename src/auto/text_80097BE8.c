@@ -2636,6 +2636,14 @@ void MinMaxVec(Vector *min, Vector *max, Vector *v) {
     }
 }
 
+void Distance_Plane_4(Vector *planes, Vector *point, f32 *out) {
+    s32 Distance_Plane();
+    out[0] = Distance_Plane(&planes[0], point);
+    out[1] = Distance_Plane(&planes[1], point);
+    out[2] = Distance_Plane(&planes[2], point);
+    out[3] = Distance_Plane(&planes[3], point);
+}
+
 void ScaleMatrix(void *arg0, void *arg1) {
     M2C_FIELD(arg0, f32 *, 0) = (f32) (M2C_FIELD(arg0, f32 *, 0) * M2C_FIELD(arg1, f32 *, 0));
     M2C_FIELD(arg0, f32 *, 4) = (f32) (M2C_FIELD(arg0, f32 *, 4) * M2C_FIELD(arg1, f32 *, 0));
