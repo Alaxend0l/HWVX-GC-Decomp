@@ -4389,17 +4389,18 @@ void AnimExtractKeyFrame_CompoundHybrid(void *animp, void *outp, f32 time) {
     } Bone;
     void CopyVector(Vector *dst, Vector *src);
     void Distance_Plane_4(Vector *planes, Vector *point, f32 *out);
-    Anim *anim = (Anim *)animp;
-    Bone *out = (Bone *)outp;
     Vector tv __attribute__((aligned(16)));
-    u32 *mask;
-    u8 *data;
     u32 i;
+    u32 *mask;
+    Bone *out;
+    u8 *data;
     u32 bit;
-    u32 k;
-    s32 idx;
+    Anim *anim;
     u32 save;
+    s32 idx;
 
+    anim = (Anim *)animp;
+    out = (Bone *)outp;
     idx = 0;
     mask = anim->mask;
     if (time < anim->minTime) {
@@ -4408,19 +4409,18 @@ void AnimExtractKeyFrame_CompoundHybrid(void *animp, void *outp, f32 time) {
     if (time > anim->maxTime) {
         time = anim->maxTime;
     }
-    for (k = 1; k < anim->numFrames; k++) {
-        if (time <= anim->times[k]) {
-            idx = k - 1;
+    for (i = 1; i < anim->numFrames; i++) {
+        if (time <= anim->times[i]) {
+            idx = i - 1;
             break;
         }
     }
+    data = &anim->data[(((anim->numKeysPerFrame - anim->numCompound) * sizeof(Bone)) + (anim->numCompound * 2 * sizeof(Bone))) * idx];
     tv.y = time * time;
     tv.x = time * tv.y;
     tv.z = time;
     tv.w = 1.0f;
-    data = anim->data + idx * (((anim->numKeysPerFrame - anim->numCompound) << 5) + (anim->numCompound << 6));
-    bit = 0;
-    for (i = 0; i < anim->numBones; i++) {
+    for (i = 0, bit = 0; i < anim->numBones; i++) {
         if (anim->flags[i] & 7) {
             if (*mask & (1 << bit++)) {
                 save = out->info;
