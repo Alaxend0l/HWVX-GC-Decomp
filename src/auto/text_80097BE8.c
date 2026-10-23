@@ -9434,7 +9434,7 @@ BOOL THPPlayerSetBuffer(u8 *buffer) {
 #pragma pop
 
 void PrepareReady(void *arg0) {
-    extern u8 PrepareReadyQueue_8036ED00[];
+    extern u8 PrepareReadyQueue_8036ED00[0x20];
     OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
 }
 
