@@ -3115,7 +3115,7 @@ double __kernel_tan(double x, double y, int iy) {
     if (ix < 0x3e300000) {
         if ((int)x == 0) {
             if (((ix | __LO(x)) | (iy + 1)) == 0) {
-                return 1.0 / __fabs(x);
+                return 1.0 / fabs(x);
             } else {
                 return (iy == 1) ? x : -1.0 / x;
             }
