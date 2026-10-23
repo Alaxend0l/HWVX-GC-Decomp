@@ -4276,6 +4276,27 @@ s32 isInWindow(void *arg0) {
     M2C_FIELD(arg0, f32 *, 4) = (f32) (M2C_FIELD(arg0, f32 *, 4) - (f32) M2C_FIELD(GetRenderWindow(temp_r3, temp_f1), u32 *, 0x2B8));
     return 1;
 }
+
+void Render_StateSetScissor(void);
+void GXGetViewportv(f32 *vp);
+void GXGetProjectionv(f32 *p);
+void GXProject(f32 x, f32 y, f32 z, f32 mtx[3][4], f32 *pm, f32 *vp, f32 *sx, f32 *sy, f32 *sz);
+void Gfx_TransformVector(Vector *in, f32 *out) {
+    extern f32 GXCameraSpace_8036CF80[3][4];
+    f32 pm[7];
+    f32 vp[6];
+
+    Render_StateSetScissor();
+    GXGetViewportv(vp);
+    GXGetProjectionv(pm);
+    vp[3] *= 1.0714f;
+    GXProject(in->x, in->y, in->z, GXCameraSpace_8036CF80, pm, vp, &out[0], &out[1], &out[2]);
+    out[3] = -(*(f32 *)((u8 *)GetRenderWindow() + 0x13C) +
+               (in->z * *(f32 *)((u8 *)GetRenderWindow() + 0x12C) +
+                (in->x * *(f32 *)((u8 *)GetRenderWindow() + 0x10C) +
+                 in->y * *(f32 *)((u8 *)GetRenderWindow() + 0x11C))));
+}
+
 #pragma pop
 
 void Gfx_SetTextColor(s8 arg0, s8 arg1, s8 arg2, s8 arg3) {
