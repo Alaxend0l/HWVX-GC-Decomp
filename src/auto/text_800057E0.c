@@ -3018,6 +3018,7 @@ void BuildOConvexHullOffset(void *out, void *hull, void *pos, void *rot) {
     o->unk3C4 = 0;
     o->pos = local.v[3];
 }
+#pragma pop
 
 void OConvexHullHolder_Init(void) {
     extern u8 g_aOConvexHull[8][0x3E0];
