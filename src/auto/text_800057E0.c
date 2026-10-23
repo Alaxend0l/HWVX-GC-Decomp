@@ -6381,10 +6381,11 @@ void InterfaceInputAnimator_Initialize(void) {
     g_UD_Max_Min = 0.0f;
     ProcessManager_Add((char *)s_InterfaceInputName, NULL, InterfaceInputAnimator_HeartBeat, 0, 1);
 }
-#pragma pop
+
 void InterfaceInputAnimator_Release(void) {
     ProcessManager_Release((char *)s_InterfaceInputName);
 }
+#pragma pop
 
 void ProcessManager_Release(char *name);
 void InterfaceInputAnimator_HeartBeat(void);
