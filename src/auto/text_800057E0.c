@@ -10,6 +10,8 @@ typedef union PPCWGPipe {
 } PPCWGPipe;
 
 #define GXWGFifo (*(volatile PPCWGPipe *)0xCC008000)
+extern volatile PPCWGPipe GXWGPipe : 0xCC008000;
+#define GXWGPIPE_DECLARED
 
 typedef struct GXColor {
     u8 r;
