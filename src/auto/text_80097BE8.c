@@ -10026,6 +10026,8 @@ void SetVoiceState_(void *voice, s32 state) {
 
 #pragma pop
 
+#pragma push
+#pragma optimization_level 1
 void StartVoice_(void *voice) {
     extern u32 g_silence;
     s32 OSDisableInterrupts();
@@ -10054,7 +10056,7 @@ void StartVoice_(void *voice) {
     *(u32 *)(axv + 0x1C) |= 0x20000;
     *(u32 *)(axv + 0x1B2) = *(u32 *)(v + 0x20);
     *(u32 *)(axv + 0x1AE) = *(u32 *)(v + 0x20) + (*(u32 *)(v + 0x28) - 1);
-    if (*(s32 *)(v + 0x24) != -1) {
+    if (*(u32 *)(v + 0x24) != 0xFFFFFFFF) {
         *(u16 *)(axv + 0x1A6) = 1;
         *(u32 *)(axv + 0x1AA) = *(u32 *)(v + 0x20) + *(u32 *)(v + 0x24);
     } else {
@@ -10094,6 +10096,7 @@ void StartVoice_(void *voice) {
     v[0x15] = 1;
     OSRestoreInterrupts(level);
 }
+#pragma pop
 
 void SetVoicePriority_(void *arg0) {
     M2C_UNK AXSetVoicePriority(s32, u8);
