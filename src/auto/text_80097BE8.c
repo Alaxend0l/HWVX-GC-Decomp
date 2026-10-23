@@ -474,8 +474,8 @@ typedef struct GBAControl {
     void *proc;
     u8 unk3C[4];
     GBABootInfo bootInfo;
-    u8 unkA8[0xF8 - 0xA8];
-    void *param;
+    GBADSPTaskInfo task;
+    GBASecParam *param;
     u8 unkFC[4];
 } GBAControl;
 
