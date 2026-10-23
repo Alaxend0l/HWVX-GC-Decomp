@@ -13814,6 +13814,58 @@ s32 SIGetTypeAsync(s32 chan, void (*callback)(s32, u32)) {
     return type;
 }
 
+s32 SIDecodeType(s32 type) {
+    u32 error;
+    s32 kind;
+
+    error = type & 0xFF;
+    kind = type & ~0xFF;
+    if (error & 0x08) {
+        return 0x08;
+    }
+    if (error & 0x47) {
+        return 0x40;
+    }
+    if (error) {
+        return 0x80;
+    }
+    if ((kind & 0x18000000) == 0) {
+        switch (kind & 0xFFFF0000) {
+        case 0x00040000:
+        case 0x00020000:
+        case 0x00010000:
+        case 0x05000000:
+        case 0x02000000:
+            return kind & 0xFFFF0000;
+        }
+        return 0x40;
+    }
+    if ((kind & 0x18000000) != 0x08000000) {
+        return 0x40;
+    }
+    switch (kind & 0xFFFF0000) {
+    case 0x09000000:
+    case 0x08000000:
+        return kind & 0xFFFF0000;
+    }
+    if ((kind & 0xFFE00000) == 0x08200000) {
+        return 0x08200000;
+    }
+    if ((kind & 0x80000000) && !(kind & 0x04000000)) {
+        if ((kind & 0x8B100000) == 0x8B100000) {
+            return 0x8B100000;
+        }
+        if (!(kind & 0x02000000)) {
+            return 0x88000000;
+        }
+    }
+    if ((kind & 0x09000000) == 0x09000000) {
+        return 0x09000000;
+    }
+    error = 0x40;
+    return error;
+}
+
 typedef struct DVDCommandBlock {
     struct DVDCommandBlock *next;
     struct DVDCommandBlock *prev;
@@ -21865,7 +21917,58 @@ s32 TRKTargetAccessDefault(u32 firstRegister, u32 lastRegister, TRKBuffer *b, u3
     return error;
 }
 
-s32 TRKValidMemory32(const void *addr, u32 length, u8 readWriteable) {
+s32 TRKValidMemory32(const void *addr, u32 length, s32 readWriteable);
+u32 TRKTargetTranslate(u32 addr);
+s32 TRKTargetAccessMemory(void *data, u32 start, u32 *length, s32 space, s32 read) {
+    extern u32 gTRKExceptionStatus_800DA0A4[];
+    extern u8 gTRKCPUState[];
+    typedef struct {
+        u32 PC;
+        u32 PCInstruction;
+        u16 exceptionID;
+        u8 pad[2];
+        u8 inTRK;
+        u8 exceptionDetected;
+    } TRKExceptionStatus;
+    u32 __TRK_get_MSR(void);
+    void TRK_ppc_memcpy(void *dest, const void *src, u32 n, u32 fromMSR, u32 toMSR);
+    void TRK_flush_cache(u32 start, u32 length);
+    s32 error;
+    u32 trans;
+    u32 oldMSR;
+    u32 newMSR;
+    TRKExceptionStatus savedException;
+
+    savedException = *(TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4;
+    ((TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4)->exceptionDetected = 0;
+
+    trans = TRKTargetTranslate(start);
+    error = TRKValidMemory32((void *)trans, *length, read == 0);
+    if (error != 0) {
+        *length = 0;
+    } else {
+        oldMSR = __TRK_get_MSR();
+        newMSR = oldMSR | (*(u32 *)(gTRKCPUState + 0x1F8) & 0x10);
+        if (read) {
+            TRK_ppc_memcpy(data, (void *)trans, *length, oldMSR, newMSR);
+        } else {
+            TRK_ppc_memcpy((void *)trans, data, *length, newMSR, oldMSR);
+            TRK_flush_cache(trans, *length);
+            if (start != trans) {
+                TRK_flush_cache(start, *length);
+            }
+        }
+    }
+
+    if (((TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4)->exceptionDetected) {
+        *length = 0;
+        error = 0x702;
+    }
+    *(TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4 = savedException;
+    return error;
+}
+
+s32 TRKValidMemory32(const void *addr, u32 length, s32 readWriteable) {
     typedef struct memRange {
         u8 *start;
         u8 *end;
@@ -21887,8 +21990,8 @@ s32 TRKValidMemory32(const void *addr, u32 length, u8 readWriteable) {
 
     for (i = 0; i < (s32)(sizeof(gTRKMemMap) / sizeof(memRange)); i++) {
         if (start <= gTRKMemMap[i].end && end >= gTRKMemMap[i].start) {
-            if ((readWriteable == 0 && !gTRKMemMap[i].readable) ||
-                (readWriteable == 1 && !gTRKMemMap[i].writeable)) {
+            if (((u8)readWriteable == 0 && !gTRKMemMap[i].readable) ||
+                ((u8)readWriteable == 1 && !gTRKMemMap[i].writeable)) {
                 err = 0x700;
             } else {
                 err = 0;
