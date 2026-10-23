@@ -198,7 +198,9 @@ s32 MemCard_Write__FUllPv(u32 id, s32 size, void *data);
 
 typedef struct FileEntry {
     s32 id;
-    u8 unk4[0x14 - 0x4];
+    u8 unk4[0xC - 0x4];
+    s32 size;
+    u8 unk10[0x14 - 0x10];
     s32 position;
     s8 slot;
     u8 unk19[0x1C - 0x19];
