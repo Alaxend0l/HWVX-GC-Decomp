@@ -1265,7 +1265,7 @@ typedef struct GfxState {
     GXColor ambientColor;
     u32 unk7C;
     f32 unk80;
-    u8 unk84[0x88 - 0x84];
+    u32 unk84;
     s32 unk88;
     u16 debugFont;
     s8 lightChanged;
