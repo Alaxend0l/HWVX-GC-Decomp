@@ -14287,6 +14287,7 @@ void UnsetRun(void *arg0) {
     }
     M2C_FIELD(arg0, void **, 0x2DC) = NULL;
 }
+#pragma pop
 
 s32 __OSGetEffectivePriority(void *thread) {
     s32 priority;
