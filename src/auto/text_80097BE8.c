@@ -3384,11 +3384,11 @@ void DrawAlphaTable(void) {
 s32 Gfx_GetLightState(void) {
     extern GDL *g_pGDL;
     extern GfxState g_state;
+    u32 i;
     GDLLightState *ls;
     u32 idx;
-    u32 i;
 
-    if (!(s8)g_state.lightChanged) {
+    if (!g_state.lightChanged) {
         return g_pGDL->numLightStates - 1;
     }
     if (g_pGDL->numLightStates >= 0x80) {
