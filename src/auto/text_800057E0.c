@@ -3550,6 +3550,50 @@ void Drone_GetCameraOrientationInfo(void *drone, void *camera, void *info) {
     M2C_FIELD(info, f32 *, 0x38) = 0.0f;
 }
 
+void Drone_DynamicCollideImpact(u8 *drone, u8 *collision, f32 force) {
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void Thing_ProcessEndEvent(u8 *thing, u8 *event, u8 *collision, Vector4 *vel);
+    Quaternion normal;
+    Quaternion pos;
+    Vector4 f;
+    Vector4 torque;
+    Vector4 r;
+    Vector4 scaled;
+    Vector4 local;
+    f32 scale;
+
+    normal = *(Quaternion *)(collision + 0x10);
+    pos = *(Quaternion *)collision;
+    if (drone[0x1DC] != 2) {
+        scale = force / *(f32 *)(*(u8 **)(*(u8 **)(drone + 0xC0) + 0x10) + 0x20);
+        ((Vector4 *)drone)->x += normal.x * scale;
+        ((Vector4 *)drone)->y += normal.y * scale;
+        ((Vector4 *)drone)->z += normal.z * scale;
+        PSVECSubtract((Vector4 *)&pos, (Vector4 *)(drone + 0x40), &r);
+        f.x = force * normal.x;
+        f.y = force * normal.y;
+        f.z = force * normal.z;
+        PSVECCrossProduct(&r, &f, &torque);
+        ((Vector4 *)(drone + 0x110))->x += torque.x;
+        ((Vector4 *)(drone + 0x110))->y += torque.y;
+        ((Vector4 *)(drone + 0x110))->z += torque.z;
+        InverseXformVecOrientation(drone + 0x10, (Vector4 *)(drone + 0x110), &local);
+        scaled.x = ((Vector4 *)(drone + 0x120))->x * local.x;
+        scaled.y = ((Vector4 *)(drone + 0x120))->y * local.y;
+        scaled.z = ((Vector4 *)(drone + 0x120))->z * local.z;
+        XformVecOrientation(drone + 0x10, &scaled, (Vector4 *)(drone + 0x130));
+        if (*(s32 *)(drone + 0x78) <= 0) {
+            Thing_ProcessEndEvent(drone, *(u8 **)(*(u8 **)(drone + 0xC0) + 0x10), collision, (Vector4 *)(drone + 0x130));
+            Thing_Release((s32)drone);
+        }
+        *(f32 *)(drone + 0x180) = 0.0f;
+        *(s32 *)(drone + 0x17C) = 0;
+    }
+}
+
 void Drone_DynamicRotation(u8 *drone) {
     void QuaternionToSubMatrix(void *quat, void *mtx);
     void PhysicalObject_DynamicRotation(u8 *obj);
@@ -6442,6 +6486,94 @@ done:
     }
     g_saveFileCheckSum_803C6CAC = sum;
 }
+
+#pragma push
+#pragma readonly_strings on
+#pragma use_lmw_stmw on
+u8 GameSettings_LoadGame(void) {
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    u32 FileManager_GetChecksum(u32 size, void *data);
+    void *memcpy(void *dst, const void *src, u32 n);
+    extern u8 *g_pSavedGameData;
+    extern u8 *g_pGameData;
+    extern s8 g_bRefreshMC_803C6F78;
+    extern s8 g_bRefreshMC_FileList_803C6F79;
+    extern s8 g_bRefreshMC_FileInfo_803C6F7A;
+    extern struct {
+        u8 unk0[0xC];
+        char *fileName;
+        u8 unk10[0x4];
+        u32 version;
+        u32 size;
+    } g_gameInfo[];
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    s32 slot;
+    char *device;
+    s32 handle;
+    s8 ok;
+    u8 *data;
+    u32 version;
+    u32 size;
+    const char *name;
+    u8 *mcp;
+    void *pack;
+    u32 i;
+
+    device = g_codeVariables.device;
+    slot = g_codeVariables.fileIndex - 1;
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        name = g_gameInfo[mcp[1]].fileName;
+        version = g_gameInfo[mcp[1]].version;
+        size = g_gameInfo[mcp[1]].size;
+    } else {
+        version = 0;
+        size = version;
+        name = "saveFile";
+    }
+    data = g_pSavedGameData;
+    ok = 0;
+    if ((handle = File_Open(device + 0xA, name, 0, NULL)) != -1) {
+        File_Read(handle, size * 8 + 0x15C, data);
+        if (((u32 *)data)[0] == 4 && ((u32 *)data)[1] == version &&
+            ((u32 *)data)[2] == FileManager_GetChecksum(version, data + 0xC)) {
+            ok = 1;
+        }
+        File_Close(handle);
+    }
+    if (!ok) {
+        g_codeVariables.unk11C[1] = 0;
+        return 0;
+    }
+    data = g_pSavedGameData;
+    memcpy(g_pGameData, &data[slot * size + 0x15C], size);
+    memcpy(&g_generalGameSettings, data + 0xC, 0x150);
+    g_codeVariables.unk11C[1] = 1;
+    g_bRefreshMC_803C6F78 = 1;
+    g_bRefreshMC_FileList_803C6F79 = 1;
+    g_bRefreshMC_FileInfo_803C6F7A = 1;
+    for (i = 0; i < 11; i++) {
+        g_codeVariables.unk120[8 + i] = 0;
+    }
+    return g_codeVariables.unk11C[1];
+}
+#pragma pop
+
 #pragma pop
 
 s32 GameSettings_FormatMemoryCard(void) {
@@ -23076,6 +23208,92 @@ s32 CARDDeleteAsync(s32 chan, const char *fileName, CARDCallback callback) {
         __CARDPutControlBlock(card, result);
     }
     return result;
+}
+
+void UpdateIconOffsets(void *dir, void *status) {
+    typedef struct {
+        u8 gameName[4];
+        u8 company[2];
+        u8 _padding0;
+        u8 bannerFormat;
+        u8 fileName[32];
+        u32 time;
+        u32 iconAddr;
+        u16 iconFormat;
+        u16 iconSpeed;
+    } Dir;
+    typedef struct {
+        char fileName[32];
+        u32 length;
+        u32 time;
+        u8 gameName[4];
+        u8 company[2];
+        u8 bannerFormat;
+        u8 __padding;
+        u32 iconAddr;
+        u16 iconFormat;
+        u16 iconSpeed;
+        u32 commentAddr;
+        u32 offsetBanner;
+        u32 offsetBannerTlut;
+        u32 offsetIcon[8];
+        u32 offsetIconTlut;
+        u32 offsetData;
+    } Stat;
+    Dir *ent = dir;
+    Stat *stat = status;
+    u32 offset;
+    BOOL iconTlut;
+    int i;
+
+    offset = ent->iconAddr;
+    if (offset == 0xFFFFFFFF) {
+        stat->bannerFormat = 0;
+        stat->iconFormat = 0;
+        stat->iconSpeed = 0;
+        offset = 0;
+    }
+    iconTlut = FALSE;
+    switch (ent->bannerFormat & 3) {
+    case 1:
+        stat->offsetBanner = offset;
+        offset += 96 * 32;
+        stat->offsetBannerTlut = offset;
+        offset += 2 * 256;
+        break;
+    case 2:
+        stat->offsetBanner = offset;
+        offset += 2 * 96 * 32;
+        stat->offsetBannerTlut = 0xFFFFFFFF;
+        break;
+    default:
+        stat->offsetBanner = 0xFFFFFFFF;
+        stat->offsetBannerTlut = 0xFFFFFFFF;
+        break;
+    }
+    for (i = 0; i < 8; ++i) {
+        switch ((ent->iconFormat >> (2 * i)) & 3) {
+        case 1:
+            stat->offsetIcon[i] = offset;
+            offset += 32 * 32;
+            iconTlut = TRUE;
+            break;
+        case 2:
+            stat->offsetIcon[i] = offset;
+            offset += 2 * 32 * 32;
+            break;
+        default:
+            stat->offsetIcon[i] = 0xFFFFFFFF;
+            break;
+        }
+    }
+    if (iconTlut) {
+        stat->offsetIconTlut = offset;
+        offset += 2 * 256;
+    } else {
+        stat->offsetIconTlut = 0xFFFFFFFF;
+    }
+    stat->offsetData = offset;
 }
 
 s32 CARDGetStatus(s32 chan, s32 fileNo, u8 *stat) {
