@@ -2454,6 +2454,18 @@ s32 EventSeq_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+void FileStreaming_Destroy(void) {
+    extern u8 *g_StreamingDataPacks[11];
+    s32 FileStreaming_ReleaseAllDataPacks(s32 type, s8 wait);
+    void Deallocate(void *);
+    u32 i;
+
+    for (i = 0; i < 11; i++) {
+        FileStreaming_ReleaseAllDataPacks(i, 1);
+        Deallocate(g_StreamingDataPacks[i]);
+    }
+}
+
 s8 IsLoadingThreadRunning(void) {
     extern s8 g_bLoadingThreadRunning;
     return g_bLoadingThreadRunning;
