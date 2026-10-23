@@ -8390,6 +8390,52 @@ s32 __ct__8ConstantFv(s32 arg0) {
     return arg0;
 }
 
+s32 Destroy__5ForceFll(Force *force, s32 chan, s32 effect);
+#pragma push
+#pragma use_lmw_stmw on
+#pragma readonly_strings on
+#pragma dont_inline on
+s32 DownloadForce__8ConstantFllRUlUlUlsUsUlUlUcUc(Force *force, s32 chan, s32 effect, u32 *device, u32 duration, u32 startDelay, s16 magnitude, u16 direction, u32 attackTime, u32 fadeTime, u8 attackLevel, u8 fadeLevel) {
+    struct {
+        u8 type;
+        u32 duration;
+        u32 startDelay;
+        s16 magnitude;
+        u16 direction;
+        u32 attackTime;
+        u32 fadeTime;
+        u8 attackLevel;
+        u8 fadeLevel;
+        u8 pad[10];
+    } desc;
+    s32 result = 0;
+
+    if (force->effectIds[chan][effect] != 0xFFFFFFFF) {
+        Destroy__5ForceFll(force, chan, effect);
+    }
+    if (*device != 0xFFFFFFFF) {
+        memset(&desc, 0, sizeof(desc));
+        desc.type = 0;
+        desc.duration = duration;
+        desc.startDelay = startDelay;
+        desc.magnitude = magnitude;
+        desc.direction = direction;
+        desc.attackTime = attackTime;
+        desc.attackLevel = attackLevel;
+        desc.fadeTime = fadeTime;
+        desc.fadeLevel = fadeLevel;
+        result = LGDownloadForceEffect((LGDevice *)*device, &force->effectIds[chan][effect], (u8 *)&desc);
+        if (result < 0) {
+            OSReport("ERROR: DownloadForce(constant force) on channel %d returned %d\n", chan, result);
+            force->effectIds[chan][effect] = 0xFFFFFFFF;
+        }
+    } else {
+        OSReport("ERROR: Trying to download a constant force to channel %d but wheel has not been opened.\n", chan);
+    }
+    return result;
+}
+#pragma pop
+
 #pragma push
 #pragma use_lmw_stmw on
 #pragma readonly_strings on
