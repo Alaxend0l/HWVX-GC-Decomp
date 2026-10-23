@@ -4133,10 +4133,26 @@ void ShowStats(void) {
 
 }
 
-void SoundSeq_Release(u8 *seq) {
+static void SoundSeq_RemoveFromQueue(u8 *seq) {
+    void Trigger_SoundSequenceQueueEmptied(void);
+    u8 *next;
+
+    next = M2C_FIELD(seq, u8 **, 0xC8);
+    if (next != NULL) {
+        M2C_FIELD(next, u32 *, 0x74) &= ~0x80000000;
+        M2C_FIELD(seq, u8 **, 0xC8) = NULL;
+    } else {
+        Trigger_SoundSequenceQueueEmptied();
+    }
+}
+
+#pragma push
+#pragma dont_inline on
+void SoundSeq_Release(u8 *thing) {
     void Trigger_SoundSequenceQueueEmptied(void);
     void SoundSource_Stop(s32 index);
     void Thing_Release(void *thing);
+    u8 *seq = thing;
     u8 *next;
     u32 i;
 
@@ -4150,14 +4166,15 @@ void SoundSeq_Release(u8 *seq) {
         }
     }
     for (i = 0; i < 4; i++) {
-        if (((s32 *)(seq + 0xD0))[i] >= 0 && SoundSource_IsLooping(((s32 *)(seq + 0xD0))[i])) {
-            SoundSource_Stop(((s32 *)(seq + 0xD0))[i]);
+        if (M2C_FIELD(seq, s32 *, 0xD0) >= 0 && SoundSource_IsLooping(M2C_FIELD(seq, s32 *, 0xD0))) {
+            SoundSource_Stop(M2C_FIELD(seq, s32 *, 0xD0));
         }
-        ((s32 *)(seq + 0xD0))[i] = -1;
+        M2C_FIELD(seq, s32 *, 0xD0) = -1;
+        seq += 4;
     }
-    Thing_Release(seq);
+    Thing_Release(thing);
 }
-
+#pragma pop
 s32 SoundSeq_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
