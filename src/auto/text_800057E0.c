@@ -4924,6 +4924,60 @@ s32 Debris_Init(u8 *debris, u8 *data) {
     return 1;
 }
 
+s32 Debris_Move(u8 *debris) {
+    extern s32 g_iDeltaTimeMS;
+    extern f32 g_fDeltaTimeMS;
+    extern f32 g_fDeltaTimeSec;
+    f32 Gfx_GetMinCameraDistSquared(void *pos);
+    f32 Sqrt(f32 x);
+    f32 RandomAdd(f32 base, f32 range);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    void Debris_MacroStep(void *debris, f32 dt);
+    void GenerateQuaternion(void *axis, Quaternion *out, f32 angle);
+    void QuaternionMult(void *a, Quaternion *b, Quaternion *out);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    Quaternion result;
+    Quaternion rot;
+    f32 dt;
+    f32 dist;
+
+    if (*(s32 *)(debris + 0xF0) <= 0) {
+        dt = 500.0f;
+        *(Quaternion *)(debris + 0x40) = *(Quaternion *)(debris + 0xD0);
+        dist = Sqrt(Gfx_GetMinCameraDistSquared(debris + 0x40));
+        if (dist > 900.0f) {
+            *(s32 *)(debris + 0xF0) = RandomAdd_s32(500, 50);
+        } else {
+            dt = ((dist - 60.0f) / 840.0f) * dt + RandomAdd(0.0f, 50.0f);
+            *(s32 *)(debris + 0xF0) = dt;
+        }
+        if (*(s32 *)(debris + 0xF0) < g_iDeltaTimeMS) {
+            *(s32 *)(debris + 0xF0) = g_iDeltaTimeMS;
+            dt = g_fDeltaTimeMS;
+        }
+        Debris_MacroStep(debris, 0.001f * dt);
+    }
+    dt = g_fDeltaTimeMS;
+    if (*(s32 *)(debris + 0xF0) < g_iDeltaTimeMS) {
+        dt = *(s32 *)(debris + 0xF0);
+    }
+    dt = 0.001f * dt;
+    ((Quaternion *)(debris + 0x40))->x += ((Quaternion *)(debris + 0xE0))->x * dt;
+    ((Quaternion *)(debris + 0x40))->y += ((Quaternion *)(debris + 0xE0))->y * dt;
+    ((Quaternion *)(debris + 0x40))->z += ((Quaternion *)(debris + 0xE0))->z * dt;
+    GenerateQuaternion(debris + 0xB0, &rot, *(f32 *)(debris + 0xBC) * g_fDeltaTimeSec);
+    QuaternionMult(debris + 0x50, &rot, &result);
+    *(Quaternion *)(debris + 0x50) = result;
+    *(s32 *)(debris + 0xF0) -= g_iDeltaTimeMS;
+    if (*(s32 *)(debris + 0xC8) < 0) {
+        Thing_Release((s32)debris);
+        return 0;
+    }
+    *(s32 *)(debris + 0xC8) -= g_iDeltaTimeMS;
+    QuaternionToSubMatrix(debris + 0x50, debris + 0x10);
+    return 1;
+}
+
 void Debris_Draw(u8 *debris) {
     void Gfx_DrawGeometry(void *geom, void *mtx);
     void Gfx_DrawGeometry_MatrixNotCached(void *geom, void *mtx);
