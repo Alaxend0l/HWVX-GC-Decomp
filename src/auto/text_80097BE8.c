@@ -9840,6 +9840,9 @@ void DestroyITVoice(u8 *voice) {
 }
 #pragma pop
 
+u8 g_song_80376990[0x24];
+u8 g_chn_803769B4[0x200];
+
 s32 AudioMIDI_Create(void) {
     extern u8 g_song_80376990[0x24];
     extern u8 g_chn_803769B4[0x200];
