@@ -5782,7 +5782,7 @@ void Render_DrawPointSprites(void) {
 }
 
 #pragma push
-#pragma inline_max_size(10)
+#pragma inline_max_size(40)
 void Render_DrawRectangle(void *rect) {
     typedef struct RectVertex {
         f32 x;
