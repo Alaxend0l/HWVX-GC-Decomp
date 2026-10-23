@@ -14133,6 +14133,14 @@ void GSI_VehicleSelectionInfo(u8 *info) {
     }
 }
 
+static inline void FlashHolder_Remove(s32 index) {
+    extern u8 g_pFlash[16][0x80];
+
+    if (index >= 0) {
+        *(void **)(g_pFlash[index] + 0x5C) = NULL;
+    }
+}
+
 void FlashHolder_Init(void) {
     extern u8 g_pFlash[16][0x80];
     u32 i;
