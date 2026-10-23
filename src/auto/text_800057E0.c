@@ -19398,7 +19398,6 @@ s32 CARDSetStatusAsync(s32 chan, s32 fileNo, u8 *stat, CARDCallback callback) {
     }
     return result;
 }
-#pragma pop
 
 #pragma pop
 s32 __CARDUpdateDir(s32 chan, CARDCallback callback) {
