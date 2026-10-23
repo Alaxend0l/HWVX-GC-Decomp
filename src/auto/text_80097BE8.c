@@ -7368,6 +7368,7 @@ u8 AutoCalibrateAxisUnsigned(u8 *min, u8 *max, u8 value, u8 deadzone, u8 *out) {
 }
 
 #pragma push
+#pragma optimize_for_size on
 #pragma use_lmw_stmw on
 #pragma dont_inline on
 void HandleTriggers(u8 *cur, SISteeringStatus *status, SISteeringStatus *calib) {
@@ -7375,7 +7376,7 @@ void HandleTriggers(u8 *cur, SISteeringStatus *status, SISteeringStatus *calib) 
 
     if ((status->button ^ calib[3].button) & 0x40) {
         diff = status->left - calib[2].right;
-        calib[1].right = diff > 0 ? diff : 0;
+        calib[1].right = diff < 0 ? 0 : diff;
         cur[7] = 0xFF;
     } else if (status->button & 0x40) {
         cur[7] = 0xFF;
@@ -7384,7 +7385,7 @@ void HandleTriggers(u8 *cur, SISteeringStatus *status, SISteeringStatus *calib) 
     }
     if ((status->button ^ calib[3].button) & 0x20) {
         diff = status->right - *(u8 *)&calib[2].err;
-        calib[1].err = diff > 0 ? diff : 0;
+        calib[1].err = diff < 0 ? 0 : diff;
         cur[8] = 0xFF;
     } else if (status->button & 0x20) {
         cur[8] = 0xFF;
