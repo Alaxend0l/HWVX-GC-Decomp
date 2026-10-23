@@ -3212,6 +3212,19 @@ void Looker_Draw(void) {
 
 }
 
+s32 Main_Loop(void) {
+    extern s32 (*Heartbeat_Process)(void);
+    s32 StateManager_QueuedState(void);
+    s32 StateManager_GotoState(s32 state);
+    s32 queued;
+
+    queued = StateManager_QueuedState();
+    if (queued != -1 && queued != StateManager_GotoState(queued)) {
+        return 0;
+    }
+    return Heartbeat_Process();
+}
+
 s32 Main_Shutdown(void) {
     void PlayerManager_Destroy(void);
     void ThingManager_DARYL_Destroy(void);
