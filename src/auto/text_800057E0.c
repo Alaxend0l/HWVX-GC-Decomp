@@ -18470,6 +18470,7 @@ s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data) {
 
 #pragma push
 #pragma opt_propagation off
+#pragma auto_inline off
 s32 TRKReadBuffer1_ui8(TRKBuffer *b, u8 *data) {
     return TRKReadBuffer_inline(b, data, 1);
 }
