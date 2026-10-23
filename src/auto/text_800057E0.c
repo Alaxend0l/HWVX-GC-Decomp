@@ -4743,7 +4743,7 @@ void LineManager_Render(void) {
     }
 }
 
-s32 LogHandler_Create(void) {
+s32 LogHandler_Create(const char *name, s32 arg1) {
     return 0;
 }
 
