@@ -9231,8 +9231,6 @@ void GXPokeZMode(u8 compare_enable, s32 func, u8 update_enable) {
     M2C_FIELD(__peReg, u16 *, 0) = (((compare_enable & ~0xE) | (func << 1)) & ~0x10) | (update_enable << 4);
 }
 
-#pragma push
-#pragma scheduling off
 void __GXSetDirtyState(void) {
     extern u8 *gx;
     void __GXSetSUTexRegs();
@@ -9262,7 +9260,6 @@ void __GXSetDirtyState(void) {
     }
     *(u32 *)(gx + 0x4F4) = 0;
 }
-#pragma pop
 
 void __GXSendFlushPrim(void) {
     extern u8 *gx;
