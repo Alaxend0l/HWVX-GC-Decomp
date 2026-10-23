@@ -3492,6 +3492,40 @@ s32 CollisionTriCache_Get(u32 tri0, u32 tri1, Vector4 *a, Vector4 *b) {
     return 0;
 }
 
+void CollisionTriCache_Set(u32 tri0, u32 tri1, Vector4 *a, Vector4 *b) {
+    extern u8 g_aCollisionTriPairCache[4][0x30];
+    s32 i;
+    u32 maxTime;
+    s32 slot;
+
+    maxTime = 0;
+    slot = 0;
+    for (i = 0; i < 4; i++) {
+        if (tri0 == *(u32 *)(g_aCollisionTriPairCache[i] + 0x24) &&
+            tri1 == *(u32 *)(g_aCollisionTriPairCache[i] + 0x20)) {
+            *(s32 *)(g_aCollisionTriPairCache[i] + 0x28) = 0;
+            *(Vector4 *)(g_aCollisionTriPairCache[i] + 0x10) = *b;
+            *(Vector4 *)(g_aCollisionTriPairCache[i] + 0x0) = *a;
+            return;
+        }
+    }
+    for (i = 0; i < 4; i++) {
+        if (*(u32 *)(g_aCollisionTriPairCache[i] + 0x24) == 0) {
+            slot = i;
+            break;
+        }
+        if (*(u32 *)(g_aCollisionTriPairCache[i] + 0x28) > maxTime) {
+            maxTime = *(u32 *)(g_aCollisionTriPairCache[i] + 0x28);
+            slot = i;
+        }
+    }
+    *(s32 *)(g_aCollisionTriPairCache[slot] + 0x28) = 0;
+    *(Vector4 *)(g_aCollisionTriPairCache[slot] + 0x10) = *b;
+    *(Vector4 *)(g_aCollisionTriPairCache[slot] + 0x0) = *a;
+    *(u32 *)(g_aCollisionTriPairCache[slot] + 0x24) = tri0;
+    *(u32 *)(g_aCollisionTriPairCache[slot] + 0x20) = tri1;
+}
+
 void ShaderHolder_RemoveGX(s32 gx);
 void VertexColorSeqManager_RemoveVertices(void *vertices);
 void Control_ClearControl(void *control) {
