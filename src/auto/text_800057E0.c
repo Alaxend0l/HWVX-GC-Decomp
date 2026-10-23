@@ -1865,6 +1865,37 @@ void MotionState_Draw(void *state) {
     }
     MotionState_DrawSlaves(state, 0);
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void MotionState_InitSlavesTimed(u8 *state, void *slaves, u8 player, u32 time) {
+    extern u32 g_iDeltaTimeMS;
+    extern Vector4 g_zeroVector;
+    void ThingManagerList_TriggerSlaves(void **list, u8 *trigger, Vector4 *a, Vector4 *b, Vector4 *c, u8 player);
+    typedef struct {
+        u8 unk0[0x14];
+        f32 time;
+        u8 unk18[0x8];
+    } SlaveTrigger;
+    typedef struct {
+        u32 count;
+        SlaveTrigger *triggers;
+    } SlaveList;
+    SlaveList *list = slaves;
+    u32 i;
+
+    for (i = 0; i < list->count; i++) {
+        Vector4 dir;
+        SlaveTrigger *trigger = &list->triggers[i];
+
+        dir = g_zeroVector;
+        if (trigger->time >= time && trigger->time < time + g_iDeltaTimeMS) {
+            ThingManagerList_TriggerSlaves((void **)(state + 0x14), (u8 *)trigger, (Vector4 *)trigger, &dir, &g_zeroVector, player);
+        }
+    }
+}
+#pragma pop
+
 #pragma pop
 
 #pragma push
@@ -4113,6 +4144,71 @@ s32 ActionHUDChangeMode(u32 *action) {
     }
     return 1;
 }
+
+s32 ActionTargetArrowSetTarget(void *params) {
+    extern s32 g_TargetArrow[7];
+    extern Vector4 g_zeroVector;
+    typedef struct {
+        u8 unk0[0x10];
+        u8 *unk10;
+        u8 unk14[0x10];
+        u8 *unk24;
+        u8 *unk28;
+        u8 *unk2C;
+    } TargetObject;
+    typedef struct {
+        u32 type;
+        TargetObject *obj;
+    } TargetParams;
+    TargetParams *p = params;
+    void *target;
+
+    g_TargetArrow[3] = 0;
+    switch (p->type) {
+    case 1:
+        if (p->obj->unk28 != NULL) {
+            target = p->obj->unk28 + 0x40;
+        } else {
+            target = p->obj;
+        }
+        break;
+    case 4:
+        if (p->obj->unk10 != NULL) {
+            target = p->obj->unk10 + 0x40;
+        } else {
+            target = &g_zeroVector;
+        }
+        break;
+    case 2:
+        if (p->obj->unk2C != NULL) {
+            target = p->obj->unk2C + 0x40;
+        } else {
+            target = p->obj;
+        }
+        break;
+    case 3:
+        if (p->obj->unk24 != NULL) {
+            g_TargetArrow[3] = (s32)p->obj->unk24;
+            target = p->obj->unk24 + 0x40;
+        } else {
+            target = p->obj;
+        }
+        break;
+    case 6:
+        target = p->obj;
+        break;
+    default:
+        target = NULL;
+        break;
+    }
+    if (g_TargetArrow[0] != (s32)target) {
+        g_TargetArrow[0] = (s32)target;
+        g_TargetArrow[4] = -1;
+        g_TargetArrow[2] = 0;
+    }
+    return 1;
+}
+
 #pragma pop
 
 s32 InterfaceManager_GetTargetArrowNearestNavPoint(void) {
@@ -4653,6 +4749,38 @@ s32 LogHandler_Create(void) {
 
 void LogHandler_Destroy(void) {
 
+}
+
+s32 Looker_Init(u8 *looker, u8 *init) {
+    typedef struct { f32 x, y, z, w; } Vec4;
+    void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
+    void ThingManagerList_Append(void **arg0, void *arg1);
+    Vector4 params;
+    u8 *slave;
+    void *world;
+
+    Thing_Init(looker, 0);
+    M2C_FIELD(looker, u32 *, 0x74) |= 2;
+    M2C_FIELD(looker, f32 *, 0xB4) = 0.0f;
+    M2C_FIELD(looker, f32 *, 0xB8) = 0.0f;
+    params.x = 0.0f;
+    params.y = 2.0f;
+    params.z = 1.0f;
+    slave = ThingManager_DARYL_CreateSlave(8, &params, 0xFF);
+    if (slave != NULL) {
+        slave[0x83] = 0;
+        ThingManagerList_Append((void **)(looker + 0x88), slave);
+    }
+    world = g_worldData.world;
+    if (M2C_FIELD(world, u32 *, 0x8) != 0) {
+        M2C_FIELD(looker, Vec4 *, 0x40) = *M2C_FIELD(world, Vec4 **, 0xC);
+    }
+    M2C_FIELD(looker, s16 *, 0x80) = 3;
+    M2C_FIELD(looker, s32 *, 0xBC) = 0;
+    M2C_FIELD(looker, f32 *, 0xCC) = 60.0f;
+    M2C_FIELD(looker, s32 *, 0xC4) = -1;
+    M2C_FIELD(looker, s32 *, 0xC8) = -1;
+    return 1;
 }
 
 void Looker_Draw(void) {
@@ -6714,6 +6842,34 @@ s8 ThingManagerList_Get(void *list, void *target) {
         }
     }
     return 0;
+}
+
+void ThingManagerList_RemoveReleasedThings(void **list) {
+    void ThingManagerList_ReleaseAndRemoveAll(void *list);
+    void *thing;
+    void *next;
+
+    thing = *list;
+    while (thing != NULL) {
+        next = M2C_FIELD(thing, void **, 0xA4);
+        if (M2C_FIELD(thing, u32 *, 0x74) & 0x200000) {
+            ThingManagerList_ReleaseAndRemoveAll((u8 *)thing + 0x88);
+            if (M2C_FIELD(thing, void **, 0xA0) == NULL) {
+                *list = M2C_FIELD(thing, void **, 0xA4);
+            } else {
+                M2C_FIELD(M2C_FIELD(thing, void **, 0xA0), void **, 0xA4) = M2C_FIELD(thing, void **, 0xA4);
+            }
+            if (M2C_FIELD(thing, void **, 0xA4) != NULL) {
+                M2C_FIELD(M2C_FIELD(thing, void **, 0xA4), void **, 0xA0) = M2C_FIELD(thing, void **, 0xA0);
+                M2C_FIELD(thing, void **, 0xA4) = NULL;
+            }
+            M2C_FIELD(thing, void **, 0xA0) = NULL;
+            ThingManagerList_Append(&g_thingManager_DARYL.freeList[M2C_FIELD(thing, s32 *, 0xA8)], thing);
+            M2C_FIELD(thing, u32 *, 0x74) &= ~0x200000;
+            M2C_FIELD(thing, u32 *, 0x74) |= 0x1000;
+        }
+        thing = next;
+    }
 }
 
 void ThingManagerList_ReleaseAll(void **list) {
@@ -10976,6 +11132,49 @@ void cbForReadSync(void) {
     OSWakeupThread(&__DVDThreadQueue);
 }
 
+#pragma push
+#pragma dont_inline on
+void DVDInit(void) {
+    extern s32 DVDInitialized_803C7350;
+    extern s32 FirstTimeInBootrom_803C734C;
+    extern void *bootInfo_803C7318;
+    extern void *currID_803C7314;
+    extern M2C_UNK __DVDThreadQueue;
+    void __DVDInterruptHandler(short interrupt, void *context);
+    void OSInitAlarm(void);
+    void __DVDFSInit(void);
+    void __DVDClearWaitingQueue(void);
+    void __DVDInitWA(void);
+    void __fstLoad(void);
+    void OSReport(const char *msg, ...);
+
+    if (DVDInitialized_803C7350) {
+        return;
+    }
+    OSInitAlarm();
+    DVDInitialized_803C7350 = TRUE;
+    __DVDFSInit();
+    __DVDClearWaitingQueue();
+    __DVDInitWA();
+    bootInfo_803C7318 = (void *)0x80000000;
+    currID_803C7314 = (void *)0x80000000;
+    __OSSetInterruptHandler(0x15, __DVDInterruptHandler);
+    __OSUnmaskInterrupts(0x400);
+    OSInitThreadQueue(&__DVDThreadQueue);
+    *(volatile u32 *)0xCC006000 = 0x2A;
+    *(volatile u32 *)0xCC006004 = 0;
+    if (*(u32 *)((u8 *)bootInfo_803C7318 + 0x20) == 0xE5207C22) {
+        OSReport("app booted via JTAG\n");
+        OSReport("load fst\n");
+        __fstLoad();
+    } else if (*(u32 *)((u8 *)bootInfo_803C7318 + 0x20) == 0x0D15EA5E) {
+        OSReport("app booted from bootrom\n");
+    } else {
+        FirstTimeInBootrom_803C734C = TRUE;
+        OSReport("bootrom\n");
+    }
+}
+#pragma pop
 void stateReadingFST(void) {
     M2C_UNK DVDLowRead(void *, u32, u32, void (*)(u32));
     void cbForStateReadingFST(u32);
