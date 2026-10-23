@@ -6452,6 +6452,55 @@ s32 FlashHolder_Add(void *flash, Vector4 *pos, s32 arg2, f32 time) {
     return -1;
 }
 
+void BulletHole_Init(void) {
+    extern u8 g_bulletData[512][0x60];
+    extern s32 g_nextBullet;
+    s32 i;
+
+    for (i = 0; i < 512; i++) {
+        *(s32 *)(g_bulletData[i] + 0x50) = 0;
+    }
+    g_nextBullet = 1;
+}
+
+#pragma push
+#pragma use_lmw_stmw on
+void BulletHole_Render(void) {
+    extern u8 g_bulletData[512][0x60];
+    void *Gfx_Begin_GroupQuadFlat(u16 texture, s32 arg1, s32 arg2);
+    void Gfx_End_GroupTri(u32 count);
+    void MemCpy32(void *dst, void *src, u32 size);
+    u8 *bullet;
+    u8 *dst;
+    u16 texture;
+    u32 count;
+    u32 i;
+
+    count = 0;
+    texture = 0xFFFF;
+    dst = NULL;
+    for (i = 0; i < 512; i++) {
+        bullet = g_bulletData[i];
+        if (*(s32 *)(bullet + 0x50) > 0) {
+            if (texture != *(u16 *)(bullet + 0x5C)) {
+                if (count != 0) {
+                    Gfx_End_GroupTri(count);
+                    count = 0;
+                }
+                dst = Gfx_Begin_GroupQuadFlat(*(u16 *)(bullet + 0x5C), 7, 0);
+                texture = *(u16 *)(bullet + 0x5C);
+            }
+            MemCpy32(dst, bullet, 0x50);
+            dst += 0x50;
+            count++;
+        }
+    }
+    if (count != 0) {
+        Gfx_End_GroupTri(count);
+    }
+}
+#pragma pop
+
 void Motion_Release(s32 arg0) {
     MotionState_Release(arg0 + 0xB0);
     Thing_Release(arg0);
