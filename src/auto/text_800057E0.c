@@ -4586,7 +4586,13 @@ void GameSettings_GetGameInfo(void *info) {
     mcp = pMCP;
 done:
     if (mcp != NULL) {
-        *(GameInfo *)info = g_gameInfo[mcp[1]];
+        ((GameInfo *)info)->name = g_gameInfo[mcp[1]].name;
+        ((GameInfo *)info)->id = g_gameInfo[mcp[1]].id;
+        ((GameInfo *)info)->title = g_gameInfo[mcp[1]].title;
+        ((GameInfo *)info)->fileName = g_gameInfo[mcp[1]].fileName;
+        ((GameInfo *)info)->icon = g_gameInfo[mcp[1]].icon;
+        ((GameInfo *)info)->unk14 = g_gameInfo[mcp[1]].unk14;
+        ((GameInfo *)info)->unk18 = g_gameInfo[mcp[1]].unk18;
     } else {
         ((GameInfo *)info)->name = "XXXXXXXXXXXXXXXXXXX";
         ((GameInfo *)info)->id = "SLUS_001.00";
@@ -12847,6 +12853,39 @@ void L2GlobalInvalidate(void) {
     }
 }
 
+void DMAErrorHandler(u16 error, void *context, ...) {
+    u32 PPCMfhid2(void);
+    void PPCMthid2(u32 val);
+    void OSReport(const char *fmt, ...);
+    void OSDumpContext(void *context);
+    void PPCHalt(void);
+    u32 hid2;
+
+    hid2 = PPCMfhid2();
+    OSReport("Machine check received\n");
+    OSReport("HID2 = 0x%x   SRR1 = 0x%x\n", hid2, *(u32 *)((u8 *)context + 0x19C));
+    if (!(hid2 & 0x00F00000) || !(*(u32 *)((u8 *)context + 0x19C) & 0x00200000)) {
+        OSReport("Machine check was not DMA/locked cache related\n");
+        OSDumpContext(context);
+        PPCHalt();
+    }
+    OSReport("DMAErrorHandler(): An error occurred while processing DMA.\n");
+    OSReport("The following errors have been detected and cleared :\n");
+    if (hid2 & 0x00800000) {
+        OSReport("\t- Requested a locked cache tag that was already in the cache\n");
+    }
+    if (hid2 & 0x00400000) {
+        OSReport("\t- DMA attempted to access normal cache\n");
+    }
+    if (hid2 & 0x00200000) {
+        OSReport("\t- DMA missed in data cache\n");
+    }
+    if (hid2 & 0x00100000) {
+        OSReport("\t- DMA queue overflowed\n");
+    }
+    PPCMthid2(hid2);
+}
+
 #pragma push
 #pragma peephole off
 void __OSCacheInit(void) {
@@ -17036,6 +17075,80 @@ void ARQInit(void) {
 void ARQReset(void) {
     extern s32 __ARQ_init_flag_803C7464;
     __ARQ_init_flag_803C7464 = 0;
+}
+
+void ARQPostRequest(void *request, u32 owner, u32 type, u32 priority, u32 source, u32 dest, u32 length, void (*callback)(u32)) {
+    typedef struct ARQRequest {
+        struct ARQRequest *next;
+        u32 owner;
+        u32 type;
+        u32 priority;
+        u32 source;
+        u32 dest;
+        u32 length;
+        void (*callback)(u32);
+    } ARQRequest;
+    extern ARQRequest *__ARQRequestQueueHi_803C7440;
+    extern ARQRequest *__ARQRequestTailHi_803C7444;
+    extern ARQRequest *__ARQRequestQueueLo_803C7448;
+    extern ARQRequest *__ARQRequestTailLo_803C744C;
+    extern ARQRequest *__ARQRequestPendingHi_803C7450;
+    extern ARQRequest *__ARQRequestPendingLo_803C7454;
+    extern void (*__ARQCallbackHi_803C7458)(u32);
+    void ARStartDMA(u32 type, u32 mainmem, u32 aram, u32 length);
+    void __ARQServiceQueueLo(void);
+    void __ARQCallbackHack(void);
+    ARQRequest *req = request;
+    s32 level;
+
+    req->next = NULL;
+    req->owner = owner;
+    req->type = type;
+    req->source = source;
+    req->dest = dest;
+    req->length = length;
+    if (callback) {
+        req->callback = callback;
+    } else {
+        req->callback = (void (*)(u32))__ARQCallbackHack;
+    }
+    level = OSDisableInterrupts();
+    switch (priority) {
+    case 0:
+        if (__ARQRequestQueueLo_803C7448) {
+            __ARQRequestTailLo_803C744C->next = req;
+        } else {
+            __ARQRequestQueueLo_803C7448 = req;
+        }
+        __ARQRequestTailLo_803C744C = req;
+        break;
+    case 1:
+        if (__ARQRequestQueueHi_803C7440) {
+            __ARQRequestTailHi_803C7444->next = req;
+        } else {
+            __ARQRequestQueueHi_803C7440 = req;
+        }
+        __ARQRequestTailHi_803C7444 = req;
+        break;
+    }
+    if (__ARQRequestPendingHi_803C7450 == NULL && __ARQRequestPendingLo_803C7454 == NULL) {
+        if (__ARQRequestQueueHi_803C7440) {
+            if (__ARQRequestQueueHi_803C7440->type == 0) {
+                ARStartDMA(__ARQRequestQueueHi_803C7440->type, __ARQRequestQueueHi_803C7440->source,
+                           __ARQRequestQueueHi_803C7440->dest, __ARQRequestQueueHi_803C7440->length);
+            } else {
+                ARStartDMA(__ARQRequestQueueHi_803C7440->type, __ARQRequestQueueHi_803C7440->dest,
+                           __ARQRequestQueueHi_803C7440->source, __ARQRequestQueueHi_803C7440->length);
+            }
+            __ARQCallbackHi_803C7458 = __ARQRequestQueueHi_803C7440->callback;
+            __ARQRequestPendingHi_803C7450 = __ARQRequestQueueHi_803C7440;
+            __ARQRequestQueueHi_803C7440 = __ARQRequestQueueHi_803C7440->next;
+        }
+        if (__ARQRequestPendingHi_803C7450 == NULL) {
+            __ARQServiceQueueLo();
+        }
+    }
+    OSRestoreInterrupts(level);
 }
 
 void ARQFlushQueue(void) {
