@@ -4185,27 +4185,25 @@ s32 DBGReadMailbox(u32 *mailbox) {
 
 #pragma push
 #pragma use_lmw_stmw on
-#pragma scheduling 603
+#pragma scheduling 604
 BOOL DBGEXIImm(void *buffer, s32 bytecounter, u32 write) {
-    volatile u32 *cr;
     u8 *tempPointer;
     u32 writeOutValue;
     int i;
 
     if (write) {
+        tempPointer = buffer;
         writeOutValue = 0;
         for (i = 0; i < bytecounter; i++) {
             u8 *temp = (u8 *)buffer + i;
             writeOutValue |= *temp << ((3 - i) << 3);
         }
-        *(volatile u32 *)0xCC006838 = writeOutValue;
+        __EXIRegs[14] = writeOutValue;
     }
-    cr = (volatile u32 *)0xCC006800;
-    *(cr += 13) = 1 | write << 2 | (bytecounter - 1) << 4;
-    while (*cr & 1) {
-    }
+    __EXIRegs[13] = 1 | write << 2 | (bytecounter - 1) << 4;
+    DBGEXISync();
     if (!write) {
-        writeOutValue = *(volatile u32 *)0xCC006838;
+        writeOutValue = __EXIRegs[14];
         tempPointer = buffer;
         for (i = 0; i < bytecounter; i++) {
             *tempPointer++ = (u8)(writeOutValue >> ((3 - i) << 3));
