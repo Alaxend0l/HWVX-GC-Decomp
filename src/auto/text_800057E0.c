@@ -4047,7 +4047,7 @@ static inline void Grid_GetCell(Vector4 *pos, u32 *cell) {
     cell[1] = (s32)fz;
 }
 
-static void Grid_GetCellCoords(Vector4 *pos, u32 *x, u32 *z) {
+static inline void Grid_GetCellCoords(Vector4 *pos, u32 *x, u32 *z) {
     f32 fx;
     f32 fz;
 
