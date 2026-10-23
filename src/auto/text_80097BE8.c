@@ -3572,6 +3572,8 @@ void Gfx_Add2DRectangleBack(void) {
 }
 
 void *Gfx_GetWorldMatrixState(u32 index);
+#pragma push
+#pragma auto_inline off
 void DisplayList_AddAlphaGroup(s32 arg0, s32 arg1, u32 matrix, u8 arg3, GXColor *color) {
     extern GDL *g_pGDL;
     extern s32 g_currentWindow;
@@ -3591,6 +3593,7 @@ void DisplayList_AddAlphaGroup(s32 arg0, s32 arg1, u32 matrix, u8 arg3, GXColor 
     g_pGDL->alphaGroups[g_pGDL->numAlphaGroups].color = *color;
     g_pGDL->numAlphaGroups++;
 }
+#pragma pop
 
 void DrawAlphaTable(void) {
     extern GDL *g_pGDL;
