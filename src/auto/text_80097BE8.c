@@ -7204,6 +7204,45 @@ u8 AutoCalibrateAxisUnsigned(u8 *min, u8 *max, u8 value, u8 deadzone, u8 *out) {
 #pragma push
 #pragma optimize_for_size on
 #pragma use_lmw_stmw on
+void SteeringSamplingCallback(void) {
+    void SIReadSteering(s32 chan, void *status);
+    void HandlePedals(void *cur, SISteeringStatus *status, SISteeringStatus *calib);
+    void HandleTriggers(void *cur, SISteeringStatus *status, SISteeringStatus *calib);
+    void SimThread_Step(VDevice *dev);
+    LGDevice *device;
+    SISteeringStatus *status;
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        device = &g_lgDevices_803771D8[i];
+        if (device->opened) {
+            status = &device->status;
+            SIReadSteering(i, status);
+            switch (status->err) {
+            case -1:
+                device->unk4D = -1;
+                device->started = 1;
+                break;
+            case 0:
+                AutoCalibrateAxisSigned(&device->calibMin.steering, &device->calibMax.steering, status->steering,
+                                        device->calibDeadzone.steering, &device->curSteering);
+                HandlePedals(&device->curButton, status, &device->calibMin);
+                HandleTriggers(&device->curButton, status, &device->calibMin);
+                device->curButton = status->button;
+                device->curMisc = status->misc;
+                device->prev = *status;
+                device->unk4D = 0;
+                SimThread_Step(&device->vdev);
+                break;
+            }
+        }
+    }
+}
+#pragma pop
+
+#pragma push
+#pragma optimize_for_size on
+#pragma use_lmw_stmw on
 void LGInit(void) {
     extern s32 g_lgInitialized_803C7948;
     void InitDevice(LGDevice *device, s32 index);
