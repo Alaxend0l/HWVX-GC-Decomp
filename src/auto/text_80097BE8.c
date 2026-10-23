@@ -8177,6 +8177,116 @@ void EnvMap(Geometry *geometry, u32 group, void *matrix, s32 mode) {
         Render_StateAlphaBlendEnable(0);
     }
 }
+
+void Render_DrawOpaqueGroup(Geometry *geometry, u32 group, void *matrix) {
+    typedef struct UVScroll {
+        f32 u;
+        f32 v;
+        GXColor color;
+        u32 flags;
+    } UVScroll;
+    extern GfxState g_state;
+    extern s32 g_debugTriCount;
+    extern s32 m_curLightState;
+    extern u32 g_IsAnim;
+    extern u32 m_VtxDescFlag;
+    void Render_SetTextureHandle(u16 id);
+    void Render_SetConstColor(GXColor *color);
+    void Render_UpdateLightState(u32 index);
+    void Render_UseLighting(u8 arg0);
+    void SetTriVtxDescIdx(void);
+    void SetTriNormVtxDescIdx(void);
+    void SetVertexBuffer();
+    void GXSetVtxDesc(s32 attr, s32 type);
+    void GXLoadTexMtxImm(f32 mtx[3][4], u32 id, s32 type);
+    void GXSetTexCoordGen2(s32 dst, s32 func, s32 src, u32 mtx, u8 normalize, u32 pt);
+    void DCFlushRange(void *addr, u32 len);
+    void GXCallDisplayList(void *list, u32 nbytes);
+    GeometryGroup *grp;
+    f32 *vb;
+    void *dl;
+    UVScroll *scroll;
+
+    vb = geometry->lodDistances;
+    grp = &geometry->groups[group];
+    dl = *(void **)((u8 *)grp + 0x1C);
+    if (*(u16 *)((u8 *)grp + 0x18) == 0) {
+        Render_SetTextureHandle(*(u16 *)((u8 *)grp + 0x1A));
+    } else {
+        Render_SetTextureHandle(*(u16 *)((u8 *)grp + 0x18));
+    }
+    g_debugTriCount += *(u32 *)((u8 *)grp + 0x10);
+    if ((g_state.unk7C & 0x10) || (g_state.unk7C & 0x40000)) {
+        g_state.unk74.a = 0xFF;
+        Render_SetConstColor(&g_state.unk74);
+        SetTriVtxDescIdx();
+        SetVertexBuffer(vb, grp->flags, geometry->unk4);
+        DCFlushRange(dl, *(u32 *)((u8 *)grp + 0x10));
+        GXCallDisplayList(dl, *(u32 *)((u8 *)grp + 0x10));
+        Render_SetConstColor(NULL);
+    } else if (grp->flags & 4) {
+        Render_UpdateLightState(m_curLightState);
+        Render_UseLighting(1);
+        if (*(UVScroll **)((u8 *)grp + 0xC) != NULL) {
+            f32 mtx[3][4];
+            scroll = *(UVScroll **)((u8 *)grp + 0xC);
+            mtx[0][0] = 1.0f;
+            mtx[0][1] = 0.0f;
+            mtx[0][2] = 0.0f;
+            mtx[0][3] = scroll->u;
+            mtx[1][0] = 0.0f;
+            mtx[1][1] = 1.0f;
+            mtx[1][2] = 0.0f;
+            mtx[1][3] = scroll->v;
+            GXLoadTexMtxImm(mtx, 30, 1);
+            GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
+        }
+        SetTriNormVtxDescIdx();
+        if (g_IsAnim) {
+            GXSetVtxDesc(0, 1);
+            m_VtxDescFlag = 0;
+        }
+        SetVertexBuffer(vb, grp->flags, geometry->unk4);
+        DCFlushRange(dl, *(u32 *)((u8 *)grp + 0x10));
+        GXCallDisplayList(dl, *(u32 *)((u8 *)grp + 0x10));
+        if (*(UVScroll **)((u8 *)grp + 0xC) != NULL) {
+            GXSetTexCoordGen2(0, 1, 4, 60, 0, 125);
+        }
+        Render_UseLighting(0);
+    } else {
+        scroll = *(UVScroll **)((u8 *)grp + 0xC);
+        if (scroll != NULL) {
+            f32 mtx[3][4];
+            mtx[0][0] = 1.0f;
+            mtx[0][1] = 0.0f;
+            mtx[0][2] = 0.0f;
+            mtx[0][3] = scroll->u;
+            mtx[1][0] = 0.0f;
+            mtx[1][1] = 1.0f;
+            mtx[1][2] = 0.0f;
+            mtx[1][3] = scroll->v;
+            GXLoadTexMtxImm(mtx, 30, 1);
+            GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
+            if (scroll->flags & 2) {
+                Render_SetConstColor(&scroll->color);
+            }
+            SetTriVtxDescIdx();
+            SetVertexBuffer(vb, grp->flags, geometry->unk4);
+            DCFlushRange(dl, *(u32 *)((u8 *)grp + 0x10));
+            GXCallDisplayList(dl, *(u32 *)((u8 *)grp + 0x10));
+            if (scroll->flags & 2) {
+                Render_SetConstColor(NULL);
+            }
+            GXSetTexCoordGen2(0, 1, 4, 60, 0, 125);
+        } else {
+            SetTriVtxDescIdx();
+            SetVertexBuffer(vb, grp->flags, geometry->unk4);
+            DCFlushRange(dl, *(u32 *)((u8 *)grp + 0x10));
+            GXCallDisplayList(dl, *(u32 *)((u8 *)grp + 0x10));
+        }
+    }
+}
+
 #pragma pop
 void Render_UseLighting(u8 arg0) {
     M2C_UNK GXSetChanCtrl(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK, s32, M2C_UNK, M2C_UNK);
