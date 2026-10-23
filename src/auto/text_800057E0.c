@@ -18597,6 +18597,8 @@ s32 TRKAppendBuffer(TRKBuffer *b, const void *data, u32 length) {
     return error;
 }
 
+#pragma push
+#pragma auto_inline off
 s32 TRKSetBufferPosition(void *arg0, u32 arg1) {
     s32 var_r5;
 
