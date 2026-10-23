@@ -642,6 +642,16 @@ extern LGDevice g_lgDevices_803771D8[4];
 extern s32 g_bGammaInitialized_803C794C;
 
 void SimThread_Init(VDevice *dev, VDevice *owner);
+
+static inline void SimThread_SetWeights(SimThread *t, const s32 *weights) {
+    s32 i;
+
+    for (i = 0; i < 10; i++) {
+        t->weights[i] = weights[i];
+        t->history[i] = 0;
+    }
+    t->historyIdx = 0;
+}
 void VDevice_RecalcGammaTable(void);
 extern s8 g_iGammaLookup_8037BAF8[129];
 s32 VDevice_Shutdown(VDevice *dev);
@@ -8774,6 +8784,45 @@ s32 Effect_UpdateDamper(Effect *effect, EffectCondition *cond) {
     }
     return force;
 }
+
+void SimThread_Init(VDevice *dev, VDevice *owner) {
+    static f32 a[10] = {
+        0.0995392948f, 0.0998378024f, 0.1000645086f, 0.1002266929f, 0.1003241092f,
+        0.1003241092f, 0.1002266929f, 0.1000645086f, 0.0998378024f, 0.0995392948f,
+    };
+    static s32 ia[10];
+    SimThread *t = &dev->sim;
+    s32 w[1] = {0x1000};
+    s32 i;
+
+    t->lastTick = 0;
+    t->historyIdx = 0;
+    t->deltaIdx = 0;
+    for (i = 0; i < 16; i++) {
+        t->deltaPos[i] = 0;
+        t->deltaTime[i] = 0;
+    }
+    t->owner = owner;
+    t->lastForce = 0;
+    t->posScaled = 0;
+    t->pos = 0;
+    t->accel = 0;
+    t->lastTick = OSGetTick() / ((*(u32 *)0x800000F8 / 4) / 1000);
+    for (i = 0; i < 10; i++) {
+        t->weights[i] = w[i];
+        t->history[i] = 0;
+    }
+    t->historyIdx = 0;
+    for (i = 0; i < 10; i++) {
+        ia[i] = 4096.0f * a[i];
+    }
+    for (i = 0; i < 10; i++) {
+        t->weights[i] = ia[i];
+        t->history[i] = 0;
+    }
+    t->historyIdx = 0;
+}
+
 #pragma pop
 
 void ShortCommandProc(s32 chan) {
