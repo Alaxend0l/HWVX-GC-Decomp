@@ -10404,6 +10404,16 @@ s32 TRKTerminateNub(void) {
     return 0;
 }
 
+s32 TRKAppendBuffer_ui8(TRKBuffer *b, const u8 *data, s32 count) {
+    s32 err;
+    s32 i;
+
+    for (i = 0, err = 0; err == 0 && i < count; i++) {
+        err = TRKAppendBuffer1_ui8(b, data[i]);
+    }
+    return err;
+}
+
 s32 TRKReadBuffer(TRKBuffer *b, void *data, u32 length) {
     s32 error = 0;
     u32 bytesLeft;
