@@ -3923,6 +3923,68 @@ s32 EventSeq_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+void ExtractActiveKey(u8 *track, u8 *state, f32 dt) {
+    typedef struct Key {
+        u8 value;
+        u8 active;
+        u8 pad[2];
+        f32 duration;
+    } Key;
+    typedef struct KeyTrack {
+        u32 count;
+        Key *keys;
+    } KeyTrack;
+    typedef struct KeyState {
+        f32 time;
+        u16 index;
+        u16 current;
+        u8 value;
+        u8 reset;
+    } KeyState;
+    KeyTrack *t = (KeyTrack *)track;
+    KeyState *s = (KeyState *)state;
+    u32 reset;
+    u16 i;
+
+    reset = 0;
+    if (s->reset) {
+        s->reset = 0;
+        reset = 1;
+        s->index = 0;
+        s->time = 0.0f;
+    }
+    if (s->index >= t->count) {
+        return;
+    }
+    s->time += dt;
+    if (!reset && !(s->time >= t->keys[s->index].duration)) {
+        return;
+    }
+    s->current = 0;
+    for (;;) {
+        if (s->time < t->keys[s->index].duration) {
+            break;
+        }
+        s->current = s->index;
+        s->time -= t->keys[s->index].duration;
+        s->index++;
+        if (s->index >= t->count) {
+            for (i = 0; i < t->count; i++) {
+                if (t->keys[i].active) {
+                    s->index = i;
+                    break;
+                }
+            }
+            if (s->index >= t->count) {
+                s->value = t->keys[s->current].value;
+                return;
+            }
+            break;
+        }
+    }
+    s->value = t->keys[s->current].value;
+}
+
 void ExtractTextureKey(TextureKeyAnim *anim, TextureKeyState *state, f32 dt) {
     if (state->reset) {
         if (anim->numKeys == 0) {
