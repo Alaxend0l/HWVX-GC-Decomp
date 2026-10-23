@@ -6583,32 +6583,34 @@ void TitleScreen_RunDemoLoop(void) {
     u32 index;
 
     mcp = GameSettings_GetMCP();
-    if (mcp != NULL) {
-        demos = *(u8 **)(mcp + 0x24);
-        list = *(u32 **)(demos + 8);
-        if (list == NULL) {
-            return;
-        } else if (demos[0] != 0) {
-            index = RandomNumberGenerator_GetRandomInteger(0, *list);
-        } else {
-            index = progressionIndex++;
-        }
-        if (index >= **(u32 **)(*(u8 **)(mcp + 0x24) + 8)) {
-            index = 0;
-            progressionIndex = 1;
-        }
-        if (index < 6) {
-            GameSettings_SetCodeVariable(0x12D, 0, 3);
-        } else {
-            GameSettings_SetCodeVariable(0x12D, 0, 2);
-        }
-        g_gameDifficulty = GameSettings_GetDifficulty();
-        GameSettings_SetCodeVariable(0x198, 0, 1);
-        GameSettings_SetCodeVariable(0x133, 0, 3);
-        GameSettings_SetCodeVariable(0x131, 0, 1);
-        GameSettings_SetCodeVariable(0xC8, 0, 3);
-        StateProgressionManager_SetProgressionID(0, index);
+    if (mcp == NULL) {
+        return;
     }
+    demos = *(u8 **)(mcp + 0x24);
+    list = *(u32 **)(demos + 8);
+    if (!list) {
+        return;
+    }
+    if (demos[0] != 0) {
+        index = RandomNumberGenerator_GetRandomInteger(0, *list);
+    } else {
+        index = progressionIndex++;
+    }
+    if (index >= **(u32 **)(*(u8 **)(mcp + 0x24) + 8)) {
+        index = 0;
+        progressionIndex = 1;
+    }
+    if (index < 6) {
+        GameSettings_SetCodeVariable(0x12D, 0, 3);
+    } else {
+        GameSettings_SetCodeVariable(0x12D, 0, 2);
+    }
+    g_gameDifficulty = GameSettings_GetDifficulty();
+    GameSettings_SetCodeVariable(0x198, 0, 1);
+    GameSettings_SetCodeVariable(0x133, 0, 3);
+    GameSettings_SetCodeVariable(0x131, 0, 1);
+    GameSettings_SetCodeVariable(0xC8, 0, 3);
+    StateProgressionManager_SetProgressionID(0, index);
 }
 
 #pragma pop
@@ -7211,6 +7213,33 @@ s8 ThingManagerList_Get(void *list, void *target) {
         }
     }
     return 0;
+}
+
+void ThingManagerList_ReleaseSlavesBySlaveType(void **list, u8 type) {
+    void *thing;
+    void *next;
+    void **freeList;
+    void *head;
+
+    thing = *list;
+    while (thing != NULL) {
+        next = M2C_FIELD(thing, void **, 0xA4);
+        if (M2C_FIELD(thing, u8 *, 0x83) == type) {
+            M2C_FIELD(M2C_FIELD(thing, void **, 0x8C), void (**)(void *), 4)(thing);
+            ThingManagerList_Remove(list, thing);
+            M2C_FIELD(thing, u32 *, 0x74) &= ~0x200000;
+            M2C_FIELD(thing, u32 *, 0x74) |= 0x1000;
+            freeList = &g_thingManager_DARYL.freeList[M2C_FIELD(thing, s32 *, 0xA8)];
+            M2C_FIELD(thing, void **, 0xA4) = *freeList;
+            M2C_FIELD(thing, void **, 0xA0) = NULL;
+            head = M2C_FIELD(thing, void **, 0xA4);
+            if (head != NULL) {
+                M2C_FIELD(head, void **, 0xA0) = thing;
+            }
+            *freeList = thing;
+        }
+        thing = next;
+    }
 }
 
 void ThingManagerList_RemoveReleasedThings(void **list) {
