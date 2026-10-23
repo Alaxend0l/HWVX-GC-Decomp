@@ -27952,11 +27952,11 @@ BOOL __SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inpu
         struct {
             u32 tcint : 1;
             u32 tcintmsk : 1;
-            u32 : 1;
+            u32 : 7;
             u32 outlngth : 7;
             u32 : 1;
             u32 inlngth : 7;
-            u32 : 11;
+            u32 : 5;
             u32 channel : 2;
             u32 tstart : 1;
         } f;
