@@ -7340,6 +7340,46 @@ void CreateSilhouette(void *edges, u32 count, Vector *dir) {
     }
 }
 
+void DrawVolume(f32 (*verts)[3], void *edgeData, u32 numEdges, f32 dx, f32 dy, f32 dz) {
+    typedef struct VolumeEdge {
+        u8 unk0[0xC];
+        u16 v0;
+        u16 v1;
+        u8 unk10[0x1C - 0x10];
+        u32 flags;
+    } VolumeEdge;
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    VolumeEdge *edge;
+    u32 i;
+
+    edge = edgeData;
+    for (i = 0; i < numEdges; i++) {
+        if (edge->flags & 2) {
+            GXBegin(0x80, 0, 4);
+            GXPosition3f32(verts[edge->v0][0], verts[edge->v0][1], verts[edge->v0][2]);
+            GXWGFifo.u32 = 0xFF0004;
+            GXPosition3f32(verts[edge->v1][0], verts[edge->v1][1], verts[edge->v1][2]);
+            GXWGFifo.u32 = 0xFF0004;
+            GXPosition3f32(dx + verts[edge->v1][0], dy + verts[edge->v1][1], dz + verts[edge->v1][2]);
+            GXWGFifo.u32 = 0xFF0004;
+            GXPosition3f32(dx + verts[edge->v0][0], dy + verts[edge->v0][1], dz + verts[edge->v0][2]);
+            GXWGFifo.u32 = 0xFF0004;
+        }
+        if (edge->flags & 1) {
+            GXBegin(0x80, 0, 4);
+            GXPosition3f32(verts[edge->v1][0], verts[edge->v1][1], verts[edge->v1][2]);
+            GXWGFifo.u32 = 0xFF0004;
+            GXPosition3f32(verts[edge->v0][0], verts[edge->v0][1], verts[edge->v0][2]);
+            GXWGFifo.u32 = 0xFF0004;
+            GXPosition3f32(dx + verts[edge->v0][0], dy + verts[edge->v0][1], dz + verts[edge->v0][2]);
+            GXWGFifo.u32 = 0xFF0004;
+            GXPosition3f32(dx + verts[edge->v1][0], dy + verts[edge->v1][1], dz + verts[edge->v1][2]);
+            GXWGFifo.u32 = 0xFF0004;
+        }
+        edge++;
+    }
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void Render_GeometryListSplitScreen(void) {
