@@ -12037,6 +12037,46 @@ void PADOriginUpdateCallback(s32 chan, u32 error, void *context) {
     }
 }
 
+s32 PADReset(u32 mask) {
+    void SIDisablePolling(u32 poll);
+    s32 SIGetTypeAsync(s32 chan, void (*callback)(s32, u32));
+    void PADTypeAndStatusCallback(s32 chan, u32 type);
+    void *memset(void *dst, int c, u32 n);
+    extern u32 CheckingBits_803C73CC;
+    extern u32 EnabledBits_803C73BC;
+    extern u8 Origin_802EFC00[4][12];
+    extern u32 PendingBits_803C73D0;
+    extern u32 RecalibrateBits_803C73C4;
+    extern u32 ResettingBits_803C73C0;
+    extern s32 ResettingChan_803C6DC8;
+    extern u32 Spec_803C6DD4;
+    extern u32 WaitingBits_803C73C8;
+    s32 enabled;
+    u32 disableBits;
+
+    enabled = OSDisableInterrupts();
+    mask |= PendingBits_803C73D0;
+    PendingBits_803C73D0 = 0;
+    mask &= ~(WaitingBits_803C73C8 | CheckingBits_803C73CC);
+    ResettingBits_803C73C0 |= mask;
+    disableBits = ResettingBits_803C73C0 & EnabledBits_803C73BC;
+    EnabledBits_803C73BC &= ~mask;
+    if (Spec_803C6DD4 == 4) {
+        RecalibrateBits_803C73C4 |= mask;
+    }
+    SIDisablePolling(disableBits);
+    if (ResettingChan_803C6DC8 == 32) {
+        ResettingChan_803C6DC8 = __cntlzw(ResettingBits_803C73C0);
+        if (ResettingChan_803C6DC8 != 32) {
+            ResettingBits_803C73C0 &= ~(0x80000000 >> ResettingChan_803C6DC8);
+            memset(Origin_802EFC00[ResettingChan_803C6DC8], 0, 12);
+            SIGetTypeAsync(ResettingChan_803C6DC8, PADTypeAndStatusCallback);
+        }
+    }
+    OSRestoreInterrupts(enabled);
+    return 1;
+}
+
 void PADSetSpec(s32 spec) {
     extern void (*MakeStatus_803C6DD8)(s32, void *, u32 *);
     void SPEC0_MakeStatus(s32, void *, u32 *);
@@ -12627,6 +12667,48 @@ void __ARHandler(s16 interrupt, void *context) {
     }
     OSClearContext(exceptionContext);
     OSSetCurrentContext(context);
+}
+
+void __ARQServiceQueueLo(void) {
+    typedef struct ARQRequest {
+        struct ARQRequest *next;
+        u32 owner;
+        u32 type;
+        u32 priority;
+        u32 source;
+        u32 dest;
+        u32 length;
+        void (*callback)(u32);
+    } ARQRequest;
+    extern ARQRequest *__ARQRequestQueueLo_803C7448;
+    extern ARQRequest *__ARQRequestPendingLo_803C7454;
+    extern u32 __ARQChunkSize_803C7460;
+    extern void (*__ARQCallbackLo_803C745C)(u32);
+    void ARStartDMA(u32 type, u32 mainmem, u32 aram, u32 length);
+
+    if (__ARQRequestPendingLo_803C7454 == NULL && __ARQRequestQueueLo_803C7448 != NULL) {
+        __ARQRequestPendingLo_803C7454 = __ARQRequestQueueLo_803C7448;
+        __ARQRequestQueueLo_803C7448 = __ARQRequestQueueLo_803C7448->next;
+    }
+    if (__ARQRequestPendingLo_803C7454) {
+        if (__ARQRequestPendingLo_803C7454->length <= __ARQChunkSize_803C7460) {
+            if (__ARQRequestPendingLo_803C7454->type == 0) {
+                ARStartDMA(__ARQRequestPendingLo_803C7454->type, __ARQRequestPendingLo_803C7454->source, __ARQRequestPendingLo_803C7454->dest, __ARQRequestPendingLo_803C7454->length);
+            } else {
+                ARStartDMA(__ARQRequestPendingLo_803C7454->type, __ARQRequestPendingLo_803C7454->dest, __ARQRequestPendingLo_803C7454->source, __ARQRequestPendingLo_803C7454->length);
+            }
+            __ARQCallbackLo_803C745C = __ARQRequestPendingLo_803C7454->callback;
+        } else {
+            if (__ARQRequestPendingLo_803C7454->type == 0) {
+                ARStartDMA(__ARQRequestPendingLo_803C7454->type, __ARQRequestPendingLo_803C7454->source, __ARQRequestPendingLo_803C7454->dest, __ARQChunkSize_803C7460);
+            } else {
+                ARStartDMA(__ARQRequestPendingLo_803C7454->type, __ARQRequestPendingLo_803C7454->dest, __ARQRequestPendingLo_803C7454->source, __ARQChunkSize_803C7460);
+            }
+        }
+        __ARQRequestPendingLo_803C7454->length -= __ARQChunkSize_803C7460;
+        __ARQRequestPendingLo_803C7454->source += __ARQChunkSize_803C7460;
+        __ARQRequestPendingLo_803C7454->dest += __ARQChunkSize_803C7460;
+    }
 }
 
 void __ARQCallbackHack(void) {
@@ -15235,6 +15317,38 @@ void GXSetNumTevStages(u8 nStages) {
     *reg |= 4;
 }
 
+#pragma push
+#pragma opt_unroll_loops on
+void GXSetFogRangeAdj(u8 enable, u16 center, u16 *table) {
+    typedef struct GXDataFog {
+        u8 unk0[2];
+        u16 bpSentNot;
+    } GXDataFog;
+    extern GXDataFog *gx;
+    u32 i;
+    u32 range_adj;
+    u32 range_c;
+
+    if (enable) {
+        for (i = 0; i < 5; i++) {
+            range_adj = 0;
+            range_adj = (range_adj & ~0xFFF) | table[0];
+            range_adj = (range_adj & ~0xFFF000) | (table[1] << 12);
+            range_adj = (range_adj & ~0xFF000000) | ((i + 0xE9) << 24);
+            GXWGFifo.u8 = 0x61;
+            GXWGFifo.u32 = range_adj;
+            table += 2;
+        }
+    }
+    range_c = 0;
+    range_c = (range_c & ~0x3FF) | (center + 342);
+    range_c = (range_c & ~0x400) | (enable << 10);
+    range_c = (range_c & ~0xFF000000) | (0xE8 << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = range_c;
+    gx->bpSentNot = 0;
+}
+#pragma pop
 void GXSetColorUpdate(u8 updateEnable) {
     extern u8 *gx;
     u8 *g;
@@ -16508,6 +16622,39 @@ s32 TRKInitializeDispatcher(void) {
     extern u32 gTRKDispatchTableSize[];
     gTRKDispatchTableSize[0] = 0x20;
     return 0;
+}
+
+void TRKDoStop(TRKBuffer *b) {
+    s32 TRKTargetStop(void);
+    u8 replyError;
+    s32 err;
+    s32 ackTries;
+
+    switch (TRKTargetStop()) {
+    case 0:
+        replyError = 0;
+        break;
+    case 0x704:
+        replyError = 0x21;
+        break;
+    case 0x705:
+        replyError = 0x22;
+        break;
+    case 0x706:
+        replyError = 0x20;
+        break;
+    default:
+        replyError = 1;
+        break;
+    }
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, replyError);
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
 }
 
 s32 TRKDoReset(TRKBuffer *b) {
