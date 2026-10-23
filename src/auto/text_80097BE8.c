@@ -4703,6 +4703,7 @@ s32 THPPlayerDrawCurrentFrame(void *rmode, u32 x, u32 y, u32 polygonW, u32 polyg
     }
     return -1;
 }
+#pragma pop
 
 BOOL THPPlayerGetVideoInfo(THPVideoInfo *videoInfo) {
     if (ActivePlayer.open) {
