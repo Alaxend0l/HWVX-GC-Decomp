@@ -14305,6 +14305,7 @@ s32 __OSGetEffectivePriority(void *thread) {
     return priority;
 }
 #pragma pop
+#pragma pop
 
 void __OSReschedule(void) {
     void SelectThread(s32 yield);
