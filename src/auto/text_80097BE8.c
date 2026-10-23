@@ -3104,6 +3104,29 @@ void Gfx_TextureHandler_Destroy(void) {
     m_texture = NULL;
 }
 
+void Gfx_TextureManager_Init(void) {
+    extern u8 *m_texture;
+    extern u32 m_totalTextures;
+    void Render_DestroyTextureSlot(u32 id);
+    void Deallocate(void *p);
+    void *memset(void *dst, int c, u32 n);
+    void Gfx_FontManager_Init(void);
+    u32 i;
+
+    for (i = 1; i < m_totalTextures; i++) {
+        Render_DestroyTextureSlot(i);
+        if (*(void **)(m_texture + i * 0x40 + 0x24) != NULL && *(u16 *)(m_texture + i * 0x40 + 0x3A) == 0) {
+            Deallocate(*(void **)(m_texture + i * 0x40 + 0x24));
+        }
+        memset(m_texture + i * 0x40, 0, 0x20);
+        *(u16 *)(m_texture + i * 0x40 + 0x36) = 0;
+        *(u16 *)(m_texture + i * 0x40 + 0x30) = 0;
+        *(u16 *)(m_texture + i * 0x40 + 0x32) = 0;
+        *(void **)(m_texture + i * 0x40 + 0x24) = NULL;
+    }
+    Gfx_FontManager_Init();
+}
+
 #pragma push
 #pragma readonly_strings on
 #pragma dont_inline on
