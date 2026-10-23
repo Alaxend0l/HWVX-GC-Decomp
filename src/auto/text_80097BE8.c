@@ -6868,6 +6868,41 @@ s32 LGSetDeviceProperty(LGDevice *device, u32 property, s32 value) {
     return 0;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s32 LGRead(void *status) {
+    typedef struct LGStatus {
+        u16 data[4];
+        u8 unk8;
+        s8 err;
+    } LGStatus;
+    LGStatus *out = status;
+    LGDevice *device;
+    s32 i;
+
+    if (status == NULL) {
+        return -2;
+    }
+    for (i = 0; i < 4; i++) {
+        device = &g_lgDevices_803771D8[i];
+        if (device->started) {
+            if (device != NULL && (u32)device != 0xFFFFFFFF && device->opened) {
+                device->opened = 0;
+                device->started = 0;
+                VDevice_Shutdown(&device->vdev);
+                device->unk8 = -1;
+            }
+        }
+        if (device->opened) {
+            out[i] = *(LGStatus *)&device->unkC[0x38];
+        } else {
+            out[i].err = -1;
+        }
+    }
+    return 0;
+}
+#pragma pop
+
 s32 VDevice_DownloadEffect(VDevice *dev, u32 *handle, u8 *desc);
 s32 LGDownloadForceEffect(LGDevice *device, u32 *handle, u8 *desc) {
     if (device == NULL || (u32)device == 0xFFFFFFFF) {
@@ -8433,46 +8468,49 @@ s32 __ct__9ConditionFv(s32 arg0) {
 #pragma push
 #pragma use_lmw_stmw on
 #pragma readonly_strings on
-s32 UpdateForce__9ConditionFllUcUlUlScUcUcUcss(Force *force, s32 chan, s32 effect, u8 type, u32 duration, u32 startDelay, s8 offset, u8 deadband, u8 posSaturation, u8 negSaturation, s16 posCoefficient, s16 negCoefficient) {
-    s32 LGUpdateForceEffect(u32 handle, void *desc);
-    struct {
-        u8 type;
-        u32 duration;
-        u32 startDelay;
-        struct {
-            s8 offset;
-            u8 deadband;
-            u8 posSaturation;
-            u8 negSaturation;
-            s16 posCoefficient;
-            s16 negCoefficient;
-        } condition[2];
-        u8 pad[8];
-    } desc;
-    s32 result;
-
-    memset(&desc, 0, sizeof(desc));
-    desc.type = type;
-    desc.duration = duration;
-    desc.startDelay = startDelay;
-    desc.condition[0].offset = offset;
-    desc.condition[0].deadband = deadband;
-    desc.condition[0].posSaturation = posSaturation;
-    desc.condition[0].negSaturation = negSaturation;
-    desc.condition[0].posCoefficient = posCoefficient;
-    desc.condition[0].negCoefficient = negCoefficient;
-    desc.condition[1].offset = offset;
-    desc.condition[1].deadband = deadband;
-    desc.condition[1].posSaturation = posSaturation;
-    desc.condition[1].negSaturation = negSaturation;
-    desc.condition[1].posCoefficient = posCoefficient;
-    desc.condition[1].negCoefficient = negCoefficient;
-    result = LGUpdateForceEffect(force->effectIds[chan][effect], &desc);
-    if (result < 0) {
-        OSReport("ERROR: UpdateForce(condition force) on channel %d returned %d\n", chan, result);
-        force->effectIds[chan][effect] = 0xFFFFFFFF;
-    }
-    return result;
+s32 UpdateForce__9ConditionFllUcUlUlScUcUcUcss(Force *force, s32 chan, s32 effect, u8 type, u32 duration, u32 startDelay, s8 offset, u8 deadband, u8 posSaturation, u8 negSaturation, s16 posCoefficient, s16 negCoefficient)
+{
+  s32 LGUpdateForceEffect(u32 handle, u8 *desc);
+  struct 
+  {
+    u8 type;
+    u32 duration;
+    u32 startDelay;
+    struct 
+    {
+      s8 offset;
+      u8 deadband;
+      u8 posSaturation;
+      u8 negSaturation;
+      s16 posCoefficient;
+      s16 negCoefficient;
+    } condition[2];
+    u8 pad[8];
+  } desc;
+  s32 result;
+  memset(&desc, 0, sizeof(desc));
+  desc.type = type;
+  desc.duration = duration;
+  desc.startDelay = startDelay;
+  desc.condition[0].offset = offset;
+  desc.condition[0].deadband = deadband;
+  desc.condition[0].posSaturation = posSaturation;
+  desc.condition[0].negSaturation = negSaturation;
+  desc.condition[0].posCoefficient = (long long) posCoefficient;
+  desc.condition[0].negCoefficient = negCoefficient;
+  desc.condition[1].offset = offset;
+  desc.condition[1].deadband = deadband;
+  desc.condition[1].posSaturation = posSaturation;
+  desc.condition[1].negSaturation = negSaturation;
+  desc.condition[1].posCoefficient = posCoefficient;
+  desc.condition[1].negCoefficient = negCoefficient;
+  result = LGUpdateForceEffect(force->effectIds[chan][effect], (u8 *) (&desc));
+  if (result < 0)
+  {
+    OSReport("ERROR: UpdateForce(condition force) on channel %d returned %d\n", chan, result);
+    force->effectIds[chan][effect] = 0xFFFFFFFF;
+  }
+  return result;
 }
 #pragma pop
 
