@@ -5426,6 +5426,32 @@ void Gfx_TransformVector(Vector *in, f32 *out) {
 
 #pragma pop
 
+void Render_DrawPointSprites(void) {
+    extern GDL *g_pGDL;
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    void GXSetPointSize(u8 size, s32 fmt);
+    void Render_SetTextureHandle(s32 handle);
+    void Render_StateBlendMode(u8 mode);
+    void Render_StateAlphaBlendEnable(s32 enable);
+    void SetTriVtxDesc(void);
+    u32 i;
+    u32 color;
+
+    SetTriVtxDesc();
+    Render_StateAlphaBlendEnable(1);
+    for (i = 0; i < g_pGDL->numPointSprites; i++) {
+        Render_SetTextureHandle(g_pGDL->pointSprites[i].tex);
+        Render_StateBlendMode(g_pGDL->pointSprites[i].blendMode);
+        GXSetPointSize(6.0f * g_pGDL->pointSprites[i].size, 5);
+        GXBegin(0xB8, 0, 1);
+        GXPosition3f32(g_pGDL->pointSprites[i].x, g_pGDL->pointSprites[i].y, g_pGDL->pointSprites[i].z);
+        color = g_pGDL->pointSprites[i].color;
+        GXColor4u8(color >> 24, color >> 16, color >> 8, color);
+        GXTexCoord2f32(0.0f, 0.0f);
+    }
+    Render_StateAlphaBlendEnable(0);
+}
+
 void Gfx_SetTextColor(s8 arg0, s8 arg1, s8 arg2, s8 arg3) {
     extern M2C_UNK g_textcolor;
     M2C_FIELD(&g_textcolor, s8 *, 0) = arg0;
