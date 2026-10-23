@@ -442,12 +442,16 @@ void GameRules_SetPlayerOrder(u32 *order, u32 count);
 s32 TRKTargetCPUMinorType(void);
 
 typedef struct SoundSource {
-    u8 unk0[0x24];
+    u8 pos[0x10];
+    u8 vel[0x10];
+    f32 unk20;
     f32 unk24;
-    u8 unk28[0x2C - 0x28];
+    f32 unk28;
     s32 voice;
     s32 looping;
-    u8 unk34[0x49 - 0x34];
+    f32 unk34;
+    f32 unk38;
+    u8 unk3C[0x49 - 0x3C];
     u8 playing;
     u8 unk4A[0x50 - 0x4A];
 } SoundSource;
@@ -13093,6 +13097,39 @@ void EXTIntrruptHandler(s16 interrupt, void *context) {
     }
 }
 
+#pragma push
+#pragma optimize_for_size on
+void EXIInit(void) {
+    extern u8 Ecb_80309980[3][0x40];
+    u32 __OSMaskInterrupts(u32 mask);
+    void *__OSSetInterruptHandler(s16, void *);
+    s32 OSGetConsoleType(void);
+    BOOL __EXIProbe(s32 chan);
+    void TCIntrruptHandler(s16 interrupt, void *context);
+
+    __OSMaskInterrupts(0x7F8000);
+    ((volatile u32 *)0xCC006800)[0] = 0;
+    ((volatile u32 *)0xCC006800)[5] = 0;
+    ((volatile u32 *)0xCC006800)[10] = 0;
+    ((volatile u32 *)0xCC006800)[0] = 0x2000;
+    __OSSetInterruptHandler(9, EXIIntrruptHandler);
+    __OSSetInterruptHandler(10, TCIntrruptHandler);
+    __OSSetInterruptHandler(11, EXTIntrruptHandler);
+    __OSSetInterruptHandler(12, EXIIntrruptHandler);
+    __OSSetInterruptHandler(13, TCIntrruptHandler);
+    __OSSetInterruptHandler(14, EXTIntrruptHandler);
+    __OSSetInterruptHandler(15, EXIIntrruptHandler);
+    __OSSetInterruptHandler(16, TCIntrruptHandler);
+    if (OSGetConsoleType() & 0x10000000) {
+        *(u32 *)0x800030C4 = 0;
+        *(u32 *)0x800030C0 = 0;
+        *(s32 *)(Ecb_80309980[1] + 0x20) = 0;
+        *(s32 *)(Ecb_80309980[0] + 0x20) = 0;
+        __EXIProbe(0);
+        __EXIProbe(1);
+    }
+}
+#pragma pop
 s32 EXILock(s32 chan, u32 dev, void *unlockedCallback) {
     extern u8 Ecb_80309980[3][0x40];
     void SetExiInterruptMask(s32 chan, u8 *exi);
