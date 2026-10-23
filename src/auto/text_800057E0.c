@@ -8321,6 +8321,53 @@ void State_GetGameStateStr(s32 state, char *str) {
     }
 }
 
+void InterfaceManager_SetPlayerMessage(void *message, u32 player);
+s32 ActionPrintDebugString(u32 *action) {
+    u32 i;
+    u8 *player;
+
+    if (action[0] == 0) {
+        if (action[1] == 0) {
+            action[1] = 60;
+        }
+        action[1]--;
+    } else {
+        action[1] = 0;
+        for (i = 0; i < *(u32 *)((u8 *)g_worldData.world + 0x8); i++) {
+            player = *(u8 **)((u8 *)g_worldData.world + 0xC) + i * 0x60;
+            if (player[0x35] == 1) {
+                switch (action[0]) {
+                case 1:
+                    *(u32 *)(*(u8 **)(player + 0x28) + 0x498) = action[2];
+                    break;
+                case 2:
+                    *(u32 *)(*(u8 **)(player + 0x28) + 0x494) = action[2];
+                    break;
+                case 3:
+                    *(u32 *)(*(u8 **)(player + 0x28) + 0x494) = action[2];
+                    break;
+                case 4:
+                    InterfaceManager_SetPlayerMessage((void *)action[2], 0);
+                    break;
+                case 5:
+                    *(u32 *)(*(u8 **)(player + 0x28) + 0x49C) = action[2];
+                    break;
+                case 6:
+                    *(u32 *)(*(u8 **)(player + 0x28) + 0x4A0) = action[2];
+                    break;
+                case 7:
+                    InterfaceManager_SetPlayerMessage((void *)action[2], 1);
+                    break;
+                case 8:
+                    InterfaceManager_SetPlayerMessage((void *)action[2], 2);
+                    break;
+                }
+            }
+        }
+    }
+    return 1;
+}
+
 void GamePlay_PauseOptions_HandleInput(void *msg) {
     typedef struct {
         u8 unk0[4];
