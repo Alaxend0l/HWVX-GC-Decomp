@@ -5805,7 +5805,7 @@ void Creature_Draw(void *creature) {
     M2C_FIELD(creature, s32 *, 0x74) |= 0x4000;
 }
 
-s32 Creature_ProcessItemPickup(void *creature, void *item) {
+s8 Creature_ProcessItemPickup(void *creature, void *item) {
     void *rack;
     void *motion;
 
@@ -6664,7 +6664,6 @@ s32 Emitter_Move(u8 *emitter) {
     void *ThingManager_DARYL_CreateThing(s32 type, void *params);
     s32 RandomAdd_s32(s32 base, s32 range);
     void Thing_Release(s32 thing);
-    struct { Vector4 pos; Vector4 quat; Vector4 row; Vector4 vel; u32 id; u32 unk54; f32 speed; f32 unk5C; } params;
     u32 dt;
     u8 *fx;
 
@@ -6672,7 +6671,8 @@ s32 Emitter_Move(u8 *emitter) {
         return 1;
     }
     *(u32 *)(emitter + 0x74) |= 0x10;
-    if (*(f32 *)(*(u8 **)(emitter + 0xB0) + 0x14) > 0.0f) {
+    fx = *(u8 **)(emitter + 0xB0);
+    if (*(f32 *)(fx + 0x14) > 0.0f) {
         dt = g_fDeltaTimeMS * (*(f32 *)(*(u8 **)(emitter + 0xB0) + 0x14) * MagnitudeVector(emitter) + 1.0f);
         if (dt > 1000) {
             dt = 1000;
@@ -6705,6 +6705,8 @@ s32 Emitter_Move(u8 *emitter) {
                 *(u32 *)(emitter + 0xB4) = (*(u32 **)(*(u8 **)(emitter + 0xB0) + 0x1C))[*(u32 *)(emitter + 0xC0)];
             }
             if (*(u32 *)(emitter + 0xB4) != 0 && Emitter_InCameraRange(emitter, *(f32 *)(emitter + 0xC8))) {
+                struct { Vector4 pos; Vector4 quat; Vector4 row; Vector4 vel; u32 id; u32 unk54; f32 speed; f32 unk5C; } params;
+
                 params.id = *(u32 *)(emitter + 0xB4);
                 params.pos = *(Vector4 *)(emitter + 0x40);
                 params.quat = *(Vector4 *)(emitter + 0x50);
@@ -14239,6 +14241,95 @@ void Thing_RotationalGridMove(void *thing) {
         Grid_MoveObject(M2C_FIELD(thing, s32 *, 0x84), &min, &max);
     }
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void Thing_CollideWithItems(u8 *thing) {
+    extern Vector4 g_zeroVector;
+    struct GridResult {
+        u32 data;
+        u32 id;
+    };
+    u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, struct GridResult *results, u32 maxResults);
+    f32 PSVECSquareDistance(f32 *a, f32 *b);
+    s32 Creature_ProcessItemPickup(void *creature, void *item);
+    s32 CarA_ProcessItemPickup(void *car, void *item);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    Vector4 min;
+    Vector4 max;
+    struct { Vector4 pos; Vector4 quat; Vector4 row; Vector4 vel; u32 id; u32 unk74; f32 unk78; f32 unk7C; } params;
+    struct GridResult results[64];
+    s32 count;
+    s32 i;
+    u8 *item;
+    s8 picked;
+    void *rack;
+    void *motion;
+
+    max = *(Vector4 *)(thing + 0x40);
+    min = max;
+    min.x -= *(f32 *)(thing + 0x70);
+    min.y -= *(f32 *)(thing + 0x70);
+    min.z -= *(f32 *)(thing + 0x70);
+    max.x += *(f32 *)(thing + 0x70);
+    max.y += *(f32 *)(thing + 0x70);
+    max.z += *(f32 *)(thing + 0x70);
+    count = Grid_GetObjects(&min, &max, 8, results, 0x40);
+    for (i = 0; i < count; i++) {
+        item = (u8 *)results[i].id;
+        if (*(s16 *)(item + 0xCC) <= 0 && PSVECSquareDistance((f32 *)(thing + 0x40), (f32 *)(item + 0x40)) < *(f32 *)(item + 0xE8)) {
+            picked = 0;
+            switch (*(s32 *)(thing + 0xA8)) {
+            case 7:
+                picked = Creature_ProcessItemPickup(thing, item);
+                break;
+            case 9:
+                picked = CarA_ProcessItemPickup(thing, item);
+                break;
+            case 11:
+                switch (**(u8 **)(item + 0xC0)) {
+                case 3:
+                    rack = ThingManagerList_GetByType(thing + 0x88, 8);
+                    if (rack == NULL) {
+                        break;
+                    }
+                    WildCardRack_Add(rack, *(u8 **)(item + 0xC0), *(s16 *)(item + 0xCE));
+                    Item_Release(item);
+                    motion = *(void **)(item + 0xD0);
+                    if (motion != NULL) {
+                        *(s32 *)((u8 *)motion + 0x18) = *(s32 *)((u8 *)motion + 0x14);
+                    }
+                    picked = 1;
+                    goto done;
+                case 0:
+                case 1:
+                case 2:
+                    break;
+                default:
+                    break;
+                }
+                picked = 0;
+            done:
+                break;
+            }
+            if (picked && *(u32 *)(*(u8 **)(item + 0xC0) + 0x24) != 0) {
+                params.id = *(u32 *)(*(u8 **)(item + 0xC0) + 0x24);
+                params.pos = *(Vector4 *)(thing + 0x40);
+                params.row.z = 0.0f;
+                params.row.y = 0.0f;
+                params.row.x = 0.0f;
+                params.quat = *(Vector4 *)(thing + 0x50);
+                params.unk78 = 0.0f;
+                params.unk7C = 0.0f;
+                params.unk74 = 0;
+                params.vel = g_zeroVector;
+                ThingManager_DARYL_CreateThing(1, &params);
+            }
+            return;
+        }
+    }
+}
+#pragma pop
 
 void Thing_ProcessEndEvent(u8 *thing, u8 *event, u8 *collision, Vector4 *vel) {
     void *ThingManager_DARYL_CreateThing(s32 type, void *params);
