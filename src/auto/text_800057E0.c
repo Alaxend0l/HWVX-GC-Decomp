@@ -3380,6 +3380,21 @@ void ThingManager_DARYL_Render(void) {
     g_pNoRayCollideThing = NULL;
 }
 
+s8 RayHitsTerrainAndObjects(void *arg0, void *arg1, void *arg2, void *arg3) {
+    s8 RayHitsTerrain_Aux3(void *, void *, void *, void *);
+    s8 RayHitsObjects_Aux(void *, void *, void *, void *);
+    s8 hitTerrain;
+
+    if (g_worldData.world == NULL || *(void **)g_worldData.world == NULL) {
+        return 0;
+    }
+    hitTerrain = RayHitsTerrain_Aux3(arg0, arg1, arg2, arg3);
+    if (RayHitsObjects_Aux(arg0, arg1, arg2, arg3)) {
+        return 1;
+    }
+    return hitTerrain;
+}
+
 s8 OBoxHitsTerrainAndObjectsZeroTimeEdgesOnly(void *obox, void *thing, void *arg2) {
     s8 OBoxHitsTerrainZeroTimeEdgesOnly(void *, void *);
     s32 OBox_CollideAllThingsZeroTime(void *, void *, void *);
