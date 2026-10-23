@@ -1567,6 +1567,33 @@ void __stdio_atexit(void) {
     __stdio_exit = __close_all;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+int sprintf(char *s, const char *format, ...) {
+    typedef struct __va_list_struct {
+        char gpr;
+        char fpr;
+        char reserved[2];
+        char *input_arg_area;
+        char *reg_save_area;
+    } va_list[1];
+    int __pformatter(void *(*)(void *, const char *, u32), void *, const char *, char *);
+    void *__StringWrite(void *osc, const char *Buffer, u32 NumChars);
+    va_list args;
+    int end;
+    __OutStrCtrl osc;
+
+    __builtin_va_info(&args);
+    osc.CharStr = s;
+    osc.MaxCharCount = 0xFFFFFFFF;
+    osc.CharsWritten = 0;
+    end = __pformatter(&__StringWrite, &osc, format, (char *)args);
+    if (s) {
+        s[(u32)end < 0xFFFFFFFF ? end : 0xFFFFFFFF - 1] = '\0';
+    }
+    return end;
+}
+
 int vprintf(const char *format, char *arg) {
     extern u8 __files[];
     extern void *__FileWrite(void *, const char *, u32);
