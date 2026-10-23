@@ -450,6 +450,10 @@ typedef struct EffectEnvelope {
     u8 fadeLevel;
 } EffectEnvelope;
 
+static inline s32 Effect_MulDiv(s32 a, s32 b, s32 c) {
+    return (a * b + (a < 0 ? -(c / 2) : c / 2)) / c;
+}
+
 typedef struct Effect {
     u8 unk0[4];
     u32 duration;
@@ -6070,21 +6074,21 @@ s32 Effect_PerformEnvelope(Effect *effect, EffectEnvelope *env, s32 magnitude) {
     s32 half;
 
     if (elapsed < env->attackTime) {
-        half = (s32)env->attackTime / 2;
+        half = env->attackTime / 2;
         if ((s32)elapsed < 0) {
             half = -half;
         }
-        level = env->attackLevel + (s32)(elapsed * (start - env->attackLevel) + half) / (s32)env->attackTime;
+        level = env->attackLevel + (s32)(elapsed * (start - env->attackLevel) + half) / env->attackTime;
     } else if (effect->duration != 0xFFFFFFFF) {
         fadeStart = effect->duration - env->fadeTime;
         if (elapsed > fadeStart) {
             if (elapsed < effect->duration) {
                 t = elapsed - fadeStart;
-                half = (s32)env->fadeTime / 2;
+                half = env->fadeTime / 2;
                 if (t < 0) {
                     half = -half;
                 }
-                level = start + (t * (env->fadeLevel - start) + half) / (s32)env->fadeTime;
+                level = start + (t * (env->fadeLevel - start) + half) / env->fadeTime;
             } else {
                 level = env->fadeLevel;
             }
