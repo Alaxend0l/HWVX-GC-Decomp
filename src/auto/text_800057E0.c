@@ -11742,9 +11742,6 @@ s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data) {
     return err;
 }
 
-#pragma pop
-
-s32 TRKReadBuffer(TRKBuffer *b, void *data, u32 length);
 s32 TRKReadBuffer1_ui8(TRKBuffer *b, u8 *data) {
     return TRKReadBuffer_inline(b, data, 1);
 }
@@ -11758,6 +11755,7 @@ s32 TRKAppendBuffer_ui32(TRKBuffer *b, const u32 *data, s32 count) {
     }
     return err;
 }
+#pragma pop
 
 s32 TRKAppendBuffer_ui8(TRKBuffer *b, const u8 *data, s32 count) {
     s32 err;
