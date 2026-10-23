@@ -2306,8 +2306,45 @@ f32 Destructible_GetMass(void *arg0) {
     return M2C_FIELD(M2C_FIELD(M2C_FIELD(arg0, void **, 0xC0), void **, 0x10), f32 *, 0x20);
 }
 
+void *Destructible_GetOrientedCollision(void *thing) {
+    extern u8 g_zeroVector[];
+    void BuildOOB(void *oob, void *pos, void *out);
+    void BuildOConvexHullOffset(void *out, void *hull, void *pos, void *rot);
+    void *coll;
+
+    coll = M2C_FIELD(M2C_FIELD(thing, void **, 0xC0), void **, 0x10);
+    switch (M2C_FIELD(coll, u8 *, 0x10)) {
+    case 0:
+    case 3:
+        if (M2C_FIELD(thing, u32 *, 0x74) & 0x180) {
+            BuildOOB(M2C_FIELD(coll, void **, 0x44), (u8 *)thing + 0x10, M2C_FIELD(thing, void **, 0xD0));
+            M2C_FIELD(thing, u32 *, 0x74) &= ~0x180;
+        }
+        return M2C_FIELD(thing, void **, 0xD0);
+    case 1:
+    case 6:
+        BuildOConvexHullOffset(M2C_FIELD(thing, void **, 0xCC), M2C_FIELD(coll, void **, 0x48), (u8 *)thing + 0x10, g_zeroVector);
+        return M2C_FIELD(thing, void **, 0xCC);
+    default:
+        return NULL;
+    }
+}
+
 s32 Destructible_GetSurfaceScript(void *arg0) {
     return M2C_FIELD(M2C_FIELD(M2C_FIELD(arg0, void **, 0xC0), void **, 0x10), s32 *, 0x30);
+}
+
+void Destructible_CollideWithRay(void *thing, void *start, void *end, void *hit, f32 maxDist) {
+    f32 PhysicalProperties_CollideWithRay(void *props, void *pos, void *start, void *end, void *hit);
+    f32 dist;
+
+    dist = PhysicalProperties_CollideWithRay(M2C_FIELD(M2C_FIELD(thing, void **, 0xC0), void **, 0x10), (u8 *)thing + 0x10, start, end, hit);
+    if (hit != NULL && dist < maxDist) {
+        M2C_FIELD(hit, s32 *, 0x30) = M2C_FIELD(thing, s32 *, 0x0);
+        M2C_FIELD(hit, s32 *, 0x34) = M2C_FIELD(thing, s32 *, 0x4);
+        M2C_FIELD(hit, s32 *, 0x38) = M2C_FIELD(thing, s32 *, 0x8);
+        M2C_FIELD(hit, s32 *, 0x3C) = M2C_FIELD(thing, s32 *, 0xC);
+    }
 }
 
 s32 Destructible_Invalidate(void *arg0, u32 arg1, u32 arg2) {
