@@ -8844,6 +8844,59 @@ u8 AutoCalibrateAxisUnsigned(u8 *min, u8 *max, u8 value, u8 deadzone, u8 *out) {
 #pragma optimize_for_size on
 #pragma use_lmw_stmw on
 #pragma dont_inline on
+void HandlePedals(u8 *cur, SISteeringStatus *status, SISteeringStatus *calib) {
+    s32 combined;
+
+    if ((status->misc ^ calib[3].misc) & 8) {
+        *(s32 *)&calib[4] = 0x40;
+        calib[0].gas = 0x50;
+        calib[0].brake = 0x50;
+        combined = (calib[0].gas - calib[0].brake) / 2;
+        if (combined < -128) {
+            combined = -128;
+        } else if (combined > 127) {
+            combined = 127;
+        }
+        calib[0].left = combined;
+        calib[1].gas = 0xB0;
+        calib[1].brake = 0xB0;
+        combined = (calib[1].gas - calib[1].brake) / 2;
+        if (combined < -128) {
+            combined = -128;
+        } else if (combined > 127) {
+            combined = 127;
+        }
+        calib[1].left = combined;
+        calib[2].gas = 10;
+        calib[2].brake = 10;
+    }
+    if (*(s32 *)&calib[4] > 0) {
+        (*(s32 *)&calib[4])--;
+        cur[5] = 0;
+        cur[4] = 0;
+        cur[6] = 0;
+    } else if (status->misc & 8) {
+        AutoCalibrateAxisUnsigned(&calib[0].gas, &calib[1].gas, status->gas, calib[2].gas, &cur[4]);
+        AutoCalibrateAxisUnsigned(&calib[0].brake, &calib[1].brake, status->brake, calib[2].brake, &cur[5]);
+        combined = (cur[4] - cur[5]) / 2;
+        if (combined < -128) {
+            combined = -128;
+        } else if (combined > 127) {
+            combined = 127;
+        }
+        cur[6] = combined;
+    } else {
+        cur[5] = 0;
+        cur[4] = 0;
+        cur[6] = 0;
+    }
+}
+#pragma pop
+
+#pragma push
+#pragma optimize_for_size on
+#pragma use_lmw_stmw on
+#pragma dont_inline on
 void HandleTriggers(u8 *cur, SISteeringStatus *status, SISteeringStatus *calib) {
     s32 diff;
 
