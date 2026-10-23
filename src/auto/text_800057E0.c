@@ -12731,6 +12731,37 @@ TRKBuffer *TRKGetBuffer(s32 idx) {
     return buf;
 }
 
+void usr_puts_serial(const char *msg);
+#pragma push
+#pragma use_lmw_stmw on
+#pragma readonly_strings on
+s32 TRKGetFreeBuffer(s32 *msgID, TRKBuffer **outMsg) {
+    TRKBuffer *buf;
+    s32 error = 0x300;
+    s32 i;
+
+    *outMsg = NULL;
+    for (i = 0; i < 3; i++) {
+        buf = TRKGetBuffer(i);
+        TRKAcquireMutex(buf);
+        if (!buf->isInUse) {
+            buf->length = 0;
+            buf->position = 0;
+            buf->isInUse = 1;
+            error = 0;
+            *outMsg = buf;
+            *msgID = i;
+            i = 3;
+        }
+        TRKReleaseMutex(buf);
+    }
+    if (error == 0x300) {
+        usr_puts_serial("ERROR : No buffer available\n");
+    }
+    return error;
+}
+#pragma pop
+
 s32 TRKInitializeMessageBuffers(void) {
     extern TRKBuffer gTRKMsgBufs[3];
     s32 i;
