@@ -8713,7 +8713,20 @@ u32 OSLoadFont(void *buf);
 void ExpandFontSheet(u8 *src, u8 *dst, u8 *font);
 
 BOOL OSInitFont(void *fontData) {
-    return 0;
+    void *buf;
+
+    if (OSGetFontEncode() == 1) {
+        buf = (u8 *)fontData + 0xD3F00;
+    } else {
+        buf = (u8 *)fontData + 0x1D120;
+    }
+    if (OSLoadFont((void *)((u32)buf & ~31)) == 0) {
+        return FALSE;
+    }
+    SheetImage_803C7234 = FontData_803C7230 + *(u32 *)(FontData_803C7230 + 0x24);
+    SheetImage_803C7234 = (u8 *)(((u32)SheetImage_803C7234 + 31) & ~31);
+    ExpandFontSheet(FontData_803C7230 + *(u32 *)(FontData_803C7230 + 0x24), SheetImage_803C7234, FontData_803C7230);
+    return TRUE;
 }
 
 __OSInterruptHandler __OSSetInterruptHandler(__OSInterrupt interrupt, __OSInterruptHandler handler) {
@@ -11763,6 +11776,37 @@ void TimeoutHandler(void *alarm, void *context) {
     }
 }
 
+s32 __CARDEraseSector(s32 chan, u32 addr, CARDCallback callback) {
+    s32 __CARDStart(s32 chan, CARDCallback txCallback, CARDCallback exiCallback);
+    s32 EXIImmEx(s32 chan, void *buf, s32 len, u32 mode);
+    s32 EXIDeselect(s32 chan);
+    s32 EXIUnlock(s32 chan);
+    CARDControl *card;
+    s32 result;
+
+    card = &__CARDBlock[chan];
+    card->unk8C[0x94 - 0x8C] = 0xF1;
+    card->unk8C[0x95 - 0x8C] = (u8)((addr >> 17) & 0x7F);
+    card->unk8C[0x96 - 0x8C] = (u8)(addr >> 9);
+    *(s32 *)&card->unk8C[0xA0 - 0x8C] = 3;
+    *(s32 *)&card->unk8C[0xA4 - 0x8C] = -1;
+    card->retry = 3;
+    result = __CARDStart(chan, NULL, NULL);
+    if (result == -1) {
+        result = 0;
+    } else if (result >= 0) {
+        if (!EXIImmEx(chan, &card->unk8C[0x94 - 0x8C], *(s32 *)&card->unk8C[0xA0 - 0x8C], 1)) {
+            card->exiCallback = NULL;
+            result = -3;
+        } else {
+            result = 0;
+        }
+        EXIDeselect(chan);
+        EXIUnlock(chan);
+    }
+    return result;
+}
+
 void CARDInit(void) {
     void DSPInit(void);
     void OSInitAlarm(void);
@@ -14173,6 +14217,30 @@ void TRKConstructEvent(void *arg0, s8 arg1) {
     M2C_FIELD(arg0, s32 *, 4) = 0;
     M2C_FIELD(arg0, s32 *, 8) = -1;
 }
+
+#pragma push
+#pragma auto_inline off
+#pragma opt_propagation off
+s32 TRKPostEvent(void *event) {
+    s32 result = 0;
+    s32 nextEventID;
+
+    TRKAcquireMutex(&gTRKEventQueue);
+    if (gTRKEventQueue.count == 2) {
+        result = 0x100;
+    } else {
+        nextEventID = (gTRKEventQueue.next + gTRKEventQueue.count) % 2;
+        TRK_memcpy(&gTRKEventQueue.events[nextEventID], event, sizeof(TRKEvent));
+        gTRKEventQueue.events[nextEventID].eventID = gTRKEventQueue.eventID;
+        if (++gTRKEventQueue.eventID < 0x100) {
+            gTRKEventQueue.eventID = 0x100;
+        }
+        gTRKEventQueue.count++;
+    }
+    TRKReleaseMutex(&gTRKEventQueue);
+    return result;
+}
+#pragma pop
 
 s32 TRKGetNextEvent(TRKEvent *event) {
     s32 result = 0;
