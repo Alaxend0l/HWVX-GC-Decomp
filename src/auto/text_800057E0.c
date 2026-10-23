@@ -20645,6 +20645,65 @@ void GXSetDispCopyGamma(s32 gamma) {
     *(u32 *)(g + 0x1EC) = (*(u32 *)(g + 0x1EC) & ~0x180) | (gamma << 7);
 }
 
+void GXCopyDisp(void *dest, u8 clear) {
+    extern u8 *gx;
+    u32 reg;
+    u32 tempPeCtrl;
+    u8 changePeCtrl;
+    u32 *cpDisp;
+
+    if (clear) {
+        reg = *(u32 *)(gx + 0x1D8);
+        reg = (reg & ~1) | 1;
+        reg = (reg & ~0xE) | (7 << 1);
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = reg;
+        reg = *(u32 *)(gx + 0x1D0);
+        reg = reg & ~1;
+        reg = reg & ~2;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = reg;
+    }
+    changePeCtrl = 0;
+    if ((clear || (*(u32 *)(gx + 0x1DC) & 7) == 3) && ((*(u32 *)(gx + 0x1DC) >> 6) & 1) == 1) {
+        changePeCtrl = 1;
+        tempPeCtrl = *(u32 *)(gx + 0x1DC);
+        tempPeCtrl = tempPeCtrl & ~0x40;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = tempPeCtrl;
+    }
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *(u32 *)(gx + 0x1E0);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *(u32 *)(gx + 0x1E4);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *(u32 *)(gx + 0x1E8);
+    reg = 0;
+    reg = (reg & ~0xFFFFFF) | (((u32)dest >> 5) & 0xFFFFFF);
+    reg = (reg & 0xFFFFFF) | 0x4B000000;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    cpDisp = (u32 *)(gx + 0x1EC);
+    *cpDisp = (*cpDisp & ~0x800) | (clear << 11);
+    cpDisp = (u32 *)(gx + 0x1EC);
+    *cpDisp = (*cpDisp & ~0x4000) | 0x4000;
+    cpDisp = (u32 *)(gx + 0x1EC);
+    *cpDisp = (*cpDisp & 0xFFFFFF) | 0x52000000;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *(u32 *)(gx + 0x1EC);
+    if (clear) {
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x1D8);
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x1D0);
+    }
+    if (changePeCtrl) {
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x1DC);
+    }
+    *(u16 *)(gx + 2) = 0;
+}
+
 void GXClearBoundingBox(void) {
     extern u8 *gx;
     u16 *bpSentNot = (u16 *)(gx + 2);
