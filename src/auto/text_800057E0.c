@@ -4072,6 +4072,34 @@ s32 TriggerAirboxEntered(u32 *trigger) {
     }
     return 0;
 }
+
+s32 ActionAirboxChangeMode(s32 *data) {
+    u32 count = data[1];
+    s32 mode = data[0];
+    u32 i;
+
+    for (i = 0; i < count; i++) {
+        u8 *airbox = (u8 *)data[i + 2];
+        switch (mode) {
+        case 0:
+            *(u32 *)(airbox + 4) = 0;
+            break;
+        case 2:
+            if (*(u32 *)(airbox + 4) == 1) {
+                *(u32 *)(airbox + 4) = 0;
+            } else {
+                *(u32 *)(airbox + 4) = 1;
+            }
+            break;
+        case 1:
+        default:
+            *(u32 *)(airbox + 4) = 1;
+            break;
+        }
+    }
+    return 1;
+}
+
 #pragma pop
 
 s32 TriggerP2PActivated(u32 *data) {
