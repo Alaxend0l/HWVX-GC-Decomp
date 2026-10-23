@@ -5659,15 +5659,12 @@ void __GXFifoReadEnable(void) {
     __cpReg[1] = *(u32 *)(gx + 8);
 }
 
-#pragma push
-#pragma peephole off
 void __GXFifoReadDisable(void) {
     extern u8 *gx;
     extern volatile u16 *__cpReg;
     *(u32 *)(gx + 8) = *(u32 *)(gx + 8) & ~1;
     __cpReg[1] = *(u32 *)(gx + 8);
 }
-#pragma pop
 
 void __GXFifoLink(u8 en) {
     extern u8 *gx;
