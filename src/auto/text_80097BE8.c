@@ -3754,6 +3754,61 @@ void Gfx_AnimTraverseHeirarchyToMatrices(void) {
     fn_800957D4();
 }
 
+void Gfx_DrawAnimGeometryAux_(Geometry *geometry, f32 *matrices, u32 count, f32 *matrix);
+#pragma push
+#pragma use_lmw_stmw on
+void Gfx_DrawAnimGeometryAux(Geometry *geometry, f32 *matrices, u32 count, f32 *matrix) {
+    extern f32 g_identity[];
+    extern u8 g_CurrentViews;
+    extern s32 g_currentWindow;
+    s32 Gfx_CalcGeometryLOD(Geometry *geometry, f32 *matrix);
+    void MultiplyMatrix(f32 *a, f32 *b, f32 *out);
+    void Gfx_SetRenderWindow(u32 view);
+    s32 Gfx_GetLightState(void);
+    s32 Gfx_AddWorldMatrixState_CacheMatrix(u32 matrix);
+    DLSkinGroup *DisplayList_AddGroup_Skin(void);
+    f32 world[16] __attribute__((aligned(16)));
+    DLSkinGroup *group;
+    u16 matrixState;
+    Geometry *lod;
+    u32 level;
+    u32 j;
+    u32 i;
+
+    if (g_CurrentViews != 1) {
+        i = 1;
+        do {
+            if (g_CurrentViews & (1 << i)) {
+                Gfx_SetRenderWindow(i);
+            }
+            if (matrix == NULL || matrix == g_identity) {
+                level = Gfx_CalcGeometryLOD(geometry, matrices);
+            } else {
+                MultiplyMatrix(matrices, matrix, world);
+                level = Gfx_CalcGeometryLOD(geometry, world);
+            }
+            if (level != 0xFFFFFFFF) {
+                matrixState = Gfx_AddWorldMatrixState_CacheMatrix((u32)matrix);
+                lod = (Geometry *)((u8 *)geometry->groups + level * 0x18);
+                for (j = 0; j < lod->numGroups; j++) {
+                    group = DisplayList_AddGroup_Skin();
+                    group->lod = lod;
+                    group->group = j;
+                    group->matrix = matrixState;
+                    group->matrices = matrices;
+                    group->lightState = Gfx_GetLightState();
+                    group->window = g_currentWindow;
+                    group->count = count;
+                }
+            }
+            i++;
+        } while (i < 5);
+        return;
+    }
+    Gfx_DrawAnimGeometryAux_(geometry, matrices, count, matrix);
+}
+#pragma pop
+
 #pragma push
 #pragma use_lmw_stmw on
 void Gfx_DrawAnimGeometryAux_(Geometry *geometry, f32 *matrices, u32 count, f32 *matrix) {
@@ -9830,6 +9885,57 @@ s32 __ct__8PeriodicFv(s32 arg0) {
     __ct__5ForceFv();
     return arg0;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+#pragma readonly_strings on
+#pragma dont_inline on
+s32 DownloadForce__8PeriodicFllRUlUcUlUlUcUsUsUssUlUlUcUc(Force *force, s32 chan, s32 effect, u32 *device, u8 type, u32 duration, u32 startDelay, u8 magnitude, u16 direction, u16 period, u16 phase, s16 offset, u32 attackTime, u32 fadeTime, u8 attackLevel, u8 fadeLevel) {
+    struct {
+        u8 type;
+        u32 duration;
+        u32 startDelay;
+        u8 magnitude;
+        u16 direction;
+        u16 period;
+        u16 phase;
+        s16 offset;
+        u32 attackTime;
+        u32 fadeTime;
+        u8 attackLevel;
+        u8 fadeLevel;
+        u8 pad[2];
+    } desc;
+    s32 result = 0;
+
+    if (force->effectIds[chan][effect] != 0xFFFFFFFF) {
+        Destroy__5ForceFll(force, chan, effect);
+    }
+    if (*device != 0xFFFFFFFF) {
+        memset(&desc, 0, sizeof(desc));
+        desc.type = type;
+        desc.duration = duration;
+        desc.startDelay = startDelay;
+        desc.magnitude = magnitude;
+        desc.direction = direction;
+        desc.period = period;
+        desc.phase = phase;
+        desc.offset = offset;
+        desc.attackTime = attackTime;
+        desc.fadeTime = fadeTime;
+        desc.attackLevel = attackLevel;
+        desc.fadeLevel = fadeLevel;
+        result = LGDownloadForceEffect((LGDevice *)*device, &force->effectIds[chan][effect], (u8 *)&desc);
+        if (result < 0) {
+            OSReport("ERROR: DownloadForce(periodic force) on channel %d returned %d\n", chan, result);
+            force->effectIds[chan][effect] = 0xFFFFFFFF;
+        }
+    } else {
+        OSReport("ERROR: Trying to download a periodic force to channel %d but wheel has not been opened.\n", chan);
+    }
+    return result;
+}
+#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
