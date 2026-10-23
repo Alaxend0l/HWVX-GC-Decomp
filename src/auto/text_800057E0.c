@@ -6657,6 +6657,76 @@ s32 Emitter_Init(u8 *emitter, u8 *data) {
     return 1;
 }
 
+u32 Emitter_InCameraRange(u8 *emitter, f32 range);
+s32 Emitter_Move(u8 *emitter) {
+    extern f32 g_fDeltaTimeMS;
+    extern Vector4 g_zeroVector;
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    void Thing_Release(s32 thing);
+    struct { Vector4 pos; Vector4 quat; Vector4 row; Vector4 vel; u32 id; u32 unk54; f32 speed; f32 unk5C; } params;
+    u32 dt;
+    u8 *fx;
+
+    if (*(u32 *)(emitter + 0x74) & 0x02000000) {
+        return 1;
+    }
+    *(u32 *)(emitter + 0x74) |= 0x10;
+    if (*(f32 *)(*(u8 **)(emitter + 0xB0) + 0x14) > 0.0f) {
+        dt = g_fDeltaTimeMS * (*(f32 *)(*(u8 **)(emitter + 0xB0) + 0x14) * MagnitudeVector(emitter) + 1.0f);
+        if (dt > 1000) {
+            dt = 1000;
+        }
+    } else {
+        dt = g_fDeltaTimeMS;
+    }
+    if (*(u32 *)(*(u8 **)(emitter + 0xB0) + 0x18) != 0) {
+        for (;;) {
+            if (*(u32 *)(emitter + 0xBC) != 0) {
+                if (dt > *(u32 *)(emitter + 0xBC)) {
+                    dt -= *(u32 *)(emitter + 0xBC);
+                } else {
+                    *(u32 *)(emitter + 0xBC) -= dt;
+                    return 1;
+                }
+            }
+            fx = *(u8 **)(emitter + 0xB0);
+            *(u32 *)(emitter + 0xBC) = RandomAdd_s32(*(s32 *)(fx + 8), *(s32 *)(fx + 0xC));
+            fx = *(u8 **)(emitter + 0xB0);
+            if (*(u32 *)(fx + 0x18) != 0) {
+                if (fx[1] == 1) {
+                    *(u32 *)(emitter + 0xC0) = RandomAdd_s32(0, *(u32 *)(fx + 0x18));
+                } else if (fx[1] == 2) {
+                    *(u32 *)(emitter + 0xC0) += 1;
+                    if (*(u32 *)(emitter + 0xC0) >= *(u32 *)(*(u8 **)(emitter + 0xB0) + 0x18)) {
+                        *(u32 *)(emitter + 0xC0) = 0;
+                    }
+                }
+                *(u32 *)(emitter + 0xB4) = (*(u32 **)(*(u8 **)(emitter + 0xB0) + 0x1C))[*(u32 *)(emitter + 0xC0)];
+            }
+            if (*(u32 *)(emitter + 0xB4) != 0 && Emitter_InCameraRange(emitter, *(f32 *)(emitter + 0xC8))) {
+                params.id = *(u32 *)(emitter + 0xB4);
+                params.pos = *(Vector4 *)(emitter + 0x40);
+                params.quat = *(Vector4 *)(emitter + 0x50);
+                params.row = *(Vector4 *)(emitter + 0x0);
+                params.unk54 = *(u32 *)(emitter + 0x94);
+                params.speed = *(f32 *)(*(u8 **)(emitter + 0xB0) + 0x14);
+                params.unk5C = 0.0f;
+                params.vel = g_zeroVector;
+                ThingManager_DARYL_CreateThing(1, &params);
+            }
+            if (*(s32 *)(emitter + 0xC4) > 0) {
+                if (*(s32 *)(emitter + 0xC4) == 1) {
+                    Thing_Release((s32)emitter);
+                    break;
+                }
+                *(s32 *)(emitter + 0xC4) -= 1;
+            }
+        }
+    }
+    return 1;
+}
+
 void Emitter_Release(void *emitter) {
     extern u8 g_emitterVTable[];
     void Thing_Release(s32 thing);
@@ -6672,7 +6742,7 @@ void Emitter_Release(void *emitter) {
     Thing_Release((s32)emitter);
 }
 
-s32 Emitter_InCameraRange(u8 *emitter, f32 range) {
+u32 Emitter_InCameraRange(u8 *emitter, f32 range) {
     u32 Gfx_GetCameraPositions(Vector4 *positions);
     f32 PSVECSquareDistance(f32 *a, f32 *b);
     extern u8 g_CurrentViews;
