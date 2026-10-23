@@ -73,6 +73,8 @@ f32 MagnitudeVector(void *v);
 void *Allocate(u32, u32, const char *);
 s32 ViewManager_GetViewFormat(void);
 s32 Thing_Init(void *thing, s32 arg1);
+void Thing_InitAllSlavesNow(void *thing, void *slaves, u8 player);
+s32 Thing_AddToGrid(void *thing, s32 type);
 void MatrixCache_Free(u32 key);
 void MotionState_Release(s32 state);
 s8 ThingManagerList_Get(void *list, void *target);
