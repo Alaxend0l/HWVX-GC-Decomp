@@ -49,7 +49,7 @@ typedef struct DVDQueue {
 
 extern DVDQueue WaitingQueue_802EFA18[4];
 
-extern u32 next_803C6DF8;
+extern volatile u32 next_803C6DF8;
 
 static inline void DummySRand(u32 seed) {
     next_803C6DF8 = seed;
@@ -10095,26 +10095,23 @@ s32 OnReset_8007DB90(s32 arg0) {
 
 s32 DummyLen(void) {
     u32 OSGetTick(void);
-    extern u32 next_803C6DF8;
     u32 shift;
     u32 tries;
     s32 len;
 
     shift = 1;
     tries = 0;
-    next_803C6DF8 = OSGetTick();
-    next_803C6DF8 = next_803C6DF8 * 1103515245 + 12345;
-    len = ((next_803C6DF8 >> 16) & 0x1F) + 1;
+    DummySRand(OSGetTick());
+    len = (DummyRand() & 0x1F) + 1;
     while (len < 4 && tries < 10) {
         u32 seed = OSGetTick() << shift;
         shift++;
         if (shift > 16) {
             shift = 1;
         }
-        next_803C6DF8 = seed;
+        DummySRand(seed);
         tries++;
-        next_803C6DF8 = next_803C6DF8 * 1103515245 + 12345;
-        len = ((next_803C6DF8 >> 16) & 0x1F) + 1;
+        len = (DummyRand() & 0x1F) + 1;
     }
     if (len < 4) {
         len = 4;
