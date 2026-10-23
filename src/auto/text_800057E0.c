@@ -7764,6 +7764,21 @@ s32 TRKTargetCPUMinorType(void) {
     return 0x54;
 }
 
+void TRK_main(void) {
+    s32 TRKInitializeNub(void);
+    void TRKNubWelcome(void);
+    void TRKNubMainLoop(void);
+    s32 TRKTerminateNub(void);
+    extern s32 TRK_mainError_8030B9D0[];
+
+    TRK_mainError_8030B9D0[0] = TRKInitializeNub();
+    if (TRK_mainError_8030B9D0[0] == 0) {
+        TRKNubWelcome();
+        TRKNubMainLoop();
+    }
+    TRK_mainError_8030B9D0[0] = TRKTerminateNub();
+}
+
 s32 fn_80095480(void) {
     return 0x54;
 }
