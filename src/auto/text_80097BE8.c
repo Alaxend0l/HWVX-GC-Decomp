@@ -6507,6 +6507,67 @@ void Render_DrawPointSprites(void) {
 
 #pragma push
 #pragma dont_inline on
+void Render_DrawRectanglesWindow(void) {
+    extern GDL *g_pGDL;
+    extern u8 g_CurrentViews;
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    void Gfx_SetRenderWindow(s32 window);
+    void Render_StateSetScissor(void);
+    u8 window = 0;
+    u32 i;
+    u32 j;
+
+    if (g_pGDL->numRects == 0) {
+        return;
+    }
+    Set2DRectVtxDesc();
+    for (i = 0; i < g_pGDL->numRects; i++) {
+        if (g_CurrentViews != 1 && window != g_pGDL->rects[i].window) {
+            window = g_pGDL->rects[i].window;
+            Gfx_SetRenderWindow(window);
+            Render_StateSetScissor();
+            Gfx_SetOrthoMatrix();
+        }
+        Render_StateAlphaBlendEnable(g_pGDL->rects[i].blendMode > 1);
+        Render_SetTextureHandle(g_pGDL->rects[i].tex);
+        Render_StateBlendMode(g_pGDL->rects[i].blendMode);
+        GXBegin(0x80, 0, 4);
+        for (j = 0; j < 4; j++) {
+            {
+                f32 y = g_pGDL->rects[i].v[j].y;
+                f32 x = g_pGDL->rects[i].v[j].x;
+                GXWGFifo.f32 = x;
+                GXWGFifo.f32 = y;
+            }
+            {
+                u8 a = g_pGDL->rects[i].v[j].a;
+                u8 b = g_pGDL->rects[i].v[j].b;
+                u8 g = g_pGDL->rects[i].v[j].g;
+                u8 c = g_pGDL->rects[i].v[j].r;
+                GXWGFifo.u8 = c;
+                GXWGFifo.u8 = g;
+                GXWGFifo.u8 = b;
+                GXWGFifo.u8 = a;
+            }
+            {
+                f32 t = g_pGDL->rects[i].v[j].t;
+                f32 s = g_pGDL->rects[i].v[j].s;
+                GXWGFifo.f32 = s;
+                GXWGFifo.f32 = t;
+            }
+        }
+    }
+    if (window != 0) {
+        Gfx_SetRenderWindow(0);
+        Render_StateSetScissor();
+        Gfx_SetOrthoMatrix();
+    }
+    Render_StateAlphaBlendEnable(1);
+}
+#pragma pop
+
+#pragma push
+#pragma dont_inline on
 void Render_DrawRectangles(void) {
     extern GDL *g_pGDL;
     extern s32 g_debugTriCount;
