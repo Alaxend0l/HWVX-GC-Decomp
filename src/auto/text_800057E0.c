@@ -1481,6 +1481,30 @@ void AI_AsyncHeartbeat(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0xC8) = 0x1F4;
 }
 
+void AI_Car_AsyncScanDestructibles(u8 *car) {
+    s32 RandomAdd_s32(s32 base, s32 range);
+    void *RayHitsObjects_GetObject(void *pos, void *target, f32 *dist, s32 arg3, s32 arg4);
+    f32 dist;
+    u8 *target;
+    u32 index;
+
+    if (M2C_FIELD(car, u8 **, 0x2C) != NULL) {
+        index = M2C_FIELD(car, u32 *, 0x4A4);
+        target = NULL;
+        if (index < 32 && ((u8 **)(car + 0x420))[index] != NULL) {
+            target = ((u8 **)(car + 0x420))[index];
+        } else if (M2C_FIELD(car, u8 **, 0x3EC) != NULL) {
+            target = M2C_FIELD(car, u8 **, 0x3EC) + 0x40;
+        }
+        M2C_FIELD(car, void **, 0x3E8) = NULL;
+        if (target != NULL) {
+            dist = 1.0f;
+            M2C_FIELD(car, void **, 0x3E8) = RayHitsObjects_GetObject(M2C_FIELD(car, u8 **, 0x2C) + 0x40, target, &dist, 1, 0);
+            M2C_FIELD(car, s32 *, 0x608) = RandomAdd_s32(400, 400);
+        }
+    }
+}
+
 #pragma push
 #pragma auto_inline off
 void MotionState_Release(s32 state) {
@@ -3102,6 +3126,22 @@ void InterfaceManager_LinkThingToObject(s32 index, u32 id, void *thing) {
 
 void InterfaceManager_SetControllerConfigInputString(void) {
 
+}
+
+void InterfaceManager_Render(void) {
+    extern u8 g_interface[][0x170];
+    extern u32 g_interfaceRenderOrder[18];
+    extern u32 g_numInterfacesToRender;
+    void InterfaceManager_RenderInterface(void *iface);
+    u32 i;
+    u8 *iface;
+
+    for (i = 0; i < g_numInterfacesToRender; i++) {
+        iface = g_interface[g_interfaceRenderOrder[i]];
+        if (*(void **)iface != NULL && (*(u32 *)(iface + 4) != 1 || *(u32 *)(iface + 0x10) != 0) && iface[0x7F] == 0) {
+            InterfaceManager_RenderInterface(iface);
+        }
+    }
 }
 
 s32 ActionInterfacePlay(s32 *arg0) {
