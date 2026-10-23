@@ -3174,6 +3174,16 @@ s8 Player_IsHuman(void *player) {
     return isHuman;
 }
 
+void PlayerHuman_Init(void *player) {
+    void PlayerHuman_SetDefaultControls(void *player, s32 arg);
+
+    Player_Init(player, 0);
+    M2C_FIELD(player, s32 *, 0xC8) = 0;
+    PlayerHuman_SetDefaultControls(player, 0);
+    M2C_FIELD(player, s32 *, 0x6C) = 0;
+    M2C_FIELD(player, void **, 0x114) = (u8 *)player + 0x118;
+}
+
 #pragma push
 #pragma dont_inline on
 void Player_Init(void *player, s32 arg1) {
@@ -3525,6 +3535,32 @@ void ShowStats_BeginScene(void) {
     Release_Performance_Diff(g_pActiveTimeBar);
     Release_Performance_Get(g_pActiveTimeBar + 4);
     Gfx_BeginScene();
+}
+
+void ShowStats_EndScene(void) {
+    void Render_TimeBars(void *bar);
+    void Release_Performance_Diff(s32);
+    void Release_Performance_Get(s32);
+    void Performance_End(void);
+    extern s32 g_debugDataFlag;
+    extern u8 g_timeBar[0x20];
+    extern s32 g_timeBarOn;
+    extern s32 g_pActiveTimeBar;
+    extern s32 g_bDrawTimeBars;
+    extern s32 g_TripleBufferSleepQTime;
+    u8 *bar = g_timeBar + !g_timeBarOn * 0x10;
+
+    if (g_debugDataFlag != 0 && g_bDrawTimeBars != 0) {
+        Render_TimeBars(bar);
+    }
+    Release_Performance_Diff(g_pActiveTimeBar + 4);
+    Release_Performance_Get(g_pActiveTimeBar + 8);
+    Gfx_EndScene();
+    Release_Performance_Diff(g_pActiveTimeBar + 8);
+    M2C_FIELD(g_pActiveTimeBar, s32 *, 0xC) = g_TripleBufferSleepQTime;
+    Gfx_FlipBuffers();
+    ShowStats();
+    Performance_End();
 }
 
 void ShowStats(void) {
