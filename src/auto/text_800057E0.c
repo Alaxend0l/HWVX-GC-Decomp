@@ -2454,6 +2454,8 @@ s32 EventSeq_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 void FileStreaming_Initialize(void) {
     extern u8 *g_StreamingDataPacks[11];
     extern u32 g_MaxStreamingDataPacks[11];
@@ -2479,6 +2481,7 @@ void FileStreaming_Initialize(void) {
     }
     g_pDataPackToLoad = NULL;
 }
+#pragma pop
 
 void FileStreaming_Destroy(void) {
     extern u8 *g_StreamingDataPacks[11];
