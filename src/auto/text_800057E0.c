@@ -6515,6 +6515,31 @@ void Mover_Init(void) {
     fn_800957D4();
 }
 
+void PhysicalObject_IntegrateNonLateral(u8 *obj) {
+    extern Vector4 g_zeroVector;
+    extern f32 g_fDeltaTimeSec;
+    void XformVecOrientation(void *mtx, f32 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, f32 *out);
+    f32 scaled[4];
+    f32 local[4];
+    f32 invMass;
+
+    invMass = g_fDeltaTimeSec / *(f32 *)(*(u8 **)(*(u8 **)(obj + 0xC0) + 0x10) + 0x20);
+    ((Vector4 *)obj)->x += invMass * ((Vector4 *)(obj + 0xF0))->x;
+    ((Vector4 *)obj)->y += invMass * ((Vector4 *)(obj + 0xF0))->y;
+    ((Vector4 *)obj)->z += invMass * ((Vector4 *)(obj + 0xF0))->z;
+    ((Vector4 *)(obj + 0x110))->x += g_fDeltaTimeSec * ((Vector4 *)(obj + 0x100))->x;
+    ((Vector4 *)(obj + 0x110))->y += g_fDeltaTimeSec * ((Vector4 *)(obj + 0x100))->y;
+    ((Vector4 *)(obj + 0x110))->z += g_fDeltaTimeSec * ((Vector4 *)(obj + 0x100))->z;
+    *(Vector4 *)(obj + 0x100) = g_zeroVector;
+    *(Vector4 *)(obj + 0xF0) = *(Vector4 *)(obj + 0x100);
+    InverseXformVecOrientation(obj + 0x10, (Vector4 *)(obj + 0x110), local);
+    scaled[0] = ((Vector4 *)(obj + 0x120))->x * local[0];
+    scaled[1] = ((Vector4 *)(obj + 0x120))->y * local[1];
+    scaled[2] = ((Vector4 *)(obj + 0x120))->z * local[2];
+    XformVecOrientation(obj + 0x10, scaled, (Vector4 *)(obj + 0x130));
+}
+
 void Mover_DynamicRotation(u8 *mover) {
     void QuaternionToSubMatrix(void *quat, void *mtx);
     Vector4 quat;
