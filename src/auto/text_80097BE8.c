@@ -10527,6 +10527,8 @@ s32 MemCard_Open__FUlPCScUlPl(u32 device, const char *fileName, u32 flags, s32 *
 }
 #pragma pop
 
+#pragma push
+#pragma readonly_strings on
 void MemCard_Close__Fl(s32 device) {
     s32 chan = device - 11;
 
@@ -10534,6 +10536,7 @@ void MemCard_Close__Fl(s32 device) {
     m_memcardstatus_803C7970[chan] = CARDUnmount(chan);
     OSReport("CARDClose\n");
 }
+#pragma pop
 
 s32 MemCard_Read__FUllPv(u32 device, s32 size, void *data) {
     u8 buffer[0x2000] __attribute__((aligned(32)));
@@ -10543,6 +10546,64 @@ s32 MemCard_Read__FUllPv(u32 device, s32 size, void *data) {
     memcpy(data, buffer + 0x840, size);
     return size;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+#pragma readonly_strings on
+s32 MemCard_Write__FUllPv(u32 id, s32 size, void *data) {
+    typedef struct CARDStat {
+        char fileName[32];
+        u32 length;
+        u32 time;
+        u8 gameName[4];
+        u8 company[2];
+        u8 bannerFormat;
+        u8 __padding;
+        u32 iconAddr;
+        u16 iconFormat;
+        u16 iconSpeed;
+        u32 commentAddr;
+        u32 offsetBanner;
+        u32 offsetBannerTlut;
+        u32 offsetIcon[8];
+        u32 offsetIconTlut;
+        u32 offsetData;
+    } CARDStat;
+    s32 CARDWrite(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset);
+    s32 CARDGetStatus(s32 chan, s32 fileNo, CARDStat *stat);
+    s32 CARDSetStatus(s32 chan, s32 fileNo, CARDStat *stat);
+    extern u8 rawData_800DB404[0x800];
+    CARDStat stat;
+    u8 buffer[0x2000] __attribute__((aligned(32)));
+    s32 chan = id - 11;
+
+    memset(buffer, 0, 0x40);
+    sprintf((char *)buffer, "Hot Wheels Velocity X Save");
+    sprintf((char *)buffer + 0x20, "Game Data");
+    memcpy(buffer + 0x40, rawData_800DB404, 0x800);
+    memcpy(buffer + 0x840, data, size);
+    m_memcardstatus_803C7970[chan] = CARDWrite(&memCardfileInfo[chan], buffer, memCardBlockSize[chan], 0);
+    if (m_memcardstatus_803C7970[chan] < 0) {
+        if (m_memcardstatus_803C7970[chan] == -5) {
+            CARDDelete(chan, g_appInfo[3]);
+        }
+        m_memcardstatus_803C7970[chan] = CARDUnmount(chan);
+        OSReport("CARD error %d\n", m_memcardstatus_803C7970[chan]);
+        return 0;
+    }
+    OSReport("CARDWrite\n");
+    m_memcardstatus_803C7970[chan] = CARDGetStatus(chan, memCardfileInfo[chan].fileNo, &stat);
+    stat.commentAddr = 0;
+    stat.iconAddr = 0x40;
+    stat.bannerFormat = (u8)((stat.bannerFormat & ~3) | 0);
+    stat.bannerFormat = (u8)((stat.bannerFormat & ~4) | 0);
+    stat.iconFormat = (u16)((stat.iconFormat & ~3) | 2);
+    stat.iconSpeed = (u16)((stat.iconSpeed & ~3) | 3);
+    stat.iconSpeed = (u16)((stat.iconSpeed & ~(3 << 2)) | (0 << 2));
+    m_memcardstatus_803C7970[chan] = CARDSetStatus(chan, memCardfileInfo[chan].fileNo, &stat);
+    return 1;
+}
+#pragma pop
 
 #pragma push
 #pragma readonly_strings on
