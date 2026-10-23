@@ -10187,6 +10187,61 @@ s8 RayHitsTerrainAndObjects(void *arg0, void *arg1, void *arg2, void *arg3) {
     return hitTerrain;
 }
 
+#pragma push
+#pragma opt_loop_invariants off
+s8 OBoxHitsTerrainAndObjectsZeroTime(void *obox, void *thing, void *info) {
+    typedef struct { f32 x, y, z, w; } Vec4;
+    u32 Grid_GetObjects(Vec4 *min, Vec4 *max, u32 typeMask, GridResult *results, u32 maxResults);
+    s8 OBoxHitsTerrain(void *obox, Vector4 *vel, f32 *t, void *info);
+    f32 OBoxHitsOBox(void *a, Vector4 *velA, void *b, Vector4 *velB, s32 arg4, f32 t);
+    f32 PSVECSquareDistance(void *a, void *b);
+    extern Vector4 g_zeroVector;
+    f32 time;
+    Vec4 max;
+    Vec4 min;
+    GridResult results[96];
+    u32 count;
+    u32 i;
+    u8 *other;
+    f32 t;
+    f32 dist;
+    f32 r;
+    s32 hit;
+
+    time = 1.0f;
+    if (!(*(u32 *)((u8 *)thing + 0x74) & 0x40000)) {
+        if (OBoxHitsTerrain(obox, &g_zeroVector, &time, info)) {
+            return 1;
+        }
+    }
+    if (*(u32 *)((u8 *)thing + 0x74) & 0x20000) {
+        hit = 0;
+    } else {
+        Thing_GetStaticRotationalMinMax(thing, (Vector4 *)&min, (Vector4 *)&max);
+        count = Grid_GetObjects(&min, &max, 5, results, 0x60);
+        for (i = 0; i < count; i++) {
+            other = (u8 *)results[i].id;
+            if (!(*(u32 *)(other + 0x74) & 2) && *(s16 *)(other + 0x80) != 0 && other != thing) {
+                dist = PSVECSquareDistance((u8 *)thing + 0x40, other + 0x40);
+                r = *(f32 *)(other + 0x70) + *(f32 *)((u8 *)thing + 0x70);
+                if (r * r > dist) {
+                    if (*(s16 *)(other + 0x80) == 1) {
+                        t = OBoxHitsOBox(obox, &g_zeroVector, (*(void *(**)(void *))(*(u8 **)(other + 0x8C) + 0x40))(other), &g_zeroVector, 0, 1.0f);
+                    }
+                    if (t < 1.0f) {
+                        hit = 1;
+                        goto done;
+                    }
+                }
+            }
+        }
+        hit = 0;
+    }
+done:
+    return hit;
+}
+#pragma pop
+
 s8 OBoxHitsTerrainAndObjectsZeroTimeEdgesOnly(void *obox, void *thing, void *arg2) {
     s8 OBoxHitsTerrainZeroTimeEdgesOnly(void *, void *);
     s32 OBox_CollideAllThingsZeroTime(void *, void *, void *);
