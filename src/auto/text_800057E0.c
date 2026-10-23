@@ -3006,13 +3006,13 @@ static inline s8 PointInsideBSP(void *bsp, void *point) {
 }
 
 s8 OBoxHitsBSPZeroTime(void *obox, void *bsp, void *arg2) {
+    typedef struct {
+        u8 pad[0x10];
+        Vector4 corners[8];
+    } OBoxCorners;
     s8 OBoxHitsSegmentZeroTime(void *obox, void *edge, void *arg2);
-    f32 Distance_Plane(void *arg0, void *arg1);
     u8 *edge;
     u32 i;
-    u8 *corner;
-    u32 node;
-    s8 inside;
 
     if (*(u32 *)((u8 *)bsp + 0x3C) == 0 && *(u32 *)((u8 *)bsp + 0x40) == 0) {
         return 0;
@@ -3026,32 +3026,10 @@ s8 OBoxHitsBSPZeroTime(void *obox, void *bsp, void *arg2) {
             }
         }
     }
-    corner = obox;
     for (i = 0; i < 8; i++) {
-        node = 0;
-        if (*(u8 **)((u8 *)bsp + 0x30) == NULL) {
-            inside = 0;
-        } else {
-            while (1) {
-                if (Distance_Plane(*(u8 **)((u8 *)bsp + 0x30) + node * 0x20, corner + 0x10) >= 0.0f) {
-                    node = *(u16 *)(*(u8 **)((u8 *)bsp + 0x30) + node * 0x20 + 0x14);
-                    if (node == 0xFFFF) {
-                        inside = 0;
-                        break;
-                    }
-                } else {
-                    node = *(u16 *)(*(u8 **)((u8 *)bsp + 0x30) + node * 0x20 + 0x16);
-                    if (node == 0xFFFF) {
-                        inside = 1;
-                        break;
-                    }
-                }
-            }
-        }
-        if (inside) {
+        if (PointInsideBSP(bsp, &((OBoxCorners *)obox)->corners[i])) {
             return 1;
         }
-        corner += 0x10;
     }
     return 0;
 }
