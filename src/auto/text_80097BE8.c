@@ -4272,6 +4272,28 @@ void Render_SetConstColor(s32 *arg0) {
     GXSetChanMatColor(4, &sp8);
 }
 
+void Render_Draw3DLines(void) {
+    extern GDL *g_pGDL;
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    void Gfx_SetWorldMatrix(void *matrix);
+    void Render_SetTextureHandle(s32 handle);
+    void Render_StateAlphaBlendEnable(s32 enable);
+    void Set3DLineVtxDesc(void);
+    u32 i;
+
+    Gfx_SetWorldMatrix(NULL);
+    Render_SetTextureHandle(0xFFFF);
+    Render_StateAlphaBlendEnable(0);
+    Set3DLineVtxDesc();
+    GXBegin(0xA8, 0, g_pGDL->num3DLines * 2);
+    for (i = 0; i < g_pGDL->num3DLines; i++) {
+        GXPosition3f32(g_pGDL->lines3D[i].p0.x, g_pGDL->lines3D[i].p0.y, g_pGDL->lines3D[i].p0.z);
+        GXColor3u8(g_pGDL->lines3D[i].r, g_pGDL->lines3D[i].g, g_pGDL->lines3D[i].b);
+        GXPosition3f32(g_pGDL->lines3D[i].p1.x, g_pGDL->lines3D[i].p1.y, g_pGDL->lines3D[i].p1.z);
+        GXColor3u8(g_pGDL->lines3D[i].r, g_pGDL->lines3D[i].g, g_pGDL->lines3D[i].b);
+    }
+}
+
 void Render_DrawLine2D(void *line) {
     typedef struct Line2D {
         Vector p0;
