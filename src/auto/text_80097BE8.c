@@ -4731,7 +4731,7 @@ loop_1:
 void AudioDecoderForOnMemory(void *bufAddr) {
     void AudioDecode(THPReadBuffer *readBuffer);
     s32 OSSuspendThread(void *thread);
-    extern u8 AudioDecodeThread_80370108[];
+    extern u8 AudioDecodeThread_80370108[0x310];
     THPReadBuffer readBuffer;
     s32 tmp;
     s32 size;
