@@ -9359,6 +9359,27 @@ void OSCreateAlarm(s32 *arg0) {
     *arg0 = 0;
 }
 
+static inline Cell *DLExtract(Cell *list, Cell *cell) {
+    if (cell->next) {
+        cell->next->prev = cell->prev;
+    }
+    if (cell->prev == NULL) {
+        return cell->next;
+    } else {
+        cell->prev->next = cell->next;
+        return list;
+    }
+}
+
+static inline Cell *DLAddFront(Cell *list, Cell *cell) {
+    cell->next = list;
+    cell->prev = NULL;
+    if (list) {
+        list->prev = cell;
+    }
+    return cell;
+}
+
 Cell *DLInsert(Cell *list, Cell *cell) {
     Cell *prev;
     Cell *next;
@@ -9394,6 +9415,61 @@ Cell *DLInsert(Cell *list, Cell *cell) {
     } else {
         return cell;
     }
+}
+
+void *OSAllocFromHeap(s32 heap, u32 size) {
+    HeapDesc *hd;
+    Cell *cell;
+    Cell *newCell;
+    Cell *list;
+    u32 leftoverSize;
+
+    hd = &HeapArray_803C7218[heap];
+    size += 0x20;
+    size = (size + 0x1F) & ~0x1F;
+    for (cell = hd->free; cell != NULL; cell = cell->next) {
+        if ((s32)size <= cell->size) {
+            break;
+        }
+    }
+    if (cell == NULL) {
+        return NULL;
+    }
+    leftoverSize = cell->size - size;
+    if (leftoverSize < 0x40) {
+        list = hd->free;
+        if (cell->next) {
+            cell->next->prev = cell->prev;
+        }
+        if (cell->prev == NULL) {
+            list = cell->next;
+        } else {
+            cell->prev->next = cell->next;
+        }
+        hd->free = list;
+    } else {
+        cell->size = size;
+        newCell = (Cell *)((u8 *)cell + size);
+        newCell->size = leftoverSize;
+        newCell->prev = cell->prev;
+        newCell->next = cell->next;
+        if (newCell->next != NULL) {
+            newCell->next->prev = newCell;
+        }
+        if (newCell->prev != NULL) {
+            newCell->prev->next = newCell;
+        } else {
+            hd->free = newCell;
+        }
+    }
+    list = hd->allocated;
+    cell->next = list;
+    cell->prev = NULL;
+    if (list != NULL) {
+        list->prev = cell;
+    }
+    hd->allocated = cell;
+    return (u8 *)cell + 0x20;
 }
 
 #pragma push
