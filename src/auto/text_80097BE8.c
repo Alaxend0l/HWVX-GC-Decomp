@@ -4185,7 +4185,7 @@ s32 DBGReadMailbox(u32 *mailbox) {
 
 #pragma push
 #pragma use_lmw_stmw on
-#pragma scheduling 604
+#pragma scheduling 603
 BOOL DBGEXIImm(void *buffer, s32 bytecounter, u32 write) {
     u8 *tempPointer;
     u32 writeOutValue;
