@@ -14211,8 +14211,8 @@ void FlashHolder_Heartbeat(void) {
                     flash[0x35] = flash[0x35] * *(f32 *)(flash + 0x74);
                     flash[0x36] = flash[0x36] * *(f32 *)(flash + 0x74);
                 }
-            } else if ((s32)i >= 0) {
-                *(void **)(g_pFlash[i] + 0x5C) = NULL;
+            } else {
+                FlashHolder_Remove(i);
             }
         }
     }
