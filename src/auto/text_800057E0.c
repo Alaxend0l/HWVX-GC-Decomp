@@ -6492,10 +6492,10 @@ void BulletHole_Render(void) {
     void Gfx_End_GroupTri(u32 count);
     void MemCpy32(void *dst, void *src, u32 size);
     u8 *bullet;
-    u8 *dst;
+    u32 i;
     u16 texture;
     u32 count;
-    u32 i;
+    u8 *dst;
 
     count = 0;
     texture = 0xFFFF;
