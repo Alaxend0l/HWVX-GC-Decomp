@@ -8494,7 +8494,7 @@ void Render_Print(void) {
     }
 }
 
-static inline void FontManager_Vertex(f32 x, f32 y, GXColor *color, f32 s, f32 t) {
+static inline void FontManager_Vertex(f32 x, f32 y, GXColor *color, f32 t, f32 s) {
     GXPosition2f32(x, y);
     GXColor4u8(color->r, color->g, color->b, color->a);
     GXTexCoord2f32(s, t);
@@ -8509,14 +8509,14 @@ u32 FontManager_Print(char *str, s32 id, f32 x, f32 y) {
     void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
     u32 strlen(const char *);
     Font *font = &g_fontManager.fonts[id];
-    u32 count = 0;
     u32 i;
+    u32 count = 0;
     u8 c;
 
     Render_SetTextureHandle(font->texture);
     Set2DRectVtxDesc();
     for (i = 0; i < strlen(str); i++) {
-        if (str[i] != ' ') {
+        if ((u8)str[i] != ' ') {
             count++;
         }
     }
@@ -8531,18 +8531,10 @@ u32 FontManager_Print(char *str, s32 id, f32 x, f32 y) {
             f32 y1 = y + font->height;
             f32 x1 = 0.6f * (u8)font->chars[c].spacingX + x;
 
-            GXPosition2f32(x, y);
-            GXColor4u8(g_textcolor.r, g_textcolor.g, g_textcolor.b, g_textcolor.a);
-            GXTexCoord2f32(font->chars[c].unk0, font->chars[c].unk4);
-            GXPosition2f32(x, y1);
-            GXColor4u8(g_textcolor.r, g_textcolor.g, g_textcolor.b, g_textcolor.a);
-            GXTexCoord2f32(font->chars[c].unk0, font->chars[c].unkC);
-            GXPosition2f32(x1, y1);
-            GXColor4u8(g_textcolor.r, g_textcolor.g, g_textcolor.b, g_textcolor.a);
-            GXTexCoord2f32(font->chars[c].unk8, font->chars[c].unkC);
-            GXPosition2f32(x1, y);
-            GXColor4u8(g_textcolor.r, g_textcolor.g, g_textcolor.b, g_textcolor.a);
-            GXTexCoord2f32(font->chars[c].unk8, font->chars[c].unk4);
+            FontManager_Vertex(x, y, &g_textcolor, font->chars[c].unk0, font->chars[c].unk4);
+            FontManager_Vertex(x, y1, &g_textcolor, font->chars[c].unk0, font->chars[c].unkC);
+            FontManager_Vertex(x1, y1, &g_textcolor, font->chars[c].unk8, font->chars[c].unkC);
+            FontManager_Vertex(x1, y, &g_textcolor, font->chars[c].unk8, font->chars[c].unk4);
         }
         x += 0.6f * (u8)font->chars[' '].spacingX - 2.0f;
     }
