@@ -10690,6 +10690,55 @@ s32 TriggerDesructibleKilled(u32 *data) {
     return 0;
 }
 
+void Trigger_DestructibleKilled(void *thing) {
+    extern u32 TriggerStats_800D3C58[][3];
+    extern u32 **m_Triggers_802C1890[];
+    extern s8 g_bTACSystemPaused_803C7124;
+    s8 TriggerCheckConditions(u8, s32, s32);
+    s32 Action_AddAction(s32);
+    u32 i;
+    u32 actions;
+    u32 *trigger;
+    u32 j;
+    u32 *list;
+    s8 found;
+    u32 count;
+    u32 mode;
+
+    if (!g_bTACSystemPaused_803C7124) {
+        for (i = 0; i < TriggerStats_800D3C58[4][0]; i++) {
+            trigger = m_Triggers_802C1890[4][i];
+            list = (u32 *)trigger[1];
+            count = list[0];
+            if (trigger[9] != 2) {
+                found = 0;
+                for (j = 0; j < count; j++) {
+                    if (((void **)((u32 *)m_Triggers_802C1890[4][i][1] + 1)[j])[11] == thing) {
+                        mode = list[count + 1];
+                        if (mode == 3) {
+                            found = 1;
+                        } else if (mode == 2) {
+                            found = !(M2C_FIELD(thing, u32 *, 0x74) & 0x20);
+                        } else {
+                            found = M2C_FIELD(thing, u32 *, 0x74) & 0x20;
+                        }
+                        break;
+                    }
+                }
+                if (found && TriggerCheckConditions(((u8 *)trigger)[0x28], trigger[4], trigger[3])) {
+                    actions = 0;
+                    for (j = 0; j < m_Triggers_802C1890[4][i][7]; j++) {
+                        actions += Action_AddAction(m_Triggers_802C1890[4][i][5] + j * 0x18);
+                    }
+                    if (actions == 0) {
+                        m_Triggers_802C1890[4][i][9] = 2;
+                    }
+                }
+            }
+        }
+    }
+}
+
 s32 TriggerCreatureKilled(void) {
     return 0;
 }
