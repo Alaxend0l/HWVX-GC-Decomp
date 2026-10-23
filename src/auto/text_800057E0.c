@@ -4866,6 +4866,32 @@ void ShowStats(void) {
 
 }
 
+s32 SmartProjectileA_Move(u8 *proj) {
+    extern f32 g_fDeltaTimeSec;
+    void GenerateQuaternion(void *axis, void *q, f32 angle);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void Projectile_MoveBase(void *proj);
+    void Thing_CollideWithForceBoxes(void *thing);
+    Quaternion qy;
+    Quaternion qz;
+    Quaternion qx;
+    Quaternion t1;
+    Quaternion t2;
+
+    Projectile_MoveBase(proj);
+    GenerateQuaternion(proj + 0x20, &qx, M2C_FIELD(proj, f32 *, 0x150) * g_fDeltaTimeSec);
+    GenerateQuaternion(proj + 0x10, &qy, M2C_FIELD(proj, f32 *, 0x154) * g_fDeltaTimeSec);
+    GenerateQuaternion(proj + 0x30, &qz, M2C_FIELD(proj, f32 *, 0x158) * g_fDeltaTimeSec);
+    QuaternionMult((Vector4 *)(proj + 0x50), (Vector4 *)&qx, (Vector4 *)&t1);
+    QuaternionMult((Vector4 *)&qy, (Vector4 *)&t1, (Vector4 *)&t2);
+    QuaternionMult((Vector4 *)&qz, (Vector4 *)&t2, (Vector4 *)(proj + 0x50));
+    QuaternionToSubMatrix(proj + 0x50, proj + 0x10);
+    M2C_FIELD(proj, u32 *, 0x74) |= 0x80;
+    M2C_FIELD(proj, u32 *, 0x74) |= 0x100;
+    Thing_CollideWithForceBoxes(proj);
+    return 1;
+}
+
 static void SoundSeq_RemoveFromQueue(u8 *seq) {
     void Trigger_SoundSequenceQueueEmptied(void);
     u8 *next;
