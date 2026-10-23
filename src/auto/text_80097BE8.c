@@ -28,7 +28,7 @@ typedef union PPCWGPipe {
     f32 f32;
 } PPCWGPipe;
 
-#define GXWGFifo (*(volatile PPCWGPipe *)0xCC008000)
+volatile PPCWGPipe GXWGFifo : 0xCC008000;
 
 static inline void GXPosition2f32(f32 x, f32 y) {
     GXWGFifo.f32 = x;
