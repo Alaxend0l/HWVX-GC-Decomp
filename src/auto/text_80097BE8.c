@@ -8500,7 +8500,7 @@ static inline void FontManager_Vertex(f32 x, f32 y, GXColor *color, f32 s, f32 t
     GXTexCoord2f32(s, t);
 }
 
-static inline void FontManager_Vertex2(f32 x, f32 y, f32 s, f32 t) {
+static inline void FontManager_Vertex2(f32 x, f32 y, f32 t, f32 s) {
     extern GXColor g_textcolor;
     GXPosition2f32(x, y);
     GXColor4u8(g_textcolor.r, g_textcolor.g, g_textcolor.b, g_textcolor.a);
@@ -8509,7 +8509,6 @@ static inline void FontManager_Vertex2(f32 x, f32 y, f32 s, f32 t) {
 
 u32 FontManager_Print(char *str, s32 id, f32 x, f32 y) {
     extern FontManager g_fontManager;
-    extern GXColor g_textcolor;
     extern s32 g_debugTriCount;
     void Render_SetTextureHandle(u16 id);
     void Set2DRectVtxDesc(void);
@@ -8535,13 +8534,14 @@ u32 FontManager_Print(char *str, s32 id, f32 x, f32 y) {
             c -= 0x20;
         }
         if (c != ' ') {
+            FontChar *ch = &font->chars[c];
             f32 y1 = y + font->height;
-            f32 x1 = 0.6f * (u8)font->chars[c].spacingX + x;
+            f32 x1 = 0.6f * (u8)ch->spacingX + x;
 
-            FontManager_Vertex(x, y, &g_textcolor, font->chars[c].unk0, font->chars[c].unk4);
-            FontManager_Vertex(x, y1, &g_textcolor, font->chars[c].unk0, font->chars[c].unkC);
-            FontManager_Vertex(x1, y1, &g_textcolor, font->chars[c].unk8, font->chars[c].unkC);
-            FontManager_Vertex(x1, y, &g_textcolor, font->chars[c].unk8, font->chars[c].unk4);
+            FontManager_Vertex2(x, y, ch->unk0, ch->unk4);
+            FontManager_Vertex2(x, y1, ch->unk0, ch->unkC);
+            FontManager_Vertex2(x1, y1, ch->unk8, ch->unkC);
+            FontManager_Vertex2(x1, y, ch->unk8, ch->unk4);
         }
         x += 0.6f * (u8)font->chars[' '].spacingX - 2.0f;
     }
