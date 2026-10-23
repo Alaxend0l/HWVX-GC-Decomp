@@ -15491,42 +15491,6 @@ void PadSamplingCallback__Fv(void) {
     }
 }
 
-static inline void GbaHandshake(s32 chan, s32 retry, u32 key, u32 *sendKey) {
-    s32 GBAGetStatus(s32 chan, u8 *status);
-    s32 GBARead(s32 chan, void *dst, u8 *status);
-    s32 GBAWrite(s32 chan, void *src, u8 *status);
-    u32 OSGetTick(void);
-    JoyBusParam *q;
-    u8 *status;
-    s32 result;
-    u32 tick;
-    u32 recvTick;
-
-    q = &Param_803C6A40[chan];
-    status = &q->status;
-    if (GBAGetStatus(chan, status) != 0 || Param_803C6A40[chan].status != 0x30) {
-        return;
-    }
-    if (retry) {
-        tick = key;
-    } else {
-        tick = OSGetTick();
-        *sendKey = tick;
-    }
-    if (GBAWrite(chan, &tick, status) != 0 || (Param_803C6A40[chan].status & 0x30) != 0x30) {
-        return;
-    }
-    if (GBAGetStatus(chan, status) != 0 || Param_803C6A40[chan].status != 0x38) {
-        return;
-    }
-    result = GBARead(chan, &recvTick, status);
-    if (retry || result != 0 || tick != recvTick || (Param_803C6A40[chan].status & 0x30) != 0x30) {
-        return;
-    }
-    Param_803C6A40[chan].key = tick;
-    q->state = 3;
-}
-
 void GbaOpen__Fl(s32 chan) {
     extern s32 HostId_803C79A4;
     int memcmp(const void *src1, const void *src2, unsigned long n);
