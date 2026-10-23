@@ -1336,6 +1336,21 @@ s32 ActionNavPointChangeMode(u32 *action) {
     return 1;
 }
 
+s32 ActionPauseTACSystem(s32 *action) {
+    switch (action[0]) {
+    case 7:
+        Trigger_PauseTACSystem(1);
+        break;
+    case 8:
+        Trigger_PauseTACSystem(0);
+        break;
+    case 2:
+        Trigger_PauseTACSystem(!(s8)Trigger_IsTACSystemPaused());
+        break;
+    }
+    return 1;
+}
+
 void AI_Create(void) {
     u32 GameSettings_GetCodeVariable(s32, s32);
     extern s32 g_volumeTotal;
