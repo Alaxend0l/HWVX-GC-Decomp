@@ -6111,6 +6111,48 @@ void NavHolder_UseMainRouteOnly(void) {
     gs_useMainRouteOnly_803C7000 = 1;
 }
 
+u8 *NavHolder_FindPath(s32 from, s32 to) {
+    extern s8 gs_useMainRouteOnly_803C7000;
+    extern void *gs_pOpenListHead_803C7008;
+    extern void *gs_pClosedListHead_803C7004;
+    u32 RandomNumberGenerator_GetRandomInteger(u32 min, u32 max);
+    s8 NavHolder_CreatePath(u8 *start, u8 *end);
+    NavData *data;
+    u8 *node;
+    s32 offset;
+    u32 i;
+    u32 chance;
+
+    if (from == -1 || to == -1) {
+        return NULL;
+    }
+    chance = 1;
+    data = gs_NavHolder_803C6CD8.data;
+    if (data != NULL) {
+        gs_pOpenListHead_803C7008 = NULL;
+        gs_pClosedListHead_803C7004 = NULL;
+        if (gs_useMainRouteOnly_803C7000) {
+            chance = 100;
+            gs_useMainRouteOnly_803C7000 = 0;
+        }
+        for (i = 0, offset = 0; i < data->numNodes; i++, offset += 0x60) {
+            u32 r = RandomNumberGenerator_GetRandomInteger(chance, 100);
+            node = data->nodes + offset;
+            if (node[0x50] != 0 && node[0x35] >= r) {
+                node[0x37] |= 1;
+            } else {
+                node[0x37] &= ~1;
+            }
+            data->nodes[offset + 0x37] &= ~6;
+            *(u8 **)(data->nodes + offset + 0x38) = NULL;
+        }
+    }
+    if (NavHolder_CreatePath(gs_NavHolder_803C6CD8.data->nodes + from * 0x60, gs_NavHolder_803C6CD8.data->nodes + to * 0x60)) {
+        return gs_NavHolder_803C6CD8.data->nodes + from * 0x60;
+    }
+    return NULL;
+}
+
 extern NavHolder gs_NavHolder_803C6CD8;
 
 s32 NavHolder_GetTotalNavPoints(void) {
@@ -9166,6 +9208,47 @@ s32 TriggerVehicleKilled(u32 *data) {
     }
     return 0;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void Trigger_VehicleKilled(void *vehicle) {
+    extern u32 TriggerStats_800D3C58[][3];
+    extern u32 **m_Triggers_802C1890[];
+    extern s8 g_bTACSystemPaused_803C7124;
+    s8 TriggerCheckConditions(u8, s32, s32);
+    s32 Action_AddAction(s32);
+    u32 i;
+    u32 actions;
+    u32 *trigger;
+    u32 j;
+    s8 found;
+    u32 count;
+
+    if (!g_bTACSystemPaused_803C7124) {
+        for (i = 0; i < TriggerStats_800D3C58[12][0]; i++) {
+            trigger = m_Triggers_802C1890[12][i];
+            count = *(u32 *)trigger[1];
+            if (trigger[9] != 2) {
+                found = 0;
+                for (j = 0; j < count && !found; j++) {
+                    if (((void **)((u32 *)m_Triggers_802C1890[12][i][1] + 1)[j])[10] == vehicle) {
+                        found = 1;
+                    }
+                }
+                if (found && TriggerCheckConditions(((u8 *)trigger)[0x28], trigger[4], trigger[3])) {
+                    actions = 0;
+                    for (j = 0; j < m_Triggers_802C1890[12][i][7]; j++) {
+                        actions += Action_AddAction(m_Triggers_802C1890[12][i][5] + j * 0x18);
+                    }
+                    if (actions == 0) {
+                        m_Triggers_802C1890[12][i][9] = 2;
+                    }
+                }
+            }
+        }
+    }
+}
+#pragma pop
 
 s32 TriggerDesructibleKilled(u32 *data) {
     u32 i;
