@@ -4111,6 +4111,33 @@ GDLSprite *Gfx_AddBillBoardSprite(u16 tex) {
     return sprite;
 }
 
+void *Gfx_Begin_GroupTriFlat(u16 tex, s32 arg1, s32 arg2) {
+    extern GDL *g_pGDL;
+    u32 n;
+
+    n = g_pGDL->numGroupTris;
+    if (n >= 500) {
+        n = 0;
+        g_pGDL->numGroupTris = 0;
+    }
+    if (n != 0 && (&g_pGDL->groupTris[n])[-1].type == 0 && (&g_pGDL->groupTris[n])[-1].unk10 >= 0xFFFE &&
+        tex == (&g_pGDL->groupTris[n])[-1].tex && (u16)arg1 == (&g_pGDL->groupTris[n])[-1].unk6) {
+        g_pGDL->numGroupTris--;
+    } else {
+        g_pGDL->groupTris[n].type = 0;
+        g_pGDL->groupTris[n].unk1 = 0;
+        g_pGDL->groupTris[n].unk2 = arg2;
+        g_pGDL->groupTris[n].unk8 = g_pGDL->unk38;
+        g_pGDL->groupTris[n].count = 0;
+        g_pGDL->groupTris[n].tex = tex;
+        g_pGDL->groupTris[n].unk6 = arg1;
+        g_pGDL->groupTris[n].unk10 = 0xFFFE;
+        g_pGDL->groupTris[n].unk18 = 0.0f;
+        g_pGDL->groupTris[n].unk1C = 0.0f;
+    }
+    return (u8 *)g_pGDL->unk24CDE0 + g_pGDL->unk38 * 0x50;
+}
+
 void Gfx_End_GroupTri(s32 n) {
     extern GDL *g_pGDL;
 
