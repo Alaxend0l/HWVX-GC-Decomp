@@ -3606,6 +3606,21 @@ void Gfx_DrawGeometry_MatrixNotCached(s32 geometry, s32 matrix) {
     g_pGDL->numDrawEntries++;
 }
 
+s32 Gfx_AddWorldMatrixState_CacheMatrixQuaternionScalePos(s32 quat, s32 scale, s32 pos);
+void Gfx_DrawGeometry_QuaternionScalePos(s32 geometry, s32 quat, s32 scale, s32 pos) {
+    extern GDL *g_pGDL;
+    extern GfxState g_state;
+
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].geometry = geometry;
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].matrix = Gfx_AddWorldMatrixState_CacheMatrixQuaternionScalePos(quat, scale, pos);
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].unk10 = (g_state.unk7C >> 4) & 1;
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].unk4 = g_state.unk74;
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].lightState = Gfx_GetLightState();
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].envmapState = Gfx_GetEnvmapState();
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].unk11 = 0;
+    g_pGDL->numDrawEntries++;
+}
+
 s32 Gfx_Create(void) {
     void Init_Math3D(void);
     void RenderState_Init(void);
