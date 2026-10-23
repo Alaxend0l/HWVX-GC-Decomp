@@ -2312,6 +2312,19 @@ void OConvexHullHolder_Release(void *arg0) {
     }
 }
 
+#pragma push
+#pragma readonly_strings on
+void OBoxHolder_Init(void) {
+    extern s8 g_aOBox[0x200][0xF0];
+    u32 i;
+
+    Dprintf("OBOXHOLDER: %x\n", g_aOBox);
+    for (i = 0; i < 0x200; i++) {
+        g_aOBox[i][0x9D] = 0;
+    }
+}
+#pragma pop
+
 void *OBoxHolder_Get(void) {
     static const char msg[] = "OUT OF OBOXES!!!!\n";
     extern s8 g_aOBox[0x200][0xF0];
