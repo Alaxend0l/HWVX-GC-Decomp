@@ -2250,6 +2250,54 @@ void MotionState_Heartbeat(void *state, void *arg1, void *thing) {
         MotionState_MoveSlaves(state, arg1, thing);
     }
 }
+
+s32 AttachThing_Init(u8 *attach, u8 *data) {
+    f32 RandomAdd(f32 base, f32 range);
+    void ExtractColorKey(void *keys, void *out, f32 time);
+    void ExtractScaleKey(void *keys, void *out, f32 time);
+    double cos(double x);
+    extern u8 g_attachGeometryVTable[];
+    extern u8 g_attachVTable[];
+    u8 *info;
+    u8 *rnd;
+
+    Thing_Init(attach, (s32)data);
+    *(u32 *)(attach + 0x94) = *(u32 *)(data + 0x24);
+    *(Vector4 *)(attach + 0x40) = *(Vector4 *)(data + 0x10);
+    *(u8 **)(attach + 0xB4) = *(u8 **)(data + 0x0);
+    *(u8 *)(attach + 0x124) = 1;
+    *(u8 *)(attach + 0xF4) = 1;
+    *(u8 *)(attach + 0x15C) = 1;
+    rnd = *(u8 **)(*(u8 **)(attach + 0xB4) + 0x2C);
+    if (rnd != NULL) {
+        *(f32 *)(attach + 0xC0) = RandomAdd(*(f32 *)(rnd + 0x10), *(f32 *)(rnd + 0x14));
+    }
+    info = *(u8 **)(attach + 0xB4);
+    if (*(u32 *)(info + 0x1C) <= 1 && *(u32 *)(info + 0x14) <= 1 && *(u32 *)(info + 0xC) <= 1) {
+        *(u32 *)(attach + 0x74) |= 0x4000;
+    }
+    info = *(u8 **)(attach + 0xB4);
+    if (info[2] == 1) {
+        *(f32 *)(attach + 0xB0) = cos(0.017453292f * *(f32 *)(*(u8 **)(info + 0x28) + 0x10));
+    }
+    ExtractColorKey(*(u8 **)(attach + 0xB4) + 0x1C, attach + 0x130, 0.0f);
+    ExtractScaleKey(*(u8 **)(attach + 0xB4) + 0x14, attach + 0xD0, 0.0f);
+    ExtractScaleKey(*(u8 **)(attach + 0xB4) + 0xC, attach + 0x100, 0.0f);
+    *(u32 *)(attach + 0x74) |= 0x400000;
+    *(u32 *)(attach + 0x74) |= 2;
+    *(u32 *)(attach + 0xB8) = 100;
+    *(f32 *)(attach + 0xBC) = 1.0f;
+    *(f32 *)(attach + 0x0) = 0.0f;
+    *(f32 *)(attach + 0x4) = 0.0f;
+    *(f32 *)(attach + 0x8) = 1.0f;
+    if (*(u32 *)(data + 0x20) != 0) {
+        *(u8 **)(attach + 0x8C) = g_attachGeometryVTable;
+    } else {
+        *(u8 **)(attach + 0x8C) = g_attachVTable;
+    }
+    return 1;
+}
+
 #pragma pop
 
 #pragma pop
@@ -17659,6 +17707,69 @@ void SPEC2_MakeStatus_80076F6C(s32 chan, void *arg1, u32 *data) {
     ClampU8(&status->triggerRight, origin->triggerRight);
 }
 
+void *PADSetSamplingCallback(void *callback);
+#pragma push
+#pragma peephole off
+BOOL OnReset_80077364(BOOL final) {
+    void SIDisablePolling(u32 poll);
+    s32 SIGetTypeAsync(s32 chan, void (*callback)(s32, u32));
+    void PADTypeAndStatusCallback(s32 chan, u32 type);
+    void *memset(void *dst, int c, u32 n);
+    BOOL SIBusy(void);
+    extern void *SamplingCallback_803C73D4;
+    extern u32 CheckingBits_803C73CC;
+    extern u32 EnabledBits_803C73BC;
+    extern u8 Origin_802EFC00[4][12];
+    extern u32 PendingBits_803C73D0;
+    extern u32 RecalibrateBits_803C73C4;
+    extern u32 ResettingBits_803C73C0;
+    extern s32 ResettingChan_803C6DC8;
+    extern u32 WaitingBits_803C73C8;
+    static BOOL recalibrated = FALSE;
+    BOOL sync;
+    BOOL enabled;
+    u32 mask;
+    u32 disableBits;
+
+    if (SamplingCallback_803C73D4) {
+        PADSetSamplingCallback(NULL);
+    }
+    if (!final) {
+        sync = FALSE;
+        if (ResettingBits_803C73C0 == 0 && ResettingChan_803C6DC8 == 32 && !SIBusy()) {
+            sync = TRUE;
+        }
+        if (!recalibrated && sync) {
+            mask = 0xF0000000;
+            enabled = OSDisableInterrupts();
+            mask |= PendingBits_803C73D0;
+            PendingBits_803C73D0 = 0;
+            mask &= ~(WaitingBits_803C73C8 | CheckingBits_803C73CC);
+            ResettingBits_803C73C0 |= mask;
+            disableBits = ResettingBits_803C73C0 & EnabledBits_803C73BC;
+            EnabledBits_803C73BC &= ~mask;
+            if (!(*(u8 *)0x800030E3 & 0x40)) {
+                RecalibrateBits_803C73C4 |= mask;
+            }
+            SIDisablePolling(disableBits);
+            if (ResettingChan_803C6DC8 == 32) {
+                ResettingChan_803C6DC8 = __cntlzw(ResettingBits_803C73C0);
+                if (ResettingChan_803C6DC8 != 32) {
+                    ResettingBits_803C73C0 &= ~(0x80000000 >> ResettingChan_803C6DC8);
+                    memset(Origin_802EFC00[ResettingChan_803C6DC8], 0, 12);
+                    SIGetTypeAsync(ResettingChan_803C6DC8, PADTypeAndStatusCallback);
+                }
+            }
+            OSRestoreInterrupts(enabled);
+            recalibrated = TRUE;
+            return FALSE;
+        }
+        return sync;
+    }
+    recalibrated = FALSE;
+    return TRUE;
+}
+#pragma pop
 static void SamplingHandler(s16 interrupt, void *context) {
     M2C_UNK OSClearContext(void *);
     M2C_UNK OSSetCurrentContext(void *);
@@ -22111,6 +22222,46 @@ void __GetImageTileCount(s32 fmt, u16 wd, u16 ht, u32 *rowTiles, u32 *colTiles, 
     *colTiles = (ht + (1 << texColShift) - 1) >> texColShift;
     *cmpTiles = (fmt == 0x6 || fmt == 0x16) ? 2 : 1;
 }
+
+void GXInitTexObjLOD(void *obj, s32 min_filt, s32 mag_filt, f32 min_lod, f32 max_lod, f32 lod_bias, u8 bias_clamp, u8 do_edge_lod, s32 max_aniso) {
+    typedef struct {
+        u32 mode0;
+        u32 mode1;
+    } GXTexObjRegs;
+    extern u8 GX2HWFiltConv[6];
+    GXTexObjRegs *t = obj;
+    s32 lbias;
+    s32 lmin;
+
+    if (lod_bias < -4.0f) {
+        lod_bias = -4.0f;
+    } else if (lod_bias >= 4.0f) {
+        lod_bias = 3.99f;
+    }
+    lbias = 32.0f * lod_bias;
+    t->mode0 = (t->mode0 & 0xFFFE01FF) | ((lbias << 9) & 0x1FE00);
+    t->mode0 = (t->mode0 & 0xFFFFFFEF) | ((mag_filt == 1 ? 1 : 0) << 4);
+    t->mode0 = (t->mode0 & 0xFFFFFF1F) | (GX2HWFiltConv[min_filt] << 5);
+    t->mode0 = (t->mode0 & 0xFFFFFEFF) | ((do_edge_lod ? 0 : 1) << 8);
+    t->mode0 = t->mode0 & 0xFFFDFFFF;
+    t->mode0 = t->mode0 & 0xFFFBFFFF;
+    t->mode0 = (t->mode0 & 0xFFE7FFFF) | (max_aniso << 19);
+    t->mode0 = (t->mode0 & 0xFFDFFFFF) | (bias_clamp << 21);
+    if (min_lod < 0.0f) {
+        min_lod = 0.0f;
+    } else if (min_lod > 10.0f) {
+        min_lod = 10.0f;
+    }
+    lmin = 16.0f * min_lod;
+    if (max_lod < 0.0f) {
+        max_lod = 0.0f;
+    } else if (max_lod > 10.0f) {
+        max_lod = 10.0f;
+    }
+    t->mode1 = (t->mode1 & 0xFFFFFF00) | (lmin & 0xFF);
+    t->mode1 = (t->mode1 & 0xFFFF00FF) | (((s32)(16.0f * max_lod) << 8) & 0xFF00);
+}
+
 #pragma pop
 s32 GXGetTexObjData(void *arg0) {
     return (M2C_FIELD(arg0, s32 *, 0xC) << 5) & 0x03FFFFE0;
