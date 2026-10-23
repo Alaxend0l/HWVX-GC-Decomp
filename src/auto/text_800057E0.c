@@ -2693,6 +2693,38 @@ void GameSettings_DetermineIfOverwritingFile(void) {
     }
 }
 
+u8 GameSettings_FormatMemoryCard(void) {
+    u8 FileManager_FormatDevice(char *device);
+    extern s8 g_bRefreshMC_803C6F78;
+    extern s8 g_bRefreshMC_FileList_803C6F79;
+    extern s8 g_bRefreshMC_FileInfo_803C6F7A;
+    u8 result;
+
+    result = FileManager_FormatDevice(M2C_FIELD(&g_codeVariables, char **, 0x114) + 0xA);
+    g_bRefreshMC_803C6F78 = 1;
+    M2C_FIELD(&g_codeVariables, u8 *, 0x11E) = result;
+    g_bRefreshMC_FileList_803C6F79 = 1;
+    g_bRefreshMC_FileInfo_803C6F7A = 1;
+    return result;
+}
+
+s32 Geometry_Create(void) {
+    extern u8 *g_pGeometryHandler;
+    u32 i;
+
+    g_pGeometryHandler = Allocate(0x24008, 0, "");
+    if (g_pGeometryHandler == NULL) {
+        return 0;
+    }
+    M2C_FIELD(g_pGeometryHandler, u32 *, 0x24004) = 0x800;
+    M2C_FIELD(g_pGeometryHandler, u32 *, 0x24000) = 0;
+    for (i = 0; i < M2C_FIELD(g_pGeometryHandler, u32 *, 0x24004); i++) {
+        *(s32 *)(g_pGeometryHandler + i * 0x48) = 0;
+        *(s16 *)(g_pGeometryHandler + i * 0x48 + 0x44) = 0;
+    }
+    return 1;
+}
+
 void Geometry_Destroy(void) {
     M2C_UNK Geometry_Init(M2C_UNK);
     extern s32 g_pGeometryHandler;
