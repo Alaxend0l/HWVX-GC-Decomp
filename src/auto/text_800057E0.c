@@ -11170,6 +11170,33 @@ void __CARDSyncCallback(s32 chan, s32 result) {
     OSWakeupThread((u8 *)&__CARDBlock[chan] + 0x8C);
 }
 
+void __CARDExtHandler(s32 chan, void *context) {
+    void *EXISetExiCallback(s32 chan, void *exiCallback);
+    s32 OSCancelAlarm(void *alarm);
+    CARDControl *card;
+    CARDCallback callback;
+
+    card = &__CARDBlock[chan];
+    if (card->attached) {
+        card->attached = 0;
+        EXISetExiCallback(chan, 0);
+        OSCancelAlarm(card->alarm);
+        callback = card->exiCallback;
+        if (callback) {
+            card->exiCallback = 0;
+            callback(chan, -3);
+        }
+        if (card->result != -1) {
+            card->result = -3;
+        }
+        callback = card->extCallback;
+        if (callback && 7 <= card->mountStep) {
+            card->extCallback = 0;
+            callback(chan, -3);
+        }
+    }
+}
+
 s32 EXILock(s32 chan, u32 dev, void *unlockedCallback);
 s32 EXIUnlock(s32 chan);
 s32 OSCancelAlarm(void *alarm);
@@ -13892,6 +13919,8 @@ void TRKResetBuffer(TRKBuffer *b, u8 keepData) {
 #pragma pop
 
 void *TRK_memset(void *dst, s32 val, u32 n);
+#pragma push
+#pragma auto_inline off
 void TRKReleaseBuffer(s32 idx) {
     extern TRKBuffer gTRKMsgBufs[3];
     TRKBuffer *b;
@@ -13906,6 +13935,7 @@ void TRKReleaseBuffer(s32 idx) {
         TRKReleaseMutex(b);
     }
 }
+#pragma pop
 
 TRKBuffer *TRKGetBuffer(s32 idx) {
     extern TRKBuffer gTRKMsgBufs[3];
@@ -14179,6 +14209,37 @@ s32 TRKInitializeMutex(void *mutex) {
     return 0;
 }
 
+#pragma push
+#pragma dont_inline on
+s32 TRKDoNotifyStopped(u8 cmd) {
+    s32 TRKGetFreeBuffer(s32 *msgID, TRKBuffer **outMsg);
+    s32 TRKRequestSend(TRKBuffer *msgBuf, s32 *bufferId, u32 p1, u32 p2, s32 p3);
+    void TRKTargetAddStopInfo(TRKBuffer *b);
+    void TRKTargetAddExceptionInfo(TRKBuffer *b);
+    s32 err;
+    s32 reply;
+    s32 bufIdx;
+    TRKBuffer *buffer;
+
+    err = TRKGetFreeBuffer(&bufIdx, &buffer);
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(buffer, cmd);
+        if (err == 0) {
+            if (cmd == 0x90) {
+                TRKTargetAddStopInfo(buffer);
+            } else {
+                TRKTargetAddExceptionInfo(buffer);
+            }
+        }
+        err = TRKRequestSend(buffer, &reply, 2, 3, 1);
+        if (err == 0) {
+            TRKReleaseBuffer(reply);
+        }
+        TRKReleaseBuffer(bufIdx);
+    }
+    return err;
+}
+#pragma pop
 void TRK_fill_mem_80093658(void *dst, int val, u32 n) {
     u32 i;
     u32 v = (u8)val;
