@@ -13149,6 +13149,33 @@ void AlarmHandler(void *alarm, void *context) {
     }
 }
 
+s32 SIGetTypeAsync(s32 chan, void (*callback)(s32, u32)) {
+    extern u32 Type_800D9E84[4];
+    extern void (*TypeCallback_80309840[4][4])(s32, u32);
+    u32 SIGetType(s32 chan);
+    BOOL enabled;
+    u32 type;
+
+    enabled = OSDisableInterrupts();
+    type = SIGetType(chan);
+    if (Type_800D9E84[chan] & 0x80) {
+        int i;
+        for (i = 0; i < 4; ++i) {
+            if (TypeCallback_80309840[chan][i] == callback) {
+                break;
+            }
+            if (TypeCallback_80309840[chan][i] == 0) {
+                TypeCallback_80309840[chan][i] = callback;
+                break;
+            }
+        }
+    } else {
+        callback(chan, type);
+    }
+    OSRestoreInterrupts(enabled);
+    return type;
+}
+
 typedef struct DVDCommandBlock {
     struct DVDCommandBlock *next;
     struct DVDCommandBlock *prev;
@@ -20926,6 +20953,57 @@ s32 TRKTargetVersions(void *arg0) {
     M2C_FIELD(arg0, s8 *, 2) = 1;
     M2C_FIELD(arg0, s8 *, 3) = 0xA;
     return 0;
+}
+
+u32 __TRK_get_MSR(void);
+void __TRK_set_MSR(u32 val);
+s32 TRKPPCAccessFPRegister(void *srcDestPtr, u32 fpr, s32 read);
+
+#pragma push
+#pragma dont_inline on
+s32 TRKTargetAccessFP(u32 firstRegister, u32 lastRegister, TRKBuffer *b, u32 *registersLengthPtr, s32 read) {
+    extern u32 gTRKExceptionStatus_800DA0A4[];
+    typedef struct {
+        u32 PC;
+        u32 PCInstruction;
+        u16 exceptionID;
+        u8 pad[2];
+        u8 inTRK;
+        u8 exceptionDetected;
+    } TRKExceptionStatus;
+    u64 temp;
+    TRKExceptionStatus savedException;
+    s32 error;
+    u32 current;
+
+    if (lastRegister > 0x21) {
+        return 0x701;
+    }
+
+    savedException = *(TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4;
+    ((TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4)->exceptionDetected = 0;
+
+    __TRK_set_MSR(__TRK_get_MSR() | 0x2000);
+
+    *registersLengthPtr = 0;
+    error = 0;
+
+    for (current = firstRegister; current <= lastRegister && error == 0; current++, *registersLengthPtr += sizeof(u64)) {
+        if (read) {
+            TRKPPCAccessFPRegister(&temp, current, read);
+            error = TRKAppendBuffer1_ui64(b, temp);
+        } else {
+            TRKReadBuffer1_ui64(b, &temp);
+            error = TRKPPCAccessFPRegister(&temp, current, read);
+        }
+    }
+
+    if (((TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4)->exceptionDetected) {
+        *registersLengthPtr = 0;
+        error = 0x702;
+    }
+    *(TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4 = savedException;
+    return error;
 }
 
 #pragma push
