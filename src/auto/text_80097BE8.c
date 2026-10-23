@@ -10102,12 +10102,12 @@ void ChannelOff(void *arg0) {
 #pragma push
 #pragma optimization_level 1
 void DestroyMIDIVoice(u8 *voice) {
-    extern u8 g_chn_803769B4[0x10][0x20];
+    extern u8 g_chn_803769B4[0x200];
     u8 *v;
 
-    v = *(u8 **)g_chn_803769B4[voice[1]];
+    v = *(u8 **)&g_chn_803769B4[voice[1] * 0x20];
     if (v == voice) {
-        *(u8 **)g_chn_803769B4[voice[1]] = *(u8 **)(voice + 4);
+        *(u8 **)&g_chn_803769B4[voice[1] * 0x20] = *(u8 **)(voice + 4);
     } else {
         for (; *(u8 **)(v + 4) != voice; v = *(u8 **)(v + 4)) {
         }
@@ -10134,6 +10134,41 @@ u8 *DestroyVoice(u8 *voice) {
     SetVoiceState_(voice, 3);
     return next;
 }
+
+void JumpToMarker(void) {
+    extern u8 g_song_80376990[0x24];
+    extern u32 g_trkOn;
+    extern u32 g_trkOff;
+    u32 ReadVar_(u8 **pp);
+    u8 *song = g_song_80376990;
+    u32 mask;
+    u8 *chn;
+    u32 i;
+
+    for (chn = song + 0x24, mask = g_trkOn; mask != 0; chn += 0x20) {
+        chn[4] |= mask & 1;
+        mask >>= 1;
+    }
+    for (chn = song + 0x24; g_trkOff != 0; chn += 0x20) {
+        chn[4] &= ~(g_trkOff & 1);
+    }
+    g_trkOn = 0;
+    g_trkOff = 0;
+    *(u32 *)(song + 0x14) = *(u32 *)(song + 0x624 + song[0x1E] * 8);
+    *(u32 *)(song + 0x0) = 0;
+    *(u32 *)(song + 0x8) = 0;
+    *(u32 *)(song + 0x18) = ReadVar_((u8 **)(song + 0x14));
+    song[0x1D] = (song + 0x624 + song[0x1E] * 8)[5];
+    song[0x1C] = (song + 0x624 + song[0x1E] * 8)[4];
+    for (chn = song + 0x24, i = 0x10; i != 0; chn += 0x20, i--) {
+        ChannelOff(chn);
+        chn[0x1F] = 0;
+        chn[0x1D] = 0x40;
+        *(u32 *)(chn + 0x18) = 0x10000;
+    }
+    song[0x1E] = 0;
+}
+
 #pragma pop
 s32 AudioMusic_Create(void) {
     extern s32 g_musicState;
