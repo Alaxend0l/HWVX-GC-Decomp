@@ -6039,6 +6039,36 @@ void SetSFXVol(s32 vol) {
     }
 }
 
+u32 GetVoice(u32 handle, u8 priority) {
+    u8 *GetVoice_(s32 type, s32 priority);
+    u8 *voice;
+    SFX *sfx;
+
+    handle--;
+    if (handle < 0xFE && g_sound_80373560[handle].data != 0) {
+        sfx = &g_sound_80373560[handle];
+        voice = GetVoice_(1, priority * 2);
+        if (voice != NULL) {
+            *(SFX **)(voice + 0x10) = sfx;
+            *(u32 *)(voice + 0x20) = *(u32 *)((u8 *)sfx + 0x0);
+            *(u32 *)(voice + 0x28) = *(u32 *)((u8 *)sfx + 0x4);
+            *(u32 *)(voice + 0x24) = *(u32 *)((u8 *)sfx + 0x8);
+            *(u32 *)(voice + 0x30) = *(u32 *)((u8 *)sfx + 0xC);
+            *(u32 *)(voice + 0x34) = 0x10000;
+            voice[0x2C] = *((u8 *)sfx + 0x11);
+            *(s32 *)(voice + 0x38) = 0x7FFF;
+            *(u32 *)(voice + 0x3C) = *(u16 *)((u8 *)sfx + 0x12);
+            *(s32 *)(voice + 0x48) = 0x7FFF;
+            *(s32 *)(voice + 0x40) = 0;
+            *(s32 *)(voice + 0x44) = -0x7FFF;
+            voice[1] = handle;
+            voice[2]++;
+            return *(u32 *)voice;
+        }
+    }
+    return 0;
+}
+
 #pragma push
 #pragma optimization_level 1
 void ReleaseVoice(u32 id) {
