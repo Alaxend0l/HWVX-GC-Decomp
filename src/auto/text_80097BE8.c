@@ -6074,23 +6074,26 @@ s32 Effect_PerformEnvelope(Effect *effect, EffectEnvelope *env, s32 magnitude) {
     u32 fadeStart;
     s32 t;
     s32 half;
+    s32 delta;
 
     if (elapsed < env->attackTime) {
+        delta = start - env->attackLevel;
         half = env->attackTime / 2;
         if ((s32)elapsed < 0) {
             half = -half;
         }
-        level = env->attackLevel + (s32)(elapsed * (start - env->attackLevel) + half) / env->attackTime;
+        level = env->attackLevel + (s32)(half + elapsed * delta) / env->attackTime;
     } else if (effect->duration != 0xFFFFFFFF) {
         fadeStart = effect->duration - env->fadeTime;
         if (elapsed > fadeStart) {
             if (elapsed < effect->duration) {
                 t = elapsed - fadeStart;
+                delta = env->fadeLevel - start;
                 half = env->fadeTime / 2;
                 if (t < 0) {
                     half = -half;
                 }
-                level = start + (t * (env->fadeLevel - start) + half) / env->fadeTime;
+                level = start + (half + t * delta) / env->fadeTime;
             } else {
                 level = env->fadeLevel;
             }
@@ -6408,6 +6411,31 @@ s32 GBAWriteAsync(s32 chan, u8 *src, u8 *status, GBACallback callback) {
     gba->callback = callback;
     return __GBATransfer(chan, 5, 1, WriteProc);
 }
+
+#pragma push
+#pragma peephole off
+#pragma scheduling off
+s32 GBAWrite(s32 chan, u8 *src, u8 *status) {
+    GBAControl *gba = &__GBA[chan];
+    s32 ret;
+
+    if (gba->callback != NULL) {
+        ret = 2;
+    } else {
+        gba->output[0] = 0x15;
+        memcpy(&gba->output[1], src, 4);
+        gba->ptr = src;
+        gba->status = status;
+        gba->callback = __GBASyncCallback;
+        ret = __GBATransfer(chan, 5, 1, WriteProc);
+    }
+    if (ret != 0) {
+        return ret;
+    }
+    return __GBASync(chan);
+}
+#pragma pop
+
 #pragma pop
 
 void __GBASyncCallback(s32 chan) {
