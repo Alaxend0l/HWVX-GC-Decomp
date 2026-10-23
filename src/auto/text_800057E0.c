@@ -9115,8 +9115,16 @@ void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id) {
 
 static inline f32 OBox_CollideThingZeroTime(void *obox, void *thing, u8 *other, void *info) {
     s8 OBoxHitsOBoxZeroTime(void *a, void *b, void *info);
+    f32 PSVECSquareDistance(f32 *a, f32 *b);
     void *otherBox;
+    f32 dist;
+    f32 r;
 
+    dist = PSVECSquareDistance((f32 *)((u8 *)thing + 0x40), (f32 *)(other + 0x40));
+    r = *(f32 *)(other + 0x70) + *(f32 *)((u8 *)thing + 0x70);
+    if (r * r <= dist) {
+        return 1.0f;
+    }
     if (*(s16 *)(other + 0x80) == 1) {
         otherBox = (*(void *(**)(void *))(*(u8 **)(other + 0x8C) + 0x40))(other);
         if (OBoxHitsOBoxZeroTime(obox, otherBox, info)) {
