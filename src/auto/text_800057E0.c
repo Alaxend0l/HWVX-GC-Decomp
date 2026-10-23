@@ -42,6 +42,9 @@ void MotionState_Draw(void *state);
 f32 MagnitudeVector(void *v);
 void *Allocate(u32, u32, const char *);
 s32 ViewManager_GetViewFormat(void);
+s32 Thing_Init(void *thing, s32 arg1);
+void MatrixCache_Free(u32 key);
+void MotionState_Release(s32 state);
 void GXSetTevIndirect(s32 tev_stage, s32 ind_stage, s32 format, s32 bias_sel, s32 matrix_sel, s32 wrap_s, s32 wrap_t, u8 add_prev, u8 utc_lod, s32 alpha_sel);
 
 s32 AIGetStreamPlayState(void);
