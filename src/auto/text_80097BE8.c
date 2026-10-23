@@ -3540,13 +3540,14 @@ void Render_DrawLine2D(void *line) {
     } Line2D;
     void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
     void Set2DLineVtxDesc(void);
+    Line2D *l = line;
 
     Set2DLineVtxDesc();
     GXBegin(0xA8, 0, 2);
-    GXPosition2f32(((Line2D *)line)->p0.x, ((Line2D *)line)->p0.y);
-    GXColor3u8(((Line2D *)line)->r, ((Line2D *)line)->g, ((Line2D *)line)->b);
-    GXPosition2f32(((Line2D *)line)->p1.x, ((Line2D *)line)->p1.y);
-    GXColor3u8(((Line2D *)line)->r, ((Line2D *)line)->g, ((Line2D *)line)->b);
+    GXPosition2f32(l->p0.x, l->p0.y);
+    GXColor3u8(l->r, l->g, l->b);
+    GXPosition2f32(l->p1.x, l->p1.y);
+    GXColor3u8(l->r, l->g, l->b);
 }
 
 void Set2DLineVtxDesc(void) {
