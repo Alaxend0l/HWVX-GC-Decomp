@@ -10077,6 +10077,55 @@ void Thing_RotationalGridMove(void *thing) {
     }
 }
 
+void Thing_ProcessEndEvent(u8 *thing, u8 *event, u8 *collision, Vector4 *vel) {
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    extern Vector4 g_zeroVector;
+    struct {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 origin;
+        Vector4 vel;
+        void *data;
+        s32 owner;
+        f32 a;
+        f32 b;
+    } params;
+    void *data;
+    u8 *other;
+
+    data = NULL;
+    if (event != NULL && *(u32 *)(event + 0x34) != 0) {
+        data = (*(void ***)(event + 0x38))[RandomAdd_s32(0, *(u32 *)(event + 0x34))];
+    }
+    if (data != NULL) {
+        params.data = data;
+        params.pos = *(Vector4 *)(thing + 0x40);
+        params.quat = *(Vector4 *)(thing + 0x50);
+        params.origin = *(Vector4 *)(thing + 0x0);
+        params.owner = *(s32 *)(thing + 0x94);
+        params.a = 0.0f;
+        params.b = 0.0f;
+        if (vel != NULL) {
+            params.vel = *vel;
+        } else {
+            params.vel = g_zeroVector;
+        }
+        if (collision != NULL) {
+            other = *(u8 **)(collision + 0x20);
+            if (other != NULL && other != thing) {
+                params.owner = *(s32 *)(other + 0x94);
+            } else {
+                other = *(u8 **)(collision + 0x24);
+                if (other != NULL && other != thing) {
+                    params.owner = *(s32 *)(other + 0x94);
+                }
+            }
+        }
+        ThingManager_DARYL_CreateThing(1, &params);
+    }
+}
+
 void Thing_CollideWithRay(void) {
 
 }
