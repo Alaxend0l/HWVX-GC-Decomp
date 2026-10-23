@@ -6846,6 +6846,36 @@ void Trigger_GameRoundsComplete(void) {
         }
     }
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void Trigger_GameRoundXComplete(void) {
+    extern u32 TriggerStats_800D3C58[][3];
+    extern u32 **m_Triggers_802C1890[];
+    extern s8 g_bTACSystemPaused_803C7124;
+    s8 TriggerCheckConditions(u8, s32, s32);
+    s32 Action_AddAction(s32);
+    u32 i;
+    u32 j;
+    u32 actions;
+
+    if (!g_bTACSystemPaused_803C7124) {
+        for (i = 0; i < TriggerStats_800D3C58[23][0]; i++) {
+            u32 *trigger = m_Triggers_802C1890[23][i];
+            if (trigger[9] != 2 && TriggerCheckConditions(((u8 *)trigger)[0x28], trigger[4], trigger[3])) {
+                actions = 0;
+                for (j = 0; j < m_Triggers_802C1890[23][i][7]; j++) {
+                    actions += Action_AddAction(m_Triggers_802C1890[23][i][5] + j * 0x18);
+                }
+                if (actions == 0) {
+                    m_Triggers_802C1890[23][i][9] = 2;
+                }
+            }
+        }
+    }
+}
+#pragma pop
+
 #pragma pop
 
 s32 ActionVertexColorSeqChangeMode(s32 *data) {
