@@ -10127,6 +10127,8 @@ void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id) {
     return NULL;
 }
 
+#pragma push
+#pragma opt_loop_invariants off
 s32 OBox_CollideAllThingsZeroTime(void *obox, void *thing, void *info) {
     u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults);
     s8 OBoxHitsOBoxZeroTime(void *a, void *b, void *info);
@@ -10171,6 +10173,7 @@ s32 OBox_CollideAllThingsZeroTime(void *obox, void *thing, void *info) {
     }
     return 0;
 }
+#pragma pop
 
 s8 RayHitsTerrainAndObjects(void *arg0, void *arg1, void *arg2, void *arg3) {
     s8 RayHitsTerrain_Aux3(void *, void *, void *, void *);
@@ -10204,8 +10207,6 @@ s8 OBoxHitsTerrainAndObjectsZeroTime(void *obox, void *thing, void *info) {
     u32 i;
     u8 *other;
     f32 t;
-    f32 dist;
-    f32 r;
     s32 hit;
 
     time = 1.0f;
@@ -10221,17 +10222,15 @@ s8 OBoxHitsTerrainAndObjectsZeroTime(void *obox, void *thing, void *info) {
         count = Grid_GetObjects(&min, &max, 5, results, 0x60);
         for (i = 0; i < count; i++) {
             other = (u8 *)results[i].id;
-            if (!(*(u32 *)(other + 0x74) & 2) && *(s16 *)(other + 0x80) != 0 && other != thing) {
-                dist = PSVECSquareDistance((u8 *)thing + 0x40, other + 0x40);
-                r = *(f32 *)(other + 0x70) + *(f32 *)((u8 *)thing + 0x70);
-                if (r * r > dist) {
-                    if (*(s16 *)(other + 0x80) == 1) {
-                        t = OBoxHitsOBox(obox, &g_zeroVector, (*(void *(**)(void *))(*(u8 **)(other + 0x8C) + 0x40))(other), &g_zeroVector, 0, 1.0f);
-                    }
-                    if (t < 1.0f) {
-                        hit = 1;
-                        goto done;
-                    }
+            if (!(*(u32 *)(other + 0x74) & 2) && *(s16 *)(other + 0x80) != 0 && other != thing &&
+                (*(f32 *)(other + 0x70) + *(f32 *)((u8 *)thing + 0x70)) * (*(f32 *)(other + 0x70) + *(f32 *)((u8 *)thing + 0x70)) >
+                    PSVECSquareDistance((u8 *)thing + 0x40, other + 0x40)) {
+                if (*(s16 *)(other + 0x80) == 1) {
+                    t = OBoxHitsOBox(obox, &g_zeroVector, (*(void *(**)(void *))(*(u8 **)(other + 0x8C) + 0x40))(other), &g_zeroVector, 0, 1.0f);
+                }
+                if (t < 1.0f) {
+                    hit = 1;
+                    goto done;
                 }
             }
         }
