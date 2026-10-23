@@ -5781,6 +5781,65 @@ void Render_DrawPointSprites(void) {
     Render_StateAlphaBlendEnable(0);
 }
 
+#pragma push
+#pragma auto_inline off
+void Render_DrawRectangle(void *rect) {
+    typedef struct RectVertex {
+        f32 x;
+        f32 y;
+        f32 z;
+        f32 w;
+        f32 u;
+        f32 v;
+        u8 r;
+        u8 g;
+        u8 b;
+        u8 a;
+        u8 pad[4];
+    } RectVertex;
+    typedef struct Rectangle {
+        RectVertex v[4];
+        u16 texture;
+        u8 blendMode;
+    } Rectangle;
+    extern s32 m_cullMode;
+    extern s32 g_debugTriCount;
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    void Render_LoadCamera(void);
+    Rectangle *r = rect;
+    s32 cullMode;
+    u32 i;
+
+    cullMode = m_cullMode;
+    g_debugTriCount += 2;
+    Render_StateCullMode(0);
+    Render_StateAlphaBlendEnable(r->blendMode > 1);
+    Render_SaveCamera();
+    Gfx_SetOrthoMatrix();
+    Render_StateZWriteEnable(0);
+    Render_StateBlendMode(r->blendMode);
+    Render_SetTextureHandle(r->texture);
+    Set2DRectVtxDesc();
+    GXBegin(0x80, 0, 4);
+    for (i = 0; i < 4; i++) {
+        GXWGFifo.f32 = r->v[i].x;
+        GXWGFifo.f32 = r->v[i].y;
+        GXWGFifo.u8 = r->v[i].r;
+        GXWGFifo.u8 = r->v[i].g;
+        GXWGFifo.u8 = r->v[i].b;
+        GXWGFifo.u8 = r->v[i].a;
+        GXWGFifo.f32 = r->v[i].u;
+        GXWGFifo.f32 = r->v[i].v;
+    }
+    if (r->blendMode != 0) {
+        Render_StateAlphaBlendEnable(0);
+    }
+    Render_StateZWriteEnable(1);
+    Render_StateCullMode(cullMode);
+    Render_LoadCamera();
+}
+#pragma pop
+
 void Gfx_SetTextColor(s8 arg0, s8 arg1, s8 arg2, s8 arg3) {
     extern M2C_UNK g_textcolor;
     M2C_FIELD(&g_textcolor, s8 *, 0) = arg0;
