@@ -2929,6 +2929,64 @@ void Gfx_TextureHandler_Destroy(void) {
     m_texture = NULL;
 }
 
+#pragma push
+#pragma readonly_strings on
+#pragma dont_inline on
+u16 Gfx_LoadTexture(char *name) {
+    extern u8 *m_texture;
+    extern u32 m_totalTextures;
+    extern s32 m_currentView;
+    s32 LoadBTF(char *name, u16 id);
+    s32 LoadTGA(char *name, u16 id);
+    s32 stricmp(const char *s1, const char *s2);
+    char buf[256];
+    char *ext;
+    u16 i;
+
+    if (strcmp(name, "_NONE_") == 0) {
+        return 0xFFFF;
+    }
+    strcpy(buf, name);
+    if ((ext = strstr(buf, ".tga")) != NULL) {
+        *ext = 0;
+    } else if ((ext = strstr(buf, ".TGA")) != NULL) {
+        *ext = 0;
+    } else if ((ext = strstr(buf, ".btf")) != NULL) {
+        *ext = 0;
+    }
+    if (strlen(buf) > 34) {
+        buf[34] = 0;
+    }
+
+    for (i = 1; i < m_totalTextures; i++) {
+        if (stricmp(buf, (char *)((Texture *)m_texture)[i].unk0) == 0 && m_currentView == ((Texture *)m_texture)[i].view) {
+            ((Texture *)m_texture)[i].refCount++;
+            return i;
+        }
+    }
+
+    for (i = 1; i < m_totalTextures; i++) {
+        if (((Texture *)m_texture)[i].data == NULL) {
+            break;
+        }
+    }
+    if (i >= m_totalTextures) {
+        i = m_totalTextures - 1;
+    }
+
+    ((Texture *)m_texture)[i].wrapMode = 0;
+    if (LoadBTF(buf, i) == 0 && LoadTGA(buf, i) == 0) {
+        return 0xFFFF;
+    }
+    strncpy((char *)((Texture *)m_texture)[i].unk0, buf, 0x24);
+    ((Texture *)m_texture)[i].refCount++;
+    ((Texture *)m_texture)[i].view = (s8)m_currentView;
+    ((Texture *)m_texture)[i].unk2C = 0.25f;
+    ((Texture *)m_texture)[i].unk3A = 0;
+    return i;
+}
+#pragma pop
+
 u8 *LoadBTF_RAM(u8 *data, u32 id) {
     extern u8 *m_texture;
     void Render_CreateTextureSlot(u32 id, s32 arg1, void *texture);
