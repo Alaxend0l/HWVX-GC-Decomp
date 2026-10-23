@@ -4083,6 +4083,22 @@ void PlayerManager_Destroy(void) {
 
 }
 
+#pragma push
+#pragma dont_inline on
+s32 PlayerManager_PlayerHumanCount(void) {
+    extern u8 g_playerManager[0x20E0];
+    u8 count = 0;
+    void *player;
+
+    for (player = M2C_FIELD(g_playerManager, void **, 0x20D8); player != NULL; player = M2C_FIELD(player, void **, 0xB0)) {
+        if (Player_IsHuman(player)) {
+            count++;
+        }
+    }
+    return count;
+}
+#pragma pop
+
 u8 PlayerManager_PlayerCount(void) {
     extern u8 g_playerManager[0x20E0];
     u8 count = 0;
@@ -4107,6 +4123,25 @@ void *PlayerManager_GetPlayerByIndex(u8 index) {
     }
     return NULL;
 }
+
+#pragma push
+#pragma dont_inline on
+void *PlayerManager_GetHumanPlayerByIndex(u8 index) {
+    extern u8 *g_pPlayerManager;
+    void *player;
+    u8 i = 0;
+
+    for (player = M2C_FIELD(g_pPlayerManager, void **, 0x20D8); player != NULL; player = M2C_FIELD(player, void **, 0xB0)) {
+        if (Player_IsHuman(player)) {
+            if (i == index) {
+                return player;
+            }
+            i++;
+        }
+    }
+    return NULL;
+}
+#pragma pop
 
 void PlayerManager_Render_DEBUG(void) {
 
