@@ -4492,9 +4492,9 @@ void Thing_SetSlavePlayers(void *thing) {
     }
 }
 
-void Thing_InitAllSlavesNow(s32 arg0) {
-    M2C_UNK ThingManagerList_InitAllSlavesNow(s32);
-    ThingManagerList_InitAllSlavesNow(arg0 + 0x88);
+void Thing_InitAllSlavesNow(void *thing, void *slaves, u8 player) {
+    void ThingManagerList_InitAllSlavesNow(void *list, void *slaves, u8 player);
+    ThingManagerList_InitAllSlavesNow((u8 *)thing + 0x88, slaves, player);
 }
 
 void Thing_SlaveTransform(Thing *thing, void *mtx) {
@@ -7711,6 +7711,26 @@ u8 *getTiming_800742A0(u32 mode) {
     }
 }
 
+static u32 getCurrentFieldEvenOdd(void) {
+    typedef struct VITiming {
+        u8 unk0[0x18];
+        u16 nhlines;
+        u16 hlw;
+    } VITiming;
+    extern VITiming *CurrTiming_803C73A8;
+    u32 hcount;
+    u32 vcount0;
+    u32 vcount;
+
+    vcount = ((volatile u16 *)0xCC002000)[22] & 0x7FF;
+    do {
+        vcount0 = vcount;
+        hcount = ((volatile u16 *)0xCC002000)[23] & 0x7FF;
+        vcount = ((volatile u16 *)0xCC002000)[22] & 0x7FF;
+    } while (vcount0 != vcount);
+    return ((((vcount - 1) << 1) + ((hcount - 1) / CurrTiming_803C73A8->hlw)) < CurrTiming_803C73A8->nhlines) ? 1 : 0;
+}
+
 static void SamplingHandler(s16 interrupt, void *context) {
     M2C_UNK OSClearContext(void *);
     M2C_UNK OSSetCurrentContext(void *);
@@ -8633,6 +8653,44 @@ error:
         card->eraseCallback = NULL;
         callback(chan, result);
     }
+}
+
+s32 __CARDFreeBlock(s32 chan, u16 nBlock, CARDCallback callback) {
+    s32 __CARDUpdateFatBlock(s32 chan, u16 *fat, CARDCallback callback);
+    CARDControl *card;
+    u16 *fat;
+    u16 nextBlock;
+
+    card = &__CARDBlock[chan];
+    if (!card->attached) {
+        return -3;
+    }
+    fat = *(u16 **)((u8 *)card + 0x88);
+    while (nBlock != 0xFFFF) {
+        if (nBlock < 5 || *(u16 *)((u8 *)card + 0x10) <= nBlock) {
+            return -6;
+        }
+        nextBlock = fat[nBlock];
+        fat[nBlock] = 0;
+        nBlock = nextBlock;
+        ++fat[3];
+    }
+    return __CARDUpdateFatBlock(chan, fat, callback);
+}
+
+s32 __CARDUpdateFatBlock(s32 chan, u16 *fat, void *callback) {
+    void __CARDCheckSum(void *ptr, s32 length, u16 *checksum, u16 *checksumInv);
+    void DCStoreRange(void *addr, u32 nBytes);
+    s32 __CARDEraseSector(s32 chan, u32 addr, void *callback);
+    void EraseCallback(s32 chan, s32 result);
+    CARDControl *card;
+
+    ++fat[2];
+    card = &__CARDBlock[chan];
+    __CARDCheckSum(fat + 2, 0x1FFC, fat, fat + 1);
+    DCStoreRange(fat, 0x2000);
+    *(void **)((u8 *)card + 0xD8) = callback;
+    return __CARDEraseSector(chan, *(s32 *)((u8 *)card + 0xC) * ((u32)((u8 *)fat - *(u8 **)((u8 *)card + 0x80)) / 0x2000), EraseCallback);
 }
 
 void *__GXDefaultTexRegionCallback(void *obj, s32 mapID) {
