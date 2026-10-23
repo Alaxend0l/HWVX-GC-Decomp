@@ -4396,15 +4396,7 @@ typedef struct AnimBone {
 
 #pragma push
 #pragma use_lmw_stmw on
-void AnimTraverseHeirarchyToMatrices(void *bones, u32 count, f32 *matrices) {
-    typedef struct {
-        Vector rot;
-        f32 pos[3];
-        u8 numChildren;
-        u8 pop;
-        u8 next;
-        u8 pad[1];
-    } Bone;
+void AnimTraverseHeirarchyToMatrices(AnimBone *bones, u32 count, f32 *matrices) {
     void QuaternionMult(Vector *a, Vector *b, Vector *out);
     void QuaternionToSubMatrix(void *quat, void *mtx);
     void XformVec(Vector *m, Vector *v, Vector *out);
@@ -4417,24 +4409,20 @@ void AnimTraverseHeirarchyToMatrices(void *bones, u32 count, f32 *matrices) {
     u32 i;
     Vector *posSp;
     Vector *rotSp;
-    Bone *bone;
-    u32 num;
+    AnimBone *bone;
     u32 n;
-    u32 j;
     Vector *p;
-    Bone *child;
+    AnimBone *child;
+    u32 j;
 
     mtx = matrices;
-    num = count;
-    bone = (Bone *)bones;
+    bone = bones;
     posSp = posStack;
     rotSp = rotStack;
-    rot.z = 0.0f;
     rot.w = 1.0f;
-    rot.y = 0.0f;
-    rot.x = 0.0f;
-    memcpy(&pos, bone->pos, 12);
-    for (i = 0; i < num; i++) {
+    rot.x = rot.y = rot.z = 0.0f;
+    memcpy(&pos, bones->pos, 12);
+    for (i = 0; i < count; i++) {
         QuaternionMult(&rot, &bone->rot, &q);
         rot = q;
         QuaternionToSubMatrix(&q, mtx);
@@ -4442,18 +4430,17 @@ void AnimTraverseHeirarchyToMatrices(void *bones, u32 count, f32 *matrices) {
         mtx[13] = pos.y;
         mtx[14] = pos.z;
         if (bone->numChildren != 0) {
-            child = bone + 1;
+            child = &bone[1];
             n = bone->numChildren - 1;
             XformVec((Vector *)mtx, (Vector *)child->pos, &pos);
             if (n != 0) {
-                child += child->next;
                 posSp += n;
                 p = posSp;
+                child = &child[child->next];
                 *rotSp++ = q;
                 for (j = 0; j < n; j++) {
-                    p--;
-                    XformVec((Vector *)mtx, (Vector *)child->pos, p);
-                    child += child->next;
+                    XformVec((Vector *)mtx, (Vector *)child->pos, --p);
+                    child = &child[child->next];
                 }
             }
         } else {
@@ -7115,6 +7102,52 @@ void THPGXRestore(void) {
     GXSetTevSwapModeTable(1, 0, 0, 0, 3);
     GXSetTevSwapModeTable(2, 1, 1, 1, 3);
     GXSetTevSwapModeTable(3, 2, 2, 2, 3);
+}
+
+#pragma push
+#pragma use_lmw_stmw on
+void THPGXYuv2RgbDraw(u32 *yImage, u32 *uImage, u32 *vImage, s16 x, s16 y, s16 textureWidth, s16 textureHeight, s16 polygonWidth, s16 polygonHeight) {
+    typedef struct {
+        u32 dummy[8];
+    } GXTexObj;
+    void GXInitTexObj(GXTexObj *obj, void *image, u16 width, u16 height, s32 format, s32 wrap_s, s32 wrap_t, u8 mipmap);
+    void GXInitTexObjLOD(GXTexObj *obj, s32 min_filt, s32 mag_filt, f32 min_lod, f32 max_lod, f32 lod_bias, u8 bias_clamp, u8 do_edge_lod, s32 max_aniso);
+    void GXLoadTexObj(GXTexObj *obj, s32 id);
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    GXTexObj tobj0;
+    GXTexObj tobj1;
+    GXTexObj tobj2;
+
+    GXInitTexObj(&tobj0, yImage, (u16)textureWidth, (u16)textureHeight, 1, 0, 0, 0);
+    GXInitTexObjLOD(&tobj0, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+    GXLoadTexObj(&tobj0, 0);
+    GXInitTexObj(&tobj1, uImage, (u16)(textureWidth >> 1), (u16)(textureHeight >> 1), 1, 0, 0, 0);
+    GXInitTexObjLOD(&tobj1, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+    GXLoadTexObj(&tobj1, 1);
+    GXInitTexObj(&tobj2, vImage, (u16)(textureWidth >> 1), (u16)(textureHeight >> 1), 1, 0, 0, 0);
+    GXInitTexObjLOD(&tobj2, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+    GXLoadTexObj(&tobj2, 2);
+    GXBegin(0x80, 7, 4);
+    GXWGFifo.s16 = x;
+    GXWGFifo.s16 = y;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.u16 = 0;
+    GXWGFifo.u16 = 0;
+    GXWGFifo.s16 = x + polygonWidth;
+    GXWGFifo.s16 = y;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.u16 = 1;
+    GXWGFifo.u16 = 0;
+    GXWGFifo.s16 = x + polygonWidth;
+    GXWGFifo.s16 = y + polygonHeight;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.u16 = 1;
+    GXWGFifo.u16 = 1;
+    GXWGFifo.s16 = x;
+    GXWGFifo.s16 = y + polygonHeight;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.u16 = 0;
+    GXWGFifo.u16 = 1;
 }
 
 void Mpeg_Create(void) {
