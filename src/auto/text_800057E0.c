@@ -4085,7 +4085,7 @@ void PlayerManager_Destroy(void) {
 
 #pragma push
 #pragma dont_inline on
-s32 PlayerManager_PlayerHumanCount(void) {
+u8 PlayerManager_PlayerHumanCount(void) {
     extern u8 g_playerManager[0x20E0];
     u8 count = 0;
     void *player;
