@@ -455,7 +455,7 @@ s32 TRKPostEvent(void *event);
 
 typedef struct TRKBuffer {
     u32 mutex;
-    u32 isInUse;
+    s32 isInUse;
     u32 length;
     u32 position;
     u8 data[0x880];
