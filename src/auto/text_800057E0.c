@@ -5781,6 +5781,49 @@ void Looker_Draw(void) {
 
 }
 
+void Looker_GetCameraOrientationInfo(u8 *looker, void *arg1, u8 *info) {
+    typedef struct LookerCamera {
+        Vector4 pos;
+        Matrix4 orient;
+        u8 unk50[0x3C];
+        struct { u8 unk0[0x1C]; void (*getOrientationInfo)(struct LookerCamera *, void *, u8 *); } *vtable;
+    } LookerCamera;
+    typedef struct {
+        Vector4 pos;
+        Matrix4 orient;
+        u8 unk50[0x6C];
+        LookerCamera *camera;
+        u8 unkC0[0xC];
+        f32 fov;
+    } Looker;
+    typedef struct {
+        u8 unk0[0x14];
+        f32 fov;
+        u8 unk18[0x8];
+        Matrix4 orient;
+        Vector4 eye;
+        Vector4 target;
+        s32 unk80;
+        s32 unk84;
+    } OrientationInfo;
+    Looker *l = (Looker *)looker;
+    OrientationInfo *o = (OrientationInfo *)info;
+    LookerCamera *cam = l->camera;
+
+    if (cam != NULL) {
+        l->orient = cam->orient;
+        l->pos = l->camera->pos;
+        l->camera->vtable->getOrientationInfo(l->camera, arg1, info);
+        return;
+    }
+    o->fov = l->fov;
+    o->unk80 = 0;
+    o->unk84 = 0;
+    o->orient = l->orient;
+    o->eye = l->orient.v[3];
+    o->target = l->orient.v[3];
+}
+
 #pragma push
 #pragma dont_inline on
 #pragma readonly_strings on
