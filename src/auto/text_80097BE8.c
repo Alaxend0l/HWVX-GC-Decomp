@@ -300,6 +300,7 @@ typedef struct THPFileInfo {
     u8 RST;
     u16 nMCU;
     u16 currMCU;
+    u8 unk6AE[0x6BC - 0x6AE];
 } THPFileInfo;
 
 extern THPFileInfo *__THPInfo_803C7890;
