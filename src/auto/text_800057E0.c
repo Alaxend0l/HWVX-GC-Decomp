@@ -3674,6 +3674,52 @@ void DataPack_RefreshTextures(DataPack *pack) {
         *(u32 *)(base + pack->relocs[i * 2]) = texID;
     }
 }
+
+void DataPack_ReleaseDataPack(DataPack *pack) {
+    void DestroySFX(u16 id);
+    void ShaderHolder_RemoveShader(s32 shader);
+    void Gfx_UnLoadTexture(u16 id);
+    s32 Trigger_ReleaseTrigger(s32 *trigger);
+    void Action_ReleaseAllActions(void);
+    void *memset(void *dst, s32 c, u32 n);
+    s8 releasedTriggers = 0;
+    u32 *gx;
+    u8 *trigger;
+    u32 i;
+
+    if (pack->soundIDs != NULL) {
+        for (i = 0; i < pack->numSounds; i++) {
+            if (pack->soundIDs[i] != 0) {
+                DestroySFX(pack->soundIDs[i]);
+            }
+        }
+        gx = pack->gxList;
+        for (i = 0; i < pack->numGX; i++) {
+            ShaderHolder_RemoveGX((s32)pack->base + *gx);
+            gx += 2;
+        }
+        for (i = 0; i < pack->numShaders; i++) {
+            ShaderHolder_RemoveShader(pack->shaders[i].shader);
+        }
+        for (i = 0; i < pack->numTextures; i++) {
+            Gfx_UnLoadTexture(pack->textureIDs[i]);
+        }
+        trigger = pack->triggers;
+        for (i = 0; i < pack->numTriggers; i++, trigger += 0x2C) {
+            Trigger_ReleaseTrigger((s32 *)trigger);
+            releasedTriggers = 1;
+        }
+        if (releasedTriggers) {
+            Action_ReleaseAllActions();
+        }
+        Deallocate(pack->soundIDs);
+        Deallocate(pack->soundData);
+        pack->soundIDs = NULL;
+        pack->soundData = NULL;
+        memset(pack, 0, 0x94);
+    }
+}
+
 void DataPack_ReleaseQuadPack(void *pack) {
     s32 *gx;
     s32 base;
