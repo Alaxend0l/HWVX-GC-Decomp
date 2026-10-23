@@ -7284,7 +7284,7 @@ s32 LGRead(void *status) {
             LGClose(device);
         }
         if (device->opened) {
-            out[i] = *(LGStatus *)&device->unkC[0x38];
+            out[i] = *(LGStatus *)((u8 *)device + 0x44);
         } else {
             out[i].err = -1;
         }
