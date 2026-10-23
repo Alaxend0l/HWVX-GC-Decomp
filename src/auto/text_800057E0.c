@@ -11458,6 +11458,60 @@ s32 TriggerCreatureDroppedOff(void) {
 
 #pragma push
 #pragma use_lmw_stmw on
+void Trigger_CreatureDroppedOff(void *vehicle, void *creature) {
+    extern u32 TriggerStats_800D3C58[][3];
+    extern u32 **m_Triggers_802C1890[];
+    extern s8 g_bTACSystemPaused_803C7124;
+    s8 TriggerCheckConditions(u8, s32, s32);
+    s32 Action_AddAction(s32);
+    u32 i;
+    u32 actions;
+    u32 *trigger;
+    u32 j;
+    u32 *list;
+    s8 foundCreature;
+    s8 foundVehicle;
+    u32 count;
+    u32 count2;
+
+    if (!g_bTACSystemPaused_803C7124) {
+        for (i = 0; i < TriggerStats_800D3C58[14][0]; i++) {
+            trigger = m_Triggers_802C1890[14][i];
+            list = (u32 *)trigger[1];
+            count = list[0];
+            count2 = list[count + 1];
+            if (trigger[9] != 2) {
+                foundCreature = 0;
+                foundVehicle = 0;
+                for (j = 0; j < count && !foundCreature; j++) {
+                    if (((void **)((u32 *)m_Triggers_802C1890[14][i][1] + 1)[j])[7] == creature) {
+                        foundCreature = 1;
+                    }
+                }
+                if (foundCreature) {
+                    for (j = 0; j < count2 && !foundVehicle; j++) {
+                        if (((void **)*(u32 *)(m_Triggers_802C1890[14][i][1] + (2 + count + j) * 4))[10] == vehicle) {
+                            foundVehicle = 1;
+                        }
+                    }
+                    if (foundVehicle && TriggerCheckConditions(((u8 *)trigger)[0x28], trigger[4], trigger[3])) {
+                        actions = 0;
+                        for (j = 0; j < m_Triggers_802C1890[14][i][7]; j++) {
+                            actions += Action_AddAction(m_Triggers_802C1890[14][i][5] + j * 0x18);
+                        }
+                        if (actions == 0) {
+                            m_Triggers_802C1890[14][i][9] = 2;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+#pragma pop
+
+#pragma push
+#pragma use_lmw_stmw on
 void Trigger_GameRoundsComplete(void) {
     extern u32 TriggerStats_800D3C58[][3];
     extern u32 **m_Triggers_802C1890[];
