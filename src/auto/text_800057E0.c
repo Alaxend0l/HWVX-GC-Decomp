@@ -3253,6 +3253,20 @@ void *NavHolder_GetFirstWayPoint(void) {
     return gs_NavHolder_803C6CD8.data->firstWayPoint;
 }
 
+void ParticleSprite_Render(void *sprite) {
+    void *Gfx_AddBillBoardSprite(u16);
+    void *bb;
+
+    bb = Gfx_AddBillBoardSprite(M2C_FIELD(M2C_FIELD(M2C_FIELD(sprite, void **, 0x90), void **, 4), u32 **, 0x24)[M2C_FIELD(sprite, u8 *, 0x97)]);
+    M2C_FIELD(bb, u8 *, 0x2A) = M2C_FIELD(sprite, u8 *, 0x95);
+    M2C_FIELD(bb, s32 *, 0x24) = M2C_FIELD(sprite, s32 *, 0x54);
+    M2C_FIELD(bb, f32 *, 0x1C) = 1.0f - M2C_FIELD(sprite, f32 *, 0x80);
+    M2C_FIELD(bb, f32 *, 0xC) = M2C_FIELD(sprite, f32 *, 0x60) * M2C_FIELD(sprite, f32 *, 0x8C);
+    M2C_FIELD(bb, f32 *, 0) = M2C_FIELD(sprite, f32 *, 0);
+    M2C_FIELD(bb, f32 *, 4) = M2C_FIELD(sprite, f32 *, 4);
+    M2C_FIELD(bb, f32 *, 8) = M2C_FIELD(sprite, f32 *, 8);
+}
+
 void Mover_GetTrackPos(void *mover, f32 *pos, f32 time) {
     void Gfx_AnimExtractKeyFrame(void *anim, f32 time, void *keyFrame, u32 count);
     f32 keyFrame[8];
