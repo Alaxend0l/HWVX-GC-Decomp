@@ -76,6 +76,23 @@ s32 Thing_Init(void *thing, s32 arg1);
 void MatrixCache_Free(u32 key);
 void MotionState_Release(s32 state);
 
+typedef struct InterfaceCallBackData {
+    u32 data[17];
+} InterfaceCallBackData;
+
+typedef struct InterfacePackEntry {
+    char *name;
+    u32 id;
+    u32 unk8;
+} InterfacePackEntry;
+
+extern void *g_pCallBack;
+extern InterfaceCallBackData g_CallBackData;
+extern InterfacePackEntry g_InterfacePackData[10];
+extern u32 g_NumInterfacesPlaying;
+extern u8 g_carAVTable[];
+extern u8 g_creatureVTable[];
+
 static inline u8 *PlayerManager_PopActive(u8 *pm) {
     u8 *player = M2C_FIELD(pm, u8 **, 0x20D8);
     u8 *next;
