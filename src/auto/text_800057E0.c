@@ -3801,6 +3801,22 @@ s32 InterfaceManager_AddFont(u8 *font) {
     return id;
 }
 
+void InterfaceManager_RemoveInterfaceFromRender(u32 id) {
+    extern u32 g_interfaceRenderOrder[];
+    extern u32 g_numInterfacesToRender;
+    u32 i;
+
+    for (i = 0; i < g_numInterfacesToRender; i++) {
+        if (id == g_interfaceRenderOrder[i]) {
+            g_numInterfacesToRender--;
+            for (; i < g_numInterfacesToRender; i++) {
+                g_interfaceRenderOrder[i] = g_interfaceRenderOrder[i + 1];
+            }
+            return;
+        }
+    }
+}
+
 s32 Item_Init(u8 *item, u8 *data) {
     void QuaternionToSubMatrix(void *quat, void *mtx);
     f32 RandomAdd(f32 base, f32 range);
