@@ -4667,9 +4667,40 @@ void PushReadedBuffer2(void *arg0) {
     OSSendMessage(ReadedBufferQueue2_803700C0, arg0, 1);
 }
 
-void AudioDecodeThreadStart(void) {
+s32 CreateAudioDecodeThread(s32 priority, void *param) {
+    s32 OSCreateThread(void *thread, void *func, void *param, void *stack, u32 stackSize, s32 priority, u16 attr);
+    void OSInitMessageQueue(void *queue, void *msgArray, s32 msgCount);
+    void AudioDecoder(void);
+    void AudioDecoderForOnMemory(void *bufAddr);
     extern s32 AudioDecodeThreadCreated_803C7770;
     extern u8 AudioDecodeThread_80370108[];
+    struct AudioDecodeThreadData {
+        u8 thread[0x310];
+        u8 stack[0x1000];
+        u8 freeQueue[0x20];
+        void *freeMessage[3];
+        u8 decodedQueue[0x20];
+        void *decodedMessage[3];
+    } *at = (struct AudioDecodeThreadData *)AudioDecodeThread_80370108;
+
+    if (param) {
+        if (OSCreateThread(at->thread, AudioDecoderForOnMemory, param, at->stack + 0x1000, 0x1000, priority, 1) == 0) {
+            return 0;
+        }
+    } else {
+        if (OSCreateThread(at->thread, AudioDecoder, NULL, at->stack + 0x1000, 0x1000, priority, 1) == 0) {
+            return 0;
+        }
+    }
+    OSInitMessageQueue(at->freeQueue, at->freeMessage, 3);
+    OSInitMessageQueue(at->decodedQueue, at->decodedMessage, 3);
+    AudioDecodeThreadCreated_803C7770 = 1;
+    return 1;
+}
+
+void AudioDecodeThreadStart(void) {
+    extern s32 AudioDecodeThreadCreated_803C7770;
+    extern u8 AudioDecodeThread_80370108[0x310];
     if (AudioDecodeThreadCreated_803C7770) {
         OSResumeThread(AudioDecodeThread_80370108);
     }
