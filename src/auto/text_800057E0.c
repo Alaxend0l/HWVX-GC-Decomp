@@ -27940,6 +27940,60 @@ BOOL SIUnregisterPollingHandler(void *handler) {
     return FALSE;
 }
 
+BOOL __SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback) {
+    BOOL OSDisableInterrupts(void);
+    BOOL OSRestoreInterrupts(BOOL level);
+    BOOL enabled;
+    u32 rLen;
+    u32 i;
+    u32 sr;
+    union {
+        u32 val;
+        struct {
+            u32 tcint : 1;
+            u32 tcintmsk : 1;
+            u32 : 1;
+            u32 outlngth : 7;
+            u32 : 1;
+            u32 inlngth : 7;
+            u32 : 11;
+            u32 channel : 2;
+            u32 tstart : 1;
+        } f;
+    } comcsr;
+
+    enabled = OSDisableInterrupts();
+    if (Si_800D9E70.chan != -1) {
+        OSRestoreInterrupts(enabled);
+        return FALSE;
+    }
+    sr = __SIRegs[14];
+    sr &= (0x0F000000) >> (8 * chan);
+    __SIRegs[14] = sr;
+
+    Si_800D9E70.chan = chan;
+    Si_800D9E70.callback = callback;
+    Si_800D9E70.inputBytes = inputBytes;
+    Si_800D9E70.input = input;
+
+    rLen = (outputBytes + 3) / 4;
+    for (i = 0; i < rLen; i++) {
+        __SIRegs[32 + i] = ((u32 *)output)[i];
+    }
+
+    comcsr.val = __SIRegs[13];
+    comcsr.f.tcint = 1;
+    comcsr.f.tcintmsk = callback ? 1 : 0;
+    comcsr.f.outlngth = (outputBytes == 128) ? 0 : outputBytes;
+    comcsr.f.inlngth = (inputBytes == 128) ? 0 : inputBytes;
+    comcsr.f.channel = chan;
+    comcsr.f.tstart = 1;
+    __SIRegs[13] = comcsr.val;
+
+    OSRestoreInterrupts(enabled);
+    return TRUE;
+}
+
 void SISetCommand(s32 chan, u32 command) {
     __SIRegs[3 * chan] = command;
 }
