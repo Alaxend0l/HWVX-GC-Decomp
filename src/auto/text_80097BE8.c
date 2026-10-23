@@ -6870,6 +6870,7 @@ s32 LGSetDeviceProperty(LGDevice *device, u32 property, s32 value) {
 
 #pragma push
 #pragma use_lmw_stmw on
+#pragma optimize_for_size on
 s32 LGRead(void *status) {
     typedef struct LGStatus {
         u16 data[4];
@@ -6877,24 +6878,17 @@ s32 LGRead(void *status) {
         s8 err;
     } LGStatus;
     LGStatus *out = status;
-    LGDevice *device;
     s32 i;
 
     if (status == NULL) {
         return -2;
     }
     for (i = 0; i < 4; i++) {
-        device = &g_lgDevices_803771D8[i];
-        if (device->started) {
-            if (device != NULL && (u32)device != 0xFFFFFFFF && device->opened) {
-                device->opened = 0;
-                device->started = 0;
-                VDevice_Shutdown(&device->vdev);
-                device->unk8 = -1;
-            }
+        if (g_lgDevices_803771D8[i].started) {
+            LGClose(&g_lgDevices_803771D8[i]);
         }
-        if (device->opened) {
-            out[i] = *(LGStatus *)&device->unkC[0x38];
+        if (g_lgDevices_803771D8[i].opened) {
+            out[i] = *(LGStatus *)&g_lgDevices_803771D8[i].unkC[0x38];
         } else {
             out[i].err = -1;
         }
