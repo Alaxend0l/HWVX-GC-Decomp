@@ -10248,7 +10248,6 @@ void OSCancelAlarm(void *arg0) {
     alarm->handler = NULL;
     OSRestoreInterrupts(enabled);
 }
-#pragma pop
 
 static inline Cell *DLExtract(Cell *list, Cell *cell) {
     if (cell->next) {
