@@ -10165,6 +10165,32 @@ s32 CarA_DoFreeStyleStunts(void *car) {
     return 0;
 }
 
+void CarA_StuntImpulse(u8 *car, Vector4 *linImpulse, Vector4 *angImpulse) {
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void MotionState_InitAllSlavesNow(void *motionState, void *slaves, s32 arg2);
+    Vector4 lin;
+    Vector4 ang;
+    Vector4 scaled;
+    u8 *data;
+
+    scaled.x = angImpulse->x / *(f32 *)(car + 0x3C0);
+    scaled.y = angImpulse->y / *(f32 *)(car + 0x3D4);
+    scaled.z = angImpulse->z / *(f32 *)(car + 0x3E8);
+    XformVecOrientation(car + 0x10, &scaled, &ang);
+    XformVecOrientation(car + 0x10, linImpulse, &lin);
+    *(f32 *)(car + 0x0) += lin.x;
+    *(f32 *)(car + 0x4) += lin.y;
+    *(f32 *)(car + 0x8) += lin.z;
+    *(f32 *)(car + 0x380) += ang.x;
+    *(f32 *)(car + 0x384) += ang.y;
+    *(f32 *)(car + 0x388) += ang.z;
+    *(u32 *)(car + 0x48C) |= 2;
+    data = *(u8 **)(car + 0x3BC);
+    if (*(u32 *)(data + 0xE0) > 4) {
+        MotionState_InitAllSlavesNow(car + 0x330, *(u8 **)(data + 0xE4) + 0x34, 4);
+    }
+}
+
 void CarA_SlaveWeaponHeartbeat(s32 car) {
     void MotionState_InitSlavesTimed(s32 state, s32 slaves, u8 type);
     void ThingManagerList_RemoveReleasedThings(s32 list);
