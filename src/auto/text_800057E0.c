@@ -35,6 +35,13 @@ typedef struct ShaderHolder {
     u32 numGX;
 } ShaderHolder;
 
+typedef struct DVDQueue {
+    struct DVDQueue *next;
+    struct DVDQueue *prev;
+} DVDQueue;
+
+extern DVDQueue WaitingQueue_802EFA18[4];
+
 void *ThingManagerList_GetByType(void *list, s32 type);
 void WildCardRack_Add(void *rack, u8 *item, s16 count);
 void Item_Release(void *item);
@@ -6772,7 +6779,9 @@ void __DSP_remove_task(DSPTaskInfo *task) {
             __DSP_first_task = task->next;
             task->next->prev = NULL;
         } else {
-            __DSP_first_task = __DSP_last_task = __DSP_curr_task = NULL;
+            __DSP_curr_task = NULL;
+            __DSP_last_task = NULL;
+            __DSP_first_task = NULL;
         }
     } else if (__DSP_last_task == task) {
         __DSP_last_task = task->prev;
@@ -7508,8 +7517,96 @@ void GXSetAlphaCompare(s32 comp0, u8 ref0, s32 op, s32 comp1, u8 ref1) {
     *(u16 *)(gx + 2) = 0;
 }
 
+void GXSetZTexture(s32 op, s32 fmt, u32 bias) {
+    extern u8 *gx;
+    volatile PPCWGPipe *wgPipe = (volatile PPCWGPipe *)0xCC008000;
+    u32 zenv0;
+    u32 zenv1;
+    u32 type;
+
+    zenv0 = 0;
+    zenv0 = (zenv0 & ~0xFFFFFF) | bias;
+    zenv0 = (zenv0 & 0xFFFFFF) | 0xF4000000;
+    zenv1 = 0;
+    switch (fmt) {
+    case 0x11:
+        type = 0;
+        break;
+    case 0x13:
+        type = 1;
+        break;
+    case 0x16:
+        type = 2;
+        break;
+    default:
+        type = 2;
+        break;
+    }
+    zenv1 = (zenv1 & ~3) | type;
+    zenv1 = (zenv1 & ~0xC) | (op << 2);
+    zenv1 = (zenv1 & 0xFFFFFF) | 0xF5000000;
+    wgPipe->u8 = 0x61;
+    wgPipe->u32 = zenv0;
+    wgPipe->u8 = 0x61;
+    wgPipe->u32 = zenv1;
+    *(u16 *)(gx + 2) = 0;
+}
+
+void GXSetNumTevStages(u8 nStages) {
+    extern u8 *gx;
+    u32 *reg;
+
+    reg = (u32 *)(gx + 0x204);
+    *reg = (*reg & ~0x3C00) | ((u32)(nStages - 1) << 10);
+    reg = (u32 *)(gx + 0x4F4);
+    *reg |= 4;
+}
+
+void GXSetColorUpdate(u8 updateEnable) {
+    extern u8 *gx;
+    u8 *g;
+    u32 *reg;
+
+    g = gx;
+    reg = (u32 *)(g + 0x1D0);
+    *reg = (*(u32 *)(g + 0x1D0) & ~8) | (updateEnable << 3);
+    GXWGFifo.u8 = 0x61;
+    g = gx;
+    GXWGFifo.u32 = *(u32 *)(g + 0x1D0);
+    *(u16 *)(g + 2) = 0;
+}
+
+void GXSetAlphaUpdate(u8 updateEnable) {
+    extern u8 *gx;
+    u32 reg;
+    u8 *g;
+
+    g = gx;
+    reg = *(u32 *)(g + 0x1D0);
+    reg = (reg & ~0x10) | (updateEnable << 4);
+    *(u32 *)(g + 0x1D0) = reg;
+    GXWGFifo.u8 = 0x61;
+    g = gx;
+    GXWGFifo.u32 = *(u32 *)(g + 0x1D0);
+    *(u16 *)(g + 2) = 0;
+}
+
 void __GXSetRange(void) {
 
+}
+
+void GXGetProjectionv(f32 *p) {
+    extern void *gx;
+    u32 type;
+
+    type = M2C_FIELD(gx, u32 *, 0x420);
+    p[0] = (f32)type;
+    p[1] = M2C_FIELD(gx, f32 *, 0x424);
+    p[2] = M2C_FIELD(gx, f32 *, 0x428);
+    p[3] = M2C_FIELD(gx, f32 *, 0x42C);
+    p[4] = M2C_FIELD(gx, f32 *, 0x430);
+    p[5] = M2C_FIELD(gx, f32 *, 0x434);
+    p[6] = M2C_FIELD(gx, f32 *, 0x438);
 }
 
 void WriteMTXPS3x3from3x4(f32 mtx[3][4], volatile f32 *dest) {
@@ -7525,6 +7622,16 @@ void WriteMTXPS4x2(f32 mtx[2][4], volatile f32 *dest) {
     f32 b = mtx[0][1];
     *dest = a;
     *dest = b;
+}
+
+void GXSetCurrentMtx(u32 id) {
+    extern u8 *gx;
+    void __GXSetMatrixIndex(s32 index);
+    u32 *reg;
+
+    reg = (u32 *)(gx + 0x80);
+    *reg = (*reg & ~0x3F) | id;
+    __GXSetMatrixIndex(0);
 }
 
 void GXGetViewportv(void *arg0) {
