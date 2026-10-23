@@ -3101,6 +3101,37 @@ u8 *GameSettings_GetMCP(void) {
     return pMCP;
 }
 
+void GameSettings_ResetControllerConfig(s32 player) {
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    ControllerSettings *GameSettings_GetControllerSettings(s32 player);
+    void *memset(void *, s32, u32);
+    void *memcpy(void *, const void *, u32);
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    void *pack;
+    ControllerSettings *settings;
+
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    settings = GameSettings_GetControllerSettings(player);
+    if (mcp == NULL || M2C_FIELD(mcp, void **, 0x3C) == NULL) {
+        memset(&settings->data[2], 0, 0x10);
+    } else {
+        memcpy(&settings->data[2], M2C_FIELD(**M2C_FIELD(mcp, u8 ****, 0x40), void **, 4), 0x10);
+    }
+}
+
 void GameSettings_GameBoyConnected(void) {
     void *FileStreaming_InitializeDataPack(void *, s32, s32);
     u8 *DataPack_GetScript(void *, s32);
