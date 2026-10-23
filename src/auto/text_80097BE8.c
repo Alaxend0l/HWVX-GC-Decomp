@@ -8494,12 +8494,6 @@ void Render_Print(void) {
     }
 }
 
-static inline void FontManager_Vertex(f32 x, f32 y, GXColor *color, f32 s, f32 t) {
-    GXPosition2f32(x, y);
-    GXColor4u8(color->r, color->g, color->b, color->a);
-    GXTexCoord2f32(s, t);
-}
-
 static inline void FontManager_Vertex2(f32 x, f32 y, f32 s, f32 t) {
     extern GXColor g_textcolor;
     GXPosition2f32(x, y);
