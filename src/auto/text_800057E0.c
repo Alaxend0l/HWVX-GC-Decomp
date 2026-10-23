@@ -1437,6 +1437,39 @@ s32 ActionPauseTACSystem(s32 *action) {
     return 1;
 }
 
+void WildCardRack_JettisonAll(void *rack);
+#pragma push
+#pragma use_lmw_stmw on
+s32 ActionVehicleRemoveItem(s32 *action) {
+    void *list;
+    u32 i;
+    void *creature;
+    void *rack;
+    void *item;
+
+    for (i = 0; i < (u32)action[1]; i++) {
+        creature = M2C_FIELD((void *)action[i + 2], void **, 0x28);
+        if (creature != NULL) {
+            list = (u8 *)creature + 0x344;
+            rack = ThingManagerList_GetByType(list, 8);
+            switch (action[0]) {
+            case 0:
+                WildCardRack_JettisonAll(rack);
+                break;
+            case 1:
+                item = ThingManagerList_GetByType(list, 4);
+                if (item != NULL) {
+                    (*(void (**)(void *))(M2C_FIELD(item, u8 **, 0x8C) + 4))(item);
+                }
+                break;
+            }
+            M2C_FIELD(rack, u32 *, 0x74) &= ~0x400200;
+        }
+    }
+    return 1;
+}
+#pragma pop
+
 void AI_Create(void) {
     u32 GameSettings_GetCodeVariable(s32, s32);
     extern s32 g_volumeTotal;
