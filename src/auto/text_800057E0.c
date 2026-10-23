@@ -19349,7 +19349,6 @@ s32 TRKInitializeNub(void) {
     }
     return result;
 }
-#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
