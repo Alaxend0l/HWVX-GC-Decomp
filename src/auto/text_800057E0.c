@@ -5780,6 +5780,31 @@ void ThingManager_DARYL_Render(void) {
     g_pNoRayCollideThing = NULL;
 }
 
+void *ThingManager_DARYL_CreateThing(s32 type, void *params) {
+    void *thing = g_thingManager_DARYL.freeList[type];
+
+    if (thing == NULL) {
+        thing = NULL;
+    } else {
+        g_thingManager_DARYL.freeList[type] = M2C_FIELD(thing, void **, 0xA4);
+        if (g_thingManager_DARYL.freeList[type] != NULL) {
+            M2C_FIELD(g_thingManager_DARYL.freeList[type], void **, 0xA0) = NULL;
+        }
+        M2C_FIELD(thing, void **, 0xA4) = NULL;
+    }
+    if (thing != NULL) {
+        M2C_FIELD(thing, void **, 0xA4) = g_thingManager_DARYL.activeList;
+        M2C_FIELD(thing, void **, 0xA0) = NULL;
+        if (M2C_FIELD(thing, void **, 0xA4) != NULL) {
+            M2C_FIELD(M2C_FIELD(thing, void **, 0xA4), void **, 0xA0) = thing;
+        }
+        g_thingManager_DARYL.activeList = thing;
+        ((void (*)(void *, void *))(M2C_FIELD(thing, void ***, 0x8C))[0])(thing, params);
+        return thing;
+    }
+    return NULL;
+}
+
 void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id) {
     void *slave = g_thingManager_DARYL.freeList[type];
 
