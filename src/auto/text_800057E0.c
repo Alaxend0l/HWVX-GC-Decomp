@@ -14270,48 +14270,6 @@ static inline s8 Thing_ProcessItemPickup(u8 *thing, u8 *item) {
     return 0;
 }
 
-static inline s8 Thing_CollideWithItem(u8 *thing, u8 *item) {
-    extern Vector4 g_zeroVector;
-    f32 PSVECSquareDistance(f32 *a, f32 *b);
-    s8 Creature_ProcessItemPickup(void *creature, void *item);
-    s8 CarA_ProcessItemPickup(void *car, void *item);
-    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
-    struct { Vector4 pos; Vector4 quat; Vector4 row; Vector4 vel; u32 id; u32 unk74; f32 unk78; f32 unk7C; } params;
-    s8 picked;
-
-    if (*(s16 *)(item + 0xCC) > 0) {
-        return 0;
-    }
-    if (PSVECSquareDistance((f32 *)(thing + 0x40), (f32 *)(item + 0x40)) >= *(f32 *)(item + 0xE8)) {
-        return 0;
-    }
-    picked = 0;
-    switch (*(s32 *)(thing + 0xA8)) {
-    case 7:
-        picked = Creature_ProcessItemPickup(thing, item);
-        break;
-    case 9:
-        picked = CarA_ProcessItemPickup(thing, item);
-        break;
-    case 11:
-        picked = Thing_ProcessItemPickup(thing, item);
-        break;
-    }
-    if (picked && *(u32 *)(*(u8 **)(item + 0xC0) + 0x24) != 0) {
-        params.id = *(u32 *)(*(u8 **)(item + 0xC0) + 0x24);
-        params.pos = *(Vector4 *)(thing + 0x40);
-        params.row.z = 0.0f;
-        params.row.y = 0.0f;
-        params.row.x = 0.0f;
-        params.quat = *(Vector4 *)(thing + 0x50);
-        params.unk78 = 0.0f;
-        params.unk7C = 0.0f;
-        params.unk74 = 0;
-        params.vel = g_zeroVector;
-        ThingManager_DARYL_CreateThing(1, &params);
-    }
-    return 1;
-}
 
 #pragma push
 #pragma use_lmw_stmw on
