@@ -3372,6 +3372,19 @@ void ProcessManager_Render(u32 all) {
     }
 }
 
+#pragma push
+#pragma dont_inline on
+void Projectile_Release(void *projectile) {
+    void LensFlare_Delete(s32 flare);
+    extern u8 g_projectileVTable[];
+
+    LensFlare_Delete(M2C_FIELD(projectile, s32 *, 0x130));
+    Thing_Release((s32)projectile);
+    LightHolder_Delete(M2C_FIELD(projectile, s32 *, 0x134));
+    M2C_FIELD(projectile, void **, 0x8C) = g_projectileVTable;
+}
+#pragma pop
+
 #pragma pop
 
 void Projectile_DynamicCollideImpact(void *proj, void *dir, s32 damage, f32 force) {
