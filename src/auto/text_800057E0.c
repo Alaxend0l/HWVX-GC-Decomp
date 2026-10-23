@@ -1712,8 +1712,40 @@ void CarA_GetTargetPos(void *car, Vector4 *pos) {
     }
 }
 
+void *CarA_GetOrientedCollision(void *car) {
+    void BuildOOBOffset(void *oob, void *pos, void *rot, void *out);
+    void BuildOConvexHullOffset(void *out, void *hull, void *pos, void *rot);
+    void *coll;
+
+    coll = M2C_FIELD(M2C_FIELD(car, void **, 0x3BC), void **, 0xA0);
+    switch (M2C_FIELD(coll, u8 *, 0x10)) {
+    case 0:
+        if (M2C_FIELD(car, u32 *, 0x74) & 0x180) {
+            BuildOOBOffset(M2C_FIELD(coll, void **, 0x44), (u8 *)car + 0x10, (u8 *)car + 0x520, (u8 *)car + 0xC0);
+            M2C_FIELD(car, u32 *, 0x74) &= ~0x180;
+        }
+        return (u8 *)car + 0xC0;
+    case 1:
+        BuildOConvexHullOffset(M2C_FIELD(car, void **, 0x370), M2C_FIELD(coll, void **, 0x48), (u8 *)car + 0x10, (u8 *)car + 0x520);
+        return M2C_FIELD(car, void **, 0x370);
+    default:
+        return NULL;
+    }
+}
+
 s32 CarA_GetSurfaceScript(void *arg0) {
     return M2C_FIELD(M2C_FIELD(M2C_FIELD(arg0, void **, 0x3BC), void **, 0xA0), s32 *, 0x30);
+}
+
+s32 CarA_GetNearestNavPoint(void *car) {
+    s32 NavHolder_FindIndexOfNearestNavPoint(void *navHolder);
+    s32 RandomAdd_s32(s32 base, s32 range);
+
+    if (M2C_FIELD(car, u32 *, 0x3B0) == 0xFFFFFFFF) {
+        M2C_FIELD(car, s32 *, 0x3B0) = NavHolder_FindIndexOfNearestNavPoint((u8 *)car + 0x40);
+        M2C_FIELD(car, s32 *, 0x3B4) = M2C_FIELD(car, s32 *, 0x3B4) = RandomAdd_s32(300, 100);
+    }
+    return M2C_FIELD(car, s32 *, 0x3B0);
 }
 
 s32 CarA_Invalidate(void *arg0, u32 arg1, u32 arg2) {
