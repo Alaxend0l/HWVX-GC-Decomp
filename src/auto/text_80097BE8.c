@@ -301,6 +301,9 @@ typedef struct RumbleStatus {
 } RumbleStatus;
 
 extern RumbleStatus rumbleStatus[4];
+extern s8 g_padUpPos[4];
+extern s8 g_padDownPos[4];
+extern u32 g_StopInput;
 
 typedef struct JoyBusParam {
     s32 state;
@@ -6301,6 +6304,27 @@ s32 LGGetDeviceProperty(LGDevice *device, u32 property, s32 *value, u32 size) {
         return -2;
     }
     *value = device->vdev.unk11F4;
+    return 0;
+}
+
+s32 LGSetDeviceProperty(LGDevice *device, u32 property, s32 value) {
+    if (device == NULL || (u32)device == 0xFFFFFFFF) {
+        return -2;
+    }
+    if (value < 0 || value > 0xFF) {
+        return -2;
+    }
+    if (property != 3) {
+        return -2;
+    }
+    if (!device->opened) {
+        return -2;
+    }
+    if (device->started) {
+        LGClose(device);
+        return -2;
+    }
+    device->vdev.unk11F4 = value;
     return 0;
 }
 
