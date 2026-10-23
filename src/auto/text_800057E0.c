@@ -3560,6 +3560,21 @@ s32 ActionEndInterface(void *action) {
     return 1;
 }
 
+s32 InterfaceManager_AddFont(u8 *font) {
+    s32 Gfx_FontManager_AddFont(u16, u8, f32, f32, f32);
+    void Gfx_FontManager_SetCharacterSpacing(s32 id, u8 c, f32 x, f32 y);
+    u32 i;
+    s32 id;
+    u8 *spacing;
+
+    id = Gfx_FontManager_AddFont(M2C_FIELD(font, u32 *, 0), font[0xB], font[9], font[0xA], M2C_FIELD(font, f32 *, 0x28));
+    for (i = 0; i < M2C_FIELD(font, u32 *, 0x20); i++) {
+        spacing = M2C_FIELD(font, u8 **, 0x24) + i * 0xC;
+        Gfx_FontManager_SetCharacterSpacing(id, spacing[0], M2C_FIELD(spacing, f32 *, 4), M2C_FIELD(spacing, f32 *, 8));
+    }
+    return id;
+}
+
 s32 Item_Init(u8 *item, u8 *data) {
     void QuaternionToSubMatrix(void *quat, void *mtx);
     f32 RandomAdd(f32 base, f32 range);
