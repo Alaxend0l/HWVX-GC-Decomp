@@ -3509,12 +3509,9 @@ f32 RayBoxTest(Vector4 *start, Vector4 *dir, Vector4 *box, f32 t, Vector4 *hit) 
     nodes[3].plane.w = box[0].x;
     nodes[4].plane.w = box[0].y;
     nodes[5].plane.w = box[0].z;
-    end.x = t * dir->x + start->x;
-    endPt.x = end.x;
-    end.y = t * dir->y + start->y;
-    endPt.y = end.y;
-    end.z = t * dir->z + start->z;
-    endPt.z = end.z;
+    endPt.x = end.x = t * dir->x + start->x;
+    endPt.y = end.y = t * dir->y + start->y;
+    endPt.z = end.z = t * dir->z + start->z;
     plane = BSPN0_CollideWithSegment(nodes, 0, start, &end);
     if (plane != NULL) {
         d0 = Distance_Plane(plane, start);
@@ -9424,6 +9421,48 @@ s32 StateMovie_Init(s32 returnState) {
 s32 StateMovie_Shutdown(void) {
     M2C_UNK StateGameManager_RefreshMCPTextures();
     StateGameManager_RefreshMCPTextures();
+    return 1;
+}
+
+s32 StateMovie_Heartbeat(void) {
+    extern s32 g_returnState;
+    extern u8 g_buttonUpCnt;
+    void ProcessManager_Heartbeat(s32 arg0);
+    s8 Input_KeyPress(s32 pad, s32 key);
+    s8 Mpeg_Heartbeat(void);
+    void Mpeg_StopMovie(void);
+    void Mpeg_Destroy(void);
+    void Mpeg_Create(void);
+    void Mpeg_Render(void);
+    void Mpeg_StartMovie(char *name, u8 volume, f32 fvolume);
+    void StateManager_QueueChange(s32 state);
+    s8 skip;
+
+    ProcessManager_Heartbeat(0);
+    skip = Input_KeyPress(0, 9) || Input_KeyPress(0, 0);
+    if (!Mpeg_Heartbeat() || (skip && g_buttonUpCnt > 10)) {
+        char *name = StateMovie_GetNextMovieName();
+
+        Mpeg_StopMovie();
+        if (name != NULL) {
+            AudioSettings *audio = GameSettings_GetAudioSettings();
+
+            Mpeg_Destroy();
+            Mpeg_Create();
+            Mpeg_StartMovie(name, audio->sfxVolume, audio->sfxVolume / 100.0f);
+            g_buttonUpCnt = 0;
+        } else {
+            g_moviePlaybackName = NULL;
+            Mpeg_Destroy();
+            StateManager_QueueChange(g_returnState);
+            return 1;
+        }
+    } else if (!skip) {
+        g_buttonUpCnt++;
+    } else {
+        g_buttonUpCnt = 0;
+    }
+    Mpeg_Render();
     return 1;
 }
 
