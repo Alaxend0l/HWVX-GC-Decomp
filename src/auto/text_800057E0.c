@@ -10216,6 +10216,24 @@ void Tracer_Release(void *thing) {
     Thing_Release((s32)thing);
 }
 
+void Tracer_ClearTracer(s32 index) {
+    Tracer *tracer = &tracers_802CD600[index];
+    u32 i;
+
+    tracer->head = tracer->points;
+    tracer->tail = tracer->head;
+    tracer->unk4CC = 0;
+    tracer->active = 0;
+    tracer->unk4D0 = 0xFFFF;
+    for (i = 0; i < 14; i++) {
+        tracer->points[i].next = &tracer->points[i + 1];
+        tracer->points[i].pos[3] = 1.0f;
+        tracer->points[i].vel[3] = 1.0f;
+        tracer->points[i].unk40 = 1.0f;
+    }
+    tracers_802CD600[index].unk4A8 = tracer->points;
+}
+
 s32 Tracer_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
