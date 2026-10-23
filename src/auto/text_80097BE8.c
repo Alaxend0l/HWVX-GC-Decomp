@@ -1189,7 +1189,7 @@ typedef struct Font {
 } Font;
 
 typedef struct FontManager {
-    s32 numFonts;
+    u32 numFonts;
     Font fonts[16];
 } FontManager;
 
@@ -5109,6 +5109,62 @@ void Gfx_FontManager_SetCharacterSpacing(s32 id, u8 c, f32 x, f32 y) {
     font->chars[c].spacingY = y;
     font->chars[c].unk8 = font->chars[c].unk0 + x / width;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+u32 Gfx_FontManager_Print(char *str, u32 id, u8 blendMode, f32 x, f32 y, f32 spacing) {
+    extern FontManager g_fontManager;
+    extern GXColor g_textcolor;
+    GDLRect *Gfx_Add2DRectangle(void);
+    u32 strlen(const char *);
+    u32 i;
+    Font *font = &g_fontManager.fonts[id];
+    GXColor color = g_textcolor;
+    u8 c;
+    GDLRect *rect;
+
+    if (id == 0 && g_fontManager.numFonts == 0) {
+        return 0;
+    }
+    for (i = 0; i < strlen(str); i++) {
+        c = str[i];
+        if (font->caseMode == 1 || font->caseMode == 3) {
+            if (c >= 'a' && c <= 'z') {
+                c -= 0x20;
+            }
+        }
+        if (c != ' ') {
+            f32 x1 = x + (u8)font->chars[c].spacingX;
+            f32 y1 = y + font->height;
+            rect = Gfx_Add2DRectangle();
+            rect->blendMode = blendMode;
+            rect->tex = font->texture;
+            *(GXColor *)&rect->v[0].r = color;
+            *(GXColor *)&rect->v[1].r = color;
+            *(GXColor *)&rect->v[2].r = color;
+            *(GXColor *)&rect->v[3].r = color;
+            rect->v[0].s = font->chars[c].unk0;
+            rect->v[0].t = font->chars[c].unk4;
+            rect->v[1].s = font->chars[c].unk0;
+            rect->v[1].t = font->chars[c].unkC;
+            rect->v[2].s = font->chars[c].unk8;
+            rect->v[2].t = font->chars[c].unkC;
+            rect->v[3].s = font->chars[c].unk8;
+            rect->v[3].t = font->chars[c].unk4;
+            rect->v[0].x = x;
+            rect->v[0].y = y;
+            rect->v[1].x = x;
+            rect->v[1].y = y1;
+            rect->v[2].x = x1;
+            rect->v[2].y = y1;
+            rect->v[3].x = x1;
+            rect->v[3].y = y;
+        }
+        x += (u8)font->chars[c].spacingX + spacing;
+    }
+    return g_fontManager.fonts[id].height;
+}
+#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
