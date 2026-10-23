@@ -19252,6 +19252,8 @@ s32 TRKGetNextEvent(TRKEvent *event) {
     return result;
 }
 
+#pragma push
+#pragma auto_inline off
 s32 TRKInitializeEventQueue(void) {
     TRKInitializeMutex(&gTRKEventQueue);
     TRKAcquireMutex(&gTRKEventQueue);
@@ -19261,6 +19263,7 @@ s32 TRKInitializeEventQueue(void) {
     TRKReleaseMutex(&gTRKEventQueue);
     return 0;
 }
+#pragma pop
 
 void TRKNubWelcome(void) {
     TRK_board_display("MetroTRK for GAMECUBE v0.10");
