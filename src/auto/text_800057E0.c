@@ -2082,6 +2082,52 @@ void MotionState_InitSlavesTimed(u8 *state, void *slaves, u8 player, u32 time) {
         }
     }
 }
+
+void MotionState_BlendTriggerEvents(void *state, void *events, Vector4 *vel) {
+    void ThingManagerList_TriggerSlaves(void **list, u8 *trigger, Vector4 *a, Vector4 *b, Vector4 *c, u8 player);
+    typedef struct {
+        u8 unk0[0x14];
+        f32 time;
+        u8 unk18[0x8];
+    } SlaveTrigger;
+    typedef struct {
+        u32 count;
+        SlaveTrigger *triggers;
+    } SlaveList;
+    SlaveList *list = events;
+    Vector4 v;
+    f32 start;
+    f32 end;
+    u32 i;
+
+    v.x = v.y = v.z = v.w = 0.0f;
+    if (vel != NULL) {
+        v = *vel;
+    }
+    start = *(f32 *)((u8 *)state + 0x28);
+    end = *(f32 *)((u8 *)state + 0x2C);
+    for (i = 0; i < *(u32 *)(*(u8 **)((u8 *)state + 0x18) + 0x2C); i++) {
+        SlaveTrigger *trigger = &list->triggers[i];
+        s8 hit = 0;
+
+        if (*((u8 *)state + 0x1E)) {
+            if (start > trigger->time && end <= trigger->time) {
+                hit = 1;
+            }
+        } else {
+            if (start <= trigger->time && end > trigger->time) {
+                hit = 1;
+            }
+        }
+        if (hit) {
+            Vector4 dir;
+            dir.x = dir.y = dir.z = 0.0f;
+            dir.w = 1.0f;
+            ThingManagerList_TriggerSlaves((void **)((u8 *)state + 0x14), (u8 *)trigger, (Vector4 *)trigger, &dir, &v, 0xFF);
+        }
+    }
+}
+
 #pragma pop
 
 #pragma pop
@@ -4022,6 +4068,57 @@ s32 Destructible_Invalidate(void *arg0, u32 arg1, u32 arg2) {
         return 1;
     }
     return 0;
+}
+
+void Mover_GetTrackPos(void *mover, f32 *pos, f32 time);
+s32 ActionMoveableChangeMode(u32 *action) {
+    typedef struct {
+        u8 pad0[0x10];
+        u8 *mover;
+    } Thing;
+    typedef struct {
+        u8 pad0[0x8];
+        f32 start;
+        f32 end;
+    } Anim;
+    u32 i;
+    u8 *mover;
+
+    for (i = 0; i < action[4]; i++) {
+        mover = ((Thing *)action[i + 5])->mover;
+        if (mover != NULL) {
+            switch (action[0]) {
+            case 6:
+                *(f32 *)(mover + 0xD8) = action[2];
+                break;
+            case 12:
+                *(u32 *)(mover + 0x74) |= 0x4000;
+                break;
+            case 11:
+                *(u32 *)(mover + 0x74) &= ~0x4000;
+                *(f32 *)(mover + 0xD8) = action[2];
+                break;
+            case 3:
+                (*(void (**)(void *))(*(u8 **)(mover + 0x8C) + 4))(mover);
+                break;
+            }
+            switch (action[1]) {
+            case 13:
+                if (*(Anim **)(mover + 0xD4) != NULL) {
+                    *(f32 *)(mover + 0xDC) = (*(Anim **)(mover + 0xD4))->start;
+                }
+                Mover_GetTrackPos(mover, (f32 *)(mover + 0x40), *(f32 *)(mover + 0xDC));
+                break;
+            case 14:
+                if (*(Anim **)(mover + 0xD4) != NULL) {
+                    *(f32 *)(mover + 0xDC) = (*(Anim **)(mover + 0xD4))->end;
+                }
+                Mover_GetTrackPos(mover, (f32 *)(mover + 0x40), *(f32 *)(mover + 0xDC));
+                break;
+            }
+        }
+    }
+    return 1;
 }
 
 void Emitter_Release(void *emitter) {
