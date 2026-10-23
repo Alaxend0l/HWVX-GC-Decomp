@@ -49,6 +49,19 @@ typedef struct DVDQueue {
 
 extern DVDQueue WaitingQueue_802EFA18[4];
 
+typedef struct TextureKeyAnim {
+    u32 numKeys;
+    u32 *keys;
+    u32 frameTime;
+} TextureKeyAnim;
+
+typedef struct TextureKeyState {
+    u16 texture;
+    u16 key;
+    f32 time;
+    u8 reset;
+} TextureKeyState;
+
 extern volatile u32 next_803C6DF8;
 
 static void DummySRand(u32 seed) {
