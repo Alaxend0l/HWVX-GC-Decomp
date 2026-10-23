@@ -10725,6 +10725,8 @@ void VertexColorSeqManager_RemoveVertices(void *vertices) {
     }
 }
 
+#pragma push
+#pragma auto_inline off
 s32 VertexColorSeqManager_GetLightIndex(void *light) {
     typedef struct VertexColorTile {
         u8 *light;
@@ -10741,6 +10743,7 @@ s32 VertexColorSeqManager_GetLightIndex(void *light) {
     }
     return -1;
 }
+#pragma pop
 
 void VertexColorSeqManager_GetLightColor(u32 index, u32 *color) {
     typedef struct VertexColorTile {
@@ -11976,6 +11979,77 @@ s32 Tracer_Invalidate(void *arg0, u32 arg1, u32 arg2) {
         return 1;
     }
     return 0;
+}
+
+void LightManager_Initialize(void) {
+    typedef struct Light {
+        u8 unk0[0x10];
+        u8 r;
+        u8 g;
+        u8 b;
+        u8 unk13;
+        s32 index;
+        u8 type;
+    } Light;
+    typedef struct Volume {
+        u8 unk0[0xC];
+        u32 type;
+        u8 unp10[0x1C];
+        Light *light;
+    } Volume;
+    typedef struct LightWorld {
+        u8 unk0[0x64];
+        u8 *lights;
+        u32 numVolumes;
+        u8 *volumes;
+    } LightWorld;
+    extern u8 g_ThingLightingData[0xA000];
+    extern s32 g_numDirectionalLights;
+    extern s32 g_numThingsToLight;
+    extern u8 g_bLightVolumesExist;
+    extern Light *g_directionalLights[5];
+    extern u8 g_ambientColor[4];
+    u32 r;
+    u32 g;
+    u32 b;
+    u32 i;
+    Volume *volume;
+    Light *light;
+
+    r = 0;
+    g = 0;
+    b = 0;
+    g_numDirectionalLights = 0;
+    g_numThingsToLight = 0;
+    g_bLightVolumesExist = 0;
+    memset(g_ThingLightingData, 0, sizeof(g_ThingLightingData));
+    for (i = 0; i < ((LightWorld *)g_worldData.world)->numVolumes; i++) {
+        volume = (Volume *)(((LightWorld *)g_worldData.world)->volumes + i * 0x30);
+        if (volume->type == 6) {
+            light = volume->light;
+            g_bLightVolumesExist = 1;
+            if (light->type == 1) {
+                g_directionalLights[g_numDirectionalLights++] = light;
+            } else if (light->type == 2) {
+                r += light->r;
+                g += light->g;
+                b += light->b;
+            } else if (light->type == 3) {
+                light->index = VertexColorSeqManager_GetLightIndex(((LightWorld *)g_worldData.world)->lights + light->index * 0x10);
+            }
+        }
+    }
+    g_ambientColor[0] = r > 0xFF ? 0xFF : r;
+    if (g > 0xFF) {
+        g_ambientColor[1] = 0xFF;
+    } else {
+        g_ambientColor[1] = g;
+    }
+    if (b > 0xFF) {
+        g_ambientColor[2] = 0xFF;
+    } else {
+        g_ambientColor[2] = b;
+    }
 }
 
 void StateGameManager_RefreshMCPTextures(void) {
