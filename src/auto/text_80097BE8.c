@@ -3410,6 +3410,7 @@ void Gfx_DrawAnimGeometryAux_(Geometry *geometry, f32 *matrices, u32 count, f32 
     Gfx_DrawGeometryLOD_Immediate(lod, matrices);
     g_IsAnim = 0;
 }
+#pragma pop
 
 #pragma push
 #pragma dont_inline on
