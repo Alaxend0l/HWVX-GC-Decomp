@@ -4164,6 +4164,35 @@ void *NavHolder_GetFirstWayPoint(void) {
     return gs_NavHolder_803C6CD8.data->firstWayPoint;
 }
 
+void ParticleGX_MicroStep(void *arg0) {
+    extern f32 g_fDeltaTimeMS;
+    void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0);
+    void GenerateQuaternion(void *axis, void *q, f32 angle);
+    struct ParticleGX {
+        Vector4 pos;
+        u8 unk10[0x30 - 0x10];
+        Vector4 quat;
+        Vector4 axis;
+        u8 unk50[0xB8 - 0x50];
+        f32 spinRate;
+        u8 unkBC[0xC8 - 0xBC];
+        f32 spin;
+        u8 unkCC[0xF0 - 0xCC];
+        Vector4 vel;
+    } *particle = arg0;
+    Vector4 pos;
+    Vector4 rot;
+    Vector4 out;
+
+    AccumulateVector(&particle->vel, &particle->pos, &pos, g_fDeltaTimeMS);
+    particle->pos = pos;
+    if (particle->spin) {
+        GenerateQuaternion(&particle->axis, &rot, 0.01f * (g_fDeltaTimeMS * (particle->spinRate * particle->spin)));
+        QuaternionMult(&particle->quat, &rot, &out);
+        particle->quat = out;
+    }
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void ParticleManager_Render(void) {
