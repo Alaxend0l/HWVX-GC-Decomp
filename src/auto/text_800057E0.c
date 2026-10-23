@@ -2017,6 +2017,15 @@ f32 CarA_GetImpactMultiplier(void *car, void *other, f32 scale) {
     return 1.0f - impact;
 }
 
+s8 RayHitsTerrain(Vector4 *start, Vector4 *end, void *arg2, void *arg3) {
+    s8 RayHitsTerrain_Aux3(void *, void *, void *, void *);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    Vector4 dir;
+
+    PSVECSubtract(end, start, &dir);
+    return RayHitsTerrain_Aux3(start, &dir, arg2, arg3);
+}
+
 void OConvexHullHolder_Init(void) {
     extern u8 g_aOConvexHull[8][0x3E0];
     s32 i;
