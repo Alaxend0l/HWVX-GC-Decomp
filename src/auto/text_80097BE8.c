@@ -6642,7 +6642,7 @@ void VDevice_Init(VDevice *dev) {
 #pragma pop
 
 #pragma push
-#pragma use_lmw_stmw on
+#pragma optimize_for_size on
 #pragma dont_inline on
 void VDevice_RecalcGammaTable(void) {
     s32 i;
