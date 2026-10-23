@@ -3346,6 +3346,17 @@ typedef struct DataPack {
     DataPackRef refs[2];
 } DataPack;
 
+typedef struct QuadPackHeader {
+    u8 pad00[0x8];
+    u32 numRelocs;
+    u32 *relocs;
+    u8 pad10[0xC];
+    u32 numShaders;
+    u32 *shaders;
+    u8 pad24[0x8];
+    DataPackRef refs[2];
+} QuadPackHeader;
+
 void DataPack_EnableLoadingSounds(s8 arg0) {
     extern s8 g_bSoundLoadingEnabled;
     g_bSoundLoadingEnabled = arg0;
