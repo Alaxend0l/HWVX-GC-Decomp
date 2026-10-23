@@ -7376,7 +7376,7 @@ void HandleTriggers(u8 *cur, SISteeringStatus *status, SISteeringStatus *calib) 
 
     if ((status->button ^ calib[3].button) & 0x40) {
         diff = status->left - calib[2].right;
-        calib[1].right = diff < 0 ? 0 : diff;
+        calib[1].right = 0 > diff ? 0 : diff;
         cur[7] = 0xFF;
     } else if (status->button & 0x40) {
         cur[7] = 0xFF;
@@ -7385,7 +7385,7 @@ void HandleTriggers(u8 *cur, SISteeringStatus *status, SISteeringStatus *calib) 
     }
     if ((status->button ^ calib[3].button) & 0x20) {
         diff = status->right - *(u8 *)&calib[2].err;
-        calib[1].err = diff < 0 ? 0 : diff;
+        calib[1].err = 0 > diff ? 0 : diff;
         cur[8] = 0xFF;
     } else if (status->button & 0x20) {
         cur[8] = 0xFF;
