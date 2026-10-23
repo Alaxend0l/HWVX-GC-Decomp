@@ -3192,6 +3192,43 @@ void DataPack_CloseFiles(void) {
     }
 }
 
+#pragma use_lmw_stmw on
+void DataPack_RefreshTextures(DataPack *pack) {
+    void Gfx_LoadPalettes_RAM(void *data, void *palettes);
+    u16 Gfx_LoadTexture_RAM(u32 *data);
+    void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
+    u8 *base;
+    u32 texData;
+    u32 id;
+    u32 i;
+    u32 texID;
+    u32 packID;
+    u32 idx;
+
+    base = pack->base;
+    Gfx_LoadPalettes_RAM(pack->paletteData, pack->palettes);
+    texData = pack->textureData;
+    for (i = 0; i < pack->numTextures; i++) {
+        pack->textureIDs[i] = Gfx_LoadTexture_RAM(&texData);
+        if (texData & 0x1F) {
+            texData += 0x20 - (texData & 0x1F);
+        }
+    }
+    for (i = 0; i < pack->numRelocs; i++) {
+        id = pack->relocs[i * 2 + 1];
+        if (id & 0xFFFF0000) {
+            packID = id >> 16;
+            idx = pack->refs[0].id != packID;
+            if (pack->refs[idx].pack == NULL) {
+                pack->refs[idx].pack = FileStreaming_InitializeDataPack(FileStreaming_LoadDataPack(&pack->refs[idx], 8, packID, 0), 8, 1);
+            }
+            texID = pack->refs[idx].pack->textureIDs[id & 0xFFFF];
+        } else {
+            texID = pack->textureIDs[id];
+        }
+        *(u32 *)(base + pack->relocs[i * 2]) = texID;
+    }
+}
 void DataPack_ReleaseQuadPack(void *pack) {
     s32 *gx;
     s32 base;
@@ -3249,6 +3286,49 @@ void Debris_Draw(u8 *debris) {
 
 f32 Debris_GetMass(void *arg0) {
     return M2C_FIELD(arg0, f32 *, 0xCC);
+}
+
+f32 GetBoundingBoxRadius(Vector4 *box, Vector4 *offset) {
+    Vector4 corners[8];
+    f32 radius;
+    f32 mag;
+    u32 i;
+
+    radius = 0.0f;
+    corners[0].x = box[1].x;
+    corners[0].y = box[1].y;
+    corners[0].z = box[1].z;
+    corners[1].x = box[1].x;
+    corners[1].y = box[1].y;
+    corners[1].z = box[0].z;
+    corners[2].x = box[1].x;
+    corners[2].y = box[0].y;
+    corners[2].z = box[1].z;
+    corners[3].x = box[1].x;
+    corners[3].y = box[0].y;
+    corners[3].z = box[0].z;
+    corners[4].x = box[0].x;
+    corners[4].y = box[1].y;
+    corners[4].z = box[1].z;
+    corners[5].x = box[0].x;
+    corners[5].y = box[1].y;
+    corners[5].z = box[0].z;
+    corners[6].x = box[0].x;
+    corners[6].y = box[0].y;
+    corners[6].z = box[1].z;
+    corners[7].x = box[0].x;
+    corners[7].y = box[0].y;
+    corners[7].z = box[0].z;
+    for (i = 0; i < 8; i++) {
+        corners[i].x += offset->x;
+        corners[i].y += offset->y;
+        corners[i].z += offset->z;
+        mag = MagnitudeVector(&corners[i]);
+        if (mag > radius) {
+            radius = mag;
+        }
+    }
+    return radius;
 }
 
 #pragma push
