@@ -5422,6 +5422,72 @@ void Render_SetTextureHandle(u16 id) {
     }
 }
 
+#pragma push
+#pragma dont_inline on
+void Render_Create(void) {
+    extern s32 m_fogMode_803C76CC;
+    extern s32 m_fillMode;
+    extern s32 m_currentView;
+    extern s32 m_blendMode_803C76D0;
+    extern s32 m_curLightState;
+    extern s32 m_curTexture;
+    extern s32 m_zmode_803C76B8;
+    extern s32 m_zstate_803C76B4;
+    extern s32 m_zwrite_803C76B0;
+    extern GXColor g_textcolor;
+    extern GXColor m_clearColor_803C76F4;
+    extern GfxState g_state;
+    extern f32 g_identity[];
+    extern void *FontData_803C76A4;
+    extern s32 __OSCurrHeap;
+    void *OSAllocFromHeap(s32 heap, u32 size);
+    void OSInitFont(void *fontData);
+
+    m_fogMode_803C76CC = 0;
+    m_fillMode = 0;
+    m_currentView = 0;
+    *(f32 *)((u8 *)GetRenderWindow() + 0x270) = 90.0f;
+    memset((u8 *)GetRenderWindow() + 0xC0, 0, 0x40);
+    g_state.unk93 = 0;
+    memset(g_identity, 0, 0x40);
+    g_identity[15] = 1.0f;
+    g_identity[10] = 1.0f;
+    g_identity[5] = 1.0f;
+    g_identity[0] = 1.0f;
+    memcpy(GetRenderWindow(), g_identity, 0x40);
+    memcpy((u8 *)GetRenderWindow() + 0x40, g_identity, 0x40);
+    memcpy((u8 *)GetRenderWindow() + 0x80, g_identity, 0x40);
+    memcpy((u8 *)GetRenderWindow() + 0x100, g_identity, 0x40);
+    m_blendMode_803C76D0 = 1;
+    g_textcolor.r = 0xFF;
+    g_textcolor.g = 0xFF;
+    g_textcolor.b = 0xFF;
+    g_textcolor.a = 0xFF;
+    m_clearColor_803C76F4.r = 0;
+    m_clearColor_803C76F4.g = 0;
+    m_clearColor_803C76F4.b = 0;
+    m_clearColor_803C76F4.a = 0;
+    g_state.ambientColor.r = 0x30;
+    g_state.ambientColor.g = 0x30;
+    g_state.ambientColor.b = 0x30;
+    g_state.ambientColor.a = 0xFF;
+    g_state.lightColor.r = 0xC8;
+    g_state.lightColor.g = 0xC8;
+    g_state.lightColor.b = 0xC8;
+    g_state.lightColor.a = 0xFF;
+    g_state.lightDir.x = 0.5f;
+    g_state.lightDir.y = 0.5f;
+    g_state.lightDir.z = 0.0f;
+    m_curLightState = -1;
+    m_curTexture = 0;
+    m_zmode_803C76B8 = 3;
+    m_zstate_803C76B4 = 1;
+    m_zwrite_803C76B0 = 1;
+    FontData_803C76A4 = OSAllocFromHeap(__OSCurrHeap, 0x20120);
+    OSInitFont(FontData_803C76A4);
+}
+#pragma pop
+
 void Render_FlipBuffers(void) {
     void PrintDVDMessage(void);
     void GXSetColorUpdate(u8 enable);
@@ -8357,7 +8423,9 @@ void AudioIT_Destroy(void) {
 void CreateIT(u8 *data, u32 arg1) {
     typedef struct ITSong {
         u8 unk0[0xE30];
-        u8 *tbl[3][100];
+        u8 *ins[100];
+        u8 *smp[100];
+        u8 *pat[100];
     } ITSong;
     extern u8 *g_pHdr_803C78E8;
     extern u8 *g_pOrder_803C78E4;
@@ -8382,20 +8450,20 @@ void CreateIT(u8 *data, u32 arg1) {
     data = g_pHdr_803C78E8;
     *(s32 *)(g_pHdr_803C78E8 + 0x3C) = 1;
     g_pOrder_803C78E4 = data + 0xC0;
-    insOff = (u32 *)(data + *(u16 *)(g_pHdr_803C78E8 + 0x20) + 0xC0);
+    insOff = (u32 *)(&data[*(u16 *)(g_pHdr_803C78E8 + 0x20)] + 0xC0);
     smpOff = insOff + *(u16 *)(g_pHdr_803C78E8 + 0x22);
     patOff = smpOff + *(u16 *)(g_pHdr_803C78E8 + 0x24);
     for (i = 0; i < *(u16 *)(g_pHdr_803C78E8 + 0x22); i++) {
-        song->tbl[0][i] = data + insOff[i];
+        song->ins[i] = &data[insOff[i]];
     }
     for (i = 0; i < *(u16 *)(g_pHdr_803C78E8 + 0x24); i++) {
-        song->tbl[1][i] = data + smpOff[i];
+        song->smp[i] = &data[smpOff[i]];
     }
     for (i = 0; i < *(u16 *)(g_pHdr_803C78E8 + 0x26); i++) {
-        song->tbl[2][i] = data + patOff[i];
+        song->pat[i] = &data[patOff[i]];
     }
-    *(u32 *)(song->tbl[1][0] + 0x48) = arg1;
-    CreateIT_(g_pHdr_803C78E8, song->tbl[1]);
+    *(u32 *)(song->smp[0] + 0x48) = arg1;
+    CreateIT_(g_pHdr_803C78E8, song->smp);
     memcpy(g_musicTitle, g_pHdr_803C78E8 + 4, 0x1A);
     DestroySongVoice = DestroyITVoice;
     g_musicTitle[0x1A] = 0;
