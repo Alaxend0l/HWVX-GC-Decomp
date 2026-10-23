@@ -1438,6 +1438,41 @@ s32 ActionPauseTACSystem(s32 *action) {
     return 1;
 }
 
+s32 ActionSwapAIScript(u32 *action) {
+    s32 GameSettings_GetDifficulty(void);
+    void AI_Car_Reset(void *ai);
+    u8 *creature;
+    u32 i;
+    u8 *vehicle;
+
+    for (i = 0; i < action[4]; i++) {
+        vehicle = (u8 *)action[i + 5];
+        M2C_FIELD(vehicle, u32 *, 0x40) = action[0];
+        M2C_FIELD(vehicle, u32 *, 0x44) = action[1];
+        M2C_FIELD(vehicle, u32 *, 0x48) = action[2];
+        M2C_FIELD(vehicle, u32 *, 0x4C) = action[3];
+        creature = M2C_FIELD(vehicle, u8 **, 0x28);
+        if (creature != NULL) {
+            switch (GameSettings_GetDifficulty()) {
+            case 0:
+                M2C_FIELD(M2C_FIELD(creature, u8 **, 0x94), u32 *, 0xD0) = action[0];
+                break;
+            case 1:
+                M2C_FIELD(M2C_FIELD(creature, u8 **, 0x94), u32 *, 0xD0) = action[1];
+                break;
+            case 2:
+                M2C_FIELD(M2C_FIELD(creature, u8 **, 0x94), u32 *, 0xD0) = action[2];
+                break;
+            case 3:
+                M2C_FIELD(M2C_FIELD(creature, u8 **, 0x94), u32 *, 0xD0) = action[3];
+                break;
+            }
+            AI_Car_Reset(creature + 0x94);
+        }
+    }
+    return 1;
+}
+
 void WildCardRack_JettisonAll(void *rack);
 #pragma push
 #pragma use_lmw_stmw on
