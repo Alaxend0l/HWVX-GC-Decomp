@@ -8384,13 +8384,13 @@ static inline char *StateMovie_GetNextMovieName(void) {
     if (g_curMovieIndex >= len) {
         return NULL;
     }
-    while (g_curMovieIndex < len) {
-        if (g_moviePlaybackName[g_curMovieIndex] == ',') {
+    for (; g_curMovieIndex < len; g_curMovieIndex++) {
+        if (g_moviePlaybackName[g_curMovieIndex] != ',') {
+            buffer[n++] = g_moviePlaybackName[g_curMovieIndex];
+        } else {
             g_curMovieIndex++;
             break;
         }
-        buffer[n++] = g_moviePlaybackName[g_curMovieIndex];
-        g_curMovieIndex++;
     }
     buffer[n] = '\0';
     return buffer;
