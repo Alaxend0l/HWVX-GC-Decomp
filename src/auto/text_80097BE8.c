@@ -1551,6 +1551,28 @@ void __close_all(void) {
     }
 }
 
+void __num2dec_internal(decimal *d, double x);
+void __num2dec(const decform *form, double x, decimal *d) {
+    short digits = form->digits;
+    int i;
+
+    __num2dec_internal(d, x);
+    if (d->sig.text[0] > 9) {
+        return;
+    }
+    if (digits > SIGDIGLEN) {
+        digits = SIGDIGLEN;
+    }
+    __rounddec(d, digits);
+    while (d->sig.length < digits) {
+        d->sig.text[d->sig.length++] = 0;
+    }
+    d->exp -= d->sig.length - 1;
+    for (i = 0; i < d->sig.length; i++) {
+        d->sig.text[i] += '0';
+    }
+}
+
 void __two_exp_800991F0(decimal *result, short exp);
 void __timesdec(decimal *result, const decimal *x, const decimal *y);
 void __ull2dec(decimal *result, unsigned long long val);
