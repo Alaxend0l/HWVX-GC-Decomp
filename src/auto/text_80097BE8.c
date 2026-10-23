@@ -6191,14 +6191,15 @@ void Render_DrawPointSprites(void) {
 }
 
 #pragma push
-#pragma dont_inline on
+#pragma auto_inline off
 void Render_DrawRectangles(void) {
     extern GDL *g_pGDL;
     extern s32 g_debugTriCount;
     void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
     u32 i;
     u32 j;
-    u8 blend;
+    s32 blend;
+    GDLRectVtx *v;
 
     if (g_pGDL->numRects2D == 0) {
         return;
@@ -6213,25 +6214,26 @@ void Render_DrawRectangles(void) {
         Render_SetTextureHandle(g_pGDL->rects2D[i].tex);
         GXBegin(0x80, 0, 4);
         for (j = 0; j < 4; j++) {
+            v = &g_pGDL->rects2D[i].v[j];
             {
-                f32 y = g_pGDL->rects2D[i].v[j].y;
-                f32 x = g_pGDL->rects2D[i].v[j].x;
+                f32 y = v->y;
+                f32 x = v->x;
                 GXWGFifo.f32 = x;
                 GXWGFifo.f32 = y;
             }
             {
-                u8 a = g_pGDL->rects2D[i].v[j].a;
-                u8 b = g_pGDL->rects2D[i].v[j].b;
-                u8 g = g_pGDL->rects2D[i].v[j].g;
-                u8 c = g_pGDL->rects2D[i].v[j].r;
+                u8 a = v->a;
+                u8 b = v->b;
+                u8 g = v->g;
+                u8 c = v->r;
                 GXWGFifo.u8 = c;
                 GXWGFifo.u8 = g;
                 GXWGFifo.u8 = b;
                 GXWGFifo.u8 = a;
             }
             {
-                f32 t = g_pGDL->rects2D[i].v[j].t;
-                f32 s = g_pGDL->rects2D[i].v[j].s;
+                f32 t = v->t;
+                f32 s = v->s;
                 GXWGFifo.f32 = s;
                 GXWGFifo.f32 = t;
             }
