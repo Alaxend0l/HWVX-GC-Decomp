@@ -256,6 +256,15 @@ typedef struct SubBlock {
     struct SubBlock *next_;
 } SubBlock;
 
+typedef struct Block {
+    struct Block *prev_;
+    struct Block *next_;
+    u32 max_size_;
+    u32 size_;
+} Block;
+
+SubBlock *Block_subBlock(Block *ths, u32 size);
+
 extern u8 __lower_map[256];
 s32 fflush(FILE *file);
 void free(void *ptr);
