@@ -338,8 +338,7 @@ typedef struct CodeVariables {
     u8 unk120[0x134 - 0x120];
 } CodeVariables;
 
-CodeVariables g_codeVariables;
-GeneralGameSettings g_generalGameSettings;
+extern CodeVariables g_codeVariables;
 
 typedef struct SIControl {
     s32 chan;
