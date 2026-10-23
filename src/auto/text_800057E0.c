@@ -8967,6 +8967,95 @@ void __GXSetVCD(void) {
     __GXXfVtxSpecs();
 }
 
+#pragma push
+#pragma scheduling off
+void GXGetVtxDesc(u32 attr, s32 *type) {
+    typedef struct GXDataVcd {
+        u8 unk0[0x14];
+        u32 vcdLo;
+        u32 vcdHi;
+        u8 unk1C[0x41C - 0x1C];
+        u8 hasNrms;
+        u8 hasBiNrms;
+    } GXDataVcd;
+    extern GXDataVcd *const gx;
+    u32 cpType;
+
+    switch (attr) {
+    case 0:
+        cpType = gx->vcdLo & 1;
+        break;
+    case 1:
+        cpType = (gx->vcdLo >> 1) & 1;
+        break;
+    case 2:
+        cpType = (gx->vcdLo >> 2) & 1;
+        break;
+    case 3:
+        cpType = (gx->vcdLo >> 3) & 1;
+        break;
+    case 4:
+        cpType = (gx->vcdLo >> 4) & 1;
+        break;
+    case 5:
+        cpType = (gx->vcdLo >> 5) & 1;
+        break;
+    case 6:
+        cpType = (gx->vcdLo >> 6) & 1;
+        break;
+    case 7:
+        cpType = (gx->vcdLo >> 7) & 1;
+        break;
+    case 8:
+        cpType = (gx->vcdLo >> 8) & 1;
+        break;
+    case 9:
+        cpType = (gx->vcdLo >> 9) & 3;
+        break;
+    case 10:
+        cpType = gx->hasNrms ? (gx->vcdLo >> 11) & 3 : 0;
+        break;
+    case 25:
+        cpType = gx->hasBiNrms ? (gx->vcdLo >> 11) & 3 : 0;
+        break;
+    case 11:
+        cpType = (gx->vcdLo >> 13) & 3;
+        break;
+    case 12:
+        cpType = (gx->vcdLo >> 15) & 3;
+        break;
+    case 13:
+        cpType = gx->vcdHi & 3;
+        break;
+    case 14:
+        cpType = (gx->vcdHi >> 2) & 3;
+        break;
+    case 15:
+        cpType = (gx->vcdHi >> 4) & 3;
+        break;
+    case 16:
+        cpType = (gx->vcdHi >> 6) & 3;
+        break;
+    case 17:
+        cpType = (gx->vcdHi >> 8) & 3;
+        break;
+    case 18:
+        cpType = (gx->vcdHi >> 10) & 3;
+        break;
+    case 19:
+        cpType = (gx->vcdHi >> 12) & 3;
+        break;
+    case 20:
+        cpType = (gx->vcdHi >> 14) & 3;
+        break;
+    default:
+        cpType = 0;
+        break;
+    }
+    *type = cpType;
+}
+#pragma pop
+
 void GXGetVtxDescv(s32 *vcd) {
     void GXGetVtxDesc(s32 attr, s32 *type);
     s32 attr;
