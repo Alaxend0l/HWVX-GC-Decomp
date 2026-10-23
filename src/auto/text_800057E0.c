@@ -4229,6 +4229,7 @@ void InterfaceManager_SetObjectReactive(u8 *iface, u32 onId, u32 offId) {
         }
     }
 }
+#pragma pop
 
 void InterfaceManager_SetControllerConfigInputString(void) {
 
