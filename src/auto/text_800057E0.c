@@ -2804,6 +2804,93 @@ s32 AttachThing_Move(void *thing) {
     return 1;
 }
 
+void AttachThing_DrawCorona(void *arg0) {
+    extern s32 g_iDeltaTimeMS;
+    u32 ViewManager_GetViewFormat(void);
+    void Thing_Release(void *thing);
+    void Gfx_TransformVector(Vector4 *in, Vector4 *out);
+    void Gfx_GetCameraPosition(Vector4 *pos);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    s8 RayHitsTerrainAndObjects(void *start, void *dir, void *dist, void *hit);
+    void Gfx_AddCorona(Vector4 *pos, u16 texture, void *color, f32 scaleX, f32 scaleY, s32 blend);
+    typedef struct CoronaColor {
+        u8 r;
+        u8 g;
+        u8 b;
+        u8 a;
+    } CoronaColor;
+    struct AttachData {
+        u8 type;
+        u8 blend;
+        u8 pad2[0x8 - 0x2];
+        u32 texture;
+        u8 padC[0x24 - 0xC];
+        f32 *range;
+    };
+    struct AttachCorona {
+        u8 pad00[0x40];
+        Vector4 pos;
+        u8 pad50[0x74 - 0x50];
+        u32 flags;
+        u8 pad78[0xB4 - 0x78];
+        struct AttachData *data;
+        s32 timer;
+        f32 fade;
+        u8 padC0[0xD0 - 0xC0];
+        f32 scaleX;
+        u8 padD4[0x100 - 0xD4];
+        f32 scaleY;
+        u8 pad104[0x154 - 0x104];
+        CoronaColor color;
+    } *thing = arg0;
+    Vector4 screen;
+    Vector4 camera;
+    Vector4 dir;
+    f32 dist;
+    CoronaColor scaled;
+    CoronaColor color;
+    f32 farDist;
+    f32 nearDist;
+    f32 depth;
+    f32 fade;
+
+    if (ViewManager_GetViewFormat() > 1) {
+        Thing_Release(thing);
+        return;
+    }
+    farDist = thing->data->range[1];
+    nearDist = thing->data->range[0];
+    Gfx_TransformVector(&thing->pos, &screen);
+    depth = screen.w;
+    if (!(depth < 0.0f) && !(depth > farDist)) {
+        thing->timer -= g_iDeltaTimeMS;
+        if (thing->timer < 0) {
+            dist = 1.0f;
+            Gfx_GetCameraPosition(&camera);
+            PSVECSubtract(&thing->pos, &camera, &dir);
+            thing->timer = 100;
+            if (RayHitsTerrainAndObjects(&camera, &dir, &dist, NULL)) {
+                thing->flags |= 0x20;
+                return;
+            }
+            thing->flags &= ~0x20;
+        }
+        if (!(thing->flags & 0x20)) {
+            if (depth > nearDist) {
+                fade = thing->fade * (1.0f - (depth - nearDist) / (farDist - nearDist));
+            } else {
+                fade = thing->fade;
+            }
+            scaled.r = thing->color.r * fade;
+            scaled.g = thing->color.g * fade;
+            scaled.b = thing->color.b * fade;
+            scaled.a = thing->color.a;
+            color = scaled;
+            Gfx_AddCorona(&screen, thing->data->texture, &color, thing->scaleX, thing->scaleY, thing->data->blend);
+        }
+    }
+}
+
 void AttachThing_Draw(void *arg0) {
     M2C_UNK AttachThing_DrawCorona(void *);
     void *Gfx_AddBillBoardSprite(u16);
@@ -6902,6 +6989,84 @@ done:
         break;
     }
 }
+
+#pragma push
+#pragma readonly_strings on
+#pragma use_lmw_stmw on
+s32 GameSettings_LoadDefaultMemoryCardData(void) {
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    u32 FileManager_GetChecksum(u32 size, void *data);
+    void *memcpy(void *dst, const void *src, u32 n);
+    s32 GameSettings_GetDefaultMemoryCardStatus(s32 *device, s8 bForce);
+    extern u8 *g_pSavedGameData;
+    extern struct {
+        u8 unk0[0xC];
+        char *fileName;
+        u8 unk10[0x4];
+        u32 version;
+        u32 size;
+    } g_gameInfo[];
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    s32 device;
+    s32 status;
+    s32 handle;
+    s8 ok;
+    u8 *data;
+    u32 version;
+    u32 size;
+    const char *name;
+    u8 *mcp;
+    void *pack;
+
+    status = GameSettings_GetDefaultMemoryCardStatus(&device, 1);
+    if (status != 1 && status != 0) {
+        return 0;
+    }
+    device--;
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        name = g_gameInfo[mcp[1]].fileName;
+        version = g_gameInfo[mcp[1]].version;
+        size = g_gameInfo[mcp[1]].size;
+    } else {
+        version = 0;
+        size = version;
+        name = "saveFile";
+    }
+    data = g_pSavedGameData;
+    ok = 0;
+    handle = File_Open((char *)device + 0xB, name, 0, NULL);
+    if (handle != -1) {
+        File_Read(handle, size * 8 + 0x15C, data);
+        if (((u32 *)data)[0] == 4 && ((u32 *)data)[1] == version &&
+            ((u32 *)data)[2] == FileManager_GetChecksum(version, data + 0xC)) {
+            ok = 1;
+        }
+        File_Close(handle);
+    }
+    if (!ok) {
+        return 0;
+    }
+    memcpy(&g_generalGameSettings, g_pSavedGameData + 0xC, 0x150);
+    GameSettings_ApplyDefaultGameData();
+    return 1;
+}
+#pragma pop
 
 s32 GameSettings_GetDefaultMemoryCardStatus(s32 *device, s8 bForce) {
     s32 GameSettings_GetMemoryCardStatus(s32 device, s32 arg1);
