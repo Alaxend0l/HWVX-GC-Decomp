@@ -5981,7 +5981,7 @@ void CarA_SlaveWeaponStop(void *car, s32 weapon) {
     void MotionState_ReleaseSlavesByType(void *state, u8 type);
     void ThingManagerList_RemoveReleasedThings(void *list);
 
-    M2C_FIELD(car, s32 *, 0x46C + weapon * 4) = 10001;
+    ((s32 *)((u8 *)car + 0x46C))[weapon] = 10001;
     MotionState_ReleaseSlavesByType((u8 *)car + 0x330, weapon + 0xF0);
     ThingManagerList_RemoveReleasedThings((u8 *)car + 0x344);
 }
