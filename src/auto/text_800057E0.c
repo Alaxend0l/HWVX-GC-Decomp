@@ -2002,6 +2002,74 @@ void AI_Car_AsyncScanDestructibles(u8 *car) {
     }
 }
 
+s32 AI_Car_CheckLocalStats(u8 *ai, u8 *node) {
+    u8 *stats = *(u8 **)(node + 0x58);
+    u8 *car = *(u8 **)(ai + 0x2C);
+    s32 health;
+    u16 count;
+    u16 i;
+    u8 *list;
+    u8 *entry;
+    u8 *thing;
+
+    if (node[1] != 1) {
+        return 1;
+    }
+    if (stats[0] != 0) {
+        health = (f32)*(s32 *)(car + 0x78) / (100.0f * (f32)*(s32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x14));
+        switch (stats[0]) {
+        case 1:
+            if (health >= *(s32 *)(stats + 8)) {
+                return 0;
+            }
+            break;
+        case 2:
+            if (health <= *(s32 *)(stats + 8)) {
+                return 0;
+            }
+            break;
+        }
+    }
+    switch (stats[1]) {
+    case 0:
+        break;
+    case 1:
+        if (*(f32 *)(car + 0x468) >= *(f32 *)(stats + 0xC)) {
+            return 0;
+        }
+        break;
+    case 2:
+        if (*(f32 *)(car + 0x468) <= *(f32 *)(stats + 0xC)) {
+            return 0;
+        }
+        break;
+    }
+    if (stats[2] != 0) {
+        count = 0;
+        list = ThingManagerList_GetByType(car + 0x344, 8);
+        for (i = 0; list != NULL && i < 12; i++) {
+            entry = list + i * 0x50;
+            thing = *(u8 **)(entry + 0xFC);
+            if (thing != NULL && thing[0] == 3 && *(s16 *)(entry + 0xF0) > *(u32 *)(*(u8 **)(thing + 0x30) + 0x24)) {
+                count++;
+            }
+        }
+        switch (stats[2]) {
+        case 1:
+            if (count >= *(u16 *)(stats + 6)) {
+                return 0;
+            }
+            break;
+        case 2:
+            if (count <= *(u16 *)(stats + 6)) {
+                return 0;
+            }
+            break;
+        }
+    }
+    return 1;
+}
+
 s32 AI_Car_DetermineState(u8 *car) {
     typedef struct { u8 *info; u32 timer0; u32 timer1; u32 timer2; u8 pad10[8]; } AIBranch;
     typedef struct { u8 pad0[0xD4]; AIBranch branches[32]; } AICarBranches;
