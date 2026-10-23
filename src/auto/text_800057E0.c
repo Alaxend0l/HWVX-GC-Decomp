@@ -27940,6 +27940,9 @@ BOOL SIUnregisterPollingHandler(void *handler) {
     return FALSE;
 }
 
+#pragma push
+#pragma peephole off
+#pragma scheduling off
 BOOL __SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback) {
     BOOL OSDisableInterrupts(void);
     BOOL OSRestoreInterrupts(BOOL level);
@@ -27993,6 +27996,7 @@ BOOL __SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inpu
     OSRestoreInterrupts(enabled);
     return TRUE;
 }
+#pragma pop
 
 void SISetCommand(s32 chan, u32 command) {
     __SIRegs[3 * chan] = command;
