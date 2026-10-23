@@ -9238,7 +9238,7 @@ extern Vector4 g_zeroVector;
 extern void *g_pSourcePlayer;
 void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
 void ThingManagerList_InitAllSlavesNow(void *list, void *slaves, u8 player);
-static inline s32 SharedSlaveHolder_Get(void *shared) {
+s32 SharedSlaveHolder_Get(void *shared) {
     s32 i;
 
     for (i = 0; i < 64; i++) {
