@@ -406,6 +406,37 @@ extern u32 g_freeSound_803C78D8;
 
 typedef void (*GBACallback)(s32 chan, s32 ret);
 
+typedef struct GBASecParam {
+    u8 readbuf[4];
+    s32 paletteColor;
+    s32 paletteSpeed;
+    s32 length;
+    u32 *out;
+    u8 _padding0[12];
+    u32 keyA;
+    s32 keyB;
+    u8 _padding1[24];
+} GBASecParam;
+
+typedef struct GBADSPTaskInfo {
+    u32 state;
+    u32 priority;
+    u32 flags;
+    void *iram_mmem_addr;
+    u32 iram_length;
+    u32 iram_addr;
+    void *dram_mmem_addr;
+    u32 dram_length;
+    u32 dram_addr;
+    u16 dsp_init_vector;
+    u16 dsp_resume_vector;
+    void *init_cb;
+    void *res_cb;
+    void *done_cb;
+    void *req_cb;
+    u8 unk38[0x50 - 0x38];
+} GBADSPTaskInfo;
+
 typedef struct GBABootInfo {
     s32 paletteColor;
     s32 paletteSpeed;
