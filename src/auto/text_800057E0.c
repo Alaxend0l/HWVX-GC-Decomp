@@ -2212,6 +2212,19 @@ void DataPack_ReleaseQuadPack(void *pack) {
     }
 }
 
+void Debris_Draw(u8 *debris) {
+    void Gfx_DrawGeometry(void *geom, void *mtx);
+    void Gfx_DrawGeometry_MatrixNotCached(void *geom, void *mtx);
+
+    if (M2C_FIELD(debris, void **, 0xC0) != NULL) {
+        if (M2C_FIELD(debris, u32 *, 0x74) & 0x20000000) {
+            Gfx_DrawGeometry(M2C_FIELD(debris, void **, 0xC0), debris + 0x10);
+        } else {
+            Gfx_DrawGeometry_MatrixNotCached(M2C_FIELD(debris, void **, 0xC0), debris + 0x10);
+        }
+    }
+}
+
 f32 Debris_GetMass(void *arg0) {
     return M2C_FIELD(arg0, f32 *, 0xCC);
 }
