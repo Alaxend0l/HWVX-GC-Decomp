@@ -1489,6 +1489,28 @@ int vprintf(const char *format, char *arg) {
     return __pformatter(&__FileWrite, stream, format, arg);
 }
 
+int printf(const char *format, ...) {
+    typedef struct __va_list_struct {
+        char gpr;
+        char fpr;
+        char reserved[2];
+        char *input_arg_area;
+        char *reg_save_area;
+    } va_list[1];
+    extern u8 __files[];
+    extern void *__FileWrite(void *, const char *, u32);
+    int fwide(void *, int);
+    int __pformatter(void *(*)(void *, const char *, u32), void *, const char *, char *);
+    va_list args;
+    void *stream = __files + 0x50;
+
+    if (fwide(stream, -1) >= 0) {
+        return -1;
+    }
+    __builtin_va_info(&args);
+    return __pformatter(&__FileWrite, stream, format, (char *)args);
+}
+
 void *__StringWrite(void *osc, const char *Buffer, u32 NumChars) {
     u32 CharsToBeWritten;
     __OutStrCtrl *Oscp = (__OutStrCtrl *)osc;
