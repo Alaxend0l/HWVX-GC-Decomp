@@ -4362,6 +4362,42 @@ void Gfx_DrawGeometry_QuaternionScalePos(s32 geometry, s32 quat, s32 scale, s32 
     g_pGDL->numDrawEntries++;
 }
 
+s32 Gfx_CalcGeometryLOD(Geometry *geometry, f32 *matrix) {
+    extern u8 g_CurrentViews;
+    void PSVECAdd(Vector *a, Vector *b, Vector *ab);
+    void PSVECScale(Vector *src, Vector *dst, f32 scale);
+    void PSVECSubtract(Vector *a, Vector *b, Vector *a_b);
+    f32 PSVECDotProduct(Vector *a, Vector *b);
+    Vector min __attribute__((aligned(16)));
+    Vector max __attribute__((aligned(16)));
+    Vector center __attribute__((aligned(16)));
+    f32 dist;
+    u16 i;
+
+    if (geometry->numGroups == 1) {
+        return 0;
+    }
+    PSVECAdd((Vector *)&matrix[12], (Vector *)geometry->bboxMin, &min);
+    PSVECAdd((Vector *)&matrix[12], (Vector *)geometry->bboxMax, &max);
+    PSVECAdd(&min, &max, &center);
+    PSVECScale(&center, &center, 0.5f);
+    PSVECSubtract(&center, (Vector *)((u8 *)GetRenderWindow() + 0x180), &min);
+    dist = PSVECDotProduct(&min, (Vector *)((u8 *)GetRenderWindow() + 0x190));
+    dist *= ((f32 *)GetRenderWindow())[0x9D];
+    for (i = 0; i < geometry->numGroups; i++) {
+        if (dist < geometry->lodDistances[i]) {
+            break;
+        }
+    }
+    if (i < geometry->numGroups) {
+        if (g_CurrentViews != 1 && i + 1 < geometry->numGroups) {
+            return i + 1;
+        }
+        return i;
+    }
+    return -1;
+}
+
 s32 Gfx_Create(void) {
     void Init_Math3D(void);
     void RenderState_Init(void);
