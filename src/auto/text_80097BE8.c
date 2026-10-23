@@ -7133,6 +7133,82 @@ void RenderGroup(Geometry *geometry, u32 group, void *matrix) {
         RenderOpaqueGroup(geometry, group, matrix);
     }
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void EnvMap(Geometry *geometry, u32 group, void *matrix, s32 mode) {
+    extern GDL *g_pGDL;
+    extern s32 m_curEnvmapState;
+    extern u32 g_IsAnim;
+    extern u32 m_VtxDescFlag;
+    void *GetRenderWindow();
+    void Render_SetTextureHandle(u16 id);
+    void Render_StateAlphaBlendEnable(s32 enable);
+    void Render_StateBlendMode(u8 mode);
+    void Render_SetConstColor(GXColor *color);
+    void SetTriEnvVtxDescIdx(void);
+    void SetVertexBuffer();
+    void GXSetVtxDesc(s32 attr, s32 type);
+    void GXLoadTexMtxImm(f32 mtx[3][4], u32 id, s32 type);
+    void GXSetTexCoordGen2(s32 dst, s32 func, s32 src, u32 mtx, u8 normalize, u32 pt);
+    void DCFlushRange(void *addr, u32 len);
+    void GXCallDisplayList(void *list, u32 nbytes);
+    u32 opaque;
+    GeometryGroup *grp;
+    void *dl;
+    GXColor color;
+    f32 mtx[3][4];
+    u8 blend;
+
+    opaque = mode & 1;
+    grp = &geometry->groups[group];
+    dl = *(void **)((u8 *)grp + 0x1C);
+    color.r = ((u8 *)grp)[4];
+    color.g = ((u8 *)grp)[5];
+    color.b = ((u8 *)grp)[6];
+    color.a = ((u8 *)grp)[7];
+    if (!opaque) {
+        Render_SetTextureHandle(g_pGDL->envmapStates[m_curEnvmapState].unk8);
+        blend = 5;
+        if (mode & 2) {
+            blend = 2;
+        }
+        Render_StateAlphaBlendEnable(1);
+        Render_StateBlendMode(blend);
+        MatrixToMtxTranspose(mtx, (u8 *)GetRenderWindow() + 0x80);
+        color.r = ((u8 *)grp)[4] >> 2;
+        color.g = ((u8 *)grp)[5] >> 2;
+        color.b = ((u8 *)grp)[6] >> 2;
+    } else {
+        Render_SetTextureHandle(g_pGDL->envmapStates[m_curEnvmapState].unkA);
+        MatrixToMtxTranspose(mtx, (u8 *)GetRenderWindow() + 0x80);
+    }
+    mtx[0][0] *= 0.5f;
+    mtx[0][1] *= 0.5f;
+    mtx[0][2] *= 0.5f;
+    mtx[0][3] = 0.5f;
+    mtx[1][0] *= 0.5f;
+    mtx[1][1] *= 0.5f;
+    mtx[1][2] *= 0.5f;
+    mtx[1][3] = 0.5f;
+    GXLoadTexMtxImm(mtx, 30, 1);
+    GXSetTexCoordGen2(0, 1, 1, 30, 0, 125);
+    Render_SetConstColor(&color);
+    SetTriEnvVtxDescIdx();
+    if (g_IsAnim) {
+        GXSetVtxDesc(0, 1);
+        m_VtxDescFlag = 0;
+    }
+    SetVertexBuffer(geometry->lodDistances, grp->flags, geometry->unk4);
+    DCFlushRange(dl, *(u32 *)((u8 *)grp + 0x10));
+    GXCallDisplayList(dl, *(u32 *)((u8 *)grp + 0x10));
+    Render_SetConstColor(NULL);
+    GXSetTexCoordGen2(0, 1, 4, 60, 0, 125);
+    if (!opaque) {
+        Render_StateAlphaBlendEnable(0);
+    }
+}
+#pragma pop
 void Render_UseLighting(u8 arg0) {
     M2C_UNK GXSetChanCtrl(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK, s32, M2C_UNK, M2C_UNK);
     extern s32 m_pointLightMask_803C771C;
