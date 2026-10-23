@@ -3773,6 +3773,21 @@ void VertexColorSeqManager_Destroy(void) {
     g_iTotalVertexColorTiles = 0;
 }
 
+void VertexColorSeqManager_Heartbeat(void) {
+    typedef struct VertexColorTile {
+        u8 *light;
+        u8 key[0x30];
+    } VertexColorTile;
+    extern VertexColorTile g_VertexColorTiles[64];
+    extern s32 g_iTotalVertexColorTiles;
+    extern f32 g_fDeltaTimeMS;
+    u32 i;
+
+    for (i = 0; i < g_iTotalVertexColorTiles; i++) {
+        ExtractColorKey(M2C_FIELD(g_VertexColorTiles[i].light, void **, 0x4), g_VertexColorTiles[i].key, g_fDeltaTimeMS);
+    }
+}
+
 void VertexColorSeqManager_AddVertices(void *vertices) {
     extern s32 g_iTotalVertexColorSeq;
     extern void *g_pVertexColorSeqList[64];
@@ -3793,6 +3808,23 @@ void VertexColorSeqManager_RemoveVertices(void *vertices) {
             return;
         }
     }
+}
+
+s32 VertexColorSeqManager_GetLightIndex(void *light) {
+    typedef struct VertexColorTile {
+        u8 *light;
+        u8 key[0x30];
+    } VertexColorTile;
+    extern VertexColorTile g_VertexColorTiles[64];
+    extern s32 g_iTotalVertexColorTiles;
+    u32 i;
+
+    for (i = 0; i < g_iTotalVertexColorTiles; i++) {
+        if (light == g_VertexColorTiles[i].light) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 void VolumeManager_Create(void) {
