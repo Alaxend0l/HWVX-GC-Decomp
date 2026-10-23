@@ -557,14 +557,15 @@ typedef struct Texture {
     u8 unk0[0x24];
     void *data;
     u32 unk28;
-    u8 unk2C[4];
+    f32 unk2C;
     u16 unk30;
     u16 width;
     u16 height;
-    u8 unk36[2];
+    s16 refCount;
     u16 unk38;
     u16 unk3A;
-    u8 unk3C[0x40 - 0x3C];
+    u16 view;
+    s16 wrapMode;
 } Texture;
 
 typedef struct FontChar {
@@ -883,8 +884,8 @@ void __timesdec(decimal *result, const decimal *x, const decimal *y) {
 
     if (pDigit < end && *pDigit >= 5) {
         if (*pDigit == 5) {
-            u8 *q = pDigit + 1;
-            for (; q < end; ++q) {
+            u8 *q;
+            for (q = pDigit + 1; q < end; ++q) {
                 if (*q != 0) {
                     goto round;
                 }
