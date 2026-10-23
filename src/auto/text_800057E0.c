@@ -601,7 +601,7 @@ typedef struct CARDControl {
     s32 offset;
     u8 unkB8[0xBE - 0xB8];
     u16 startBlock;
-    u8 unkC0[0xC4 - 0xC0];
+    struct CARDFileInfo *fileInfo;
     CARDCallback extCallback;
     CARDCallback txCallback;
     CARDCallback exiCallback;
@@ -14141,6 +14141,59 @@ u32 VIGetTvFormat(void) {
     return format;
 }
 
+void ClampStick(s8 *px, s8 *py, s8 max, s8 xy, s8 min) {
+    int x = *px;
+    int y = *py;
+    int signX;
+    int signY;
+    int d;
+
+    if (0 <= x) {
+        signX = 1;
+    } else {
+        signX = -1;
+        x = -x;
+    }
+    if (0 <= y) {
+        signY = 1;
+    } else {
+        signY = -1;
+        y = -y;
+    }
+
+    if (x <= min) {
+        x = 0;
+    } else {
+        x -= min;
+    }
+    if (y <= min) {
+        y = 0;
+    } else {
+        y -= min;
+    }
+
+    if (x == 0 && y == 0) {
+        *px = *py = 0;
+        return;
+    }
+
+    if (xy * y <= xy * x) {
+        d = xy * x + (max - xy) * y;
+        if (xy * max < d) {
+            x = (s8)(xy * max * x / d);
+            y = (s8)(xy * max * y / d);
+        }
+    } else {
+        d = xy * y + (max - xy) * x;
+        if (xy * max < d) {
+            x = (s8)(xy * max * x / d);
+            y = (s8)(xy * max * y / d);
+        }
+    }
+    *px = (s8)(signX * x);
+    *py = (s8)(signY * y);
+}
+
 void PADClamp(void *status) {
     typedef struct {
         u16 button;
@@ -16293,6 +16346,44 @@ s32 CARDDeleteAsync(s32 chan, const char *fileName, CARDCallback callback) {
     }
     return result;
 }
+
+s32 CARDGetStatus(s32 chan, s32 fileNo, u8 *stat) {
+    void *memcpy(void *dst, const void *src, u32 n);
+    void UpdateIconOffsets(u8 *ent, u8 *stat);
+    s32 __CARDGetDirBlock(void *card);
+    s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard);
+    CARDControl *card;
+    u8 *ent;
+    s32 result;
+
+    if (fileNo < 0 || 0x7F <= fileNo) {
+        return -0x80;
+    }
+    result = __CARDGetControlBlock(chan, &card);
+    if (result < 0) {
+        return result;
+    }
+    ent = (u8 *)__CARDGetDirBlock(card) + fileNo * 0x40;
+    result = __CARDAccess(card, ent);
+    if (result == -10) {
+        result = __CARDIsPublic(ent);
+    }
+    if (0 <= result) {
+        memcpy(stat + 0x28, ent, 4);
+        memcpy(stat + 0x2C, ent + 4, 2);
+        *(u32 *)(stat + 0x20) = *(u16 *)(ent + 0x38) * card->sectorSize;
+        memcpy(stat, ent + 8, 0x20);
+        *(u32 *)(stat + 0x24) = *(u32 *)(ent + 0x28);
+        *(u8 *)(stat + 0x2E) = *(u8 *)(ent + 0x7);
+        *(u32 *)(stat + 0x30) = *(u32 *)(ent + 0x2C);
+        *(u16 *)(stat + 0x34) = *(u16 *)(ent + 0x30);
+        *(u16 *)(stat + 0x36) = *(u16 *)(ent + 0x32);
+        *(u32 *)(stat + 0x38) = *(u32 *)(ent + 0x3C);
+        UpdateIconOffsets(ent, stat);
+    }
+    return __CARDPutControlBlock(card, result);
+}
+
 #pragma pop
 s32 __CARDUpdateDir(s32 chan, CARDCallback callback) {
     void __CARDCheckSum(void *ptr, s32 length, u16 *checksum, u16 *checksumInv);
@@ -16502,6 +16593,52 @@ s32 __CARDGetDirBlock(void *arg0) {
 
 s32 __CARDIsOpened(void) {
     return 0;
+}
+
+void CreateCallbackFat(s32 chan, s32 result) {
+    void *memcpy(void *dst, const void *src, u32 n);
+    s32 __CARDGetDirBlock(void *card);
+    s32 __CARDUpdateDir(s32 chan, CARDCallback callback);
+    s64 OSGetTime(void);
+    CARDControl *card;
+    u8 *ent;
+    CARDCallback callback;
+    u8 *diskID;
+    u8 *fileInfo;
+
+    card = &__CARDBlock[chan];
+    callback = card->apiCallback;
+    card->apiCallback = 0;
+    if (result < 0) {
+        goto error;
+    }
+    ent = (u8 *)__CARDGetDirBlock(card) + (*(u16 *)((u8 *)card + 0xBC) << 6);
+    diskID = *(u8 **)((u8 *)card + 0x10C);
+    memcpy(ent, diskID, 4);
+    memcpy(ent + 4, *(u8 **)((u8 *)card + 0x10C) + 4, 2);
+    ent[0x34] = 4;
+    ent[0x35] = 0;
+    *(u16 *)(ent + 0x36) = card->startBlock;
+    ent[0x7] = 0;
+    *(u32 *)(ent + 0x2C) = 0xFFFFFFFF;
+    *(u16 *)(ent + 0x30) = 0;
+    *(u16 *)(ent + 0x32) = 0;
+    *(u32 *)(ent + 0x3C) = 0xFFFFFFFF;
+    *(u16 *)(ent + 0x32) = (*(u16 *)(ent + 0x32) & ~3) | 1;
+    fileInfo = *(u8 **)((u8 *)card + 0xC0);
+    *(s32 *)(fileInfo + 0x8) = 0;
+    *(u16 *)(*(u8 **)((u8 *)card + 0xC0) + 0x10) = *(u16 *)(ent + 0x36);
+    *(u32 *)(ent + 0x28) = OSGetTime() / (*(u32 *)0x800000F8 / 4);
+    result = __CARDUpdateDir(chan, callback);
+    if (result < 0) {
+        goto error;
+    }
+    return;
+error:
+    __CARDPutControlBlock(card, result);
+    if (callback) {
+        callback(chan, result);
+    }
 }
 
 s32 CARDCreate(s32 chan, const char *fileName, u32 size, CARDFileInfo *fileInfo) {
