@@ -1559,7 +1559,7 @@ f32 AI_AngleToTarget(u8 *ai, Vector4 *target) {
 
     PSVECSubtract(target, (Vector4 *)(ai + 0x40), &dir);
     ProjectVectorTangential(&dir, (Vector4 *)(ai + 0x20), &dir);
-    if (PSVECSquareMag(&dir) != 0.0f) {
+    if (PSVECSquareMag(&dir)) {
         PSVECNormalize(&dir, &dir);
     }
     dot = PSVECDotProduct(ai + 0x30, &dir);
