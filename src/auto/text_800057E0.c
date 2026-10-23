@@ -18807,6 +18807,96 @@ void __GXWriteFifoIntReset(u8 hiWatermarkClr, u8 loWatermarkClr) {
     __cpReg[2] = *(u32 *)(gx + 0x10);
 }
 
+void __GXXfVtxSpecs(void) {
+    typedef struct GXDataXfVcd {
+        u16 unk0;
+        u16 bpSentNot;
+        u8 unk4[0x14 - 0x4];
+        u32 vcdLo;
+        u32 vcdHi;
+        u8 unk1C[0x41C - 0x1C];
+        u8 hasNrms;
+        u8 hasBiNrms;
+    } GXDataXfVcd;
+    extern GXDataXfVcd *gx;
+    u32 nCols;
+    u32 nNrm;
+    u32 nTex;
+    u32 reg;
+    u32 lo;
+    u32 hi;
+    u32 c0, c1;
+    u32 t0, t1, t2, t3, t4, t5, t6, t7;
+
+    lo = gx->vcdLo;
+    if ((lo >> 13) & 3) {
+        c0 = 1;
+    } else {
+        c0 = 0;
+    }
+    if ((lo >> 15) & 3) {
+        c1 = 1;
+    } else {
+        c1 = 0;
+    }
+    nCols = c0 + c1;
+    if (gx->hasBiNrms) {
+        nNrm = 2;
+    } else if (gx->hasNrms) {
+        nNrm = 1;
+    } else {
+        nNrm = 0;
+    }
+    hi = gx->vcdHi;
+    if (hi & 3) {
+        t0 = 1;
+    } else {
+        t0 = 0;
+    }
+    if ((hi >> 2) & 3) {
+        t1 = 1;
+    } else {
+        t1 = 0;
+    }
+    if ((hi >> 4) & 3) {
+        t2 = 1;
+    } else {
+        t2 = 0;
+    }
+    if ((hi >> 6) & 3) {
+        t3 = 1;
+    } else {
+        t3 = 0;
+    }
+    if ((hi >> 8) & 3) {
+        t4 = 1;
+    } else {
+        t4 = 0;
+    }
+    if ((hi >> 10) & 3) {
+        t5 = 1;
+    } else {
+        t5 = 0;
+    }
+    if ((hi >> 12) & 3) {
+        t6 = 1;
+    } else {
+        t6 = 0;
+    }
+    if ((hi >> 14) & 3) {
+        t7 = 1;
+    } else {
+        t7 = 0;
+    }
+    nTex = t0 + t1 + t2 + t3 + t4 + t5 + t6 + t7;
+    reg = nCols | (nNrm << 2) | (nTex << 4);
+    GXWGPipe.u8 = 0x10;
+    GXWGPipe.u32 = 0x1008;
+    GXWGPipe.u32 = reg;
+    gx->bpSentNot = 1;
+}
+#pragma pop
+
 void __GXSetVCD(void) {
     extern void *const gx;
     void __GXXfVtxSpecs(void);
