@@ -5755,6 +5755,27 @@ void Gfx_TransformVector(Vector *in, f32 *out) {
 
 #pragma pop
 
+#pragma push
+#pragma use_lmw_stmw on
+void Render_Print(void) {
+    extern u8 g_screenText[0xA00];
+    extern GfxState g_state;
+    u32 FontManager_Print(char *str, u16 font, f32 x, f32 y);
+    char buf[88];
+    s32 i;
+    s32 j;
+    f32 y = 10.0f;
+
+    for (i = 0; i < 32; i++) {
+        for (j = 0; j < 80; j++) {
+            buf[j] = g_screenText[i * 80 + j];
+        }
+        buf[j] = 0;
+        y += FontManager_Print(buf, g_state.debugFont, 10.0f, y);
+    }
+}
+#pragma pop
+
 void Render_DrawPointSprites(void) {
     extern GDL *g_pGDL;
     void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
@@ -5833,11 +5854,10 @@ void Render_DrawRectangle(void *rect) {
             u8 b = r->v[i].b;
             u8 g = r->v[i].g;
             u8 c = r->v[i].r;
-            volatile PPCWGPipe *fifo = &GXWGFifo;
-            fifo->u8 = c;
-            fifo->u8 = g;
-            fifo->u8 = b;
-            fifo->u8 = a;
+            GXWGFifo.u8 = c;
+            GXWGFifo.u8 = g;
+            GXWGFifo.u8 = b;
+            GXWGFifo.u8 = a;
         }
         {
             f32 t = r->v[i].v;
