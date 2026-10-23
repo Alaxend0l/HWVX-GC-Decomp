@@ -6870,8 +6870,6 @@ void Render_StateSetScissor(void) {
     GXSetScissor(*(u32 *)((u8 *)GetRenderWindow() + 0x2B0), stop, swd, sht);
 }
 
-#pragma pop
-
 void Render_BeginScene(void) {
     void GXInvalidateVtxCache(void);
     void GXInvalidateTexAll(void);
@@ -6926,6 +6924,8 @@ void Render_BeginScene(void) {
     GXSetColorUpdate(1);
     GXSetAlphaUpdate(0);
 }
+
+#pragma pop
 
 void Render_FlipBuffers(void) {
     void PrintDVDMessage(void);
