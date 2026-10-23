@@ -1053,6 +1053,37 @@ void __close_all(void) {
     }
 }
 
+static void __str2dec(decimal *d, const char *s, short exp) {
+    int i;
+
+    d->exp = exp;
+    d->sign = 0;
+
+    for (i = 0; i < SIGDIGLEN && *s;) {
+        d->sig.text[i++] = *s++ - '0';
+    }
+    d->sig.length = i;
+
+    if (*s != 0) {
+        if (*s < 5) {
+            return;
+        }
+        {
+            const char *p = s + 1;
+            for (; *p != 0; p++) {
+                if (*p != '0') {
+                    goto round_up;
+                }
+            }
+            if ((d->sig.text[i - 1] & 1) == 0) {
+                return;
+            }
+        }
+    round_up:
+        __dorounddecup(d, d->sig.length);
+    }
+}
+
 void __timesdec(decimal *result, const decimal *x, const decimal *y) {
     u32 accumulator = 0;
     u8 mantissa[SIGDIGLEN * 2];
@@ -8398,6 +8429,52 @@ s32 __ct__9ConditionFv(s32 arg0) {
     __ct__5ForceFv();
     return arg0;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+#pragma readonly_strings on
+s32 UpdateForce__9ConditionFllUcUlUlScUcUcUcss(Force *force, s32 chan, s32 effect, u8 type, u32 duration, u32 startDelay, s8 offset, u8 deadband, u8 posSaturation, u8 negSaturation, s16 posCoefficient, s16 negCoefficient) {
+    s32 LGUpdateForceEffect(u32 handle, void *desc);
+    struct {
+        u8 type;
+        u32 duration;
+        u32 startDelay;
+        struct {
+            s8 offset;
+            u8 deadband;
+            u8 posSaturation;
+            u8 negSaturation;
+            s16 posCoefficient;
+            s16 negCoefficient;
+        } condition[2];
+        u8 pad[8];
+    } desc;
+    s32 result;
+
+    memset(&desc, 0, sizeof(desc));
+    desc.type = type;
+    desc.duration = duration;
+    desc.startDelay = startDelay;
+    desc.condition[0].offset = offset;
+    desc.condition[0].deadband = deadband;
+    desc.condition[0].posSaturation = posSaturation;
+    desc.condition[0].negSaturation = negSaturation;
+    desc.condition[0].posCoefficient = posCoefficient;
+    desc.condition[0].negCoefficient = negCoefficient;
+    desc.condition[1].offset = offset;
+    desc.condition[1].deadband = deadband;
+    desc.condition[1].posSaturation = posSaturation;
+    desc.condition[1].negSaturation = negSaturation;
+    desc.condition[1].posCoefficient = posCoefficient;
+    desc.condition[1].negCoefficient = negCoefficient;
+    result = LGUpdateForceEffect(force->effectIds[chan][effect], &desc);
+    if (result < 0) {
+        OSReport("ERROR: UpdateForce(condition force) on channel %d returned %d\n", chan, result);
+        force->effectIds[chan][effect] = 0xFFFFFFFF;
+    }
+    return result;
+}
+#pragma pop
 
 f32 fn_800A08D4(void) {
     f64 fn_8009FAF8();
