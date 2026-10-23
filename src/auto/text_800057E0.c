@@ -11846,6 +11846,55 @@ s32 InitializeUART(void) {
     return 0;
 }
 
+extern u8 *gTRKInputPendingPtr[];
+void TRKDestructEvent(void *arg0);
+s32 TRKGetNextEvent(TRKEvent *event);
+s32 TRKDispatchMessage(TRKBuffer *buffer);
+s32 TRKTargetStopped(void);
+void TRKGetInput(void);
+s32 TRKTargetContinue(void);
+s32 TRKTargetInterrupt(TRKEvent *event);
+s32 TRKTargetSupportRequest(void);
+void TRKNubMainLoop(void) {
+    TRKEvent event;
+    BOOL isShutdownRequested;
+    BOOL isNewInput;
+
+    isShutdownRequested = FALSE;
+    isNewInput = FALSE;
+    while (isShutdownRequested == FALSE) {
+        if (TRKGetNextEvent(&event) != FALSE) {
+            isNewInput = FALSE;
+            switch (event.eventType) {
+            case 0:
+                break;
+            case 2:
+                TRKDispatchMessage(TRKGetBuffer(event.msgBufID));
+                break;
+            case 1:
+                isShutdownRequested = TRUE;
+                break;
+            case 3:
+            case 4:
+                TRKTargetInterrupt(&event);
+                break;
+            case 5:
+                TRKTargetSupportRequest();
+                break;
+            }
+            TRKDestructEvent(&event);
+        } else if (isNewInput == FALSE || *gTRKInputPendingPtr != 0) {
+            isNewInput = TRUE;
+            TRKGetInput();
+        } else {
+            if (TRKTargetStopped() == FALSE) {
+                TRKTargetContinue();
+            }
+            isNewInput = FALSE;
+        }
+    }
+}
+
 static void SamplingHandler(s16 interrupt, void *context);
 void *PADSetSamplingCallback(void *callback) {
     M2C_UNK SIRegisterPollingHandler(void *);
