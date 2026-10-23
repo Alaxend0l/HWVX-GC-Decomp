@@ -7603,6 +7603,24 @@ void Thing_SetSlavePlayers(void *thing) {
     }
 }
 
+void Thing_DrawSlaves(Thing *thing) {
+    Thing *slave;
+    Vector4 quat;
+    Vector4 pos;
+
+    for (slave = *(Thing **)((u8 *)thing + 0x88); slave != NULL; slave = *(Thing **)((u8 *)slave + 0xA4)) {
+        if (!(*(u32 *)((u8 *)slave + 0x74) & 0x200200)) {
+            quat = slave->quat;
+            pos = slave->mtx.v[3];
+            QuaternionMult(&thing->quat, &quat, &slave->quat);
+            XformVec(&thing->mtx, &pos, &slave->mtx.v[3]);
+            (*(void (***)(Thing *))((u8 *)slave + 0x8C))[4](slave);
+            slave->quat = quat;
+            slave->mtx.v[3] = pos;
+        }
+    }
+}
+
 void Thing_InitAllSlavesNow(void *thing, void *slaves, u8 player) {
     void ThingManagerList_InitAllSlavesNow(void *list, void *slaves, u8 player);
     ThingManagerList_InitAllSlavesNow((u8 *)thing + 0x88, slaves, player);
