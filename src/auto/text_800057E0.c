@@ -3101,6 +3101,17 @@ s32 ActionInterfacePlay(s32 *arg0) {
     return 1;
 }
 
+s32 InterfaceManager_GetTargetArrowNearestNavPoint(void) {
+    extern s32 g_TargetArrow[7];
+    s32 NavHolder_FindIndexOfNearestNavPoint(void *pos, s32 hint);
+
+    if (g_TargetArrow[4] == -1 || g_TargetArrow[5] <= 0) {
+        g_TargetArrow[4] = NavHolder_FindIndexOfNearestNavPoint((void *)g_TargetArrow[0], g_TargetArrow[4]);
+        g_TargetArrow[5] = 300;
+    }
+    return g_TargetArrow[4];
+}
+
 void DropShip_EndInterface(s32 index) {
     extern u8 g_interface[][0x170];
     void InterfaceManager_SetLoadState(void *iface, s32 state);
@@ -4149,23 +4160,32 @@ static void SoundSeq_RemoveFromQueue(u8 *seq) {
     }
 }
 
-void SoundSeq_Release(u8 *thing) {
+void SoundSeq_Release(u8 *seq) {
+    void Trigger_SoundSequenceQueueEmptied(void);
     void SoundSource_Stop(s32 index);
     void Thing_Release(void *thing);
-    u8 *seq = thing;
+    u8 *next;
+    u8 *p;
     u32 i;
 
+    p = seq;
     if (M2C_FIELD(seq, u32 *, 0x74) & 0x40000000) {
-        SoundSeq_RemoveFromQueue(seq);
+        next = M2C_FIELD(p, u8 **, 0xC8);
+        if (next != NULL) {
+            M2C_FIELD(next, u32 *, 0x74) &= ~0x80000000;
+            M2C_FIELD(p, u8 **, 0xC8) = NULL;
+        } else {
+            Trigger_SoundSequenceQueueEmptied();
+        }
     }
     for (i = 0; i < 4; i++) {
-        if (M2C_FIELD(seq, s32 *, 0xD0) >= 0 && SoundSource_IsLooping(M2C_FIELD(seq, s32 *, 0xD0))) {
-            SoundSource_Stop(M2C_FIELD(seq, s32 *, 0xD0));
+        if (M2C_FIELD(p, s32 *, 0xD0) >= 0 && SoundSource_IsLooping(M2C_FIELD(p, s32 *, 0xD0))) {
+            SoundSource_Stop(M2C_FIELD(p, s32 *, 0xD0));
         }
-        M2C_FIELD(seq, s32 *, 0xD0) = -1;
-        seq += 4;
+        M2C_FIELD(p, s32 *, 0xD0) = -1;
+        p += 4;
     }
-    Thing_Release(thing);
+    Thing_Release(seq);
 }
 s32 SoundSeq_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
@@ -8462,6 +8482,30 @@ static void SamplingHandler(s16 interrupt, void *context) {
     }
 }
 
+void SIControlSteering(s32 chan, u32 control, s32 level) {
+    s32 SISetCommand(s32 chan, u32 command);
+    s32 SITransferCommands(void);
+    extern u32 __SISteeringEnableBits;
+    s32 enabled;
+    u32 command;
+
+    control &= 0x600;
+    if (level <= -128) {
+        command = 0;
+    } else if (level >= 128) {
+        command = 0x100;
+    } else {
+        command = level + 128;
+    }
+    command = (command | control) & 0x7FF;
+    enabled = OSDisableInterrupts();
+    if (__SISteeringEnableBits & (0x80000000 >> chan)) {
+        SISetCommand(chan, command | 0x300000);
+        SITransferCommands();
+    }
+    OSRestoreInterrupts(enabled);
+}
+
 s32 EXIClearInterrupts(s32 chan, s32 exi, s32 tc, s32 ext) {
     u32 cpr;
     u32 prev;
@@ -10842,6 +10886,30 @@ void GXSetClipMode(s32 mode) {
     *(u16 *)(gx + 2) = 1;
 }
 
+void __GXSetMatrixIndex(s32 index) {
+    extern u8 *gx;
+    u32 reg;
+
+    if (index < 5) {
+        GXWGFifo.u8 = 8;
+        GXWGFifo.u8 = 0x30;
+        reg = *(u32 *)(gx + 0x80);
+        GXWGFifo.u32 = reg;
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1018;
+        GXWGFifo.u32 = reg;
+    } else {
+        GXWGFifo.u8 = 8;
+        GXWGFifo.u8 = 0x40;
+        reg = *(u32 *)(gx + 0x84);
+        GXWGFifo.u32 = reg;
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1019;
+        GXWGFifo.u32 = reg;
+    }
+    *(u16 *)(gx + 2) = 1;
+}
+
 void GXClearGPMetric(void) {
     extern void *__cpReg;
     M2C_FIELD(__cpReg, u16 *, 4) = 4;
@@ -10879,6 +10947,22 @@ u32 SISetXY(u32 x, u32 y) {
     return poll;
 }
 
+u32 SIDisablePolling(u32 poll) {
+    s32 enabled;
+
+    if (poll == 0) {
+        return Si_800D9E70.poll;
+    }
+    enabled = OSDisableInterrupts();
+    poll >>= 24;
+    poll &= 0xF0;
+    poll = Si_800D9E70.poll & ~poll;
+    __SIRegs[12] = poll;
+    Si_800D9E70.poll = poll;
+    OSRestoreInterrupts(enabled);
+    return poll;
+}
+
 void DefaultCallback(void) {
 
 }
@@ -10909,26 +10993,21 @@ s32 SIResetSteeringAsync(s32 chan, void *callback) {
     return __SISteeringTransfer(chan, 1, 3, ResetProc);
 }
 
-void __SISteeringEnable(s32 arg0)
-{
-  int new_var2;
-  M2C_UNK SIEnablePolling(s32);
-  M2C_UNK SIGetResponse(s32, M2C_UNK *);
-  int new_var;
-  M2C_UNK SISetCommand(s32, M2C_UNK);
-  extern s32 __SISteeringEnableBits;
-  M2C_UNK spC;
-  u32 temp_r4;
-  temp_r4 = 0x80000000U >> arg0;
-  new_var2 = !(__SISteeringEnableBits & temp_r4);
-  if (new_var2)
-  {
-    __SISteeringEnableBits |= temp_r4;
-    SIGetResponse(arg0, &spC);
-    new_var = 0x300680;
-    SISetCommand(arg0, new_var);
-    SIEnablePolling(__SISteeringEnableBits);
-  }
+void __SISteeringEnable(s32 chan) {
+    s32 SIEnablePolling(u32 poll);
+    s32 SIGetResponse(s32 chan, void *data);
+    s32 SISetCommand(s32 chan, u32 command);
+    extern u32 __SISteeringEnableBits;
+    u32 data[2];
+    u32 chanBit;
+
+    chanBit = 0x80000000 >> chan;
+    if (!(__SISteeringEnableBits & chanBit)) {
+        __SISteeringEnableBits |= chanBit;
+        SIGetResponse(chan, data);
+        SISetCommand(chan, 0x300680);
+        SIEnablePolling(__SISteeringEnableBits);
+    }
 }
 
 f32 fn_8006FB1C(void) {
