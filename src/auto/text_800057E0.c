@@ -2439,6 +2439,19 @@ s32 CarA_GetNearestNavPoint(void *car) {
     return M2C_FIELD(car, s32 *, 0x3B0);
 }
 
+void CarA_CollideWithRay(Thing *car, void *start, void *end, void *hit, f32 maxDist) {
+    f32 PhysicalProperties_CollideWithRay(void *props, void *pos, void *start, void *end, void *hit, f32 maxDist);
+    Matrix4 local;
+    f32 dist;
+
+    local = car->mtx;
+    XformVec(&car->mtx, (Vector4 *)((u8 *)car + 0x520), &local.v[3]);
+    dist = PhysicalProperties_CollideWithRay(*(void **)(*(u8 **)((u8 *)car + 0x3BC) + 0xA0), &local, start, end, hit, maxDist);
+    if (hit != NULL && dist < maxDist) {
+        *(Vector4 *)((u8 *)hit + 0x30) = *(Vector4 *)car;
+    }
+}
+
 s32 CarA_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
@@ -10542,6 +10555,67 @@ void OSSleepThread(void *queue) {
     }
     OSRestoreInterrupts(enabled);
 }
+
+void OSWakeupThread(void *queue) {
+    typedef struct WThread WThread;
+    typedef struct { WThread *head; WThread *tail; } WQueue;
+    struct WThread {
+        u8 pad[0x2C8];
+        u16 state;
+        u16 attr;
+        s32 suspend;
+        s32 priority;
+        s32 base;
+        void *val;
+        WQueue *queue;
+        WThread *next;
+        WThread *prev;
+    };
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32);
+    void SelectThread(s32 yield);
+    extern WQueue RunQueue_802EEE78[32];
+    extern u32 RunQueueBits_803C7290;
+    extern s32 RunQueueHint_803C7294;
+    WQueue *q = queue;
+    s32 enabled;
+
+    enabled = OSDisableInterrupts();
+    while (q->head) {
+        WThread *thread;
+        WThread *next;
+        WThread *prev;
+
+        thread = q->head;
+        next = thread->next;
+        if (next == NULL) {
+            q->tail = NULL;
+        } else {
+            next->prev = NULL;
+        }
+        q->head = next;
+        thread->state = 1;
+        if (thread->suspend <= 0) {
+            thread->queue = &RunQueue_802EEE78[thread->priority];
+            prev = thread->queue->tail;
+            if (prev == NULL) {
+                thread->queue->head = thread;
+            } else {
+                prev->next = thread;
+            }
+            thread->prev = prev;
+            thread->next = NULL;
+            thread->queue->tail = thread;
+            RunQueueBits_803C7290 |= 1 << (31 - thread->priority);
+            RunQueueHint_803C7294 = 1;
+        }
+    }
+    if (RunQueueHint_803C7294) {
+        SelectThread(0);
+    }
+    OSRestoreInterrupts(enabled);
+}
+
 #pragma pop
 
 #pragma pop
@@ -15396,6 +15470,41 @@ void GXSetFogRangeAdj(u8 enable, u16 center, u16 *table) {
     GXWGFifo.u32 = range_c;
     gx->bpSentNot = 0;
 }
+
+void GXSetBlendMode(s32 type, s32 src_factor, s32 dst_factor, s32 op) {
+    typedef struct GXDataCmode {
+        u16 pad0;
+        u16 bpSentNot;
+        u8 pad4[0x1CC];
+        u32 cmode0;
+    } GXDataCmode;
+    extern GXDataCmode *gx;
+    u32 *reg;
+    u32 blend;
+
+    blend = 1;
+    if (type != 1 && type != 3) {
+        blend = 0;
+    }
+    reg = &gx->cmode0;
+    *reg = (gx->cmode0 & ~1) | blend;
+    reg = &gx->cmode0;
+    *reg = (*reg & ~0x800) | ((type == 3) << 11);
+    reg = &gx->cmode0;
+    *reg = (gx->cmode0 & ~2) | ((type == 2) << 1);
+    reg = &gx->cmode0;
+    *reg = (gx->cmode0 & ~0xF000) | (op << 12);
+    reg = &gx->cmode0;
+    *reg = (gx->cmode0 & ~0x700) | (src_factor << 8);
+    reg = &gx->cmode0;
+    *reg = (gx->cmode0 & ~0xE0) | (dst_factor << 5);
+    reg = &gx->cmode0;
+    *reg = (gx->cmode0 & ~0xFF000000) | (0x41 << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->cmode0;
+    gx->bpSentNot = 0;
+}
+
 #pragma pop
 void GXSetColorUpdate(u8 updateEnable) {
     extern u8 *gx;
