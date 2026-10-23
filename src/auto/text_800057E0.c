@@ -4220,8 +4220,8 @@ void PlayerManager_ClearAllCameraFlags_PRIVATE(void) {
 s32 PlayerManager_RemovePlayer(void *player) {
     extern u8 g_playerManager[0x20E0];
     extern u8 *g_pPlayerManager;
-    u8 *p;
     u8 *pm;
+    u8 *p;
 
     for (p = M2C_FIELD(g_playerManager, u8 **, 0x20D8); p != NULL; p = M2C_FIELD(p, u8 **, 0xB0)) {
         if (p == player) {
@@ -4231,18 +4231,14 @@ s32 PlayerManager_RemovePlayer(void *player) {
     if (p == NULL) {
         return 0;
     }
+    PlayerManager_UnlinkActive(g_pPlayerManager, p);
     pm = g_pPlayerManager;
-    if (M2C_FIELD(p, u8 **, 0xB4) == NULL) {
-        M2C_FIELD(pm, u8 **, 0x20D8) = M2C_FIELD(p, u8 **, 0xB0);
-    } else {
-        M2C_FIELD(M2C_FIELD(p, u8 **, 0xB4), u8 **, 0xB0) = M2C_FIELD(p, u8 **, 0xB0);
-    }
-    if (M2C_FIELD(p, u8 **, 0xB0) != NULL) {
-        M2C_FIELD(M2C_FIELD(p, u8 **, 0xB0), u8 **, 0xB4) = M2C_FIELD(p, u8 **, 0xB4);
-        M2C_FIELD(p, u8 **, 0xB0) = NULL;
-    }
+    M2C_FIELD(p, u8 **, 0xB0) = M2C_FIELD(pm, u8 **, 0x20DC);
     M2C_FIELD(p, u8 **, 0xB4) = NULL;
-    PlayerManager_PushFree(pm, p);
+    if (M2C_FIELD(p, u8 **, 0xB0) != NULL) {
+        M2C_FIELD(M2C_FIELD(p, u8 **, 0xB0), u8 **, 0xB4) = p;
+    }
+    M2C_FIELD(pm, u8 **, 0x20DC) = p;
     return 1;
 }
 
@@ -5249,11 +5245,56 @@ s32 __DBIsExceptionMarked(u8 arg0) {
 void DBPrintf(char *str, ...) {
 }
 
+void C_MTXOrtho(f32 m[4][4], f32 t, f32 b, f32 l, f32 r, f32 n, f32 f) {
+    f32 tmp;
+
+    tmp = 1.0f / (r - l);
+    m[0][0] = 2.0f * tmp;
+    m[0][1] = 0.0f;
+    m[0][2] = 0.0f;
+    m[0][3] = -(r + l) * tmp;
+    tmp = 1.0f / (t - b);
+    m[1][0] = 0.0f;
+    m[1][1] = 2.0f * tmp;
+    m[1][2] = 0.0f;
+    m[1][3] = -(t + b) * tmp;
+    tmp = 1.0f / (f - n);
+    m[2][0] = 0.0f;
+    m[2][1] = 0.0f;
+    m[2][2] = -1.0f * tmp;
+    m[2][3] = -f * tmp;
+    m[3][0] = 0.0f;
+    m[3][1] = 0.0f;
+    m[3][2] = 0.0f;
+    m[3][3] = 1.0f;
+}
+
 f32 PSVECDotProduct(void) {
     M2C_ERROR(/* unknown instruction: ps_mul $f2, $f2, $f3 */);
     M2C_ERROR(/* unknown instruction: ps_madd $f3, $f5, $f4, $f2 */);
     return M2C_ERROR(/* unknown instruction: ps_sum0 $f1, $f3, $f2, $f2 */);
 }
+
+f32 PSVECSquareDistance(f32 *a, f32 *b) {
+    f32 dx = a[0] - b[0];
+    f32 dy = a[1] - b[1];
+    f32 dz = a[2] - b[2];
+    return dx * dx + dy * dy + dz * dz;
+}
+
+#pragma push
+#pragma dont_inline on
+void __DVDInitWA(void) {
+    extern s32 CommandList_802EF860[][5];
+    extern s32 NextCommandNumber_803C72EC;
+    void __DVDLowSetWAType(u32 type, u32 location);
+
+    NextCommandNumber_803C72EC = 0;
+    CommandList_802EF860[0][0] = -1;
+    __DVDLowSetWAType(0, 0);
+    OSInitAlarm();
+}
+#pragma pop
 
 void AlarmHandler(void *alarm, void *context) {
     M2C_UNK DVDLowSeek(u32, void (*)(u32));
@@ -5271,6 +5312,28 @@ void AlarmHandler(void *alarm, void *context) {
         DVDLowSeek(command[3], (void (*)(u32))command[4]);
     }
 }
+
+#pragma push
+#pragma dont_inline on
+void AlarmHandlerForTimeout(void *alarm, void *context) {
+    extern void (*Callback_803C72B0)(u32);
+    void __OSMaskInterrupts(u32 mask);
+    void OSSetCurrentContext(void *context);
+    u8 tmpContext[0x2C8];
+    void (*callback)(u32);
+
+    __OSMaskInterrupts(0x400);
+    OSClearContext(tmpContext);
+    OSSetCurrentContext(tmpContext);
+    callback = Callback_803C72B0;
+    Callback_803C72B0 = NULL;
+    if (callback) {
+        callback(0x10);
+    }
+    OSClearContext(tmpContext);
+    OSSetCurrentContext(context);
+}
+#pragma pop
 
 #pragma push
 #pragma dont_inline on
