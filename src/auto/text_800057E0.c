@@ -3333,7 +3333,9 @@ typedef struct DataPack {
     u32 *relocs;
     u8 pad0C[0x8];
     void *palettes;
-    u8 pad18[0x14];
+    u8 pad18[0x8];
+    u16 *shaderIDs;
+    u8 pad24[0x8];
     u32 numTextures;
     u16 *textureIDs;
     u8 pad34[0x10];
@@ -17670,14 +17672,14 @@ void FormatCallback(s32 chan, s32 result) {
         goto error;
     }
 
-    ++card->mountStep;
-    if (card->mountStep < 5) {
-        result = __CARDEraseSector(chan, card->sectorSize * card->mountStep, FormatCallback);
+    ++card->formatStep;
+    if (card->formatStep < 5) {
+        result = __CARDEraseSector(chan, card->sectorSize * card->formatStep, FormatCallback);
         if (0 <= result) {
             return;
         }
-    } else if (card->mountStep < 10) {
-        s32 step = card->mountStep - 5;
+    } else if (card->formatStep < 10) {
+        s32 step = card->formatStep - 5;
         result = __CARDWrite(chan, card->sectorSize * step, 0x2000, (u8 *)card->workArea + step * 0x2000, FormatCallback);
         if (0 <= result) {
             return;
