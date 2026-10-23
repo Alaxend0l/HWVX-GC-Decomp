@@ -4385,6 +4385,15 @@ void AnimExtractKeyFrame(void *anim, s32 frame) {
     }
 }
 
+typedef struct AnimBone {
+    Vector rot;
+    f32 pos[3];
+    u8 numChildren;
+    u8 pop;
+    u8 next;
+    u8 pad[1];
+} AnimBone;
+
 #pragma push
 #pragma use_lmw_stmw on
 void AnimTraverseHeirarchyToMatrices(void *bones, u32 count, f32 *matrices) {
@@ -4404,37 +4413,46 @@ void AnimTraverseHeirarchyToMatrices(void *bones, u32 count, f32 *matrices) {
     Vector rot;
     Vector q;
     Vector pos;
-    Bone *bone = (Bone *)bones;
-    Vector *posSp = posStack;
-    Vector *rotSp = rotStack;
-    Bone *child;
-    Vector *p;
-    u32 n;
+    f32 *mtx;
     u32 i;
+    Vector *posSp;
+    Vector *rotSp;
+    Bone *bone;
+    u32 num;
+    u32 n;
     u32 j;
+    Vector *p;
+    Bone *child;
 
-    rot.x = rot.y = rot.z = 0.0f;
+    mtx = matrices;
+    num = count;
+    bone = (Bone *)bones;
+    posSp = posStack;
+    rotSp = rotStack;
+    rot.z = 0.0f;
     rot.w = 1.0f;
+    rot.y = 0.0f;
+    rot.x = 0.0f;
     memcpy(&pos, bone->pos, 12);
-    for (i = 0; i < count; i++) {
+    for (i = 0; i < num; i++) {
         QuaternionMult(&rot, &bone->rot, &q);
         rot = q;
-        QuaternionToSubMatrix(&q, matrices);
-        matrices[12] = pos.x;
-        matrices[13] = pos.y;
-        matrices[14] = pos.z;
+        QuaternionToSubMatrix(&q, mtx);
+        mtx[12] = pos.x;
+        mtx[13] = pos.y;
+        mtx[14] = pos.z;
         if (bone->numChildren != 0) {
             child = bone + 1;
             n = bone->numChildren - 1;
-            XformVec((Vector *)matrices, (Vector *)child->pos, &pos);
+            XformVec((Vector *)mtx, (Vector *)child->pos, &pos);
             if (n != 0) {
+                child += child->next;
                 posSp += n;
                 p = posSp;
                 *rotSp++ = q;
-                child += child->next;
                 for (j = 0; j < n; j++) {
                     p--;
-                    XformVec((Vector *)matrices, (Vector *)child->pos, p);
+                    XformVec((Vector *)mtx, (Vector *)child->pos, p);
                     child += child->next;
                 }
             }
@@ -4444,7 +4462,7 @@ void AnimTraverseHeirarchyToMatrices(void *bones, u32 count, f32 *matrices) {
             rot = *rotSp++;
         }
         bone++;
-        matrices += 16;
+        mtx += 16;
     }
 }
 #pragma pop
