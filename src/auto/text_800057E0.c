@@ -4554,6 +4554,51 @@ void ForceFeedback_GetForce(void *ff, u8 *a, u8 *b, f32 *c) {
     *c = force;
 }
 
+#pragma push
+#pragma readonly_strings on
+void GameSettings_GetGameInfo(void *info) {
+    typedef struct GameInfo {
+        const char *name;
+        const char *id;
+        const char *title;
+        const char *fileName;
+        const char *icon;
+        s32 unk14;
+        s32 unk18;
+    } GameInfo;
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    extern GameInfo g_gameInfo[];
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    void *pack;
+
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        *(GameInfo *)info = g_gameInfo[mcp[1]];
+    } else {
+        ((GameInfo *)info)->name = "XXXXXXXXXXXXXXXXXXX";
+        ((GameInfo *)info)->id = "SLUS_001.00";
+        ((GameInfo *)info)->title = "XXXXXXXXXXX";
+        ((GameInfo *)info)->fileName = "saveFile";
+        ((GameInfo *)info)->icon = "mm.ico";
+        ((GameInfo *)info)->unk14 = 0;
+        ((GameInfo *)info)->unk18 = 0;
+    }
+}
+#pragma pop
+
 void GameSettings_ResetGame(void) {
     s32 i;
 
