@@ -23585,7 +23585,7 @@ s32 TRKTargetAccessExtended1(u32 firstRegister, u32 lastRegister, TRKBuffer *b, 
         u8 exceptionDetected;
     } TRKExceptionStatus;
     s32 error;
-    u32 count;
+    s32 count;
     u32 *data;
     TRKExceptionStatus savedException;
 
@@ -23605,7 +23605,7 @@ s32 TRKTargetAccessExtended1(u32 firstRegister, u32 lastRegister, TRKBuffer *b, 
         if (read) {
             error = TRKAppendBuffer_ui32(b, data, count);
         } else {
-            if (data <= (u32 *)(gTRKCPUState + 0x1EC) && (u32 *)((u8 *)data + count * sizeof(u32) - sizeof(u32)) >= (u32 *)(gTRKCPUState + 0x1E8)) {
+            if (data <= (u32 *)(gTRKCPUState + 0x1EC) && data + count - 1 >= (u32 *)(gTRKCPUState + 0x1E8)) {
                 gTRKRestoreFlags[0] = 1;
             }
             if (data <= (u32 *)(gTRKCPUState + 0x278) && data + count - 1 >= (u32 *)(gTRKCPUState + 0x278)) {
