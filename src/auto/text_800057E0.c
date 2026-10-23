@@ -4316,6 +4316,12 @@ void World_ClearSweep(void) {
     g_worldData.unk4 = 1;
 }
 
+void World_NextSweep(void) {
+    if (++g_worldData.unk4 == 0) {
+        World_ClearSweep();
+    }
+}
+
 s32 ActionTimerChangeMode(u32 *action) {
     u8 **item;
     u32 i;
