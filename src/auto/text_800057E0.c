@@ -3583,6 +3583,64 @@ void CollisionTriCache_Set(u32 tri0, u32 tri1, Vector4 *a, Vector4 *b) {
     *(u32 *)(g_aCollisionTriPairCache[slot] + 0x20) = tri1;
 }
 
+f32 _fabs(f32 x);
+s32 Collision_ProcessDividingAxis(DividingAxis *axis) {
+    s32 result = 1;
+    f32 t0;
+    f32 t1;
+
+    if (_fabs(axis->dir) < 0.0001f) {
+        if (axis->maxA < axis->minB || axis->maxB < axis->minA) {
+            return 0;
+        }
+        return 1;
+    }
+    if (axis->minA > axis->maxB) {
+        if (axis->dir > 0.0f) {
+            return 0;
+        }
+        t0 = (axis->maxB - axis->minA) / axis->dir;
+        if (t0 > axis->tExit) {
+            return 0;
+        }
+        t1 = (axis->minB - axis->maxA) / axis->dir;
+        if (t0 > axis->tEnter) {
+            result = 2;
+            axis->tEnter = t0;
+        }
+        if (t1 < axis->tExit) {
+            axis->tExit = t1;
+        }
+    } else if (axis->maxA < axis->minB) {
+        if (axis->dir <= 0.0f) {
+            return 0;
+        }
+        t0 = (axis->minB - axis->maxA) / axis->dir;
+        t1 = (axis->maxB - axis->minA) / axis->dir;
+        if (t0 > axis->tEnter) {
+            result = 3;
+            axis->tEnter = t0;
+        }
+        if (t1 < axis->tExit) {
+            axis->tExit = t1;
+        }
+    } else if (axis->dir > 0.0f) {
+        t1 = (axis->maxB - axis->minA) / axis->dir;
+        if (t1 < axis->tExit) {
+            axis->tExit = t1;
+        }
+    } else {
+        t1 = (axis->minB - axis->maxA) / axis->dir;
+        if (t1 < axis->tExit) {
+            axis->tExit = t1;
+        }
+    }
+    if (axis->tExit < axis->tEnter) {
+        return 0;
+    }
+    return result;
+}
+
 void ShaderHolder_RemoveGX(s32 gx);
 void VertexColorSeqManager_RemoveVertices(void *vertices);
 void Control_ClearControl(void *control) {
