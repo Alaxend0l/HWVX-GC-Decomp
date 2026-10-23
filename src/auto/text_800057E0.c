@@ -3142,6 +3142,29 @@ s32 Creature_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+typedef struct DataPackRef {
+    char name[0xC];
+    u32 id;
+    struct DataPack *pack;
+} DataPackRef;
+
+typedef struct DataPack {
+    u8 *base;
+    u32 numRelocs;
+    u32 *relocs;
+    u8 pad0C[0x8];
+    void *palettes;
+    u8 pad18[0x14];
+    u32 numTextures;
+    u16 *textureIDs;
+    u8 pad34[0x10];
+    u32 textureData;
+    u8 pad48[0x4];
+    void *paletteData;
+    u8 pad50[0x18];
+    DataPackRef refs[2];
+} DataPack;
+
 void DataPack_EnableLoadingSounds(s8 arg0) {
     extern s8 g_bSoundLoadingEnabled;
     g_bSoundLoadingEnabled = arg0;
