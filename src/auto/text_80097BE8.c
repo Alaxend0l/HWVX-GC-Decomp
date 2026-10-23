@@ -1099,6 +1099,9 @@ void *soft_allocate_from_var_pools(Block **pool_obj, u32 size, u32 *max_size) {
     return (u8 *)ptr + 8;
 }
 
+void FixBlock_construct(FixBlock *ths, FixBlock *prev, FixBlock *next, s32 index, FixSubBlock *chunk, u32 chunk_size) {
+}
+
 void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
     u32 this_cur_size;
     SubBlock *next_sub_block;
