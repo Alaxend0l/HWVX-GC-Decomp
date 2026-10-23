@@ -4952,15 +4952,17 @@ void Render_UseLighting(u8 arg0) {
     GXSetChanCtrl(4, 0, 1, 1, 0, 0, 2);
 }
 
+#pragma push
+#pragma dont_inline on
 void Render_DrawSpheres(void) {
     extern s32 m_cullMode;
     extern GDL *g_pGDL;
     extern GDLMatrix g_identity;
     void Render_SetTextureHandle(s32 handle);
     void GXDrawSphere(s32 numMajor, s32 numMinor);
-    GDLMatrix mtx __attribute__((aligned(16)));
-    s32 cullMode;
     u32 i;
+    s32 cullMode;
+    GDLMatrix mtx;
 
     cullMode = m_cullMode;
     Render_SetTextureHandle(0xFFFF);
@@ -4970,13 +4972,13 @@ void Render_DrawSpheres(void) {
         mtx.m[12] = g_pGDL->spheres[i].x;
         mtx.m[13] = g_pGDL->spheres[i].y;
         mtx.m[14] = g_pGDL->spheres[i].z;
-        mtx.m[10] = mtx.m[5] = mtx.m[0] = g_pGDL->spheres[i].radius;
+        mtx.m[0] = mtx.m[5] = mtx.m[10] = g_pGDL->spheres[i].radius;
         Gfx_SetWorldMatrix(mtx.m);
         GXDrawSphere(8, 16);
     }
     Render_StateCullMode(cullMode);
 }
-
+#pragma pop
 void SetVertexBuffer(u32 *vb) {
     void GXSetArray(s32 attr, void *data, u8 stride);
     extern u32 *m_vertexBuffer;
