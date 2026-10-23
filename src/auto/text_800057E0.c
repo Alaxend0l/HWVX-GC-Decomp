@@ -1740,12 +1740,13 @@ s32 CarA_GetSurfaceScript(void *arg0) {
 s32 CarA_GetNearestNavPoint(void *car) {
     s32 NavHolder_FindIndexOfNearestNavPoint(void *navHolder);
     s32 RandomAdd_s32(s32 base, s32 range);
-    u32 index;
+    s32 timer;
 
-    index = M2C_FIELD(car, u32 *, 0x3B0);
-    if (index == 0xFFFFFFFF) {
+    if (M2C_FIELD(car, u32 *, 0x3B0) == 0xFFFFFFFF) {
         M2C_FIELD(car, s32 *, 0x3B0) = NavHolder_FindIndexOfNearestNavPoint((u8 *)car + 0x40);
-        M2C_FIELD(car, s32 *, 0x3B4) = M2C_FIELD(car, s32 *, 0x3B4) = RandomAdd_s32(300, 100);
+        timer = RandomAdd_s32(300, 100);
+        M2C_FIELD(car, s32 *, 0x3B4) = timer;
+        M2C_FIELD(car, s32 *, 0x3B4) = timer;
     }
     return M2C_FIELD(car, s32 *, 0x3B0);
 }
@@ -5092,6 +5093,54 @@ void Callback(void) {
     Prepared_803C7260 = 1;
 }
 
+void OSRegisterResetFunction(void *func) {
+    typedef struct OSResetFunctionInfo {
+        void *func;
+        u32 priority;
+        struct OSResetFunctionInfo *next;
+        struct OSResetFunctionInfo *prev;
+    } OSResetFunctionInfo;
+    typedef struct OSResetFunctionQueue {
+        OSResetFunctionInfo *head;
+        OSResetFunctionInfo *tail;
+    } OSResetFunctionQueue;
+    extern OSResetFunctionQueue ResetFunctionQueue_803C7268;
+    OSResetFunctionInfo *info = func;
+    OSResetFunctionInfo *tmp;
+    OSResetFunctionInfo *iter;
+
+    for (iter = ResetFunctionQueue_803C7268.head; iter && iter->priority <= info->priority; iter = iter->next) {
+    }
+    if (iter == NULL) {
+        OSResetFunctionInfo **tail = &ResetFunctionQueue_803C7268.tail;
+        if ((tmp = *tail) == NULL) {
+            ResetFunctionQueue_803C7268.head = info;
+        } else {
+            tmp->next = info;
+        }
+        info->prev = tmp;
+        info->next = NULL;
+        *tail = info;
+        return;
+    }
+    info->next = iter;
+    tmp = iter->prev;
+    iter->prev = info;
+    info->prev = tmp;
+    if (tmp == NULL) {
+        ResetFunctionQueue_803C7268.head = info;
+    } else {
+        tmp->next = info;
+    }
+}
+
+u32 OSGetResetCode(void) {
+    if (*(u8 *)0x800030E2 != 0) {
+        return 0x80000000;
+    }
+    return (((volatile u32 *)0xCC003000)[9] & ~7) >> 3;
+}
+
 OSSram *__OSLockSram(void) {
     return LockSram(0);
 }
@@ -5213,6 +5262,21 @@ void UnsetRun(void *arg0) {
         RunQueueBits_803C7290 &= ~(1 << (0x1F - M2C_FIELD(arg0, s32 *, 0x2D0)));
     }
     M2C_FIELD(arg0, void **, 0x2DC) = NULL;
+}
+
+s32 __OSGetEffectivePriority(void *thread) {
+    s32 priority;
+    void *blocked;
+    void *mutex;
+
+    priority = M2C_FIELD(thread, s32 *, 0x2D4);
+    for (mutex = M2C_FIELD(thread, void **, 0x2F4); mutex; mutex = M2C_FIELD(mutex, void **, 0x10)) {
+        blocked = M2C_FIELD(mutex, void **, 0);
+        if (blocked && M2C_FIELD(blocked, s32 *, 0x2D0) < priority) {
+            priority = M2C_FIELD(blocked, s32 *, 0x2D0);
+        }
+    }
+    return priority;
 }
 
 void __OSReschedule(void) {
@@ -6841,6 +6905,63 @@ void __GXSetGenMode(void) {
     extern u8 *const gx;
     GXWGFifo.u8 = 0x61;
     GXWGFifo.u32 = *(u32 *)(gx + 0x204);
+    *(u16 *)(gx + 2) = 0;
+}
+
+void GXSetDispCopyDst(u16 wd, u16 ht) {
+    extern u8 *gx;
+    u16 stride;
+    u32 *reg;
+
+    stride = (u16)(wd * 2);
+    *(u32 *)(gx + 0x1E8) = 0;
+    reg = (u32 *)(gx + 0x1E8);
+    *reg = (*reg & ~0x3FF) | (stride >> 5);
+    reg = (u32 *)(gx + 0x1E8);
+    *reg = (*reg & 0xFFFFFF) | 0x4D000000;
+}
+
+void GXSetDispCopyFrame2Field(s32 mode) {
+    extern u8 *gx;
+    u32 *reg;
+
+    reg = (u32 *)(gx + 0x1EC);
+    *reg = (*reg & ~0x3000) | (mode << 12);
+    reg = (u32 *)(gx + 0x1FC);
+    *reg = *reg & ~0x3000;
+}
+
+void GXSetCopyClamp(s32 clamp) {
+    extern u8 *gx;
+    u8 clmpB;
+    u8 clmpT;
+
+    clmpT = (clamp & 1) == 1;
+    clmpB = (clamp & 2) == 2;
+    *(u32 *)(gx + 0x1EC) = (*(u32 *)(gx + 0x1EC) & ~1) | clmpT;
+    *(u32 *)(gx + 0x1EC) = (*(u32 *)(gx + 0x1EC) & ~2) | (clmpB << 1);
+    *(u32 *)(gx + 0x1FC) = (*(u32 *)(gx + 0x1FC) & ~1) | clmpT;
+    *(u32 *)(gx + 0x1FC) = (*(u32 *)(gx + 0x1FC) & ~2) | (clmpB << 1);
+}
+
+void GXSetCopyClear(GXColor clear_clr, u32 clear_z) {
+    extern u8 *gx;
+    u32 reg;
+
+    reg = clear_clr.r;
+    reg = (reg & ~0xFF00) | (clear_clr.a << 8);
+    reg = (reg & 0xFFFFFF) | 0x4F000000;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    reg = clear_clr.b;
+    reg = (reg & ~0xFF00) | (clear_clr.g << 8);
+    reg = (reg & 0xFFFFFF) | 0x50000000;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    reg = clear_z & 0xFFFFFF;
+    reg = (reg & 0xFFFFFF) | 0x51000000;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
     *(u16 *)(gx + 2) = 0;
 }
 
