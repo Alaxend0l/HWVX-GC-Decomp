@@ -14937,6 +14937,69 @@ s8 OBoxHitsTerrainAndObjectsZeroTimeEdgesOnly(void *obox, void *thing, void *arg
     return OBox_CollideAllThingsZeroTime(obox, thing, arg2);
 }
 
+s32 RayHitsObjects_GetObject(Vector4 *start, Vector4 *end, f32 *t, s8 statics, s8 dynamics) {
+    u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults);
+    s8 SegmentVsSphere(void *center, Vector4 *start, Vector4 *end, f32 radius);
+    GridResult results[256];
+    u8 info[0x50];
+    Vector4 hitEnd;
+    Vector4 dir;
+    Vector4 min;
+    Vector4 max;
+    u32 count;
+    u32 i;
+    u8 *other;
+    u8 *col;
+    f32 best;
+    f32 hit;
+
+    best = *t;
+    dir.x = end->x - start->x;
+    dir.y = end->y - start->y;
+    dir.z = end->z - start->z;
+    hitEnd.x = dir.x * best + start->x;
+    hitEnd.y = dir.y * best + start->y;
+    hitEnd.z = dir.z * best + start->z;
+    min = *end;
+    max = *start;
+    if (start->x < min.x) {
+        min.x = start->x;
+    }
+    if (start->y < min.y) {
+        min.y = start->y;
+    }
+    if (start->z < min.z) {
+        min.z = start->z;
+    }
+    if (end->x > max.x) {
+        max.x = end->x;
+    }
+    if (end->y > max.y) {
+        max.y = end->y;
+    }
+    if (end->z > max.z) {
+        max.z = end->z;
+    }
+    count = Grid_GetObjects(&min, &max, 4, results, 0x100);
+    for (i = 0; i < count; i++) {
+        other = (u8 *)results[i].id;
+        if (!(*(u32 *)(other + 0x74) & 2) &&
+            ((statics == 1 && (col = *(u8 **)(*(u8 **)(other + 0xC0) + 0x10), col[0x11] == 0) && *(s32 *)(col + 0x18) == 0) ||
+             (dynamics == 1 && ((col = *(u8 **)(*(u8 **)(other + 0xC0) + 0x10), col[0x11] == 1) || *(s32 *)(col + 0x18) != 0))) &&
+            SegmentVsSphere(other + 0x40, start, &hitEnd, *(f32 *)(other + 0x70))) {
+            hit = (*(f32 (**)(void *, Vector4 *, Vector4 *, void *, f32))(*(u8 **)(other + 0x8C) + 0x38))(other, start, &dir, info, best);
+            if (hit < *t) {
+                best = hit;
+            }
+        }
+    }
+    if (best < *t) {
+        *t = best;
+        return 0;
+    }
+    return 0;
+}
+
 s32 ThingManager_GetActiveCars(void **cars) {
     s32 count;
     s32 i;
