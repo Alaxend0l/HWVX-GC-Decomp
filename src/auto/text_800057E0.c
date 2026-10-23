@@ -3362,14 +3362,21 @@ void ThingManager_DARYL_Heartbeat(void) {
     ThingManager_MoveThings_DARYL_SUBTICK();
 }
 
+typedef struct ThingManagerDARYL {
+    u8 unk0[0x7AB70];
+    void *activeList;
+    void *freeList[19];
+} ThingManagerDARYL;
+
+extern ThingManagerDARYL g_thingManager_DARYL;
+
 void ThingManager_DARYL_Render(void) {
-    extern u8 g_thingManager_DARYL[];
     extern void *g_pNoRayCollideThing;
     s32 Gfx_FrustrumCullSphereTestAllWindows(void *, f32);
     void Thing_DrawSlaves(void *);
     void *thing;
 
-    for (thing = *(void **)(g_thingManager_DARYL + 0x7AB70); thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
+    for (thing = g_thingManager_DARYL.activeList; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
         if (!(M2C_FIELD(thing, u32 *, 0x74) & 0x200200) &&
             Gfx_FrustrumCullSphereTestAllWindows((u8 *)thing + 0x40, M2C_FIELD(thing, f32 *, 0x70))) {
             ((void (*)(void *))(M2C_FIELD(thing, void ***, 0x8C))[4])(thing);
@@ -3378,6 +3385,27 @@ void ThingManager_DARYL_Render(void) {
         }
     }
     g_pNoRayCollideThing = NULL;
+}
+
+void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id) {
+    void *slave = g_thingManager_DARYL.freeList[type];
+
+    if (slave == NULL) {
+        slave = NULL;
+    } else {
+        g_thingManager_DARYL.freeList[type] = M2C_FIELD(slave, void **, 0xA4);
+        if (g_thingManager_DARYL.freeList[type] != NULL) {
+            M2C_FIELD(g_thingManager_DARYL.freeList[type], void **, 0xA0) = NULL;
+        }
+        M2C_FIELD(slave, void **, 0xA4) = NULL;
+    }
+    if (slave != NULL) {
+        ((void (*)(void *, void *))(M2C_FIELD(slave, void ***, 0x8C))[0])(slave, params);
+        M2C_FIELD(slave, u8 *, 0x82) = id;
+        M2C_FIELD(slave, u32 *, 0x74) |= 0x20000000;
+        return slave;
+    }
+    return NULL;
 }
 
 s8 RayHitsTerrainAndObjects(void *arg0, void *arg1, void *arg2, void *arg3) {
