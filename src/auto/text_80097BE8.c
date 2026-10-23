@@ -10027,7 +10027,7 @@ void SetVoiceState_(void *voice, s32 state) {
 #pragma pop
 
 #pragma push
-#pragma optimization_level 2
+#pragma optimization_level 1
 void StartVoice_(void *voice) {
     extern u32 g_silence;
     s32 OSDisableInterrupts();
