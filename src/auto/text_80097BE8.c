@@ -5333,7 +5333,8 @@ static void __THPHuffGenerateSizeTable(void) {
         i = __THPHuffmanBits_803C7824[l - 1];
         size = l;
         while (i--) {
-            __THPHuffmanSizeTab_803C7828[p++] = size;
+            __THPHuffmanSizeTab_803C7828[p] = size;
+            p++;
         }
     }
     __THPHuffmanSizeTab_803C7828[p] = 0;
@@ -7455,7 +7456,16 @@ void __GBAX02(s32 chan, u8 *readbuf) {
     task->req_cb = NULL;
     DSPAddTask(task);
 }
+
 #pragma pop
+
+void UpdatePointers(u32 *offsets, u32 count, u32 base) {
+    u32 i;
+
+    for (i = 0; i < count; i++) {
+        *(u32 *)(base + offsets[i]) += base;
+    }
+}
 
 s32 GBAReadAsync(s32 chan, u8 *dst, u8 *status, GBACallback callback);
 static void F29(s32 chan, s32 ret);
