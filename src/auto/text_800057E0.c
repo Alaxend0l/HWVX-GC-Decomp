@@ -1867,6 +1867,74 @@ void AI_AsyncHeartbeat(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0xC8) = 0x1F4;
 }
 
+s32 AI_Car_CheckIfStuck(u8 *ai) {
+    f32 PSVECSquareDistance(void *a, void *b);
+    f32 PSVECDotProduct(void *a, void *b);
+    f32 AI_AngleToTarget(u8 *ai, Vector4 *target);
+    double acos(double x);
+    u8 *car = *(u8 **)(ai + 0x2C);
+    s32 timer;
+    u8 mode;
+    f32 dot;
+
+    if (*(s32 *)(*(u8 **)(ai + 0x2C) + 0x464) > 600) {
+        ai[0] = 0x7F;
+        return 1;
+    }
+    timer = *(s32 *)(ai + 0x634);
+    if (timer == 0) {
+        if (*(s32 *)(*(u8 **)(ai + 0x2C) + 0x404) < 500 && PSVECSquareDistance(ai + 0x620, *(u8 **)(ai + 0x2C) + 0x40) < 0.5f) {
+            (*(u32 *)(ai + 0x630))++;
+            if (*(u32 *)(ai + 0x630) >= 10) {
+                *(s32 *)(ai + 0x634) = 120;
+                *(s16 *)(ai + 0x640) = AI_AngleToTarget(car, (Vector4 *)(ai + 0x400)) < 0.0f ? -127 : 127;
+                *(Quaternion *)(ai + 0x610) = *(Quaternion *)(car + 0x30);
+            }
+        } else {
+            *(u32 *)(ai + 0x630) = 0;
+        }
+        *(Quaternion *)(ai + 0x620) = *(Quaternion *)(*(u8 **)(ai + 0x2C) + 0x40);
+        if (*(s32 *)(ai + 0x634) == 0) {
+            return 0;
+        }
+    } else if (timer < 0) {
+        *(s32 *)(ai + 0x634) = timer + 1;
+        return 0;
+    }
+    ai[0] = *(s16 *)(ai + 0x640);
+    (*(s32 *)(ai + 0x634))--;
+    if (*(s32 *)(ai + 0x634) == 0) {
+        *(s32 *)(ai + 0x634) = -120;
+    }
+    mode = (*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11];
+    if (mode == 1) {
+        ai[0x13] = 0xFF;
+        dot = PSVECDotProduct(car + 0x30, ai + 0x610);
+        if (dot > 1.0f) {
+            dot = 1.0f;
+        }
+        if (dot < -1.0f) {
+            dot = -1.0f;
+        }
+        if (30.0 <= 57.29578f * acos(dot)) {
+            *(s32 *)(ai + 0x634) = -120;
+        }
+    } else if (mode == 2) {
+        ai[0x14] = 0xFF;
+        dot = PSVECDotProduct(car + 0x30, ai + 0x610);
+        if (dot > 1.0f) {
+            dot = 1.0f;
+        }
+        if (dot < -1.0f) {
+            dot = -1.0f;
+        }
+        if (45.0 <= 57.29578f * acos(dot)) {
+            *(s32 *)(ai + 0x634) = -180;
+        }
+    }
+    return 1;
+}
+
 void AI_Car_ClearedNavPoint_800087C8(u8 *car, s8 arg1) {
     s32 NavHolder_GetTotalNavPoints(void);
     u8 *NavHolder_GetNavPoint(s32 index);
@@ -28834,41 +28902,73 @@ void __GXSetSUTexRegs(void) {
 void __GXSetTmemConfig(u32 config) {
     switch (config) {
     case 1:
-        GXWriteRasReg(0x8C0D8000);
-        GXWriteRasReg(0x900DC000);
-        GXWriteRasReg(0x8D0D8800);
-        GXWriteRasReg(0x910DC800);
-        GXWriteRasReg(0x8E0D9000);
-        GXWriteRasReg(0x920DD000);
-        GXWriteRasReg(0x8F0D9800);
-        GXWriteRasReg(0x930DD800);
-        GXWriteRasReg(0xAC0DA000);
-        GXWriteRasReg(0xB00DE000);
-        GXWriteRasReg(0xAD0DA800);
-        GXWriteRasReg(0xB10DE800);
-        GXWriteRasReg(0xAE0DB000);
-        GXWriteRasReg(0xB20DF000);
-        GXWriteRasReg(0xAF0DB800);
-        GXWriteRasReg(0xB30DF800);
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0x8C0D8000;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0x900DC000;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0x8D0D8800;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0x910DC800;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0x8E0D9000;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0x920DD000;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0x8F0D9800;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0x930DD800;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0xAC0DA000;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0xB00DE000;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0xAD0DA800;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0xB10DE800;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0xAE0DB000;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0xB20DF000;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0xAF0DB800;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0xB30DF800;
         break;
     case 0:
     default:
-        GXWriteRasReg(0x8C0D8000);
-        GXWriteRasReg(0x900DC000);
-        GXWriteRasReg(0x8D0D8400);
-        GXWriteRasReg(0x910DC400);
-        GXWriteRasReg(0x8E0D8800);
-        GXWriteRasReg(0x920DC800);
-        GXWriteRasReg(0x8F0D8C00);
-        GXWriteRasReg(0x930DCC00);
-        GXWriteRasReg(0xAC0D9000);
-        GXWriteRasReg(0xB00DD000);
-        GXWriteRasReg(0xAD0D9400);
-        GXWriteRasReg(0xB10DD400);
-        GXWriteRasReg(0xAE0D9800);
-        GXWriteRasReg(0xB20DD800);
-        GXWriteRasReg(0xAF0D9C00);
-        GXWriteRasReg(0xB30DDC00);
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0x8C0D8000;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0x900DC000;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0x8D0D8400;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0x910DC400;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0x8E0D8800;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0x920DC800;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0x8F0D8C00;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0x930DCC00;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0xAC0D9000;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0xB00DD000;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0xAD0D9400;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0xB10DD400;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0xAE0D9800;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0xB20DD800;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0xAF0D9C00;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = 0xB30DDC00;
         break;
     }
 }
