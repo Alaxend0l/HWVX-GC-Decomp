@@ -19280,6 +19280,9 @@ s32 TRKInitializeTarget(void);
 void usr_put_initialize(void);
 void TRKTargetSetInputPendingPtr(void *ptr);
 s32 TRKInitializeIntDrivenUART(u32 param1, u32 param2, u32 param3, volatile u8 **inputPendingPtrRef);
+
+#pragma push
+#pragma dont_inline on
 s32 TRKInitializeNub(void) {
     s32 result;
     s32 resultTemp;
