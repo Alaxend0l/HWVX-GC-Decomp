@@ -10417,7 +10417,6 @@ s32 TRKAppendBuffer_ui8(TRKBuffer *b, const u8 *data, s32 count) {
 }
 
 s32 TRKAppendBuffer1_ui64(TRKBuffer *b, u64 data) {
-    extern s32 gTRKBigEndian;
     u8 *bigEndianData;
     u8 *byteData;
     u8 swapBuffer[sizeof(data)];
