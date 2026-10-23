@@ -6064,6 +6064,8 @@ s32 Effect_StartEffect(void *arg0) {
     return 0;
 }
 
+#pragma push
+#pragma optimize_for_size on
 s32 Effect_PerformEnvelope(Effect *effect, EffectEnvelope *env, s32 magnitude) {
     u32 elapsed = effect->elapsed;
     s32 start = magnitude < 0 ? -magnitude : magnitude;
@@ -6099,6 +6101,7 @@ s32 Effect_PerformEnvelope(Effect *effect, EffectEnvelope *env, s32 magnitude) {
     }
     return level;
 }
+#pragma pop
 
 #pragma push
 #pragma optimize_for_size on
