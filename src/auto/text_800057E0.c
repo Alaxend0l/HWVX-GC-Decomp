@@ -8787,6 +8787,45 @@ void WildCardRack_JettisonAll(void *rack) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+#pragma dont_inline on
+s32 TriggerItemPickup(u32 *trigger) {
+    u32 i;
+    u32 j;
+    u32 numItems;
+    u8 *item;
+    u32 found;
+    u8 *thing;
+    u8 *rack;
+    u32 k;
+
+    numItems = trigger[0] + 1;
+    for (i = 0; i < trigger[0]; i++) {
+        item = (u8 *)trigger[i + 1];
+        for (j = 0; j < trigger[numItems]; j++) {
+            found = 0;
+            thing = *(u8 **)(trigger[j + numItems + 1] + 0x28);
+            if (thing != NULL) {
+                if (Thing_HasThing(thing, *(void **)(item + 0x24))) {
+                    return 1;
+                }
+                rack = ThingManagerList_GetByType(thing + 0x344, 8);
+                for (k = 0; rack != NULL && k < 12; k++) {
+                    if (*(u8 **)(rack + k * 0x50 + 0xFC) != NULL &&
+                        *(u32 *)(*(u8 **)(item + 0x1C) + 0x30) == *(u32 *)(*(u8 **)(rack + k * 0x50 + 0xFC) + 0x30)) {
+                        found = 1;
+                    }
+                }
+                if (found) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+#pragma pop
 s32 WildCardRack_Invalidate(u8 *rack, u32 start, u32 end) {
     u32 i;
     u32 addr;
