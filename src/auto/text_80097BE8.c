@@ -6280,6 +6280,57 @@ DLSkinGroup *DisplayList_AddGroup_Skin(void) {
     return &dl->skinGroups[dl->numSkinGroups++];
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void DisplayList_RenderGXList(void) {
+    extern GDL *g_pGDL;
+    extern u8 g_CurrentViews;
+    void Gfx_SetRenderWindow(u32 view);
+    u32 Gfx_GetCullLODGX(s32 geometry, void *matrix, u8 *lod, u8 flag);
+    void DisplayList_AddGeometry(s32 geometry, u16 matrix, s32 lightState, u8 lod, u8 flag, GXColor color);
+    GXColor color = {0, 0, 0, 0};
+    u32 i;
+    u32 view;
+    void *matrix;
+    u8 lod;
+
+    if (g_CurrentViews == 1) {
+        for (i = 0; i < g_pGDL->numDrawEntries; i++) {
+            matrix = Gfx_GetWorldMatrixState(g_pGDL->drawEntries[i].matrix);
+            if (Gfx_GetCullLODGX(g_pGDL->drawEntries[i].geometry, matrix, &lod, g_pGDL->drawEntries[i].unk11)) {
+                DisplayList_AddGeometry(g_pGDL->drawEntries[i].geometry, g_pGDL->drawEntries[i].matrix,
+                                        g_pGDL->drawEntries[i].lightState, lod, g_pGDL->drawEntries[i].unk10,
+                                        g_pGDL->drawEntries[i].unk4);
+            }
+        }
+        for (i = 0; i < g_pGDL->numLODEntries; i++) {
+            DisplayList_AddGeometry(g_pGDL->lodEntries[i].geometry, g_pGDL->lodEntries[i].matrix, -1, 1, 0, color);
+        }
+    } else {
+        for (i = 0; i < g_pGDL->numDrawEntries; i++) {
+            matrix = Gfx_GetWorldMatrixState(g_pGDL->drawEntries[i].matrix);
+            for (view = 1; view < 5; view++) {
+                if (g_CurrentViews & (1 << view)) {
+                    Gfx_SetRenderWindow(view);
+                    if (Gfx_GetCullLODGX(g_pGDL->drawEntries[i].geometry, matrix, &lod, g_pGDL->drawEntries[i].unk11)) {
+                        DisplayList_AddGeometry(g_pGDL->drawEntries[i].geometry, g_pGDL->drawEntries[i].matrix,
+                                                g_pGDL->drawEntries[i].lightState, lod, g_pGDL->drawEntries[i].unk10,
+                                                g_pGDL->drawEntries[i].unk4);
+                    }
+                }
+            }
+        }
+        for (i = 0; i < g_pGDL->numLODEntries; i++) {
+            for (view = 1; view < 5; view++) {
+                if (g_CurrentViews & (1 << view)) {
+                    Gfx_SetRenderWindow(view);
+                    DisplayList_AddGeometry(g_pGDL->lodEntries[i].geometry, g_pGDL->lodEntries[i].matrix, -1, 1, 0, color);
+                }
+            }
+        }
+    }
+}
+
 s32 Gfx_FrustrumCullSphereTestAllWindows(Vector *center, f32 radius) {
     extern u8 g_CurrentViews;
     void Gfx_SetRenderWindow(u32 view);
