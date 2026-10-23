@@ -175,15 +175,15 @@ typedef struct THPAudioBuffer {
     s32 frameNumber;
 } THPAudioBuffer;
 
-THPPlayer ActivePlayer;
-u8 UsedTextureSetQueue_8036EC78[0x20];
-void *UsedTextureSetMessage_8036EC98[3];
 u8 AudioDecodeThread_80370108[0x310];
 u8 AudioDecodeThreadStack[0x1000];
 u8 FreeAudioBufferQueue_80371418[0x20];
 void *FreeAudioBufferMessage[3];
 u8 DecodedAudioBufferQueue_80371444[0x20];
 void *DecodedAudioBufferMessage[3];
+THPPlayer ActivePlayer;
+u8 UsedTextureSetQueue_8036EC78[0x20];
+void *UsedTextureSetMessage_8036EC98[3];
 
 extern s32 __float_nan[];
 extern s32 __float_huge[];
@@ -4679,27 +4679,18 @@ s32 CreateAudioDecodeThread(s32 priority, void *param) {
     void AudioDecoder(void);
     void AudioDecoderForOnMemory(void *bufAddr);
     extern s32 AudioDecodeThreadCreated_803C7770;
-    extern u8 AudioDecodeThread_80370108[0x310];
-    struct AudioDecodeThreadData {
-        u8 thread[0x310];
-        u8 stack[0x1000];
-        u8 freeQueue[0x20];
-        void *freeMessage[3];
-        u8 decodedQueue[0x20];
-        void *decodedMessage[3];
-    } *at = (struct AudioDecodeThreadData *)AudioDecodeThread_80370108;
 
     if (param) {
-        if (OSCreateThread(at->thread, AudioDecoderForOnMemory, param, at->stack + 0x1000, 0x1000, priority, 1) == 0) {
+        if (OSCreateThread(AudioDecodeThread_80370108, AudioDecoderForOnMemory, param, AudioDecodeThreadStack + 0x1000, 0x1000, priority, 1) == 0) {
             return 0;
         }
     } else {
-        if (OSCreateThread(at->thread, AudioDecoder, NULL, at->stack + 0x1000, 0x1000, priority, 1) == 0) {
+        if (OSCreateThread(AudioDecodeThread_80370108, AudioDecoder, NULL, AudioDecodeThreadStack + 0x1000, 0x1000, priority, 1) == 0) {
             return 0;
         }
     }
-    OSInitMessageQueue(at->freeQueue, at->freeMessage, 3);
-    OSInitMessageQueue(at->decodedQueue, at->decodedMessage, 3);
+    OSInitMessageQueue(FreeAudioBufferQueue_80371418, FreeAudioBufferMessage, 3);
+    OSInitMessageQueue(DecodedAudioBufferQueue_80371444, DecodedAudioBufferMessage, 3);
     AudioDecodeThreadCreated_803C7770 = 1;
     return 1;
 }
