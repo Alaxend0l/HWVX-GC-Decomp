@@ -26503,6 +26503,8 @@ s32 TRKInitializeNub(void) {
     return result;
 }
 
+#pragma push
+#pragma auto_inline off
 s32 TRKMessageSend(TRKBuffer *b) {
     s32 WriteUART1(s8 c);
     s32 WriteUARTFlush(void);
