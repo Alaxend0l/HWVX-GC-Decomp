@@ -3923,6 +3923,24 @@ s8 ThingManagerList_Get(void *list, void *target) {
     return 0;
 }
 
+void SharedSlaveHolder_Release(void) {
+    M2C_UNK ThingManagerList_RemoveReleasedThings(s32);
+    u32 i;
+    void *thing;
+    void *next;
+
+    for (i = 0; i < 64; i++) {
+        if (g_aSharedSlaveHolder[i].key != NULL) {
+            for (thing = g_aSharedSlaveHolder[i].slaves; thing != NULL; thing = next) {
+                next = M2C_FIELD(thing, void **, 0xA4);
+                ((void (*)(void *))(M2C_FIELD(thing, void ***, 0x8C))[1])(thing);
+            }
+            ThingManagerList_RemoveReleasedThings((s32)&g_aSharedSlaveHolder[i].slaves);
+            g_aSharedSlaveHolder[i].key = NULL;
+        }
+    }
+}
+
 extern Vector4 g_zeroVector;
 extern void *g_pSourcePlayer;
 void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
@@ -4109,6 +4127,7 @@ void ThingManager_DARYL_Heartbeat(void) {
     ThingManager_MoveThings_DARYL_SUBTICK();
 }
 
+#ifndef THINGMANAGERDARYL_DEFINED
 typedef struct ThingManagerDARYL {
     u8 unk0[0x6AD10];
     u8 looker[0xFE60];
@@ -4117,6 +4136,7 @@ typedef struct ThingManagerDARYL {
 } ThingManagerDARYL;
 
 extern ThingManagerDARYL g_thingManager_DARYL;
+#endif
 
 void ThingManager_DARYL_Render(void) {
     extern void *g_pNoRayCollideThing;
