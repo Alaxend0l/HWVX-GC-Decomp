@@ -11822,6 +11822,31 @@ u32 SIDisablePolling(u32 poll) {
     return poll;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+BOOL SIGetResponse(s32 chan, void *data) {
+    BOOL OSDisableInterrupts(void);
+    BOOL OSRestoreInterrupts(BOOL level);
+    u32 SIGetStatus(s32 chan);
+    BOOL rc;
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    if (SIGetStatus(chan) & 0x20) {
+        Packet_803096E0.inputBuffer[chan][0] = __SIRegs[3 * chan + 1];
+        Packet_803096E0.inputBuffer[chan][1] = __SIRegs[3 * chan + 2];
+        Packet_803096E0.inputBufferValid[chan] = TRUE;
+    }
+    rc = Packet_803096E0.inputBufferValid[chan];
+    Packet_803096E0.inputBufferValid[chan] = FALSE;
+    if (rc) {
+        ((u32 *)data)[0] = Packet_803096E0.inputBuffer[chan][0];
+        ((u32 *)data)[1] = Packet_803096E0.inputBuffer[chan][1];
+    }
+    OSRestoreInterrupts(enabled);
+    return rc;
+}
+
 void DefaultCallback(void) {
 
 }
