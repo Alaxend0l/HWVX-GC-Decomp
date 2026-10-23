@@ -19142,7 +19142,7 @@ BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputB
     if (now < fire) {
         delay = fire - now;
         OSSetAlarm(Packet_803096E0.alarm[chan], delay, AlarmHandler);
-    } else if (__SITransfer(chan, output, outputBytes, input, inputBytes, callback) != FALSE) {
+    } else if (__SITransfer(chan, output, outputBytes, input, inputBytes, callback)) {
         OSRestoreInterrupts(enabled);
         return TRUE;
     }
