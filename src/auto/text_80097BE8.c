@@ -62,7 +62,7 @@ static inline void GXTexCoord2f32(f32 s, f32 t) {
     GXWGFifo.f32 = t;
 }
 
-static inline void GXPosition3s16(const s16 x, const s16 y, const s16 z) {
+static inline void GXPosition3s16(s16 x, s16 y, s16 z) {
     GXWGFifo.s16 = x;
     GXWGFifo.s16 = y;
     GXWGFifo.s16 = z;
@@ -5850,8 +5850,6 @@ s32 DrawChar(s32 x, s32 y, u16 code) {
     s32 t0;
     s32 cw;
     s32 ch;
-    s32 t1;
-    s32 s1;
 
     if (code == 0) {
         return 0;
@@ -5880,28 +5878,22 @@ s32 DrawChar(s32 x, s32 y, u16 code) {
     x1 = x0 + cw;
     y1 = y0 + ch;
     GXBegin(0x80, 0, 4);
-    s1 = s0 + cw;
-    t1 = t0 + ch;
     GXWGFifo.s16 = x0;
     GXWGFifo.s16 = y0;
     GXWGFifo.s16 = 0;
-    GXWGFifo.s16 = s0;
-    GXWGFifo.s16 = t0;
+    GXTexCoord2s16(s0, t0);
     GXWGFifo.s16 = x1;
     GXWGFifo.s16 = y0;
     GXWGFifo.s16 = 0;
-    GXWGFifo.s16 = s1;
-    GXWGFifo.s16 = t0;
+    GXTexCoord2s16(s0 + cw, t0);
     GXWGFifo.s16 = x1;
     GXWGFifo.s16 = y1;
     GXWGFifo.s16 = 0;
-    GXWGFifo.s16 = s1;
-    GXWGFifo.s16 = t1;
+    GXTexCoord2s16(s0 + cw, t0 + ch);
     GXWGFifo.s16 = x0;
     GXWGFifo.s16 = y1;
     GXWGFifo.s16 = 0;
-    GXWGFifo.s16 = s0;
-    GXWGFifo.s16 = t1;
+    GXTexCoord2s16(s0, t0 + ch);
     return width;
 }
 #pragma pop
