@@ -8290,6 +8290,49 @@ s32 __ct__8PeriodicFv(s32 arg0) {
     return arg0;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+#pragma readonly_strings on
+s32 UpdateForce__8PeriodicFllUcUlUlUcUsUsUssUlUlUcUc(Force *force, s32 chan, s32 effect, u8 type, u32 duration, u32 startDelay, u8 axis, u16 magnitude, u16 offset, u16 phase, s16 period, u32 attackTime, u32 fadeTime, u8 attackLevel, u8 fadeLevel) {
+    s32 LGUpdateForceEffect(u32 handle, u8 *desc);
+    struct {
+        u8 type;
+        u32 duration;
+        u32 startDelay;
+        u8 axis;
+        u16 magnitude;
+        u16 offset;
+        u16 phase;
+        s16 period;
+        u32 attackTime;
+        u32 fadeTime;
+        u8 attackLevel;
+        u8 fadeLevel;
+    } desc;
+    s32 result;
+
+    memset(&desc, 0, sizeof(desc));
+    desc.type = type;
+    desc.duration = duration;
+    desc.startDelay = startDelay;
+    desc.axis = axis;
+    desc.magnitude = magnitude;
+    desc.offset = offset;
+    desc.phase = phase;
+    desc.period = period;
+    desc.attackTime = attackTime;
+    desc.fadeTime = fadeTime;
+    desc.attackLevel = attackLevel;
+    desc.fadeLevel = fadeLevel;
+    result = LGUpdateForceEffect(force->effectIds[chan][effect], (u8 *)&desc);
+    if (result < 0) {
+        OSReport("ERROR: UpdateForce(periodic force) on channel %d returned %d\n", chan, result);
+        force->effectIds[chan][effect] = 0xFFFFFFFF;
+    }
+    return result;
+}
+#pragma pop
+
 s32 __ct__4RampFv(s32 arg0) {
     M2C_UNK __ct__5ForceFv();
     __ct__5ForceFv();
