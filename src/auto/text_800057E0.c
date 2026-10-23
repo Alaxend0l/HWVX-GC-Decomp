@@ -16097,86 +16097,59 @@ static inline void SetRun(RThread *thread) {
 }
 
 void *SetEffectivePriority(void *thread, s32 priority) {
-    typedef struct PThread PThread;
-    typedef struct { PThread *head; PThread *tail; } PQueue;
-    typedef struct { PQueue queue; PThread *thread; } PMutex;
-    struct PThread {
-        u8 pad[0x2C8];
-        u16 state;
-        u16 attr;
-        s32 suspend;
-        s32 priority;
-        s32 base;
-        void *val;
-        PQueue *queue;
-        PThread *next;
-        PThread *prev;
-        PQueue queueJoin;
+    typedef struct { RThread *thread; } PMutex;
+    typedef struct {
+        RThread base;
+        RQueue queueJoin;
         PMutex *mutex;
-    };
-    extern PQueue RunQueue_802EEE78[32];
-    extern u32 RunQueueBits_803C7290;
+    } PThread;
     extern s32 RunQueueHint_803C7294;
     PThread *t = thread;
 
-    switch (t->state) {
-    case 1: {
-        PThread *prev;
-
+    switch (t->base.state) {
+    case 1:
         UnsetRun(t);
-        t->priority = priority;
-        t->queue = &RunQueue_802EEE78[t->priority];
-        prev = t->queue->tail;
-        if (prev == NULL) {
-            t->queue->head = t;
-        } else {
-            prev->next = t;
-        }
-        t->prev = prev;
-        t->next = NULL;
-        t->queue->tail = t;
-        RunQueueBits_803C7290 |= 1 << (31 - t->priority);
-        RunQueueHint_803C7294 = 1;
+        t->base.priority = priority;
+        SetRun(&t->base);
         break;
-    }
     case 4: {
-        PThread *next;
-        PThread *prev;
+        RThread *next;
+        RThread *prev;
 
-        next = t->next;
-        prev = t->prev;
+        next = t->base.next;
+        prev = t->base.prev;
         if (next == NULL) {
-            t->queue->tail = prev;
+            t->base.queue->tail = prev;
         } else {
             next->prev = prev;
         }
         if (prev == NULL) {
-            t->queue->head = next;
+            t->base.queue->head = next;
         } else {
             prev->next = next;
         }
-        t->priority = priority;
-        for (next = t->queue->head; next && next->priority <= t->priority; next = next->next) {
+        t->base.priority = priority;
+        for (next = t->base.queue->head; next && next->priority <= t->base.priority; next = next->next) {
         }
         if (next == NULL) {
-            prev = t->queue->tail;
+            prev = t->base.queue->tail;
             if (prev == NULL) {
-                t->queue->head = t;
+                t->base.queue->head = &t->base;
             } else {
-                prev->next = t;
+                prev->next = &t->base;
             }
-            t->prev = prev;
-            t->next = NULL;
-            t->queue->tail = t;
+            t->base.prev = prev;
+            t->base.next = NULL;
+            t->base.queue->tail = &t->base;
         } else {
-            t->next = next;
+            t->base.next = next;
             prev = next->prev;
-            next->prev = t;
-            t->prev = prev;
+            next->prev = &t->base;
+            t->base.prev = prev;
             if (prev == NULL) {
-                t->queue->head = t;
+                t->base.queue->head = &t->base;
             } else {
-                prev->next = t;
+                prev->next = &t->base;
             }
         }
         if (t->mutex) {
@@ -16186,7 +16159,7 @@ void *SetEffectivePriority(void *thread, s32 priority) {
     }
     case 2:
         RunQueueHint_803C7294 = 1;
-        t->priority = priority;
+        t->base.priority = priority;
         break;
     }
     return NULL;
@@ -17278,7 +17251,7 @@ void DVDLowReset(void) {
 }
 #pragma pop
 
-s32 SIGetType(s32 chan);
+u32 SIGetType(s32 chan);
 s32 SIDecodeType(s32 type);
 void SISetSamplingRate(u32 msec);
 s32 SIProbe(s32 chan) {
