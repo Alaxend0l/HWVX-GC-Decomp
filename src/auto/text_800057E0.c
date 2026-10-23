@@ -18,6 +18,13 @@ typedef struct GXColor {
     u8 a;
 } GXColor;
 
+typedef struct GXColorS10 {
+    s16 r;
+    s16 g;
+    s16 b;
+    s16 a;
+} GXColorS10;
+
 typedef struct GXLightObjInt {
     u32 reserved[3];
     u32 Color;
@@ -10674,6 +10681,72 @@ void GXSetTevColorOp(s32 stage, s32 op, s32 bias, s32 scale, u8 clamp, s32 out_r
     *reg = (*reg & ~0xC00000) | (out_reg << 22);
     GXWGFifo.u8 = 0x61;
     GXWGFifo.u32 = *reg;
+    *(u16 *)(gx + 2) = 0;
+}
+
+void GXSetTevAlphaOp(s32 stage, s32 op, s32 bias, s32 scale, u8 clamp, s32 out_reg) {
+    extern u8 *gx;
+    u32 *reg;
+
+    reg = (u32 *)(gx + (stage * 4 + 0x170));
+    *reg = (*reg & ~0x40000) | ((op & 1) << 18);
+    if (op <= 1) {
+        *reg = (*reg & ~0x300000) | (scale << 20);
+        *reg = (*reg & ~0x30000) | (bias << 16);
+    } else {
+        *reg = (*reg & ~0x300000) | (((op >> 1) & 3) << 20);
+        *reg = (*reg & ~0x30000) | (3 << 16);
+    }
+    *reg = (*reg & ~0x80000) | (clamp << 19);
+    *reg = (*reg & ~0xC00000) | (out_reg << 22);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *reg;
+    *(u16 *)(gx + 2) = 0;
+}
+
+void GXSetTevColor(s32 id, GXColor color) {
+    extern u8 *gx;
+    u32 regRA;
+    u32 regBG;
+
+    regRA = 0;
+    regRA = (regRA & ~0x7FF) | color.r;
+    regRA = (regRA & ~0x7FF000) | (color.a << 12);
+    regRA = (regRA & ~0xFF000000) | ((0xE0 + id * 2) << 24);
+    regBG = 0;
+    regBG = (regBG & ~0x7FF) | color.b;
+    regBG = (regBG & ~0x7FF000) | (color.g << 12);
+    regBG = (regBG & ~0xFF000000) | ((0xE1 + id * 2) << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = regRA;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = regBG;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = regBG;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = regBG;
+    *(u16 *)(gx + 2) = 0;
+}
+
+void GXSetTevKColor(s32 id, GXColor color) {
+    extern u8 *gx;
+    u32 regRA;
+    u32 regBG;
+
+    regRA = 0;
+    regRA = (regRA & ~0xFF) | color.r;
+    regRA = (regRA & ~0xFF000) | (color.a << 12);
+    regRA = (regRA & ~0xF00000) | (8 << 20);
+    regRA = (regRA & ~0xFF000000) | ((0xE0 + id * 2) << 24);
+    regBG = 0;
+    regBG = (regBG & ~0xFF) | color.b;
+    regBG = (regBG & ~0xFF000) | (color.g << 12);
+    regBG = (regBG & ~0xF00000) | (8 << 20);
+    regBG = (regBG & ~0xFF000000) | ((0xE1 + id * 2) << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = regRA;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = regBG;
     *(u16 *)(gx + 2) = 0;
 }
 
