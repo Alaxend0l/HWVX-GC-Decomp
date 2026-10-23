@@ -8777,6 +8777,17 @@ s32 TRKSetBufferPosition(void *arg0, u32 arg1) {
     return var_r5;
 }
 
+#pragma push
+#pragma auto_inline off
+void TRKResetBuffer(TRKBuffer *b, u8 keepData) {
+    b->length = 0;
+    b->position = 0;
+    if (!keepData) {
+        TRK_memset(b->data, 0, 0x880);
+    }
+}
+#pragma pop
+
 void *TRK_memset(void *dst, s32 val, u32 n);
 void TRKReleaseBuffer(s32 idx) {
     extern TRKBuffer gTRKMsgBufs[3];
