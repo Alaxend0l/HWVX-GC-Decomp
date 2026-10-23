@@ -8722,6 +8722,23 @@ s32 TRKTerminateNub(void) {
     return 0;
 }
 
+s32 TRKReadBuffer(TRKBuffer *b, void *data, u32 length) {
+    s32 error = 0;
+    u32 bytesLeft;
+
+    if (length == 0) {
+        return 0;
+    }
+    bytesLeft = b->length - b->position;
+    if (length > bytesLeft) {
+        error = 0x302;
+        length = bytesLeft;
+    }
+    TRK_memcpy(data, b->data + b->position, length);
+    b->position += length;
+    return error;
+}
+
 s32 TRKAppendBuffer(TRKBuffer *b, const void *data, u32 length) {
     s32 error = 0;
     u32 bytesLeft;
