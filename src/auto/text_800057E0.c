@@ -4959,6 +4959,19 @@ s32 SoundSequence_GetTotalElementsInQueue(void) {
     return total;
 }
 
+void SoundSequence_Stop(u32 handle) {
+    u8 *seq;
+
+    if (handle == 0xFFFFFFFF) {
+        return;
+    }
+    seq = (u8 *)handle;
+    if (seq == NULL) {
+        return;
+    }
+    SoundSeq_Release(seq);
+}
+
 void ExitStateGamePlay(s32 arg0) {
     extern s8 g_bExitStateGamePlay;
     extern s32 g_targetGameState;
@@ -5605,6 +5618,36 @@ s32 TriggerCreatureVolumeEntered(u32 *trigger) {
     }
     return 0;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 TriggerItemVolumeEntered(u32 *trigger) {
+    f32 dist;
+    u8 *thing;
+    u32 i;
+    u32 numThings;
+    u32 j;
+    u8 *volume;
+
+    numThings = trigger[0];
+    for (i = 0; i < numThings; i++) {
+        thing = (u8 *)trigger[i + 1];
+        for (j = 0; j < trigger[numThings + 1]; j++) {
+            volume = M2C_FIELD(trigger[numThings + 2 + j], u8 **, 0x24);
+            if (volume != NULL) {
+                if (M2C_FIELD(volume, u8 **, 0x94) != NULL && M2C_FIELD(M2C_FIELD(volume, u8 **, 0x94), u8 **, 0x2C) != NULL) {
+                    volume = M2C_FIELD(M2C_FIELD(volume, u8 **, 0x94), u8 **, 0x2C);
+                }
+                if (M2C_FIELD(thing, u32 *, 4) == 1 && IsPointWithinVolume((Vector4 *)(volume + 0x40), thing, &dist)) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+#pragma pop
+
 #pragma pop
 
 #pragma push
