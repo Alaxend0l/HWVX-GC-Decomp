@@ -21575,6 +21575,7 @@ void __SetSURegs(u32 tmap, u32 tcoord) {
     GXWGPipe.u32 = gx->suTs1[tcoord];
     gx->bpSentNot = 0;
 }
+#pragma pop
 
 void __GXSetSUTexRegs(void) {
     typedef struct GXDataSUTex {
