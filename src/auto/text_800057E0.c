@@ -4952,6 +4952,23 @@ void Mover_Init(void) {
     fn_800957D4();
 }
 
+void Mover_DynamicRotation(u8 *mover) {
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    Vector4 quat;
+    Matrix4 mtx;
+
+    if (!(*(u32 *)(mover + 0x74) & 0x10)) {
+        *(u32 *)(mover + 0x74) |= 0x10;
+        quat = *(Vector4 *)(mover + 0xE0);
+        QuaternionToSubMatrix(&quat, &mtx);
+        mtx.m[3][0] = ((Thing *)mover)->mtx.m[3][0];
+        mtx.m[3][1] = ((Thing *)mover)->mtx.m[3][1];
+        mtx.m[3][2] = ((Thing *)mover)->mtx.m[3][2];
+        ((Thing *)mover)->quat = quat;
+        ((Thing *)mover)->mtx = mtx;
+    }
+}
+
 void PhysicalObject_GetInverseLocalInertiaTensor(void *obj, Quaternion *out) {
     *out = *(Quaternion *)((u8 *)obj + 0x120);
 }
