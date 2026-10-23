@@ -9920,6 +9920,115 @@ void State_GetGameStateStr(s32 state, char *str) {
     }
 }
 
+void Creature_MotionStateInit(void *arg0, s32 state, u8 reset, u8 keepTime) {
+    typedef struct { u32 anim; u8 pad4[0x5C]; } AnimEntry;
+    typedef struct { u8 pad0[0x14]; u32 count; AnimEntry *entries; } Anims;
+    typedef struct {
+        u8 pad0[0x74];
+        u32 flags;
+        u8 pad78[0x3C];
+        f32 unkB4;
+        Anims *anims;
+        u8 padBC[8];
+        s32 state;
+        u8 padC8[4];
+        u32 motion;
+        u8 padD0[0x18];
+        u8 unkE8;
+        u8 unkE9;
+        u8 padEA[2];
+        f32 time;
+        f32 motionTime;
+        u8 padF4[0x20];
+        u32 index;
+        AnimEntry *entry;
+    } Creature;
+    void MotionState_Init(void *motion, s8 reset);
+    Creature *creature = arg0;
+    u32 index;
+    AnimEntry *entry;
+    u32 *motion;
+    f32 time;
+
+    time = creature->time;
+    motion = &creature->motion;
+    index = 0;
+    if (reset && state == creature->state && creature->unkE8 != 2) {
+        creature->unkE9 = 0;
+        return;
+    }
+    if (creature->flags & 0x10) {
+        return;
+    }
+    creature->flags &= ~0x20;
+    switch (state) {
+    case 0:
+        index = 0;
+        break;
+    case 1:
+        index = 1;
+        break;
+    case 2:
+        index = 2;
+        break;
+    case 4:
+        index = 5;
+        break;
+    case 5:
+        index = 6;
+        break;
+    case 6:
+        index = 7;
+        break;
+    case 7:
+        index = 8;
+        creature->flags |= 0x10;
+        break;
+    case 8:
+        index = 9;
+        creature->flags |= 0x10;
+        break;
+    case 9:
+        index = 10;
+        break;
+    case 10:
+        index = 0x10;
+        creature->flags |= 0x10;
+        break;
+    case 11:
+        index = 0x16;
+        creature->flags |= 0x10;
+        break;
+    case 14:
+        index = 0xE;
+        creature->unkB4 = 0.0f;
+        creature->flags |= 0x10;
+        break;
+    case 15:
+        index = 0xF;
+        creature->flags |= 0x10;
+        break;
+    }
+    entry = &creature->anims->entries[index];
+    if (index >= creature->anims->count || entry->anim == 0) {
+        entry = creature->anims->entries;
+        state = 0;
+        index = 0;
+    }
+    creature->motion = entry->anim;
+    if (!reset) {
+        creature->motionTime = 0.0f;
+        creature->index = 0xFFFF;
+    }
+    MotionState_Init(motion, reset);
+    creature->state = state;
+    creature->index = index;
+    creature->entry = entry;
+    if (keepTime) {
+        creature->time = time;
+    }
+}
+
 void InterfaceManager_SetPlayerMessage(void *message, u32 player);
 s32 ActionPrintDebugString(u32 *action) {
     u32 i;
@@ -21001,6 +21110,48 @@ void *__AXGetCurrentProfile(void) {
     return NULL;
 }
 
+#pragma opt_unroll_loops on
+void AXFXDelayCallback(void *bufferUpdate, void *data) {
+    typedef struct { s32 *left; s32 *right; s32 *surround; } AXFX_BUFFERUPDATE;
+    typedef struct {
+        u32 currentSize[3];
+        u32 currentPos[3];
+        u32 currentFeedback[3];
+        u32 currentOutput[3];
+        s32 *left;
+        s32 *right;
+        s32 *sur;
+    } AXFX_DELAY_DATA;
+    AXFX_BUFFERUPDATE *update = bufferUpdate;
+    AXFX_DELAY_DATA *delay = data;
+    s32 l, r, s;
+    s32 *lBusData, *rBusData, *sBusData;
+    s32 *leftD, *rightD, *surD;
+    u32 i;
+
+    lBusData = update->left;
+    rBusData = update->right;
+    sBusData = update->surround;
+    leftD = delay->left + delay->currentPos[0] * 160;
+    rightD = delay->right + delay->currentPos[1] * 160;
+    surD = delay->sur + delay->currentPos[2] * 160;
+
+    for (i = 0; i < 160; i++) {
+        l = leftD[i];
+        r = rightD[i];
+        s = surD[i];
+        leftD[i] = lBusData[i] + ((s32)(l * delay->currentFeedback[0]) >> 7);
+        rightD[i] = rBusData[i] + ((s32)(r * delay->currentFeedback[1]) >> 7);
+        surD[i] = sBusData[i] + ((s32)(s * delay->currentFeedback[2]) >> 7);
+        lBusData[i] = (s32)(l * delay->currentOutput[0]) >> 7;
+        rBusData[i] = (s32)(r * delay->currentOutput[1]) >> 7;
+        sBusData[i] = (s32)(s * delay->currentOutput[2]) >> 7;
+    }
+    delay->currentPos[0] = (delay->currentPos[0] + 1) % delay->currentSize[0];
+    delay->currentPos[1] = (delay->currentPos[1] + 1) % delay->currentSize[1];
+    delay->currentPos[2] = (delay->currentPos[2] + 1) % delay->currentSize[2];
+}
+#pragma opt_unroll_loops reset
 void AXFXDelayInit(void *arg0) {
     M2C_UNK AXFXDelaySettings(void *);
     OSDisableInterrupts();
@@ -24558,6 +24709,57 @@ void GXSetTevIndirect(s32 tev_stage, s32 ind_stage, s32 format, s32 bias_sel, s3
     *(u16 *)(gx + 2) = 0;
 }
 
+#pragma push
+#pragma peephole off
+void GXSetIndTexCoordScale(s32 ind_state, s32 scale_s, s32 scale_t) {
+    extern u8 *gx;
+    u32 *reg;
+
+    switch (ind_state) {
+    case 0:
+        reg = (u32 *)(gx + 0x128);
+        *reg = (*(u32 *)(gx + 0x128) & ~0xF) | scale_s;
+        reg = (u32 *)(gx + 0x128);
+        *reg = (*(u32 *)(gx + 0x128) & ~0xF0) | (scale_t << 4);
+        reg = (u32 *)(gx + 0x128);
+        *reg = (*(u32 *)(gx + 0x128) & ~0xFF000000) | (0x25 << 24);
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x128);
+        break;
+    case 1:
+        reg = (u32 *)(gx + 0x128);
+        *reg = (*reg & ~0xF00) | (scale_s << 8);
+        reg = (u32 *)(gx + 0x128);
+        *reg = (*(u32 *)(gx + 0x128) & ~0xF000) | (scale_t << 12);
+        reg = (u32 *)(gx + 0x128);
+        *reg = (*(u32 *)(gx + 0x128) & ~0xFF000000) | (0x25 << 24);
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x128);
+        break;
+    case 2:
+        reg = (u32 *)(gx + 0x12C);
+        *reg = (*(u32 *)(gx + 0x12C) & ~0xF) | scale_s;
+        reg = (u32 *)(gx + 0x12C);
+        *reg = (*(u32 *)(gx + 0x12C) & ~0xF0) | (scale_t << 4);
+        reg = (u32 *)(gx + 0x12C);
+        *reg = (*(u32 *)(gx + 0x12C) & ~0xFF000000) | (0x26 << 24);
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x12C);
+        break;
+    case 3:
+        reg = (u32 *)(gx + 0x12C);
+        *reg = (*reg & ~0xF00) | (scale_s << 8);
+        reg = (u32 *)(gx + 0x12C);
+        *reg = (*(u32 *)(gx + 0x12C) & ~0xF000) | (scale_t << 12);
+        reg = (u32 *)(gx + 0x12C);
+        *reg = (*(u32 *)(gx + 0x12C) & ~0xFF000000) | (0x26 << 24);
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x12C);
+        break;
+    }
+    *(u16 *)(gx + 2) = 0;
+}
+#pragma pop
 void GXSetNumIndStages(u8 nIndStages) {
     extern u8 *gx;
     u32 *reg = (u32 *)(gx + 0x204);
