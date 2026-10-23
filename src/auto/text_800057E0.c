@@ -2460,6 +2460,15 @@ void LoadDataPack(void) {
     }
 }
 
+void ForceFeedback_Init(void) {
+    extern u8 g_forcefeedback[24][0x60];
+    s32 i;
+
+    for (i = 0; i < 24; i++) {
+        *(s32 *)g_forcefeedback[i] = 0;
+    }
+}
+
 void ForceFeedback_Play(void *effect, Vector4 *dir) {
     typedef struct ForceFeedback {
         void *effect;
