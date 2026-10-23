@@ -14748,6 +14748,47 @@ s32 TRKReadBuffer_ui8(TRKBuffer *b, u8 *data, s32 count) {
     }
     return err;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+#pragma opt_propagation off
+s32 TRKReadBuffer1_ui64(TRKBuffer *b, u64 *data) {
+    s32 err;
+    u32 length;
+    u32 bytesLeft;
+    u8 *bigEndianData;
+    u8 *byteData;
+    u8 swapBuffer[sizeof(*data)];
+
+    if (gTRKBigEndian) {
+        bigEndianData = (u8 *)data;
+    } else {
+        bigEndianData = swapBuffer;
+    }
+    length = sizeof(*data);
+    err = 0;
+    bytesLeft = b->length - b->position;
+    if (length > bytesLeft) {
+        err = 0x302;
+        length = bytesLeft;
+    }
+    TRK_memcpy(bigEndianData, b->data + b->position, length);
+    b->position += length;
+    if (!gTRKBigEndian && err == 0) {
+        byteData = (u8 *)data;
+        byteData[0] = bigEndianData[7];
+        byteData[1] = bigEndianData[6];
+        byteData[2] = bigEndianData[5];
+        byteData[3] = bigEndianData[4];
+        byteData[4] = bigEndianData[3];
+        byteData[5] = bigEndianData[2];
+        byteData[6] = bigEndianData[1];
+        byteData[7] = bigEndianData[0];
+    }
+    return err;
+}
+#pragma pop
+
 #pragma pop
 
 s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data) {
