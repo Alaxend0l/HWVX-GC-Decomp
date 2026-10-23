@@ -5486,6 +5486,28 @@ void Render_Create(void) {
     FontData_803C76A4 = OSAllocFromHeap(__OSCurrHeap, 0x20120);
     OSInitFont(FontData_803C76A4);
 }
+
+void GXSetViewport(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz);
+void GXSetScissor(u32 left, u32 top, u32 wd, u32 ht);
+void Render_StateSetScissor(void) {
+    f32 top;
+    f32 wd;
+    f32 ht;
+    u32 stop;
+    u32 swd;
+    u32 sht;
+
+    Gfx_SetProjectionMatrix(*(f32 *)((u8 *)GetRenderWindow() + 0x270));
+    ht = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x284);
+    wd = *(u32 *)((u8 *)GetRenderWindow() + 0x280);
+    top = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x2B8);
+    GXSetViewport(*(u32 *)((u8 *)GetRenderWindow() + 0x2B0), top, wd, ht, 0.0f, 1.0f);
+    sht = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x284);
+    swd = (f32)*(u32 *)((u8 *)GetRenderWindow() + 0x280);
+    stop = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x2B8);
+    GXSetScissor(*(u32 *)((u8 *)GetRenderWindow() + 0x2B0), stop, swd, sht);
+}
+
 #pragma pop
 
 void Render_FlipBuffers(void) {
