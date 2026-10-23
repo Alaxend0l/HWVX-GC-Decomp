@@ -4499,6 +4499,61 @@ void ForceFeedback_Heartbeat(void) {
     }
 }
 
+void ForceFeedback_GetForce(void *ff, u8 *a, u8 *b, f32 *c) {
+    typedef struct ForceFeedback {
+        void *effect;
+        f32 inner;
+        f32 outer;
+        u8 unkC[0x20 - 0xC];
+        f32 value;
+        u8 unk24[0x40 - 0x24];
+        Vector4 pos;
+        s32 unk50;
+        s32 unk54;
+        s32 unk58;
+        u8 unk5C[0x60 - 0x5C];
+    } ForceFeedback;
+    extern ForceFeedback g_forcefeedback[24];
+    void DistanceXYZ(void *a, void *b, f32 *dist);
+    s32 i;
+    u8 active;
+    s32 rumble;
+    f32 dist;
+    f32 force;
+    f32 scale;
+
+    force = 0.0f;
+    rumble = 0;
+    active = 0;
+    if (ff != NULL) {
+        for (i = 0; i < 24; i++) {
+            if (g_forcefeedback[i].effect != NULL) {
+                DistanceXYZ(ff, &g_forcefeedback[i].pos, &dist);
+                if (g_forcefeedback[i].unk54 > 0 && dist < g_forcefeedback[i].outer) {
+                    active = 1;
+                }
+                if (g_forcefeedback[i].unk58 > 0 && dist < g_forcefeedback[i].outer) {
+                    scale = (g_forcefeedback[i].outer - dist) / (g_forcefeedback[i].outer - g_forcefeedback[i].inner);
+                    scale *= g_forcefeedback[i].value;
+                    scale *= 255.0f;
+                    if (scale > rumble) {
+                        rumble = scale;
+                    }
+                }
+                if (g_forcefeedback[i].unk50 > 0 && dist < g_forcefeedback[i].outer) {
+                    scale = (g_forcefeedback[i].outer - dist) / (g_forcefeedback[i].outer - g_forcefeedback[i].inner);
+                    if (scale > force) {
+                        force = scale;
+                    }
+                }
+            }
+        }
+    }
+    *a = active;
+    *b = rumble;
+    *c = force;
+}
+
 void GameSettings_ResetGame(void) {
     s32 i;
 
