@@ -4198,7 +4198,7 @@ void *Gfx_Begin_GroupTriFlat(u16 tex, s32 arg1, s32 arg2) {
     return (u8 *)g_pGDL->unk24CDE0 + g_pGDL->unk38 * 0x50;
 }
 
-void *Gfx_Begin_GroupQuadFlat(u16 tex, s32 arg1, s32 arg2) {
+void *Gfx_Begin_GroupQuadFlat(u16 tex, u16 arg1, u8 arg2) {
     extern GDL *g_pGDL;
     u32 n;
 
@@ -4208,7 +4208,7 @@ void *Gfx_Begin_GroupQuadFlat(u16 tex, s32 arg1, s32 arg2) {
         g_pGDL->numGroupTris = 0;
     }
     if (n != 0 && (&g_pGDL->groupTris[n])[-1].type == 4 && (&g_pGDL->groupTris[n])[-1].unk10 >= 0xFFFE &&
-        tex == (&g_pGDL->groupTris[n])[-1].tex && (u16)arg1 == (&g_pGDL->groupTris[n])[-1].unk6) {
+        tex == (&g_pGDL->groupTris[n])[-1].tex && arg1 == (&g_pGDL->groupTris[n])[-1].unk6) {
         g_pGDL->numGroupTris--;
     } else {
         g_pGDL->groupTris[n].type = 4;
@@ -4218,7 +4218,7 @@ void *Gfx_Begin_GroupQuadFlat(u16 tex, s32 arg1, s32 arg2) {
         g_pGDL->groupTris[n].count = 0;
         g_pGDL->groupTris[n].tex = tex;
         g_pGDL->groupTris[n].unk6 = arg1;
-        g_pGDL->groupTris[n].unk10 = 0x10000 - 2;
+        g_pGDL->groupTris[n].unk10 = 0xFFFE;
         g_pGDL->groupTris[n].unk18 = 0.0f;
         g_pGDL->groupTris[n].unk1C = 0.0f;
     }
