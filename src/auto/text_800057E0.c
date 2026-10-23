@@ -8068,9 +8068,9 @@ s32 ActionPauseGame(u32 *action) {
     void PlayerHuman_SetDefaultControls(void *player, s32 arg);
     void Input_SetForceFeedbackActive(s32 chan, u8 active);
     u8 *mcp;
-    u32 i;
-    u32 count;
     u8 *player;
+    u32 count;
+    u32 i;
     ControllerSettings *settings;
 
     if (*action == 7) {
