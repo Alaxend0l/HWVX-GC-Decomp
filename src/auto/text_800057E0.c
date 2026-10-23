@@ -22211,6 +22211,54 @@ s32 TRKTargetAddStopInfo(void *b) {
     return err;
 }
 
+s32 TRKTargetInterrupt(TRKEvent *event) {
+    s32 TRKDoNotifyStopped(u8 cmd);
+    extern u8 gTRKCPUState[];
+    extern u8 gTRKState[];
+    s32 result = 0;
+    s32 done;
+
+    switch (event->eventType) {
+    case 3:
+    case 4:
+        if (gTRKStepStatus_800DA0B4.active) {
+            *(u32 *)(gTRKCPUState + 0x1F8) &= ~0x400;
+            done = 1;
+            if (gTRKStepStatus_800DA0B4.active && (u16)*(u32 *)(gTRKCPUState + 0x2F8) == 0xD00) {
+                switch (gTRKStepStatus_800DA0B4.type) {
+                case 0:
+                    if (gTRKStepStatus_800DA0B4.count > 0) {
+                        done = 0;
+                    }
+                    break;
+                case 1:
+                    if (*(u32 *)(gTRKCPUState + 0x80) >= gTRKStepStatus_800DA0B4.rangeStart &&
+                        *(u32 *)(gTRKCPUState + 0x80) <= gTRKStepStatus_800DA0B4.rangeEnd) {
+                        done = 0;
+                    }
+                    break;
+                }
+            }
+            if (done) {
+                gTRKStepStatus_800DA0B4.active = 0;
+            } else {
+                gTRKStepStatus_800DA0B4.active = 1;
+                *(u32 *)(gTRKCPUState + 0x1F8) |= 0x400;
+                if (gTRKStepStatus_800DA0B4.type == 0 || gTRKStepStatus_800DA0B4.type == 0x10) {
+                    gTRKStepStatus_800DA0B4.count--;
+                }
+                *(s32 *)(gTRKState + 0x98) = 0;
+            }
+        }
+        if (gTRKStepStatus_800DA0B4.active == 0) {
+            *(s32 *)(gTRKState + 0x98) = 1;
+            result = TRKDoNotifyStopped(0x90);
+        }
+        break;
+    }
+    return result;
+}
+
 #pragma push
 #pragma dont_inline on
 void TRKPostInterruptEvent(void) {
