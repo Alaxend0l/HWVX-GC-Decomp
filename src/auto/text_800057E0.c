@@ -1692,6 +1692,29 @@ void MotionState_ExtractBlendedKeyFrame(u8 *state, void *keyFrame) {
 }
 
 #pragma push
+#pragma auto_inline off
+void MotionState_Draw(void *state) {
+    void Gfx_DrawAnimGeometryAux(void *geom, void *mtx, s32 skel, s32 arg3);
+    void Gfx_DrawGeometry_MatrixNotCached(void *geom, void *mtx);
+    void MotionState_DrawSlaves(void *state, s32 arg1);
+    u32 i;
+    s32 *skel;
+
+    skel = M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), s32 **, 0x14);
+    for (i = 0; i < M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u32 *, 0x0); i++) {
+        Gfx_DrawAnimGeometryAux(M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), void ***, 0x4)[i],
+                                M2C_FIELD(state, void **, 0x10), *skel, 0);
+    }
+    for (i = 0; i < M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u32 *, 0x8); i++) {
+        u8 *e = M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u8 **, 0xC) + i * 8;
+        Gfx_DrawGeometry_MatrixNotCached(M2C_FIELD(e, void **, 0x0),
+                                         M2C_FIELD(state, u8 **, 0x10) + (M2C_FIELD(e, u16 *, 0x4) << 6));
+    }
+    MotionState_DrawSlaves(state, 0);
+}
+#pragma pop
+
+#pragma push
 #pragma dont_inline on
 void MotionState_BuildMatricesWorld(void *arg0, void *arg1, void *motionState, f32 time) {
     u8 frames[0x800];
