@@ -4179,6 +4179,25 @@ void Gfx_Add2DSprite(Vector *pos, u16 tex, GXColor *color, u8 flag, f32 a, f32 b
     g_pGDL->num2DSprites++;
 }
 
+void Gfx_AddCorona(Vector *pos, u16 tex, GXColor *color, u8 flag, f32 a, f32 b) {
+    extern GDL *g_pGDL;
+    extern s32 g_currentWindow;
+
+    if (g_pGDL->num2DSprites == 2000) {
+        return;
+    }
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].x = pos->x;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].y = pos->y;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].z = pos->z;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].unkC = a * *(f32 *)((u8 *)GetRenderWindow() + 0x2CC);
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].unk1C = b;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].color = *color;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].tex = tex;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].flag = flag;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].window = g_currentWindow;
+    g_pGDL->num2DSprites++;
+}
+
 GDLRect *Gfx_Add2DRectangleRenderWindow(void) {
     extern GDL *g_pGDL;
     extern s32 g_currentWindow;
