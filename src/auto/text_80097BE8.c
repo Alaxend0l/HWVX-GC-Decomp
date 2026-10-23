@@ -4453,6 +4453,29 @@ BOOL ProperTimingForStart(void) {
     return FALSE;
 }
 
+BOOL ProperTimingForGettingNextFrame(void) {
+    u32 VIGetNextField(void);
+    s32 frameRate;
+
+    if (ActivePlayer.playFlag & 2) {
+        if (VIGetNextField() == 0) {
+            return TRUE;
+        }
+    } else if (ActivePlayer.playFlag & 4) {
+        if (VIGetNextField() == 1) {
+            return TRUE;
+        }
+    } else {
+        frameRate = ActivePlayer.frameRate * 100.0f;
+        ActivePlayer.curCount = (*(s64 *)&ActivePlayer.unkC0 * frameRate) / 5994;
+        if (ActivePlayer.prevCount != ActivePlayer.curCount) {
+            ActivePlayer.prevCount = ActivePlayer.curCount;
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 BOOL THPPlayerGetVideoInfo(THPVideoInfo *videoInfo) {
     if (ActivePlayer.open) {
         memcpy(videoInfo, &ActivePlayer.videoInfo, sizeof(THPVideoInfo));
