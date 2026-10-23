@@ -4876,6 +4876,41 @@ void *NavHolder_GetFirstWayPoint(void) {
     return gs_NavHolder_803C6CD8.data->firstWayPoint;
 }
 
+void ParticleGX_Move(struct ParticleGX_Move_t {
+        Vector4 pos;
+        u8 unk10[0xDC - 0x10];
+        s32 timer;
+        Vector4 targetPos;
+    } *particle) {
+    extern s32 g_iDeltaTimeMS;
+    f32 Gfx_GetMinCameraDistSquared(void *pos);
+    f32 Sqrt(f32 x);
+    void ParticleGX_MacroStep(void *particle);
+    void ParticleGX_MicroStep(void *particle);
+    f32 distSq;
+    f32 t;
+
+    if (particle->timer <= 0) {
+        particle->pos = particle->targetPos;
+        distSq = Gfx_GetMinCameraDistSquared(particle);
+        if ((u32)ViewManager_GetViewFormat() > 1) {
+            distSq *= 4.0f;
+        }
+        if (distSq > 1000000.0f) {
+            particle->timer = 700;
+        } else {
+            t = 700.0f;
+            particle->timer = (u32)(((Sqrt(distSq) - 1.0f) / 999.0f) * t);
+        }
+        if (particle->timer < g_iDeltaTimeMS) {
+            particle->timer = g_iDeltaTimeMS;
+        }
+        ParticleGX_MacroStep(particle);
+    }
+    ParticleGX_MicroStep(particle);
+    particle->timer -= g_iDeltaTimeMS;
+}
+
 void ParticleGX_MicroStep(void *arg0) {
     extern f32 g_fDeltaTimeMS;
     void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0);
@@ -7629,6 +7664,31 @@ void VolumeManager_Initialize(void) {
     SetReverb(1, 0, 0, 0);
     g_VolumeHolder = M2C_FIELD(g_worldData.world, s32 *, 0x4);
     g_bReset = 1;
+}
+
+s32 VolumeManager_GetVolumeCellIndex(Vector4 *point) {
+    extern u8 *g_VolumeHolder;
+    u8 *holder = g_VolumeHolder;
+    s32 x;
+    s32 y;
+    s32 z;
+
+    if (holder == NULL) {
+        return 0;
+    }
+    x = (point->x - M2C_FIELD(holder, f32 *, 0x0)) / M2C_FIELD(holder, f32 *, 0x20);
+    y = (point->y - M2C_FIELD(holder, f32 *, 0x4)) / M2C_FIELD(holder, f32 *, 0x24);
+    z = (point->z - M2C_FIELD(holder, f32 *, 0x8)) / M2C_FIELD(holder, f32 *, 0x28);
+    if (x < 0 || x >= M2C_FIELD(holder, s32 *, 0x2C)) {
+        return 0;
+    }
+    if (y < 0 || y >= M2C_FIELD(holder, s32 *, 0x30)) {
+        return 0;
+    }
+    if (z < 0 || z >= M2C_FIELD(holder, s32 *, 0x34)) {
+        return 0;
+    }
+    return M2C_FIELD(holder, s32 **, 0x14)[z * M2C_FIELD(holder, s32 *, 0x2C) + M2C_FIELD(holder, s32 *, 0x34) * (y * M2C_FIELD(holder, s32 *, 0x2C)) + x];
 }
 
 s32 VolumeManager_GetNumVolumesOfType(u32 type) {
