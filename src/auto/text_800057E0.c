@@ -2969,6 +2969,56 @@ void BuildOOBOffset(void *oob, void *pos, void *rot, void *out) {
     M2C_FIELD(out, Vector4 **, 0xA8) = &((Matrix4 *)pos)->v[1];
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void BuildOConvexHullOffset(void *out, void *hull, void *pos, void *rot) {
+    typedef struct HullFace {
+        Vector4 normal;
+        u8 unk10[4];
+        u32 *verts;
+        u8 unk18[8];
+    } HullFace;
+    typedef struct Hull {
+        u8 unk0[8];
+        u32 numFaces;
+        u32 numVerts;
+        u8 unk10[8];
+        HullFace *faces;
+        Vector4 *verts;
+    } Hull;
+    typedef struct OConvexHull {
+        Vector4 verts[32];
+        Vector4 planes[16];
+        Hull *hull;
+        u8 unk304[0x3C4 - 0x304];
+        s32 unk3C4;
+        s32 unk3C8;
+        u8 unk3CC[4];
+        Vector4 pos;
+    } OConvexHull;
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void Create_Plane3(Vector4 *plane, Vector4 *normal, Vector4 *point);
+    Hull *h = hull;
+    OConvexHull *o = out;
+    Vector4 normal;
+    Matrix4 local;
+    u32 i;
+
+    local = *(Matrix4 *)pos;
+    XformVec(pos, rot, &local.v[3]);
+    for (i = 0; i < h->numVerts; i++) {
+        XformVec(&local, &h->verts[i], &o->verts[i]);
+    }
+    for (i = 0; i < h->numFaces; i++) {
+        XformVecOrientation(&local, &h->faces[i].normal, &normal);
+        Create_Plane3(&o->planes[i], &normal, &o->verts[*h->faces[i].verts]);
+    }
+    o->hull = h;
+    o->unk3C8 = 0;
+    o->unk3C4 = 0;
+    o->pos = local.v[3];
+}
+
 void OConvexHullHolder_Init(void) {
     extern u8 g_aOConvexHull[8][0x3E0];
     s32 i;
