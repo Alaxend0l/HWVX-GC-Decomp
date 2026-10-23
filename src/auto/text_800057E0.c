@@ -3112,6 +3112,32 @@ s32 InterfaceManager_GetTargetArrowNearestNavPoint(void) {
     return g_TargetArrow[4];
 }
 
+s32 DropShip_IsChildInterfaceReady(s32 index) {
+    typedef struct DropShipSlot {
+        u8 pad0[0x243];
+        u8 type;
+        u8 pad244[0x270 - 0x244];
+        s32 child;
+        u8 pad274[0x300 - 0x274];
+    } DropShipSlot;
+    extern u8 g_interface[][0x170];
+    u32 i;
+    u8 *iface = g_interface[index];
+    u8 *child;
+
+    for (i = 0; i < *(u32 *)iface; i++) {
+        if ((*(DropShipSlot **)(iface + 0x88))[i].type == 6) {
+            child = g_interface[(*(DropShipSlot **)(iface + 0x88))[i].child];
+            if (child[0x83] == 0) {
+                if (*(u32 *)(child + 4) == 0 || (*(u32 *)(child + 4) == 1 && *(u32 *)(child + 0x10) != 0)) {
+                    return 0;
+                }
+            }
+        }
+    }
+    return 1;
+}
+
 void DropShip_EndInterface(s32 index) {
     extern u8 g_interface[][0x170];
     void InterfaceManager_SetLoadState(void *iface, s32 state);
