@@ -8106,6 +8106,100 @@ void InterfaceManager_Backup_Key(u8 *iface, u8 *key, u8 flags) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void InterfaceManager_ExecuteActions(u8 *iface, u8 *list) {
+    typedef struct { u8 pad[0x98]; s32 vars[1]; } IfaceVars;
+    void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
+    void InterfaceManager_SetObjectState(u8 *iface, u8 *obj, s32 state, s32 arg3);
+    u8 *action;
+    u8 *data;
+    u8 *obj;
+    u8 *op;
+    u8 *code;
+    s32 a;
+    s32 b;
+    s32 value;
+    u32 i;
+    s32 state;
+
+    for (i = 0; i < *(u32 *)list; i++) {
+        action = *(u8 **)(list + 4) + i * 8;
+        switch (action[0]) {
+        case 1:
+            data = *(u8 **)(action + 4);
+            if (*(u32 *)(data + 4) >= *(u32 *)iface) {
+                break;
+            }
+            obj = *(u8 **)(iface + 0x88) + *(u32 *)(data + 4) * 0x300;
+            switch (data[0]) {
+            case 0:
+                state = 0;
+                break;
+            case 1:
+                state = 1;
+                break;
+            case 2:
+                state = 2;
+                break;
+            case 3:
+                state = 3;
+                break;
+            case 4:
+                if (obj[0x240] != 0) {
+                    obj[0x240] = 0;
+                    obj[0x2C] = 1;
+                    obj[0x54] = 1;
+                    obj[0x118] = 1;
+                    obj[0x84] = 1;
+                    obj[0xB4] = 1;
+                    obj[0x125] = 1;
+                    obj[0x164] = 1;
+                    obj[0x194] = 1;
+                    obj[0x248] = 1;
+                }
+                continue;
+            case 5:
+                obj[0x240] = 1;
+                continue;
+            }
+            switch (data[1]) {
+            case 10:
+                value = *(u16 *)(data + 2);
+                break;
+            default:
+                value = ((IfaceVars *)iface)->vars[*(u16 *)(data + 2)];
+                break;
+            }
+            InterfaceManager_SetObjectState(iface, obj, state, value);
+            break;
+        case 2:
+            data = *(u8 **)(action + 4);
+            if (*(s8 *)(op = *(u8 **)(*(u8 **)data + 4))) {
+                a = ((IfaceVars *)iface)->vars[*(u16 *)(op + 2)];
+            } else {
+                a = *(u16 *)(op + 2);
+            }
+            if (*(s8 *)(op = *(u8 **)(data + 4))) {
+                b = ((IfaceVars *)iface)->vars[*(u16 *)(op + 2)];
+            } else {
+                b = *(u16 *)(op + 2);
+            }
+            GameSettings_SetCodeVariable(**(s32 **)data, a, b);
+            break;
+        case 3:
+            op = *(u8 **)(action + 4);
+            if (*(s8 *)op) {
+                ((IfaceVars *)iface)->vars[op[1]] = ((IfaceVars *)iface)->vars[*(u16 *)(op + 2)];
+            } else {
+                ((IfaceVars *)iface)->vars[op[1]] = *(u16 *)(op + 2);
+            }
+            break;
+        }
+    }
+}
+#pragma pop
+
 #pragma pop
 
 #pragma pop
@@ -25778,6 +25872,71 @@ error:
         callback(chan, result);
     }
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 CARDCreateAsync(s32 chan, const char *fileName, u32 size, CARDFileInfo *fileInfo, CARDCallback callback) {
+    u32 strlen(const char *s);
+    s32 memcmp(const void *a, const void *b, u32 n);
+    char *strncpy(char *dst, const char *src, u32 n);
+    s32 __CARDGetDirBlock(void *card);
+    s32 __CARDGetFatBlock(void *card);
+    s32 __CARDAllocBlock(s32 chan, u32 cBlock, CARDCallback callback);
+    void __CARDDefaultApiCallback(void);
+    CARDControl *card;
+    u8 *dir;
+    u8 *ent;
+    u16 fileNo;
+    u16 freeNo;
+    u16 *fat;
+    s32 result;
+
+    if (strlen(fileName) > 32) {
+        return -12;
+    }
+    result = __CARDGetControlBlock(chan, &card);
+    if (result < 0) {
+        return result;
+    }
+    if (size == 0 || (size % card->sectorSize) != 0) {
+        return -128;
+    }
+    freeNo = (u16)-1;
+    dir = (u8 *)__CARDGetDirBlock(card);
+    for (fileNo = 0; fileNo < 127; fileNo++) {
+        ent = dir + fileNo * 0x40;
+        if (ent[0] == 0xFF) {
+            if (freeNo == (u16)-1) {
+                freeNo = fileNo;
+            }
+        } else if (memcmp(ent, *(u8 **)((u8 *)card + 0x10C), 4) == 0 &&
+                   memcmp(ent + 4, *(u8 **)((u8 *)card + 0x10C) + 4, 2) == 0 &&
+                   __CARDCompareFileName(ent, fileName)) {
+            return __CARDPutControlBlock(card, -7);
+        }
+    }
+    if (freeNo == (u16)-1) {
+        return __CARDPutControlBlock(card, -8);
+    }
+    fat = (u16 *)__CARDGetFatBlock(card);
+    if (card->sectorSize * fat[3] < size) {
+        return __CARDPutControlBlock(card, -9);
+    }
+    card->apiCallback = callback ? callback : (CARDCallback)__CARDDefaultApiCallback;
+    *(u16 *)((u8 *)card + 0xBC) = freeNo;
+    ent = dir + freeNo * 0x40;
+    *(u16 *)(ent + 0x38) = (u16)(size / card->sectorSize);
+    strncpy((char *)(ent + 8), fileName, 32);
+    card->fileInfo = fileInfo;
+    fileInfo->chan = chan;
+    fileInfo->fileNo = freeNo;
+    result = __CARDAllocBlock(chan, size / card->sectorSize, CreateCallbackFat);
+    if (result < 0) {
+        return __CARDPutControlBlock(card, result);
+    }
+    return result;
+}
+#pragma pop
 
 s32 CARDCreate(s32 chan, const char *fileName, u32 size, CARDFileInfo *fileInfo) {
     s32 result = CARDCreateAsync(chan, fileName, size, fileInfo, __CARDSyncCallback);
