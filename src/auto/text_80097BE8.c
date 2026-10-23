@@ -7198,7 +7198,7 @@ void LGInit(void) {
             VDevice_Init(&device->vdev);
             InitDevice(device, i);
             SIResetSteeringAsync(i, SteeringResetCallback);
-            SIReadSteering(i, device->unkC);
+            SIReadSteering(i, (u8 *)device + 0xC);
         }
         SISetSteeringSamplingCallback(SteeringSamplingCallback);
         g_lgInitialized_803C7948 = 1;
