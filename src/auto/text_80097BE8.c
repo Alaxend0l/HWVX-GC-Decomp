@@ -1375,6 +1375,76 @@ void *malloc(u32 size) {
     return allocate_from_var_pools(pool, size);
 }
 
+void *soft_allocate_from_var_pools(Block **pool_obj, u32 size, u32 *max_size);
+void FixBlock_construct(FixBlock *ths, FixBlock *prev, FixBlock *next, s32 index, FixSubBlock *chunk, u32 chunk_size);
+#pragma push
+#pragma use_lmw_stmw on
+void *allocate_from_fixed_pools(void *pool, u32 size) {
+    typedef struct FixStart {
+        FixBlock *tail_;
+        FixBlock *head_;
+    } FixStart;
+    typedef struct mem_pool_obj {
+        Block *start_;
+        FixStart fix_start[6];
+    } mem_pool_obj;
+    void *allocate_from_var_pools(void *pool, u32 size);
+    u32 i = 0;
+    FixSubBlock *p;
+    FixStart *fs;
+
+    while (size > fix_pool_sizes_800CD960[i]) {
+        ++i;
+    }
+    fs = &((mem_pool_obj *)pool)->fix_start[i];
+    if (fs->head_ == NULL || fs->head_->start_ == NULL) {
+        u32 size_received;
+        u32 n;
+        void *newblock;
+        u32 nsave;
+        u32 u_size;
+
+        n = 0xFEC / (fix_pool_sizes_800CD960[i] + sizeof(void *));
+        if (n > 0x100) {
+            n = 0x100;
+        }
+        nsave = n;
+        while (n >= 10) {
+            newblock = soft_allocate_from_var_pools(pool, n * (fix_pool_sizes_800CD960[i] + sizeof(void *)) + sizeof(FixBlock), &size_received);
+            if (newblock != NULL) {
+                break;
+            }
+            if (size_received > sizeof(FixBlock)) {
+                n = (size_received - sizeof(FixBlock)) / (fix_pool_sizes_800CD960[i] + sizeof(void *));
+            } else {
+                n = 0;
+            }
+        }
+        if (newblock == NULL && n < nsave) {
+            newblock = allocate_from_var_pools(pool, nsave * (fix_pool_sizes_800CD960[i] + sizeof(void *)) + sizeof(FixBlock));
+            if (newblock == NULL) {
+                return NULL;
+            }
+        }
+        u_size = !(*(u32 *)((u8 *)newblock - 4) & 1) ? (*(FixBlock **)((u8 *)newblock - 4))->client_size_
+                                                    : (*(u32 *)((u8 *)newblock - 8) & ~7) - 8;
+        if (fs->head_ == NULL) {
+            fs->head_ = newblock;
+            fs->tail_ = newblock;
+        }
+        FixBlock_construct(newblock, fs->tail_, fs->head_, i, (FixSubBlock *)((u8 *)newblock + sizeof(FixBlock)), u_size - sizeof(FixBlock));
+        fs->head_ = newblock;
+    }
+    p = fs->head_->start_;
+    fs->head_->start_ = p->next_;
+    ++fs->head_->n_allocated_;
+    if (fs->head_->start_ == NULL) {
+        fs->head_ = fs->head_->next_;
+        fs->tail_ = fs->tail_->next_;
+    }
+    return (u8 *)p + 4;
+}
+
 void *soft_allocate_from_var_pools(Block **pool_obj, u32 size, u32 *max_size) {
     Block *bp;
     void *ptr;
@@ -7575,7 +7645,8 @@ void __THPHuffGenerateDecoderTables(u8 tabIndex) {
 
     p = 0;
     h = &__THPInfo_803C7890->huffmanTabs[tabIndex];
-    for (l = 1; l <= 16; l++) {
+    l = 1;
+    while (l <= 16) {
         if (__THPHuffmanBits_803C7824[l - 1]) {
             h->valPtr[l] = p - __THPHuffmanCodeTab_803C782C[p];
             p += __THPHuffmanBits_803C7824[l - 1];
@@ -7584,8 +7655,9 @@ void __THPHuffGenerateDecoderTables(u8 tabIndex) {
             h->maxCode[l] = -1;
             h->valPtr[l] = -1;
         }
+        l++;
     }
-    h->maxCode[17] = 0xfffffL;
+    h->maxCode[17] = 0xfffff;
 }
 #pragma pop
 
