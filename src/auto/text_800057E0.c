@@ -2135,6 +2135,18 @@ s8 RayHitsTerrain(Vector4 *start, Vector4 *end, void *arg2, void *arg3) {
     return RayHitsTerrain_Aux3(start, &dir, arg2, arg3);
 }
 
+void BuildOOBOffset(void *oob, void *pos, void *rot, void *out) {
+    void BuildOOB(void *oob, void *pos, void *out);
+    Matrix4 local;
+
+    local = *(Matrix4 *)pos;
+    XformVec(pos, rot, &local.v[3]);
+    BuildOOB(oob, &local, out);
+    M2C_FIELD(out, Vector4 **, 0xA0) = &((Matrix4 *)pos)->v[2];
+    M2C_FIELD(out, Matrix4 **, 0xA4) = (Matrix4 *)pos;
+    M2C_FIELD(out, Vector4 **, 0xA8) = &((Matrix4 *)pos)->v[1];
+}
+
 void OConvexHullHolder_Init(void) {
     extern u8 g_aOConvexHull[8][0x3E0];
     s32 i;
