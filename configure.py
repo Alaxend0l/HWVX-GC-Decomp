@@ -247,7 +247,7 @@ cflags_rel = [
     "-sdata2 0",
 ]
 
-config.linker_version = "GC/2.7"
+config.linker_version = "GC/1.3.2"
 config.shift_jis = False
 
 

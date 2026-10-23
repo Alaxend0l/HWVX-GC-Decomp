@@ -7,4 +7,4 @@ the layout GameCube and Wii decomps use. Every build rebuilds `main.dol` and che
 2. `python configure.py` (downloads the tools it needs), then `ninja`.
 3. Decompiled code goes in `src/`; `objdiff` (objdiff.json) shows each function's progress.
 
-Compiler: CodeWarrior GC/2.7 (change `config.linker_version` in configure.py if the game used another).
+Compiler: CodeWarrior GC/1.3.2 (change `config.linker_version` in configure.py if the game used another).
