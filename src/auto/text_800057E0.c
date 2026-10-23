@@ -14429,6 +14429,94 @@ void OSExitThread(void *val) {
     OSRestoreInterrupts(enabled);
 }
 
+s32 OSSuspendThread(void *thread) {
+    typedef struct SThread SThread;
+    typedef struct { SThread *head; SThread *tail; } SQueue;
+    typedef struct { SThread *thread; } SMutex;
+    struct SThread {
+        u8 pad[0x2C8];
+        u16 state;
+        u16 attr;
+        s32 suspend;
+        s32 priority;
+        s32 base;
+        void *val;
+        SQueue *queue;
+        SThread *next;
+        SThread *prev;
+        SQueue queueJoin;
+        SMutex *mutex;
+    };
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32);
+    void SelectThread(s32 yield);
+    SThread *SetEffectivePriority(SThread *thread, s32 priority);
+    extern s32 RunQueueHint_803C7294;
+    SThread *t = thread;
+    s32 enabled;
+    s32 suspendCount;
+
+    enabled = OSDisableInterrupts();
+    suspendCount = t->suspend++;
+    if (suspendCount == 0) {
+        switch (t->state) {
+        case 2:
+            RunQueueHint_803C7294 = 1;
+            t->state = 1;
+            break;
+        case 1:
+            UnsetRun(t);
+            break;
+        case 4: {
+            SThread *next;
+            SThread *prev;
+
+            next = t->next;
+            prev = t->prev;
+            if (next == NULL) {
+                t->queue->tail = prev;
+            } else {
+                next->prev = prev;
+            }
+            if (prev == NULL) {
+                t->queue->head = next;
+            } else {
+                prev->next = next;
+            }
+            t->priority = 32;
+            prev = t->queue->tail;
+            if (prev == NULL) {
+                t->queue->head = t;
+            } else {
+                prev->next = t;
+            }
+            t->prev = prev;
+            t->next = NULL;
+            t->queue->tail = t;
+            if (t->mutex) {
+                SThread *owner = t->mutex->thread;
+                s32 priority;
+
+                do {
+                    if (0 < owner->suspend) {
+                        break;
+                    }
+                    priority = __OSGetEffectivePriority(owner);
+                    if (owner->priority == priority) {
+                        break;
+                    }
+                    owner = SetEffectivePriority(owner, priority);
+                } while (owner);
+            }
+            break;
+        }
+        }
+        __OSReschedule();
+    }
+    OSRestoreInterrupts(enabled);
+    return suspendCount;
+}
+
 #pragma push
 #pragma scheduling off
 void OSSleepThread(void *queue) {
