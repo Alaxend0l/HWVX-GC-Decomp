@@ -1062,7 +1062,7 @@ void abort(void) {
 }
 
 #pragma push
-#pragma dont_inline on
+#pragma auto_inline off
 extern u8 protopool_8030DD18[0x34];
 extern u8 init_803C75E8;
 
