@@ -441,6 +441,7 @@ typedef struct TRKBuffer {
 void TRKResetBuffer(TRKBuffer *b, u8 keepData);
 s32 TRKMessageSend(TRKBuffer *b);
 s32 TRKAppendBuffer(TRKBuffer *b, const void *data, u32 length);
+__declspec(section ".data") extern s32 gTRKBigEndian;
 
 volatile u16 __DSPRegs[32] : 0xCC005000;
 volatile u32 __AIRegs[8] : 0xCC006C00;
@@ -10413,6 +10414,29 @@ s32 TRKAppendBuffer_ui8(TRKBuffer *b, const u8 *data, s32 count) {
         err = TRKAppendBuffer1_ui8(b, data[i]);
     }
     return err;
+}
+
+s32 TRKAppendBuffer1_ui64(TRKBuffer *b, u64 data) {
+    extern s32 gTRKBigEndian;
+    u8 *bigEndianData;
+    u8 *byteData;
+    u8 swapBuffer[sizeof(data)];
+
+    if (gTRKBigEndian) {
+        bigEndianData = (u8 *)&data;
+    } else {
+        byteData = (u8 *)&data;
+        bigEndianData = swapBuffer;
+        bigEndianData[0] = byteData[7];
+        bigEndianData[1] = byteData[6];
+        bigEndianData[2] = byteData[5];
+        bigEndianData[3] = byteData[4];
+        bigEndianData[4] = byteData[3];
+        bigEndianData[5] = byteData[2];
+        bigEndianData[6] = byteData[1];
+        bigEndianData[7] = byteData[0];
+    }
+    return TRKAppendBuffer(b, bigEndianData, sizeof(data));
 }
 
 s32 TRKReadBuffer(TRKBuffer *b, void *data, u32 length) {
