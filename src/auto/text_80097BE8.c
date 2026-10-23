@@ -667,6 +667,11 @@ typedef struct GDLDrawEntry {
     u8 pad13;
 } GDLDrawEntry;
 
+typedef struct GDLLODEntry {
+    s32 geometry;
+    s32 matrix;
+} GDLLODEntry;
+
 typedef struct GDLAlphaEntry {
     void (*func)(u16 arg);
     u16 arg;
@@ -6437,6 +6442,34 @@ void PushDecodedAudioBuffer(void *arg0) {
     OSSendMessage(DecodedAudioBufferQueue_80371444, arg0, 1);
 }
 
+s32 __THPReadFrameHeader(void) {
+    s32 i;
+    u8 utmp8;
+    u8 *p;
+
+    __THPInfo_803C7890->c += 2;
+    if (*(__THPInfo_803C7890->c)++ != 8) {
+        return 10;
+    }
+    __THPInfo_803C7890->yPixelSize = (u16)((__THPInfo_803C7890->c[0] << 8) | __THPInfo_803C7890->c[1]);
+    __THPInfo_803C7890->c += 2;
+    __THPInfo_803C7890->xPixelSize = (u16)((__THPInfo_803C7890->c[0] << 8) | __THPInfo_803C7890->c[1]);
+    __THPInfo_803C7890->c += 2;
+    if (*(__THPInfo_803C7890->c)++ != 3) {
+        return 12;
+    }
+    for (i = 0; (u8)i < 3; i++) {
+        __THPInfo_803C7890->c++;
+        utmp8 = *(__THPInfo_803C7890->c)++;
+        if (((u8)i == 0 && utmp8 != 0x22) || ((u8)i > 0 && utmp8 != 0x11)) {
+            return 19;
+        }
+        p = __THPInfo_803C7890->c++;
+        __THPInfo_803C7890->components[i].quantizationTableSelector = *p;
+    }
+    return 0;
+}
+
 u8 __THPReadScaneHeader(void) {
     s32 i;
     s32 compId;
@@ -8734,6 +8767,48 @@ s32 OnReset_800C4F14(void) {
     return 1;
 }
 
+s32 GBAGetProcessStatus(s32 chan, u8 *percentp);
+#pragma push
+#pragma optimize_for_size on
+s32 GBAJoyBootAsync(s32 chan, s32 paletteColor, s32 paletteSpeed, u8 *programp, s32 length, u8 *status, GBACallback callback) {
+    GBAControl *gba = &__GBA[chan];
+    GBABootInfo *bootInfo = &gba->bootInfo;
+    u8 percent;
+    s32 ret;
+
+    if (chan & ~3) {
+        return 4;
+    }
+    if (length == 0 || 0x40000 < length) {
+        return 4;
+    }
+    if (paletteSpeed < -4 || paletteSpeed > 4) {
+        return 4;
+    }
+    if (paletteColor < 0 || paletteColor > 6) {
+        return 4;
+    }
+    if (programp[0xac] * programp[0xad] * programp[0xae] * programp[0xaf] == 0) {
+        return 4;
+    }
+    ret = GBAGetProcessStatus(chan, &percent);
+    if (ret != 0) {
+        return ret;
+    }
+    bootInfo->paletteColor = paletteColor;
+    bootInfo->paletteSpeed = paletteSpeed;
+    bootInfo->programp = programp;
+    bootInfo->length = length;
+    bootInfo->status = status;
+    bootInfo->callback = callback;
+    bootInfo->curOffset = D54_800DAFF8[8];
+    ret = GBAGetStatusAsync(chan, bootInfo->status, F23);
+    if (ret != 0) {
+        bootInfo->callback = NULL;
+    }
+    return ret;
+}
+#pragma pop
 static void F23(s32 chan, s32 ret) {
     GBAControl *gba = &__GBA[chan];
     GBABootInfo *bootInfo = &gba->bootInfo;
