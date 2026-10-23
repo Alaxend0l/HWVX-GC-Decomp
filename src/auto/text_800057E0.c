@@ -8869,6 +8869,34 @@ s32 SoundSequence_Play(s8 *seq, Vector4 *pos) {
     return -1;
 }
 
+s32 SoundSequence_PlayQueued(s8 *seq, Vector4 *pos) {
+    u32 ThingManager_GetActiveSoundSequences(u8 **list, u32 max);
+    u8 *list[0x80];
+    s32 thing;
+    s8 found;
+    u32 n;
+
+    thing = SoundSequence_Play(seq, pos);
+    if ((u32)thing != 0xFFFFFFFF) {
+        found = 0;
+        n = ThingManager_GetActiveSoundSequences(list, 0x80);
+        while (n != 0) {
+            n--;
+            if ((*(u32 *)(list[n] + 0x74) & 0x40000000) && *(u8 **)(list[n] + 0xc8) == NULL) {
+                found = 1;
+                break;
+            }
+        }
+        if (found) {
+            *(s32 *)(list[n] + 0xc8) = thing;
+            *(u32 *)((u8 *)thing + 0x74) |= 0x80000000;
+        }
+        *(u32 *)((u8 *)thing + 0x74) |= 0x40000000;
+        *(u8 **)((u8 *)thing + 0xc8) = NULL;
+    }
+    return thing;
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void SoundSequence_ClearQueue(void) {
