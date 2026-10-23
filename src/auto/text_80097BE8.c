@@ -568,6 +568,12 @@ typedef struct Texture {
     s16 wrapMode;
 } Texture;
 
+extern u8 *m_texture;
+
+static inline Texture *Gfx_GetTexture(u32 id) {
+    return &((Texture *)m_texture)[id];
+}
+
 typedef struct FontChar {
     f32 unk0;
     f32 unk4;
@@ -2936,11 +2942,12 @@ u16 Gfx_LoadTexture(char *name) {
     extern u8 *m_texture;
     extern u32 m_totalTextures;
     extern s32 m_currentView;
-    s32 LoadBTF(char *name, u16 id);
-    s32 LoadTGA(char *name, u16 id);
+    s32 LoadBTF(char *name, u32 id);
+    s32 LoadTGA(char *name, u32 id);
     s32 stricmp(const char *s1, const char *s2);
-    char buf[256];
+    char buf[260];
     char *ext;
+    Texture *tex;
     u16 i;
 
     if (strcmp(name, "_NONE_") == 0) {
@@ -2960,7 +2967,8 @@ u16 Gfx_LoadTexture(char *name) {
 
     for (i = 1; i < m_totalTextures; i++) {
         if (stricmp(buf, (char *)((Texture *)m_texture)[i].unk0) == 0 && m_currentView == ((Texture *)m_texture)[i].view) {
-            ((Texture *)m_texture)[i].refCount++;
+            tex = &((Texture *)m_texture)[i];
+            tex->refCount++;
             return i;
         }
     }
@@ -2974,15 +2982,21 @@ u16 Gfx_LoadTexture(char *name) {
         i = m_totalTextures - 1;
     }
 
-    ((Texture *)m_texture)[i].wrapMode = 0;
+    tex = &((Texture *)m_texture)[i];
+    tex->wrapMode = 0;
     if (LoadBTF(buf, i) == 0 && LoadTGA(buf, i) == 0) {
         return 0xFFFF;
     }
-    strncpy((char *)((Texture *)m_texture)[i].unk0, buf, 0x24);
-    ((Texture *)m_texture)[i].refCount++;
-    ((Texture *)m_texture)[i].view = (s8)m_currentView;
-    ((Texture *)m_texture)[i].unk2C = 0.25f;
-    ((Texture *)m_texture)[i].unk3A = 0;
+    tex = &((Texture *)m_texture)[i];
+    strncpy((char *)tex->unk0, buf, 0x24);
+    tex = &((Texture *)m_texture)[i];
+    tex->refCount++;
+    tex = &((Texture *)m_texture)[i];
+    tex->view = (s8)m_currentView;
+    tex = &((Texture *)m_texture)[i];
+    tex->unk2C = 0.25f;
+    tex = &((Texture *)m_texture)[i];
+    tex->unk3A = 0;
     return i;
 }
 #pragma pop
