@@ -8346,6 +8346,33 @@ void __DVDFSInit(void) {
 }
 
 #pragma push
+#pragma peephole off
+s32 DVDGetCurrentDir(char *path, u32 maxlen) {
+    extern u32 *FstStart_803C72F4;
+    extern u32 currentDirectory_803C7300;
+    u32 entryToPath(u32 entry, char *path, u32 maxlen);
+    u32 loc;
+    u32 entry;
+
+    entry = currentDirectory_803C7300;
+    loc = entryToPath(entry, path, maxlen);
+    if (loc == maxlen) {
+        path[maxlen - 1] = '\0';
+        return 0;
+    }
+    if ((FstStart_803C72F4[entry * 3] & 0xFF000000) ? 1 : 0) {
+        if (loc == maxlen - 1) {
+            path[loc] = '\0';
+            return 0;
+        }
+        path[loc++] = '/';
+    }
+    path[loc] = '\0';
+    return 1;
+}
+#pragma pop
+
+#pragma push
 #pragma use_lmw_stmw on
 s32 DVDReadAsyncPrio(void *fileInfo, void *addr, s32 length, s32 offset, void *callback, s32 prio) {
     void OSPanic(const char *file, s32 line, const char *msg, ...);
