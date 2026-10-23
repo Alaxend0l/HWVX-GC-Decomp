@@ -2944,6 +2944,26 @@ void Gfx_GetCameraVector(Vector *right, Vector *up, Vector *at) {
     *at = *(Vector *)((u8 *)GetRenderWindow() + 0x1B0);
 }
 
+void Gfx_ScreenOverlay(GXColor *color, u32 mode) {
+    if (mode != *(u32 *)((u8 *)GetRenderWindow() + 0x2C4)) {
+        *(GXColor *)((u8 *)GetRenderWindow() + 0x2C0) = *color;
+        *(u32 *)((u8 *)GetRenderWindow() + 0x2C4) = mode;
+        return;
+    }
+    if (color->r > ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->r) {
+        ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->r = color->r;
+    }
+    if (color->g > ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->g) {
+        ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->g = color->g;
+    }
+    if (color->b > ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->b) {
+        ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->b = color->b;
+    }
+    if (color->a > ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->a) {
+        ((GXColor *)((u8 *)GetRenderWindow() + 0x2C0))->a = color->a;
+    }
+}
+
 DLSkinGroup *DisplayList_AddGroup_Skin(void) {
     extern DisplayList *g_pDL;
     DisplayList *dl = g_pDL;
