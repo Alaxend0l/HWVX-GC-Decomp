@@ -14261,11 +14261,10 @@ static inline s8 Thing_ProcessItemPickup(u8 *thing, u8 *item) {
         }
         return 1;
     case 0:
-        break;
     case 1:
-        break;
     case 2:
-        break;
+    default:
+        return 0;
     }
     return 0;
 }
