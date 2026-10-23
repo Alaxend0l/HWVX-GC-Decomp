@@ -1711,10 +1711,13 @@ s8 SoundSource_IsActive(s32 index) {
     return g_sources_803C6F38[index].voice != -1;
 }
 
+#pragma push
+#pragma auto_inline off
 s8 SoundSource_IsLooping(s32 index) {
     extern SoundSource *g_sources_803C6F38;
     return g_sources_803C6F38[index].looping;
 }
+#pragma pop
 
 void *SoundAudioSample_Play(void *sample) {
     void *voice;
