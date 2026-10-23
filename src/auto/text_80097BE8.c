@@ -871,9 +871,12 @@ typedef struct GDL {
     GDLPointSprite pointSprites[1000];
     GDLEnvmapState envmapStates[0x20];
     u32 matrices[0x578];
-    u8 unkF51E0[0x24CDE4 - 0xF51E0];
+    u8 unkF51E0[0x24CDE0 - 0xF51E0];
+    void *unk24CDE0;
     GDLGroupTri *groupTris;
-    u8 unk24CDE8[0x24CDF4 - 0x24CDE8];
+    void *unk24CDE8;
+    void *unk24CDEC;
+    void *unk24CDF0;
     u16 spriteHeads[1];
 } GDL;
 
