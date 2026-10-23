@@ -9116,6 +9116,27 @@ s32 EXIDetach(s32 arg0) {
     return 1;
 }
 
+void EXIIntrruptHandler(s16 interrupt, void *context) {
+    extern u8 Ecb_80309980[3][0x40];
+    void OSClearContext(void *context);
+    void OSSetCurrentContext(void *context);
+    typedef void (*EXICallback)(s32 chan, void *context);
+    s32 chan;
+    EXICallback callback;
+    u8 exceptionContext[0x2C8];
+
+    chan = (interrupt - 9) / 3;
+    ((volatile u32 *)0xCC006800)[chan * 5] = ((volatile u32 *)0xCC006800)[chan * 5] & 0x7F5 | 2;
+    callback = *(EXICallback *)(Ecb_80309980[chan] + 0);
+    if (callback) {
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(exceptionContext);
+        callback(chan, context);
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(context);
+    }
+}
+
 s32 EXIGetID(s32 chan, u32 dev, u32 *id);
 s32 OSGetConsoleType(void);
 s32 EXIGetState(s32 chan) {
@@ -13026,5 +13047,55 @@ s32 __read_console(s32 handle, u8 *buffer, u32 *count, void *idle) {
     default:
         return 1;
     }
+}
+
+void *__va_arg(void *ap, s32 type) {
+    typedef struct {
+        char gpr;
+        char fpr;
+        char reserved[2];
+        char *input_arg_area;
+        char *reg_save_area;
+    } _va_list_struct;
+    char *addr;
+    char *reg = &((_va_list_struct *)ap)->gpr;
+    s32 g_reg = ((_va_list_struct *)ap)->gpr;
+    s32 maxsize = 8;
+    s32 size = 4;
+    s32 increment = 1;
+    s32 even = 0;
+    s32 fpr_offset = 0;
+    s32 regsize = 4;
+    _va_list_struct *list = ap;
+
+    if (type == 3) {
+        reg = &list->fpr;
+        g_reg = list->fpr;
+        size = 8;
+        fpr_offset = 32;
+        regsize = 8;
+    }
+    if (type == 2) {
+        size = 8;
+        maxsize--;
+        if (g_reg & 1) {
+            even = 1;
+        }
+        increment = 2;
+    }
+    if (g_reg < maxsize) {
+        g_reg += even;
+        addr = list->reg_save_area + fpr_offset + g_reg * regsize;
+        *reg = g_reg + increment;
+    } else {
+        *reg = 8;
+        addr = list->input_arg_area;
+        addr = (char *)(((u32)addr + (size - 1)) & ~(size - 1));
+        list->input_arg_area = addr + size;
+    }
+    if (type == 0) {
+        addr = *(char **)addr;
+    }
+    return addr;
 }
 
