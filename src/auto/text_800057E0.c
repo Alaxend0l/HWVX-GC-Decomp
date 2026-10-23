@@ -5221,8 +5221,8 @@ void InterfaceManager_ReleaseAllInterfaces(void) {
             InterfaceManager_ReleaseInterface(i);
         }
     }
-    g_TargetArrow[0] = 0;
     g_pInterfaceToEnd = NULL;
+    g_TargetArrow[0] = 0;
     g_TargetArrow[1] = 0;
     g_TargetArrow[3] = 0;
     g_TargetArrow[4] = -1;
@@ -5502,6 +5502,64 @@ void InterfaceManager_SetObjectReference(u8 *iface, u32 id, u32 state) {
         }
     }
 }
+
+void InterfaceManager_Backup_Key(u8 *iface, u8 *key, u8 flags) {
+    extern u8 g_interface[][0x170];
+    extern s32 g_TargetArrow[7];
+    extern void *g_pInterfaceToEnd;
+    void InterfaceManager_ReleaseInterface(u32 index);
+    void InterfaceManager_SetLoadState(void *iface, s32 state);
+    s32 SoundSequence_Play(s8 *seq, Vector4 *pos);
+    s32 StateManager_QueueChange(s32 state);
+    u32 i;
+    s32 count;
+
+    count = iface[0x80];
+    if (iface[0x7F] != 0) {
+        iface = g_interface[*(s32 *)(iface + 0x15C)];
+        count = iface[0x80];
+    }
+    if (key != NULL) {
+        u16 n = *(u16 *)(*(u8 **)(key + 8) + 6);
+        if (n != 0) {
+            count -= n - 1;
+            if (count < 0) {
+                count = 0;
+            }
+        }
+    }
+    if (count == 0) {
+        i = 0;
+        do {
+            if (*(void **)g_interface[i] != NULL) {
+                InterfaceManager_ReleaseInterface(i);
+            }
+            i++;
+        } while (i < 0x12);
+        g_pInterfaceToEnd = NULL;
+        g_TargetArrow[0] = 0;
+        g_TargetArrow[1] = 0;
+        g_TargetArrow[3] = 0;
+        g_TargetArrow[4] = -1;
+        g_TargetArrow[5] = 0;
+        StateManager_QueueChange(2);
+        return;
+    }
+    iface[0x7C] = 0;
+    if (key != NULL && *(s8 **)(*(u8 **)(key + 8) + 0x14) != NULL) {
+        SoundSequence_Play(*(s8 **)(*(u8 **)(key + 8) + 0x14), NULL);
+    }
+    count--;
+    iface[0x81] = 1;
+    *(u32 *)(iface + 0x24) = ((u32 *)(iface + 0x28))[count];
+    iface[0x80] = count;
+    iface[0x7C] = flags;
+    InterfaceManager_SetLoadState(iface, 1);
+    if (iface[0x7C] & 1) {
+        *(u32 *)(iface + 0x10) = 0;
+    }
+}
+
 #pragma pop
 
 #pragma pop
@@ -14822,6 +14880,8 @@ u32 entryToPath(u32 entry, char *path, u32 maxlen) {
     char *name;
     u32 loc;
     char *dest;
+    char *src;
+    u32 n;
     u32 i;
 
     if (entry == 0) {
@@ -14834,12 +14894,14 @@ u32 entryToPath(u32 entry, char *path, u32 maxlen) {
     }
     *(path + loc++) = '/';
     dest = path + loc;
-    i = maxlen - loc;
-    while ((i > 0) && (*name != 0)) {
-        *dest++ = *name++;
+    src = name;
+    n = maxlen - loc;
+    i = n;
+    while ((i > 0) && (*src != 0)) {
+        *dest++ = *src++;
         i--;
     }
-    loc += (maxlen - loc) - i;
+    loc += n - i;
     return loc;
 }
 #pragma inline_depth(4)
