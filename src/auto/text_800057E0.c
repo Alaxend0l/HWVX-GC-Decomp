@@ -8196,6 +8196,21 @@ s32 ActionPlayInterfacePack(u32 *pack) {
     return result;
 }
 
+#pragma opt_unroll_loops on
+void InterfaceHasEnded(u32 handle) {
+    u32 i;
+
+    for (i = 0; i < g_NumInterfacesPlaying; i++) {
+        if (handle == g_InterfacePackData[i].unk8) {
+            for (; i < g_NumInterfacesPlaying - 1; i++) {
+                g_InterfacePackData[i] = g_InterfacePackData[i + 1];
+            }
+            g_NumInterfacesPlaying--;
+        }
+    }
+}
+#pragma opt_unroll_loops reset
+
 void InterfaceDataPackRouter(void *arg0) {
     M2C_UNK ArmageddonDropShip(void *);
     M2C_UNK GSI_VehicleItemSelection(void *);
