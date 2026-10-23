@@ -2786,6 +2786,39 @@ s8 OBoxHitsBSPZeroTimeEdgesOnly(void *obox, void *bsp, void *arg2) {
     }
     return 0;
 }
+
+u32 RayHitsBSP2(Vector4 *start, Vector4 *end, Vector4 *bbox, void *arg3, s32 arg4, void *bsp, f32 *t, Vector4 *hit);
+u32 RayHitsBSP(Vector4 *start, Vector4 *dir, Vector4 *bbox, f32 *time, void *bsp) {
+    f32 t;
+    Vector4 end;
+    Vector4 hit;
+    u32 result;
+    s8 inside;
+    f32 eps;
+
+    t = 1.0f;
+    end.x = start->x + dir->x * *time;
+    end.y = start->y + dir->y * *time;
+    end.z = start->z + dir->z * *time;
+    result = RayHitsBSP2(start, &end, bbox, NULL, 0, bsp, &t, &hit);
+    if (result) {
+        eps = 0.01f;
+        if (hit.x < bbox[0].x - eps || hit.x > bbox[1].x + eps ||
+            hit.y < bbox[0].y - eps || hit.y > bbox[1].y + eps ||
+            hit.z < bbox[0].z - eps || hit.z > bbox[1].z + eps) {
+            inside = 0;
+        } else {
+            inside = 1;
+        }
+        if (inside) {
+            *time = t * *time;
+        } else {
+            result = 0;
+        }
+    }
+    return result;
+}
+
 #pragma pop
 
 void BuildOOBOffset(void *oob, void *pos, void *rot, void *out) {
