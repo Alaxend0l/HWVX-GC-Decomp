@@ -7959,6 +7959,50 @@ u8 __THPReadScaneHeader(void) {
     return 0;
 }
 
+static void __THPHuffGenerateSizeTable(void);
+void __THPHuffGenerateCodeTable(void);
+void __THPHuffGenerateDecoderTables(u8 tabIndex);
+#pragma push
+#pragma scheduling off
+s32 __THPReadHuffmanTableSpecification(void) {
+    extern u8 *__THPWorkArea_803C788C;
+    u8 t_class, id, i, tab_index;
+    u16 length, num_Vij;
+
+    __THPHuffmanSizeTab_803C7828 = __THPWorkArea_803C788C;
+    __THPHuffmanCodeTab_803C782C = (u16 *)((u32)__THPWorkArea_803C788C + 256 + 1);
+    length = (u16)((__THPInfo_803C7890->c[0] << 8) | __THPInfo_803C7890->c[1]);
+    __THPInfo_803C7890->c += 2;
+    length -= 2;
+
+    for (;;) {
+        i = *(__THPInfo_803C7890->c)++;
+        id = (u8)(i & 15);
+        t_class = (u8)(i >> 4);
+        __THPHuffmanBits_803C7824 = __THPInfo_803C7890->c;
+        tab_index = (u8)((id << 1) + t_class);
+        num_Vij = 0;
+
+        for (i = 0; i < 16; i++) {
+            num_Vij += *(__THPInfo_803C7890->c)++;
+        }
+
+        __THPInfo_803C7890->huffmanTabs[tab_index].Vij = __THPInfo_803C7890->c;
+        __THPInfo_803C7890->c += num_Vij;
+        __THPHuffGenerateSizeTable();
+        __THPHuffGenerateCodeTable();
+        __THPHuffGenerateDecoderTables(tab_index);
+        __THPInfo_803C7890->validHuffmanTabs |= 1 << tab_index;
+        length -= 17 + num_Vij;
+
+        if (length == 0) {
+            break;
+        }
+    }
+    return 0;
+}
+#pragma pop
+
 #pragma push
 #pragma opt_lifetimes off
 static void __THPHuffGenerateSizeTable(void) {
@@ -11137,31 +11181,33 @@ void __GBAX01(s32 chan, s32 ret) {
     GBABootInfo *bootInfo;
     GBACallback callback;
     s32 minLength;
+    u8 *d;
 
     gba = &__GBA[chan];
+    d = D54_800DAFF8;
     bootInfo = &gba->bootInfo;
     if (ret == 0) {
         bootInfo->keyA = gba->param->keyA;
         bootInfo->keyB = gba->param->keyB;
         if (bootInfo->readbuf[3] == 0 || bootInfo->readbuf[2] == 0 ||
-            (bootInfo->keyA & (D54_800DAFF8[5] << 9)) == 0 || bootInfo->readbuf[1] == 0 ||
+            (bootInfo->keyA & (d[5] << 9)) == 0 || bootInfo->readbuf[1] == 0 ||
             (bootInfo->keyA >> 15) == 0 || bootInfo->readbuf[0] == 0) {
             ret = 3;
         } else {
-            bootInfo->i = ~D54_800DAFF8[0x24] & (bootInfo->length + D54_800DAFF8[0x24]);
-            minLength = D54_800DAFF8[0x14] << D54_800DAFF8[0x21];
+            bootInfo->i = ~d[0x24] & (bootInfo->length + d[0x24]);
+            minLength = d[0x14] << d[0x21];
             if (bootInfo->i < minLength) {
                 bootInfo->i = minLength;
             }
             bootInfo->realLength = bootInfo->i;
             bootInfo->i -= minLength;
-            bootInfo->i >>= D54_800DAFF8[0x20];
-            bootInfo->writebuf[0] = bootInfo->keyB;
-            bootInfo->writebuf[1] = bootInfo->keyB >> 8;
-            bootInfo->writebuf[3] = bootInfo->keyB >> 24;
-            bootInfo->writebuf[2] = bootInfo->keyB >> 16;
-            bootInfo->crc = (D54_800DAFF8[0x26] + 1) << D54_800DAFF8[0x22];
-            bootInfo->curOffset = D54_800DAFF8[8];
+            bootInfo->i >>= d[0x20];
+            bootInfo->writebuf[0] = (s32)bootInfo->keyB;
+            bootInfo->writebuf[1] = (s32)bootInfo->keyB >> 8;
+            bootInfo->writebuf[3] = (s32)bootInfo->keyB >> 24;
+            bootInfo->writebuf[2] = (s32)bootInfo->keyB >> 16;
+            bootInfo->crc = (d[0x26] + 1) << d[0x22];
+            bootInfo->curOffset = d[8];
             bootInfo->begin = OSGetTime();
             bootInfo->firstXfer = 1;
             ret = GBAWriteAsync(chan, bootInfo->writebuf, bootInfo->status, F31);
