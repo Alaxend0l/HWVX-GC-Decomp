@@ -9313,6 +9313,37 @@ static void F29(s32 chan, s32 ret) {
     gba->ret = ret;
 }
 
+static void F37(s32 chan, s32 ret);
+s64 __GBASetDelay(s32 chan, s64 delay);
+static void F35(s32 chan, s32 ret) {
+    GBAControl *gba = &__GBA[chan];
+    GBABootInfo *bootInfo = &gba->bootInfo;
+    GBACallback callback;
+
+    if (ret == 0) {
+        if ((*(u32 *)0x800000F8 / 4) * 10 <= OSGetTick() - bootInfo->start) {
+            ret = 3;
+        } else if (*bootInfo->status & 0x32) {
+            ret = 3;
+        } else if (*bootInfo->status != 8) {
+            ret = GBAGetStatusAsync(chan, bootInfo->status, F35);
+        } else {
+            __GBASetDelay(chan, 8 * ((*(u32 *)0x800000F8 / 4) / 1000));
+            ret = GBAReadAsync(chan, bootInfo->readbuf, bootInfo->status, F37);
+            __GBASetDelay(chan, (60 * ((*(u32 *)0x800000F8 / 4) / 125000)) / 8);
+        }
+    }
+    if (ret != 0) {
+        bootInfo->begin = 0;
+        callback = bootInfo->callback;
+        if (callback != NULL) {
+            bootInfo->callback = NULL;
+            callback(chan, ret);
+        }
+    }
+    gba->ret = ret;
+}
+
 static void F39(s32 chan, s32 ret);
 s32 GBAWriteAsync(s32 chan, u8 *src, u8 *status, GBACallback callback);
 static void F37(s32 chan, s32 ret) {
@@ -9720,6 +9751,51 @@ s32 File_Delete(s32 device, const char *fileName) {
     CARDUnmount(chan);
     return 0;
 }
+
+s32 CARDGetSectorSize(s32 chan, s32 *size);
+s32 CARDOpen(s32 chan, const char *fileName, CARDFileInfo *fileInfo);
+s32 CARDCreate(s32 chan, const char *fileName, s32 size, CARDFileInfo *fileInfo);
+u32 FileManager_GetDeviceStatus(u32 device);
+#pragma push
+#pragma use_lmw_stmw on
+#pragma readonly_strings on
+s32 MemCard_Open__FUlPCScUlPl(u32 device, const char *fileName, u32 flags, s32 *unused) {
+    u32 chan;
+    CARDFileInfo *fileInfo;
+    s32 *blockSize;
+
+    chan = device - 11;
+    if (FileManager_GetDeviceStatus(device) == 3) {
+        return 0;
+    }
+    m_memcardstatus_803C7970[chan] = CARDMount(chan, CardWorkArea, 0);
+    OSReport("CARDMount\n");
+    if (m_memcardstatus_803C7970[chan] < 0) {
+        OSReport("CARD error %d\n", m_memcardstatus_803C7970[chan]);
+        return 0;
+    }
+    blockSize = &memCardBlockSize[chan];
+    CARDGetSectorSize(chan, blockSize);
+    fileInfo = &memCardfileInfo[chan];
+    m_memcardstatus_803C7970[chan] = CARDOpen(chan, fileName, fileInfo);
+    if (m_memcardstatus_803C7970[chan] == 0) {
+        return 1;
+    }
+    if (m_memcardstatus_803C7970[chan] == -4 && (flags & 1)) {
+        m_memcardstatus_803C7970[chan] = CARDCreate(chan, fileName, *blockSize, fileInfo);
+        if (m_memcardstatus_803C7970[chan] < 0) {
+            m_memcardstatus_803C7970[chan] = CARDUnmount(chan);
+            OSReport("CARD error %d\n", m_memcardstatus_803C7970[chan]);
+            return 0;
+        }
+        OSReport("CARDCreate\n");
+    } else {
+        m_memcardstatus_803C7970[chan] = CARDUnmount(chan);
+        return 0;
+    }
+    return 1;
+}
+#pragma pop
 
 void MemCard_Close__Fl(s32 device) {
     s32 chan = device - 11;
