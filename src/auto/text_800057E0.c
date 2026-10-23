@@ -8895,6 +8895,34 @@ void WildCardRack_JettisonAll(void *rack) {
     }
 }
 
+void WildCardRack_Jettison(void *thing, u8 slot) {
+    typedef struct WildCardSlot {
+        void *card;
+        u8 pad4[0x44 - 0x4];
+        f32 unk44;
+        u8 pad48[0x4C - 0x48];
+        void *unk4C;
+    } WildCardSlot;
+    typedef struct WildCardRack {
+        u8 pad0[0xB0];
+        WildCardSlot slots[12];
+        u8 unk470;
+    } WildCardRack;
+    WildCardRack *rack = thing;
+    u32 i;
+
+    if (rack->slots[slot].card != NULL) {
+        rack->slots[slot].unk4C = NULL;
+        rack->slots[slot].card = NULL;
+        for (i = 0; i < 12; i++) {
+            if (rack->slots[i].unk4C != NULL && rack->slots[i].card != NULL) {
+                rack->unk470 = i;
+                rack->slots[i].unk44 = 0.0f;
+            }
+        }
+    }
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 #pragma dont_inline on
