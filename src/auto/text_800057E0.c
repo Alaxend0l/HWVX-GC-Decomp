@@ -4280,12 +4280,14 @@ s32 PPCMfmsr(void) {
     return M2C_ERROR(/* unknown instruction: mfmsr $r3 */);
 }
 
+#pragma push
+#pragma peephole off
 s32 OSGetConsoleType(void) {
     extern u8 *BootInfo_803C71E0;
-    if (BootInfo_803C71E0 == NULL || M2C_FIELD(BootInfo_803C71E0, s32 *, 0x2C) == 0) {
+    if (BootInfo_803C71E0 == NULL || M2C_FIELD(BootInfo_803C71E0, u32 *, 0x2C) == 0) {
         return 0x10000002;
     }
-    return M2C_FIELD(BootInfo_803C71E0, s32 *, 0x2C);
+    return M2C_FIELD(BootInfo_803C71E0, u32 *, 0x2C);
 }
 
 void InquiryCallback(s32 result, void *block) {
@@ -4299,6 +4301,7 @@ void InquiryCallback(s32 result, void *block) {
         break;
     }
 }
+#pragma pop
 
 extern void **OSExceptionTable_803C71F4;
 void *__OSSetExceptionHandler(u8 exception, void *handler) {
