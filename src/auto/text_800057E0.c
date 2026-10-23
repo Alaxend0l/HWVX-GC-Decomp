@@ -2318,6 +2318,78 @@ void MotionState_BlendTriggerEvents(void *state, void *events, Vector4 *vel) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void MotionState_MoveSlaves(void *state, Matrix4 *matrix, Vector4 *vel) {
+    extern Matrix4 g_identity;
+    extern Vector4 g_zeroVector;
+    void Thing_MoveSlaves(Thing *thing);
+    void CopyVector(Vector4 *dst, Vector4 *src);
+    void CopyMatrix(void *dst, void *src);
+    void ThingManagerList_RemoveReleasedThings(void **list);
+    typedef struct SlaveThing {
+        Thing base;
+        u8 pad60[0x74 - 0x60];
+        u32 flags;
+        u8 pad78[0x82 - 0x78];
+        u8 bone;
+        u8 pad83[0x8C - 0x83];
+        void (**vtbl)();
+        u8 pad90[0xA4 - 0x90];
+        struct SlaveThing *next;
+    } SlaveThing;
+    typedef struct {
+        u8 pad0[0x10];
+        Matrix4 *matrices;
+        SlaveThing *slaves;
+    } State;
+    Vector4 pos;
+    Vector4 quat;
+    Vector4 v = g_zeroVector;
+    Matrix4 saved;
+    Matrix4 out;
+    Matrix4 *mtx = NULL;
+    SlaveThing *slave;
+    Matrix4 *matrices;
+    SlaveThing *next;
+
+    matrices = ((State *)state)->matrices;
+    if (vel != NULL) {
+        v = *vel;
+    }
+    if (matrix != &g_identity) {
+        mtx = matrix;
+    }
+    slave = ((State *)state)->slaves;
+    while (slave != NULL) {
+        next = slave->next;
+        if (!(slave->flags & 0x201000)) {
+            if (!(slave->flags & 0x400000)) {
+                CopyVector(&quat, &slave->base.quat);
+                CopyMatrix(&saved, &slave->base.mtx);
+                if (mtx != NULL) {
+                    MultiplyMatrix(&matrices[slave->bone], mtx, &out);
+                    slave->vtbl[9](slave, &out);
+                } else {
+                    slave->vtbl[9](slave, &matrices[slave->bone]);
+                }
+                pos = slave->base.pos;
+                slave->base.pos = v;
+                slave->vtbl[3](slave);
+                Thing_MoveSlaves(&slave->base);
+                CopyVector(&slave->base.quat, &quat);
+                CopyMatrix(&slave->base.mtx, &saved);
+                CopyVector(&slave->base.pos, &pos);
+            } else {
+                slave->vtbl[3](slave);
+            }
+        }
+        slave = next;
+    }
+    ThingManagerList_RemoveReleasedThings((void **)((u8 *)state + 0x14));
+}
+#pragma pop
+
 void MotionState_DrawSlaves(void *state, s32 arg1) {
     extern Matrix4 g_identity;
     void Thing_DrawSlaves(Thing *thing);
@@ -11917,6 +11989,66 @@ s32 OBox_CollideAllThingsZeroTime(void *obox, void *thing, void *info) {
     }
     return 0;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s8 RayHitsObjects_Aux(Vector4 *start, Vector4 *dir, f32 *t, void *info) {
+    extern void *g_pNoRayCollideThing;
+    u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults);
+    s8 SegmentVsSphere(void *center, Vector4 *start, Vector4 *end, f32 radius);
+    Vector4 min;
+    Vector4 max;
+    Vector4 end;
+    GridResult results[512];
+    u32 count;
+    u32 i;
+    u8 *other;
+    f32 best;
+    f32 hit;
+
+    best = *t;
+    max = *start;
+    end.x = dir->x * best + start->x;
+    end.y = dir->y * best + start->y;
+    end.z = dir->z * best + start->z;
+    min = end;
+    if (start->x < min.x) {
+        min.x = start->x;
+    }
+    if (start->y < min.y) {
+        min.y = start->y;
+    }
+    if (start->z < min.z) {
+        min.z = start->z;
+    }
+    if (end.x > max.x) {
+        max.x = end.x;
+    }
+    if (end.y > max.y) {
+        max.y = end.y;
+    }
+    if (end.z > max.z) {
+        max.z = end.z;
+    }
+    count = Grid_GetObjects(&min, &max, 5, results, 0x200);
+    for (i = 0; i < count; i++) {
+        other = (u8 *)results[i].id;
+        if (!(*(u32 *)(other + 0x74) & 2) && other != g_pNoRayCollideThing &&
+            SegmentVsSphere(other + 0x40, start, &end, *(f32 *)(other + 0x70))) {
+            hit = (*(f32 (**)(void *, Vector4 *, Vector4 *, void *, f32))(*(u8 **)(other + 0x8C) + 0x38))(other, start, dir, info, best);
+            if (hit < *t) {
+                best = hit;
+            }
+        }
+    }
+    if (best < *t) {
+        *t = best;
+        return 1;
+    }
+    return 0;
+}
+#pragma pop
+
 #pragma pop
 
 s8 RayHitsTerrainAndObjects(void *arg0, void *arg1, void *arg2, void *arg3) {
