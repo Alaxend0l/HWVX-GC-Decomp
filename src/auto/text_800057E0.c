@@ -12009,10 +12009,10 @@ void LightManager_Initialize(void) {
     extern u8 g_bLightVolumesExist;
     extern Light *g_directionalLights[5];
     extern u8 g_ambientColor[4];
+    u32 i;
     u32 r;
     u32 g;
     u32 b;
-    u32 i;
     Volume *volume;
     Light *light;
 
@@ -12039,7 +12039,7 @@ void LightManager_Initialize(void) {
             }
         }
     }
-    g_ambientColor[0] = r > 0xFF ? 0xFF : r;
+    g_ambientColor[0] = r > 0xFF ? (u8)0xFF : (u8)r;
     if (g > 0xFF) {
         g_ambientColor[1] = 0xFF;
     } else {
