@@ -55,7 +55,7 @@ static inline void DummySRand(u32 seed) {
     next_803C6DF8 = seed;
 }
 
-static inline u32 DummyRand(void) {
+static inline s32 DummyRand(void) {
     next_803C6DF8 = next_803C6DF8 * 1103515245 + 12345;
     return (next_803C6DF8 >> 16) & 0x7FFF;
 }
