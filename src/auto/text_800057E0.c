@@ -6901,6 +6901,40 @@ static void SamplingHandler(s16 interrupt, void *context) {
     }
 }
 
+#pragma push
+#pragma optimization_level 1
+s32 EXIClearInterrupts(s32 chan, s32 exi, s32 tc, s32 ext) {
+    volatile u32 *reg;
+    u32 cpr;
+    u32 prev;
+
+    reg = (volatile u32 *)0xCC006800 + chan * 5;
+    prev = cpr = *reg;
+    cpr &= 0x7F5;
+    if (exi) {
+        cpr |= 2;
+    }
+    if (tc) {
+        cpr |= 8;
+    }
+    if (ext) {
+        cpr |= 0x800;
+    }
+    *reg = cpr;
+    return prev;
+}
+#pragma pop
+
+s32 EXIProbeEx(s32 chan) {
+    if (EXIProbe(chan)) {
+        return 1;
+    } else if (((s32 *)0x800030C0)[chan]) {
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
 s32 EXIDetach(s32 arg0) {
     M2C_UNK __OSMaskInterrupts(u32, s32);
     extern M2C_UNK Ecb_80309980;
@@ -8033,6 +8067,56 @@ void __GXSetVAT(void) {
 
 void GXInvalidateVtxCache(void) {
     *(s8 *)0xCC008000 = 0x48;
+}
+
+void GXSetNumTexGens(u8 nTexGens) {
+    extern u8 *gx;
+    u32 *reg = (u32 *)(gx + 0x204);
+    *reg = (*(u32 *)(gx + 0x204) & ~0xF) | nTexGens;
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = 0x103F;
+    GXWGFifo.u32 = nTexGens;
+    *(u32 *)(gx + 0x4F4) |= 4;
+}
+
+void GXSetMisc(s32 token, u32 val) {
+    extern u8 *gx;
+
+    switch (token) {
+    case 1:
+        *(u16 *)(gx + 0x4) = val;
+        *(u16 *)(gx + 0x0) = !*(u16 *)(gx + 0x4);
+        *(u16 *)(gx + 0x2) = 1;
+        if (*(u16 *)(gx + 0x4)) {
+            *(u32 *)(gx + 0x4F4) |= 8;
+        }
+        break;
+    case 2:
+        *(u8 *)(gx + 0x4F1) = (0 < val);
+        break;
+    case 0:
+    default:
+        break;
+    }
+}
+
+void GXFlush(void) {
+    extern u8 *gx;
+    void __GXSetDirtyState(void);
+    void PPCSync(void);
+
+    if (*(u32 *)(gx + 0x4F4) != 0) {
+        __GXSetDirtyState();
+    }
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u32 = 0;
+    PPCSync();
 }
 
 void GXPixModeSync(void) {
