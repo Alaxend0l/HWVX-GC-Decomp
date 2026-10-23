@@ -1203,6 +1203,17 @@ typedef struct DLSkinGroup {
     u8 window;
 } DLSkinGroup;
 
+typedef struct print_format {
+    u8 justification_options;
+    u8 sign_options;
+    u8 precision_specified;
+    u8 alternate_form;
+    u8 argument_options;
+    u8 conversion_char;
+    s32 field_width;
+    s32 precision;
+} print_format;
+
 typedef struct DLGroup {
     Geometry *geometry;
     s32 lightState;
