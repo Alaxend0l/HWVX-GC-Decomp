@@ -9725,6 +9725,49 @@ void __ARQCallbackHack(void) {
 
 }
 
+void __ARQInterruptServiceRoutine(void) {
+    typedef struct ARQRequest {
+        struct ARQRequest *next;
+        u32 owner;
+        u32 type;
+        u32 priority;
+        u32 source;
+        u32 dest;
+        u32 length;
+        void (*callback)(u32);
+    } ARQRequest;
+    extern ARQRequest *__ARQRequestQueueHi_803C7440;
+    extern u32 __ARQRequestPendingHi_803C7450;
+    extern u32 __ARQRequestPendingLo_803C7454;
+    extern void (*__ARQCallbackHi_803C7458)(u32);
+    extern void (*__ARQCallbackLo_803C745C)(u32);
+    void ARStartDMA(u32 type, u32 mainmem, u32 aram, u32 length);
+    void __ARQServiceQueueLo(void);
+
+    if (__ARQCallbackHi_803C7458) {
+        __ARQCallbackHi_803C7458(__ARQRequestPendingHi_803C7450);
+        __ARQRequestPendingHi_803C7450 = 0;
+        __ARQCallbackHi_803C7458 = NULL;
+    } else if (__ARQCallbackLo_803C745C) {
+        __ARQCallbackLo_803C745C(__ARQRequestPendingLo_803C7454);
+        __ARQRequestPendingLo_803C7454 = 0;
+        __ARQCallbackLo_803C745C = NULL;
+    }
+    if (__ARQRequestQueueHi_803C7440) {
+        if (__ARQRequestQueueHi_803C7440->type == 0) {
+            ARStartDMA(__ARQRequestQueueHi_803C7440->type, __ARQRequestQueueHi_803C7440->source, __ARQRequestQueueHi_803C7440->dest, __ARQRequestQueueHi_803C7440->length);
+        } else {
+            ARStartDMA(__ARQRequestQueueHi_803C7440->type, __ARQRequestQueueHi_803C7440->dest, __ARQRequestQueueHi_803C7440->source, __ARQRequestQueueHi_803C7440->length);
+        }
+        __ARQCallbackHi_803C7458 = __ARQRequestQueueHi_803C7440->callback;
+        __ARQRequestPendingHi_803C7450 = (u32)__ARQRequestQueueHi_803C7440;
+        __ARQRequestQueueHi_803C7440 = __ARQRequestQueueHi_803C7440->next;
+    }
+    if (__ARQRequestPendingHi_803C7450 == 0) {
+        __ARQServiceQueueLo();
+    }
+}
+
 void ARQInit(void) {
     extern s32 __ARQ_init_flag_803C7464;
     extern u32 __ARQRequestQueueHi_803C7440;
@@ -11678,6 +11721,39 @@ void *GXSetTlutRegionCallback(void *f) {
     return oldcb;
 }
 
+extern volatile PPCWGPipe GXWGPipe : 0xCC008000;
+void __SetSURegs(u32 tmap, u32 tcoord) {
+    typedef struct GXDataSU {
+        u8 unk0[2];
+        u16 bpSentNot;
+        u8 unk4[0xB4];
+        u32 suTs0[8];
+        u32 suTs1[8];
+        u8 unkF8[0x364];
+        u32 tImage0[8];
+        u32 tMode0[8];
+    } GXDataSU;
+    extern GXDataSU *gx;
+    u32 w;
+    u32 h;
+    u8 s_bias;
+    u8 t_bias;
+
+    w = (gx->tImage0[tmap] >> 0) & 0x3FF;
+    h = (gx->tImage0[tmap] >> 10) & 0x3FF;
+    gx->suTs0[tcoord] = (gx->suTs0[tcoord] & ~0xFFFF) | (w << 0);
+    gx->suTs1[tcoord] = (gx->suTs1[tcoord] & ~0xFFFF) | (h << 0);
+    s_bias = ((gx->tMode0[tmap] >> 0) & 3) == 1;
+    t_bias = ((gx->tMode0[tmap] >> 2) & 3) == 1;
+    gx->suTs0[tcoord] = (gx->suTs0[tcoord] & ~0x10000) | ((u32)s_bias << 16);
+    gx->suTs1[tcoord] = (gx->suTs1[tcoord] & ~0x10000) | ((u32)t_bias << 16);
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = gx->suTs0[tcoord];
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = gx->suTs1[tcoord];
+    gx->bpSentNot = 0;
+}
+
 void GXSetTevIndirect(s32 tev_stage, s32 ind_stage, s32 format, s32 bias_sel, s32 matrix_sel, s32 wrap_s, s32 wrap_t, u8 add_prev, u8 utc_lod, s32 alpha_sel) {
     extern u8 *gx;
     u32 reg;
@@ -11704,6 +11780,52 @@ void GXSetNumIndStages(u8 nIndStages) {
     *reg = (*reg & ~0x70000) | (nIndStages << 16);
     *(u32 *)(gx + 0x4F4) |= 6;
 }
+
+#pragma push
+#pragma scheduling off
+void __GXUpdateBPMask(void) {
+    typedef struct GXDataBP {
+        u8 unk0[2];
+        u16 bpSentNot;
+        u8 unk4[0x11C];
+        u32 iref;
+        u32 bpMask;
+        u8 unk128[0xDC];
+        u32 genMode;
+    } GXDataBP;
+    extern GXDataBP *gx;
+    u32 nIndStages;
+    u32 i;
+    u32 tmap;
+    u32 new_imask;
+
+    new_imask = 0;
+    nIndStages = (gx->genMode >> 16) & 7;
+    for (i = 0; i < nIndStages; i++) {
+        switch (i) {
+        case 0:
+            tmap = gx->iref & 7;
+            break;
+        case 1:
+            tmap = (gx->iref >> 6) & 7;
+            break;
+        case 2:
+            tmap = (gx->iref >> 12) & 7;
+            break;
+        case 3:
+            tmap = (gx->iref >> 18) & 7;
+            break;
+        }
+        new_imask |= 1 << tmap;
+    }
+    if ((u8)gx->bpMask != new_imask) {
+        gx->bpMask = (gx->bpMask & ~0xFF) | new_imask;
+        GXWGPipe.u8 = 0x61;
+        GXWGPipe.u32 = gx->bpMask;
+        gx->bpSentNot = 0;
+    }
+}
+#pragma pop
 
 void __GXFlushTextureState(void) {
     extern u8 *const gx;
