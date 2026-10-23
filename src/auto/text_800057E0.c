@@ -2351,6 +2351,20 @@ s32 ActionInterfacePlay(s32 *arg0) {
     return 1;
 }
 
+f32 DropShip_GetLRTime(s32 index) {
+    extern u8 g_interface[][0x170];
+    u8 *iface = g_interface[index];
+    u32 i;
+
+    for (i = 0; i < *(u32 *)iface; i++) {
+        u8 *data = *(u8 **)(iface + 0x88);
+        if (data[i * 0x300 + 0x245] == 5) {
+            return *(u16 *)(*(u8 **)(data + i * 0x300 + 0x25C) + 0xA);
+        }
+    }
+    return 0.0f;
+}
+
 void InterfaceManager_SetPlayerMessage(void *message, u32 player) {
     extern void *g_playerMessage1;
     extern void *g_playerMessage2;
@@ -2363,6 +2377,21 @@ void InterfaceManager_SetPlayerMessage(void *message, u32 player) {
     } else if (player == 2) {
         g_playerMessage3 = message;
     }
+}
+
+void Item_Release(void *item) {
+    extern u8 g_itemVTable[];
+    void Thing_Release(s32 thing);
+    void *slot;
+
+    if (M2C_FIELD(item, void **, 0x8C) == g_itemVTable) {
+        slot = M2C_FIELD(item, void **, 0x90);
+        if (slot != NULL && M2C_FIELD(slot, void **, 0x24) != NULL) {
+            M2C_FIELD(item, void **, 0x90) = NULL;
+            M2C_FIELD(slot, void **, 0x24) = NULL;
+        }
+    }
+    Thing_Release((s32)item);
 }
 
 s32 Item_PreMove(void) {
