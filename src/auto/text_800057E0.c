@@ -4200,6 +4200,36 @@ void InterfaceManager_LinkThingToObject(s32 index, u32 id, void *thing) {
     }
 }
 
+void InterfaceManager_SetObjectState(u8 *iface, u8 *obj, s32 state, s32 arg3);
+#pragma push
+#pragma use_lmw_stmw on
+void InterfaceManager_SetObjectReactive(u8 *iface, u32 onId, u32 offId) {
+    u32 i;
+    u32 j;
+    u8 *obj;
+    u8 *info;
+
+    for (i = 0; i < *(u32 *)iface; i++) {
+        obj = *(u8 **)(iface + 0x88) + i * 0x300;
+        if (*(u8 *)(*(u8 **)(obj + 0x25C) + 8) != 0 && *(u32 *)(obj + 0x254) != 0) {
+            if (**(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) == onId) {
+                InterfaceManager_SetObjectState(iface, obj, 1, 0);
+            }
+            if (**(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) == offId) {
+                InterfaceManager_SetObjectState(iface, obj, 2, 0);
+                info = *(u8 **)(*(u8 **)(obj + 0x25C) + 0x44);
+                for (j = 0; j < *(u32 *)(info + 0x10); j++) {
+                    if (*(u32 *)(*(u8 **)(info + 0x14) + 4) != 0) {
+                        obj[0x247] = 0;
+                        *(u32 *)(obj + 0x274) = *(u32 *)(*(u8 **)(*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) + 0x14) + 4);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
 void InterfaceManager_SetControllerConfigInputString(void) {
 
 }
