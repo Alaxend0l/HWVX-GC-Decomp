@@ -2670,6 +2670,19 @@ void ProjectVectorToNormal(Vector *n, Vector *v) {
     v->z = scale * n->z + v->z;
 }
 
+f32 LinearPointTest(Vector *point, Vector *start, Vector *end) {
+    void PSVECSubtract(Vector *a, Vector *b, Vector *out);
+    f32 PSVECDotProduct(Vector *a, Vector *b);
+    Vector toPoint __attribute__((aligned(16)));
+    Vector toEnd __attribute__((aligned(16)));
+    f32 dot;
+
+    PSVECSubtract(point, start, &toPoint);
+    PSVECSubtract(end, start, &toEnd);
+    dot = PSVECDotProduct(&toPoint, &toEnd);
+    return dot / (MagnitudeVector(&toPoint) * MagnitudeVector(&toEnd));
+}
+
 void MinMaxVec(Vector *min, Vector *max, Vector *v) {
     if (min->x > v->x) {
         min->x = v->x;
