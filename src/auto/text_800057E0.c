@@ -8485,6 +8485,45 @@ s32 SmartProjectileA_Move(u8 *proj) {
     return 1;
 }
 
+void SmartProjectileA_DynamicCollideImpact(u8 *proj, u8 *other, void *arg2, f32 arg3) {
+    f32 PSVECDotProduct(void *a, void *b);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
+    double acos(double x);
+    void GenerateQuaternion(void *axis, void *q, f32 angle);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void Projectile_DynamicCollideImpact(u8 *proj, u8 *other, void *arg2, f32 arg3);
+    Vector4 q;
+    Vector4 result;
+    Vector4 axis;
+    f32 dot;
+    f32 angle;
+    f32 speed;
+
+    (*(u16 *)(proj + 0x15C))++;
+    if (*(u16 *)(proj + 0x15C) > 8) {
+        *(u32 *)(proj + 0x74) |= 0x40;
+        return;
+    }
+    if (other != NULL && *(u32 *)(proj + 0x14C) != 0 &&
+        (*(u32 *)(other + 0x20) == 0 || *(u32 *)(other + 0x24) == 0)) {
+        dot = PSVECDotProduct(other + 0x10, proj + 0x30);
+        if (dot > -0.5f) {
+            speed = MagnitudeVector(proj);
+            angle = acos(dot);
+            PSVECCrossProduct((Vector4 *)(proj + 0x30), (Vector4 *)(other + 0x10), &axis);
+            GenerateQuaternion(&axis, &q, angle - 1.5707964f);
+            QuaternionMult(&q, (Vector4 *)(proj + 0x50), &result);
+            *(Vector4 *)(proj + 0x50) = result;
+            QuaternionToSubMatrix(proj + 0x50, proj + 0x10);
+            ((Vector4 *)proj)->x = speed * ((Vector4 *)(proj + 0x30))->x;
+            ((Vector4 *)proj)->y = speed * ((Vector4 *)(proj + 0x30))->y;
+            ((Vector4 *)proj)->z = speed * ((Vector4 *)(proj + 0x30))->z;
+            return;
+        }
+    }
+    Projectile_DynamicCollideImpact(proj, other, arg2, arg3);
+}
+
 static void SoundSeq_RemoveFromQueue(u8 *seq) {
     void Trigger_SoundSequenceQueueEmptied(void);
     u8 *next;
