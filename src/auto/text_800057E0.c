@@ -17196,6 +17196,52 @@ void *__GXDefaultTlutRegionCallback(u32 idx) {
     return ret;
 }
 #pragma pop
+
+void GXCPInterruptHandler(s16 interrupt, void *context) {
+    extern u8 *gx;
+    extern u16 *__cpReg;
+    extern void *__GXCurrentThread_803C7560;
+    extern s32 GXOverflowSuspendInProgress_803C7568;
+    extern u32 __GXOverflowCount_803C7570;
+    extern void (*BreakPointCB_803C756C)(void);
+    void __GXWriteFifoIntEnable(u8 hiWatermarkEn, u8 loWatermarkEn);
+    void __GXWriteFifoIntReset(u8 hiWatermarkClr, u8 loWatermarkClr);
+    s32 OSResumeThread(void *thread);
+    s32 OSSuspendThread(void *thread);
+    void OSClearContext(void *context);
+    void OSSetCurrentContext(void *context);
+    u8 exceptionContext[0x2C8];
+    u32 *reg;
+
+    *(u32 *)(gx + 0xC) = __cpReg[0];
+    if (((*(u32 *)(gx + 8) >> 3) & 1) && ((*(u32 *)(gx + 0xC) >> 1) & 1)) {
+        OSResumeThread(__GXCurrentThread_803C7560);
+        GXOverflowSuspendInProgress_803C7568 = 0;
+        __GXWriteFifoIntReset(1, 1);
+        __GXWriteFifoIntEnable(1, 0);
+    }
+    if (((*(u32 *)(gx + 8) >> 2) & 1) && (*(u32 *)(gx + 0xC) & 1)) {
+        __GXOverflowCount_803C7570++;
+        __GXWriteFifoIntEnable(0, 1);
+        __GXWriteFifoIntReset(1, 0);
+        GXOverflowSuspendInProgress_803C7568 = 1;
+        OSSuspendThread(__GXCurrentThread_803C7560);
+    }
+    if (((*(u32 *)(gx + 8) >> 5) & 1) && ((*(u32 *)(gx + 0xC) >> 4) & 1)) {
+        reg = (u32 *)(gx + 8);
+        *reg = *reg & ~0x20;
+        __cpReg[1] = *(u32 *)(gx + 8);
+        if (BreakPointCB_803C756C != NULL) {
+            OSClearContext(exceptionContext);
+            OSSetCurrentContext(exceptionContext);
+            BreakPointCB_803C756C();
+            OSClearContext(exceptionContext);
+            OSSetCurrentContext(context);
+        }
+    }
+}
+
+#pragma pop
 void GXInitFifoBase(void *fifo, void *base, u32 size) {
     void GXInitFifoLimits(void *arg0, s32 arg1, s32 arg2);
     void GXInitFifoPtrs(void *fifo, void *readPtr, void *writePtr);
