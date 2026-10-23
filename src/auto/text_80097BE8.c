@@ -6707,6 +6707,30 @@ static void F25(s32 chan, s32 ret) {
     gba->ret = ret;
 }
 
+s32 GBAReadAsync(s32 chan, u8 *dst, u8 *status, GBACallback callback);
+static void F29(s32 chan, s32 ret);
+void F27(s32 chan, s32 ret) {
+    GBAControl *gba = &__GBA[chan];
+    GBABootInfo *bootInfo = &gba->bootInfo;
+    GBACallback callback;
+
+    if (ret == 0 && *bootInfo->status != D54_800DAFF8[0]) {
+        ret = 3;
+    }
+    if (ret == 0) {
+        ret = GBAReadAsync(chan, bootInfo->readbuf, bootInfo->status, F29);
+    }
+    if (ret != 0) {
+        bootInfo->begin = 0;
+        callback = bootInfo->callback;
+        if (callback != NULL) {
+            bootInfo->callback = NULL;
+            callback(chan, ret);
+        }
+    }
+    gba->ret = ret;
+}
+
 s32 FileManager_Create(void) {
     s32 i;
 
@@ -7253,6 +7277,44 @@ s32 __ct__8ConstantFv(s32 arg0) {
     __ct__5ForceFv();
     return arg0;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+#pragma readonly_strings on
+s32 UpdateForce__8ConstantFllUlUlsUsUlUlUcUc(Force *force, s32 chan, s32 effect, u32 duration, u32 startDelay, s16 magnitude, u16 direction, u32 attackTime, u32 fadeTime, u8 attackLevel, u8 fadeLevel) {
+    s32 LGUpdateForceEffect(u32 handle, u8 *desc);
+    struct {
+        u8 type;
+        u32 duration;
+        u32 startDelay;
+        s16 magnitude;
+        u16 direction;
+        u32 attackTime;
+        u32 fadeTime;
+        u8 attackLevel;
+        u8 fadeLevel;
+        u8 pad[10];
+    } desc;
+    s32 result;
+
+    memset(&desc, 0, sizeof(desc));
+    desc.type = 0;
+    desc.duration = duration;
+    desc.startDelay = startDelay;
+    desc.magnitude = magnitude;
+    desc.direction = direction;
+    desc.attackTime = attackTime;
+    desc.attackLevel = attackLevel;
+    desc.fadeTime = fadeTime;
+    desc.fadeLevel = fadeLevel;
+    result = LGUpdateForceEffect(force->effectIds[chan][effect], (u8 *)&desc);
+    if (result < 0) {
+        OSReport("ERROR: UpdateForce(constant force) on channel %d returned %d\n", chan, result);
+        force->effectIds[chan][effect] = 0xFFFFFFFF;
+    }
+    return result;
+}
+#pragma pop
 
 s32 __ct__5ForceFv(s32 arg0) {
     M2C_UNK InitVars__5ForceFv();
