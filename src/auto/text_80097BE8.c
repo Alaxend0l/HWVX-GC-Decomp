@@ -4360,7 +4360,7 @@ void *VideoDecoder(void *param) {
 }
 
 void *PopFreeTextureSet(void) {
-    extern u8 FreeTextureSetQueue_8036E300[];
+    extern u8 FreeTextureSetQueue_8036E300[0x20];
     void *msg;
 
     OSReceiveMessage(FreeTextureSetQueue_8036E300, &msg, 1);
