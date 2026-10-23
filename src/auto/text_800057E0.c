@@ -4966,6 +4966,38 @@ s32 TriggerInterfacePackEnd(u32 *pack) {
     return 1;
 }
 
+#pragma push
+#pragma dont_inline on
+s32 ActionPlayInterfacePack(u32 *pack) {
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    u32 InterfaceManager_Create(u8 *, s32, void *, void *, void *);
+    void InterfaceDataPackRouter(void);
+    void *data;
+    u8 *script;
+    u32 id;
+    s32 result;
+
+    id = pack[0];
+    data = FileStreaming_InitializeDataPack((void *)FileStreaming_GetPackID((char *)(pack + 1), 1, id), 1, 1);
+    if (data == NULL) {
+        result = 0;
+    } else {
+        script = DataPack_GetScript(data, id);
+        if (script == NULL) {
+            result = 0;
+        } else {
+            *(char **)((u8 *)g_InterfacePackData + g_NumInterfacesPlaying * sizeof(InterfacePackEntry)) = (char *)(pack + 1);
+            g_InterfacePackData[g_NumInterfacesPlaying].id = id;
+            g_InterfacePackData[g_NumInterfacesPlaying].unk8 =
+                InterfaceManager_Create(script, 0, InterfaceDataPackRouter, g_InterfacePackData + g_NumInterfacesPlaying, pack + 1);
+            g_NumInterfacesPlaying++;
+            result = 1;
+        }
+    }
+    return result;
+}
+#pragma pop
 static const char s_InterfaceInputName[] = "InterfaceInput";
 
 void ArmageddonDropShipInfo(void *arg0) {
