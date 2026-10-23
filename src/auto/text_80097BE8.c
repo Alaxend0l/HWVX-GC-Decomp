@@ -8138,6 +8138,48 @@ void Render_DrawPointSprites(void) {
     Render_StateAlphaBlendEnable(0);
 }
 
+void Render_DrawAlphaTriangle(u16 index) {
+    extern GDL *g_pGDL;
+    extern s32 g_debugTriCount;
+    extern GfxState g_state;
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    void Render_SetTextureHandle(u16 id);
+    void Render_StateBlendMode(s32 mode);
+    void Gfx_SetCameraMatrix(void *a, void *b, void *c, void *d);
+    void SetTriFlatVtxDesc(void);
+    void SetTriVtxDesc(void);
+    GDLTri *tri;
+
+    g_debugTriCount++;
+    Render_StateBlendMode(g_pGDL->tris[index].blendMode);
+    Render_SetTextureHandle(g_pGDL->tris[index].tex);
+    Gfx_SetCameraMatrix(NULL, NULL, NULL, NULL);
+    if (g_state.unk84 == 0xFFFF) {
+        SetTriFlatVtxDesc();
+        GXBegin(0x90, 0, 3);
+        tri = &g_pGDL->tris[index];
+        GXPosition3f32(tri->v[0].x, tri->v[0].y, tri->v[0].z);
+        GXColor4u8(tri->v[0].r, tri->v[0].g, tri->v[0].b, tri->v[0].a);
+        GXPosition3f32(tri->v[1].x, tri->v[1].y, tri->v[1].z);
+        GXColor4u8(tri->v[1].r, tri->v[1].g, tri->v[1].b, tri->v[1].a);
+        GXPosition3f32(tri->v[2].x, tri->v[2].y, tri->v[2].z);
+        GXColor4u8(tri->v[2].r, tri->v[2].g, tri->v[2].b, tri->v[2].a);
+    } else {
+        SetTriVtxDesc();
+        GXBegin(0x90, 0, 3);
+        tri = &g_pGDL->tris[index];
+        GXPosition3f32(tri->v[0].x, tri->v[0].y, tri->v[0].z);
+        GXColor4u8(tri->v[0].r, tri->v[0].g, tri->v[0].b, tri->v[0].a);
+        GXTexCoord2f32(tri->v[0].s, tri->v[0].t);
+        GXPosition3f32(tri->v[1].x, tri->v[1].y, tri->v[1].z);
+        GXColor4u8(tri->v[1].r, tri->v[1].g, tri->v[1].b, tri->v[1].a);
+        GXTexCoord2f32(tri->v[1].s, tri->v[1].t);
+        GXPosition3f32(tri->v[2].x, tri->v[2].y, tri->v[2].z);
+        GXColor4u8(tri->v[2].r, tri->v[2].g, tri->v[2].b, tri->v[2].a);
+        GXTexCoord2f32(tri->v[2].s, tri->v[2].t);
+    }
+}
+
 void Render_ScreenFlash(void) {
     void *GetRenderWindow();
     void Render_StateZWriteEnable(s32 enable);
