@@ -646,7 +646,6 @@ void SimThread_Init(VDevice *dev, VDevice *owner);
 static inline void SimThread_SetWeights(SimThread *t, const s32 *weights) {
     s32 i;
 
-    t->historyIdx = 0;
     for (i = 0; i < 10; i++) {
         t->weights[i] = weights[i];
         t->history[i] = 0;
