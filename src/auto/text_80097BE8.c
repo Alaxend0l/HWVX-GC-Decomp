@@ -3381,6 +3381,90 @@ s32 fwide(FILE *stream, s32 mode) {
     return result;
 }
 
+double atan(double x);
+double __ieee754_atan2(double y, double x) {
+    double z;
+    int k, m, hx, hy, ix, iy;
+    unsigned lx, ly;
+
+    hx = __HI(x);
+    ix = hx & 0x7fffffff;
+    lx = __LO(x);
+    hy = __HI(y);
+    iy = hy & 0x7fffffff;
+    ly = __LO(y);
+    if (((unsigned)ix | ((lx | -lx) >> 31)) > 0x7ff00000 || ((unsigned)iy | ((ly | -ly) >> 31)) > 0x7ff00000) {
+        return x + y;
+    }
+    if (((hx - 0x3ff00000) | lx) == 0) {
+        return atan(y);
+    }
+    m = ((hy >> 31) & 1) | ((hx >> 30) & 2);
+
+    if ((iy | ly) == 0) {
+        switch (m) {
+        case 0:
+        case 1:
+            return y;
+        case 2:
+            return 3.1415926535897931160E+00 + 1.0e-300;
+        case 3:
+            return -3.1415926535897931160E+00 - 1.0e-300;
+        }
+    }
+    if ((ix | lx) == 0) {
+        return (hy < 0) ? -1.5707963267948965580E+00 - 1.0e-300 : 1.5707963267948965580E+00 + 1.0e-300;
+    }
+    if (ix == 0x7ff00000) {
+        if (iy == 0x7ff00000) {
+            switch (m) {
+            case 0:
+                return 7.8539816339744827900E-01 + 1.0e-300;
+            case 1:
+                return -7.8539816339744827900E-01 - 1.0e-300;
+            case 2:
+                return 3.0 * 7.8539816339744827900E-01 + 1.0e-300;
+            case 3:
+                return -3.0 * 7.8539816339744827900E-01 - 1.0e-300;
+            }
+        } else {
+            switch (m) {
+            case 0:
+                return 0.0;
+            case 1:
+                return -0.0;
+            case 2:
+                return 3.1415926535897931160E+00 + 1.0e-300;
+            case 3:
+                return -3.1415926535897931160E+00 - 1.0e-300;
+            }
+        }
+    }
+    if (iy == 0x7ff00000) {
+        return (hy < 0) ? -1.5707963267948965580E+00 - 1.0e-300 : 1.5707963267948965580E+00 + 1.0e-300;
+    }
+
+    k = (iy - ix) >> 20;
+    if (k > 60) {
+        z = 1.5707963267948965580E+00 + 0.5 * 1.2246467991473531772E-16;
+    } else if (hx < 0 && k < -60) {
+        z = 0.0;
+    } else {
+        z = atan(fabs(y / x));
+    }
+    switch (m) {
+    case 0:
+        return z;
+    case 1:
+        __HI(z) ^= 0x80000000;
+        return z;
+    case 2:
+        return 3.1415926535897931160E+00 - (z - 1.2246467991473531772E-16);
+    default:
+        return (z - 1.2246467991473531772E-16) - 3.1415926535897931160E+00;
+    }
+}
+
 double __kernel_cos(double x, double y) {
     double a, hz, z, r, qx;
     int ix;
@@ -8207,6 +8291,43 @@ void Gfx_SetWorldMatrix(f32 *matrix) {
     GXLoadPosMtxImm(GXCameraSpace_8036CF80, 0);
     GXSetCurrentMtx(0);
 }
+
+void Gfx_SetProjectionMatrix(f32 fov) {
+    void C_MTXPerspective(f32 m[4][4], f32 fovY, f32 aspect, f32 n, f32 f);
+    void GXSetProjection(f32 m[4][4], s32 type);
+    void Gfx_SetCameraMatrix(void *a, void *b, void *c, void *d);
+    f32 Gfx_GetProjectionMatrix(void);
+    f32 mtx[4][4];
+    f32 value;
+    f32 angle;
+
+    angle = fov;
+    value = sin(0.017453292f * (0.9f * fov));
+    *(f32 *)((u8 *)GetRenderWindow() + 0x274) = value;
+    *(f32 *)((u8 *)GetRenderWindow() + 0x270) = fov;
+    fov = 90.0f / fov;
+    value = -(fov * *(u32 *)((u8 *)GetRenderWindow() + 0x2B4));
+    *(f32 *)((u8 *)GetRenderWindow() + 0xC0) = value;
+    value = 1.333f * (fov * *(u32 *)((u8 *)GetRenderWindow() + 0x2BC));
+    *(f32 *)((u8 *)GetRenderWindow() + 0xD4) = value;
+    value = 1.0f;
+    *(f32 *)((u8 *)GetRenderWindow() + 0xEC) = value;
+    value = 20000.0f;
+    *(f32 *)((u8 *)GetRenderWindow() + 0xF8) = value;
+    value = *(u32 *)((u8 *)GetRenderWindow() + 0x2B4);
+    *(f32 *)((u8 *)GetRenderWindow() + 0xE0) = value;
+    value = *(u32 *)((u8 *)GetRenderWindow() + 0x2BC);
+    *(f32 *)((u8 *)GetRenderWindow() + 0xE4) = value;
+    Gfx_SetCameraMatrix((u8 *)GetRenderWindow() + 0x180, (u8 *)GetRenderWindow() + 0x190, (u8 *)GetRenderWindow() + 0x1A0, (u8 *)GetRenderWindow() + 0x1B0);
+    value = 1.0 / sin(0.008726646f * Gfx_GetProjectionMatrix());
+    *(f32 *)((u8 *)GetRenderWindow() + 0x2CC) = value;
+    value = *(u32 *)((u8 *)GetRenderWindow() + 0x284);
+    value = *(u32 *)((u8 *)GetRenderWindow() + 0x280) / value;
+    fov = *(u32 *)((u8 *)GetRenderWindow() + 0x280);
+    C_MTXPerspective(mtx, 1.0714285f * angle * *(u32 *)((u8 *)GetRenderWindow() + 0x284) / fov, value, 1.0f, 20000.0f);
+    GXSetProjection(mtx, 0);
+}
+
 #pragma pop
 
 f32 Gfx_GetProjectionMatrix(void) {
