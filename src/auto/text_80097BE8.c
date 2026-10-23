@@ -243,8 +243,19 @@ typedef struct THPComponent {
     s16 predDC;
 } THPComponent;
 
+typedef struct THPHuffmanTab {
+    u8 quick[32];
+    u8 increment[32];
+    u8 *Vij;
+    s32 maxCode[18];
+    s32 valPtr[18];
+    u8 Vij1;
+    u8 unkD5[0xE0 - 0xD5];
+} THPHuffmanTab;
+
 typedef struct THPFileInfo {
-    u8 unk0[0x680];
+    u8 unk0[0x300];
+    THPHuffmanTab huffmanTabs[4];
     THPComponent components[3];
     u16 xPixelSize;
     u16 yPixelSize;
