@@ -14427,6 +14427,44 @@ void OSPanic(const char *file, int line, const char *msg, ...) {
     PPCHalt();
 }
 
+u16 GetFontCode(u16 code) {
+    extern u16 HankakuToCode_800D4950[];
+    extern u16 Zenkaku2Code_800D4AD0[];
+
+    if (OSGetFontEncode() == 1) {
+        if (0x20 <= code && code <= 0xDF) {
+            return HankakuToCode_800D4950[code - 0x20];
+        } else if (0x889E < code && code <= 0x9872) {
+            int i = ((code >> 8) - 0x88) * 188;
+            int j = code & 0xFF;
+
+            if (!IsSjisTrailByte(j)) {
+                return 0;
+            }
+            j -= 0x40;
+            if (0x40 <= j) {
+                j--;
+            }
+            return i + j + 0x2BE;
+        } else if (0x8140 <= code && code < 0x879E) {
+            int i = ((code >> 8) - 0x81) * 188;
+            int j = code & 0xFF;
+
+            if (!IsSjisTrailByte(j)) {
+                return 0;
+            }
+            j -= 0x40;
+            if (0x40 <= j) {
+                j--;
+            }
+            return Zenkaku2Code_800D4AD0[i + j];
+        }
+    } else if (0x20 < code && code <= 0xFF) {
+        return code - 0x20;
+    }
+    return 0;
+}
+
 void Decode(u8 *s, u8 *d) {
     int i;
     int j;
@@ -15655,6 +15693,18 @@ void OSWakeupThread(void *queue) {
 #pragma pop
 
 #pragma pop
+
+static inline BOOL IsLeapYear(s32 year) {
+    return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
+}
+
+static inline s32 GetLeapDays(s32 year) {
+    if (year < 1) {
+        return 0;
+    }
+    return (year + 3) / 4 - (year - 1) / 100 + (year - 1) / 400;
+}
+
 s64 __OSGetSystemTime(void) {
     s32 OSDisableInterrupts(void);
     s32 OSRestoreInterrupts(s32);
