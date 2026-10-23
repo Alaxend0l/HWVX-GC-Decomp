@@ -2943,6 +2943,107 @@ static void round_decimal(decimal *dec, int new_length) {
     dec->sig.length = new_length;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+char *longlong2str_8009BE88(s64 num, char *buff, print_format format) {
+    u64 unsigned_num;
+    u64 base;
+    char *p;
+    s32 n;
+    s32 digits;
+    s32 minus;
+
+    unsigned_num = num;
+    minus = 0;
+    p = buff;
+    *--p = 0;
+    digits = 0;
+
+    if (!num && !format.precision && !(format.alternate_form && format.conversion_char == 'o')) {
+        return p;
+    }
+
+    switch (format.conversion_char) {
+    case 'd':
+    case 'i':
+        base = 10;
+        if (num < 0) {
+            unsigned_num = -unsigned_num;
+            minus = 1;
+        }
+        break;
+    case 'o':
+        base = 8;
+        format.sign_options = 0;
+        break;
+    case 'u':
+        base = 10;
+        format.sign_options = 0;
+        break;
+    case 'x':
+    case 'X':
+        base = 16;
+        format.sign_options = 0;
+        break;
+    }
+
+    do {
+        n = unsigned_num % base;
+        unsigned_num /= base;
+        if (n < 10) {
+            n += '0';
+        } else {
+            n -= 10;
+            if (format.conversion_char == 'x') {
+                n += 'a';
+            } else {
+                n += 'A';
+            }
+        }
+        *--p = n;
+        ++digits;
+    } while (unsigned_num != 0);
+
+    if (base == 8 && format.alternate_form && *p != '0') {
+        *--p = '0';
+        ++digits;
+    }
+
+    if (format.justification_options == 2) {
+        format.precision = format.field_width;
+        if (minus || format.sign_options != 0) {
+            --format.precision;
+        }
+        if (base == 16 && format.alternate_form) {
+            format.precision -= 2;
+        }
+    }
+
+    if (buff - p + format.precision > 509) {
+        return 0;
+    }
+
+    while (digits < format.precision) {
+        *--p = '0';
+        ++digits;
+    }
+
+    if (base == 16 && format.alternate_form) {
+        *--p = format.conversion_char;
+        *--p = '0';
+    }
+
+    if (minus) {
+        *--p = '-';
+    } else if (format.sign_options == 1) {
+        *--p = '+';
+    } else if (format.sign_options == 2) {
+        *--p = ' ';
+    }
+
+    return p;
+}
+
 char *long2str_8009C164(s32 num, char *buff, print_format format) {
     u32 unsigned_num;
     u32 base;
