@@ -2011,6 +2011,54 @@ void MotionState_BuildMatricesWorld(void *arg0, void *arg1, void *motionState, f
         TEST_AnimTraverseHeirarchyToMatricesWorld(arg0, arg1, frames, *skel, M2C_FIELD(motionState, u32 *, 0x10), time);
     }
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void MotionState_Heartbeat(void *state, void *arg1, void *thing) {
+    extern f32 g_fDeltaTimeSec;
+    void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps);
+    void MotionState_BlendTriggerEvents(void *state, void *events, void *thing);
+    void MotionState_MoveSlaves(void *state, void *arg1, void *thing);
+    typedef struct {
+        u8 unk0[0x18];
+        f32 fps;
+    } MotionAnim;
+    typedef struct {
+        MotionAnim *anim;
+        u8 unk4[0x8];
+        f32 weight;
+        u8 unk10[0x10];
+    } MotionLayer;
+    typedef struct {
+        u8 *data;
+        u8 unk4[0x14];
+        MotionLayer layers[2];
+    } MotionStateT;
+    MotionStateT *ms = state;
+    f32 rate = 0.0f;
+    u32 i;
+
+    ms->layers[0].weight += g_fDeltaTimeSec;
+    if (ms->layers[0].weight > 1.0f) {
+        ms->layers[0].weight = 1.0f;
+    }
+    Motion_BlendHeartbeat_FPS(&ms->layers[0], 2, ms->layers[0].anim, ms->layers[0].anim->fps);
+    for (i = 1; i < 1; i++) {
+        rate -= 1.0f;
+        ms->layers[i].weight += rate * g_fDeltaTimeSec;
+        if (ms->layers[i].weight <= 0.0f) {
+            ms->layers[i].weight = 0.0f;
+        } else {
+            Motion_BlendHeartbeat_FPS(&ms->layers[i], 2, ms->layers[i].anim, ms->layers[i].anim->fps);
+        }
+    }
+    if (arg1 != NULL) {
+        MotionState_BlendTriggerEvents(state, ms->data + 0x2C, thing);
+        MotionState_MoveSlaves(state, arg1, thing);
+    }
+}
+#pragma pop
+
 #pragma pop
 
 s32 AttachThing_Move(void *thing) {
