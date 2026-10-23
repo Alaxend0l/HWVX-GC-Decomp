@@ -380,6 +380,43 @@ typedef struct Block {
 
 SubBlock *Block_subBlock(Block *ths, u32 size);
 
+static inline void SubBlock_split(SubBlock *ths, u32 sz) {
+    SubBlock *np = (SubBlock *)((u8 *)ths + sz);
+    void *bp = (void *)(((u32)ths->bp_ & ~1) | 1);
+    s32 isprevalloc = ths->size_ & 4;
+    s32 isfree = !(ths->size_ & 2);
+    u32 origsize = ths->size_ & 0xFFFFFFF8;
+
+    ths->bp_ = bp;
+    ths->size_ = sz;
+    if (isprevalloc) {
+        ths->size_ |= 4;
+    }
+    if (!isfree) {
+        ths->size_ |= 2;
+        np->size_ |= 4;
+    } else {
+        *(u32 *)((u8 *)np - sizeof(u32)) = sz;
+    }
+    np->bp_ = bp;
+    np->size_ = origsize - sz;
+    if (!isfree) {
+        np->size_ |= 4;
+    }
+    if (!isfree) {
+        np->size_ |= 2;
+        *(u32 *)((u8 *)np + (origsize - sz)) |= 4;
+    } else {
+        *(u32 *)((u8 *)np + (origsize - sz) - sizeof(u32)) = origsize - sz;
+    }
+    if (isfree) {
+        np->next_ = ths->next_;
+        np->next_->prev_ = np;
+        np->prev_ = ths;
+        ths->next_ = np;
+    }
+}
+
 typedef struct FixSubBlock {
     struct FixBlock *block_;
     struct FixSubBlock *next_;
@@ -1594,6 +1631,91 @@ void Block_link(Block *ths, SubBlock *sb) {
         ths->max_size_ = (*st)->size_ & 0xFFFFFFF8;
     }
 }
+
+SubBlock *Block_subBlock(Block *ths, u32 size) {
+    SubBlock *sb;
+    SubBlock *st;
+    u32 sb_size;
+    u32 max_found;
+
+    st = *(SubBlock **)((u8 *)ths + (ths->size_ & 0xFFFFFFF8) - sizeof(SubBlock *));
+    if (st == NULL) {
+        return NULL;
+    }
+    sb = st;
+    sb_size = sb->size_ & 0xFFFFFFF8;
+    max_found = sb_size;
+    while (sb_size < size) {
+        sb = sb->next_;
+        sb_size = sb->size_ & 0xFFFFFFF8;
+        if (max_found < sb_size) {
+            max_found = sb_size;
+        }
+        if (sb == st) {
+            ths->max_size_ = max_found;
+            return NULL;
+        }
+    }
+    if (sb_size - size >= 0x50) {
+        SubBlock *np = (SubBlock *)((u8 *)sb + size);
+        void *bp = (void *)(((u32)sb->bp_ & ~1) | 1);
+        u32 old = sb->size_;
+        s32 isfree = !(old & 2);
+        s32 isalloc;
+        u32 origsize;
+        u32 np_size;
+
+        sb->bp_ = bp;
+        sb->size_ = size;
+        isalloc = !isfree;
+        origsize = old & 0xFFFFFFF8;
+        if (old & 4) {
+            sb->size_ |= 4;
+        }
+        if (isalloc) {
+            sb->size_ |= 2;
+            np->size_ |= 4;
+        } else {
+            *(u32 *)((u8 *)np - sizeof(u32)) = size;
+        }
+        np->bp_ = bp;
+        np_size = origsize - size;
+        np->size_ = np_size;
+        if (isalloc) {
+            np->size_ |= 4;
+        }
+        if (isalloc) {
+            np->size_ |= 2;
+            *(u32 *)((u8 *)np + np_size) |= 4;
+        } else {
+            *(u32 *)((u8 *)np + np_size - sizeof(u32)) = np_size;
+        }
+        if (isfree) {
+            np->next_ = sb->next_;
+            np->next_->prev_ = np;
+            np->prev_ = sb;
+            sb->next_ = np;
+        }
+    }
+    *(SubBlock **)((u8 *)ths + (ths->size_ & 0xFFFFFFF8) - sizeof(SubBlock *)) = sb->next_;
+    sb->size_ |= 2;
+    *(u32 *)((u8 *)sb + (sb->size_ & 0xFFFFFFF8)) |= 4;
+    {
+        SubBlock **start = (SubBlock **)((u8 *)ths + (ths->size_ & 0xFFFFFFF8) - sizeof(SubBlock *));
+        if (*start == sb) {
+            *start = sb->next_;
+        }
+        if (*start == sb) {
+            *start = NULL;
+            ths->max_size_ = 0;
+        } else {
+            sb->next_->prev_ = sb->prev_;
+            sb->prev_->next_ = sb->next_;
+        }
+    }
+    return sb;
+}
+
 #pragma pop
 s32 __flush_all(void) {
     extern FILE __files[];
