@@ -548,7 +548,9 @@ typedef struct CARDControl {
     s32 offset;
     u8 unkB8[0xBE - 0xB8];
     u16 startBlock;
-    u8 unkC0[0xCC - 0xC0];
+    u8 unkC0[0xC4 - 0xC0];
+    CARDCallback extCallback;
+    u8 unkC8[0xCC - 0xC8];
     CARDCallback exiCallback;
     CARDCallback apiCallback;
     CARDCallback xferCallback;
@@ -10297,6 +10299,40 @@ void AIInitDMA(u32 start_addr, u32 length) {
 void AIStartDMA(void) {
     M2C_FIELD((void *)0xCC005000, u16 *, 0x36) = (u16) (M2C_FIELD((void *)0xCC005000, u16 *, 0x36) | 0x8000);
 }
+
+#pragma push
+#pragma peephole off
+void AISetStreamPlayState(u32 state) {
+    void AISetStreamVolLeft(u8 vol);
+    void AISetStreamVolRight(u8 vol);
+    u8 AIGetStreamVolLeft(void);
+    u8 AIGetStreamVolRight(void);
+    s32 AIGetStreamSampleRate(void);
+    void __AI_SRC_INIT(void);
+    BOOL enabled;
+    u8 volRight;
+    u8 volLeft;
+
+    if (state == AIGetStreamPlayState()) {
+        return;
+    }
+    if ((u32)AIGetStreamSampleRate() == 0 && state == 1) {
+        volRight = AIGetStreamVolRight();
+        volLeft = AIGetStreamVolLeft();
+        AISetStreamVolRight(0);
+        AISetStreamVolLeft(0);
+        enabled = OSDisableInterrupts();
+        __AI_SRC_INIT();
+        __AIRegs[0] = (__AIRegs[0] & ~0x20) | 0x20;
+        __AIRegs[0] = (__AIRegs[0] & ~1) | 1;
+        OSRestoreInterrupts(enabled);
+        AISetStreamVolLeft(volRight);
+        AISetStreamVolRight(volLeft);
+    } else {
+        __AIRegs[0] = (__AIRegs[0] & ~1) | state;
+    }
+}
+#pragma pop
 
 s32 AIGetStreamPlayState(void) {
     return *(s32 *)0xCC006C00 & 1;
