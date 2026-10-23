@@ -12,7 +12,7 @@ void terminate();
 class exception {
 public:
     exception() {}
-    virtual ~exception() {}
+    virtual ~exception();
     virtual const char *what() const;
 };
 
