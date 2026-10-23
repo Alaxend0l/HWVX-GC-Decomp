@@ -4101,11 +4101,13 @@ void World_ClearSweep(void) {
 }
 
 s32 ActionTimerChangeMode(u32 *action) {
+    u8 **item;
     u32 i;
 
     for (i = 0; i < action[2]; i++) {
-        M2C_FIELD(M2C_FIELD(*(u8 **)action[i + 3], u8 **, 0xC), u8 *, 0) = action[0];
-        M2C_FIELD(M2C_FIELD(*(u8 **)action[i + 3], u8 **, 0xC), u8 *, 1) = action[1];
+        item = (u8 **)action[i + 3];
+        M2C_FIELD(M2C_FIELD(*item, u8 **, 0xC), u8 *, 0) = action[0];
+        M2C_FIELD(M2C_FIELD(*item, u8 **, 0xC), u8 *, 1) = action[1];
     }
     return 1;
 }
