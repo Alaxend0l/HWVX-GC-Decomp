@@ -9229,35 +9229,33 @@ void CreateMIDI(u8 *hdr, u8 *snd) {
     void FindMarkers(u8 *p);
     void DestroyMIDIVoice(u8 *voice);
     s32 CreateMIDI_(u8 *hdr);
-    s32 last;
     u32 i;
     s32 j;
-    u32 hdrSize;
 
     if (hdr == NULL || snd == NULL) {
         return;
     }
-    hdrSize = *(u32 *)(hdr + 4) + 8;
-    g_pHdr_803C78F4 = OSAllocFromHeap(__OSCurrHeap, hdrSize + ((MIDISnd *)snd)->size);
-    g_pSnd_803C78F0 = (MIDISnd *)(g_pHdr_803C78F4 + hdrSize);
-    memcpy(g_pHdr_803C78F4, hdr, hdrSize);
+    i = *(u32 *)(hdr + 4) + 8;
+    g_pHdr_803C78F4 = OSAllocFromHeap(__OSCurrHeap, i + ((MIDISnd *)snd)->size);
+    g_pSnd_803C78F0 = (MIDISnd *)(g_pHdr_803C78F4 + i);
+    memcpy(g_pHdr_803C78F4, hdr, i);
     memcpy(g_pSnd_803C78F0, snd, ((MIDISnd *)snd)->size);
     g_pSnd_803C78F0->size += (u32)snd;
     FindMarkers(g_pHdr_803C78F4 + 0x22);
     memset(g_pProg_80376BB4, 0, sizeof(g_pProg_80376BB4));
     memset(g_pDrum_80376DB4, 0, sizeof(g_pDrum_80376DB4));
-    last = 0x80;
+    j = 0x80;
     for (i = 0; i < g_pSnd_803C78F0->count; i++) {
         if (g_pSnd_803C78F0->inst[i].prog != 0x80) {
-            if (last != g_pSnd_803C78F0->inst[i].prog) {
-                last = g_pSnd_803C78F0->inst[i].prog;
-                g_pProg_80376BB4[last] = &g_pSnd_803C78F0->inst[i];
+            if (j != g_pSnd_803C78F0->inst[i].prog) {
+                j = g_pSnd_803C78F0->inst[i].prog;
+                g_pProg_80376BB4[j] = &g_pSnd_803C78F0->inst[i];
             }
         } else {
             for (j = g_pSnd_803C78F0->inst[i].lo; j <= g_pSnd_803C78F0->inst[i].hi; j++) {
                 g_pDrum_80376DB4[j] = &g_pSnd_803C78F0->inst[i];
             }
-            last = 0x80;
+            j = 0x80;
         }
     }
     CreateMIDI_((u8 *)g_pSnd_803C78F0);
