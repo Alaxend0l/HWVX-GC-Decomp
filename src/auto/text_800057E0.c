@@ -6532,6 +6532,65 @@ void OSCreateAlarm(s32 *arg0) {
     *arg0 = 0;
 }
 
+Cell *DLInsert(Cell *list, Cell *cell) {
+    Cell *prev;
+    Cell *next;
+
+    for (next = list, prev = NULL; next; prev = next, next = next->next) {
+        if (cell <= next) {
+            break;
+        }
+    }
+    cell->next = next;
+    cell->prev = prev;
+    if (next) {
+        next->prev = cell;
+        if ((u8 *)cell + cell->size == (u8 *)next) {
+            cell->size += next->size;
+            next = next->next;
+            cell->next = next;
+            if (next) {
+                next->prev = cell;
+            }
+        }
+    }
+    if (prev) {
+        prev->next = cell;
+        if ((u8 *)prev + prev->size == (u8 *)cell) {
+            prev->size += cell->size;
+            prev->next = next;
+            if (next) {
+                next->prev = prev;
+            }
+        }
+        return list;
+    } else {
+        return cell;
+    }
+}
+
+#pragma push
+#pragma dont_inline on
+void OSFreeToHeap(s32 heap, void *ptr) {
+    HeapDesc *hd;
+    Cell *cell;
+    Cell *list;
+
+    cell = (Cell *)((u8 *)ptr - 0x20);
+    hd = &HeapArray_803C7218[heap];
+    list = hd->allocated;
+    if (cell->next) {
+        cell->next->prev = cell->prev;
+    }
+    if (cell->prev == NULL) {
+        list = cell->next;
+    } else {
+        cell->prev->next = cell->next;
+    }
+    hd->allocated = list;
+    hd->free = DLInsert(hd->free, cell);
+}
+#pragma pop
 s32 OSSetCurrentHeap(s32 arg0) {
     s32 temp_r0;
 
@@ -7913,6 +7972,32 @@ static u32 getCurrentFieldEvenOdd(void) {
         vcount = ((volatile u16 *)0xCC002000)[22] & 0x7FF;
     } while (vcount0 != vcount);
     return ((((vcount - 1) << 1) + ((hcount - 1) / CurrTiming_803C73A8->hlw)) < CurrTiming_803C73A8->nhlines) ? 1 : 0;
+}
+
+void PADSetSpec(s32 spec) {
+    extern void (*MakeStatus_803C6DD8)(s32, void *, u32 *);
+    void SPEC0_MakeStatus(s32, void *, u32 *);
+    void SPEC1_MakeStatus(s32, void *, u32 *);
+    void SPEC2_MakeStatus_80076F6C(s32, void *, u32 *);
+    extern s32 Spec_803C6DD4;
+    extern s32 __PADSpec;
+
+    __PADSpec = 0;
+    switch (spec) {
+    case 0:
+        MakeStatus_803C6DD8 = SPEC0_MakeStatus;
+        break;
+    case 1:
+        MakeStatus_803C6DD8 = SPEC1_MakeStatus;
+        break;
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+        MakeStatus_803C6DD8 = SPEC2_MakeStatus_80076F6C;
+        break;
+    }
+    Spec_803C6DD4 = spec;
 }
 
 static void SamplingHandler(s16 interrupt, void *context) {
