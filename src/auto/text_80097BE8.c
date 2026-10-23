@@ -4183,6 +4183,35 @@ s32 DBGReadMailbox(u32 *mailbox) {
     return !err;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+BOOL DBGEXIImm(void *buffer, s32 bytecounter, u32 write) {
+    u8 *tempPointer;
+    u32 writeOutValue;
+    int i;
+
+    if (write) {
+        tempPointer = buffer;
+        writeOutValue = 0;
+        for (i = 0; i < bytecounter; i++) {
+            u8 *temp = (u8 *)buffer + i;
+            writeOutValue |= *temp << ((3 - i) << 3);
+        }
+        __EXIRegs[14] = writeOutValue;
+    }
+    __EXIRegs[13] = 1 | write << 2 | (bytecounter - 1) << 4;
+    do {
+    } while (__EXIRegs[13] & 1);
+    if (!write) {
+        writeOutValue = __EXIRegs[14];
+        tempPointer = buffer;
+        for (i = 0; i < bytecounter; i++) {
+            *tempPointer++ = (u8)(writeOutValue >> ((3 - i) << 3));
+        }
+    }
+    return TRUE;
+}
+
 f32 MagnitudeVector(Vector *v) {
     f32 zero = 0.0f;
 
