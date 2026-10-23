@@ -3404,6 +3404,21 @@ s32 Item_PreMove(void) {
     return 1;
 }
 
+void Item_Draw(u8 *item) {
+    f32 Gfx_GetMinCameraDistSquared(void *pos);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void Thing_DrawSharedSlaves(void *thing, void *slaves);
+
+    if (M2C_FIELD(item, f32 *, 0xC8) != 0.0f &&
+        Gfx_GetMinCameraDistSquared(item + 0x40) > M2C_FIELD(item, f32 *, 0xC8) * M2C_FIELD(item, f32 *, 0xC8)) {
+        return;
+    }
+    if (M2C_FIELD(item, u32 *, 0x74) & 8) {
+        QuaternionToSubMatrix(item + 0x50, item + 0x10);
+    }
+    Thing_DrawSharedSlaves(item, M2C_FIELD(item, u8 **, 0xC0) + 0x38);
+}
+
 s32 Item_GetNearestNavPoint(void *arg0) {
     return M2C_FIELD(arg0, s32 *, 0xD4);
 }
@@ -3416,6 +3431,19 @@ s32 Item_Invalidate(void *arg0, u32 arg1, u32 arg2) {
         return 1;
     }
     return 0;
+}
+
+void LensFlare_Init(void) {
+    extern u8 g_pFlare[64][0x30];
+    extern s32 g_activeFlares;
+    extern s32 g_LensFlareRayTest;
+    s32 i;
+
+    for (i = 0; i < 64; i++) {
+        *(s32 *)g_pFlare[i] = 0;
+    }
+    g_activeFlares = 0;
+    g_LensFlareRayTest = 1;
 }
 
 s32 LensFlare_Add(void *flare, s32 arg1, Vector4 *pos) {
