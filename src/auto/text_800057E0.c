@@ -45,6 +45,31 @@ s32 ViewManager_GetViewFormat(void);
 s32 Thing_Init(void *thing, s32 arg1);
 void MatrixCache_Free(u32 key);
 void MotionState_Release(s32 state);
+
+static inline u8 *PlayerManager_PopActive(u8 *pm) {
+    u8 *player = M2C_FIELD(pm, u8 **, 0x20D8);
+    u8 *next;
+
+    if (player == NULL) {
+        return NULL;
+    }
+    next = M2C_FIELD(player, u8 **, 0xB0);
+    M2C_FIELD(pm, u8 **, 0x20D8) = next;
+    if (next != NULL) {
+        M2C_FIELD(next, u8 **, 0xB4) = NULL;
+    }
+    M2C_FIELD(player, u8 **, 0xB0) = NULL;
+    return player;
+}
+
+static inline void PlayerManager_PushFree(u8 *pm, u8 *player) {
+    M2C_FIELD(player, u8 **, 0xB0) = M2C_FIELD(pm, u8 **, 0x20DC);
+    M2C_FIELD(player, u8 **, 0xB4) = NULL;
+    if (M2C_FIELD(player, u8 **, 0xB0) != NULL) {
+        M2C_FIELD(M2C_FIELD(player, u8 **, 0xB0), u8 **, 0xB4) = player;
+    }
+    M2C_FIELD(pm, u8 **, 0x20DC) = player;
+}
 void GXSetTevIndirect(s32 tev_stage, s32 ind_stage, s32 format, s32 bias_sel, s32 matrix_sel, s32 wrap_s, s32 wrap_t, u8 add_prev, u8 utc_lod, s32 alpha_sel);
 
 s32 AIGetStreamPlayState(void);
@@ -4075,12 +4100,54 @@ void World_ClearSweep(void) {
     g_worldData.unk4 = 1;
 }
 
+s32 ActionTimerChangeMode(u32 *action) {
+    u32 i;
+
+    for (i = 0; i < action[2]; i++) {
+        M2C_FIELD(M2C_FIELD(*(u8 **)action[i + 3], u8 **, 0xC), u8 *, 0) = action[0];
+        M2C_FIELD(M2C_FIELD(*(u8 **)action[i + 3], u8 **, 0xC), u8 *, 1) = action[1];
+    }
+    return 1;
+}
+
 void PlayerManager_Create(void) {
 
 }
 
 void PlayerManager_Destroy(void) {
 
+}
+
+void PlayerManager_Release(void) {
+    extern u8 g_playerManager[0x20E0];
+    void Player_ReleaseInterface(void *player);
+    u8 *player;
+    u8 *next;
+
+    for (;;) {
+        player = M2C_FIELD(g_playerManager, u8 **, 0x20D8);
+        if (player == NULL) {
+            player = NULL;
+        } else {
+            next = M2C_FIELD(player, u8 **, 0xB0);
+            M2C_FIELD(g_playerManager, u8 **, 0x20D8) = next;
+            if (next != NULL) {
+                M2C_FIELD(next, u8 **, 0xB4) = NULL;
+            }
+            M2C_FIELD(player, u8 **, 0xB0) = NULL;
+        }
+        if (player == NULL) {
+            break;
+        }
+        Player_ReleaseInterface(player);
+        M2C_FIELD(player, u8 **, 0xB0) = M2C_FIELD(g_playerManager, u8 **, 0x20DC);
+        M2C_FIELD(player, u8 **, 0xB4) = NULL;
+        next = M2C_FIELD(player, u8 **, 0xB0);
+        if (next != NULL) {
+            M2C_FIELD(next, u8 **, 0xB4) = player;
+        }
+        M2C_FIELD(g_playerManager, u8 **, 0x20DC) = player;
+    }
 }
 
 #pragma push
@@ -4154,6 +4221,42 @@ void PlayerManager_ClearAllCameraFlags_PRIVATE(void) {
     for (player = M2C_FIELD(g_pPlayerManager, void **, 0x20D8); player != NULL; player = M2C_FIELD(player, void **, 0xB0)) {
         M2C_FIELD(player, u32 *, 0x6C) &= ~0x10;
     }
+}
+
+s32 PlayerManager_RemovePlayer(void *player) {
+    extern u8 g_playerManager[0x20E0];
+    extern u8 *g_pPlayerManager;
+    u8 *p;
+    u8 *other;
+
+    for (p = M2C_FIELD(g_playerManager, u8 **, 0x20D8); p != NULL; p = M2C_FIELD(p, u8 **, 0xB0)) {
+        if (p == player) {
+            break;
+        }
+    }
+    if (p == NULL) {
+        return 0;
+    }
+    other = M2C_FIELD(p, u8 **, 0xB4);
+    if (other == NULL) {
+        M2C_FIELD(g_pPlayerManager, u8 **, 0x20D8) = M2C_FIELD(p, u8 **, 0xB0);
+    } else {
+        M2C_FIELD(other, u8 **, 0xB0) = M2C_FIELD(p, u8 **, 0xB0);
+    }
+    other = M2C_FIELD(p, u8 **, 0xB0);
+    if (other != NULL) {
+        M2C_FIELD(other, u8 **, 0xB4) = M2C_FIELD(p, u8 **, 0xB4);
+        M2C_FIELD(p, u8 **, 0xB0) = NULL;
+    }
+    M2C_FIELD(p, u8 **, 0xB4) = NULL;
+    M2C_FIELD(p, u8 **, 0xB0) = M2C_FIELD(g_pPlayerManager, u8 **, 0x20DC);
+    M2C_FIELD(p, u8 **, 0xB4) = NULL;
+    other = M2C_FIELD(p, u8 **, 0xB0);
+    if (other != NULL) {
+        M2C_FIELD(other, u8 **, 0xB4) = p;
+    }
+    M2C_FIELD(g_pPlayerManager, u8 **, 0x20DC) = p;
+    return 1;
 }
 
 void AI_Creature_Heartbeat(void) {
