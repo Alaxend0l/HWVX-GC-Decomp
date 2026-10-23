@@ -8784,6 +8784,20 @@ u32 TRKTargetGetPC(void) {
     return *(u32 *)(gTRKCPUState + 0x80);
 }
 
+s32 TRKTargetStepOutOfRange(u32 rangeStart, u32 rangeEnd, s32 stepOver) {
+    s32 err = 0;
+
+    if (stepOver) {
+        err = 0x703;
+    } else {
+        gTRKStepStatus_800DA0B4.type = 1;
+        gTRKStepStatus_800DA0B4.rangeStart = rangeStart;
+        gTRKStepStatus_800DA0B4.rangeEnd = rangeEnd;
+        err = TRKTargetDoStep();
+    }
+    return err;
+}
+
 s32 TRKTargetAddExceptionInfo(void *b) {
     extern u32 gTRKExceptionStatus_800DA0A4[];
     s32 err;
