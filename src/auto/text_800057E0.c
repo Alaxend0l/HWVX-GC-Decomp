@@ -338,7 +338,7 @@ typedef struct CodeVariables {
     u8 unk120[0x134 - 0x120];
 } CodeVariables;
 
-extern CodeVariables g_codeVariables;
+CodeVariables g_codeVariables;
 
 typedef struct SIControl {
     s32 chan;
@@ -5686,6 +5686,97 @@ void ForceFeedback_GetForce(void *ff, u8 *a, u8 *b, f32 *c) {
     *a = active;
     *b = rumble;
     *c = force;
+}
+
+void GameSetting_Init(void) {
+    typedef struct GameInfo {
+        const char *name;
+        const char *id;
+        const char *title;
+        const char *fileName;
+        const char *icon;
+        s32 unk14;
+        s32 unk18;
+    } GameInfo;
+    void GameSettings_SetDefaultControllerState(void);
+    void GameSettings_ResetPlayerVehicleItem(void);
+    void GameSettings_ResetGame(void);
+    void GameSettings_ResetControllerConfig(s32 player);
+    s32 GameSettings_GetGameType(void);
+    void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
+    u8 OSGetSoundMode(void);
+    void *memset(void *dst, s32 c, u32 n);
+    extern GameInfo g_gameInfo[];
+    extern s8 g_bGameSettingsInitialized;
+    extern u8 *g_pGameData;
+    extern u8 *g_pSavedGameData;
+    extern u8 g_DDRsavedGameData[];
+    u8 *vars;
+    GeneralGameSettings *settings;
+    u8 *data;
+    u32 i;
+
+    vars = (u8 *)&g_codeVariables;
+    g_bGameSettingsInitialized = 1;
+    memset(&vars[0], 0, 0x134);
+    data = &vars[0];
+    ((CodeVariables *)data)->device = (char *)1;
+    GameSettings_SetDefaultControllerState();
+    GameSettings_ResetPlayerVehicleItem();
+    GameSettings_ResetGame();
+    memset(&vars[0x134], 0, 0x150);
+    ((GeneralGameSettings *)&vars[0x134])->difficulty = 0;
+    data = (u8 *)OSGetSoundMode();
+    settings = (GeneralGameSettings *)&vars[0x134];
+    settings->audio.speakerMode = (u8)(u32)data;
+    settings->audio.musicVolume = 100;
+    settings->audio.sfxVolume = 100;
+    for (i = 1; i <= 4; i++) {
+        GameSettings_ResetControllerConfig(i);
+        settings->controllers[i - 1].data[0] = 1;
+    }
+    switch (GameSettings_GetGameType()) {
+    case 0:
+        g_gameInfo[0].unk14 = 0x8F0;
+        g_gameInfo[0].unk18 = 0xF4;
+        g_pGameData = &vars[0x284];
+        g_pSavedGameData = &vars[0x378];
+        memset(&vars[0x284], 0, 0xF4);
+        data = &vars[0x284];
+        data[0x3] = 1;
+        data[0x4] = 1;
+        data[0x5] = 1;
+        data[0x93] = 1;
+        data[0x94] = 1;
+        data[0x95] = 1;
+        data[0x21] = 1;
+        data[0x26] = 1;
+        data[0x34] = 1;
+        data[0x35] = 1;
+        data[0x36] = 1;
+        data[0x37] = 1;
+        data[0x3E] = 1;
+        data[0x3F] = 1;
+        data[0x40] = 1;
+        data[0x41] = 1;
+        data[0x48] = 1;
+        data[0xAA] = 1;
+        data[0xAB] = 1;
+        data[0xAE] = 1;
+        break;
+    case 1:
+        g_gameInfo[1].unk14 = 0xE830;
+        g_gameInfo[1].unk18 = 0x1CDC;
+        g_pGameData = &vars[0xC74];
+        g_pSavedGameData = g_DDRsavedGameData;
+        memset(&vars[0xC74], 0, 0x1CDC);
+        data = &vars[0xC74];
+        data[0] = 1;
+        data[0x14] = 1;
+        GameSettings_SetCodeVariable(0x6A, 0xA, 1);
+        GameSettings_SetCodeVariable(0x6B, 0xA, 1);
+        break;
+    }
 }
 
 #pragma push
