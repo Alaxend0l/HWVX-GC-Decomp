@@ -380,8 +380,8 @@ void *DecodedAudioBufferMessage[3];
 THPPlayer ActivePlayer;
 u8 UsedTextureSetQueue_8036EC78[0x20];
 void *UsedTextureSetMessage_8036EC98[3];
-s32 WorkBuffer_8036ECC0[16] __attribute__((aligned(32)));
 u8 PrepareReadyQueue_8036ED00[0x20];
+s32 WorkBuffer_8036ECC0[16] __attribute__((aligned(32)));
 
 extern s32 __float_nan[];
 extern s32 __float_huge[];
@@ -9438,6 +9438,101 @@ BOOL THPPlayerSetBuffer(u8 *buffer) {
 void PrepareReady(void *arg0) {
     extern u8 PrepareReadyQueue_8036ED00[0x20];
     OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
+}
+
+BOOL THPPlayerPrepare(s32 frameNum, u8 playFlag) {
+    extern u8 PrepareReadyMessage_803C7760[];
+    void PlayControl(u32 retraceCount);
+    s32 DVDReadPrio(void *fileInfo, void *addr, s32 length, s32 offset, s32 prio);
+    void CreateVideoDecodeThread(s32 priority, u8 *ptr);
+    void CreateAudioDecodeThread(s32 priority, u8 *ptr);
+    void CreateReadThread(s32 priority);
+    void PushFreeReadBuffer(void *buffer);
+    void PushFreeTextureSet(void *buffer);
+    void PushFreeAudioBuffer(void *buffer);
+    void VideoDecodeThreadStart(void);
+    void AudioDecodeThreadStart(void);
+    void ReadThreadStart(void);
+    void *VISetPostRetraceCallback(void *callback);
+    void *msg;
+    u8 *ptr;
+    s32 i;
+
+    if (ActivePlayer.open && ActivePlayer.state == 0) {
+        if (frameNum > 0) {
+            if (*(u32 *)&ActivePlayer.unk5C[0x60 - 0x5C] == 0) {
+                return FALSE;
+            }
+            if (ActivePlayer.numFrames > frameNum) {
+                if (DVDReadPrio(ActivePlayer.fileInfo, WorkBuffer_8036ECC0, 0x20,
+                                *(u32 *)&ActivePlayer.unk5C[0x60 - 0x5C] + (frameNum - 1) * 4, 2) < 0) {
+                    return FALSE;
+                }
+                *(s32 *)ActivePlayer.unkB0 = *(s32 *)&ActivePlayer.unk5C[0x64 - 0x5C] + WorkBuffer_8036ECC0[0];
+                ActivePlayer.initReadSize = WorkBuffer_8036ECC0[1] - WorkBuffer_8036ECC0[0];
+                ActivePlayer.initReadFrame = frameNum;
+            } else {
+                return FALSE;
+            }
+        } else {
+            *(s32 *)ActivePlayer.unkB0 = *(s32 *)&ActivePlayer.unk5C[0x64 - 0x5C];
+            ActivePlayer.initReadSize = *(s32 *)ActivePlayer.unk54;
+            ActivePlayer.initReadFrame = frameNum;
+        }
+        ActivePlayer.playFlag = playFlag;
+        ActivePlayer.videoDecodeCount = 0;
+        if (ActivePlayer.onMemory) {
+            if (DVDReadPrio(ActivePlayer.fileInfo, ActivePlayer.movieData, ActivePlayer.movieDataSize,
+                            *(s32 *)&ActivePlayer.unk5C[0x64 - 0x5C], 2) < 0) {
+                return FALSE;
+            }
+            ptr = ActivePlayer.movieData + *(s32 *)ActivePlayer.unkB0 - *(s32 *)&ActivePlayer.unk5C[0x64 - 0x5C];
+            CreateVideoDecodeThread(20, ptr);
+            if (ActivePlayer.audioExist) {
+                CreateAudioDecodeThread(12, ptr);
+            }
+        } else {
+            CreateVideoDecodeThread(20, NULL);
+            if (ActivePlayer.audioExist) {
+                CreateAudioDecodeThread(12, NULL);
+            }
+            CreateReadThread(8);
+        }
+        if (!ActivePlayer.onMemory) {
+            for (i = 0; i < 10; i++) {
+                PushFreeReadBuffer(&ActivePlayer.readBuffer[i]);
+            }
+        }
+        for (i = 0; i < 3; i++) {
+            PushFreeTextureSet(&ActivePlayer.textureSet[i]);
+        }
+        if (ActivePlayer.audioExist) {
+            for (i = 0; i < 3; i++) {
+                PushFreeAudioBuffer(&ActivePlayer.audioBuffer[i]);
+            }
+        }
+        OSInitMessageQueue(PrepareReadyQueue_8036ED00, PrepareReadyMessage_803C7760, 1);
+        VideoDecodeThreadStart();
+        if (ActivePlayer.audioExist) {
+            AudioDecodeThreadStart();
+        }
+        if (!ActivePlayer.onMemory) {
+            ReadThreadStart();
+        }
+        OSReceiveMessage(PrepareReadyQueue_8036ED00, &msg, 1);
+        if ((BOOL)msg == FALSE) {
+            return FALSE;
+        }
+        ActivePlayer.state = 1;
+        ActivePlayer.unk9D = 0;
+        *(s32 *)&ActivePlayer.unkD4[0x8] = 0;
+        *(s32 *)&ActivePlayer.unkD4[0xC] = 0;
+        *(s32 *)&ActivePlayer.unkD4[0x0] = 0;
+        *(s32 *)&ActivePlayer.unkD4[0x4] = 0;
+        OldVIPostCallback_803C775C = VISetPostRetraceCallback(PlayControl);
+        return TRUE;
+    }
+    return FALSE;
 }
 
 BOOL THPPlayerPlay(void) {
