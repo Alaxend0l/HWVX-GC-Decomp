@@ -21953,23 +21953,39 @@ s32 EXIDeselect(s32 chan) {
     return 1;
 }
 
+typedef struct EXIControl {
+    void (*exiCallback)(s32 chan, void *context);
+    void (*tcCallback)(s32 chan, void *context);
+    void (*extCallback)(s32 chan, void *context);
+    u32 state;
+    s32 immLen;
+    u8 *immBuf;
+    u32 dev;
+    u32 id;
+    s32 idTime;
+    s32 items;
+    u8 queue[0x40 - 0x28];
+} EXIControl;
+
+volatile u32 __EXIRegs[15] : 0xCC006800;
+
 static inline BOOL CompleteTransfer(s32 chan) {
     extern u8 Ecb_80309980[3][0x40];
-    u8 *exi = Ecb_80309980[chan];
+    EXIControl *exi = (EXIControl *)Ecb_80309980[chan];
     u8 *buf;
     u32 data;
     s32 i;
     s32 len;
 
-    if (*(u32 *)(exi + 0xC) & 3) {
-        if ((*(u32 *)(exi + 0xC) & 2) && (len = *(s32 *)(exi + 0x10)) != 0) {
-            buf = *(u8 **)(exi + 0x14);
-            data = ((volatile u32 *)0xCC006800)[chan * 5 + 4];
+    if (exi->state & 3) {
+        if ((exi->state & 2) && (len = exi->immLen) != 0) {
+            buf = exi->immBuf;
+            data = __EXIRegs[chan * 5 + 4];
             for (i = 0; i < len; i++) {
                 *buf++ = (u8)(data >> ((3 - i) * 8));
             }
         }
-        *(u32 *)(exi + 0xC) &= ~3;
+        exi->state &= ~3;
         return TRUE;
     }
     return FALSE;
