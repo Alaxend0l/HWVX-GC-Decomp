@@ -585,12 +585,12 @@ typedef struct CARDControl {
     u16 startBlock;
     u8 unkC0[0xC4 - 0xC0];
     CARDCallback extCallback;
-    u8 unkC8[0xCC - 0xC8];
+    CARDCallback txCallback;
     CARDCallback exiCallback;
     CARDCallback apiCallback;
     CARDCallback xferCallback;
     CARDCallback eraseCallback;
-    u8 unkDC[0xE0 - 0xDC];
+    CARDCallback unlockCallback;
     u8 alarm[0x28];
     u8 unk108[0x110 - 0x108];
 } CARDControl;
@@ -11176,6 +11176,40 @@ void AlarmHandlerForTimeout(void *alarm, void *context) {
     }
     OSClearContext(tmpContext);
     OSSetCurrentContext(context);
+}
+
+void Read(void *addr, u32 length, u32 offset, void *callback) {
+    extern void *Callback_803C72B0;
+    extern s32 StopAtNextInt_803C72A8;
+    extern s32 LastCommandWasRead_803C72E8;
+    extern s64 LastReadIssued_803C72E0;
+    extern u32 LastLength_803C72AC;
+    extern s32 AlarmForTimeout_802EF8C8[10];
+    s64 __OSGetSystemTime(void);
+    void OSSetAlarm(void *alarm, s64 tick, void *handler);
+    void AlarmHandlerForTimeout(void *alarm, void *context);
+    s64 timeout;
+
+    StopAtNextInt_803C72A8 = 0;
+    Callback_803C72B0 = callback;
+    LastCommandWasRead_803C72E8 = 1;
+    LastReadIssued_803C72E0 = __OSGetSystemTime();
+    ((volatile u32 *)0xCC006000)[2] = 0xA8000000;
+    ((volatile u32 *)0xCC006000)[3] = offset >> 2;
+    ((volatile u32 *)0xCC006000)[4] = length;
+    ((volatile u32 *)0xCC006000)[5] = (u32)addr;
+    ((volatile u32 *)0xCC006000)[6] = length;
+    LastLength_803C72AC = length;
+    ((volatile u32 *)0xCC006000)[7] = 3;
+    if (length > 0xA00000) {
+        timeout = (*(u32 *)0x800000F8 / 4) * 20;
+        OSCreateAlarm(AlarmForTimeout_802EF8C8);
+        OSSetAlarm(AlarmForTimeout_802EF8C8, timeout, AlarmHandlerForTimeout);
+    } else {
+        timeout = (*(u32 *)0x800000F8 / 4) * 10;
+        OSCreateAlarm(AlarmForTimeout_802EF8C8);
+        OSSetAlarm(AlarmForTimeout_802EF8C8, timeout, AlarmHandlerForTimeout);
+    }
 }
 
 void SeekTwiceBeforeRead(void *addr, u32 length, u32 offset, void *callback) {
