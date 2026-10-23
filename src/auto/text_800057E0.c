@@ -18935,6 +18935,43 @@ s32 GetTRKConnected(void) {
     return IsTRKConnected_8030B440.difficulty;
 }
 
+#pragma push
+#pragma auto_inline off
+#pragma push
+#pragma auto_inline off
+s32 HandleCloseFileSupportRequest(u32 fileHandle, u8 *ioResult) {
+    s32 TRKGetFreeBuffer(s32 *msgID, TRKBuffer **outMsg);
+    s32 TRKRequestSend(TRKBuffer *msgBuf, s32 *bufferId, u32 p1, u32 p2, s32 p3);
+    s32 TRKAppendBuffer1_ui32(TRKBuffer *b, u32 data);
+    s32 replyBufferId;
+    TRKBuffer *replyBuffer;
+    s32 bufferId;
+    TRKBuffer *buffer;
+    s32 error;
+
+    error = TRKGetFreeBuffer(&bufferId, &buffer);
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui8(buffer, 0xD3);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui32(buffer, fileHandle);
+    }
+    if (error == 0) {
+        *ioResult = 0;
+        error = TRKRequestSend(buffer, &replyBufferId, 3, 3, 0);
+        if (error == 0) {
+            replyBuffer = TRKGetBuffer(replyBufferId);
+            TRKSetBufferPosition(replyBuffer, 2);
+        }
+        if (error == 0) {
+            error = TRKReadBuffer1_ui8(replyBuffer, ioResult);
+        }
+        TRKReleaseBuffer(replyBufferId);
+    }
+    TRKReleaseBuffer(bufferId);
+    return error;
+}
+#pragma pop
 s32 TRKReleaseMutex(void *mutex) {
     return 0;
 }
