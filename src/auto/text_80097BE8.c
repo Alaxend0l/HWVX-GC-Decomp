@@ -4796,7 +4796,7 @@ void *PopFreeAudioBuffer(void) {
 }
 
 void PushFreeAudioBuffer(void *arg0) {
-    extern u8 FreeAudioBufferQueue_80371418[];
+    extern u8 FreeAudioBufferQueue_80371418[0x20];
     OSSendMessage(FreeAudioBufferQueue_80371418, arg0, 0);
 }
 
