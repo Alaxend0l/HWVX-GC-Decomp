@@ -10372,8 +10372,6 @@ void GXPokeAlphaUpdate(u8 update_enable) {
     __peReg[1] = reg;
 }
 
-#pragma push
-#pragma scheduling off
 void GXPokeBlendMode(s32 type, s32 src_factor, s32 dst_factor, s32 op) {
     extern volatile u16 *__peReg;
     u32 reg;
@@ -10393,7 +10391,6 @@ void GXPokeBlendMode(s32 type, s32 src_factor, s32 dst_factor, s32 op) {
     reg = (reg & 0xFFFFFF) | 0x41000000;
     __peReg[1] = reg;
 }
-#pragma pop
 
 void GXPokeColorUpdate(u8 update_enable) {
     extern volatile u16 *__peReg;
