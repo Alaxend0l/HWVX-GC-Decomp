@@ -10740,6 +10740,49 @@ void __GXSetGenMode(void) {
     *(u16 *)(gx + 2) = 0;
 }
 
+#pragma push
+#pragma peephole off
+void GXSetDispCopySrc(u16 left, u16 top, u16 wd, u16 ht) {
+    extern u8 *gx;
+    u32 *reg;
+
+    *(u32 *)(gx + 0x1E0) = 0;
+    reg = (u32 *)(gx + 0x1E0);
+    *reg = (*reg & ~0x3FF) | left;
+    reg = (u32 *)(gx + 0x1E0);
+    *reg = (*reg & ~0xFFC00) | (top << 10);
+    reg = (u32 *)(gx + 0x1E0);
+    *reg = (*reg & 0xFFFFFF) | 0x49000000;
+    *(u32 *)(gx + 0x1E4) = 0;
+    reg = (u32 *)(gx + 0x1E4);
+    *reg = (*reg & ~0x3FF) | (wd - 1);
+    reg = (u32 *)(gx + 0x1E4);
+    *reg = (*reg & ~0xFFC00) | ((ht - 1) << 10);
+    reg = (u32 *)(gx + 0x1E4);
+    *reg = (*reg & 0xFFFFFF) | 0x4A000000;
+}
+#pragma pop
+
+void GXSetTexCopySrc(u16 left, u16 top, u16 wd, u16 ht) {
+    extern u8 *gx;
+    u32 *reg;
+
+    *(u32 *)(gx + 0x1F0) = 0;
+    reg = (u32 *)(gx + 0x1F0);
+    *reg = (*reg & ~0x3FF) | left;
+    reg = (u32 *)(gx + 0x1F0);
+    *reg = (*reg & ~0xFFC00) | (top << 10);
+    reg = (u32 *)(gx + 0x1F0);
+    *reg = (*reg & 0xFFFFFF) | 0x49000000;
+    *(u32 *)(gx + 0x1F4) = 0;
+    reg = (u32 *)(gx + 0x1F4);
+    *reg = (*reg & ~0x3FF) | (wd - 1);
+    reg = (u32 *)(gx + 0x1F4);
+    *reg = (*reg & ~0xFFC00) | ((ht - 1) << 10);
+    reg = (u32 *)(gx + 0x1F4);
+    *reg = (*reg & 0xFFFFFF) | 0x4A000000;
+}
+
 void GXSetDispCopyDst(u16 wd, u16 ht) {
     extern u8 *gx;
     u16 stride;
