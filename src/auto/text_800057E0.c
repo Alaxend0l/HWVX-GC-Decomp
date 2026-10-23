@@ -10199,8 +10199,6 @@ void OSCreateAlarm(s32 *arg0) {
     *arg0 = 0;
 }
 
-#pragma push
-#pragma peephole off
 void OSCancelAlarm(void *arg0) {
     typedef struct OSAlarm {
         void *handler;
