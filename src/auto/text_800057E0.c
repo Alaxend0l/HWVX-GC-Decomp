@@ -2043,7 +2043,8 @@ void MotionState_Heartbeat(void *state, void *arg1, void *thing) {
         ms->layers[0].weight = 1.0f;
     }
     Motion_BlendHeartbeat_FPS(&ms->layers[0], 2, ms->layers[0].anim, ms->layers[0].anim->fps);
-    for (i = 1; i < 1; i++) {
+    i = 1;
+    while (i < 1) {
         rate -= 1.0f;
         ms->layers[i].weight += rate * g_fDeltaTimeSec;
         if (ms->layers[i].weight <= 0.0f) {
@@ -2051,6 +2052,7 @@ void MotionState_Heartbeat(void *state, void *arg1, void *thing) {
         } else {
             Motion_BlendHeartbeat_FPS(&ms->layers[i], 2, ms->layers[i].anim, ms->layers[i].anim->fps);
         }
+        i++;
     }
     if (arg1 != NULL) {
         MotionState_BlendTriggerEvents(state, ms->data + 0x2C, thing);
@@ -6475,6 +6477,34 @@ void Projectile_Release(void *projectile) {
     LightHolder_Delete(M2C_FIELD(projectile, s32 *, 0x134));
     M2C_FIELD(projectile, void **, 0x8C) = g_projectileVTable;
 }
+
+void Projectile_YAim(u8 *proj, Vector4 *target) {
+    void InverseXformVec(void *mtx, Vector4 *in, Vector4 *out);
+    f32 ArcTan(f32 y, f32 x);
+    u8 FloatsEqual(f32 a, f32 b, f32 eps);
+    void GenerateQuaternion(void *axis, void *q, f32 angle);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    Vector4 local;
+    Vector4 axis = {1.0f, 0.0f, 0.0f, 0.0f};
+    Vector4 q;
+    Vector4 result;
+    f32 angle;
+    f32 speed;
+
+    InverseXformVec(proj + 0x10, target, &local);
+    angle = ArcTan(local.y, local.z);
+    if (FloatsEqual(angle, 0.0f, 0.001f)) {
+        speed = MagnitudeVector(proj);
+        GenerateQuaternion(&axis, &q, -angle);
+        QuaternionMult((Vector4 *)(proj + 0x50), &q, &result);
+        *(Vector4 *)(proj + 0x50) = result;
+        QuaternionToSubMatrix(proj + 0x50, proj + 0x10);
+        ((Vector4 *)proj)->x = ((Vector4 *)(proj + 0x30))->x * speed;
+        ((Vector4 *)proj)->y = ((Vector4 *)(proj + 0x30))->y * speed;
+        ((Vector4 *)proj)->z = ((Vector4 *)(proj + 0x30))->z * speed;
+    }
+}
+
 #pragma pop
 
 #pragma pop
