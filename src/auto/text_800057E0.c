@@ -3493,15 +3493,13 @@ s8 RayHitsObjects_CameraSpecial(Vector4 *start, Vector4 *dir, f32 *t, void *info
     };
     u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, struct GridResult *results, u32 maxResults);
     s8 SegmentVsSphere(void *center, Vector4 *start, Vector4 *end, f32 radius);
+    u32 i;
+    u8 *other;
     Vector4 min;
     Vector4 max;
     Vector4 end;
     struct GridResult results[256];
     u32 count;
-    u32 i;
-    u8 *other;
-    u8 *coll;
-    f32 *box;
     f32 best;
     f32 hit;
 
@@ -3535,14 +3533,11 @@ s8 RayHitsObjects_CameraSpecial(Vector4 *start, Vector4 *dir, f32 *t, void *info
         if (*(u32 *)(other + 0x74) & 2) {
             continue;
         }
-        if (*(u8 **)(other + 0x8C) == g_destructibleVTable) {
-            coll = *(u8 **)(*(u8 **)(other + 0xC0) + 0x10);
-            if (*(u8 *)(coll + 0x10) == 0) {
-                box = *(f32 **)(coll + 0x44);
-                if ((box[4] - box[0]) * (box[6] - box[2]) < 100.0f) {
-                    continue;
-                }
-            }
+        if (*(u8 **)(other + 0x8C) == g_destructibleVTable &&
+            *(u8 *)(*(u8 **)(*(u8 **)(other + 0xC0) + 0x10) + 0x10) == 0 &&
+            (((f32 *)*(u8 **)(*(u8 **)(*(u8 **)(other + 0xC0) + 0x10) + 0x44))[4] - ((f32 *)*(u8 **)(*(u8 **)(*(u8 **)(other + 0xC0) + 0x10) + 0x44))[0]) *
+            (((f32 *)*(u8 **)(*(u8 **)(*(u8 **)(other + 0xC0) + 0x10) + 0x44))[6] - ((f32 *)*(u8 **)(*(u8 **)(*(u8 **)(other + 0xC0) + 0x10) + 0x44))[2]) < 100.0f) {
+            continue;
         }
         if (SegmentVsSphere(other + 0x40, start, &end, *(f32 *)(other + 0x70))) {
             hit = (*(f32 (**)(void *, Vector4 *, Vector4 *, void *, f32))(*(u8 **)(other + 0x8C) + 0x38))(other, start, dir, info, best);
