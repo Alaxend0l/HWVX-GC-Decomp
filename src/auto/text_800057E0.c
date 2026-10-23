@@ -183,6 +183,16 @@ typedef struct SharedSlaveHolder {
 
 extern SharedSlaveHolder g_aSharedSlaveHolder[64];
 
+typedef struct ThingManagerDARYL {
+    u8 unk0[0x6AD10];
+    u8 looker[0xFE60];
+    void *activeList;
+    void *freeList[19];
+} ThingManagerDARYL;
+
+extern ThingManagerDARYL g_thingManager_DARYL;
+#define THINGMANAGERDARYL_DEFINED
+
 typedef struct NavData {
     u8 *nodes;
     u32 numNodes;
