@@ -425,9 +425,9 @@ typedef struct CARDControl {
 extern CARDControl __CARDBlock[2];
 
 typedef struct DSPTaskInfo {
-    volatile u32 state;
-    volatile u32 priority;
-    volatile u32 flags;
+    u32 state;
+    u32 priority;
+    u32 flags;
     u8 unkC[0x38 - 0xC];
     struct DSPTaskInfo *next;
     struct DSPTaskInfo *prev;
@@ -6787,6 +6787,12 @@ void __DSP_remove_task(DSPTaskInfo *task) {
 
 void __CARDDefaultApiCallback(void) {
 
+}
+
+void __CARDSyncCallback(s32 chan, s32 result) {
+    void OSWakeupThread(void *queue);
+
+    OSWakeupThread((u8 *)&__CARDBlock[chan] + 0x8C);
 }
 
 s32 EXILock(s32 chan, u32 dev, void *unlockedCallback);
