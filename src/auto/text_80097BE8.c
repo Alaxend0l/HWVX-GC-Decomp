@@ -380,6 +380,8 @@ void *DecodedAudioBufferMessage[3];
 THPPlayer ActivePlayer;
 u8 UsedTextureSetQueue_8036EC78[0x20];
 void *UsedTextureSetMessage_8036EC98[3];
+s32 WorkBuffer_8036ECC0[16] __attribute__((aligned(32)));
+u8 PrepareReadyQueue_8036ED00[0x20];
 
 extern s32 __float_nan[];
 extern s32 __float_huge[];
