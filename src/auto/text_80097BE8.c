@@ -6872,6 +6872,61 @@ void Render_StateSetScissor(void) {
 
 #pragma pop
 
+void Render_BeginScene(void) {
+    void GXInvalidateVtxCache(void);
+    void GXInvalidateTexAll(void);
+    void GXSetCopyClear(GXColor, u32);
+    void GXSetColorUpdate(u8 enable);
+    void GXSetAlphaUpdate(u8 enable);
+    void DisplayList_Init(void);
+    void Render_StateBlendMode(u32 mode);
+    void Gfx_StateTextureBlendMode(s32 arg0);
+    void Render_StateAlphaBlendEnable(s32 enable);
+    void Render_StateCullMode(s32 mode);
+    void Render_StateZEnable(s32 enable);
+    void Render_StateZWriteEnable(s32 enable);
+    void Render_StateFogEnable(s32 enable);
+    extern GXColor m_clearColor_803C76F4;
+    extern u8 g_CurrentViews;
+    extern s32 g_debugTriCount;
+    extern u32 *m_vertexBuffer;
+    extern u32 m_VtxDescFlag;
+    f32 top;
+    f32 wd;
+    f32 ht;
+    u32 stop;
+    u32 swd;
+    u32 sht;
+
+    Gfx_SetProjectionMatrix(*(f32 *)((u8 *)GetRenderWindow() + 0x270));
+    ht = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x284);
+    wd = *(u32 *)((u8 *)GetRenderWindow() + 0x280);
+    top = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x2B8);
+    GXSetViewport(*(u32 *)((u8 *)GetRenderWindow() + 0x2B0), top, wd, ht, 0.0f, 1.0f);
+    sht = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x284);
+    swd = (f32)*(u32 *)((u8 *)GetRenderWindow() + 0x280);
+    stop = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x2B8);
+    GXSetScissor(*(u32 *)((u8 *)GetRenderWindow() + 0x2B0), stop, swd, sht);
+    GXInvalidateVtxCache();
+    GXInvalidateTexAll();
+    GXSetCopyClear(m_clearColor_803C76F4, 0xFFFFFF);
+    Render_StateBlendMode(1);
+    Gfx_StateTextureBlendMode(2);
+    Render_StateAlphaBlendEnable(0);
+    Render_StateCullMode(1);
+    Render_StateZEnable(1);
+    Render_StateZWriteEnable(1);
+    if (g_CurrentViews != 1) {
+        DisplayList_Init();
+    }
+    g_debugTriCount = 0;
+    Render_StateFogEnable(1);
+    m_vertexBuffer = 0;
+    m_VtxDescFlag = 0;
+    GXSetColorUpdate(1);
+    GXSetAlphaUpdate(0);
+}
+
 void Render_FlipBuffers(void) {
     void PrintDVDMessage(void);
     void GXSetColorUpdate(u8 enable);
