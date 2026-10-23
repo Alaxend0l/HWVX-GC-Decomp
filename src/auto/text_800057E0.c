@@ -6901,15 +6901,11 @@ static void SamplingHandler(s16 interrupt, void *context) {
     }
 }
 
-#pragma push
-#pragma optimization_level 1
 s32 EXIClearInterrupts(s32 chan, s32 exi, s32 tc, s32 ext) {
-    volatile u32 *reg;
     u32 cpr;
     u32 prev;
 
-    reg = (volatile u32 *)0xCC006800 + chan * 5;
-    prev = cpr = *reg;
+    prev = cpr = ((volatile u32 *)0xCC006800)[chan * 5];
     cpr &= 0x7F5;
     if (exi) {
         cpr |= 2;
@@ -6920,10 +6916,9 @@ s32 EXIClearInterrupts(s32 chan, s32 exi, s32 tc, s32 ext) {
     if (ext) {
         cpr |= 0x800;
     }
-    *reg = cpr;
+    ((volatile u32 *)0xCC006800)[chan * 5] = cpr;
     return prev;
 }
-#pragma pop
 
 s32 EXIProbeEx(s32 chan) {
     if (EXIProbe(chan)) {
