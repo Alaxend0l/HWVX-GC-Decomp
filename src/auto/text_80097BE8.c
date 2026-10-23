@@ -520,6 +520,7 @@ extern s32 g_bGammaInitialized_803C794C;
 
 void SimThread_Init(VDevice *dev, VDevice *owner);
 void VDevice_RecalcGammaTable(void);
+extern s8 g_iGammaLookup_8037BAF8[129];
 s32 VDevice_Shutdown(VDevice *dev);
 void VDevice_Init(VDevice *dev);
 s32 VDevice_StartEffect(VDevice *dev, u32 handle);
