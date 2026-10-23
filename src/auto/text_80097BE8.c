@@ -664,6 +664,48 @@ typedef struct Effect {
     s32 deadbandHigh;
 } Effect;
 
+s32 Effect_PerformEnvelope(Effect *effect, EffectEnvelope *env, s32 magnitude);
+extern s16 g_iQuarterSineTable_8037BB7C[0x40];
+extern s16 g_iRampUpTable_8037BBFC[0x40];
+
+static inline s32 Effect_GetPeriodicLevel(Effect *effect, u32 dt) {
+    s16 magnitude;
+    s32 wave;
+    u32 a;
+
+    effect->phase += (dt << 24) / effect->params.periodic.period;
+    if (effect->phase >= 0x1000000) {
+        effect->phase -= effect->phase & 0xFF000000;
+    }
+    magnitude = Effect_PerformEnvelope(effect, &effect->params.periodic.envelope, effect->params.periodic.magnitude);
+    switch (effect->type) {
+    case 2:
+        wave = Effect_WaveLookup(g_iQuarterSineTable_8037BB7C, (effect->phase >> 16) & 0xFF);
+        break;
+    case 3:
+        wave = -0x400;
+        if ((effect->phase >> 16) < 0x80) {
+            wave = 0x400;
+        }
+        break;
+    case 4:
+        wave = Effect_WaveLookup(g_iRampUpTable_8037BBFC, (effect->phase >> 16) & 0xFF);
+        break;
+    case 5:
+        a = (effect->phase >> 16) & 0xFF;
+        wave = g_iRampUpTable_8037BBFC[a >> 2];
+        break;
+    case 6:
+        a = (effect->phase >> 16) & 0xFF;
+        wave = g_iRampUpTable_8037BBFC[(0xFF - a) >> 2];
+        break;
+    default:
+        wave = 0;
+        break;
+    }
+    return Effect_MulDiv(wave, magnitude, 0x400) + effect->params.periodic.offset;
+}
+
 typedef struct SimThread {
     struct VDevice *owner;
     u32 lastTick;
@@ -9333,11 +9375,11 @@ void Effect_PolarToRect(s32 magnitude, s32 angle, s32 *out);
 s32 Effect_UpdateSpring(Effect *effect, EffectCondition *cond);
 s32 Effect_UpdateDamper(Effect *effect, EffectCondition *cond);
 s32 Effect_Update(Effect *effect, u32 dt) {
-    EffectCondition *cond;
-    u32 a;
-    s32 wave;
-    s16 magnitude;
     s32 active;
+    s16 magnitude;
+    s32 wave;
+    u32 a;
+    EffectCondition *cond;
 
     if (effect->flags & 1) {
         if (effect->delay != 0) {
@@ -9364,30 +9406,30 @@ s32 Effect_Update(Effect *effect, u32 dt) {
         } else if (effect->flags & 0x20) {
             Effect_PolarToRect(effect->params.ramp.start + Effect_MulDiv(effect->params.ramp.end - effect->params.ramp.start, effect->elapsed, effect->duration), effect->params.ramp.angle, &effect->force);
         } else if (effect->flags & 0x40) {
-            *(u32 *)&effect->deadbandLow += (dt << 24) / effect->params.periodic.period;
-            if (*(u32 *)&effect->deadbandLow >= 0x1000000) {
-                *(u32 *)&effect->deadbandLow -= *(u32 *)&effect->deadbandLow & 0xFF000000;
+            effect->phase = (dt << 24) / effect->params.periodic.period + effect->phase;
+            if (effect->phase >= 0x1000000) {
+                effect->phase -= effect->phase & 0xFF000000;
             }
             magnitude = Effect_PerformEnvelope(effect, &effect->params.periodic.envelope, effect->params.periodic.magnitude);
             switch (effect->type) {
             case 2:
-                wave = Effect_WaveLookup(g_iQuarterSineTable_8037BB7C, (*(u32 *)&effect->deadbandLow >> 16) & 0xFF);
+                wave = Effect_WaveLookup(g_iQuarterSineTable_8037BB7C, (effect->phase >> 16) & 0xFF);
                 break;
             case 3:
                 wave = -0x400;
-                if ((*(u32 *)&effect->deadbandLow >> 16) < 0x80) {
+                if ((effect->phase >> 16) < 0x80) {
                     wave = 0x400;
                 }
                 break;
             case 4:
-                wave = Effect_WaveLookup(g_iRampUpTable_8037BBFC, (*(u32 *)&effect->deadbandLow >> 16) & 0xFF);
+                wave = Effect_WaveLookup(g_iRampUpTable_8037BBFC, (effect->phase >> 16) & 0xFF);
                 break;
             case 5:
-                a = (*(u32 *)&effect->deadbandLow >> 16) & 0xFF;
+                a = (effect->phase >> 16) & 0xFF;
                 wave = g_iRampUpTable_8037BBFC[a >> 2];
                 break;
             case 6:
-                a = (*(u32 *)&effect->deadbandLow >> 16) & 0xFF;
+                a = (effect->phase >> 16) & 0xFF;
                 wave = g_iRampUpTable_8037BBFC[(0xFF - a) >> 2];
                 break;
             default:
