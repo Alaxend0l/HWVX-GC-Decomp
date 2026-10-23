@@ -5760,18 +5760,19 @@ void Gfx_TransformVector(Vector *in, f32 *out) {
 void Render_Print(void) {
     extern u8 g_screenText[0xA00];
     extern GfxState g_state;
-    u32 FontManager_Print(char *str, u16 font, f32 x, f32 y);
-    char buf[88];
+    u32 FontManager_Print(char *str, f32 x, f32 y, u16 font);
+    f32 y;
     s32 i;
     s32 j;
-    f32 y = 10.0f;
+    char buf[88];
 
+    y = 10.0f;
     for (i = 0; i < 32; i++) {
         for (j = 0; j < 80; j++) {
             buf[j] = g_screenText[i * 80 + j];
         }
         buf[j] = 0;
-        y += FontManager_Print(buf, (u16)g_state.debugFont, 10.0f, y);
+        y += FontManager_Print(buf, 10.0f, y, g_state.debugFont);
     }
 }
 #pragma pop
