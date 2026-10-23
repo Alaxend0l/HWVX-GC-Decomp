@@ -14778,13 +14778,3 @@ void *__va_arg(void *ap, s32 type) {
     }
     return addr;
 }
-static inline void SoundSequence_StopAllWithId(u32 id) {
-    extern u8 g_soundSeqVTable[];
-    void *thing;
-
-    for (thing = g_thingManager_DARYL.activeList; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
-        if (M2C_FIELD(thing, u8 **, 0x8C) == g_soundSeqVTable && M2C_FIELD(thing, u32 *, 0xB0) == id) {
-            ((void (*)(void *))(M2C_FIELD(thing, void ***, 0x8C))[1])(thing);
-        }
-    }
-}
