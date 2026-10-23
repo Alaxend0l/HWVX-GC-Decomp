@@ -3829,6 +3829,21 @@ s32 VertexColorSeqManager_GetLightIndex(void *light) {
     return -1;
 }
 
+void VertexColorSeqManager_GetLightColor(u32 index, u32 *color) {
+    typedef struct VertexColorTile {
+        u8 *light;
+        u8 key[0x24];
+        u32 color;
+        u8 unk2C[0x8];
+    } VertexColorTile;
+    extern VertexColorTile g_VertexColorTiles[64];
+    extern s32 g_iTotalVertexColorTiles;
+
+    if (index < g_iTotalVertexColorTiles) {
+        *color = g_VertexColorTiles[index].color;
+    }
+}
+
 void VolumeManager_Create(void) {
     extern s32 g_VolumeHolder;
     g_VolumeHolder = 0;
