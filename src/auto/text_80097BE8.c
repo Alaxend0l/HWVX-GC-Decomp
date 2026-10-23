@@ -7498,6 +7498,20 @@ u32 VDevice_GetFreeEffect(VDevice *dev) {
     return handle;
 }
 
+#pragma push
+#pragma dont_inline on
+void Effect_Init(struct Effect *effect) {
+    s32 i;
+
+    zero_mem_aligned(effect, 0x40);
+    if (g_bWaveTablesInitialized_803C7958 == 0) {
+        for (i = 0; i < 0x40; i++) {
+            g_iQuarterSineTable_8037BB7C[i] = 1024.0f * (f32)sin((3.1415927f * (f32)i) / 128.0f);
+            g_iRampUpTable_8037BBFC[i] = (i * 0x400) / 63;
+        }
+        g_bWaveTablesInitialized_803C7958 = 1;
+    }
+}
 #pragma pop
 
 #pragma pop
