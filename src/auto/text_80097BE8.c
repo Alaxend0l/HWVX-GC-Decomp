@@ -7374,7 +7374,6 @@ static inline s32 MaxS32(s32 a, s32 b) {
 #pragma push
 #pragma optimize_for_size on
 #pragma use_lmw_stmw on
-#pragma dont_inline on
 void HandleTriggers(u8 *cur, SISteeringStatus *status, SISteeringStatus *calib) {
     s32 diff;
 
