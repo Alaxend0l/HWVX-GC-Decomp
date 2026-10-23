@@ -4187,7 +4187,6 @@ s32 DBGReadMailbox(u32 *mailbox) {
 #pragma use_lmw_stmw on
 #pragma scheduling 603
 BOOL DBGEXIImm(void *buffer, s32 bytecounter, u32 write) {
-    volatile u32 *regs = (volatile u32 *)0xCC000000;
     volatile u32 *cr;
     u8 *tempPointer;
     u32 writeOutValue;
@@ -4202,7 +4201,7 @@ BOOL DBGEXIImm(void *buffer, s32 bytecounter, u32 write) {
         }
         __EXIRegs[14] = writeOutValue;
     }
-    cr = (volatile u32 *)((u8 *)regs + 0x6800);
+    cr = __EXIRegs;
     *(cr += 13) = 1 | write << 2 | (bytecounter - 1) << 4;
     while (*cr & 1) {
     }
@@ -8494,6 +8493,62 @@ void Render_Print(void) {
         y += FontManager_Print(buf, 10.0f, y, g_state.debugFont);
     }
 }
+
+static inline void FontManager_Vertex(f32 x, f32 y, GXColor *color, f32 s, f32 t) {
+    GXPosition2f32(x, y);
+    GXColor4u8(color->r, color->g, color->b, color->a);
+    GXTexCoord2f32(s, t);
+}
+
+u32 FontManager_Print(char *str, s32 id, f32 x, f32 y) {
+    extern FontManager g_fontManager;
+    extern GXColor g_textcolor;
+    extern s32 g_debugTriCount;
+    void Render_SetTextureHandle(u16 id);
+    void Set2DRectVtxDesc(void);
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    u32 strlen(const char *);
+    Font *font = &g_fontManager.fonts[id];
+    u32 count = 0;
+    u32 i;
+    u8 c;
+
+    Render_SetTextureHandle(font->texture);
+    Set2DRectVtxDesc();
+    for (i = 0; i < strlen(str); i++) {
+        if (str[i] != ' ') {
+            count++;
+        }
+    }
+    GXBegin(0x80, 0, count * 4);
+    g_debugTriCount += count * 2;
+    for (i = 0; i < strlen(str); i++) {
+        c = str[i];
+        if (c >= 'a' && c <= 'z') {
+            c -= 0x20;
+        }
+        if (c != ' ') {
+            f32 y1 = y + font->height;
+            f32 x1 = 0.6f * (u8)font->chars[c].spacingX + x;
+
+            GXPosition2f32(x, y);
+            GXColor4u8(g_textcolor.r, g_textcolor.g, g_textcolor.b, g_textcolor.a);
+            GXTexCoord2f32(font->chars[c].unk0, font->chars[c].unk4);
+            GXPosition2f32(x, y1);
+            GXColor4u8(g_textcolor.r, g_textcolor.g, g_textcolor.b, g_textcolor.a);
+            GXTexCoord2f32(font->chars[c].unk0, font->chars[c].unkC);
+            GXPosition2f32(x1, y1);
+            GXColor4u8(g_textcolor.r, g_textcolor.g, g_textcolor.b, g_textcolor.a);
+            GXTexCoord2f32(font->chars[c].unk8, font->chars[c].unkC);
+            GXPosition2f32(x1, y);
+            GXColor4u8(g_textcolor.r, g_textcolor.g, g_textcolor.b, g_textcolor.a);
+            GXTexCoord2f32(font->chars[c].unk8, font->chars[c].unk4);
+        }
+        x += 0.6f * (u8)font->chars[' '].spacingX - 2.0f;
+    }
+    return font->height;
+}
+
 #pragma pop
 
 void Render_DrawPointSprites(void) {
