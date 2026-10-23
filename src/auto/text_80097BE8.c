@@ -9436,7 +9436,6 @@ BOOL THPPlayerSetBuffer(u8 *buffer) {
 #pragma pop
 
 void PrepareReady(void *arg0) {
-    extern u8 PrepareReadyQueue_8036ED00[0x20];
     OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
 }
 
@@ -9456,9 +9455,9 @@ BOOL THPPlayerPrepare(s32 frameNum, u8 playFlag) {
     void AudioDecodeThreadStart(void);
     void ReadThreadStart(void);
     void *VISetPostRetraceCallback(void *callback);
-    void *msg;
-    u8 *ptr;
     s32 i;
+    u8 *ptr;
+    void *msg;
 
     if (ActivePlayer.open && ActivePlayer.state == 0) {
         if (frameNum > 0) {
