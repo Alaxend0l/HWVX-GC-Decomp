@@ -9352,33 +9352,7 @@ typedef struct SmartProjectile {
     SmartTarget *target;
 } SmartProjectile;
 
-void SmartProjectileA_AquireTarget(void *arg0) {
-    typedef struct SmartParams {
-        u8 unk0;
-        u8 invertZ;
-        u8 pad2[0x1C - 0x2];
-        f32 fov;
-        f32 minRange;
-    } SmartParams;
-    typedef struct ProjInfo {
-        u8 pad0[0xA8];
-        SmartParams *params;
-    } ProjInfo;
-    typedef struct Target {
-        u8 pad0[0x40];
-        Vector4 pos;
-        u8 pad50[0x8C - 0x50];
-        void **vtable;
-    } Target;
-    typedef struct Proj {
-        u8 pad0[0x10];
-        u8 mtx[0x30];
-        Vector4 pos;
-        u8 pad50[0x120 - 0x50];
-        ProjInfo *info;
-        u8 pad124[0x14C - 0x124];
-        Target *target;
-    } Proj;
+void SmartProjectileA_AquireTarget(SmartProjectile *proj) {
     s32 GetAllTargets(void **targets);
     s32 Thing_GetSource(void *arg0);
     f32 PSVECSquareDistance(Vector4 *a, Vector4 *b);
@@ -9388,26 +9362,25 @@ void SmartProjectileA_AquireTarget(void *arg0) {
     double atan2(double y, double x);
     f32 t;
     Vector4 local;
-    Target *targets[32];
-    Target *source;
+    SmartTarget *targets[32];
+    SmartTarget *source;
     u32 count;
     u32 i;
     u32 bestIdx;
-    Proj *proj = (Proj *)arg0;
     Vector4 *pos;
     f32 best;
     f32 dist;
     f32 angle;
 
     count = GetAllTargets((void **)targets);
-    source = (Target *)Thing_GetSource(proj);
+    source = (SmartTarget *)Thing_GetSource(proj);
     best = 180.0f;
     bestIdx = count;
     for (i = 0; i < count; i++) {
         dist = PSVECSquareDistance(&proj->pos, &targets[i]->pos);
-        pos = ((Vector4 *(*)(Target *))targets[i]->vtable[0x40 / 4])(targets[i]);
+        pos = ((Vector4 *(*)(SmartTarget *))targets[i]->vtable[0x40 / 4])(targets[i]);
         t = 1.0f;
-        if (targets[i] != (Target *)proj && targets[i] != source &&
+        if (targets[i] != (SmartTarget *)proj && targets[i] != source &&
             !(dist < proj->info->params->minRange * proj->info->params->minRange) &&
             !RayHitsTerrain(&proj->pos, pos, &t, NULL)) {
             InverseXformVec(proj->mtx, pos, &local);
