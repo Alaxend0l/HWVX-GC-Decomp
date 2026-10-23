@@ -2477,13 +2477,13 @@ void Camera_PrepareForRender(u8 *camera) {
     mtx.m[0][2] = ((Vector4 *)(camera + 0x80))->x;
     mtx.m[1][2] = ((Vector4 *)(camera + 0x80))->y;
     mtx.m[2][2] = ((Vector4 *)(camera + 0x80))->z;
+    mtx.m[3][0] = -(mtx.m[0][0] * ((Vector4 *)(camera + 0x60))->x + mtx.m[1][0] * ((Vector4 *)(camera + 0x60))->y + mtx.m[2][0] * ((Vector4 *)(camera + 0x60))->z);
+    mtx.m[3][1] = -(mtx.m[0][1] * ((Vector4 *)(camera + 0x60))->x + mtx.m[1][1] * ((Vector4 *)(camera + 0x60))->y + mtx.m[2][1] * ((Vector4 *)(camera + 0x60))->z);
+    mtx.m[3][2] = -(mtx.m[0][2] * ((Vector4 *)(camera + 0x60))->x + mtx.m[1][2] * ((Vector4 *)(camera + 0x60))->y + mtx.m[2][2] * ((Vector4 *)(camera + 0x60))->z);
     mtx.m[2][3] = 0.0f;
     mtx.m[1][3] = 0.0f;
     mtx.m[0][3] = 0.0f;
     mtx.m[3][3] = 1.0f;
-    mtx.m[3][0] = -(mtx.m[0][0] * ((Vector4 *)(camera + 0x60))->x + mtx.m[1][0] * ((Vector4 *)(camera + 0x60))->y + mtx.m[2][0] * ((Vector4 *)(camera + 0x60))->z);
-    mtx.m[3][1] = -(mtx.m[0][1] * ((Vector4 *)(camera + 0x60))->x + mtx.m[1][1] * ((Vector4 *)(camera + 0x60))->y + mtx.m[2][1] * ((Vector4 *)(camera + 0x60))->z);
-    mtx.m[3][2] = -(mtx.m[0][2] * ((Vector4 *)(camera + 0x60))->x + mtx.m[1][2] * ((Vector4 *)(camera + 0x60))->y + mtx.m[2][2] * ((Vector4 *)(camera + 0x60))->z);
     SoundListener_Set(window, 5, camera + 0x60);
     SoundListener_Set(window, 6, camera + 0x70);
     SoundListener_Set(window, 7, &mtx);
