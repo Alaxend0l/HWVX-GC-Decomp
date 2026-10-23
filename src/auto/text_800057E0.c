@@ -4149,6 +4149,36 @@ void GSI_Init(void) {
     fn_800957D4();
 }
 
+void GSI_VehicleItemInit(void) {
+    typedef struct VehicleInterfaceData {
+        s32 unk0;
+        s32 unk4;
+        s32 unk8;
+        s32 unkC;
+        s32 unk10;
+        s32 unk14;
+        u8 unk18[0x24 - 0x18];
+        void *car;
+        u8 unk28[0x2C - 0x28];
+        u8 unk2C[8];
+        u8 unk34[0x38 - 0x34];
+    } VehicleInterfaceData;
+    extern VehicleInterfaceData g_vehicleInterfaceData[4];
+    void PlayerManager_Init(void);
+    u32 i;
+
+    for (i = 0; i < 4; i++) {
+        memset(&g_vehicleInterfaceData[i], 0, sizeof(VehicleInterfaceData));
+        g_vehicleInterfaceData[i].unk0 = -1;
+        g_vehicleInterfaceData[i].unkC = -1;
+        g_vehicleInterfaceData[i].unk4 = -1;
+        g_vehicleInterfaceData[i].unk8 = -1;
+        g_vehicleInterfaceData[i].unk14 = -1;
+        memset(g_vehicleInterfaceData[i].unk2C, 0xFF, 8);
+    }
+    PlayerManager_Init();
+}
+
 void Motion_Release(s32 arg0) {
     MotionState_Release(arg0 + 0xB0);
     Thing_Release(arg0);
