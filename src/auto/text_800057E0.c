@@ -5579,6 +5579,77 @@ void GameSettings_DetermineIfOverwritingFile(void) {
     }
 }
 
+#pragma push
+#pragma readonly_strings on
+void GameSettings_SetSaveGameName(u32 *letters) {
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    extern char g_saveFileName_80110C74[11];
+    extern u8 *g_pSavedGameData;
+    extern s32 g_saveFileCheckSum_803C6CAC;
+    extern struct {
+        u8 unk0[0xC];
+        char *fileName;
+        u8 unk10[0x8];
+        s32 index;
+    } g_gameInfo[];
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    char *device;
+    const char *name;
+    u8 *data;
+    s32 index;
+    u8 *mcp;
+    void *pack;
+    s32 handle;
+    s32 sum;
+    s32 i;
+
+    device = g_codeVariables.device;
+    for (i = 0; i < 10; i++) {
+        if (letters[i] < 26) {
+            g_saveFileName_80110C74[i] = (s8)letters[i] + 'A';
+        } else if (letters[i] < 36) {
+            g_saveFileName_80110C74[i] = letters[i] - 26 + '0';
+        } else {
+            g_saveFileName_80110C74[i] = ' ';
+        }
+    }
+    g_saveFileName_80110C74[10] = 0;
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        name = g_gameInfo[mcp[1]].fileName;
+        index = g_gameInfo[mcp[1]].index;
+    } else {
+        index = 0;
+        name = "saveFile";
+    }
+    data = g_pSavedGameData;
+    handle = File_Open(device + 0xA, name, 0, 0);
+    if (handle != -1) {
+        File_Read(handle, index * 8 + 0x15C, data);
+        File_Close(handle);
+        sum = *(s32 *)(data + 8);
+    } else {
+        sum = -1;
+    }
+    g_saveFileCheckSum_803C6CAC = sum;
+}
+#pragma pop
+
 s32 GameSettings_FormatMemoryCard(void) {
     u8 FileManager_FormatDevice(char *device);
     extern s8 g_bRefreshMC_803C6F78;
