@@ -14209,8 +14209,6 @@ s32 TRKInitializeMutex(void *mutex) {
     return 0;
 }
 
-#pragma push
-#pragma dont_inline on
 s32 TRKDoNotifyStopped(u8 cmd) {
     s32 TRKGetFreeBuffer(s32 *msgID, TRKBuffer **outMsg);
     s32 TRKRequestSend(TRKBuffer *msgBuf, s32 *bufferId, u32 p1, u32 p2, s32 p3);
@@ -14239,7 +14237,6 @@ s32 TRKDoNotifyStopped(u8 cmd) {
     }
     return err;
 }
-#pragma pop
 void TRK_fill_mem_80093658(void *dst, int val, u32 n) {
     u32 i;
     u32 v = (u8)val;
