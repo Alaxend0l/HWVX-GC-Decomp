@@ -15044,6 +15044,34 @@ BOOL SIRegisterPollingHandler(void *handler) {
     return FALSE;
 }
 
+BOOL SIUnregisterPollingHandler(void *handler) {
+    extern void *RDSTHandler_80309880[4];
+    BOOL OSDisableInterrupts(void);
+    BOOL OSRestoreInterrupts(BOOL level);
+    BOOL SIEnablePollingInterrupt(BOOL enable);
+    BOOL enabled;
+    int i;
+
+    enabled = OSDisableInterrupts();
+    for (i = 0; i < 4; ++i) {
+        if (RDSTHandler_80309880[i] == handler) {
+            RDSTHandler_80309880[i] = 0;
+            for (i = 0; i < 4; ++i) {
+                if (RDSTHandler_80309880[i] != 0) {
+                    break;
+                }
+            }
+            if (i == 4) {
+                SIEnablePollingInterrupt(FALSE);
+            }
+            OSRestoreInterrupts(enabled);
+            return TRUE;
+        }
+    }
+    OSRestoreInterrupts(enabled);
+    return FALSE;
+}
+
 void SISetCommand(s32 chan, u32 command) {
     __SIRegs[3 * chan] = command;
 }
@@ -16320,6 +16348,50 @@ s32 TRKTargetVersions(void *arg0) {
     M2C_FIELD(arg0, s8 *, 3) = 0xA;
     return 0;
 }
+
+#pragma push
+#pragma dont_inline on
+s32 TRKTargetAccessDefault(u32 firstRegister, u32 lastRegister, TRKBuffer *b, u32 *registersLengthPtr, s32 read) {
+    extern u32 gTRKExceptionStatus_800DA0A4[];
+    extern u8 gTRKCPUState[];
+    typedef struct {
+        u32 PC;
+        u32 PCInstruction;
+        u16 exceptionID;
+        u8 pad[2];
+        u8 inTRK;
+        u8 exceptionDetected;
+    } TRKExceptionStatus;
+    s32 error;
+    u32 count;
+    u32 *data;
+    TRKExceptionStatus savedException;
+
+    if (lastRegister > 0x24) {
+        return 0x701;
+    }
+
+    savedException = *(TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4;
+    ((TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4)->exceptionDetected = 0;
+
+    data = (u32 *)gTRKCPUState + firstRegister;
+    count = (lastRegister - firstRegister) + 1;
+    *registersLengthPtr = count * sizeof(u32);
+
+    if (read) {
+        error = TRKAppendBuffer_ui32(b, data, count);
+    } else {
+        error = TRKReadBuffer_ui32(b, data, count);
+    }
+
+    if (((TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4)->exceptionDetected) {
+        *registersLengthPtr = 0;
+        error = 0x702;
+    }
+    *(TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4 = savedException;
+    return error;
+}
+#pragma pop
 
 s32 fn_80093530(void) {
     return 0;
