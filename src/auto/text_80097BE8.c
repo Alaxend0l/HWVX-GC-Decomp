@@ -1350,7 +1350,6 @@ static inline void SubBlock_set_free(SubBlock *ths) {
 }
 
 #pragma push
-#pragma peephole off
 void Block_link(Block *ths, SubBlock *sb) {
     SubBlock **st;
 
