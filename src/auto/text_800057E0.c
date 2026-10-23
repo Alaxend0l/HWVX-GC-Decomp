@@ -4236,6 +4236,18 @@ s32 TriggerInterfaceEnd(void) {
     return 1;
 }
 
+s32 TriggerVehicleKilled(u32 *data) {
+    u32 i;
+
+    for (i = 0; i < data[0]; i++) {
+        u8 *vehicle = M2C_FIELD((data + 1)[i], u8 **, 0x28);
+        if (vehicle != NULL && (M2C_FIELD(vehicle, s32 *, 0x74) & 2)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 s32 TriggerDesructibleKilled(u32 *data) {
     u32 i;
 
