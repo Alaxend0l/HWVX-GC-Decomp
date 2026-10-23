@@ -3029,6 +3029,36 @@ void InterfaceManager_SetPlayerMessage(void *message, u32 player) {
     }
 }
 
+s32 ActionEndInterface(void *action) {
+    extern u8 g_interface[][0x170];
+    extern void *g_pInterfaceToEnd;
+    void InterfaceManager_SetLoadState(void *iface, s32 state);
+    u32 i;
+    s8 found;
+
+    if (M2C_FIELD(action, u32 *, 0) == 0xFFFFFFFF) {
+        for (i = 0; i < 0x12; i++) {
+            if (*(void **)g_interface[i] != NULL && g_interface[i] != NULL) {
+                InterfaceManager_SetLoadState(g_interface[i], 1);
+            }
+        }
+    } else {
+        found = 0;
+        for (i = 0; i < 0x12; i++) {
+            if (*(void **)g_interface[i] != NULL && M2C_FIELD(g_interface[i], void **, 0x20) == M2C_FIELD(action, void **, 4)) {
+                if (g_interface[i] != NULL) {
+                    InterfaceManager_SetLoadState(g_interface[i], 1);
+                }
+                found = 1;
+            }
+        }
+        if (found == 0 && M2C_FIELD(action, void **, 8) != NULL) {
+            g_pInterfaceToEnd = M2C_FIELD(action, void **, 4);
+        }
+    }
+    return 1;
+}
+
 s32 Item_Init(u8 *item, u8 *data) {
     void QuaternionToSubMatrix(void *quat, void *mtx);
     f32 RandomAdd(f32 base, f32 range);
@@ -9473,6 +9503,19 @@ s32 GXGetTexObjFmt(void *arg0) {
     return M2C_FIELD(arg0, s32 *, 0x14);
 }
 
+void GXLoadTexObj(void *obj, u32 id) {
+    typedef struct GXDataTex {
+        u8 unk0[0x410];
+        void *(*texRegionCallback)(void *obj, u32 id);
+    } GXDataTex;
+    extern GXDataTex *gx;
+    void GXLoadTexObjPreLoaded(void *obj, void *region, u32 id);
+    void *r;
+
+    r = gx->texRegionCallback(obj, id);
+    GXLoadTexObjPreLoaded(obj, r, id);
+}
+
 void GXInitTlutRegion(u32 *region, u32 tmem_addr, u32 tlut_size) {
     u32 *t = region;
 
@@ -9511,6 +9554,26 @@ void *GXSetTlutRegionCallback(void *f) {
     return oldcb;
 }
 
+void GXSetTevIndirect(s32 tev_stage, s32 ind_stage, s32 format, s32 bias_sel, s32 matrix_sel, s32 wrap_s, s32 wrap_t, u8 add_prev, u8 utc_lod, s32 alpha_sel) {
+    extern u8 *gx;
+    u32 reg;
+
+    reg = 0;
+    reg = (reg & ~0x3) | ind_stage;
+    reg = (reg & ~0xC) | (format << 2);
+    reg = (reg & ~0x70) | (bias_sel << 4);
+    reg = (reg & ~0x180) | (alpha_sel << 7);
+    reg = (reg & ~0x1E00) | (matrix_sel << 9);
+    reg = (reg & ~0xE000) | (wrap_s << 13);
+    reg = (reg & ~0x70000) | (wrap_t << 16);
+    reg = (reg & ~0x80000) | (utc_lod << 19);
+    reg = (reg & ~0x100000) | (add_prev << 20);
+    reg = (reg & ~0xFF000000) | ((tev_stage + 0x10) << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    *(u16 *)(gx + 2) = 0;
+}
+
 void GXSetNumIndStages(u8 nIndStages) {
     extern u8 *gx;
     u32 *reg = (u32 *)(gx + 0x204);
@@ -9535,6 +9598,40 @@ void GXSetTevColorIn(s32 stage, s32 a, s32 b, s32 c, s32 d) {
     GXWGFifo.u8 = 0x61;
     GXWGFifo.u32 = *reg;
     *(u16 *)((u8 *)gx + 2) = 0;
+}
+
+void GXSetTevAlphaIn(s32 stage, s32 a, s32 b, s32 c, s32 d) {
+    extern u8 *gx;
+    u32 *reg;
+
+    reg = (u32 *)(gx + (stage * 4 + 0x170));
+    *reg = (*reg & ~0xE000) | (a << 13);
+    *reg = (*reg & ~0x1C00) | (b << 10);
+    *reg = (*reg & ~0x380) | (c << 7);
+    *reg = (*reg & ~0x70) | (d << 4);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *reg;
+    *(u16 *)(gx + 2) = 0;
+}
+
+void GXSetTevColorOp(s32 stage, s32 op, s32 bias, s32 scale, u8 clamp, s32 out_reg) {
+    extern u8 *gx;
+    u32 *reg;
+
+    reg = (u32 *)(gx + (stage * 4 + 0x130));
+    *reg = (*reg & ~0x40000) | ((op & 1) << 18);
+    if (op <= 1) {
+        *reg = (*reg & ~0x300000) | (scale << 20);
+        *reg = (*reg & ~0x30000) | (bias << 16);
+    } else {
+        *reg = (*reg & ~0x300000) | (((op >> 1) & 3) << 20);
+        *reg = (*reg & ~0x30000) | (3 << 16);
+    }
+    *reg = (*reg & ~0x80000) | (clamp << 19);
+    *reg = (*reg & ~0xC00000) | (out_reg << 22);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *reg;
+    *(u16 *)(gx + 2) = 0;
 }
 
 void GXSetTevKColorSel(s32 stage, s32 sel) {
