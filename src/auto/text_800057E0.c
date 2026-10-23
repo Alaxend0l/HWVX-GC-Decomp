@@ -527,6 +527,21 @@ s32 TRKSetBufferPosition(void *arg0, u32 arg1);
 void SetTRKConnected(s32 connected);
 s32 GetTRKConnected(void);
 
+static inline s32 TRKWriteEscapedByte(u8 c) {
+    s32 WriteUART1(s8 c);
+    s32 err;
+
+    if (c == 0x7e || c == 0x7d) {
+        err = WriteUART1(0x7d);
+        c ^= 0x20;
+        if (err != 0) {
+            return err;
+        }
+    }
+    err = WriteUART1(c);
+    return err;
+}
+
 static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
     if (b->position >= 0x880) {
         return 0x301;
@@ -12896,27 +12911,21 @@ static inline s32 VolumeManager_GetCell(u8 *holder, Vector4 *point) {
 u8 *IsPointWithinForceBox(Vector4 *point) {
     typedef struct VolumeList {
         u32 count;
-        s32 *volumes;
+        u8 **volumes;
     } VolumeList;
     typedef struct VolumeCell {
         VolumeList types[7];
     } VolumeCell;
     extern u8 *g_VolumeHolder;
-    u8 *holder;
-    s32 cell;
-    u32 count;
     u8 *volume;
-    u32 i;
+    u32 count;
+    s32 cell;
+    s32 i;
 
-    holder = g_VolumeHolder;
-    cell = VolumeManager_GetCell(holder, point);
-    if (holder != NULL) {
-        count = M2C_FIELD(holder, VolumeCell **, 0x10)[cell].types[1].count;
-    } else {
-        count = 0;
-    }
+    cell = VolumeManager_GetCell(g_VolumeHolder, point);
+    count = g_VolumeHolder != NULL ? M2C_FIELD(g_VolumeHolder, VolumeCell **, 0x10)[cell].types[1].count : 0;
     for (i = 0; i < count; i++) {
-        volume = (u8 *)VolumeManager_GetVolumeTypeByIndexByCell(1, i, cell);
+        volume = M2C_FIELD(g_VolumeHolder, VolumeCell **, 0x10)[cell].types[1].volumes[i];
         if (VolumeManager_IsPointInVolume(point, volume)) {
             return volume;
         }
@@ -25279,6 +25288,43 @@ void GXSetZTexture(s32 op, s32 fmt, u32 bias) {
     *(u16 *)(gx + 2) = 0;
 }
 
+void GXSetTevOrder(s32 stage, s32 coord, u32 map, s32 color) {
+    extern u8 *gx;
+    static s32 c2r[] = { 0, 1, 0, 1, 0, 1, 7, 5, 6 };
+    u32 *ptref;
+    u32 tmap;
+    u32 tcoord;
+
+    ptref = (u32 *)(gx + ((stage / 2) * 4 + 0x100));
+    ((u32 *)(gx + 0x49C))[stage] = map;
+    tmap = map & ~0x100;
+    if (tmap >= 8) {
+        tmap = 0;
+    }
+    if (coord >= 8) {
+        tcoord = 0;
+        *(u32 *)(gx + 0x4E0) = *(u32 *)(gx + 0x4E0) & ~(1 << stage);
+    } else {
+        tcoord = coord;
+        *(u32 *)(gx + 0x4E0) = *(u32 *)(gx + 0x4E0) | (1 << stage);
+    }
+    if (stage & 1) {
+        *ptref = (*ptref & ~0x7000) | (tmap << 12);
+        *ptref = (*ptref & ~0x38000) | (tcoord << 15);
+        *ptref = (*ptref & ~0x380000) | (((color == 0xFF) ? 7 : c2r[color]) << 19);
+        *ptref = (*ptref & ~0x40000) | ((map != 0xFF && !(map & 0x100)) << 18);
+    } else {
+        *ptref = (*ptref & ~0x7) | tmap;
+        *ptref = (*ptref & ~0x38) | (tcoord << 3);
+        *ptref = (*ptref & ~0x380) | (((color == 0xFF) ? 7 : c2r[color]) << 7);
+        *ptref = (*ptref & ~0x40) | ((map != 0xFF && !(map & 0x100)) << 6);
+    }
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *ptref;
+    *(u16 *)(gx + 2) = 0;
+    *(u32 *)(gx + 0x4F4) |= 1;
+}
+
 void GXSetNumTevStages(u8 nStages) {
     extern u8 *gx;
     u32 *reg;
@@ -26455,6 +26501,58 @@ s32 TRKInitializeNub(void) {
         result = TRKInitializeTarget();
     }
     return result;
+}
+
+s32 TRKMessageSend(TRKBuffer *b) {
+    s32 WriteUART1(s8 c);
+    s32 WriteUARTFlush(void);
+    u8 csum = 0;
+    u32 j;
+    u32 i;
+    u8 c;
+    s32 err;
+
+    for (j = 0; j < b->length; j++) {
+        csum = csum + b->data[j];
+    }
+    csum = csum ^ 0xff;
+
+    err = WriteUART1(0x7e);
+    if (err == 0) {
+        for (i = 0; i < b->length; i++) {
+            c = b->data[i];
+            if (c == 0x7e || c == 0x7d) {
+                err = WriteUART1(0x7d);
+                c ^= 0x20;
+                if (err != 0) {
+                    break;
+                }
+            }
+            err = WriteUART1(c);
+            if (err != 0) {
+                break;
+            }
+        }
+    }
+    if (err == 0) {
+        c = csum;
+        if (c == 0x7e || c == 0x7d) {
+            err = WriteUART1(0x7d);
+            c ^= 0x20;
+            if (err != 0) {
+                goto end;
+            }
+        }
+        err = WriteUART1(c);
+    end:;
+    }
+    if (err == 0) {
+        err = WriteUART1(0x7e);
+    }
+    if (err == 0) {
+        err = WriteUARTFlush();
+    }
+    return err;
 }
 
 #pragma push
