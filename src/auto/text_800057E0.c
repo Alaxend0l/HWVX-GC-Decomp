@@ -2365,14 +2365,20 @@ void DropShip_EndInterface(s32 index) {
 }
 
 f32 DropShip_GetLRTime(s32 index) {
+    typedef struct DropShipSlot {
+        u8 pad0[0x245];
+        u8 state;
+        u8 pad246[0x25C - 0x246];
+        u8 *anim;
+        u8 pad260[0x300 - 0x260];
+    } DropShipSlot;
     extern u8 g_interface[][0x170];
-    u8 *iface = g_interface[index];
     u32 i;
+    u8 *iface = g_interface[index];
 
     for (i = 0; i < *(u32 *)iface; i++) {
-        u8 *data = *(u8 **)(iface + 0x88);
-        if (data[i * 0x300 + 0x245] == 5) {
-            return *(u16 *)(*(u8 **)(data + i * 0x300 + 0x25C) + 0xA);
+        if ((*(DropShipSlot **)(iface + 0x88))[i].state == 5) {
+            return *(u16 *)((*(DropShipSlot **)(iface + 0x88))[i].anim + 0xA);
         }
     }
     return 0.0f;
