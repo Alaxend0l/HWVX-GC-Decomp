@@ -833,7 +833,7 @@ void __close_all(void) {
 }
 
 #pragma push
-#pragma opt_common_subs off
+#pragma optimize_for_size on
 void __timesdec(decimal *result, const decimal *x, const decimal *y) {
     u32 accumulator = 0;
     u8 mantissa[SIGDIGLEN * 2];
@@ -867,13 +867,13 @@ void __timesdec(decimal *result, const decimal *x, const decimal *y) {
             accumulator += *ip * *jp;
         }
         *--pDigit = accumulator % 10;
-        accumulator /= 10;
+        accumulator = accumulator / 10;
         --i;
     }
 
     result->exp = x->exp + y->exp;
 
-    if (accumulator > 0) {
+    if (accumulator) {
         *--pDigit = accumulator;
         result->exp++;
     }
