@@ -14861,6 +14861,9 @@ u8 SameFrontalCollisionForceParams__8LGWheelsFls(LGWheels *wheels, s32 chan, s16
     return wheels->frontalCollisionParams[chan] == force;
 }
 
+void PlayFrontalCollisionForce__8LGWheelsFlUc(void *wheels, s32 chan, u8 force) {
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 #pragma readonly_strings on
