@@ -7962,8 +7962,6 @@ u8 __THPReadScaneHeader(void) {
 static void __THPHuffGenerateSizeTable(void);
 void __THPHuffGenerateCodeTable(void);
 void __THPHuffGenerateDecoderTables(u8 tabIndex);
-#pragma push
-#pragma scheduling off
 s32 __THPReadHuffmanTableSpecification(void) {
     extern u8 *__THPWorkArea_803C788C;
     u8 t_class, id, i, tab_index;
@@ -8001,7 +7999,6 @@ s32 __THPReadHuffmanTableSpecification(void) {
     }
     return 0;
 }
-#pragma pop
 
 #pragma push
 #pragma opt_lifetimes off
