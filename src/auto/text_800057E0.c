@@ -2283,15 +2283,17 @@ void Destructible_Draw(u8 *destructible) {
     f32 distSq;
     u8 *data;
 
-    if (0.0f != M2C_FIELD(destructible, f32 *, 0xC4)) {
-        distSq = Gfx_GetMinCameraDistSquared(destructible + 0x40);
-        if ((u32)ViewManager_GetViewFormat() > 1) {
-            distSq *= 4.0f;
-        }
-        if (distSq > M2C_FIELD(destructible, f32 *, 0xC4) * M2C_FIELD(destructible, f32 *, 0xC4)) {
-            return;
-        }
+    if (M2C_FIELD(destructible, f32 *, 0xC4) == 0.0f) {
+        goto draw;
     }
+    distSq = Gfx_GetMinCameraDistSquared(destructible + 0x40);
+    if ((u32)ViewManager_GetViewFormat() > 1) {
+        distSq *= 4.0f;
+    }
+    if (distSq > M2C_FIELD(destructible, f32 *, 0xC4) * M2C_FIELD(destructible, f32 *, 0xC4)) {
+        return;
+    }
+draw:
     QuaternionToSubMatrix(destructible + 0x50, destructible + 0x10);
     data = M2C_FIELD(destructible, u8 **, 0xC0);
     if (data[4] == 0) {
@@ -2316,6 +2318,21 @@ s32 Destructible_Invalidate(void *arg0, u32 arg1, u32 arg2) {
         return 1;
     }
     return 0;
+}
+
+void Emitter_Release(void *emitter) {
+    extern u8 g_emitterVTable[];
+    void Thing_Release(s32 thing);
+    void *slot;
+
+    if (M2C_FIELD(emitter, void **, 0x8C) == g_emitterVTable) {
+        slot = M2C_FIELD(emitter, void **, 0x90);
+        if (slot != NULL) {
+            M2C_FIELD(emitter, void **, 0x90) = NULL;
+            M2C_FIELD(slot, void **, 0x30) = NULL;
+        }
+    }
+    Thing_Release((s32)emitter);
 }
 
 s32 Emitter_Invalidate(void *arg0, u32 arg1, u32 arg2) {
