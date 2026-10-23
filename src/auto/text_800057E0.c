@@ -3270,6 +3270,52 @@ void *NavHolder_GetFirstWayPoint(void) {
     return gs_NavHolder_803C6CD8.data->firstWayPoint;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void ParticleManager_Render(void) {
+    void ParticleGX_Render(void *particle);
+    void ParticleSprite_Render(void *sprite);
+    typedef struct {
+        u8 unk0[0x94];
+        u8 flags;
+        u8 unk95[0xB0 - 0x95];
+    } ParticleSprite;
+    typedef struct {
+        u8 unk0[0xB4];
+        u8 flags;
+        u8 unkB5[0x100 - 0xB5];
+    } ParticleGX;
+    typedef struct {
+        struct {
+            ParticleGX particles[0x280];
+            u8 unk28000[0x10];
+        } groups[3];
+        ParticleSprite sprites[0x200];
+        u8 unk8E030[0x10];
+    } ParticleManager;
+    extern ParticleManager g_particleManager;
+    extern s32 g_numParticlesCreatedThisFrame;
+    ParticleManager *pm = &g_particleManager;
+    u32 j;
+    u32 i;
+    ParticleSprite *sprite;
+
+    for (i = 0; i < 3; i++) {
+        for (j = 0; j < 0x280; j++) {
+            if (!(pm->groups[i].particles[j].flags & 8)) {
+                ParticleGX_Render(&pm->groups[i].particles[j]);
+            }
+        }
+    }
+    for (j = 0, sprite = pm->sprites; j < 0x200; j++, sprite++) {
+        if (!(pm->sprites[j].flags & 8)) {
+            ParticleSprite_Render(sprite);
+        }
+    }
+    g_numParticlesCreatedThisFrame = 0;
+}
+#pragma pop
+
 void ParticleSprite_Render(void *sprite) {
     void *Gfx_AddBillBoardSprite(u16);
     void *bb;
@@ -5899,6 +5945,31 @@ s32 CarA_DoFreeStyleStunts(void *car) {
     }
     return 0;
 }
+
+void CarA_SlaveWeaponHeartbeat(void *car) {
+    void MotionState_InitSlavesTimed(void *state, void *slaves, u8 type);
+    void ThingManagerList_RemoveReleasedThings(void *list);
+    extern s32 g_iDeltaTimeMS;
+    u32 i;
+
+    for (i = 0; i < M2C_FIELD(M2C_FIELD(car, void **, 0x3BC), u32 *, 0xE8); i++) {
+        if (((s32 *)((u8 *)car + 0x46C))[i] < 10000) {
+            MotionState_InitSlavesTimed((u8 *)car + 0x330, M2C_FIELD(M2C_FIELD(car, void **, 0x3BC), u8 **, 0xEC) + i * 0xC + 4, i + 0xF0);
+            ThingManagerList_RemoveReleasedThings((u8 *)car + 0x344);
+            ((s32 *)((u8 *)car + 0x46C))[i] += g_iDeltaTimeMS;
+        }
+    }
+}
+
+void CarA_SlaveWeaponStop(void *car, s32 weapon) {
+    void MotionState_ReleaseSlavesByType(void *state, u8 type);
+    void ThingManagerList_RemoveReleasedThings(void *list);
+
+    M2C_FIELD(car, s32 *, 0x46C + weapon * 4) = 10001;
+    MotionState_ReleaseSlavesByType((u8 *)car + 0x330, weapon + 0xF0);
+    ThingManagerList_RemoveReleasedThings((u8 *)car + 0x344);
+}
+
 #pragma pop
 
 void GameRules_ForceRoundEnd(u32 arg0) {
@@ -6003,6 +6074,40 @@ void FlashHolder_Init(void) {
     for (i = 0; i < 16; i++) {
         *(void **)(g_pFlash[i] + 0x5C) = NULL;
     }
+}
+
+s32 FlashHolder_Add(void *flash, Vector4 *pos, s32 arg2, f32 time) {
+    typedef struct Flash {
+        Vector4 pos;
+        u8 unk10[0x3C - 0x10];
+        u8 active;
+        u8 unk3D[0x58 - 0x3D];
+        u8 visible;
+        u8 unk59[0x5C - 0x59];
+        void *flash;
+        s32 unk60;
+        u8 unk64[0x68 - 0x64];
+        s32 unk68;
+        u8 unk6C[0x74 - 0x6C];
+        f32 time;
+        u8 unk78[0x80 - 0x78];
+    } Flash;
+    extern Flash g_pFlash[16];
+    s32 i;
+
+    for (i = 0; i < 16; i++) {
+        if (g_pFlash[i].flash == NULL) {
+            g_pFlash[i].flash = flash;
+            g_pFlash[i].pos = *pos;
+            g_pFlash[i].unk60 = arg2;
+            g_pFlash[i].unk68 = M2C_FIELD(flash, s32 *, 0xC);
+            g_pFlash[i].active = 1;
+            g_pFlash[i].visible = 1;
+            g_pFlash[i].time = time;
+            return i;
+        }
+    }
+    return -1;
 }
 
 void Motion_Release(s32 arg0) {
