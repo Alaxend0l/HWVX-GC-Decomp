@@ -6587,6 +6587,38 @@ void *PlayerManager_GetHumanPlayerByIndex(u8 index) {
     }
     return NULL;
 }
+
+void PlayerManager_Heartbeat(void) {
+    extern u8 *g_pPlayerManager;
+    extern u32 g_attackDelay;
+    extern u32 g_iDeltaTimeMS;
+    extern s16 g_AI_FramesSinceAsyncEventProcessed;
+    extern u8 g_AI_AsyncProcess[16];
+    void *player;
+    void *next;
+
+    for (player = M2C_FIELD(g_pPlayerManager, void **, 0x20D8); player != NULL; player = M2C_FIELD(player, void **, 0xB0)) {
+        Player_InputHeartbeat(player);
+    }
+    if (g_attackDelay > g_iDeltaTimeMS) {
+        g_attackDelay -= g_iDeltaTimeMS;
+    } else {
+        g_attackDelay = 0;
+    }
+    g_AI_FramesSinceAsyncEventProcessed++;
+    if (g_worldData.world != NULL) {
+        if ((s8)g_AI_AsyncProcess[0xC] == 0) {
+            AI_AddEvent(g_AI_AsyncProcess);
+        }
+        while ((s8)AI_ProcessEvent()) {
+        }
+    }
+    for (player = M2C_FIELD(g_pPlayerManager, void **, 0x20D8); player != NULL; player = next) {
+        next = M2C_FIELD(player, void **, 0xB0);
+        M2C_FIELD(player, void (**)(void *), 0x28)(player);
+    }
+}
+
 #pragma pop
 
 void PlayerManager_Render_DEBUG(void) {
