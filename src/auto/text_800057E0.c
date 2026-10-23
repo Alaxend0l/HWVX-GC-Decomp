@@ -5505,13 +5505,9 @@ void InterfaceManager_SetObjectReference(u8 *iface, u32 id, u32 state) {
 
 void InterfaceManager_Backup_Key(u8 *iface, u8 *key, u8 flags) {
     extern u8 g_interface[][0x170];
-    extern s32 g_TargetArrow[7];
-    extern void *g_pInterfaceToEnd;
-    void InterfaceManager_ReleaseInterface(u32 index);
     void InterfaceManager_SetLoadState(void *iface, s32 state);
     s32 SoundSequence_Play(s8 *seq, Vector4 *pos);
     s32 StateManager_QueueChange(s32 state);
-    u32 i;
     s32 count;
 
     count = iface[0x80];
@@ -5529,19 +5525,7 @@ void InterfaceManager_Backup_Key(u8 *iface, u8 *key, u8 flags) {
         }
     }
     if (count == 0) {
-        i = 0;
-        do {
-            if (*(void **)g_interface[i] != NULL) {
-                InterfaceManager_ReleaseInterface(i);
-            }
-            i++;
-        } while (i < 0x12);
-        g_pInterfaceToEnd = NULL;
-        g_TargetArrow[0] = 0;
-        g_TargetArrow[1] = 0;
-        g_TargetArrow[3] = 0;
-        g_TargetArrow[4] = -1;
-        g_TargetArrow[5] = 0;
+        InterfaceManager_ReleaseAllInterfaces();
         StateManager_QueueChange(2);
         return;
     }
