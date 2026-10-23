@@ -115,7 +115,7 @@ typedef struct THPPlayer {
     u8 unk3C[0x44 - 0x3C];
     u32 bufSize;
     u32 audioMaxSamples;
-    u8 unk4C[0x50 - 0x4C];
+    f32 frameRate;
     u32 numFrames;
     u8 unk54[0x58 - 0x54];
     u32 movieDataSize;
