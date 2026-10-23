@@ -383,8 +383,9 @@ SubBlock *Block_subBlock(Block *ths, u32 size);
 static inline void SubBlock_split(SubBlock *ths, u32 sz) {
     SubBlock *np = (SubBlock *)((u8 *)ths + sz);
     void *bp = (void *)(((u32)ths->bp_ & ~1) | 1);
-    s32 isprevalloc = ths->size_ & 4;
     s32 isfree = !(ths->size_ & 2);
+    s32 isprevalloc = ths->size_ & 4;
+    s32 isalloc = !isfree;
     u32 origsize = ths->size_ & 0xFFFFFFF8;
 
     ths->bp_ = bp;
@@ -392,7 +393,7 @@ static inline void SubBlock_split(SubBlock *ths, u32 sz) {
     if (isprevalloc) {
         ths->size_ |= 4;
     }
-    if (!isfree) {
+    if (isalloc) {
         ths->size_ |= 2;
         np->size_ |= 4;
     } else {
@@ -400,10 +401,10 @@ static inline void SubBlock_split(SubBlock *ths, u32 sz) {
     }
     np->bp_ = bp;
     np->size_ = origsize - sz;
-    if (!isfree) {
+    if (isalloc) {
         np->size_ |= 4;
     }
-    if (!isfree) {
+    if (isalloc) {
         np->size_ |= 2;
         *(u32 *)((u8 *)np + (origsize - sz)) |= 4;
     } else {
