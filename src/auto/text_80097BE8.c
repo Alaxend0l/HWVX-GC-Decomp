@@ -1099,7 +1099,8 @@ typedef struct GDL {
     void *unk24CDE8;
     void *unk24CDEC;
     void *unk24CDF0;
-    u16 spriteHeads[1];
+    u16 spriteHeads[0x1FF];
+    u8 unk24D1F2;
 } GDL;
 
 typedef struct GeometryGroup {
