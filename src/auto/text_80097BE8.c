@@ -4627,6 +4627,50 @@ void Mpeg_Init(void) {
     m_rendermode_803C7754 = rmode;
 }
 
+#pragma push
+#pragma dont_inline on
+void Mpeg_StopMovie(void) {
+    void *AIRegisterDMACallback(void (*callback)(void));
+    void THPPlayerStop(void);
+    BOOL THPPlayerClose(void);
+    void THPPlayerQuit(void);
+    extern u8 badMojo_803C7734;
+    extern s32 m_rendermode_803C7754;
+    extern void *audio_restore_cb;
+    extern s32 m_movie_buffer_803C774C;
+    u8 *rmode;
+
+    if (badMojo_803C7734 == 0) {
+        THPPlayerStop();
+        THPPlayerClose();
+        GXSetNumChans(1);
+        GXSetNumTexGens(1);
+        GXSetNumTevStages(1);
+        GXSetTevOrder(0, 0, 0, 4);
+        GXSetTevOp(0, 0);
+        GXSetDispCopyGamma(1);
+        rmode = (u8 *)m_rendermode_803C7754;
+        GXSetCopyFilter(rmode[0x19], rmode + 0x1A, 1, rmode + 0x32);
+        AIRegisterDMACallback(audio_restore_cb);
+        THPPlayerQuit();
+        VIWaitForRetrace();
+        Render_FlipBuffers();
+        GXSetPixelFmt(1, 0);
+        OSFreeToHeap(__OSCurrHeap, m_movie_buffer_803C774C);
+        VIWaitForRetrace();
+        VIWaitForRetrace();
+        VIWaitForRetrace();
+        VIWaitForRetrace();
+        Gfx_BeginScene();
+        Gfx_EndScene();
+        Render_FlipBuffers();
+        VIWaitForRetrace();
+        VIWaitForRetrace();
+        VIWaitForRetrace();
+        VIWaitForRetrace();
+    }
+}
+#pragma pop
 u32 Mpeg_Heartbeat(void) {
     M2C_UNK GXInvalidateVtxCache();
     M2C_UNK THPPlayerClose();
