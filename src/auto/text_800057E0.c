@@ -12,6 +12,11 @@ typedef union PPCWGPipe {
 #define GXWGFifo (*(volatile PPCWGPipe *)0xCC008000)
 extern volatile PPCWGPipe GXWGPipe : 0xCC008000;
 
+static inline void GXWriteRasReg(u32 reg) {
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = reg;
+}
+
 typedef struct GXColor {
     u8 r;
     u8 g;
@@ -24470,6 +24475,78 @@ void __AXGetAuxBOutputDPL2(u32 **out) {
     *out = __AXBufferAuxB_802F13C0[__AXAuxDspReadPositionDpl2_803C749C];
 }
 
+void __AXProcessAux(void) {
+    extern void (*__AXCallbackAuxA_803C7470)(void *data, void *context);
+    extern void (*__AXCallbackAuxB_803C7474)(void *data, void *context);
+    extern void *__AXContextAuxA_803C7478;
+    extern void *__AXContextAuxB_803C747C;
+    extern u32 __AXBufferAuxA_802EFD40[3][480];
+    extern u32 *__AXAuxADspWrite_803C7480;
+    extern u32 *__AXAuxADspRead_803C7484;
+    extern u32 *__AXAuxBDspWrite_803C7488;
+    extern u32 *__AXAuxBDspRead_803C748C;
+    extern u32 __AXClMode;
+    extern u32 __AXAuxDspWritePosition_803C7490;
+    extern u32 __AXAuxDspReadPosition_803C7494;
+    extern u32 __AXAuxDspWritePositionDpl2_803C7498;
+    extern u32 __AXAuxDspReadPositionDpl2_803C749C;
+    extern u32 __AXAuxCpuReadWritePosition_803C74A0;
+    void DCInvalidateRange(void *addr, u32 nBytes);
+    void DCFlushRangeNoSync(void *addr, u32 nBytes);
+
+    __AXAuxADspWrite_803C7480 = __AXBufferAuxA_802EFD40[__AXAuxDspWritePosition_803C7490];
+    __AXAuxADspRead_803C7484 = __AXBufferAuxA_802EFD40[__AXAuxDspReadPosition_803C7494];
+    __AXAuxBDspWrite_803C7488 = __AXBufferAuxA_802EFD40[__AXAuxDspWritePosition_803C7490 + 3];
+    __AXAuxBDspRead_803C748C = __AXBufferAuxA_802EFD40[__AXAuxDspReadPosition_803C7494 + 3];
+
+    if (__AXCallbackAuxA_803C7470) {
+        if (__AXClMode == 2) {
+            u32 *data[4];
+
+            data[0] = __AXBufferAuxA_802EFD40[__AXAuxCpuReadWritePosition_803C74A0];
+            data[1] = data[0] + 160;
+            data[2] = data[0] + 320;
+            data[3] = data[0] + 1760;
+            DCInvalidateRange(data[0], 0x780);
+            DCInvalidateRange(data[3], 0x280);
+            __AXCallbackAuxA_803C7470(data, __AXContextAuxA_803C7478);
+            DCFlushRangeNoSync(data[0], 0x780);
+            DCFlushRangeNoSync(data[3], 0x280);
+        } else {
+            u32 *data[3];
+
+            data[0] = __AXBufferAuxA_802EFD40[__AXAuxCpuReadWritePosition_803C74A0];
+            data[1] = data[0] + 160;
+            data[2] = data[0] + 320;
+            DCInvalidateRange(data[0], 0x780);
+            __AXCallbackAuxA_803C7470(data, __AXContextAuxA_803C7478);
+            DCFlushRangeNoSync(data[0], 0x780);
+        }
+    }
+
+    if (__AXCallbackAuxB_803C7474 && __AXClMode != 2) {
+        u32 *data[3];
+
+        data[0] = __AXBufferAuxA_802EFD40[__AXAuxCpuReadWritePosition_803C74A0 + 3];
+        data[1] = data[0] + 160;
+        data[2] = data[0] + 320;
+        DCInvalidateRange(data[0], 0x780);
+        __AXCallbackAuxB_803C7474(data, __AXContextAuxB_803C747C);
+        DCFlushRangeNoSync(data[0], 0x780);
+    }
+
+    __AXAuxDspWritePosition_803C7490++;
+    __AXAuxDspReadPosition_803C7494++;
+    __AXAuxCpuReadWritePosition_803C74A0++;
+    __AXAuxDspWritePositionDpl2_803C7498++;
+    __AXAuxDspReadPositionDpl2_803C749C++;
+    __AXAuxDspWritePosition_803C7490 %= 3;
+    __AXAuxDspReadPosition_803C7494 %= 3;
+    __AXAuxDspWritePositionDpl2_803C7498 &= 1;
+    __AXAuxDspReadPositionDpl2_803C749C &= 1;
+    __AXAuxCpuReadWritePosition_803C74A0 %= 3;
+}
+
 void AXRegisterAuxACallback(s32 arg0, s32 arg1) {
     extern s32 __AXCallbackAuxA_803C7470;
     extern s32 __AXContextAuxA_803C7478;
@@ -28757,6 +28834,82 @@ void __GXSetSUTexRegs(void) {
     }
 }
 
+#pragma push
+#pragma scheduling 603
+void __GXSetTmemConfig(u32 config) {
+    switch (config) {
+    case 1:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x8C0D8000;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x900DC000;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x8D0D8800;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x910DC800;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x8E0D9000;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x920DD000;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x8F0D9800;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x930DD800;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0xAC0DA000;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0xB00DE000;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0xAD0DA800;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0xB10DE800;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0xAE0DB000;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0xB20DF000;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0xAF0DB800;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0xB30DF800;
+        break;
+    case 0:
+    default:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x8C0D8000;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x900DC000;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x8D0D8400;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x910DC400;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x8E0D8800;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x920DC800;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x8F0D8C00;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x930DCC00;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0xAC0D9000;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0xB00DD000;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0xAD0D9400;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0xB10DD400;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0xAE0D9800;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0xB20DD800;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0xAF0D9C00;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0xB30DDC00;
+        break;
+    }
+}
+#pragma pop
 void GXSetTevIndirect(s32 tev_stage, s32 ind_stage, s32 format, s32 bias_sel, s32 matrix_sel, s32 wrap_s, s32 wrap_t, u8 add_prev, u8 utc_lod, s32 alpha_sel) {
     extern u8 *gx;
     u32 reg;
