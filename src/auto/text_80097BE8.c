@@ -14901,6 +14901,9 @@ void PlayConstantForce__8LGWheelsFlsUs(void *wheels, s32 chan, s16 magnitude, u1
 }
 #pragma pop
 
+void PlayFrontalCollisionForce__8LGWheelsFlUc(void *wheels, s32 chan, u8 force) {
+}
+
 void PlayCarAirborne__8LGWheelsFl(void *wheels, s32 chan) {
     if (IsOpened__6WheelsFl((Wheels *)((u8 *)wheels + 0x82C), chan)) {
         if (GetOverallForceGain__8LGWheelsFl(wheels, chan) != 0) {
