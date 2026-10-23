@@ -2024,6 +2024,42 @@ s32 AttachGeometry_Move(Thing *thing) {
     return 1;
 }
 
+void AttachThing_SlaveTransform(Thing *thing, void *mtx) {
+    void Gfx_GetCameraPosition(Vector4 *pos);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    void XformVecOrientation(void *mtx, void *in, Vector4 *out);
+    Vector4 pos;
+    Vector4 camera;
+    Vector4 toCamera;
+    Vector4 dir;
+    u8 *data;
+    f32 dot;
+    f32 minDot;
+
+    pos = thing->mtx.v[3];
+    XformVec(mtx, &pos, &thing->mtx.v[3]);
+    if (*(u8 *)(*(u8 **)((u8 *)thing + 0xB4) + 2) == 1) {
+        *(u32 *)((u8 *)thing + 0x74) &= ~0x10;
+        Gfx_GetCameraPosition(&camera);
+        PSVECSubtract(&thing->mtx.v[3], &camera, &toCamera);
+        if (PSVECSquareMag(&toCamera)) {
+            PSVECNormalize(&toCamera, &toCamera);
+        }
+        data = *(u8 **)((u8 *)thing + 0xB4);
+        XformVecOrientation(mtx, *(void **)(data + 0x28), &dir);
+        dot = -PSVECDotProduct(&dir, &toCamera);
+        minDot = *(f32 *)((u8 *)thing + 0xB0);
+        if (dot < minDot) {
+            *(u32 *)((u8 *)thing + 0x74) |= 0x10;
+        } else {
+            *(f32 *)((u8 *)thing + 0xBC) = (dot - minDot) / (1.0f - minDot);
+        }
+    }
+}
+
 s32 AttachThing_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
@@ -12221,6 +12257,50 @@ void cbForReadAsync(s32 result, void *block) {
     }
 }
 
+s32 DVDReadPrio(u8 *fileInfo, void *addr, s32 length, s32 offset, s32 prio) {
+    s32 DVDReadAbsAsyncPrio(void *block, void *addr, s32 length, s32 offset, void *callback, s32 prio);
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32 level);
+    void OSSleepThread(void *queue);
+    void OSPanic(char *file, s32 line, char *msg, ...);
+    void cbForReadSync(s32 result, void *block);
+    extern u8 __DVDThreadQueue[];
+    s32 result;
+    s32 state;
+    s32 enabled;
+    s32 retVal;
+
+    if (!(0 <= offset && (u32)offset < *(u32 *)(fileInfo + 0x34))) {
+        OSPanic("dvdfs.c", 0x329, "DVDRead(): specified area is out of the file  ");
+    }
+    if (!(0 <= offset + length && (u32)(offset + length) < *(u32 *)(fileInfo + 0x34) + 0x20)) {
+        OSPanic("dvdfs.c", 0x32F, "DVDRead(): specified area is out of the file  ");
+    }
+    result = DVDReadAbsAsyncPrio(fileInfo, addr, length, *(s32 *)(fileInfo + 0x30) + offset, cbForReadSync, prio);
+    if (result == 0) {
+        return -1;
+    }
+    enabled = OSDisableInterrupts();
+    while (1) {
+        state = *(s32 *)(fileInfo + 0xC);
+        if (state == 0) {
+            retVal = *(s32 *)(fileInfo + 0x20);
+            break;
+        }
+        if (state == -1) {
+            retVal = -1;
+            break;
+        }
+        if (state == 10) {
+            retVal = -3;
+            break;
+        }
+        OSSleepThread(__DVDThreadQueue);
+    }
+    OSRestoreInterrupts(enabled);
+    return retVal;
+}
+
 void cbForReadSync(void) {
     M2C_UNK OSWakeupThread(M2C_UNK *);
     extern M2C_UNK __DVDThreadQueue;
@@ -12778,6 +12858,23 @@ s32 __DVDDequeueWaitingQueue(void **block) {
     next[1] = prev;
     OSRestoreInterrupts();
     return 1;
+}
+
+u8 ErrorCode2Num(u32 errorCode) {
+    extern u32 ErrorTable_800D5798[];
+    u32 *p;
+    u32 i;
+
+    p = ErrorTable_800D5798;
+    for (i = 0; i < 18; i++) {
+        if (p[i] == errorCode) {
+            return (u8)i;
+        }
+    }
+    if (errorCode >= 0x100000 && errorCode <= 0x100008) {
+        return 17;
+    }
+    return 29;
 }
 
 void __DVDStoreErrorCode(u32 error) {
@@ -14926,6 +15023,51 @@ error:
         card->eraseCallback = NULL;
         callback(chan, result);
     }
+}
+
+s32 __CARDAllocBlock(s32 chan, u32 cBlock, CARDCallback callback) {
+    s32 __CARDUpdateFatBlock(s32 chan, u16 *fat, CARDCallback callback);
+    CARDControl *card;
+    u16 *fat;
+    u16 iBlock;
+    u16 startBlock;
+    u16 prevBlock;
+    u16 count;
+
+    card = &__CARDBlock[chan];
+    if (!card->attached) {
+        return -3;
+    }
+    fat = *(u16 **)((u8 *)card + 0x88);
+    if (fat[3] < cBlock) {
+        return -9;
+    }
+    fat[3] -= cBlock;
+    startBlock = 0xFFFF;
+    iBlock = fat[4];
+    count = 0;
+    while (0 < cBlock) {
+        if (*(u16 *)((u8 *)card + 0x10) - 5 < ++count) {
+            return -6;
+        }
+        iBlock++;
+        if (iBlock < 5 || *(u16 *)((u8 *)card + 0x10) <= iBlock) {
+            iBlock = 5;
+        }
+        if (fat[iBlock] == 0) {
+            if (startBlock == 0xFFFF) {
+                startBlock = iBlock;
+            } else {
+                fat[prevBlock] = iBlock;
+            }
+            prevBlock = iBlock;
+            fat[iBlock] = 0xFFFF;
+            --cBlock;
+        }
+    }
+    fat[4] = iBlock;
+    card->startBlock = startBlock;
+    return __CARDUpdateFatBlock(chan, fat, callback);
 }
 
 s32 CARDWriteAsync(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset, CARDCallback callback) {
