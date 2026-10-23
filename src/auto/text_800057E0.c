@@ -2314,6 +2314,22 @@ f32 Destructible_GetMass(void *arg0) {
     return M2C_FIELD(M2C_FIELD(M2C_FIELD(arg0, void **, 0xC0), void **, 0x10), f32 *, 0x20);
 }
 
+void Destructible_GetTargetPos(void *obj, Vector4 *pos) {
+    switch (M2C_FIELD(M2C_FIELD(M2C_FIELD(obj, void **, 0xC0), void **, 0x10), u8 *, 0x10)) {
+    case 0:
+    case 3:
+        *pos = *M2C_FIELD(obj, Vector4 **, 0xD0);
+        break;
+    case 1:
+    case 6:
+        *pos = M2C_FIELD(M2C_FIELD(obj, void **, 0xCC), Vector4 *, 0x3D0);
+        break;
+    default:
+        *pos = M2C_FIELD(obj, Vector4 *, 0x40);
+        break;
+    }
+}
+
 void *Destructible_GetOrientedCollision(void *thing) {
     extern u8 g_zeroVector[];
     void BuildOOB(void *oob, void *pos, void *out);
