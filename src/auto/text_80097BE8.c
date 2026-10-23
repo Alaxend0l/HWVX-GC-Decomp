@@ -6919,6 +6919,66 @@ void CreateSilhouette(void *edges, u32 count, Vector *dir) {
 }
 
 #pragma push
+#pragma use_lmw_stmw on
+void Render_GeometryListSplitScreen(void) {
+    extern u8 g_CurrentViews;
+    extern DisplayList *g_pDL;
+    extern f32 g_identity[];
+    extern s32 m_curLightState;
+    void Gfx_SetRenderWindow(u32 view);
+    void Render_StateSetScissor(void);
+    void *Gfx_GetWorldMatrixState(u32 index);
+    void RenderGroup(Geometry *geometry, u32 group, void *matrix);
+    u8 view;
+    u32 i;
+
+    for (view = 1; view < 5; view++) {
+        if (g_CurrentViews & (1 << view)) {
+            Gfx_SetRenderWindow(view);
+            Render_StateSetScissor();
+            for (i = 0; i < g_pDL->numOpaqueGroups; i++) {
+                Geometry *geometry = g_pDL->opaqueGroups[i].geometry;
+                void *matrix = Gfx_GetWorldMatrixState(g_pDL->opaqueGroups[i].matrix);
+                if (g_pDL->opaqueGroups[i].window == view) {
+                    if (matrix == g_identity) {
+                        Gfx_SetWorldMatrix(0);
+                    } else {
+                        Gfx_SetWorldMatrix(matrix);
+                    }
+                    RenderGroup(geometry, g_pDL->opaqueGroups[i].group, matrix);
+                }
+            }
+            for (i = 0; i < g_pDL->numLitGroups; i++) {
+                Geometry *geometry = g_pDL->litGroups[i].geometry;
+                void *matrix = Gfx_GetWorldMatrixState(g_pDL->litGroups[i].matrix);
+                m_curLightState = g_pDL->litGroups[i].lightState;
+                if (g_pDL->litGroups[i].window == view) {
+                    if (matrix == g_identity) {
+                        Gfx_SetWorldMatrix(0);
+                    } else {
+                        Gfx_SetWorldMatrix(matrix);
+                    }
+                    RenderGroup(geometry, g_pDL->litGroups[i].group, matrix);
+                }
+            }
+            for (i = 0; i < g_pDL->numAlphaGroups; i++) {
+                Geometry *geometry = g_pDL->alphaGroups[i].geometry;
+                void *matrix = Gfx_GetWorldMatrixState(g_pDL->alphaGroups[i].matrix);
+                if (g_pDL->alphaGroups[i].window == view) {
+                    if (matrix == g_identity) {
+                        Gfx_SetWorldMatrix(0);
+                    } else {
+                        Gfx_SetWorldMatrix(matrix);
+                    }
+                    RenderGroup(geometry, g_pDL->alphaGroups[i].group, matrix);
+                }
+            }
+        }
+    }
+}
+#pragma pop
+
+#pragma push
 #pragma dont_inline on
 void Render_GeometryList(void) {
     extern GDL *g_pGDL;
