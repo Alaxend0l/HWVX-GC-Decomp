@@ -9935,6 +9935,63 @@ f32 GetCodeVariable(s32 var, u8 *thing) {
     }
     return 0.0f;
 }
+
+void SetCodeVariable(s32 var, u8 *obj, f32 value) {
+    u8 *thing;
+    u8 *data;
+    u8 idx;
+
+    switch (var) {
+    case 1:
+        thing = *(u8 **)(obj + 0x28);
+        if (thing != NULL) {
+            *(s32 *)(thing + 0x78) = (s32)value;
+        }
+        break;
+    case 2:
+        thing = *(u8 **)(obj + 0x28);
+        if (thing != NULL) {
+            *(u32 *)(*(u8 **)(thing + 0x94) + 0x7C) = (u32)value;
+            *(*(u8 **)(thing + 0x94) + 0x71) = 1;
+        }
+        break;
+    case 3:
+        thing = *(u8 **)(obj + 0x28);
+        if (thing != NULL) {
+            s32 max;
+            *(s32 *)(thing + 0x400) = (s32)value;
+            max = *(s32 *)(*(u8 **)(*(u8 **)(thing + 0x3BC) + 0xA0) + 0x14);
+            if (*(s32 *)(thing + 0x78) > max) {
+                *(s32 *)(thing + 0x78) = max;
+            }
+        }
+        break;
+    case 4:
+        break;
+    case 20:
+    case 21:
+    case 22:
+    case 23:
+    case 24:
+    case 25:
+    case 26:
+    case 27:
+        thing = *(u8 **)(obj + 0x28);
+        idx = (u8)var - 20;
+        if (thing != NULL) {
+            data = *(u8 **)(thing + 0x94);
+            if (data != NULL) {
+                ((s16 *)(data + 0x94))[idx] = (s16)value;
+                *(*(u8 **)(thing + 0x94) + 0xA4) = 1;
+            }
+        }
+        break;
+    default:
+        GameSettings_SetCodeVariable(var, (s32)obj, (u32)value);
+        break;
+    }
+}
+
 #pragma pop
 
 s32 TriggerInterfaceEnd(void) {
