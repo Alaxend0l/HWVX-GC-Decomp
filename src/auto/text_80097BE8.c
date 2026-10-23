@@ -18,6 +18,29 @@ typedef struct Vector {
 
 f32 PSVECMag(Vector *v);
 
+typedef union PPCWGPipe {
+    u8 u8;
+    s8 s8;
+    u16 u16;
+    s16 s16;
+    u32 u32;
+    s32 s32;
+    f32 f32;
+} PPCWGPipe;
+
+#define GXWGFifo (*(volatile PPCWGPipe *)0xCC008000)
+
+static inline void GXPosition2f32(f32 x, f32 y) {
+    GXWGFifo.f32 = x;
+    GXWGFifo.f32 = y;
+}
+
+static inline void GXColor3u8(u8 r, u8 g, u8 b) {
+    GXWGFifo.u8 = r;
+    GXWGFifo.u8 = g;
+    GXWGFifo.u8 = b;
+}
+
 typedef struct CARDFileInfo {
     s32 chan;
     s32 fileNo;
