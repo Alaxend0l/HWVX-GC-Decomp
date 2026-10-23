@@ -3953,52 +3953,6 @@ BOOL DBGRead(u32 count, void *buffer, s32 size) {
 
 #pragma pop
 
-static inline void DBGEXISelect(u32 v) {
-    u32 regs = ((volatile u32 *)0xCC006800)[10];
-    regs &= 0x405;
-    regs |= 0x80 | (v << 4);
-    ((volatile u32 *)0xCC006800)[10] = regs;
-}
-
-static inline BOOL DBGEXIDeselect(void) {
-    ((volatile u32 *)0xCC006800)[10] &= 0x405;
-    return TRUE;
-}
-
-static inline BOOL DBGEXISync(void) {
-    while (((volatile u32 *)0xCC006800)[13] & 1) {
-    }
-    return TRUE;
-}
-
-static inline BOOL DBGReadStatus_inline(u32 *status) {
-    BOOL DBGEXIImm(void *buffer, s32 bytecounter, u32 write);
-    BOOL err;
-    u32 cmd;
-
-    DBGEXISelect(4);
-    cmd = 0x40000000;
-    err = !DBGEXIImm(&cmd, 2, 1);
-    err |= !DBGEXISync();
-    err |= !DBGEXIImm(status, 4, 0);
-    err |= !DBGEXISync();
-    err |= !DBGEXIDeselect();
-    return !err;
-}
-
-static inline BOOL DBGWriteMailbox(u32 mailbox) {
-    BOOL DBGEXIImm(void *buffer, s32 bytecounter, u32 write);
-    BOOL err;
-    u32 cmd;
-
-    DBGEXISelect(4);
-    cmd = (mailbox & 0x1FFFFFFF) | 0xC0000000;
-    err = !DBGEXIImm(&cmd, 4, 1);
-    err |= !DBGEXISync();
-    err |= !DBGEXIDeselect();
-    return !err;
-}
-
 s32 DBGReadMailbox(u32 *mailbox) {
     s32 DBGEXIImm(void *buf, s32 len, u32 mode);
     s32 err;
