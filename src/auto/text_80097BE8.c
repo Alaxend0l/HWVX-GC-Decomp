@@ -2220,7 +2220,6 @@ s32 fseek(FILE *file, u32 offset, s32 file_mode) {
 int _fseek(FILE *file, u32 offset, int file_mode) {
     extern s32 errno;
     s32 __flush_buffer(FILE *file, u32 *bytes_flushed);
-    s32 ftell(FILE *file);
     s32 (*position_proc)(u32, u32 *, s32, void *);
 
     if (file->mode.file_kind != 1 || file->state.error) {
@@ -2236,8 +2235,25 @@ int _fseek(FILE *file, u32 offset, int file_mode) {
         }
     }
     if (file_mode == 1) {
+        s32 pos;
+        u32 charsInUndoBuffer;
+
         file_mode = 0;
-        offset += ftell(file);
+        if ((file->mode.file_kind != 1 && file->mode.file_kind != 2) || file->state.error) {
+            errno = 0x28;
+            pos = -1;
+        } else {
+            charsInUndoBuffer = file->state.io_state;
+            if (charsInUndoBuffer == 0) {
+                pos = file->position;
+            } else {
+                pos = file->buffer_pos + (file->buffer_ptr - file->buffer);
+                if (charsInUndoBuffer >= 3) {
+                    pos -= charsInUndoBuffer - 2;
+                }
+            }
+        }
+        offset += pos;
     }
     if (file_mode != 2 && file->mode.io_mode != 3 &&
         (file->state.io_state == 2 || file->state.io_state == 3)) {
