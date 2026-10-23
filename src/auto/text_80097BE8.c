@@ -11129,6 +11129,58 @@ static void F29(s32 chan, s32 ret) {
     gba->ret = ret;
 }
 
+#pragma push
+#pragma peephole off
+void __GBAX01(s32 chan, s32 ret) {
+    void F31(s32 chan, s32 ret);
+    s32 GBAWriteAsync(s32 chan, u8 *src, u8 *status, GBACallback callback);
+    s64 OSGetTime(void);
+    GBAControl *gba;
+    GBABootInfo *bootInfo;
+    GBACallback callback;
+    s32 minLength;
+
+    gba = &__GBA[chan];
+    bootInfo = &gba->bootInfo;
+    if (ret == 0) {
+        bootInfo->keyA = gba->param->keyA;
+        bootInfo->keyB = gba->param->keyB;
+        if (bootInfo->readbuf[3] == 0 || bootInfo->readbuf[2] == 0 ||
+            (bootInfo->keyA & (D54_800DAFF8[5] << 9)) == 0 || bootInfo->readbuf[1] == 0 ||
+            (bootInfo->keyA >> 15) == 0 || bootInfo->readbuf[0] == 0) {
+            ret = 3;
+        } else {
+            bootInfo->i = ~D54_800DAFF8[0x24] & (bootInfo->length + D54_800DAFF8[0x24]);
+            minLength = D54_800DAFF8[0x14] << D54_800DAFF8[0x21];
+            if (bootInfo->i < minLength) {
+                bootInfo->i = minLength;
+            }
+            bootInfo->realLength = bootInfo->i;
+            bootInfo->i -= minLength;
+            bootInfo->i >>= D54_800DAFF8[0x20];
+            bootInfo->writebuf[0] = bootInfo->keyB;
+            bootInfo->writebuf[1] = bootInfo->keyB >> 8;
+            bootInfo->writebuf[3] = bootInfo->keyB >> 24;
+            bootInfo->writebuf[2] = bootInfo->keyB >> 16;
+            bootInfo->crc = (D54_800DAFF8[0x26] + 1) << D54_800DAFF8[0x22];
+            bootInfo->curOffset = D54_800DAFF8[8];
+            bootInfo->begin = OSGetTime();
+            bootInfo->firstXfer = 1;
+            ret = GBAWriteAsync(chan, bootInfo->writebuf, bootInfo->status, F31);
+        }
+    }
+    if (ret != 0) {
+        bootInfo->begin = 0;
+        callback = bootInfo->callback;
+        if (callback != NULL) {
+            bootInfo->callback = NULL;
+            callback(chan, ret);
+        }
+    }
+    gba->ret = ret;
+}
+#pragma pop
+
 static void F35(s32 chan, s32 ret);
 #pragma push
 #pragma opt_common_subs off
