@@ -8392,6 +8392,32 @@ static char *StateMovie_GetNextMovieName(void) {
     return buffer;
 }
 
+#pragma push
+#pragma readonly_strings on
+s32 StateMovie_Init(s32 returnState) {
+    extern s32 g_returnState;
+    extern u8 g_buttonUpCnt;
+    void ProcessManager_Init(void);
+    void TimeHandler_Heartbeat(void);
+    void Input_Init(void);
+    void Input_Heartbeat(void);
+    void Mpeg_Create(void);
+    void Mpeg_StartMovie(char *name, u8 volume, f32 fvolume);
+    AudioSettings *audio;
+
+    audio = GameSettings_GetAudioSettings();
+    ProcessManager_Init();
+    ProcessManager_Add("TimeHandler", NULL, TimeHandler_Heartbeat, 0, 0);
+    ProcessManager_Add("Input", Input_Init, Input_Heartbeat, 0, 0);
+    g_curMovieIndex = 0;
+    Mpeg_Create();
+    Mpeg_StartMovie(StateMovie_GetNextMovieName(), audio->musicVolume, audio->musicVolume / 100.0f);
+    g_returnState = returnState;
+    g_buttonUpCnt = 0;
+    return 1;
+}
+#pragma pop
+
 s32 StateMovie_Shutdown(void) {
     M2C_UNK StateGameManager_RefreshMCPTextures();
     StateGameManager_RefreshMCPTextures();
