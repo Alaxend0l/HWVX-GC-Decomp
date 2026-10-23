@@ -1400,10 +1400,9 @@ s8 ActionLoadInterfacePack(s32 *arg0) {
 }
 
 void ActionUnloadInterfacePack(s32 *arg0) {
-    M2C_UNK FileStreaming_GetPackID(void *, M2C_UNK, s32);
-    M2C_UNK FileStreaming_ReleaseDataPack(M2C_UNK);
-    FileStreaming_GetPackID(arg0 + 1, 1, *arg0);
-    FileStreaming_ReleaseDataPack(1);
+    s32 FileStreaming_GetPackID(char *name, s32 type, u32 id);
+    s32 FileStreaming_ReleaseDataPack(u32 index, s32 type);
+    FileStreaming_ReleaseDataPack(FileStreaming_GetPackID((char *)(arg0 + 1), 1, *arg0), 1);
 }
 
 s32 ActionMissionObjChangeMode(u32 *action) {
