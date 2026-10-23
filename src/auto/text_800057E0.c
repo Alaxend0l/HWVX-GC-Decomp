@@ -21957,7 +21957,7 @@ typedef struct EXIControl {
     void (*exiCallback)(s32 chan, void *context);
     void (*tcCallback)(s32 chan, void *context);
     void (*extCallback)(s32 chan, void *context);
-    u32 state;
+    volatile u32 state;
     s32 immLen;
     u8 *immBuf;
     u32 dev;
