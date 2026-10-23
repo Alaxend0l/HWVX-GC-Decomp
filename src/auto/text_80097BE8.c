@@ -8500,6 +8500,12 @@ static inline void FontManager_Vertex(f32 x, f32 y, GXColor *color, f32 s, f32 t
     GXTexCoord2f32(s, t);
 }
 
+static inline void FontManager_VertexP(f32 x, f32 y, GXColor *color, f32 *s, f32 *t) {
+    GXPosition2f32(x, y);
+    GXColor4u8(color->r, color->g, color->b, color->a);
+    GXTexCoord2f32(*s, *t);
+}
+
 u32 FontManager_Print(char *str, s32 id, f32 x, f32 y) {
     extern FontManager g_fontManager;
     extern GXColor g_textcolor;
