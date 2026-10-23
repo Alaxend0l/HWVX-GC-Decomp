@@ -7269,6 +7269,43 @@ s32 Input_Create(void) {
     return 1;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void Input_Init(void) {
+    typedef struct InputState {
+        RumbleStatus rumble[4];
+        s32 rumbleTime[2];
+        u8 unk28[8];
+        u8 unk30[8];
+        u8 unk38[0x38];
+        u8 unk70[8];
+        u8 unk78[0x90];
+        struct {
+            u8 unk0[0xA];
+            u8 unkA;
+            u8 unkB;
+        } unk108[4];
+    } InputState;
+    InputState *state = (InputState *)rumbleStatus;
+    u32 i;
+
+    memset(state->unk30, 0, 8);
+    memset(state->unk70, 0, 8);
+    for (i = 0; i < 4; i++) {
+        memset(&g_VirtualPad[i], 0, sizeof(VirtualPad));
+        g_VirtualPad[i].unk0[2] = 1;
+        state->rumble[i].duration = -1;
+        g_VirtualPad[i].forceFeedbackActive = 1;
+        g_padUpPos[i] = 0;
+        g_padDownPos[i] = 0;
+        state->rumble[i].active = 0;
+        state->unk108[i].unkA = 0;
+    }
+    state->rumbleTime[0] = 200;
+    state->rumbleTime[1] = 200;
+    g_StopInput = 0;
+}
+
 void Input_Destroy(void) {
     M2C_UNK PADControlMotor(M2C_UNK, M2C_UNK);
     PADControlMotor(0, 0);
