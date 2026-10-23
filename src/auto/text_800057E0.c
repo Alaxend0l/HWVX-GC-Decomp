@@ -15531,6 +15531,17 @@ typedef struct Tracer {
 
 extern Tracer tracers_802CD600[];
 
+static inline u32 Tracer_FindFree(void) {
+    u32 i;
+
+    for (i = 0; i < 32; i++) {
+        if (tracers_802CD600[i].active == 0) {
+            break;
+        }
+    }
+    return i;
+}
+
 void ViewManager_SetFourPlayer(void) {
     extern s32 g_viewFormat;
     extern u8 g_CurrentViews;
@@ -15546,6 +15557,38 @@ void ViewManager_SetFourPlayer(void) {
     Gfx_SetRenderWindow(4);
     Gfx_SetRenderWindowSize(0x140, 0xF0, 0x27F, 0x1DF, 0);
     g_viewFormat = 5;
+}
+
+s32 Tracer_Init(u8 *thing, u8 *data) {
+    s32 Thing_Init(void *thing, s32 arg1);
+    void Tracer_ClearTracer(s32 index);
+    u8 *params;
+    u32 i;
+    Tracer *tracer;
+
+    Thing_Init(thing, 0);
+    *(u8 **)(thing + 0xB0) = *(u8 **)(data + 0x30);
+    *(Vector4 *)(thing + 0x40) = *(Vector4 *)data;
+    for (i = 0, tracer = tracers_802CD600; i < 32; tracer++, i++) {
+        if (tracer->active == 0) {
+            break;
+        }
+    }
+    *(u32 *)(thing + 0xB4) = i;
+    Tracer_ClearTracer(*(u32 *)(thing + 0xB4));
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].active = 1;
+    params = *(u8 **)(thing + 0xB0);
+    if (*(u32 *)(params + 0x54) != 0) {
+        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D0 = **(u32 **)(params + 0x58);
+    } else {
+        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D0 = 0xFFFF;
+    }
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D2 = *(u8 *)(*(u8 **)(thing + 0xB0) + 0x20);
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4BC = -1.0f * *(f32 *)(*(u8 **)(thing + 0xB0) + 0x40) / 14.0f;
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C4 = 0;
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C8 = 0;
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C0 = 0.0f;
+    return 1;
 }
 
 void Tracer_Release(void *thing) {
