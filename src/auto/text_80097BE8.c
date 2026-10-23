@@ -90,6 +90,35 @@ typedef struct decimal {
     } sig;
 } decimal;
 
+s32 __count_trailing_zerol(u32 x);
+
+static inline int __fpclassifyd(double x) {
+    switch ((*(int *)&x) & 0x7FF00000) {
+    case 0x7FF00000:
+        if (((*(int *)&x) & 0x000FFFFF) || (*((int *)&x + 1) & 0xFFFFFFFF)) {
+            return 1;
+        } else {
+            return 2;
+        }
+    case 0:
+        if (((*(int *)&x) & 0x000FFFFF) || (*((int *)&x + 1) & 0xFFFFFFFF)) {
+            return 5;
+        } else {
+            return 3;
+        }
+    }
+    return 4;
+}
+
+static inline int __count_trailing_zero(double x) {
+    u32 *l = (u32 *)&x;
+
+    if (l[1] != 0) {
+        return __count_trailing_zerol(l[1]);
+    }
+    return 32 + __count_trailing_zerol(l[0] | 0x00100000);
+}
+
 static void __dorounddecup(decimal *d, int digits) {
     u8 *b = d->sig.text;
     u8 *i = b + digits - 1;
