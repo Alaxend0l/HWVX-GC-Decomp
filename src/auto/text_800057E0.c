@@ -481,12 +481,15 @@ typedef struct CARDControl {
     void *buffer;
     u8 unk8C[0xA8 - 0x8C];
     s32 retry;
-    u8 unkAC[0xBE - 0xAC];
+    u32 repeat;
+    void *addr;
+    s32 offset;
+    u8 unkB8[0xBE - 0xB8];
     u16 startBlock;
     u8 unkC0[0xCC - 0xC0];
     CARDCallback exiCallback;
     CARDCallback apiCallback;
-    u8 unkD4[0xD8 - 0xD4];
+    CARDCallback xferCallback;
     CARDCallback eraseCallback;
     u8 unkDC[0xE0 - 0xDC];
     u8 alarm[0x28];
@@ -7972,6 +7975,62 @@ static u32 getCurrentFieldEvenOdd(void) {
         vcount = ((volatile u16 *)0xCC002000)[22] & 0x7FF;
     } while (vcount0 != vcount);
     return ((((vcount - 1) << 1) + ((hcount - 1) / CurrTiming_803C73A8->hlw)) < CurrTiming_803C73A8->nhlines) ? 1 : 0;
+}
+
+u32 VIGetTvFormat(void) {
+    void OSRestoreInterrupts(s32);
+    extern s32 CurrTvMode_803C73AC;
+    u32 format;
+    s32 enabled;
+
+    enabled = OSDisableInterrupts();
+    switch (CurrTvMode_803C73AC) {
+    case 0:
+    case 3:
+        format = 0;
+        break;
+    case 1:
+    case 4:
+        format = 1;
+        break;
+    case 5:
+    case 2:
+        format = CurrTvMode_803C73AC;
+        break;
+    }
+    OSRestoreInterrupts(enabled);
+    return format;
+}
+
+void PADOriginUpdateCallback(s32 chan, u32 error, void *context) {
+    void OSSetWirelessID(s32, u16);
+    void SIDisablePolling(u32);
+    void UpdateOrigin(s32);
+    void OSRestoreInterrupts(s32);
+    extern u32 CheckingBits_803C73CC;
+    extern u32 EnabledBits_803C73BC;
+    extern u32 PendingBits_803C73D0;
+    extern u32 WaitingBits_803C73C8;
+    u32 chanBit;
+    s32 enabled;
+
+    chanBit = 0x80000000 >> chan;
+    if (!(EnabledBits_803C73BC & chanBit)) {
+        return;
+    }
+    if (!(error & 0xF)) {
+        UpdateOrigin(chan);
+    }
+    if (error & 8) {
+        enabled = OSDisableInterrupts();
+        SIDisablePolling(chanBit);
+        EnabledBits_803C73BC &= ~chanBit;
+        WaitingBits_803C73C8 &= ~chanBit;
+        CheckingBits_803C73CC &= ~chanBit;
+        PendingBits_803C73D0 &= ~chanBit;
+        OSSetWirelessID(chan, 0);
+        OSRestoreInterrupts(enabled);
+    }
 }
 
 void PADSetSpec(s32 spec) {
