@@ -6839,6 +6839,43 @@ void Projectile_Release(void *projectile) {
     M2C_FIELD(projectile, void **, 0x8C) = g_projectileVTable;
 }
 
+s32 Projectile_PreMove(u8 *proj) {
+    extern f32 g_fDeltaTimeSec;
+    void GenerateQuaternion(void *axis, void *q, f32 angle);
+    f32 PSVECSquareMag(Vector4 *v);
+    f32 Sqrt(f32 x);
+    void Projectile_ProximityDetection(void *proj);
+    Quaternion q;
+    Quaternion result;
+    Vector4 *pos = (Vector4 *)proj;
+    Vector4 *dir = (Vector4 *)(proj + 0x30);
+    f32 step;
+    f32 mag;
+    f32 scale;
+
+    GenerateQuaternion(proj + 0xB0, &q, *(f32 *)(proj + 0x13C) * g_fDeltaTimeSec);
+    QuaternionMult((Vector4 *)(proj + 0x50), (Vector4 *)&q, (Vector4 *)&result);
+    *(Quaternion *)(proj + 0x50) = result;
+    pos->y += *(f32 *)(proj + 0x148) * g_fDeltaTimeSec;
+    if (*(f32 *)(*(u8 **)(proj + 0x120) + 0x40)) {
+        step = *(f32 *)(*(u8 **)(proj + 0x120) + 0x40) * g_fDeltaTimeSec;
+        pos->x += dir->x * step;
+        pos->y += dir->y * step;
+        pos->z += dir->z * step;
+    }
+    mag = PSVECSquareMag(pos);
+    if (mag > *(f32 *)(*(u8 **)(proj + 0x120) + 0x44) * *(f32 *)(*(u8 **)(proj + 0x120) + 0x44)) {
+        scale = 1.0f / Sqrt(mag);
+        pos->x *= scale;
+        pos->y *= scale;
+        pos->z *= scale;
+    }
+    if (*(f32 *)(*(u8 **)(proj + 0x120) + 0x34)) {
+        Projectile_ProximityDetection(proj);
+    }
+    return 1;
+}
+
 void Projectile_YAim(u8 *proj, Vector4 *target) {
     void InverseXformVec(void *mtx, Vector4 *in, Vector4 *out);
     f32 ArcTan(f32 y, f32 x);
@@ -16981,6 +17018,51 @@ s32 __CARDUpdateDir(s32 chan, CARDCallback callback) {
     card->eraseCallback = callback;
     return __CARDEraseSector(chan, card->sectorSize * ((u32)(dir - (u8 *)card->workArea) / 0x2000), EraseCallback);
 }
+
+static s32 DoMount(s32 chan);
+static void DoUnmount(s32 chan, s32 result);
+s32 __CARDVerify(CARDControl *card);
+void __CARDUnlockedHandler(s32 chan, void *context);
+#pragma push
+#pragma dont_inline on
+void __CARDMountCallback(s32 chan, s32 result) {
+    CARDControl *card;
+    CARDCallback callback;
+
+    card = &__CARDBlock[chan];
+    switch (result) {
+    case 0:
+        if (++card->mountStep < 7) {
+            result = DoMount(chan);
+            if (0 <= result) {
+                return;
+            }
+        } else {
+            result = __CARDVerify(card);
+        }
+        break;
+    case 1:
+        card->unlockCallback = __CARDMountCallback;
+        if (!EXILock(chan, 0, __CARDUnlockedHandler)) {
+            return;
+        }
+        card->unlockCallback = 0;
+        result = DoMount(chan);
+        if (0 <= result) {
+            return;
+        }
+        break;
+    case -5:
+    case -3:
+        DoUnmount(chan, result);
+        break;
+    }
+    callback = card->apiCallback;
+    card->apiCallback = 0;
+    __CARDPutControlBlock(card, result);
+    callback(chan, result);
+}
+#pragma pop
 
 s32 __CARDFreeBlock(s32 chan, u16 nBlock, CARDCallback callback) {
     s32 __CARDUpdateFatBlock(s32 chan, u16 *fat, CARDCallback callback);
