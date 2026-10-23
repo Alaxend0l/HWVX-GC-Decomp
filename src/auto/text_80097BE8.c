@@ -3379,15 +3379,14 @@ void Gfx_DrawAnimGeometryAux_(Geometry *geometry, f32 *matrices, u32 count, f32 
     void PSMTXConcat(f32 a[3][4], f32 b[3][4], f32 ab[3][4]);
     void GXLoadPosMtxImm(f32 m[3][4], u32 id);
     void Gfx_DrawGeometryLOD_Immediate(Geometry *geometry, void *matrix);
-    f32 view[3][4];
-    f32 result[3][4];
-    f32 bone[3][4];
     f32 world[16] __attribute__((aligned(16)));
-    Geometry *lod;
-    s32 level;
-    u32 *lookup;
-    f32 *m;
+    f32 bone[3][4] __attribute__((aligned(16)));
+    f32 result[3][4] __attribute__((aligned(16)));
+    f32 view[3][4] __attribute__((aligned(16)));
     u32 i;
+    Geometry *lod;
+    f32 *m;
+    s32 level;
 
     if (matrix == NULL || matrix == g_identity) {
         level = Gfx_CalcGeometryLOD(geometry, matrices);
@@ -3398,13 +3397,11 @@ void Gfx_DrawAnimGeometryAux_(Geometry *geometry, f32 *matrices, u32 count, f32 
     lod = (Geometry *)((u8 *)geometry->groups + level * 0x18);
     MatrixToMtxTranspose(view, (u8 *)GetRenderWindow() + 0x40);
     m = matrices;
-    lookup = matrixlookup;
     for (i = 0; i < count; i++) {
         MatrixToMtxTranspose(bone, m);
         PSMTXConcat(view, bone, result);
-        GXLoadPosMtxImm(result, *lookup);
+        GXLoadPosMtxImm(result, matrixlookup[i]);
         m += 16;
-        lookup++;
     }
     g_IsAnim = 1;
     Gfx_DrawGeometryLOD_Immediate(lod, matrices);
@@ -3705,6 +3702,29 @@ s32 Gfx_FrustrumCullSphereTestAllWindows(Vector *center, f32 radius) {
         return ret;
     }
     return Gfx_FrustrumCullSphereTest(center, radius);
+}
+
+s32 Gfx_FrustrumCullSphereTest(Vector *center, f32 radius) {
+    f32 PSVECDotProduct(Vector *a, Vector *b);
+    Vector normal __attribute__((aligned(16)));
+    s32 result;
+    u32 i;
+    f32 dist;
+
+    result = 2;
+    for (i = 0; i < 5; i++) {
+        normal.x = ((f32 *)GetRenderWindow())[i * 4 + 0x70];
+        normal.y = ((f32 *)GetRenderWindow())[i * 4 + 0x71];
+        normal.z = ((f32 *)GetRenderWindow())[i * 4 + 0x72];
+        dist = PSVECDotProduct(center, &normal) + ((f32 *)GetRenderWindow())[i * 4 + 0x73];
+        if (dist > radius) {
+            return 0;
+        }
+        if (dist > -radius) {
+            result = 1;
+        }
+    }
+    return result;
 }
 
 s32 Gfx_GetLightState(void);
