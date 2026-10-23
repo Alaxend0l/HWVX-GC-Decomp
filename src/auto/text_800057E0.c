@@ -19057,6 +19057,8 @@ void __CARDSetDiskID(u8 *id) {
     *(u8 **)((u8 *)&__CARDBlock[1] + 0x10C) = id ? id : __CARDDiskNone;
 }
 
+#pragma push
+#pragma auto_inline off
 s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard) {
     s32 OSDisableInterrupts(void);
     s32 OSRestoreInterrupts(s32);
@@ -19082,6 +19084,7 @@ s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard) {
     OSRestoreInterrupts(enabled);
     return result;
 }
+#pragma pop
 
 s32 CARDFreeBlocks(s32 chan, s32 *byteNotUsed, s32 *filesNotUsed) {
     typedef struct CARDDir {
@@ -19896,6 +19899,32 @@ s32 __CARDGetFileNo(CARDControl *card, const char *fileName, s32 *pfileNo) {
         }
     }
     return -4;
+}
+
+s32 CARDOpen(s32 chan, const char *fileName, CARDFileInfo *fileInfo) {
+    CARDControl *card;
+    u8 *ent;
+    s32 fileNo;
+    s32 result;
+
+    fileInfo->chan = -1;
+    result = __CARDGetControlBlock(chan, &card);
+    if (result < 0) {
+        return result;
+    }
+    result = __CARDGetFileNo(card, fileName, &fileNo);
+    if (0 <= result) {
+        ent = (u8 *)__CARDGetDirBlock(card) + fileNo * 0x40;
+        if (*(u16 *)(ent + 0x36) < 5 || card->cBlock <= *(u16 *)(ent + 0x36)) {
+            result = -6;
+        } else {
+            fileInfo->chan = chan;
+            fileInfo->fileNo = fileNo;
+            fileInfo->offset = 0;
+            fileInfo->iBlock = *(u16 *)(ent + 0x36);
+        }
+    }
+    return __CARDPutControlBlock(card, result);
 }
 
 s32 CARDClose(CARDFileInfo *fileInfo) {
