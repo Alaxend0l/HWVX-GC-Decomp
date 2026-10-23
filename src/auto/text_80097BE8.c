@@ -9841,6 +9841,36 @@ Wheels *__ct__6WheelsFv(Wheels *wheels) {
     return wheels;
 }
 
+#pragma push
+#pragma readonly_strings on
+s16 ReadAll__6WheelsFv(Wheels *wheels) {
+    s32 LGOpen(s32 chan, u32 *handle);
+    s32 LGRead(void *status);
+    u8 IsConnected__6WheelsFl(Wheels *wheels, s32 chan);
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        if (IsConnected__6WheelsFl(wheels, i) && *(u32 *)&wheels->unk828[i * 4] == (u32)-1) {
+            if (LGOpen(i, (u32 *)&wheels->unk828[i * 4]) < 0) {
+                OSReport("ERROR: Could not open wheel on channel %d\n", i);
+            } else {
+                wheels->status[i].err = 0;
+            }
+            break;
+        }
+    }
+    memcpy((u8 *)wheels + 0x858, wheels, 0x28);
+    LGRead(wheels);
+    for (i = 0; i < 4; i++) {
+        if (wheels->status[i].err == -1 && *(u32 *)&wheels->unk828[i * 4] != (u32)-1) {
+            ((u32 *)wheels->unk828)[i] = -1;
+            return i;
+        }
+    }
+    return -1;
+}
+#pragma pop
+
 u8 IsOpened__6WheelsFl(Wheels *wheels, s32 chan) {
     return wheels->status[chan].err == 0;
 }
