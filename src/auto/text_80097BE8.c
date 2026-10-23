@@ -888,6 +888,9 @@ typedef struct Geometry {
     u16 numGroups;
     u32 unk4;
     GeometryGroup *groups;
+    f32 *lodDistances;
+    f32 bboxMin[4];
+    f32 bboxMax[4];
 } Geometry;
 
 typedef struct RenderStats {
