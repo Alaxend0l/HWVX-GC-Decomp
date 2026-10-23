@@ -9350,10 +9350,13 @@ s32 TRKTargetContinue(void) {
     return 0;
 }
 
+#pragma push
+#pragma auto_inline off
 u8 GetUseSerialIO(void) {
     extern u8 bUseSerialIO_8030DC00[];
     return bUseSerialIO_8030DC00[0];
 }
+#pragma pop
 
 void SetUseSerialIO(u8 sio) {
     extern u8 bUseSerialIO_8030DC00[];
@@ -9368,6 +9371,58 @@ s32 __close_console(s32 handle) {
         return 1;
     }
     switch (fn_80094FC0(0xD3, handle)) {
+    case 0:
+        return 0;
+    case 2:
+        return 2;
+    case 1:
+    default:
+        return 1;
+    }
+}
+
+s32 __TRK_write_console(s32 handle, u8 *buffer, u32 *count, void *idle) {
+    s32 GetTRKConnected();
+    u8 fn_80094FB0(s32, s32, u32 *, u8 *);
+    u32 length;
+    u8 result;
+
+    if (GetUseSerialIO() == 0) {
+        return 1;
+    }
+    if (GetTRKConnected() == 0) {
+        return 1;
+    }
+    length = *count;
+    result = fn_80094FB0(0xD0, 1, &length, buffer);
+    *count = length;
+    switch (result) {
+    case 0:
+        return 0;
+    case 2:
+        return 2;
+    case 1:
+    default:
+        return 1;
+    }
+}
+
+s32 __read_console(s32 handle, u8 *buffer, u32 *count, void *idle) {
+    s32 GetTRKConnected();
+    u8 fn_80094FB0(s32, s32, u32 *, u8 *);
+    u32 length;
+    u8 result;
+
+    if (GetUseSerialIO() == 0) {
+        return 1;
+    }
+    if (GetTRKConnected() == 0) {
+        return 1;
+    }
+    length = *count;
+    result = fn_80094FB0(0xD1, 0, &length, buffer);
+    *count = length;
+    switch (result) {
     case 0:
         return 0;
     case 2:
