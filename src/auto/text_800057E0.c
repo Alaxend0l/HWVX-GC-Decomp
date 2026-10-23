@@ -9231,6 +9231,99 @@ void GXPokeZMode(u8 compare_enable, s32 func, u8 update_enable) {
     M2C_FIELD(__peReg, u16 *, 0) = (((compare_enable & ~0xE) | (func << 1)) & ~0x10) | (update_enable << 4);
 }
 
+#pragma push
+#pragma scheduling off
+void __GXSetDirtyState(void) {
+    extern u8 *gx;
+    void __GXSetSUTexRegs();
+    void __GXUpdateBPMask();
+    void __GXSetGenMode();
+    void __GXSetVCD();
+    void __GXSetVAT();
+    void __GXCalculateVLim();
+
+    if (*(u32 *)(gx + 0x4F4) & 1) {
+        __GXSetSUTexRegs();
+    }
+    if (*(u32 *)(gx + 0x4F4) & 2) {
+        __GXUpdateBPMask();
+    }
+    if (*(u32 *)(gx + 0x4F4) & 4) {
+        __GXSetGenMode();
+    }
+    if (*(u32 *)(gx + 0x4F4) & 8) {
+        __GXSetVCD();
+    }
+    if (*(u32 *)(gx + 0x4F4) & 0x10) {
+        __GXSetVAT();
+    }
+    if (*(u32 *)(gx + 0x4F4) & 0x18) {
+        __GXCalculateVLim();
+    }
+    *(u32 *)(gx + 0x4F4) = 0;
+}
+#pragma pop
+
+void __GXSendFlushPrim(void) {
+    extern u8 *gx;
+    u32 i;
+    u16 vNum;
+    u32 numD;
+
+    vNum = *(u16 *)(gx + 4);
+    numD = vNum * *(u16 *)(gx + 6);
+    GXWGFifo.u8 = 0x98;
+    GXWGFifo.u16 = vNum;
+    for (i = 0; i < numD; i += 4) {
+        GXWGFifo.u32 = 0;
+    }
+    *(u16 *)(gx + 2) = 1;
+}
+
+void GXSetLineWidth(u8 width, u32 texOffsets) {
+    typedef struct GXDataLp {
+        u8 unk0[2];
+        u16 bpSentNot;
+        u8 unk4[0x7C - 4];
+        u32 lpSize;
+    } GXDataLp;
+    extern GXDataLp *gx;
+    u32 *reg;
+
+    reg = &gx->lpSize;
+    *reg = (gx->lpSize & ~0xFF) | width;
+    reg = &gx->lpSize;
+    *reg = (gx->lpSize & ~0x70000) | (texOffsets << 16);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->lpSize;
+    gx->bpSentNot = 0;
+}
+
+void __GXSetSUTexRegs(void);
+void __GXUpdateBPMask(void);
+void __GXSetGenMode(void);
+void __GXSetVCD(void);
+void __GXSetVAT(void);
+void __GXCalculateVLim(void);
+void GXSetPointSize(u8 pointSize, u32 texOffsets) {
+    typedef struct GXDataLp {
+        u8 unk0[2];
+        u16 bpSentNot;
+        u8 unk4[0x7C - 4];
+        u32 lpSize;
+    } GXDataLp;
+    extern GXDataLp *gx;
+    u32 *reg;
+
+    reg = &gx->lpSize;
+    *reg = (*reg & ~0xFF00) | ((u32)pointSize << 8);
+    reg = &gx->lpSize;
+    *reg = (gx->lpSize & ~0x380000) | (texOffsets << 19);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->lpSize;
+    gx->bpSentNot = 0;
+}
+
 void GXEnableTexOffsets(s32 coord, u8 line_enable, u8 point_enable) {
     extern u8 *gx;
     ((u32 *)(gx + 0xB8))[coord] = (((u32 *)(gx + 0xB8))[coord] & ~0x40000) | ((u32)line_enable << 18);
