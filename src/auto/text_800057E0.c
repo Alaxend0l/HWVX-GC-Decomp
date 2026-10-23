@@ -26556,6 +26556,7 @@ s32 TRKMessageSend(TRKBuffer *b) {
     }
     return err;
 }
+#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
