@@ -3480,6 +3480,83 @@ void Camera_PrepareForRender(u8 *camera) {
     SoundListener_Set(window, 6, camera + 0x70);
     SoundListener_Set(window, 7, &mtx);
 }
+
+#pragma pop
+
+#pragma push
+#pragma use_lmw_stmw on
+s8 RayHitsObjects_CameraSpecial(Vector4 *start, Vector4 *dir, f32 *t, void *info) {
+    extern u8 g_destructibleVTable[];
+    struct GridResult {
+        u32 data;
+        u32 id;
+    };
+    u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, struct GridResult *results, u32 maxResults);
+    s8 SegmentVsSphere(void *center, Vector4 *start, Vector4 *end, f32 radius);
+    Vector4 min;
+    Vector4 max;
+    Vector4 end;
+    struct GridResult results[256];
+    u32 count;
+    u32 i;
+    u8 *other;
+    u8 *coll;
+    f32 *box;
+    f32 best;
+    f32 hit;
+
+    best = *t;
+    max = *start;
+    end.x = dir->x * best + start->x;
+    end.y = dir->y * best + start->y;
+    end.z = dir->z * best + start->z;
+    min = end;
+    if (start->x < min.x) {
+        min.x = start->x;
+    }
+    if (start->y < min.y) {
+        min.y = start->y;
+    }
+    if (start->z < min.z) {
+        min.z = start->z;
+    }
+    if (end.x > max.x) {
+        max.x = end.x;
+    }
+    if (end.y > max.y) {
+        max.y = end.y;
+    }
+    if (end.z > max.z) {
+        max.z = end.z;
+    }
+    count = Grid_GetObjects(&min, &max, 4, results, 0x100);
+    for (i = 0; i < count; i++) {
+        other = (u8 *)results[i].id;
+        if (*(u32 *)(other + 0x74) & 2) {
+            continue;
+        }
+        if (*(u8 **)(other + 0x8C) == g_destructibleVTable) {
+            coll = *(u8 **)(*(u8 **)(other + 0xC0) + 0x10);
+            if (*(u8 *)(coll + 0x10) == 0) {
+                box = *(f32 **)(coll + 0x44);
+                if ((box[4] - box[0]) * (box[6] - box[2]) < 100.0f) {
+                    continue;
+                }
+            }
+        }
+        if (SegmentVsSphere(other + 0x40, start, &end, *(f32 *)(other + 0x70))) {
+            hit = (*(f32 (**)(void *, Vector4 *, Vector4 *, void *, f32))(*(u8 **)(other + 0x8C) + 0x38))(other, start, dir, info, best);
+            if (hit < *t) {
+                best = hit;
+            }
+        }
+    }
+    if (best < *t) {
+        *t = best;
+        return 1;
+    }
+    return 0;
+}
 #pragma pop
 
 void Camera_SetPlayer(void **camera, void *player) {
