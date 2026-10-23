@@ -5988,6 +5988,33 @@ void Mover_GetTrackPos(void *mover, f32 *pos, f32 time) {
     pos[2] = keyFrame[6];
 }
 
+void PhysicalObject_ProcessForce(u8 *obj, Vector4 *pos, Vector4 *force, f32 scale) {
+    void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 GetComponentOfVector(Vector4 *v, Vector4 *dir);
+    Vector4 pointVel;
+    Vector4 cross;
+    Vector4 r;
+    Vector4 torque;
+    Vector4 vel = *(Vector4 *)obj;
+    Vector4 f;
+
+    PSVECScale(force, &f, scale);
+    PSVECSubtract(pos, (Vector4 *)(obj + 0x40), &r);
+    GetComponentOfVector(force, &vel);
+    PSVECCrossProduct((Vector4 *)(obj + 0x130), &r, &cross);
+    PSVECAdd((Vector4 *)obj, &cross, &pointVel);
+    PSVECCrossProduct(&r, &f, &torque);
+    *(f32 *)(obj + 0xF0) += f.x;
+    *(f32 *)(obj + 0xF4) += f.y;
+    *(f32 *)(obj + 0xF8) += f.z;
+    *(f32 *)(obj + 0x100) += torque.x;
+    *(f32 *)(obj + 0x104) += torque.y;
+    *(f32 *)(obj + 0x108) += torque.z;
+}
+
 void Mover_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
