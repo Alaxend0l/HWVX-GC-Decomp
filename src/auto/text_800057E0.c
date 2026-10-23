@@ -18807,6 +18807,8 @@ void __GXWriteFifoIntReset(u8 hiWatermarkClr, u8 loWatermarkClr) {
     __cpReg[2] = *(u32 *)(gx + 0x10);
 }
 
+#pragma push
+#pragma peephole off
 void __GXXfVtxSpecs(void) {
     typedef struct GXDataXfVcd {
         u16 unk0;
