@@ -2535,6 +2535,20 @@ void ProcessManager_Add(char *name, void (*init)(void), void (*update)(void), s3
     g_processManager.processes[index].unk14 = 0;
 }
 
+void Projectile_DynamicCollideImpact(void *proj, void *dir, s32 damage, f32 force) {
+    void Projectile_DynamicCollisionCorrection(void *);
+    f32 scale;
+
+    M2C_FIELD(proj, s32 *, 0x78) -= damage;
+    if (dir != NULL) {
+        scale = force / M2C_FIELD(M2C_FIELD(proj, void **, 0x120), f32 *, 0x2C);
+        M2C_FIELD(proj, f32 *, 0) = M2C_FIELD(dir, f32 *, 0x10) * scale + M2C_FIELD(proj, f32 *, 0);
+        M2C_FIELD(proj, f32 *, 4) = M2C_FIELD(dir, f32 *, 0x14) * scale + M2C_FIELD(proj, f32 *, 4);
+        M2C_FIELD(proj, f32 *, 8) = M2C_FIELD(dir, f32 *, 0x18) * scale + M2C_FIELD(proj, f32 *, 8);
+        Projectile_DynamicCollisionCorrection(proj);
+    }
+}
+
 f32 Projectile_GetMass(void *arg0) {
     return M2C_FIELD(M2C_FIELD(arg0, void **, 0x120), f32 *, 0x2C);
 }
