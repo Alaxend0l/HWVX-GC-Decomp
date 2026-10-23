@@ -4797,23 +4797,25 @@ void Gfx_DrawAnimGeometryAux_(Geometry *geometry, f32 *matrices, u32 count, f32 
 }
 #pragma pop
 
+#pragma push
+#pragma use_lmw_stmw on
 s32 Gfx_DisplayList_Create(void) {
     extern GDL *g_pGDL;
-    s32 i;
-    s32 j;
+    u32 i;
 
     g_pGDL = Allocate(0x24D200, 0, "");
     if (g_pGDL == NULL) {
         return 0;
     }
     for (i = 0; i < 2000; i++) {
-        for (j = 0; j < 3; j++) {
-            g_pGDL->tris[i].v[j].w = 1.0f;
-        }
+        g_pGDL->tris[i].v[0].w = 1.0f;
+        g_pGDL->tris[i].v[1].w = 1.0f;
+        g_pGDL->tris[i].v[2].w = 1.0f;
     }
     g_pGDL->unk24D1F2 = 0;
     return 1;
 }
+#pragma pop
 
 #pragma push
 #pragma dont_inline on
