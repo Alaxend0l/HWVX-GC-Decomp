@@ -800,7 +800,8 @@ typedef struct GDL {
     u32 numLightStates;
     u32 numCachedMatrices;
     s32 numDrawEntries;
-    u8 unk58[0x6C - 0x58];
+    u8 unk58[0x68 - 0x58];
+    u32 numPointSprites;
     s32 numEnvmapStates;
     u32 num2DFXLines;
     u32 numMatrices;
