@@ -2319,11 +2319,9 @@ void Grid_FreeObject(u8 *object) {
     extern u8 gGridManager[];
     u8 *node;
     u8 *next;
-    u8 *list;
 
     if (object != NULL) {
-        node = *(u8 **)(object + 8);
-        while (node != NULL) {
+        for (node = *(u8 **)(object + 8); node != NULL; node = next) {
             next = *(u8 **)(node + 0x10);
             if (*(u8 **)(node + 8) != NULL) {
                 *(u8 **)(*(u8 **)(node + 8) + 0xC) = *(u8 **)(node + 0xC);
@@ -2333,15 +2331,13 @@ void Grid_FreeObject(u8 *object) {
             } else {
                 **(u8 ***)(node + 0x14) = *(u8 **)(node + 8);
             }
-            list = *(u8 **)(node + 0x14);
-            *(s32 *)(list + 4) = *(s32 *)(list + 4) - 1;
-            *(u8 **)(node + 8) = *(u8 **)(gGridManager + 0x1B3B8);
-            *(u8 **)(gGridManager + 0x1B3B8) = node;
-            node = next;
+            (*(s32 *)(*(u8 **)(node + 0x14) + 4))--;
+            *(u8 **)(node + 8) = ((u8 **)(gGridManager + 0x1B3B8))[0];
+            ((u8 **)(gGridManager + 0x1B3B8))[0] = node;
         }
         *(u8 **)(object + 0x1C) = *(u8 **)(gGridManager + 0x233BC);
         *(u8 **)(gGridManager + 0x233BC) = object;
-        *(s32 *)(gGridManager + 0x233C0) = *(s32 *)(gGridManager + 0x233C0) + 1;
+        *(s32 *)(gGridManager + 0x233C0) += 1;
     }
 }
 
@@ -4071,6 +4067,16 @@ s8 OBoxHitsTerrainAndObjectsZeroTimeEdgesOnly(void *obox, void *thing, void *arg
         return 1;
     }
     return OBox_CollideAllThingsZeroTime(obox, thing, arg2);
+}
+
+s32 TriggerPlayerVehicleGear(u32 *params) {
+    extern u8 g_cameraManager[];
+    u8 *vehicle = M2C_FIELD(*(u8 **)g_cameraManager, u8 **, 0x2C);
+
+    if (vehicle != NULL && vehicle[0x4E8] == params[1]) {
+        return 1;
+    }
+    return 0;
 }
 
 void Trail_Create(void) {
