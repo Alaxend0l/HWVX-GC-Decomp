@@ -7970,8 +7970,6 @@ void GXSetAlphaUpdate(u8 updateEnable) {
     *(u16 *)(g + 2) = 0;
 }
 
-#pragma push
-#pragma peephole off
 void GXSetDither(u8 dither) {
     extern u8 *gx;
     u8 *g;
@@ -7985,7 +7983,6 @@ void GXSetDither(u8 dither) {
     GXWGFifo.u32 = *(u32 *)(g + 0x1D0);
     *(u16 *)(g + 2) = 0;
 }
-#pragma pop
 
 void GXSetDstAlpha(u8 enable, u8 alpha) {
     extern u8 *gx;
