@@ -3248,6 +3248,23 @@ void Player_DetachThingDeath(void *arg0) {
     }
 }
 
+void PlayerHuman_Heartbeat(void *player) {
+    void ForceFeedback_GetForce(void *ff, u8 *a, u8 *b, s32 *c);
+    void Input_SetAlternativeForceFeedback(s32 input, u8 a, u8 b);
+    void Player_Heartbeat(void *player);
+    s32 c;
+    u8 a;
+    u8 b;
+    void *car;
+
+    car = M2C_FIELD(player, void **, 0x2C);
+    if (car != NULL && !(M2C_FIELD(car, u32 *, 0x74) & 2)) {
+        ForceFeedback_GetForce((u8 *)car + 0x40, &a, &b, &c);
+        Input_SetAlternativeForceFeedback(M2C_FIELD(player, s32 *, 0xC8), a, b);
+    }
+    Player_Heartbeat(player);
+}
+
 s32 Player_NULL(void) {
     return 0;
 }
