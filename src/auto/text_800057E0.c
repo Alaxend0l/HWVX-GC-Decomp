@@ -47,6 +47,16 @@ typedef struct ShaderHolder {
     u32 numGX;
 } ShaderHolder;
 
+typedef struct DividingAxis {
+    f32 dir;
+    f32 minA;
+    f32 maxA;
+    f32 minB;
+    f32 maxB;
+    f32 tEnter;
+    f32 tExit;
+} DividingAxis;
+
 typedef struct DVDQueue {
     struct DVDQueue *next;
     struct DVDQueue *prev;
@@ -5638,11 +5648,10 @@ done:
         name = "saveFile";
     }
     data = g_pSavedGameData;
-    handle = File_Open(device + 0xA, name, 0, 0);
-    if (handle != -1) {
+    if ((handle = File_Open(device + 0xA, name, 0, NULL)) != -1) {
         File_Read(handle, index * 8 + 0x15C, data);
         File_Close(handle);
-        sum = *(s32 *)(data + 8);
+        sum = ((s32 *)data)[2];
     } else {
         sum = -1;
     }
@@ -20445,6 +20454,59 @@ void TimeoutHandler(void *alarm, void *context) {
     }
 }
 
+s32 __CARDStart(s32 chan, CARDCallback txCallback, CARDCallback exiCallback) {
+    s32 EXILock(s32 chan, u32 dev, void *unlockedCallback);
+    s32 EXISelect(s32 chan, u32 dev, u32 freq);
+    s32 EXIUnlock(s32 chan);
+    s32 OSCancelAlarm(void *alarm);
+    void OSSetAlarm(void *alarm, s64 tick, void *handler);
+    void UnlockedCallback(s32 chan, s32 result);
+    void __CARDUnlockedHandler(s32 chan, void *context);
+    void TimeoutHandler(void *alarm, void *context);
+    BOOL enabled;
+    CARDControl *card;
+    s32 result;
+
+    enabled = OSDisableInterrupts();
+    card = &__CARDBlock[chan];
+    if (!card->attached) {
+        result = -3;
+    } else {
+        if (txCallback) {
+            card->txCallback = txCallback;
+        }
+        if (exiCallback) {
+            card->exiCallback = exiCallback;
+        }
+        card->unlockCallback = (CARDCallback)UnlockedCallback;
+        if (!EXILock(chan, 0, __CARDUnlockedHandler)) {
+            result = -1;
+        } else {
+            card->unlockCallback = NULL;
+            if (!EXISelect(chan, 0, 4)) {
+                EXIUnlock(chan);
+                result = -3;
+            } else {
+                OSCancelAlarm(card->alarm);
+                switch (card->cmd[0]) {
+                case 0xF2:
+                    OSSetAlarm(card->alarm, (s64)100 * ((*(u32 *)0x800000F8 / 4) / 1000), TimeoutHandler);
+                    break;
+                case 0xF3:
+                    break;
+                case 0xF4:
+                case 0xF1:
+                    OSSetAlarm(card->alarm, (s64)2 * (*(u32 *)0x800000F8 / 4) * (card->sectorSize / 0x2000), TimeoutHandler);
+                    break;
+                }
+                result = 0;
+            }
+        }
+    }
+    OSRestoreInterrupts(enabled);
+    return result;
+}
+
 s32 __CARDReadSegment(s32 chan, CARDCallback callback) {
     s32 __CARDStart(s32 chan, CARDCallback txCallback, CARDCallback exiCallback);
     s32 EXIImmEx(s32 chan, void *buf, s32 len, u32 mode);
@@ -21103,6 +21165,82 @@ s32 __CARDUpdateDir(s32 chan, CARDCallback callback) {
     DCStoreRange(dir, 0x2000);
     card->eraseCallback = callback;
     return __CARDEraseSector(chan, card->sectorSize * ((u32)(dir - (u8 *)card->workArea) / 0x2000), EraseCallback);
+}
+
+void __CARDCheckSum(u16 *arg0, s32 arg1, u16 *arg2, u16 *arg3) {
+    s32 temp_r0;
+    s32 var_ctr;
+    s32 var_ctr_2;
+    s32 var_r4;
+    u16 *var_r3;
+    u16 temp_r0_10;
+    u16 temp_r0_2;
+    u16 temp_r0_3;
+    u16 temp_r0_4;
+    u16 temp_r0_5;
+    u16 temp_r0_6;
+    u16 temp_r0_7;
+    u16 temp_r0_8;
+    u16 temp_r0_9;
+
+    var_r3 = arg0;
+    *arg3 = 0;
+    var_r4 = arg1 / 2;
+    *arg2 = 0;
+    if (var_r4 > 0) {
+        temp_r0 = arg1 / 16;
+        var_ctr = temp_r0;
+        if (temp_r0 != 0) {
+            do {
+                *arg2 += M2C_FIELD(var_r3, u16 *, 0);
+                temp_r0_2 = M2C_FIELD(var_r3, u16 *, 0);
+                *arg3 += ~(temp_r0_2 | temp_r0_2);
+                *arg2 += M2C_FIELD(var_r3, u16 *, 2);
+                temp_r0_3 = M2C_FIELD(var_r3, u16 *, 2);
+                *arg3 += ~(temp_r0_3 | temp_r0_3);
+                *arg2 += M2C_FIELD(var_r3, u16 *, 4);
+                temp_r0_4 = M2C_FIELD(var_r3, u16 *, 4);
+                *arg3 += ~(temp_r0_4 | temp_r0_4);
+                *arg2 += M2C_FIELD(var_r3, u16 *, 6);
+                temp_r0_5 = M2C_FIELD(var_r3, u16 *, 6);
+                *arg3 += ~(temp_r0_5 | temp_r0_5);
+                *arg2 += M2C_FIELD(var_r3, u16 *, 8);
+                temp_r0_6 = M2C_FIELD(var_r3, u16 *, 8);
+                *arg3 += ~(temp_r0_6 | temp_r0_6);
+                *arg2 += M2C_FIELD(var_r3, u16 *, 0xA);
+                temp_r0_7 = M2C_FIELD(var_r3, u16 *, 0xA);
+                *arg3 += ~(temp_r0_7 | temp_r0_7);
+                *arg2 += M2C_FIELD(var_r3, u16 *, 0xC);
+                temp_r0_8 = M2C_FIELD(var_r3, u16 *, 0xC);
+                *arg3 += ~(temp_r0_8 | temp_r0_8);
+                *arg2 += M2C_FIELD(var_r3, u16 *, 0xE);
+                temp_r0_9 = M2C_FIELD(var_r3, u16 *, 0xE);
+                var_r3 += 0x10;
+                *arg3 += ~(temp_r0_9 | temp_r0_9);
+                var_ctr -= 1;
+            } while (var_ctr != 0);
+            var_r4 &= 7;
+            if (var_r4 != 0) {
+                goto block_4;
+            }
+        } else {
+block_4:
+            var_ctr_2 = var_r4;
+            do {
+                *arg2 += *var_r3;
+                temp_r0_10 = *var_r3;
+                var_r3 += 2;
+                *arg3 += ~(temp_r0_10 | temp_r0_10);
+                var_ctr_2 -= 1;
+            } while (var_ctr_2 != 0);
+        }
+    }
+    if ((u16) *arg2 == -1U) {
+        *arg2 = 0;
+    }
+    if ((u16) *arg3 == -1U) {
+        *arg3 = 0;
+    }
 }
 
 static s32 DoMount(s32 chan);
@@ -23741,6 +23879,58 @@ void GXSetNumTevStages(u8 nStages) {
     *reg = (*reg & ~0x3C00) | ((u32)(nStages - 1) << 10);
     reg = (u32 *)(gx + 0x4F4);
     *reg |= 4;
+}
+
+void GXSetFog(s32 type, f32 startz, f32 endz, f32 nearz, f32 farz, u8 *color) {
+    extern u8 *const gx;
+    u32 fogclr, fog0, fog1, fog2, fog3;
+    f32 A, B, B_mant, C, a, c;
+    s32 B_expn;
+    u32 b_m, b_s, a_hex, c_hex;
+
+    if (farz == nearz || endz == startz) {
+        A = 0.0f;
+        B = 0.5f;
+        C = 0.0f;
+    } else {
+        A = (farz * nearz) / ((farz - nearz) * (endz - startz));
+        B = farz / (farz - nearz);
+        C = startz / (endz - startz);
+    }
+    B_mant = B;
+    B_expn = 0;
+    while (B_mant > 1.0) {
+        B_mant *= 0.5f;
+        B_expn++;
+    }
+    while (B_mant > 0.0f && B_mant < 0.5) {
+        B_mant *= 2.0f;
+        B_expn--;
+    }
+    a = A / (f32)(1 << (B_expn + 1));
+    b_m = (u32)(8.388638e6f * B_mant);
+    b_s = B_expn + 1;
+    c = C;
+
+    fog1 = (b_m & 0xFFFFFF) | 0xEF000000;
+    fog2 = (b_s & 0xFFFFFF) | 0xF0000000;
+    a_hex = *(u32 *)&a;
+    c_hex = *(u32 *)&c;
+    fog0 = (((a_hex >> 12) & 0x7FF) | ((a_hex >> 12) & 0x7F800) | ((a_hex >> 12) & 0x80000)) | 0xEE000000;
+    fog3 = ((((c_hex >> 12) & 0x7FF) | ((c_hex >> 12) & 0x7F800) | ((c_hex >> 12) & 0x80000)) | (type << 21)) & 0xFFFFFF | 0xF1000000;
+    fogclr = ((color[0] << 16) | (color[1] << 8) | color[2]) & 0xFFFFFF | 0xF2000000;
+
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = fog0;
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = fog1;
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = fog2;
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = fog3;
+    GXWGPipe.u8 = 0x61;
+    GXWGPipe.u32 = fogclr;
+    *(u16 *)(gx + 2) = 0;
 }
 
 #pragma push
