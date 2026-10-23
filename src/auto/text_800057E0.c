@@ -18430,3 +18430,31 @@ void *__va_arg(void *ap, s32 type) {
     }
     return addr;
 }
+void SoundSource_Set(s32 index, u32 param, void *value) {
+    extern SoundSource *g_sources_803C6F38;
+    void *memcpy(void *dst, const void *src, u32 n);
+
+    switch (param) {
+    case 5:
+        memcpy(&g_sources_803C6F38[index], value, 0x10);
+        break;
+    case 6:
+        memcpy(g_sources_803C6F38[index].vel, value, 0x10);
+        break;
+    case 0:
+        memcpy(&g_sources_803C6F38[index].unk24, value, 4);
+        break;
+    case 1:
+        memcpy(&g_sources_803C6F38[index].unk20, value, 4);
+        break;
+    case 8:
+        memcpy(&g_sources_803C6F38[index].unk28, value, 4);
+        break;
+    case 2:
+        memcpy(&g_sources_803C6F38[index].unk34, value, 4);
+        break;
+    case 3:
+        memcpy(&g_sources_803C6F38[index].unk38, value, 4);
+        break;
+    }
+}
