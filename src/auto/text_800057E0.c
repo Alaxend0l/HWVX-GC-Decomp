@@ -8798,6 +8798,19 @@ s32 TRKTargetStepOutOfRange(u32 rangeStart, u32 rangeEnd, s32 stepOver) {
     return err;
 }
 
+s32 TRKTargetSingleStep(u32 count, s32 stepOver) {
+    s32 err = 0;
+
+    if (stepOver) {
+        err = 0x703;
+    } else {
+        gTRKStepStatus_800DA0B4.type = 0;
+        gTRKStepStatus_800DA0B4.count = count;
+        err = TRKTargetDoStep();
+    }
+    return err;
+}
+
 s32 TRKTargetAddExceptionInfo(void *b) {
     extern u32 gTRKExceptionStatus_800DA0A4[];
     s32 err;
