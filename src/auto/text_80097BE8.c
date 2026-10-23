@@ -6807,6 +6807,83 @@ s32 THPPlayerDrawCurrentFrame(void *rmode, u32 x, u32 y, u32 polygonW, u32 polyg
     }
     return -1;
 }
+
+extern u16 VolumeTable_800DAE30[];
+void *PopDecodedAudioBuffer(s32 arg0);
+void PushFreeAudioBuffer(void *arg0);
+s32 THPPlayerAudioOutput(s16 *destination, u32 sample, s32 volume) {
+    s32 ret;
+    u32 requestSample;
+    s16 *dst;
+    s32 vol;
+    THPAudioBuffer *buf;
+    u32 sampleNum;
+    s16 *src;
+    s32 mix;
+    u32 i;
+
+    if (volume < 0) {
+        volume = 0;
+    }
+    if (volume > 0x7F) {
+        volume = 0x7F;
+    }
+    vol = VolumeTable_800DAE30[volume];
+
+    if (ActivePlayer.open && ActivePlayer.unk9D == 2 && ActivePlayer.audioExist) {
+        requestSample = sample;
+        dst = destination;
+        ret = 0;
+        while (TRUE) {
+            if (*(THPAudioBuffer **)&ActivePlayer.unkD4[0xC] == NULL) {
+                buf = PopDecodedAudioBuffer(0);
+                *(THPAudioBuffer **)&ActivePlayer.unkD4[0xC] = buf;
+                if (buf == NULL) {
+                    break;
+                }
+                *(s32 *)&ActivePlayer.unkD4[0x4] = buf->frameNumber;
+            }
+            buf = *(THPAudioBuffer **)&ActivePlayer.unkD4[0xC];
+            sampleNum = buf->validSample;
+            if (sampleNum) {
+                if (sampleNum >= requestSample) {
+                    sampleNum = requestSample;
+                }
+                src = buf->curPtr;
+                for (i = 0; i < sampleNum * 2; i++) {
+                    mix = *dst + ((vol * *src) >> 15);
+                    if (mix < -32767) {
+                        mix = -32767;
+                    }
+                    if (mix > 32768) {
+                        mix = 32768;
+                    }
+                    *dst = mix;
+                    dst++;
+                    src++;
+                }
+                ret += sampleNum;
+                requestSample -= sampleNum;
+                (*(THPAudioBuffer **)&ActivePlayer.unkD4[0xC])->validSample -= sampleNum;
+                (*(THPAudioBuffer **)&ActivePlayer.unkD4[0xC])->curPtr = src;
+                if ((*(THPAudioBuffer **)&ActivePlayer.unkD4[0xC])->validSample == 0) {
+                    PushFreeAudioBuffer(*(THPAudioBuffer **)&ActivePlayer.unkD4[0xC]);
+                    buf = PopDecodedAudioBuffer(0);
+                    *(THPAudioBuffer **)&ActivePlayer.unkD4[0xC] = buf;
+                    if (buf != NULL) {
+                        *(s32 *)&ActivePlayer.unkD4[0x4] = buf->frameNumber;
+                    }
+                }
+                if (requestSample == 0) {
+                    break;
+                }
+            }
+        }
+        return ret;
+    }
+    return 0;
+}
+
 #pragma pop
 
 BOOL THPPlayerGetVideoInfo(THPVideoInfo *videoInfo) {
