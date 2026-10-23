@@ -3831,6 +3831,51 @@ void DataPack_RefreshTextures(DataPack *pack) {
     }
 }
 
+void DataPack_RefreshPtrs(DataPack *pack) {
+    void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
+    u16 ShaderHolder_AddShader(s32 shader);
+    void ShaderHolder_AddGX(void *gx, u32 index);
+    s32 Trigger_AddTrigger(s32 *trigger);
+    u8 *base;
+    u32 *relocs;
+    u32 id;
+    u32 i;
+    u32 texID;
+    u32 packID;
+    u32 idx;
+    u8 *trigger;
+
+    base = pack->base;
+    if (base != NULL) {
+        DataPack_RefreshTextures(pack);
+        for (i = 0; i < *(u32 *)((u8 *)pack + 0xC); i++) {
+            id = ((u32 *)pack->palettes)[i * 2 + 1];
+            if (id & 0xFFFF0000) {
+                packID = id >> 16;
+                idx = pack->refs[0].id != packID;
+                if (pack->refs[idx].pack == NULL) {
+                    pack->refs[idx].pack = FileStreaming_InitializeDataPack(FileStreaming_LoadDataPack(&pack->refs[idx], 8, packID, 0), 8, 1);
+                }
+                texID = pack->refs[idx].pack->soundIDs[id & 0xFFFF];
+            } else {
+                texID = pack->soundIDs[id];
+            }
+            *(u32 *)(base + ((u32 *)pack->palettes)[i * 2]) = texID;
+        }
+        for (i = 0; i < pack->numShaders; i++) {
+            pack->shaderIDs[i] = ShaderHolder_AddShader(pack->shaders[i].shader);
+        }
+        for (i = 0; i < pack->numGX; i++) {
+            ShaderHolder_AddGX(base + pack->gxList[i * 2], pack->shaderIDs[pack->gxList[i * 2 + 1]]);
+        }
+        trigger = pack->triggers;
+        for (i = 0; i < pack->numTriggers; i++) {
+            Trigger_AddTrigger((s32 *)trigger);
+            trigger += 0x2C;
+        }
+    }
+}
+
 void DataPack_ReleaseDataPack(DataPack *pack) {
     void DestroySFX(u16 id);
     void ShaderHolder_RemoveShader(s32 shader);
