@@ -18808,7 +18808,6 @@ void __GXWriteFifoIntReset(u8 hiWatermarkClr, u8 loWatermarkClr) {
 }
 
 #pragma push
-#pragma peephole off
 void __GXXfVtxSpecs(void) {
     typedef struct GXDataXfVcd {
         u16 unk0;
@@ -18825,72 +18824,18 @@ void __GXXfVtxSpecs(void) {
     u32 nNrm;
     u32 nTex;
     u32 reg;
-    u32 lo;
-    u32 hi;
-    u32 c0, c1;
-    u32 t0, t1, t2, t3, t4, t5, t6, t7;
 
-    lo = gx->vcdLo;
-    if ((lo >> 13) & 3) {
-        c0 = 1;
-    } else {
-        c0 = 0;
-    }
-    if ((lo >> 15) & 3) {
-        c1 = 1;
-    } else {
-        c1 = 0;
-    }
-    nCols = c0 + c1;
-    if (gx->hasBiNrms) {
-        nNrm = 2;
-    } else if (gx->hasNrms) {
-        nNrm = 1;
-    } else {
-        nNrm = 0;
-    }
-    hi = gx->vcdHi;
-    if (hi & 3) {
-        t0 = 1;
-    } else {
-        t0 = 0;
-    }
-    if ((hi >> 2) & 3) {
-        t1 = 1;
-    } else {
-        t1 = 0;
-    }
-    if ((hi >> 4) & 3) {
-        t2 = 1;
-    } else {
-        t2 = 0;
-    }
-    if ((hi >> 6) & 3) {
-        t3 = 1;
-    } else {
-        t3 = 0;
-    }
-    if ((hi >> 8) & 3) {
-        t4 = 1;
-    } else {
-        t4 = 0;
-    }
-    if ((hi >> 10) & 3) {
-        t5 = 1;
-    } else {
-        t5 = 0;
-    }
-    if ((hi >> 12) & 3) {
-        t6 = 1;
-    } else {
-        t6 = 0;
-    }
-    if ((hi >> 14) & 3) {
-        t7 = 1;
-    } else {
-        t7 = 0;
-    }
-    nTex = t0 + t1 + t2 + t3 + t4 + t5 + t6 + t7;
+    nCols = (((gx->vcdLo >> 13) & 3) ? 1 : 0) + (((gx->vcdLo >> 15) & 3) ? 1 : 0);
+    nNrm = gx->hasBiNrms ? 2 : gx->hasNrms ? 1 : 0;
+    nTex = 0;
+    nTex += (gx->vcdHi & 3) ? 1 : 0;
+    nTex += ((gx->vcdHi >> 2) & 3) ? 1 : 0;
+    nTex += ((gx->vcdHi >> 4) & 3) ? 1 : 0;
+    nTex += ((gx->vcdHi >> 6) & 3) ? 1 : 0;
+    nTex += ((gx->vcdHi >> 8) & 3) ? 1 : 0;
+    nTex += ((gx->vcdHi >> 10) & 3) ? 1 : 0;
+    nTex += ((gx->vcdHi >> 12) & 3) ? 1 : 0;
+    nTex += ((gx->vcdHi >> 14) & 3) ? 1 : 0;
     reg = nCols | (nNrm << 2) | (nTex << 4);
     GXWGPipe.u8 = 0x10;
     GXWGPipe.u32 = 0x1008;
