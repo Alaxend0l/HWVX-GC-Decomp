@@ -9786,9 +9786,10 @@ void __THPPrepBitStream(void) {
             for (code = 0; code < 32; code++) {
                 __THPInfo_803C7890->huffmanTabs[i].quick[code] = 0xFF;
                 for (j = 0; j < 5; j++) {
-                    if ((s32)(code >> (4 - j)) <= __THPInfo_803C7890->huffmanTabs[i].maxCode[j + 1]) {
+                    s32 tmp = code >> (4 - j);
+                    if (tmp <= __THPInfo_803C7890->huffmanTabs[i].maxCode[j + 1]) {
                         __THPInfo_803C7890->huffmanTabs[i].quick[code] =
-                            __THPInfo_803C7890->huffmanTabs[i].Vij[__THPInfo_803C7890->huffmanTabs[i].valPtr[j + 1] + (code >> (4 - j))];
+                            (__THPInfo_803C7890->huffmanTabs[i].Vij + __THPInfo_803C7890->huffmanTabs[i].valPtr[j + 1])[tmp];
                         __THPInfo_803C7890->huffmanTabs[i].increment[code] = j + 1;
                         j = 99;
                     }
@@ -10024,6 +10025,75 @@ void SetVoiceState_(void *voice, s32 state) {
 #pragma pop
 
 #pragma pop
+
+void StartVoice_(void *voice) {
+    extern u32 g_silence;
+    s32 OSDisableInterrupts();
+    void OSRestoreInterrupts(s32);
+    u8 *v;
+    u8 *axv;
+    s32 level;
+
+    v = voice;
+    level = OSDisableInterrupts();
+    axv = *(u8 **)(v + 0x50);
+    switch (v[0x2C]) {
+    case 8:
+        *(u16 *)(axv + 0x1D6) = 0x100;
+        *(u16 *)(axv + 0x1A8) = 0x19;
+        break;
+    case 16:
+        *(u16 *)(axv + 0x1D6) = 0x800;
+        *(u16 *)(axv + 0x1A8) = 0xA;
+        break;
+    default:
+        *(u16 *)(axv + 0x1D6) = 0;
+        *(u16 *)(axv + 0x1A8) = 0;
+        break;
+    }
+    *(u32 *)(axv + 0x1C) |= 0x20000;
+    *(u32 *)(axv + 0x1B2) = *(u32 *)(v + 0x20);
+    *(u32 *)(axv + 0x1AE) = *(u32 *)(v + 0x20) + (*(u32 *)(v + 0x28) - 1);
+    if (*(s32 *)(v + 0x24) != -1) {
+        *(u16 *)(axv + 0x1A6) = 1;
+        *(u32 *)(axv + 0x1AA) = *(u32 *)(v + 0x20) + *(u32 *)(v + 0x24);
+    } else {
+        *(u16 *)(axv + 0x1A6) = 0;
+        *(u32 *)(axv + 0x1AA) = g_silence;
+        if (v[0x2C] == 16) {
+            *(u32 *)(axv + 0x1AA) >>= 1;
+        }
+    }
+    *(u32 *)(axv + 0x1C) |= 0x1000;
+    *(u16 *)(axv + 0x140) = 0;
+    *(u16 *)(axv + 0x142) = 2;
+    *(u32 *)(axv + 0x1DE) = (1.0f / 48000.0f) * ((f32)*(u32 *)(v + 0x30) * (f32)*(u32 *)(v + 0x34));
+    *(u16 *)(axv + 0x1E2) = 0;
+    if (v[0x54]) {
+        *(u16 *)(axv + 0x1E4) = 0;
+        *(u16 *)(axv + 0x1E6) = 0;
+        *(u16 *)(axv + 0x1E8) = 0;
+        *(u16 *)(axv + 0x1EA) = 0;
+        *(u32 *)(axv + 0x1C) |= 0x40000 | 1;
+    } else {
+        *(u32 *)(axv + 0x1C) |= 0x80000 | 1;
+    }
+    if (v[0]) {
+        *(u16 *)(axv + 0x144) = 0x203;
+    } else {
+        *(u16 *)(axv + 0x144) = 0x13;
+    }
+    *(u16 *)(axv + 0x152) = 0;
+    *(u16 *)(axv + 0x156) = 0;
+    *(u16 *)(axv + 0x15A) = 0;
+    *(u16 *)(axv + 0x15E) = 0;
+    *(u32 *)(axv + 0x1C) |= 2;
+    *(u16 *)(axv + 0x146) = 1;
+    *(u32 *)(axv + 0x1C) |= 4;
+    v[0x54] = 0;
+    v[0x15] = 1;
+    OSRestoreInterrupts(level);
+}
 
 void SetVoicePriority_(void *arg0) {
     M2C_UNK AXSetVoicePriority(s32, u8);
