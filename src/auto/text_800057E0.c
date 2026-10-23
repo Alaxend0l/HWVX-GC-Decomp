@@ -15061,7 +15061,7 @@ void stateGoToRetry(void) {
 }
 
 #pragma push
-#pragma optimization_level 1
+#pragma optimization_level 0
 void cbForStateGoToRetry(u32 intType) {
     void __DVDStoreErrorCode(u32);
     void DVDReset(void);
