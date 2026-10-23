@@ -2148,29 +2148,66 @@ BOOL DBGReadStatus(u32 *status) {
 #pragma use_lmw_stmw on
 BOOL DBGWrite(u32 count, void *buffer, s32 size) {
     BOOL DBGEXIImm(void *buffer, s32 bytecounter, u32 write);
-    BOOL err;
+    volatile u32 *regs = (volatile u32 *)0xCC000000;
     u32 *buf = (u32 *)buffer;
+    BOOL err;
+    volatile u32 *cpr;
+    volatile u32 *cr;
     u32 cmd;
     u32 data;
 
-    *(volatile u32 *)0xCC006828 = (*(volatile u32 *)0xCC006828 & 0x405) | 0xC0;
+    cpr = (volatile u32 *)((u8 *)regs + 0x6800);
+    *(cpr += 10) = (*(volatile u32 *)((u8 *)regs + 0x6828) & 0x405) | 0xC0;
     cmd = ((count << 8) & 0x1FFFC00) | 0xA0000000;
     err = !DBGEXIImm(&cmd, 4, 1);
-    while (*(volatile u32 *)0xCC006834 & 1) {
+    cr = (volatile u32 *)((u8 *)regs + 0x6800);
+    while (*(cr += 13) & 1) {
     }
     while (size != 0) {
         data = *buf++;
         err |= !DBGEXIImm(&data, 4, 1);
-        while (*(volatile u32 *)0xCC006834 & 1) {
+        while (*cr & 1) {
         }
         size -= 4;
         if (size < 0) {
             size = 0;
         }
     }
-    *(volatile u32 *)0xCC006828 &= 0x405;
+    *cpr &= 0x405;
     return !err;
 }
+
+BOOL DBGRead(u32 count, void *buffer, s32 size) {
+    BOOL DBGEXIImm(void *buffer, s32 bytecounter, u32 write);
+    volatile u32 *regs = (volatile u32 *)0xCC000000;
+    u32 *buf = (u32 *)buffer;
+    BOOL err;
+    volatile u32 *cpr;
+    volatile u32 *cr;
+    u32 cmd;
+    u32 data;
+
+    cpr = (volatile u32 *)((u8 *)regs + 0x6800);
+    *(cpr += 10) = (*(volatile u32 *)((u8 *)regs + 0x6828) & 0x405) | 0xC0;
+    cmd = ((count << 8) & 0x1FFFC00) | 0x20000000;
+    err = !DBGEXIImm(&cmd, 4, 1);
+    cr = (volatile u32 *)((u8 *)regs + 0x6800);
+    while (*(cr += 13) & 1) {
+    }
+    while (size != 0) {
+        err |= !DBGEXIImm(&data, 4, 0);
+        while (*cr & 1) {
+        }
+        *buf++ = data;
+        size -= 4;
+        if (size < 0) {
+            size = 0;
+        }
+    }
+    *cpr &= 0x405;
+    return !err;
+}
+
 #pragma pop
 
 s32 DBGReadMailbox(u32 *mailbox) {
@@ -7203,6 +7240,40 @@ s32 GBAWrite(s32 chan, u8 *src, u8 *status) {
     }
     return __GBASync(chan);
 }
+
+void __GBAHandler(s32 chan, u32 error, void *context) {
+    extern s32 __GBAReset;
+    void OSClearContext(void *);
+    void OSSetCurrentContext(void *);
+    GBAControl *gba = &__GBA[chan];
+    void (*proc)(s32);
+    void (*callback)(s32, s32);
+    u8 tmpContext[0x2C8];
+
+    if (__GBAReset != 0) {
+        return;
+    }
+    if (error & 0xF) {
+        gba->ret = 1;
+    } else {
+        gba->ret = 0;
+    }
+    if (gba->proc) {
+        proc = (void (*)(s32))gba->proc;
+        gba->proc = NULL;
+        proc(chan);
+    }
+    if (gba->callback) {
+        OSClearContext(tmpContext);
+        OSSetCurrentContext(tmpContext);
+        callback = (void (*)(s32, s32))gba->callback;
+        gba->callback = NULL;
+        callback(chan, gba->ret);
+        OSClearContext(tmpContext);
+        OSSetCurrentContext(context);
+    }
+}
+
 #pragma pop
 
 #pragma pop
@@ -7305,6 +7376,29 @@ s8 FileManager_IsDeviceFormatted(s32 device) {
 s8 FileManager_FormatDevice(s32 device) {
     m_memcardstatus_803C7970[device - 11] = CARDFormat(device - 11);
     return m_memcardstatus_803C7970[device - 11] == 0;
+}
+
+#pragma push
+#pragma dont_inline on
+void File_Close(s32 handle) {
+    extern struct { s32 fileInfo; u8 pad[0x100]; } g_filedata_PC[4];
+    s32 DVDClose(void *fileInfo);
+    void MemCard_Close__Fl(s32 device);
+    s8 device = (u8)(handle >> 16);
+    s8 slot = (u8)(handle >> 8);
+    s8 idx = (u8)handle;
+
+    if (device >= 11) {
+        MemCard_Close__Fl(device);
+        g_files[idx].slot = -1;
+    } else if (idx >= 0 && idx < 4) {
+        if (slot == g_files[idx].slot) {
+            DVDClose((void *)g_filedata_PC[idx].fileInfo);
+            Deallocate(g_filedata_PC[idx].fileInfo);
+            g_filedata_PC[idx].fileInfo = 0;
+            g_files[idx].slot = -1;
+        }
+    }
 }
 
 s32 File_Seek(s32 handle, s32 offset, s8 mode) {
