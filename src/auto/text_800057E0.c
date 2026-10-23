@@ -83,6 +83,7 @@ void ShowStats(void);
 void LightHolder_Delete(s32 index);
 void Gfx_EndScene(void);
 void Gfx_FlipBuffers(void);
+void Player_Init(void *player, s32 arg1);
 s8 IsPointWithinVolume(struct Vector4 *point, u8 *volume, f32 *distSq);
 
 typedef struct InterfaceCallBackData {
