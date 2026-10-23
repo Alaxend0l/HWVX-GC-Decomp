@@ -11883,7 +11883,7 @@ void TRKNubMainLoop(void) {
                 break;
             }
             TRKDestructEvent(&event);
-        } else if (isNewInput == FALSE || *gTRKInputPendingPtr != 0) {
+        } else if (isNewInput == FALSE || *gTRKInputPendingPtr[0] != 0) {
             isNewInput = TRUE;
             TRKGetInput();
         } else {
