@@ -1572,6 +1572,53 @@ s32 ActionPlaySoundSequence(void *arg0) {
     }
 }
 
+s32 ActionCreatureChangeMode(u32 *action) {
+    void Creature_MotionStateInitDeath(u8 *creature);
+    void Creature_Release(s32 arg0);
+    u32 i;
+    u8 *creature;
+    u32 handle;
+
+    for (i = 0; i < action[1]; i++) {
+        creature = (u8 *)action[i + 2];
+        handle = *(u32 *)(creature + 0x1C);
+        switch (action[0]) {
+        case 0:
+            *(u32 *)(creature + 0x20) = 0;
+            if (handle != 0) {
+                *(u32 *)(creature + 0x1C) = 0;
+                Creature_Release(handle);
+            }
+            break;
+        case 1:
+            *(u32 *)(creature + 0x20) = 1;
+            break;
+        case 3:
+            *(u32 *)(creature + 0x20) = 0;
+            if (handle != 0) {
+                *(u32 *)(creature + 0x1C) = 0;
+                Creature_MotionStateInitDeath((u8 *)handle);
+            }
+            break;
+        case 25:
+            *(u32 *)(creature + 0x20) = 0;
+            if (handle != 0) {
+                *(u32 *)(creature + 0x1C) = 0;
+                Creature_Release(handle);
+            }
+            break;
+        case 26:
+            *(u32 *)(creature + 0x20) = 1;
+            if (handle != 0) {
+                *(u32 *)(creature + 0x1C) = 0;
+                Creature_MotionStateInitDeath((u8 *)handle);
+            }
+            break;
+        }
+    }
+    return 1;
+}
+
 #pragma pop
 
 void AI_Create(void) {
@@ -11056,6 +11103,42 @@ s32 OSReceiveMessage(void *mq, void **msg, s32 flags) {
     return 1;
 }
 
+void __OSInitMemoryProtection(void) {
+    void OSRegisterResetFunction(void *info);
+    void RealMode(void *config);
+    u32 __OSMaskInterrupts(u32 mask);
+    void *__OSSetInterruptHandler(s16 interrupt, void *handler);
+    u32 __OSUnmaskInterrupts(u32 mask);
+    extern u8 Config24MB[];
+    extern u8 Config48MB[];
+    void MEMIntrruptHandler(s16 interrupt, void *context);
+    extern u8 ResetFunctionInfo_800D5490[];
+    u32 size;
+    s32 enabled;
+
+    size = *(u32 *)0x800000F0;
+    enabled = OSDisableInterrupts();
+    if (size <= 0x1800000) {
+        RealMode(Config24MB);
+    } else if (size <= 0x3000000) {
+        RealMode(Config48MB);
+    }
+    ((volatile u16 *)0xCC004000)[0x10] = 0;
+    ((volatile u16 *)0xCC004000)[0x8] = 0xFF;
+    __OSMaskInterrupts(0xF0000000);
+    __OSSetInterruptHandler(0, MEMIntrruptHandler);
+    __OSSetInterruptHandler(1, MEMIntrruptHandler);
+    __OSSetInterruptHandler(2, MEMIntrruptHandler);
+    __OSSetInterruptHandler(3, MEMIntrruptHandler);
+    __OSSetInterruptHandler(4, MEMIntrruptHandler);
+    OSRegisterResetFunction(ResetFunctionInfo_800D5490);
+    if (*(u32 *)0x800000F0 < *(u32 *)0x80000028 && *(u32 *)0x800000F0 == 0x1800000) {
+        ((volatile u16 *)0xCC004000)[0x14] = 2;
+    }
+    __OSUnmaskInterrupts(0x08000000);
+    OSRestoreInterrupts(enabled);
+}
+
 void __OSUnlockAllMutex(void *thread) {
     void OSWakeupThread(void *queue);
     void *mutex;
@@ -13130,20 +13213,13 @@ void VIFlush(void) {
     extern u16 shdwRegs_802EFB20[59];
     BOOL enabled;
     s32 regIndex;
-    u32 hi;
-    u32 lo;
 
     enabled = OSDisableInterrupts();
     shdwChangeMode_803C7398 |= changeMode_803C7388;
     changeMode_803C7388 = 0;
     shdwChanged_803C73A0 |= changed_803C7390;
     while (changed_803C7390) {
-        hi = (u32)(changed_803C7390 >> 32);
-        lo = (u32)(changed_803C7390 & 0xFFFFFFFF);
-        regIndex = __cntlzw(hi);
-        if (regIndex >= 32) {
-            regIndex = 32 + __cntlzw(lo);
-        }
+        regIndex = cntlzd(changed_803C7390);
         shdwRegs_802EFB20[regIndex] = regs_802EFAA8[regIndex];
         changed_803C7390 &= ~((u64)1 << (63 - regIndex));
     }
@@ -14942,6 +15018,43 @@ void TimeoutHandler(void *alarm, void *context) {
         card->exiCallback = NULL;
         callback(chan, -5);
     }
+}
+
+s32 __CARDWritePage(s32 chan, CARDCallback callback) {
+    s32 EXIImmEx(s32 chan, void *buf, s32 len, u32 mode);
+    s32 EXIDma(s32 chan, void *buf, s32 len, u32 type, void *callback);
+    s32 EXIDeselect(s32 chan);
+    s32 EXIUnlock(s32 chan);
+    void __CARDTxHandler(s32 chan, void *context);
+    CARDControl *card;
+    u8 *cmd;
+    s32 result;
+
+    card = &__CARDBlock[chan];
+    cmd = card->unk8C + (0x94 - 0x8C);
+    cmd[0] = 0xF2;
+    cmd[1] = (u8)(((u32)card->addr >> 17) & 0x7F);
+    cmd[2] = (u8)(((u32)card->addr >> 9) & 0xFF);
+    cmd[3] = (u8)(((u32)card->addr >> 7) & 3);
+    cmd[4] = (u8)((u32)card->addr & 0x7F);
+    *(s32 *)(card->unk8C + (0xA0 - 0x8C)) = 5;
+    *(s32 *)(card->unk8C + (0xA4 - 0x8C)) = 1;
+    card->retry = 3;
+    result = __CARDStart(chan, callback, NULL);
+    if (result == -1) {
+        return 0;
+    }
+    if (result < 0) {
+        return result;
+    }
+    if (EXIImmEx(chan, cmd, *(s32 *)(card->unk8C + (0xA0 - 0x8C)), 1) &&
+        EXIDma(chan, (void *)card->offset, 0x80, *(s32 *)(card->unk8C + (0xA4 - 0x8C)), __CARDTxHandler)) {
+        return 0;
+    }
+    card->exiCallback = NULL;
+    EXIDeselect(chan);
+    EXIUnlock(chan);
+    return -3;
 }
 
 s32 __CARDEraseSector(s32 chan, u32 addr, CARDCallback callback) {
@@ -17220,6 +17333,49 @@ void GXSetCurrentMtx(u32 id) {
     __GXSetMatrixIndex(0);
 }
 
+void GXSetViewportJitter(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz, u32 field) {
+    extern u8 *gx;
+    void __GXSetRange(f32 nearz, f32 fgSideX);
+    f32 sx;
+    f32 sy;
+    f32 sz;
+    f32 ox;
+    f32 oy;
+    f32 oz;
+    f32 zmin;
+    f32 zmax;
+
+    if (field == 0) {
+        top -= 0.5f;
+    }
+    sx = wd * 0.5f;
+    sy = -ht * 0.5f;
+    ox = 342.0f + (left + wd * 0.5f);
+    oy = 342.0f + (top + ht * 0.5f);
+    zmin = 16777215.0f * nearz;
+    zmax = 16777215.0f * farz;
+    sz = zmax - zmin;
+    oz = zmax;
+    *(f32 *)(gx + 0x43C) = left;
+    *(f32 *)(gx + 0x440) = top;
+    *(f32 *)(gx + 0x444) = wd;
+    *(f32 *)(gx + 0x448) = ht;
+    *(f32 *)(gx + 0x44C) = nearz;
+    *(f32 *)(gx + 0x450) = farz;
+    if (*(u8 *)(gx + 0x454)) {
+        __GXSetRange(nearz, *(f32 *)(gx + 0x458));
+    }
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = 0x5101A;
+    GXWGFifo.f32 = sx;
+    GXWGFifo.f32 = sy;
+    GXWGFifo.f32 = sz;
+    GXWGFifo.f32 = ox;
+    GXWGFifo.f32 = oy;
+    GXWGFifo.f32 = oz;
+    *(u16 *)(gx + 2) = 1;
+}
+
 void GXGetViewportv(void *arg0) {
     extern void *gx;
     M2C_FIELD(arg0, f32 *, 0) = (f32) M2C_FIELD(gx, f32 *, 0x43C);
@@ -17522,6 +17678,53 @@ void __SISteeringHandler(s32 arg0, s32 arg1, M2C_UNK *arg2) {
     }
 }
 
+#pragma push
+#pragma peephole off
+void TypeAndStatusCallback(s32 chan, u32 type) {
+    extern u8 __SISteering[];
+    extern s32 __SIResetSteering;
+    void __SISteeringHandler(s32, s32, void *);
+    s32 SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback, s64 delay);
+    void *OSGetCurrentContext(void);
+    void OSClearContext(void *context);
+    void OSSetCurrentContext(void *context);
+    void __OSReschedule(void);
+    u8 *steering = __SISteering + chan * 0x28;
+    void *context;
+    void (*callback)(s32);
+    void (*cb)(s32, s32);
+    u8 exceptionContext[0x2C8];
+
+    if (__SIResetSteering != 0) {
+        return;
+    }
+    if ((type & 0xFFFF0000) == 0x08000000) {
+        if (SITransfer(chan, steering, *(u32 *)(steering + 0xC), steering + 3, *(u32 *)(steering + 0x10),
+                       __SISteeringHandler, 0) != 0) {
+            return;
+        }
+        *(s32 *)(steering + 0x18) = -2;
+    } else {
+        *(s32 *)(steering + 0x18) = -1;
+    }
+    callback = *(void (**)(s32))(steering + 0x24);
+    if (callback != NULL) {
+        *(void (**)(s32))(steering + 0x24) = NULL;
+        callback(chan);
+    }
+    if (*(void **)(steering + 0x14) != NULL) {
+        context = OSGetCurrentContext();
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(exceptionContext);
+        cb = *(void (**)(s32, s32))(steering + 0x14);
+        *(void **)(steering + 0x14) = NULL;
+        cb(chan, *(s32 *)(steering + 0x18));
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(context);
+        __OSReschedule();
+    }
+}
+#pragma pop
 void __SISteeringEnable(s32 chan) {
     s32 SIEnablePolling(u32 poll);
     s32 SIGetResponse(s32 chan, void *data);
