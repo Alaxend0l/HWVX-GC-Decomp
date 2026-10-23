@@ -14901,9 +14901,42 @@ void PlayConstantForce__8LGWheelsFlsUs(void *wheels, s32 chan, s16 magnitude, u1
 }
 #pragma pop
 
-void PlayFrontalCollisionForce__8LGWheelsFlUc(void *wheels, s32 chan, u8 force) {
-}
+s32 DownloadForce__8PeriodicFllRUlUcUlUlUcUsUsUssUlUlUcUc(Force *force, s32 chan, s32 effect, u32 *device, u8 type, u32 duration, u32 startDelay, u8 magnitude, u16 direction, u16 period, u16 phase, s16 offset, u32 attackTime, u32 fadeTime, u8 attackLevel, u8 fadeLevel);
+s32 UpdateForce__8PeriodicFllUcUlUlUcUsUsUssUlUlUcUc(Force *force, s32 chan, s32 effect, u8 type, u32 duration, u32 startDelay, u8 axis, u16 magnitude, u16 offset, u16 phase, s16 period, u32 attackTime, u32 fadeTime, u8 attackLevel, u8 fadeLevel);
+#pragma push
+#pragma readonly_strings on
+#pragma dont_inline on
+void PlayFrontalCollisionForce_tmp(LGWheels *lg, s32 chan, u8 force) {
+    s32 Start__5ForceFll();
 
+    if (IsOpened__6WheelsFl((Wheels *)lg->wheels, chan)) {
+        if (lg->periodic.playing[chan][0]) {
+            if (SameFrontalCollisionForceParams__8LGWheelsFls(lg, chan, force)) {
+                Start__5ForceFll(&lg->periodic, chan, 0);
+            } else {
+                if (UpdateForce__8PeriodicFllUcUlUlUcUsUsUssUlUlUcUc(&lg->periodic, chan, 0, 3, 150, 0, force, 90, 75, 0, 0, 0, 20, 0, 0) >= 0) {
+                    lg->frontalCollisionParams[chan] = force;
+                }
+                Start__5ForceFll(&lg->periodic, chan, 0);
+            }
+        } else if (lg->periodic.effectIds[chan][0] == 0xFFFFFFFF) {
+            if (DownloadForce__8PeriodicFllRUlUcUlUlUcUsUsUssUlUlUcUc(&lg->periodic, chan, 0, &lg->overallGainId[chan], 3, 150, 0, force, 90, 75, 0, 0, 0, 20, 0, 0) >= 0) {
+                lg->frontalCollisionParams[chan] = force;
+            }
+            Start__5ForceFll(&lg->periodic, chan, 0);
+        } else if (SameFrontalCollisionForceParams__8LGWheelsFls(lg, chan, force)) {
+            Start__5ForceFll(&lg->periodic, chan, 0);
+        } else {
+            if (UpdateForce__8PeriodicFllUcUlUlUcUsUsUssUlUlUcUc(&lg->periodic, chan, 0, 3, 150, 0, force, 90, 75, 0, 0, 0, 20, 0, 0) >= 0) {
+                lg->frontalCollisionParams[chan] = force;
+            }
+            Start__5ForceFll(&lg->periodic, chan, 0);
+        }
+    } else {
+        OSReport("ERROR: trying to play a force on port %d but no wheel opened.\n", chan);
+    }
+}
+#pragma pop
 void PlayCarAirborne__8LGWheelsFl(void *wheels, s32 chan) {
     if (IsOpened__6WheelsFl((Wheels *)((u8 *)wheels + 0x82C), chan)) {
         if (GetOverallForceGain__8LGWheelsFl(wheels, chan) != 0) {
