@@ -598,14 +598,46 @@ static inline s32 Effect_MulDiv(s32 a, s32 b, s32 c) {
     return (a * b + (a < 0 ? -(c / 2) : c / 2)) / c;
 }
 
+typedef struct EffectConstant {
+    s16 magnitude;
+    u16 angle;
+    EffectEnvelope envelope;
+} EffectConstant;
+
+typedef struct EffectRamp {
+    s16 start;
+    s16 end;
+    u16 angle;
+} EffectRamp;
+
+typedef struct EffectPeriodic {
+    u8 magnitude;
+    u8 unk1;
+    u16 angle;
+    u16 period;
+    u16 phase;
+    s16 offset;
+    u8 unkA[2];
+    EffectEnvelope envelope;
+} EffectPeriodic;
+
 typedef struct Effect {
-    u8 unk0[4];
+    u8 type;
+    u8 unk1[3];
     u32 duration;
-    u8 unk8[0x1C];
+    u32 startDelay;
+    union {
+        EffectConstant constant;
+        EffectRamp ramp;
+        EffectPeriodic periodic;
+        EffectCondition condition;
+        u8 raw[0x18];
+    } params;
     EffectState *state;
-    u8 unk28[4];
+    u32 flags;
     u32 elapsed;
-    u8 unk30[8];
+    u32 delay;
+    s32 force;
     s32 deadbandLow;
     s32 deadbandHigh;
 } Effect;
