@@ -21542,6 +21542,8 @@ void *GXSetTlutRegionCallback(void *f) {
     return oldcb;
 }
 
+#pragma push
+#pragma auto_inline off
 void __SetSURegs(u32 tmap, u32 tcoord) {
     typedef struct GXDataSU {
         u8 unk0[2];
@@ -21572,6 +21574,69 @@ void __SetSURegs(u32 tmap, u32 tcoord) {
     GXWGPipe.u8 = 0x61;
     GXWGPipe.u32 = gx->suTs1[tcoord];
     gx->bpSentNot = 0;
+}
+
+void __GXSetSUTexRegs(void) {
+    typedef struct GXDataSUTex {
+        u8 unk0[0x100];
+        u32 tref[8];
+        u32 iref;
+        u8 unk124[0x204 - 0x124];
+        u32 genMode;
+        u8 unk208[0x49C - 0x208];
+        u32 texmapId[16];
+        u32 tcsManEnab;
+        u32 tevTcEnab;
+    } GXDataSUTex;
+    extern GXDataSUTex *gx;
+    u32 nStages;
+    u32 nIndStages;
+    u32 i;
+    u32 map;
+    u32 tmap;
+    u32 coord;
+    u32 *ptref;
+
+    if (gx->tcsManEnab != 0xFF) {
+        nStages = ((gx->genMode >> 10) & 0xF) + 1;
+        nIndStages = (gx->genMode >> 16) & 7;
+        for (i = 0; i < nIndStages; i++) {
+            switch (i) {
+            case 0:
+                tmap = gx->iref & 7;
+                coord = (gx->iref >> 3) & 7;
+                break;
+            case 1:
+                tmap = (gx->iref >> 6) & 7;
+                coord = (gx->iref >> 9) & 7;
+                break;
+            case 2:
+                tmap = (gx->iref >> 12) & 7;
+                coord = (gx->iref >> 15) & 7;
+                break;
+            case 3:
+                tmap = (gx->iref >> 18) & 7;
+                coord = (gx->iref >> 21) & 7;
+                break;
+            }
+            if (!(gx->tcsManEnab & (1 << coord))) {
+                __SetSURegs(tmap, coord);
+            }
+        }
+        for (i = 0; i < nStages; i++) {
+            ptref = &gx->tref[i / 2];
+            map = gx->texmapId[i];
+            tmap = map & ~0x100;
+            if (i & 1) {
+                coord = (*ptref >> 15) & 7;
+            } else {
+                coord = (*ptref >> 3) & 7;
+            }
+            if (tmap != 0xFF && !(gx->tcsManEnab & (1 << coord)) && (gx->tevTcEnab & (1 << i))) {
+                __SetSURegs(tmap, coord);
+            }
+        }
+    }
 }
 
 void GXSetTevIndirect(s32 tev_stage, s32 ind_stage, s32 format, s32 bias_sel, s32 matrix_sel, s32 wrap_s, s32 wrap_t, u8 add_prev, u8 utc_lod, s32 alpha_sel) {
