@@ -5701,6 +5701,8 @@ void InterfaceManager_RestoreMissionObjString(u8 *mgr) {
 }
 #pragma pop
 
+#pragma push
+#pragma auto_inline off
 void InterfaceManager_SetPlayerMessage(void *message, u32 player) {
     extern void *g_playerMessage1;
     extern void *g_playerMessage2;
@@ -5714,6 +5716,7 @@ void InterfaceManager_SetPlayerMessage(void *message, u32 player) {
         g_playerMessage3 = message;
     }
 }
+#pragma pop
 
 s32 ActionEndInterface(void *action) {
     extern u8 g_interface[][0x170];
