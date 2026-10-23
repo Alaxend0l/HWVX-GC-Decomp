@@ -11881,6 +11881,33 @@ s32 __CARDRead(s32 chan, void *addr, u32 length, void *dst, CARDCallback callbac
     return __CARDReadSegment(chan, BlockReadCallback);
 }
 
+void BlockWriteCallback(s32 chan, s32 result) {
+    s32 __CARDWritePage(s32 chan, CARDCallback callback);
+    CARDControl *card;
+    CARDCallback callback;
+
+    card = &__CARDBlock[chan];
+    if (result >= 0) {
+        *(s32 *)card->unkB8 += 128;
+        card->addr = (u8 *)card->addr + 128;
+        card->offset += 128;
+        if (--*(s32 *)&card->repeat > 0) {
+            result = __CARDWritePage(chan, BlockWriteCallback);
+            if (result >= 0) {
+                return;
+            }
+        }
+    }
+    if (card->apiCallback == NULL) {
+        __CARDPutControlBlock(card, result);
+    }
+    callback = card->xferCallback;
+    if (callback) {
+        card->xferCallback = NULL;
+        callback(chan, result);
+    }
+}
+
 s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, void *callback) {
     s32 __CARDWritePage(s32 chan, CARDCallback callback);
     void BlockWriteCallback(s32 chan, s32 result);
