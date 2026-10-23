@@ -15060,6 +15060,68 @@ void stateGoToRetry(void) {
     DVDLowStopMotor(cbForStateGoToRetry);
 }
 
+#pragma push
+#pragma optimization_level 2
+void cbForStateGoToRetry(u32 intType) {
+    void __DVDStoreErrorCode(u32);
+    void DVDReset(void);
+    void cbForStateError(u32);
+    void DVDLowStopMotor(void (*)(u32));
+    void stateReady_800725A4(void);
+    void stateMotorStopped(DVDCommandBlock *block);
+    extern DVDCommandBlock *executing_803C7310;
+    extern DVDCommandBlock DummyCommandBlock_802EF9C0;
+    extern s32 NumInternalRetry_803C7344;
+    extern u32 CurrCommand_803C732C;
+    extern s32 ResetRequired_803C7348;
+    extern u32 Canceling_803C7330;
+    extern u32 ResumeFromHere_803C7338;
+    extern void (*CancelCallback_803C7334)(s32, DVDCommandBlock *);
+    DVDCommandBlock *finished;
+    s32 canceled;
+
+    if (intType == 16) {
+        executing_803C7310->state = -1;
+        __DVDStoreErrorCode(0x01234568);
+        DVDReset();
+        cbForStateError(0);
+        return;
+    }
+    if (intType & 2) {
+        executing_803C7310->state = -1;
+        __DVDStoreErrorCode(0x01234567);
+        DVDLowStopMotor(cbForStateError);
+        return;
+    }
+    NumInternalRetry_803C7344 = 0;
+    if (CurrCommand_803C732C == 4 || CurrCommand_803C732C == 5 || CurrCommand_803C732C == 13 ||
+        CurrCommand_803C732C == 15) {
+        ResetRequired_803C7348 = 1;
+    }
+    if (Canceling_803C7330) {
+        ResumeFromHere_803C7338 = 2;
+        finished = executing_803C7310;
+        executing_803C7310 = &DummyCommandBlock_802EF9C0;
+        Canceling_803C7330 = 0;
+        finished->state = 10;
+        if (finished->callback) {
+            (*finished->callback)(-3, finished);
+        }
+        if (CancelCallback_803C7334) {
+            (*CancelCallback_803C7334)(0, finished);
+        }
+        stateReady_800725A4();
+        canceled = 1;
+    } else {
+        canceled = 0;
+    }
+    if (canceled == 0) {
+        executing_803C7310->state = 11;
+        stateMotorStopped(executing_803C7310);
+    }
+}
+#pragma pop
+
 void stateCheckID(void) {
     int memcmp(const void *a, const void *b, u32 n);
     void *memcpy(void *dst, const void *src, u32 n);
