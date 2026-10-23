@@ -5782,7 +5782,7 @@ void Render_DrawPointSprites(void) {
 }
 
 #pragma push
-#pragma auto_inline off
+#pragma dont_inline on
 void Render_DrawRectangle(void *rect) {
     typedef struct RectVertex {
         f32 x;
