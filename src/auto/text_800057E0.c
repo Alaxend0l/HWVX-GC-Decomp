@@ -4258,6 +4258,13 @@ void *World_GetTileCreature(u32 index) {
     return NULL;
 }
 
+void *World_GetTilePath(u32 index) {
+    if (index < M2C_FIELD(g_worldData.world, u32 *, 0x10)) {
+        return M2C_FIELD(g_worldData.world, u8 **, 0x14) + index * 0x20;
+    }
+    return NULL;
+}
+
 void *World_GetVolume(u32 index) {
     void *world = g_worldData.world;
     if (index < M2C_FIELD(world, u32 *, 0x68)) {
