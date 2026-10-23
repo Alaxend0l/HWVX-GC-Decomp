@@ -14248,6 +14248,10 @@ static inline s8 Thing_ProcessItemPickup(u8 *thing, u8 *item) {
     void *motion;
 
     switch (**(u8 **)(item + 0xC0)) {
+    case 0:
+    case 1:
+    case 2:
+        break;
     case 3:
         rack = ThingManagerList_GetByType(thing + 0x88, 8);
         if (rack == NULL) {
@@ -14260,10 +14264,6 @@ static inline s8 Thing_ProcessItemPickup(u8 *thing, u8 *item) {
             *(s32 *)((u8 *)motion + 0x18) = *(s32 *)((u8 *)motion + 0x14);
         }
         return 1;
-    case 0:
-    case 1:
-    case 2:
-        break;
     default:
         break;
     }
