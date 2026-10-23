@@ -14435,7 +14435,7 @@ void OSExitThread(void *val) {
 s32 OSSuspendThread(void *thread) {
     typedef struct SThread SThread;
     typedef struct { SThread *head; SThread *tail; } SQueue;
-    typedef struct { SThread *thread; } SMutex;
+    typedef struct { SQueue queue; SThread *thread; } SMutex;
     struct SThread {
         u8 pad[0x2C8];
         u16 state;
@@ -20509,6 +20509,52 @@ void GXSetDispCopyDst(u16 wd, u16 ht) {
     *reg = (*reg & ~0x3FF) | (stride >> 5);
     reg = (u32 *)(gx + 0x1E8);
     *reg = (*reg & 0xFFFFFF) | 0x4D000000;
+}
+
+void GXSetTexCopyDst(u16 wd, u16 ht, s32 fmt, u8 mipmap) {
+    extern u8 *gx;
+    void __GetImageTileCount(s32 fmt, u16 wd, u16 ht, u32 *rowTiles, u32 *colTiles, u32 *cmpTiles);
+    u32 rowTiles;
+    u32 colTiles;
+    u32 cmpTiles;
+    u32 peTexFmt;
+    u32 peTexFmtH;
+    u32 *reg;
+
+    *(u8 *)(gx + 0x200) = 0;
+    peTexFmt = fmt & 0xF;
+    if (fmt == 0x13) {
+        peTexFmt = 0xB;
+    }
+    switch (fmt) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 0x26:
+        reg = (u32 *)(gx + 0x1FC);
+        *reg = (*reg & ~0x18000) | (3 << 15);
+        break;
+    default:
+        reg = (u32 *)(gx + 0x1FC);
+        *reg = (*reg & ~0x18000) | (2 << 15);
+        break;
+    }
+    *(u8 *)(gx + 0x200) = (fmt & 0x10) == 0x10;
+    peTexFmtH = (peTexFmt >> 3) & 1;
+    reg = (u32 *)(gx + 0x1FC);
+    *reg = (*reg & ~8) | (peTexFmtH << 3);
+    peTexFmt = peTexFmt & 7;
+    __GetImageTileCount(fmt, wd, ht, &rowTiles, &colTiles, &cmpTiles);
+    *(u32 *)(gx + 0x1F8) = 0;
+    reg = (u32 *)(gx + 0x1F8);
+    *reg = (*reg & ~0x3FF) | (rowTiles * cmpTiles);
+    reg = (u32 *)(gx + 0x1F8);
+    *reg = (*reg & 0xFFFFFF) | 0x4D000000;
+    reg = (u32 *)(gx + 0x1FC);
+    *reg = (*reg & ~0x1FE00) | (mipmap << 9);
+    reg = (u32 *)(gx + 0x1FC);
+    *reg = (*reg & ~0x70) | (peTexFmt << 4);
 }
 
 void GXSetDispCopyFrame2Field(s32 mode) {
