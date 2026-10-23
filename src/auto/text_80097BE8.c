@@ -62,6 +62,17 @@ static inline void GXTexCoord2f32(f32 s, f32 t) {
     GXWGFifo.f32 = t;
 }
 
+static inline void GXPosition3s16(const s16 x, const s16 y, const s16 z) {
+    GXWGFifo.s16 = x;
+    GXWGFifo.s16 = y;
+    GXWGFifo.s16 = z;
+}
+
+static inline void GXTexCoord2s16(const s16 s, const s16 t) {
+    GXWGFifo.s16 = s;
+    GXWGFifo.s16 = t;
+}
+
 typedef struct CARDFileInfo {
     s32 chan;
     s32 fileNo;
@@ -5824,19 +5835,23 @@ s32 DrawChar(s32 x, s32 y, u16 code) {
     void GXSetTexCoordGen2(s32 dst, s32 func, s32 src, u32 mtx, u8 normalize, u32 pt);
     void PSMTXScale(f32 m[3][4], f32 x, f32 y, f32 z);
     char *OSGetFontTexture(char *string, void **image, s32 *x, s32 *y, s32 *width);
-    s32 t;
-    s32 s;
-    void *image;
-    s32 width;
-    char str[3];
-    GXTexObj tobj;
     f32 mtx[3][4];
-    s16 x0;
+    GXTexObj tobj;
+    char str[4];
+    s32 width;
+    void *image;
+    s32 s;
+    s32 t;
+    s16 y1;
     s16 y0;
     s16 x1;
-    s16 y1;
-    u16 cw;
-    u16 ch;
+    s16 x0;
+    s32 s0;
+    s32 t0;
+    s32 cw;
+    s32 ch;
+    s32 t1;
+    s32 s1;
 
     if (code == 0) {
         return 0;
@@ -5858,31 +5873,35 @@ s32 DrawChar(s32 x, s32 y, u16 code) {
     GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
     x0 = x;
     y0 = y;
+    t0 = t;
     cw = FontData_803C76A4->cellWidth;
     ch = FontData_803C76A4->cellHeight;
+    s0 = s;
     x1 = x0 + cw;
     y1 = y0 + ch;
     GXBegin(0x80, 0, 4);
+    s1 = s0 + cw;
+    t1 = t0 + ch;
     GXWGFifo.s16 = x0;
     GXWGFifo.s16 = y0;
     GXWGFifo.s16 = 0;
-    GXWGFifo.s16 = s;
-    GXWGFifo.s16 = t;
+    GXWGFifo.s16 = s0;
+    GXWGFifo.s16 = t0;
     GXWGFifo.s16 = x1;
     GXWGFifo.s16 = y0;
     GXWGFifo.s16 = 0;
-    GXWGFifo.s16 = s + cw;
-    GXWGFifo.s16 = t;
+    GXWGFifo.s16 = s1;
+    GXWGFifo.s16 = t0;
     GXWGFifo.s16 = x1;
     GXWGFifo.s16 = y1;
     GXWGFifo.s16 = 0;
-    GXWGFifo.s16 = s + cw;
-    GXWGFifo.s16 = t + ch;
+    GXWGFifo.s16 = s1;
+    GXWGFifo.s16 = t1;
     GXWGFifo.s16 = x0;
     GXWGFifo.s16 = y1;
     GXWGFifo.s16 = 0;
-    GXWGFifo.s16 = s;
-    GXWGFifo.s16 = t + ch;
+    GXWGFifo.s16 = s0;
+    GXWGFifo.s16 = t1;
     return width;
 }
 #pragma pop
