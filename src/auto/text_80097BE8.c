@@ -1100,6 +1100,30 @@ void *soft_allocate_from_var_pools(Block **pool_obj, u32 size, u32 *max_size) {
 }
 
 void FixBlock_construct(FixBlock *ths, FixBlock *prev, FixBlock *next, s32 index, FixSubBlock *chunk, u32 chunk_size) {
+    u32 fixSubBlock_size;
+    u32 n;
+    u32 i;
+    FixSubBlock *np;
+    u8 *p;
+
+    ths->prev_ = prev;
+    ths->next_ = next;
+    prev->next_ = ths;
+    next->prev_ = ths;
+    ths->client_size_ = fix_pool_sizes_800CD960[index];
+    fixSubBlock_size = fix_pool_sizes_800CD960[index] + sizeof(FixSubBlock *);
+    n = chunk_size / fixSubBlock_size;
+    p = (u8 *)chunk;
+    for (i = 0; i < n - 1; i++) {
+        np = (FixSubBlock *)p;
+        np->block_ = ths;
+        np->next_ = (FixSubBlock *)(p += fixSubBlock_size);
+    }
+    np = (FixSubBlock *)p;
+    np->block_ = ths;
+    np->next_ = NULL;
+    ths->start_ = chunk;
+    ths->n_allocated_ = 0;
 }
 
 void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
@@ -2059,6 +2083,10 @@ bytecopy:
     } while (1);
 
     return dst;
+}
+
+int strcmp(const char *str1, const char *str2) {
+    return 0;
 }
 
 u32 strlen(const char *str) {
