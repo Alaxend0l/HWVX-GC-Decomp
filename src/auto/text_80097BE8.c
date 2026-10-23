@@ -14,20 +14,22 @@ s32 OSReceiveMessage(void *queue, void **msg, s32 flags);
 u32 MemCpyA_(u32 dst, u32 src, u32 len);
 BOOL DBGEXIImm(void *buffer, s32 bytecounter, u32 write);
 
+volatile u32 __EXIRegs[16] : 0xCC006800;
+
 static inline void DBGEXISelect(u32 v) {
-    u32 regs = ((volatile u32 *)0xCC006800)[10];
+    u32 regs = __EXIRegs[10];
     regs &= 0x405;
     regs |= 0x80 | (v << 4);
-    ((volatile u32 *)0xCC006800)[10] = regs;
+    __EXIRegs[10] = regs;
 }
 
 static inline BOOL DBGEXIDeselect(void) {
-    ((volatile u32 *)0xCC006800)[10] &= 0x405;
+    __EXIRegs[10] &= 0x405;
     return TRUE;
 }
 
 static inline BOOL DBGEXISync(void) {
-    while (((volatile u32 *)0xCC006800)[13] & 1) {
+    while (__EXIRegs[13] & 1) {
     }
     return TRUE;
 }
