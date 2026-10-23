@@ -1471,14 +1471,13 @@ s32 ActionVehicleRemoveItem(s32 *action) {
     return 1;
 }
 
-void ActionPlaySoundSequence(void *arg0) {
+s32 ActionPlaySoundSequence(void *arg0) {
     void SoundSequence_ClearQueue();
     void SoundSequence_Play(u32, s32);
     void SoundSequence_PlayQueued(u32, s32);
     extern u8 g_soundSeqVTable[];
     u32 id;
     void *thing;
-    void **vtable;
 
     id = M2C_FIELD(arg0, u32 *, 8);
     if (M2C_FIELD(arg0, u32 *, 0) != 0) {
@@ -1493,9 +1492,8 @@ void ActionPlaySoundSequence(void *arg0) {
         SoundSequence_ClearQueue();
     } else {
         for (thing = g_thingManager_DARYL.activeList; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
-            vtable = M2C_FIELD(thing, void ***, 0x8C);
-            if ((u8 *)vtable == g_soundSeqVTable && M2C_FIELD(thing, u32 *, 0xB0) == id) {
-                ((void (*)(void *))vtable[1])(thing);
+            if (M2C_FIELD(thing, u8 **, 0x8C) == g_soundSeqVTable && M2C_FIELD(thing, u32 *, 0xB0) == id) {
+                ((void (*)(void *))(M2C_FIELD(thing, void ***, 0x8C))[1])(thing);
             }
         }
     }
