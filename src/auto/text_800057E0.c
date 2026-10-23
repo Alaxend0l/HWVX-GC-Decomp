@@ -51,11 +51,11 @@ extern DVDQueue WaitingQueue_802EFA18[4];
 
 extern volatile u32 next_803C6DF8;
 
-static inline void DummySRand(u32 seed) {
+static void DummySRand(u32 seed) {
     next_803C6DF8 = seed;
 }
 
-static inline u32 DummyRand(void) {
+static u32 DummyRand(void) {
     next_803C6DF8 = next_803C6DF8 * 1103515245 + 12345;
     return (next_803C6DF8 >> 16) & 0x7FFF;
 }
@@ -10098,20 +10098,20 @@ s32 DummyLen(void) {
     u32 shift;
     u32 tries;
     s32 len;
+    u32 seed;
 
     shift = 1;
     tries = 0;
     DummySRand(OSGetTick());
-    len = (DummyRand() & 0x1F) + 1;
+    len = DummyRand() % 32 + 1;
     while (len < 4 && tries < 10) {
-        u32 seed = OSGetTick() << shift;
-        shift++;
-        if (shift > 16) {
+        seed = OSGetTick() << shift;
+        if (++shift > 16) {
             shift = 1;
         }
         DummySRand(seed);
         tries++;
-        len = (DummyRand() & 0x1F) + 1;
+        len = DummyRand() % 32 + 1;
     }
     if (len < 4) {
         len = 4;
