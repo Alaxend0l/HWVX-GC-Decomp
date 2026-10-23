@@ -6255,19 +6255,19 @@ void DrawGroupWireframe(Geometry *geometry, u32 group, void *matrix) {
     count = *(u32 *)(grp + 0x10);
     for (i = 0; i < count; i++) {
         for (j = 0; j < 3; j++) {
-            XformVec(matrix, (Vector *)((u8 *)geometry->lodDistances + (*(u16 **)(grp + 0x1C))[i * 3 + j] * 0x30), (Vector *)&v[j]);
+            XformVec(matrix, (Vector *)((u8 *)geometry->lodDistances + (*(u16 (**)[3])(grp + 0x1C))[i][j] * 0x30), (Vector *)&v[j]);
         }
         g_pGDL->lines3D[g_pGDL->num3DLines].p0 = v[0];
         g_pGDL->lines3D[g_pGDL->num3DLines].p1 = v[1];
-        *(u32 *)&g_pGDL->lines3D[g_pGDL->num3DLines].r = *(u32 *)((u8 *)geometry->lodDistances + (*(u16 **)(grp + 0x1C))[i * 3 + 0] * 0x30 + 0x1C);
+        *(u32 *)&g_pGDL->lines3D[g_pGDL->num3DLines].r = *(u32 *)((u8 *)geometry->lodDistances + (*(u16 (**)[3])(grp + 0x1C))[i][0] * 0x30 + 0x1C);
         g_pGDL->num3DLines++;
         g_pGDL->lines3D[g_pGDL->num3DLines].p0 = v[1];
         g_pGDL->lines3D[g_pGDL->num3DLines].p1 = v[2];
-        *(u32 *)&g_pGDL->lines3D[g_pGDL->num3DLines].r = *(u32 *)((u8 *)geometry->lodDistances + (*(u16 **)(grp + 0x1C))[i * 3 + 1] * 0x30 + 0x1C);
+        *(u32 *)&g_pGDL->lines3D[g_pGDL->num3DLines].r = *(u32 *)((u8 *)geometry->lodDistances + (*(u16 (**)[3])(grp + 0x1C))[i][1] * 0x30 + 0x1C);
         g_pGDL->num3DLines++;
         g_pGDL->lines3D[g_pGDL->num3DLines].p0 = v[2];
         g_pGDL->lines3D[g_pGDL->num3DLines].p1 = v[0];
-        *(u32 *)&g_pGDL->lines3D[g_pGDL->num3DLines].r = *(u32 *)((u8 *)geometry->lodDistances + (*(u16 **)(grp + 0x1C))[i * 3 + 2] * 0x30 + 0x1C);
+        *(u32 *)&g_pGDL->lines3D[g_pGDL->num3DLines].r = *(u32 *)((u8 *)geometry->lodDistances + (*(u16 (**)[3])(grp + 0x1C))[i][2] * 0x30 + 0x1C);
         g_pGDL->num3DLines++;
     }
 }
@@ -8422,6 +8422,68 @@ void Gfx_SetWorldMatrix(f32 *matrix) {
     MatrixToMtxTranspose(GXCameraSpace_8036CF80, (u8 *)GetRenderWindow() + 0x80);
     GXLoadPosMtxImm(GXCameraSpace_8036CF80, 0);
     GXSetCurrentMtx(0);
+}
+
+void Gfx_SetCameraMatrix(Vector *pos, Vector *right, Vector *up, Vector *at) {
+    extern GfxState g_state;
+    extern f32 GXCameraSpace_8036CF80[3][4];
+    void GXLoadPosMtxImm(f32 m[3][4], u32 id);
+    void GXSetCurrentMtx(u32 id);
+    void Render_SetClipPlanes(f32 fov);
+    Vector defPos __attribute__((aligned(16)));
+    Vector defRight __attribute__((aligned(16)));
+    Vector defUp __attribute__((aligned(16)));
+    Vector defAt __attribute__((aligned(16)));
+    f32 m[4][4] __attribute__((aligned(16)));
+
+    if (pos == NULL) {
+        pos = &defPos;
+        defPos.x = 0.0f;
+        defPos.y = 0.0f;
+        defPos.z = 0.0f;
+    }
+    if (right == NULL) {
+        right = &defRight;
+        up = &defUp;
+        at = &defAt;
+        defRight.x = 0.0f;
+        defRight.y = 0.0f;
+        defRight.z = -1.0f;
+        defUp.x = 0.0f;
+        defUp.y = 1.0f;
+        defUp.z = 0.0f;
+        defAt.x = -1.0f;
+        defAt.y = 0.0f;
+        defAt.z = 0.0f;
+    }
+    *(Vector *)((u8 *)GetRenderWindow() + 0x180) = *pos;
+    *(Vector *)((u8 *)GetRenderWindow() + 0x190) = *right;
+    *(Vector *)((u8 *)GetRenderWindow() + 0x1A0) = *up;
+    *(Vector *)((u8 *)GetRenderWindow() + 0x1B0) = *at;
+    m[0][0] = -at->x;
+    m[1][0] = -at->y;
+    m[2][0] = -at->z;
+    m[0][1] = up->x;
+    m[1][1] = up->y;
+    m[2][1] = up->z;
+    m[0][2] = -right->x;
+    m[1][2] = -right->y;
+    m[2][2] = -right->z;
+    m[3][0] = -(m[0][0] * pos->x + m[1][0] * pos->y + m[2][0] * pos->z);
+    m[3][1] = -(m[0][1] * pos->x + m[1][1] * pos->y + m[2][1] * pos->z);
+    m[3][2] = -(m[0][2] * pos->x + m[1][2] * pos->y + m[2][2] * pos->z);
+    m[2][3] = 0.0f;
+    m[1][3] = 0.0f;
+    m[0][3] = 0.0f;
+    m[3][3] = 1.0f;
+    memcpy((u8 *)GetRenderWindow() + 0x40, m, 0x40);
+    MultiplyMatrix4x4(GetRenderWindow(), (u8 *)GetRenderWindow() + 0x40, (u8 *)GetRenderWindow() + 0x80);
+    MultiplyMatrix4x4((u8 *)GetRenderWindow() + 0x80, (u8 *)GetRenderWindow() + 0xC0, (u8 *)GetRenderWindow() + 0x100);
+    MatrixToMtxTranspose(GXCameraSpace_8036CF80, (u8 *)GetRenderWindow() + 0x80);
+    GXLoadPosMtxImm(GXCameraSpace_8036CF80, 0);
+    GXSetCurrentMtx(0);
+    Render_SetClipPlanes(*(f32 *)((u8 *)GetRenderWindow() + 0x270));
+    g_state.unk93 = 0;
 }
 
 void Gfx_SetProjectionMatrix(f32 fov) {
