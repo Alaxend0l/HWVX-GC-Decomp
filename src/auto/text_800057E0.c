@@ -1271,6 +1271,23 @@ void AI_AsyncHeartbeat(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0xC8) = 0x1F4;
 }
 
+#pragma push
+#pragma auto_inline off
+void MotionState_Release(s32 state) {
+    M2C_UNK ThingManagerList_EmancipateSlaves(s32, s32);
+    M2C_UNK ThingManagerList_ReleaseAll(s32);
+    M2C_UNK ThingManagerList_RemoveReleasedThings(s32);
+    if (M2C_FIELD(state, u32 *, 0x10) != 0) {
+        ThingManagerList_EmancipateSlaves(M2C_FIELD(state, u32 *, 0x10), state + 0x14);
+        MatrixCache_Free(M2C_FIELD(state, u32 *, 0x10));
+        M2C_FIELD(state, u32 *, 0x10) = 0;
+        M2C_FIELD(state, u8 *, 0x7) = 0;
+    }
+    ThingManagerList_ReleaseAll(state + 0x14);
+    ThingManagerList_RemoveReleasedThings(state + 0x14);
+}
+#pragma pop
+
 void MotionState_ExtractBlendedKeyFrame(u8 *state, void *keyFrame) {
     void MemCpy32(void *dst, void *src, u32 size);
     void Gfx_AnimExtractKeyFrame(void *anim, f32 time, void *keyFrame, u32 count);
