@@ -10119,13 +10119,13 @@ void DestroyMIDIVoice(u8 *voice) {
 #pragma push
 #pragma optimization_level 1
 u8 *DestroyVoice(u8 *voice) {
-    extern u8 g_chn_803769B4[0x10][0x20];
+    extern u8 g_chn_803769B4[0x200];
     u8 *next = *(u8 **)(voice + 4);
     u8 *v;
 
-    v = *(u8 **)g_chn_803769B4[voice[1]];
+    v = *(u8 **)&g_chn_803769B4[voice[1] * 0x20];
     if (v == voice) {
-        *(u8 **)g_chn_803769B4[voice[1]] = next;
+        *(u8 **)&g_chn_803769B4[voice[1] * 0x20] = next;
     } else {
         for (; *(u8 **)(v + 4) != voice; v = *(u8 **)(v + 4)) {
         }
