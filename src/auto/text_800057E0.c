@@ -19149,9 +19149,6 @@ void *GXSetTlutRegionCallback(void *f) {
     return oldcb;
 }
 
-#ifndef GXWGPIPE_DECLARED
-extern volatile PPCWGPipe GXWGPipe : 0xCC008000;
-#endif
 void __SetSURegs(u32 tmap, u32 tcoord) {
     typedef struct GXDataSU {
         u8 unk0[2];
