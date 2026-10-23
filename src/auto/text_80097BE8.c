@@ -922,7 +922,8 @@ typedef struct GDLSprite {
 typedef struct GDLRectVtx {
     f32 x;
     f32 y;
-    u8 unk8[0x10 - 0x8];
+    f32 z;
+    u8 unkC[0x10 - 0xC];
     f32 s;
     f32 t;
     u8 r;
