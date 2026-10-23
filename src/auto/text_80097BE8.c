@@ -4801,7 +4801,7 @@ void PushFreeAudioBuffer(void *arg0) {
 }
 
 void *PopDecodedAudioBuffer(s32 arg0) {
-    extern u8 DecodedAudioBufferQueue_80371444[];
+    extern u8 DecodedAudioBufferQueue_80371444[0x20];
     void *msg;
 
     if (OSReceiveMessage(DecodedAudioBufferQueue_80371444, &msg, arg0) == 1) {
