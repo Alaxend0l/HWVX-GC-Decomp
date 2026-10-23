@@ -3382,7 +3382,7 @@ void ThingManager_DARYL_Render(void) {
 
 s8 OBoxHitsTerrainAndObjectsZeroTimeEdgesOnly(void *obox, void *thing, void *arg2) {
     s8 OBoxHitsTerrainZeroTimeEdgesOnly(void *, void *);
-    s8 OBox_CollideAllThingsZeroTime(void *, void *, void *);
+    s32 OBox_CollideAllThingsZeroTime(void *, void *, void *);
     if (!(M2C_FIELD(thing, u32 *, 0x74) & 0x40000) && OBoxHitsTerrainZeroTimeEdgesOnly(obox, arg2)) {
         return 1;
     }
