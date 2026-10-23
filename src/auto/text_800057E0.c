@@ -6514,8 +6514,25 @@ void OSCreateAlarm(s32 *arg0) {
     *arg0 = 0;
 }
 
+typedef struct Cell {
+    struct Cell *prev;
+    struct Cell *next;
+    s32 size;
+} Cell;
+
+typedef struct HeapDesc {
+    s32 size;
+    Cell *free;
+    Cell *allocated;
+} HeapDesc;
+
+extern HeapDesc *HeapArray_803C7218;
+extern s32 NumHeaps_803C721C;
+extern void *ArenaStart_803C7220;
+extern void *ArenaEnd_803C7224;
+extern s32 __OSCurrHeap;
+
 s32 OSSetCurrentHeap(s32 arg0) {
-    extern s32 __OSCurrHeap;
     s32 temp_r0;
 
     temp_r0 = __OSCurrHeap;
@@ -6524,18 +6541,6 @@ s32 OSSetCurrentHeap(s32 arg0) {
 }
 
 s32 OSCreateHeap(void *start, void *end) {
-    typedef struct Cell {
-        struct Cell *prev;
-        struct Cell *next;
-        s32 size;
-    } Cell;
-    typedef struct HeapDesc {
-        s32 size;
-        Cell *free;
-        Cell *allocated;
-    } HeapDesc;
-    extern HeapDesc *HeapArray_803C7218;
-    extern s32 NumHeaps_803C721C;
     s32 heap;
     HeapDesc *hd;
     Cell *cell;
@@ -8064,6 +8069,78 @@ void AIReset(void) {
     __AI_init_flag_803C73F0 = 0;
 }
 
+void __AISHandler(s16 interrupt, void *context) {
+    void OSClearContext(void *);
+    void OSSetCurrentContext(void *);
+    extern void (*__AIS_Callback_803C73E0)(u32);
+    u32 exceptionContext[0x2C8 / 4];
+
+    __AIRegs[0] |= 8;
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(exceptionContext);
+    if (__AIS_Callback_803C73E0) {
+        __AIS_Callback_803C73E0(__AIRegs[2]);
+    }
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(context);
+}
+
+void __AIDHandler(s16 interrupt, void *context) {
+    void OSClearContext(void *);
+    void OSSetCurrentContext(void *);
+    void __AICallbackStackSwitch(void *cb);
+    extern void (*__AID_Callback_803C73E4)(void);
+    extern u8 *__CallbackStack_803C73E8;
+    u32 exceptionContext[0x2C8 / 4];
+    u16 tmp;
+
+    tmp = __DSPRegs[5];
+    tmp = (u16)((tmp & ~0xA0) | 8);
+    __DSPRegs[5] = tmp;
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(exceptionContext);
+    if (__AID_Callback_803C73E4) {
+        if (__CallbackStack_803C73E8) {
+            __AICallbackStackSwitch(__AID_Callback_803C73E4);
+        } else {
+            __AID_Callback_803C73E4();
+        }
+    }
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(context);
+}
+
+#pragma push
+#pragma dont_inline on
+u32 ARInit(u32 *stack_index_addr, u32 num_entries) {
+    void OSRestoreInterrupts(s32);
+    void __OSUnmaskInterrupts(u32);
+    void __ARChecksize(void);
+    void __ARHandler(s16, void *);
+    extern s32 __AR_init_flag_803C743C;
+    extern void *__AR_Callback_803C7420;
+    extern u32 __AR_FreeBlocks_803C7434;
+    extern u32 __AR_StackPointer_803C7430;
+    extern u32 *__AR_BlockLength_803C7438;
+    s32 old;
+
+    if (__AR_init_flag_803C743C == 1) {
+        return 0x4000;
+    }
+    old = OSDisableInterrupts();
+    __AR_Callback_803C7420 = NULL;
+    __OSSetInterruptHandler(6, __ARHandler);
+    __OSUnmaskInterrupts(0x02000000);
+    __AR_FreeBlocks_803C7434 = num_entries;
+    __AR_StackPointer_803C7430 = 0x4000;
+    __AR_BlockLength_803C7438 = stack_index_addr;
+    __DSPRegs[13] = (u16)((__DSPRegs[13] & ~0xFF) | (__DSPRegs[13] & 0xFF));
+    __ARChecksize();
+    __AR_init_flag_803C743C = 1;
+    OSRestoreInterrupts(old);
+    return __AR_StackPointer_803C7430;
+}
+#pragma pop
 void ARReset(void) {
     extern s32 __AR_init_flag_803C743C;
     __AR_init_flag_803C743C = 0;
