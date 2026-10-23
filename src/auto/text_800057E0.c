@@ -3572,6 +3572,46 @@ void GameSettings_ApplyDefaultGameData(void) {
     OSSetSoundMode(g_generalGameSettings.audio.speakerMode);
 }
 
+void GameSettings_GetLoadedProgression(s32 *arg0, s32 *arg1) {
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
+    extern s8 g_DDRescueGameData[];
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    void *pack;
+    s32 state;
+
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        state = mcp[1];
+    } else {
+        state = 0;
+    }
+    switch (state) {
+    case 0:
+        *arg0 = 0;
+        *arg1 = 0;
+        break;
+    case 1:
+        *arg0 = *(s32 *)&g_DDRescueGameData[0x6C];
+        *arg1 = *(s32 *)&g_DDRescueGameData[0x70];
+        GameSettings_SetCodeVariable(0xCB, 1, *(s32 *)&g_DDRescueGameData[0x1CD4]);
+        break;
+    }
+}
+
 extern s8 g_DDRescueGameData[];
 void GameSettings_RestorePlayerStats(void) {
     void *FileStreaming_InitializeDataPack(void *, s32, s32);
