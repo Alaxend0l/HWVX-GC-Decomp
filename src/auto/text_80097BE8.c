@@ -5459,13 +5459,13 @@ void Render_Create(void) {
     memcpy((u8 *)GetRenderWindow() + 0x80, g_identity, 0x40);
     memcpy((u8 *)GetRenderWindow() + 0x100, g_identity, 0x40);
     m_blendMode_803C76D0 = 1;
-    g_textcolor.r = 0xFF;
-    g_textcolor.g = 0xFF;
-    g_textcolor.b = 0xFF;
     g_textcolor.a = 0xFF;
-    m_clearColor_803C76F4.r = 0;
-    m_clearColor_803C76F4.g = 0;
+    g_textcolor.b = 0xFF;
+    g_textcolor.g = 0xFF;
+    g_textcolor.r = 0xFF;
     m_clearColor_803C76F4.b = 0;
+    m_clearColor_803C76F4.g = 0;
+    m_clearColor_803C76F4.r = 0;
     m_clearColor_803C76F4.a = 0;
     g_state.ambientColor.r = 0x30;
     g_state.ambientColor.g = 0x30;
