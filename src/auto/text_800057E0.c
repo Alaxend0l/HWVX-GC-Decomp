@@ -2220,7 +2220,7 @@ u8 *DataPack_GetScript(void *pack, s32 id) {
         return NULL;
     }
     for (i = 0; i < M2C_FIELD(table, u32 *, 0); i++) {
-        if (id == M2C_FIELD(table, u32 **, 4)[i * 2 + 1]) {
+        if (M2C_FIELD(table, u32 **, 4)[i * 2 + 1] == id) {
             return M2C_FIELD(table, u8 ***, 4)[i * 2];
         }
     }
@@ -2251,6 +2251,7 @@ void Destructible_Release(u8 *destructible) {
     void Thing_Release(s32 thing);
     extern u8 g_destructibleVTable[];
     u8 *trigger;
+    s8 paused;
 
     Trigger_DestructibleKilled(destructible);
     if (M2C_FIELD(destructible, u8 **, 0x8C) == g_destructibleVTable) {
@@ -2258,7 +2259,8 @@ void Destructible_Release(u8 *destructible) {
         if (trigger != NULL) {
             M2C_FIELD(destructible, u8 **, 0x90) = NULL;
             M2C_FIELD(trigger, u32 *, 0x2C) = 0;
-            if (!(s8)Trigger_IsTACSystemPaused()) {
+            paused = Trigger_IsTACSystemPaused();
+            if (paused == 0) {
                 M2C_FIELD(trigger, u32 *, 0x30) = 0;
             }
         }
