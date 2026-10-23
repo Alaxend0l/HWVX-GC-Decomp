@@ -25587,7 +25587,7 @@ s32 SoundManager_CreateSource(s32 owner) {
         }
     }
     g_sources_803C6F38[g_nextSource_803C6F34].looping = owner;
-    *(Vector4 *)&g_sources_803C6F38[g_nextSource_803C6F34].pos = *(Vector4 *)&g_sources_803C6F38[g_nextSource_803C6F34].vel = g_zeroVector;
+    g_sources_803C6F38[g_nextSource_803C6F34].pos = g_sources_803C6F38[g_nextSource_803C6F34].vel = g_zeroVector;
     g_sources_803C6F38[g_nextSource_803C6F34].voice = -1;
     g_sources_803C6F38[g_nextSource_803C6F34].unk28 = -1;
     g_sources_803C6F38[g_nextSource_803C6F34].unk20 = 1.0f;
