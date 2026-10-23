@@ -18033,6 +18033,80 @@ void __AXServiceCallbackStack(void) {
     }
 }
 
+void *AXAcquireVoice(u32 priority, void (*callback)(void *), u32 userContext) {
+    typedef struct AVPB AVPB;
+    struct AVPB {
+        AVPB *next;
+        AVPB *prev;
+        u32 pad8;
+        u32 priority;
+        void (*callback)(void *);
+        u32 userContext;
+        u32 pad18[2];
+        u32 depop;
+        u8 pad24[0x146 - 0x24];
+        u16 state;
+    };
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32);
+    void __AXSetPBDefault(void *p);
+    extern AVPB *__AXStackHead_802EFC40[32];
+    AVPB **head = __AXStackHead_802EFC40;
+    AVPB **tail = __AXStackHead_802EFC40 + 32;
+    s32 old;
+    AVPB *pvpb;
+    u32 i;
+
+    old = OSDisableInterrupts();
+    pvpb = head[0];
+    if (pvpb != NULL) {
+        head[0] = pvpb->next;
+    }
+    if (pvpb == NULL) {
+        for (i = 1; i < priority; i++) {
+            AVPB *p = NULL;
+
+            if (head[i]) {
+                if (head[i] == tail[i]) {
+                    p = head[i];
+                    head[i] = tail[i] = NULL;
+                } else if (tail[i]) {
+                    p = tail[i];
+                    tail[i] = p->prev;
+                    tail[i]->next = NULL;
+                }
+            }
+            pvpb = p;
+            if (pvpb) {
+                if (pvpb->state == 1) {
+                    pvpb->depop = 1;
+                }
+                if (pvpb->callback) {
+                    pvpb->callback(pvpb);
+                }
+                break;
+            }
+        }
+    }
+    if (pvpb) {
+        pvpb->next = head[priority];
+        pvpb->prev = NULL;
+        if (pvpb->next) {
+            head[priority]->prev = pvpb;
+            head[priority] = pvpb;
+        } else {
+            tail[priority] = pvpb;
+            head[priority] = pvpb;
+        }
+        pvpb->priority = priority;
+        pvpb->callback = callback;
+        pvpb->userContext = userContext;
+        __AXSetPBDefault(pvpb);
+    }
+    OSRestoreInterrupts(old);
+    return pvpb;
+}
+
 void __AXAllocInit(void) {
     extern void *__AXCallbackStack_803C7468;
     extern void *__AXStackHead_802EFC40[32];
