@@ -5343,6 +5343,40 @@ void ReleaseVoice(u32 id) {
     }
 }
 
+s32 SetVoiceState(u32 id, s32 state) {
+    extern u8 g_voice[0x20][0x70];
+    extern s32 g_sfxState_803C78D0;
+    extern s32 g_sfxvol_803C78D4;
+    void SetVoiceVol_(void *voice, s32 vol);
+    void StartVoice_(void *voice);
+    u8 *voice = g_voice[(u8)id];
+
+    if (*(u32 *)voice == id) {
+        if (voice[0x15] == state) {
+            return state;
+        }
+        switch (state) {
+        case 1:
+            if (voice[0x15] == 2) {
+                SetVoiceState_(voice, 1);
+                g_sfxState_803C78D0 = 1;
+                break;
+            }
+        case 4:
+            StartVoice_(voice);
+            SetVoiceVol_(voice, g_sfxvol_803C78D4);
+            g_sfxState_803C78D0 = 1;
+            break;
+        case 2:
+        case 3:
+            SetVoiceState_(voice, 2);
+            break;
+        }
+        return voice[0x15];
+    }
+    return 0;
+}
+
 s32 SetVoiceVol(u32 id, s32 vol) {
     extern u8 g_voice[0x20][0x70];
     extern s32 g_sfxvol_803C78D4;
