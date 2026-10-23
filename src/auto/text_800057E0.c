@@ -2437,6 +2437,27 @@ void SongManager_StopBKSong(void) {
 
 }
 
+void SoundManager_Pause(s32 paused) {
+    extern u8 g_paused_803C6F2D;
+    extern SoundSource *g_sources_803C6F38;
+    extern void (*SetMusicState)(s32);
+    void SetSFXState(s32 state);
+    u32 i;
+
+    g_paused_803C6F2D = paused;
+    if (paused) {
+        SetSFXState(2);
+        SetMusicState(2);
+    } else {
+        SetSFXState(1);
+        SetMusicState(1);
+    }
+    SetSFXState(1);
+    for (i = 0; i < 100; i++) {
+        g_sources_803C6F38[i].paused = paused;
+    }
+}
+
 void SongManager_LoadSong(void) {
     M2C_UNK CreateMusic();
     extern s8 g_songLoaded_803C6F2C;
