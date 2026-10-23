@@ -35,6 +35,12 @@ static inline void GXPosition2f32(f32 x, f32 y) {
     GXWGFifo.f32 = y;
 }
 
+static inline void GXPosition3f32(f32 x, f32 y, f32 z) {
+    GXWGFifo.f32 = x;
+    GXWGFifo.f32 = y;
+    GXWGFifo.f32 = z;
+}
+
 static inline void GXColor3u8(const u8 r, const u8 g, const u8 b) {
     GXWGFifo.u8 = r;
     GXWGFifo.u8 = g;
