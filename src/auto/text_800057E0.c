@@ -1397,6 +1397,7 @@ u32 AI_UpdateTimer(u32 *arg0) {
 }
 
 s8 AI_CheckAngleInRange(f32 angle, f32 center, f32 range) {
+    s8 inRange = 0;
     f32 diff;
 
     if (center == 0.0f && range == 0.0f) {
@@ -1415,9 +1416,9 @@ s8 AI_CheckAngleInRange(f32 angle, f32 center, f32 range) {
         diff += 360.0f;
     }
     if (diff <= range && diff >= -range) {
-        return 1;
+        inRange = 1;
     }
-    return 0;
+    return inRange;
 }
 
 s32 AI_ProcessEvent(void) {
