@@ -479,6 +479,10 @@ typedef struct Quaternion {
     f32 w;
 } Quaternion;
 
+static inline void Mover_SetRotation(u8 *mover, Quaternion quat) {
+    *(Quaternion *)(mover + 0xE0) = quat;
+}
+
 void XformVec(void *mtx, Vector4 *out, Vector4 *in);
 void SubMatrixToQuaternion(void *mtx, Vector4 *quat);
 void QuaternionMult(Vector4 *a, Vector4 *b, Vector4 *out);
