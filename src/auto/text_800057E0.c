@@ -3407,6 +3407,53 @@ s32 GameSettings_FormatMemoryCard(void) {
     return result;
 }
 
+#pragma push
+#pragma readonly_strings on
+s32 GameSettings_DeleteGameFile(void) {
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    u8 File_Delete(char *device, const char *fileName);
+    extern s8 g_bRefreshMC_803C6F78;
+    extern s8 g_bRefreshMC_FileList_803C6F79;
+    extern s8 g_bRefreshMC_FileInfo_803C6F7A;
+    extern struct {
+        u8 unk0[0xC];
+        char *fileName;
+        u8 unk10[0xC];
+    } g_gameInfo[];
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    const char *name;
+    u8 *mcp;
+    void *pack;
+    char *device;
+    u8 result;
+
+    device = M2C_FIELD(&g_codeVariables, char **, 0x114) + 0xA;
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        name = g_gameInfo[mcp[1]].fileName;
+    } else {
+        name = "saveFile";
+    }
+    result = File_Delete(device, name);
+    g_bRefreshMC_803C6F78 = 1;
+    M2C_FIELD(&g_codeVariables, u8 *, 0x11E) = result;
+    g_bRefreshMC_FileList_803C6F79 = 1;
+    g_bRefreshMC_FileInfo_803C6F7A = 1;
+    return result;
+}
+#pragma pop
 s32 Geometry_Create(void) {
     extern u8 *g_pGeometryHandler;
     u32 i;
@@ -4062,6 +4109,22 @@ s32 LensFlare_Add(void *flare, s32 arg1, Vector4 *pos) {
         }
     }
     return -1;
+}
+
+void LensFlare_Delete(s32 index) {
+    extern u8 g_pFlare[64][0x30];
+    extern s32 g_activeFlares;
+    u32 i;
+
+    if (index != -1) {
+        g_activeFlares = 0;
+        *(void **)g_pFlare[index] = NULL;
+        for (i = 0; i < 64; i++) {
+            if (*(void **)g_pFlare[i] != NULL) {
+                g_activeFlares = i + 1;
+            }
+        }
+    }
 }
 
 void LightHolder_Init(void) {
