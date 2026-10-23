@@ -537,6 +537,9 @@ typedef struct LGWheels {
 } LGWheels;
 
 u8 IsOpened__6WheelsFl(Wheels *wheels, s32 chan);
+u8 SameDamperForceParams__8LGWheelsFlUcs(void *wheels, s32 chan, u8 coefficient, s16 offset);
+s32 DownloadForce__9ConditionFllRUlUcUlUlScUcUcUcss(Force *force, s32 chan, s32 effect, u32 *device, u8 type, u32 duration, u32 startDelay, s8 offset, u8 deadband, u8 saturationPos, u8 saturationNeg, s16 coefficientPos, s16 coefficientNeg);
+s32 UpdateForce__9ConditionFllUcUlUlScUcUcUcss(Force *force, s32 chan, s32 effect, u8 type, u32 duration, u32 startDelay, s8 offset, u8 deadband, u8 posSaturation, u8 negSaturation, s16 posCoefficient, s16 negCoefficient);
 s32 GetOverallForceGain__8LGWheelsFl(void *wheels, s32 chan);
 void SetOverallForceGain__8LGWheelsFll(void *wheels, s32 chan, s32 gain);
 void SetOverallForceGain__5ForceFRUll(void *force, u32 *effectId, s32 gain);
@@ -6109,6 +6112,76 @@ s32 DrawChar(s32 x, s32 y, u16 code) {
     GXTexCoord2s16(s0, t0 + ch);
     return width;
 }
+
+s32 DrawString(s32 x, s32 y, char *string) {
+    typedef struct {
+        u32 dummy[8];
+    } GXTexObj;
+    typedef struct {
+        u8 unk0[0x10];
+        u16 cellWidth;
+        u16 cellHeight;
+        u8 unk14[4];
+        u16 sheetFormat;
+        u8 unk1A[4];
+        u16 sheetWidth;
+        u16 sheetHeight;
+    } FontHeader;
+    extern FontHeader *FontData_803C76A4;
+    void GXInitTexObj(GXTexObj *obj, void *image, u16 width, u16 height, s32 format, s32 wrap_s, s32 wrap_t, u8 mipmap);
+    void GXInitTexObjLOD(GXTexObj *obj, s32 min_filt, s32 mag_filt, f32 min_lod, f32 max_lod, f32 lod_bias, u8 bias_clamp, u8 do_edge_lod, s32 max_aniso);
+    void GXLoadTexObj(GXTexObj *obj, s32 id);
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    void GXLoadTexMtxImm(f32 mtx[3][4], u32 id, s32 type);
+    void GXSetTexCoordGen2(s32 dst, s32 func, s32 src, u32 mtx, u8 normalize, u32 pt);
+    void PSMTXScale(f32 m[3][4], f32 x, f32 y, f32 z);
+    char *OSGetFontTexture(char *string, void **image, s32 *x, s32 *y, s32 *width);
+    f32 mtx[3][4];
+    GXTexObj tobj;
+    void *image;
+    s32 s;
+    s32 t;
+    s32 width;
+    s16 y1;
+    s16 y0;
+    s16 x1;
+    s16 x0;
+    s32 s0;
+    s32 t0;
+    s32 cw;
+    s32 ch;
+    s32 total = 0;
+
+    while (*string != 0) {
+        string = OSGetFontTexture(string, &image, &s, &t, &width);
+        GXInitTexObj(&tobj, image, FontData_803C76A4->sheetWidth, FontData_803C76A4->sheetHeight, FontData_803C76A4->sheetFormat, 0, 0, 0);
+        GXInitTexObjLOD(&tobj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+        GXLoadTexObj(&tobj, 0);
+        PSMTXScale(mtx, 1.0f / FontData_803C76A4->sheetWidth, 1.0f / FontData_803C76A4->sheetHeight, 1.0f);
+        GXLoadTexMtxImm(mtx, 30, 1);
+        GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
+        x0 = x + total;
+        y0 = y;
+        t0 = t;
+        cw = FontData_803C76A4->cellWidth;
+        ch = FontData_803C76A4->cellHeight;
+        s0 = s;
+        x1 = x0 + cw;
+        y1 = y0 + ch;
+        GXBegin(0x80, 0, 4);
+        GXPosition3s16(x0, y0, 0);
+        GXTexCoord2s16(s0, t0);
+        GXPosition3s16(x1, y0, 0);
+        GXTexCoord2s16(s0 + cw, t0);
+        GXPosition3s16(x1, y1, 0);
+        GXTexCoord2s16(s0 + cw, t0 + ch);
+        GXPosition3s16(x0, y1, 0);
+        GXTexCoord2s16(s0, t0 + ch);
+        total = total + width;
+    }
+    return total;
+}
+
 #pragma pop
 
 #pragma push
