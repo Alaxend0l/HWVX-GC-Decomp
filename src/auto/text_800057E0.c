@@ -4069,11 +4069,63 @@ s8 OBoxHitsTerrainAndObjectsZeroTimeEdgesOnly(void *obox, void *thing, void *arg
     return OBox_CollideAllThingsZeroTime(obox, thing, arg2);
 }
 
+s8 TriggerVehicleDamage(u32 *params) {
+    u32 i;
+    s32 amount;
+    s32 *saved;
+    u32 type;
+    s32 result;
+    u8 **things;
+    u32 count;
+
+    count = params[0];
+    things = (u8 **)&params[1];
+    result = 0;
+    type = params[count + 1];
+    saved = (s32 *)&params[count + 3];
+    amount = params[count + 2];
+    for (i = 0; i < count; i++) {
+        u8 *vehicle = M2C_FIELD(things[i], u8 **, 0x28);
+        if (type == 0x2A) {
+            s32 damage = *(s32 *)(vehicle + 0x78);
+            if (damage < saved[i] - amount) {
+                result = 1;
+            }
+            saved[i] = damage;
+        }
+        if (type == 0x2B && *(s32 *)(vehicle + 0x78) < *(s32 *)(*(u8 **)(*(u8 **)(vehicle + 0x3BC) + 0xA0) + 0x14) / amount) {
+            result = 1;
+        }
+    }
+    return result;
+}
+
 s32 TriggerPlayerVehicleGear(u32 *params) {
     extern u8 g_cameraManager[];
     u8 *vehicle = M2C_FIELD(*(u8 **)g_cameraManager, u8 **, 0x2C);
 
     if (vehicle != NULL && vehicle[0x4E8] == params[1]) {
+        return 1;
+    }
+    return 0;
+}
+
+s32 TriggerPlayerVehicleInAir(u32 *params) {
+    extern u8 g_cameraManager[];
+    u8 *vehicle;
+    u8 *player = *(u8 **)g_cameraManager;
+
+    if (player != NULL) {
+        vehicle = M2C_FIELD(player, u8 **, 0x2C);
+    } else {
+        vehicle = NULL;
+    }
+    if (params[2] == 0 && vehicle != NULL && *(s32 *)(vehicle + 0x460) >= (s32)params[1]) {
+        params[2] = 1;
+        return 1;
+    }
+    if (params[2] != 0 && vehicle != NULL && *(s32 *)(vehicle + 0x460) == 0) {
+        params[2] = 0;
         return 1;
     }
     return 0;
@@ -4145,6 +4197,29 @@ void Trigger_PauseTACSystem(s8 arg0) {
 u8 Trigger_IsTACSystemPaused(void) {
     extern u8 g_bTACSystemPaused_803C7124;
     return g_bTACSystemPaused_803C7124;
+}
+
+s32 Trigger_AddTrigger(s32 *trigger) {
+    extern u32 TriggerStats_800D3C58[][3];
+    extern char *triggerLabelsArray_800D3BE8[];
+    extern s32 **m_Triggers_802C1890[];
+    extern s8 g_bTACSystemPaused_803C7124;
+    int sprintf(char *buf, const char *fmt, ...);
+    char buf[0x200];
+    s32 type = trigger[0];
+
+    if (TriggerStats_800D3C58[type][0] == TriggerStats_800D3C58[type][1]) {
+        sprintf(buf, "Could not add the trigger: \"%s\", please notify Peter.", triggerLabelsArray_800D3BE8[type]);
+        return 0;
+    }
+    m_Triggers_802C1890[type][TriggerStats_800D3C58[type][0]++] = trigger;
+    if (trigger[0] == 8) {
+        trigger[9] = 1;
+    } else {
+        trigger[9] = 0x10;
+    }
+    g_bTACSystemPaused_803C7124 = 0;
+    return 1;
 }
 
 s32 TriggerLevelStart(void) {
