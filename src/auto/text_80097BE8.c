@@ -3898,6 +3898,87 @@ void DBOpen(void) {
 
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s32 DBWrite(const void *src, u32 size) {
+    extern volatile u8 SendCount_803C6EB0;
+    volatile u32 *regs = (volatile u32 *)0xCC000000;
+    volatile u32 *cpr;
+    volatile u32 *cr;
+    BOOL err;
+    u32 v;
+    u32 busyFlag;
+    u32 cmd1;
+    u32 cmd2;
+    u32 cmd3;
+    u32 cmd4;
+    BOOL interrupts = OSDisableInterrupts();
+
+    cpr = (volatile u32 *)((u8 *)regs + 0x6800);
+    do {
+        *(cpr += 10) = (*(volatile u32 *)((u8 *)regs + 0x6828) & 0x405) | 0xC0;
+        cmd1 = 0x40000000;
+        err = !DBGEXIImm(&cmd1, 2, 1);
+        cr = (volatile u32 *)((u8 *)regs + 0x6800);
+        while (*(cr += 13) & 1) {
+        }
+        err |= !DBGEXIImm(&busyFlag, 4, 0);
+        while (*cr & 1) {
+        }
+        *cpr &= 0x405;
+    } while (busyFlag & 2);
+
+    SendCount_803C6EB0++;
+    if (SendCount_803C6EB0 & 1) {
+        v = 0x1000;
+    } else {
+        v = 0;
+    }
+
+    while (!DBGWrite(v | 0x1C000, (void *)src, (size + 3) & ~3)) {
+    }
+
+    do {
+        *cpr = (*cpr & 0x405) | 0xC0;
+        cmd2 = 0x40000000;
+        err = !DBGEXIImm(&cmd2, 2, 1);
+        while (*cr & 1) {
+        }
+        err |= !DBGEXIImm(&busyFlag, 4, 0);
+        while (*cr & 1) {
+        }
+        *cpr &= 0x405;
+    } while (busyFlag & 2);
+
+    v = SendCount_803C6EB0;
+    do {
+        *cpr = (*cpr & 0x405) | 0xC0;
+        cmd3 = ((0x1F000000 | v << 16 | size) & 0x1FFFFFFF) | 0xC0000000;
+        err = !DBGEXIImm(&cmd3, 4, 1);
+        while (*cr & 1) {
+        }
+        *cpr &= 0x405;
+    } while (err);
+
+    do {
+        do {
+            *cpr = (*cpr & 0x405) | 0xC0;
+            cmd4 = 0x40000000;
+            err = !DBGEXIImm(&cmd4, 2, 1);
+            while (*cr & 1) {
+            }
+            err |= !DBGEXIImm(&busyFlag, 4, 0);
+            while (*cr & 1) {
+            }
+            *cpr &= 0x405;
+        } while (err);
+    } while (busyFlag & 2);
+
+    OSRestoreInterrupts(interrupts);
+    return 0;
+}
+#pragma pop
+
 void DBGHandler(s16 interrupt) {
     extern void (*DBGCallback_803C7604)(s16);
 
@@ -4277,6 +4358,66 @@ void MultiplyMatrix(void *arg0, void *arg1, void *arg2) {
     d[13] = b[13] + (b[9] * a[14] + (b[1] * a[12] + b[5] * a[13]));
     d[14] = b[14] + (b[10] * a[14] + (b[2] * a[12] + b[6] * a[13]));
     d[15] = 1.0f;
+}
+
+void SetOrientation(f32 *m, f32 x, f32 y, f32 z) {
+    f32 c;
+    f32 s;
+    f32 t;
+
+    m[9] = 0.0f;
+    m[8] = 0.0f;
+    m[6] = 0.0f;
+    m[4] = 0.0f;
+    m[2] = 0.0f;
+    m[1] = 0.0f;
+    m[10] = 1.0f;
+    m[5] = 1.0f;
+    m[0] = 1.0f;
+    m[11] = 0.0f;
+    m[7] = 0.0f;
+    m[3] = 0.0f;
+    m[15] = 1.0f;
+
+    if (z != 0.0f) {
+        c = cos(z);
+        s = sin(z);
+        t = m[0];
+        m[0] = c * t - s * m[1];
+        m[1] = c * m[1] + s * t;
+        t = m[4];
+        m[4] = c * t - s * m[5];
+        m[5] = c * m[5] + s * t;
+        t = m[8];
+        m[8] = c * t - s * m[9];
+        m[9] = c * m[9] + s * t;
+    }
+    if (y != 0.0f) {
+        c = cos(y);
+        s = sin(y);
+        t = m[1];
+        m[1] = c * t - s * m[2];
+        m[2] = c * m[2] + s * t;
+        t = m[5];
+        m[5] = c * t - s * m[6];
+        m[6] = c * m[6] + s * t;
+        t = m[9];
+        m[9] = c * t - s * m[10];
+        m[10] = c * m[10] + s * t;
+    }
+    if (x != 0.0f) {
+        c = cos(x);
+        s = sin(x);
+        t = m[0];
+        m[0] = c * t + s * m[2];
+        m[2] = -s * t + c * m[2];
+        t = m[4];
+        m[4] = c * t + s * m[6];
+        m[6] = -s * t + c * m[6];
+        t = m[8];
+        m[8] = c * t + s * m[10];
+        m[10] = -s * t + c * m[10];
+    }
 }
 
 void TransposeSubMatrix(void *arg0) {
