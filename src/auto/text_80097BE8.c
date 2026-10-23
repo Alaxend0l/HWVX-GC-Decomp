@@ -178,6 +178,12 @@ typedef struct THPAudioBuffer {
 THPPlayer ActivePlayer;
 u8 UsedTextureSetQueue_8036EC78[0x20];
 void *UsedTextureSetMessage_8036EC98[3];
+u8 AudioDecodeThread_80370108[0x310];
+u8 AudioDecodeThreadStack[0x1000];
+u8 FreeAudioBufferQueue_80371418[0x20];
+void *FreeAudioBufferMessage[3];
+u8 DecodedAudioBufferQueue_80371444[0x20];
+void *DecodedAudioBufferMessage[3];
 
 extern s32 __float_nan[];
 extern s32 __float_huge[];
