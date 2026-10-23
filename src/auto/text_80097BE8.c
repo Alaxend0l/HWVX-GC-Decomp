@@ -6196,6 +6196,27 @@ s32 LGClose(LGDevice *device) {
     return 0;
 }
 
+s32 LGGetDeviceProperty(LGDevice *device, u32 property, s32 *value, u32 size) {
+    if (device == NULL || (u32)device == 0xFFFFFFFF) {
+        return -2;
+    }
+    if (value == NULL) {
+        return -2;
+    }
+    if (property != 3) {
+        return -2;
+    }
+    if (!device->opened) {
+        return -2;
+    }
+    if (device->started) {
+        LGClose(device);
+        return -2;
+    }
+    *value = device->vdev.unk11F4;
+    return 0;
+}
+
 s32 VDevice_DownloadEffect(VDevice *dev, u32 *handle, u8 *desc);
 s32 LGDownloadForceEffect(LGDevice *device, u32 *handle, u8 *desc) {
     if (device == NULL || (u32)device == 0xFFFFFFFF) {
@@ -6215,6 +6236,33 @@ s32 LGDownloadForceEffect(LGDevice *device, u32 *handle, u8 *desc) {
         return -2;
     }
     return VDevice_DownloadEffect(&device->vdev, handle, desc);
+}
+
+s32 VDevice_UpdateEffect(VDevice *dev, u32 handle, u8 *desc);
+s32 LGUpdateForceEffect(u32 handle, u8 *desc) {
+    u32 index = handle >> 16;
+    LGDevice *device;
+
+    if (index >= 4) {
+        return -2;
+    }
+    device = &g_lgDevices_803771D8[index];
+    if (!device->opened) {
+        return -2;
+    }
+    if (desc == NULL) {
+        return -2;
+    }
+    if (device->started) {
+        if (device != NULL && (u32)device != 0xFFFFFFFF && device->opened) {
+            device->opened = 0;
+            device->started = 0;
+            VDevice_Shutdown(&device->vdev);
+            device->unk8 = -1;
+        }
+        return -2;
+    }
+    return VDevice_UpdateEffect(&device->vdev, handle, desc);
 }
 
 s32 LGStartForceEffect(u32 handle) {
