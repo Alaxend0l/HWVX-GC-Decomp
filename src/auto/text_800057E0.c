@@ -6474,6 +6474,59 @@ void GameSettings_DetermineIfOverwritingFile(void) {
 
 #pragma push
 #pragma readonly_strings on
+void GameSettings_GetSaveGameName(s32 *letters) {
+    char *strncpy(char *dst, const char *src, u32 n);
+    int sprintf(char *buf, const char *fmt, ...);
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    extern char g_fileNames_80110B2C[8][41];
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    void *pack;
+    char name[12];
+    s32 i;
+
+    if (g_bValidFileName_803C6CA4[g_codeVariables.fileIndex - 1]) {
+        strncpy(name, g_fileNames_80110B2C[g_codeVariables.fileIndex - 1], 11);
+    } else {
+        if (bFirstTime) {
+            bFirstTime = 0;
+            pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+            if (pack == NULL) {
+                mcp = NULL;
+                goto done;
+            }
+            pMCP = DataPack_GetScript(pack, 0);
+        }
+        mcp = pMCP;
+    done:
+        switch (mcp != NULL ? mcp[1] : 0) {
+        case 0:
+            sprintf(name, "HWVX%06d", g_codeVariables.fileIndex);
+            break;
+        case 1:
+            sprintf(name, "HWVXE%05d", g_codeVariables.fileIndex);
+            break;
+        default:
+            sprintf(name, "HWVXJ%05d", g_codeVariables.fileIndex);
+            break;
+        }
+    }
+    for (i = 0; i < 10; i++) {
+        if (name[i] >= 'A' && name[i] <= 'Z') {
+            letters[i] = name[i] - 'A';
+        } else if (name[i] >= '0' && name[i] <= '9') {
+            letters[i] = name[i] - '0' + 26;
+        } else {
+            letters[i] = 36;
+        }
+    }
+}
+#pragma pop
+
+#pragma push
+#pragma readonly_strings on
 void GameSettings_SetSaveGameName(u32 *letters) {
     void *FileStreaming_InitializeDataPack(void *, s32, s32);
     u8 *DataPack_GetScript(void *, s32);
@@ -15380,6 +15433,91 @@ s32 StateGameManager_Init(void) {
     return 1;
 }
 
+s32 StateGameManager_Heartbeat(void) {
+    typedef struct { s32 name; s32 script; } PackRef;
+    typedef struct { u8 type; void *movie; PackRef *pack; } Step;
+    typedef struct { u8 pad0[4]; s32 menuName; u8 pad8[0x20]; s32 menuFile; u32 numSteps; Step *steps; } MCP;
+    extern struct { MCP *mcp; u32 step; } g_GameManagerState;
+    extern s8 g_bInterfacePlaying;
+    extern s32 g_interfacePackID;
+    void StateManager_GotoState(s32);
+    void StateMovie_SetMovieToPlay(void *);
+    s32 FileStreaming_LoadDataPack(s32, s32, s32, s32);
+    void *FileStreaming_InitializeDataPack(s32, s32, s32);
+    void *DataPack_GetScript(void *, s32);
+    void InterfaceManager_Create(void *, s32, void (*)(void *));
+    void StateGameManager_InterfaceHandler(void *);
+    void ShowStats_StartFrame(void);
+    void ViewManager_PrepForRender(void);
+    void ProcessManager_Heartbeat(s32);
+    void ShowStats_BeginScene(void);
+    void ProcessManager_Render(s32);
+    void ShowStats_EndScene(void);
+    u32 InterfaceManager_GetTotalActiveInterfaces(void);
+    void FileStreaming_ReleaseDataPack(s32, s32);
+    void GameSettings_LoadDefaultMemoryCardData(void);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void StateTitleScreen_SetMenuFile(s32, s32);
+    s8 loadDefaults = 0;
+    Step *step;
+    void *pack;
+
+    if (g_GameManagerState.mcp == NULL) {
+        StateManager_GotoState(0xB);
+        return 1;
+    }
+    if (g_GameManagerState.step < g_GameManagerState.mcp->numSteps) {
+        step = &g_GameManagerState.mcp->steps[g_GameManagerState.step];
+        switch (step->type) {
+        case 0:
+            if (step->movie != NULL) {
+                StateMovie_SetMovieToPlay(step->movie);
+                StateManager_QueueChange(3);
+            }
+            break;
+        case 1:
+            loadDefaults = 1;
+        case 4:
+            if (!g_bInterfacePlaying) {
+                g_interfacePackID = FileStreaming_LoadDataPack(step->pack->name, 1, step->pack->script, 0);
+                if ((pack = FileStreaming_InitializeDataPack(g_interfacePackID, 1, 1)) != NULL) {
+                    InterfaceManager_Create(DataPack_GetScript(pack, step->pack->script), 0, StateGameManager_InterfaceHandler);
+                    g_bInterfacePlaying = 1;
+                }
+                if (g_GameManagerState.step == g_GameManagerState.mcp->numSteps - 1) {
+                    FileStreaming_LoadDataPack(g_GameManagerState.mcp->menuName, 1, g_GameManagerState.mcp->menuFile, 0);
+                }
+            }
+            ShowStats_StartFrame();
+            ViewManager_PrepForRender();
+            ProcessManager_Heartbeat(0);
+            ShowStats_BeginScene();
+            ProcessManager_Render(1);
+            ShowStats_EndScene();
+            if (!g_bInterfacePlaying && InterfaceManager_GetTotalActiveInterfaces() == 0) {
+                FileStreaming_ReleaseDataPack(g_interfacePackID, 1);
+                g_interfacePackID = -1;
+                if (loadDefaults) {
+                    GameSettings_LoadDefaultMemoryCardData();
+                }
+            } else {
+                g_bInterfacePlaying = 1;
+            }
+            break;
+        }
+        if (!g_bInterfacePlaying && GameSettings_GetCodeVariable(0x198, 0) == 0) {
+            if (loadDefaults) {
+                GameSettings_LoadDefaultMemoryCardData();
+            }
+            g_GameManagerState.step++;
+        }
+    } else {
+        StateTitleScreen_SetMenuFile(g_GameManagerState.mcp->menuName, g_GameManagerState.mcp->menuFile);
+        StateManager_QueueChange(2);
+    }
+    return 1;
+}
+
 s32 StateGameManager_Shutdown(void) {
     u32 GameSettings_GetCodeVariable(s32, s32);
     void FileStreaming_HeartBeat(void);
@@ -16616,6 +16754,63 @@ void OSPanic(const char *file, int line, const char *msg, ...) {
     PPCHalt();
 }
 
+void __OSUnhandledException(u8 exception, u8 *context, u32 dsisr, u32 dar) {
+    extern void (*__OSErrorTable[16])(u8, u8 *, u32, u32);
+    extern s16 __OSLastInterrupt;
+    extern u32 __OSLastInterruptSrr0;
+    extern s64 __OSLastInterruptTime;
+    void OSReport(const char *fmt, ...);
+    void OSDisableScheduler(void);
+    void OSEnableScheduler(void);
+    void __OSReschedule(void);
+    void OSLoadContext(void *ctx);
+    void OSDumpContext(void *ctx);
+    s64 OSGetTime(void);
+    void PPCHalt(void);
+
+    if (!(*(u32 *)(context + 0x19C) & 2)) {
+        OSReport("Non-recoverable Exception %d", exception);
+    } else {
+        if (__OSErrorTable[exception] != NULL) {
+            OSDisableScheduler();
+            __OSErrorTable[exception](exception, context, dsisr, dar);
+            OSEnableScheduler();
+            __OSReschedule();
+            OSLoadContext(context);
+        }
+        if (exception == 8) {
+            OSLoadContext(context);
+        }
+        OSReport("Unhandled Exception %d", exception);
+    }
+    OSReport("\n");
+    OSDumpContext(context);
+    OSReport("\nDSISR = 0x%08x                   DAR  = 0x%08x\n", dsisr, dar);
+    OSReport("TB = 0x%016llx\n", OSGetTime());
+    switch (exception) {
+    case 2:
+        OSReport("\nInstruction at 0x%x (read from SRR0) attempted to access invalid address 0x%x (read from DAR)\n", *(u32 *)(context + 0x198), dar);
+        break;
+    case 3:
+        OSReport("\nAttempted to fetch instruction from invalid address 0x%x (read from SRR0)\n", *(u32 *)(context + 0x198));
+        break;
+    case 5:
+        OSReport("\nInstruction at 0x%x (read from SRR0) attempted to access unaligned address 0x%x (read from DAR)\n", *(u32 *)(context + 0x198), dar);
+        break;
+    case 6:
+        OSReport("\nProgram exception : Possible illegal instruction/operation at or around 0x%x (read from SRR0)\n", *(u32 *)(context + 0x198), dar);
+        break;
+    case 15:
+        OSReport("\n");
+        OSReport("AI DMA Address =   0x%04x%04x\n", *(u16 *)0xCC005030, *(u16 *)0xCC005032);
+        OSReport("ARAM DMA Address = 0x%04x%04x\n", *(u16 *)0xCC005020, *(u16 *)0xCC005022);
+        OSReport("DI DMA Address =   0x%08x\n", *(u32 *)0xCC006014);
+        break;
+    }
+    OSReport("\nLast interrupt (%d): SRR0 = 0x%08x  TB = 0x%016llx\n", __OSLastInterrupt, __OSLastInterruptSrr0, __OSLastInterruptTime);
+    PPCHalt();
+}
+
 u16 GetFontCode(u16 code) {
     extern u16 HankakuToCode_800D4950[];
     extern u16 Zenkaku2Code_800D4AD0[];
@@ -17807,6 +18002,105 @@ void *SetEffectivePriority(void *thread, s32 priority) {
         break;
     }
     return NULL;
+}
+
+void *SelectThread(s32 yield) {
+    typedef struct OSThread OSThread;
+    typedef struct { OSThread *head; OSThread *tail; } OSThreadQueue;
+    struct OSThread {
+        u8 context[0x1A2];
+        u16 state1A2;
+        u8 pad1A4[0x2C8 - 0x1A4];
+        u16 state;
+        u16 attr;
+        s32 suspend;
+        s32 priority;
+        s32 base;
+        void *val;
+        OSThreadQueue *queue;
+        OSThread *next;
+        OSThread *prev;
+    };
+    extern OSThreadQueue RunQueue_802EEE78[32];
+    extern s32 Reschedule_803C7298;
+    extern u32 RunQueueBits_803C7290;
+    extern s32 RunQueueHint_803C7294;
+    void *OSGetCurrentContext(void);
+    void OSSetCurrentContext(void *ctx);
+    u32 OSSaveContext(void *ctx);
+    void OSLoadContext(void *ctx);
+    void OSClearContext(void *ctx);
+    s32 OSEnableInterrupts(void);
+    s32 OSDisableInterrupts(void);
+    OSThread *currentThread;
+    OSThread *nextThread;
+    OSThread *prev;
+    OSThread *next;
+    OSThreadQueue *queue;
+    s32 priority;
+
+    if (Reschedule_803C7298 > 0) {
+        return NULL;
+    }
+    currentThread = *(OSThread **)0x800000E4;
+    if (OSGetCurrentContext() != currentThread) {
+        return NULL;
+    }
+    if (currentThread != NULL) {
+        if (currentThread->state == 2) {
+            if (!yield && currentThread->priority <= __cntlzw(RunQueueBits_803C7290)) {
+                return NULL;
+            }
+            currentThread->state = 1;
+            currentThread->queue = &RunQueue_802EEE78[currentThread->priority];
+            queue = currentThread->queue;
+            prev = queue->tail;
+            if (prev == NULL) {
+                queue->head = currentThread;
+            } else {
+                prev->next = currentThread;
+            }
+            currentThread->prev = prev;
+            currentThread->next = NULL;
+            currentThread->queue->tail = currentThread;
+            RunQueueBits_803C7290 |= 1u << (31 - currentThread->priority);
+            RunQueueHint_803C7294 = 1;
+        }
+        if (!(currentThread->state1A2 & 2) && OSSaveContext(currentThread)) {
+            return NULL;
+        }
+    }
+    *(OSThread **)0x800000E4 = NULL;
+    if (RunQueueBits_803C7290 == 0) {
+        OSSetCurrentContext((u8 *)RunQueue_802EEE78 + 0x720);
+        do {
+            OSEnableInterrupts();
+            while (RunQueueBits_803C7290 == 0) {
+            }
+            OSDisableInterrupts();
+        } while (RunQueueBits_803C7290 == 0);
+        OSClearContext((u8 *)RunQueue_802EEE78 + 0x720);
+    }
+    RunQueueHint_803C7294 = 0;
+    priority = __cntlzw(RunQueueBits_803C7290);
+    queue = &RunQueue_802EEE78[priority];
+    nextThread = queue->head;
+    next = nextThread->next;
+    if (next == NULL) {
+        queue->tail = NULL;
+    } else {
+        next->prev = NULL;
+    }
+    queue->head = next;
+    if (queue->head == NULL) {
+        RunQueueBits_803C7290 &= ~(1u << (31 - priority));
+    }
+    nextThread->queue = NULL;
+    nextThread->state = 2;
+    *(OSThread **)0x800000E4 = nextThread;
+    OSSetCurrentContext(nextThread);
+    OSLoadContext(nextThread);
+    return nextThread;
 }
 
 #pragma pop
@@ -22298,6 +22592,73 @@ void __AXSetPBDefault(void *p) {
     *(u16 *)(pb + 0x180) = 0;
     *(u16 *)(pb + 0x17E) = 0;
     *(u16 *)(pb + 0x17C) = 0;
+}
+
+void __AXVPBInit(void) {
+    extern u8 __AXPB_802F78A0[];
+    extern u32 __AXMaxDspCycles_803C7508;
+    extern u32 __AXRecDspCycles_803C750C;
+    void __AXPushFreeStack(void *p);
+    void DCFlushRange(void *addr, u32 nBytes);
+    u32 i;
+    u8 *ppb;
+    u8 *pitd;
+    u8 *pupd;
+    u8 *pvpb;
+    u32 next;
+
+    __AXMaxDspCycles_803C7508 = *(u32 *)0x800000F8 / 400;
+    __AXRecDspCycles_803C750C = 0;
+    for (i = 0; i < 0x3B00 / 4; i++) {
+        ((u32 *)__AXPB_802F78A0)[i] = 0;
+    }
+    for (i = 0; i < 0x1000 / 4; i++) {
+        ((u32 *)(__AXPB_802F78A0 + 0x3B00))[i] = 0;
+    }
+    for (i = 0; i < 0x8900 / 4; i++) {
+        ((u32 *)(__AXPB_802F78A0 + 0x8B00))[i] = 0;
+    }
+    ppb = __AXPB_802F78A0;
+    pitd = __AXPB_802F78A0 + 0x3B00;
+    pupd = __AXPB_802F78A0 + 0x4B00;
+    pvpb = __AXPB_802F78A0 + 0x8B00;
+    for (i = 0; i < 64; i++) {
+        *(u32 *)(pvpb + 0x18) = i;
+        *(u8 **)(pvpb + 0x30) = pvpb + 0x34;
+        *(u8 **)(pvpb + 0x134) = pitd;
+        __AXSetPBDefault(pvpb);
+        if (i == 63) {
+            *(u16 *)(ppb + 2) = 0;
+            *(u16 *)(ppb + 0) = 0;
+            *(u16 *)(pvpb + 0x13A) = 0;
+            *(u16 *)(pvpb + 0x138) = 0;
+        } else {
+            next = (u32)(ppb + 0xEC);
+            *(u16 *)(pvpb + 0x138) = next >> 16;
+            *(u16 *)(pvpb + 0x13A) = next;
+            *(u16 *)(ppb + 0) = next >> 16;
+            *(u16 *)(ppb + 2) = next;
+        }
+        *(u16 *)(pvpb + 0x13C) = (u32)ppb >> 16;
+        *(u16 *)(pvpb + 0x13E) = (u32)ppb;
+        *(u16 *)(ppb + 4) = (u32)ppb >> 16;
+        *(u16 *)(ppb + 6) = (u32)ppb;
+        *(u16 *)(pvpb + 0x170) = (u32)pitd >> 16;
+        *(u16 *)(pvpb + 0x172) = (u32)pitd;
+        *(u16 *)(ppb + 0x38) = (u32)pitd >> 16;
+        *(u16 *)(ppb + 0x3A) = (u32)pitd;
+        *(u16 *)(pvpb + 0x186) = (u32)pupd >> 16;
+        *(u16 *)(pvpb + 0x188) = (u32)pupd;
+        *(u16 *)(ppb + 0x4E) = (u32)pupd >> 16;
+        *(u16 *)(ppb + 0x50) = (u32)pupd;
+        *(u32 *)(pvpb + 0xC) = 1;
+        __AXPushFreeStack(pvpb);
+        ppb += 0xEC;
+        pitd += 0x40;
+        pupd += 0x100;
+        pvpb += 0x224;
+    }
+    DCFlushRange(__AXPB_802F78A0, 0x3B00);
 }
 
 void __AXVPBQuit(void) {
