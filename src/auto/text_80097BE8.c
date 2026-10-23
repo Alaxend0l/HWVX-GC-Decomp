@@ -4673,7 +4673,7 @@ s32 CreateAudioDecodeThread(s32 priority, void *param) {
     void AudioDecoder(void);
     void AudioDecoderForOnMemory(void *bufAddr);
     extern s32 AudioDecodeThreadCreated_803C7770;
-    extern u8 AudioDecodeThread_80370108[];
+    extern u8 AudioDecodeThread_80370108[0x310];
     struct AudioDecodeThreadData {
         u8 thread[0x310];
         u8 stack[0x1000];
