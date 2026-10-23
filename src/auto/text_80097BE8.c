@@ -6271,6 +6271,7 @@ void DrawGroupWireframe(Geometry *geometry, u32 group, void *matrix) {
         g_pGDL->num3DLines++;
     }
 }
+#pragma pop
 
 void Gfx_GetCameraPosition(Vector *pos) {
     *pos = *(Vector *)((u8 *)GetRenderWindow() + 0x180);
