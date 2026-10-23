@@ -2144,6 +2144,34 @@ BOOL DBGReadStatus(u32 *status) {
     return !err;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+BOOL DBGWrite(u32 count, void *buffer, s32 size) {
+    BOOL DBGEXIImm(void *buffer, s32 bytecounter, u32 write);
+    BOOL err;
+    u32 *buf = (u32 *)buffer;
+    u32 cmd;
+    u32 data;
+
+    *(volatile u32 *)0xCC006828 = (*(volatile u32 *)0xCC006828 & 0x405) | 0xC0;
+    cmd = ((count << 8) & 0x1FFFC00) | 0xA0000000;
+    err = !DBGEXIImm(&cmd, 4, 1);
+    while (*(volatile u32 *)0xCC006834 & 1) {
+    }
+    while (size != 0) {
+        data = *buf++;
+        err |= !DBGEXIImm(&data, 4, 1);
+        while (*(volatile u32 *)0xCC006834 & 1) {
+        }
+        size -= 4;
+        if (size < 0) {
+            size = 0;
+        }
+    }
+    *(volatile u32 *)0xCC006828 &= 0x405;
+    return !err;
+}
+
 s32 DBGReadMailbox(u32 *mailbox) {
     s32 DBGEXIImm(void *buf, s32 len, u32 mode);
     s32 err;
