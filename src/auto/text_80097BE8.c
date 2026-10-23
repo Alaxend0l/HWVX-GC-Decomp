@@ -4383,7 +4383,7 @@ void *PopDecodedTextureSet(s32 arg0) {
 }
 
 void PushDecodedTextureSet(void *arg0) {
-    extern u8 DecodedTextureSetQueue_8036E32C[];
+    extern u8 DecodedTextureSetQueue_8036E32C[0x20];
     OSSendMessage(DecodedTextureSetQueue_8036E32C, arg0, 1);
 }
 
