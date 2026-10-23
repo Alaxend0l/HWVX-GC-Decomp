@@ -4811,7 +4811,7 @@ void *PopDecodedAudioBuffer(s32 arg0) {
 }
 
 void PushDecodedAudioBuffer(void *arg0) {
-    extern u8 DecodedAudioBufferQueue_80371444[];
+    extern u8 DecodedAudioBufferQueue_80371444[0x20];
     OSSendMessage(DecodedAudioBufferQueue_80371444, arg0, 1);
 }
 
