@@ -6506,15 +6506,15 @@ void Render_DrawPointSprites(void) {
 }
 
 #pragma push
-#pragma dont_inline on
+#pragma auto_inline off
 void Render_DrawRectanglesWindow(void) {
     extern GDL *g_pGDL;
     extern u8 g_CurrentViews;
     void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
     void Gfx_SetRenderWindow(s32 window);
     void Render_StateSetScissor(void);
-    u8 window = 0;
     u32 i;
+    u32 window = 0;
     u32 j;
 
     if (g_pGDL->numRects == 0) {
@@ -6533,28 +6533,29 @@ void Render_DrawRectanglesWindow(void) {
         Render_StateBlendMode(g_pGDL->rects[i].blendMode);
         GXBegin(0x80, 0, 4);
         for (j = 0; j < 4; j++) {
-            {
-                f32 y = g_pGDL->rects[i].v[j].y;
-                f32 x = g_pGDL->rects[i].v[j].x;
-                GXWGFifo.f32 = x;
-                GXWGFifo.f32 = y;
-            }
-            {
-                u8 a = g_pGDL->rects[i].v[j].a;
-                u8 b = g_pGDL->rects[i].v[j].b;
-                u8 g = g_pGDL->rects[i].v[j].g;
-                u8 c = g_pGDL->rects[i].v[j].r;
-                GXWGFifo.u8 = c;
-                GXWGFifo.u8 = g;
-                GXWGFifo.u8 = b;
-                GXWGFifo.u8 = a;
-            }
-            {
-                f32 t = g_pGDL->rects[i].v[j].t;
-                f32 s = g_pGDL->rects[i].v[j].s;
-                GXWGFifo.f32 = s;
-                GXWGFifo.f32 = t;
-            }
+            f32 y = g_pGDL->rects[i].v[j].y;
+            f32 x = g_pGDL->rects[i].v[j].x;
+            u8 a;
+            u8 b;
+            u8 g;
+            u8 c;
+            f32 t;
+            f32 s;
+
+            GXWGFifo.f32 = x;
+            GXWGFifo.f32 = y;
+            a = g_pGDL->rects[i].v[j].a;
+            b = g_pGDL->rects[i].v[j].b;
+            g = g_pGDL->rects[i].v[j].g;
+            c = g_pGDL->rects[i].v[j].r;
+            GXWGFifo.u8 = c;
+            GXWGFifo.u8 = g;
+            GXWGFifo.u8 = b;
+            GXWGFifo.u8 = a;
+            t = g_pGDL->rects[i].v[j].t;
+            s = g_pGDL->rects[i].v[j].s;
+            GXWGFifo.f32 = s;
+            GXWGFifo.f32 = t;
         }
     }
     if (window != 0) {
