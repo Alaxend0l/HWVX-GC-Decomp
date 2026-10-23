@@ -3280,6 +3280,46 @@ void GameSettings_ApplyDefaultGameData(void) {
     OSSetSoundMode(g_generalGameSettings.audio.speakerMode);
 }
 
+extern s8 g_DDRescueGameData[];
+void GameSettings_RestorePlayerStats(void) {
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    u8 PlayerManager_PlayerHumanCount(void);
+    void *PlayerManager_GetHumanPlayerByIndex(u8 index);
+    void *memcpy(void *, const void *, u32);
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    void *pack;
+    s32 state;
+
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        state = mcp[1];
+    } else {
+        state = 0;
+    }
+    switch (state) {
+    case 0:
+        break;
+    case 1:
+        if (g_DDRescueGameData[0x74] && PlayerManager_PlayerHumanCount() == 1) {
+            memcpy((u8 *)PlayerManager_GetHumanPlayerByIndex(0) + 0x70, &g_DDRescueGameData[0x78], 0x38);
+        }
+        break;
+    }
+}
+
 void GameSettings_DetermineIfOverwritingFile(void) {
     if (g_bValidFileName_803C6CA4[g_codeVariables.fileIndex - 1]) {
         g_codeVariables.bOverwritingFile = 1;
@@ -8067,6 +8107,31 @@ void OSSetArenaLo(s32 arg0) {
     __OSArenaLo_803C6D78 = arg0;
 }
 
+void __OSStopAudioSystem(void) {
+    s32 OSGetTick(void);
+    volatile u16 *dsp = (volatile u16 *)0xCC005000;
+    u32 r28;
+    s32 start;
+
+    dsp[5] = 0x804;
+    dsp[0x1B] &= ~0x8000;
+    while (dsp[5] & 0x400) {
+    }
+    while (dsp[5] & 0x200) {
+    }
+    dsp[5] = 0x8AC;
+    dsp[0] = 0;
+    while (((dsp[2] << 16) | dsp[3]) & 0x80000000) {
+    }
+    start = OSGetTick();
+    while ((s32)(OSGetTick() - start) < 0x2C) {
+    }
+    r28 = dsp[5];
+    dsp[5] = (u16)(r28 | 1);
+    while (dsp[5] & 1) {
+    }
+}
+
 void DCFlushRangeNoSync(void *addr, u32 nBytes) {
     if (nBytes > 0) {
         u32 n;
@@ -8164,6 +8229,22 @@ void L2GlobalInvalidate(void) {
 
 s32 OSGetCurrentContext(void) {
     return *(s32 *)0x800000D4;
+}
+
+void OSLoadContext(void *context) {
+    extern u8 __RAS_OSDisableInterrupts_begin[];
+    extern u8 __RAS_OSDisableInterrupts_end[];
+    u8 *srr0;
+    u16 state;
+
+    srr0 = M2C_FIELD(context, u8 **, 0x198);
+    if (srr0 >= __RAS_OSDisableInterrupts_begin && srr0 <= __RAS_OSDisableInterrupts_end) {
+        M2C_FIELD(context, u8 **, 0x198) = __RAS_OSDisableInterrupts_begin;
+    }
+    state = M2C_FIELD(context, u16 *, 0x1A2);
+    if (state & 2) {
+        M2C_FIELD(context, u16 *, 0x1A2) = state & ~2;
+    }
 }
 
 void OSClearContext(register void *context) {
@@ -12940,8 +13021,6 @@ void GXSetProjection(f32 mtx[4][4], s32 type) {
         f32 projMtx[6];
     } GXDataProj;
     extern GXDataProj *gx;
-    GXDataProj *g;
-    u32 reg;
 
     gx->projType = type;
     gx->projMtx[0] = mtx[0][0];
@@ -12955,18 +13034,16 @@ void GXSetProjection(f32 mtx[4][4], s32 type) {
         gx->projMtx[1] = mtx[0][2];
         gx->projMtx[3] = mtx[1][2];
     }
-    g = gx;
-    reg = 0x61020;
     GXWGPipe.u8 = 0x10;
-    GXWGPipe.u32 = reg;
-    GXWGPipe.f32 = g->projMtx[0];
-    GXWGPipe.f32 = g->projMtx[1];
-    GXWGPipe.f32 = g->projMtx[2];
-    GXWGPipe.f32 = g->projMtx[3];
-    GXWGPipe.f32 = g->projMtx[4];
-    GXWGPipe.f32 = g->projMtx[5];
-    GXWGPipe.u32 = g->projType;
-    g->bpSentNot = 1;
+    GXWGPipe.u32 = 0x61020;
+    GXWGPipe.f32 = gx->projMtx[0];
+    GXWGPipe.f32 = gx->projMtx[1];
+    GXWGPipe.f32 = gx->projMtx[2];
+    GXWGPipe.f32 = gx->projMtx[3];
+    GXWGPipe.f32 = gx->projMtx[4];
+    GXWGPipe.f32 = gx->projMtx[5];
+    GXWGPipe.u32 = gx->projType;
+    gx->bpSentNot = 1;
 }
 
 void GXGetProjectionv(f32 *p) {
@@ -13162,6 +13239,31 @@ u32 SIDisablePolling(u32 poll) {
     Si_800D9E70.poll = poll;
     OSRestoreInterrupts(enabled);
     return poll;
+}
+
+BOOL SIGetResponseRaw(s32 chan) {
+    extern u32 Type_800D9E84[4];
+    BOOL OSDisableInterrupts(void);
+    BOOL OSRestoreInterrupts(BOOL level);
+    SIPacketBss *si = &Packet_803096E0;
+    BOOL enabled;
+    u32 sr;
+
+    enabled = OSDisableInterrupts();
+    sr = __SIRegs[14] >> (8 * (3 - chan));
+    if (sr & 8) {
+        if (!(Type_800D9E84[chan] & 0x80)) {
+            Type_800D9E84[chan] = 8;
+        }
+    }
+    OSRestoreInterrupts(enabled);
+    if (sr & 0x20) {
+        si->inputBuffer[chan][0] = __SIRegs[3 * chan + 1];
+        si->inputBuffer[chan][1] = __SIRegs[3 * chan + 2];
+        si->inputBufferValid[chan] = TRUE;
+        return TRUE;
+    }
+    return FALSE;
 }
 
 #pragma push
