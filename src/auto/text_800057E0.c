@@ -2504,8 +2504,8 @@ void InterfaceManager_LinkThingToObject(s32 index, u32 id, void *thing) {
         u8 pad28C[0x300 - 0x28C];
     } InterfaceSlot;
     extern u8 g_interface[][0x170];
-    u32 i;
     u8 *iface = g_interface[index];
+    u32 i;
 
     if (iface != NULL) {
         for (i = 0; i < *(u32 *)iface; i++) {
