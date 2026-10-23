@@ -14492,10 +14492,6 @@ u16 OSGetFontEncode(void) {
     return fontEncode;
 }
 
-static inline BOOL IsSjisTrailByte(u8 c) {
-    return 0x40 <= c && c <= 0xFC && c != 0x7F;
-}
-
 extern u8 *FontData_803C7230;
 extern u8 *SheetImage_803C7234;
 u32 OSLoadFont(void *buf);
