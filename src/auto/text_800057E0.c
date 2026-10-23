@@ -3137,6 +3137,49 @@ void Looker_Draw(void) {
 
 }
 
+s32 Main_Shutdown(void) {
+    void PlayerManager_Destroy(void);
+    void ThingManager_DARYL_Destroy(void);
+    void Input_Destroy(void);
+    void ShaderHolder_Destroy(void);
+    void VertexColorSeqManager_Destroy(void);
+    void MatrixCache_Destroy(void);
+    void World_Destroy(void);
+    void Geometry_Destroy(void);
+    void StateManager_Destroy(void);
+    void CameraManager_Destroy(void);
+    void Trigger_Destroy(void);
+    void Action_Destroy(void);
+    void LogHandler_Destroy(void);
+    void FileManager_Destroy(void);
+    void Gfx_Destroy(void);
+    void StateGameManager_Release(void);
+    void FileStreaming_Destroy(void);
+    void SoundManager_Destroy(void);
+    void HeapDump(void);
+
+    PlayerManager_Destroy();
+    ThingManager_DARYL_Destroy();
+    Input_Destroy();
+    ShaderHolder_Destroy();
+    VertexColorSeqManager_Destroy();
+    MatrixCache_Destroy();
+    World_Destroy();
+    Geometry_Destroy();
+    StateManager_Destroy();
+    CameraManager_Destroy();
+    Trigger_Destroy();
+    Action_Destroy();
+    LogHandler_Destroy();
+    FileManager_Destroy();
+    Gfx_Destroy();
+    StateGameManager_Release();
+    FileStreaming_Destroy();
+    SoundManager_Destroy();
+    HeapDump();
+    return 1;
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void MatrixCache_Create(void) {
