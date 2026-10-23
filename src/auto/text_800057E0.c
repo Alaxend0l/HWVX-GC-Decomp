@@ -3152,6 +3152,80 @@ void CarA_SetSlavePlayers(void *car) {
     }
 }
 
+#pragma use_lmw_stmw on
+void CarA_DrawScript(u8 *car) {
+    typedef struct { void *geom; u16 mtxIndex; u8 pad6[2]; } ModelPart;
+    typedef struct {
+        u32 numGeoms;
+        void **geoms;
+        u32 numParts;
+        ModelPart *parts;
+        u8 pad10[4];
+        s32 *skel;
+    } Model;
+    typedef struct CarPart {
+        u8 flags;
+        u8 xform;
+        u8 pad2[2];
+        u16 mtxIndex;
+        u8 pad6[2];
+        void *geom;
+        Vector4 *offset;
+        u8 pad10[0xC];
+    } CarPart;
+    typedef struct CarPartList {
+        u32 count;
+        CarPart *parts;
+    } CarPartList;
+    void LightManager_LightThing(void *thing);
+    void Gfx_DrawAnimGeometryAux(void *geom, void *mtx, s32 skel, s32 arg3);
+    void Gfx_DrawGeometry_MatrixNotCached(void *geom, void *mtx);
+    void Gfx_DrawGeometry(void *geom, void *mtx);
+    Matrix4 *matrices;
+    u32 i;
+    s32 *skel;
+    u32 j;
+    CarPartList *list;
+    CarPart *part;
+    u32 bit;
+    void *geom;
+    Matrix4 mtx;
+
+    matrices = *(Matrix4 **)(car + 0x340);
+    if (matrices == NULL) {
+        return;
+    }
+    LightManager_LightThing(car);
+    skel = (*(Model **)(car + 0x330))->skel;
+    for (i = 0; i < (*(Model **)(car + 0x330))->numGeoms; i++) {
+        Gfx_DrawAnimGeometryAux((*(Model **)(car + 0x330))->geoms[i], matrices, *skel, 0);
+    }
+    for (i = 0; i < (*(Model **)(car + 0x330))->numParts; i++) {
+        ModelPart *e = &(*(Model **)(car + 0x330))->parts[i];
+        Gfx_DrawGeometry_MatrixNotCached(e->geom, &matrices[e->mtxIndex]);
+    }
+    list = *(CarPartList **)(*(u8 **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x78) + 0x10) + 0x38);
+    if (list != NULL) {
+        for (j = 0; j < list->count; j++) {
+            part = &list->parts[j];
+            geom = part->geom;
+            bit = *(u32 *)(car + 0x374) & (1 << j);
+            if (bit && !(part->flags & 1)) {
+                continue;
+            }
+            if (!bit && (part->flags & 1)) {
+                continue;
+            }
+            if (part->xform) {
+                mtx = matrices[part->mtxIndex];
+                XformVec(&mtx, list->parts[j].offset, &mtx.v[3]);
+                Gfx_DrawGeometry(geom, &mtx);
+            } else {
+                Gfx_DrawGeometry_MatrixNotCached(geom, &matrices[part->mtxIndex]);
+            }
+        }
+    }
+}
 void CarA_Draw(u8 *car) {
     extern void *g_pNoRayCollideThing;
     void CarA_DrawScript(u8 *car);
