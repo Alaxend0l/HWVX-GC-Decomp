@@ -9337,6 +9337,8 @@ s32 Effect_Update(Effect *effect, u32 dt) {
     s32 active;
     s16 magnitude;
     s32 wave;
+    s32 round;
+    s32 level;
     u32 a;
     EffectCondition *cond;
 
@@ -9365,7 +9367,8 @@ s32 Effect_Update(Effect *effect, u32 dt) {
         } else if (effect->flags & 0x20) {
             Effect_PolarToRect(effect->params.ramp.start + Effect_MulDiv(effect->params.ramp.end - effect->params.ramp.start, effect->elapsed, effect->duration), effect->params.ramp.angle, &effect->force);
         } else if (effect->flags & 0x40) {
-            effect->phase = (dt << 24) / effect->params.periodic.period + effect->phase;
+            dt = (dt << 24) / effect->params.periodic.period;
+            effect->phase += dt;
             if (effect->phase >= 0x1000000) {
                 effect->phase -= effect->phase & 0xFF000000;
             }
@@ -9395,7 +9398,13 @@ s32 Effect_Update(Effect *effect, u32 dt) {
                 wave = 0;
                 break;
             }
-            Effect_PolarToRect(Effect_MulDiv(wave, magnitude, 0x400) + effect->params.periodic.offset, effect->params.periodic.angle, &effect->force);
+            round = 0x200;
+            if (wave < 0) {
+                round = -0x200;
+            }
+            level = wave * magnitude;
+            level += round;
+            Effect_PolarToRect(level / 0x400 + effect->params.periodic.offset, effect->params.periodic.angle, &effect->force);
         } else if (effect->flags & 0x80) {
             cond = &effect->params.condition;
             switch (effect->type) {
