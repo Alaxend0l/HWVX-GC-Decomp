@@ -1363,6 +1363,12 @@ s32 AttachThing_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+s32 RadarBlip_Move(u8 *blip) {
+    typedef struct { f32 x, y, z, w; } Vec4;
+    M2C_FIELD(blip, Vec4 *, 0xC0) = M2C_FIELD(blip, Vec4 *, 0x40);
+    return 1;
+}
+
 #pragma push
 #pragma readonly_strings on
 void SoundManager_Create(void) {
@@ -4287,10 +4293,11 @@ s32 OSGetConsoleType(void) {
     extern u8 *BootInfo_803C71E0;
     u32 type;
 
-    if (BootInfo_803C71E0 == NULL || (type = M2C_FIELD(BootInfo_803C71E0, u32 *, 0x2C)) == 0) {
-        type = 0x10000002;
+    if (BootInfo_803C71E0 != NULL && (type = M2C_FIELD(BootInfo_803C71E0, u32 *, 0x2C)) != 0) {
+        return type;
+    } else {
+        return 0x10000002;
     }
-    return type;
 }
 
 void InquiryCallback(s32 result, void *block) {
@@ -4350,6 +4357,41 @@ s32 OSSetCurrentHeap(s32 arg0) {
     return temp_r0;
 }
 
+s32 OSCreateHeap(void *start, void *end) {
+    typedef struct Cell {
+        struct Cell *prev;
+        struct Cell *next;
+        s32 size;
+    } Cell;
+    typedef struct HeapDesc {
+        s32 size;
+        Cell *free;
+        Cell *allocated;
+    } HeapDesc;
+    extern HeapDesc *HeapArray_803C7218;
+    extern s32 NumHeaps_803C721C;
+    s32 heap;
+    HeapDesc *hd;
+    Cell *cell;
+
+    start = (void *)(((u32)start + 0x1F) & ~0x1F);
+    end = (void *)((u32)end & ~0x1F);
+    for (heap = 0; heap < NumHeaps_803C721C; heap++) {
+        hd = &HeapArray_803C7218[heap];
+        if (hd->size < 0) {
+            hd->size = (u8 *)end - (u8 *)start;
+            cell = (Cell *)start;
+            cell->prev = NULL;
+            cell->next = NULL;
+            cell->size = hd->size;
+            hd->free = cell;
+            hd->allocated = NULL;
+            return heap;
+        }
+    }
+    return -1;
+}
+
 s32 fn_80069F84(s32 arg0) {
     extern s32 lbl_803C6D70;
     s32 temp_r0;
@@ -4377,6 +4419,20 @@ void OSSetArenaHi(s32 arg0) {
 void OSSetArenaLo(s32 arg0) {
     extern s32 __OSArenaLo_803C6D78;
     __OSArenaLo_803C6D78 = arg0;
+}
+
+void DCFlushRangeNoSync(void *addr, u32 nBytes) {
+    if (nBytes > 0) {
+        u32 n;
+        if ((u32)addr & 0x1F) {
+            nBytes += 0x20;
+        }
+        n = (nBytes + 0x1F) >> 5;
+        do {
+            __dcbf(addr, 0);
+            addr = (u8 *)addr + 0x20;
+        } while (--n);
+    }
 }
 
 void DCZeroRange(void *addr, u32 nBytes) {
@@ -4410,12 +4466,12 @@ void ICInvalidateRange(void *addr, u32 nBytes) {
 }
 
 void LCEnable(void) {
-    M2C_UNK __LCEnable();
-    s32 temp_r31;
+    void __LCEnable(void);
+    s32 enabled;
 
-    temp_r31 = OSDisableInterrupts();
+    enabled = OSDisableInterrupts();
     __LCEnable();
-    OSRestoreInterrupts(temp_r31);
+    OSRestoreInterrupts(enabled);
 }
 
 #pragma push
