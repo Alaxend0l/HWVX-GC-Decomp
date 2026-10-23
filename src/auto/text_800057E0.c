@@ -7668,7 +7668,7 @@ static inline s32 VolumeManager_GetCellIndex(Vector4 *point) {
     if (z < 0 || z >= M2C_FIELD(g_VolumeHolder, s32 *, 0x34)) {
         return 0;
     }
-    return M2C_FIELD(g_VolumeHolder, s32 **, 0x14)[x + M2C_FIELD(g_VolumeHolder, s32 *, 0x34) * (y * M2C_FIELD(g_VolumeHolder, s32 *, 0x2C)) + z * M2C_FIELD(g_VolumeHolder, s32 *, 0x2C)];
+    return M2C_FIELD(g_VolumeHolder, s32 **, 0x14)[z * M2C_FIELD(g_VolumeHolder, s32 *, 0x2C) + (M2C_FIELD(g_VolumeHolder, s32 *, 0x34) * (y * M2C_FIELD(g_VolumeHolder, s32 *, 0x2C)) + x)];
 }
 
 #pragma push
@@ -7699,9 +7699,6 @@ void VolumeManager_SetReverbLevel(Vector4 *point) {
     u8 *reverb;
     u32 i;
     s32 cell;
-    s32 x;
-    s32 y;
-    s32 z;
     s8 inside;
     u8 *settings;
     f32 diff[3];
@@ -7711,23 +7708,7 @@ void VolumeManager_SetReverbLevel(Vector4 *point) {
     feedback = 32767.0f * M2C_FIELD(settings, f32 *, 0x2C);
     delay = M2C_FIELD(settings, f32 *, 0x28);
 
-    if (g_VolumeHolder == NULL) {
-        cell = 0;
-    } else {
-        x = (point->x - M2C_FIELD(g_VolumeHolder, f32 *, 0x0)) / M2C_FIELD(g_VolumeHolder, f32 *, 0x20);
-        y = (point->y - M2C_FIELD(g_VolumeHolder, f32 *, 0x4)) / M2C_FIELD(g_VolumeHolder, f32 *, 0x24);
-        z = (point->z - M2C_FIELD(g_VolumeHolder, f32 *, 0x8)) / M2C_FIELD(g_VolumeHolder, f32 *, 0x28);
-        if (x < 0 || x >= M2C_FIELD(g_VolumeHolder, s32 *, 0x2C)) {
-            cell = 0;
-        } else if (y < 0 || y >= M2C_FIELD(g_VolumeHolder, s32 *, 0x30)) {
-            cell = 0;
-        } else if (z < 0 || z >= M2C_FIELD(g_VolumeHolder, s32 *, 0x34)) {
-            cell = 0;
-        } else {
-            cell = M2C_FIELD(g_VolumeHolder, s32 **, 0x14)[x + M2C_FIELD(g_VolumeHolder, s32 *, 0x34) * (y * M2C_FIELD(g_VolumeHolder, s32 *, 0x2C)) + z * M2C_FIELD(g_VolumeHolder, s32 *, 0x2C)];
-        }
-    }
-
+    cell = VolumeManager_GetCellIndex(point);
     if (g_VolumeHolder != NULL) {
         count = M2C_FIELD(g_VolumeHolder, VolumeCell **, 0x10)[cell].types[2].count;
     } else {
