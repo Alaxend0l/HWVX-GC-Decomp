@@ -8361,9 +8361,35 @@ void InterfaceInputAnimator_HeartBeat(void) {
     }
 }
 
+extern char *g_moviePlaybackName;
+extern u32 g_curMovieIndex;
+
 void StateMovie_SetMovieToPlay(s32 arg0) {
-    extern s32 g_moviePlaybackName;
-    g_moviePlaybackName = arg0;
+    g_moviePlaybackName = (char *)arg0;
+}
+
+static char *StateMovie_GetNextMovieName(void) {
+    static char buffer[32];
+    u32 n = 0;
+    u32 len;
+
+    if (g_moviePlaybackName == NULL) {
+        return NULL;
+    }
+    len = strlen(g_moviePlaybackName);
+    if (g_curMovieIndex >= len) {
+        return NULL;
+    }
+    while (g_curMovieIndex < len) {
+        if (g_moviePlaybackName[g_curMovieIndex] == ',') {
+            g_curMovieIndex++;
+            break;
+        }
+        buffer[n++] = g_moviePlaybackName[g_curMovieIndex];
+        g_curMovieIndex++;
+    }
+    buffer[n] = '\0';
+    return buffer;
 }
 
 s32 StateMovie_Shutdown(void) {
