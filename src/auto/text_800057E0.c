@@ -23571,6 +23571,7 @@ s32 TRKTargetVersions(void *arg0) {
 
 #pragma push
 #pragma dont_inline on
+#pragma opt_propagation off
 s32 TRKTargetAccessExtended1(u32 firstRegister, u32 lastRegister, TRKBuffer *b, u32 *registersLengthPtr, s32 read) {
     extern u32 gTRKExceptionStatus_800DA0A4[];
     extern u8 gTRKCPUState[];
@@ -23604,7 +23605,7 @@ s32 TRKTargetAccessExtended1(u32 firstRegister, u32 lastRegister, TRKBuffer *b, 
         if (read) {
             error = TRKAppendBuffer_ui32(b, data, count);
         } else {
-            if (data <= (u32 *)(gTRKCPUState + 0x1EC) && data + count - 1 >= (u32 *)(gTRKCPUState + 0x1E8)) {
+            if (data <= (u32 *)(gTRKCPUState + 0x1EC) && (u32 *)((u8 *)data + count * sizeof(u32) - sizeof(u32)) >= (u32 *)(gTRKCPUState + 0x1E8)) {
                 gTRKRestoreFlags[0] = 1;
             }
             if (data <= (u32 *)(gTRKCPUState + 0x278) && data + count - 1 >= (u32 *)(gTRKCPUState + 0x278)) {
