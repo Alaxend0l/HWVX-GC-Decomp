@@ -1740,8 +1740,10 @@ s32 CarA_GetSurfaceScript(void *arg0) {
 s32 CarA_GetNearestNavPoint(void *car) {
     s32 NavHolder_FindIndexOfNearestNavPoint(void *navHolder);
     s32 RandomAdd_s32(s32 base, s32 range);
+    u32 index;
 
-    if (M2C_FIELD(car, u32 *, 0x3B0) == 0xFFFFFFFF) {
+    index = M2C_FIELD(car, u32 *, 0x3B0);
+    if (index == 0xFFFFFFFF) {
         M2C_FIELD(car, s32 *, 0x3B0) = NavHolder_FindIndexOfNearestNavPoint((u8 *)car + 0x40);
         M2C_FIELD(car, s32 *, 0x3B4) = M2C_FIELD(car, s32 *, 0x3B4) = RandomAdd_s32(300, 100);
     }
@@ -1765,6 +1767,17 @@ void Drone_GetCameraOrientationInfo(void *drone, void *camera, void *info) {
     M2C_FIELD(info, f32 *, 0x30) = 0.0f;
     M2C_FIELD(info, f32 *, 0x34) = 1.0f;
     M2C_FIELD(info, f32 *, 0x38) = 0.0f;
+}
+
+f32 CarA_GetImpactMultiplier(void *car, void *other, f32 scale) {
+    f32 PSVECDotProduct(void *a, void *b);
+    f32 impact;
+
+    impact = scale * PSVECDotProduct((u8 *)car + 0x20, (u8 *)other + 0x10);
+    if (impact < 0.0f) {
+        return 1.0f;
+    }
+    return 1.0f - impact;
 }
 
 void OConvexHullHolder_Init(void) {
