@@ -7568,7 +7568,7 @@ void __THPHuffGenerateCodeTable(void) {
 }
 
 #pragma push
-#pragma opt_strength_reduction off
+#pragma optimization_level 3
 void __THPHuffGenerateDecoderTables(u8 tabIndex) {
     s32 p, l;
     THPHuffmanTab *h;
