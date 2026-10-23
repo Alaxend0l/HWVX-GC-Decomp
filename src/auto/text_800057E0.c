@@ -9731,10 +9731,25 @@ void *PlayerManager_NewHumanPlayer(void) {
 
 void *PlayerManager_NewAIPlayer(u8 *desc) {
     extern u8 g_playerManager[0x20E0];
+    void AI_Car_Init(void *player);
+    void AI_Creature_Init(void *player);
+    void (*init)(void *);
     u8 *player;
 
-    for (player = *(u8 **)(g_playerManager + 0x20DC); player != NULL; player = *(u8 **)(player + 0xB0)) {
-        if (*(void **)(player + 0x24) == AI_GetInitFunc(desc)) {
+    player = *(u8 **)(g_playerManager + 0x20DC);
+    switch (desc[0xD]) {
+    case 0:
+        init = AI_Car_Init;
+        break;
+    case 1:
+        init = AI_Creature_Init;
+        break;
+    default:
+        init = NULL;
+        break;
+    }
+    for (; player != NULL; player = *(u8 **)(player + 0xB0)) {
+        if (*(void (**)(void *))(player + 0x24) == init) {
             if (*(u8 **)(player + 0xB4) == NULL) {
                 *(u8 **)(g_playerManager + 0x20DC) = *(u8 **)(player + 0xB0);
             } else {
