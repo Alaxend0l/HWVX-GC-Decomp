@@ -7799,6 +7799,13 @@ void EnableEXI2Interrupts(void) {
     gDBCommTable[1]();
 }
 
+s32 TRKInitializeIntDrivenUART(u32 param1, u32 param2, u32 param3, volatile u8 **inputPendingPtrRef) {
+    extern void (*gDBCommTable[7])(void);
+    void TRKEXICallBack(s16 chan, void *context);
+    ((void (*)(volatile u8 **, void *))gDBCommTable[0])(inputPendingPtrRef, TRKEXICallBack);
+    return 0;
+}
+
 void TRKEXICallBack(s16 chan, void *ctx) {
     OSEnableScheduler();
     TRKLoadContext(ctx, 0x500);
