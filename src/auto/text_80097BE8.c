@@ -287,6 +287,21 @@ typedef struct Block {
 
 SubBlock *Block_subBlock(Block *ths, u32 size);
 
+typedef struct FixSubBlock {
+    struct FixBlock *block_;
+    struct FixSubBlock *next_;
+} FixSubBlock;
+
+typedef struct FixBlock {
+    struct FixBlock *prev_;
+    struct FixBlock *next_;
+    u32 client_size_;
+    FixSubBlock *start_;
+    u32 n_allocated_;
+} FixBlock;
+
+extern const u32 fix_pool_sizes_800CD960[6];
+
 extern u8 __lower_map[256];
 s32 fflush(FILE *file);
 void free(void *ptr);
@@ -8568,9 +8583,50 @@ s32 __GBASync(s32 chan) {
     return ret;
 }
 
+#pragma push
+#pragma peephole off
 void TypeAndStatusCallback(s32 chan, u32 type) {
-}
+    extern s32 __GBAReset;
+    void *OSGetCurrentContext(void);
+    void OSClearContext(void *);
+    void OSSetCurrentContext(void *);
+    void __OSReschedule(void);
+    s32 SITransfer(s32 chan, void *output, s32 outputBytes, void *input, s32 inputBytes, void *callback, s64 delay);
+    GBAControl *gba = &__GBA[chan];
+    void *context;
+    void (*proc)(s32);
+    void (*callback)(s32, s32);
+    u8 tmpContext[0x2C8];
 
+    if (__GBAReset != 0) {
+        return;
+    }
+    if ((type & 0xFF) != 0 || (type & 0xFFFF0000) != 0x40000) {
+        gba->ret = 1;
+    } else {
+        if (SITransfer(chan, gba->output, gba->outputBytes, gba->input, gba->inputBytes, __GBAHandler, gba->delay)) {
+            return;
+        }
+        gba->ret = 2;
+    }
+    if (gba->proc) {
+        proc = (void (*)(s32))gba->proc;
+        gba->proc = NULL;
+        proc(chan);
+    }
+    if (gba->callback) {
+        context = OSGetCurrentContext();
+        OSClearContext(tmpContext);
+        OSSetCurrentContext(tmpContext);
+        callback = (void (*)(s32, s32))gba->callback;
+        gba->callback = NULL;
+        callback(chan, gba->ret);
+        OSClearContext(tmpContext);
+        OSSetCurrentContext(context);
+        __OSReschedule();
+    }
+}
+#pragma pop
 s64 __GBASetDelay(s32 chan, s64 delay) {
     GBAControl *gba = &__GBA[chan];
     s64 oldDelay = gba->delay;
