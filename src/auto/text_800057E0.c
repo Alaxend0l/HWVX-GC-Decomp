@@ -6345,6 +6345,47 @@ void ThingManagerList_ReleaseAll(void **list) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+#pragma dont_inline on
+void ThingManagerList_EmancipateSlaves(void *mtx, void **list) {
+    extern u8 g_itemVTable[];
+    Matrix4 out;
+    Thing *thing;
+    Thing *next;
+
+    thing = *list;
+    while (thing != NULL) {
+        next = M2C_FIELD(thing, Thing **, 0xA4);
+        if (M2C_FIELD(thing, u8 *, 0x83) == 0xEF) {
+            if (M2C_FIELD(thing, void **, 0xA0) == NULL) {
+                *list = M2C_FIELD(thing, void **, 0xA4);
+            } else {
+                M2C_FIELD(M2C_FIELD(thing, void **, 0xA0), void **, 0xA4) = M2C_FIELD(thing, void **, 0xA4);
+            }
+            if (M2C_FIELD(thing, void **, 0xA4) != NULL) {
+                M2C_FIELD(M2C_FIELD(thing, void **, 0xA4), void **, 0xA0) = M2C_FIELD(thing, void **, 0xA0);
+                M2C_FIELD(thing, void **, 0xA4) = NULL;
+            }
+            M2C_FIELD(thing, void **, 0xA0) = NULL;
+            MultiplyMatrix(&thing->mtx, mtx, &out);
+            thing->mtx = out;
+            M2C_FIELD(thing, void **, 0xA4) = g_thingManager_DARYL.activeList;
+            M2C_FIELD(thing, void **, 0xA0) = NULL;
+            if (M2C_FIELD(thing, void **, 0xA4) != NULL) {
+                M2C_FIELD(M2C_FIELD(thing, void **, 0xA4), void **, 0xA0) = thing;
+            }
+            g_thingManager_DARYL.activeList = thing;
+            if (M2C_FIELD(thing, s16 *, 0x80) != 0 && M2C_FIELD(thing, void **, 0x8C) == g_itemVTable) {
+                Thing_AddToGrid(thing, 3);
+                M2C_FIELD(thing, u32 *, 0x74) &= ~8;
+            }
+        }
+        thing = next;
+    }
+}
+#pragma pop
+
 void SharedSlaveHolder_Release(void) {
     M2C_UNK ThingManagerList_RemoveReleasedThings(s32);
     void *thing;
@@ -10326,6 +10367,44 @@ void stateGoToRetry(void) {
     DVDLowStopMotor(cbForStateGoToRetry);
 }
 
+void stateCheckID(void) {
+    int memcmp(const void *a, const void *b, u32 n);
+    void *memcpy(void *dst, const void *src, u32 n);
+    void DCInvalidateRange(void *addr, u32 nBytes);
+    void DVDLowStopMotor(void (*callback)(u32));
+    void cbForStateCheckID1(u32 intType);
+    void stateCheckID2();
+    void stateCheckID3();
+    extern void (*LastState)(void);
+    extern s32 CurrCommand_803C732C;
+    extern void *executing_803C7310;
+    extern void *currID_803C7314;
+    extern u8 tmpBuffer_802EF940[128];
+    u8 *id = tmpBuffer_802EF940;
+
+    switch (CurrCommand_803C732C) {
+    case 3:
+        if (memcmp(id, M2C_FIELD(executing_803C7310, void **, 0x24), 0x1C)) {
+            DVDLowStopMotor(cbForStateCheckID1);
+            break;
+        }
+        memcpy(currID_803C7314, id, 0x20);
+        M2C_FIELD(executing_803C7310, s32 *, 0xC) = 1;
+        DCInvalidateRange(id, 0x20);
+        LastState = stateCheckID2;
+        stateCheckID2(executing_803C7310);
+        break;
+    default:
+        if (memcmp(id, currID_803C7314, 0x20)) {
+            DVDLowStopMotor(cbForStateCheckID1);
+            break;
+        }
+        LastState = stateCheckID3;
+        stateCheckID3(executing_803C7310);
+        break;
+    }
+}
+
 void stateCheckID2(void) {
     void DVDLowRead(void *addr, u32 length, u32 offset, void (*callback)(u32));
     void cbForStateCheckID2(u32 intType);
@@ -11442,9 +11521,9 @@ void __AXAuxInit(void) {
     extern u32 __AXAuxDspWritePositionDpl2_803C7498;
     extern u32 __AXAuxDspReadPositionDpl2_803C749C;
     extern u32 __AXAuxCpuReadWritePosition_803C74A0;
-    u32 i;
-    u32 *pA;
     u32 *pB;
+    u32 *pA;
+    u32 i;
 
     __AXCallbackAuxA_803C7470 = NULL;
     __AXCallbackAuxB_803C7474 = NULL;
