@@ -6572,42 +6572,6 @@ s32 StateTitleScreen_Heartbeat(void) {
     return 1;
 }
 
-static inline void TitleScreen_StartDemo(u8 *mcp) {
-    extern s32 g_gameDifficulty;
-    u32 RandomNumberGenerator_GetRandomInteger(u32 min, u32 max);
-    void StateProgressionManager_SetProgressionID(s32 id, s32 subID);
-    static u32 progressionIndex;
-    u8 *demos;
-    u32 *list;
-    u32 index;
-
-    demos = *(u8 **)(mcp + 0x24);
-    list = *(u32 **)(demos + 8);
-    if (list == NULL) {
-        return;
-    }
-    if (demos[0] != 0) {
-        index = RandomNumberGenerator_GetRandomInteger(0, *list);
-    } else {
-        index = progressionIndex++;
-    }
-    if (index >= **(u32 **)(*(u8 **)(mcp + 0x24) + 8)) {
-        index = 0;
-        progressionIndex = 1;
-    }
-    if (index < 6) {
-        GameSettings_SetCodeVariable(0x12D, 0, 3);
-    } else {
-        GameSettings_SetCodeVariable(0x12D, 0, 2);
-    }
-    g_gameDifficulty = GameSettings_GetDifficulty();
-    GameSettings_SetCodeVariable(0x198, 0, 1);
-    GameSettings_SetCodeVariable(0x133, 0, 3);
-    GameSettings_SetCodeVariable(0x131, 0, 1);
-    GameSettings_SetCodeVariable(0xC8, 0, 3);
-    StateProgressionManager_SetProgressionID(0, index);
-}
-
 void TitleScreen_RunDemoLoop(void) {
     extern s32 g_gameDifficulty;
     u32 RandomNumberGenerator_GetRandomInteger(u32 min, u32 max);
