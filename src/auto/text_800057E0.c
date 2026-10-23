@@ -11782,6 +11782,7 @@ void GXSetNumIndStages(u8 nIndStages) {
 }
 
 #pragma push
+#pragma scheduling off
 void __GXUpdateBPMask(void) {
     typedef struct GXDataBP {
         u8 unk0[2];
