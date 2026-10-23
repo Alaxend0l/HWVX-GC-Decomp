@@ -3063,6 +3063,75 @@ void Creature_MotionStateInitDeath(u8 *creature) {
     }
 }
 
+s32 Creature_Init(void *arg0, void *arg1) {
+    void Creature_MotionStateInit(void *creature, s32 arg1, s32 arg2, s32 arg3);
+    void MotionState_BuildMatricesWorld(void *mtx, void *pos, void *state, f32 scale);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    f32 RandomAdd(f32 base, f32 range);
+    struct CreatureInit {
+        Vector4 pos;
+        f32 unk10;
+        u8 *anims;
+    } *init = arg1;
+    struct Creature {
+        u8 unk0[0x10];
+        u8 mtx[0x40 - 0x10];
+        Vector4 pos;
+        Vector4 quat;
+        f32 unk60;
+        u8 unk64[0x70 - 0x64];
+        f32 unk70;
+        u8 unk74[0x78 - 0x74];
+        u32 unk78;
+        u8 unk7C[0x80 - 0x7C];
+        s16 unk80;
+        u8 unk82[0xB0 - 0x82];
+        f32 unkB0;
+        f32 unkB4;
+        u8 *anims;
+        u8 unkBC[0xBF - 0xBC];
+        u8 unkBF;
+        f32 unkC0;
+        u8 unkC4[0xCC - 0xC4];
+        u8 motion[0x130 - 0xCC];
+        f32 unk130;
+        u8 unk134[0x190 - 0x134];
+        Vector4 startPos;
+        u8 unk1A0[0x1B0 - 0x1A0];
+        s32 unk1B0;
+        s32 unk1B4;
+        s32 unk1B8;
+        f32 mass;
+        f32 unk1C0;
+        u8 unk1C4[0x1C8 - 0x1C4];
+        s32 unk1C8;
+    } *creature = arg0;
+
+    Thing_Init(creature, 0);
+    creature->anims = init->anims;
+    creature->pos = init->pos;
+    creature->startPos = creature->pos;
+    creature->mass = RandomAdd(0.002f, 0.001f);
+    creature->unk1B8 = 0;
+    creature->unk1C8 = 0;
+    QuaternionToSubMatrix(&creature->quat, creature->mtx);
+    creature->unk80 = 0;
+    creature->unk70 = 11.0f;
+    creature->unkB0 = init->unk10;
+    creature->unkB4 = 0.0f;
+    creature->unkC0 = 0.0f;
+    creature->unk1B4 = 0;
+    creature->unk78 = *(u32 *)(creature->anims + 4);
+    Creature_MotionStateInit(creature, 0, 0, 0);
+    creature->unkBF = 0;
+    creature->unk130 = 0.03f;
+    creature->unk1B0 = -1;
+    creature->unk1C0 = 1.0f;
+    Thing_AddToGrid(creature, 6);
+    MotionState_BuildMatricesWorld(&creature->quat, &creature->pos, creature->motion, 1.0f);
+    return 1;
+}
+
 void Creature_Release(s32 arg0) {
     M2C_UNK MotionState_Release(s32);
     M2C_UNK Thing_Release(s32);
@@ -16251,6 +16320,43 @@ void TimeoutHandler(void *alarm, void *context) {
         card->exiCallback = NULL;
         callback(chan, -5);
     }
+}
+
+s32 __CARDReadSegment(s32 chan, CARDCallback callback) {
+    s32 __CARDStart(s32 chan, CARDCallback txCallback, CARDCallback exiCallback);
+    s32 EXIImmEx(s32 chan, void *buf, s32 len, u32 mode);
+    s32 EXIDma(s32 chan, void *buf, s32 len, u32 type, void *callback);
+    s32 EXIDeselect(s32 chan);
+    s32 EXIUnlock(s32 chan);
+    void __CARDTxHandler(s32 chan, void *context);
+    CARDControl *card;
+    s32 result;
+
+    card = &__CARDBlock[chan];
+    card->cmd[0] = 0x52;
+    card->cmd[1] = (u8)(((u32)card->addr >> 17) & 0x7F);
+    card->cmd[2] = (u8)(((u32)card->addr >> 9) & 0xFF);
+    card->cmd[3] = (u8)(((u32)card->addr >> 7) & 3);
+    card->cmd[4] = (u8)((u32)card->addr & 0x7F);
+    card->cmdlen = 5;
+    card->mode = 0;
+    card->retry = 0;
+    result = __CARDStart(chan, callback, 0);
+    if (result == -1) {
+        result = 0;
+    } else if (result >= 0) {
+        if (!EXIImmEx(chan, card->cmd, card->cmdlen, 1) ||
+            !EXIImmEx(chan, (u8 *)card->workArea + 0x200, card->latency, 1) ||
+            !EXIDma(chan, (void *)card->offset, 0x200, card->mode, __CARDTxHandler)) {
+            card->txCallback = 0;
+            EXIDeselect(chan);
+            EXIUnlock(chan);
+            result = -3;
+        } else {
+            result = 0;
+        }
+    }
+    return result;
 }
 
 s32 __CARDWritePage(s32 chan, CARDCallback callback) {
