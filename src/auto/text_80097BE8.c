@@ -35,7 +35,7 @@ static inline void GXPosition2f32(f32 x, f32 y) {
     GXWGFifo.f32 = y;
 }
 
-static inline void GXColor3u8(u8 r, u8 g, u8 b) {
+static inline void GXColor3u8(const u8 r, const u8 g, const u8 b) {
     GXWGFifo.u8 = r;
     GXWGFifo.u8 = g;
     GXWGFifo.u8 = b;
@@ -3540,14 +3540,13 @@ void Render_DrawLine2D(void *line) {
     } Line2D;
     void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
     void Set2DLineVtxDesc(void);
-    Line2D *l = line;
 
     Set2DLineVtxDesc();
     GXBegin(0xA8, 0, 2);
-    GXPosition2f32(l->p0.x, l->p0.y);
-    GXColor3u8(l->r, l->g, l->b);
-    GXPosition2f32(l->p1.x, l->p1.y);
-    GXColor3u8(l->r, l->g, l->b);
+    GXPosition2f32(((Line2D *)line)->p0.x, ((Line2D *)line)->p0.y);
+    GXColor3u8(((Line2D *)line)->r, ((Line2D *)line)->g, ((Line2D *)line)->b);
+    GXPosition2f32(((Line2D *)line)->p1.x, ((Line2D *)line)->p1.y);
+    GXColor3u8(((Line2D *)line)->r, ((Line2D *)line)->g, ((Line2D *)line)->b);
 }
 
 void Set2DLineVtxDesc(void) {
