@@ -10027,14 +10027,15 @@ void SetVoiceState_(void *voice, s32 state) {
 #pragma pop
 
 #pragma push
-#pragma optimization_level 1
+#pragma optimization_level 2
 void StartVoice_(void *voice) {
     extern u32 g_silence;
     s32 OSDisableInterrupts();
     void OSRestoreInterrupts(s32);
-    u8 *v;
+    u32 last;
     u8 *axv;
     s32 level;
+    u8 *v;
 
     v = voice;
     level = OSDisableInterrupts();
@@ -10055,7 +10056,8 @@ void StartVoice_(void *voice) {
     }
     *(u32 *)(axv + 0x1C) |= 0x20000;
     *(u32 *)(axv + 0x1B2) = *(u32 *)(v + 0x20);
-    *(u32 *)(axv + 0x1AE) = *(u32 *)(v + 0x20) + (*(u32 *)(v + 0x28) - 1);
+    last = *(u32 *)(v + 0x28) - 1;
+    *(u32 *)(axv + 0x1AE) = last + *(u32 *)(v + 0x20);
     if (*(u32 *)(v + 0x24) != 0xFFFFFFFF) {
         *(u16 *)(axv + 0x1A6) = 1;
         *(u32 *)(axv + 0x1AA) = *(u32 *)(v + 0x20) + *(u32 *)(v + 0x24);
