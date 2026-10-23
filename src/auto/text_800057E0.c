@@ -1818,6 +1818,62 @@ void AI_AsyncHeartbeat(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0xC8) = 0x1F4;
 }
 
+void AI_Car_ClearedNavPoint_800087C8(u8 *car, s8 arg1) {
+    s32 NavHolder_GetTotalNavPoints(void);
+    u8 *NavHolder_GetNavPoint(s32 index);
+    s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest);
+    u8 *point;
+    u8 *nav;
+    u8 *thing;
+    u8 *target;
+    void *holder;
+    s32 dest;
+    f32 dist;
+
+    if (!arg1) {
+        if (*(u32 *)(car + 0x4A0) < NavHolder_GetTotalNavPoints()) {
+            nav = NavHolder_GetNavPoint(*(u32 *)(car + 0x4A0));
+            point = ((u8 **)(car + 0x420))[*(u32 *)(car + 0x4A4)];
+            if (point == nav) {
+                if (*(u8 *)(point + 0x51) == 1) {
+                    *(s32 *)(car + 0x4A0) = *(s32 *)(point + 0x4C);
+                } else {
+                    *(s32 *)(car + 0x4A0) = -1;
+                }
+            }
+        }
+        (*(u32 *)(car + 0x4A4))++;
+        if (*(u8 **)(car + 0x3E4) != NULL && *(u32 *)(car + 0x4A4) >= 30) {
+            thing = *(u8 **)(car + 0x2C);
+            holder = (*(void *(**)(void *))(*(u8 **)(thing + 0x8C) + 0x2C))(thing);
+            target = *(u8 **)(car + 0x3E4);
+            if (**(u8 **)target == 10 || **(u8 **)target == 14) {
+                dest = *(s32 *)(*(u8 **)(target + 0x10) + 0x28);
+            } else {
+                thing = *(u8 **)(target + 0x10);
+                dest = (*(s32 (**)(void *))(*(u8 **)(thing + 0x8C) + 0x2C))(thing);
+            }
+            AI_Car_PrepareNavPath(car, holder, dest);
+        }
+    }
+    if (*(u32 *)(car + 0x4A4) < 32) {
+        point = ((u8 **)(car + 0x420))[*(u32 *)(car + 0x4A4)];
+        if (point != NULL) {
+            dist = *(f32 *)(*(u8 **)(car + 0xD0) + 0xC);
+            if (*(f32 *)(point + 0x2C) < dist) {
+                dist = *(f32 *)(point + 0x2C);
+            }
+            if (dist > 150.0f || 0.0f == dist) {
+                *(s32 *)(car + 0x4AC) = 3000;
+            } else if (dist > 100.0f) {
+                *(s32 *)(car + 0x4AC) = 4500;
+            } else {
+                *(s32 *)(car + 0x4AC) = 6000;
+            }
+        }
+    }
+}
+
 s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest) {
     void *memset(void *dst, s32 val, u32 n);
     u8 *NavHolder_FindPath(void *holder, s32 dest);
@@ -18534,6 +18590,59 @@ s32 __AXGetCommandListCycles(void) {
 
 void __AXClQuit(void) {
 
+}
+
+void __AXOutNewFrame(u32 lessDspCycles) {
+    typedef struct {
+        u8 data[0x38];
+    } AXProfile;
+    s64 OSGetTime(void);
+    void __AXSyncPBs(u32 lessDspCycles);
+    void __AXPrintStudio(void);
+    u32 __AXGetCommandListAddress(void);
+    void DSPSendMailToDSP(u32 mail);
+    s32 DSPCheckMailToDSP(void);
+    void __AXServiceCallbackStack(void);
+    void __AXProcessAux(void);
+    void __AXNextFrame(void *sbuffer, void *buffer);
+    void AIInitDMA(u32 start_addr, u32 length);
+    s32 __AXGetNumVoices(void);
+    void *__AXGetCurrentProfile(void);
+    extern u8 __AXOutBuffer_802F3040[];
+    extern void (*__AXUserFrameCallback_803C74D0)(void);
+    extern u32 __AXOutFrame_803C74C0;
+    u32 cl;
+    AXProfile *profile;
+
+    *(s64 *)(__AXOutBuffer_802F3040 + 0x780) = OSGetTime();
+    __AXSyncPBs(lessDspCycles);
+    __AXPrintStudio();
+    cl = __AXGetCommandListAddress();
+    DSPSendMailToDSP(0xBABE0180);
+    while (DSPCheckMailToDSP()) {
+    }
+    DSPSendMailToDSP(cl);
+    while (DSPCheckMailToDSP()) {
+    }
+    __AXServiceCallbackStack();
+    *(s64 *)(__AXOutBuffer_802F3040 + 0x788) = OSGetTime();
+    __AXProcessAux();
+    *(s64 *)(__AXOutBuffer_802F3040 + 0x790) = OSGetTime();
+    *(s64 *)(__AXOutBuffer_802F3040 + 0x798) = OSGetTime();
+    if (__AXUserFrameCallback_803C74D0 != NULL) {
+        __AXUserFrameCallback_803C74D0();
+    }
+    *(s64 *)(__AXOutBuffer_802F3040 + 0x7A0) = OSGetTime();
+    __AXNextFrame(__AXOutBuffer_802F3040 + 0x500, __AXOutBuffer_802F3040 + __AXOutFrame_803C74C0 * 0x280);
+    __AXOutFrame_803C74C0++;
+    __AXOutFrame_803C74C0 &= 1;
+    AIInitDMA((u32)(__AXOutBuffer_802F3040 + __AXOutFrame_803C74C0 * 0x280), 0x280);
+    *(s64 *)(__AXOutBuffer_802F3040 + 0x7A8) = OSGetTime();
+    *(s32 *)(__AXOutBuffer_802F3040 + 0x7B0) = __AXGetNumVoices();
+    profile = __AXGetCurrentProfile();
+    if (profile != NULL) {
+        *profile = *(AXProfile *)(__AXOutBuffer_802F3040 + 0x780);
+    }
 }
 
 void __AXDSPInitCallback(void) {
