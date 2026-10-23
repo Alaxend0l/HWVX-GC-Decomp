@@ -6642,8 +6642,12 @@ void VDevice_Init(VDevice *dev) {
 #pragma pop
 
 #pragma push
-#pragma use_lmw_stmw on
-#pragma dont_inline on
+#pragma optimize_for_size on
+#pragma auto_inline off
+static inline f32 VDevice_GammaCurve(s32 x) {
+    return 128.0f * (f32)pow((f32)x / 128.0f, 0.6666667f) + 0.5f;
+}
+
 void VDevice_RecalcGammaTable(void) {
     s32 i;
     f32 gamma = 0.6666667f;
