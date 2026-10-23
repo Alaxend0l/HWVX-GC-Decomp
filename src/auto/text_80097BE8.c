@@ -1667,8 +1667,8 @@ static inline Block *link_new_block(Block **pool_obj, u32 size) {
     bp->size_ = size | 3;
     *(u32 *)((u8 *)bp + size - 8) = bp->size_;
     sb = (SubBlock *)((u8 *)bp + 16);
-    sb->size_ = size - 24;
     sb->bp_ = (void *)((u32)bp | 1);
+    sb->size_ = size - 24;
     *(u32 *)((u8 *)sb + (size - 24) - 4) = size - 24;
     bp->max_size_ = size - 24;
     *(u32 *)((u8 *)bp + (bp->size_ & ~7) - 4) = 0;
