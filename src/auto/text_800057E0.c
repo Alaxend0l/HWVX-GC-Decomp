@@ -5502,10 +5502,10 @@ void SoundSeq_Release(u8 *seq) {
         SoundSeq_RemoveFromQueue(seq);
     }
     for (i = 0; i < 4; i++) {
-        if (((s32 *)(seq + 0xD0))[i] >= 0 && SoundSource_IsLooping(((s32 *)(seq + 0xD0))[i])) {
-            SoundSource_Stop(((s32 *)(seq + 0xD0))[i]);
+        if (((s32 *)seq)[0x34 + i] >= 0 && SoundSource_IsLooping(((s32 *)seq)[0x34 + i])) {
+            SoundSource_Stop(((s32 *)seq)[0x34 + i]);
         }
-        ((s32 *)(seq + 0xD0))[i] = -1;
+        ((s32 *)seq)[0x34 + i] = -1;
     }
     Thing_Release(seq);
 }
