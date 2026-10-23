@@ -934,6 +934,29 @@ s32 __count_trailing_zerol(u32 x) {
     return result;
 }
 
+s32 __flush_buffer(FILE *file, u32 *bytes_flushed) {
+    u32 buffer_len;
+    s32 ioresult;
+
+    buffer_len = file->buffer_ptr - file->buffer;
+    if (buffer_len) {
+        file->buffer_len = buffer_len;
+        ioresult = file->write_fn(file->handle, file->buffer, &file->buffer_len, file->ref_con);
+        if (bytes_flushed) {
+            *bytes_flushed = file->buffer_len;
+        }
+        if (ioresult) {
+            return ioresult;
+        }
+        file->position += file->buffer_len;
+    }
+    file->buffer_ptr = file->buffer;
+    file->buffer_len = file->buffer_size;
+    file->buffer_len -= file->position & file->buffer_alignment;
+    file->buffer_pos = file->position;
+    return 0;
+}
+
 void __prep_buffer(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0x24) = (s32) M2C_FIELD(arg0, s32 *, 0x1C);
     M2C_FIELD(arg0, s32 *, 0x28) = (s32) M2C_FIELD(arg0, s32 *, 0x20);
