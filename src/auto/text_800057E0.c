@@ -4143,6 +4143,23 @@ s32 SoundSeq_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+s32 SoundSequence_GetTotalElementsInQueue(void) {
+    u32 ThingManager_GetActiveSoundSequences(u8 **list, u32 max);
+    u8 *list[128];
+    u32 count;
+    s32 total;
+
+    total = 0;
+    count = ThingManager_GetActiveSoundSequences(list, 128);
+    while (count != 0) {
+        count--;
+        if (M2C_FIELD(list[count], u32 *, 0x74) & 0x40000000) {
+            total++;
+        }
+    }
+    return total;
+}
+
 void ExitStateGamePlay(s32 arg0) {
     extern s8 g_bExitStateGamePlay;
     extern s32 g_targetGameState;
