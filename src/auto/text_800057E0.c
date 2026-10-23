@@ -5719,16 +5719,14 @@ void GameSetting_Init(void) {
     vars = (u8 *)&g_codeVariables;
     g_bGameSettingsInitialized = 1;
     memset(&vars[0], 0, 0x134);
-    data = &vars[0];
-    ((CodeVariables *)data)->device = (char *)1;
+    ((CodeVariables *)&vars[0])->device = (char *)1;
     GameSettings_SetDefaultControllerState();
     GameSettings_ResetPlayerVehicleItem();
     GameSettings_ResetGame();
     memset(&vars[0x134], 0, 0x150);
-    ((GeneralGameSettings *)&vars[0x134])->difficulty = 0;
-    data = (u8 *)OSGetSoundMode();
     settings = (GeneralGameSettings *)&vars[0x134];
-    settings->audio.speakerMode = (u8)(u32)data;
+    settings->difficulty = 0;
+    settings->audio.speakerMode = OSGetSoundMode();
     settings->audio.musicVolume = 100;
     settings->audio.sfxVolume = 100;
     for (i = 1; i <= 4; i++) {
@@ -9322,6 +9320,114 @@ void ShowStats_EndScene(void) {
 
 void ShowStats(void) {
 
+}
+
+typedef struct SmartProjParams {
+    u8 unk0;
+    u8 invertZ;
+    u8 pad2[0x1C - 0x2];
+    f32 fov;
+    f32 minRange;
+} SmartProjParams;
+
+typedef struct SmartProjInfo {
+    u8 pad0[0xA8];
+    SmartProjParams *params;
+} SmartProjInfo;
+
+typedef struct SmartTarget {
+    u8 pad0[0x40];
+    Vector4 pos;
+    u8 pad50[0x8C - 0x50];
+    void **vtable;
+} SmartTarget;
+
+typedef struct SmartProjectile {
+    u8 pad0[0x10];
+    u8 mtx[0x30];
+    Vector4 pos;
+    u8 pad50[0x120 - 0x50];
+    SmartProjInfo *info;
+    u8 pad124[0x14C - 0x124];
+    SmartTarget *target;
+} SmartProjectile;
+
+void SmartProjectileA_AquireTarget(void *arg0) {
+    typedef struct SmartParams {
+        u8 unk0;
+        u8 invertZ;
+        u8 pad2[0x1C - 0x2];
+        f32 fov;
+        f32 minRange;
+    } SmartParams;
+    typedef struct ProjInfo {
+        u8 pad0[0xA8];
+        SmartParams *params;
+    } ProjInfo;
+    typedef struct Target {
+        u8 pad0[0x40];
+        Vector4 pos;
+        u8 pad50[0x8C - 0x50];
+        void **vtable;
+    } Target;
+    typedef struct Proj {
+        u8 pad0[0x10];
+        u8 mtx[0x30];
+        Vector4 pos;
+        u8 pad50[0x120 - 0x50];
+        ProjInfo *info;
+        u8 pad124[0x14C - 0x124];
+        Target *target;
+    } Proj;
+    s32 GetAllTargets(void **targets);
+    s32 Thing_GetSource(void *arg0);
+    f32 PSVECSquareDistance(Vector4 *a, Vector4 *b);
+    s8 RayHitsTerrain(Vector4 *start, Vector4 *end, void *arg2, void *arg3);
+    void InverseXformVec(void *mtx, Vector4 *in, Vector4 *out);
+    f32 Sqrt(f32 x);
+    double atan2(double y, double x);
+    f32 t;
+    Vector4 local;
+    Target *targets[32];
+    Target *source;
+    u32 count;
+    u32 i;
+    u32 bestIdx;
+    Proj *proj = (Proj *)arg0;
+    Vector4 *pos;
+    f32 best;
+    f32 dist;
+    f32 angle;
+
+    count = GetAllTargets((void **)targets);
+    source = (Target *)Thing_GetSource(proj);
+    best = 180.0f;
+    bestIdx = count;
+    for (i = 0; i < count; i++) {
+        dist = PSVECSquareDistance(&proj->pos, &targets[i]->pos);
+        pos = ((Vector4 *(*)(Target *))targets[i]->vtable[0x40 / 4])(targets[i]);
+        t = 1.0f;
+        if (targets[i] != (Target *)proj && targets[i] != source &&
+            !(dist < proj->info->params->minRange * proj->info->params->minRange) &&
+            !RayHitsTerrain(&proj->pos, pos, &t, NULL)) {
+            InverseXformVec(proj->mtx, pos, &local);
+            if (proj->info->params->invertZ) {
+                local.z *= -1.0f;
+            }
+            if (!(local.z < 1.0f)) {
+                angle = atan2(Sqrt(local.x * local.x + local.y * local.y), local.z);
+                if (!(angle > 0.5f * (0.017453292f * proj->info->params->fov)) && angle < best) {
+                    best = angle;
+                    bestIdx = i;
+                }
+            }
+        }
+    }
+    if (bestIdx < count) {
+        proj->target = targets[bestIdx];
+    } else {
+        proj->target = NULL;
+    }
 }
 
 s32 SmartProjectileA_Move(u8 *proj) {
