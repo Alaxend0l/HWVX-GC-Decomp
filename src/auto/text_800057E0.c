@@ -21633,6 +21633,89 @@ void __fstLoad(void) {
     OSSetArenaHi(*(void **)(bb2_803C735C + 0x10));
 }
 
+static u32 getCurrentFieldEvenOdd(void);
+static inline u32 cntlzd(u64 bit);
+extern struct VITiming *CurrTiming_803C73A8;
+void __VIRetraceHandler(s16 interrupt, void *context) {
+    extern u32 retraceCount_803C7368;
+    extern s32 flushFlag_803C736C;
+    extern u32 shdwChangeMode_803C7398;
+    extern u64 shdwChanged_803C73A0;
+    extern u16 regs_802EFAA8[59];
+    extern u16 shdwRegs_802EFB20[59];
+    extern void (*PreCB_803C7378)(u32 retraceCount);
+    extern void (*PostCB_803C737C)(u32 retraceCount);
+    extern u8 retraceQueue_803C7370[8];
+    extern u32 CurrTvMode_803C73AC;
+    void OSClearContext(void *context);
+    void OSSetCurrentContext(void *context);
+    void OSWakeupThread(void *queue);
+    void SIRefreshSamplingRate(void);
+    u8 exceptionContext[0x2C8];
+    u16 reg;
+    u32 inter;
+    s32 regIndex;
+    BOOL ret;
+
+    inter = 0;
+    reg = ((volatile u16 *)0xCC002000)[24];
+    if (reg & 0x8000) {
+        ((volatile u16 *)0xCC002000)[24] = reg & ~0x8000;
+        inter |= 1;
+    }
+    reg = ((volatile u16 *)0xCC002000)[26];
+    if (reg & 0x8000) {
+        ((volatile u16 *)0xCC002000)[26] = reg & ~0x8000;
+        inter |= 2;
+    }
+    reg = ((volatile u16 *)0xCC002000)[28];
+    if (reg & 0x8000) {
+        ((volatile u16 *)0xCC002000)[28] = reg & ~0x8000;
+        inter |= 4;
+    }
+    reg = ((volatile u16 *)0xCC002000)[30];
+    if (reg & 0x8000) {
+        ((volatile u16 *)0xCC002000)[30] = reg & ~0x8000;
+        inter |= 8;
+    }
+    if ((inter & 4) || (inter & 8)) {
+        OSSetCurrentContext(context);
+        return;
+    }
+    retraceCount_803C7368++;
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(exceptionContext);
+    if (PreCB_803C7378) {
+        PreCB_803C7378(retraceCount_803C7368);
+    }
+    if (flushFlag_803C736C) {
+        if (shdwChangeMode_803C7398 == 1 && getCurrentFieldEvenOdd() == 0) {
+            ret = FALSE;
+        } else {
+            while (shdwChanged_803C73A0) {
+                regIndex = cntlzd(shdwChanged_803C73A0);
+                ((volatile u16 *)0xCC002000)[regIndex] = shdwRegs_802EFB20[regIndex];
+                shdwChanged_803C73A0 &= ~((u64)1 << (63 - regIndex));
+            }
+            shdwChangeMode_803C7398 = 0;
+            CurrTiming_803C73A8 = *(struct VITiming **)((u8 *)regs_802EFAA8 + 0x144);
+            CurrTvMode_803C73AC = *(u32 *)((u8 *)regs_802EFAA8 + 0x118);
+            ret = TRUE;
+        }
+        if (ret) {
+            flushFlag_803C736C = 0;
+            SIRefreshSamplingRate();
+        }
+    }
+    if (PostCB_803C737C) {
+        OSClearContext(exceptionContext);
+        PostCB_803C737C(retraceCount_803C7368);
+    }
+    OSWakeupThread(retraceQueue_803C7370);
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(context);
+}
+
 static inline u32 cntlzd(u64 bit) {
     u32 hi;
     u32 lo;
@@ -24605,6 +24688,76 @@ void TimeoutHandler(void *alarm, void *context) {
     }
 }
 
+static inline void SetupTimeoutAlarm(CARDControl *card) {
+    s32 OSCancelAlarm(void *alarm);
+    void OSSetAlarm(void *alarm, s64 tick, void *handler);
+
+    OSCancelAlarm(card->alarm);
+    switch (card->cmd[0]) {
+    case 0xF2:
+        OSSetAlarm(card->alarm, (u32)(((*(u32 *)0x800000F8 / 4) / 1000) * 100), TimeoutHandler);
+        break;
+    case 0xF3:
+        break;
+    case 0xF4:
+    case 0xF1:
+        OSSetAlarm(card->alarm, (s64)2 * (*(u32 *)0x800000F8 / 4) * (card->sectorSize / 0x2000), TimeoutHandler);
+        break;
+    }
+}
+
+s32 Retry(s32 chan) {
+    s32 EXISelect(s32 chan, u32 dev, u32 freq);
+    s32 OSCancelAlarm(void *alarm);
+    void OSSetAlarm(void *alarm, s64 tick, void *handler);
+    s32 EXIImmEx(s32 chan, void *buf, s32 len, u32 mode);
+    s32 EXIDma(s32 chan, void *buf, s32 len, u32 type, void *callback);
+    s32 EXIDeselect(s32 chan);
+    s32 EXIUnlock(s32 chan);
+    void __CARDTxHandler(s32 chan, void *context);
+    void TimeoutHandler(void *alarm, void *context);
+    CARDControl *card;
+
+    card = &__CARDBlock[chan];
+    if (!EXISelect(chan, 0, 4)) {
+        EXIUnlock(chan);
+        return -3;
+    }
+    OSCancelAlarm(card->alarm);
+    switch (card->cmd[0]) {
+    case 0xF2:
+        OSSetAlarm(card->alarm, (u32)(((*(u32 *)0x800000F8 / 4) / 1000) * 100), TimeoutHandler);
+        break;
+    case 0xF3:
+        break;
+    case 0xF4:
+    case 0xF1:
+        OSSetAlarm(card->alarm, ((u64)(*(u32 *)0x800000F8 / 4) * 2) * (card->sectorSize / 0x2000), TimeoutHandler);
+        break;
+    }
+    if (!EXIImmEx(chan, card->cmd, card->cmdlen, 1)) {
+        EXIDeselect(chan);
+        EXIUnlock(chan);
+        return -3;
+    }
+    if (card->cmd[0] == 0x52 && !EXIImmEx(chan, (u8 *)card->workArea + 0x200, card->latency, 1)) {
+        EXIDeselect(chan);
+        EXIUnlock(chan);
+        return -3;
+    }
+    if (card->mode == 0xFFFFFFFF) {
+        EXIDeselect(chan);
+        EXIUnlock(chan);
+        return 0;
+    }
+    if (!EXIDma(chan, (void *)card->offset, (card->cmd[0] == 0x52) ? 0x200 : 0x80, card->mode, __CARDTxHandler)) {
+        EXIDeselect(chan);
+        EXIUnlock(chan);
+        return -3;
+    }
+    return 0;
+}
+
 s32 __CARDStart(s32 chan, CARDCallback txCallback, CARDCallback exiCallback) {
     s32 EXILock(s32 chan, u32 dev, void *unlockedCallback);
     s32 EXISelect(s32 chan, u32 dev, u32 freq);
@@ -27166,6 +27319,85 @@ void GXSetCopyClear(GXColor clear_clr, u32 clear_z) {
     *(u16 *)(gx + 2) = 0;
 }
 
+#pragma push
+#pragma scheduling 603
+#pragma opt_common_subs off
+void GXSetCopyFilter(u8 aa, const u8 sample_pattern[12][2], u8 vf, const u8 vfilter[7]) {
+    extern u8 *gx;
+    u32 msLoc[4];
+    u32 coeff0;
+    u32 coeff1;
+
+    if (aa) {
+        msLoc[0] = 0;
+        msLoc[0] = (msLoc[0] & ~0xF) | sample_pattern[0][0];
+        msLoc[0] = (msLoc[0] & ~0xF0) | (sample_pattern[0][1] << 4);
+        msLoc[0] = (msLoc[0] & ~0xF00) | (sample_pattern[1][0] << 8);
+        msLoc[0] = (msLoc[0] & ~0xF000) | (sample_pattern[1][1] << 12);
+        msLoc[0] = (msLoc[0] & ~0xF0000) | (sample_pattern[2][0] << 16);
+        msLoc[0] = (msLoc[0] & ~0xF00000) | (sample_pattern[2][1] << 20);
+        msLoc[0] = (msLoc[0] & 0xFFFFFF) | 0x01000000;
+        msLoc[1] = 0;
+        msLoc[1] = (msLoc[1] & ~0xF) | sample_pattern[3][0];
+        msLoc[1] = (msLoc[1] & ~0xF0) | (sample_pattern[3][1] << 4);
+        msLoc[1] = (msLoc[1] & ~0xF00) | (sample_pattern[4][0] << 8);
+        msLoc[1] = (msLoc[1] & ~0xF000) | (sample_pattern[4][1] << 12);
+        msLoc[1] = (msLoc[1] & ~0xF0000) | (sample_pattern[5][0] << 16);
+        msLoc[1] = (msLoc[1] & ~0xF00000) | (sample_pattern[5][1] << 20);
+        msLoc[1] = (msLoc[1] & 0xFFFFFF) | 0x02000000;
+        msLoc[2] = 0;
+        msLoc[2] = (msLoc[2] & ~0xF) | sample_pattern[6][0];
+        msLoc[2] = (msLoc[2] & ~0xF0) | (sample_pattern[6][1] << 4);
+        msLoc[2] = (msLoc[2] & ~0xF00) | (sample_pattern[7][0] << 8);
+        msLoc[2] = (msLoc[2] & ~0xF000) | (sample_pattern[7][1] << 12);
+        msLoc[2] = (msLoc[2] & ~0xF0000) | (sample_pattern[8][0] << 16);
+        msLoc[2] = (msLoc[2] & ~0xF00000) | (sample_pattern[8][1] << 20);
+        msLoc[2] = (msLoc[2] & 0xFFFFFF) | 0x03000000;
+        msLoc[3] = 0;
+        msLoc[3] = (msLoc[3] & ~0xF) | sample_pattern[9][0];
+        msLoc[3] = (msLoc[3] & ~0xF0) | (sample_pattern[9][1] << 4);
+        msLoc[3] = (msLoc[3] & ~0xF00) | (sample_pattern[10][0] << 8);
+        msLoc[3] = (msLoc[3] & ~0xF000) | (sample_pattern[10][1] << 12);
+        msLoc[3] = (msLoc[3] & ~0xF0000) | (sample_pattern[11][0] << 16);
+        msLoc[3] = (msLoc[3] & ~0xF00000) | (sample_pattern[11][1] << 20);
+        msLoc[3] = (msLoc[3] & 0xFFFFFF) | 0x04000000;
+    } else {
+        msLoc[0] = 0x01666666;
+        msLoc[1] = 0x02666666;
+        msLoc[2] = 0x03666666;
+        msLoc[3] = 0x04666666;
+    }
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = msLoc[0];
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = msLoc[1];
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = msLoc[2];
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = msLoc[3];
+    coeff0 = 0;
+    coeff0 = (coeff0 & 0xFFFFFF) | 0x53000000;
+    coeff1 = 0;
+    coeff1 = (coeff1 & 0xFFFFFF) | 0x54000000;
+    if (vf) {
+        coeff0 = (coeff0 & ~0x3F) | vfilter[0];
+        coeff0 = (coeff0 & ~0xFC0) | (vfilter[1] << 6);
+        coeff0 = (coeff0 & ~0x3F000) | (vfilter[2] << 12);
+        coeff0 = (coeff0 & ~0xFC0000) | (vfilter[3] << 18);
+        coeff1 = (coeff1 & ~0x3F) | vfilter[4];
+        coeff1 = (coeff1 & ~0xFC0) | (vfilter[5] << 6);
+        coeff1 = (coeff1 & ~0x3F000) | (vfilter[6] << 12);
+    } else {
+        coeff0 = 0x53595000;
+        coeff1 = 0x54000015;
+    }
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = coeff0;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = coeff1;
+    *(u16 *)(gx + 2) = 0;
+}
+#pragma pop
 void GXSetDispCopyGamma(s32 gamma) {
     extern u8 *gx;
     u8 *g = gx;
