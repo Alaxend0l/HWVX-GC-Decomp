@@ -3405,8 +3405,8 @@ s8 VectorHitsTerrain(Vector4 *point) {
     s32 y;
     s32 z;
     s32 index;
-    u8 *cell;
     u32 node;
+    u8 *cell;
 
     if (g_worldData.world == NULL || *(TerrainGrid **)g_worldData.world == NULL) {
         return 0;
@@ -3431,7 +3431,7 @@ s8 VectorHitsTerrain(Vector4 *point) {
     }
     node = 0;
     if (*(u8 **)(cell + 0x30) == NULL) {
-        return node;
+        return 0;
     }
     while (1) {
         if (Distance_Plane(*(u8 **)(cell + 0x30) + node * 0x20, point) >= 0.0f) {
@@ -3442,11 +3442,10 @@ s8 VectorHitsTerrain(Vector4 *point) {
         } else {
             node = *(u16 *)(*(u8 **)(cell + 0x30) + node * 0x20 + 0x16);
             if (node == 0xFFFF) {
-                break;
+                return 1;
             }
         }
     }
-    return 1;
 }
 
 #pragma pop
@@ -11680,6 +11679,52 @@ s32 Trigger_ReleaseTrigger(s32 *trigger) {
             m_Triggers_802C1890[trigger[0]][i] = m_Triggers_802C1890[trigger[0]][TriggerStats_800D3C58[trigger[0]][0]];
             return 1;
         }
+    }
+    return 0;
+}
+
+s8 TriggerCheckConditions(u8 mode, s32 count, s32 conds) {
+    typedef struct TriggerCondition {
+        u32 type;
+        void *param;
+        u8 unk8[0x2C - 0x8];
+    } TriggerCondition;
+    extern s8 (*pTriggerFuncArray_800D3DA8[])(void *param);
+    TriggerCondition *cond = (TriggerCondition *)conds;
+    u32 i;
+
+    if (count == 0) {
+        return 1;
+    }
+    switch (mode) {
+    case 0:
+        for (i = 0; i < count; i++) {
+            if (!pTriggerFuncArray_800D3DA8[cond[i].type](cond[i].param)) {
+                return 0;
+            }
+        }
+        return 1;
+    case 1:
+        for (i = 0; i < count; i++) {
+            if (pTriggerFuncArray_800D3DA8[cond[i].type](cond[i].param)) {
+                return 1;
+            }
+        }
+        return 0;
+    case 2:
+        for (i = 0; i < count; i++) {
+            if (!pTriggerFuncArray_800D3DA8[cond[i].type](cond[i].param)) {
+                return 1;
+            }
+        }
+        return 0;
+    case 3:
+        for (i = 0; i < count; i++) {
+            if (pTriggerFuncArray_800D3DA8[cond[i].type](cond[i].param)) {
+                return 0;
+            }
+        }
+        return 1;
     }
     return 0;
 }
