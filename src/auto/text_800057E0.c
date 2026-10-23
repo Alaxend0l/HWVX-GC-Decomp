@@ -3652,6 +3652,38 @@ done:
     }
 }
 
+s32 GameSettings_GetDefaultMemoryCardStatus(s32 *device, s8 bForce) {
+    s32 GameSettings_GetMemoryCardStatus(s32 device, s32 arg1);
+    extern s8 g_bRefreshMC_803C6F78;
+    static u32 s_updateCntr = 10;
+    static s32 s_curStatus;
+    static s32 s_curDevice;
+    s32 status1;
+    s32 status2;
+
+    if (++s_updateCntr < 10 && !bForce && !g_bRefreshMC_803C6F78) {
+        *device = s_curDevice;
+        return s_curStatus;
+    }
+    s_updateCntr = 0;
+    s_curStatus = 2;
+    g_bRefreshMC_803C6F78 = 0;
+    status1 = GameSettings_GetMemoryCardStatus(1, 1);
+    status2 = GameSettings_GetMemoryCardStatus(2, 1);
+    if (status1 == 1 || status1 == 0) {
+        s_curStatus = status1;
+        s_curDevice = 1;
+    } else if (status1 == 2 && status2 != 2) {
+        s_curStatus = status2;
+        s_curDevice = 2;
+    } else {
+        s_curStatus = status1;
+        s_curDevice = 1;
+    }
+    *device = s_curDevice;
+    return s_curStatus;
+}
+
 void GameSettings_DetermineIfOverwritingFile(void) {
     if (g_bValidFileName_803C6CA4[g_codeVariables.fileIndex - 1]) {
         g_codeVariables.bOverwritingFile = 1;
@@ -9621,6 +9653,54 @@ void OSExitThread(void *val) {
     }
     OSRestoreInterrupts(enabled);
 }
+
+#pragma push
+#pragma scheduling off
+void OSSleepThread(void *queue) {
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32);
+    void SelectThread(s32 yield);
+    extern volatile s32 RunQueueHint_803C7294;
+    s32 enabled;
+    void *currentThread;
+    void *next;
+    void *prev;
+
+    enabled = OSDisableInterrupts();
+    currentThread = *(void **)0x800000E4;
+    M2C_FIELD(currentThread, u16 *, 0x2C8) = 4;
+    M2C_FIELD(currentThread, void **, 0x2DC) = queue;
+    for (next = M2C_FIELD(queue, void **, 0); next && M2C_FIELD(next, s32 *, 0x2D0) <= M2C_FIELD(currentThread, s32 *, 0x2D0); next = M2C_FIELD(next, void **, 0x2E0)) {
+    }
+    if (next == NULL) {
+        prev = M2C_FIELD(queue, void **, 4);
+        if (prev == NULL) {
+            M2C_FIELD(queue, void **, 0) = currentThread;
+        } else {
+            M2C_FIELD(prev, void **, 0x2E0) = currentThread;
+        }
+        M2C_FIELD(currentThread, void **, 0x2E4) = prev;
+        M2C_FIELD(currentThread, void **, 0x2E0) = NULL;
+        M2C_FIELD(queue, void **, 4) = currentThread;
+    } else {
+        M2C_FIELD(currentThread, void **, 0x2E0) = next;
+        prev = M2C_FIELD(next, void **, 0x2E4);
+        M2C_FIELD(next, void **, 0x2E4) = currentThread;
+        M2C_FIELD(currentThread, void **, 0x2E4) = prev;
+        if (prev == NULL) {
+            M2C_FIELD(queue, void **, 0) = currentThread;
+        } else {
+            M2C_FIELD(prev, void **, 0x2E0) = currentThread;
+        }
+    }
+    RunQueueHint_803C7294 = 1;
+    if (RunQueueHint_803C7294) {
+        SelectThread(0);
+    }
+    OSRestoreInterrupts(enabled);
+}
+#pragma pop
+
 #pragma pop
 s64 __OSGetSystemTime(void) {
     s32 OSDisableInterrupts(void);
