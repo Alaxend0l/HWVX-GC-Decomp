@@ -1611,6 +1611,8 @@ void AI_Car_AsyncScanDestructibles(u8 *car) {
     }
 }
 
+#pragma push
+#pragma auto_inline off
 void AI_Car_Init(u8 *car, u8 *params) {
     void AI_Car_AsyncHeartbeat(u8 *car);
     void AI_Car_WeaponAsyncHeartbeat_80008210(u8 *car);
@@ -1638,6 +1640,7 @@ void AI_Car_Init(u8 *car, u8 *params) {
     memset(car + 0x3D4, 0, 0x60);
     M2C_FIELD(car, u8 *, 0xCC) = 1;
 }
+#pragma pop
 
 void MotionState_ReleaseSlavesByType(s32 state, u8 type) {
     void ThingManagerList_Remove(void **arg0, void *arg1);
