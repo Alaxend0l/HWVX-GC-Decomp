@@ -9411,6 +9411,25 @@ s32 ActionPlayInterfacePack(u32 *pack) {
 }
 
 #pragma opt_unroll_loops on
+s32 ActionEndInterfacePack(u32 *pack) {
+    int strcmp(const char *, const char *);
+    u32 i;
+
+    for (i = 0; i < g_NumInterfacesPlaying; i++) {
+        if (pack[0] == g_InterfacePackData[i].id && strcmp(g_InterfacePackData[i].name, (char *)(pack + 1)) == 0) {
+            InterfaceManager_EndInterface(g_InterfacePackData[i].unk8);
+            for (; i < g_NumInterfacesPlaying - 1; i++) {
+                g_InterfacePackData[i] = g_InterfacePackData[i + 1];
+            }
+            g_NumInterfacesPlaying--;
+            return 1;
+        }
+    }
+    return 0;
+}
+#pragma opt_unroll_loops reset
+
+#pragma opt_unroll_loops on
 void InterfaceHasEnded(u32 handle) {
     u32 i;
 
