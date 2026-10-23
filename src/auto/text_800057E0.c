@@ -3795,6 +3795,8 @@ void DataPack_RefreshQuadPackPtrs(DataPack *pack, void *quad) {
         }
     }
 }
+#pragma push
+#pragma auto_inline off
 void DataPack_RefreshTextures(DataPack *pack) {
     void Gfx_LoadPalettes_RAM(void *data, void *palettes);
     u16 Gfx_LoadTexture_RAM(u32 *data);
@@ -3831,6 +3833,7 @@ void DataPack_RefreshTextures(DataPack *pack) {
         *(u32 *)(base + pack->relocs[i * 2]) = texID;
     }
 }
+#pragma pop
 
 void DataPack_RefreshPtrs(DataPack *pack) {
     void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
