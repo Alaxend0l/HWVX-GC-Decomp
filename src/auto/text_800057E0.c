@@ -4071,31 +4071,33 @@ s8 OBoxHitsTerrainAndObjectsZeroTimeEdgesOnly(void *obox, void *thing, void *arg
 
 s8 TriggerVehicleDamage(u32 *params) {
     u32 i;
-    s32 amount;
+    u32 count;
+    u8 **things;
     s32 *saved;
     u32 type;
+    s32 amount;
     s32 result;
-    u8 **things;
-    u32 count;
 
     count = params[0];
     things = (u8 **)&params[1];
     result = 0;
-    type = params[count + 1];
     saved = (s32 *)&params[count + 3];
+    type = params[count + 1];
     amount = params[count + 2];
     for (i = 0; i < count; i++) {
-        u8 *vehicle = M2C_FIELD(things[i], u8 **, 0x28);
+        u8 *vehicle = M2C_FIELD(*things, u8 **, 0x28);
         if (type == 0x2A) {
             s32 damage = *(s32 *)(vehicle + 0x78);
-            if (damage < saved[i] - amount) {
+            if (damage < *saved - amount) {
                 result = 1;
             }
-            saved[i] = damage;
+            *saved = damage;
         }
         if (type == 0x2B && *(s32 *)(vehicle + 0x78) < *(s32 *)(*(u8 **)(*(u8 **)(vehicle + 0x3BC) + 0xA0) + 0x14) / amount) {
             result = 1;
         }
+        things++;
+        saved++;
     }
     return result;
 }
