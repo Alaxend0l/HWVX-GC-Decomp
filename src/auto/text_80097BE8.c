@@ -4788,7 +4788,7 @@ void AudioDecode(THPReadBuffer *readBuffer) {
 }
 #pragma pop
 void *PopFreeAudioBuffer(void) {
-    extern u8 FreeAudioBufferQueue_80371418[];
+    extern u8 FreeAudioBufferQueue_80371418[0x20];
     void *msg;
 
     OSReceiveMessage(FreeAudioBufferQueue_80371418, &msg, 1);
