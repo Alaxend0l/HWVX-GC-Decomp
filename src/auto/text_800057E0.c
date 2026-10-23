@@ -17241,7 +17241,6 @@ void GXCPInterruptHandler(s16 interrupt, void *context) {
     }
 }
 
-#pragma pop
 void GXInitFifoBase(void *fifo, void *base, u32 size) {
     void GXInitFifoLimits(void *arg0, s32 arg1, s32 arg2);
     void GXInitFifoPtrs(void *fifo, void *readPtr, void *writePtr);
