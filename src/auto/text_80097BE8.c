@@ -7282,38 +7282,22 @@ s32 Input_Create(void) {
 #pragma push
 #pragma use_lmw_stmw on
 void Input_Init(void) {
-    typedef struct InputState {
-        RumbleStatus rumble[4];
-        s32 rumbleTime[2];
-        u8 unk28[8];
-        u8 unk30[8];
-        u8 unk38[0x38];
-        u8 unk70[8];
-        u8 unk78[0x90];
-        struct {
-            u8 unk0[0xA];
-            u8 unkA;
-            u8 unkB;
-        } unk108[4];
-    } InputState;
-    InputState *state = (InputState *)rumbleStatus;
     u32 i;
 
-    memset(state->unk30, 0, 8);
-    memset(state->unk70, 0, 8);
+    memset(s_unk30, 0, 8);
+    memset(s_unk70, 0, 8);
     for (i = 0; i < 4; i++) {
         memset(&g_VirtualPad[i], 0, sizeof(VirtualPad));
         g_VirtualPad[i].unk0[2] = 1;
-        state->rumble[i].duration = -1;
         g_VirtualPad[i].forceFeedbackActive = 1;
         g_padUpPos[i] = 0;
         g_padDownPos[i] = 0;
-        state->rumble[i].active = 0;
-        state->unk108[i].unkA = 0;
+        rumbleStatus[i].duration = -1;
+        rumbleStatus[i].active = 0;
+        s_unk108[i].unkA = 0;
     }
-    for (i = 0; i < 2; i++) {
-        state->rumbleTime[i] = 200;
-    }
+    s_rumbleTime[0] = 200;
+    s_rumbleTime[1] = 200;
     g_StopInput = 0;
 }
 #pragma pop
@@ -7345,6 +7329,31 @@ void Input_ForceFeedbackPause(void) {
 
 s32 Input_GetContollersPluggedIn(void) {
     return 0xF;
+}
+
+extern u16 g_pKeyToDI[20];
+void InitTables__Fv(void) {
+    memset(g_pKeyToDI, 0, sizeof(g_pKeyToDI));
+    g_pKeyToDI[0] = 0x1000;
+    g_pKeyToDI[1] = 0;
+    g_pKeyToDI[2] = 1;
+    g_pKeyToDI[3] = 2;
+    g_pKeyToDI[4] = 8;
+    g_pKeyToDI[5] = 4;
+    g_pKeyToDI[6] = 0x200;
+    g_pKeyToDI[7] = 0x400;
+    g_pKeyToDI[8] = 0x800;
+    g_pKeyToDI[9] = 0x100;
+    g_pKeyToDI[10] = 0;
+    g_pKeyToDI[11] = 0x40;
+    g_pKeyToDI[12] = 0x10;
+    g_pKeyToDI[13] = 0x20;
+    g_pKeyToDI[14] = 0;
+    g_pKeyToDI[15] = 0;
+    g_pKeyToDI[16] = 0;
+    g_pKeyToDI[17] = 0;
+    g_pKeyToDI[18] = 0;
+    g_pKeyToDI[19] = 0;
 }
 
 void Wheel_PlaySpringForce(s32 chan, s8 offset, u8 saturation, s16 coefficient) {
