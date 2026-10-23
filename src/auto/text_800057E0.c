@@ -2627,6 +2627,22 @@ void ShaderHolder_AddGX(void *gx, u32 index) {
     g_pShaderHolder->gx[n].shader = g_pShaderHolder->shaders[index];
 }
 
+void ShaderHolder_RemoveGX(s32 gx) {
+    extern ShaderHolder *g_pShaderHolder;
+    u32 i;
+
+    if (g_pShaderHolder == NULL) {
+        return;
+    }
+    for (i = 0; i < g_pShaderHolder->numGX; i++) {
+        if (g_pShaderHolder->gx[i].gx == (void *)gx) {
+            g_pShaderHolder->numGX--;
+            g_pShaderHolder->gx[i] = g_pShaderHolder->gx[g_pShaderHolder->numGX];
+            return;
+        }
+    }
+}
+
 void ShowStats_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
