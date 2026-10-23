@@ -527,20 +527,6 @@ s32 TRKSetBufferPosition(void *arg0, u32 arg1);
 void SetTRKConnected(s32 connected);
 s32 GetTRKConnected(void);
 
-static inline s32 TRKWriteEscapedByte(u8 c) {
-    s32 WriteUART1(s8 c);
-    s32 err = 0;
-
-    if (c == 0x7e || c == 0x7d) {
-        err = WriteUART1(0x7d);
-        c ^= 0x20;
-    }
-    if (err == 0) {
-        err = WriteUART1(c);
-    }
-    return err;
-}
-
 static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
     if (b->position >= 0x880) {
         return 0x301;
