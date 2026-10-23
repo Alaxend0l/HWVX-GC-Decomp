@@ -491,7 +491,9 @@ extern u8 D54_800DAFF8[];
 s32 GBAResetAsync(s32 chan, u8 *status, GBACallback callback);
 s32 GBAGetStatusAsync(s32 chan, u8 *status, GBACallback callback);
 void __GBAX02(s32 chan, u8 *readbuf);
+static void F23(s32 chan, s32 ret);
 static void F25(s32 chan, s32 ret);
+extern u8 D35_800DB028[0x380];
 void F27(s32 chan, s32 ret);
 
 typedef struct EffectCondition {
