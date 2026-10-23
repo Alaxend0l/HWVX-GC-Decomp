@@ -3531,16 +3531,24 @@ typedef struct DataPack {
     u32 *relocs;
     u8 pad0C[0x8];
     void *palettes;
-    u8 pad18[0x8];
+    u32 numShaders;
+    u32 numGX;
     u16 *shaderIDs;
-    u8 pad24[0x8];
+    u32 *gxList;
+    u8 pad28[0x4];
     u32 numTextures;
     u16 *textureIDs;
-    u8 pad34[0x10];
+    u32 numSounds;
+    u16 *soundIDs;
+    void *soundData;
+    u8 pad40[0x4];
     u32 textureData;
     u8 pad48[0x4];
     void *paletteData;
-    u8 pad50[0x18];
+    struct DataPackShader *shaders;
+    u32 numTriggers;
+    u8 *triggers;
+    u8 pad5C[0xC];
     DataPackRef refs[2];
 } DataPack;
 
