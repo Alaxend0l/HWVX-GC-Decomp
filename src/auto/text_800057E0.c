@@ -1910,6 +1910,25 @@ void *CameraManager_GetCameraFromPlayer(void *player) {
     return NULL;
 }
 
+void CameraManager_ReleaseAllEmitters(void) {
+    typedef struct Camera {
+        u8 pad0[0x180];
+        u8 *emitter;
+        u8 pad1[0x190 - 0x184];
+    } Camera;
+    extern u8 g_cameraManager[];
+    void ThingManagerList_RemoveReleasedThings(s32 list);
+    u32 i;
+
+    for (i = 0; i < g_cameraManager[0x640]; i++) {
+        if (((Camera *)g_cameraManager)[i].emitter != NULL) {
+            (*(void (***)(void *))(((Camera *)g_cameraManager)[i].emitter + 0x8C))[1](((Camera *)g_cameraManager)[i].emitter);
+            ((Camera *)g_cameraManager)[i].emitter = NULL;
+        }
+    }
+    ThingManagerList_RemoveReleasedThings((s32)&g_thingManager_DARYL.activeList);
+}
+
 void CarA_GetAngularVelocity(void *car, Vector4 *vel) {
     *vel = M2C_FIELD(car, Vector4 *, 0x410);
 }
