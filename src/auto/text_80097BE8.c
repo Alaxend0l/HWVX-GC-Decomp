@@ -905,7 +905,13 @@ typedef struct FontManager {
 } FontManager;
 
 typedef struct DLSkinGroup {
-    u8 unk0[0x14];
+    Geometry *lod;
+    s32 lightState;
+    f32 *matrices;
+    u32 count;
+    u16 matrix;
+    u8 group;
+    u8 window;
 } DLSkinGroup;
 
 typedef struct DisplayList {
