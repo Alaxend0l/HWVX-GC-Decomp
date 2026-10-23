@@ -9414,6 +9414,36 @@ s32 SharedSlaveHolder_Get(void *shared) {
     return 64;
 }
 
+#pragma use_lmw_stmw on
+void Thing_DrawSharedSlaves(Thing *thing, u32 *triggers) {
+    typedef struct { u8 pad[0x10]; u8 type; u8 pad2[7]; u8 *shared; u8 pad3[4]; } Trigger;
+    u32 i;
+    Thing *slave;
+    u8 *shared;
+    Vector4 quat;
+    Vector4 pos;
+
+    for (i = 0; i < triggers[0]; i++) {
+        Trigger *trigger = &((Trigger *)triggers[1])[i];
+        if (trigger->type == 10) {
+            shared = trigger->shared;
+            slave = g_aSharedSlaveHolder[*(*(u8 **)(shared + 8) + 0x1D)].slaves;
+            if (*(u32 *)shared != 0) {
+                for (; slave != NULL; slave = *(Thing **)((u8 *)slave + 0xA4)) {
+                    quat = slave->quat;
+                    pos = slave->mtx.v[3];
+                    QuaternionMult(&thing->quat, &quat, &slave->quat);
+                    XformVec(&thing->mtx, &pos, &slave->mtx.v[3]);
+                    (*(void (***)(Thing *))((u8 *)slave + 0x8C))[4](slave);
+                    slave->quat = quat;
+                    slave->mtx.v[3] = pos;
+                }
+            }
+        }
+    }
+}
+#pragma use_lmw_stmw reset
+
 #pragma push
 #pragma use_lmw_stmw on
 void ThingManagerList_TriggerSlaves(void **list, u8 *trigger, Vector4 *a, Vector4 *b, Vector4 *c, u8 player) {
