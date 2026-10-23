@@ -8507,13 +8507,6 @@ static inline void FontManager_Vertex2(f32 x, f32 y, f32 s, f32 t) {
     GXTexCoord2f32(s, t);
 }
 
-static inline void FontManager_Quad(f32 x0, f32 y0, f32 x1, f32 y1, FontChar *ch) {
-    FontManager_Vertex2(x0, y0, ch->unk0, ch->unk4);
-    FontManager_Vertex2(x0, y1, ch->unk0, ch->unkC);
-    FontManager_Vertex2(x1, y1, ch->unk8, ch->unkC);
-    FontManager_Vertex2(x1, y0, ch->unk8, ch->unk4);
-}
-
 u32 FontManager_Print(char *str, s32 id, f32 x, f32 y) {
     extern FontManager g_fontManager;
     extern s32 g_debugTriCount;
