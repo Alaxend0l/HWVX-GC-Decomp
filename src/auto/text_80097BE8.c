@@ -3,6 +3,7 @@
 
 #define __HI(x) *(int *)&x
 #define __LO(x) *(1 + (int *)&x)
+static inline double fabs(double x) { return __fabs(x); }
 
 void *GetRenderWindow();
 void Gfx_SetWorldMatrix(f32 *matrix);
@@ -3101,6 +3102,58 @@ double __kernel_sin(double x, double y, int iy) {
         return x + v * (-1.66666666666666324348e-01 + z * r);
     } else {
         return x - ((z * (5.0e-1 * y - v * r) - y) - v * -1.66666666666666324348e-01);
+    }
+}
+
+extern const double T_800CDC88[];
+double __kernel_tan(double x, double y, int iy) {
+    double z, r, v, w, s;
+    int ix, hx;
+
+    hx = __HI(x);
+    ix = hx & 0x7fffffff;
+    if (ix < 0x3e300000) {
+        if ((int)x == 0) {
+            if (((ix | __LO(x)) | (iy + 1)) == 0) {
+                return 1.0 / __fabs(x);
+            } else {
+                return (iy == 1) ? x : -1.0 / x;
+            }
+        }
+    }
+    if (ix >= 0x3FE59428) {
+        if (hx < 0) {
+            x = -x;
+            y = -y;
+        }
+        z = 7.85398163397448278999e-01 - x;
+        w = 3.06161699786838301793e-17 - y;
+        x = z + w;
+        y = 0.0;
+    }
+    z = x * x;
+    w = z * z;
+    r = T_800CDC88[1] + w * (T_800CDC88[3] + w * (T_800CDC88[5] + w * (T_800CDC88[7] + w * (T_800CDC88[9] + w * T_800CDC88[11]))));
+    v = z * (T_800CDC88[2] + w * (T_800CDC88[4] + w * (T_800CDC88[6] + w * (T_800CDC88[8] + w * (T_800CDC88[10] + w * T_800CDC88[12])))));
+    s = z * x;
+    r = y + z * (s * (r + v) + y);
+    r += T_800CDC88[0] * s;
+    w = x + r;
+    if (ix >= 0x3FE59428) {
+        v = (double)iy;
+        return (double)(1 - ((hx >> 30) & 2)) * (v - 2.0 * (x - (w * w / (w + v) - r)));
+    }
+    if (iy == 1) {
+        return w;
+    } else {
+        double a, t;
+        z = w;
+        __LO(z) = 0;
+        v = r - (z - x);
+        t = a = -1.0 / w;
+        __LO(t) = 0;
+        s = 1.0 + t * z;
+        return t + a * (s + t * v);
     }
 }
 
@@ -6922,6 +6975,67 @@ void Render_UseLighting(u8 arg0) {
         return;
     }
     GXSetChanCtrl(4, 0, 1, 1, 0, 0, 2);
+}
+
+void Render_UpdateLightState(u32 index) {
+    extern GDL *g_pGDL;
+    extern u8 m_totalLights_803C7718;
+    extern u32 m_pointLightMask_803C771C;
+    void *GetRenderWindow();
+    void InverseXformVecOrientation(Vector *m, Vector *v, Vector *out);
+    void GXInitLightPos(void *lt_obj, f32 x, f32 y, f32 z);
+    void GXInitLightColor(void *lt_obj, GXColor color);
+    void GXLoadLightObjImm(void *lt_obj, s32 light);
+    void GXSetChanAmbColor(s32 chan, GXColor amb_color);
+    void GXInitLightDistAttn(void *lt_obj, f32 ref_dist, f32 ref_br, s32 dist_func);
+    void GXInitLightAttnK(void *lt_obj, f32 k0, f32 k1, f32 k2);
+    u8 lightObj[0x40];
+    u8 pointObj[0x40];
+    Vector dir;
+    GXColor ambient;
+    u8 i;
+    GDLLightState *ls;
+
+    if (index == 0xFFFFFFFF) {
+        index = 0;
+    }
+    ls = &g_pGDL->lightStates[index];
+    {
+        GXColor color;
+        color.r = ls->lightColor.r;
+        color.g = ls->lightColor.g;
+        color.b = ls->lightColor.b;
+        color.a = 0xFF;
+        memset(lightObj, 0, 0x40);
+        InverseXformVecOrientation((Vector *)GetRenderWindow(), &ls->lightDir, &dir);
+        GXInitLightPos(lightObj, -10000.0f * dir.x, 10000.0f * dir.y, -10000.0f * dir.z);
+        GXInitLightColor(lightObj, color);
+        GXLoadLightObjImm(lightObj, 1);
+    }
+    ambient.r = ls->ambientColor.r;
+    ambient.g = ls->ambientColor.g;
+    ambient.b = ls->ambientColor.b;
+    ambient.a = 0xFF;
+    GXSetChanAmbColor(4, ambient);
+    m_pointLightMask_803C771C = 0;
+    m_totalLights_803C7718 = 0;
+    for (i = 0; i < ls->numPointLights; i++) {
+        if (m_totalLights_803C7718 <= 4) {
+            GXColor pointColor;
+            m_totalLights_803C7718++;
+            pointColor.r = ls->pointColors[i].r;
+            pointColor.g = ls->pointColors[i].g;
+            pointColor.b = ls->pointColors[i].b;
+            pointColor.a = 0xFF;
+            memset(pointObj, 0, 0x40);
+            GXInitLightPos(pointObj, ls->pointLights[i].x, ls->pointLights[i].y, ls->pointLights[i].z);
+            GXInitLightColor(pointObj, pointColor);
+            GXInitLightDistAttn(pointObj, ls->pointLights[i].w, 0.99999f, 1);
+            GXInitLightAttnK(pointObj, 0.0f, 0.0f, 0.01f);
+            GXLoadLightObjImm(pointObj, 1 << m_totalLights_803C7718);
+            m_pointLightMask_803C771C |= 1 << m_totalLights_803C7718;
+        }
+    }
 }
 
 #pragma push
