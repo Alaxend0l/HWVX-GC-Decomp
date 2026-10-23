@@ -3841,10 +3841,8 @@ void DataPack_RefreshPtrs(DataPack *pack) {
     void ShaderHolder_AddGX(void *gx, u32 index);
     s32 Trigger_AddTrigger(s32 *trigger);
     u8 *base;
-    u32 *relocs;
     u32 id;
     u32 i;
-    u32 texID;
     u32 packID;
     u32 idx;
     u8 *trigger;
@@ -3852,19 +3850,19 @@ void DataPack_RefreshPtrs(DataPack *pack) {
     base = pack->base;
     if (base != NULL) {
         DataPack_RefreshTextures(pack);
-        for (i = 0; i < *(u32 *)((u8 *)pack + 0xC); i++) {
-            id = ((u32 *)pack->palettes)[i * 2 + 1];
+        for (i = 0; i < pack->numSoundRelocs; i++) {
+            id = pack->soundRelocs[i * 2 + 1];
             if (id & 0xFFFF0000) {
                 packID = id >> 16;
                 idx = pack->refs[0].id != packID;
                 if (pack->refs[idx].pack == NULL) {
                     pack->refs[idx].pack = FileStreaming_InitializeDataPack(FileStreaming_LoadDataPack(&pack->refs[idx], 8, packID, 0), 8, 1);
                 }
-                texID = pack->refs[idx].pack->soundIDs[id & 0xFFFF];
+                id = pack->refs[idx].pack->soundIDs[id & 0xFFFF];
             } else {
-                texID = pack->soundIDs[id];
+                id = pack->soundIDs[id];
             }
-            *(u32 *)(base + ((u32 *)pack->palettes)[i * 2]) = texID;
+            *(u32 *)(base + pack->soundRelocs[i * 2]) = id;
         }
         for (i = 0; i < pack->numShaders; i++) {
             pack->shaderIDs[i] = ShaderHolder_AddShader(pack->shaders[i].shader);
@@ -9347,6 +9345,58 @@ s8 Thing_HasThing(u8 *thing, void *target) {
         }
     }
     return ThingManagerList_Get(thing + 0x88, target);
+}
+
+static inline void CameraOrientationInfo_SetDefaultUp(u8 *info) {
+    *(f32 *)(info + 0x8C) = 1.0f;
+    *(f32 *)(info + 0x30) = 0.0f;
+    *(f32 *)(info + 0x34) = 1.0f;
+    *(f32 *)(info + 0x38) = 0.0f;
+}
+
+void Thing_GetCameraOrientationInfo(Thing *thing, u32 index, void *out) {
+    typedef struct CameraOrientationInfo {
+        u8 pad00[0x8];
+        f32 unk8;
+        f32 unkC;
+        f32 unk10;
+        f32 unk14;
+        u8 pad18[0x8];
+        Matrix4 mtx;
+        Vector4 pos;
+        u8 pad70[0x10];
+        s32 unk80;
+        u8 *unk84;
+        u32 unk88;
+        f32 unk8C;
+    } CameraOrientationInfo;
+    CameraOrientationInfo *info = out;
+    u32 *cams;
+
+    cams = (u32 *)(*(u8 **)((u8 *)g_worldData.world + 0x9C) + 0x100);
+    info->unk88 = cams[0];
+    switch (ViewManager_GetViewFormat()) {
+    case 2:
+        cams = (u32 *)(*(u8 **)((u8 *)g_worldData.world + 0x9C) + 0x108);
+        break;
+    }
+    if (cams[0] == 0) {
+        info->unk80 = 0;
+        info->unk84 = NULL;
+        info->mtx = thing->mtx;
+    } else {
+        info->unk84 = (u8 *)cams[1] + (index % cams[0]) * 0xC;
+        info->unk8C = 1.0f;
+        info->mtx.m[1][0] = 0.0f;
+        info->mtx.m[1][1] = 1.0f;
+        info->mtx.m[1][2] = 0.0f;
+        info->unk14 = 90.0f;
+        info->pos = thing->mtx.v[3];
+        info->unk8 = 5.0f;
+        info->unkC = 5.0f;
+        info->unk10 = 90.0f;
+        info->mtx = thing->mtx;
+    }
 }
 
 #pragma push
