@@ -3354,6 +3354,111 @@ u32 RayHitsBSP(Vector4 *start, Vector4 *dir, Vector4 *bbox, f32 *time, void *bsp
     return result;
 }
 
+typedef struct TerrainGrid {
+    Vector4 origin;
+    u8 unk10[0x20 - 0x10];
+    u8 *cells;
+    u8 unk24[0x28 - 0x24];
+    f32 sizeX;
+    f32 sizeY;
+    f32 sizeZ;
+    s32 numX;
+    s32 numY;
+    s32 numZ;
+    s32 *cellIndex;
+} TerrainGrid;
+
+static inline s32 TerrainGrid_GetCellIndex(TerrainGrid *grid, Vector4 *point) {
+    s32 x;
+    s32 y;
+    s32 z;
+
+    x = (point->x - grid->origin.x) / grid->sizeX;
+    y = (point->y - grid->origin.y) / grid->sizeY;
+    z = (point->z - grid->origin.z) / grid->sizeZ;
+    if (x < 0 || x >= grid->numX) {
+        return -1;
+    }
+    if (y < 0 || y >= grid->numY) {
+        return -1;
+    }
+    if (z < 0 || z >= grid->numZ) {
+        return -1;
+    }
+    return z * grid->numX + grid->numZ * (y * grid->numX) + x;
+}
+
+static inline u8 *TerrainGrid_GetCell(TerrainGrid *grid, Vector4 *point) {
+    s32 index = TerrainGrid_GetCellIndex(grid, point);
+
+    if (index == -1) {
+        return grid->cells;
+    }
+    return grid->cells + grid->cellIndex[index] * 0x50;
+}
+
+s8 VectorHitsTerrain(Vector4 *point) {
+    f32 Distance_Plane(void *arg0, void *arg1);
+    typedef struct TerrainGrid {
+        Vector4 origin;
+        u8 unk10[0x20 - 0x10];
+        u8 *cells;
+        u8 unk24[0x28 - 0x24];
+        f32 sizeX;
+        f32 sizeY;
+        f32 sizeZ;
+        s32 numX;
+        s32 numY;
+        s32 numZ;
+        s32 *cellIndex;
+    } TerrainGrid;
+    u32 node;
+    u8 *cell;
+    TerrainGrid *grid;
+    s32 index;
+    s32 x;
+    s32 y;
+    s32 z;
+
+    if (g_worldData.world == NULL || (grid = *(TerrainGrid **)g_worldData.world) == NULL) {
+        return 0;
+    }
+    x = (point->x - grid->origin.x) / grid->sizeX;
+    y = (point->y - grid->origin.y) / grid->sizeY;
+    z = (point->z - grid->origin.z) / grid->sizeZ;
+    if (x < 0 || x >= grid->numX) {
+        index = -1;
+    } else if (y < 0 || y >= grid->numY) {
+        index = -1;
+    } else if (z < 0 || z >= grid->numZ) {
+        index = -1;
+    } else {
+        index = z * grid->numX + grid->numZ * (y * grid->numX) + x;
+    }
+    if (index == -1) {
+        cell = grid->cells;
+    } else {
+        cell = grid->cells + grid->cellIndex[index] * 0x50;
+    }
+    node = 0;
+    if (*(u8 **)(cell + 0x30) == NULL) {
+        return 0;
+    }
+    while (1) {
+        if (Distance_Plane(*(u8 **)(cell + 0x30) + node * 0x20, point) >= 0.0f) {
+            node = *(u16 *)(*(u8 **)(cell + 0x30) + node * 0x20 + 0x14);
+            if (node == 0xFFFF) {
+                return 0;
+            }
+        } else {
+            node = *(u16 *)(*(u8 **)(cell + 0x30) + node * 0x20 + 0x16);
+            if (node == 0xFFFF) {
+                return 1;
+            }
+        }
+    }
+}
+
 #pragma pop
 
 void BuildOOBOffset(void *oob, void *pos, void *rot, void *out) {
