@@ -4808,6 +4808,87 @@ void DataPack_CloseFiles(void) {
     }
 }
 
+void DataPack_LoadQuadPack(s32 file, QuadPack *quad) {
+    void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
+    s32 File_Seek(s32 handle, s32 offset, s8 mode);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void UpdatePointers(u32 *offsets, u32 count, u8 *base);
+    u32 *reloc;
+    u8 *data;
+    u32 *pointers;
+    u32 i;
+    u32 *texRelocs = NULL;
+    QuadPackHeader *header;
+    u32 offset;
+    u8 *base;
+    u32 packID;
+    u32 n;
+    void *alloc;
+    u32 idx;
+
+    if (quad->enabled != 0) {
+        if ((u32)quad->fileOffset == 0) {
+            quad->enabled = 0;
+            return;
+        }
+        File_Seek(file, quad->fileOffset, 0);
+        alloc = Allocate(quad->size + 0x40, 0, "");
+        quad->alloc = alloc;
+        if (alloc != NULL) {
+            data = (u8 *)(((u32)alloc + 0x3F) & ~0x3F);
+            File_Read(file, quad->size, data);
+            quad->header = (QuadPackHeader *)data;
+            offset = 0x54;
+            header = quad->header;
+            if (header->valid == 0) {
+                quad->data = NULL;
+                return;
+            }
+            n = header->numRelocs;
+            if (n != 0) {
+                header->relocs = (u32 *)(data + offset);
+                offset += n * 8;
+            }
+            header = quad->header;
+            n = header->numShaders;
+            if (n != 0) {
+                header->shaders = (u32 *)(data + offset);
+                offset += n * 8;
+            }
+            header = quad->header;
+            n = header->numTexRelocs;
+            if (n != 0) {
+                texRelocs = (u32 *)(data + offset);
+                offset += n * 8;
+            }
+            pointers = (u32 *)(data + offset);
+            offset += header->numPointers * 4;
+            offset += header->dataSize;
+            quad->base = data + offset;
+            reloc = texRelocs;
+            for (i = 0; i < quad->header->numTexRelocs; i++) {
+                base = quad->base;
+                packID = reloc[1] & 0xFFFF0000;
+                if (packID != 0) {
+                    packID >>= 16;
+                    header = quad->header;
+                    idx = header->refs[0].id != packID;
+                    if (header->refs[idx].pack == NULL) {
+                        header->refs[idx].pack = FileStreaming_InitializeDataPack(FileStreaming_LoadDataPack(&header->refs[idx], 8, packID, 0), 8, 1);
+                    }
+                    *(u32 *)(base + reloc[0]) = ((u32 *)header->refs[idx].pack->base)[reloc[1] & 0xFFFF];
+                } else {
+                    *(u32 *)(base + reloc[0]) += (u32)base;
+                }
+                reloc += 2;
+            }
+            UpdatePointers(pointers, quad->header->numPointers, quad->base);
+            quad->data = ((void **)quad->base)[0];
+            quad->vertices = ((void **)quad->base)[1];
+        }
+    }
+}
+
 #pragma use_lmw_stmw on
 void DataPack_RefreshQuadPackPtrs(DataPack *pack, void *quad) {
     void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
