@@ -5194,6 +5194,58 @@ void InterfaceManager_SetObjectReactive(u8 *iface, u32 onId, u32 offId) {
         }
     }
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void InterfaceManager_SetObjectReference(u8 *iface, u32 id, u32 state) {
+    u32 i;
+
+    for (i = 0; i < *(u32 *)iface; i++) {
+        u8 *info = *(u8 **)(*(u8 **)(*(u8 **)(iface + 0x88) + i * 0x300 + 0x25C) + 0x44);
+        u8 *obj = *(u8 **)(iface + 0x88) + i * 0x300;
+        if (info != NULL && *info == id) {
+            if (obj[0x246] != state) {
+                InterfaceManager_SetObjectState(iface, obj, state, 0);
+                if (obj[0x243] == 5) {
+                    char **strings = *(char ***)(obj + 0x1A0);
+                    if (strings != NULL) {
+                        u8 *font = *(u8 **)(*(u8 **)(obj + 0x258) + 4);
+                        char *text;
+                        obj[0x248] = 1;
+                        obj[0x2C] = 1;
+                        obj[0x54] = 1;
+                        obj[0x84] = 1;
+                        obj[0x164] = 1;
+                        obj[0x194] = 1;
+                        *(u16 *)(obj + 0x1AA) = 0;
+                        *(s32 *)(obj + 0x1AC) = *(s32 *)(font + 0x14);
+                        *(u16 *)(obj + 0x1A8) = 0;
+                        obj[0x1C0] = 0;
+                        *(char ***)(obj + 0x1A0) = strings;
+                        *(char **)(obj + 0x1A4) = NULL;
+                        obj[0x1B1] = 0;
+                        text = *strings;
+                        if (text != NULL) {
+                            *(char **)(obj + 0x1A4) = text;
+                            *(u16 *)(obj + 0x1A8) = strlen(text);
+                            if (*(s32 *)(obj + 0x1AC) == 0) {
+                                *(u16 *)(obj + 0x1AA) = *(u16 *)(obj + 0x1A8);
+                            }
+                            if (*(u8 *)(*(u8 **)(obj + 0x258) + 0x12) != 0) {
+                                obj[0x1B1] = 1;
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            obj[0x246] = 0;
+            obj[0x240] = 1;
+        }
+    }
+}
+#pragma pop
+
 #pragma pop
 
 void InterfaceManager_SetControllerConfigInputString(void) {
@@ -8627,6 +8679,48 @@ void Thing_DrawSlaves(Thing *thing) {
             slave->mtx.v[3] = pos;
         }
     }
+}
+
+void CopyVector(Vector4 *dst, Vector4 *src);
+void ThingManagerList_RemoveReleasedThings(void **list);
+void Thing_MoveSlaves(Thing *thing) {
+    typedef struct SlaveThing {
+        Thing base;
+        u8 pad60[0x74 - 0x60];
+        u32 flags;
+        u8 pad78[0x88 - 0x78];
+        struct SlaveThing *slaves;
+        void (**vtbl)(struct SlaveThing *);
+        u8 pad90[0xA4 - 0x90];
+        struct SlaveThing *next;
+    } SlaveThing;
+    SlaveThing *self = (SlaveThing *)thing;
+    SlaveThing *slave;
+    SlaveThing *next;
+    Vector4 quat;
+    Vector4 trans;
+    Vector4 pos;
+
+    for (slave = self->slaves; slave != NULL && !(self->flags & 0x201000); slave = next) {
+        next = slave->next;
+        if (!(slave->flags & 0x201000)) {
+            if (!(slave->flags & 0x400000)) {
+                CopyVector(&quat, &slave->base.quat);
+                CopyVector(&trans, &slave->base.mtx.v[3]);
+                CopyVector(&pos, &slave->base.pos);
+                QuaternionMult(&thing->quat, &quat, &slave->base.quat);
+                XformVec(&thing->mtx, &trans, &slave->base.mtx.v[3]);
+                slave->base.pos = thing->pos;
+                slave->vtbl[3](slave);
+                CopyVector(&slave->base.quat, &quat);
+                CopyVector(&slave->base.mtx.v[3], &trans);
+                CopyVector(&slave->base.pos, &pos);
+            } else {
+                slave->vtbl[3](slave);
+            }
+        }
+    }
+    ThingManagerList_RemoveReleasedThings((void **)&self->slaves);
 }
 
 void Thing_InitAllSlavesNow(void *thing, void *slaves, u8 player) {
