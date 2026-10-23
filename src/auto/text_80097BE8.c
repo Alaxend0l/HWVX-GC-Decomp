@@ -3043,6 +3043,7 @@ char *longlong2str_8009BE88(s64 num, char *buff, print_format format) {
 
     return p;
 }
+#pragma pop
 
 char *long2str_8009C164(s32 num, char *buff, print_format format) {
     u32 unsigned_num;
