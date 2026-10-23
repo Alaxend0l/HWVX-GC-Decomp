@@ -8443,6 +8443,41 @@ void AlarmHandler(void *alarm, void *context) {
     }
 }
 
+void stateCoverClosed(void) {
+    extern s32 CurrCommand_803C732C;
+    extern u8 *executing_803C7310;
+    extern u8 tmpBuffer_802EF940[];
+    void DVDReset(void);
+    void __DVDClearWaitingQueue(void);
+    void stateReady_800725A4(void);
+    void OSCreateAlarm(void *alarm);
+    void OSSetAlarm(void *alarm, s64 tick, void *handler);
+    void AlarmHandler(void *alarm, void *context);
+    u8 *finished;
+    void (*cb)(s32, void *);
+
+    switch (CurrCommand_803C732C) {
+    case 4:
+    case 5:
+    case 13:
+    case 15:
+        __DVDClearWaitingQueue();
+        finished = executing_803C7310;
+        executing_803C7310 = tmpBuffer_802EF940 + 0x80;
+        cb = *(void (**)(s32, void *))(finished + 0x28);
+        if (cb) {
+            cb(-4, finished);
+        }
+        stateReady_800725A4();
+        break;
+    default:
+        DVDReset();
+        OSCreateAlarm(tmpBuffer_802EF940 + 0xB0);
+        OSSetAlarm(tmpBuffer_802EF940 + 0xB0, (*(u32 *)0x800000F8 / 4) / 1000 * 1150, AlarmHandler);
+        break;
+    }
+}
+
 #pragma push
 #pragma dont_inline on
 void AlarmHandlerForTimeout(void *alarm, void *context) {
@@ -8830,6 +8865,69 @@ void stateMotorStopped(void) {
     M2C_UNK DVDLowWaitCoverClose(void (*)(u32));
     void cbForStateMotorStopped(u32);
     DVDLowWaitCoverClose(cbForStateMotorStopped);
+}
+
+static inline BOOL issueCommand(s32 prio, u8 *block) {
+    extern s32 autoInvalidation_803C6DA8;
+    extern void *executing_803C7310;
+    extern s32 PauseFlag_803C731C;
+    void DCInvalidateRange(void *addr, u32 nBytes);
+    s32 OSDisableInterrupts(void);
+    void OSRestoreInterrupts(s32);
+    BOOL __DVDPushWaitingQueue(s32 prio, void *block);
+    void stateReady_800725A4(void);
+    BOOL level;
+    BOOL result;
+    u32 cmd;
+
+    if (autoInvalidation_803C6DA8) {
+        cmd = *(u32 *)(block + 0x8);
+        if (cmd == 1 || cmd - 4 <= 1 || cmd == 14) {
+            DCInvalidateRange(*(void **)(block + 0x18), *(u32 *)(block + 0x14));
+        }
+    }
+    level = OSDisableInterrupts();
+    *(s32 *)(block + 0xC) = 2;
+    result = __DVDPushWaitingQueue(prio, block);
+    if (executing_803C7310 == NULL && PauseFlag_803C731C == 0) {
+        stateReady_800725A4();
+    }
+    OSRestoreInterrupts(level);
+    return result;
+}
+
+BOOL DVDInquiryAsync(u8 *block, void *addr, void *callback) {
+    extern s32 autoInvalidation_803C6DA8;
+    extern void *executing_803C7310;
+    extern s32 PauseFlag_803C731C;
+    void DCInvalidateRange(void *addr, u32 nBytes);
+    s32 OSDisableInterrupts(void);
+    void OSRestoreInterrupts(s32);
+    BOOL __DVDPushWaitingQueue(s32 prio, void *block);
+    void stateReady_800725A4(void);
+    BOOL result;
+    s32 level;
+    u32 cmd;
+
+    *(u32 *)(block + 0x8) = 14;
+    *(void **)(block + 0x18) = addr;
+    *(u32 *)(block + 0x14) = 0x20;
+    *(u32 *)(block + 0x20) = 0;
+    *(void **)(block + 0x28) = callback;
+    if (autoInvalidation_803C6DA8) {
+        cmd = *(u32 *)(block + 0x8);
+        if (cmd == 1 || cmd - 4 <= 1 || cmd == 14) {
+            DCInvalidateRange(*(void **)(block + 0x18), *(u32 *)(block + 0x14));
+        }
+    }
+    level = OSDisableInterrupts();
+    *(s32 *)(block + 0xC) = 2;
+    result = __DVDPushWaitingQueue(2, block);
+    if (executing_803C7310 == NULL && PauseFlag_803C731C == 0) {
+        stateReady_800725A4();
+    }
+    OSRestoreInterrupts(level);
+    return result;
 }
 
 s32 DVDGetDriveStatus(void) {
@@ -11797,7 +11895,6 @@ void __GXUpdateBPMask(void) {
     u32 i;
     u32 tmap;
     u32 new_imask;
-    u32 *reg;
 
     new_imask = 0;
     for (i = 0; i < ((gx->genMode >> 16) & 7); i++) {
@@ -11817,9 +11914,8 @@ void __GXUpdateBPMask(void) {
         }
         new_imask |= 1 << tmap;
     }
-    reg = &gx->bpMask;
-    if ((u8)*reg != new_imask) {
-        *reg = (*reg & ~0xFF) | new_imask;
+    if ((u8)gx->bpMask != new_imask) {
+        gx->bpMask = (gx->bpMask & ~0xFF) | new_imask;
         GXWGPipe.u8 = 0x61;
         GXWGPipe.u32 = gx->bpMask;
         gx->bpSentNot = 0;
@@ -12356,6 +12452,33 @@ BOOL SIIsChanBusy(s32 chan) {
         rc = FALSE;
     }
     return rc;
+}
+
+BOOL SIRegisterPollingHandler(void *handler) {
+    extern void *RDSTHandler_80309880[4];
+    BOOL OSDisableInterrupts(void);
+    BOOL OSRestoreInterrupts(BOOL level);
+    BOOL SIEnablePollingInterrupt(BOOL enable);
+    BOOL enabled;
+    int i;
+
+    enabled = OSDisableInterrupts();
+    for (i = 0; i < 4; ++i) {
+        if (RDSTHandler_80309880[i] == handler) {
+            OSRestoreInterrupts(enabled);
+            return TRUE;
+        }
+    }
+    for (i = 0; i < 4; ++i) {
+        if (RDSTHandler_80309880[i] == 0) {
+            RDSTHandler_80309880[i] = handler;
+            SIEnablePollingInterrupt(TRUE);
+            OSRestoreInterrupts(enabled);
+            return TRUE;
+        }
+    }
+    OSRestoreInterrupts(enabled);
+    return FALSE;
 }
 
 void SISetCommand(s32 chan, u32 command) {
