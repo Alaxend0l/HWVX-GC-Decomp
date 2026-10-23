@@ -1543,6 +1543,39 @@ u32 AI_UpdateTimer(u32 *arg0) {
     return *arg0;
 }
 
+f32 AI_AngleToTarget(u8 *ai, Vector4 *target) {
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void ProjectVectorTangential(Vector4 *v, Vector4 *n, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    f32 PSVECDotProduct(void *a, void *b);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 Distance_Plane(void *arg0, void *arg1);
+    double acos(double x);
+    Vector4 dir;
+    Vector4 cross;
+    f32 dot;
+    f32 angle;
+
+    PSVECSubtract(target, (Vector4 *)(ai + 0x40), &dir);
+    ProjectVectorTangential(&dir, (Vector4 *)(ai + 0x20), &dir);
+    if (PSVECSquareMag(&dir) != 0.0f) {
+        PSVECNormalize(&dir, &dir);
+    }
+    dot = PSVECDotProduct(ai + 0x30, &dir);
+    if (dot > 1.0f) {
+        dot = 1.0f;
+    } else if (dot < -1.0f) {
+        dot = -1.0f;
+    }
+    angle = acos(dot);
+    PSVECCrossProduct((Vector4 *)(ai + 0x30), &dir, &cross);
+    if (Distance_Plane(ai + 0x20, &cross) < 0.0f) {
+        angle = -angle;
+    }
+    return angle;
+}
+
 s8 AI_CheckAngleInRange(f32 angle, f32 center, f32 range) {
     s8 inRange = 0;
     f32 diff;
