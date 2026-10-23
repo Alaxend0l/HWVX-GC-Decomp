@@ -2425,6 +2425,39 @@ s8 RayHitsTerrain(Vector4 *start, Vector4 *end, void *arg2, void *arg3) {
     return RayHitsTerrain_Aux3(start, &dir, arg2, arg3);
 }
 
+s8 OBoxHitsBSPZeroTimeEdgesOnly(void *obox, void *bsp, void *arg2);
+#pragma push
+#pragma use_lmw_stmw on
+s8 OBoxHitsCellZeroTimeEdgesOnly(void *obox, void *cell, void *arg2) {
+    s8 OBoxHitsPolyZeroTime(void *obox, void *poly, void *arg2);
+    s8 hit = 0;
+    u32 i;
+    u8 *poly;
+
+    M2C_FIELD(obox, f32 *, 0xB0) = 0.0f;
+    M2C_FIELD(obox, f32 *, 0xB4) = 0.0f;
+    M2C_FIELD(obox, f32 *, 0xB8) = 0.0f;
+    M2C_FIELD(obox, f32 *, 0xC0) = 0.0f;
+    M2C_FIELD(obox, f32 *, 0xC4) = 0.0f;
+    M2C_FIELD(obox, f32 *, 0xC8) = 0.0f;
+    if (M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u32 *, 0x58) == 1) {
+        hit = OBoxHitsBSPZeroTimeEdgesOnly(obox, cell, arg2);
+    } else {
+        for (i = 0; i < M2C_FIELD(cell, u32 *, 0x3C); i++) {
+            poly = M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u8 **, 0x4C) + M2C_FIELD(cell, u32 **, 0x38)[i] * 0x20;
+            if (M2C_FIELD(poly, u32 *, 0x18) != g_worldData.unk4) {
+                M2C_FIELD(poly, u32 *, 0x18) = g_worldData.unk4;
+                hit = OBoxHitsPolyZeroTime(obox, poly, arg2);
+                if (hit) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return hit;
+}
+#pragma pop
+
 #pragma push
 #pragma use_lmw_stmw on
 s8 OBoxHitsBSPZeroTimeEdgesOnly(void *obox, void *bsp, void *arg2) {
@@ -11018,6 +11051,31 @@ void SIControlSteering(s32 chan, u32 control, s32 level) {
         SITransferCommands();
     }
     OSRestoreInterrupts(enabled);
+}
+
+s32 EXIDma(s32 chan, void *buf, s32 len, u32 type, void *callback) {
+    extern u8 Ecb_80309980[3][0x40];
+    u32 __OSUnmaskInterrupts(u32 mask);
+    s32 EXIClearInterrupts(s32 chan, s32 exi, s32 tc, s32 ext);
+    u8 *exi = Ecb_80309980[chan];
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    if ((*(u32 *)(exi + 0xC) & 3) || !(*(u32 *)(exi + 0xC) & 4)) {
+        OSRestoreInterrupts(enabled);
+        return 0;
+    }
+    *(void **)(exi + 0x4) = callback;
+    if (*(void **)(exi + 0x4)) {
+        EXIClearInterrupts(chan, 0, 1, 0);
+        __OSUnmaskInterrupts(0x200000U >> (chan * 3));
+    }
+    *(u32 *)(exi + 0xC) |= 1;
+    ((volatile u32 *)0xCC006800)[chan * 5 + 1] = (u32)buf & 0x3FFFFE0;
+    ((volatile u32 *)0xCC006800)[chan * 5 + 2] = len;
+    ((volatile u32 *)0xCC006800)[chan * 5 + 3] = (type << 2) | 3;
+    OSRestoreInterrupts(enabled);
+    return 1;
 }
 
 s32 EXIClearInterrupts(s32 chan, s32 exi, s32 tc, s32 ext) {
