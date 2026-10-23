@@ -7728,31 +7728,26 @@ void ShaderHolder_Heartbeat(void) {
     void ExtractColorKey(void *keys, void *out, f32 time);
     void ExtractPointKey(void *keys, void *out, f32 time);
     u16 MovieManager_GetTextureIndex(void);
-    u8 *shader;
-    u8 *gx;
-    u8 *mtx;
     u32 i;
     f32 dt;
 
     dt = g_fDeltaTimeMS;
     for (i = 0; i < g_pShaderHolder->numShaders; i++) {
-        shader = g_pShaderHolder->shaders[i];
-        if (shader[0x60] != 0) {
-            ExtractColorKey(*(u8 **)(shader + 0x5C) + 4, shader + 0x24, dt);
+        if (((u8 *)g_pShaderHolder->shaders[i])[0x60] != 0) {
+            ExtractColorKey(*(u8 **)((u8 *)g_pShaderHolder->shaders[i] + 0x5C) + 4, g_pShaderHolder->shaders[i], dt);
         }
-        shader = g_pShaderHolder->shaders[i];
-        if (shader[0x62] != 0) {
-            ExtractPointKey(*(u8 **)(shader + 0x5C) + 0xC, shader + 0x40, dt);
+        if (((u8 *)g_pShaderHolder->shaders[i])[0x62] != 0) {
+            ExtractPointKey(*(u8 **)((u8 *)g_pShaderHolder->shaders[i] + 0x5C) + 0xC, (u8 *)g_pShaderHolder->shaders[i] + 0x40, dt);
         }
-        shader = g_pShaderHolder->shaders[i];
-        if (shader[0x61] != 0) {
-            ExtractTextureKey(*(TextureKeyAnim **)(*(u8 **)(shader + 0x5C) + 0x14), (TextureKeyState *)(shader + 0x30), dt);
+        if (((u8 *)g_pShaderHolder->shaders[i])[0x61] != 0) {
+            ExtractTextureKey(*(TextureKeyAnim **)(*(u8 **)((u8 *)g_pShaderHolder->shaders[i] + 0x5C) + 0x14), (TextureKeyState *)((u8 *)g_pShaderHolder->shaders[i] + 0x30), dt);
         }
     }
     for (i = 0; i < g_pShaderHolder->numGX; i++) {
-        shader = g_pShaderHolder->gx[i].shader;
-        gx = g_pShaderHolder->gx[i].gx;
-        mtx = *(u8 **)(gx + 0xC);
+        u8 *shader = g_pShaderHolder->gx[i].shader;
+        u8 *gx = g_pShaderHolder->gx[i].gx;
+        u8 *mtx = *(u8 **)(gx + 0xC);
+
         if (**(u8 **)(shader + 0x5C) != 0) {
             *(u16 *)(gx + 0x18) = MovieManager_GetTextureIndex();
         }
