@@ -1162,7 +1162,7 @@ typedef struct Texture {
     u16 unk38;
     u16 unk3A;
     u16 view;
-    s16 wrapMode;
+    u16 wrapMode;
 } Texture;
 
 typedef struct FontChar {
@@ -6234,6 +6234,71 @@ void MovieManager_Destroy(void) {
 s32 MovieManager_GetTextureIndex(void) {
     return 0;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void Render_CreateTextureSlot(u32 id) {
+    void *GXGetTexObjData(void *obj);
+    void GXInitTexObj(void *obj, void *image, u16 width, u16 height, s32 format, s32 wrapS, s32 wrapT, u8 mipmap);
+    void GXInitTexObjLOD(void *obj, s32 min_filt, s32 mag_filt, f32 min_lod, f32 max_lod, f32 lod_bias, u8 bias_clamp, u8 do_edge_lod, s32 max_aniso);
+    void DCFlushRange(void *addr, u32 len);
+    extern u8 *m_texture;
+    extern u8 m_gxTexObjArray_80322F30[][0x20];
+    Texture *texs;
+    void *data;
+    s32 format;
+    s32 wrap;
+    void *obj;
+    Texture *tex;
+    u8 mipmap;
+
+    wrap = (u16)((Texture *)m_texture)[id].wrapMode == 0;
+    obj = m_gxTexObjArray_80322F30[id];
+    if (GXGetTexObjData(obj) != NULL) {
+        texs = (Texture *)m_texture;
+        switch (texs[id].unk38) {
+        case 0:
+        case 2:
+            break;
+        case 1:
+            format = 6;
+            break;
+        case 4:
+            format = 0xE;
+            break;
+        }
+        mipmap = texs[id].height > 1;
+        GXInitTexObj(obj, GXGetTexObjData(obj), texs[id].unk30, texs[id].width, format, wrap, wrap, mipmap);
+        return;
+    }
+    tex = &((Texture *)m_texture)[id];
+    switch (tex->unk38) {
+    case 0:
+    case 2:
+        break;
+    case 1:
+        DCFlushRange(tex->data, tex->unk30 * (tex->width * 4));
+        format = 6;
+        tex = &((Texture *)m_texture)[id];
+        data = tex->data;
+        tex->height = 0;
+        break;
+    case 4:
+        DCFlushRange(tex->data, tex->unk30 * tex->width);
+        format = 0xE;
+        data = ((Texture *)m_texture)[id].data;
+        break;
+    }
+    tex = &((Texture *)m_texture)[id];
+    if (tex->unk30 > 0x200 || tex->width > 0x200) {
+        return;
+    }
+    GXInitTexObj(obj, data, tex->unk30, tex->width, format, wrap, wrap, tex->height > 1);
+    if (((Texture *)m_texture)[id].height > 1) {
+        GXInitTexObjLOD(obj, 5, 1, 0.0f, (s32)(((Texture *)m_texture)[id].height - 1) / 1.15f, -1.0f, 1, 1, 0);
+    }
+}
+#pragma pop
 
 void Render_DestroyTextureSlot(u32 id) {
     void GXInitTexObj(void *obj, void *image, u16 width, u16 height, s32 format, s32 wrapS, s32 wrapT, u8 mipmap);
