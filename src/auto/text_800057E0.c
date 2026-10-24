@@ -10168,6 +10168,98 @@ void LineManager_Init(void) {
     }
 }
 
+void LineManager_Add(void *arg, Vector4 *start, Vector4 *dir, Vector4 *colour) {
+    typedef struct LineDef {
+        u8 unk0;
+        u8 unk1;
+        u8 unk2;
+        u8 pad3;
+        f32 base;
+        f32 range;
+        u8 keys[4];
+    } LineDef;
+    typedef struct LineInfo {
+        u8 pad0[4];
+        LineDef *data;
+        s32 life;
+        s32 lifeRange;
+    } LineInfo;
+    typedef struct Line {
+        Vector4 start;
+        Vector4 end;
+        Vector4 origDir;
+        Vector4 dir;
+        Vector4 colour;
+        LineInfo *info;
+        u8 unk54[0x80 - 0x54];
+        u8 unk80;
+        u8 unk81[0xB0 - 0x81];
+        u8 unkB0;
+        u8 unkB1[3];
+        f32 length;
+        u8 unkB8[0xC4 - 0xB8];
+        u8 unkC4;
+        u8 unkC5[0xD4 - 0xC5];
+        f32 life;
+        f32 scale;
+        f32 rate;
+        u8 unkE0;
+        u8 unkE1;
+        u8 unkE2;
+        u8 unkE3[0xF0 - 0xE3];
+    } Line;
+    extern Line g_lineManager[128];
+    s32 RandomAdd_s32(s32 base, s32 range);
+    f32 RandomAdd(f32 base, f32 range);
+    void ExtractF32Key(void *keys, void *out, f32 time);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
+    void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *dst);
+    LineInfo *info = arg;
+    u32 i;
+    LineDef *data;
+
+    for (i = 0; i < 128; i++) {
+        if (g_lineManager[i].info == NULL) {
+            data = info->data;
+            g_lineManager[i].life = RandomAdd_s32(info->life, info->lifeRange);
+            g_lineManager[i].rate = 1.0f;
+            if (info->life && info->lifeRange) {
+                g_lineManager[i].rate = 1.0f / (g_lineManager[i].life / info->life);
+            }
+            g_lineManager[i].start = *start;
+            g_lineManager[i].origDir = *dir;
+            g_lineManager[i].dir = *dir;
+            if (PSVECSquareMag(&g_lineManager[i].dir)) {
+                PSVECNormalize(&g_lineManager[i].dir, &g_lineManager[i].dir);
+            }
+            g_lineManager[i].colour = *colour;
+            g_lineManager[i].info = info;
+            g_lineManager[i].unkE0 = data->unk0;
+            g_lineManager[i].unk80 = 1;
+            g_lineManager[i].unkB0 = 1;
+            g_lineManager[i].unkC4 = 1;
+            g_lineManager[i].unkE2 = 0;
+            g_lineManager[i].unkE1 = 0;
+            g_lineManager[i].scale = RandomAdd(data->base, data->range);
+            if (*(u32 *)data->keys > 1) {
+                g_lineManager[i].unkE1 = 1;
+                g_lineManager[i].unkE2 = 1;
+            } else {
+                ExtractF32Key(data->keys, &g_lineManager[i].length, 0.0f);
+                g_lineManager[i].length *= g_lineManager[i].scale;
+                PSVECScale(&g_lineManager[i].dir, &g_lineManager[i].end, g_lineManager[i].length);
+                PSVECAdd(&g_lineManager[i].start, &g_lineManager[i].end, &g_lineManager[i].end);
+            }
+            if (data->unk2 != 0 || data->unk1 != 0) {
+                g_lineManager[i].unkE2 = 1;
+            }
+            return;
+        }
+    }
+}
+
 void LineManager_Render(void) {
     typedef struct LinePoints {
         u32 data[8];
@@ -27760,6 +27852,51 @@ block_4:
     }
 }
 
+s32 VerifyID(CARDControl *card) {
+    typedef struct CARDID {
+        u8 serial[32];
+        u16 deviceID;
+        u16 size;
+        u16 encode;
+        u8 padding[0x1FC - 0x26];
+        u16 checkSum;
+        u16 checkSumInv;
+    } CARDID;
+    u16 OSGetFontEncode(void);
+    OSSramEx *__OSLockSramEx(void);
+    s32 __OSUnlockSramEx(s32 commit);
+    CARDID *id;
+    u16 checksum;
+    u16 checksumInv;
+    OSSramEx *sramEx;
+    s64 rand;
+    s32 i;
+
+    id = card->workArea;
+    if (id->deviceID != 0 || id->size != card->size) {
+        return -6;
+    }
+    __CARDCheckSum((u16 *)id, sizeof(CARDID) - sizeof(u32), &checksum, &checksumInv);
+    if (id->checkSum != checksum || id->checkSumInv != checksumInv) {
+        return -6;
+    }
+    if (id->encode != OSGetFontEncode()) {
+        return -13;
+    }
+    rand = *(s64 *)&id->serial[12];
+    sramEx = __OSLockSramEx();
+    for (i = 0; i < 12; i++) {
+        rand = (rand * 1103515245 + 12345) >> 16;
+        if (id->serial[i] != (u8)(sramEx->flashID[card - __CARDBlock][i] + rand)) {
+            __OSUnlockSramEx(0);
+            return -6;
+        }
+        rand = ((rand * 1103515245 + 12345) >> 16) & 0x7FFF;
+    }
+    __OSUnlockSramEx(0);
+    return 0;
+}
+
 s32 VerifyDir(CARDControl *card, s32 *outCurrent) {
     void *memcpy(void *dst, const void *src, u32 n);
     u8 *dir[2];
@@ -27793,6 +27930,61 @@ s32 VerifyDir(CARDControl *card, s32 *outCurrent) {
             memcpy(dir[current], dir[current ^ 1], 0x2000);
         } else {
             current = (card->currentDir == dir[0]) ? 0 : 1;
+        }
+    }
+    if (outCurrent) {
+        *outCurrent = current;
+    }
+    return errors;
+}
+
+s32 VerifyFAT(CARDControl *card, s32 *outCurrent) {
+    void *memcpy(void *dst, const void *src, u32 n);
+    u16 *fat[2];
+    u16 *fatp;
+    u16 nBlock;
+    u16 cFree;
+    s32 i;
+    u16 checkSum;
+    u16 checkSumInv;
+    s32 errors;
+    s32 current;
+
+    errors = 0;
+    current = 0;
+    for (i = 0; i < 2; i++) {
+        fatp = fat[i] = (u16 *)((u8 *)card->workArea + (3 + i) * 0x2000);
+        __CARDCheckSum(&fatp[2], 0x2000 - sizeof(u32), &checkSum, &checkSumInv);
+        if (fatp[0] != checkSum || fatp[1] != checkSumInv) {
+            *(void **)((u8 *)card + 0x88) = NULL;
+            current = i;
+            errors++;
+            continue;
+        }
+        cFree = 0;
+        for (nBlock = 5; nBlock < card->cBlock; nBlock++) {
+            if (fatp[nBlock] == 0) {
+                cFree++;
+            }
+        }
+        if (cFree != fatp[3]) {
+            *(void **)((u8 *)card + 0x88) = NULL;
+            current = i;
+            errors++;
+            continue;
+        }
+    }
+    if (errors == 0) {
+        if (*(void **)((u8 *)card + 0x88) == NULL) {
+            if (((s16)fat[0][2] - (s16)fat[1][2]) < 0) {
+                current = 0;
+            } else {
+                current = 1;
+            }
+            *(void **)((u8 *)card + 0x88) = fat[current];
+            memcpy(fat[current], fat[current ^ 1], 0x2000);
+        } else {
+            current = (*(void **)((u8 *)card + 0x88) == fat[0]) ? 0 : 1;
         }
     }
     if (outCurrent) {
