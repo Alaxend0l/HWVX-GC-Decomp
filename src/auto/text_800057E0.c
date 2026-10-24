@@ -2716,6 +2716,7 @@ void AI_Car_Heartbeat(u8 *ai) {
         }
     }
 }
+#pragma dont_inline on
 
 void MotionState_Init(void *arg0, s8 reset) {
     typedef struct {
