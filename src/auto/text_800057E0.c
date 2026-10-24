@@ -14988,8 +14988,8 @@ static inline PathNode *NavHolder_PopLowestOpen(void) {
     extern PathNode *gs_pOpenListHead_803C7008;
     PathNode *head = gs_pOpenListHead_803C7008;
     PathNode *prev = NULL;
-    PathNode *best;
     PathNode *p;
+    PathNode *best;
     f32 bestF;
 
     if (head == NULL) {
