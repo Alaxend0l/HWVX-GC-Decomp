@@ -2579,6 +2579,7 @@ void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed) {
         ai[0x15] = reverse;
     }
 }
+#pragma pop
 
 static inline void AI_Car_LeadTarget(u8 *ai) {
     f32 PSVECSquareMag(void *v);
