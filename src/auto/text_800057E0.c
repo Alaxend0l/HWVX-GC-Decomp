@@ -2300,25 +2300,24 @@ s32 AI_Car_CheckLocalStats(u8 *ai, u8 *node) {
 #pragma push
 #pragma use_lmw_stmw on
 s8 AI_Car_EnterState(u8 *ai, u8 *branch, s32 slot) {
-    typedef struct { u32 time; } AITimer;
-    typedef struct { u8 *info; AITimer timer0; u32 timer1; u32 timer2; u8 pad10[4]; u8 count; } AIBranch;
+    typedef struct { u8 *info; u32 timer0; u32 timer1; u32 timer2; u8 pad10[4]; u8 count; } AIBranch;
     extern Vector4 g_zeroVector;
-    u32 AI_UpdateTimer(AITimer *timer);
+    u32 AI_UpdateTimer(u32 *timer);
     s8 AI_Car_DetermineTarget(u8 *ai, u8 *branch, s32 slot);
     void *ThingManager_DARYL_CreateThing(s32 type, void *params);
     s32 RandomAdd_s32(s32 base, s32 range);
     struct { Vector4 a; Vector4 b; Vector4 c; Vector4 zero; u32 id; u8 *player; f32 f0; f32 f1; } p;
-    s8 done;
     u32 id;
     u8 *car;
     u8 i;
+    s8 done;
 
     done = 0;
     if (branch == ((u8 **)(ai + 0x3D4))[(u8)slot]) {
-        if (((AIBranch *)branch)->timer0.time != 0) {
-            AI_UpdateTimer(&((AIBranch *)branch)->timer0);
+        if (*(u32 *)(branch + 4) != 0) {
+            AI_UpdateTimer((u32 *)((u32)branch + 4));
         }
-        if (((AIBranch *)branch)->timer0.time == 0 && (*(u32 *)(((AIBranch *)branch)->info + 0x48) != 0 || *(u32 *)(((AIBranch *)branch)->info + 0x4C) != 0)) {
+        if (*(u32 *)(branch + 4) == 0 && (*(u32 *)(((AIBranch *)branch)->info + 0x48) != 0 || *(u32 *)(((AIBranch *)branch)->info + 0x4C) != 0)) {
             done = 1;
         } else if (!(s8)AI_Car_CheckLocalStats(ai, ((AIBranch *)branch)->info)) {
             done = 1;
@@ -2356,7 +2355,7 @@ s8 AI_Car_EnterState(u8 *ai, u8 *branch, s32 slot) {
             p.zero = g_zeroVector;
             ThingManager_DARYL_CreateThing(1, &p);
         }
-        ((AIBranch *)branch)->timer0.time = RandomAdd_s32(*(s32 *)(((AIBranch *)branch)->info + 0x38), *(s32 *)(((AIBranch *)branch)->info + 0x3C));
+        ((AIBranch *)branch)->timer0 = RandomAdd_s32(*(s32 *)(((AIBranch *)branch)->info + 0x38), *(s32 *)(((AIBranch *)branch)->info + 0x3C));
         done = 1;
     }
     if (done) {
