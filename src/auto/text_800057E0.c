@@ -7287,10 +7287,23 @@ void ExtractTextureKey(TextureKeyAnim *anim, TextureKeyState *state, f32 dt) {
 }
 #pragma pop
 
+typedef struct StreamingDataPack {
+    s8 used;
+    u8 unk1;
+    u8 unk2;
+    char *name;
+    u32 id;
+    u32 refs;
+    u8 unk10;
+    u8 pad11[0x4C - 0x11];
+    void *data;
+    u8 pad50[0xA8 - 0x50];
+} StreamingDataPack;
+
 #pragma push
 #pragma use_lmw_stmw on
 void FileStreaming_Initialize(void) {
-    extern u8 *g_StreamingDataPacks[11];
+    extern StreamingDataPack *g_StreamingDataPacks[11];
     extern u32 g_MaxStreamingDataPacks[11];
     extern s32 g_numQuadPacksInMemory;
     extern s32 g_numQuadPacksToLoad;
@@ -7503,7 +7516,7 @@ s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded) {
         void *data;
         u8 pad50[0xA8 - 0x50];
     } DataPack;
-    extern u8 *g_StreamingDataPacks[11];
+    extern DataPack *g_StreamingDataPacks[11];
     extern u32 g_MaxStreamingDataPacks[11];
     extern s8 g_bLoadingThreadRunning;
     extern s8 g_bLoadDataPack;
@@ -7514,7 +7527,7 @@ s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded) {
     void FileStreaming_LoadingThread(void);
     s32 RunThread(void *func, s32 priority);
     u32 i;
-    s32 slot;
+    u32 slot;
 
     slot = -1;
     if (type >= 11 || (g_bLoadingThreadRunning && threaded)) {
@@ -7524,35 +7537,35 @@ s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded) {
         FileStreaming_Initialize();
     }
     for (i = 0; i < g_MaxStreamingDataPacks[type]; i++) {
-        if (((DataPack *)g_StreamingDataPacks[type])[i].used && id == ((DataPack *)g_StreamingDataPacks[type])[i].id
-            && strcmp(name, ((DataPack *)g_StreamingDataPacks[type])[i].name) == 0
-            && ((DataPack *)g_StreamingDataPacks[type])[i].refs != 0) {
-            if (((DataPack *)g_StreamingDataPacks[type])[i].data == NULL) {
-                ((DataPack *)g_StreamingDataPacks[type])[i].used = 0;
-                ((DataPack *)g_StreamingDataPacks[type])[i].refs = 0;
-                ((DataPack *)g_StreamingDataPacks[type])[i].unk1 = 0;
-                ((DataPack *)g_StreamingDataPacks[type])[i].unk2 = 0;
+        if (g_StreamingDataPacks[type][i].used && id == g_StreamingDataPacks[type][i].id
+            && strcmp(name, g_StreamingDataPacks[type][i].name) == 0
+            && g_StreamingDataPacks[type][i].refs != 0) {
+            if (g_StreamingDataPacks[type][i].data == NULL) {
+                g_StreamingDataPacks[type][i].used = 0;
+                g_StreamingDataPacks[type][i].refs = 0;
+                g_StreamingDataPacks[type][i].unk1 = 0;
+                g_StreamingDataPacks[type][i].unk2 = 0;
             } else {
-                ((DataPack *)g_StreamingDataPacks[type])[i].refs++;
+                (g_StreamingDataPacks[type] + i)->refs++;
                 return i;
             }
         }
-        if (slot == -1 && !((DataPack *)g_StreamingDataPacks[type])[i].used) {
+        if (slot == -1 && !g_StreamingDataPacks[type][i].used) {
             slot = i;
         }
     }
     if (slot == -1) {
         return -1;
     }
-    ((DataPack *)g_StreamingDataPacks[type])[slot].used = 1;
-    ((DataPack *)g_StreamingDataPacks[type])[slot].unk1 = 0;
-    ((DataPack *)g_StreamingDataPacks[type])[slot].unk2 = 0;
-    ((DataPack *)g_StreamingDataPacks[type])[slot].name = name;
-    ((DataPack *)g_StreamingDataPacks[type])[slot].id = id;
-    ((DataPack *)g_StreamingDataPacks[type])[slot].refs = 1;
-    ((DataPack *)g_StreamingDataPacks[type])[slot].unk10 = 0;
+    g_StreamingDataPacks[type][slot].used = 1;
+    (g_StreamingDataPacks[type] + slot)->unk1 = 0;
+    (g_StreamingDataPacks[type] + slot)->unk2 = 0;
+    (g_StreamingDataPacks[type] + slot)->name = name;
+    (g_StreamingDataPacks[type] + slot)->id = id;
+    (g_StreamingDataPacks[type] + slot)->refs = 1;
+    (g_StreamingDataPacks[type] + slot)->unk10 = 0;
     g_dataPackToLoadType = type;
-    g_pDataPackToLoad = &((DataPack *)g_StreamingDataPacks[type])[slot];
+    g_pDataPackToLoad = g_StreamingDataPacks[type] + slot;
     if (threaded) {
         while (g_bLoadingThreadRunning) {
         }
