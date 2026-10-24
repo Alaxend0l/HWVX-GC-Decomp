@@ -23214,12 +23214,77 @@ done:
     Scb_802EEE20.offset = 0x40;
 }
 
+#pragma use_lmw_stmw reset
 OSSram *__OSLockSram(void) {
     return LockSram(0);
 }
 
 OSSramEx *__OSLockSramEx(void) {
     return LockSram(0x14);
+}
+
+s32 UnlockSram(s32 commit, u32 offset) {
+    s32 EXILock(s32 chan, u32 dev, void *unlockedCallback);
+    s32 EXIUnlock(s32 chan);
+    s32 EXISelect(s32 chan, u32 dev, u32 freq);
+    s32 EXIDeselect(s32 chan);
+    s32 EXIImm(s32 chan, void *buf, s32 len, u32 type, void *callback);
+    s32 EXIImmEx(s32 chan, void *buf, s32 len, u32 mode);
+    s32 EXISync(s32 chan);
+    void WriteSramCallback(void);
+    u16 *p;
+
+    if (commit) {
+        if (offset == 0) {
+            OSSram *sram = (OSSram *)Scb_802EEE20.sram;
+
+            if (2u < (sram->flags & 3)) {
+                sram->flags &= ~3;
+            }
+            sram->checkSum = sram->checkSumInv = 0;
+            for (p = (u16 *)&sram->counterBias; p < (u16 *)(Scb_802EEE20.sram + sizeof(OSSram)); p++) {
+                sram->checkSum += *p;
+                sram->checkSumInv += ~*p;
+            }
+        }
+        if (offset < Scb_802EEE20.offset) {
+            Scb_802EEE20.offset = offset;
+        }
+        {
+            void *buffer = Scb_802EEE20.sram + Scb_802EEE20.offset;
+            u32 off = Scb_802EEE20.offset;
+            u32 size = 0x40 - Scb_802EEE20.offset;
+            BOOL err;
+            u32 cmd;
+
+            if (!EXILock(0, 1, WriteSramCallback)) {
+                err = FALSE;
+                goto done;
+            }
+            if (!EXISelect(0, 1, 3)) {
+                EXIUnlock(0);
+                err = FALSE;
+                goto done;
+            }
+            off <<= 6;
+            cmd = 0x20000000 | 0x80000000 | 0x100 + off;
+            err = FALSE;
+            err |= !EXIImm(0, &cmd, 4, 1, NULL);
+            err |= !EXISync(0);
+            err |= !EXIImmEx(0, buffer, (s32)size, 1);
+            err |= !EXIDeselect(0);
+            EXIUnlock(0);
+            err = !err;
+        done:
+            Scb_802EEE20.sync = err;
+        }
+        if (Scb_802EEE20.sync) {
+            Scb_802EEE20.offset = 0x40;
+        }
+    }
+    Scb_802EEE20.locked = FALSE;
+    OSRestoreInterrupts(Scb_802EEE20.enabled);
+    return Scb_802EEE20.sync;
 }
 
 s32 __OSUnlockSram(s32 commit) {
