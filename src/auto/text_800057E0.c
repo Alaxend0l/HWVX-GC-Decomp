@@ -10120,22 +10120,50 @@ typedef struct DataPack {
     u32 numGX;
     u16 *shaderIDs;
     u32 *gxList;
-    u8 pad28[0x4];
+    u32 dataSize;
     u32 numTextures;
     u16 *textureIDs;
     u32 numSounds;
     u16 *soundIDs;
     void *soundData;
-    u8 pad40[0x4];
+    u8 *soundBase;
     u32 textureData;
-    u8 pad48[0x4];
+    u8 *sfxData;
     void *paletteData;
     struct DataPackShader *shaders;
     u32 numTriggers;
     u8 *triggers;
-    u8 pad5C[0xC];
+    void *song;
+    void *songBank;
+    s8 songLoaded;
+    u8 pad65[3];
     DataPackRef refs[2];
+    u32 soundDataSize;
 } DataPack;
+
+typedef struct DataPackFileHeader {
+    u32 dataSize;
+    u32 soundDataSize;
+    u32 numSoundPointers;
+    u32 numPointers;
+    u32 numRelocs;
+    u32 numTextures;
+    u32 textureDataOffset;
+    u32 numSoundRelocs;
+    u32 numSounds;
+    u32 sfxOffset;
+    u32 palettes;
+    u32 paletteOffset;
+    u32 numShaders;
+    u32 numGX;
+    u32 numTexRelocs;
+    u32 shaderOffset;
+    u32 numTriggers;
+    u32 triggerOffset;
+    u32 songOffset;
+    u32 songBankOffset;
+    DataPackRef refs[2];
+} DataPackFileHeader;
 
 typedef struct QuadPackHeader {
     u32 valid;
