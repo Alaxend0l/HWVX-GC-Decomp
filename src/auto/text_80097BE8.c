@@ -979,6 +979,42 @@ static inline void SimThread_SetWeights(SimThread *t, const s32 *weights) {
     t->historyIdx = 0;
 }
 
+static inline s32 SimThread_AddDelta(SimThread *t, s32 dPos, u32 dt) {
+    s32 i;
+    s32 n;
+    s32 sumP;
+    u32 sumT;
+
+    t->deltaIdx--;
+    if (t->deltaIdx < 0) {
+        t->deltaIdx = 15;
+    }
+    t->deltaPos[t->deltaIdx] = dPos;
+    t->deltaTime[t->deltaIdx] = dt;
+    i = t->deltaIdx;
+    for (n = 0, sumT = 0, sumP = 0; n < 16 && sumT < 16; n++) {
+        sumP += t->deltaPos[i];
+        sumT += t->deltaTime[i];
+        if (++i == 16) {
+            i = 0;
+        }
+    }
+    if (sumT > 16) {
+        s32 over;
+        s32 half;
+        if (--i < 0) {
+            i = 15;
+        }
+        over = sumT - 16;
+        half = t->deltaTime[i] / 2;
+        if (over < 0) {
+            half = -half;
+        }
+        sumP -= (over * t->deltaPos[i] + half) / t->deltaTime[i];
+    }
+    return sumP;
+}
+
 void VDevice_RecalcGammaTable(void);
 extern s8 g_iGammaLookup_8037BAF8[129];
 s32 VDevice_Shutdown(VDevice *dev);
@@ -16153,6 +16189,117 @@ void SimThread_Init(VDevice *dev, VDevice *owner) {
         ia[i] = 4096.0f * a[i];
     }
     SimThread_SetWeights(t, ia);
+}
+
+s32 SimThread_Step(VDevice *dev) {
+    u32 OSGetTick(void);
+    s32 SIControlSteering(s32 chan, s32 cmd, s32 force);
+    SimThread *t = &dev->sim;
+    s32 sumA = 0;
+    s32 sumB = 0;
+    u32 now;
+    u32 dt;
+    s32 oldPos;
+    s32 i;
+    s32 n;
+    s32 sumP;
+    u32 sumT;
+    s32 accel;
+    u32 k;
+    Effect *e;
+    s32 f;
+    s32 flag;
+    s32 gain;
+    s32 force;
+
+    now = OSGetTick() / ((*(u32 *)0x800000F8 / 4) / 1000);
+    dt = now - t->lastTick;
+    t->lastTick = now;
+    oldPos = t->pos;
+    t->pos = ((LGDevice *)t->owner->unkF0)->curSteering;
+    t->posScaled = t->pos << 12;
+    t->deltaIdx--;
+    if (t->deltaIdx < 0) {
+        t->deltaIdx = 15;
+    }
+    t->deltaPos[t->deltaIdx] = t->pos - oldPos;
+    t->deltaTime[t->deltaIdx] = dt;
+    i = t->deltaIdx;
+    for (n = 0, sumT = 0, sumP = 0; n < 16 && sumT < 16; n++) {
+        sumP += t->deltaPos[i];
+        sumT += t->deltaTime[i];
+        if (++i == 16) {
+            i = 0;
+        }
+    }
+    if (sumT > 16) {
+        s32 over;
+        s32 half;
+        if (--i < 0) {
+            i = 15;
+        }
+        over = sumT - 16;
+        half = t->deltaTime[i] / 2;
+        if (over < 0) {
+            half = -half;
+        }
+        sumP -= (over * t->deltaPos[i] + half) / t->deltaTime[i];
+    }
+    t->history[t->historyIdx++] = sumP;
+    if (t->historyIdx > 9) {
+        t->historyIdx = 0;
+    }
+    accel = 0;
+    for (n = 0; n < 10; n++) {
+        accel += t->history[t->historyIdx++] * t->weights[9 - n];
+        if (t->historyIdx > 9) {
+            t->historyIdx = 0;
+        }
+    }
+    t->accel = accel;
+    for (k = 0; k < 64; k++) {
+        e = t->owner->activeEffects[k];
+        if (e != NULL && (e->flags & 1)) {
+            Effect_Update(e, dt);
+            if ((e->flags & 1) && e->delay == 0) {
+                f = e->force < -127 ? -127 : e->force;
+                f = f > 127 ? 127 : f;
+                flag = e->flags & 4;
+            } else {
+                f = 0;
+                flag = 0;
+            }
+            if (flag) {
+                sumA += f;
+            } else {
+                sumB += f;
+            }
+        }
+    }
+    gain = t->owner->unk11F4;
+    f = sumA > 128 ? 128 : sumA;
+    f = f < -128 ? -128 : f;
+    if (f < 0) {
+        f = -(u8)g_iGammaLookup_8037BAF8[-f];
+    } else {
+        f = (u8)g_iGammaLookup_8037BAF8[f];
+    }
+    if (gain < 255) {
+        f = (f * gain + (f < 0 ? -127 : 127)) / 255;
+        sumB = (sumB * gain + (sumB < 0 ? -127 : 127)) / 255;
+    }
+    force = f + sumB;
+    force = force > 128 ? 128 : force;
+    force = force < -128 ? -128 : force;
+    if (t->lastForce != force) {
+        t->lastForce = force;
+        if (force == 0) {
+            SIControlSteering(*(s32 *)t->owner->unkF0, 0x400, 0);
+        } else {
+            SIControlSteering(*(s32 *)t->owner->unkF0, 0x600, force);
+        }
+    }
+    return force;
 }
 
 #pragma pop
