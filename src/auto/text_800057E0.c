@@ -7678,23 +7678,23 @@ void FileStreaming_HeartBeat(void) {
 }
 
 void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh) {
-    extern u8 *g_StreamingDataPacks[11];
+    extern StreamingDataPack *g_StreamingDataPacks[11];
     extern u32 g_MaxStreamingDataPacks[11];
     void DataPack_RefreshPtrs(void *pack);
-    u8 *pack;
+    StreamingDataPack *pack;
 
     if (type >= 11 || index >= g_MaxStreamingDataPacks[type]) {
         return NULL;
     }
-    pack = g_StreamingDataPacks[type] + index * 0xA8;
-    if ((s8)pack[0] == 0 || (s8)pack[1] == 0) {
+    pack = g_StreamingDataPacks[type] + index;
+    if (pack->used == 0 || (s8)pack->unk1 == 0) {
         return NULL;
     }
-    if ((s8)pack[2] == 0 && refresh) {
-        DataPack_RefreshPtrs(pack + 0x14);
+    if ((s8)pack->unk2 == 0 && refresh) {
+        DataPack_RefreshPtrs(&pack->start);
     }
-    g_StreamingDataPacks[type][index * 0xA8 + 2] = 1;
-    return g_StreamingDataPacks[type] + index * 0xA8 + 0x14;
+    g_StreamingDataPacks[type][index].unk2 = 1;
+    return &g_StreamingDataPacks[type][index].start;
 }
 
 #pragma pop
