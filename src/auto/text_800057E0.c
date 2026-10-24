@@ -30820,6 +30820,179 @@ void CarA_StuntImpulse(u8 *car, Vector4 *linImpulse, Vector4 *angImpulse) {
     }
 }
 
+static inline s8 CarA_StuntsCanStunt(u8 *car, s32 minTime) {
+    s8 Player_IsHuman(void *player);
+    u8 *player;
+
+    if (*(u8 **)(car + 0x94) == NULL || !Player_IsHuman(*(u8 **)(car + 0x94))) {
+        return 0;
+    }
+    player = *(u8 **)(car + 0x94);
+    if (player[0x10] == 0 && player[0x1A] == 0 && (s8)player[0] > -64 && (s8)player[0] < 64 &&
+        (s8)player[1] > -64 && (s8)player[1] < 64) {
+        return 0;
+    }
+    if (*(s32 *)(car + 0x460) > minTime && *(s32 *)(car + 0x404) > minTime &&
+        !(*(u32 *)(car + 0x48C) & 0x40002)) {
+        return 1;
+    }
+    return 0;
+}
+
+#pragma readonly_strings on
+s32 CarA_StuntsGetNewOrientation(u8 *car, Quaternion *outQ, f32 t) {
+    typedef struct StuntParams {
+        f32 pitchRate;
+        f32 rollRate;
+        f32 spinRate;
+        f32 maxTime;
+        u8 pad10[8];
+        f32 pitchScore;
+        f32 rollScore;
+        u8 pad20[8];
+        s32 minTime;
+        f32 scoreMax;
+        u8 pad30[0x24];
+        f32 spinScore;
+    } StuntParams;
+    extern f32 g_fDeltaTimeSec;
+    s8 Player_IsHuman(void *player);
+    f32 MagnitudeVector(Vector4 *v);
+    void GenerateQuaternion(Vector4 *axis, Quaternion *q, f32 angle);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    int sprintf(char *buf, const char *fmt, ...);
+    Vector4 accum = {0.0f, 0.0f, 0.0f, 0.0f};
+    Quaternion q;
+    Quaternion newQ;
+    f32 rates[3] = {0.0f, 0.0f, 0.0f};
+    Vector4 axis;
+    Vector4 scaled;
+    Vector4 local;
+    StuntParams *params;
+    u8 *player;
+    f32 frac;
+    f32 sign;
+    f32 spin;
+    f32 roll;
+    f32 maxMag;
+    f32 mag;
+    s8 ok;
+    s32 minTime;
+
+    params = *(StuntParams **)(*(u8 **)(car + 0x3BC) + 0x8C);
+    minTime = params->minTime;
+    sign = 1.0f;
+    frac = (f32)(u32)(*(s32 *)(car + 0x460) - minTime) / params->maxTime;
+    if (*(u8 **)(car + 0x94) == NULL || !Player_IsHuman(*(u8 **)(car + 0x94))) {
+        ok = 0;
+    } else {
+        player = *(u8 **)(car + 0x94);
+        if (player[0x10] == 0 && player[0x1A] == 0 && (s8)player[0] > -64 && (s8)player[0] < 64 &&
+            (s8)player[1] > -64 && (s8)player[1] < 64) {
+            ok = 0;
+        } else if (*(s32 *)(car + 0x460) > minTime && *(s32 *)(car + 0x404) > minTime &&
+                   !(*(u32 *)(car + 0x48C) & 0x40002)) {
+            ok = 1;
+        } else {
+            ok = 0;
+        }
+    }
+    if (!ok) {
+        car[0x491] = 0;
+        return 0;
+    }
+    if ((s8)(*(u8 **)(car + 0x94))[0] > 100 || (s8)(*(u8 **)(car + 0x94))[0] < -100) {
+        rates[0] = 1.0f;
+        if (car[0x491] != 1) {
+            *(Vector4 *)(car + 0x510) = *(Vector4 *)(car + 0x20);
+            car[0x491] = 1;
+        }
+        if ((s8)(*(u8 **)(car + 0x94))[0] > 0) {
+            sign = -1.0f;
+        }
+    } else if ((s8)(*(u8 **)(car + 0x94))[1] > 100 || (s8)(*(u8 **)(car + 0x94))[1] < -100) {
+        rates[1] = 1.0f;
+        if (car[0x491] != 2) {
+            *(Vector4 *)(car + 0x510) = *(Vector4 *)(car + 0x10);
+            car[0x491] = 2;
+        }
+        if ((s8)(*(u8 **)(car + 0x94))[1] > 0) {
+            sign = -1.0f;
+        }
+    } else {
+        car[0x491] = 0;
+    }
+    if (frac > 1.0f) {
+        frac = 1.0f;
+    }
+    spin = sign;
+    switch (car[0x491]) {
+    case 0:
+        spin = sign * 0.0f;
+        break;
+    case 1:
+        spin = sign * (*(StuntParams **)(*(u8 **)(car + 0x3BC) + 0x8C))->pitchRate;
+        break;
+    case 2:
+        spin = sign * -(*(StuntParams **)(*(u8 **)(car + 0x3BC) + 0x8C))->rollRate;
+        break;
+    }
+    accum.x += ((Vector4 *)(car + 0x510))->x * spin;
+    accum.y += ((Vector4 *)(car + 0x510))->y * spin;
+    accum.z += ((Vector4 *)(car + 0x510))->z * spin;
+    params = *(StuntParams **)(*(u8 **)(car + 0x3BC) + 0x8C);
+    player = *(u8 **)(car + 0x94);
+    roll = 0.0f;
+    maxMag = 0.5f * (params->pitchRate + params->spinRate);
+    if (player[0x10]) {
+        roll -= params->spinRate;
+        rates[2] = 1.0f;
+    }
+    if (player[0x1A]) {
+        roll += params->spinRate;
+        rates[2] = 1.0f;
+    }
+    accum.x += ((Vector4 *)(car + 0x30))->x * roll;
+    accum.y += ((Vector4 *)(car + 0x30))->y * roll;
+    accum.z += ((Vector4 *)(car + 0x30))->z * roll;
+    if (!(*(u32 *)(car + 0x48C) & 0x20000)) {
+        params = *(StuntParams **)(*(u8 **)(car + 0x3BC) + 0x8C);
+        *(f32 *)(car + 0x554) += g_fDeltaTimeSec * (params->rollRate * (rates[0] * params->rollScore)) +
+                                 g_fDeltaTimeSec * (params->pitchRate * (rates[1] * params->pitchScore)) +
+                                 g_fDeltaTimeSec * (params->spinRate * (rates[2] * params->spinScore));
+        *(u32 *)(car + 0x48C) |= 0x20000;
+    }
+    axis = accum;
+    mag = MagnitudeVector(&axis);
+    if (mag > maxMag) {
+        mag = maxMag;
+        accum.x *= maxMag / mag;
+        accum.y *= maxMag / mag;
+        accum.z *= maxMag / mag;
+    }
+    if (mag > 0.0001f) {
+        t = mag * t;
+        GenerateQuaternion(&axis, &q, frac * t);
+        QuaternionMult((Vector4 *)&q, (Vector4 *)(car + 0x50), (Vector4 *)&newQ);
+        InverseXformVecOrientation(car + 0x10, &accum, &local);
+        scaled.x = local.x / *(f32 *)(car + 0x3C0);
+        scaled.y = local.y / *(f32 *)(car + 0x3D4);
+        scaled.z = local.z / *(f32 *)(car + 0x3E8);
+        XformVecOrientation(car + 0x10, &scaled, (Vector4 *)(car + 0x380));
+        *(f32 *)(car + 0x4B0) += 3.0f * t;
+        *outQ = newQ;
+        if (*(f32 *)(car + 0x554) > (*(StuntParams **)(*(u8 **)(car + 0x3BC) + 0x8C))->scoreMax) {
+            player = *(u8 **)(car + 0x94);
+            sprintf(*(char **)(player + 0x114), "Stunt Score: %u", (u32)*(f32 *)(car + 0x554));
+            *(char **)(car + 0x49C) = (char *)(player + 0x114);
+        }
+        return 1;
+    }
+    return 0;
+}
+#pragma readonly_strings reset
+
 void CarA_StuntFail(u8 *car) {
     extern Vector4 g_zeroVector;
     extern char stunt_msg_buffer[];
