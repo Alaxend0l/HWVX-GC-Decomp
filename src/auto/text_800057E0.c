@@ -34956,6 +34956,8 @@ s32 DSPGetDMAStatus(void) {
 void __DSP_debug_printf(char *str, ...) {
 }
 
+#pragma peephole off
+#pragma scheduling off
 void __DSPHandler(__OSInterrupt interrupt, void *context) {
     extern DSPTaskInfo *__DSP_rude_task;
     extern s32 __DSP_rude_task_pending;
