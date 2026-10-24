@@ -7548,6 +7548,240 @@ s32 Drone_Init(u8 *drone, u8 *data) {
     return 1;
 }
 
+typedef struct DroneWheelHit {
+    Vector4 pos;
+    Vector4 normal;
+    u8 pad20[8];
+    u8 *material;
+    u8 pad2C[4];
+    Vector4 unk30;
+    u8 pad40[0x10];
+} DroneWheelHit;
+
+static inline void Drone_ComputeWheelForce(u8 *drone, Vector4 *offset, f32 *prevCompression) {
+    extern Vector4 g_zeroVector;
+    extern u32 g_iLastDeltaTimeMS;
+    s8 RayHitsTerrain_Aux3(void *, void *, void *, void *);
+    void XformVec(void *mtx, Vector4 *in, Vector4 *out);
+    f32 PSVECDotProduct(void *a, void *b);
+    void PSVECSubtract(void *a, void *b, void *out);
+    void PSVECCrossProduct(void *a, void *b, void *out);
+    void PSVECAdd(void *a, void *b, void *out);
+    f32 PSVECSquareMag(void *v);
+    void PSVECNormalize(void *v, void *out);
+    void ProjectVectorToNormal(void *n, void *v);
+    f32 MagnitudeVector(void *v);
+    void PhysicalObject_ProcessForce(u8 *obj, Vector4 *pos, Vector4 *force, f32 scale);
+    DroneWheelHit hit;
+    Vector4 dir;
+    Vector4 point;
+    Vector4 start;
+    Vector4 slip;
+    Vector4 vel;
+    Vector4 spin;
+    Vector4 r;
+    Vector4 friction;
+    Vector4 side;
+    f32 t;
+    s8 hitTerrain;
+    f32 compression;
+    f32 len;
+    f32 spring;
+    f32 damper;
+    f32 mag;
+    f32 grip;
+    f32 scale;
+
+    dir.x = -((Vector4 *)(drone + 0x20))->x;
+    dir.y = -((Vector4 *)(drone + 0x20))->y;
+    dir.z = -((Vector4 *)(drone + 0x20))->z;
+    hit.unk30 = g_zeroVector;
+    XformVec(drone + 0x10, offset, &start);
+    start.x += 2.0f * ((Vector4 *)(drone + 0x20))->x;
+    start.y += 2.0f * ((Vector4 *)(drone + 0x20))->y;
+    start.z += 2.0f * ((Vector4 *)(drone + 0x20))->z;
+    t = 5.0f;
+    hitTerrain = RayHitsTerrain_Aux3(&start, &dir, &t, &hit);
+    compression = 4.0f - t;
+    if (hitTerrain) {
+        (*(u32 *)(drone + 0x150))++;
+        len = 1.0f + compression;
+        spring = 700.0f * len;
+        damper = 100.0f * ((compression - *prevCompression) / ((f32)g_iLastDeltaTimeMS / 1000.0f));
+        point.x = dir.x * len + start.x;
+        point.y = dir.y * len + start.y;
+        point.z = dir.z * len + start.z;
+        PhysicalObject_ProcessForce(drone, &point, (Vector4 *)(drone + 0x20), (spring + damper) * PSVECDotProduct(drone + 0x20, &hit.normal));
+        if (drone[0x1DC] == 0) {
+            PSVECSubtract(&point, drone + 0x40, &r);
+            PSVECCrossProduct(drone + 0x130, &r, &spin);
+            PSVECAdd(drone, &spin, &vel);
+            slip.x = vel.x - ((Vector4 *)(drone + 0x30))->x * *(f32 *)(drone + 0x180);
+            slip.y = vel.y - ((Vector4 *)(drone + 0x30))->y * *(f32 *)(drone + 0x180);
+            slip.z = vel.z - ((Vector4 *)(drone + 0x30))->z * *(f32 *)(drone + 0x180);
+            ProjectVectorToNormal(&hit.normal, &slip);
+            mag = MagnitudeVector(&slip);
+            if (mag > 0.0f) {
+                PSVECDotProduct(drone + 0x20, &hit.normal);
+                spring = 2.1f * spring;
+                PSVECCrossProduct(drone + 0x30, &hit.normal, &side);
+                if (PSVECSquareMag(&side)) {
+                    PSVECNormalize(&side, &side);
+                }
+                grip = 1.1f * (1.0f - 1.8f * PSVECDotProduct(&side, drone + 0x20));
+                if (grip < 0.1f) {
+                    grip = 0.1f;
+                } else if (grip > 1.0f) {
+                    grip = 1.0f;
+                }
+                scale = grip * (*(f32 *)(hit.material + 0x14) * spring) / mag;
+                friction.x = -slip.x * scale;
+                friction.y = -slip.y * scale;
+                friction.z = -slip.z * scale;
+                PhysicalObject_ProcessForce(drone, &point, &friction, 1.0f);
+            }
+        }
+    }
+    *prevCompression = compression;
+}
+
+void Drone_ComputeSuspensionForces(u8 *drone) {
+    extern Vector4 g_zeroVector;
+    extern u32 g_iLastDeltaTimeMS;
+    typedef struct {
+        Vector4 pos;
+        Vector4 normal;
+        u8 pad20[8];
+        u8 *material;
+        u8 pad2C[4];
+        Vector4 unk30;
+        u8 pad40[0x10];
+    } WheelHit;
+    s8 RayHitsTerrain_Aux3(void *, void *, void *, void *);
+    void XformVec(void *mtx, Vector4 *in, Vector4 *out);
+    f32 PSVECDotProduct(void *a, void *b);
+    void PSVECSubtract(void *a, void *b, void *out);
+    void PSVECCrossProduct(void *a, void *b, void *out);
+    void PSVECAdd(void *a, void *b, void *out);
+    f32 PSVECSquareMag(void *v);
+    void PSVECNormalize(void *v, void *out);
+    void ProjectVectorToNormal(void *n, void *v);
+    f32 MagnitudeVector(void *v);
+    void PhysicalObject_ProcessForce(u8 *obj, Vector4 *pos, Vector4 *force, f32 scale);
+    f32 _fabs(f32 x);
+    WheelHit hit;
+    Vector4 dir;
+    Vector4 point;
+    Vector4 start;
+    Vector4 slip;
+    Vector4 vel;
+    Vector4 spin;
+    Vector4 r;
+    Vector4 friction;
+    Vector4 side;
+    f32 t;
+    s8 hitTerrain;
+    f32 compression;
+    f32 len;
+    f32 spring;
+    f32 damper;
+    f32 mag;
+    f32 grip;
+    f32 scale;
+    f32 gravity;
+    f32 turn;
+    f32 thrust;
+    s8 *input;
+    u32 i;
+
+    *(u32 *)(drone + 0x150) = 0;
+    i = 0;
+    do {
+        dir.x = -((Vector4 *)(drone + 0x20))->x;
+        dir.y = -((Vector4 *)(drone + 0x20))->y;
+        dir.z = -((Vector4 *)(drone + 0x20))->z;
+        hit.unk30 = g_zeroVector;
+        XformVec(drone + 0x10, (Vector4 *)(drone + i * 0x10 + 0x190), &start);
+        start.x += 2.0f * ((Vector4 *)(drone + 0x20))->x;
+        start.y += 2.0f * ((Vector4 *)(drone + 0x20))->y;
+        start.z += 2.0f * ((Vector4 *)(drone + 0x20))->z;
+        t = 5.0f;
+        hitTerrain = RayHitsTerrain_Aux3(&start, &dir, &t, &hit);
+        compression = 4.0f - t;
+        if (hitTerrain) {
+            (*(u32 *)(drone + 0x150))++;
+            len = 1.0f + compression;
+            spring = 700.0f * len;
+            damper = 100.0f * ((compression - *(f32 *)(drone + i * 4 + 0x140)) / ((f32)g_iLastDeltaTimeMS / 1000.0f));
+            point.x = dir.x * len + start.x;
+            point.y = dir.y * len + start.y;
+            point.z = dir.z * len + start.z;
+            PhysicalObject_ProcessForce(drone, &point, (Vector4 *)(drone + 0x20), (spring + damper) * PSVECDotProduct(drone + 0x20, &hit.normal));
+            if (drone[0x1DC] == 0) {
+                PSVECSubtract(&point, drone + 0x40, &r);
+                PSVECCrossProduct(drone + 0x130, &r, &spin);
+                PSVECAdd(drone, &spin, &vel);
+                slip.x = vel.x - ((Vector4 *)(drone + 0x30))->x * *(f32 *)(drone + 0x180);
+                slip.y = vel.y - ((Vector4 *)(drone + 0x30))->y * *(f32 *)(drone + 0x180);
+                slip.z = vel.z - ((Vector4 *)(drone + 0x30))->z * *(f32 *)(drone + 0x180);
+                ProjectVectorToNormal(&hit.normal, &slip);
+                mag = MagnitudeVector(&slip);
+                if (mag > 0.0f) {
+                    PSVECDotProduct(drone + 0x20, &hit.normal);
+                    spring = 2.1f * spring;
+                    PSVECCrossProduct(drone + 0x30, &hit.normal, &side);
+                    if (PSVECSquareMag(&side)) {
+                        PSVECNormalize(&side, &side);
+                    }
+                    grip = 1.1f * (1.0f - 1.8f * PSVECDotProduct(&side, drone + 0x20));
+                    if (grip < 0.1f) {
+                        grip = 0.1f;
+                    } else if (grip > 1.0f) {
+                        grip = 1.0f;
+                    }
+                    scale = grip * (*(f32 *)(hit.material + 0x14) * spring) / mag;
+                    friction.x = -slip.x * scale;
+                    friction.y = -slip.y * scale;
+                    friction.z = -slip.z * scale;
+                    PhysicalObject_ProcessForce(drone, &point, &friction, 1.0f);
+                }
+            }
+        }
+        *(f32 *)(drone + i * 4 + 0x140) = compression;
+        i++;
+    } while (i < 4);
+    gravity = -*(f32 *)(*(u8 **)(*(u8 **)(drone + 0xC0) + 0x10) + 0x2C);
+    ((Vector4 *)(drone + 0x100))->x += gravity * ((Vector4 *)(drone + 0x130))->x;
+    ((Vector4 *)(drone + 0x100))->y += gravity * ((Vector4 *)(drone + 0x130))->y;
+    ((Vector4 *)(drone + 0x100))->z += gravity * ((Vector4 *)(drone + 0x130))->z;
+    if (*(u32 *)(drone + 0x150) == 4) {
+        if (drone[0x1DC] == 1) {
+            ProjectVectorToNormal(drone + 0x10, drone);
+            *(f32 *)(drone + 0x180) = PSVECDotProduct(drone, drone + 0x30);
+            input = *(s8 **)(drone + 0x94);
+            if (input != NULL) {
+                thrust = 12.1f * (f32)input[1];
+                turn = 10.0f * (f32)-input[0];
+                ProjectVectorToNormal(drone + 0x20, drone + 0x110);
+                ((Vector4 *)(drone + 0x110))->x += turn * ((Vector4 *)(drone + 0x20))->x;
+                ((Vector4 *)(drone + 0x110))->y += turn * ((Vector4 *)(drone + 0x20))->y;
+                ((Vector4 *)(drone + 0x110))->z += turn * ((Vector4 *)(drone + 0x20))->z;
+                if (_fabs(*(f32 *)(drone + 0x180)) < 100.0f) {
+                    ((Vector4 *)(drone + 0xF0))->x += ((Vector4 *)(drone + 0x30))->x * thrust;
+                    ((Vector4 *)(drone + 0xF0))->y += ((Vector4 *)(drone + 0x30))->y * thrust;
+                    ((Vector4 *)(drone + 0xF0))->z += ((Vector4 *)(drone + 0x30))->z * thrust;
+                }
+            }
+        } else if (_fabs(PSVECDotProduct(drone + 0x10, drone)) < 2.0f) {
+            if (_fabs(PSVECDotProduct(drone + 0x20, drone + 0x130)) < 5.0f) {
+                drone[0x1DC] = 1;
+            }
+        }
+    } else if (*(u32 *)(drone + 0x150) == 0) {
+        drone[0x1DC] = 0;
+    }
+}
+
 s32 Drone_PreMove(u8 *drone) {
     extern Vector4 g_zeroVector;
     extern f32 g_fDeltaTimeSec;
