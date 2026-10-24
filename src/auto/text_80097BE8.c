@@ -6758,7 +6758,6 @@ static inline void Gfx_LinkAlphaEntry(u32 n, f32 z) {
 }
 
 #pragma use_lmw_stmw on
-#pragma dont_inline on
 void Gfx_SortAlpha(void) {
     extern GDL *g_pGDL;
     extern f32 g_alphaTestMin;
