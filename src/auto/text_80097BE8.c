@@ -3632,6 +3632,203 @@ int __pformatter(void *(*WriteProc)(void *, const char *, u32), void *WriteProcA
 
     return chars_written;
 }
+
+static void round_decimal(decimal *dec, int new_length);
+char *float2str(double num, char *buff, print_format format) {
+    extern unsigned char __ctype_map[256];
+    char *strcpy(char *dst, const char *src);
+    decimal dec;
+    decform form;
+    char *p;
+    char *q;
+    int n;
+    int digits;
+    int sign;
+    int int_digits;
+    int frac_digits;
+
+    if (format.precision > 509) {
+        return 0;
+    }
+
+    form.style = 0;
+    form.digits = 0x20;
+    __num2dec(&form, num, &dec);
+
+    p = (char *)dec.sig.text + dec.sig.length;
+    while (dec.sig.length > 1 && *--p == '0') {
+        --dec.sig.length;
+        ++dec.exp;
+    }
+
+    switch (*dec.sig.text) {
+    case '0':
+        dec.exp = 0;
+        break;
+    case 'I':
+        if (num < 0.0) {
+            p = buff - 5;
+            if (__ctype_map[format.conversion_char] & 0x80) {
+                strcpy(p, "-INF");
+            } else {
+                strcpy(p, "-inf");
+            }
+        } else {
+            p = buff - 4;
+            if (__ctype_map[format.conversion_char] & 0x80) {
+                strcpy(p, "INF");
+            } else {
+                strcpy(p, "inf");
+            }
+        }
+        return p;
+    case 'N':
+        if (dec.sign) {
+            p = buff - 5;
+            if (__ctype_map[format.conversion_char] & 0x80) {
+                strcpy(p, "-NAN");
+            } else {
+                strcpy(p, "-nan");
+            }
+        } else {
+            p = buff - 4;
+            if (__ctype_map[format.conversion_char] & 0x80) {
+                strcpy(p, "NAN");
+            } else {
+                strcpy(p, "nan");
+            }
+        }
+        return p;
+    }
+
+    dec.exp += dec.sig.length - 1;
+    p = buff;
+    *--p = 0;
+
+    switch (format.conversion_char) {
+    case 'g':
+    case 'G':
+        if (dec.sig.length > format.precision) {
+            round_decimal(&dec, format.precision);
+        }
+        if (dec.exp < -4 || dec.exp >= format.precision) {
+            if (format.alternate_form) {
+                --format.precision;
+            } else {
+                format.precision = dec.sig.length - 1;
+            }
+            if (format.conversion_char == 'g') {
+                format.conversion_char = 'e';
+            } else {
+                format.conversion_char = 'E';
+            }
+            goto e_format;
+        }
+        if (format.alternate_form) {
+            format.precision -= dec.exp + 1;
+        } else {
+            if ((format.precision = dec.sig.length - (dec.exp + 1)) < 0) {
+                format.precision = 0;
+            }
+        }
+        goto f_format;
+
+    case 'e':
+    case 'E':
+    e_format:
+        if (dec.sig.length > format.precision + 1) {
+            round_decimal(&dec, format.precision + 1);
+        }
+        n = dec.exp;
+        sign = '+';
+        if (n < 0) {
+            n = -n;
+            sign = '-';
+        }
+        for (digits = 0; n || digits < 2; ++digits) {
+            *--p = n % 10 + '0';
+            n /= 10;
+        }
+        *--p = sign;
+        *--p = format.conversion_char;
+        if (buff - p + format.precision > 509) {
+            return 0;
+        }
+        if (dec.sig.length < format.precision + 1) {
+            for (n = format.precision + 1 - dec.sig.length + 1; --n;) {
+                *--p = '0';
+            }
+        }
+        for (n = dec.sig.length, q = (char *)dec.sig.text + dec.sig.length; --n;) {
+            *--p = *--q;
+        }
+        if (format.precision || format.alternate_form) {
+            *--p = '.';
+        }
+        *--p = *dec.sig.text;
+        if (dec.sign) {
+            *--p = '-';
+        } else if (format.sign_options == 1) {
+            *--p = '+';
+        } else if (format.sign_options == 2) {
+            *--p = ' ';
+        }
+        break;
+
+    case 'f':
+    case 'F':
+    f_format:
+        if ((frac_digits = -dec.exp + dec.sig.length - 1) < 0) {
+            frac_digits = 0;
+        }
+        if (frac_digits > format.precision) {
+            round_decimal(&dec, dec.sig.length - (frac_digits - format.precision));
+            if ((frac_digits = -dec.exp + dec.sig.length - 1) < 0) {
+                frac_digits = 0;
+            }
+        }
+        if ((int_digits = dec.exp + 1) < 0) {
+            int_digits = 0;
+        }
+        if (int_digits + frac_digits > 509) {
+            return 0;
+        }
+        q = (char *)dec.sig.text + dec.sig.length;
+        for (digits = 0; digits < (format.precision - frac_digits); ++digits) {
+            *--p = '0';
+        }
+        for (digits = 0; digits < frac_digits && digits < dec.sig.length; ++digits) {
+            *--p = *--q;
+        }
+        for (; digits < frac_digits; ++digits) {
+            *--p = '0';
+        }
+        if (format.precision || format.alternate_form) {
+            *--p = '.';
+        }
+        if (int_digits) {
+            for (digits = 0; digits < int_digits - dec.sig.length; ++digits) {
+                *--p = '0';
+            }
+            for (; digits < int_digits; ++digits) {
+                *--p = *--q;
+            }
+        } else {
+            *--p = '0';
+        }
+        if (dec.sign) {
+            *--p = '-';
+        } else if (format.sign_options == 1) {
+            *--p = '+';
+        } else if (format.sign_options == 2) {
+            *--p = ' ';
+        }
+        break;
+    }
+
+    return p;
+}
+
 #pragma use_lmw_stmw reset
 #pragma readonly_strings reset
 #pragma pool_strings reset
@@ -14428,6 +14625,94 @@ void __THPHuffDecodeDCTCompU(THPFileInfo *info, s16 *block) {
         }
     }
 }
+
+#pragma push
+#pragma inline_max_size(4096)
+void __THPHuffDecodeDCTCompV(THPFileInfo *info, s16 *block) {
+    extern THPHuffmanTab *Vdchuff_803C77C0;
+    extern THPHuffmanTab *Vachuff_803C7820;
+    extern u8 __THPJpegNaturalOrder_800CE0D8[];
+    u32 *c;
+    u8 *order;
+    s32 t;
+    s16 diff;
+    s32 n;
+    s32 rem;
+    s32 cnt;
+    u32 cb;
+    u32 tmp2;
+    s32 k;
+    s32 tmp;
+    s32 s;
+    s32 r;
+    s32 v;
+
+    __dcbz(block, 0);
+    t = __THPHuffDecodeTab(info, Vdchuff_803C77C0);
+    __dcbz(block, 32);
+    diff = 0;
+    __dcbz(block, 64);
+    if (t) {
+        cnt = info->cnt;
+        n = 33 - cnt;
+        cb = info->currByte;
+        rem = t - n;
+        if (rem <= 0) {
+            info->cnt = cnt + t;
+            diff = (cb << (cnt - 1)) >> (32 - t);
+        } else {
+            c = (u32 *)info->c;
+            tmp2 = cb << (cnt - 1);
+            cb = *++c;
+            info->currByte = cb;
+            info->c = (u8 *)c;
+            info->cnt = rem + 1;
+            diff = ((cb >> n) + tmp2) >> (32 - t);
+        }
+        if (__cntlzw(diff) > 32 - t) {
+            diff = (-1 << t) + diff + 1;
+        }
+    }
+    __dcbz(block, 96);
+    order = __THPJpegNaturalOrder_800CE0D8;
+    block[0] = info->components[2].predDC = info->components[2].predDC + diff;
+
+    for (k = 1; k < 64; k++) {
+        tmp = __THPHuffDecodeTab(info, Vachuff_803C7820);
+        s = tmp & 15;
+        r = tmp >> 4;
+        if (s) {
+            k += r;
+            cnt = info->cnt;
+            n = 33 - cnt;
+            cb = info->currByte;
+            rem = s - n;
+            if (rem <= 0) {
+                info->cnt = cnt + s;
+                v = (cb << (cnt - 1)) >> (32 - s);
+            } else {
+                c = (u32 *)info->c;
+                tmp2 = cb << (cnt - 1);
+                cb = *++c;
+                info->currByte = cb;
+                info->c = (u8 *)c;
+                info->cnt = rem + 1;
+                v = ((cb >> n) + tmp2) >> (32 - s);
+            }
+            if (__cntlzw(v) > 32 - s) {
+                v = (-1 << s) + v + 1;
+            }
+            block[order[k]] = v;
+        } else {
+            if (r != 15) {
+                break;
+            }
+            k += 15;
+        }
+    }
+}
+#pragma pop
+
 #pragma pop
 
 s32 __THPAudioGetNewSample(u32 *info);
