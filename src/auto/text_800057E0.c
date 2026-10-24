@@ -18584,7 +18584,6 @@ void InterfaceManager_DrawObject_Standard_Geometry(u8 *obj, u8 *iface) {
     void *memcpy(void *dst, const void *src, u32 n);
     void SetOrientation(void *m, f32 x, f32 y, f32 z);
     void Gfx_DrawGeometry(void *geom, Matrix4 *mtx);
-    Vector4 dest;
     Matrix4 mtx;
     Matrix4 rot;
     Matrix4 out;
@@ -18602,8 +18601,9 @@ void InterfaceManager_DrawObject_Standard_Geometry(u8 *obj, u8 *iface) {
     f32 b;
     f32 c;
     f32 t;
-    f32 sinA;
+    f32 scale;
     f32 cosA;
+    f32 sinA;
     f32 s;
 
     if (*(void **)(obj + 0x268) == NULL) {
@@ -18611,68 +18611,61 @@ void InterfaceManager_DrawObject_Standard_Geometry(u8 *obj, u8 *iface) {
     }
     if (obj[0x245] == 0x1F) {
         s = (f32)sin(0.5f * (0.0174533f * Gfx_GetProjectionMatrix()));
-        if ((Vector4 *)g_TargetArrow[0] == NULL) {
+        if ((Vector4 *)g_TargetArrow[0] == NULL || GameSettings_GetCodeVariable(0x198, 0)) {
             return;
         }
-        if (GameSettings_GetCodeVariable(0x198, 0)) {
-        } else {
-            Gfx_GetCameraPosition(&camPos);
-            Gfx_GetCameraVector(&at, &up, &right);
-            a = -*(f32 *)(obj + 0x60) * 0.1f;
-            b = 0.1f * (1.1f * -s * *(f32 *)(obj + 0x68));
-            c = 0.1f * Sqrt(225.0f - s * (s * (*(f32 *)(obj + 0x68) * *(f32 *)(obj + 0x68))));
-            mtx.m[0][0] = -right.x;
-            mtx.m[0][1] = -right.y;
-            mtx.m[0][2] = -right.z;
-            mtx.m[1][0] = up.x;
-            mtx.m[1][1] = up.y;
-            mtx.m[1][2] = up.z;
-            mtx.m[2][0] = -at.x;
-            mtx.m[2][1] = -at.y;
-            mtx.m[2][2] = -at.z;
-            mtx.m[3][0] = camPos.x - (mtx.m[0][0] * a + mtx.m[1][0] * b + mtx.m[2][0] * c);
-            mtx.m[3][1] = camPos.y - (mtx.m[0][1] * a + mtx.m[1][1] * b + mtx.m[2][1] * c);
-            mtx.m[3][2] = camPos.z - (mtx.m[0][2] * a + mtx.m[1][2] * b + mtx.m[2][2] * c);
-            mtx.m[0][3] = mtx.m[1][3] = mtx.m[2][3] = 0.0f;
-            mtx.m[3][3] = 1.0f;
-            if ((Vector4 *)g_TargetArrow[1] != NULL) {
-                dest = *(Vector4 *)g_TargetArrow[1];
-            } else {
-                dest = *(Vector4 *)g_TargetArrow[0];
-            }
-            target = dest;
-            if ((Vector4 *)g_TargetArrow[2] != NULL && (u32)g_TargetArrow[6] < 19) {
-                t = (u32)++g_TargetArrow[6] / 20.0f;
-                target.x = t * (target.x - ((Vector4 *)g_TargetArrow[2])->x) + ((Vector4 *)g_TargetArrow[2])->x;
-                target.y = t * (target.y - ((Vector4 *)g_TargetArrow[2])->y) + ((Vector4 *)g_TargetArrow[2])->y;
-                target.z = t * (target.z - ((Vector4 *)g_TargetArrow[2])->z) + ((Vector4 *)g_TargetArrow[2])->z;
-            }
-            toTarget.x = target.x - mtx.m[3][0];
-            toTarget.y = target.y - mtx.m[3][1];
-            toTarget.z = target.z - mtx.m[3][2];
-            toTarget.y = at.y = right.y = 0.0f;
-            if (PSVECSquareMag(&toTarget)) {
-                PSVECNormalize(&toTarget, &toTarget);
-            }
-            if (PSVECSquareMag(&at)) {
-                PSVECNormalize(&at, &at);
-            }
-            if (PSVECSquareMag(&right)) {
-                PSVECNormalize(&right, &right);
-            }
-            cosA = -PSVECDotProduct(&at, &toTarget);
-            sinA = -PSVECDotProduct(&right, &toTarget);
-            memcpy(&rot, &g_identity, sizeof(Matrix4));
-            rot.m[1][1] = 0.1f;
-            rot.m[1][0] = 0.0f;
-            rot.m[0][0] = 0.1f * cosA;
-            rot.m[0][2] = 0.1f * -sinA;
-            rot.m[1][2] = 0.0f;
-            rot.m[2][0] = 0.1f * sinA;
-            rot.m[2][2] = 0.1f * cosA;
-            MultiplyMatrix(&rot, &mtx, &out);
-            Gfx_DrawGeometry(*(void **)(obj + 0x268), &out);
+        scale = 0.1f;
+        Gfx_GetCameraPosition(&camPos);
+        Gfx_GetCameraVector(&at, &up, &right);
+        a = -*(f32 *)(obj + 0x60) * scale;
+        b = scale * (1.1f * -s * *(f32 *)(obj + 0x68));
+        c = scale * Sqrt(225.0f - s * (s * (*(f32 *)(obj + 0x68) * *(f32 *)(obj + 0x68))));
+        mtx.m[0][0] = -right.x;
+        mtx.m[0][1] = -right.y;
+        mtx.m[0][2] = -right.z;
+        mtx.m[1][0] = up.x;
+        mtx.m[1][1] = up.y;
+        mtx.m[1][2] = up.z;
+        mtx.m[2][0] = -at.x;
+        mtx.m[2][1] = -at.y;
+        mtx.m[2][2] = -at.z;
+        mtx.m[3][0] = camPos.x - (mtx.m[0][0] * a + mtx.m[1][0] * b + mtx.m[2][0] * c);
+        mtx.m[3][1] = camPos.y - (mtx.m[0][1] * a + mtx.m[1][1] * b + mtx.m[2][1] * c);
+        mtx.m[3][2] = camPos.z - (mtx.m[0][2] * a + mtx.m[1][2] * b + mtx.m[2][2] * c);
+        mtx.m[0][3] = mtx.m[1][3] = mtx.m[2][3] = 0.0f;
+        mtx.m[3][3] = 1.0f;
+        target = TargetArrow_GetTargetPos();
+        if ((Vector4 *)g_TargetArrow[2] != NULL && (u32)g_TargetArrow[6] < 19) {
+            t = (u32)++g_TargetArrow[6] / 20.0f;
+            target.x = t * (target.x - ((Vector4 *)g_TargetArrow[2])->x) + ((Vector4 *)g_TargetArrow[2])->x;
+            target.y = t * (target.y - ((Vector4 *)g_TargetArrow[2])->y) + ((Vector4 *)g_TargetArrow[2])->y;
+            target.z = t * (target.z - ((Vector4 *)g_TargetArrow[2])->z) + ((Vector4 *)g_TargetArrow[2])->z;
         }
+        toTarget.x = target.x - mtx.m[3][0];
+        toTarget.y = target.y - mtx.m[3][1];
+        toTarget.z = target.z - mtx.m[3][2];
+        toTarget.y = at.y = right.y = 0.0f;
+        if (PSVECSquareMag(&toTarget)) {
+            PSVECNormalize(&toTarget, &toTarget);
+        }
+        if (PSVECSquareMag(&at)) {
+            PSVECNormalize(&at, &at);
+        }
+        if (PSVECSquareMag(&right)) {
+            PSVECNormalize(&right, &right);
+        }
+        cosA = -PSVECDotProduct(&at, &toTarget);
+        sinA = -PSVECDotProduct(&right, &toTarget);
+        memcpy(&rot, &g_identity, sizeof(Matrix4));
+        rot.m[0][0] = cosA * scale;
+        rot.m[0][2] = -sinA * scale;
+        rot.m[1][0] = 0.0f;
+        rot.m[1][1] = scale;
+        rot.m[1][2] = 0.0f;
+        rot.m[2][0] = sinA * scale;
+        rot.m[2][2] = cosA * scale;
+        MultiplyMatrix(&rot, &mtx, &out);
+        Gfx_DrawGeometry(*(void **)(obj + 0x268), &out);
         return;
     }
     parent = NULL;
