@@ -13711,6 +13711,117 @@ char *GameSettings_GetActiveMemoryCardFileName(s8 bNoDefault, s32 index, char *d
     }
     return NULL;
 }
+
+#pragma push
+#pragma readonly_strings on
+char *GameSettings_GetActiveMemoryCardLevelDetails(void) {
+    s32 GameSettings_GetMemoryCardStatus(s32 device, s32 arg1);
+    int sprintf(char *buf, const char *fmt, ...);
+    extern u8 *g_pSavedGameData;
+    extern s8 g_bRefreshMC_FileInfo_803C6F7A;
+    typedef struct SaveSlot {
+        s8 valid;
+        u8 unk1[0x1F];
+    } SaveSlot;
+    typedef struct SaveData {
+        u8 header[0x5C];
+        SaveSlot slots[8];
+    } SaveData;
+    static s32 cachedStatus = -1;
+    static char *cachedMemorySlot = (char *)-1;
+    static u32 cachedFileSlot = -1;
+    static char levelDetails[256];
+    char *slot;
+    s32 status;
+    u32 fileSlot;
+    SaveData *data;
+    u8 *mcp;
+    s8 *save;
+    u32 i;
+    u32 mission;
+    u32 challenge;
+    u32 cars;
+    u32 items;
+    u32 battles;
+    u32 races;
+
+    slot = g_codeVariables.device - 1;
+    status = GameSettings_GetMemoryCardStatus((s32)g_codeVariables.device, 0);
+    fileSlot = g_codeVariables.fileIndex - 1;
+    if (cachedMemorySlot != slot || status != cachedStatus) {
+        g_bRefreshMC_FileInfo_803C6F7A = 1;
+    }
+    if (cachedFileSlot != fileSlot || g_bRefreshMC_FileInfo_803C6F7A) {
+        cachedMemorySlot = slot;
+        cachedFileSlot = fileSlot;
+        cachedStatus = status;
+        if (fileSlot >= 8 || status != 1) {
+            return NULL;
+        }
+        data = (SaveData *)g_pSavedGameData;
+        mcp = GameSettings_GetMCP();
+        switch (mcp != NULL ? mcp[1] : 0) {
+        case 0:
+            save = (s8 *)(g_pSavedGameData + cachedFileSlot * 0xF4 + 0x15C);
+            if (data->slots[cachedFileSlot].valid) {
+                mission = 1;
+                for (i = 5; i < 19; i++) {
+                    if (save[0x21 + i]) {
+                        mission = i;
+                    }
+                }
+                challenge = 1;
+                for (i = 39; i < 57; i++) {
+                    if (save[0x21 + i]) {
+                        challenge = i;
+                    }
+                }
+                cars = 0;
+                for (i = 0; i < 33; i++) {
+                    if (save[i]) {
+                        cars++;
+                    }
+                }
+                items = 0;
+                for (i = 0; i < 9; i++) {
+                    if (save[0x96 + i]) {
+                        items++;
+                    }
+                }
+                races = 0;
+                for (i = 0; i < 2; i++) {
+                    if (save[0x42 + i]) {
+                        races++;
+                    }
+                }
+                battles = 0;
+                for (i = 0; i < 4; i++) {
+                    if (save[0x38 + i]) {
+                        battles++;
+                    }
+                }
+                sprintf(levelDetails, "Mission %d|Challenge %d|Available Cars %d|Available Items %d|Available Races %d|Available Battles %d|Completed %d%%",
+                        mission - 4, challenge - 38, cars, items + 3, races + 4, battles + 4,
+                        (u32)(100.0f * ((f32)(cars + items + (mission - 4) + (challenge - 38) + (races + 4) + (battles + 4) - 13) / 75.0f)));
+                g_codeVariables.unk124 = mission - 5;
+            } else {
+                levelDetails[0] = 0;
+                g_codeVariables.unk124 = 0;
+            }
+            break;
+        case 1:
+            levelDetails[0] = 0;
+            g_codeVariables.unk124 = 0;
+            break;
+        }
+    } else {
+        levelDetails[0] = 0;
+        g_codeVariables.unk124 = 0;
+    }
+    return levelDetails;
+}
+#pragma pop
+
 #pragma pop
 
 #pragma push
