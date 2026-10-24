@@ -397,7 +397,7 @@ static inline s32 __THPHuffDecodeTab(THPFileInfo *info, THPHuffmanTab *h) {
         }
         cnt += 5;
         i = 5;
-        maxCode = &h->maxCode[i];
+        maxCode = h->maxCode;
         do {
             code <<= 1;
             if (cnt != 33) {
@@ -410,13 +410,12 @@ static inline s32 __THPHuffDecodeTab(THPFileInfo *info, THPHuffmanTab *h) {
                 info->c = (u8 *)c;
                 code = __rlwimi(code, cb, 1, 31, 31);
                 info->currByte = cb;
-                while (cnt++, i++, code > *++maxCode) {
+                while (cnt++, code > maxCode[++i]) {
                     code = (code << 1) | __rlwnm(cb, cnt, 31, 31);
                 }
                 break;
             }
-            i++;
-        } while (code > *++maxCode);
+        } while (code > maxCode[++i]);
         info->cnt = cnt;
         return (h->Vij + h->valPtr[i])[code];
     }
