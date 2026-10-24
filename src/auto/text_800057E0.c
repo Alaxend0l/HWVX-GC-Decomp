@@ -3962,6 +3962,58 @@ s8 RayHitsObjects_CameraSpecial(Vector4 *start, Vector4 *dir, f32 *t, void *info
     }
     return 0;
 }
+
+void Camera_UpdatePosition_Zoom_Generic(u8 *cam, u8 *mode, Vector4 *target, Vector4 *eye, f32 zoom, f32 shake) {
+    extern f32 g_fDeltaTimeSec;
+    double sin(double x);
+    double atan2(double y, double x);
+    f32 MagnitudeVector(void *v);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
+    void Gfx_SetProjectionMatrix(f32 fov);
+    Vector4 pos;
+
+    pos = *target;
+    *(f32 *)(cam + 0xB8) += 0.2f * g_fDeltaTimeSec;
+    pos.x = shake * (*(f32 *)(cam + 0xA0) * (f32)sin(*(f32 *)(cam + 0xB8))) + target->x;
+    pos.y = shake * (*(f32 *)(cam + 0xA4) * (f32)sin(*(f32 *)(cam + 0xB8))) + target->y;
+    pos.z = shake * (*(f32 *)(cam + 0xA8) * (f32)sin(*(f32 *)(cam + 0xB8))) + target->z;
+    {
+        Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
+        Vector4 dir;
+        f32 mag;
+        f32 inv;
+        f32 fov;
+
+        PSVECSubtract(eye, &pos, &dir);
+        mag = MagnitudeVector(&dir);
+        inv = 1.0f / mag;
+        fov = *(f32 *)(mode + 0x10) * (zoom * (zoom * (f32)atan2(40.0, mag)));
+        *(f32 *)(cam + 0x80) = dir.x * inv;
+        *(f32 *)(cam + 0x84) = dir.y * inv;
+        *(f32 *)(cam + 0x88) = dir.z * inv;
+        PSVECCrossProduct(&up, (Vector4 *)(cam + 0x80), (Vector4 *)(cam + 0xA0));
+        PSVECCrossProduct((Vector4 *)(cam + 0x80), (Vector4 *)(cam + 0xA0), (Vector4 *)(cam + 0x90));
+        inv = 1.0f / MagnitudeVector(cam + 0xA0);
+        *(f32 *)(cam + 0xA0) *= inv;
+        *(f32 *)(cam + 0xA4) *= inv;
+        *(f32 *)(cam + 0xA8) *= inv;
+        inv = 1.0f / MagnitudeVector(cam + 0x90);
+        *(f32 *)(cam + 0x90) *= inv;
+        *(f32 *)(cam + 0x94) *= inv;
+        *(f32 *)(cam + 0x98) *= inv;
+        if (fov > 150.0f) {
+            fov = 150.0f;
+        }
+        if (fov < 6.0f) {
+            fov = 6.0f;
+        }
+        Gfx_SetProjectionMatrix(fov);
+    }
+    *(Vector4 *)(cam + 0x60) = pos;
+    PSVECSubtract((Vector4 *)(cam + 0x60), &pos, (Vector4 *)(cam + 0x70));
+}
+
 #pragma pop
 
 void Camera_SetPlayer(void **camera, void *player) {
