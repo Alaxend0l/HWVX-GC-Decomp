@@ -6515,66 +6515,6 @@ void CarA_SetSlavePlayers(void *car) {
     }
 }
 
-static inline void CarA_DrawReflectionParts(u8 *car, Matrix4 *matrices) {
-    typedef struct { void *geom; u16 mtxIndex; u8 pad6[2]; } ModelPart;
-    typedef struct {
-        u32 numGeoms;
-        void **geoms;
-        u32 numParts;
-        ModelPart *parts;
-        u8 pad10[4];
-        s32 *skel;
-    } Model;
-    typedef struct CarPart {
-        u8 flags;
-        u8 xform;
-        u8 pad2[2];
-        u16 mtxIndex;
-        u8 pad6[2];
-        void *geom;
-        Vector4 *offset;
-        u8 pad10[0xC];
-    } CarPart;
-    typedef struct CarPartList {
-        u32 count;
-        CarPart *parts;
-    } CarPartList;
-    void Gfx_DrawGeometry(void *geom, void *mtx);
-    Matrix4 mtx;
-    u32 i;
-    u32 j;
-    CarPartList *list;
-    CarPart *part;
-    u32 bit;
-    void *geom;
-
-    for (i = 0; i < (*(Model **)(car + 0x330))->numParts; i++) {
-        ModelPart *e = &(*(Model **)(car + 0x330))->parts[i];
-        Gfx_DrawGeometry(e->geom, &matrices[e->mtxIndex]);
-    }
-    list = *(CarPartList **)(*(u8 **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x78) + 0x10) + 0x38);
-    if (list != NULL) {
-        for (j = 0; j < list->count; j++) {
-            part = &list->parts[j];
-            geom = part->geom;
-            bit = *(u32 *)(car + 0x374) & (1 << j);
-            if (bit && !(part->flags & 1)) {
-                continue;
-            }
-            if (!bit && (part->flags & 1)) {
-                continue;
-            }
-            if (part->xform) {
-                mtx = matrices[part->mtxIndex];
-                XformVec(&mtx, list->parts[j].offset, &mtx.v[3]);
-                Gfx_DrawGeometry(geom, &mtx);
-            } else {
-                Gfx_DrawGeometry(geom, &matrices[part->mtxIndex]);
-            }
-        }
-    }
-}
-
 #pragma push
 #pragma use_lmw_stmw on
 void CarA_DrawReflection(void *thing) {
