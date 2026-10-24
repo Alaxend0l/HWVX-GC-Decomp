@@ -16,6 +16,24 @@ s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded);
 
 extern f32 g_frictionTable[9][10];
 
+extern s32 __float_nan[];
+extern s32 __float_huge[];
+static inline double sqrt(double x) {
+    if (x > 0.0) {
+        double guess = __frsqrte(x);
+        guess = .5 * guess * (3.0 - guess * guess * x);
+        guess = .5 * guess * (3.0 - guess * guess * x);
+        guess = .5 * guess * (3.0 - guess * guess * x);
+        guess = .5 * guess * (3.0 - guess * guess * x);
+        return x * guess;
+    } else if (x == 0) {
+        return 0;
+    } else if (x) {
+        return *(f32 *)__float_nan;
+    }
+    return *(f32 *)__float_huge;
+}
+
 typedef struct GXColor {
     u8 r;
     u8 g;
