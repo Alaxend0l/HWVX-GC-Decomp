@@ -9248,6 +9248,149 @@ void InterfaceManager_SetOffset(s32 index, f32 x, f32 y) {
     *(f32 *)(iface + 0x64) = y;
 }
 
+void InterfaceManager_PreprocessInterface(u8 *iface) {
+    typedef struct MusicInfo {
+        char *name;
+        u32 id;
+    } MusicInfo;
+    typedef struct InterfaceHeader {
+        u8 pad0[0x30];
+        MusicInfo *music;
+        u8 pad34[0x38 - 0x34];
+        f32 volume;
+    } InterfaceHeader;
+    typedef struct FontInfo {
+        u8 pad0[0x8];
+        u8 *name;
+        u8 padC[0x28 - 0xC];
+        s32 id;
+    } FontInfo;
+    typedef struct ResourceEntry {
+        u8 pad0[0x8];
+        u32 soundID;
+        char *soundName;
+        u8 pad10[0x14 - 0x10];
+        FontInfo *font;
+        u8 pad18[0x20 - 0x18];
+    } ResourceEntry;
+    typedef struct ResourceList {
+        u32 count;
+        ResourceEntry *entries;
+    } ResourceList;
+    typedef struct SoundPack {
+        s32 id;
+        u8 *data;
+    } SoundPack;
+    typedef struct InterfaceSlot {
+        u8 pad0[0x245];
+        u8 type;
+        u8 pad246[0x25C - 0x246];
+        u8 *object;
+        u8 pad260[0x300 - 0x260];
+    } InterfaceSlot;
+    typedef struct WorldObjective {
+        u32 unk0;
+        u8 *info;
+    } WorldObjective;
+    typedef struct World {
+        u8 pad0[0x58];
+        u32 numObjectives;
+        WorldObjective *objectives;
+    } World;
+    extern char *g_curMusicPackName;
+    extern u32 g_curMusicPackID;
+    extern u32 g_numInterfaceDialogSoundPacks;
+    extern u32 g_curInterfaceDialogSoundPack;
+    extern u32 g_curInterfaceDialogSoundIndex;
+    extern SoundPack g_interfaceDialogSoundPacks[15];
+    void SongManager_StopBKSong(void);
+    void SongManager_PlaySong(void);
+    void SetMusicVol(u32 vol);
+    s32 FileStreaming_GetPackID(char *name, s32 type, u32 id);
+    s32 FileStreaming_ReleaseDataPack(u32 index, s32 type);
+    void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
+    s32 InterfaceManager_AddFont(u8 *font);
+    void InterfaceManager_SetObjectText(u8 *obj, char **text);
+    void InterfaceManager_SetMissionObjectiveText(u8 *obj, void *objective);
+    u32 i;
+    u32 total;
+    ResourceList *list;
+    InterfaceSlot *slot;
+    s32 pack;
+    u8 *data;
+    SoundPack *sp;
+    World *world;
+    u32 k;
+    u8 *info;
+    WorldObjective *objective;
+    u32 id;
+
+    if ((*(InterfaceHeader **)(iface + 0x20))->music != NULL && (*(InterfaceHeader **)(iface + 0x20))->music->name != NULL) {
+        if (g_curMusicPackName == NULL || strcmp(g_curMusicPackName, (*(InterfaceHeader **)(iface + 0x20))->music->name) != 0
+            || g_curMusicPackID != (*(InterfaceHeader **)(iface + 0x20))->music->id) {
+            SongManager_StopBKSong();
+            if (g_curMusicPackName != NULL) {
+                FileStreaming_ReleaseDataPack(FileStreaming_GetPackID(g_curMusicPackName, 10, g_curMusicPackID), 10);
+            }
+            FileStreaming_InitializeDataPack(FileStreaming_LoadDataPack((*(InterfaceHeader **)(iface + 0x20))->music->name, 10, (*(InterfaceHeader **)(iface + 0x20))->music->id, 0), 10, 1);
+            SongManager_PlaySong();
+            SetMusicVol(32767.0f * (*(InterfaceHeader **)(iface + 0x20))->volume);
+            g_curMusicPackName = (*(InterfaceHeader **)(iface + 0x20))->music->name;
+            g_curMusicPackID = (*(InterfaceHeader **)(iface + 0x20))->music->id;
+        }
+    }
+    g_numInterfaceDialogSoundPacks = 0;
+    g_curInterfaceDialogSoundPack = 0;
+    g_curInterfaceDialogSoundIndex = 0;
+    if (*(u8 **)(iface + 0x158) != NULL) {
+        list = *(ResourceList **)(*(u8 **)(iface + 0x158) + 0x258);
+        total = 0;
+        for (i = 0; i < list->count; i++) {
+            if (list->entries[i].font != NULL) {
+                if (list->entries[i].font->name == NULL) {
+                    continue;
+                }
+                list->entries[i].font->id = InterfaceManager_AddFont(list->entries[i].font->name);
+            }
+            if (list->entries[i].soundName != NULL && g_numInterfaceDialogSoundPacks < 15 && total < 1000000) {
+                pack = FileStreaming_LoadDataPack(list->entries[i].soundName, 9, list->entries[i].soundID, 0);
+                data = FileStreaming_InitializeDataPack(pack, 9, 1);
+                sp = &g_interfaceDialogSoundPacks[g_numInterfaceDialogSoundPacks];
+                g_numInterfaceDialogSoundPacks++;
+                sp->id = pack;
+                sp->data = data;
+                total += *(u32 *)(data + 0x90);
+                g_curInterfaceDialogSoundIndex = i + 1;
+            }
+        }
+    }
+    g_curInterfaceDialogSoundPack = 0;
+    for (i = 0; i < *(u32 *)iface; i++) {
+        slot = &(*(InterfaceSlot **)(iface + 0x88))[i];
+        switch (slot->type) {
+        case 0x34:
+            id = *(u16 *)(slot->object + 0xA);
+            world = g_worldData.world;
+            if (world == NULL) {
+                break;
+            }
+            for (k = 0; k < world->numObjectives; k++) {
+                objective = &world->objectives[k];
+                info = objective->info;
+                if (info[2] == id) {
+                    if (info[1] == 0x17) {
+                        InterfaceManager_SetMissionObjectiveText((u8 *)slot, objective);
+                    } else {
+                        InterfaceManager_SetObjectText((u8 *)slot, NULL);
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+    }
+}
+
 void InterfaceManager_SetObjectString(u8 *obj, char *str) {
     u32 strlen(const char *s);
     char *strncpy(char *dst, const char *src, u32 n);
