@@ -19255,8 +19255,7 @@ static inline s32 Trail_FindFreeSegment(void) {
             g_nextTrail = 0;
         }
         if (g_TrialData[g_nextTrail++].life == 0) {
-            i = g_nextTrail - 1;
-            break;
+            return g_nextTrail - 1;
         }
     }
     return i;
@@ -19279,15 +19278,7 @@ void Trail_AddSegment(u32 *handle, f32 *pos, f32 *dir, u16 texture, u8 *color, s
             last = *handle;
             i = last;
             if (g_TrialData[i].active == 1) {
-                for (i = 1000; i-- > 0;) {
-                    if (g_nextTrail == 1000) {
-                        g_nextTrail = 0;
-                    }
-                    if (g_TrialData[g_nextTrail++].life == 0) {
-                        i = g_nextTrail - 1;
-                        break;
-                    }
-                }
+                i = Trail_FindFreeSegment();
                 if (i == 0) {
                     *handle = -1;
                     return;
@@ -19322,16 +19313,8 @@ void Trail_AddSegment(u32 *handle, f32 *pos, f32 *dir, u16 texture, u8 *color, s
             *handle = i;
         }
     } else {
-        for (last = 1000; last-- > 0;) {
-            if (g_nextTrail == 1000) {
-                g_nextTrail = 0;
-            }
-            if (g_TrialData[g_nextTrail++].life == 0) {
-                last = g_nextTrail - 1;
-                break;
-            }
-        }
-        if (last == 0) {
+        i = Trail_FindFreeSegment();
+        if (i == 0) {
             *handle = -1;
             return;
         }
@@ -19339,21 +19322,21 @@ void Trail_AddSegment(u32 *handle, f32 *pos, f32 *dir, u16 texture, u8 *color, s
         g = color[1];
         b = color[2];
         a = color[3];
-        g_TrialData[last].active = 0;
-        g_TrialData[last].life = life << 4;
-        g_TrialData[last].texture = texture;
-        g_TrialData[last].color[0] = r;
-        g_TrialData[last].color[1] = g;
-        g_TrialData[last].color[2] = b;
-        g_TrialData[last].color[3] = a;
-        g_TrialData[last].v[0][3] = 0.0f;
-        g_TrialData[last].v[0][0] = pos[0] + width1 * dir[2];
-        g_TrialData[last].v[0][1] = pos[1];
-        g_TrialData[last].v[0][2] = pos[2] - width1 * dir[0];
-        g_TrialData[last].v[1][0] = pos[0] - width0 * dir[2];
-        g_TrialData[last].v[1][1] = pos[1];
-        g_TrialData[last].v[1][2] = pos[2] + width0 * dir[0];
-        *handle = last;
+        g_TrialData[i].active = 0;
+        g_TrialData[i].life = life << 4;
+        g_TrialData[i].texture = texture;
+        g_TrialData[i].color[0] = r;
+        g_TrialData[i].color[1] = g;
+        g_TrialData[i].color[2] = b;
+        g_TrialData[i].color[3] = a;
+        g_TrialData[i].v[0][3] = 0.0f;
+        g_TrialData[i].v[0][0] = pos[0] + width1 * dir[2];
+        g_TrialData[i].v[0][1] = pos[1];
+        g_TrialData[i].v[0][2] = pos[2] - width1 * dir[0];
+        g_TrialData[i].v[1][0] = pos[0] - width0 * dir[2];
+        g_TrialData[i].v[1][1] = pos[1];
+        g_TrialData[i].v[1][2] = pos[2] + width0 * dir[0];
+        *handle = i;
     }
 }
 
