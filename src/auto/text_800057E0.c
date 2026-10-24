@@ -22792,6 +22792,193 @@ void SmartProjectileA_AquireTarget(SmartProjectile *proj) {
     }
 }
 
+s32 SmartProjectileA_PreMove(u8 *proj) {
+    extern f32 g_fDeltaTimeSec;
+    extern s32 g_iDeltaTimeMS;
+    extern Vector4 g_zeroVector;
+    u8 FloatsEqual(f32 a, f32 b, f32 eps);
+    f32 _fabs(f32 x);
+    double acos(double x);
+    f32 Sqrt(f32 x);
+    f32 PSVECDotProduct(void *a, void *b);
+    void PSVECCrossProduct(void *a, void *b, void *out);
+    void PSVECSubtract(void *a, void *b, void *out);
+    f32 PSVECSquareMag(void *v);
+    void PSVECNormalize(void *src, void *dst);
+    f32 PSVECSquareDistance(void *a, void *b);
+    void GenerateQuaternion(void *axis, void *q, f32 angle);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void InverseXformVec(void *mtx, Vector4 *in, Vector4 *out);
+    s32 ThingManager_GetActiveCars();
+    void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
+    void ThingManagerList_Append(void *list, void *thing);
+    void Projectile_Release(void *proj);
+    typedef struct {
+        u8 pad0[0x18];
+        void (*applyImpulse)(u8 *obj, void *hit, f32 impulse, s32 damage);
+        u8 pad1C[0x3C - 0x1C];
+        void (*getPos)(u8 *obj, Vector4 *out);
+    } VTable;
+    struct { Vector4 a; Vector4 b; Vector4 c; Vector4 zero; u32 id; s32 player; f32 f0; f32 f1; } p;
+    struct { Vector4 pos; Vector4 normal; u8 *thing; u8 *other; s32 unk28; u8 pad2C[0x24]; } hit;
+    u8 *cars[16];
+    Vector4 cross;
+    Vector4 axis;
+    Quaternion q;
+    Quaternion result;
+    Vector4 dir;
+    Vector4 local;
+    Vector4 aim;
+    SmartProjParams *params;
+    u8 *slave;
+    u32 id;
+    u32 count;
+    u32 i;
+    s8 found;
+    f32 speed;
+    f32 dot;
+    f32 angle;
+    f32 inv;
+    f32 gain;
+    f32 newSpeed;
+    f32 dist;
+    f32 lead;
+    f32 turnOut;
+    f32 turnIn;
+    f32 maxTurn;
+
+    speed = MagnitudeVector(proj);
+    PSVECCrossProduct(proj, proj + 0x30, &cross);
+    if (!FloatsEqual(MagnitudeVector(&cross), 0.0f, 0.05f)) {
+        inv = 1.0f / speed;
+        dir.x = ((Vector4 *)proj)->x * inv;
+        dir.y = ((Vector4 *)proj)->y * inv;
+        dir.z = ((Vector4 *)proj)->z * inv;
+        dot = PSVECDotProduct(&dir, proj + 0x30);
+        if (_fabs(dot) < 0.99f) {
+            angle = acos(dot);
+            PSVECCrossProduct(proj + 0x30, &dir, &axis);
+            GenerateQuaternion(&axis, &q, angle);
+            QuaternionMult((Vector4 *)&q, (Vector4 *)(proj + 0x50), (Vector4 *)&result);
+            *(Quaternion *)(proj + 0x50) = result;
+            QuaternionToSubMatrix(proj + 0x50, proj + 0x10);
+        }
+    }
+    newSpeed = *(f32 *)(*(u8 **)(proj + 0x120) + 0x40) * g_fDeltaTimeSec + speed;
+    if (newSpeed > *(f32 *)(*(u8 **)(proj + 0x120) + 0x44)) {
+        newSpeed = *(f32 *)(*(u8 **)(proj + 0x120) + 0x44);
+    }
+    *(s16 *)(proj + 0x15E) -= (u16)g_iDeltaTimeMS;
+    if (*(s16 *)(proj + 0x15E) > 0) {
+        *(s16 *)(proj + 0x15E) = -1;
+        return 0;
+    }
+    if (*(u8 **)(proj + 0x14C) != NULL) {
+        params = (*(SmartProjInfo **)(proj + 0x120))->params;
+        turnOut = params->unk8;
+        turnIn = params->unkC;
+        maxTurn = params->unk4;
+        dist = Sqrt(PSVECSquareDistance(proj + 0x40, *(u8 **)(proj + 0x14C) + 0x40));
+        if (newSpeed) {
+            lead = dist / newSpeed;
+        } else {
+            lead = 0.0f;
+        }
+        (*(VTable **)(*(u8 **)(proj + 0x14C) + 0x8C))->getPos(*(u8 **)(proj + 0x14C), &aim);
+        if (lead > 2.0f) {
+            lead = 0.3f * (lead - 2.0f) + 2.0f;
+        }
+        if (lead > 0.2f) {
+            lead = 0.2f;
+        }
+        aim.x += ((Vector4 *)*(u8 **)(proj + 0x14C))->x * lead;
+        aim.y += ((Vector4 *)*(u8 **)(proj + 0x14C))->y * lead;
+        aim.z += ((Vector4 *)*(u8 **)(proj + 0x14C))->z * lead;
+        InverseXformVec(proj + 0x10, &aim, &local);
+        if (local.z < 0.0f) {
+            count = ThingManager_GetActiveCars(cars, 16);
+            found = 0;
+            for (i = 0; i < count; i++) {
+                if (cars[i] == *(u8 **)(proj + 0x14C)) {
+                    found = 1;
+                    break;
+                }
+            }
+            if (found && dist < *(f32 *)(*(u8 **)(proj + 0x120) + 0x34)) {
+                id = *(u32 *)(*(u8 **)(proj + 0x120) + 0x74);
+                if (id != 0) {
+                    p.id = id;
+                    p.b = *(Vector4 *)(proj + 0x50);
+                    p.player = *(s32 *)(proj + 0x94);
+                    p.f0 = 0.0f;
+                    p.f1 = 0.0f;
+                    p.zero = g_zeroVector;
+                    InverseXformVec(*(u8 **)(proj + 0x14C) + 0x10, (Vector4 *)(proj + 0x40), &p.a);
+                    slave = ThingManager_DARYL_CreateSlave(1, &p, 0xFF);
+                    if (slave != NULL) {
+                        slave[0x83] = 0;
+                        ThingManagerList_Append(*(u8 **)(proj + 0x14C) + 0x88, slave);
+                    }
+                }
+                hit.thing = proj;
+                hit.other = *(u8 **)(proj + 0x14C);
+                hit.unk28 = 0;
+                hit.pos = *(Vector4 *)(proj + 0x40);
+                PSVECSubtract(proj + 0x40, hit.other + 0x40, &hit.normal);
+                if (PSVECSquareMag(&hit.normal)) {
+                    PSVECNormalize(&hit.normal, &hit.normal);
+                }
+                (*(VTable **)(*(u8 **)(proj + 0x14C) + 0x8C))->applyImpulse(*(u8 **)(proj + 0x14C), &hit, 0.0f, *(s32 *)(*(u8 **)(proj + 0x120) + 0x1C));
+                Projectile_Release(proj);
+                *(u32 *)(proj + 0x74) |= 2;
+            } else {
+                *(u8 **)(proj + 0x14C) = NULL;
+            }
+        } else {
+            params = (*(SmartProjInfo **)(proj + 0x120))->params;
+            if (dist > params->unk10) {
+                *(f32 *)(proj + 0x158) = 0.8f;
+                local.x /= local.z;
+                local.y /= local.z;
+                if (*(f32 *)(proj + 0x150) * local.x < 0.0f) {
+                    *(f32 *)(proj + 0x150) += g_fDeltaTimeSec * (turnIn * local.x);
+                } else {
+                    *(f32 *)(proj + 0x150) += g_fDeltaTimeSec * (turnOut * local.x);
+                }
+                if (*(f32 *)(proj + 0x154) * local.y > 0.0f) {
+                    *(f32 *)(proj + 0x154) += g_fDeltaTimeSec * (-turnIn * local.y);
+                } else {
+                    *(f32 *)(proj + 0x154) += g_fDeltaTimeSec * (-turnOut * local.y);
+                }
+            } else if (local.z > 0.0f) {
+                gain = params->unk14;
+                inv = 1.0f / local.z;
+                *(f32 *)(proj + 0x150) = inv * (g_fDeltaTimeSec * (gain * local.x));
+                *(f32 *)(proj + 0x154) = inv * (g_fDeltaTimeSec * (-gain * local.y));
+                *(f32 *)(proj + 0x158) = 0.0f;
+            }
+            if (*(f32 *)(proj + 0x150) > maxTurn) {
+                *(f32 *)(proj + 0x150) = maxTurn;
+            }
+            if (*(f32 *)(proj + 0x150) < -maxTurn) {
+                *(f32 *)(proj + 0x150) = -maxTurn;
+            }
+            if (*(f32 *)(proj + 0x154) > maxTurn) {
+                *(f32 *)(proj + 0x154) = maxTurn;
+            }
+            if (*(f32 *)(proj + 0x154) < -maxTurn) {
+                *(f32 *)(proj + 0x154) = -maxTurn;
+            }
+        }
+    } else {
+        *(f32 *)(proj + 0x150) = *(f32 *)(proj + 0x154) = *(f32 *)(proj + 0x158) = 0.0f;
+    }
+    ((Vector4 *)proj)->x = ((Vector4 *)(proj + 0x30))->x * newSpeed;
+    ((Vector4 *)proj)->y = ((Vector4 *)(proj + 0x30))->y * newSpeed;
+    ((Vector4 *)proj)->z = ((Vector4 *)(proj + 0x30))->z * newSpeed;
+    return 1;
+}
+
 s32 SmartProjectileA_Move(u8 *proj) {
     extern f32 g_fDeltaTimeSec;
     void GenerateQuaternion(void *axis, void *q, f32 angle);
