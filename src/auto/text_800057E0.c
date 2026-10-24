@@ -2546,6 +2546,197 @@ void AI_Car_SeekPoint_80007C7C(u8 *ai) {
     }
     AI_Car_DriveToTarget(ai, &target, speed);
 }
+
+void AI_Car_WeaponAsyncHeartbeat_80008210(u8 *ai) {
+    typedef struct WeaponParams {
+        u8 pad0[0x24];
+        u32 minAmmo;
+        u8 pad28[0x30 - 0x28];
+        u32 reloadTime;
+        u8 priority;
+        u8 pad35[3];
+        f32 minRange;
+        f32 maxRange;
+        f32 aimAngle;
+        f32 farAngle;
+        f32 nearAngle;
+    } WeaponParams;
+    typedef struct WeaponDef {
+        u8 type;
+        u8 pad1[0x20 - 0x1];
+        char **name;
+        u8 pad24[0x30 - 0x24];
+        WeaponParams *params;
+    } WeaponDef;
+    typedef struct WeaponSlot {
+        u8 pad0[0x40];
+        s16 ammo;
+        u8 pad42[0x4C - 0x42];
+        WeaponDef *def;
+    } WeaponSlot;
+    typedef struct WeaponHolder {
+        u8 pad0[0xB0];
+        WeaponSlot slots[12];
+        u8 current;
+    } WeaponHolder;
+    extern u32 g_attackDelay;
+    extern u8 g_itemVTable[];
+    extern const char g_jetBoostersName_800CC3E4[];
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    s32 ThingManager_GetActiveCars();
+    s8 Player_IsHuman(void *player);
+    f32 PSVECSquareDistance(void *a, void *b);
+    f32 Sqrt(f32 x);
+    f32 AI_AngleToTarget(u8 *ai, Vector4 *target);
+    s8 AI_CheckAngleInRange(f32 angle, f32 center, f32 range);
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    f32 RandomAdd(f32 base, f32 range);
+    int strcmp(const char *a, const char *b);
+    u8 *cars[8];
+    u8 *target;
+    WeaponHolder *holder;
+    WeaponParams *params;
+    s16 i;
+    s8 lowHealth;
+    s16 best;
+    s16 preferred;
+    WeaponSlot *slot;
+    WeaponParams *reload;
+    WeaponDef *def;
+    Vector4 *targetPos;
+    f32 nearest;
+    f32 distSq;
+    f32 dist;
+    f32 angle;
+    f32 angleRange;
+    u32 numCars;
+    u8 n;
+    u8 type;
+
+    target = NULL;
+    lowHealth = 0;
+    if (*(u8 **)(ai + 0x2C) == NULL) {
+        return;
+    }
+    if (GameSettings_GetCodeVariable(0x12D, 0) >= 3) {
+        numCars = ThingManager_GetActiveCars(cars, 8);
+        nearest = 1e10f;
+        for (n = 0; n < numCars; n++) {
+            if (cars[n] != *(u8 **)(ai + 0x2C) && !(*(u32 *)(cars[n] + 0x74) & 0x1000) &&
+                (GameSettings_GetCodeVariable(0x12D, 0) != 4 || Player_IsHuman(*(void **)(cars[n] + 0x94)))) {
+                distSq = PSVECSquareDistance(*(u8 **)(ai + 0x2C) + 0x40, cars[n] + 0x40);
+                if (nearest > distSq) {
+                    nearest = distSq;
+                    target = cars[n];
+                }
+            }
+        }
+    } else if (*(u8 **)(ai + 0x3E8) != NULL) {
+        target = *(u8 **)(ai + 0x3E8);
+    } else if (*(u8 **)(ai + 0x3EC) != NULL &&
+               (*(u8 **)(*(u8 **)(ai + 0x3EC) + 0x8C) == g_carAVTable ||
+                (*(u8 **)(*(u8 **)(ai + 0x3EC) + 0x8C) == g_itemVTable && **(u8 **)(*(u8 **)(ai + 0x3EC) + 0xC0) == 2))) {
+        target = *(u8 **)(ai + 0x3EC);
+    }
+    if (target != NULL && *(u8 **)(ai + 0x2C) != NULL) {
+        targetPos = (Vector4 *)(target + 0x40);
+        best = -1;
+        preferred = -1;
+        distSq = PSVECSquareDistance(*(u8 **)(ai + 0x2C) + 0x40, targetPos);
+        dist = Sqrt(distSq);
+        angle = 57.29578f * AI_AngleToTarget(*(u8 **)(ai + 0x2C), targetPos);
+        if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1 && g_attackDelay == 0 && distSq < 400.0f) {
+            if (AI_CheckAngleInRange(angle, 90.0f, 12.5f)) {
+                ai[0x10] = 0xFF;
+                *(u32 *)(ai + 0xC) |= 1;
+            } else if (AI_CheckAngleInRange(angle, 270.0f, 12.5f)) {
+                ai[0x1A] = 0xFF;
+                *(u32 *)(ai + 0xC) |= 0x400;
+            }
+        }
+        if ((f32)*(s32 *)(*(u8 **)(ai + 0x2C) + 0x78) <
+            0.3f * ((f32)*(s32 *)(*(u8 **)(*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC) + 0xA0) + 0x14) *
+                    **(f32 **)(ai + 0xD0))) {
+            lowHealth = 1;
+        }
+        holder = ThingManagerList_GetByType(*(u8 **)(ai + 0x2C) + 0x344, 8);
+        for (i = 0; holder != NULL && i < 12; i++) {
+            slot = &holder->slots[i];
+            if (slot == NULL || slot->def == NULL) {
+                continue;
+            }
+            params = slot->def->params;
+            if (slot->ammo < params->minAmmo) {
+                continue;
+            }
+            type = slot->def->type;
+            if (type == 1) {
+                if (lowHealth) {
+                    best = i;
+                    preferred = -1;
+                    break;
+                }
+                continue;
+            }
+            if (lowHealth && type == 6 && dist <= params->maxRange && dist >= params->minRange) {
+                best = i;
+                preferred = i;
+            }
+            if (preferred != -1) {
+                continue;
+            }
+            if (best != -1 && params->priority != (*(u8 **)(ai + 0xD0))[0x26] &&
+                holder->slots[best].def->params->priority <= params->priority) {
+                continue;
+            }
+            if ((params->maxRange || params->minRange) &&
+                !(dist <= params->maxRange && dist >= params->minRange)) {
+                continue;
+            }
+            angleRange = params->nearAngle + (params->farAngle - params->nearAngle) * (dist - params->minRange) /
+                                                 (params->maxRange - params->minRange);
+            if ((params->nearAngle || params->farAngle) &&
+                !AI_CheckAngleInRange(angle, params->aimAngle, angleRange)) {
+                continue;
+            }
+            best = i;
+            if (params->priority == (*(u8 **)(ai + 0xD0))[0x26]) {
+                preferred = i;
+            }
+        }
+        if (preferred != -1) {
+            best = preferred;
+        }
+        if (holder->current == best) {
+            def = holder->slots[best].def;
+            if (g_attackDelay == 0 || RandomAdd_s32(0, 50) == 0 || def->type != 3 ||
+                strcmp(*def->name, g_jetBoostersName_800CC3E4) == 0) {
+                ai[0x1B] = 0xFF;
+                *(u32 *)(ai + 0xC) |= 0x800;
+            }
+        } else if (best != -1 && *(u32 *)(ai + 0x658) == 0) {
+            ai[0x11] = 0xFF;
+            *(u32 *)(ai + 0xC) |= 2;
+            *(u32 *)(ai + 0x658) = 3000;
+        }
+        reload = NULL;
+        if (best != -1) {
+            reload = holder->slots[best].def->params;
+        } else if (holder->slots[holder->current].def != NULL) {
+            reload = holder->slots[holder->current].def->params;
+        }
+        if (reload != NULL) {
+            *(u32 *)(ai + 0x654) = (f32)reload->reloadTime *
+                                   RandomAdd(*(f32 *)(*(u8 **)(ai + 0xD0) + 0x14), *(f32 *)(*(u8 **)(ai + 0xD0) + 0x18));
+        }
+    }
+    if (*(u32 *)(ai + 0x654) == 0) {
+        *(u32 *)(ai + 0x654) =
+            300.0f * RandomAdd(*(f32 *)(*(u8 **)(ai + 0xD0) + 0x14), *(f32 *)(*(u8 **)(ai + 0xD0) + 0x18));
+    }
+}
+
 #pragma pop
 void AI_Car_ClearedNavPoint_800087C8(u8 *car, s8 arg1) {
     s32 NavHolder_GetTotalNavPoints(void);
@@ -13099,6 +13290,248 @@ void FileStreaming_ResetQuadResources(void) {
     }
     FileStreaming_SetActiveQuadrants(g_LoadedQuadrants, g_numQuadPacksInMemory + 1);
     Trigger_PauseTACSystem(paused);
+}
+
+void FileStreaming_SetActiveQuadrants(void **quads, u32 count) {
+    typedef struct Thing {
+        u8 pad0[0x8C];
+        void (**vtbl)(struct Thing *);
+        u8 *owner;
+    } Thing;
+    typedef struct SlaveInfo {
+        u8 pad0[0x18];
+        u32 *shared;
+        u8 pad1C[0x20 - 0x1C];
+    } SlaveInfo;
+    typedef struct StaticInfo {
+        u8 *box;
+        u8 noRadius;
+        u8 pad5[2];
+        u8 isStatic;
+        u8 pad8[0x18 - 0x8];
+        u32 numSlaves;
+        SlaveInfo *slaves;
+    } StaticInfo;
+    typedef struct StaticEntry {
+        Vector4 pos;
+        Vector4 rot;
+        u8 pad20[0x24 - 0x20];
+        StaticInfo *info;
+        f32 scale;
+        Thing *thing;
+        u32 active;
+        u8 hasScale;
+        s8 respawn;
+        u8 pad36[0x3C - 0x36];
+        f32 radius;
+    } StaticEntry;
+    typedef struct DynamicEntry {
+        Vector4 pos;
+        Vector4 rot;
+        u8 pad20[0x24 - 0x20];
+        void *info;
+        void *corona;
+        f32 scale;
+        Thing *thing;
+        u32 mode;
+        u8 hasScale;
+    } DynamicEntry;
+    typedef struct ItemEntry {
+        u8 pad0[0x18];
+        s32 timer;
+        u8 *info;
+        u8 pad20[0x24 - 0x20];
+        Thing *thing;
+        u8 pad28[0x38 - 0x28];
+        s8 spawned;
+        u8 pad39[0x40 - 0x39];
+    } ItemEntry;
+    typedef struct QuadData {
+        s8 dirty;
+        u32 numStatics;
+        StaticEntry *statics;
+        u32 numDynamics;
+        DynamicEntry *dynamics;
+        u32 numItems;
+        ItemEntry *items;
+    } QuadData;
+    typedef struct Quad {
+        u8 pad0[0x1C];
+        void *loaded;
+        u8 pad20[0x30 - 0x20];
+        QuadData *data;
+        s8 releasable;
+    } Quad;
+    typedef struct StaticParams {
+        Vector4 pos;
+        Vector4 vel;
+        Vector4 angVel;
+        Vector4 rot;
+        StaticInfo *info;
+        u32 unk44;
+        f32 scale;
+        u32 unk4C;
+        u32 unk50;
+    } StaticParams;
+    typedef struct DynamicParams {
+        Vector4 pos;
+        Vector4 rot;
+        u8 pad20[0x30 - 0x20];
+        void *info;
+        u32 unk34;
+        f32 scale;
+    } DynamicParams;
+    typedef struct ModeAction {
+        u32 mode;
+        s32 set;
+        void *entry;
+    } ModeAction;
+    extern Quad *g_LoadedQuadrants[];
+    extern u32 g_numQuadPacksInMemory;
+    extern Quad *g_pQuadPackToBeReleased[];
+    extern u32 g_numQuadPacksToRelease;
+    extern Vector4 g_zeroVector;
+    s32 Trigger_IsTACSystemPaused(void);
+    void Trigger_PauseTACSystem(s32 pause);
+    void ThingManagerList_RemoveReleasedThings(void **list);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    s32 ActionDestructibleChangeMode(u32 *action);
+    s32 ActionFXPointChangeMode(s32 *data);
+    s32 CoronaHolder_Add(void *corona, Vector4 *pos);
+    s32 SharedSlaveHolder_Get(void *shared);
+    f32 GetBoundingBoxRadius(Vector4 *box, Vector4 *offset);
+    StaticParams sp;
+    Quad *release[12];
+    DynamicParams dp;
+    ModeAction destAction;
+    ModeAction fxAction;
+    u32 numRelease;
+    u32 i;
+    u32 j;
+    u32 k;
+    s32 paused;
+    Quad *quad;
+    u32 *shared;
+
+    numRelease = 0;
+    paused = Trigger_IsTACSystemPaused();
+    for (i = 0; i < g_numQuadPacksInMemory; i++) {
+        quad = g_LoadedQuadrants[i];
+        for (j = 0; j < count; j++) {
+            if (quad == ((Quad **)quads)[j]) {
+                break;
+            }
+        }
+        if (j == count && quad->loaded != NULL) {
+            release[numRelease++] = quad;
+        }
+    }
+    Trigger_PauseTACSystem(1);
+    for (i = 0; i < numRelease; i++) {
+        quad = release[i];
+        if (quad->data->dirty) {
+            quad->data->dirty = 0;
+            for (j = 0; j < quad->data->numStatics; j++) {
+                StaticEntry *st = &release[i]->data->statics[j];
+
+                if (st->thing != NULL && st->info->isStatic == 0) {
+                    st->thing->vtbl[1](st->thing);
+                    st->thing = NULL;
+                }
+            }
+            for (j = 0; j < release[i]->data->numDynamics; j++) {
+                DynamicEntry *dyn = &release[i]->data->dynamics[j];
+
+                if (dyn->thing != NULL) {
+                    dyn->thing->vtbl[1](dyn->thing);
+                    dyn->thing = NULL;
+                }
+            }
+            for (j = 0; j < release[i]->data->numItems; j++) {
+                ItemEntry *item = &release[i]->data->items[j];
+
+                if (item->thing != NULL && item->info[0] != 7) {
+                    if (item->timer == 0) {
+                        item->spawned = 0;
+                    }
+                    item->thing->vtbl[1](item->thing);
+                    item->thing = NULL;
+                }
+            }
+            if (release[i]->releasable) {
+                g_pQuadPackToBeReleased[g_numQuadPacksToRelease++] = release[i];
+            }
+        }
+    }
+    ThingManagerList_RemoveReleasedThings((void **)&g_thingManager_DARYL.activeList);
+    Trigger_PauseTACSystem(paused);
+    g_numQuadPacksInMemory = 0;
+    for (i = 0; i < count; i++) {
+        if (((Quad **)quads)[i]->loaded != NULL) {
+            g_LoadedQuadrants[g_numQuadPacksInMemory++] = ((Quad **)quads)[i];
+        }
+        if (!((Quad **)quads)[i]->data->dirty) {
+            ((Quad **)quads)[i]->data->dirty = 1;
+            for (j = 0; j < ((Quad **)quads)[i]->data->numStatics; j++) {
+                StaticEntry *st = &((Quad **)quads)[i]->data->statics[j];
+
+                if (st->active == 3 && st->respawn) {
+                    st->active = 1;
+                } else if (st->active == 3) {
+                    continue;
+                } else if (st->info->isStatic) {
+                    for (k = 0; k < st->info->numSlaves; k++) {
+                        shared = st->info->slaves[k].shared;
+                        if (shared[0] == 0) {
+                            shared[0] = 1;
+                            ((u8 *)shared[2])[0x1D] = SharedSlaveHolder_Get(shared);
+                        }
+                    }
+                    if (st->info->noRadius == 0) {
+                        st->radius = GetBoundingBoxRadius((Vector4 *)(st->info->box + 0x10), &g_zeroVector);
+                    } else {
+                        st->radius = 1000000.0f;
+                    }
+                    continue;
+                }
+                sp.unk4C = 0;
+                sp.unk50 = 0;
+                sp.scale = st->hasScale ? st->scale : 1.0f;
+                sp.pos = st->pos;
+                sp.info = st->info;
+                sp.rot = st->rot;
+                sp.angVel = g_zeroVector;
+                sp.vel = g_zeroVector;
+                st->thing = ThingManager_DARYL_CreateThing(3, &sp);
+                if (st->thing != NULL) {
+                    st->thing->owner = (u8 *)st;
+                    destAction.mode = st->active;
+                    destAction.set = 1;
+                    destAction.entry = st;
+                    ActionDestructibleChangeMode((u32 *)&destAction);
+                }
+            }
+            for (j = 0; j < ((Quad **)quads)[i]->data->numDynamics; j++) {
+                DynamicEntry *dyn = &((Quad **)quads)[i]->data->dynamics[j];
+
+                if (dyn->info != NULL) {
+                    dp.pos = dyn->pos;
+                    dp.info = dyn->info;
+                    dp.rot = dyn->rot;
+                    dp.scale = dyn->hasScale ? dyn->scale : 1.0f;
+                    dp.unk34 = 0;
+                    dyn->thing = ThingManager_DARYL_CreateThing(2, &dp);
+                }
+                if (dyn->corona != NULL) {
+                    CoronaHolder_Add(dyn->corona, (Vector4 *)dyn);
+                }
+                fxAction.mode = dyn->mode;
+                fxAction.set = 1;
+                fxAction.entry = dyn;
+                ActionFXPointChangeMode((s32 *)&fxAction);
+            }
+        }
+    }
 }
 
 void FileStreaming_HeartBeatItems(void) {
