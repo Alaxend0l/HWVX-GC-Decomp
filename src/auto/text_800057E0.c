@@ -8370,6 +8370,24 @@ f32 RayHitsPoly(Vector4 *start, Vector4 *dir, Vector4 *poly, f32 t) {
     return 0.0f;
 }
 
+typedef struct OBoxZT {
+    Vector4 center;
+    Vector4 corners[8];
+    f32 extents[4];
+    Vector4 *axes[3];
+} OBoxZT;
+
+typedef struct PolyZT {
+    Vector4 plane;
+    Vector4 *verts;
+    u32 numVerts;
+} PolyZT;
+
+typedef struct HitZT {
+    Vector4 pos;
+    Vector4 normal;
+} HitZT;
+
 s8 OBoxHitsPolyZeroTime(void *obox, void *poly, void *arg2) {
     typedef struct {
         Vector4 center;
