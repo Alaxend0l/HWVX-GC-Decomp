@@ -12439,11 +12439,11 @@ static inline void Grid_RemoveNodes(GridObject *obj) {
 }
 
 static inline void Grid_InsertNodes(GridObject *obj) {
-    u32 z;
-    u32 x;
-    GridNode *prev;
-    GridNode *newNode;
     GridNode *node;
+    GridNode *newNode;
+    GridNode *prev;
+    u32 x;
+    u32 z;
 
     prev = NULL;
     for (x = obj->x0; x <= obj->x1; x++) {
