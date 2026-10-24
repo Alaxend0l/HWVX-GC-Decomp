@@ -3087,6 +3087,8 @@ int __pformatter(void *(*WriteProc)(void *, const char *, u32), void *WriteProcA
     char *double2hex(double num, char *buff, print_format format);
     char *strchr(const char *str, int chr);
     u32 strlen(const char *str);
+    u32 wcstombs(char *s, const u16 *pwcs, u32 n);
+    void *memchr(const void *src, int val, unsigned long n);
     int num_chars;
     int chars_written;
     int field_width;
