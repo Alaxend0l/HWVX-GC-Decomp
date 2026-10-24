@@ -590,8 +590,8 @@ static s32 s_rumbleTime[4];
 static u8 s_unk30[0x40];
 static u8 s_unk70[0x98];
 static InputUnk108 s_unk108[4];
-extern s8 g_padUpPos[4];
-extern s8 g_padDownPos[4];
+extern u8 g_padUpPos[4];
+extern u8 g_padDownPos[4];
 extern u32 g_StopInput;
 
 typedef struct JoyBusPacket {
