@@ -382,6 +382,7 @@ static inline s32 __THPHuffDecodeTab(THPFileInfo *info, THPHuffmanTab *h) {
     s32 i;
     u8 *increment;
     u32 *c;
+    s32 *maxCode;
 
     cnt = info->cnt;
     increment = h->increment;
@@ -14323,6 +14324,91 @@ void __THPHuffDecodeDCTCompY(THPFileInfo *info, s16 *block) {
     info->cnt = cnt;
     info->currByte = cb;
 }
+
+#pragma push
+#pragma inline_max_size(4096)
+void __THPHuffDecodeDCTCompU(THPFileInfo *info, s16 *block) {
+    extern THPHuffmanTab *Udchuff_803C77A0;
+    extern THPHuffmanTab *Uachuff_803C7800;
+    extern u8 __THPJpegNaturalOrder_800CE0D8[];
+    u32 *c;
+    s32 t;
+    s16 diff;
+    s32 n;
+    s32 rem;
+    s32 cnt;
+    u32 cb;
+    u32 tmp2;
+    s32 k;
+    s32 tmp;
+    s32 s;
+    s32 r;
+    s32 v;
+
+    __dcbz(block, 0);
+    t = __THPHuffDecodeTab(info, Udchuff_803C77A0);
+    __dcbz(block, 32);
+    diff = 0;
+    __dcbz(block, 64);
+    if (t) {
+        cnt = info->cnt;
+        n = 33 - cnt;
+        cb = info->currByte;
+        rem = t - n;
+        if (rem <= 0) {
+            info->cnt = cnt + t;
+            diff = (cb << (cnt - 1)) >> (32 - t);
+        } else {
+            c = (u32 *)info->c;
+            tmp2 = cb << (cnt - 1);
+            cb = *++c;
+            info->currByte = cb;
+            info->c = (u8 *)c;
+            info->cnt = rem + 1;
+            diff = ((cb >> n) + tmp2) >> (32 - t);
+        }
+        if (__cntlzw(diff) > 32 - t) {
+            diff = (-1 << t) + diff + 1;
+        }
+    }
+    __dcbz(block, 96);
+    block[0] = info->components[1].predDC = info->components[1].predDC + diff;
+
+    for (k = 1; k < 64; k++) {
+        tmp = __THPHuffDecodeTab(info, Uachuff_803C7800);
+        s = tmp & 15;
+        r = tmp >> 4;
+        if (s) {
+            k += r;
+            cnt = info->cnt;
+            n = 33 - cnt;
+            cb = info->currByte;
+            rem = s - n;
+            if (rem <= 0) {
+                info->cnt = cnt + s;
+                v = (cb << (cnt - 1)) >> (32 - s);
+            } else {
+                c = (u32 *)info->c;
+                tmp2 = cb << (cnt - 1);
+                cb = *++c;
+                info->currByte = cb;
+                info->c = (u8 *)c;
+                info->cnt = rem + 1;
+                v = ((cb >> n) + tmp2) >> (32 - s);
+            }
+            if (__cntlzw(v) > 32 - s) {
+                v = (-1 << s) + v + 1;
+            }
+            block[__THPJpegNaturalOrder_800CE0D8[k]] = v;
+        } else {
+            if (r != 15) {
+                break;
+            }
+            k += 15;
+        }
+    }
+}
+#pragma pop
 
 s32 __THPAudioGetNewSample(u32 *info);
 void __THPAudioInitialize(void *arg0, u8 *arg1);
