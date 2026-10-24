@@ -588,7 +588,9 @@ typedef struct InputUnk108 {
 static RumbleStatus rumbleStatus[4];
 static s32 s_rumbleTime[4];
 static u8 s_unk30[0x40];
-static u8 s_unk70[0x98];
+static u8 s_unk70[0x40];
+static u16 s_keyMap[20];
+static u8 s_unkD8[0x30];
 static InputUnk108 s_unk108[4];
 extern u8 g_padUpPos[4];
 extern u8 g_padDownPos[4];
@@ -16129,6 +16131,55 @@ void Input_Destroy(void) {
     PADControlMotor(1, 0);
     PADControlMotor(2, 0);
     PADControlMotor(3, 0);
+}
+
+void Input_Heartbeat(void) {
+    void GBAConnectivityLoop__Fv(void);
+    void pollControllers__Fv(void);
+    void PADControlMotor(s32 chan, u32 command);
+    extern s32 g_iDeltaTimeMS;
+    s32 i;
+    s32 j;
+    s32 k;
+    u32 key;
+
+    if (!g_StopInput) {
+        GBAConnectivityLoop__Fv();
+        pollControllers__Fv();
+    }
+    for (i = 0; i < 4; i++) {
+        g_VirtualPad[i].keyPress = 0;
+        for (j = 0; j < g_padDownPos[i]; j++) {
+            key = ((u16 (*)[8])s_unk30)[i][j];
+            for (k = 0; k < 20; k++) {
+                if (((u16 *)(s_unk70 + 0x40))[k] == key) {
+                    g_VirtualPad[i].keyDown |= 1 << k;
+                    g_VirtualPad[i].keyPress |= 1 << k;
+                }
+            }
+            ((u16 (*)[8])s_unk30)[i][j] = key;
+        }
+        for (j = 0; j < g_padUpPos[i]; j++) {
+            key = ((u16 (*)[8])s_unk70)[i][j];
+            for (k = 0; k < 20; k++) {
+                if (((u16 *)(s_unk70 + 0x40))[k] == key) {
+                    g_VirtualPad[i].keyDown &= ~(1 << k);
+                    g_VirtualPad[i].keyRelease |= 1 << k;
+                }
+            }
+            ((u16 (*)[8])s_unk70)[i][j] = key;
+        }
+        g_padUpPos[i] = 0;
+        g_padDownPos[i] = 0;
+        if (rumbleStatus[i].active) {
+            if (rumbleStatus[i].duration < 0) {
+                rumbleStatus[i].active = 0;
+                PADControlMotor(i, 0);
+            } else {
+                rumbleStatus[i].duration -= g_iDeltaTimeMS;
+            }
+        }
+    }
 }
 
 void Input_SetForceFeedback(s32 chan, f32 strength, f32 duration) {
