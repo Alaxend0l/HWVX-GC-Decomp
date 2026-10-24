@@ -6734,6 +6734,29 @@ void DisplayList_AddAlphaGroup(s32 arg0, s32 arg1, u32 matrix, u8 arg3, GXColor 
 
 void Render_DrawAlphaTriangle(u16 arg);
 void Render_DrawAlphaGroup(u16 arg);
+
+static inline void Gfx_LinkAlphaEntry(u32 n, f32 z) {
+    extern GDL *g_pGDL;
+    extern f32 g_alphaTestMin;
+    extern f32 g_AlphaTestMax;
+    extern f32 g_AlphaScale;
+    u32 idx;
+
+    if (g_alphaTestMin > z) {
+        g_alphaTestMin = z;
+    }
+    if (g_AlphaTestMax < z) {
+        g_AlphaTestMax = z;
+    }
+    g_AlphaScale = 255.0f / (g_AlphaTestMax - g_alphaTestMin);
+    idx = g_AlphaScale * (z - g_alphaTestMin);
+    if (idx >= 0x100) {
+        idx = 0xFF;
+    }
+    g_pGDL->alphaEntries[n].next = g_pGDL->alphaTable[idx];
+    g_pGDL->alphaTable[idx] = n;
+}
+
 #pragma use_lmw_stmw on
 #pragma dont_inline on
 void Gfx_SortAlpha(void) {
@@ -6742,19 +6765,21 @@ void Gfx_SortAlpha(void) {
     extern f32 g_AlphaTestMax;
     extern f32 g_AlphaScale;
     u16 heads[0x1FF];
-    u16 i;
-    u32 n;
     u32 idx;
     f32 z;
     GDLAlphaGroup *grp;
     u16 key;
+    GDLAlphaEntry *entry;
+    u32 count;
+    u32 n;
+    u16 i;
 
     MemClr32(g_pGDL->alphaTable, 0x200);
     g_pGDL->numAlphaEntries = 1;
     for (i = 0; i < g_pGDL->numTris; i++) {
-        XformVec4x4((Vector *)((u8 *)GetRenderWindow() + 0x40), (Vector *)&g_pGDL->tris[i].v[0], (Vector *)&g_pGDL->tris[i].v[0]);
-        XformVec4x4((Vector *)((u8 *)GetRenderWindow() + 0x40), (Vector *)&g_pGDL->tris[i].v[1], (Vector *)&g_pGDL->tris[i].v[1]);
-        XformVec4x4((Vector *)((u8 *)GetRenderWindow() + 0x40), (Vector *)&g_pGDL->tris[i].v[2], (Vector *)&g_pGDL->tris[i].v[2]);
+        XformVec4x4((Vector *)((u8 *)GetRenderWindow() + 0x40), (Vector *)&g_pGDL->tris[i].v[0].x, (Vector *)&g_pGDL->tris[i].v[0].x);
+        XformVec4x4((Vector *)((u8 *)GetRenderWindow() + 0x40), (Vector *)&g_pGDL->tris[i].v[1].x, (Vector *)&g_pGDL->tris[i].v[1].x);
+        XformVec4x4((Vector *)((u8 *)GetRenderWindow() + 0x40), (Vector *)&g_pGDL->tris[i].v[2].x, (Vector *)&g_pGDL->tris[i].v[2].x);
         z = 0.333333f * (g_pGDL->tris[i].v[2].z + (g_pGDL->tris[i].v[0].z + g_pGDL->tris[i].v[1].z));
         g_pGDL->alphaEntries[g_pGDL->numAlphaEntries].func = Render_DrawAlphaTriangle;
         g_pGDL->alphaEntries[g_pGDL->numAlphaEntries].arg = i;
@@ -6775,22 +6800,22 @@ void Gfx_SortAlpha(void) {
     }
 
     grp = g_pGDL->alphaGroups;
-    memset(heads, 0xFFFF, sizeof(heads));
+    memset(heads, -1, sizeof(heads));
     for (i = 0; i < g_pGDL->numAlphaGroups; i++, grp++) {
         key = ((Geometry *)grp->unk40)->groups[grp->unk44].unk18;
         grp->next = heads[key];
         heads[key] = i;
     }
 
+    count = g_pGDL->numAlphaEntries;
     if (g_pGDL->numAlphaGroups != 0) {
-        GDLAlphaEntry *entry;
-        u32 count = g_pGDL->numAlphaEntries;
         entry = &g_pGDL->alphaEntries[count];
         for (i = 0; i < 0x1FF; i++) {
-            for (key = heads[i]; key != 0xFFFF; key = g_pGDL->alphaGroups[key].next) {
+            key = heads[i];
+            while (key != 0xFFFF) {
+                grp = &g_pGDL->alphaGroups[key];
                 entry->func = Render_DrawAlphaGroup;
                 entry->arg = key;
-                entry++;
                 n = count++;
                 z = 0.0f;
                 if (g_alphaTestMin > z) {
@@ -6804,12 +6829,14 @@ void Gfx_SortAlpha(void) {
                 if (idx >= 0x100) {
                     idx = 0xFF;
                 }
+                entry++;
                 g_pGDL->alphaEntries[n].next = g_pGDL->alphaTable[idx];
                 g_pGDL->alphaTable[idx] = n;
+                key = grp->next;
             }
         }
-        g_pGDL->numAlphaEntries = count;
     }
+    g_pGDL->numAlphaEntries = count;
 }
 
 #pragma pop
