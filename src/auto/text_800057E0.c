@@ -20658,21 +20658,6 @@ static inline void GameRules_ResetZone(GRZone *zone) {
     }
 }
 
-static inline void GameRules_SetTimerFromMCP(u8 *mcp) {
-    u32 i;
-    GRTrigger *trig;
-
-    for (i = 0; i < ((GRWorld *)g_worldData.world)->numTriggers; i++) {
-        trig = ((GRWorld *)g_worldData.world)->triggers[i];
-        if (trig->type == 0xC) {
-            if (trig->time == 0.0f) {
-                trig->time = (*(u32 **)(mcp + 0x24))[1];
-            }
-            break;
-        }
-    }
-}
-
 void GameRules_Init(void) {
     extern s8 g_bRoundEnd_803C71CC;
     extern u32 g_playerNumThatWon_803C71C8;
