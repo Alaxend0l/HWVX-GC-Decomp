@@ -14641,6 +14641,70 @@ void Effect_Init(struct Effect *effect) {
 }
 #pragma pop
 
+#pragma push
+s32 Effect_UpdateEffect(Effect *effect, u8 *desc) {
+    Effect *src = (Effect *)desc;
+    s32 ret = 0;
+
+    effect->type = src->type;
+    effect->duration = src->duration;
+    effect->startDelay = src->startDelay;
+    switch (src->type) {
+    case 0:
+        effect->flags |= 0x14;
+        effect->params.constant.magnitude = Effect_Clamp(src->params.constant.magnitude, -255, 255);
+        effect->params.constant.angle = Effect_AngleToByte(src->params.constant.angle);
+        effect->params.constant.envelope.attackTime = src->params.constant.envelope.attackTime;
+        effect->params.constant.envelope.fadeTime = src->params.constant.envelope.fadeTime;
+        effect->params.constant.envelope.attackLevel = src->params.constant.envelope.attackLevel > 255 ? 255 : src->params.constant.envelope.attackLevel;
+        effect->params.constant.envelope.fadeLevel = src->params.constant.envelope.fadeLevel > 255 ? 255 : src->params.constant.envelope.fadeLevel;
+        break;
+    case 1:
+        effect->flags |= 0x24;
+        effect->params.ramp.start = Effect_Clamp(src->params.ramp.start, -255, 255);
+        effect->params.ramp.end = Effect_Clamp(src->params.ramp.end, -255, 255);
+        effect->params.ramp.angle = Effect_AngleToByte(src->params.ramp.angle);
+        break;
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+        effect->flags |= 0x44;
+        effect->params.periodic.magnitude = src->params.periodic.magnitude > 255 ? 255 : src->params.periodic.magnitude;
+        effect->params.periodic.angle = Effect_AngleToByte(src->params.periodic.angle);
+        effect->params.periodic.period = src->params.periodic.period < 2 ? 2 : src->params.periodic.period;
+        effect->params.periodic.phase = Effect_AngleToByte(src->params.periodic.phase);
+        effect->params.periodic.offset = Effect_Clamp(src->params.periodic.offset, -255, 255);
+        effect->params.periodic.envelope.attackTime = src->params.periodic.envelope.attackTime;
+        effect->params.periodic.envelope.fadeTime = src->params.periodic.envelope.fadeTime;
+        effect->params.periodic.envelope.attackLevel = src->params.periodic.envelope.attackLevel > 255 ? 255 : src->params.periodic.envelope.attackLevel;
+        effect->params.periodic.envelope.fadeLevel = src->params.periodic.envelope.fadeLevel > 255 ? 255 : src->params.periodic.envelope.fadeLevel;
+        if (effect->params.periodic.period < 4) {
+            effect->params.periodic.phase = 0x40;
+        }
+        break;
+    case 7:
+    case 8:
+        effect->flags |= 0x80;
+        effect->params.condition.unk0[0] = src->params.condition.unk0[0];
+        effect->params.condition.unk0[1] = src->params.condition.unk0[1];
+        effect->params.condition.posCoefficient = Effect_Clamp(src->params.condition.posCoefficient, -255, 255);
+        effect->params.condition.negCoefficient = Effect_Clamp(src->params.condition.negCoefficient, -255, 255);
+        effect->params.condition.negSaturation = src->params.condition.negSaturation >> 1;
+        effect->params.condition.posSaturation = src->params.condition.posSaturation >> 1;
+        effect->deadbandLow = ((s8)effect->params.condition.unk0[0] - (effect->params.condition.unk0[1] >> 1)) << 12;
+        effect->deadbandHigh = ((s8)effect->params.condition.unk0[0] + (effect->params.condition.unk0[1] >> 1)) << 12;
+        break;
+    default:
+        ret = -2;
+        break;
+    }
+    return ret;
+}
+
+#pragma pop
+
 #pragma pop
 s32 Effect_StartEffect(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0x28) = (s32) (M2C_FIELD(arg0, s32 *, 0x28) | 1);
