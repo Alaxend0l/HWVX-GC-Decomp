@@ -4894,6 +4894,99 @@ f32 CarA_GetMass(void *arg0) {
     return M2C_FIELD(M2C_FIELD(M2C_FIELD(arg0, void **, 0x3BC), void **, 0xA0), f32 *, 0x20);
 }
 
+void CarA_DynamicRotation(u8 *car, f32 dt) {
+    typedef struct OBox {
+        Vector4 center;
+        Vector4 corners[8];
+        u8 pad[0x60];
+    } OBox;
+    typedef struct RayHit {
+        Vector4 pos;
+        Vector4 normal;
+        u8 pad20[8];
+        u8 *surface;
+        u8 pad2C[0x24];
+    } RayHit;
+    extern u8 *g_pNoRayCollideThing;
+    f32 MagnitudeVector(Vector4 *v);
+    void GenerateQuaternion(Vector4 *axis, Quaternion *q, f32 angle);
+    void QuaternionToSubMatrix(Quaternion *q, Matrix4 *m);
+    void CarA_StuntsGetNewOrientation(u8 *car, Quaternion *q, f32 t);
+    void *CarA_GetOrientedCollision(void *car);
+    void BuildOOBOffset(void *oob, void *pos, void *rot, void *out);
+    s8 RayHitsTerrainAndObjects(void *pos, void *vel, f32 *t, RayHit *hit);
+    s8 OBoxHitsTerrainAndObjectsZeroTimeEdgesOnly(void *obox, void *thing, void *hit);
+    void PSVECSubtract(void *a, void *b, Vector4 *out);
+    void PSVECCrossProduct(void *a, void *b, Vector4 *out);
+    OBox obox;
+    RayHit hit;
+    Matrix4 mtx;
+    Quaternion q;
+    Quaternion newQ;
+    Vector4 axis;
+    Vector4 dir;
+    Vector4 r;
+    Vector4 v;
+    f32 t;
+    f32 mag;
+    u32 i;
+    OBox *old;
+    void *box;
+    s8 hitAny;
+
+    t = dt;
+    axis = *(Vector4 *)(car + 0x410);
+    mag = MagnitudeVector(&axis);
+    if (mag > 0.0001f) {
+        axis.x /= mag;
+        axis.y /= mag;
+        axis.z /= mag;
+    }
+    GenerateQuaternion(&axis, &q, mag * t);
+    QuaternionMult((Vector4 *)&q, (Vector4 *)(car + 0x50), (Vector4 *)&newQ);
+    CarA_StuntsGetNewOrientation(car, &newQ, t);
+    QuaternionToSubMatrix(&newQ, &mtx);
+    mtx.v[3] = *(Vector4 *)(car + 0x40);
+    switch ((*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0))[0x10]) {
+    case 0:
+        box = *(void **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x44);
+        old = CarA_GetOrientedCollision(car);
+        hitAny = 0;
+        BuildOOBOffset(box, &mtx, car + 0x520, &obox);
+        g_pNoRayCollideThing = car;
+        for (i = 0; i < 8; i++) {
+            if (t > 0.0f) {
+                dir.x = (obox.corners[i].x - old->corners[i].x) / dt;
+                dir.y = (obox.corners[i].y - old->corners[i].y) / dt;
+                dir.z = (obox.corners[i].z - old->corners[i].z) / dt;
+                if (RayHitsTerrainAndObjects(&old->corners[i], &dir, &t, &hit)) {
+                    hitAny = 1;
+                    CarA_ProcessImpulse(car, &hit.normal, &hit.pos, &dir, *(f32 *)(hit.surface + 0x18));
+                }
+            }
+        }
+        g_pNoRayCollideThing = NULL;
+        if (!hitAny) {
+            if (OBoxHitsTerrainAndObjectsZeroTimeEdgesOnly(&obox, car, &hit)) {
+                PSVECSubtract(&hit.pos, car + 0x40, &r);
+                PSVECCrossProduct(car + 0x410, &r, &v);
+                CarA_ProcessImpulse(car, &hit.normal, &hit.pos, &v, 0.5f);
+            } else {
+                *(Quaternion *)(car + 0x50) = newQ;
+                *(Matrix4 *)(car + 0x10) = mtx;
+                *(OBox *)(car + 0xC0) = obox;
+                *(u8 **)(car + 0x160) = car + 0x30;
+                *(u8 **)(car + 0x164) = car + 0x10;
+                *(u8 **)(car + 0x168) = car + 0x20;
+                *(u32 *)(car + 0x74) &= ~0x180;
+            }
+        }
+        break;
+    case 1:
+        break;
+    }
+}
+
 void CarA_GetTargetPos(void *car, Vector4 *pos) {
     switch (M2C_FIELD(M2C_FIELD(M2C_FIELD(car, void **, 0x3BC), void **, 0xA0), u8 *, 0x10)) {
     case 0:
