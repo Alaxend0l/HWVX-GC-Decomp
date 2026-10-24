@@ -5232,39 +5232,6 @@ static void CarA_ApplyWheelLoads(void *thing) {
     *(f32 *)(car + 0x394) += *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x24) * *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x20);
 }
 
-static void CarA_ApplySuspensionLoads(void *thing, Vector4 *carUp) {
-    u8 *car = thing;
-    typedef struct WheelInfo {
-        u8 pad0[0x3F];
-        u8 parent;
-        u16 index;
-        u8 pad42[0x50 - 0x42];
-    } WheelInfo;
-    Vector4 *up;
-    u32 i;
-    WheelInfo *wheel;
-    u8 *susp;
-    s32 bone;
-
-    susp = car;
-    for (i = 0; i < *(u32 *)(*(u8 **)(car + 0x3BC) + 0xD0); i++, susp += 0x30) {
-        wheel = &(*(WheelInfo **)(*(u8 **)(car + 0x3BC) + 0xD4))[i];
-        if (wheel->parent != 0) {
-            bone = wheel->index - wheel->parent;
-            up = (Vector4 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x10);
-            *(f32 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x30) -= *(f32 *)(susp + 0x1BC) * up->x;
-            *(f32 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x34) -= *(f32 *)(susp + 0x1BC) * up->y;
-            *(f32 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x38) -= *(f32 *)(susp + 0x1BC) * up->z;
-        } else {
-            up = carUp;
-        }
-        *(f32 *)(*(u8 **)(car + 0x340) + wheel->index * 0x40 + 0x30) -= *(f32 *)(susp + 0x1BC) * up->x;
-        *(f32 *)(*(u8 **)(car + 0x340) + wheel->index * 0x40 + 0x34) -= *(f32 *)(susp + 0x1BC) * up->y;
-        *(f32 *)(*(u8 **)(car + 0x340) + wheel->index * 0x40 + 0x38) -= *(f32 *)(susp + 0x1BC) * up->z;
-    }
-    *(f32 *)(car + 0x394) += *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x24) * *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x20);
-}
-
 void CarA_ComputeForces(u8 *car) {
     typedef struct RayHit {
         Vector4 pos;
