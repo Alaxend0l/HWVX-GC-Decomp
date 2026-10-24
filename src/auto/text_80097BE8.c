@@ -12952,8 +12952,6 @@ u32 THPAudioDecode(s16 *buffer, u8 *audioFrame, s32 flag) {
         u32 offsetNibbles;
         u8 predictor;
         u8 scale;
-        s16 yn1;
-        s16 yn2;
     } THPAudioDecodeInfo;
     THPAudioRecordHeader *header;
     THPAudioDecodeInfo decInfo;
@@ -12973,7 +12971,7 @@ u32 THPAudioDecode(s16 *buffer, u8 *audioFrame, s32 flag) {
     }
     header = (THPAudioRecordHeader *)audioFrame;
     left = audioFrame + sizeof(THPAudioRecordHeader);
-    right = left + header->offsetNextChannel;
+    right = audioFrame + header->offsetNextChannel + sizeof(THPAudioRecordHeader);
     if (flag == 1) {
         decRightPtr = buffer;
         decLeftPtr = buffer + header->sampleSize;
@@ -17123,6 +17121,108 @@ void __GBAX01(s32 chan, s32 ret) {
     gba->ret = ret;
 }
 
+static void F33(s32 chan, s32 ret);
+void F31(s32 chan, s32 ret) {
+    s32 GBAWriteAsync(s32 chan, u8 *src, u8 *status, GBACallback callback);
+    s32 GBAReadAsync(s32 chan, u8 *dst, u8 *status, GBACallback callback);
+    GBAControl *gba;
+    GBABootInfo *bootInfo;
+    GBACallback callback;
+    u8 *d;
+    u32 writeWord;
+    u32 crc;
+    u32 x;
+    u32 poly;
+    s32 i;
+
+    gba = &__GBA[chan];
+    d = D54_800DAFF8;
+    bootInfo = &gba->bootInfo;
+    if (ret == 0) {
+        if (bootInfo->firstXfer != 0) {
+            bootInfo->firstXfer = 0;
+        } else if (!(*bootInfo->status & d[0x14]) ||
+                   (*bootInfo->status & d[0x2A]) >> d[0x21] != (bootInfo->curOffset & d[0x21]) >> d[0x1F]) {
+            ret = 3;
+            goto exit;
+        } else {
+            bootInfo->curOffset -= d[0x19] - d[0x17];
+        }
+        if (bootInfo->curOffset <= bootInfo->realLength) {
+            if (bootInfo->curOffset < bootInfo->realLength) {
+                writeWord = d[0x1D];
+                for (bootInfo->i = d[0x1D]; bootInfo->i < d[0x21]; bootInfo->i++) {
+                    if (bootInfo->length != 0) {
+                        writeWord |= *bootInfo->programp++ << (bootInfo->i * d[0x25]);
+                        bootInfo->length--;
+                    }
+                }
+                if (bootInfo->curOffset == d[0x26]) {
+                    bootInfo->initialCode = writeWord;
+                } else if (bootInfo->curOffset == d[0x27]) {
+                    writeWord = chan << d[0x25];
+                }
+                if (bootInfo->curOffset >= d[2]) {
+                    x = writeWord;
+                    crc = bootInfo->crc;
+                    poly = (d[0x26] << 8) + (d[0x28] + (d[0x2B] - (d[0x2B] << 4)) - d[0x23]);
+                    for (i = d[0x14]; i > d[0x1E]; i--) {
+                        if ((x ^ crc) & 1) {
+                            crc = (crc >> 1) ^ poly;
+                        } else {
+                            crc >>= 1;
+                        }
+                        x >>= 1;
+                    }
+                    bootInfo->crc = crc;
+                }
+                if (bootInfo->curOffset == d[0x28] + 0x100) {
+                    bootInfo->dummyWord[0] = writeWord;
+                } else if (bootInfo->curOffset == d[1] + 0x100) {
+                    bootInfo->i = d[7];
+                    bootInfo->dummyWord[bootInfo->i] = writeWord;
+                }
+            } else {
+                writeWord = bootInfo->crc | (bootInfo->curOffset << 16);
+            }
+            if (bootInfo->curOffset > d[0x2B]) {
+                bootInfo->keyA = bootInfo->keyA * (d[0x15] | (d[0x18] << d[0x25]) | (d[0x18] << d[0x2C]) | (d[0x17] << d[0x2A])) - (d[0x1B] - d[0x1A]);
+                writeWord ^= bootInfo->keyA;
+                writeWord ^= -(bootInfo->curOffset + (d[0xB] << 20));
+                writeWord ^= (d[0xB] << 24) | (d[0x13] << 16) | (d[0x12] << 8) | d[0xB];
+            }
+            bootInfo->writebuf[3] = writeWord >> d[0];
+            bootInfo->writebuf[0] = writeWord >> d[0x1E];
+            bootInfo->writebuf[1] = writeWord >> d[0x29];
+            bootInfo->writebuf[2] = writeWord >> d[0x2A];
+            if (bootInfo->curOffset == d[1] + d[1]) {
+                bootInfo->dummyWord[2] = writeWord;
+            }
+            if (bootInfo->i < d[0x21]) {
+                bootInfo->dummyWord[3 - (1 - bootInfo->i)] = writeWord;
+                bootInfo->dummyWord[5 - bootInfo->i] = bootInfo->dummyWord[2 - (1 - bootInfo->i)] * bootInfo->dummyWord[4 - bootInfo->i];
+                bootInfo->dummyWord[5 - (1 - bootInfo->i)] = bootInfo->dummyWord[1 - bootInfo->i] * bootInfo->dummyWord[bootInfo->i];
+                bootInfo->dummyWord[7 - bootInfo->i] = bootInfo->dummyWord[-(1 - bootInfo->i)] * bootInfo->dummyWord[4 - bootInfo->i];
+            }
+            ret = GBAWriteAsync(chan, bootInfo->writebuf, bootInfo->status, F31);
+        } else {
+            bootInfo->start = OSGetTick();
+            ret = GBAReadAsync(chan, bootInfo->readbuf, bootInfo->status, F33);
+        }
+    }
+exit:
+    if (ret != 0) {
+        bootInfo->begin = 0;
+        callback = bootInfo->callback;
+        if (callback != NULL) {
+            bootInfo->callback = NULL;
+            callback(chan, ret);
+        }
+    }
+    gba->ret = ret;
+}
+
+#pragma opt_common_subs reset
 static void F35(s32 chan, s32 ret);
 #pragma push
 #pragma opt_common_subs off
