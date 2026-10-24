@@ -2518,6 +2518,7 @@ void AI_Car_Init(u8 *car, u8 *params) {
     M2C_FIELD(car, u8 *, 0xCC) = 1;
 }
 
+#pragma dont_inline off
 static inline void AI_Car_Think(u8 *ai, u8 *car) {
     typedef struct AICarTarget {
         u32 timer;
