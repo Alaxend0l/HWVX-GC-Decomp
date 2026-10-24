@@ -42460,6 +42460,18 @@ s32 TRKDoReadRegisters(TRKBuffer *b) {
     return err;
 }
 
+static inline s32 TRKSendACK(TRKBuffer *b) {
+    s32 err;
+    s32 ackTries = 3;
+
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+    return err;
+}
+
+#pragma auto_inline off
 void TRKDoReadMemory(TRKBuffer *b) {
     s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data);
     s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data);
