@@ -10922,7 +10922,7 @@ void InterfaceManager_SetInput(s32 index, s32 input) {
     }
 }
 
-static void InterfaceManager_ReleaseInterfaceObjects(u8 *objs) {
+static inline void InterfaceManager_ReleaseInterfaceObjects(u8 *objs) {
     typedef struct ObjectAllocation {
         u32 start;
         u32 count;
