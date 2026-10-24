@@ -11363,7 +11363,13 @@ typedef struct GridNode {
 } GridNode;
 
 typedef struct GridObject {
-    u8 pad0[0x1C];
+    u32 data;
+    u32 id;
+    GridNode *nodes;
+    s32 x0;
+    s32 x1;
+    s32 z0;
+    s32 z1;
     struct GridObject *next;
 } GridObject;
 
@@ -35532,93 +35538,13 @@ void GXSetVtxDescv(const u32 *list) {
     extern u8 *gx;
 
     while (list[0] != 0xFF) {
-        s32 type = list[1];
-        switch (list[0]) {
-        case 0:
-            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x1) | type;
-            break;
-        case 1:
-            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x2) | (type << 1);
-            break;
-        case 2:
-            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x4) | (type << 2);
-            break;
-        case 3:
-            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x8) | (type << 3);
-            break;
-        case 4:
-            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x10) | (type << 4);
-            break;
-        case 5:
-            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x20) | (type << 5);
-            break;
-        case 6:
-            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x40) | (type << 6);
-            break;
-        case 7:
-            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x80) | (type << 7);
-            break;
-        case 8:
-            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x100) | (type << 8);
-            break;
-        case 9:
-            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x600) | (type << 9);
-            break;
-        case 10:
-            if (type != 0) {
-                *(u8 *)(gx + 0x41C) = 1;
-                *(u8 *)(gx + 0x41D) = 0;
-                *(s32 *)(gx + 0x418) = type;
-            } else {
-                *(u8 *)(gx + 0x41C) = 0;
-            }
-            break;
-        case 25:
-            if (type != 0) {
-                *(u8 *)(gx + 0x41D) = 1;
-                *(u8 *)(gx + 0x41C) = 0;
-                *(s32 *)(gx + 0x418) = type;
-            } else {
-                *(u8 *)(gx + 0x41D) = 0;
-            }
-            break;
-        case 11:
-            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x6000) | (type << 13);
-            break;
-        case 12:
-            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x18000) | (type << 15);
-            break;
-        case 13:
-            *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0x3) | type;
-            break;
-        case 14:
-            *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0xC) | (type << 2);
-            break;
-        case 15:
-            *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0x30) | (type << 4);
-            break;
-        case 16:
-            *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0xC0) | (type << 6);
-            break;
-        case 17:
-            *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0x300) | (type << 8);
-            break;
-        case 18:
-            *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0xC00) | (type << 10);
-            break;
-        case 19:
-            *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0x3000) | (type << 12);
-            break;
-        case 20:
-            *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0xC000) | (type << 14);
-            break;
-        }
+        SETVCDATTR(list[0], list[1]);
         list += 2;
     }
     if (*(u8 *)(gx + 0x41C) || *(u8 *)(gx + 0x41D)) {
         *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x1800) | (*(u32 *)(gx + 0x418) << 11);
     } else {
-        *(u32 *)(gx + 0x14) &= ~0x1800;
+        *(u32 *)(gx + 0x14) = *(u32 *)(gx + 0x14) & ~0x1800;
     }
     *(u32 *)(gx + 0x4F4) |= 8;
 }
