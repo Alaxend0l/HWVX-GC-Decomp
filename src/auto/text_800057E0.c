@@ -18717,7 +18717,7 @@ s32 Thing_AddToGrid(void *thing, s32 type) {
     Vector4 max;
 
     Thing_GetDynamicMinMax(thing, &min, &max, 0.0f);
-    M2C_FIELD(thing, s32 *, 0x84) = Grid_AddObject(type, thing, &min, &max);
+    M2C_FIELD(thing, s32 *, 0x84) = (s32)Grid_AddObject(type, (u32)thing, &min, &max);
     return M2C_FIELD(thing, s32 *, 0x84);
 }
 
