@@ -2456,8 +2456,12 @@ void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed) {
     f32 t;
     f32 yaw;
     f32 r;
+    f32 far;
+    f32 near;
     f32 mid;
     f32 margin;
+    f32 hi;
+    f32 lo;
     s32 v;
     s16 s;
     s8 full;
@@ -2474,11 +2478,11 @@ void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed) {
     vel = Sqrt(velSq);
     angle = AI_AngleToTarget(car, (Vector4 *)(ai + 0x400));
     deg = 57.29578f * angle;
-    if (fabs(deg) <= 5.0 || 0.0f == velSq) {
+    if (__fabs(deg) <= 5.0 || 0.0f == velSq) {
         brake = 0xFF;
         *(s16 *)(ai + 0x640) = (s8)(-6.0f * deg);
         ai[0] = *(s16 *)(ai + 0x640);
-    } else if (velSq < 1600.0f && fabs(deg) >= 100.0 && fabs(deg) <= 125.0 && distSq < 900.0f) {
+    } else if (velSq < 1600.0f && __fabs(deg) >= 100.0 && __fabs(deg) <= 125.0 && distSq < 900.0f) {
         accel = 0xFF;
         if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1) {
             *(s32 *)(ai + 0x634) = 80;
@@ -2487,7 +2491,7 @@ void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed) {
         }
         *(s16 *)(ai + 0x640) = deg < 0.0f ? -127 : 127;
         *(Quaternion *)(ai + 0x610) = *(Quaternion *)(car + 0x30);
-    } else if (velSq > 1600.0f && fabs(deg) >= 45.0 && distSq < 5625.0f) {
+    } else if (velSq > 1600.0f && __fabs(deg) >= 45.0 && distSq < 5625.0f) {
         accel = 0xFF;
         reverse = 0xFF;
         *(s16 *)(ai + 0x640) = deg < 0.0f ? 127 : -127;
@@ -2501,7 +2505,8 @@ void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed) {
         }
         r = angle / yaw;
         if (r < 0.0f) {
-            r = -r + yaw * (yaw >= 0.0f ? 3.0f : -3.0f);
+            r = -r;
+            r += yaw * (yaw >= 0.0f ? 3.0f : -3.0f);
         }
         r /= t;
         if (*(s16 *)(ai + 0x640) == 0 || ((*(s16 *)(ai + 0x640) << 16) ^ *(s32 *)&angle) < 0) {
@@ -2513,7 +2518,7 @@ void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed) {
             *(s16 *)(ai + 0x640) = r * (f32)(full - *(s16 *)(ai + 0x640)) + (f32)*(s16 *)(ai + 0x640);
         } else {
             s = r * (f32)*(s16 *)(ai + 0x640);
-            if (_fabs(full) > _fabs(s)) {
+            if (_fabs(s) < _fabs(full)) {
                 *(s16 *)(ai + 0x640) = s;
                 brake = 0xFF;
             } else {
@@ -2525,9 +2530,11 @@ void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed) {
     }
     DistanceXYZ(car + 0x40, target, &dist);
     range = **(u8 ***)(ai + 0x3E4);
-    mid = (*(f32 *)(range + 0x28) - *(f32 *)(range + 0x24)) * 0.5f + *(f32 *)(range + 0x24);
+    far = *(f32 *)(range + 0x28);
+    near = *(f32 *)(range + 0x24);
+    mid = (far - near) / 2.0f + near;
     if (dist < mid && accel != 0xFF) {
-        v = 255 - (s32)(255.0f * ((dist - *(f32 *)(range + 0x24)) / (mid - *(f32 *)(range + 0x24))));
+        v = 255 - (s32)(255.0f * ((dist - near) / (mid - near)));
         if (v > 255) {
             v = 255;
         }
@@ -2535,8 +2542,8 @@ void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed) {
             accel = v;
         }
         brake = 0;
-    } else if (dist < *(f32 *)(range + 0x28) && brake) {
-        v = 255.0f * ((dist - mid) / (*(f32 *)(range + 0x28) - mid));
+    } else if (dist < far && brake) {
+        v = 255.0f * ((dist - mid) / (far - mid));
         if (brake > v) {
             brake = v;
         }
@@ -2545,8 +2552,10 @@ void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed) {
         speed = *(f32 *)(ai + 0x63C);
     }
     margin = 0.1f * speed;
+    hi = speed + margin;
+    lo = speed - margin;
     if (speed && vel > speed && accel != 0xFF) {
-        v = 255.0f * ((vel - speed) / (speed + margin - speed));
+        v = 255.0f * ((vel - speed) / (hi - speed));
         if (v > 255) {
             v = 255;
         }
@@ -2554,8 +2563,8 @@ void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed) {
             accel = v;
         }
         brake = 0;
-    } else if (speed && vel > speed - margin && brake) {
-        v = 255 - (s32)(255.0f * ((vel - (speed - margin)) / (speed - (speed - margin))));
+    } else if (speed && vel > lo && brake) {
+        v = 255 - (s32)(255.0f * ((vel - lo) / (speed - lo)));
         if (brake > v) {
             brake = v;
         }
