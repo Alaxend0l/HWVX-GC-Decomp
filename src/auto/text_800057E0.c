@@ -32873,7 +32873,8 @@ typedef struct Tracer {
     u16 active;
     u16 unk4D0;
     u16 unk4D2;
-    u8 unk4D4[0xC];
+    u16 unk4D4;
+    u8 unk4D6[0xA];
 } Tracer;
 
 extern Tracer tracers_802CD600[];
