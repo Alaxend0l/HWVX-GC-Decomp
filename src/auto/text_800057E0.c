@@ -21062,6 +21062,159 @@ s32 Mover_PreMove(u8 *mover) {
     return 1;
 }
 
+void PhysicalObject_DynamicRotation(u8 *obj, f32 dt) {
+    typedef struct OBox {
+        Vector4 center;
+        Vector4 corners[8];
+        u8 pad90[0xD];
+        u8 valid;
+        u8 pad9E[2];
+        void *row2;
+        void *row0;
+        void *row1;
+        u8 padAC[0xF0 - 0xAC];
+    } OBox;
+    typedef struct RayHit {
+        Vector4 pos;
+        Vector4 normal;
+        u8 pad20[8];
+        u8 *surface;
+        u8 pad2C[0x24];
+    } RayHit;
+    void XformVecOrientation(void *mtx, void *in, void *out);
+    void InverseXformVecOrientation(void *mtx, void *in, void *out);
+    void GenerateQuaternion(Vector4 *axis, Quaternion *q, f32 angle);
+    void QuaternionToSubMatrix(Quaternion *q, Matrix4 *m);
+    OBox *Destructible_GetOrientedCollision(void *thing);
+    void BuildOOB(void *oob, Matrix4 *mtx, OBox *out);
+    s8 RayHitsTerrain_Aux3(void *start, void *dir, f32 *t, RayHit *hit);
+    s8 OBoxHitsTerrainAndObjectsZeroTime(void *obox, void *thing, void *info);
+    void PSVECSubtract(void *a, void *b, void *out);
+    void PSVECCrossProduct(void *a, void *b, void *out);
+    f32 PSVECDotProduct(void *a, void *b);
+    OBox obox;
+    RayHit hit;
+    Matrix4 mtx;
+    Vector4 spin;
+    Quaternion q;
+    Quaternion newQ;
+    Vector4 axis;
+    Vector4 dir;
+    f32 scaled[4];
+    f32 local[4];
+    f32 t;
+    f32 mag;
+    u32 i;
+    void *box;
+    OBox *old;
+    s8 hitTerrain;
+
+    t = dt;
+    if (*(u32 *)(obj + 0x74) & 8) {
+        return;
+    }
+    if (*(u32 *)(obj + 0x74) & 0x200000) {
+        return;
+    }
+    InverseXformVecOrientation(obj + 0x10, obj + 0x110, local);
+    scaled[0] = ((Vector4 *)(obj + 0x120))->x * local[0];
+    scaled[1] = ((Vector4 *)(obj + 0x120))->y * local[1];
+    scaled[2] = ((Vector4 *)(obj + 0x120))->z * local[2];
+    XformVecOrientation(obj + 0x10, scaled, &spin);
+    axis = spin;
+    mag = MagnitudeVector(&axis);
+    if (mag > 0.0001f) {
+        axis.x /= mag;
+        axis.y /= mag;
+        axis.z /= mag;
+    }
+    GenerateQuaternion(&axis, &q, mag * t);
+    QuaternionMult((Vector4 *)&q, (Vector4 *)(obj + 0x50), (Vector4 *)&newQ);
+    QuaternionToSubMatrix(&newQ, &mtx);
+    mtx.m[3][0] = ((Thing *)obj)->mtx.m[3][0];
+    mtx.m[3][1] = ((Thing *)obj)->mtx.m[3][1];
+    mtx.m[3][2] = ((Thing *)obj)->mtx.m[3][2];
+    if (*(u32 *)(obj + 0x74) & 2) {
+        *(Quaternion *)(obj + 0x50) = newQ;
+        ((Thing *)obj)->mtx = mtx;
+        return;
+    }
+    switch ((*(u8 **)(*(u8 **)(obj + 0xC0) + 0x10))[0x10]) {
+    case 0:
+        box = *(void **)(*(u8 **)(*(u8 **)(obj + 0xC0) + 0x10) + 0x44);
+        old = Destructible_GetOrientedCollision(obj);
+        obox.valid = 1;
+        BuildOOB(box, &mtx, &obox);
+        for (i = 0; i < 8; i++) {
+            if (t > 0.0f) {
+                dir.x = (obox.corners[i].x - old->corners[i].x) / dt;
+                dir.y = (obox.corners[i].y - old->corners[i].y) / dt;
+                dir.z = (obox.corners[i].z - old->corners[i].z) / dt;
+                hitTerrain = 0;
+                *(u32 *)(obj + 0x74) |= 2;
+                if (!(*(u32 *)(obj + 0x74) & 0x40000)) {
+                    hitTerrain = RayHitsTerrain_Aux3(&old->corners[i], &dir, &t, &hit);
+                }
+                *(u32 *)(obj + 0x74) &= ~2;
+                if (hitTerrain) {
+                    Quaternion torque;
+                    f32 bScaled[4];
+                    f32 bLocal[4];
+                    Quaternion tmp;
+                    Quaternion angVel;
+                    Quaternion rxn;
+                    Quaternion vel;
+                    Quaternion r;
+                    Quaternion impulse;
+                    f32 e1;
+                    f32 num;
+                    f32 j;
+
+                    e1 = *(f32 *)(hit.surface + 0x18);
+                    vel = *(Quaternion *)&dir;
+                    PSVECSubtract(&hit.pos, obj + 0x40, &r);
+                    num = PSVECDotProduct(&vel, &hit.normal) * -(e1 * *(f32 *)(*(u8 **)(*(u8 **)(*(u8 **)(obj + 0xC0) + 0x10) + 0x30) + 0x18) + 1.0f);
+                    PSVECCrossProduct(&r, &hit.normal, &rxn);
+                    InverseXformVecOrientation(obj + 0x10, &rxn, bLocal);
+                    bScaled[0] = ((Vector4 *)(obj + 0x120))->x * bLocal[0];
+                    bScaled[1] = ((Vector4 *)(obj + 0x120))->y * bLocal[1];
+                    bScaled[2] = ((Vector4 *)(obj + 0x120))->z * bLocal[2];
+                    XformVecOrientation(obj + 0x10, bScaled, &angVel);
+                    PSVECCrossProduct(&angVel, &r, &tmp);
+                    j = num / (1.0f / *(f32 *)(*(u8 **)(*(u8 **)(obj + 0xC0) + 0x10) + 0x20) + PSVECDotProduct(&tmp, &hit.normal));
+                    impulse.x = j * hit.normal.x;
+                    impulse.y = j * hit.normal.y;
+                    impulse.z = j * hit.normal.z;
+                    ((Vector4 *)obj)->x += impulse.x / *(f32 *)(*(u8 **)(*(u8 **)(obj + 0xC0) + 0x10) + 0x20);
+                    ((Vector4 *)obj)->y += impulse.y / *(f32 *)(*(u8 **)(*(u8 **)(obj + 0xC0) + 0x10) + 0x20);
+                    ((Vector4 *)obj)->z += impulse.z / *(f32 *)(*(u8 **)(*(u8 **)(obj + 0xC0) + 0x10) + 0x20);
+                    ((Vector4 *)(obj + 0x40))->x += 0.03f * hit.normal.x;
+                    ((Vector4 *)(obj + 0x40))->y += 0.03f * hit.normal.y;
+                    ((Vector4 *)(obj + 0x40))->z += 0.03f * hit.normal.z;
+                    PSVECCrossProduct(&r, &impulse, &torque);
+                    ((Vector4 *)(obj + 0x110))->x += torque.x;
+                    ((Vector4 *)(obj + 0x110))->y += torque.y;
+                    ((Vector4 *)(obj + 0x110))->z += torque.z;
+                    PhysicalObject_UpdateSpin(obj);
+                }
+            }
+        }
+        if (!OBoxHitsTerrainAndObjectsZeroTime(&obox, obj, NULL)) {
+            *(Quaternion *)(obj + 0x50) = newQ;
+            ((Thing *)obj)->mtx = mtx;
+            **(OBox **)(obj + 0xD0) = obox;
+            (*(OBox **)(obj + 0xD0))->row2 = obj + 0x30;
+            (*(OBox **)(obj + 0xD0))->row0 = obj + 0x10;
+            (*(OBox **)(obj + 0xD0))->row1 = obj + 0x20;
+            *(u32 *)(obj + 0x74) &= ~0x180;
+        }
+        break;
+    case 1:
+    case 6:
+        break;
+    }
+}
+
 void Mover_DynamicRotation(u8 *mover) {
     void QuaternionToSubMatrix(void *quat, void *mtx);
     Vector4 quat;
@@ -36835,6 +36988,216 @@ void stateBusy_800727EC(DVDCommandBlock *block) {
         block->currTransferSize = 0x20;
         DVDLowInquiry(block->addr, cbForStateBusy);
         break;
+    }
+}
+
+void cbForStateBusy(u32 intType) {
+    void __DVDStoreErrorCode(u32);
+    void DVDReset(void);
+    void cbForStateError(u32);
+    void cbForStateMotorStopped(u32);
+    void cbForStateGettingError(u32);
+    void DVDLowStopMotor(void (*)(u32));
+    void DVDLowWaitCoverClose(void (*)(u32));
+    void DVDLowRequestError(void (*)(u32));
+    void DVDLowAudioStream(u32 subcmd, u32 length, u32 offset, void (*)(u32));
+    void stateReady_800725A4(void);
+    void stateBusy_800727EC(DVDCommandBlock *block);
+    extern DVDCommandBlock *executing_803C7310;
+    extern u8 tmpBuffer_802EF940[];
+    extern s32 NumInternalRetry_803C7344;
+    extern u32 CurrCommand_803C732C;
+    extern s32 ResetRequired_803C7348;
+    extern u32 Canceling_803C7330;
+    extern u32 ResumeFromHere_803C7338;
+    extern s32 AutoFinishing_803C7324;
+    extern void (*CancelCallback_803C7334)(s32, DVDCommandBlock *);
+    DVDCommandBlock *finished;
+    s32 canceled;
+    s32 result;
+
+    if (intType == 16) {
+        executing_803C7310->state = -1;
+        __DVDStoreErrorCode(0x01234568);
+        DVDReset();
+        cbForStateError(0);
+        return;
+    }
+    if (CurrCommand_803C732C == 3 || CurrCommand_803C732C == 15) {
+        if (intType & 2) {
+            executing_803C7310->state = -1;
+            __DVDStoreErrorCode(0x01234567);
+            DVDLowStopMotor(cbForStateError);
+            return;
+        }
+        NumInternalRetry_803C7344 = 0;
+        if (CurrCommand_803C732C == 15) {
+            ResetRequired_803C7348 = 1;
+        }
+        if (Canceling_803C7330) {
+            ResumeFromHere_803C7338 = 7;
+            finished = executing_803C7310;
+            executing_803C7310 = (DVDCommandBlock *)(tmpBuffer_802EF940 + 0x80);
+            Canceling_803C7330 = 0;
+            finished->state = 10;
+            if (finished->callback) {
+                (*finished->callback)(-3, finished);
+            }
+            if (CancelCallback_803C7334) {
+                (*CancelCallback_803C7334)(0, finished);
+            }
+            stateReady_800725A4();
+            canceled = 1;
+        } else {
+            canceled = 0;
+        }
+        if (canceled == 0) {
+            executing_803C7310->state = 7;
+            DVDLowWaitCoverClose(cbForStateMotorStopped);
+        }
+        return;
+    }
+    if (CurrCommand_803C732C == 1 || CurrCommand_803C732C == 4 || CurrCommand_803C732C == 5 ||
+        CurrCommand_803C732C == 14) {
+        executing_803C7310->transferredSize +=
+            executing_803C7310->currTransferSize - ((volatile u32 *)0xCC006000)[6];
+    }
+    if (intType & 8) {
+        finished = executing_803C7310;
+        executing_803C7310 = (DVDCommandBlock *)(tmpBuffer_802EF940 + 0x80);
+        Canceling_803C7330 = 0;
+        finished->state = 10;
+        if (finished->callback) {
+            (*finished->callback)(-3, finished);
+        }
+        if (CancelCallback_803C7334) {
+            (*CancelCallback_803C7334)(0, finished);
+        }
+        stateReady_800725A4();
+        return;
+    }
+    if (intType & 1) {
+        NumInternalRetry_803C7344 = 0;
+        if (Canceling_803C7330) {
+            ResumeFromHere_803C7338 = 0;
+            finished = executing_803C7310;
+            executing_803C7310 = (DVDCommandBlock *)(tmpBuffer_802EF940 + 0x80);
+            Canceling_803C7330 = 0;
+            finished->state = 10;
+            if (finished->callback) {
+                (*finished->callback)(-3, finished);
+            }
+            if (CancelCallback_803C7334) {
+                (*CancelCallback_803C7334)(0, finished);
+            }
+            stateReady_800725A4();
+            canceled = 1;
+        } else {
+            canceled = 0;
+        }
+        if (canceled) {
+            return;
+        }
+        if (CurrCommand_803C732C == 1 || CurrCommand_803C732C == 4 || CurrCommand_803C732C == 5 ||
+            CurrCommand_803C732C == 14) {
+            if (executing_803C7310->transferredSize != executing_803C7310->length) {
+                stateBusy_800727EC(executing_803C7310);
+                return;
+            }
+            finished = executing_803C7310;
+            executing_803C7310 = (DVDCommandBlock *)(tmpBuffer_802EF940 + 0x80);
+            finished->state = 0;
+            if (finished->callback) {
+                (*finished->callback)((s32)finished->transferredSize, finished);
+            }
+            stateReady_800725A4();
+        } else if (CurrCommand_803C732C == 9 || CurrCommand_803C732C == 10 || CurrCommand_803C732C == 11 ||
+                   CurrCommand_803C732C == 12) {
+            if (CurrCommand_803C732C == 11 || CurrCommand_803C732C == 10) {
+                result = (s32)(((volatile u32 *)0xCC006000)[8] << 2);
+            } else {
+                result = (s32)((volatile u32 *)0xCC006000)[8];
+            }
+            finished = executing_803C7310;
+            executing_803C7310 = (DVDCommandBlock *)(tmpBuffer_802EF940 + 0x80);
+            finished->state = 0;
+            if (finished->callback) {
+                (*finished->callback)(result, finished);
+            }
+            stateReady_800725A4();
+        } else if (CurrCommand_803C732C == 6) {
+            if (executing_803C7310->currTransferSize == 0) {
+                if (((volatile u32 *)0xCC006000)[8] & 1) {
+                    finished = executing_803C7310;
+                    executing_803C7310 = (DVDCommandBlock *)(tmpBuffer_802EF940 + 0x80);
+                    finished->state = 9;
+                    if (finished->callback) {
+                        (*finished->callback)(-2, finished);
+                    }
+                    stateReady_800725A4();
+                } else {
+                    AutoFinishing_803C7324 = 0;
+                    executing_803C7310->currTransferSize = 1;
+                    DVDLowAudioStream(0, executing_803C7310->length, executing_803C7310->offset, cbForStateBusy);
+                }
+            } else {
+                finished = executing_803C7310;
+                executing_803C7310 = (DVDCommandBlock *)(tmpBuffer_802EF940 + 0x80);
+                finished->state = 0;
+                if (finished->callback) {
+                    (*finished->callback)(0, finished);
+                }
+                stateReady_800725A4();
+            }
+        } else {
+            finished = executing_803C7310;
+            executing_803C7310 = (DVDCommandBlock *)(tmpBuffer_802EF940 + 0x80);
+            finished->state = 0;
+            if (finished->callback) {
+                (*finished->callback)(0, finished);
+            }
+            stateReady_800725A4();
+        }
+    } else {
+        if (CurrCommand_803C732C == 14) {
+            executing_803C7310->state = -1;
+            __DVDStoreErrorCode(0x01234567);
+            DVDLowStopMotor(cbForStateError);
+            return;
+        }
+        if ((CurrCommand_803C732C == 1 || CurrCommand_803C732C == 4 || CurrCommand_803C732C == 5 ||
+             CurrCommand_803C732C == 14) &&
+            executing_803C7310->transferredSize == executing_803C7310->length) {
+            if (Canceling_803C7330) {
+                ResumeFromHere_803C7338 = 0;
+                finished = executing_803C7310;
+                executing_803C7310 = (DVDCommandBlock *)(tmpBuffer_802EF940 + 0x80);
+                Canceling_803C7330 = 0;
+                finished->state = 10;
+                if (finished->callback) {
+                    (*finished->callback)(-3, finished);
+                }
+                if (CancelCallback_803C7334) {
+                    (*CancelCallback_803C7334)(0, finished);
+                }
+                stateReady_800725A4();
+                canceled = 1;
+            } else {
+                canceled = 0;
+            }
+            if (canceled) {
+                return;
+            }
+            finished = executing_803C7310;
+            executing_803C7310 = (DVDCommandBlock *)(tmpBuffer_802EF940 + 0x80);
+            finished->state = 0;
+            if (finished->callback) {
+                (*finished->callback)((s32)finished->transferredSize, finished);
+            }
+            stateReady_800725A4();
+            return;
+        }
+        DVDLowRequestError(cbForStateGettingError);
     }
 }
 
