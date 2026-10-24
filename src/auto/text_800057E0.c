@@ -2622,7 +2622,6 @@ s32 AI_Car_DetermineState(u8 *car) {
 
 #pragma push
 #pragma use_lmw_stmw on
-#pragma inline_depth(4)
 void AI_Car_ResetState(u8 *car, void *arg) {
     typedef struct AIStateInfo {
         u8 unk0[6];
@@ -2641,26 +2640,31 @@ void AI_Car_ResetState(u8 *car, void *arg) {
         u8 unk10[4];
         u8 unk14;
     } AIStateSlot;
+    typedef struct AICar {
+        u8 pad0[0xD0];
+        u8 *params;
+        AIStateSlot slots[1];
+    } AICar;
     static u8 iTotal;
     AIState *state = arg;
     u8 i;
 
-    if (state == (AIState *)(*(u8 **)(car + 0xD0) + 0x28)) {
+    if (state == (AIState *)(((AICar *)car)->params + 0x28)) {
         iTotal = 0;
     }
     if (state->info != NULL) {
-        ((AIStateSlot *)(car + 0xD4))[iTotal].info = state->info;
-        ((AIStateSlot *)(car + 0xD4))[iTotal].unk4 = 0;
-        ((AIStateSlot *)(car + 0xD4))[iTotal].unk8 = 0;
-        ((AIStateSlot *)(car + 0xD4))[iTotal].unkC = 0;
-        ((AIStateSlot *)(car + 0xD4))[iTotal].unk14 = state->info->unk6;
+        ((AICar *)car)->slots[iTotal].info = state->info;
+        ((AICar *)car)->slots[iTotal].unk4 = 0;
+        ((AICar *)car)->slots[iTotal].unk8 = 0;
+        ((AICar *)car)->slots[iTotal].unkC = 0;
+        ((AICar *)car)->slots[iTotal].unk14 = state->info->unk6;
         iTotal++;
     }
     for (i = 0; i < state->numChildren; i++) {
         AI_Car_ResetState(car, &state->children[i]);
     }
-    if (state == (AIState *)(*(u8 **)(car + 0xD0) + 0x28)) {
-        ((AIStateSlot *)(car + 0xD4))[iTotal].info = NULL;
+    if (state == (AIState *)(((AICar *)car)->params + 0x28)) {
+        ((AICar *)car)->slots[iTotal].info = NULL;
     }
 }
 #pragma pop
