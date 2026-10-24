@@ -34042,6 +34042,26 @@ void *__AXGetStudio(void) {
     return __AXStudio_802F7860;
 }
 
+static void __AXDepopFade(s32 *value, s32 *hi, s16 *delta) {
+    s32 frac = *value / 160;
+
+    if (frac) {
+        if (frac > 20) {
+            frac = 20;
+        }
+        if (frac < -20) {
+            frac = -20;
+        }
+        *hi = *value;
+        *value -= frac * 160;
+        *delta = -frac;
+    } else {
+        *value = 0;
+        *hi = 0;
+        *delta = 0;
+    }
+}
+
 void __AXSPBInit(void) {
     extern s32 __AXSpbAAL_803C74EC;
     extern s32 __AXSpbAAR_803C74F0;
