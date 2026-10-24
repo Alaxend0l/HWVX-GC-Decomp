@@ -549,7 +549,7 @@ typedef struct VirtualPad {
     s8 forceFeedbackActive;
     u32 keyDown;
     u32 keyPress;
-    u8 unkC[4];
+    u32 keyRelease;
     u8 keyValue[0x20];
 } VirtualPad;
 
