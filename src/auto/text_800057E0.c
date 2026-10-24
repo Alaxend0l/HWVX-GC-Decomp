@@ -34037,6 +34037,8 @@ void AXRegisterCallback(s32 arg0) {
     __AXUserFrameCallback_803C74D0 = arg0;
 }
 
+extern u8 __AXStudio_802F7860[];
+
 static void __AXDepopFade(s32 *value, s32 *hi, s16 *delta) {
     s32 frac = *value / 160;
 
@@ -34060,6 +34062,31 @@ static void __AXDepopFade(s32 *value, s32 *hi, s16 *delta) {
 void *__AXGetStudio(void) {
     extern u8 __AXStudio_802F7860[];
     return __AXStudio_802F7860;
+}
+
+void __AXPrintStudio(void) {
+    extern u8 __AXStudio_802F7860[];
+    extern s32 __AXSpbAL_803C74E0;
+    extern s32 __AXSpbAR_803C74E4;
+    extern s32 __AXSpbAS_803C74E8;
+    extern s32 __AXSpbAAL_803C74EC;
+    extern s32 __AXSpbAAR_803C74F0;
+    extern s32 __AXSpbAAS_803C74F4;
+    extern s32 __AXSpbABL_803C74F8;
+    extern s32 __AXSpbABR_803C74FC;
+    extern s32 __AXSpbABS_803C7500;
+    void DCFlushRange(void *addr, u32 nBytes);
+
+    __AXDepopFade(&__AXSpbAL_803C74E0, (s32 *)(__AXStudio_802F7860 + 0x0), (s16 *)(__AXStudio_802F7860 + 0x4));
+    __AXDepopFade(&__AXSpbAR_803C74E4, (s32 *)(__AXStudio_802F7860 + 0x6), (s16 *)(__AXStudio_802F7860 + 0xA));
+    __AXDepopFade(&__AXSpbAS_803C74E8, (s32 *)(__AXStudio_802F7860 + 0xC), (s16 *)(__AXStudio_802F7860 + 0x10));
+    __AXDepopFade(&__AXSpbAAL_803C74EC, (s32 *)(__AXStudio_802F7860 + 0x12), (s16 *)(__AXStudio_802F7860 + 0x16));
+    __AXDepopFade(&__AXSpbAAR_803C74F0, (s32 *)(__AXStudio_802F7860 + 0x18), (s16 *)(__AXStudio_802F7860 + 0x1C));
+    __AXDepopFade(&__AXSpbAAS_803C74F4, (s32 *)(__AXStudio_802F7860 + 0x1E), (s16 *)(__AXStudio_802F7860 + 0x22));
+    __AXDepopFade(&__AXSpbABL_803C74F8, (s32 *)(__AXStudio_802F7860 + 0x24), (s16 *)(__AXStudio_802F7860 + 0x28));
+    __AXDepopFade(&__AXSpbABR_803C74FC, (s32 *)(__AXStudio_802F7860 + 0x2A), (s16 *)(__AXStudio_802F7860 + 0x2E));
+    __AXDepopFade(&__AXSpbABS_803C7500, (s32 *)(__AXStudio_802F7860 + 0x30), (s16 *)(__AXStudio_802F7860 + 0x34));
+    DCFlushRange(__AXStudio_802F7860, 0x36);
 }
 
 void __AXSPBInit(void) {
