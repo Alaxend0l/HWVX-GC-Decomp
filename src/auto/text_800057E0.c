@@ -18785,7 +18785,6 @@ s32 StateGameManager_Heartbeat(void) {
     extern s32 g_interfacePackID;
     void StateManager_GotoState(s32);
     void StateMovie_SetMovieToPlay(void *);
-    s32 FileStreaming_LoadDataPack(s32, s32, s32, s32);
     void *FileStreaming_InitializeDataPack(s32, s32, s32);
     void *DataPack_GetScript(void *, s32);
     void InterfaceManager_Create(void *, s32, void (*)(void *));
