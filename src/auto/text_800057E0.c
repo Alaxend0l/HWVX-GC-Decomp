@@ -360,7 +360,13 @@ extern NavHolder gs_NavHolder_803C6CD8;
 
 typedef struct NavLink {
     f32 pos[3];
-    u8 pad0C[0x1C];
+    u8 pad0C[4];
+    u32 numPrev;
+    u8 pad14[4];
+    s32 *prev;
+    u32 numNext;
+    s32 *next;
+    u8 pad24[4];
     s32 index;
     u8 pad2C[0x24];
     u8 enabled;
