@@ -13042,6 +13042,223 @@ void EventSeq_Advanced_GetOffset(u8 *seq, void *arg1, Vector4 *out) {
     }
 }
 
+void EventSeq_Advanced_GetInitData(u8 *emit, Thing *seq, Vector4 *vel, Vector4 *pos, Vector4 *quat, Vector4 *angVel) {
+    f32 RandomAdd(f32 base, f32 range);
+    f32 RandomDirVar(f32 base, f32 range);
+    void RandomNumberGenerator_GetRandomSubMatrix(Matrix4 *out);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void PSVECAdd(void *a, void *b, void *out);
+    void SetOrientation(void *m, f32 x, f32 y, f32 z);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *a, Vector4 *out);
+    Matrix4 mtx1;
+    Matrix4 res;
+    Matrix4 rot;
+    Matrix4 mtx3;
+    Matrix4 mtx4;
+    Vector4 tmp;
+    Vector4 v;
+    Vector4 a;
+    Vector4 offset;
+    Vector4 dir3;
+
+    EventSeq_Advanced_GetOffset(emit, &seq->mtx, &offset);
+    switch (emit[0x22]) {
+    case 0:
+        XformVecOrientation(&seq->mtx, &offset, &tmp);
+        PSVECAdd(&seq->mtx.v[3], &tmp, pos);
+        v.x = 0.0f;
+        v.y = 0.0f;
+        v.z = RandomAdd(*(f32 *)(emit + 0x8), *(f32 *)(emit + 0xC));
+        a.x = 0.0f;
+        a.y = 0.0f;
+        a.z = 0.001f * RandomAdd(*(f32 *)(emit + 0x10), *(f32 *)(emit + 0x14));
+        XformVecOrientation(&seq->mtx, &v, vel);
+        XformVecOrientation(&seq->mtx, &a, angVel);
+        if (quat != NULL) {
+            *quat = seq->quat;
+        }
+        break;
+    case 1: {
+        f32 speed;
+        f32 spin;
+
+        speed = RandomAdd(*(f32 *)(emit + 0x8), *(f32 *)(emit + 0xC));
+        spin = 0.001f * RandomAdd(*(f32 *)(emit + 0x10), *(f32 *)(emit + 0x14));
+        RandomNumberGenerator_GetRandomSubMatrix(&mtx1);
+        v.x = mtx1.v[2].x * speed;
+        v.y = mtx1.v[2].y * speed;
+        v.z = mtx1.v[2].z * speed;
+        a.x = mtx1.v[2].x * spin;
+        a.y = mtx1.v[2].y * spin;
+        a.z = mtx1.v[2].z * spin;
+        offset.x += mtx1.v[2].x;
+        offset.y += mtx1.v[2].y;
+        offset.z += mtx1.v[2].z;
+        if (quat != NULL) {
+            SubMatrixToQuaternion(&mtx1, quat);
+        }
+        XformVecOrientation(&seq->mtx, &v, vel);
+        XformVecOrientation(&seq->mtx, &a, angVel);
+        XformVecOrientation(&seq->mtx, &offset, &tmp);
+        PSVECAdd(&seq->mtx.v[3], &tmp, pos);
+        break;
+    }
+    case 2: {
+        f32 *range = *(f32 **)(emit + 0x2C);
+        f32 ry;
+        f32 rx;
+        f32 rz;
+
+        ry = RandomDirVar(range[2], range[3]);
+        rx = -RandomDirVar(range[0], range[1]);
+        rz = RandomDirVar(range[4], range[5]);
+        XformVecOrientation(&seq->mtx, &offset, &tmp);
+        PSVECAdd(&seq->mtx.v[3], &tmp, pos);
+        SetOrientation(&rot, 0.0174533f * ry, 0.0174533f * rx, 0.0174533f * rz);
+        rot.v[3].x = rot.v[3].y = rot.v[3].z = 0.0f;
+        MultiplyMatrix(&rot, &seq->mtx, &res);
+        v.x = 0.0f;
+        v.y = 0.0f;
+        v.z = RandomAdd(*(f32 *)(emit + 0x8), *(f32 *)(emit + 0xC));
+        a.x = 0.0f;
+        a.y = 0.0f;
+        a.z = 0.001f * RandomAdd(*(f32 *)(emit + 0x10), *(f32 *)(emit + 0x14));
+        if (quat != NULL) {
+            SubMatrixToQuaternion(&res, quat);
+        }
+        XformVecOrientation(&res, &v, vel);
+        XformVecOrientation(&res, &a, angVel);
+        break;
+    }
+    case 3: {
+        f32 speed;
+        f32 spin;
+
+        mtx3 = seq->mtx;
+        speed = RandomAdd(*(f32 *)(emit + 0x8), *(f32 *)(emit + 0xC));
+        spin = 0.001f * RandomAdd(*(f32 *)(emit + 0x10), *(f32 *)(emit + 0x14));
+        dir3 = offset;
+        XformVecOrientation(&seq->mtx, &offset, &tmp);
+        PSVECAdd(&seq->mtx.v[3], &tmp, pos);
+        if (!dir3.x && !dir3.y && !dir3.z) {
+            dir3.x = 0.0f;
+            dir3.y = 0.0f;
+            dir3.z = 1.0f;
+        } else if (PSVECSquareMag(&dir3)) {
+            PSVECNormalize(&dir3, &dir3);
+        }
+        v.x = dir3.x * speed;
+        v.y = dir3.y * speed;
+        v.z = dir3.z * speed;
+        a.x = dir3.x * spin;
+        a.y = dir3.y * spin;
+        a.z = dir3.z * spin;
+        if (quat != NULL) {
+            SubMatrixToQuaternion(&mtx3, quat);
+        }
+        XformVecOrientation(&seq->mtx, &v, vel);
+        XformVecOrientation(&seq->mtx, &a, angVel);
+        break;
+    }
+    case 4: {
+        f32 speed;
+        f32 spin;
+        u8 *info;
+
+        speed = RandomAdd(*(f32 *)(emit + 0x8), *(f32 *)(emit + 0xC));
+        spin = 0.001f * RandomAdd(*(f32 *)(emit + 0x10), *(f32 *)(emit + 0x14));
+        info = *(u8 **)(emit + 0x2C);
+        RandomNumberGenerator_GetRandomSubMatrix(&mtx4);
+        switch (info[0x10]) {
+        case 4:
+            if (mtx4.v[2].x < 0.0f) {
+                mtx4.v[1].x *= -1.0f;
+                mtx4.v[1].y *= -1.0f;
+                mtx4.v[1].z *= -1.0f;
+                mtx4.v[2].x *= -1.0f;
+                mtx4.v[2].y *= -1.0f;
+                mtx4.v[2].z *= -1.0f;
+            }
+            break;
+        case 5:
+            if (mtx4.v[2].x > 0.0f) {
+                mtx4.v[1].x *= -1.0f;
+                mtx4.v[1].y *= -1.0f;
+                mtx4.v[1].z *= -1.0f;
+                mtx4.v[2].x *= -1.0f;
+                mtx4.v[2].y *= -1.0f;
+                mtx4.v[2].z *= -1.0f;
+            }
+            break;
+        case 2:
+            if (mtx4.v[2].y < 0.0f) {
+                mtx4.v[0].x *= -1.0f;
+                mtx4.v[0].y *= -1.0f;
+                mtx4.v[0].z *= -1.0f;
+                mtx4.v[2].x *= -1.0f;
+                mtx4.v[2].y *= -1.0f;
+                mtx4.v[2].z *= -1.0f;
+            }
+            break;
+        case 3:
+            if (mtx4.v[2].y > 0.0f) {
+                mtx4.v[0].x *= -1.0f;
+                mtx4.v[0].y *= -1.0f;
+                mtx4.v[0].z *= -1.0f;
+                mtx4.v[2].x *= -1.0f;
+                mtx4.v[2].y *= -1.0f;
+                mtx4.v[2].z *= -1.0f;
+            }
+            break;
+        case 0:
+            if (mtx4.v[2].z < 0.0f) {
+                mtx4.v[1].x *= -1.0f;
+                mtx4.v[1].y *= -1.0f;
+                mtx4.v[1].z *= -1.0f;
+                mtx4.v[2].x *= -1.0f;
+                mtx4.v[2].y *= -1.0f;
+                mtx4.v[2].z *= -1.0f;
+            }
+            break;
+        case 1:
+            if (mtx4.v[2].z > 0.0f) {
+                mtx4.v[1].x *= -1.0f;
+                mtx4.v[1].y *= -1.0f;
+                mtx4.v[1].z *= -1.0f;
+                mtx4.v[2].x *= -1.0f;
+                mtx4.v[2].y *= -1.0f;
+                mtx4.v[2].z *= -1.0f;
+            }
+            break;
+        }
+        v.x = mtx4.v[2].x * speed;
+        v.y = mtx4.v[2].y * speed;
+        v.z = mtx4.v[2].z * speed;
+        a.x = mtx4.v[2].x * spin;
+        a.y = mtx4.v[2].y * spin;
+        a.z = mtx4.v[2].z * spin;
+        offset.x += mtx4.v[2].x;
+        offset.y += mtx4.v[2].y;
+        offset.z += mtx4.v[2].z;
+        if (quat != NULL) {
+            SubMatrixToQuaternion(&mtx4, quat);
+        }
+        XformVecOrientation(&seq->mtx, &v, vel);
+        XformVecOrientation(&seq->mtx, &a, angVel);
+        XformVecOrientation(&seq->mtx, &offset, &tmp);
+        PSVECAdd(&seq->mtx.v[3], &tmp, pos);
+        break;
+    }
+    }
+    if (emit[0x20]) {
+        vel->x += seq->pos.x * *(f32 *)(emit + 0x24);
+        vel->y += seq->pos.y * *(f32 *)(emit + 0x24);
+        vel->z += seq->pos.z * *(f32 *)(emit + 0x24);
+    }
+    pos->w = 1.0f;
+}
+
 void EventSeq_Advanced_GetInitData_NonDirectional(u8 *emit, Thing *seq, Vector4 *vel, Vector4 *pos, Vector4 *quat, Vector4 *angVel) {
     f32 RandomAdd(f32 base, f32 range);
     f32 RandomDirVar(f32 base, f32 range);
@@ -24752,6 +24969,202 @@ void Projectile_YAim(u8 *proj, Vector4 *target) {
         ((Vector4 *)proj)->x = ((Vector4 *)(proj + 0x30))->x * speed;
         ((Vector4 *)proj)->y = ((Vector4 *)(proj + 0x30))->y * speed;
         ((Vector4 *)proj)->z = ((Vector4 *)(proj + 0x30))->z * speed;
+    }
+}
+
+void Projectile_DynamicCollisionCorrection(u8 *proj, u8 *hit) {
+    extern Vector4 g_zeroVector;
+    extern u8 g_projectileVTable[];
+    void *Thing_GetSource(void *thing);
+    f32 PSVECDotProduct(void *a, void *b);
+    void PSVECCrossProduct(void *a, void *b, void *out);
+    void PSVECNormalize(void *a, void *out);
+    f32 PSVECSquareMag(void *v);
+    void GenerateQuaternion(void *axis, void *q, f32 angle);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void TransposeSubMatrix(Matrix4 *mtx);
+    void MultiplySubMatrix(Matrix4 *a, Matrix4 *b, void *out);
+    void InverseXformVec(void *mtx, void *in, void *out);
+    void Grid_FreeObject(void *object);
+    void ThingManagerList_Remove(void *list, void *thing);
+    void ThingManagerList_Append(void *list, void *thing);
+    void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    f32 RandomAdd(f32 base, f32 range);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    void BulletHole_AddSegment(void *mtx, u16 texture, GXColor color, u32 life, f32 size);
+    void LensFlare_Delete(s32 flare);
+    void LightHolder_Delete(s32 light);
+    double acos(double x);
+    struct { Vector4 a; Vector4 b; Vector4 c; Vector4 zero; u32 id; s32 player; f32 f0; f32 f1; } p;
+    Matrix4 mtx;
+    Matrix4 other;
+    Matrix4 hole;
+    Vector4 normal;
+    Vector4 q;
+    Vector4 axis;
+    u8 *target;
+    u8 *surface;
+    u8 *slave;
+    u32 id;
+    f32 dot;
+    f32 angle;
+    f32 size;
+    u8 type;
+
+    Thing_GetSource(proj);
+    if (!(*(u32 *)(proj + 0x74) & 0x40) && !(*(u32 *)(proj + 0x74) & 0x200000) && hit != NULL) {
+        *(u16 *)(proj + 0x15C) += 1;
+        if (*(u16 *)(proj + 0x15C) > 8) {
+            *(u32 *)(proj + 0x74) |= 0x40;
+            return;
+        }
+        if (*(u8 **)(hit + 0x20) == proj) {
+            target = *(u8 **)(hit + 0x24);
+            normal = *(Vector4 *)(hit + 0x10);
+        } else {
+            target = *(u8 **)(hit + 0x24);
+            normal.x = -*(f32 *)(hit + 0x10);
+            normal.y = -*(f32 *)(hit + 0x14);
+            normal.z = -*(f32 *)(hit + 0x18);
+        }
+        type = (*(u8 **)(proj + 0x120))[3];
+        if (type == 6) {
+            if (target != NULL) {
+                mtx = *(Matrix4 *)(proj + 0x10);
+                other = *(Matrix4 *)(target + 0x10);
+                TransposeSubMatrix(&other);
+                MultiplySubMatrix(&other, &mtx, proj + 0x10);
+                SubMatrixToQuaternion(proj + 0x10, (Vector4 *)(proj + 0x50));
+                InverseXformVec(target + 0x10, &mtx.m[3][0], proj + 0x40);
+                if (*(void **)(proj + 0x84) != NULL) {
+                    Grid_FreeObject(*(void **)(proj + 0x84));
+                    *(void **)(proj + 0x84) = NULL;
+                }
+                proj[0x83] = 0xEF;
+                ThingManagerList_Remove(&g_thingManager_DARYL.activeList, proj);
+                ThingManagerList_Append(target + 0x88, proj);
+                *(Vector4 *)proj = g_zeroVector;
+            } else {
+                *(u32 *)(proj + 0x74) |= 0x80000;
+                *(Vector4 *)proj = g_zeroVector;
+            }
+        } else if (type == 0 || type == 3) {
+            id = *(u32 *)(*(u8 **)(proj + 0x120) + 0x74);
+            if (id != 0) {
+                dot = PSVECDotProduct(&normal, proj + 0x30);
+                switch ((*(u8 **)(proj + 0x120))[8]) {
+                case 0:
+                    p.b = *(Vector4 *)(proj + 0x50);
+                    break;
+                case 1:
+                    if (dot < -0.97f) {
+                        Vector4 flip = {1.0f, 0.0f, 0.0f, 0.0f};
+                        GenerateQuaternion(&flip, &q, 3.1415927f);
+                        QuaternionMult(&q, (Vector4 *)(proj + 0x50), &p.b);
+                    } else {
+                        angle = acos(dot);
+                        PSVECCrossProduct(proj + 0x30, &normal, &axis);
+                        if (dot > 0.99f) {
+                            axis = *(Vector4 *)(proj + 0x10);
+                        } else if (PSVECSquareMag(&axis)) {
+                            PSVECNormalize(&axis, &axis);
+                        }
+                        GenerateQuaternion(&axis, &q, angle);
+                        QuaternionMult(&q, (Vector4 *)(proj + 0x50), &p.b);
+                    }
+                    break;
+                case 2:
+                    if (dot < -0.97f) {
+                        Vector4 flip = {0.0f, 1.0f, 0.0f, 0.0f};
+                        GenerateQuaternion(&flip, &q, 3.1415927f);
+                        QuaternionMult(&q, (Vector4 *)(proj + 0x50), &p.b);
+                    } else {
+                        if (dot > 0.97f) {
+                            angle = -1.5707964f;
+                        } else {
+                            angle = (f32)acos(dot) - 1.5707964f;
+                        }
+                        PSVECCrossProduct(proj + 0x30, &normal, &axis);
+                        if (dot > 0.99f) {
+                            axis = *(Vector4 *)(proj + 0x10);
+                        } else if (PSVECSquareMag(&axis)) {
+                            PSVECNormalize(&axis, &axis);
+                        }
+                        GenerateQuaternion(&axis, &q, 2.0f * angle);
+                        QuaternionMult(&q, (Vector4 *)(proj + 0x50), &p.b);
+                    }
+                    break;
+                }
+                p.id = id;
+                p.c = g_zeroVector;
+                p.player = *(s32 *)(proj + 0x94);
+                p.f0 = 0.0f;
+                p.f1 = 0.0f;
+                p.zero = g_zeroVector;
+                if (target != NULL) {
+                    InverseXformVec(target + 0x10, proj + 0x40, &p.a);
+                    slave = ThingManager_DARYL_CreateSlave(1, &p, 0xFF);
+                    if (slave != NULL) {
+                        slave[0x83] = 0xEF;
+                        ThingManagerList_Append(target + 0x88, slave);
+                    }
+                } else {
+                    p.a = *(Vector4 *)(proj + 0x40);
+                    p.a.x = 0.5f * normal.x + p.a.x;
+                    p.a.y = 0.5f * normal.y + p.a.y;
+                    p.a.z = 0.5f * normal.z + p.a.z;
+                    ThingManager_DARYL_CreateThing(1, &p);
+                }
+            }
+            ((Vector4 *)proj)->x = 0.0f;
+            ((Vector4 *)proj)->y = 0.0f;
+            ((Vector4 *)proj)->z = 0.0f;
+            if (*(u8 **)(hit + 0x24) == NULL && (surface = *(u8 **)(hit + 0x28)) != NULL && *(u32 *)(*(u8 **)(proj + 0x120) + 0x5C) != 0) {
+                switch ((s8)surface[1]) {
+                case 0: {
+                    Vector4 rot;
+                    Vector4 q2;
+                    Vector4 axis2;
+                    dot = PSVECDotProduct(&normal, proj + 0x30);
+                    if (dot < -0.985f) {
+                        Vector4 flip = {1.0f, 0.0f, 0.0f, 0.0f};
+                        GenerateQuaternion(&flip, &q2, 3.1415927f);
+                        QuaternionMult(&q2, (Vector4 *)(proj + 0x50), &rot);
+                    } else {
+                        angle = acos(dot);
+                        PSVECCrossProduct(proj + 0x30, &normal, &axis2);
+                        if (dot > 0.99f) {
+                            axis2 = *(Vector4 *)(proj + 0x10);
+                        } else if (PSVECSquareMag(&axis2)) {
+                            PSVECNormalize(&axis2, &axis2);
+                        }
+                        GenerateQuaternion(&axis2, &q2, angle);
+                        QuaternionMult(&q2, (Vector4 *)(proj + 0x50), &rot);
+                    }
+                    QuaternionToSubMatrix(&rot, &hole);
+                    hole.m[3][0] = 0.5f * *(f32 *)(hit + 0x10) + *(f32 *)(hit + 0x0);
+                    hole.m[3][1] = 0.5f * *(f32 *)(hit + 0x14) + *(f32 *)(hit + 0x4);
+                    hole.m[3][2] = 0.5f * *(f32 *)(hit + 0x18) + *(f32 *)(hit + 0x8);
+                    size = RandomAdd(*(f32 *)(*(u8 **)(proj + 0x120) + 0x4C), *(f32 *)(*(u8 **)(proj + 0x120) + 0x50));
+                    angle = RandomAdd_s32(*(s32 *)(*(u8 **)(proj + 0x120) + 0x54), *(s32 *)(*(u8 **)(proj + 0x120) + 0x58));
+                    BulletHole_AddSegment(&hole, *(u32 *)(*(u8 **)(proj + 0x120) + 0x5C), **(GXColor **)(*(u8 **)(proj + 0x120) + 0xAC), angle, size);
+                    break;
+                }
+                case -1:
+                    break;
+                }
+            }
+            LensFlare_Delete(*(s32 *)(proj + 0x130));
+            Thing_Release((s32)proj);
+            LightHolder_Delete(*(s32 *)(proj + 0x134));
+            *(void **)(proj + 0x8C) = g_projectileVTable;
+            *(u32 *)(proj + 0x74) |= 2;
+        } else if (type == 1 || type == 4) {
+            ((Vector4 *)(proj + 0x40))->x = 0.02f * normal.x + ((Vector4 *)(proj + 0x40))->x;
+            ((Vector4 *)(proj + 0x40))->y = 0.02f * normal.y + ((Vector4 *)(proj + 0x40))->y;
+            ((Vector4 *)(proj + 0x40))->z = 0.02f * normal.z + ((Vector4 *)(proj + 0x40))->z;
+        }
     }
 }
 
@@ -41703,6 +42116,237 @@ void setFbbRegs(void *arg0, u32 *arg1, u32 *arg2, u32 *arg3, u32 *arg4) {
     }
 }
 
+void VIConfigure(void *rmode) {
+    typedef struct {
+        u8 equ;
+        u16 acv;
+        u16 prbOdd;
+        u16 prbEven;
+        u16 psbOdd;
+        u16 psbEven;
+        u8 bs1;
+        u8 bs2;
+        u8 bs3;
+        u8 bs4;
+        u16 be1;
+        u16 be2;
+        u16 be3;
+        u16 be4;
+        u16 nhlines;
+        u16 hlw;
+        u8 hsy;
+        u8 hcs;
+        u8 hce;
+        u8 hbe640;
+        u16 hbs640;
+    } VITimingInfo;
+    typedef struct {
+        u16 DispPosX;
+        u16 DispPosY;
+        u16 DispSizeX;
+        u16 DispSizeY;
+        u16 AdjustedDispPosX;
+        u16 AdjustedDispPosY;
+        u16 AdjustedDispSizeY;
+        u16 AdjustedPanPosY;
+        u16 AdjustedPanSizeY;
+        u16 FBSizeX;
+        u16 FBSizeY;
+        u16 PanPosX;
+        u16 PanPosY;
+        u16 PanSizeX;
+        u16 PanSizeY;
+        u32 FBMode;
+        u32 nonInter;
+        u32 tv;
+        u8 wordPerLine;
+        u8 std;
+        u8 wpl;
+        u32 bufAddr;
+        u32 tfbb;
+        u32 bfbb;
+        u8 xof;
+        BOOL black;
+        BOOL threeD;
+        u32 rbufAddr;
+        u32 rtfbb;
+        u32 rbfbb;
+        VITimingInfo *timing;
+    } VIPositionInfo;
+    typedef struct {
+        s32 viTVmode;
+        u16 fbWidth;
+        u16 efbHeight;
+        u16 xfbHeight;
+        u16 viXOrigin;
+        u16 viYOrigin;
+        u16 viWidth;
+        u16 viHeight;
+        u32 xFBmode;
+    } RenderMode;
+    extern u32 encoderType_803C7380;
+    extern u64 changed_803C7390;
+    extern u32 changeMode_803C7388;
+    extern u32 FBSet_803C73B0;
+    extern u8 timing_800D5850[][0x26];
+    extern u16 regs_802EFAA8[59];
+    extern s16 displayOffsetH_803C7384;
+    extern s16 displayOffsetV_803C7386;
+    u8 *getTiming_800742A0(u32 mode);
+    void setFbbRegs(void *HorVer, u32 *tfbb, u32 *bfbb, u32 *rtfbb, u32 *rbfbb);
+    void setVerticalRegs(u16 dispPosY, u16 dispSizeY, u8 equ, u16 acv, u16 prbOdd, u16 prbEven, u16 psbOdd, u16 psbEven, BOOL black);
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32 level);
+    void OSReport(const char *msg, ...);
+    static u32 message = 0;
+    RenderMode *rm = rmode;
+    u8 *data = (u8 *)timing_800D5850;
+    VIPositionInfo *HorVer = (VIPositionInfo *)((u8 *)regs_802EFAA8 + 0xF0);
+    VITimingInfo *tm;
+    u32 regDspCfg;
+    s32 enabled;
+    u32 newNonInter;
+    u32 tvInBootrom;
+    u32 tvInGame;
+
+    enabled = OSDisableInterrupts();
+    newNonInter = rm->viTVmode & 3;
+    if (HorVer->nonInter != newNonInter) {
+        changeMode_803C7388 = 1;
+        HorVer->nonInter = newNonInter;
+    }
+    tvInGame = (u32)rm->viTVmode >> 2;
+    tvInBootrom = *(u32 *)0x800000CC;
+    if (tvInGame == 4 && message == 0) {
+        message = 1;
+        OSReport((char *)data + 0x1BC);
+        OSReport((char *)data + 0x1E8);
+        OSReport((char *)data + 0x214);
+        OSReport((char *)data + 0x240);
+        OSReport((char *)data + 0x26C);
+        OSReport((char *)data + 0x298);
+        OSReport((char *)data + 0x1BC);
+    }
+    if (tvInGame == 0 || tvInGame == 2) {
+        HorVer->tv = tvInBootrom;
+    } else {
+        HorVer->tv = tvInGame;
+    }
+    HorVer->DispPosX = rm->viXOrigin;
+    HorVer->DispPosY = (HorVer->nonInter == 1) ? (u16)(rm->viYOrigin * 2) : rm->viYOrigin;
+    HorVer->DispSizeX = rm->viWidth;
+    HorVer->FBSizeX = rm->fbWidth;
+    HorVer->FBSizeY = rm->xfbHeight;
+    HorVer->FBMode = rm->xFBmode;
+    HorVer->PanSizeX = HorVer->FBSizeX;
+    HorVer->PanSizeY = HorVer->FBSizeY;
+    HorVer->PanPosX = 0;
+    HorVer->PanPosY = 0;
+    HorVer->DispSizeY = (HorVer->nonInter == 2) ? HorVer->PanSizeY
+        : (HorVer->nonInter == 3) ? HorVer->PanSizeY
+        : (HorVer->FBMode == 0) ? (u16)(HorVer->PanSizeY * 2) : HorVer->PanSizeY;
+    HorVer->threeD = (HorVer->nonInter == 3) ? TRUE : FALSE;
+    tm = (VITimingInfo *)getTiming_800742A0((HorVer->tv << 2) + HorVer->nonInter);
+    HorVer->timing = tm;
+    {
+        s32 coeff;
+        s32 frac;
+        u16 acv = tm->acv;
+        HorVer->AdjustedDispPosX = ((s16)HorVer->DispPosX + displayOffsetH_803C7384 > 720 - HorVer->DispSizeX) ? 720 - HorVer->DispSizeX
+            : (((s16)HorVer->DispPosX + displayOffsetH_803C7384 < 0) ? 0 : (s16)HorVer->DispPosX + displayOffsetH_803C7384);
+        coeff = (HorVer->FBMode == 0) ? 2 : 1;
+        frac = HorVer->DispPosY & 1;
+        HorVer->AdjustedDispPosY = ((s16)HorVer->DispPosY + displayOffsetV_803C7386 > frac) ? (s16)HorVer->DispPosY + displayOffsetV_803C7386 : frac;
+        HorVer->AdjustedDispSizeY = HorVer->DispSizeY
+            + (((s16)HorVer->DispPosY + displayOffsetV_803C7386 - frac < 0) ? (s16)HorVer->DispPosY + displayOffsetV_803C7386 - frac : 0)
+            - (((s16)HorVer->DispPosY + (s16)HorVer->DispSizeY + displayOffsetV_803C7386 - ((s16)acv * 2 - frac) > 0) ? (s16)HorVer->DispPosY + (s16)HorVer->DispSizeY + displayOffsetV_803C7386 - ((s16)acv * 2 - frac) : 0);
+        HorVer->AdjustedPanPosY = HorVer->PanPosY
+            - (((s16)HorVer->DispPosY + displayOffsetV_803C7386 - frac < 0) ? (s16)HorVer->DispPosY + displayOffsetV_803C7386 - frac : 0) / coeff;
+        HorVer->AdjustedPanSizeY = HorVer->PanSizeY
+            + (((s16)HorVer->DispPosY + displayOffsetV_803C7386 - frac < 0) ? (s16)HorVer->DispPosY + displayOffsetV_803C7386 - frac : 0) / coeff
+            - (((s16)HorVer->DispPosY + (s16)HorVer->DispSizeY + displayOffsetV_803C7386 - ((s16)acv * 2 - frac) > 0) ? (s16)HorVer->DispPosY + (s16)HorVer->DispSizeY + displayOffsetV_803C7386 - ((s16)acv * 2 - frac) : 0) / coeff;
+    }
+    if (encoderType_803C7380 == 0) {
+        HorVer->tv = 3;
+    }
+    {
+        u16 hct = tm->nhlines / 2;
+        u16 vct = (tm->nhlines % 2) ? tm->hlw : 0;
+        regs_802EFAA8[25] = vct + 1;
+        changed_803C7390 |= (u64)1 << (63 - 25);
+        regs_802EFAA8[24] = (hct + 1) | 0x1000;
+        changed_803C7390 |= (u64)1 << (63 - 24);
+    }
+    regDspCfg = regs_802EFAA8[1];
+    if (HorVer->nonInter == 2 || HorVer->nonInter == 3) {
+        regDspCfg = (regDspCfg & ~4) | 4;
+    } else {
+        regDspCfg = (regDspCfg & ~4) | ((HorVer->nonInter & 1) << 2);
+    }
+    regDspCfg = (regDspCfg & ~8) | (HorVer->threeD << 3);
+    if (HorVer->tv == 4 || HorVer->tv == 5) {
+        regDspCfg = regDspCfg & ~0x300;
+    } else {
+        regDspCfg = (regDspCfg & ~0x300) | (HorVer->tv << 8);
+    }
+    regs_802EFAA8[1] = regDspCfg;
+    changed_803C7390 |= (u64)1 << (63 - 1);
+    regDspCfg = regs_802EFAA8[54];
+    if (rm->viTVmode == 2 || rm->viTVmode == 3) {
+        regDspCfg = (regDspCfg & ~1) | 1;
+    } else {
+        regDspCfg = regDspCfg & ~1;
+    }
+    regs_802EFAA8[54] = regDspCfg;
+    changed_803C7390 |= (u64)1 << (63 - 54);
+    {
+        u16 dispSizeX = HorVer->DispSizeX;
+        u16 panSizeX = HorVer->threeD ? HorVer->PanSizeX * 2 : HorVer->PanSizeX;
+        if (panSizeX < dispSizeX) {
+            regs_802EFAA8[37] = ((panSizeX * 256 + dispSizeX - 1) / dispSizeX) | 0x1000;
+            changed_803C7390 |= (u64)1 << (63 - 37);
+            regs_802EFAA8[56] = panSizeX;
+            changed_803C7390 |= (u64)1 << (63 - 56);
+        } else {
+            regs_802EFAA8[37] = 0x100;
+            changed_803C7390 |= (u64)1 << (63 - 37);
+        }
+    }
+    {
+        u32 hbe;
+        u32 hbs;
+        regs_802EFAA8[3] = tm->hlw;
+        changed_803C7390 |= (u64)1 << (63 - 3);
+        regs_802EFAA8[2] = tm->hce | (tm->hcs << 8);
+        changed_803C7390 |= (u64)1 << (63 - 2);
+        hbe = tm->hbe640 + HorVer->AdjustedDispPosX - 40;
+        hbs = tm->hbs640 + HorVer->AdjustedDispPosX + 40 - (720 - HorVer->DispSizeX);
+        regs_802EFAA8[5] = tm->hsy | ((hbe & 0x1FF) << 7);
+        changed_803C7390 |= (u64)1 << (63 - 5);
+        regs_802EFAA8[4] = (hbe >> 9) | (hbs << 1);
+        changed_803C7390 |= (u64)1 << (63 - 4);
+    }
+    regs_802EFAA8[11] = tm->bs1 | (tm->be1 << 5);
+    changed_803C7390 |= (u64)1 << (63 - 11);
+    regs_802EFAA8[10] = tm->bs3 | (tm->be3 << 5);
+    changed_803C7390 |= (u64)1 << (63 - 10);
+    regs_802EFAA8[13] = tm->bs2 | (tm->be2 << 5);
+    changed_803C7390 |= (u64)1 << (63 - 13);
+    regs_802EFAA8[12] = tm->bs4 | (tm->be4 << 5);
+    changed_803C7390 |= (u64)1 << (63 - 12);
+    HorVer->wordPerLine = (HorVer->FBSizeX + 15) / 16;
+    HorVer->std = (HorVer->FBMode == 0) ? HorVer->wordPerLine : (u8)(HorVer->wordPerLine * 2);
+    HorVer->xof = HorVer->PanPosX % 16;
+    HorVer->wpl = (HorVer->xof + HorVer->PanSizeX + 15) / 16;
+    regs_802EFAA8[36] = HorVer->std | (HorVer->wpl << 8);
+    changed_803C7390 |= (u64)1 << (63 - 36);
+    if (FBSet_803C73B0) {
+        setFbbRegs(HorVer, &HorVer->tfbb, &HorVer->bfbb, &HorVer->rtfbb, &HorVer->rbfbb);
+    }
+    setVerticalRegs(HorVer->AdjustedDispPosY, HorVer->AdjustedDispSizeY, tm->equ, tm->acv, tm->prbOdd, tm->prbEven, tm->psbOdd, tm->psbEven, HorVer->black);
+    OSRestoreInterrupts(enabled);
+}
+
 void VIFlush(void) {
     extern u32 changeMode_803C7388;
     extern u64 changed_803C7390;
@@ -47346,6 +47990,136 @@ void *__GXDefaultTlutRegionCallback(u32 idx) {
     }
     return ret;
 }
+
+void *GXInit(void *base, u32 size) {
+    extern u8 *gx;
+    extern u8 gxData_80308EE0[];
+    extern volatile u16 *__cpReg;
+    extern volatile u32 *__piReg;
+    extern volatile u16 *__peReg;
+    extern volatile u16 *__memReg;
+    void GXSetMisc(u32 token, u32 val);
+    void __GXFifoInit(void);
+    void GXInitFifoBase(void *fifo, void *base, u32 size);
+    void GXSetCPUFifo(void *fifo);
+    void GXSetGPFifo(void *fifo);
+    void __GXPEInit(void);
+    u32 PPCMfhid2(void);
+    void PPCMtwpar(u32 val);
+    void PPCMthid2(u32 val);
+    void __GXFlushTextureState(void);
+    void GXInitTexCacheRegion(void *region, u8 is32bMipmap, u32 tmemEven, u32 sizeEven, u32 tmemOdd, u32 sizeOdd);
+    void GXInitTlutRegion(void *region, u32 tmemAddr, u32 tlutSize);
+    void __GXSetTmemConfig(u32 config);
+    void __GXInitGX(void);
+    u32 i;
+    u32 reg;
+    u32 freqBase;
+    void *fifo = gxData_80308EE0 + 0x4F8;
+
+    gx[0x4F0] = 0;
+    gx[0x4F1] = 1;
+    *(u32 *)(gx + 0x4DC) = 0;
+    *(u32 *)(gx + 0x4E0) = 0;
+    GXSetMisc(1, 0);
+    __cpReg = (volatile u16 *)0xCC000000;
+    __piReg = (volatile u32 *)0xCC003000;
+    __peReg = (volatile u16 *)0xCC001000;
+    __memReg = (volatile u16 *)0xCC004000;
+    __GXFifoInit();
+    GXInitFifoBase(fifo, base, size);
+    GXSetCPUFifo(fifo);
+    GXSetGPFifo(fifo);
+    __GXPEInit();
+    reg = PPCMfhid2();
+    PPCMtwpar(0x0C008000);
+    PPCMthid2(reg | 0x40000000);
+    *(u32 *)(gx + 0x204) = 0;
+    *(u32 *)(gx + 0x204) = *(u32 *)(gx + 0x204) & 0xFFFFFF;
+    *(u32 *)(gx + 0x124) = 0xFF;
+    *(u32 *)(gx + 0x124) = (*(u32 *)(gx + 0x124) & 0xFFFFFF) | 0x0F000000;
+    *(u32 *)(gx + 0x7C) = 0;
+    *(u32 *)(gx + 0x7C) = (*(u32 *)(gx + 0x7C) & 0xFFFFFF) | 0x22000000;
+    for (i = 0; i < 16; i++) {
+        *(u32 *)(gx + 0x130 + i * 4) = 0;
+        *(u32 *)(gx + 0x170 + i * 4) = 0;
+        *(u32 *)(gx + 0x100 + (i >> 1) * 4) = 0;
+        *(u32 *)(gx + 0x49C + i * 4) = 0xFF;
+        *(u32 *)(gx + 0x130 + i * 4) = (*(u32 *)(gx + 0x130 + i * 4) & 0xFFFFFF) | ((0xC0 + i * 2) << 24);
+        *(u32 *)(gx + 0x170 + i * 4) = (*(u32 *)(gx + 0x170 + i * 4) & 0xFFFFFF) | ((0xC1 + i * 2) << 24);
+        *(u32 *)(gx + 0x1B0 + (i >> 1) * 4) = (*(u32 *)(gx + 0x1B0 + (i >> 1) * 4) & 0xFFFFFF) | (((i >> 1) + 0xF6) << 24);
+        *(u32 *)(gx + 0x100 + (i >> 1) * 4) = (*(u32 *)(gx + 0x100 + (i >> 1) * 4) & 0xFFFFFF) | (((i >> 1) + 0x28) << 24);
+    }
+    *(u32 *)(gx + 0x120) = 0;
+    *(u32 *)(gx + 0x120) = (*(u32 *)(gx + 0x120) & 0xFFFFFF) | 0x27000000;
+    for (i = 0; i < 8; i++) {
+        *(u32 *)(gx + 0xB8 + i * 4) = 0;
+        *(u32 *)(gx + 0xD8 + i * 4) = 0;
+        *(u32 *)(gx + 0xB8 + i * 4) = (*(u32 *)(gx + 0xB8 + i * 4) & 0xFFFFFF) | ((0x30 + i * 2) << 24);
+        *(u32 *)(gx + 0xD8 + i * 4) = (*(u32 *)(gx + 0xD8 + i * 4) & 0xFFFFFF) | ((0x31 + i * 2) << 24);
+    }
+    *(u32 *)(gx + 0xF8) = (*(u32 *)(gx + 0xF8) & 0xFFFFFF) | 0x20000000;
+    *(u32 *)(gx + 0xFC) = (*(u32 *)(gx + 0xFC) & 0xFFFFFF) | 0x21000000;
+    *(u32 *)(gx + 0x1D0) = (*(u32 *)(gx + 0x1D0) & 0xFFFFFF) | 0x41000000;
+    *(u32 *)(gx + 0x1D4) = (*(u32 *)(gx + 0x1D4) & 0xFFFFFF) | 0x42000000;
+    *(u32 *)(gx + 0x1D8) = (*(u32 *)(gx + 0x1D8) & 0xFFFFFF) | 0x40000000;
+    *(u32 *)(gx + 0x1DC) = (*(u32 *)(gx + 0x1DC) & 0xFFFFFF) | 0x43000000;
+    *(u32 *)(gx + 0x1FC) = *(u32 *)(gx + 0x1FC) & ~0x180;
+    *(u32 *)(gx + 0x4F4) = 0;
+    gx[0x4F2] = 0;
+    freqBase = *(u32 *)0x800000F8 / 500;
+    __GXFlushTextureState();
+    *(volatile u8 *)0xCC008000 = 0x61;
+    *(volatile u32 *)0xCC008000 = (freqBase >> 11) | 0x400 | 0x69000000;
+    __GXFlushTextureState();
+    *(volatile u8 *)0xCC008000 = 0x61;
+    *(volatile u32 *)0xCC008000 = (freqBase / 4224) | 0x200 | 0x46000000;
+    for (i = 0; i < 8; i++) {
+        *(u32 *)(gx + 0x1C + i * 4) = (*(u32 *)(gx + 0x1C + i * 4) & ~0x40000000) | 0x40000000;
+        *(u32 *)(gx + 0x3C + i * 4) = (*(u32 *)(gx + 0x3C + i * 4) & ~0x80000000) | 0x80000000;
+        *(volatile u8 *)0xCC008000 = 8;
+        *(volatile u8 *)0xCC008000 = i | 0x80;
+        *(volatile u32 *)0xCC008000 = *(u32 *)(gx + 0x3C + i * 4);
+    }
+    *(volatile u8 *)0xCC008000 = 0x10;
+    *(volatile u32 *)0xCC008000 = 0x1000;
+    *(volatile u32 *)0xCC008000 = 0x3F;
+    *(volatile u8 *)0xCC008000 = 0x10;
+    *(volatile u32 *)0xCC008000 = 0x1012;
+    *(volatile u32 *)0xCC008000 = 1;
+    *(volatile u8 *)0xCC008000 = 0x61;
+    *(volatile u32 *)0xCC008000 = 0x5800000F;
+    for (i = 0; i < 8; i++) {
+        GXInitTexCacheRegion(gx + 0x208 + i * 16, 0, i * 0x8000, 0, 0x80000 + i * 0x8000, 0);
+    }
+    for (i = 0; i < 4; i++) {
+        GXInitTexCacheRegion(gx + 0x288 + i * 16, 0, (i * 2 + 8) << 15, 0, (i * 2 + 9) << 15, 0);
+    }
+    for (i = 0; i < 16; i++) {
+        GXInitTlutRegion(gx + 0x2D0 + i * 16, 0xC0000 + i * 0x2000, 16);
+    }
+    for (i = 0; i < 4; i++) {
+        GXInitTlutRegion(gx + 0x2D0 + (i + 16) * 16, 0xE0000 + i * 0x8000, 64);
+    }
+    __cpReg[3] = 0;
+    *(u32 *)(gx + 0x4EC) = *(u32 *)(gx + 0x4EC) & ~0xF0;
+    *(volatile u8 *)0xCC008000 = 8;
+    *(volatile u8 *)0xCC008000 = 0x20;
+    *(volatile u32 *)0xCC008000 = *(u32 *)(gx + 0x4EC);
+    *(volatile u8 *)0xCC008000 = 0x10;
+    *(volatile u32 *)0xCC008000 = 0x1006;
+    *(volatile u32 *)0xCC008000 = 0;
+    *(volatile u8 *)0xCC008000 = 0x61;
+    *(volatile u32 *)0xCC008000 = 0x23000000;
+    *(volatile u8 *)0xCC008000 = 0x61;
+    *(volatile u32 *)0xCC008000 = 0x24000000;
+    *(volatile u8 *)0xCC008000 = 0x61;
+    *(volatile u32 *)0xCC008000 = 0x67000000;
+    __GXSetTmemConfig(0);
+    __GXInitGX();
+    return fifo;
+}
+
 #pragma pop
 
 void GXCPInterruptHandler(s16 interrupt, void *context) {
