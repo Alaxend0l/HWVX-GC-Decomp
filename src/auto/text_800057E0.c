@@ -3902,16 +3902,8 @@ typedef struct BSPNode {
     u8 pad14[0xC];
 } BSPNode;
 
-Vector4 *BSPN0_CollideWithSegment(void *nodePtr, Vector4 *hit, Vector4 *p0, Vector4 *p1) {
-    typedef struct BoxNode {
-        Vector4 plane;
-        u8 type;
-        u8 pad;
-        u16 next;
-        u8 pad14[0xC];
-    } BoxNode;
+Vector4 *BSPN0_CollideWithSegment(BSPNode *node, Vector4 *hit, Vector4 *p0, Vector4 *p1) {
     f32 Distance_Plane(void *plane, void *point);
-    BoxNode *node = nodePtr;
     Vector4 *res;
     Vector4 mid;
     f32 d0;
@@ -3970,10 +3962,10 @@ Vector4 *BSPN0_CollideWithSegment(void *nodePtr, Vector4 *hit, Vector4 *p0, Vect
             }
         }
         if (node->type & 2) {
-            return BSPN0_CollideWithSegment(node + node->next, (Vector4 *)node, &mid, p1);
+            return BSPN0_CollideWithSegment(node + node->next, &node->plane, &mid, p1);
         }
         *p1 = mid;
-        return (Vector4 *)node;
+        return &node->plane;
     }
     return NULL;
 }
