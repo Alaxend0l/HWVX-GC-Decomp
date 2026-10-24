@@ -12245,7 +12245,7 @@ s32 NavHolder_IsLinked(s32 from, s32 to) {
 
 #pragma peephole on
 void CreateParticleGX();
-void CreateParticleSprite();
+void CreateParticleSprite(Vector4 *pos, Vector4 *vel, Vector4 *accel, void *owner, u8 *info, f32 speed, f32 age);
 void LineManager_Add();
 void NavHolder_FillPointerArrayPath(u8 *point, u8 **array, u32 max) {
     u8 **out = array;
@@ -35589,6 +35589,101 @@ s32 TRKRequestSend(TRKBuffer *msgBuf, s32 *bufferId, u32 p1, u32 p2, s32 p3) {
     }
     return error;
 }
+
+s32 TRKSuppAccessFile(u32 file, u8 *data, u32 *count, u8 *io_result, s32 need_reply, s32 read) {
+    s32 TRKGetFreeBuffer(s32 *msgID, TRKBuffer **outMsg);
+    s32 TRKRequestSend(TRKBuffer *msgBuf, s32 *bufferId, u32 p1, u32 p2, s32 p3);
+    s32 TRKAppendBuffer1_ui32(TRKBuffer *b, u32 data);
+    s32 TRKAppendBuffer1_ui16(TRKBuffer *b, u16 data);
+    s32 TRKAppendBuffer_ui8(TRKBuffer *b, const u8 *data, s32 count);
+    s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data);
+    s32 TRKReadBuffer_ui8(TRKBuffer *b, u8 *data, s32 count);
+    s32 error;
+    s32 exit;
+    u32 done;
+    u32 length;
+    s32 replyBufferId;
+    s32 bufferId;
+    TRKBuffer *buffer;
+    TRKBuffer *replyBuffer;
+    u16 replyLength;
+    u8 replyIOResult;
+
+    if (data == NULL || *count == 0) {
+        return 2;
+    }
+
+    exit = 0;
+    *io_result = 0;
+    done = 0;
+    error = 0;
+    while (!exit && done < *count && error == 0 && *io_result == 0) {
+        if (*count - done > 0x800) {
+            length = 0x800;
+        } else {
+            length = *count - done;
+        }
+
+        error = TRKGetFreeBuffer(&bufferId, &buffer);
+        if (error == 0) {
+            error = TRKAppendBuffer1_ui8(buffer, read ? 0xD1 : 0xD0);
+        }
+        if (error == 0) {
+            error = TRKAppendBuffer1_ui32(buffer, file);
+        }
+        if (error == 0) {
+            error = TRKAppendBuffer1_ui16(buffer, length);
+        }
+        if (!read && error == 0) {
+            error = TRKAppendBuffer_ui8(buffer, data + done, length);
+        }
+
+        if (error == 0) {
+            if (need_reply) {
+                replyLength = 0;
+                replyIOResult = 0;
+                error = TRKRequestSend(buffer, &replyBufferId, read ? 5 : 5, 3, !(read && file == 0));
+                if (error == 0) {
+                    replyBuffer = TRKGetBuffer(replyBufferId);
+                    TRKSetBufferPosition(replyBuffer, 2);
+                }
+                if (error == 0) {
+                    error = TRKReadBuffer1_ui8(replyBuffer, &replyIOResult);
+                }
+                if (error == 0) {
+                    error = TRKReadBuffer1_ui16(replyBuffer, &replyLength);
+                }
+                if (read && error == 0) {
+                    if (replyBuffer->length != replyLength + 5) {
+                        replyLength = replyBuffer->length - 5;
+                        if (replyIOResult == 0) {
+                            replyIOResult = 1;
+                        }
+                    }
+                    if (replyLength <= length) {
+                        error = TRKReadBuffer_ui8(replyBuffer, data + done, replyLength);
+                    }
+                }
+                if (replyLength != length) {
+                    if ((!read || replyLength >= length) && replyIOResult == 0) {
+                        replyIOResult = 1;
+                    }
+                    length = replyLength;
+                    exit = 1;
+                }
+                *io_result = replyIOResult;
+                TRKReleaseBuffer(replyBufferId);
+            } else {
+                error = TRKMessageSend(buffer);
+            }
+        }
+        TRKReleaseBuffer(bufferId);
+        done += length;
+    }
+    *count = done;
+    return error;
+}
+
 #pragma pop
 
 s32 TRKReleaseMutex(void *mutex) {
