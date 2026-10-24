@@ -26380,6 +26380,8 @@ void StateProgressionManager_RestartCurrentLevel(void) {
     ExitStateGamePlay(0xB);
 }
 
+#pragma readonly_strings on
+#pragma pool_strings on
 s32 StateProgressionManager_Init(s32 prevState) {
     extern s32 g_GameProgressionID;
     extern s32 g_GameProgressionState[8];
