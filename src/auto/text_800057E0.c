@@ -34741,13 +34741,15 @@ static inline void TRKDiscardFrame(TRKFramingState *state) {
 static inline s32 TRKCheckFrame(TRKFramingState *state) {
     void TRKStandardACK(TRKBuffer *b, u8 commandID, u8 replyError);
 
-    if (state->buffer->length < 2) {
-        TRKStandardACK(state->buffer, 0xFF, 2);
+    TRKBuffer *b = state->buffer;
+
+    if (b->length < 2) {
+        TRKStandardACK(b, 0xFF, 2);
         TRKDiscardFrame(state);
         return 0;
     }
-    state->buffer->position = 0;
-    state->buffer->length--;
+    b->position = 0;
+    b->length--;
     return 1;
 }
 
