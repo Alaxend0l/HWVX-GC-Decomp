@@ -14694,6 +14694,84 @@ void Projectile_Release(void *projectile) {
     M2C_FIELD(projectile, void **, 0x8C) = g_projectileVTable;
 }
 
+void Projectile_MoveBase(u8 *proj) {
+    extern f32 g_fDeltaTimeSec;
+    extern f32 g_fDeltaTimeMS;
+    extern s32 g_iDeltaTimeMS;
+    extern Vector4 g_zeroVector;
+    extern u8 g_projectileVTable[];
+    void LensFlare_Delete(s32 flare);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    void PSVECScale(void *src, void *dst, f32 scale);
+    void PSVECAdd(void *a, void *b, void *out);
+    f32 MagnitudeVector(void *v);
+    void ExtractColorKey(void *keys, void *out, f32 t);
+    void ExtractScaleKey(void *keys, void *out, f32 t);
+    Vector4 cur;
+    Vector4 step;
+    Vector4 move;
+    f32 dt = g_fDeltaTimeSec;
+    u8 type;
+
+    *(u16 *)(proj + 0x15C) = 0;
+    if (*(s32 *)(proj + 0x124) < 0) {
+        u32 id = *(u32 *)(*(u8 **)(proj + 0x120) + 0x78);
+        if (id != 0) {
+            struct { Vector4 a; Vector4 b; Vector4 c; Vector4 zero; u32 id; s32 player; f32 f0; f32 f1; } p;
+
+            p.id = id;
+            p.a = *(Vector4 *)(proj + 0x40);
+            p.b = *(Vector4 *)(proj + 0x50);
+            p.c = *(Vector4 *)(proj + 0x0);
+            p.player = *(s32 *)(proj + 0x94);
+            p.f0 = 0.0f;
+            p.f1 = 0.0f;
+            p.zero = g_zeroVector;
+            ThingManager_DARYL_CreateThing(1, &p);
+        }
+        LensFlare_Delete(*(s32 *)(proj + 0x130));
+        Thing_Release((s32)proj);
+        LightHolder_Delete(*(s32 *)(proj + 0x134));
+        *(void **)(proj + 0x8C) = g_projectileVTable;
+    }
+    *(s32 *)(proj + 0x124) -= g_iDeltaTimeMS;
+    type = *(u8 *)(*(u8 **)(proj + 0x120) + 0x4);
+    if (type != 0) {
+        if (type == 1) {
+            *(f32 *)(proj + 0x128) += 30.0f * dt;
+        } else if (type == 2) {
+            PSVECScale(proj, &move, dt);
+            *(f32 *)(proj + 0x128) += MagnitudeVector(&move);
+        }
+        if (*(f32 *)(proj + 0x128) >= 0.0f) {
+            cur = *(Vector4 *)(proj + 0x40);
+            PSVECScale(proj, &step, -*(f32 *)(proj + 0x12C));
+            if (*(f32 *)(proj + 0x12C)) {
+                while (*(f32 *)(proj + 0x128) > *(f32 *)(proj + 0x12C)) {
+                    u32 id = *(u32 *)(*(u8 **)(proj + 0x120) + 0x70);
+                    if (id != 0) {
+                        struct { Vector4 a; Vector4 b; Vector4 c; Vector4 zero; u32 id; s32 player; f32 f0; f32 f1; } p;
+
+                        p.id = id;
+                        p.a = cur;
+                        p.b = *(Vector4 *)(proj + 0x50);
+                        p.c = *(Vector4 *)(proj + 0x0);
+                        p.player = *(s32 *)(proj + 0x94);
+                        p.f0 = 0.0f;
+                        p.f1 = 0.0f;
+                        p.zero = g_zeroVector;
+                        ThingManager_DARYL_CreateThing(1, &p);
+                    }
+                    *(f32 *)(proj + 0x128) -= *(f32 *)(proj + 0x12C);
+                    PSVECAdd(&cur, &step, &cur);
+                }
+            }
+        }
+    }
+    ExtractColorKey(*(u8 **)(proj + 0x120) + 0x94, proj + 0xF0, g_fDeltaTimeMS * *(f32 *)(proj + 0x140));
+    ExtractScaleKey(*(u8 **)(proj + 0x120) + 0x8C, proj + 0xC0, g_fDeltaTimeMS * *(f32 *)(proj + 0x140));
+}
+
 void Projectile_ProximityDetection(u8 *proj) {
     extern s32 g_iDeltaTimeMS;
     extern Vector4 g_zeroVector;
