@@ -8775,6 +8775,28 @@ void OBoxCache_Set(u32 box0, u32 box1, Vector4 *a, Vector4 *b) {
     *(u32 *)(g_aCollisionPairCache[slot] + 0x24) = box1;
 }
 
+typedef struct CollisionOBox {
+    Vector4 center;
+    Vector4 corners[8];
+    f32 extent[3];
+    u8 pad9C[4];
+    Vector4 *axis[3];
+    u8 padAC[4];
+    f32 centerProj[3];
+    u8 padBC[4];
+    f32 velProj[3];
+    u32 unkCC;
+} CollisionOBox;
+
+typedef struct CollisionHit {
+    Vector4 pos;
+    Vector4 normal;
+    u8 pad20[8];
+    u32 unk28;
+    u8 pad2C[0x14];
+    u8 type;
+} CollisionHit;
+
 #pragma push
 #pragma use_lmw_stmw on
 f32 OBoxHitsSegment(void *obox, Vector4 *vel, Vector4 *seg, void *arg3, f32 maxT) {
