@@ -5208,23 +5208,25 @@ static inline void CarA_ApplyWheelLoads(u8 *car) {
     } WheelInfo;
     Vector4 *up;
     WheelInfo *wheel;
+    u8 *susp;
     u32 i;
     s32 bone;
 
-    for (i = 0; i < *(u32 *)(*(u8 **)(car + 0x3BC) + 0xD0); i++) {
+    susp = car;
+    for (i = 0; i < *(u32 *)(*(u8 **)(car + 0x3BC) + 0xD0); i++, susp += 0x30) {
         wheel = &(*(WheelInfo **)(*(u8 **)(car + 0x3BC) + 0xD4))[i];
         if (wheel->parent != 0) {
             bone = wheel->index - wheel->parent;
             up = (Vector4 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x10);
-            *(f32 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x30) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->x;
-            *(f32 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x34) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->y;
-            *(f32 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x38) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->z;
+            *(f32 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x30) -= *(f32 *)(susp + 0x1BC) * up->x;
+            *(f32 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x34) -= *(f32 *)(susp + 0x1BC) * up->y;
+            *(f32 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x38) -= *(f32 *)(susp + 0x1BC) * up->z;
         } else {
             up = (Vector4 *)(car + 0x20);
         }
-        *(f32 *)(*(u8 **)(car + 0x340) + wheel->index * 0x40 + 0x30) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->x;
-        *(f32 *)(*(u8 **)(car + 0x340) + wheel->index * 0x40 + 0x34) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->y;
-        *(f32 *)(*(u8 **)(car + 0x340) + wheel->index * 0x40 + 0x38) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->z;
+        *(f32 *)(*(u8 **)(car + 0x340) + wheel->index * 0x40 + 0x30) -= *(f32 *)(susp + 0x1BC) * up->x;
+        *(f32 *)(*(u8 **)(car + 0x340) + wheel->index * 0x40 + 0x34) -= *(f32 *)(susp + 0x1BC) * up->y;
+        *(f32 *)(*(u8 **)(car + 0x340) + wheel->index * 0x40 + 0x38) -= *(f32 *)(susp + 0x1BC) * up->z;
     }
     *(f32 *)(car + 0x394) += *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x24) * *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x20);
 }
@@ -5260,8 +5262,8 @@ void CarA_ComputeForces(u8 *car) {
     f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
     s8 RayHitsTerrainAndObjects(void *start, void *dir, void *dist, void *hit);
     RayHit hit;
-    Vector4 worldPos;
-    Vector4 down;
+    f32 worldPos[4];
+    f32 down[4];
     ForcePoints *forces;
     Vector4 *up;
     WheelInfo *wheel;
@@ -5294,19 +5296,19 @@ void CarA_ComputeForces(u8 *car) {
     if (dot < 0.0f) {
         return;
     }
-    down.x = -*(f32 *)(car + 0x20);
-    down.y = -*(f32 *)(car + 0x24);
-    down.z = -*(f32 *)(car + 0x28);
+    down[0] = -*(f32 *)(car + 0x20);
+    down[1] = -*(f32 *)(car + 0x24);
+    down[2] = -*(f32 *)(car + 0x28);
     scale = 1.0f - *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x80) + 0x58) * (*(f32 *)(car + 0x24) - 1.0f);
     for (i = 0; i < forces->count; i++) {
         if (forces->points[i].ray) {
             dist = 6.0f;
-            if (*(u32 *)(car + 0x3B8) < *(u32 *)(*(u8 **)(car + 0x3BC) + 0xD0) && !RayHitsTerrainAndObjects(car + 0x40, &down, &dist, &hit)) {
+            if (*(u32 *)(car + 0x3B8) < *(u32 *)(*(u8 **)(car + 0x3BC) + 0xD0) && !RayHitsTerrainAndObjects(car + 0x40, down, &dist, &hit)) {
                 continue;
             }
         }
-        XformVec(car + 0x10, &forces->points[i].pos, &worldPos);
-        CarA_ProcessForce(car, &worldPos, &down, scale * (dot * forces->points[i].weight));
+        XformVec(car + 0x10, &forces->points[i].pos, (Vector4 *)worldPos);
+        CarA_ProcessForce(car, (Vector4 *)worldPos, (Vector4 *)down, scale * (dot * forces->points[i].weight));
     }
 }
 
