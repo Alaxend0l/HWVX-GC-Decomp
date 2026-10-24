@@ -3301,6 +3301,8 @@ s32 AttachThing_Init(u8 *attach, u8 *data) {
 
 #pragma pop
 
+void ExtractScaleKey(void *keys, void *out, f32 time);
+
 s32 AttachThing_Move(void *thing) {
     extern f32 g_fDeltaTimeMS;
     if (!(M2C_FIELD(thing, u32 *, 0x74) & 0x4000)) {
