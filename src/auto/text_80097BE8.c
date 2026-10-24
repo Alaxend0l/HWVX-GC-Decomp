@@ -13619,7 +13619,7 @@ void DestroyIT(void) {
 
 #pragma use_lmw_stmw on
 #pragma opt_strength_reduction off
-#pragma optimization_level 1
+#pragma optimization_level 2
 s32 SetITState(s32 state) {
     typedef struct ITTrk {
         u8 *voice;
@@ -13662,14 +13662,14 @@ s32 SetITState(s32 state) {
         u8 *pat[100];
     } ITSong;
     extern u8 *g_pHdr_803C78E8;
-    extern u8 g_song_80375520[0x30];
+    extern ITSong g_song_80375520;
     extern s32 g_musicState;
     extern void (*SongUpdate)(void);
     extern u32 g_trkOn;
     extern u32 g_trkOff;
     void SetVoiceState_(void *voice, s32 state);
     void ProcessIT_800BF6D8(void);
-    ITSong *song = (ITSong *)g_song_80375520;
+    ITSong *song = &g_song_80375520;
     u8 *next;
     u8 *voice;
     u32 i;
