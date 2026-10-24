@@ -34037,11 +34037,6 @@ void AXRegisterCallback(s32 arg0) {
     __AXUserFrameCallback_803C74D0 = arg0;
 }
 
-void *__AXGetStudio(void) {
-    extern u8 __AXStudio_802F7860[];
-    return __AXStudio_802F7860;
-}
-
 static void __AXDepopFade(s32 *value, s32 *hi, s16 *delta) {
     s32 frac = *value / 160;
 
@@ -34060,6 +34055,11 @@ static void __AXDepopFade(s32 *value, s32 *hi, s16 *delta) {
         *hi = 0;
         *delta = 0;
     }
+}
+
+void *__AXGetStudio(void) {
+    extern u8 __AXStudio_802F7860[];
+    return __AXStudio_802F7860;
 }
 
 void __AXSPBInit(void) {
