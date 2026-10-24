@@ -20963,6 +20963,7 @@ s32 StateMovie_Heartbeat(void) {
 Vector4 g_carPos[80];
 f32 g_carRot[80];
 Vector4 g_carCamPos;
+Vector4 g_carDrivePos;
 
 #pragma push
 #pragma readonly_strings on
@@ -22230,7 +22231,6 @@ s8 Thing_CollideWithTeleporters(u8 *thing) {
         f32 unk4C;
     } DebrisParams;
     extern Vector4 g_zeroVector;
-    f32 PSVECSquareDistance(void *a, void *b);
     s32 RandomNumberGenerator_GetRandomInteger(s32 min, s32 max);
     void TransposeSubMatrix(Matrix4 *mtx);
     void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
@@ -22247,7 +22247,6 @@ s8 Thing_CollideWithTeleporters(u8 *thing) {
     Teleporter *tp;
     Teleporter *dest;
     u32 wasInside;
-    u8 inside;
 
     wasInside = (*(u32 *)(thing + 0x74) >> 11) & 1;
     *(u32 *)(thing + 0x74) &= ~0x800;
@@ -22256,15 +22255,7 @@ s8 Thing_CollideWithTeleporters(u8 *thing) {
     }
     for (i = 0; i < *(u32 *)((u8 *)g_worldData.world + 0x30); i++) {
         tp = (Teleporter *)World_GetTeleporter(i);
-        if (tp->numDest == 0) {
-            continue;
-        }
-        if (tp->flags & 4) {
-            inside = Teleporter_IsBelowOrFar((u8 *)tp, thing);
-        } else {
-            inside = tp->radius * tp->radius > PSVECSquareDistance(&tp->mtx.v[3], thing + 0x40);
-        }
-        if (!inside) {
+        if (tp->numDest == 0 || !Teleporter_Contains((u8 *)tp, thing)) {
             continue;
         }
         if (!wasInside) {
