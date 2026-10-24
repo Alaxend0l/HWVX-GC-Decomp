@@ -34878,6 +34878,7 @@ void GXClearVtxDesc(void) {
     M2C_FIELD(gx, u32 *, 0x4F4) |= 8;
 }
 
+#pragma dont_inline off
 static inline void SETVAT(u32 *va, u32 *vb, u32 *vc, s32 attr, s32 cnt, s32 type, u8 frac) {
     switch (attr) {
     case 9:
