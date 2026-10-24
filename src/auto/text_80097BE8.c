@@ -1002,15 +1002,17 @@ static inline s32 SimThread_AddDelta(SimThread *t, s32 dPos, u32 dt) {
     if (sumT > 16) {
         s32 over;
         s32 half;
+        s32 lastT;
         if (--i < 0) {
             i = 15;
         }
         over = sumT - 16;
-        half = t->deltaTime[i] / 2;
+        lastT = t->deltaTime[i];
+        half = lastT / 2;
         if (over < 0) {
             half = -half;
         }
-        sumP -= (over * t->deltaPos[i] + half) / t->deltaTime[i];
+        sumP -= (over * t->deltaPos[i] + half) / lastT;
     }
     return sumP;
 }
@@ -16221,17 +16223,11 @@ void SimThread_Init(VDevice *dev, VDevice *owner) {
 }
 
 s32 SimThread_Step(VDevice *dev) {
-    u32 OSGetTick(void);
     s32 SIControlSteering(s32 chan, s32 cmd, s32 force);
     SimThread *t = &dev->sim;
-    u32 dt;
     s32 sumA = 0;
     s32 sumB = 0;
-    u32 now;
-    s32 oldPos;
-    s32 n;
-    s32 sumP;
-    s32 accel;
+    u32 dt;
     u32 k;
     Effect *e;
     s32 f;
@@ -16239,25 +16235,7 @@ s32 SimThread_Step(VDevice *dev) {
     s32 gain;
     s32 force;
 
-    now = OSGetTick() / ((*(u32 *)0x800000F8 / 4) / 1000);
-    dt = now - t->lastTick;
-    t->lastTick = now;
-    oldPos = t->pos;
-    t->pos = ((LGDevice *)t->owner->unkF0)->curSteering;
-    t->posScaled = t->pos << 12;
-    sumP = SimThread_AddDelta(t, t->pos - oldPos, dt);
-    t->history[t->historyIdx++] = sumP;
-    if (t->historyIdx > 9) {
-        t->historyIdx = 0;
-    }
-    accel = 0;
-    for (n = 0; n < 10; n++) {
-        accel += t->history[t->historyIdx++] * t->weights[9 - n];
-        if (t->historyIdx > 9) {
-            t->historyIdx = 0;
-        }
-    }
-    t->accel = accel;
+    dt = SimThread_Sample(t);
     for (k = 0; k < 64; k++) {
         e = t->owner->activeEffects[k];
         if (e != NULL && (e->flags & 1)) {
