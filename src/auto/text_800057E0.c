@@ -20643,16 +20643,26 @@ typedef struct GRWorld {
     GRTrigger **triggers;
 } GRWorld;
 
-static inline void GameRules_ResetZone(GRZone *zone) {
-    s32 j;
+static inline void GameRules_ResetZoneA(GRZone *zone) {
+    u32 j;
 
     for (j = 0; j < zone->sub->numA; j++) {
         zone->sub->a[j].unk39 = zone->sub->a[j].unk34;
     }
+}
+
+static inline void GameRules_ResetZoneC(GRZone *zone) {
+    u32 j;
+
     for (j = 0; j < zone->sub->numC; j++) {
         zone->sub->c[j].unk39 = zone->sub->c[j].unk28;
         zone->sub->c[j].unk38 = 0;
     }
+}
+
+static inline void GameRules_ResetZoneB(GRZone *zone) {
+    u32 j;
+
     for (j = 0; j < zone->sub->numB; j++) {
         zone->sub->b[j].unk36 = zone->sub->b[j].unk30;
     }
