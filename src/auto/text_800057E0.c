@@ -19982,61 +19982,6 @@ static inline void PhysicalObject_ProjectSpin(u8 *obj, Vector4 *normal) {
     PhysicalObject_UpdateSpin(obj);
 }
 
-static inline s8 PhysicalObject_SettleOnPlane(u8 *obj, u8 *collision, Vector4 *normal) {
-    f32 PSVECSquareMag(void *v);
-    void Create_Plane(Vector4 *plane, Vector4 *normal, Vector4 *point);
-    f32 Distance_Plane(void *plane, void *point);
-    void ProjectVectorToNormal(void *n, void *v);
-    Vector4 center = {0.0f, 0.0f, 0.0f, 0.0f};
-    Vector4 plane;
-    u32 i;
-    u8 *info;
-    u8 *hull;
-    f32 weight;
-    f32 d;
-    f32 w;
-
-    weight = 0.0f;
-    Create_Plane(&plane, normal, (Vector4 *)collision);
-    info = *(u8 **)(*(u8 **)(obj + 0xC0) + 0x10);
-    switch (info[0x10]) {
-    case 0:
-        for (i = 0; i < 8; i++) {
-            d = Distance_Plane(&plane, *(u8 **)(obj + 0xD0) + i * 0x10 + 0x10);
-            if (d < 0.15f) {
-                w = (0.15f - d) / 0.15f;
-                center.x += ((Vector4 *)(*(u8 **)(obj + 0xD0) + i * 0x10 + 0x10))->x * w;
-                center.y += ((Vector4 *)(*(u8 **)(obj + 0xD0) + i * 0x10 + 0x10))->y * w;
-                center.z += ((Vector4 *)(*(u8 **)(obj + 0xD0) + i * 0x10 + 0x10))->z * w;
-                weight += w;
-            }
-        }
-        break;
-    case 1:
-    case 6:
-        hull = *(u8 **)(info + 0x48);
-        for (i = 0; i < *(u32 *)(hull + 0xC); i++) {
-            d = Distance_Plane(&plane, *(u8 **)(obj + 0xCC) + i * 0x10);
-            if (d < 0.15f) {
-                w = (0.15f - d) / 0.15f;
-                center.x += w * ((Vector4 *)(*(u8 **)(obj + 0xCC) + i * 0x10))->x;
-                center.y += w * ((Vector4 *)(*(u8 **)(obj + 0xCC) + i * 0x10))->y;
-                center.z += w * ((Vector4 *)(*(u8 **)(obj + 0xCC) + i * 0x10))->z;
-                weight += w;
-            }
-        }
-        break;
-    }
-    if (weight >= 3.0f) {
-        ProjectVectorToNormal(collision + 0x10, obj + 0x110);
-        PhysicalObject_UpdateSpin(obj);
-        if (PSVECSquareMag(obj + 0x130) < 1.0f && PSVECSquareMag(obj) < 25.0f) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
 void PhysicalObject_ProcessForce(u8 *obj, Vector4 *pos, Vector4 *force, f32 scale) {
     void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
