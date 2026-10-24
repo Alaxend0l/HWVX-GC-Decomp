@@ -18580,6 +18580,216 @@ void InterfaceManager_SetObjectReference(u8 *iface, u32 id, u32 state) {
     }
 }
 
+typedef struct {
+    s8 active;
+    s8 held;
+    s16 timer;
+} InterfaceDirState;
+
+typedef struct {
+    u8 pad0[0x116];
+    InterfaceDirState dir[4][4];
+    u8 pad156[0x160 - 0x156];
+    s8 disabled;
+    u8 pad161[0x168 - 0x161];
+    s8 locked;
+} InterfaceKeyState;
+
+s8 Input_GetAnalog(u32 chan, s16 *x, s16 *y, s16 *cx, s16 *cy);
+u32 InterfaceManager_KeyPress(void *arg0, s32 pad, u8 key) {
+    typedef struct {
+        s8 active;
+        s8 held;
+        s16 timer;
+    } DirState;
+    typedef struct {
+        u8 pad0[0x116];
+        DirState dir[4][4];
+        u8 pad156[0x160 - 0x156];
+        s8 disabled;
+        u8 pad161[0x168 - 0x161];
+        s8 locked;
+    } Iface;
+    extern s32 g_iDeltaTimeMS;
+    s8 Input_KeyPress(u32 chan, u8 key);
+    u32 result = 0;
+    Iface *im = arg0;
+
+    if (pad == -2 || im->disabled) {
+        return 0;
+    }
+    switch (pad) {
+    case -1: {
+        s16 x, y, cx, cy;
+        u32 i;
+        for (i = 0; i < 4; i++) {
+            if (Input_KeyPress(i, key)) {
+                result |= 1 << i;
+            }
+        }
+        if (result == 0) {
+            if (key == 3) {
+                for (i = 0; i < 4; i++) {
+                    if (Input_GetAnalog(i, &x, &y, &cx, &cy)) {
+                        if (x > 100 && !im->dir[i][2].active && !im->locked) {
+                            im->dir[i][2].active = 1;
+                            result |= 1 << i;
+                            im->dir[i][2].held = 1;
+                            im->dir[i][2].timer = 250;
+                        } else if (im->dir[i][2].held) {
+                            result |= 1 << i;
+                        } else {
+                            im->dir[i][2].timer -= (s16)g_iDeltaTimeMS;
+                            if (im->dir[i][2].timer <= 0) {
+                                im->dir[i][2].timer = 0;
+                                im->dir[i][2].active = 0;
+                            }
+                        }
+                    }
+                }
+            } else if (key == 2) {
+                for (i = 0; i < 4; i++) {
+                    if (Input_GetAnalog(i, &x, &y, &cx, &cy)) {
+                        if (x < -100 && !im->dir[i][3].active && !im->locked) {
+                            im->dir[i][3].active = 1;
+                            result |= 1 << i;
+                            im->dir[i][3].held = 1;
+                            im->dir[i][3].timer = 250;
+                        } else if (im->dir[i][3].held) {
+                            result |= 1 << i;
+                        } else {
+                            im->dir[i][3].timer -= (s16)g_iDeltaTimeMS;
+                            if (im->dir[i][3].timer <= 0) {
+                                im->dir[i][3].timer = 0;
+                                im->dir[i][3].active = 0;
+                            }
+                        }
+                    }
+                }
+            } else if (key == 4) {
+                for (i = 0; i < 4; i++) {
+                    if (Input_GetAnalog(i, &x, &y, &cx, &cy)) {
+                        if (y > 100 && !im->dir[i][0].active && !im->locked) {
+                            im->dir[i][0].active = 1;
+                            result |= 1 << i;
+                            im->dir[i][0].held = 1;
+                            im->dir[i][0].timer = 250;
+                        } else if (im->dir[i][0].held) {
+                            result |= 1 << i;
+                        } else {
+                            im->dir[i][0].timer -= (s16)g_iDeltaTimeMS;
+                            if (im->dir[i][0].timer <= 0) {
+                                im->dir[i][0].timer = 0;
+                                im->dir[i][0].active = 0;
+                            }
+                        }
+                    }
+                }
+            } else if (key == 5) {
+                for (i = 0; i < 4; i++) {
+                    if (Input_GetAnalog(i, &x, &y, &cx, &cy)) {
+                        if (y < -100 && !im->dir[i][1].active && !im->locked) {
+                            im->dir[i][1].active = 1;
+                            result |= 1 << i;
+                            im->dir[i][1].held = 1;
+                            im->dir[i][1].timer = 250;
+                        } else if (im->dir[i][1].held) {
+                            result |= 1 << i;
+                        } else {
+                            im->dir[i][1].timer -= (s16)g_iDeltaTimeMS;
+                            if (im->dir[i][1].timer <= 0) {
+                                im->dir[i][1].timer = 0;
+                                im->dir[i][1].active = 0;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        break;
+    }
+    default: {
+        s16 x, y, cx, cy;
+        if (Input_KeyPress(pad, key)) {
+            result |= 1 << pad;
+        }
+        if (result == 0) {
+            if (key == 3) {
+                if (Input_GetAnalog(pad, &x, &y, &cx, &cy)) {
+                    if (x > 100 && !im->dir[pad][2].active && !im->locked) {
+                        im->dir[pad][2].active = 1;
+                        result |= 1 << pad;
+                        im->dir[pad][2].held = 1;
+                        im->dir[pad][2].timer = 250;
+                    } else if (im->dir[pad][2].held) {
+                        result |= 1 << pad;
+                    } else {
+                        im->dir[pad][2].timer -= (s16)g_iDeltaTimeMS;
+                        if (im->dir[pad][2].timer <= 0) {
+                            im->dir[pad][2].timer = 0;
+                            im->dir[pad][2].active = 0;
+                        }
+                    }
+                }
+            } else if (key == 2) {
+                if (Input_GetAnalog(pad, &x, &y, &cx, &cy)) {
+                    if (x < -100 && !im->dir[pad][3].active && !im->locked) {
+                        im->dir[pad][3].active = 1;
+                        result |= 1 << pad;
+                        im->dir[pad][3].held = 1;
+                        im->dir[pad][3].timer = 250;
+                    } else if (im->dir[pad][3].held) {
+                        result |= 1 << pad;
+                    } else {
+                        im->dir[pad][3].timer -= (s16)g_iDeltaTimeMS;
+                        if (im->dir[pad][3].timer <= 0) {
+                            im->dir[pad][3].timer = 0;
+                            im->dir[pad][3].active = 0;
+                        }
+                    }
+                }
+            } else if (key == 4) {
+                if (Input_GetAnalog(pad, &x, &y, &cx, &cy)) {
+                    if (y > 100 && !im->dir[pad][0].active && !im->locked) {
+                        im->dir[pad][0].active = 1;
+                        result |= 1 << pad;
+                        im->dir[pad][0].held = 1;
+                        im->dir[pad][0].timer = 250;
+                    } else if (im->dir[pad][0].held) {
+                        result |= 1 << pad;
+                    } else {
+                        im->dir[pad][0].timer -= (s16)g_iDeltaTimeMS;
+                        if (im->dir[pad][0].timer <= 0) {
+                            im->dir[pad][0].timer = 0;
+                            im->dir[pad][0].active = 0;
+                        }
+                    }
+                }
+            } else if (key == 5) {
+                if (Input_GetAnalog(pad, &x, &y, &cx, &cy)) {
+                    if (y < -100 && !im->dir[pad][1].active && !im->locked) {
+                        im->dir[pad][1].active = 1;
+                        result |= 1 << pad;
+                        im->dir[pad][1].held = 1;
+                        im->dir[pad][1].timer = 250;
+                    } else if (im->dir[pad][1].held) {
+                        result |= 1 << pad;
+                    } else {
+                        im->dir[pad][1].timer -= (s16)g_iDeltaTimeMS;
+                        if (im->dir[pad][1].timer <= 0) {
+                            im->dir[pad][1].timer = 0;
+                            im->dir[pad][1].active = 0;
+                        }
+                    }
+                }
+            }
+        }
+        break;
+    }
+    }
+    return result;
+}
+
 s32 InterfaceManager_ProcessInput(u8 *iface, u8 *obj, u32 *events) {
     typedef struct InputSlot {
         u8 pad0[0x243];
