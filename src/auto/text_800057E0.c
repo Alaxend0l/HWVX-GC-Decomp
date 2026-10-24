@@ -48658,7 +48658,6 @@ void *GXInit(void *base, u32 size) {
     return fifo;
 }
 
-#pragma scheduling off
 #pragma dont_inline on
 void __GXInitGX(void) {
     typedef struct GXRenderModeObj {
