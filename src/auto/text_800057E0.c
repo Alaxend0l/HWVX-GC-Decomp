@@ -34738,15 +34738,21 @@ static inline void TRKDiscardFrame(TRKFramingState *state) {
     state->receiveState = 0;
 }
 
+static inline s32 TRKCheckFrame(TRKFramingState *state) {
+    void TRKStandardACK(TRKBuffer *b, u8 commandID, u8 replyError);
+
+    if (state->buffer->length < 2) {
+        TRKStandardACK(state->buffer, 0xFF, 2);
+        TRKDiscardFrame(state);
+        return 0;
+    }
+    state->buffer->position = 0;
+    state->buffer->length--;
+    return 1;
+}
+
 s32 TRKTestForPacket(void) {
-    typedef struct FramingState {
-        s32 msgBufID;
-        TRKBuffer *buffer;
-        u8 receiveState;
-        s32 isEscape;
-        u8 fcs;
-    } FramingState;
-    extern FramingState gTRKFramingState_8030B424;
+    extern TRKFramingState gTRKFramingState_8030B424;
     s32 TRKReadUARTPoll(s8 *c);
     s32 TRKGetFreeBuffer(s32 *msgID, TRKBuffer **outMsg);
     void TRKStandardACK(TRKBuffer *b, u8 commandID, u8 replyError);
@@ -34779,23 +34785,13 @@ s32 TRKTestForPacket(void) {
             if (ch == 0x7E) {
                 if (gTRKFramingState_8030B424.isEscape) {
                     TRKStandardACK(gTRKFramingState_8030B424.buffer, 0xFF, 4);
-                    if (gTRKFramingState_8030B424.msgBufID != -1) {
-                        TRKReleaseBuffer(gTRKFramingState_8030B424.msgBufID);
-                        gTRKFramingState_8030B424.msgBufID = -1;
-                    }
-                    gTRKFramingState_8030B424.buffer = NULL;
-                    gTRKFramingState_8030B424.receiveState = 0;
+                    TRKDiscardFrame(&gTRKFramingState_8030B424);
                     break;
                 }
                 if (gTRKFramingState_8030B424.buffer->length < 2) {
                     TRKStandardACK(gTRKFramingState_8030B424.buffer, 0xFF, 2);
-                    if (gTRKFramingState_8030B424.msgBufID != -1) {
-                        TRKReleaseBuffer(gTRKFramingState_8030B424.msgBufID);
-                        gTRKFramingState_8030B424.msgBufID = -1;
-                    }
+                    TRKDiscardFrame(&gTRKFramingState_8030B424);
                     isValid = 0;
-                    gTRKFramingState_8030B424.buffer = NULL;
-                    gTRKFramingState_8030B424.receiveState = 0;
                 } else {
                     TRKBuffer *b = gTRKFramingState_8030B424.buffer;
 
@@ -34825,12 +34821,7 @@ s32 TRKTestForPacket(void) {
             break;
         case 3:
             if (ch == 0x7E) {
-                if (gTRKFramingState_8030B424.msgBufID != -1) {
-                    TRKReleaseBuffer(gTRKFramingState_8030B424.msgBufID);
-                    gTRKFramingState_8030B424.msgBufID = -1;
-                }
-                gTRKFramingState_8030B424.buffer = NULL;
-                gTRKFramingState_8030B424.receiveState = 0;
+                TRKDiscardFrame(&gTRKFramingState_8030B424);
             }
             break;
         }
