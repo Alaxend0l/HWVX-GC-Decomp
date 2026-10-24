@@ -22708,7 +22708,13 @@ void Render_TimeBars(u32 *times) {
 typedef struct SmartProjParams {
     u8 unk0;
     u8 invertZ;
-    u8 pad2[0x1C - 0x2];
+    u8 pad2[0x4 - 0x2];
+    f32 unk4;
+    f32 unk8;
+    f32 unkC;
+    f32 unk10;
+    f32 unk14;
+    u8 pad18[0x1C - 0x18];
     f32 fov;
     f32 minRange;
 } SmartProjParams;
