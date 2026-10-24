@@ -8695,7 +8695,7 @@ s32 Render_CreateView(s32 view, u32 width, u32 height) {
     void GXSetDispCopyGamma(s32 gamma);
     void Gfx_SetRenderWindow(s32 window);
     void Gfx_SetCameraMatrix(void *a, void *b, void *c, void *d);
-    s32 Gfx_DisplayList_Create(void);
+    s32 DisplayList_Create(void);
     void GXSetNumChans(u8 n);
     void GXSetNumTexGens(u8 n);
     void GXSetNumTevStages(u8 n);
@@ -8739,7 +8739,7 @@ s32 Render_CreateView(s32 view, u32 width, u32 height) {
     ((Window *)GetRenderWindow())->unk2C4 = 0;
     Gfx_SetCameraMatrix(NULL, NULL, NULL, NULL);
     memcpy((u8 *)GetRenderWindow() + 0x140, (u8 *)GetRenderWindow() + 0x40, 0x40);
-    Gfx_DisplayList_Create();
+    DisplayList_Create();
     GXSetNumChans(1);
     GXSetNumTexGens(1);
     GXSetNumTevStages(1);
