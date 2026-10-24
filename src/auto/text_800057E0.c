@@ -2299,12 +2299,13 @@ s32 AI_Car_CheckLocalStats(u8 *ai, u8 *node) {
 
 #pragma push
 #pragma use_lmw_stmw on
-s8 AI_Car_EnterState(u8 *ai, u8 *branch, u8 slot) {
-    typedef struct { u8 *info; u32 timer0; u32 timer1; u32 timer2; u8 pad10[4]; u8 count; } AIBranch;
-    typedef struct { u8 pad0[0x3D4]; AIBranch *slots[4]; } AICarSlots;
+#pragma opt_common_subs off
+s8 AI_Car_EnterState(u8 *ai, u8 *branch, s32 slot) {
+    typedef struct { u32 time; } AITimer;
+    typedef struct { u8 *info; AITimer timer0; u32 timer1; u32 timer2; u8 pad10[4]; u8 count; } AIBranch;
     extern Vector4 g_zeroVector;
-    u32 AI_UpdateTimer(u32 *timer);
-    s8 AI_Car_DetermineTarget(u8 *ai, u8 *branch, u8 slot);
+    u32 AI_UpdateTimer(AITimer *timer);
+    s8 AI_Car_DetermineTarget(u8 *ai, u8 *branch, s32 slot);
     void *ThingManager_DARYL_CreateThing(s32 type, void *params);
     s32 RandomAdd_s32(s32 base, s32 range);
     struct { Vector4 a; Vector4 b; Vector4 c; Vector4 zero; u32 id; u8 *player; f32 f0; f32 f1; } p;
@@ -2314,11 +2315,11 @@ s8 AI_Car_EnterState(u8 *ai, u8 *branch, u8 slot) {
     u8 i;
 
     done = 0;
-    if ((AIBranch *)branch == ((AICarSlots *)ai)->slots[slot]) {
-        if (((AIBranch *)branch)->timer0 != 0) {
-            AI_UpdateTimer((u32 *)(branch + 4));
+    if (branch == ((u8 **)(ai + 0x3D4))[(u8)slot]) {
+        if (((AIBranch *)branch)->timer0.time != 0) {
+            AI_UpdateTimer(&((AIBranch *)branch)->timer0);
         }
-        if (((AIBranch *)branch)->timer0 == 0 && (*(u32 *)(((AIBranch *)branch)->info + 0x48) != 0 || *(u32 *)(((AIBranch *)branch)->info + 0x4C) != 0)) {
+        if (((AIBranch *)branch)->timer0.time == 0 && (*(u32 *)(((AIBranch *)branch)->info + 0x48) != 0 || *(u32 *)(((AIBranch *)branch)->info + 0x4C) != 0)) {
             done = 1;
         } else if (!(s8)AI_Car_CheckLocalStats(ai, ((AIBranch *)branch)->info)) {
             done = 1;
@@ -2356,16 +2357,16 @@ s8 AI_Car_EnterState(u8 *ai, u8 *branch, u8 slot) {
             p.zero = g_zeroVector;
             ThingManager_DARYL_CreateThing(1, &p);
         }
-        ((AIBranch *)branch)->timer0 = RandomAdd_s32(*(s32 *)(((AIBranch *)branch)->info + 0x38), *(s32 *)(((AIBranch *)branch)->info + 0x3C));
+        ((AIBranch *)branch)->timer0.time = RandomAdd_s32(*(s32 *)(((AIBranch *)branch)->info + 0x38), *(s32 *)(((AIBranch *)branch)->info + 0x3C));
         done = 1;
     }
     if (done) {
         for (i = slot; i < 4; i++) {
-            if (((AICarSlots *)ai)->slots[i] == NULL) {
+            if (*(AIBranch **)(ai + 0x3D4 + i * 4) == NULL) {
                 break;
             }
-            ((AICarSlots *)ai)->slots[i]->timer1 = RandomAdd_s32(*(s32 *)(((AICarSlots *)ai)->slots[i]->info + 0x48), *(s32 *)(((AICarSlots *)ai)->slots[i]->info + 0x4C));
-            ((AICarSlots *)ai)->slots[i] = NULL;
+            (*(AIBranch **)(ai + 0x3D4 + i * 4))->timer1 = RandomAdd_s32(*(s32 *)((*(AIBranch **)(ai + 0x3D4 + i * 4))->info + 0x48), *(s32 *)((*(AIBranch **)(ai + 0x3D4 + i * 4))->info + 0x4C));
+            *(AIBranch **)(ai + 0x3D4 + i * 4) = NULL;
         }
     }
     return branch != NULL;
