@@ -18389,7 +18389,6 @@ static inline void TimeBar_SetRect(TimeBarVtx *v, f32 x0, f32 y0, f32 x1, f32 y1
     v[1].x = v[2].x = x1;
 }
 
-#pragma optimization_level 3
 void Render_TimeBars(u32 *times) {
     typedef struct {
         f32 x;
