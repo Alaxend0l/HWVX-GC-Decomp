@@ -2180,6 +2180,7 @@ void AI_Car_Cheat_80008A60(u8 *ai) {
         *(s32 *)(car + 0x400) = 0;
     }
 }
+#pragma pop
 
 s32 AI_Heartbeat(u8 *ai) {
     s8 Player_AIControlReader(u8 *ai);
