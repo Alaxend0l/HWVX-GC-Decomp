@@ -34878,7 +34878,7 @@ void GXClearVtxDesc(void) {
     M2C_FIELD(gx, u32 *, 0x4F4) |= 8;
 }
 
-#pragma optimization_level 1
+#pragma optimization_level 3
 void GXSetVtxAttrFmt(s32 vtxfmt, s32 attr, s32 cnt, s32 type, u8 frac) {
     extern u8 *gx;
     u32 *va;
