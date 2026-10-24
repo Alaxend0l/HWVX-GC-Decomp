@@ -6471,6 +6471,171 @@ void CarA_DynamicRotation(u8 *car, f32 dt) {
     }
 }
 
+static inline Vector4 Vector4_OrZero(Vector4 *v) {
+    extern Vector4 g_zeroVector;
+
+    if (v != NULL) {
+        return *v;
+    }
+    return g_zeroVector;
+}
+
+void CarA_ProcessDamageSystem(u8 *car, Vector4 *hitPos, s32 level, f32 speed) {
+    typedef struct DamagePart {
+        u8 spawned;
+        u8 useOffset;
+        u16 unk2;
+        u16 bone;
+        u16 unk6;
+        u32 unk8;
+        Vector4 *offset;
+        Vector4 *slavePos;
+        u32 debris;
+        void *slaveInfo;
+    } DamagePart;
+    typedef struct DamagePartList {
+        u32 count;
+        DamagePart *parts;
+    } DamagePartList;
+    typedef struct DebrisParams {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        Vector4 zero;
+        u32 debris;
+        u32 unk44;
+        f32 unk48;
+        f32 unk4C;
+    } DebrisParams;
+    typedef struct PartParams {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 axis;
+        Vector4 vel;
+        f32 gravity;
+        u32 unk44;
+        s32 life;
+        u32 unk4C;
+        s32 unk50;
+    } PartParams;
+    typedef struct SlaveParams {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 zero;
+        void *info;
+        u32 unk34;
+        f32 unk38;
+    } SlaveParams;
+    extern Vector4 g_zeroVector;
+    f32 _fabs(f32 x);
+    f32 PSVECSquareDistance(void *a, void *b);
+    f32 RandomNumberGenerator_GetRandomFloat(f32 min, f32 max);
+    void RandomNumberGenerator_GetRandomVector(Vector4 *v);
+    f32 RandomAdd(f32 a, f32 b);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
+    void ThingManagerList_Append(void *list, void *thing);
+    PartParams partParams;
+    DebrisParams debrisParams;
+    SlaveParams slaveParams;
+    Vector4 pos;
+    Vector4 vel;
+    Vector4 dir;
+    Vector4 quat;
+    u32 bit;
+    u32 i;
+    DamagePartList *list;
+    f32 scale;
+    u8 *thing;
+    u8 *slave;
+    u8 *rsc;
+    f32 absSpeed;
+    u32 debris;
+
+    absSpeed = _fabs(speed);
+    if (hitPos == NULL) {
+        return;
+    }
+    rsc = *(u8 **)(car + 0x3BC);
+    if (*(s32 *)(rsc + 0x18) > level && !(absSpeed > 70.0f)) {
+        return;
+    }
+    if (!(100.0f * (f32)*(s32 *)(car + 0x78) / (f32)*(s32 *)(*(u8 **)(rsc + 0xA0) + 0x14) <= (f32)*(u8 *)(rsc + 0x10))) {
+        return;
+    }
+    list = *(DamagePartList **)(*(u8 **)(*(u8 **)(rsc + 0x78) + 0x10) + 0x38);
+    if (list == NULL) {
+        return;
+    }
+    for (i = 0; i < list->count; i++) {
+        if (*(u32 *)(car + 0x374) & (bit = 1 << i)) {
+            continue;
+        }
+        if (list->parts[i].useOffset) {
+            XformVec(*(u8 **)(car + 0x340) + (list->parts[i].bone << 6), list->parts[i].offset, &pos);
+        } else {
+            pos = *(Vector4 *)(*(u8 **)(car + 0x340) + (list->parts[i].bone << 6) + 0x30);
+        }
+        if (PSVECSquareDistance(&pos, hitPos) < 25.0f) {
+            if (list->parts[i].spawned == 0) {
+                scale = RandomNumberGenerator_GetRandomFloat(40.0f, 80.0f);
+                RandomNumberGenerator_GetRandomVector(&dir);
+                vel = *(Vector4 *)car;
+                vel.x = dir.x * scale + vel.x;
+                vel.y = dir.y * scale + vel.y;
+                vel.z = dir.z * scale + vel.z;
+                SubMatrixToQuaternion(*(u8 **)(car + 0x340) + (list->parts[i].bone << 6), &quat);
+                debris = list->parts[i].debris;
+                partParams.life = 3000;
+                partParams.gravity = -50.0f;
+                partParams.vel = vel;
+                partParams.pos = pos;
+                partParams.unk44 = list->parts[i].unk8;
+                partParams.quat = quat;
+                partParams.unk50 = 1;
+                if (debris != 0) {
+                    debrisParams.debris = debris;
+                    debrisParams.pos = pos;
+                    debrisParams.quat = quat;
+                    debrisParams.vel = vel;
+                    debrisParams.unk44 = 0;
+                    debrisParams.unk48 = 0.0f;
+                    debrisParams.unk4C = 0.0f;
+                    debrisParams.zero = g_zeroVector;
+                    ThingManager_DARYL_CreateThing(1, &debrisParams);
+                }
+                RandomNumberGenerator_GetRandomVector(&partParams.axis);
+                partParams.axis.w = 0.017453292f * RandomAdd(100.0f, 1260.0f);
+                thing = ThingManager_DARYL_CreateThing(6, &partParams);
+                if (thing != NULL && list->parts[i].slaveInfo != NULL) {
+                    Vector4 slavePos;
+
+                    slaveParams.unk38 = 0.0f;
+                    slaveParams.quat.w = 1.0f;
+                    slaveParams.quat.x = 0.0f;
+                    slaveParams.quat.y = 0.0f;
+                    slaveParams.quat.z = 0.0f;
+                    if (list->parts[i].slavePos != NULL) {
+                        slavePos = *list->parts[i].slavePos;
+                    } else {
+                        slavePos = g_zeroVector;
+                    }
+                    slaveParams.pos = slavePos;
+                    slaveParams.info = list->parts[i].slaveInfo;
+                    slaveParams.unk34 = 0;
+                    slaveParams.zero = g_zeroVector;
+                    slave = ThingManager_DARYL_CreateSlave(2, &slaveParams, 0xFF);
+                    if (slave != NULL) {
+                        slave[0x83] = 0xFF;
+                        ThingManagerList_Append(thing + 0x88, slave);
+                    }
+                }
+            }
+            *(u32 *)(car + 0x374) |= bit;
+        }
+    }
+}
+
 void CarA_GetTargetPos(void *car, Vector4 *pos) {
     switch (M2C_FIELD(M2C_FIELD(M2C_FIELD(car, void **, 0x3BC), void **, 0xA0), u8 *, 0x10)) {
     case 0:
@@ -8674,18 +8839,6 @@ void DataPack_CloseFiles(void) {
 
 #pragma readonly_strings on
 s32 DataPack_LoadFile(char *name, s32 arg1, u32 type, u32 id) {
-    typedef struct DataPackTOCEntry {
-        u32 version;
-        u32 type;
-        u32 id;
-        u8 unkC[0x14 - 0xC];
-        u32 offset;
-    } DataPackTOCEntry;
-    typedef struct DataPackTOC {
-        DataPackTOCEntry entries[50];
-        u32 count;
-        char name[0x4C];
-    } DataPackTOC;
     extern u32 g_buffer[];
     char *strcpy(char *dst, const char *src);
     char *strcat(char *dst, const char *src);
@@ -8699,8 +8852,8 @@ s32 DataPack_LoadFile(char *name, s32 arg1, u32 type, u32 id) {
     u32 File_Read(s32 handle, u32 size, void *buf);
     s32 File_Seek(s32 handle, s32 offset, s8 mode);
     void DataPack_LoadDataPack(s32 file, s32 arg1);
-    DataPackTOC *toc;
     char *tocName;
+    FileTOCCacheEntry *toc;
     u32 i;
     s8 found;
     char path[0x80];
@@ -8708,11 +8861,11 @@ s32 DataPack_LoadFile(char *name, s32 arg1, u32 type, u32 id) {
     found = 0;
     strcpy(path, name);
     strcat(path, ".xgc");
-    if ((g_fileID != -1 && ((DataPackTOC *)g_fileTOCCache)[type].name == NULL) || strcmp(((DataPackTOC *)g_fileTOCCache)[type].name, name) != 0) {
+    if ((g_fileID != -1 && g_fileTOCCache[type].name == NULL) || strcmp(g_fileTOCCache[type].name, name) != 0) {
         for (i = 0; i < 11; i++) {
-            if (i != type && ((DataPackTOC *)g_fileTOCCache)[i].name != NULL && strcmp(((DataPackTOC *)g_fileTOCCache)[i].name, name) == 0) {
-                memcpy(&((DataPackTOC *)g_fileTOCCache)[type], &((DataPackTOC *)g_fileTOCCache)[i], 0x500);
-                if (g_fileID != 0 && g_openFileDataPackType == i) {
+            if (i != type && g_fileTOCCache[i].name != NULL && strcmp(g_fileTOCCache[i].name, name) == 0) {
+                memcpy(&g_fileTOCCache[type], &g_fileTOCCache[i], sizeof(FileTOCCacheEntry));
+                if (g_fileID && g_openFileDataPackType == i) {
                     g_openFileDataPackType = type;
                 } else if (g_openFileDataPackType == type) {
                     File_Close(g_fileID);
@@ -8723,8 +8876,8 @@ s32 DataPack_LoadFile(char *name, s32 arg1, u32 type, u32 id) {
             }
         }
     }
-    if (g_fileID == -1 || (tocName = ((DataPackTOC *)g_fileTOCCache)[type].name) == NULL || strcmp(tocName, name) != 0 ||
-        (g_openFileDataPackType != type && strcmp(tocName, ((DataPackTOC *)g_fileTOCCache)[g_openFileDataPackType].name) != 0)) {
+    if (g_fileID == -1 || (tocName = g_fileTOCCache[type].name) == NULL || strcmp(tocName, name) != 0 ||
+        (g_openFileDataPackType != type && strcmp(tocName, g_fileTOCCache[g_openFileDataPackType].name) != 0)) {
         if (g_fileID != -1) {
             File_Close(g_fileID);
             g_openFileDataPackType = 0xB;
@@ -8740,9 +8893,8 @@ s32 DataPack_LoadFile(char *name, s32 arg1, u32 type, u32 id) {
         }
         g_openFileDataPackType = type;
     }
-    toc = &((DataPackTOC *)g_fileTOCCache)[type];
-    tocName = toc->name;
-    if (tocName == NULL || strcmp(tocName, name) != 0) {
+    toc = &g_fileTOCCache[type];
+    if ((tocName = toc->name) == NULL || strcmp(tocName, name) != 0) {
         File_Read(g_fileID, 0x800, g_buffer);
         if (g_buffer[0] != 0x020100A0 || g_buffer[1] != 0x040100AE) {
             File_Close(g_fileID);
@@ -8759,11 +8911,11 @@ s32 DataPack_LoadFile(char *name, s32 arg1, u32 type, u32 id) {
             Dprintf(msg);
             return 0;
         }
-        ((DataPackTOC *)g_fileTOCCache)[type].count = g_buffer[3];
-        memcpy(toc, &g_buffer[4], ((DataPackTOC *)g_fileTOCCache)[type].count * sizeof(DataPackTOCEntry));
+        g_fileTOCCache[type].count = g_buffer[3];
+        memcpy(toc, &g_buffer[4], g_fileTOCCache[type].count * sizeof(FileTOCEntry));
         if (strlen(name) >= 0x4C) {
             strncpy(tocName, name, 0x4C);
-            ((DataPackTOC *)g_fileTOCCache)[type].name[0x4B] = 0;
+            g_fileTOCCache[type].name[0x4B] = 0;
         } else {
             strcpy(tocName, name);
         }
@@ -8779,7 +8931,7 @@ s32 DataPack_LoadFile(char *name, s32 arg1, u32 type, u32 id) {
                 g_openFileDataPackType = 0xB;
                 return 0;
             }
-            File_Seek(g_fileID, ((DataPackTOC *)g_fileTOCCache)[type].entries[i].offset + ((DataPackTOC *)g_fileTOCCache)[type].count * sizeof(DataPackTOCEntry) + 0x10, 0);
+            File_Seek(g_fileID, g_fileTOCCache[type].count * sizeof(FileTOCEntry) + g_fileTOCCache[type].entries[i].offset + 0x10, 0);
             found = 1;
             break;
         }
