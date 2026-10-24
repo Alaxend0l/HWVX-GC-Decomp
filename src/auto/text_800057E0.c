@@ -41806,6 +41806,7 @@ s32 TRKAppendBuffer1_ui16(void *b, u16 data) {
 }
 #pragma pop
 
+#pragma auto_inline off
 s32 TRKReadBuffer(TRKBuffer *b, void *data, u32 length) {
     s32 error = 0;
     u32 bytesLeft;
