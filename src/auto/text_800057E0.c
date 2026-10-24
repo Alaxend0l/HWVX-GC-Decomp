@@ -32932,6 +32932,120 @@ s32 Tracer_Init(u8 *thing, u8 *data) {
     return 1;
 }
 
+s32 Tracer_Move(u8 *thing) {
+    typedef struct KeyState {
+        f32 slope[4];
+        f32 value[4];
+        f32 time;
+        u8 c[4];
+        u16 index;
+        u16 current;
+        u8 reset;
+    } KeyState;
+    extern f32 g_fDeltaTimeSec;
+    extern s32 g_iDeltaTimeMS;
+    void ExtractColorKey(void *keys, void *out, f32 time);
+    void AccumulateVector(void *vel, void *pos, void *out, f32 t);
+    void PSVECScale(void *in, void *out, f32 scale);
+    KeyState colour;
+    KeyState colour2;
+    s32 i;
+    TracerPoint *p;
+
+    p = tracers_802CD600[*(u32 *)(thing + 0xB4)].head;
+    for (i = 0; i < tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4CC; i++) {
+        s32 c;
+        p->pos[0] += p->unk20[0];
+        p->pos[1] += p->unk20[1];
+        p->pos[2] += p->unk20[2];
+        p->vel[0] += p->unk30[0];
+        p->vel[1] += p->unk30[1];
+        p->vel[2] += p->unk30[2];
+        p->unk40 += tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4BC;
+        c = p->color[0] + tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[0];
+        if (c < 0) {
+            c = 0;
+        } else if (c > 255) {
+            c = 255;
+        }
+        p->color[0] = c;
+        c = p->color[1] + tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[1];
+        if (c < 0) {
+            c = 0;
+        } else if (c > 255) {
+            c = 255;
+        }
+        p->color[1] = c;
+        c = p->color[2] + tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[2];
+        if (c < 0) {
+            c = 0;
+        } else if (c > 255) {
+            c = 255;
+        }
+        p->color[2] = c;
+        c = p->color[3] + tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[3];
+        if (c < 0) {
+            c = 0;
+        } else if (c > 255) {
+            c = 255;
+        }
+        p->color[3] = c;
+        p = p->next;
+    }
+    switch (*(u8 *)(*(u8 **)(thing + 0xB0) + 0x21)) {
+    case 0:
+        AccumulateVector(thing + 0x10, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->pos, *(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        AccumulateVector(thing + 0x10, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->vel, -*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        PSVECScale(thing + 0x10, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk20, -(*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        PSVECScale(thing + 0x10, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk30, (*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        break;
+    case 1:
+        AccumulateVector(thing + 0x20, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->pos, *(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        AccumulateVector(thing + 0x20, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->vel, -*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        PSVECScale(thing + 0x20, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk20, -(*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        PSVECScale(thing + 0x20, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk30, (*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        break;
+    case 2:
+        AccumulateVector(thing + 0x30, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->pos, *(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        AccumulateVector(thing + 0x30, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->vel, -*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        PSVECScale(thing + 0x30, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk20, -(*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        PSVECScale(thing + 0x30, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk30, (*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        break;
+    }
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk40 = tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C0;
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C0 += g_fDeltaTimeSec * *(f32 *)(*(u8 **)(thing + 0xB0) + 0x38);
+    colour.reset = 1;
+    colour2.reset = 1;
+    ExtractColorKey(*(u8 **)(thing + 0xB0) + 0x44, &colour, tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C4);
+    ExtractColorKey(*(u8 **)(thing + 0xB0) + 0x4C, &colour2, tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C4);
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C4 += g_iDeltaTimeMS;
+    if (tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D0 != 0xFFFF) {
+        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C8 += g_iDeltaTimeMS;
+        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D4 = tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C8 >> 4;
+        if (tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D4 >= *(u32 *)(*(u8 **)(thing + 0xB0) + 0x54)) {
+            tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C8 = 0;
+            tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D4 = 0;
+        }
+        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D0 = (*(u32 **)(*(u8 **)(thing + 0xB0) + 0x58))[tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D4];
+    }
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->color[0] = colour.c[0];
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->color[1] = colour.c[1];
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->color[2] = colour.c[2];
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->color[3] = colour.c[3];
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[0] = -(colour.c[0] - colour2.c[0]) / 15;
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[1] = -(colour.c[1] - colour2.c[1]) / 15;
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[2] = -(colour.c[2] - colour2.c[2]) / 15;
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[3] = -(colour.c[3] - colour2.c[3]) / 15;
+    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail = tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->next;
+    if (tracers_802CD600[*(u32 *)(thing + 0xB4)].tail == tracers_802CD600[*(u32 *)(thing + 0xB4)].head) {
+        tracers_802CD600[*(u32 *)(thing + 0xB4)].head = tracers_802CD600[*(u32 *)(thing + 0xB4)].head->next;
+    }
+    if (tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4CC < 15) {
+        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4CC++;
+    }
+    return 1;
+}
+
 void Tracer_Release(void *thing) {
     tracers_802CD600[M2C_FIELD(thing, u32 *, 0xB4)].active = 0;
     M2C_FIELD(thing, s32 *, 0xB0) = 0;
