@@ -17219,6 +17219,81 @@ void TitleScreen_RunDemoLoop(void) {
     StateProgressionManager_SetProgressionID(0, index);
 }
 
+void StateManager_Create(void) {
+    typedef struct GameState {
+        void *interrupt;
+        void *heartbeat;
+        void *enter;
+        void *exit;
+    } GameState;
+    typedef struct StateManager {
+        GameState states[13];
+        s32 current;
+        s32 next;
+    } StateManager;
+    extern StateManager *g_pStateManager;
+    s32 StateMovie_Heartbeat(void);
+    s32 StateMovie_Init(s32 returnState);
+    s32 StateMovie_Shutdown(void);
+    s32 StateGamePlay_Heartbeat(void);
+    s32 StateGamePlay_Init(void);
+    s32 StateGamePlay_Shutdown(void);
+    s32 StateRenderTest_Heartbeat(void);
+    s32 StateRenderTest_Init(void);
+    s32 StateRenderTest_Shutdown(void);
+    s32 StateShutdown_Heartbeat(void);
+    s32 StateShutdown_Init(void);
+    s32 StateShutdown_Shutdown(void);
+    s32 StateTitleScreen_Heartbeat(void);
+    s32 StateTitleScreen_Init(s32 prevState);
+    s32 StateTitleScreen_Shutdown(void);
+    s32 StateProgressionManager_Heartbeat(void);
+    s32 StateProgressionManager_Init(void);
+    s32 StateProgressionManager_Shutdown(void);
+    s32 StateGameManager_Heartbeat(void);
+    s32 StateGameManager_Init(void);
+    s32 StateGameManager_Shutdown(void);
+    s32 i;
+
+    g_pStateManager = Allocate(sizeof(StateManager), 0, "");
+    for (i = 0; i < 13; i++) {
+        g_pStateManager->states[i].interrupt = NULL;
+        g_pStateManager->states[i].heartbeat = NULL;
+        g_pStateManager->states[i].enter = NULL;
+        g_pStateManager->states[i].exit = NULL;
+    }
+    g_pStateManager->states[3].interrupt = NULL;
+    g_pStateManager->states[3].heartbeat = StateMovie_Heartbeat;
+    g_pStateManager->states[3].enter = StateMovie_Init;
+    g_pStateManager->states[3].exit = StateMovie_Shutdown;
+    g_pStateManager->states[5].interrupt = NULL;
+    g_pStateManager->states[5].heartbeat = StateGamePlay_Heartbeat;
+    g_pStateManager->states[5].enter = StateGamePlay_Init;
+    g_pStateManager->states[5].exit = StateGamePlay_Shutdown;
+    g_pStateManager->states[6].interrupt = NULL;
+    g_pStateManager->states[6].heartbeat = StateRenderTest_Heartbeat;
+    g_pStateManager->states[6].enter = StateRenderTest_Init;
+    g_pStateManager->states[6].exit = StateRenderTest_Shutdown;
+    g_pStateManager->states[8].interrupt = NULL;
+    g_pStateManager->states[8].heartbeat = StateShutdown_Heartbeat;
+    g_pStateManager->states[8].enter = StateShutdown_Init;
+    g_pStateManager->states[8].exit = StateShutdown_Shutdown;
+    g_pStateManager->states[2].interrupt = NULL;
+    g_pStateManager->states[2].heartbeat = StateTitleScreen_Heartbeat;
+    g_pStateManager->states[2].enter = StateTitleScreen_Init;
+    g_pStateManager->states[2].exit = StateTitleScreen_Shutdown;
+    g_pStateManager->states[11].interrupt = NULL;
+    g_pStateManager->states[11].heartbeat = StateProgressionManager_Heartbeat;
+    g_pStateManager->states[11].enter = StateProgressionManager_Init;
+    g_pStateManager->states[11].exit = StateProgressionManager_Shutdown;
+    g_pStateManager->states[12].interrupt = NULL;
+    g_pStateManager->states[12].heartbeat = StateGameManager_Heartbeat;
+    g_pStateManager->states[12].enter = StateGameManager_Init;
+    g_pStateManager->states[12].exit = StateGameManager_Shutdown;
+    g_pStateManager->current = -1;
+    g_pStateManager->next = -1;
+}
+
 #pragma push
 #pragma readonly_strings on
 s32 StateTitleScreen_Init(s32 prevState) {
@@ -34758,48 +34833,37 @@ void __GXXfVtxSpecs(void) {
 
 void GXSetVtxDesc(u32 attr, s32 type) {
     extern u8 *gx;
-    u32 *vcd;
 
     switch (attr) {
     case 0:
-        vcd = (u32 *)(gx + 0x14);
-        *vcd = (*(u32 *)(gx + 0x14) & ~0x1) | type;
+        ((u32 *)gx)[5] = (*(u32 *)(gx + 0x14) & ~0x1) | type;
         break;
     case 1:
-        vcd = (u32 *)(gx + 0x14);
-        *vcd = (*(u32 *)(gx + 0x14) & ~0x2) | (type << 1);
+        ((u32 *)gx)[5] = (*(u32 *)(gx + 0x14) & ~0x2) | (type << 1);
         break;
     case 2:
-        vcd = (u32 *)(gx + 0x14);
-        *vcd = (*(u32 *)(gx + 0x14) & ~0x4) | (type << 2);
+        ((u32 *)gx)[5] = (*(u32 *)(gx + 0x14) & ~0x4) | (type << 2);
         break;
     case 3:
-        vcd = (u32 *)(gx + 0x14);
-        *vcd = (*(u32 *)(gx + 0x14) & ~0x8) | (type << 3);
+        ((u32 *)gx)[5] = (*(u32 *)(gx + 0x14) & ~0x8) | (type << 3);
         break;
     case 4:
-        vcd = (u32 *)(gx + 0x14);
-        *vcd = (*(u32 *)(gx + 0x14) & ~0x10) | (type << 4);
+        ((u32 *)gx)[5] = (*(u32 *)(gx + 0x14) & ~0x10) | (type << 4);
         break;
     case 5:
-        vcd = (u32 *)(gx + 0x14);
-        *vcd = (*(u32 *)(gx + 0x14) & ~0x20) | (type << 5);
+        ((u32 *)gx)[5] = (*(u32 *)(gx + 0x14) & ~0x20) | (type << 5);
         break;
     case 6:
-        vcd = (u32 *)(gx + 0x14);
-        *vcd = (*(u32 *)(gx + 0x14) & ~0x40) | (type << 6);
+        ((u32 *)gx)[5] = (*(u32 *)(gx + 0x14) & ~0x40) | (type << 6);
         break;
     case 7:
-        vcd = (u32 *)(gx + 0x14);
-        *vcd = (*(u32 *)(gx + 0x14) & ~0x80) | (type << 7);
+        ((u32 *)gx)[5] = (*(u32 *)(gx + 0x14) & ~0x80) | (type << 7);
         break;
     case 8:
-        vcd = (u32 *)(gx + 0x14);
-        *vcd = (*(u32 *)(gx + 0x14) & ~0x100) | (type << 8);
+        ((u32 *)gx)[5] = (*(u32 *)(gx + 0x14) & ~0x100) | (type << 8);
         break;
     case 9:
-        vcd = (u32 *)(gx + 0x14);
-        *vcd = (*(u32 *)(gx + 0x14) & ~0x600) | (type << 9);
+        ((u32 *)gx)[5] = (*(u32 *)(gx + 0x14) & ~0x600) | (type << 9);
         break;
     case 10:
         if (type != 0) {
@@ -34820,51 +34884,40 @@ void GXSetVtxDesc(u32 attr, s32 type) {
         }
         break;
     case 11:
-        vcd = (u32 *)(gx + 0x14);
-        *vcd = (*(u32 *)(gx + 0x14) & ~0x6000) | (type << 13);
+        ((u32 *)gx)[5] = (*(u32 *)(gx + 0x14) & ~0x6000) | (type << 13);
         break;
     case 12:
-        vcd = (u32 *)(gx + 0x14);
-        *vcd = (*(u32 *)(gx + 0x14) & ~0x18000) | (type << 15);
+        ((u32 *)gx)[5] = (*(u32 *)(gx + 0x14) & ~0x18000) | (type << 15);
         break;
     case 13:
-        vcd = (u32 *)(gx + 0x18);
-        *vcd = (*(u32 *)(gx + 0x18) & ~0x3) | type;
+        ((u32 *)gx)[6] = (*(u32 *)(gx + 0x18) & ~0x3) | type;
         break;
     case 14:
-        vcd = (u32 *)(gx + 0x18);
-        *vcd = (*(u32 *)(gx + 0x18) & ~0xC) | (type << 2);
+        ((u32 *)gx)[6] = (*(u32 *)(gx + 0x18) & ~0xC) | (type << 2);
         break;
     case 15:
-        vcd = (u32 *)(gx + 0x18);
-        *vcd = (*(u32 *)(gx + 0x18) & ~0x30) | (type << 4);
+        ((u32 *)gx)[6] = (*(u32 *)(gx + 0x18) & ~0x30) | (type << 4);
         break;
     case 16:
-        vcd = (u32 *)(gx + 0x18);
-        *vcd = (*(u32 *)(gx + 0x18) & ~0xC0) | (type << 6);
+        ((u32 *)gx)[6] = (*(u32 *)(gx + 0x18) & ~0xC0) | (type << 6);
         break;
     case 17:
-        vcd = (u32 *)(gx + 0x18);
-        *vcd = (*(u32 *)(gx + 0x18) & ~0x300) | (type << 8);
+        ((u32 *)gx)[6] = (*(u32 *)(gx + 0x18) & ~0x300) | (type << 8);
         break;
     case 18:
-        vcd = (u32 *)(gx + 0x18);
-        *vcd = (*(u32 *)(gx + 0x18) & ~0xC00) | (type << 10);
+        ((u32 *)gx)[6] = (*(u32 *)(gx + 0x18) & ~0xC00) | (type << 10);
         break;
     case 19:
-        vcd = (u32 *)(gx + 0x18);
-        *vcd = (*(u32 *)(gx + 0x18) & ~0x3000) | (type << 12);
+        ((u32 *)gx)[6] = (*(u32 *)(gx + 0x18) & ~0x3000) | (type << 12);
         break;
     case 20:
-        vcd = (u32 *)(gx + 0x18);
-        *vcd = (*(u32 *)(gx + 0x18) & ~0xC000) | (type << 14);
+        ((u32 *)gx)[6] = (*(u32 *)(gx + 0x18) & ~0xC000) | (type << 14);
         break;
     }
-    vcd = (u32 *)(gx + 0x14);
     if (*(u8 *)(gx + 0x41C) || *(u8 *)(gx + 0x41D)) {
-        *vcd = (*(u32 *)(gx + 0x14) & ~0x1800) | (*(u32 *)(gx + 0x418) << 11);
+        ((u32 *)gx)[5] = (*(u32 *)(gx + 0x14) & ~0x1800) | (*(u32 *)(gx + 0x418) << 11);
     } else {
-        *vcd = *(u32 *)(gx + 0x14) & ~0x1800;
+        ((u32 *)gx)[5] = *(u32 *)(gx + 0x14) & ~0x1800;
     }
     *(u32 *)(gx + 0x4F4) |= 8;
 }
