@@ -20965,11 +20965,6 @@ s32 StateMovie_Heartbeat(void) {
     return 1;
 }
 
-Vector4 g_carPos[80];
-f32 g_carRot[80];
-Vector4 g_carCamPos;
-Vector4 g_carDrivePos;
-
 #pragma push
 #pragma readonly_strings on
 s32 StateRenderTest_Init(void) {
