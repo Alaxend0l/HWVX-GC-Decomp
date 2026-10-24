@@ -5928,21 +5928,6 @@ static inline AnimTrack *AnimTrack_Eval3s(AnimTrack *track, f32 time, f32 *out) 
     return track->next;
 }
 
-static inline AnimTrack *AnimTrack_GetPos(AnimTrack *track, f32 time, f32 *out) {
-    if (track->type == 3) {
-        s32 key = AnimTrack_FindKey(track, time);
-
-        out[0] = time * (time * (time * track->coeffs[key][0][0] + track->coeffs[key][0][1]) + track->coeffs[key][0][2]) + track->coeffs[key][0][3];
-        out[1] = time * (time * (time * track->coeffs[key][1][0] + track->coeffs[key][1][1]) + track->coeffs[key][1][2]) + track->coeffs[key][1][3];
-        out[2] = time * (time * (time * track->coeffs[key][2][0] + track->coeffs[key][2][1]) + track->coeffs[key][2][2]) + track->coeffs[key][2][3];
-        return track->next;
-    }
-    out[0] = track->value[0];
-    out[1] = track->value[1];
-    out[2] = track->value[2];
-    return track + 1;
-}
-
 static inline AnimTrack *AnimTrack_Eval3(AnimTrack *track, f32 time, f32 *out) {
     s32 key = AnimTrack_FindKey(track, time);
 
