@@ -591,6 +591,28 @@ static u8 s_unk30[0x40];
 static u8 s_unk70[0x40];
 static u16 s_keyMap[20];
 static u8 s_unkD8[0x30];
+
+static inline void Input_SetKeyDown(VirtualPad *pad, u16 key) {
+    s32 k;
+
+    for (k = 0; k < 20; k++) {
+        if (s_keyMap[k] == key) {
+            pad->keyDown |= 1 << k;
+            pad->keyPress |= 1 << k;
+        }
+    }
+}
+
+static inline void Input_SetKeyUp(VirtualPad *pad, u16 key) {
+    s32 k;
+
+    for (k = 0; k < 20; k++) {
+        if (s_keyMap[k] == key) {
+            pad->keyDown &= ~(1 << k);
+            pad->keyRelease |= 1 << k;
+        }
+    }
+}
 static InputUnk108 s_unk108[4];
 extern u8 g_padUpPos[4];
 extern u8 g_padDownPos[4];
@@ -16141,7 +16163,7 @@ void Input_Heartbeat(void) {
     s32 i;
     s32 j;
     s32 k;
-    u32 key;
+    u16 key;
 
     if (!g_StopInput) {
         GBAConnectivityLoop__Fv();
@@ -16152,7 +16174,7 @@ void Input_Heartbeat(void) {
         for (j = 0; j < g_padDownPos[i]; j++) {
             key = ((u16 (*)[8])s_unk30)[i][j];
             for (k = 0; k < 20; k++) {
-                if (((u16 *)(s_unk70 + 0x40))[k] == key) {
+                if (key == s_keyMap[k]) {
                     g_VirtualPad[i].keyDown |= 1 << k;
                     g_VirtualPad[i].keyPress |= 1 << k;
                 }
@@ -16162,7 +16184,7 @@ void Input_Heartbeat(void) {
         for (j = 0; j < g_padUpPos[i]; j++) {
             key = ((u16 (*)[8])s_unk70)[i][j];
             for (k = 0; k < 20; k++) {
-                if (((u16 *)(s_unk70 + 0x40))[k] == key) {
+                if (key == s_keyMap[k]) {
                     g_VirtualPad[i].keyDown &= ~(1 << k);
                     g_VirtualPad[i].keyRelease |= 1 << k;
                 }
