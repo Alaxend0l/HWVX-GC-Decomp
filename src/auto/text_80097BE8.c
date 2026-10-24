@@ -8631,60 +8631,53 @@ u16 Gfx_LoadTexture(char *name) {
 
 #pragma use_lmw_stmw on
 s32 LoadTGA(const char *name, u32 id) {
-    extern u8 *m_texture;
+    extern Texture *m_texture;
     s32 File_Open(u32 dev, const char *name, u32 flags, s32 *size);
     s32 File_Read(u32 id, s32 size, void *data);
     void File_Close(s32 handle);
     void Deallocate(void *p);
     void Render_CreateTextureSlot(u32 id, s32 arg1);
     u8 header[18];
-    char path[72];
-    s32 handle;
+    char path[56];
+    s32 size;
+    u32 handle;
+    u8 *dst;
+    u8 *src;
+    u8 *buf;
     s16 width;
     s16 height;
     s32 bpp;
-    s32 size;
     s32 i;
-    u8 *buf;
-    u8 *src;
-    u8 *dst;
-    Texture *tex;
 
     sprintf(path, "%s.tga", name);
     handle = File_Open(0, path, 0, 0);
-    if (handle == -1) {
+    if ((s32)handle == -1) {
         return 0;
     }
     File_Read(handle, 18, header);
-    tex = &((Texture *)m_texture)[id];
-    tex->width = height = header[14] + header[15] * 256;
-    tex = &((Texture *)m_texture)[id];
-    tex->unk30 = width = header[12] + header[13] * 256;
+    m_texture[id].width = height = header[14] + header[15] * 256;
+    m_texture[id].unk30 = width = header[12] + header[13] * 256;
     if (height > 0x400 || width > 0x400) {
         return 0;
     }
     if (height == 0 || width == 0) {
         return 0;
     }
-    tex = &((Texture *)m_texture)[id];
-    tex->height = 0;
+    i = width * height;
+    m_texture[id].height = 0;
     bpp = 3;
     if (header[16] == 32) {
         bpp = 4;
     }
-    dst = Allocate(width * height * bpp, 0, "");
-    tex = &((Texture *)m_texture)[id];
-    tex->data = dst;
-    tex = &((Texture *)m_texture)[id];
-    size = (header[16] >> 3) * (tex->unk30 * tex->width);
-    buf = Allocate(size, 0, "");
-    src = buf;
+    dst = Allocate(i * bpp, 0, "");
+    m_texture[id].data = dst;
+    size = (header[16] >> 3) * (m_texture[id].unk30 * m_texture[id].width);
+    src = buf = Allocate(size, 0, "");
     switch (header[16]) {
     case 8:
         break;
     case 32:
-        tex = &((Texture *)m_texture)[id];
-        tex->unk38 = 1;
+        m_texture[id].unk38 = 1;
         File_Read(handle, size, src);
         for (i = 0; i < size; i += 4) {
             dst[0] = src[2];
@@ -8696,8 +8689,7 @@ s32 LoadTGA(const char *name, u32 id) {
         }
         break;
     case 24:
-        tex = &((Texture *)m_texture)[id];
-        tex->unk38 = 0;
+        m_texture[id].unk38 = 0;
         File_Read(handle, size, src);
         for (i = 0; i < size; i += 3) {
             dst[0] = src[2];
@@ -8708,8 +8700,7 @@ s32 LoadTGA(const char *name, u32 id) {
         }
         break;
     case 16:
-        tex = &((Texture *)m_texture)[id];
-        tex->unk38 = 0;
+        m_texture[id].unk38 = 0;
         File_Read(handle, size, src);
         for (i = 0; i < size; i += 2) {
             dst[0] = (src[0] & 0x7C00) >> 7;
