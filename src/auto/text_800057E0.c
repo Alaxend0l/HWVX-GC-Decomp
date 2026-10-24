@@ -8725,7 +8725,6 @@ static inline s8 OBoxHitsCellZeroTime(void *obox, void *cell, void *arg2) {
 #pragma push
 #pragma use_lmw_stmw on
 s8 OBoxHitsCellZeroTimeEdgesOnly(void *obox, void *cell, void *arg2) {
-    s8 OBoxHitsPolyZeroTime(void *obox, void *poly, void *arg2);
     s8 hit = 0;
     u32 i;
     u8 *poly;
