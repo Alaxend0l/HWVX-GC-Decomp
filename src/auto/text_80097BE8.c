@@ -1283,6 +1283,7 @@ typedef struct Geometry {
     f32 *lodDistances;
     f32 bboxMin[4];
     f32 bboxMax[4];
+    f32 center[4];
 } Geometry;
 
 typedef struct RenderStats {
