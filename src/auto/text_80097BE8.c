@@ -14664,8 +14664,8 @@ s32 Effect_UpdateEffect(Effect *effect, u8 *desc) {
         effect->params.constant.angle = Effect_AngleToByte(src->params.constant.angle);
         effect->params.constant.envelope.attackTime = src->params.constant.envelope.attackTime;
         effect->params.constant.envelope.fadeTime = src->params.constant.envelope.fadeTime;
-        effect->params.constant.envelope.attackLevel = src->params.constant.envelope.attackLevel > 255 ? 255 : src->params.constant.envelope.attackLevel;
-        effect->params.constant.envelope.fadeLevel = src->params.constant.envelope.fadeLevel > 255 ? 255 : src->params.constant.envelope.fadeLevel;
+        effect->params.constant.envelope.attackLevel = Effect_Min(src->params.constant.envelope.attackLevel, 255);
+        effect->params.constant.envelope.fadeLevel = Effect_Min(src->params.constant.envelope.fadeLevel, 255);
         break;
     case 1:
         effect->flags |= 0x24;
@@ -14679,15 +14679,15 @@ s32 Effect_UpdateEffect(Effect *effect, u8 *desc) {
     case 5:
     case 6:
         effect->flags |= 0x44;
-        effect->params.periodic.magnitude = src->params.periodic.magnitude > 255 ? 255 : src->params.periodic.magnitude;
+        effect->params.periodic.magnitude = Effect_Min(src->params.periodic.magnitude, 255);
         effect->params.periodic.angle = Effect_AngleToByte(src->params.periodic.angle);
-        effect->params.periodic.period = src->params.periodic.period < 2 ? 2 : src->params.periodic.period;
+        effect->params.periodic.period = Effect_MaxU(src->params.periodic.period, 2);
         effect->params.periodic.phase = Effect_AngleToByte(src->params.periodic.phase);
         effect->params.periodic.offset = Effect_Clamp(src->params.periodic.offset, -255, 255);
         effect->params.periodic.envelope.attackTime = src->params.periodic.envelope.attackTime;
         effect->params.periodic.envelope.fadeTime = src->params.periodic.envelope.fadeTime;
-        effect->params.periodic.envelope.attackLevel = src->params.periodic.envelope.attackLevel > 255 ? 255 : src->params.periodic.envelope.attackLevel;
-        effect->params.periodic.envelope.fadeLevel = src->params.periodic.envelope.fadeLevel > 255 ? 255 : src->params.periodic.envelope.fadeLevel;
+        effect->params.periodic.envelope.attackLevel = Effect_Min(src->params.periodic.envelope.attackLevel, 255);
+        effect->params.periodic.envelope.fadeLevel = Effect_Min(src->params.periodic.envelope.fadeLevel, 255);
         if (effect->params.periodic.period < 4) {
             effect->params.periodic.phase = 0x40;
         }
@@ -14699,10 +14699,10 @@ s32 Effect_UpdateEffect(Effect *effect, u8 *desc) {
         effect->params.condition.unk0[1] = src->params.condition.unk0[1];
         effect->params.condition.posCoefficient = Effect_Clamp(src->params.condition.posCoefficient, -255, 255);
         effect->params.condition.negCoefficient = Effect_Clamp(src->params.condition.negCoefficient, -255, 255);
-        effect->params.condition.negSaturation = src->params.condition.negSaturation >> 1;
-        effect->params.condition.posSaturation = src->params.condition.posSaturation >> 1;
-        effect->deadbandLow = ((s8)effect->params.condition.unk0[0] - (effect->params.condition.unk0[1] >> 1)) << 12;
-        effect->deadbandHigh = ((s8)effect->params.condition.unk0[0] + (effect->params.condition.unk0[1] >> 1)) << 12;
+        effect->params.condition.negSaturation = (u32)src->params.condition.negSaturation >> 1;
+        effect->params.condition.posSaturation = (u32)src->params.condition.posSaturation >> 1;
+        effect->deadbandLow = ((s8)effect->params.condition.unk0[0] - ((u32)effect->params.condition.unk0[1] >> 1)) << 12;
+        effect->deadbandHigh = ((s8)effect->params.condition.unk0[0] + ((u32)effect->params.condition.unk0[1] >> 1)) << 12;
         break;
     default:
         ret = -2;
