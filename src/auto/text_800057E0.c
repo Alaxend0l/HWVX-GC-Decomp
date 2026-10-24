@@ -570,7 +570,9 @@ typedef struct SoundSource {
     s32 looping;
     f32 unk34;
     f32 unk38;
-    u8 unk3C[0x48 - 0x3C];
+    f32 unk3C;
+    f32 unk40;
+    u32 unk44;
     u8 paused;
     u8 playing;
     u8 unk4A[0x50 - 0x4A];
@@ -34076,16 +34078,116 @@ void __AXPrintStudio(void) {
     extern s32 __AXSpbABS_803C7500;
     void DCFlushRange(void *addr, u32 nBytes);
     u8 *studio = __AXStudio_802F7860;
+    s32 frac;
 
-    __AXDepopFade(&__AXSpbAL_803C74E0, (s32 *)(studio + 0x0), (s16 *)(studio + 0x4));
-    __AXDepopFade(&__AXSpbAR_803C74E4, (s32 *)(studio + 0x6), (s16 *)(studio + 0xA));
-    __AXDepopFade(&__AXSpbAS_803C74E8, (s32 *)(studio + 0xC), (s16 *)(studio + 0x10));
-    __AXDepopFade(&__AXSpbAAL_803C74EC, (s32 *)(studio + 0x12), (s16 *)(studio + 0x16));
-    __AXDepopFade(&__AXSpbAAR_803C74F0, (s32 *)(studio + 0x18), (s16 *)(studio + 0x1C));
-    __AXDepopFade(&__AXSpbAAS_803C74F4, (s32 *)(studio + 0x1E), (s16 *)(studio + 0x22));
-    __AXDepopFade(&__AXSpbABL_803C74F8, (s32 *)(studio + 0x24), (s16 *)(studio + 0x28));
-    __AXDepopFade(&__AXSpbABR_803C74FC, (s32 *)(studio + 0x2A), (s16 *)(studio + 0x2E));
-    __AXDepopFade(&__AXSpbABS_803C7500, (s32 *)(studio + 0x30), (s16 *)(studio + 0x34));
+    frac = __AXSpbAL_803C74E0 / 160;
+    if (frac) {
+        if (frac > 20) frac = 20;
+        if (frac < -20) frac = -20;
+        *(s32 *)(studio + 0x0) = __AXSpbAL_803C74E0;
+        __AXSpbAL_803C74E0 -= frac * 160;
+        *(s16 *)(studio + 0x4) = (s16)-frac;
+    } else {
+        __AXSpbAL_803C74E0 = 0;
+        *(s32 *)(studio + 0x0) = 0;
+        *(s16 *)(studio + 0x4) = 0;
+    }
+    frac = __AXSpbAR_803C74E4 / 160;
+    if (frac) {
+        if (frac > 20) frac = 20;
+        if (frac < -20) frac = -20;
+        *(s32 *)(studio + 0x6) = __AXSpbAR_803C74E4;
+        __AXSpbAR_803C74E4 -= frac * 160;
+        *(s16 *)(studio + 0xA) = (s16)-frac;
+    } else {
+        __AXSpbAR_803C74E4 = 0;
+        *(s32 *)(studio + 0x6) = 0;
+        *(s16 *)(studio + 0xA) = 0;
+    }
+    frac = __AXSpbAS_803C74E8 / 160;
+    if (frac) {
+        if (frac > 20) frac = 20;
+        if (frac < -20) frac = -20;
+        *(s32 *)(studio + 0xC) = __AXSpbAS_803C74E8;
+        __AXSpbAS_803C74E8 -= frac * 160;
+        *(s16 *)(studio + 0x10) = (s16)-frac;
+    } else {
+        __AXSpbAS_803C74E8 = 0;
+        *(s32 *)(studio + 0xC) = 0;
+        *(s16 *)(studio + 0x10) = 0;
+    }
+    frac = __AXSpbAAL_803C74EC / 160;
+    if (frac) {
+        if (frac > 20) frac = 20;
+        if (frac < -20) frac = -20;
+        *(s32 *)(studio + 0x12) = __AXSpbAAL_803C74EC;
+        __AXSpbAAL_803C74EC -= frac * 160;
+        *(s16 *)(studio + 0x16) = (s16)-frac;
+    } else {
+        __AXSpbAAL_803C74EC = 0;
+        *(s32 *)(studio + 0x12) = 0;
+        *(s16 *)(studio + 0x16) = 0;
+    }
+    frac = __AXSpbAAR_803C74F0 / 160;
+    if (frac) {
+        if (frac > 20) frac = 20;
+        if (frac < -20) frac = -20;
+        *(s32 *)(studio + 0x18) = __AXSpbAAR_803C74F0;
+        __AXSpbAAR_803C74F0 -= frac * 160;
+        *(s16 *)(studio + 0x1C) = (s16)-frac;
+    } else {
+        __AXSpbAAR_803C74F0 = 0;
+        *(s32 *)(studio + 0x18) = 0;
+        *(s16 *)(studio + 0x1C) = 0;
+    }
+    frac = __AXSpbAAS_803C74F4 / 160;
+    if (frac) {
+        if (frac > 20) frac = 20;
+        if (frac < -20) frac = -20;
+        *(s32 *)(studio + 0x1E) = __AXSpbAAS_803C74F4;
+        __AXSpbAAS_803C74F4 -= frac * 160;
+        *(s16 *)(studio + 0x22) = (s16)-frac;
+    } else {
+        __AXSpbAAS_803C74F4 = 0;
+        *(s32 *)(studio + 0x1E) = 0;
+        *(s16 *)(studio + 0x22) = 0;
+    }
+    frac = __AXSpbABL_803C74F8 / 160;
+    if (frac) {
+        if (frac > 20) frac = 20;
+        if (frac < -20) frac = -20;
+        *(s32 *)(studio + 0x24) = __AXSpbABL_803C74F8;
+        __AXSpbABL_803C74F8 -= frac * 160;
+        *(s16 *)(studio + 0x28) = (s16)-frac;
+    } else {
+        __AXSpbABL_803C74F8 = 0;
+        *(s32 *)(studio + 0x24) = 0;
+        *(s16 *)(studio + 0x28) = 0;
+    }
+    frac = __AXSpbABR_803C74FC / 160;
+    if (frac) {
+        if (frac > 20) frac = 20;
+        if (frac < -20) frac = -20;
+        *(s32 *)(studio + 0x2A) = __AXSpbABR_803C74FC;
+        __AXSpbABR_803C74FC -= frac * 160;
+        *(s16 *)(studio + 0x2E) = (s16)-frac;
+    } else {
+        __AXSpbABR_803C74FC = 0;
+        *(s32 *)(studio + 0x2A) = 0;
+        *(s16 *)(studio + 0x2E) = 0;
+    }
+    frac = __AXSpbABS_803C7500 / 160;
+    if (frac) {
+        if (frac > 20) frac = 20;
+        if (frac < -20) frac = -20;
+        *(s32 *)(studio + 0x30) = __AXSpbABS_803C7500;
+        __AXSpbABS_803C7500 -= frac * 160;
+        *(s16 *)(studio + 0x34) = (s16)-frac;
+    } else {
+        __AXSpbABS_803C7500 = 0;
+        *(s32 *)(studio + 0x30) = 0;
+        *(s16 *)(studio + 0x34) = 0;
+    }
     DCFlushRange(studio, 0x36);
 }
 
