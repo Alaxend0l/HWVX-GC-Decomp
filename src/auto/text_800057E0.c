@@ -11413,7 +11413,7 @@ void DataPack_LoadDataPack(s32 file, DataPack *pack) {
     pack->songLoaded = 0;
     pack->dataSize = header.dataSize;
     memcpy(pack->refs, header.refs, sizeof(header.refs));
-    size = header.numRelocs * 8 + (((s32)pack->numSounds + (s32)pack->numTextures) * 2 + pack->numShaders * 2 + header.numGX * 8 + header.numSoundRelocs * 8 + header.dataSize + 0x60) + (relocSize = header.numTexRelocs * 8 + header.numPointers * 4);
+    size = header.numRelocs * 8 + ((pack->numSounds + pack->numTextures) * 2 + (s32)pack->numShaders * 2 + header.numGX * 8 + header.numSoundRelocs * 8 + header.dataSize + 0x60) + (relocSize = header.numTexRelocs * 8 + header.numPointers * 4);
     alloc = Allocate(size, 0, "");
     if (alloc == NULL) {
         return;
@@ -15619,6 +15619,304 @@ done:
         memset(&settings->data[2], 0, 0x10);
     } else {
         memcpy(&settings->data[2], M2C_FIELD(**M2C_FIELD(mcp, u8 ****, 0x40), void **, 4), 0x10);
+    }
+}
+
+void GameSettings_SetCodeVariable(s32 id, u32 idx, u32 val) {
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    void GameSetting_Init(void);
+    void GameSettings_ApplyDefaultGameData(void);
+    void GameSettings_DetermineIfOverwritingFile(void);
+    void Input_SetForceFeedbackActive(s32 pad, s32 active);
+    void Input_SetForceFeedback(s32 pad, s32 type, f32 a, f32 b);
+    extern s8 g_bGameSettingsInitialized;
+    extern s8 g_bBlockReset;
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *vars;
+    u8 *mcp;
+    void *pack;
+    s32 state;
+    GeneralGameSettings *settings;
+
+    vars = (u8 *)&g_codeVariables;
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        state = mcp[1];
+    } else {
+        state = 0;
+    }
+    if (!g_bGameSettingsInitialized) {
+        GameSetting_Init();
+    }
+    switch (id) {
+    case 0x64:
+        switch (state) {
+        case 0:
+            if (idx < 0x21) {
+                (&vars[0x284])[idx] = val != 0;
+            }
+            break;
+        case 1:
+            if (idx < 0x14) {
+                (&vars[0xC74])[idx] = val != 0;
+            }
+            break;
+        }
+        break;
+    case 0x65:
+        switch (state) {
+        case 0:
+            if (idx < 0x39) {
+                (&vars[0x284])[0x21 + idx] = val != 0;
+            }
+            break;
+        case 1:
+            if (idx < 0xA) {
+                (&vars[0xC74])[0x14 + idx] = val != 0;
+            }
+            break;
+        }
+        break;
+    case 0x66:
+        switch (state) {
+        case 0:
+            if (idx < 0xC) {
+                (&vars[0x284])[0x93 + idx] = val != 0;
+            }
+            break;
+        }
+        break;
+    case 0x68:
+        switch (state) {
+        case 0:
+            if (idx < 5) {
+                (&vars[0x284])[0xAA + idx] = val != 0;
+            }
+            break;
+        case 1:
+            if (idx < 5) {
+                (&vars[0xC74])[0x29 + idx] = val != 0;
+            }
+            break;
+        }
+        break;
+    case 0x69:
+        switch (state) {
+        case 0:
+            (&vars[0x284])[0xA8] = val != 0;
+            break;
+        case 1:
+            (&vars[0xC74])[0x27] = val != 0;
+            break;
+        }
+        break;
+    case 0x6A:
+        switch (state) {
+        case 0:
+            if (idx < 0xB) {
+                (&vars[0x284])[0x9F + idx] = val != 0;
+            }
+            break;
+        case 1:
+            if (idx < 0xB) {
+                (&vars[0xC74])[0x1E + idx] = val != 0;
+            }
+            break;
+        }
+        break;
+    case 0x6B:
+        if (idx < 0xB) {
+            ((CodeVariables *)&vars[0])->unk120[8 + idx] = val != 0;
+        }
+        break;
+    case 0x6C:
+        if (idx < 0xB) {
+            ((CodeVariables *)&vars[0])->unk120[8 + idx] = val;
+        }
+        break;
+    case 0xC8:
+        ((GeneralGameSettings *)&vars[0x134])->difficulty = val;
+        break;
+    case 0xC9:
+        if (idx >= 1 && idx <= 10) {
+            ((CodeVariables *)&vars[0])->controllerState[idx - 1] = val;
+        }
+        break;
+    case 0xCA:
+        switch (state) {
+        case 0:
+            if (idx < 0x1E) {
+                ((u16 *)&(&vars[0x284])[0xB0])[idx] = val;
+            }
+            break;
+        case 1:
+            if (idx < 0x1E) {
+                ((u16 *)&(&vars[0xC74])[0x2E])[idx] = val;
+            }
+            break;
+        }
+        break;
+    case 0xCB:
+        ((CodeVariables *)&vars[0])->playerVehicle[idx - 1] = val;
+        if (idx - 1 == 0) {
+            switch (state) {
+            case 0:
+                *(u32 *)&(&vars[0x284])[0xEC] = val;
+                break;
+            case 1:
+                *(u32 *)&(&vars[0xC74])[0x1CD4] = val;
+                break;
+            }
+        }
+        break;
+    case 0xCC:
+        ((CodeVariables *)&vars[0])->playerItem[idx - 1] = val;
+        if (idx - 1 == 0) {
+            switch (state) {
+            case 0:
+                *(u32 *)&(&vars[0x284])[0xF0] = val;
+                break;
+            case 1:
+                *(u32 *)&(&vars[0xC74])[0x1CD8] = val;
+                break;
+            }
+        }
+        break;
+    case 0xCE:
+        if (idx <= 4) {
+            settings = (GeneralGameSettings *)&vars[0x134];
+            settings->controllers[idx - 1].data[1] = val;
+            GameSettings_ApplyDefaultGameData();
+        }
+        break;
+    case 0xD1:
+        if (idx <= 4) {
+            settings = (GeneralGameSettings *)&vars[0x134];
+            settings->controllers[idx - 1].data[0] = val;
+            GameSettings_ApplyDefaultGameData();
+            if (val) {
+                Input_SetForceFeedbackActive(idx - 1, 1);
+                Input_SetForceFeedback(idx - 1, 0, 1.0f, 5.0f);
+            }
+        }
+        break;
+    case 0xCF:
+        if (val > 100) {
+            val = 100;
+        }
+        ((GeneralGameSettings *)&vars[0x134])->audio.musicVolume = val;
+        GameSettings_ApplyDefaultGameData();
+        break;
+    case 0xD0:
+        if (val > 100) {
+            val = 100;
+        }
+        ((GeneralGameSettings *)&vars[0x134])->audio.sfxVolume = val;
+        GameSettings_ApplyDefaultGameData();
+        break;
+    case 0xD6:
+        if (val > 100) {
+            val = 100;
+        }
+        ((GeneralGameSettings *)&vars[0x134])->audio.speakerMode = val;
+        GameSettings_ApplyDefaultGameData();
+        break;
+    case 0xD5:
+        ((CodeVariables *)&vars[0])->unkE0 = val;
+        break;
+    case 0x12C:
+        ((CodeVariables *)&vars[0])->unkE4 = val != 0;
+        break;
+    case 0x12D:
+        ((CodeVariables *)&vars[0])->unkE8 = val;
+        break;
+    case 0x12E:
+        ((CodeVariables *)&vars[0])->unkEC = val * 300000;
+        break;
+    case 0x12F:
+        ((CodeVariables *)&vars[0])->unkF0 = val;
+        break;
+    case 0x130:
+        ((CodeVariables *)&vars[0])->unkF4 = val * 1000;
+        break;
+    case 0x131:
+        ((CodeVariables *)&vars[0])->unkF8 = val;
+        break;
+    case 0x132:
+        ((CodeVariables *)&vars[0])->unkFC = val != 0;
+        break;
+    case 0x133:
+        ((CodeVariables *)&vars[0])->unk100 = val;
+        break;
+    case 0x134:
+        ((CodeVariables *)&vars[0])->unk104 = val;
+        break;
+    case 0x136:
+        ((CodeVariables *)&vars[0])->unk108 = val != 0;
+        break;
+    case 0x190:
+        ((CodeVariables *)&vars[0])->unk30 = val;
+        break;
+    case 0x191:
+        if (idx <= 4) {
+            ((CodeVariables *)&vars[0])->unk34[idx - 1] = val;
+        }
+        break;
+    case 0x192:
+        if (idx <= 4) {
+            ((CodeVariables *)&vars[0])->unk44[idx - 1] = val;
+        }
+        break;
+    case 0x193:
+        if (idx <= 4) {
+            ((CodeVariables *)&vars[0])->unk54[idx - 1] = val;
+        }
+        break;
+    case 0x194:
+        if (idx <= 4) {
+            ((CodeVariables *)&vars[0])->unk64[idx - 1] = val != 0;
+        }
+        break;
+    case 0x197:
+        ((CodeVariables *)&vars[0])->unk109[0] = val != 0;
+        break;
+    case 0x135:
+        ((CodeVariables *)&vars[0])->unk109[7] = val != 0;
+        break;
+    case 0x198:
+        ((CodeVariables *)&vars[0])->unk109[1] = val != 0;
+        break;
+    case 0x1F7:
+        ((CodeVariables *)&vars[0])->device = (char *)val;
+        break;
+    case 0x1F8:
+        ((CodeVariables *)&vars[0])->fileIndex = val;
+        GameSettings_DetermineIfOverwritingFile();
+        break;
+    case 0x1FE:
+        ((CodeVariables *)&vars[0])->unk120[0] = val != 0;
+        g_bBlockReset = ((CodeVariables *)&vars[0])->unk120[0];
+        break;
+    case 0x19B:
+        ((CodeVariables *)&vars[0])->unk111 = val != 0;
+        break;
+    case 0x19C:
+        if (idx < 0x1E) {
+            ((CodeVariables *)&vars[0])->unk68[idx] = val;
+        }
+        break;
     }
 }
 
@@ -24686,6 +24984,245 @@ void ProcessManager_Render(u32 all) {
             }
         }
     }
+}
+
+s32 Projectile_Init(u8 *proj, u8 *params) {
+    typedef struct {
+        u8 pad0[0x14];
+        f32 friction;
+        f32 restitution;
+    } Material;
+    typedef struct {
+        u8 pad0[0x14];
+        f32 (*getMass)(u8 *obj);
+        void (*applyImpulse)(u8 *obj, void *hit, s32 arg2, f32 impulse);
+        u8 pad1C[0x28 - 0x1C];
+        Material *(*getMaterial)(u8 *obj);
+        u8 pad2C[0x30 - 0x2C];
+        void (*getInverseInertia)(u8 *obj, Vector4 *out);
+        u8 pad34[0x3C - 0x34];
+        void (*getPosition)(u8 *obj, Vector4 *out);
+    } VTable;
+    typedef struct {
+        Vector4 pos;
+        Vector4 normal;
+        u8 *thing;
+        s32 unk24;
+        Material *material;
+        u8 pad2C[0x40 - 0x2C];
+        u8 type;
+    } CollisionInfo;
+    extern u8 g_projectileVTable[];
+    extern u8 g_smartProjectileAVTable[];
+    void Thing_Init(u8 *thing, s32 arg1);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    f32 RandomAdd(f32 base, f32 range);
+    f32 RandomDirVar(f32 base, f32 range);
+    s32 LensFlare_Add(void *flare, u8 *thing, s32 arg2);
+    void GenerateQuaternionXYZ(Vector4 *euler, Vector4 *q);
+    void GenerateSpinAngleFromQuaternion(Vector4 *quat, void *axis, f32 *angle);
+    void ExtractColorKey(void *key, void *out, f32 t);
+    void ExtractScaleKey(void *key, void *out, f32 t);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    s32 LightHolder_Add(void *light, void *pos, u8 *thing);
+    void Thing_AddToGrid(u8 *thing, s32 arg1);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *axb);
+    void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareDistance(void *a, void *b);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVec(void *mtx, void *in, f32 *out);
+    u32 ThingManager_GetActiveCars(u8 **cars, s32 max);
+    u8 *Thing_GetSource(u8 *thing);
+    f32 Sqrt(f32 x);
+    f32 ArcTan(f32 y, f32 x);
+    void SmartProjectileA_AquireTarget(u8 *proj);
+    void Projectile_YAim(u8 *proj, Vector4 *target, f32 step, f32 range);
+    CollisionInfo hit;
+    u8 *cars[32];
+    Vector4 euler;
+    Vector4 q;
+    Vector4 rot;
+    Vector4 tmp;
+    Vector4 r;
+    Vector4 rxn;
+    Vector4 angVel;
+    Vector4 invInertia;
+    Vector4 local;
+    Vector4 scaled;
+    Vector4 sum;
+    Vector4 targetPos;
+    f32 rel[4];
+    GXColor color;
+    u8 *src;
+    u8 *info;
+    f32 vn;
+    f32 invMassA;
+    f32 invMassB;
+
+    src = NULL;
+    Thing_Init(proj, 0);
+    if (*(u8 **)(params + 0x38) != NULL) {
+        src = *(u8 **)(*(u8 **)(params + 0x38) + 0x2C);
+    }
+    *(s32 *)(proj + 0x7C) = RandomAdd_s32(*(s32 *)(*(u8 **)(params + 0x34) + 0x1C), *(s32 *)(*(u8 **)(params + 0x34) + 0x20));
+    *(u8 **)(proj + 0x120) = *(u8 **)(params + 0x34);
+    *(s32 *)(proj + 0x124) = RandomAdd_s32(*(s32 *)(*(u8 **)(proj + 0x120) + 0x14), *(s32 *)(*(u8 **)(proj + 0x120) + 0x18));
+    *(f32 *)(proj + 0x140) = 1.0f;
+    if (*(u32 *)(*(u8 **)(proj + 0x120) + 0x14) != 0 && *(u32 *)(*(u8 **)(proj + 0x120) + 0x18) != 0) {
+        *(f32 *)(proj + 0x140) = 1.0f / ((f32)*(s32 *)(proj + 0x124) / (f32)*(u32 *)(*(u8 **)(proj + 0x120) + 0x14));
+    }
+    *(s32 *)(proj + 0x130) = LensFlare_Add(*(void **)(*(u8 **)(proj + 0x120) + 0x64), proj, 0);
+    *(Vector4 *)(proj + 0x40) = *(Vector4 *)(params + 0x0);
+    *(Vector4 *)(proj + 0x50) = *(Vector4 *)(params + 0x24);
+    *(Vector4 *)(proj + 0x0) = *(Vector4 *)(params + 0x10);
+    *(f32 *)(proj + 0x148) = *(f32 *)(params + 0x20);
+    *(u8 **)(proj + 0x94) = *(u8 **)(params + 0x38);
+    if (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4) != NULL) {
+        euler.x = 0.0174533f * RandomDirVar((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[0], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[1]);
+        euler.y = 0.0174533f * RandomDirVar((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[2], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[3]);
+        euler.z = 0.0174533f * RandomDirVar((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[4], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[5]);
+        GenerateQuaternionXYZ(&euler, &q);
+        QuaternionMult(&q, (Vector4 *)(proj + 0x50), &rot);
+        *(Vector4 *)(proj + 0x50) = rot;
+        euler.x = 0.0174533f * RandomAdd((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[6], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[7]);
+        euler.y = 0.0174533f * RandomAdd((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[8], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[9]);
+        euler.z = 0.0174533f * RandomAdd((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[10], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[11]);
+        GenerateQuaternionXYZ(&euler, &q);
+        GenerateSpinAngleFromQuaternion(&q, proj + 0xB0, (f32 *)(proj + 0x13C));
+        *(f32 *)(proj + 0x13C) *= 10.0f;
+    } else {
+        *(f32 *)(proj + 0x13C) = 0.0f;
+    }
+    *(s32 *)(proj + 0x144) = 0;
+    proj[0xE4] = 1;
+    proj[0x11C] = 1;
+    ExtractColorKey(*(u8 **)(proj + 0x120) + 0x94, proj + 0xF0, 0.0f);
+    ExtractScaleKey(*(u8 **)(proj + 0x120) + 0x8C, proj + 0xC0, 0.0f);
+    *(u32 *)(proj + 0x74) |= 0x4000;
+    info = *(u8 **)(proj + 0x120);
+    if (*(u32 *)(info + 0x94) == 0) {
+        *(u32 *)(proj + 0x74) &= ~0x4000;
+    } else if (*(u32 *)(info + 0x94) == 1) {
+        color = **(GXColor **)(info + 0x98);
+        if (color.r == 0xFF && color.b == 0xFF && color.g == 0xFF) {
+            *(u32 *)(proj + 0x74) &= ~0x4000;
+        }
+    }
+    info = *(u8 **)(proj + 0x120);
+    if (info[4] == 1) {
+        *(f32 *)(proj + 0x12C) = RandomAdd((*(u32 **)(info + 0xC))[0], (*(u32 **)(info + 0xC))[1]);
+    } else if (info[4] == 2) {
+        *(f32 *)(proj + 0x12C) = RandomAdd((*(f32 **)(info + 0xC))[0], (*(f32 **)(info + 0xC))[1]);
+    }
+    *(f32 *)(proj + 0x128) = 0.0f;
+    QuaternionToSubMatrix(proj + 0x50, proj + 0x10);
+    *(u16 *)(proj + 0x80) = 3;
+    *(s32 *)(proj + 0x134) = -1;
+    if (*(void **)(*(u8 **)(proj + 0x120) + 0x68) != NULL) {
+        *(s32 *)(proj + 0x134) = LightHolder_Add(*(void **)(*(u8 **)(proj + 0x120) + 0x68), proj + 0x40, proj);
+    }
+    switch ((*(u8 **)(proj + 0x120))[3]) {
+    case 5:
+        *(u32 *)(proj + 0x74) |= 2;
+    case 3:
+        *(u32 *)(proj + 0x74) |= 0x20000;
+    case 4:
+        *(u32 *)(proj + 0x74) |= 4;
+        break;
+    case 0:
+    case 1:
+    case 6:
+        *(u32 *)(proj + 0x74) &= ~2;
+        *(u32 *)(proj + 0x74) |= 4;
+        Thing_AddToGrid(proj, 1);
+        break;
+    case 2:
+        break;
+    }
+    *(f32 *)(proj + 0x150) = 0.0f;
+    *(f32 *)(proj + 0x154) = 0.0f;
+    *(f32 *)(proj + 0x158) = 0.0f;
+    *(u8 **)(proj + 0x14C) = NULL;
+    *(void **)(proj + 0x8C) = g_projectileVTable;
+    if (src != NULL && *(f32 *)(*(u8 **)(proj + 0x120) + 0x30)) {
+        vn = PSVECDotProduct((Vector4 *)(proj + 0x30), (Vector4 *)proj);
+        invMassB = 1.0f / (*(VTable **)(src + 0x8C))->getMass(src);
+        invMassA = 1.0f / (*(VTable **)(proj + 0x8C))->getMass(proj);
+        hit.normal = *(Vector4 *)(proj + 0x30);
+        hit.pos = *(Vector4 *)(proj + 0x40);
+        hit.material = NULL;
+        hit.thing = src;
+        hit.unk24 = 0;
+        PSVECSubtract(&hit.pos, (Vector4 *)(src + 0x40), &r);
+        PSVECCrossProduct(&r, &hit.normal, &rxn);
+        (*(VTable **)(src + 0x8C))->getInverseInertia(src, &invInertia);
+        InverseXformVecOrientation(src + 0x10, &rxn, &local);
+        scaled.x = invInertia.x * local.x;
+        scaled.y = invInertia.y * local.y;
+        scaled.z = invInertia.z * local.z;
+        XformVecOrientation(src + 0x10, &scaled, &angVel);
+        PSVECCrossProduct(&angVel, &r, &tmp);
+        vn *= 1.0f + (*(VTable **)(src + 0x8C))->getMaterial(src)->restitution;
+        PSVECAdd(&tmp, (Vector4 *)(proj + 0x30), &sum);
+        (*(VTable **)(src + 0x8C))->applyImpulse(src, &hit, 0, -(*(f32 *)(*(u8 **)(proj + 0x120) + 0x30) * vn / (invMassB + invMassA + PSVECDotProduct(&sum, (Vector4 *)(proj + 0x30)))));
+        if (*(u8 **)(src + 0x94) != NULL) {
+            *(s32 *)(*(u8 **)(src + 0x94) + 0x8C) += *(s32 *)(proj + 0x7C);
+        }
+    }
+    *(void **)(proj + 0x8C) = g_projectileVTable;
+    info = *(u8 **)(proj + 0x120);
+    switch (info[5]) {
+    case 1:
+    case 2:
+        *(u16 *)(proj + 0x15E) = (*(u16 **)(info + 0xA8))[1];
+        *(void **)(proj + 0x8C) = g_smartProjectileAVTable;
+        SmartProjectileA_AquireTarget(proj);
+        break;
+    case 3: {
+        u32 best;
+        u8 *source;
+        u32 i;
+        u32 count;
+        u8 **car;
+        f32 z;
+        f32 bestDist;
+        f32 dist;
+
+        count = ThingManager_GetActiveCars(cars, 32);
+        bestDist = 99999.9f;
+        best = count;
+        source = Thing_GetSource(proj);
+        for (car = cars, i = 0; i < count; car++, i++) {
+            dist = PSVECSquareDistance(proj + 0x40, *car + 0x40);
+            if (*car != proj && *car != source && !(dist < 80.0f)) {
+                InverseXformVec(proj + 0x10, *car + 0x40, rel);
+                z = rel[2];
+                if (!(z < 1.0f)) {
+                    if (!(ArcTan(Sqrt(rel[0] * rel[0] + rel[1] * rel[1]), z) > 0.17453292f) && dist < bestDist) {
+                        bestDist = dist;
+                        best = i;
+                    }
+                }
+            }
+        }
+        if (best < count) {
+            *(u8 **)(proj + 0x14C) = cars[best];
+        } else {
+            *(u8 **)(proj + 0x14C) = NULL;
+        }
+        if (*(u8 **)(proj + 0x14C) != NULL) {
+            (*(VTable **)(*(u8 **)(proj + 0x14C) + 0x8C))->getPosition(*(u8 **)(proj + 0x14C), &targetPos);
+            Projectile_YAim(proj, &targetPos, 10.0f, 0.34906584f);
+        }
+        break;
+    }
+    }
+    *(s32 *)(proj + 0x138) = -1;
+    Thing_InitAllSlavesNow(proj, *(u8 **)(proj + 0x120) + 0x9C, 0xFF);
+    return 1;
 }
 
 #pragma push
@@ -51787,7 +52324,7 @@ void GXSetNumTevStages(u8 nStages) {
     *reg |= 4;
 }
 
-void GXSetFog(s32 type, f32 startz, f32 endz, f32 nearz, f32 farz, u8 *color) {
+void GXSetFog(s32 type, f32 startz, f32 endz, f32 nearz, f32 farz, GXColor color) {
     extern u8 *const gx;
     u32 fogclr, fog0, fog1, fog2, fog3;
     f32 A, B, B_mant, C, a, c;
@@ -51824,7 +52361,7 @@ void GXSetFog(s32 type, f32 startz, f32 endz, f32 nearz, f32 farz, u8 *color) {
     c_hex = *(u32 *)&c;
     fog0 = (((a_hex >> 12) & 0x7FF) | ((a_hex >> 12) & 0x7F800) | ((a_hex >> 12) & 0x80000)) | 0xEE000000;
     fog3 = ((((c_hex >> 12) & 0x7FF) | ((c_hex >> 12) & 0x7F800) | ((c_hex >> 12) & 0x80000)) | (type << 21)) & 0xFFFFFF | 0xF1000000;
-    fogclr = ((color[0] << 16) | (color[1] << 8) | color[2]) & 0xFFFFFF | 0xF2000000;
+    fogclr = ((color.r << 16) | (color.g << 8) | color.b) & 0xFFFFFF | 0xF2000000;
 
     GXWGPipe.u8 = 0x61;
     GXWGPipe.u32 = fog0;
