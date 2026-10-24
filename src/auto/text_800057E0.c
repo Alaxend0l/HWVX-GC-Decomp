@@ -1531,10 +1531,9 @@ void Action_ReleaseAllActions(void) {
 }
 
 s8 ActionLoadInterfacePack(s32 *arg0) {
-    s32 FileStreaming_LoadDataPack(void *, M2C_UNK, s32, M2C_UNK);
     s32 temp_r3;
 
-    temp_r3 = FileStreaming_LoadDataPack(arg0 + 1, 1, *arg0, 1);
+    temp_r3 = FileStreaming_LoadDataPack((char *)(arg0 + 1), 1, *arg0, 1);
     return (s8) ((u32) ((-1 - temp_r3) | (temp_r3 + 1)) >> 0x1FU);
 }
 
