@@ -23214,7 +23214,6 @@ done:
     Scb_802EEE20.offset = 0x40;
 }
 
-#pragma use_lmw_stmw reset
 OSSram *__OSLockSram(void) {
     return LockSram(0);
 }
