@@ -2433,6 +2433,207 @@ s32 AI_Car_CheckIfStuck(u8 *ai) {
     return 1;
 }
 
+static inline void AI_Car_LeadTarget(u8 *ai) {
+    f32 PSVECSquareMag(void *v);
+    f32 PSVECSquareDistance(void *a, void *b);
+    f32 PSVECDotProduct(void *a, void *b);
+    void PSVECScale(void *src, void *dst, f32 scale);
+    void PSVECAdd(void *a, void *b, void *out);
+    void PSVECSubtract(void *a, void *b, void *out);
+    f32 Sqrt(f32 x);
+    Vector4 lead;
+    u8 *myPos;
+    u8 *thing;
+    u8 *thingPos;
+    u8 *car;
+    f32 dist;
+    f32 t;
+
+    myPos = *(u8 **)(ai + 0x2C) + 0x40;
+    thing = *(u8 **)(ai + 0x3E8) != NULL ? *(u8 **)(ai + 0x3E8) : *(u8 **)(ai + 0x3EC);
+    thingPos = thing + 0x40;
+    if (PSVECSquareMag(thing) < 1.0f) {
+        *(Vector4 *)(ai + 0x400) = *(Vector4 *)thingPos;
+    } else {
+        car = *(u8 **)(ai + 0x2C);
+        dist = PSVECSquareDistance(thingPos, myPos);
+        t = Sqrt(dist / PSVECSquareMag(car));
+        PSVECScale(thing, &lead, t);
+        PSVECAdd(&lead, thingPos, &lead);
+        PSVECScale(thing, &lead, t * Sqrt(PSVECSquareDistance(&lead, myPos) / dist));
+        PSVECAdd(&lead, thingPos, ai + 0x400);
+        if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1) {
+            PSVECSubtract(ai + 0x400, myPos, &lead);
+            PSVECScale(thing + 0x10, &lead,
+                       PSVECDotProduct(*(u8 **)(ai + 0x2C) + 0x10, &lead) >= 0.0f ? -15.0f : 15.0f);
+            PSVECAdd(ai + 0x400, &lead, ai + 0x400);
+        }
+    }
+    if (PSVECSquareDistance(myPos, ai + 0x400) > 400.0f) {
+        PSVECSubtract(ai + 0x400, myPos, ai + 0x400);
+        PSVECScale(ai + 0x400, ai + 0x400, 0.5f);
+        PSVECAdd(ai + 0x400, myPos, ai + 0x400);
+    }
+}
+
+static inline void AI_Car_FollowPath(u8 *ai, u32 i, Vector4 *p0) {
+    void PSVECScale(void *src, void *dst, f32 scale);
+    void PSVECAdd(void *a, void *b, void *out);
+    void PSVECSubtract(void *a, void *b, void *out);
+    f32 MagnitudeVector(void *v);
+    Vector4 a;
+    Vector4 b;
+    u8 *myPos;
+    Vector4 *p1;
+    f32 ma;
+    f32 mb;
+
+    myPos = *(u8 **)(ai + 0x2C) + 0x40;
+    if (i + 1 >= 32 || (p1 = ((Vector4 **)(ai + 0x420))[i + 1]) == NULL) {
+        PSVECSubtract(myPos, p0, ai + 0x400);
+        PSVECScale(ai + 0x400, ai + 0x400, 0.5f);
+        PSVECAdd(ai + 0x400, p0, ai + 0x400);
+    } else {
+        PSVECSubtract(myPos, p0, &a);
+        PSVECSubtract(p1, p0, &b);
+        ma = MagnitudeVector(&a);
+        mb = MagnitudeVector(&b);
+        PSVECScale(&a, &a, mb / ma);
+        PSVECScale(&b, &b, ma / mb);
+        PSVECScale(&a, &a, -1.0f);
+        PSVECAdd(&a, &b, ai + 0x400);
+        PSVECScale(ai + 0x400, ai + 0x400, -(0.5f * ma / MagnitudeVector(ai + 0x400)));
+        PSVECAdd(ai + 0x400, p0, ai + 0x400);
+    }
+}
+
+void AI_Car_SeekPoint_80007C7C(u8 *ai) {
+    f32 PSVECSquareMag(void *v);
+    f32 PSVECSquareDistance(void *a, void *b);
+    f32 PSVECDotProduct(void *a, void *b);
+    void PSVECScale(void *src, void *dst, f32 scale);
+    void PSVECAdd(void *a, void *b, void *out);
+    void PSVECSubtract(void *a, void *b, void *out);
+    f32 MagnitudeVector(void *v);
+    f32 Sqrt(f32 x);
+    void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed);
+    Vector4 target;
+    f32 speed;
+    u8 *thing;
+    u8 *myPos;
+    u8 *thingPos;
+    u8 *car;
+    f32 dist;
+    f32 t;
+    u32 i;
+
+    speed = 0.0f;
+    thing = *(u8 **)(ai + 0x3E8);
+    if (thing != NULL) {
+        Vector4 lead;
+
+        myPos = *(u8 **)(ai + 0x2C) + 0x40;
+        if (thing == NULL) {
+            thing = *(u8 **)(ai + 0x3EC);
+        }
+        thingPos = thing + 0x40;
+        if (PSVECSquareMag(thing) < 1.0f) {
+            *(Vector4 *)(ai + 0x400) = *(Vector4 *)thingPos;
+        } else {
+            car = *(u8 **)(ai + 0x2C);
+            dist = PSVECSquareDistance(thingPos, myPos);
+            t = Sqrt(dist / PSVECSquareMag(car));
+            PSVECScale(thing, &lead, t);
+            PSVECAdd(&lead, thingPos, &lead);
+            PSVECScale(thing, &lead, t * Sqrt(PSVECSquareDistance(&lead, myPos) / dist));
+            PSVECAdd(&lead, thingPos, ai + 0x400);
+            if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1) {
+                PSVECSubtract(ai + 0x400, myPos, &lead);
+                PSVECScale(thing + 0x10, &lead,
+                           PSVECDotProduct(*(u8 **)(ai + 0x2C) + 0x10, &lead) >= 0.0f ? -15.0f : 15.0f);
+                PSVECAdd(ai + 0x400, &lead, ai + 0x400);
+            }
+        }
+        if (PSVECSquareDistance(myPos, ai + 0x400) > 400.0f) {
+            PSVECSubtract(ai + 0x400, myPos, ai + 0x400);
+            PSVECScale(ai + 0x400, ai + 0x400, 0.5f);
+            PSVECAdd(ai + 0x400, myPos, ai + 0x400);
+        }
+    } else if ((i = *(u32 *)(ai + 0x4A4)) < 32 && ((Vector4 **)(ai + 0x420))[i] != NULL) {
+        Vector4 a;
+        Vector4 b;
+        Vector4 *p0;
+        Vector4 *p1;
+        f32 ma;
+        f32 mb;
+
+        p0 = ((Vector4 **)(ai + 0x420))[i];
+        myPos = *(u8 **)(ai + 0x2C) + 0x40;
+        if (i + 1 >= 32 || (p1 = ((Vector4 **)(ai + 0x420))[i + 1]) == NULL) {
+            PSVECSubtract(myPos, p0, ai + 0x400);
+            PSVECScale(ai + 0x400, ai + 0x400, 0.5f);
+            PSVECAdd(ai + 0x400, p0, ai + 0x400);
+        } else {
+            PSVECSubtract(myPos, p0, &a);
+            PSVECSubtract(p1, p0, &b);
+            ma = MagnitudeVector(&a);
+            mb = MagnitudeVector(&b);
+            PSVECScale(&a, &a, mb / ma);
+            PSVECScale(&b, &b, ma / mb);
+            PSVECScale(&a, &a, -1.0f);
+            PSVECAdd(&a, &b, ai + 0x400);
+            PSVECScale(ai + 0x400, ai + 0x400, -(0.5f * ma / MagnitudeVector(ai + 0x400)));
+            PSVECAdd(ai + 0x400, p0, ai + 0x400);
+        }
+        speed = *(f32 *)((u8 *)((Vector4 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] + 0x2C);
+    } else if (*(u8 **)(ai + 0x3EC) != NULL) {
+        Vector4 lead;
+
+        myPos = *(u8 **)(ai + 0x2C) + 0x40;
+        if (thing == NULL) {
+            thing = *(u8 **)(ai + 0x3EC);
+        }
+        thingPos = thing + 0x40;
+        if (PSVECSquareMag(thing) < 1.0f) {
+            *(Vector4 *)(ai + 0x400) = *(Vector4 *)thingPos;
+        } else {
+            car = *(u8 **)(ai + 0x2C);
+            dist = PSVECSquareDistance(thingPos, myPos);
+            t = Sqrt(dist / PSVECSquareMag(car));
+            PSVECScale(thing, &lead, t);
+            PSVECAdd(&lead, thingPos, &lead);
+            PSVECScale(thing, &lead, t * Sqrt(PSVECSquareDistance(&lead, myPos) / dist));
+            PSVECAdd(&lead, thingPos, ai + 0x400);
+            if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1) {
+                PSVECSubtract(ai + 0x400, myPos, &lead);
+                PSVECScale(thing + 0x10, &lead,
+                           PSVECDotProduct(*(u8 **)(ai + 0x2C) + 0x10, &lead) >= 0.0f ? -15.0f : 15.0f);
+                PSVECAdd(ai + 0x400, &lead, ai + 0x400);
+            }
+        }
+        if (PSVECSquareDistance(myPos, ai + 0x400) > 400.0f) {
+            PSVECSubtract(ai + 0x400, myPos, ai + 0x400);
+            PSVECScale(ai + 0x400, ai + 0x400, 0.5f);
+            PSVECAdd(ai + 0x400, myPos, ai + 0x400);
+        }
+    } else {
+        ai[0x13] = 0xFF;
+        if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1) {
+            ai[0x12] = 0xFF;
+        }
+        *(u32 *)(ai + 0x3F0) = 0;
+        return;
+    }
+    if (*(u8 **)(ai + 0x3EC) != NULL) {
+        target = *(Vector4 *)(*(u8 **)(ai + 0x3EC) + 0x40);
+    } else if (*(u32 *)(ai + 0x4A4) < 32 && ((Vector4 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] != NULL) {
+        target = *((Vector4 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)];
+    } else if (*(u8 **)(ai + 0x3E8) != NULL) {
+        target = *(Vector4 *)(*(u8 **)(ai + 0x3E8) + 0x40);
+    }
+    AI_Car_DriveToTarget(ai, &target, speed);
+}
+
 void AI_Car_ClearedNavPoint_800087C8(u8 *car, s8 arg1) {
     s32 NavHolder_GetTotalNavPoints(void);
     u8 *NavHolder_GetNavPoint(s32 index);
@@ -30899,19 +31100,16 @@ s32 CarA_StuntsGetNewOrientation(u8 *car, Quaternion *outQ, f32 t) {
     Vector4 local;
     StuntParams *params;
     u8 *player;
-    s32 minTime;
+    f32 scale;
     f32 frac;
-    f32 sign;
     f32 spin;
     f32 roll;
-    f32 maxMag;
     f32 mag;
 
     params = *(StuntParams **)(*(u8 **)(car + 0x3BC) + 0x8C);
-    minTime = params->minTime;
-    sign = 1.0f;
-    frac = (f32)(u32)(*(s32 *)(car + 0x460) - minTime) / params->maxTime;
-    if (!CarA_StuntsCanStunt(car, minTime)) {
+    scale = 1.0f;
+    frac = (f32)(u32)(*(s32 *)(car + 0x460) - params->minTime) / params->maxTime;
+    if (!CarA_StuntsAllowed(car)) {
         car[0x491] = 0;
         return 0;
     }
@@ -30922,7 +31120,7 @@ s32 CarA_StuntsGetNewOrientation(u8 *car, Quaternion *outQ, f32 t) {
             car[0x491] = 1;
         }
         if ((s8)(*(u8 **)(car + 0x94))[0] > 0) {
-            sign = -1.0f;
+            scale = -1.0f;
         }
     } else if ((s8)(*(u8 **)(car + 0x94))[1] > 100 || (s8)(*(u8 **)(car + 0x94))[1] < -100) {
         rates[1] = 1.0f;
@@ -30931,7 +31129,7 @@ s32 CarA_StuntsGetNewOrientation(u8 *car, Quaternion *outQ, f32 t) {
             car[0x491] = 2;
         }
         if ((s8)(*(u8 **)(car + 0x94))[1] > 0) {
-            sign = -1.0f;
+            scale = -1.0f;
         }
     } else {
         car[0x491] = 0;
@@ -30939,16 +31137,16 @@ s32 CarA_StuntsGetNewOrientation(u8 *car, Quaternion *outQ, f32 t) {
     if (frac > 1.0f) {
         frac = 1.0f;
     }
-    spin = sign;
+    spin = scale;
     switch (car[0x491]) {
     case 0:
-        spin = sign * 0.0f;
+        spin *= 0.0f;
         break;
     case 1:
-        spin = sign * (*(StuntParams **)(*(u8 **)(car + 0x3BC) + 0x8C))->pitchRate;
+        spin *= (*(StuntParams **)(*(u8 **)(car + 0x3BC) + 0x8C))->pitchRate;
         break;
     case 2:
-        spin = sign * -(*(StuntParams **)(*(u8 **)(car + 0x3BC) + 0x8C))->rollRate;
+        spin *= -(*(StuntParams **)(*(u8 **)(car + 0x3BC) + 0x8C))->rollRate;
         break;
     }
     accum.x += ((Vector4 *)(car + 0x510))->x * spin;
@@ -30957,7 +31155,7 @@ s32 CarA_StuntsGetNewOrientation(u8 *car, Quaternion *outQ, f32 t) {
     params = *(StuntParams **)(*(u8 **)(car + 0x3BC) + 0x8C);
     player = *(u8 **)(car + 0x94);
     roll = 0.0f;
-    maxMag = 0.5f * (params->pitchRate + params->spinRate);
+    scale = 0.5f * (params->pitchRate + params->spinRate);
     if (player[0x10]) {
         roll -= params->spinRate;
         rates[2] = 1.0f;
@@ -30978,11 +31176,11 @@ s32 CarA_StuntsGetNewOrientation(u8 *car, Quaternion *outQ, f32 t) {
     }
     axis = accum;
     mag = MagnitudeVector(&axis);
-    if (mag > maxMag) {
-        mag = maxMag;
-        accum.x *= maxMag / mag;
-        accum.y *= maxMag / mag;
-        accum.z *= maxMag / mag;
+    if (mag > scale) {
+        mag = scale;
+        accum.x *= scale / mag;
+        accum.y *= scale / mag;
+        accum.z *= scale / mag;
     }
     if (mag > 0.0001f) {
         t = mag * t;
@@ -42659,6 +42857,134 @@ s32 VerifyFAT(CARDControl *card, s32 *outCurrent) {
         *outCurrent = current;
     }
     return errors;
+}
+
+s32 CARDCheckExAsync(s32 chan, s32 *xferBytes, CARDCallback callback) {
+    typedef struct CARDDir {
+        u8 gameName[4];
+        u8 company[2];
+        u8 unk6[0x36 - 0x6];
+        u16 startBlock;
+        u16 length;
+        u8 unk3A[0x40 - 0x3A];
+    } CARDDir;
+    s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard);
+    s32 VerifyID(CARDControl *card);
+    s32 VerifyDir(CARDControl *card, s32 *outCurrent);
+    s32 VerifyFAT(CARDControl *card, s32 *outCurrent);
+    s32 __CARDUpdateDir(s32 chan, CARDCallback callback);
+    s32 __CARDUpdateFatBlock(s32 chan, u16 *fat, CARDCallback callback);
+    void *memcpy(void *dst, const void *src, u32 n);
+    void *memset(void *dst, int c, u32 n);
+    CARDControl *card;
+    u8 *dir[2];
+    u16 *fat[2];
+    u16 *map;
+    s32 result;
+    s32 errors;
+    s32 currentFat;
+    s32 currentDir;
+    s32 fileNo;
+    u16 iBlock;
+    u16 cBlock;
+    u16 cFree;
+    BOOL updateFat = FALSE;
+    BOOL updateDir = FALSE;
+    BOOL updateOrphan = FALSE;
+
+    if (xferBytes) {
+        *xferBytes = 0;
+    }
+    result = __CARDGetControlBlock(chan, &card);
+    if (result < 0) {
+        return result;
+    }
+    result = VerifyID(card);
+    if (result < 0) {
+        return __CARDPutControlBlock(card, result);
+    }
+    errors = VerifyDir(card, &currentDir);
+    errors += VerifyFAT(card, &currentFat);
+    if (1 < errors) {
+        return __CARDPutControlBlock(card, -6);
+    }
+    dir[0] = (u8 *)card->workArea + (1 + 0) * 0x2000;
+    dir[1] = (u8 *)card->workArea + (1 + 1) * 0x2000;
+    fat[0] = (u16 *)((u8 *)card->workArea + (3 + 0) * 0x2000);
+    fat[1] = (u16 *)((u8 *)card->workArea + (3 + 1) * 0x2000);
+    switch (errors) {
+    case 0:
+        break;
+    case 1:
+        if (!card->currentDir) {
+            card->currentDir = dir[currentDir];
+            memcpy(dir[currentDir], dir[currentDir ^ 1], 0x2000);
+            updateDir = TRUE;
+        } else {
+            card->buffer = fat[currentFat];
+            memcpy(fat[currentFat], fat[currentFat ^ 1], 0x2000);
+            updateFat = TRUE;
+        }
+        break;
+    }
+    map = fat[currentFat ^ 1];
+    memset(map, 0, 0x2000);
+    for (fileNo = 0; fileNo < 127; fileNo++) {
+        CARDDir *ent = &((CARDDir *)card->currentDir)[fileNo];
+        if (ent->gameName[0] == 0xFF) {
+            continue;
+        }
+        for (iBlock = ent->startBlock, cBlock = 0; iBlock != 0xFFFF && cBlock < ent->length;
+             iBlock = ((u16 *)card->buffer)[iBlock], ++cBlock) {
+            if (!(iBlock >= 5 && iBlock < card->cBlock) || 1 < ++map[iBlock]) {
+                return __CARDPutControlBlock(card, -6);
+            }
+        }
+        if (cBlock != ent->length || iBlock != 0xFFFF) {
+            return __CARDPutControlBlock(card, -6);
+        }
+    }
+    cFree = 0;
+    for (iBlock = 5; iBlock < card->cBlock; iBlock++) {
+        u16 nextBlock = ((u16 *)card->buffer)[iBlock];
+        if (map[iBlock] == 0) {
+            if (nextBlock != 0) {
+                ((u16 *)card->buffer)[iBlock] = 0;
+                updateOrphan = TRUE;
+            }
+            cFree++;
+        } else if (!(nextBlock >= 5 && nextBlock < card->cBlock) && nextBlock != 0xFFFF) {
+            return __CARDPutControlBlock(card, -6);
+        }
+    }
+    if (cFree != ((u16 *)card->buffer)[3]) {
+        ((u16 *)card->buffer)[3] = cFree;
+        updateOrphan = TRUE;
+    }
+    if (updateOrphan) {
+        __CARDCheckSum(&((u16 *)card->buffer)[2], 0x2000 - sizeof(u32), &((u16 *)card->buffer)[0],
+                       &((u16 *)card->buffer)[1]);
+    }
+    memcpy(fat[currentFat ^ 1], fat[currentFat], 0x2000);
+    if (updateDir) {
+        if (xferBytes) {
+            *xferBytes = 0x2000;
+        }
+        return __CARDUpdateDir(chan, callback);
+    }
+    if (updateFat | updateOrphan) {
+        if (xferBytes) {
+            *xferBytes = 0x2000;
+        }
+        return __CARDUpdateFatBlock(chan, card->buffer, callback);
+    }
+    __CARDPutControlBlock(card, 0);
+    if (callback) {
+        BOOL enabled = OSDisableInterrupts();
+        callback(chan, 0);
+        OSRestoreInterrupts(enabled);
+    }
+    return 0;
 }
 
 static s32 DoMount(s32 chan) {
