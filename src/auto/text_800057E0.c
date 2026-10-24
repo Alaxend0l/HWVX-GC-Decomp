@@ -2701,6 +2701,150 @@ s32 AI_Car_CheckLocalStats(u8 *ai, u8 *node) {
     return 1;
 }
 
+static inline s8 AI_Car_CanTarget(u8 *ai, u8 *def) {
+    s8 ok = 1;
+
+    if (ai == NULL) {
+        ok = 0;
+    } else if (def[1] == 2) {
+        ok = 0;
+    }
+    return ok;
+}
+
+s8 AI_Car_IsTargetValid_800094EC(u8 *ai, u8 *target, f32 maxDist, f32 minDist, f32 center, f32 range) {
+    extern u8 g_itemVTable[];
+    s8 Player_IsHuman(void *player);
+    f32 PSVECSquareDistance(void *a, void *b);
+    f32 AI_AngleToTarget(u8 *ai, Vector4 *target);
+    s8 AI_CheckAngleInRange(f32 angle, f32 center, f32 range);
+    u32 NavHolder_GetTotalNavPoints(void);
+    void *NavHolder_GetNavPoint(u32 index);
+    typedef struct {
+        s32 limit0;
+        s32 limit4;
+        s32 limit8;
+        s32 limitC;
+        u8 mode;
+        u8 compare;
+    } TargetLimits;
+    typedef struct {
+        u8 type;
+        u8 subtype;
+        u8 pad2[3];
+        u8 unk5;
+        u8 pad6[0x58 - 6];
+        TargetLimits *limits;
+    } TargetDef;
+    typedef struct {
+        u8 *thing;
+        s16 v4;
+        s16 v6;
+        s16 v8;
+        s16 vA;
+        u8 padC[8];
+    } TargetEntry;
+    typedef struct {
+        u8 pad0[0x4B0];
+        TargetEntry entries[16];
+    } AIData;
+    s16 i;
+    s8 ok;
+    s8 valid;
+    TargetLimits *limits;
+    u8 *pos;
+    u8 *thing;
+    u8 type;
+    TargetDef *def;
+    f32 dist;
+
+    def = *(TargetDef **)target;
+    type = def->type;
+    if (type == 6 || (u8)(type - 7) <= 2 || type == 11 || type == 13) {
+        thing = *(u8 **)(target + 0x10);
+        if (thing != NULL && *(u8 **)(thing + 0x8C) == g_itemVTable && !(*(u32 *)(thing + 0x74) & 0x1000)) {
+            pos = NULL;
+            if (**(u8 **)(thing + 0xC0) == 7 && *(u8 **)(thing + 0x94) != NULL && *(u32 *)(*(u8 **)(thing + 0x94) + 0x2C) != 0) {
+                if (Player_IsHuman(*(u8 **)(thing + 0x94))) {
+                    pos = *(u8 **)(*(u8 **)(*(u8 **)(target + 0x10) + 0x94) + 0x2C) + 0x40;
+                }
+            } else {
+                pos = thing + 0x40;
+            }
+            if (pos != NULL) {
+                dist = PSVECSquareDistance(pos, *(u8 **)(ai + 0x2C) + 0x40);
+                if ((!minDist && !maxDist) || (dist <= maxDist && dist >= minDist)) {
+                    if (AI_CheckAngleInRange(57.29578f * AI_AngleToTarget(*(u8 **)(ai + 0x2C), (Vector4 *)pos), center, range)) {
+                        return 1;
+                    }
+                }
+            }
+        }
+    } else if ((u8)(type - 1) <= 1 || type == 3) {
+        valid = 1;
+        if (!(*(u32 *)(*(u8 **)(target + 0x10) + 0x74) & 0x1000)) {
+            ok = 1;
+            if (ai == NULL) {
+                ok = 0;
+            } else if (def->subtype == 2) {
+                ok = 0;
+            }
+            if (!ok) {
+                return 0;
+            }
+        }
+        if (def->subtype == 3) {
+            limits = def->limits;
+            valid = limits->mode != 1;
+            for (i = 0; i < 16 && ((AIData *)ai)->entries[i].thing != NULL; i++) {
+                if (((AIData *)ai)->entries[i].thing == *(u8 **)(target + 0x10)) {
+                    if (limits->compare == 1) {
+                        if ((limits->limit8 > 0 && ((TargetEntry *)(ai + 0x4B0))[i].v8 > limits->limit8) ||
+                            (limits->limitC > 0 && ((TargetEntry *)(ai + 0x4B0))[i].vA > limits->limitC) ||
+                            (limits->limit0 > 0 && ((TargetEntry *)(ai + 0x4B0))[i].v4 > limits->limit0) ||
+                            (limits->limit4 > 0 && ((TargetEntry *)(ai + 0x4B0))[i].v6 > limits->limit4)) {
+                            valid = limits->mode == 1;
+                        }
+                    } else {
+                        if ((limits->limit8 == 0 || ((TargetEntry *)(ai + 0x4B0))[i].v8 > limits->limit8) &&
+                            (limits->limitC == 0 || ((TargetEntry *)(ai + 0x4B0))[i].vA > limits->limitC) &&
+                            (limits->limit0 == 0 || ((TargetEntry *)(ai + 0x4B0))[i].v4 > limits->limit0) &&
+                            (limits->limit4 == 0 || ((TargetEntry *)(ai + 0x4B0))[i].v6 > limits->limit4)) {
+                            valid = limits->mode == 1;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        if (valid) {
+            dist = PSVECSquareDistance(*(u8 **)(target + 0x10) + 0x40, *(u8 **)(ai + 0x2C) + 0x40);
+            if ((!minDist && !maxDist) || (dist <= maxDist && dist >= minDist)) {
+                if (AI_CheckAngleInRange(57.29578f * AI_AngleToTarget(*(u8 **)(ai + 0x2C), (Vector4 *)(*(u8 **)(target + 0x10) + 0x40)), center, range)) {
+                    return 1;
+                }
+            }
+        }
+        return 0;
+    } else if (type == 10) {
+        u8 *nav = *(u8 **)(target + 0x10);
+
+        if (nav != NULL && nav[0x50] != 0) {
+            if (def->unk5 != 0 || PSVECSquareDistance(nav, *(u8 **)(ai + 0x2C) + 0x40) > *(f32 *)(nav + 0x24) * *(f32 *)(nav + 0x24)) {
+                return 1;
+            }
+        }
+    } else if (type == 14) {
+        if (*(u8 **)(target + 0x10) != NULL) {
+            if (*(u32 *)(ai + 0x4A0) < NavHolder_GetTotalNavPoints()) {
+                *(void **)(target + 0x10) = NavHolder_GetNavPoint(*(u32 *)(ai + 0x4A0));
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 s8 AI_Car_EnterState(u8 *ai, u8 *branch, s32 slot) {
