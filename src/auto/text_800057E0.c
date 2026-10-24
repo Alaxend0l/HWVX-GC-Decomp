@@ -23188,6 +23188,142 @@ s32 GetAllTargets(void **targets) {
     return ThingManager_GetActiveCars(targets);
 }
 
+static inline s32 ThingManager_GetActiveUnk6D100(void **things) {
+    s32 count;
+    s32 i;
+
+    count = 0;
+    for (i = 0; i < 1; i++) {
+        u8 *thing = g_thingManager_DARYL.unk0 + 0x6D100 + i * 0x5A0;
+        if (!(*(u32 *)(thing + 0x74) & 0x201000)) {
+            things[count++] = thing;
+        }
+    }
+    return count;
+}
+
+static inline s32 ThingManager_GetActiveUnk5B940(void **things) {
+    s32 count;
+    s32 i;
+
+    count = 0;
+    for (i = 0; i < 1; i++) {
+        u8 *thing = g_thingManager_DARYL.unk0 + 0x5B940 + i * 0x5A0;
+        if (!(*(u32 *)(thing + 0x74) & 0x201000)) {
+            things[count++] = thing;
+        }
+    }
+    return count;
+}
+
+static inline s32 ThingManager_GetActiveUnk20280(void **things) {
+    s32 count;
+    s32 i;
+
+    count = 0;
+    for (i = 0; i < 500; i++) {
+        u8 *thing = g_thingManager_DARYL.unk0 + 0x20280 + i * 0xF0;
+        if (!(*(u32 *)(thing + 0x74) & 0x201000)) {
+            things[count++] = thing;
+        }
+    }
+    return count;
+}
+
+void *FindHost(Vector4 *pos, Vector4 *dir) {
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    void *items[500];
+    void *cars[8];
+    void *pods[8];
+    Vector4 dir1;
+    Vector4 diff1;
+    Vector4 dir2;
+    Vector4 diff2;
+    Vector4 dir3;
+    Vector4 diff3;
+    Vector4 dir4;
+    Vector4 diff4;
+    void *bases[4];
+    u32 i;
+    u32 count;
+    u8 *thing;
+
+    count = ThingManager_GetActiveCars(cars);
+    for (i = 0; i < count; i++) {
+        PSVECSubtract((Vector4 *)((u8 *)cars[i] + 0x40), pos, &diff1);
+        dir1 = diff1;
+        if (!(PSVECSquareMag(&diff1) < 1.0f)) {
+            if (PSVECSquareMag(&dir1)) {
+                PSVECNormalize(&dir1, &dir1);
+            }
+            if (PSVECDotProduct(dir, &dir1) > 0.8f) {
+                return cars[i];
+            }
+        }
+    }
+    count = 0;
+    for (i = 0; i < 1; i++) {
+        thing = g_thingManager_DARYL.unk0 + 0x6D100 + i * 0x5A0;
+        if (!(*(u32 *)(thing + 0x74) & 0x201000)) {
+            pods[count++] = thing;
+        }
+    }
+    for (i = 0; i < count; i++) {
+        PSVECSubtract((Vector4 *)((u8 *)pods[i] + 0x40), pos, &diff2);
+        dir2 = diff2;
+        if (!(PSVECSquareMag(&diff2) < 1.0f)) {
+            if (PSVECSquareMag(&dir2)) {
+                PSVECNormalize(&dir2, &dir2);
+            }
+            if (PSVECDotProduct(dir, &dir2) > 0.8f) {
+                return pods[i];
+            }
+        }
+    }
+    count = 0;
+    for (i = 0; i < 1; i++) {
+        thing = g_thingManager_DARYL.unk0 + 0x5B940 + i * 0x5A0;
+        if (!(*(u32 *)(thing + 0x74) & 0x201000)) {
+            bases[count++] = thing;
+        }
+    }
+    for (i = 0; i < count; i++) {
+        PSVECSubtract((Vector4 *)((u8 *)bases[i] + 0x40), pos, &diff3);
+        dir3 = diff3;
+        if (!(PSVECSquareMag(&diff3) < 1.0f)) {
+            if (PSVECSquareMag(&dir3)) {
+                PSVECNormalize(&dir3, &dir3);
+            }
+            if (PSVECDotProduct(dir, &dir3) > 0.8f) {
+                return bases[i];
+            }
+        }
+    }
+    count = 0;
+    for (i = 0; i < 500; i++) {
+        thing = g_thingManager_DARYL.unk0 + 0x20280 + i * 0xF0;
+        if (!(*(u32 *)(thing + 0x74) & 0x201000)) {
+            items[count++] = thing;
+        }
+    }
+    for (i = 0; i < count; i++) {
+        PSVECSubtract((Vector4 *)((u8 *)items[i] + 0x40), pos, &diff4);
+        dir4 = diff4;
+        if (!(PSVECSquareMag(&diff4) < 1.0f)) {
+            if (PSVECSquareMag(&dir4)) {
+                PSVECNormalize(&dir4, &dir4);
+            }
+            if (PSVECDotProduct(dir, &dir4) > 0.8f) {
+                return items[i];
+            }
+        }
+    }
+    return g_thingManager_DARYL.looker;
+}
+
 s8 TriggerVehicleDamage(u32 *params) {
     u32 i;
     u32 count;
