@@ -20645,67 +20645,25 @@ typedef struct GRWorld {
 
 static inline void GameRules_ResetZone(GRZone *zone) {
     u32 j;
+    GRElem *elem;
+    GRElemB *elemB;
 
     for (j = 0; j < zone->sub->numA; j++) {
-        zone->sub->a[j].unk39 = zone->sub->a[j].unk34;
+        elem = &zone->sub->a[j];
+        elem->unk39 = elem->unk34;
     }
     for (j = 0; j < zone->sub->numC; j++) {
-        zone->sub->c[j].unk39 = zone->sub->c[j].unk28;
+        elem = &zone->sub->c[j];
+        elem->unk39 = elem->unk28;
         zone->sub->c[j].unk38 = 0;
     }
     for (j = 0; j < zone->sub->numB; j++) {
-        zone->sub->b[j].unk36 = zone->sub->b[j].unk30;
+        elemB = &zone->sub->b[j];
+        elemB->unk36 = elemB->unk30;
     }
 }
 
 void GameRules_Init(void) {
-    typedef struct GRTrigger {
-        u8 unk0;
-        u8 unk1;
-        u8 type;
-        u8 unk3;
-        s32 unk4;
-        f32 time;
-    } GRTrigger;
-    typedef struct GRElem {
-        u8 unk0[0x28];
-        u32 unk28;
-        u32 unk2C;
-        u32 unk30;
-        u32 unk34;
-        u8 unk38;
-        u8 unk39;
-        u8 unk3A[6];
-    } GRElem;
-    typedef struct GRElemB {
-        u8 unk0[0x30];
-        u32 unk30;
-        u8 unk34[2];
-        u8 unk36;
-        u8 unk37[9];
-    } GRElemB;
-    typedef struct GRSub {
-        u32 unk0;
-        u32 numB;
-        GRElemB *b;
-        u32 numA;
-        GRElem *a;
-        u32 numC;
-        GRElem *c;
-    } GRSub;
-    typedef struct GRZone {
-        u8 unk0[0x30];
-        GRSub *sub;
-        u8 unk34[0x1C];
-    } GRZone;
-    typedef struct GRWorld {
-        u8 unk0[0x20];
-        u32 numZones;
-        GRZone *zones;
-        u8 unk28[0x28];
-        u32 numTriggers;
-        GRTrigger **triggers;
-    } GRWorld;
     extern s8 g_bRoundEnd_803C71CC;
     extern u32 g_playerNumThatWon_803C71C8;
     extern s8 g_bWaitingForRoundReset;
@@ -20765,19 +20723,7 @@ void GameRules_Init(void) {
         break;
     }
     for (i = 0; i < ((GRWorld *)g_worldData.world)->numZones; i++) {
-        GRZone *zone = &((GRWorld *)g_worldData.world)->zones[i];
-        u32 j;
-
-        for (j = 0; j < zone->sub->numA; j++) {
-            zone->sub->a[j].unk39 = zone->sub->a[j].unk34;
-        }
-        for (j = 0; j < zone->sub->numC; j++) {
-            zone->sub->c[j].unk39 = zone->sub->c[j].unk28;
-            zone->sub->c[j].unk38 = 0;
-        }
-        for (j = 0; j < zone->sub->numB; j++) {
-            zone->sub->b[j].unk36 = zone->sub->b[j].unk30;
-        }
+        GameRules_ResetZone(&((GRWorld *)g_worldData.world)->zones[i]);
     }
 }
 
