@@ -12638,8 +12638,8 @@ u8 __THPReadScaneHeader(void) {
 }
 
 u8 __THPReadQuantizationTable(void) {
-    extern const u8 __THPJpegNaturalOrder_800CE0D8[];
-    extern const f64 __THPAANScaleFactor[];
+    extern u8 __THPJpegNaturalOrder_800CE0D8[];
+    extern f64 __THPAANScaleFactor[];
     u16 length, id, i, row, col;
     f32 q_temp[64];
 
@@ -12657,7 +12657,7 @@ u8 __THPReadQuantizationTable(void) {
         i = 0;
         for (row = 0; row < 8; row++) {
             for (col = 0; col < 8; col++) {
-                ((f32 *)__THPInfo_803C7890)[id * 64 + i] = (f32)((f64)q_temp[i] * __THPAANScaleFactor[row] * __THPAANScaleFactor[col]);
+                __THPInfo_803C7890->quantTabs[id][i] = (f32)((f64)q_temp[i] * __THPAANScaleFactor[row] * __THPAANScaleFactor[col]);
                 i++;
             }
         }
@@ -12669,6 +12669,7 @@ u8 __THPReadQuantizationTable(void) {
     }
     return 0;
 }
+#pragma use_lmw_stmw reset
 
 static void __THPHuffGenerateSizeTable(void);
 void __THPHuffGenerateCodeTable(void);
