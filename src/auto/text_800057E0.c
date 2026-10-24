@@ -22187,14 +22187,19 @@ void Thing_CollideWithForceBoxes(u8 *thing) {
     }
 }
 
-static inline s32 Teleporter_IsBelowOrFar(u8 *tp, u8 *thing) {
+static inline u8 Teleporter_Contains(u8 *tp, u8 *thing) {
     f32 MagnitudeVector(void *v);
-    s32 hit = 0;
+    f32 PSVECSquareDistance(void *a, void *b);
 
-    if (*(f32 *)(thing + 0x44) < *(f32 *)(tp + 0x34) || MagnitudeVector(thing + 0x40) > 10000.0f) {
-        hit = 1;
+    if (*(u32 *)(tp + 0x54) & 4) {
+        s32 hit = 0;
+
+        if (*(f32 *)(thing + 0x44) < *(f32 *)(tp + 0x34) || MagnitudeVector(thing + 0x40) > 10000.0f) {
+            hit = 1;
+        }
+        return hit;
     }
-    return hit;
+    return *(f32 *)(tp + 0x4C) * *(f32 *)(tp + 0x4C) > PSVECSquareDistance(tp + 0x30, thing + 0x40);
 }
 
 static inline u8 *World_GetTeleporter(u32 index) {
@@ -22225,16 +22230,12 @@ s8 Thing_CollideWithTeleporters(u8 *thing) {
         f32 unk4C;
     } DebrisParams;
     extern Vector4 g_zeroVector;
-    f32 MagnitudeVector(void *v);
     f32 PSVECSquareDistance(void *a, void *b);
     s32 RandomNumberGenerator_GetRandomInteger(s32 min, s32 max);
     void TransposeSubMatrix(Matrix4 *mtx);
     void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
     void *ThingManager_DARYL_CreateThing(s32 type, void *params);
     s8 Player_IsHuman(void *player);
-    Teleporter *tp;
-    Teleporter *dest;
-    s32 hit;
     DebrisParams destParams;
     DebrisParams srcParams;
     Matrix4 inv;
@@ -22242,8 +22243,10 @@ s8 Thing_CollideWithTeleporters(u8 *thing) {
     Vector4 vel;
     Vector4 rotated;
     Vector4 neg;
-    u32 wasInside;
     u32 i;
+    Teleporter *tp;
+    Teleporter *dest;
+    u32 wasInside;
     u8 inside;
 
     wasInside = (*(u32 *)(thing + 0x74) >> 11) & 1;
@@ -22257,11 +22260,7 @@ s8 Thing_CollideWithTeleporters(u8 *thing) {
             continue;
         }
         if (tp->flags & 4) {
-            hit = 0;
-            if (*(f32 *)(thing + 0x44) < tp->mtx.m[3][1] || MagnitudeVector(thing + 0x40) > 10000.0f) {
-                hit = 1;
-            }
-            inside = hit;
+            inside = Teleporter_IsBelowOrFar((u8 *)tp, thing);
         } else {
             inside = tp->radius * tp->radius > PSVECSquareDistance(&tp->mtx.v[3], thing + 0x40);
         }
