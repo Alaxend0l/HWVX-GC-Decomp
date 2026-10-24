@@ -396,8 +396,9 @@ static inline s32 __THPHuffDecodeTab(THPFileInfo *info, THPHuffmanTab *h) {
             return tmp;
         }
         cnt += 5;
+        maxCode = h->maxCode;
         i = 5;
-        maxCode = &h->maxCode[i];
+        maxCode += i;
         for (;;) {
             code <<= 1;
             if (cnt != 33) {
