@@ -431,57 +431,60 @@ static inline s32 __THPHuffDecodeTab(THPFileInfo *info, THPHuffmanTab *h) {
                     return tmp;
                 }
             }
-            code = cb & ~(0xFFFFFFFF << (33 - cnt));
-            i = 33 - cnt;
-            maxCode = &h->maxCode[i];
-            i++;
+        } else {
             cb = *++c;
             info->c = (u8 *)c;
-            code = __rlwimi(code << 1, cb, 1, 31, 31);
+            code = __rlwimi(code, cb, 4, 28, 31);
+            tmp = h->quick[code];
             info->currByte = cb;
-            cnt = 2;
-            while (code > *++maxCode) {
-                code = (code << 1) + __rlwnm(cb, cnt, 31, 31);
-                i++;
-                cnt++;
+            info->cnt = increment[code];
+            if (tmp != 0xFF) {
+                return tmp;
             }
+            tmp = __rlwimi(code << 27, cb, 31, 1, 31);
+            cnt = 5;
+            maxCode = &h->maxCode[cnt];
+            do {
+                code = (u32)tmp >> (31 - cnt);
+                cnt++;
+            } while (code > *++maxCode);
             info->cnt = cnt;
-            return (h->Vij + h->valPtr[i])[code];
+            return (h->Vij + h->valPtr[cnt])[code];
         }
+    } else {
         cb = *++c;
+        code = cb >> 27;
         info->c = (u8 *)c;
-        code = __rlwimi(code, cb, 4, 28, 31);
         tmp = h->quick[code];
         info->currByte = cb;
-        info->cnt = increment[code];
         if (tmp != 0xFF) {
+            info->cnt = increment[code] + 1;
             return tmp;
         }
-        tmp = __rlwimi(code << 27, cb, 31, 1, 31);
-        cnt = 5;
-        maxCode = &h->maxCode[cnt];
+        i = 5;
         do {
-            code = (u32)tmp >> (31 - cnt);
-            cnt++;
-        } while (code > *++maxCode);
-        info->cnt = cnt;
-        return (h->Vij + h->valPtr[cnt])[code];
+            code = cb >> (31 - i);
+            i++;
+        } while (code > h->maxCode[i]);
+        info->cnt = i + 1;
+        return (h->Vij + h->valPtr[i])[code];
     }
+    code = cb & ~(0xFFFFFFFF << (33 - cnt));
+    i = 33 - cnt;
+    maxCode = &h->maxCode[i];
+    i++;
+    c = (u32 *)info->c;
     cb = *++c;
-    code = cb >> 27;
     info->c = (u8 *)c;
-    tmp = h->quick[code];
+    code = __rlwimi(code << 1, cb, 1, 31, 31);
     info->currByte = cb;
-    if (tmp != 0xFF) {
-        info->cnt = increment[code] + 1;
-        return tmp;
-    }
-    i = 5;
-    do {
-        code = cb >> (31 - i);
+    cnt = 2;
+    while (code > *++maxCode) {
+        code = (code << 1) + __rlwnm(cb, cnt, 31, 31);
         i++;
-    } while (code > h->maxCode[i]);
-    info->cnt = i + 1;
+        cnt++;
+    }
+    info->cnt = cnt;
     return (h->Vij + h->valPtr[i])[code];
 }
 extern void *OldVIPostCallback_803C775C;
