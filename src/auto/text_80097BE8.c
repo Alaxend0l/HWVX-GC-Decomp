@@ -5602,6 +5602,7 @@ void AnimExtractKeyFrame_Compound(void *animp, void *outp, f32 time) {
         out++;
     }
 }
+#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
