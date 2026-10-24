@@ -42602,6 +42602,92 @@ s32 TRKDoReadRegisters(TRKBuffer *b) {
     return err;
 }
 
+s32 TRKDoWriteMemory(TRKBuffer *b) {
+    s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data);
+    s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data);
+    s32 TRKReadBuffer(TRKBuffer *b, void *data, u32 length);
+    u8 buf[0x800];
+    u32 start;
+    u32 msg_length;
+    u16 length;
+    u8 c;
+    u8 options;
+    s32 err;
+    u8 replyError;
+
+    if (b->length <= 8) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 2);
+        return TRKSendACK(b);
+    }
+    TRKSetBufferPosition(b, 0);
+    err = TRKReadBuffer1_ui8(b, &c);
+    if (err == 0) {
+        err = TRKReadBuffer1_ui8(b, &options);
+    }
+    if (err == 0) {
+        err = TRKReadBuffer1_ui16(b, &length);
+    }
+    if (err == 0) {
+        err = TRKReadBuffer1_ui32(b, &start);
+    }
+    if (options & 2) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 0x12);
+        return TRKSendACK(b);
+    }
+    if (b->length != length + 8 || length > 0x800) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 0x11);
+        return TRKSendACK(b);
+    }
+    if (err == 0) {
+        msg_length = length;
+        err = TRKReadBuffer(b, buf, msg_length);
+        if (err == 0) {
+            err = TRKTargetAccessMemory(buf, start, &msg_length, (options & 8) ? 0 : 1, 0);
+        }
+        length = msg_length;
+    }
+    if (err == 0) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 0);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui16(b, length);
+    }
+    if (err != 0) {
+        switch (err) {
+        case 0x702:
+            replyError = 0x15;
+            break;
+        case 0x700:
+            replyError = 0x13;
+            break;
+        case 0x704:
+            replyError = 0x21;
+            break;
+        case 0x705:
+            replyError = 0x22;
+            break;
+        case 0x706:
+            replyError = 0x20;
+            break;
+        default:
+            replyError = 3;
+            break;
+        }
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, replyError);
+        return TRKSendACK(b);
+    }
+    return TRKSendACK(b);
+}
 
 s32 TRKDoReadMemory(TRKBuffer *b) {
     s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data);
