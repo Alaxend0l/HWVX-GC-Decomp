@@ -18821,7 +18821,7 @@ s32 StateGameManager_Heartbeat(void) {
             loadDefaults = 1;
         case 4:
             if (!g_bInterfacePlaying) {
-                g_interfacePackID = FileStreaming_LoadDataPack(step->pack->name, 1, step->pack->script, 0);
+                g_interfacePackID = FileStreaming_LoadDataPack((void *)step->pack->name, 1, step->pack->script, 0);
                 if ((pack = FileStreaming_InitializeDataPack(g_interfacePackID, 1, 1)) != NULL) {
                     InterfaceManager_Create(DataPack_GetScript(pack, step->pack->script), 0, StateGameManager_InterfaceHandler);
                     g_bInterfacePlaying = 1;
