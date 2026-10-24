@@ -2110,6 +2110,77 @@ s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest) {
     return result;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void AI_Car_Cheat_80008A60(u8 *ai) {
+    extern u8 g_cameraManager[];
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    f32 PSVECSquareDistance(void *a, void *b);
+    u8 *car;
+    u8 *nearest;
+    u8 *list;
+    u8 *thing;
+    u8 **item;
+    u32 i;
+    u8 *pos;
+    f32 best;
+    f32 dist;
+    f32 cheat;
+
+    cheat = 0.0f;
+    car = *(u8 **)(ai + 0x2C);
+    nearest = NULL;
+    list = ThingManagerList_GetByType(car + 0x344, 8);
+    for (i = 0; i < 12; i++) {
+        thing = *(u8 **)(list + i * 0x50 + 0xFC);
+        if (thing != NULL && thing[0] == 3) {
+            *(s16 *)(list + i * 0x50 + 0xF0) = *(u32 *)(*(u8 **)(thing + 0x30) + 0x28);
+        }
+    }
+    best = 1e9f;
+    pos = car + 0x40;
+    for (i = 0; i < g_cameraManager[0x640]; i++) {
+        nearest = *(u8 **)(g_cameraManager + i * 0x190);
+        if (nearest != NULL && *(u8 **)(nearest + 0x2C) != NULL && *(u32 *)(nearest + 0x38) == 9) {
+            dist = PSVECSquareDistance(pos, g_cameraManager + i * 0x190 + 0x60);
+            if (best > dist) {
+                best = dist;
+                nearest = *(u8 **)(g_cameraManager + i * 0x190);
+            }
+        }
+    }
+    if (1e9f != best) {
+        for (i = 0; i < 4; i++) {
+            item = *(u8 ***)(ai + 0x3D4 + i * 4);
+            if (item == NULL || *item == NULL) {
+                break;
+            }
+            if (**item == 0xE) {
+                cheat = (*(f32 *)(car + 0x564) - *(f32 *)(*(u8 **)(nearest + 0x2C) + 0x564)) / 750.0f;
+                break;
+            }
+        }
+    }
+    if (cheat > 1.0f) {
+        cheat = 1.0f;
+    } else if (cheat < -1.0f) {
+        cheat = -1.0f;
+    }
+    if (cheat > 0.0f) {
+        *(f32 *)(ai + 0x63C) = *(f32 *)(*(u8 **)(ai + 0xD0) + 0xC) * cheat + *(f32 *)(*(u8 **)(ai + 0xD0) + 0xC);
+        *(u32 *)(car + 0x48C) |= 0x1000;
+        *(s32 *)(car + 0x400) = 10000;
+    } else {
+        if (GameSettings_GetCodeVariable(0x12D, 0) >= 3) {
+            *(f32 *)(ai + 0x63C) = *(f32 *)(*(u8 **)(ai + 0xD0) + 0xC) - 0.2f * *(f32 *)(*(u8 **)(ai + 0xD0) + 0xC) * -cheat;
+        } else {
+            *(f32 *)(ai + 0x63C) = *(f32 *)(*(u8 **)(ai + 0xD0) + 0xC) - 0.333f * *(f32 *)(*(u8 **)(ai + 0xD0) + 0xC) * -cheat;
+        }
+        *(u32 *)(car + 0x48C) &= ~0x1000;
+        *(s32 *)(car + 0x400) = 0;
+    }
+}
+
 s32 AI_Heartbeat(u8 *ai) {
     s8 Player_AIControlReader(u8 *ai);
 
