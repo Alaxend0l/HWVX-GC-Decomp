@@ -711,7 +711,7 @@ static s32 s_rumbleTime[4];
 static u8 s_unk30[0x40];
 static u8 s_unk70[0x40];
 static u16 s_keyMap[20];
-static u8 s_unkD8[0x30];
+static PADStatus s_unkD8[4];
 
 static inline void Input_SetKeyDown(VirtualPad *pad, u16 key) {
     s32 k;
