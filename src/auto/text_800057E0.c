@@ -5916,7 +5916,6 @@ s32 CarA_Move(u8 *car) {
         u8 pad42[0x50 - 0x42];
     } CarTrailBone;
     void Timer_Interrupt300(void);
-    void *ThingManagerList_GetByType(void *list, s32 type);
     s8 Player_IsHuman(void *player);
     s8 GameSettings_IsCheatEnabled(s32 cheat);
     s8 Thing_CollideWithTeleporters(u8 *thing);
@@ -5928,29 +5927,19 @@ s32 CarA_Move(u8 *car) {
     f32 Sqrt(f32 x);
     extern Matrix4 g_identity;
     extern void *g_pSourcePlayer;
-    u8 *slave;
-    s32 *skel;
-    s32 i;
-    f32 dx;
-    f32 dy;
-    f32 dz;
-    f32 scale;
     u32 color;
     Vector4 pos;
     Vector4 trailPos;
     u8 frames[0x800];
+    f32 dx;
+    f32 dy;
+    f32 dz;
+    f32 scale;
+    u32 i;
+    s32 *skel;
 
     Timer_Interrupt300();
-    slave = ThingManagerList_GetByType(car + 0x344, 0x11);
-    if (slave != NULL) {
-        *(f32 *)(slave + 0xB8) = (f32)*(s32 *)(car + 0x78) / (f32)*(s32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x14);
-        if (*(void **)(car + 0x94) != NULL && !Player_IsHuman(*(void **)(car + 0x94))) {
-            *(f32 *)(slave + 0xB8) /= **(f32 **)(*(u8 **)(car + 0x94) + 0xD0);
-        }
-        if (*(f32 *)(slave + 0xB8) > 1.0f) {
-            *(f32 *)(slave + 0xB8) = 1.0f;
-        }
-    }
+    CarA_UpdateHealthSlave(car);
     scale = 1.0f / Sqrt(*(f32 *)(car + 0x5C) * *(f32 *)(car + 0x5C) +
                         (*(f32 *)(car + 0x58) * *(f32 *)(car + 0x58) +
                          (*(f32 *)(car + 0x50) * *(f32 *)(car + 0x50) + *(f32 *)(car + 0x54) * *(f32 *)(car + 0x54))));
@@ -44159,6 +44148,20 @@ static inline s32 TRKPPCAccessSPR(void *value, u32 spr, s32 read) {
         access_func[1] = 0x7C8003A6 | ((spr & 0x1F) << 16) | ((spr >> 5) << 11);
     }
     return TRKPPCAccessSpecialReg(value, access_func, read);
+}
+
+static inline s32 TRKPPCAccessPairedSingleRegister(void *srcDestPtr, u32 psr, s32 read) {
+    u32 instructionData[10] = {
+        0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
+        0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
+    };
+
+    if (read) {
+        instructionData[0] = 0xF0030000 | (psr << 21);
+    } else {
+        instructionData[0] = 0xE0030000 | (psr << 21);
+    }
+    return TRKPPCAccessSpecialReg(srcDestPtr, instructionData, read);
 }
 
 s32 TRKPPCAccessFPRegister(void *srcDestPtr, u32 fpr, s32 read) {
