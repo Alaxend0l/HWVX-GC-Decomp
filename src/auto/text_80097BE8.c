@@ -1048,39 +1048,6 @@ static inline u32 SimThread_Sample(SimThread *t) {
     return dt;
 }
 
-static inline u32 SimThread_Tick(SimThread *t) {
-    u32 OSGetTick(void);
-    u32 now;
-    u32 dt;
-
-    now = OSGetTick() / ((*(u32 *)0x800000F8 / 4) / 1000);
-    dt = now - t->lastTick;
-    t->lastTick = now;
-    return dt;
-}
-
-static inline void SimThread_Update(SimThread *t, s32 dt) {
-    s32 oldPos;
-    s32 n;
-    s32 accel;
-
-    oldPos = t->pos;
-    t->pos = ((LGDevice *)t->owner->unkF0)->curSteering;
-    t->posScaled = t->pos << 12;
-    t->history[t->historyIdx++] = SimThread_AddDelta(t, t->pos - oldPos, dt);
-    if (t->historyIdx > 9) {
-        t->historyIdx = 0;
-    }
-    accel = 0;
-    for (n = 9; n >= 0; n--) {
-        accel += t->history[t->historyIdx++] * t->weights[n];
-        if (t->historyIdx > 9) {
-            t->historyIdx = 0;
-        }
-    }
-    t->accel = accel;
-}
-
 void VDevice_RecalcGammaTable(void);
 extern s8 g_iGammaLookup_8037BAF8[129];
 s32 VDevice_Shutdown(VDevice *dev);
