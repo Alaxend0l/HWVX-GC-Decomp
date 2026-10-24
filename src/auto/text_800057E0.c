@@ -7755,6 +7755,85 @@ void Destructible_Release(u8 *destructible) {
     M2C_FIELD(destructible, void **, 0xCC) = NULL;
     Thing_Release((s32)destructible);
 }
+
+#pragma dont_inline off
+s32 Destructible_Move(u8 *destructible) {
+    extern f32 g_fDeltaTimeSec;
+    extern s32 g_iDeltaTimeMS;
+    extern Vector4 g_zeroVector;
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void GenerateQuaternionXYZ(Vector4 *euler, Vector4 *quat);
+    void GenerateSpinAngleFromQuaternion(Vector4 *quat, void *axis, f32 *angle);
+    void GenerateQuaternion(void *axis, void *q, f32 angle);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    void Timer_Interrupt300(void);
+    struct { Vector4 pos; Vector4 quat; Vector4 row; Vector4 vel; u32 id; u32 unk54; f32 speed; f32 unk5C; } params;
+    Vector4 rot;
+    Vector4 quat;
+    Vector4 axis;
+    f32 angle;
+    u8 *slave;
+    u8 *info;
+    u32 id;
+    s8 spin;
+    s32 max;
+
+    if (*(u32 *)(destructible + 0x74) & 0x200000) {
+        return 0;
+    }
+    if (*(void **)(destructible + 0x94) != NULL &&
+        (slave = ThingManagerList_GetByType(destructible + 0x88, 8)) != NULL &&
+        *(u8 **)(slave + 0x94) != NULL &&
+        (spin = -**(u8 **)(slave + 0x94)) != 0) {
+        axis.x = 0.0f;
+        axis.y = 0.017453292f;
+        axis.z = 0.0f;
+        GenerateQuaternionXYZ(&axis, &quat);
+        GenerateSpinAngleFromQuaternion(&quat, &axis, &angle);
+        GenerateQuaternion(&axis, &rot, spin * (angle * g_fDeltaTimeSec));
+        QuaternionMult((Vector4 *)(slave + 0x50), &rot, &quat);
+        *(Vector4 *)(slave + 0x50) = quat;
+        QuaternionToSubMatrix(slave + 0x50, slave + 0x10);
+    }
+    if (!(*(u32 *)(destructible + 0x74) & 0x10000000)) {
+        if (*(s32 *)(destructible + 0xC8) < 0) {
+            id = 0;
+            info = *(u8 **)(*(u8 **)(destructible + 0xC0) + 0x10);
+            if (info != NULL && *(u32 *)(info + 0x3C) != 0) {
+                id = (*(u32 **)(info + 0x40))[RandomAdd_s32(0, *(u32 *)(info + 0x3C))];
+            }
+            if (id != 0) {
+                params.id = id;
+                params.pos = *(Vector4 *)(destructible + 0x40);
+                params.quat = *(Vector4 *)(destructible + 0x50);
+                params.row = *(Vector4 *)(destructible + 0x0);
+                params.unk54 = 0;
+                params.speed = 0.0f;
+                params.unk5C = 0.0f;
+                params.vel = g_zeroVector;
+                ThingManager_DARYL_CreateThing(1, &params);
+            }
+            Destructible_Release_inline(destructible);
+        }
+        *(s32 *)(destructible + 0xC8) -= g_iDeltaTimeMS;
+    }
+    Timer_Interrupt300();
+    slave = ThingManagerList_GetByType(destructible + 0x88, 0x11);
+    if (slave != NULL) {
+        max = *(s32 *)(*(u8 **)(*(u8 **)(destructible + 0xC0) + 0x10) + 0x14);
+        if (max != 0) {
+            *(f32 *)(slave + 0xB8) = (f32)*(s32 *)(destructible + 0x78) / (f32)max;
+        } else {
+            *(f32 *)(slave + 0xB8) = 0.0f;
+        }
+        if (*(f32 *)(slave + 0xB8) > 1.0f) {
+            *(f32 *)(slave + 0xB8) = 1.0f;
+        }
+    }
+    return 1;
+}
+
 #pragma pop
 
 void Destructible_Draw(u8 *destructible) {
