@@ -25949,6 +25949,23 @@ static inline u32 cntlzd(u64 bit) {
     return 32 + __cntlzw(lo);
 }
 
+static inline void calcFbbs(u32 bufAddr, u16 panPosX, u16 panPosY, u8 wordPerLine, s32 xfbMode, u16 dispPosY, u32 *tfbb, u32 *bfbb) {
+    u32 bytesPerLine;
+    u32 xoffInWords;
+
+    bytesPerLine = wordPerLine * 32;
+    xoffInWords = panPosX / 16;
+    *tfbb = bufAddr + bytesPerLine * panPosY + xoffInWords * 32;
+    *bfbb = (xfbMode == 0) ? *tfbb : *tfbb + bytesPerLine;
+    if (dispPosY % 2 == 1) {
+        u32 tmp = *tfbb;
+        *tfbb = *bfbb;
+        *bfbb = tmp;
+    }
+    *tfbb &= 0x3FFFFFFF;
+    *bfbb &= 0x3FFFFFFF;
+}
+
 s32 VISetPostRetraceCallback(s32 cb) {
     extern s32 PostCB_803C737C;
     s32 OSDisableInterrupts();
@@ -31340,6 +31357,156 @@ void GXSetArray(s32 attr, void *base_ptr, u8 stride) {
 
 void GXInvalidateVtxCache(void) {
     *(s8 *)0xCC008000 = 0x48;
+}
+
+void GXSetTexCoordGen2(u32 dst_coord, s32 func, s32 src_param, u32 mtx, u8 normalize, u32 pt_texmtx) {
+    extern u8 *gx;
+    void __GXSetMatrixIndex(u32 attr);
+    u32 reg;
+    u32 row;
+    u32 form;
+
+    reg = 0;
+    form = 0;
+    row = 5;
+    switch (src_param) {
+    case 0:
+        row = 0;
+        form = 1;
+        break;
+    case 1:
+        row = 1;
+        form = 1;
+        break;
+    case 2:
+        row = 3;
+        form = 1;
+        break;
+    case 3:
+        row = 4;
+        form = 1;
+        break;
+    case 19:
+        row = 2;
+        break;
+    case 20:
+        row = 2;
+        break;
+    case 4:
+        row = 5;
+        break;
+    case 5:
+        row = 6;
+        break;
+    case 6:
+        row = 7;
+        break;
+    case 7:
+        row = 8;
+        break;
+    case 8:
+        row = 9;
+        break;
+    case 9:
+        row = 10;
+        break;
+    case 10:
+        row = 11;
+        break;
+    case 11:
+        row = 12;
+        break;
+    case 12:
+    case 13:
+    case 14:
+    case 15:
+    case 16:
+    case 17:
+    case 18:
+    default:
+        break;
+    }
+
+    switch (func) {
+    case 1:
+        reg = (reg & ~0x2) | (0 << 1);
+        reg = (reg & ~0x4) | (form << 2);
+        reg = (reg & ~0x70) | (0 << 4);
+        reg = (reg & ~0xF80) | (row << 7);
+        break;
+    case 0:
+        reg = (reg & ~0x2) | (1 << 1);
+        reg = (reg & ~0x4) | (form << 2);
+        reg = (reg & ~0x70) | (0 << 4);
+        reg = (reg & ~0xF80) | (row << 7);
+        break;
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+        reg = (reg & ~0x2) | (0 << 1);
+        reg = (reg & ~0x4) | (form << 2);
+        reg = (reg & ~0x70) | (1 << 4);
+        reg = (reg & ~0xF80) | (row << 7);
+        reg = (reg & ~0x7000) | ((src_param - 12) << 12);
+        reg = (reg & ~0x38000) | ((func - 2) << 15);
+        break;
+    case 10:
+        reg = (reg & ~0x2) | (0 << 1);
+        reg = (reg & ~0x4) | (form << 2);
+        if (src_param == 19) {
+            reg = (reg & ~0x70) | (2 << 4);
+        } else {
+            reg = (reg & ~0x70) | (3 << 4);
+        }
+        reg = (reg & ~0xF80) | (2 << 7);
+        break;
+    default:
+        break;
+    }
+
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = dst_coord + 0x1040;
+    GXWGFifo.u32 = reg;
+
+    reg = 0;
+    reg = (reg & ~0x3F) | (pt_texmtx - 64);
+    reg = (reg & ~0x100) | (normalize << 8);
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = dst_coord + 0x1050;
+    GXWGFifo.u32 = reg;
+
+    switch (dst_coord) {
+    case 0:
+        *(u32 *)(gx + 0x80) = (*(u32 *)(gx + 0x80) & ~0xFC0) | (mtx << 6);
+        break;
+    case 1:
+        *(u32 *)(gx + 0x80) = (*(u32 *)(gx + 0x80) & ~0x3F000) | (mtx << 12);
+        break;
+    case 2:
+        *(u32 *)(gx + 0x80) = (*(u32 *)(gx + 0x80) & ~0xFC0000) | (mtx << 18);
+        break;
+    case 3:
+        *(u32 *)(gx + 0x80) = (*(u32 *)(gx + 0x80) & ~0x3F000000) | (mtx << 24);
+        break;
+    case 4:
+        *(u32 *)(gx + 0x84) = (*(u32 *)(gx + 0x84) & ~0x3F) | mtx;
+        break;
+    case 5:
+        *(u32 *)(gx + 0x84) = (*(u32 *)(gx + 0x84) & ~0xFC0) | (mtx << 6);
+        break;
+    case 6:
+        *(u32 *)(gx + 0x84) = (*(u32 *)(gx + 0x84) & ~0x3F000) | (mtx << 12);
+        break;
+    default:
+        *(u32 *)(gx + 0x84) = (*(u32 *)(gx + 0x84) & ~0xFC0000) | (mtx << 18);
+        break;
+    }
+    __GXSetMatrixIndex(dst_coord + 1);
 }
 
 void GXSetNumTexGens(u8 nTexGens) {
