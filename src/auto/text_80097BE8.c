@@ -19294,6 +19294,7 @@ void JBCallback__Fll(s32 chan, s32 result) {
 
 #pragma push
 #pragma readonly_strings on
+#pragma auto_inline on
 static inline BOOL GbaReadGameCode(s32 chan) {
     u32 code;
 
