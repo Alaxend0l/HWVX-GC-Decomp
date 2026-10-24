@@ -1045,7 +1045,6 @@ static inline u32 SimThread_Sample(SimThread *t) {
         }
     }
     t->accel = accel;
-    return dt;
 }
 
 void VDevice_RecalcGammaTable(void);
