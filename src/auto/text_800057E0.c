@@ -18269,7 +18269,7 @@ void Thing_GetDynamicMinMax(void *thing, Vector4 *min, Vector4 *max, f32 expand)
 
     min->x = min->y = min->z = min->w = 99999.9f;
     max->x = max->y = max->z = max->w = -99999.9f;
-    switch (M2C_FIELD(t, s16 *, 0x80)) {
+    switch (*(s16 *)((u8 *)t + 0x80)) {
     case 0:
         *max = t->mtx.v[3];
         *min = *max;
@@ -18311,20 +18311,20 @@ void Thing_GetDynamicMinMax(void *thing, Vector4 *min, Vector4 *max, f32 expand)
         if (p2.z > max->z) {
             max->z = p2.z;
         }
-        min->x -= M2C_FIELD(t, f32 *, 0x70);
-        min->y -= M2C_FIELD(t, f32 *, 0x70);
-        min->z -= M2C_FIELD(t, f32 *, 0x70);
-        max->x += M2C_FIELD(t, f32 *, 0x70);
-        max->y += M2C_FIELD(t, f32 *, 0x70);
-        max->z += M2C_FIELD(t, f32 *, 0x70);
+        min->x -= *(f32 *)((u8 *)t + 0x70);
+        min->y -= *(f32 *)((u8 *)t + 0x70);
+        min->z -= *(f32 *)((u8 *)t + 0x70);
+        max->x += *(f32 *)((u8 *)t + 0x70);
+        max->y += *(f32 *)((u8 *)t + 0x70);
+        max->z += *(f32 *)((u8 *)t + 0x70);
         break;
     case 1:
-        if (M2C_FIELD(t, u32 *, 0x74) & 8) {
-            t = (*(Thing *(**)(Thing *))(M2C_FIELD(t, u8 **, 0x8C) + 0x40))(t);
+        if (*(u32 *)((u8 *)t + 0x74) & 8) {
+            t = (*(Thing *(**)(Thing *))(*(u8 **)((u8 *)t + 0x8C) + 0x40))(t);
             CopyVector(min, (Vector4 *)((u8 *)t + 0xD0));
             CopyVector(max, (Vector4 *)((u8 *)t + 0xE0));
         } else {
-            box = (*(Box *(**)(Thing *))(M2C_FIELD(t, u8 **, 0x8C) + 0x40))(t);
+            box = (*(Box *(**)(Thing *))(*(u8 **)((u8 *)t + 0x8C) + 0x40))(t);
             for (i = 0; i < 8; i++) {
                 p1 = box->corners[i];
                 MinMaxVec(min, max, &p1);
