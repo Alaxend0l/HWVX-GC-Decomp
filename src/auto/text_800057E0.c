@@ -18511,6 +18511,7 @@ void Render_TimeBars(u32 *times) {
         rect->tex = 0;
     }
 }
+#pragma opt_propagation reset
 
 typedef struct SmartProjParams {
     u8 unk0;
