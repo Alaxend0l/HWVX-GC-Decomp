@@ -221,6 +221,28 @@ static inline void PlayerManager_PushFree(u8 *pm, u8 *player) {
     M2C_FIELD(pm, u8 **, 0x20DC) = player;
 }
 
+typedef struct PlayerLink {
+    u8 unk0[0x20];
+    void (*controlReader)();
+    void (*init)();
+    void (*heartbeat)();
+    u8 unk2C[0xB0 - 0x2C];
+    struct PlayerLink *next;
+    struct PlayerLink *prev;
+} PlayerLink;
+
+static inline void PlayerManager_SetupFree(PlayerLink **free, PlayerLink *player, void (*controlReader)(), void (*init)(), void (*heartbeat)()) {
+    player->controlReader = controlReader;
+    player->init = init;
+    player->heartbeat = heartbeat;
+    player->next = *free;
+    player->prev = NULL;
+    if (player->next != NULL) {
+        player->next->prev = player;
+    }
+    *free = player;
+}
+
 static inline void *AI_GetInitFunc(u8 *desc) {
     void AI_Car_Init();
     void AI_Creature_Init();
@@ -19652,6 +19674,115 @@ void PlayerManager_Release(void) {
     while ((player = PlayerManager_PopActive(g_playerManager)) != NULL) {
         Player_ReleaseInterface(player);
         PlayerManager_PushFree(g_playerManager, player);
+    }
+}
+
+void PlayerManager_Init(void) {
+    typedef struct Player {
+        u8 unk0[0x20];
+        void (*controlReader)();
+        void (*init)();
+        void (*heartbeat)();
+        u8 unk2C[0xB0 - 0x2C];
+        struct Player *next;
+        struct Player *prev;
+    } Player;
+    typedef struct {
+        Player base;
+        u8 unkB8[0x158 - 0xB8];
+    } HumanPlayer;
+    typedef struct {
+        Player base;
+        u8 unkB8[0x670 - 0xB8];
+    } CarPlayer;
+    typedef struct {
+        Player base;
+        u8 unkB8[0x100 - 0xB8];
+    } CreaturePlayer;
+    typedef struct {
+        HumanPlayer humans[4];
+        CarPlayer cars[4];
+        CreaturePlayer creature;
+        Player null;
+        Player *active;
+        Player *free;
+    } PlayerMgr;
+    extern PlayerMgr g_playerManager;
+    extern s32 g_aiHoldIndex;
+    void Player_DefaultControlReader();
+    void PlayerHuman_Init();
+    void PlayerHuman_Heartbeat();
+    void AI_Car_Heartbeat();
+    void AI_Car_Init();
+    void AI_Creature_Heartbeat();
+    void AI_Creature_Init();
+    void Player_Heartbeat();
+    void Player_NULL();
+    void Player_Init();
+    void AI_Create(void);
+    void ForceFeedback_Init(void);
+    void Player_ReleaseInterface(void *player);
+    PlayerMgr *pm = &g_playerManager;
+    Player *player;
+    u8 *p;
+    s32 i;
+
+    pm->active = NULL;
+    pm->free = NULL;
+    for (i = 0; i < 4; i++) {
+        player = &pm->humans[i].base;
+        player->controlReader = Player_DefaultControlReader;
+        player->init = PlayerHuman_Init;
+        player->heartbeat = PlayerHuman_Heartbeat;
+        player->next = pm->free;
+        player->prev = NULL;
+        if (player->next != NULL) {
+            player->next->prev = player;
+        }
+        pm->free = player;
+    }
+    for (i = 0; i < 4; i++) {
+        player = &pm->cars[i].base;
+        player->controlReader = AI_Car_Heartbeat;
+        player->init = AI_Car_Init;
+        player->heartbeat = Player_Heartbeat;
+        player->next = pm->free;
+        player->prev = NULL;
+        if (player->next != NULL) {
+            player->next->prev = player;
+        }
+        pm->free = player;
+    }
+    for (i = 0; i < 1; i++) {
+        player = &pm->creature.base;
+        player->controlReader = AI_Creature_Heartbeat;
+        player->init = AI_Creature_Init;
+        player->heartbeat = Player_Heartbeat;
+        player->next = pm->free;
+        player->prev = NULL;
+        if (player->next != NULL) {
+            player->next->prev = player;
+        }
+        pm->free = player;
+    }
+    for (i = 0; i < 1; i++) {
+        player = &pm->null;
+        player->controlReader = Player_NULL;
+        player->init = Player_Init;
+        player->heartbeat = Player_NULL;
+        player->next = pm->free;
+        player->prev = NULL;
+        if (player->next != NULL) {
+            player->next->prev = player;
+        }
+        pm->free = player;
+    }
+    g_aiHoldIndex = 0;
+    AI_Create();
+    ForceFeedback_Init();
+    while ((p = PlayerManager_PopActive((u8 *)pm)) != NULL) {
+        Player_ReleaseInterface(p);
+        PlayerManager_PushFree((u8 *)pm, p);
     }
 }
 
