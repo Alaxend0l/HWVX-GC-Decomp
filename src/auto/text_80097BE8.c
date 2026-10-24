@@ -17122,6 +17122,7 @@ void __GBAX01(s32 chan, s32 ret) {
 }
 
 static void F33(s32 chan, s32 ret);
+#pragma opt_common_subs off
 void F31(s32 chan, s32 ret) {
     s32 GBAWriteAsync(s32 chan, u8 *src, u8 *status, GBACallback callback);
     s32 GBAReadAsync(s32 chan, u8 *dst, u8 *status, GBACallback callback);
