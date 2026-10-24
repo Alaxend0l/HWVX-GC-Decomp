@@ -42560,7 +42560,6 @@ void TRKDoReadMemory(TRKBuffer *b) {
         TRKSendACK(b);
     }
 }
-#pragma auto_inline reset
 
 void TRKDoCPUType(TRKBuffer *b) {
     typedef struct {
