@@ -4157,7 +4157,7 @@ void SFX_ProcessSource(u32 index) {
     extern s8 g_paused_803C6F2D;
     extern SoundSource *g_sources_803C6F38;
     extern SoundListener g_listener[4];
-    extern u32 g_numListeners;
+    extern s32 g_numListeners;
     extern s32 g_sscount;
     extern Vector4 g_zeroVector;
     void DistanceXYZ(void *a, void *b, f32 *dist);
@@ -4171,18 +4171,19 @@ void SFX_ProcessSource(u32 index) {
     void SetVoiceState(s32 voice, s32 state);
     s8 SetVoiceVol(s32 voice, u32 vol);
     s8 SetVoicePitch(s32 voice, u32 pitch);
-    s8 SetVoicePos(s32 voice, s16 pan, s16 span);
+    s8 SetVoicePos(s32 voice, s32 pan, s32 span);
     void ReleaseVoice(s32 voice);
     SoundSource *src;
-    SoundListener *listener;
+    s32 pan;
     u32 i;
     f32 minDist;
     f32 vol;
     f32 pitch;
-    s16 pan;
+    f32 dot;
     Vector4 local;
     Vector4 diff;
     f32 dist;
+    s32 p;
 
     src = &g_sources_803C6F38[index];
     if (g_paused_803C6F2D && src->paused && src->unk24 > 0.0f) {
@@ -4194,26 +4195,27 @@ void SFX_ProcessSource(u32 index) {
     }
     if (src->unk24 > 0.0f) {
         minDist = 99999.9f;
-        for (i = 0, listener = g_listener; i <= g_numListeners; i++, listener++) {
-            DistanceXYZ(listener, src, &dist);
+        for (i = 0; i <= g_numListeners; i++) {
+            DistanceXYZ(&g_listener[i], src, &dist);
             if (minDist > dist) {
                 minDist = dist;
             }
         }
         if (minDist < src->unk38) {
             if (src->voice == -1) {
-                if (!src->looping && !src->playing) {
-                    return;
-                }
-                src->playing = 0;
-                src->voice = GetVoice(src->unk28, 5);
-                if (src->voice) {
-                    SetVoiceState(src->voice, 1);
-                    src->unk44 = 0;
-                    src->unk3C = 1.0f;
-                    src->unk40 = 1.0f;
+                if (src->looping || src->playing) {
+                    src->playing = 0;
+                    src->voice = GetVoice(src->unk28, 5);
+                    if (src->voice) {
+                        SetVoiceState(src->voice, 1);
+                        src->unk44 = 0;
+                        src->unk3C = 1.0f;
+                        src->unk40 = 1.0f;
+                    } else {
+                        src->voice = -1;
+                        return;
+                    }
                 } else {
-                    src->voice = -1;
                     return;
                 }
             }
@@ -4241,11 +4243,11 @@ void SFX_ProcessSource(u32 index) {
             if (src->unk20 != 0.0f) {
                 PSVECSubtract(&g_listener[0].pos, &src->pos, &diff);
                 XformVecOrientation(&g_listener[0].mtx, &diff, &local);
-                dist = PSVECDotProduct(&g_zeroVector, &local);
+                dot = PSVECDotProduct(&g_zeroVector, &local);
                 if (minDist) {
-                    pitch = (343.0f * src->unk20) / (0.1f * (dist / minDist) + 343.0f);
+                    pitch = (343.0f * src->unk20) / (0.1f * (dot / minDist) + 343.0f);
                 } else {
-                    pitch = (343.0f * src->unk20) / (0.1f * dist + 343.0f);
+                    pitch = (343.0f * src->unk20) / (0.1f * dot + 343.0f);
                 }
                 if (pitch < 0.0f) {
                     pitch = 1e-7f;
@@ -4265,9 +4267,10 @@ void SFX_ProcessSource(u32 index) {
             if (local.x && local.y && local.z && PSVECSquareMag(&local)) {
                 PSVECNormalize(&local, &local);
             }
-            pan = 26213.6f * local.x;
+            p = 26213.6f * local.x;
+            pan = (s16)p;
             if (src->unk44 != pan) {
-                if (!SetVoicePos(src->voice, pan, -0x7FFF)) {
+                if (!SetVoicePos(src->voice, p, -0x7FFF)) {
                     goto fail;
                 }
                 src->unk44 = pan;
