@@ -648,7 +648,8 @@ typedef void (*CARDCallback)(s32 chan, s32 result);
 typedef struct CARDControl {
     s32 attached;
     s32 result;
-    u8 unk8[0xC - 0x8];
+    u16 size;
+    u8 unkA[0xC - 0xA];
     s32 sectorSize;
     u16 cBlock;
     u8 unk12[0x14 - 0x12];
