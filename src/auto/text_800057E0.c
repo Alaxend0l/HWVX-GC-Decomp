@@ -2518,6 +2518,205 @@ void AI_Car_Init(u8 *car, u8 *params) {
     M2C_FIELD(car, u8 *, 0xCC) = 1;
 }
 
+static inline void AI_Car_Think(u8 *ai, u8 *car) {
+    typedef struct AICarTarget {
+        u32 timer;
+        u8 unk4[8];
+        f32 unkC;
+        f32 unk10;
+    } AICarTarget;
+    typedef struct AICarTargets {
+        u8 unk0[0x4B0];
+        AICarTarget targets[16];
+    } AICarTargets;
+    extern u32 g_iDeltaTimeMS;
+    s32 AI_Car_DetermineState(u8 *car);
+    u32 AI_UpdateTimer(u32 *timer);
+    void AI_AddEvent(void *arg0);
+    f32 PSVECSquareDistance(void *a, void *b);
+    void AI_Car_ClearedNavPoint_800087C8(u8 *car, s8 arg1);
+    s8 AI_Car_CheckIfStuck(u8 *ai);
+    void AI_Car_SeekPoint_80007C7C(u8 *ai);
+    s8 cleared;
+    u8 *pos;
+    u8 *point;
+    u16 i;
+    s16 j;
+    s8 done;
+
+    if (*(u32 *)(ai + 0xD0) == 0) {
+        return;
+    }
+    AI_Car_DetermineState(ai);
+    if (*(u32 *)(ai + 0x3E4) == 0 || (*(u32 *)(ai + 0x3EC) == 0 && *(u32 *)(ai + 0x3F0) == 0)) {
+        ai[0x13] = 0xFF;
+        if ((*(u8 **)(car + 0x3BC))[0x11] == 1) {
+            ai[0x12] = 0xFF;
+        }
+        return;
+    }
+    if (*(u32 *)(ai + 0x608) != 0 && AI_UpdateTimer((u32 *)(ai + 0x608)) == 0) {
+        AI_AddEvent(ai + 0x5F8);
+    }
+    if (*(u32 *)(ai + 0x4AC) != 0) {
+        AI_UpdateTimer((u32 *)(ai + 0x4AC));
+    }
+    if (*(u32 *)(ai + 0x4A4) < 32 && ((u8 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] != NULL) {
+        pos = *(u8 **)(ai + 0x2C);
+        cleared = 1;
+        while (cleared && *(u32 *)(ai + 0x4A4) < 32 && (point = *(u8 **)(ai + 0x420 + *(u32 *)(ai + 0x4A4) * 4)) != NULL) {
+            cleared = 0;
+            if (PSVECSquareDistance(point, pos + 0x40) < *(f32 *)(point + 0x24) * *(f32 *)(point + 0x24)) {
+                AI_Car_ClearedNavPoint_800087C8(ai, 0);
+                cleared = 1;
+            }
+        }
+    }
+    for (i = 0; i < 16 && ((AICarTargets *)ai)->targets[i].timer != 0; i++) {
+        done = 0;
+        while (!done) {
+            done = 1;
+            if (((AICarTargets *)ai)->targets[i].timer != 0) {
+                ((AICarTargets *)ai)->targets[i].unkC += g_iDeltaTimeMS;
+                ((AICarTargets *)ai)->targets[i].unk10 += g_iDeltaTimeMS;
+                if (((AICarTargets *)ai)->targets[i].unkC > 500.0f && ((AICarTargets *)ai)->targets[i].unk10 > 500.0f) {
+                    for (j = i; j < 16 && ((AICarTargets *)ai)->targets[j].timer != 0; j++) {
+                        if (j == 15) {
+                            ((AICarTargets *)ai)->targets[j].timer = 0;
+                        } else {
+                            ((AICarTargets *)ai)->targets[j] = ((AICarTargets *)ai)->targets[j + 1];
+                        }
+                    }
+                    done = 0;
+                }
+            }
+        }
+    }
+    *(u32 *)(ai + 0x5F0) = 0;
+    *(u32 *)(ai + 0x5F4) = 0;
+    if (*(u32 *)(ai + 0x5F0) != 0) {
+        *(u32 *)(ai + 0x5F4) += g_iDeltaTimeMS;
+        if (*(u32 *)(ai + 0x5F4) > 20000) {
+            *(u32 *)(ai + 0x5F4) = 0;
+            *(u32 *)(ai + 0x5F0) = 0;
+        }
+    }
+    if (!AI_Car_CheckIfStuck(ai)) {
+        AI_Car_SeekPoint_80007C7C(ai);
+    }
+    AI_UpdateTimer((u32 *)(ai + 0x658));
+    if (*(u32 *)(ai + 0x654) != 0 && AI_UpdateTimer((u32 *)(ai + 0x654)) == 0) {
+        AI_AddEvent(ai + 0x644);
+    }
+}
+
+void AI_Car_Heartbeat(u8 *ai) {
+    typedef struct AICarTarget {
+        u32 timer;
+        u8 unk4[8];
+        f32 unkC;
+        f32 unk10;
+    } AICarTarget;
+    typedef struct AICarTargets {
+        u8 unk0[0x4B0];
+        AICarTarget targets[16];
+    } AICarTargets;
+    extern u32 g_iDeltaTimeMS;
+    void Control_ClearControl(void *control);
+    s8 AI_Heartbeat(u8 *ai);
+    void AI_Car_Reset(u8 *car);
+    s32 AI_Car_DetermineState(u8 *car);
+    u32 AI_UpdateTimer(u32 *timer);
+    void AI_AddEvent(void *arg0);
+    f32 PSVECSquareDistance(void *a, void *b);
+    void AI_Car_ClearedNavPoint_800087C8(u8 *car, s8 arg1);
+    s8 AI_Car_CheckIfStuck(u8 *ai);
+    void AI_Car_SeekPoint_80007C7C(u8 *ai);
+    s8 cleared;
+    u8 *pos;
+    u8 *point;
+    u8 *car;
+    u16 i;
+    s16 j;
+    s8 done;
+
+    car = *(u8 **)(ai + 0x2C);
+    if (car == NULL || *(u8 **)(car + 0x8C) == g_carAVTable) {
+        Control_ClearControl(ai);
+        if (AI_Heartbeat(ai)) {
+            if (*(s8 *)(ai + 0xCC) && car != NULL) {
+                AI_Car_Reset(ai);
+            }
+            if (!*(s8 *)(ai + 0xCC)) {
+                if (*(u32 *)(ai + 0xD0) == 0) {
+                    return;
+                }
+                AI_Car_DetermineState(ai);
+                if (*(u32 *)(ai + 0x3E4) == 0 || (*(u32 *)(ai + 0x3EC) == 0 && *(u32 *)(ai + 0x3F0) == 0)) {
+                    ai[0x13] = 0xFF;
+                    if ((*(u8 **)(car + 0x3BC))[0x11] == 1) {
+                        ai[0x12] = 0xFF;
+                    }
+                } else {
+                    if (*(u32 *)(ai + 0x608) != 0 && AI_UpdateTimer((u32 *)(ai + 0x608)) == 0) {
+                        AI_AddEvent(ai + 0x5F8);
+                    }
+                    if (*(u32 *)(ai + 0x4AC) != 0) {
+                        AI_UpdateTimer((u32 *)(ai + 0x4AC));
+                    }
+                    if (*(u32 *)(ai + 0x4A4) < 32 && ((u8 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] != NULL) {
+                        pos = *(u8 **)(ai + 0x2C);
+                        cleared = 1;
+                        while (cleared && *(u32 *)(ai + 0x4A4) < 32 && (point = *(u8 **)(ai + 0x420 + *(u32 *)(ai + 0x4A4) * 4)) != NULL) {
+                            cleared = 0;
+                            if (PSVECSquareDistance(point, pos + 0x40) < *(f32 *)(point + 0x24) * *(f32 *)(point + 0x24)) {
+                                AI_Car_ClearedNavPoint_800087C8(ai, 0);
+                                cleared = 1;
+                            }
+                        }
+                    }
+                    for (i = 0; i < 16 && ((AICarTargets *)ai)->targets[i].timer != 0; i++) {
+                        done = 0;
+                        while (!done) {
+                            done = 1;
+                            if (((AICarTargets *)ai)->targets[i].timer != 0) {
+                                ((AICarTargets *)ai)->targets[i].unkC += g_iDeltaTimeMS;
+                                ((AICarTargets *)ai)->targets[i].unk10 += g_iDeltaTimeMS;
+                                if (((AICarTargets *)ai)->targets[i].unkC > 500.0f && ((AICarTargets *)ai)->targets[i].unk10 > 500.0f) {
+                                    for (j = i; j < 16 && ((AICarTargets *)ai)->targets[j].timer != 0; j++) {
+                                        if (j == 15) {
+                                            ((AICarTargets *)ai)->targets[j].timer = 0;
+                                        } else {
+                                            ((AICarTargets *)ai)->targets[j] = ((AICarTargets *)ai)->targets[j + 1];
+                                        }
+                                    }
+                                    done = 0;
+                                }
+                            }
+                        }
+                    }
+                    *(u32 *)(ai + 0x5F0) = 0;
+                    *(u32 *)(ai + 0x5F4) = 0;
+                    if (*(u32 *)(ai + 0x5F0) != 0) {
+                        *(u32 *)(ai + 0x5F4) += g_iDeltaTimeMS;
+                        if (*(u32 *)(ai + 0x5F4) > 20000) {
+                            *(u32 *)(ai + 0x5F4) = 0;
+                            *(u32 *)(ai + 0x5F0) = 0;
+                        }
+                    }
+                    if (!AI_Car_CheckIfStuck(ai)) {
+                        AI_Car_SeekPoint_80007C7C(ai);
+                    }
+                    AI_UpdateTimer((u32 *)(ai + 0x658));
+                    if (*(u32 *)(ai + 0x654) != 0 && AI_UpdateTimer((u32 *)(ai + 0x654)) == 0) {
+                        AI_AddEvent(ai + 0x644);
+                    }
+                }
+            }
+        }
+    }
+}
+
 void MotionState_Init(void *arg0, s8 reset) {
     typedef struct {
         u8 pad0[0x14];
