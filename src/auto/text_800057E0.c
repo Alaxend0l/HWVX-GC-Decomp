@@ -31270,6 +31270,102 @@ void SetCodeVariable(s32 var, u8 *obj, f32 value) {
     }
 }
 
+s32 TriggerCodeVariableValueCheck(u32 *data) {
+    f32 GetCodeVariable(s32 var, u8 *thing);
+    f32 value;
+    f32 operand;
+    u32 i;
+
+    if (data[1] < 100) {
+        for (i = 0; i < data[2]; i++) {
+            value = GetCodeVariable(data[1], (u8 *)data[i + 3]);
+            switch (data[data[2] + 3]) {
+            case 0:
+                operand = *(f32 *)&data[data[2] + 4];
+                break;
+            case 1:
+                operand = *(f32 *)(*(u8 **)data[data[2] + 4] + 4);
+                break;
+            case 2:
+                operand = GetCodeVariable(data[data[2] + 4], (u8 *)data[data[2] + 5]);
+                break;
+            default:
+                continue;
+            }
+            switch (data[0]) {
+            case 21:
+                if (value > operand) {
+                    return 1;
+                }
+                break;
+            case 20:
+                if (value < operand) {
+                    return 1;
+                }
+                break;
+            case 22:
+                if (value == operand) {
+                    return 1;
+                }
+                break;
+            case 47:
+                if (value >= operand) {
+                    return 1;
+                }
+                break;
+            case 48:
+                if (value <= operand) {
+                    return 1;
+                }
+                break;
+            }
+        }
+    } else {
+        value = GetCodeVariable(data[1], (u8 *)data[2]);
+        switch (data[3]) {
+        case 0:
+            operand = *(f32 *)&data[4];
+            break;
+        case 1:
+            operand = *(f32 *)(*(u8 **)data[4] + 4);
+            break;
+        case 2:
+            operand = GetCodeVariable(data[4], (u8 *)data[5]);
+            break;
+        default:
+            return 0;
+        }
+        switch (data[0]) {
+        case 21:
+            if (value > operand) {
+                return 1;
+            }
+            break;
+        case 20:
+            if (value < operand) {
+                return 1;
+            }
+            break;
+        case 22:
+            if (value == operand) {
+                return 1;
+            }
+            break;
+        case 47:
+            if (value >= operand) {
+                return 1;
+            }
+            break;
+        case 48:
+            if (value <= operand) {
+                return 1;
+            }
+            break;
+        }
+    }
+    return 0;
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void Trigger_ItemPickedUp(void *vehicle, void *item) {
@@ -33046,6 +33142,8 @@ s32 ActionVariableChangeMode(u32 *action) {
     return 1;
 }
 
+#pragma push
+#pragma dont_inline on
 s32 ActionTimerChangeValue(u32 *action) {
     u32 i;
     f32 value;
@@ -33086,6 +33184,7 @@ s32 ActionTimerChangeValue(u32 *action) {
     }
     return 1;
 }
+#pragma pop
 
 s32 ActionTimerChangeMode(u32 *action) {
     u8 **item;
