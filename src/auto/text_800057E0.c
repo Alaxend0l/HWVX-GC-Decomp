@@ -30820,6 +30820,8 @@ void CarA_StuntImpulse(u8 *car, Vector4 *linImpulse, Vector4 *angImpulse) {
     }
 }
 
+#pragma push
+#pragma dont_inline off
 static inline s8 CarA_StuntsCanStunt(u8 *car, s32 minTime) {
     s8 Player_IsHuman(void *player);
     u8 *player;
@@ -30841,6 +30843,7 @@ static inline s8 CarA_StuntsCanStunt(u8 *car, s32 minTime) {
     }
     return ok;
 }
+#pragma pop
 
 #pragma readonly_strings on
 s32 CarA_StuntsGetNewOrientation(u8 *car, Quaternion *outQ, f32 t) {
