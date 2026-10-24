@@ -2549,78 +2549,80 @@ void AI_Car_Heartbeat(u8 *ai) {
     s8 done;
 
     car = *(u8 **)(ai + 0x2C);
-    if (car == NULL || *(u8 **)(car + 0x8C) == g_carAVTable) {
-        Control_ClearControl(ai);
-        if (AI_Heartbeat(ai)) {
-            if (*(s8 *)(ai + 0xCC) && car != NULL) {
-                AI_Car_Reset(ai);
+    if (car != NULL && *(u8 **)(car + 0x8C) != g_carAVTable) {
+        return;
+    }
+    Control_ClearControl(ai);
+    if (!AI_Heartbeat(ai)) {
+        return;
+    }
+    if (*(s8 *)(ai + 0xCC) && car != NULL) {
+        AI_Car_Reset(ai);
+    }
+    if (*(s8 *)(ai + 0xCC)) {
+        return;
+    }
+    if (*(u32 *)(ai + 0xD0) != 0) {
+        AI_Car_DetermineState(ai);
+        if (*(u32 *)(ai + 0x3E4) == 0 || (*(u32 *)(ai + 0x3EC) == 0 && *(u32 *)(ai + 0x3F0) == 0)) {
+            ai[0x13] = 0xFF;
+            if ((*(u8 **)(car + 0x3BC))[0x11] == 1) {
+                ai[0x12] = 0xFF;
             }
-            if (!*(s8 *)(ai + 0xCC)) {
-                if (*(u32 *)(ai + 0xD0) == 0) {
-                    return;
+            return;
+        }
+        if (*(u32 *)(ai + 0x608) != 0 && AI_UpdateTimer((u32 *)(ai + 0x608)) == 0) {
+            AI_AddEvent(ai + 0x5F8);
+        }
+        if (*(u32 *)(ai + 0x4AC) != 0) {
+            AI_UpdateTimer((u32 *)(ai + 0x4AC));
+        }
+        if (*(u32 *)(ai + 0x4A4) < 32 && ((u8 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] != NULL) {
+            pos = *(u8 **)(ai + 0x2C);
+            cleared = 1;
+            while (cleared && *(u32 *)(ai + 0x4A4) < 32 && (point = *(u8 **)(ai + 0x420 + *(u32 *)(ai + 0x4A4) * 4)) != NULL) {
+                cleared = 0;
+                if (PSVECSquareDistance(point, pos + 0x40) < *(f32 *)(point + 0x24) * *(f32 *)(point + 0x24)) {
+                    AI_Car_ClearedNavPoint_800087C8(ai, 0);
+                    cleared = 1;
                 }
-                AI_Car_DetermineState(ai);
-                if (*(u32 *)(ai + 0x3E4) == 0 || (*(u32 *)(ai + 0x3EC) == 0 && *(u32 *)(ai + 0x3F0) == 0)) {
-                    ai[0x13] = 0xFF;
-                    if ((*(u8 **)(car + 0x3BC))[0x11] == 1) {
-                        ai[0x12] = 0xFF;
-                    }
-                } else {
-                    if (*(u32 *)(ai + 0x608) != 0 && AI_UpdateTimer((u32 *)(ai + 0x608)) == 0) {
-                        AI_AddEvent(ai + 0x5F8);
-                    }
-                    if (*(u32 *)(ai + 0x4AC) != 0) {
-                        AI_UpdateTimer((u32 *)(ai + 0x4AC));
-                    }
-                    if (*(u32 *)(ai + 0x4A4) < 32 && ((u8 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] != NULL) {
-                        pos = *(u8 **)(ai + 0x2C);
-                        cleared = 1;
-                        while (cleared && *(u32 *)(ai + 0x4A4) < 32 && (point = *(u8 **)(ai + 0x420 + *(u32 *)(ai + 0x4A4) * 4)) != NULL) {
-                            cleared = 0;
-                            if (PSVECSquareDistance(point, pos + 0x40) < *(f32 *)(point + 0x24) * *(f32 *)(point + 0x24)) {
-                                AI_Car_ClearedNavPoint_800087C8(ai, 0);
-                                cleared = 1;
+            }
+        }
+        for (i = 0; i < 16 && ((AICarTargets *)ai)->targets[i].timer != 0; i++) {
+            done = 0;
+            while (!done) {
+                done = 1;
+                if (((AICarTargets *)ai)->targets[i].timer != 0) {
+                    ((AICarTargets *)ai)->targets[i].unkC += g_iDeltaTimeMS;
+                    ((AICarTargets *)ai)->targets[i].unk10 += g_iDeltaTimeMS;
+                    if (((AICarTargets *)ai)->targets[i].unkC > 500.0f && ((AICarTargets *)ai)->targets[i].unk10 > 500.0f) {
+                        for (j = i; j < 16 && ((AICarTargets *)ai)->targets[j].timer != 0; j++) {
+                            if (j == 15) {
+                                ((AICarTargets *)ai)->targets[j].timer = 0;
+                            } else {
+                                ((AICarTargets *)ai)->targets[j] = ((AICarTargets *)ai)->targets[j + 1];
                             }
                         }
-                    }
-                    for (i = 0; i < 16 && ((AICarTargets *)ai)->targets[i].timer != 0; i++) {
                         done = 0;
-                        while (!done) {
-                            done = 1;
-                            if (((AICarTargets *)ai)->targets[i].timer != 0) {
-                                ((AICarTargets *)ai)->targets[i].unkC += g_iDeltaTimeMS;
-                                ((AICarTargets *)ai)->targets[i].unk10 += g_iDeltaTimeMS;
-                                if (((AICarTargets *)ai)->targets[i].unkC > 500.0f && ((AICarTargets *)ai)->targets[i].unk10 > 500.0f) {
-                                    for (j = i; j < 16 && ((AICarTargets *)ai)->targets[j].timer != 0; j++) {
-                                        if (j == 15) {
-                                            ((AICarTargets *)ai)->targets[j].timer = 0;
-                                        } else {
-                                            ((AICarTargets *)ai)->targets[j] = ((AICarTargets *)ai)->targets[j + 1];
-                                        }
-                                    }
-                                    done = 0;
-                                }
-                            }
-                        }
-                    }
-                    *(u32 *)(ai + 0x5F0) = 0;
-                    *(u32 *)(ai + 0x5F4) = 0;
-                    if (*(u32 *)(ai + 0x5F0) != 0) {
-                        *(u32 *)(ai + 0x5F4) += g_iDeltaTimeMS;
-                        if (*(u32 *)(ai + 0x5F4) > 20000) {
-                            *(u32 *)(ai + 0x5F4) = 0;
-                            *(u32 *)(ai + 0x5F0) = 0;
-                        }
-                    }
-                    if (!AI_Car_CheckIfStuck(ai)) {
-                        AI_Car_SeekPoint_80007C7C(ai);
-                    }
-                    AI_UpdateTimer((u32 *)(ai + 0x658));
-                    if (*(u32 *)(ai + 0x654) != 0 && AI_UpdateTimer((u32 *)(ai + 0x654)) == 0) {
-                        AI_AddEvent(ai + 0x644);
                     }
                 }
             }
+        }
+        *(u32 *)(ai + 0x5F0) = 0;
+        *(u32 *)(ai + 0x5F4) = 0;
+        if (*(u32 *)(ai + 0x5F0) != 0) {
+            *(u32 *)(ai + 0x5F4) += g_iDeltaTimeMS;
+            if (*(u32 *)(ai + 0x5F4) > 20000) {
+                *(u32 *)(ai + 0x5F4) = 0;
+                *(u32 *)(ai + 0x5F0) = 0;
+            }
+        }
+        if (!AI_Car_CheckIfStuck(ai)) {
+            AI_Car_SeekPoint_80007C7C(ai);
+        }
+        AI_UpdateTimer((u32 *)(ai + 0x658));
+        if (*(u32 *)(ai + 0x654) != 0 && AI_UpdateTimer((u32 *)(ai + 0x654)) == 0) {
+            AI_AddEvent(ai + 0x644);
         }
     }
 }
@@ -10929,6 +10931,185 @@ done:
     }
     return g_codeVariables.unk11C[0];
 }
+
+static inline u32 GameSettings_GetSaveFileChecksum(char *device, const char *name, u32 size) {
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    extern u8 *g_pSavedGameData;
+    u8 *data = g_pSavedGameData;
+    s32 handle;
+
+    if ((handle = File_Open(device + 0xA, name, 0, NULL)) != -1) {
+        File_Read(handle, size * 8 + 0x15C, data);
+        File_Close(handle);
+        return ((u32 *)data)[2];
+    }
+    return -1;
+}
+
+static inline s8 GameSettings_ReadSaveFile(char *device, const char *name, u32 version, u32 size) {
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    u32 FileManager_GetChecksum(u32 size, void *data);
+    extern u8 *g_pSavedGameData;
+    u8 *data = g_pSavedGameData;
+    s8 ok = 0;
+    s32 handle;
+
+    if ((handle = File_Open(device + 0xA, name, 0, NULL)) != -1) {
+        File_Read(handle, size * 8 + 0x15C, data);
+        if (((u32 *)data)[0] == 4 && ((u32 *)data)[1] == version &&
+            ((u32 *)data)[2] == FileManager_GetChecksum(version, data + 0xC)) {
+            ok = 1;
+        }
+        File_Close(handle);
+    }
+    return ok;
+}
+
+static inline s8 GameSettings_WriteSaveFile(char *device, const char *name, u32 version, u32 size) {
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    s8 File_Write(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    u32 FileManager_GetChecksum(u32 size, void *data);
+    extern u8 *g_pSavedGameData;
+    u8 *data = g_pSavedGameData;
+    s8 ok = 0;
+    s32 handle;
+
+    if ((handle = File_Open(device + 0xA, name, 5, NULL)) != -1) {
+        ((u32 *)data)[0] = 4;
+        ((u32 *)data)[1] = version;
+        ((u32 *)data)[2] = FileManager_GetChecksum(version, data + 0xC);
+        if (File_Write(handle, size * 8 + 0x15C, data)) {
+            ok = 1;
+        }
+        File_Close(handle);
+    }
+    return ok;
+}
+
+u8 GameSettings_SaveGame(void) {
+    typedef struct SaveSlot {
+        u8 valid;
+        char name[11];
+        s32 year;
+        s32 month;
+        s32 day;
+        u32 hour;
+        s32 minute;
+    } SaveSlot;
+    typedef struct SaveData {
+        u8 header[0x5C];
+        SaveSlot slots[8];
+    } SaveData;
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    s8 File_Write(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    u32 FileManager_GetChecksum(u32 size, void *data);
+    void *memcpy(void *dst, const void *src, u32 n);
+    void *memset(void *, s32, u32);
+    char *strcpy(char *dst, const char *src);
+    void GetSystemDate(s32 *year, s32 *month, s32 *day, u32 *hour, s32 *minute);
+    void GameSettings_GatherGameData(void);
+    s32 GameSettings_GetMemoryCardStatus(char *device, s32 bForce);
+    extern u8 *g_pSavedGameData;
+    extern u8 *g_pGameData;
+    extern u32 g_saveFileCheckSum_803C6CAC;
+    extern char g_saveFileName_80110C74[11];
+    extern s8 g_bRefreshMC_803C6F78;
+    extern s8 g_bRefreshMC_FileList_803C6F79;
+    extern s8 g_bRefreshMC_FileInfo_803C6F7A;
+    char *device;
+    const char *name;
+    u32 version;
+    u32 size;
+    u32 slot;
+    s32 status;
+    u8 *saved;
+
+    device = g_codeVariables.device;
+    slot = g_codeVariables.fileIndex - 1;
+    status = GameSettings_GetMemoryCardStatus(device, 1);
+    GameSettings_GetSaveFileInfo(&name, &version, &size);
+    if (status != 0 && status != 1) {
+        goto fail;
+    }
+    {
+        u8 *data = g_pSavedGameData;
+        s32 handle;
+        u32 sum;
+        if ((handle = File_Open(device + 0xA, name, 0, NULL)) != -1) {
+            File_Read(handle, size * 8 + 0x15C, data);
+            File_Close(handle);
+            sum = ((u32 *)data)[2];
+        } else {
+            sum = -1;
+        }
+        if (g_saveFileCheckSum_803C6CAC != sum) {
+        fail:
+            g_codeVariables.unk11C[0] = 0;
+            return 0;
+        }
+    }
+    {
+        u8 *data = g_pSavedGameData;
+        s8 ok = 0;
+        s32 handle;
+        if ((handle = File_Open(device + 0xA, name, 0, NULL)) != -1) {
+            File_Read(handle, size * 8 + 0x15C, data);
+            if (((u32 *)data)[0] == 4 && ((u32 *)data)[1] == version &&
+                ((u32 *)data)[2] == FileManager_GetChecksum(version, data + 0xC)) {
+                ok = 1;
+            }
+            File_Close(handle);
+        }
+        if (!ok) {
+            memset(data + 0x5C, 0, 0x100);
+        }
+        saved = data;
+    }
+    for (; slot != 0; slot--) {
+        memcpy(&g_pSavedGameData[slot * size + 0x15C], &g_pSavedGameData[(slot - 1) * size + 0x15C], size);
+        memcpy(&((SaveData *)saved)->slots[slot], &((SaveData *)saved)->slots[slot - 1], sizeof(SaveSlot));
+    }
+    memcpy((u8 *)&g_generalGameSettings + 0x50, saved + 0x5C, 0x100);
+    memcpy(saved + 0xC, &g_generalGameSettings, 0x150);
+    ((SaveData *)saved)->slots[0].valid = 1;
+    strcpy(((SaveData *)saved)->slots[0].name, g_saveFileName_80110C74);
+    GetSystemDate(&((SaveData *)saved)->slots[0].year, &((SaveData *)saved)->slots[0].month,
+                  &((SaveData *)saved)->slots[0].day, &((SaveData *)saved)->slots[0].hour,
+                  &((SaveData *)saved)->slots[0].minute);
+    GameSettings_GatherGameData();
+    memcpy(g_pSavedGameData + 0x15C, g_pGameData, size);
+    {
+        u8 *data = g_pSavedGameData;
+        s8 ok = 0;
+        s32 handle;
+        if ((handle = File_Open(device + 0xA, name, 5, NULL)) != -1) {
+            ((u32 *)data)[0] = 4;
+            ((u32 *)data)[1] = version;
+            ((u32 *)data)[2] = FileManager_GetChecksum(version, data + 0xC);
+            if (File_Write(handle, size * 8 + 0x15C, data)) {
+                ok = 1;
+            }
+            File_Close(handle);
+        }
+        if (ok) {
+            g_codeVariables.unk11C[0] = 1;
+        } else {
+            g_codeVariables.unk11C[0] = 0;
+        }
+    }
+    g_bRefreshMC_803C6F78 = 1;
+    g_bRefreshMC_FileList_803C6F79 = 1;
+    g_bRefreshMC_FileInfo_803C6F7A = 1;
+    return g_codeVariables.unk11C[0];
+}
+
 #pragma pop
 
 #pragma push
