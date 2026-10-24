@@ -5412,6 +5412,34 @@ void QuaternionMult(Vector *a, Vector *b, Vector *out) {
     out->z = a->x * b->y - a->y * b->x + a->w * b->z + a->z * b->w;
 }
 
+void GenerateQuaternionXYZ(Vector *angles, Vector *q) {
+    Vector tmp;
+    Vector axis;
+    Vector r;
+
+    tmp.x = 0.0f;
+    tmp.y = 0.0f;
+    tmp.z = 0.0f;
+    tmp.w = 1.0f;
+    axis.x = 0.0f;
+    axis.y = 0.0f;
+    axis.z = 1.0f;
+    GenerateQuaternion(&axis, &r, angles->z);
+    QuaternionMult(&r, &tmp, q);
+    memcpy(&tmp, q, sizeof(Vector));
+    axis.x = 1.0f;
+    axis.y = 0.0f;
+    axis.z = 0.0f;
+    GenerateQuaternion(&axis, &r, angles->x);
+    QuaternionMult(&r, &tmp, q);
+    memcpy(&tmp, q, sizeof(Vector));
+    axis.x = 0.0f;
+    axis.y = 1.0f;
+    axis.z = 0.0f;
+    GenerateQuaternion(&axis, &r, angles->y);
+    QuaternionMult(&r, &tmp, q);
+}
+
 void QuaternionToSubMatrix(void *quat, void *mtx) {
     f32 *q = (f32 *)quat;
     f32 *m = (f32 *)mtx;
@@ -17324,6 +17352,102 @@ void GbaProc__Fv_800CA1D0(void) {
             break;
         }
     }
+}
+
+static inline u8 GbaCalcCrc(u32 data) {
+    u32 crc = 0;
+    u32 mask;
+    s32 k;
+
+    for (k = 0; k < 2; k++) {
+        for (mask = 0x80; mask != 0; mask >>= 1) {
+            crc <<= 1;
+            if (data & mask) {
+                if (crc & 0x100) {
+                    crc ^= 0xCC;
+                } else {
+                    crc += 1;
+                }
+            } else if (crc & 0x100) {
+                crc ^= 0xCD;
+            }
+        }
+        data >>= 8;
+    }
+    for (k = 0; k < 8; k++) {
+        crc <<= 1;
+        if (crc & 0x100) {
+            crc ^= 0xCD;
+        }
+    }
+    return crc;
+}
+
+void GBACloseCallback__FlP11DVDFileInfo(s32 result, void *fileInfo) {
+    extern u8 ClientImage_80386A40[0x40000];
+    extern u32 ImageSize_803C79A0;
+    extern u32 HostId_803C79A4;
+    extern u32 *DiskId_803C79A8;
+    s32 DVDClose(void *fileInfo);
+    u32 *DVDGetCurrentDiskID(void);
+    u32 OSGetTick(void);
+    void GBAInit(void);
+    s32 i;
+    u32 mask;
+    u32 data;
+    u32 crc;
+    s32 k;
+    s32 sum;
+    s32 j;
+
+    DVDClose(fileInfo);
+    DiskId_803C79A8 = DVDGetCurrentDiskID();
+    HostId_803C79A4 = OSGetTick();
+    *(u32 *)(ClientImage_80386A40 + 0xC8) = HostId_803C79A4;
+    *(u32 *)(ClientImage_80386A40 + 0xAC) = *DiskId_803C79A8;
+    sum = 0xE7;
+    for (j = 0xA0; j < 0xBD; j++) {
+        sum -= ClientImage_80386A40[j];
+    }
+    ClientImage_80386A40[0xBD] = sum;
+
+    for (i = 0; i < 4; i++) {
+        crc = 0;
+        Param_803C6A40[i].state = crc;
+        Param_803C6A40[i].type = 0x40;
+        Param_803C6A40[i].unk70 = crc;
+        Param_803C6A40[i].program = ClientImage_80386A40;
+        Param_803C6A40[i].length = ImageSize_803C79A0;
+        Param_803C6A40[i].unk58 = crc;
+        *(u32 *)Param_803C6A40[i].unk5C = crc;
+        Param_803C6A40[i].unk60 = (i + 0x40) << 24;
+        Param_803C6A40[i].unk60 |= ((i % 2) ? 0xDF : 0) << 16;
+        Param_803C6A40[i].unk60 |= ((i / 2) ? 0x8F : 0) << 8;
+        data = ((Param_803C6A40[i].unk60 >> 16) & 0xFF) | (Param_803C6A40[i].unk60 & 0xFF00);
+        for (k = 0; k < 2; k++) {
+            for (mask = 0x80; mask != 0; mask >>= 1) {
+                crc <<= 1;
+                if (data & mask) {
+                    if (crc & 0x100) {
+                        crc ^= 0xCC;
+                    } else {
+                        crc += 1;
+                    }
+                } else if (crc & 0x100) {
+                    crc ^= 0xCD;
+                }
+            }
+            data >>= 8;
+        }
+        for (k = 0; k < 8; k++) {
+            crc <<= 1;
+            if (crc & 0x100) {
+                crc ^= 0xCD;
+            }
+        }
+        Param_803C6A40[i].unk60 |= (u8)crc;
+    }
+    GBAInit();
 }
 
 void GBACloseCallback__FlP11DVDFileInfo(s32 result, void *fileInfo);
