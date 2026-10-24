@@ -20643,14 +20643,6 @@ typedef struct GRWorld {
     GRTrigger **triggers;
 } GRWorld;
 
-static inline void GameRules_ResetZone(GRZone *zone) {
-    u32 j;
-
-    for (j = 0; j < zone->sub->numB; j++) {
-        zone->sub->b[j].unk36 = zone->sub->b[j].unk30;
-    }
-}
-
 void GameRules_Init(void) {
     extern s8 g_bRoundEnd_803C71CC;
     extern u32 g_playerNumThatWon_803C71C8;
