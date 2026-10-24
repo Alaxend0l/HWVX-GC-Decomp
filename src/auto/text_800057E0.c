@@ -2299,7 +2299,6 @@ s32 AI_Car_CheckLocalStats(u8 *ai, u8 *node) {
 
 #pragma push
 #pragma use_lmw_stmw on
-#pragma opt_common_subs off
 s8 AI_Car_EnterState(u8 *ai, u8 *branch, s32 slot) {
     typedef struct { u32 time; } AITimer;
     typedef struct { u8 *info; AITimer timer0; u32 timer1; u32 timer2; u8 pad10[4]; u8 count; } AIBranch;
