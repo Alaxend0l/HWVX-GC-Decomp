@@ -3754,6 +3754,120 @@ void SongManager_PlaySong(void) {
     }
 }
 
+s32 ActionMusicChange(void *data) {
+    typedef struct MusicFade {
+        f32 cur;
+        f32 target;
+        f32 time;
+    } MusicFade;
+    typedef struct MusicTrack {
+        u32 active;
+        f32 vol;
+        f32 target;
+        f32 time;
+        u8 pad10[0x28 - 0x10];
+    } MusicTrack;
+    typedef struct MusicChangeTrackOld {
+        u32 unk0;
+        u32 track;
+        u32 active;
+        u8 padC[0x24 - 0xC];
+    } MusicChangeTrackOld;
+    typedef struct MusicChangeTrack {
+        u32 unk0;
+        u32 track;
+        u32 active;
+        f32 vol;
+        u8 pad10[0x28 - 0x10];
+    } MusicChangeTrack;
+    typedef struct MusicChange {
+        f32 vol;
+        u32 volTime;
+        f32 pitch;
+        u32 pitchTime;
+        f32 tempo;
+        u32 tempoTime;
+        u32 orderMode;
+        u32 order;
+        u32 orderType;
+        u32 numTracks;
+        union {
+            MusicChangeTrackOld old[1];
+            MusicChangeTrack tracks[1];
+        } u;
+    } MusicChange;
+    typedef struct MusicScale {
+        u8 pad0[0x30];
+        f32 vol;
+        f32 pitch;
+        f32 tempo;
+    } MusicScale;
+    extern s8 g_paused_803C6F2D;
+    extern s8 g_songLoaded_803C6F2C;
+    extern MusicFade g_globalMusic_800DBE30[3];
+    extern MusicTrack *g_tracks_803C6F30;
+    extern void (*SetMusicPitch)(u32);
+    extern void (*SetMusicTempo)(u32);
+    extern void (*SetMusicOrder)(u8, s8);
+    void SetMusicVol(u32 vol);
+    MusicChange *action = data;
+    u32 i;
+    f32 vol;
+
+    if (g_paused_803C6F2D) {
+        return 0;
+    }
+    if (!g_songLoaded_803C6F2C) {
+        return 0;
+    }
+    if (action->volTime == 0) {
+        g_globalMusic_800DBE30[0].cur = action->vol;
+        if (g_worldData.world != NULL) {
+            g_globalMusic_800DBE30[0].cur = action->vol * (*(MusicScale **)((u8 *)g_worldData.world + 0x9C))->vol;
+        }
+        SetMusicVol(32767.0f * g_globalMusic_800DBE30[0].cur);
+    } else {
+        g_globalMusic_800DBE30[0].target = action->vol;
+    }
+    g_globalMusic_800DBE30[0].time = *(f32 *)&action->volTime;
+    if (action->pitchTime == 0) {
+        g_globalMusic_800DBE30[1].cur = action->pitch;
+        if (g_worldData.world != NULL) {
+            g_globalMusic_800DBE30[1].cur = action->pitch * (*(MusicScale **)((u8 *)g_worldData.world + 0x9C))->pitch;
+        }
+        SetMusicPitch(65536.0f * g_globalMusic_800DBE30[1].cur);
+    } else {
+        g_globalMusic_800DBE30[1].target = action->pitch;
+    }
+    g_globalMusic_800DBE30[1].time = *(f32 *)&action->pitchTime;
+    if (action->tempoTime == 0) {
+        g_globalMusic_800DBE30[2].cur = action->tempo;
+        if (g_worldData.world != NULL) {
+            g_globalMusic_800DBE30[2].cur = action->tempo * (*(MusicScale **)((u8 *)g_worldData.world + 0x9C))->tempo;
+        }
+        SetMusicTempo(65536.0f * g_globalMusic_800DBE30[2].cur);
+    } else {
+        g_globalMusic_800DBE30[2].target = action->tempo;
+    }
+    g_globalMusic_800DBE30[2].time = *(f32 *)&action->tempoTime;
+    if (action->orderMode == 0x29) {
+        SetMusicOrder(action->order, action->orderType == 0x27);
+        for (i = 0; i < 15; i++) {
+            g_tracks_803C6F30[i].active = 0;
+        }
+    }
+    for (i = 0; i < action->numTracks; i++) {
+        g_tracks_803C6F30[action->u.old[i].track].active = action->u.old[i].active;
+        g_tracks_803C6F30[action->u.tracks[i].track].active = action->u.tracks[i].active;
+        vol = *(f32 *)&((u32 *)data)[i * 10 + 13];
+        if (vol > 0.0f) {
+            g_tracks_803C6F30[action->u.tracks[i].track].target = vol;
+            g_tracks_803C6F30[action->u.tracks[i].track].time = vol;
+        }
+    }
+    return 1;
+}
+
 s32 ActionMusicSetSong(void) {
     return 1;
 }
