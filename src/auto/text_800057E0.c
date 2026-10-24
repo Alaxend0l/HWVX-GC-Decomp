@@ -24558,6 +24558,25 @@ void stateCoverClosed(void) {
     }
 }
 
+static inline BOOL ProcessNextCommand(void) {
+    extern s32 CommandList_802EF860[][5];
+    extern s32 NextCommandNumber_803C72EC;
+    void Read(void *addr, u32 length, u32 offset, void *callback);
+    s32 DVDLowSeek(u32 offset, void *callback);
+    s32 n = NextCommandNumber_803C72EC;
+
+    if (CommandList_802EF860[n][0] == 1) {
+        NextCommandNumber_803C72EC++;
+        Read((void *)CommandList_802EF860[n][1], CommandList_802EF860[n][2], CommandList_802EF860[n][3], (void *)CommandList_802EF860[n][4]);
+        return TRUE;
+    } else if (CommandList_802EF860[n][0] == 2) {
+        NextCommandNumber_803C72EC++;
+        DVDLowSeek(CommandList_802EF860[n][3], (void *)CommandList_802EF860[n][4]);
+        return TRUE;
+    }
+    return FALSE;
+}
+
 #pragma push
 #pragma dont_inline on
 void AlarmHandlerForTimeout(void *alarm, void *context) {
