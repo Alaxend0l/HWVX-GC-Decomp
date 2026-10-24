@@ -5208,9 +5208,9 @@ static void CarA_ApplyWheelLoads(void *thing) {
         u8 pad42[0x50 - 0x42];
     } WheelInfo;
     Vector4 *up;
+    u32 i;
     WheelInfo *wheel;
     u8 *susp;
-    u32 i;
     s32 bone;
 
     susp = car;
