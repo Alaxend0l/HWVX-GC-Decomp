@@ -613,9 +613,12 @@ typedef struct JoyBusParam {
     JoyBusPacket send;
     JoyBusPacket recv;
     u32 key;
-    u8 unk58[0x6C - 0x58];
+    u8 unk58[0x60 - 0x58];
+    u32 unk60;
+    u32 unk64;
+    u8 unk68[0x6C - 0x68];
     u32 startTick;
-    u8 unk70[0x74 - 0x70];
+    s32 unk70;
 } JoyBusParam;
 
 extern JoyBusParam Param_803C6A40[4];
