@@ -6577,7 +6577,7 @@ static inline void CarA_DrawReflectionParts(u8 *car, Matrix4 *matrices) {
 
 #pragma push
 #pragma use_lmw_stmw on
-void CarA_DrawReflection(u8 *car) {
+void CarA_DrawReflection(void *thing) {
     typedef struct { void *geom; u16 mtxIndex; u8 pad6[2]; } ModelPart;
     typedef struct {
         u32 numGeoms;
@@ -6627,118 +6627,116 @@ void CarA_DrawReflection(u8 *car) {
     Matrix4 partMtx2;
     Vector4 plane;
     Vector4 pos;
-    Matrix4 *oldMatrices;
-    f32 offset;
+    u8 *car = thing;
+    f32 offset = 0.0f;
+    Matrix4 *oldMatrices = *(Matrix4 **)(car + 0x340);
     f32 h;
 
-    offset = 0.0f;
-    oldMatrices = *(Matrix4 **)(car + 0x340);
-    if (*(Model **)(car + 0x330) == NULL) {
-        return;
-    }
-    LightManager_LightThing(car);
-    *(Matrix4 **)(car + 0x340) = matrices;
-    {
-        s32 *skel = (*(Model **)(car + 0x330))->skel;
-        CarA_Extract_Keyframes(car, frames, *(Model **)(car + 0x330));
-        XformVec(car + 0x10, (Vector4 *)(car + 0x520), &pos);
-        TEST_AnimTraverseHeirarchyToMatricesWorld((Vector4 *)(car + 0x50), &pos, frames, *skel, matrices, 1.0f);
-    }
-    Create_Plane3(&plane, (Vector4 *)(car + 0x20), &pos);
-    h = -Distance_Plane(&plane, &matrices[(*(CarTrailBone **)(*(u8 **)(car + 0x3BC) + 0xD4))->bone].v[3]);
-    offset += 2.0f * h + 2.0f * (*(CarTrailBone **)(*(u8 **)(car + 0x3BC) + 0xD4))->offset;
-    {
-        u32 i;
-        for (i = 0; i < (*(Model **)(car + 0x330))->numParts; i++) {
-            ModelPart *e = &(*(Model **)(car + 0x330))->parts[i];
-            Gfx_DrawGeometry(e->geom, &matrices[e->mtxIndex]);
+    if (*(Model **)(car + 0x330) != NULL) {
+        LightManager_LightThing(car);
+        *(Matrix4 **)(car + 0x340) = matrices;
+        {
+            s32 *skel = (*(Model **)(car + 0x330))->skel;
+            CarA_Extract_Keyframes(car, frames, *(Model **)(car + 0x330));
+            XformVec(car + 0x10, (Vector4 *)(car + 0x520), &pos);
+            TEST_AnimTraverseHeirarchyToMatricesWorld((Vector4 *)(car + 0x50), &pos, frames, *skel, matrices, 1.0f);
         }
-    }
-    {
-        CarPartList *list = *(CarPartList **)(*(u8 **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x78) + 0x10) + 0x38);
-        u32 j;
-        CarPart *part;
-        u32 bit;
-        void *geom;
-        if (list != NULL) {
-            for (j = 0; j < list->count; j++) {
-                part = &list->parts[j];
-                geom = part->geom;
-                bit = *(u32 *)(car + 0x374) & (1 << j);
-                if (bit && !(part->flags & 1)) {
-                    continue;
-                }
-                if (!bit && (part->flags & 1)) {
-                    continue;
-                }
-                if (part->xform) {
-                    partMtx = matrices[part->mtxIndex];
-                    XformVec(&partMtx, list->parts[j].offset, &partMtx.v[3]);
-                    Gfx_DrawGeometry(geom, &partMtx);
-                } else {
-                    Gfx_DrawGeometry(geom, &matrices[part->mtxIndex]);
+        Create_Plane3(&plane, (Vector4 *)(car + 0x20), &pos);
+        h = -Distance_Plane(&plane, &matrices[(*(CarTrailBone **)(*(u8 **)(car + 0x3BC) + 0xD4))->bone].v[3]);
+        offset += 2.0f * h + 2.0f * (*(CarTrailBone **)(*(u8 **)(car + 0x3BC) + 0xD4))->offset;
+        {
+            u32 i;
+            for (i = 0; i < (*(Model **)(car + 0x330))->numParts; i++) {
+                ModelPart *e = &(*(Model **)(car + 0x330))->parts[i];
+                Gfx_DrawGeometry(e->geom, &matrices[e->mtxIndex]);
+            }
+        }
+        {
+            u32 j;
+            CarPartList *list = *(CarPartList **)(*(u8 **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x78) + 0x10) + 0x38);
+            CarPart *part;
+            u32 bit;
+            void *geom;
+            if (list != NULL) {
+                for (j = 0; j < list->count; j++) {
+                    part = &list->parts[j];
+                    geom = part->geom;
+                    bit = *(u32 *)(car + 0x374) & (1 << j);
+                    if (bit && !(part->flags & 1)) {
+                        continue;
+                    }
+                    if (!bit && (part->flags & 1)) {
+                        continue;
+                    }
+                    if (part->xform) {
+                        partMtx = matrices[part->mtxIndex];
+                        XformVec(&partMtx, list->parts[j].offset, &partMtx.v[3]);
+                        Gfx_DrawGeometry(geom, &partMtx);
+                    } else {
+                        Gfx_DrawGeometry(geom, &matrices[part->mtxIndex]);
+                    }
                 }
             }
         }
-    }
-    MotionState_DrawSlaves(car + 0x330, 0);
-    mtx = *(Matrix4 *)(car + 0x10);
-    {
-        s32 *skel = (*(Model **)(car + 0x330))->skel;
-        u32 i;
-        CarA_Extract_Keyframes(car, frames2, *(Model **)(car + 0x330));
-        Gfx_AnimTraverseHeirarchyToMatrices(frames2, *skel, matrices);
-        mtx.v[1].x *= -1.0f;
-        mtx.v[1].y *= -1.0f;
-        mtx.v[1].z *= -1.0f;
-        mtx.v[0].x *= -1.0f;
-        mtx.v[0].y *= -1.0f;
-        mtx.v[0].z *= -1.0f;
-        XformVec(car + 0x10, (Vector4 *)(car + 0x520), &mtx.v[3]);
-        mtx.v[3].x += mtx.v[1].x * offset;
-        mtx.v[3].y += mtx.v[1].y * offset;
-        mtx.v[3].z += mtx.v[1].z * offset;
-        for (i = 0; i < *skel; i++) {
-            tmp = matrices[i];
-            MultiplyMatrix(&tmp, &mtx, &matrices[i]);
+        MotionState_DrawSlaves(car + 0x330, 0);
+        mtx = *(Matrix4 *)(car + 0x10);
+        {
+            u32 i;
+            s32 *skel = (*(Model **)(car + 0x330))->skel;
+            CarA_Extract_Keyframes(car, frames2, *(Model **)(car + 0x330));
+            Gfx_AnimTraverseHeirarchyToMatrices(frames2, *skel, matrices);
+            mtx.v[1].x *= -1.0f;
+            mtx.v[1].y *= -1.0f;
+            mtx.v[1].z *= -1.0f;
+            mtx.v[0].x *= -1.0f;
+            mtx.v[0].y *= -1.0f;
+            mtx.v[0].z *= -1.0f;
+            XformVec(car + 0x10, (Vector4 *)(car + 0x520), &mtx.v[3]);
+            mtx.v[3].x += mtx.v[1].x * offset;
+            mtx.v[3].y += mtx.v[1].y * offset;
+            mtx.v[3].z += mtx.v[1].z * offset;
+            for (i = 0; i < *skel; i++) {
+                tmp = matrices[i];
+                MultiplyMatrix(&tmp, &mtx, &matrices[i]);
+            }
         }
-    }
-    {
-        u32 i;
-        for (i = 0; i < (*(Model **)(car + 0x330))->numParts; i++) {
-            ModelPart *e = &(*(Model **)(car + 0x330))->parts[i];
-            Gfx_DrawGeometry(e->geom, &matrices[e->mtxIndex]);
+        {
+            u32 i;
+            for (i = 0; i < (*(Model **)(car + 0x330))->numParts; i++) {
+                ModelPart *e = &(*(Model **)(car + 0x330))->parts[i];
+                Gfx_DrawGeometry(e->geom, &matrices[e->mtxIndex]);
+            }
         }
-    }
-    {
-        CarPartList *list = *(CarPartList **)(*(u8 **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x78) + 0x10) + 0x38);
-        u32 j;
-        CarPart *part;
-        u32 bit;
-        void *geom;
-        if (list != NULL) {
-            for (j = 0; j < list->count; j++) {
-                part = &list->parts[j];
-                geom = part->geom;
-                bit = *(u32 *)(car + 0x374) & (1 << j);
-                if (bit && !(part->flags & 1)) {
-                    continue;
-                }
-                if (!bit && (part->flags & 1)) {
-                    continue;
-                }
-                if (part->xform) {
-                    partMtx2 = matrices[part->mtxIndex];
-                    XformVec(&partMtx2, list->parts[j].offset, &partMtx2.v[3]);
-                    Gfx_DrawGeometry(geom, &partMtx2);
-                } else {
-                    Gfx_DrawGeometry(geom, &matrices[part->mtxIndex]);
+        {
+            u32 j;
+            CarPartList *list = *(CarPartList **)(*(u8 **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x78) + 0x10) + 0x38);
+            CarPart *part;
+            u32 bit;
+            void *geom;
+            if (list != NULL) {
+                for (j = 0; j < list->count; j++) {
+                    part = &list->parts[j];
+                    geom = part->geom;
+                    bit = *(u32 *)(car + 0x374) & (1 << j);
+                    if (bit && !(part->flags & 1)) {
+                        continue;
+                    }
+                    if (!bit && (part->flags & 1)) {
+                        continue;
+                    }
+                    if (part->xform) {
+                        partMtx2 = matrices[part->mtxIndex];
+                        XformVec(&partMtx2, list->parts[j].offset, &partMtx2.v[3]);
+                        Gfx_DrawGeometry(geom, &partMtx2);
+                    } else {
+                        Gfx_DrawGeometry(geom, &matrices[part->mtxIndex]);
+                    }
                 }
             }
         }
+        MotionState_DrawSlavesAttachCoronaOnly(car + 0x330, 0);
+        *(Matrix4 **)(car + 0x340) = oldMatrices;
     }
-    MotionState_DrawSlavesAttachCoronaOnly(car + 0x330, 0);
-    *(Matrix4 **)(car + 0x340) = oldMatrices;
 }
 #pragma pop
 
