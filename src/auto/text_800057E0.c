@@ -2121,8 +2121,9 @@ void AI_Car_Cheat_80008A60(u8 *ai) {
     u8 *list;
     u8 *thing;
     u8 **item;
-    u32 i;
     u8 *pos;
+    u32 i;
+    u32 j;
     f32 best;
     f32 dist;
     f32 cheat;
@@ -2139,13 +2140,13 @@ void AI_Car_Cheat_80008A60(u8 *ai) {
     }
     best = 1e9f;
     pos = car + 0x40;
-    for (i = 0; i < g_cameraManager[0x640]; i++) {
-        nearest = *(u8 **)(g_cameraManager + i * 0x190);
+    for (j = 0; j < g_cameraManager[0x640]; j++) {
+        nearest = *(u8 **)(g_cameraManager + j * 0x190);
         if (nearest != NULL && *(u8 **)(nearest + 0x2C) != NULL && *(u32 *)(nearest + 0x38) == 9) {
-            dist = PSVECSquareDistance(pos, g_cameraManager + i * 0x190 + 0x60);
+            dist = PSVECSquareDistance(pos, g_cameraManager + j * 0x190 + 0x60);
             if (best > dist) {
                 best = dist;
-                nearest = *(u8 **)(g_cameraManager + i * 0x190);
+                nearest = *(u8 **)(g_cameraManager + j * 0x190);
             }
         }
     }
