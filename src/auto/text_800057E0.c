@@ -4803,6 +4803,93 @@ s8 RayHitsTerrain(Vector4 *start, Vector4 *end, void *arg2, void *arg3) {
     return RayHitsTerrain_Aux3(start, &dir, arg2, arg3);
 }
 
+s8 OBoxHitsCellZeroTimeEdgesOnly(void *obox, void *cell, void *arg2);
+s8 OBoxHitsTerrainZeroTimeEdgesOnly(void *obox, void *arg1) {
+    typedef struct Grid {
+        Vector4 origin;
+        u8 unk10[0x20 - 0x10];
+        u8 *cells;
+        u8 unk24[0x28 - 0x24];
+        f32 sizeX;
+        f32 sizeY;
+        f32 sizeZ;
+        s32 numX;
+        s32 numY;
+        s32 numZ;
+        s32 *cellIndex;
+    } Grid;
+    void MinMaxVec(Vector4 *min, Vector4 *max, Vector4 *v);
+    void World_NextSweep(void);
+    Grid *grid;
+    Vector4 bounds[2];
+    f32 ox;
+    f32 oy;
+    f32 oz;
+    f32 sx;
+    f32 sy;
+    f32 sz;
+    s32 x;
+    s32 x0;
+    s32 x1;
+    s32 y;
+    s32 y0;
+    s32 y1;
+    s32 z;
+    s32 z0;
+    s32 z1;
+    u32 i;
+    s32 index;
+
+    if (g_worldData.world == NULL || *(Grid **)g_worldData.world == NULL) {
+        return 0;
+    }
+    grid = *(Grid **)g_worldData.world;
+    ox = grid->origin.x;
+    oy = grid->origin.y;
+    oz = grid->origin.z;
+    sx = grid->sizeX;
+    sy = grid->sizeY;
+    sz = grid->sizeZ;
+    bounds[0].x = 99999.0f;
+    bounds[0].y = 99999.0f;
+    bounds[0].z = 99999.0f;
+    bounds[0].w = 99999.0f;
+    bounds[1].x = -99999.0f;
+    bounds[1].y = -99999.0f;
+    bounds[1].z = -99999.0f;
+    bounds[1].w = -99999.0f;
+    for (i = 0; i < 8; i++) {
+        MinMaxVec(&bounds[0], &bounds[1], (Vector4 *)obox + 1 + i);
+    }
+    World_NextSweep();
+    x0 = (bounds[0].x - ox) / sx;
+    x1 = (bounds[1].x - ox) / sx;
+    y0 = (bounds[0].y - oy) / sy;
+    y1 = (bounds[1].y - oy) / sy;
+    z0 = (bounds[0].z - oz) / sz;
+    z1 = (bounds[1].z - oz) / sz;
+    for (x = x0; x <= x1; x++) {
+        for (y = y0; y <= y1; y++) {
+            for (z = z0; z <= z1; z++) {
+                grid = *(Grid **)g_worldData.world;
+                if (x < 0 || x >= grid->numX) {
+                    index = -1;
+                } else if (y < 0 || y >= grid->numY) {
+                    index = -1;
+                } else if (z < 0 || z >= grid->numZ) {
+                    index = -1;
+                } else {
+                    index = z * grid->numX + grid->numZ * (y * grid->numX) + x;
+                }
+                if (OBoxHitsCellZeroTimeEdgesOnly(obox, index == -1 ? grid->cells : grid->cells + grid->cellIndex[index] * 0x50, arg1)) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
 s8 OBoxHitsBSPZeroTimeEdgesOnly(void *obox, void *bsp, void *arg2);
 s8 OBoxHitsPolyZeroTime(void *obox, void *poly, void *arg2);
 s8 OBoxHitsBSPZeroTime(void *obox, void *bsp, void *arg2);
@@ -7273,6 +7360,103 @@ void ExtractF32Key(u8 *track, u8 *state, f32 dt) {
         f = 0.0f;
     }
     s->value = f * s->slope + keys[s->current].value;
+}
+
+void ExtractPointKey(u8 *track, u8 *state, f32 dt) {
+    typedef struct Key {
+        f32 x;
+        f32 y;
+        f32 duration;
+        u8 active;
+        u8 interp;
+        u8 pad[2];
+    } Key;
+    typedef struct KeyTrack {
+        u32 count;
+        Key *keys;
+    } KeyTrack;
+    typedef struct KeyState {
+        f32 x;
+        f32 y;
+        f32 slopeX;
+        f32 slopeY;
+        f32 time;
+        u16 index;
+        u16 current;
+        u8 reset;
+    } KeyState;
+    KeyTrack *t = (KeyTrack *)track;
+    KeyState *s = (KeyState *)state;
+    u32 reset;
+    u16 i;
+    Key *keys;
+    Key *key;
+    f32 f;
+
+    reset = 0;
+    if (s->reset) {
+        s->reset = 0;
+        reset = 1;
+        s->index = 0;
+        s->time = 0.0f;
+    }
+    if (s->index >= t->count) {
+        return;
+    }
+    s->time += dt;
+    if (reset || s->time >= t->keys[s->index].duration) {
+        s->current = 0;
+        for (;;) {
+            if (s->time < t->keys[s->index].duration) {
+                break;
+            }
+            s->current = s->index;
+            s->time -= t->keys[s->index].duration;
+            s->index++;
+            if (s->index >= t->count) {
+                for (i = 0; i < t->count; i++) {
+                    if (t->keys[i].active) {
+                        s->index = i;
+                        break;
+                    }
+                }
+                if (s->index >= t->count) {
+                    s->x = t->keys[s->current].x;
+                    s->y = t->keys[s->current].y;
+                    return;
+                }
+                break;
+            }
+        }
+        s->slopeX = t->keys[s->index].x - t->keys[s->current].x;
+        s->slopeY = t->keys[s->index].y - t->keys[s->current].y;
+        key = &t->keys[s->index];
+        if (key->interp == 0) {
+            f = 0.0f;
+            if (key->duration > 0.0f) {
+                f = 1.0f / key->duration;
+            }
+            s->slopeX *= f;
+            s->slopeY *= f;
+        }
+    }
+    keys = t->keys;
+    key = &keys[s->index];
+    if (key->interp == 0) {
+        s->x = s->slopeX * s->time + keys[s->current].x;
+        s->y = s->slopeY * s->time + t->keys[s->current].y;
+        return;
+    }
+    f = s->time / key->duration;
+    if (key->interp == 1) {
+        f = 1.0f - (1.0f - f) * (1.0f - f);
+    } else if (key->interp == 2) {
+        f = f * f;
+    } else {
+        f = 0.0f;
+    }
+    s->x = f * s->slopeX + keys[s->current].x;
+    s->y = f * s->slopeY + t->keys[s->current].y;
 }
 
 void ExtractActiveKey(u8 *track, u8 *state, f32 dt) {
@@ -24333,6 +24517,92 @@ void stateReady_800725A4(void) {
         stateBusy_800727EC(executing_803C7310);
     }
 }
+
+void stateBusy_800727EC(DVDCommandBlock *block) {
+    extern void (*LastState)(DVDCommandBlock *);
+    extern DVDCommandBlock *executing_803C7310;
+    extern s32 AutoFinishing_803C7324;
+    void cbForStateBusy(u32 intType);
+    BOOL DVDLowReadDiskID(void *diskID, void (*callback)(u32));
+    BOOL DVDLowRead(void *addr, u32 length, u32 offset, void (*callback)(u32));
+    BOOL DVDLowSeek(u32 offset, void (*callback)(u32));
+    BOOL DVDLowStopMotor(void (*callback)(u32));
+    BOOL DVDLowRequestAudioStatus(u32 subcmd, void (*callback)(u32));
+    BOOL DVDLowAudioStream(u32 subcmd, u32 length, u32 offset, void (*callback)(u32));
+    BOOL DVDLowAudioBufferConfig(BOOL enable, u32 size, void (*callback)(u32));
+    BOOL DVDLowInquiry(void *info, void (*callback)(u32));
+
+    LastState = stateBusy_800727EC;
+    switch (block->command) {
+    case 5:
+        __DIRegs[1] = __DIRegs[1];
+        block->currTransferSize = 0x20;
+        DVDLowReadDiskID(block->addr, cbForStateBusy);
+        break;
+    case 1:
+    case 4:
+        __DIRegs[1] = __DIRegs[1];
+        block->currTransferSize = (block->length - block->transferredSize > 0x80000) ? 0x80000 : (block->length - block->transferredSize);
+        DVDLowRead((u8 *)block->addr + block->transferredSize, block->currTransferSize,
+                   block->offset + block->transferredSize, cbForStateBusy);
+        break;
+    case 2:
+        __DIRegs[1] = __DIRegs[1];
+        DVDLowSeek(block->offset, cbForStateBusy);
+        break;
+    case 3:
+        DVDLowStopMotor(cbForStateBusy);
+        break;
+    case 15:
+        DVDLowStopMotor(cbForStateBusy);
+        break;
+    case 6:
+        __DIRegs[1] = __DIRegs[1];
+        if (AutoFinishing_803C7324) {
+            executing_803C7310->currTransferSize = 0;
+            DVDLowRequestAudioStatus(0, cbForStateBusy);
+        } else {
+            executing_803C7310->currTransferSize = 1;
+            DVDLowAudioStream(0, block->length, block->offset, cbForStateBusy);
+        }
+        break;
+    case 7:
+        __DIRegs[1] = __DIRegs[1];
+        DVDLowAudioStream(0x10000, 0, 0, cbForStateBusy);
+        break;
+    case 8:
+        __DIRegs[1] = __DIRegs[1];
+        AutoFinishing_803C7324 = 1;
+        DVDLowAudioStream(0, 0, 0, cbForStateBusy);
+        break;
+    case 9:
+        __DIRegs[1] = __DIRegs[1];
+        DVDLowRequestAudioStatus(0, cbForStateBusy);
+        break;
+    case 10:
+        __DIRegs[1] = __DIRegs[1];
+        DVDLowRequestAudioStatus(0x10000, cbForStateBusy);
+        break;
+    case 11:
+        __DIRegs[1] = __DIRegs[1];
+        DVDLowRequestAudioStatus(0x20000, cbForStateBusy);
+        break;
+    case 12:
+        __DIRegs[1] = __DIRegs[1];
+        DVDLowRequestAudioStatus(0x30000, cbForStateBusy);
+        break;
+    case 13:
+        __DIRegs[1] = __DIRegs[1];
+        DVDLowAudioBufferConfig(block->offset, block->length, cbForStateBusy);
+        break;
+    case 14:
+        __DIRegs[1] = __DIRegs[1];
+        block->currTransferSize = 0x20;
+        DVDLowInquiry(block->addr, cbForStateBusy);
+        break;
+    }
+}
+
 #pragma pop
 static inline BOOL issueCommand(s32 prio, u8 *block) {
     extern s32 autoInvalidation_803C6DA8;
