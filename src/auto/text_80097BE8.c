@@ -1135,7 +1135,7 @@ typedef struct GDLAlphaGroup {
     GXColor color;
     u8 unk50;
     u8 window;
-    u8 unk52[0x54 - 0x52];
+    u16 next;
 } GDLAlphaGroup;
 
 typedef struct GDL2DSprite {
