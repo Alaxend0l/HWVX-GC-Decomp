@@ -12993,6 +12993,60 @@ void InterfaceManager_SetControllerConfigInputString(void) {
 
 }
 
+void InterfaceManager_DrawBox(u8 *obj) {
+    void Gfx_Add2DFXLine(Vector4 *p0, Vector4 *p1, u32 *c0, u32 *c1, u8 flag);
+    void Gfx_FontManager_GetPrintRect(char *str, s32 id, f32 *width, f32 *height, f32 spacing);
+    u32 Gfx_FontManager_Print(char *str, u32 id, u8 blendMode, f32 x, f32 y, f32 spacing);
+    int sprintf(char *buf, const char *fmt, ...);
+    f32 width;
+    f32 height;
+    u32 colour = *(u32 *)(obj + 0x24);
+    u32 *box = *(u32 **)(obj + 0x258);
+    Vector4 origin = {0.0f, 0.0f, 0.0f, 0.0f};
+    Vector4 p0 = {0.0f, 0.0f, 0.0f, 0.0f};
+    Vector4 p1 = {0.0f, 0.0f, 0.0f, 0.0f};
+    char buf[16];
+    u32 i;
+    u32 step;
+
+    width = 0.5f * box[0];
+    height = 0.5f * box[1];
+    origin.x = *(f32 *)(obj + 0x60) - width - width * *(f32 *)(*(u8 **)(obj + 0x25C) + 0x30);
+    origin.y = *(f32 *)(obj + 0x64) - height - height * *(f32 *)(*(u8 **)(obj + 0x25C) + 0x34);
+    if (box[2] == 0) {
+        box[2] = 1;
+    }
+    step = box[0] / box[2];
+    for (i = 0; i <= box[0]; i += step) {
+        p0.y = origin.y;
+        p0.x = origin.x + i;
+        p1.x = p0.x;
+        p1.y = origin.y + box[1];
+        Gfx_Add2DFXLine(&p0, &p1, &colour, &colour, 1);
+        sprintf(buf, "%d", (u32)p0.x);
+        Gfx_FontManager_GetPrintRect(buf, obj[0x1B0], &width, &height, **(f32 **)(box[4] + 0x1C));
+        width *= 0.5f;
+        height *= 0.5f;
+        Gfx_FontManager_Print(buf, obj[0x1B0], 5, p0.x - width, p0.y - 2.0f * height, **(f32 **)(box[4] + 0x1C));
+    }
+    if (box[3] == 0) {
+        box[3] = 1;
+    }
+    step = box[1] / box[3];
+    for (i = 0; i <= box[1]; i += step) {
+        p0.x = origin.x;
+        p0.y = origin.y + i;
+        p1.x = origin.x + box[0];
+        p1.y = p0.y;
+        Gfx_Add2DFXLine(&p0, &p1, &colour, &colour, 1);
+        sprintf(buf, "%d", (u32)p0.y);
+        Gfx_FontManager_GetPrintRect(buf, obj[0x1B0], &width, &height, **(f32 **)(box[4] + 0x1C));
+        width *= 0.5f;
+        height *= 0.5f;
+        Gfx_FontManager_Print(buf, obj[0x1B0], 5, p0.x - 2.0f * width, p0.y - height, **(f32 **)(box[4] + 0x1C));
+    }
+}
+
 typedef struct FontData {
     u8 pad0[0x9];
     u8 spacing;
@@ -15777,6 +15831,104 @@ void PhysicalObject_ProcessForce(u8 *obj, Vector4 *pos, Vector4 *force, f32 scal
     *(f32 *)(obj + 0x100) += torque.x;
     *(f32 *)(obj + 0x104) += torque.y;
     *(f32 *)(obj + 0x108) += torque.z;
+}
+
+s32 PhysicalObject_Init(u8 *obj, u8 *data) {
+    typedef struct OBox {
+        Vector4 v[3];
+    } OBox;
+    typedef struct Mesh {
+        u8 pad0[0xC];
+        u32 count;
+        u8 pad10[0x1C - 0x10];
+        Vector4 *verts;
+    } Mesh;
+    typedef struct DestructibleInfo {
+        f32 inertia[3];
+        u8 pad0C[0x10 - 0xC];
+        u8 type;
+        u8 pad11[0x20 - 0x11];
+        f32 mass;
+        u8 pad24[0x44 - 0x24];
+        OBox *box;
+        Mesh *mesh;
+    } DestructibleInfo;
+    void Destructible_Init(u8 *obj, u8 *data);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    s32 Thing_HitsTerrain(void *thing, void *arg1, void *arg2);
+    u8 hit[0x50];
+    OBox box;
+    Vector4 scaled;
+    Vector4 local;
+    f32 dist;
+    DestructibleInfo *info;
+    Mesh *mesh;
+    u32 i;
+
+    *(f32 *)(data + 4) += 0.2f;
+    Destructible_Init(obj, data);
+    *(u32 *)(obj + 0x74) &= ~8;
+    *(u32 *)(obj + 0x74) &= ~0x200;
+    if (*(u8 **)(data + 0x5C) != NULL) {
+        *(f32 *)(obj + 0xDC) = 1.0f + *(f32 *)(*(u8 **)(data + 0x5C) + 0xC);
+    }
+    info = *(DestructibleInfo **)(*(u8 **)(obj + 0xC0) + 0x10);
+    switch (info->type) {
+    case 0:
+        box = *info->box;
+        *(f32 *)(obj + 0x120) = 1.0f / (info->inertia[0] * info->mass * (box.v[1].y * box.v[1].y + box.v[1].z * box.v[1].z));
+        *(f32 *)(obj + 0x124) = 1.0f / ((*(DestructibleInfo **)(*(u8 **)(obj + 0xC0) + 0x10))->inertia[1] * (*(DestructibleInfo **)(*(u8 **)(obj + 0xC0) + 0x10))->mass * (box.v[1].x * box.v[1].x + box.v[1].z * box.v[1].z));
+        *(f32 *)(obj + 0x128) = 1.0f / ((*(DestructibleInfo **)(*(u8 **)(obj + 0xC0) + 0x10))->inertia[2] * (*(DestructibleInfo **)(*(u8 **)(obj + 0xC0) + 0x10))->mass * (box.v[1].x * box.v[1].x + box.v[1].y * box.v[1].y));
+        break;
+    case 1:
+    case 6:
+        mesh = info->mesh;
+        box.v[0].x = 9999.9f;
+        box.v[0].y = 9999.9f;
+        box.v[0].z = 9999.9f;
+        box.v[1].x = -9999.9f;
+        box.v[1].y = -9999.9f;
+        box.v[1].z = -9999.9f;
+        for (i = 0; i < mesh->count; i++) {
+            if (box.v[0].x > mesh->verts[i].x) {
+                box.v[0].x = mesh->verts[i].x;
+            }
+            if (box.v[0].y > mesh->verts[i].y) {
+                box.v[0].y = mesh->verts[i].y;
+            }
+            if (box.v[0].z > mesh->verts[i].z) {
+                box.v[0].z = mesh->verts[i].z;
+            }
+            if (box.v[1].x < mesh->verts[i].x) {
+                box.v[1].x = mesh->verts[i].x;
+            }
+            if (box.v[1].y < mesh->verts[i].y) {
+                box.v[1].y = mesh->verts[i].y;
+            }
+            if (box.v[1].z < mesh->verts[i].z) {
+                box.v[1].z = mesh->verts[i].z;
+            }
+        }
+        *(f32 *)(obj + 0x120) = 1.0f / ((*(DestructibleInfo **)(*(u8 **)(obj + 0xC0) + 0x10))->inertia[0] * (*(DestructibleInfo **)(*(u8 **)(obj + 0xC0) + 0x10))->mass * (box.v[1].y * box.v[1].y + box.v[1].z * box.v[1].z));
+        *(f32 *)(obj + 0x124) = 1.0f / ((*(DestructibleInfo **)(*(u8 **)(obj + 0xC0) + 0x10))->inertia[1] * (*(DestructibleInfo **)(*(u8 **)(obj + 0xC0) + 0x10))->mass * (box.v[1].x * box.v[1].x + box.v[1].z * box.v[1].z));
+        *(f32 *)(obj + 0x128) = 1.0f / ((*(DestructibleInfo **)(*(u8 **)(obj + 0xC0) + 0x10))->inertia[2] * (*(DestructibleInfo **)(*(u8 **)(obj + 0xC0) + 0x10))->mass * (box.v[1].x * box.v[1].x + box.v[1].y * box.v[1].y));
+        break;
+    }
+    if (((Vector4 *)(data + 0x20))->x || ((Vector4 *)(data + 0x20))->y || ((Vector4 *)(data + 0x20))->z) {
+        InverseXformVecOrientation(obj + 0x10, (Vector4 *)(data + 0x20), &local);
+        scaled.x = local.x / *(f32 *)(obj + 0x120);
+        scaled.y = local.y / *(f32 *)(obj + 0x124);
+        scaled.z = local.z / *(f32 *)(obj + 0x128);
+        XformVecOrientation(obj + 0x10, &scaled, (Vector4 *)(obj + 0x110));
+    }
+    if (!(*(u32 *)(obj + 0x74) & 0x40002)) {
+        dist = 1.0f;
+        if ((s8)Thing_HitsTerrain(obj, &dist, hit) && 0.0f == dist) {
+            (*(void (**)(u8 *))(*(u8 **)(obj + 0x8C) + 4))(obj);
+        }
+    }
+    return 1;
 }
 
 void Mover_Init(void) {
