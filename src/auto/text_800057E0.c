@@ -20646,10 +20646,6 @@ typedef struct GRWorld {
 static inline void GameRules_ResetZone(GRZone *zone) {
     u32 j;
 
-    for (j = 0; j < zone->sub->numC; j++) {
-        zone->sub->c[j].unk39 = zone->sub->c[j].unk28;
-        zone->sub->c[j].unk38 = 0;
-    }
     for (j = 0; j < zone->sub->numB; j++) {
         zone->sub->b[j].unk36 = zone->sub->b[j].unk30;
     }
@@ -20666,10 +20662,11 @@ void GameRules_Init(void) {
     u32 GameSettings_GetCodeVariable(s32, s32);
     void Trigger_SaveActions(s32 *saved, u32 count);
     u8 *GameSettings_GetMCP(void);
+    u32 j;
+    GRZone *zone;
     u32 i;
     u8 *mcp;
     GRTrigger **slot;
-    GRZone *zone;
 
     g_bRoundEnd_803C71CC = 0;
     g_playerNumThatWon_803C71C8 = 1;
@@ -20716,6 +20713,9 @@ void GameRules_Init(void) {
     }
     for (i = 0; i < ((GRWorld *)g_worldData.world)->numZones; i++) {
         zone = &((GRWorld *)g_worldData.world)->zones[i];
+        for (j = 0; j < zone->sub->numA; j++) {
+            zone->sub->a[j].unk39 = zone->sub->a[j].unk34;
+        }
         GameRules_ResetZone(zone);
     }
 }
