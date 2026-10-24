@@ -42473,7 +42473,7 @@ static inline s32 TRKSendACK(TRKBuffer *b) {
     return err;
 }
 
-void TRKDoReadMemory(TRKBuffer *b) {
+s32 TRKDoReadMemory(TRKBuffer *b) {
     s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data);
     s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data);
     u8 buf[0x800];
@@ -42489,8 +42489,7 @@ void TRKDoReadMemory(TRKBuffer *b) {
         TRKResetBuffer(b, 1);
         TRKAppendBuffer1_ui8(b, 0x80);
         TRKAppendBuffer1_ui8(b, 2);
-        TRKSendACK(b);
-        return;
+        return TRKSendACK(b);
     }
     TRKSetBufferPosition(b, 0);
     err = TRKReadBuffer1_ui8(b, &c);
@@ -42507,15 +42506,13 @@ void TRKDoReadMemory(TRKBuffer *b) {
         TRKResetBuffer(b, 1);
         TRKAppendBuffer1_ui8(b, 0x80);
         TRKAppendBuffer1_ui8(b, 0x12);
-        TRKSendACK(b);
-        return;
+        return TRKSendACK(b);
     }
     if (length > 0x800) {
         TRKResetBuffer(b, 1);
         TRKAppendBuffer1_ui8(b, 0x80);
         TRKAppendBuffer1_ui8(b, 0x11);
-        TRKSendACK(b);
-        return;
+        return TRKSendACK(b);
     }
     TRKResetBuffer(b, 1);
     TRKAppendBuffer1_ui8(b, 0x80);
@@ -42555,10 +42552,9 @@ void TRKDoReadMemory(TRKBuffer *b) {
         TRKResetBuffer(b, 1);
         TRKAppendBuffer1_ui8(b, 0x80);
         TRKAppendBuffer1_ui8(b, replyError);
-        TRKSendACK(b);
-    } else {
-        TRKSendACK(b);
+        return TRKSendACK(b);
     }
+    return TRKSendACK(b);
 }
 
 void TRKDoCPUType(TRKBuffer *b) {
