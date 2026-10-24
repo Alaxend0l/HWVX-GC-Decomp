@@ -2620,7 +2620,9 @@ s32 AI_Car_DetermineState(u8 *car) {
     return 0;
 }
 
+#pragma push
 #pragma use_lmw_stmw on
+#pragma inline_depth(3)
 void AI_Car_ResetState(u8 *car, void *arg) {
     typedef struct AIStateInfo {
         u8 unk0[6];
@@ -2661,7 +2663,7 @@ void AI_Car_ResetState(u8 *car, void *arg) {
         ((AIStateSlot *)(car + 0xD4))[iTotal].info = NULL;
     }
 }
-#pragma use_lmw_stmw reset
+#pragma pop
 
 void AI_Car_Reset(u8 *car) {
     typedef struct AICarParams {
