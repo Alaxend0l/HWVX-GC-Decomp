@@ -44528,8 +44528,8 @@ s32 TRKTargetAccessExtended2(u32 firstRegister, u32 lastRegister, TRKBuffer *b, 
         u8 exceptionDetected;
     } TRKExceptionStatus;
     TRKExceptionStatus savedException;
-    u32 value32;
-    u64 temp;
+    u32 value_buf0[1];
+    u32 value_buf[2];
     s32 error;
     u32 i;
 
@@ -44540,22 +44540,22 @@ s32 TRKTargetAccessExtended2(u32 firstRegister, u32 lastRegister, TRKBuffer *b, 
     savedException = *(TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4;
     ((TRKExceptionStatus *)gTRKExceptionStatus_800DA0A4)->exceptionDetected = 0;
 
-    TRKPPCAccessSPR(&value32, 920, 1);
-    value32 |= 0xA0000000;
-    TRKPPCAccessSPR(&value32, 920, 0);
-    value32 = 0;
-    TRKPPCAccessSPR(&value32, 912, 0);
+    TRKPPCAccessSPR(value_buf0, 920, 1);
+    value_buf0[0] |= 0xA0000000;
+    TRKPPCAccessSPR(value_buf0, 920, 0);
+    value_buf0[0] = 0;
+    TRKPPCAccessSPR(value_buf0, 912, 0);
 
     *registersLengthPtr = 0;
     error = 0;
 
     for (i = firstRegister; i <= lastRegister && error == 0; i++) {
         if (read) {
-            TRKPPCAccessPairedSingleRegister(&temp, i, read);
-            error = TRKAppendBuffer1_ui64(b, temp);
+            TRKPPCAccessPairedSingleRegister(value_buf, i, read);
+            error = TRKAppendBuffer1_ui64(b, *(u64 *)value_buf);
         } else {
-            TRKReadBuffer1_ui64(b, &temp);
-            error = TRKPPCAccessPairedSingleRegister(&temp, i, read);
+            TRKReadBuffer1_ui64(b, (u64 *)value_buf);
+            error = TRKPPCAccessPairedSingleRegister(value_buf, i, read);
         }
         *registersLengthPtr += sizeof(u64);
     }
