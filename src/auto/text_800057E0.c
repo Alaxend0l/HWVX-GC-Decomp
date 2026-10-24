@@ -32864,7 +32864,7 @@ typedef struct Tracer {
     u8 unk4AC[4];
     TracerPoint *head;
     TracerPoint *tail;
-    u8 unk4B8[0x4];
+    s8 unk4B8[0x4];
     f32 unk4BC;
     f32 unk4C0;
     u32 unk4C4;
