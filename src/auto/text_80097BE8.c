@@ -18148,6 +18148,7 @@ void ReadProc(s32 chan) {
     *gba->status = gba->input[4] & 0x3A;
 }
 
+#pragma auto_inline off
 s32 GBARead(s32 chan, u8 *dst, u8 *status) {
     GBAControl *gba = &__GBA[chan];
     s32 ret;
