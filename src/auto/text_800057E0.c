@@ -18596,24 +18596,10 @@ typedef struct {
 } InterfaceKeyState;
 
 s8 Input_GetAnalog(u32 chan, s16 *x, s16 *y, s16 *cx, s16 *cy);
-u32 InterfaceManager_KeyPress(void *arg0, s32 pad, u8 key) {
-    typedef struct {
-        s8 active;
-        s8 held;
-        s16 timer;
-    } DirState;
-    typedef struct {
-        u8 pad0[0x116];
-        DirState dir[4][4];
-        u8 pad156[0x160 - 0x156];
-        s8 disabled;
-        u8 pad161[0x168 - 0x161];
-        s8 locked;
-    } Iface;
+u32 InterfaceManager_KeyPress(InterfaceKeyState *im, s32 pad, u8 key) {
     extern s32 g_iDeltaTimeMS;
-    s8 Input_KeyPress(u32 chan, u8 key);
+    s8 Input_KeyPress(s32 chan, u8 key);
     u32 result = 0;
-    Iface *im = arg0;
 
     if (pad == -2 || im->disabled) {
         return 0;
