@@ -53243,6 +53243,374 @@ void __GXSetMatrixIndex(s32 index) {
     *(u16 *)(gx + 2) = 1;
 }
 
+void GXSetGPMetric(s32 perf0, s32 perf1) {
+    extern u8 *gx;
+    extern volatile u16 *__cpReg;
+    u32 *reg;
+
+    switch (*(s32 *)(gx + 0x4E4)) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 34:
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1006;
+        GXWGFifo.u32 = 0;
+        break;
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+    case 15:
+    case 16:
+    case 17:
+    case 18:
+    case 19:
+    case 20:
+    case 21:
+    case 22:
+    case 23:
+    case 24:
+    case 25:
+    case 26:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x23000000;
+        break;
+    case 27:
+    case 28:
+    case 29:
+    case 30:
+    case 31:
+    case 32:
+    case 33:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x24000000;
+        break;
+    case 35:
+        break;
+    }
+
+    switch (*(s32 *)(gx + 0x4E8)) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 21:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x67000000;
+        break;
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+    case 15:
+    case 16:
+        reg = (u32 *)(gx + 0x4EC);
+        *reg = *(u32 *)(gx + 0x4EC) & ~0xF0;
+        GXWGFifo.u8 = 8;
+        GXWGFifo.u8 = 0x20;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x4EC);
+        break;
+    case 17:
+    case 18:
+    case 19:
+    case 20:
+        __cpReg[3] = 0;
+        break;
+    case 22:
+        break;
+    }
+
+    *(s32 *)(gx + 0x4E4) = perf0;
+    switch (*(s32 *)(gx + 0x4E4)) {
+    case 0:
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1006;
+        GXWGFifo.u32 = 0x273;
+        break;
+    case 1:
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1006;
+        GXWGFifo.u32 = 0x14A;
+        break;
+    case 2:
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1006;
+        GXWGFifo.u32 = 0x16B;
+        break;
+    case 3:
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1006;
+        GXWGFifo.u32 = 0x84;
+        break;
+    case 4:
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1006;
+        GXWGFifo.u32 = 0xC6;
+        break;
+    case 5:
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1006;
+        GXWGFifo.u32 = 0x210;
+        break;
+    case 6:
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1006;
+        GXWGFifo.u32 = 0x252;
+        break;
+    case 7:
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1006;
+        GXWGFifo.u32 = 0x231;
+        break;
+    case 8:
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1006;
+        GXWGFifo.u32 = 0x1AD;
+        break;
+    case 9:
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1006;
+        GXWGFifo.u32 = 0x1CE;
+        break;
+    case 34:
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1006;
+        GXWGFifo.u32 = 0x21;
+        break;
+    case 10:
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1006;
+        GXWGFifo.u32 = 0x153;
+        break;
+    case 11:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2300AE7F;
+        break;
+    case 12:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x23008E7F;
+        break;
+    case 13:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x23009E7F;
+        break;
+    case 14:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x23001E7F;
+        break;
+    case 15:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2300AC3F;
+        break;
+    case 16:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2300AC7F;
+        break;
+    case 17:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2300ACBF;
+        break;
+    case 18:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2300ACFF;
+        break;
+    case 19:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2300AD3F;
+        break;
+    case 20:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2300AD7F;
+        break;
+    case 21:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2300ADBF;
+        break;
+    case 22:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2300ADFF;
+        break;
+    case 23:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2300AE3F;
+        break;
+    case 24:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2300A27F;
+        break;
+    case 25:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2300A67F;
+        break;
+    case 26:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2300AA7F;
+        break;
+    case 27:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2402C0C6;
+        break;
+    case 28:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2402C16B;
+        break;
+    case 29:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2402C0E7;
+        break;
+    case 30:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2402C108;
+        break;
+    case 31:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2402C129;
+        break;
+    case 32:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2402C14A;
+        break;
+    case 33:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x2402C1AD;
+        break;
+    case 35:
+        break;
+    }
+
+    *(s32 *)(gx + 0x4E8) = perf1;
+    switch (*(s32 *)(gx + 0x4E8)) {
+    case 0:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x67000042;
+        break;
+    case 1:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x67000084;
+        break;
+    case 2:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x67000063;
+        break;
+    case 3:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x67000129;
+        break;
+    case 8:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x67000252;
+        break;
+    case 21:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x67000021;
+        break;
+    case 4:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x6700014B;
+        break;
+    case 5:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x6700018D;
+        break;
+    case 6:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x670001CF;
+        break;
+    case 7:
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = 0x67000211;
+        break;
+    case 9:
+        reg = (u32 *)(gx + 0x4EC);
+        *reg = (*(u32 *)(gx + 0x4EC) & ~0xF0) | 0x20;
+        GXWGFifo.u8 = 8;
+        GXWGFifo.u8 = 0x20;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x4EC);
+        break;
+    case 10:
+        reg = (u32 *)(gx + 0x4EC);
+        *reg = (*(u32 *)(gx + 0x4EC) & ~0xF0) | 0x30;
+        GXWGFifo.u8 = 8;
+        GXWGFifo.u8 = 0x20;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x4EC);
+        break;
+    case 11:
+        reg = (u32 *)(gx + 0x4EC);
+        *reg = (*(u32 *)(gx + 0x4EC) & ~0xF0) | 0x40;
+        GXWGFifo.u8 = 8;
+        GXWGFifo.u8 = 0x20;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x4EC);
+        break;
+    case 12:
+        reg = (u32 *)(gx + 0x4EC);
+        *reg = (*(u32 *)(gx + 0x4EC) & ~0xF0) | 0x50;
+        GXWGFifo.u8 = 8;
+        GXWGFifo.u8 = 0x20;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x4EC);
+        break;
+    case 13:
+        reg = (u32 *)(gx + 0x4EC);
+        *reg = (*(u32 *)(gx + 0x4EC) & ~0xF0) | 0x60;
+        GXWGFifo.u8 = 8;
+        GXWGFifo.u8 = 0x20;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x4EC);
+        break;
+    case 14:
+        reg = (u32 *)(gx + 0x4EC);
+        *reg = (*(u32 *)(gx + 0x4EC) & ~0xF0) | 0x70;
+        GXWGFifo.u8 = 8;
+        GXWGFifo.u8 = 0x20;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x4EC);
+        break;
+    case 15:
+        reg = (u32 *)(gx + 0x4EC);
+        *reg = (*(u32 *)(gx + 0x4EC) & ~0xF0) | 0x80;
+        GXWGFifo.u8 = 8;
+        GXWGFifo.u8 = 0x20;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x4EC);
+        break;
+    case 16:
+        reg = (u32 *)(gx + 0x4EC);
+        *reg = (*(u32 *)(gx + 0x4EC) & ~0xF0) | 0x90;
+        GXWGFifo.u8 = 8;
+        GXWGFifo.u8 = 0x20;
+        GXWGFifo.u32 = *(u32 *)(gx + 0x4EC);
+        break;
+    case 17:
+        __cpReg[3] = 2;
+        break;
+    case 18:
+        __cpReg[3] = 3;
+        break;
+    case 19:
+        __cpReg[3] = 4;
+        break;
+    case 20:
+        __cpReg[3] = 5;
+        break;
+    case 22:
+        break;
+    }
+    *(u16 *)(gx + 2) = 0;
+}
+#pragma peephole reset
+
 void GXClearGPMetric(void) {
     extern void *__cpReg;
     M2C_FIELD(__cpReg, u16 *, 4) = 4;
