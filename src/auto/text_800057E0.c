@@ -299,10 +299,18 @@ typedef struct GXTexRegionInt {
     u8 isCached;
 } GXTexRegionInt;
 
+typedef struct FileTOCEntry {
+    u32 version;
+    u32 type;
+    u32 id;
+    u8 unkC[0x14 - 0xC];
+    u32 offset;
+} FileTOCEntry;
+
 typedef struct FileTOCCacheEntry {
-    u8 unk0[0x4B4];
-    u8 valid;
-    u8 unk4B5[0x500 - 0x4B5];
+    FileTOCEntry entries[50];
+    u32 count;
+    char name[0x4C];
 } FileTOCCacheEntry;
 
 extern FileTOCCacheEntry g_fileTOCCache[11];
