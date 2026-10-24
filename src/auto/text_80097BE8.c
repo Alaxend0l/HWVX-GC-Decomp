@@ -12776,6 +12776,14 @@ void DestroyMIDI(void) {
 
 #pragma push
 #pragma optimization_level 1
+#pragma use_lmw_stmw on
+s32 SetMIDIState(s32 state) {
+    return 0;
+}
+#pragma pop
+
+#pragma push
+#pragma optimization_level 1
 void SetMIDIVol(void) {
     extern u8 g_chn_803769B4[0x200];
     void SetVoiceVol_(void *voice, s32 vol);
@@ -15748,6 +15756,68 @@ void PlaySpringForce__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 sat
 void JBCallback__Fll(s32 chan, s32 result) {
     Param_803C6A40[chan].state = 2;
     Param_803C6A40[chan].result = result;
+}
+
+void GbaSetport__Fl(s32 chan) {
+    s32 GBAGetStatus(s32 chan, u8 *status);
+    s32 GBARead(s32 chan, u8 *dst, u8 *status);
+    s32 GBAWrite(s32 chan, u8 *src, u8 *status);
+    u32 OSGetTick(void);
+    JoyBusParam *p;
+    u8 *status;
+    u32 *startTick;
+    u32 i;
+    u8 *buf;
+    u32 cmd;
+
+    Param_803C6A40[chan].startTick = OSGetTick();
+    p = &Param_803C6A40[chan];
+    status = &p->status;
+    startTick = &p->startTick;
+    do {
+        if (GBAGetStatus(chan, status) != 0 || (*status & 0x30) != 0x30 || OSGetTick() - *startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 100) {
+            OSReport("GbaSetport: timeout waiting for GBA (chan=%d).\n", chan);
+            p->state = 0;
+            return;
+        }
+    } while (*status & 2);
+    cmd = 0x30000000;
+    if (GBAWrite(chan, (u8 *)&cmd, status) != 0 || (Param_803C6A40[chan].status & 0x30) != 0x30) {
+        OSReport("GbaSetport: GBAWrite failed (chan=%d).\n", chan);
+        p->state = 0;
+        return;
+    }
+    for (i = 0, buf = (u8 *)&p->send; i < 0x20; i += 4, buf += 4) {
+        *startTick = OSGetTick();
+        do {
+            if (GBAGetStatus(chan, (u8 *)p + 4) != 0 || (*status & 0x30) != 0x30 || OSGetTick() - *startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 100) {
+                OSReport("GbaSetport: timeout waiting to send (chan=%d).\n", chan);
+                p->state = 0;
+                return;
+            }
+        } while (*status & 2);
+        if (GBAWrite(chan, buf, status) != 0 || (*status & 0x30) != 0x30) {
+            OSReport("GbaSetport: send failed (chan=%d).\n", chan);
+            p->state = 0;
+            return;
+        }
+    }
+    for (i = 0, buf = (u8 *)&p->recv; i < 0x20; i += 4, buf += 4) {
+        *startTick = OSGetTick();
+        do {
+            if (GBAGetStatus(chan, (u8 *)p + 4) != 0 || (*status & 0x30) != 0x30 || OSGetTick() - *startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 100) {
+                OSReport("GbaSetport: timeout waiting to receive (chan=%d).\n", chan);
+                p->state = 0;
+                return;
+            }
+        } while (!(*status & 8));
+        if (GBARead(chan, buf, status) != 0 || (*status & 0x30) != 0x30) {
+            OSReport("GbaSetport: receive failed (chan=%d).\n", chan);
+            p->state = 0;
+            return;
+        }
+    }
+    p->state = 3;
 }
 
 void GBACloseCallback__FlP11DVDFileInfo(s32 result, void *fileInfo);
