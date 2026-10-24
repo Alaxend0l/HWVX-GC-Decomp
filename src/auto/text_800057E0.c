@@ -7548,6 +7548,38 @@ s32 Drone_Init(u8 *drone, u8 *data) {
     return 1;
 }
 
+static inline void Drone_ApplyControls(u8 *drone) {
+    void ProjectVectorToNormal(void *n, void *v);
+    f32 PSVECDotProduct(void *a, void *b);
+    f32 _fabs(f32 x);
+    f32 turn;
+    f32 thrust;
+    s8 *input;
+
+    if (drone[0x1DC] == 1) {
+        ProjectVectorToNormal(drone + 0x10, drone);
+        *(f32 *)(drone + 0x180) = PSVECDotProduct(drone, drone + 0x30);
+        input = *(s8 **)(drone + 0x94);
+        if (input != NULL) {
+            thrust = 12.1f * (f32)input[1];
+            turn = 10.0f * (f32)-input[0];
+            ProjectVectorToNormal(drone + 0x20, drone + 0x110);
+            ((Vector4 *)(drone + 0x110))->x += turn * ((Vector4 *)(drone + 0x20))->x;
+            ((Vector4 *)(drone + 0x110))->y += turn * ((Vector4 *)(drone + 0x20))->y;
+            ((Vector4 *)(drone + 0x110))->z += turn * ((Vector4 *)(drone + 0x20))->z;
+            if (_fabs(*(f32 *)(drone + 0x180)) < 100.0f) {
+                ((Vector4 *)(drone + 0xF0))->x += ((Vector4 *)(drone + 0x30))->x * thrust;
+                ((Vector4 *)(drone + 0xF0))->y += ((Vector4 *)(drone + 0x30))->y * thrust;
+                ((Vector4 *)(drone + 0xF0))->z += ((Vector4 *)(drone + 0x30))->z * thrust;
+            }
+        }
+    } else if (_fabs(PSVECDotProduct(drone + 0x10, drone)) < 2.0f) {
+        if (_fabs(PSVECDotProduct(drone + 0x20, drone + 0x130)) < 5.0f) {
+            drone[0x1DC] = 1;
+        }
+    }
+}
+
 void Drone_ComputeSuspensionForces(u8 *drone) {
     extern Vector4 g_zeroVector;
     extern u32 g_iLastDeltaTimeMS;
@@ -7583,6 +7615,7 @@ void Drone_ComputeSuspensionForces(u8 *drone) {
     Vector4 friction;
     Vector4 side;
     f32 t;
+    u32 i;
     s8 hitTerrain;
     f32 compression;
     f32 len;
@@ -7595,11 +7628,9 @@ void Drone_ComputeSuspensionForces(u8 *drone) {
     f32 turn;
     f32 thrust;
     s8 *input;
-    u32 i;
 
     *(u32 *)(drone + 0x150) = 0;
-    i = 0;
-    do {
+    for (i = 0; i < 4; i++) {
         dir.x = -((Vector4 *)(drone + 0x20))->x;
         dir.y = -((Vector4 *)(drone + 0x20))->y;
         dir.z = -((Vector4 *)(drone + 0x20))->z;
@@ -7636,7 +7667,8 @@ void Drone_ComputeSuspensionForces(u8 *drone) {
                     if (PSVECSquareMag(&side)) {
                         PSVECNormalize(&side, &side);
                     }
-                    grip = 1.1f * (1.0f - 1.8f * PSVECDotProduct(&side, drone + 0x20));
+                    grip = PSVECDotProduct(&side, drone + 0x20);
+                    grip = 1.1f * (1.0f - 1.8f * grip);
                     if (grip < 0.1f) {
                         grip = 0.1f;
                     } else if (grip > 1.0f) {
@@ -7651,8 +7683,7 @@ void Drone_ComputeSuspensionForces(u8 *drone) {
             }
         }
         *(f32 *)(drone + i * 4 + 0x140) = compression;
-        i++;
-    } while (i < 4);
+    }
     gravity = -*(f32 *)(*(u8 **)(*(u8 **)(drone + 0xC0) + 0x10) + 0x2C);
     ((Vector4 *)(drone + 0x100))->x += gravity * ((Vector4 *)(drone + 0x130))->x;
     ((Vector4 *)(drone + 0x100))->y += gravity * ((Vector4 *)(drone + 0x130))->y;
