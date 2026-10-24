@@ -14996,8 +14996,9 @@ static inline PathNode *NavHolder_PopLowestOpen(void) {
         return NULL;
     }
     bestF = head->f;
+    p = head;
     best = head;
-    for (p = head; p->next != NULL; p = p->next) {
+    for (; p->next != NULL; p = p->next) {
         if (p->next->f < bestF) {
             bestF = p->next->f;
             prev = p;
