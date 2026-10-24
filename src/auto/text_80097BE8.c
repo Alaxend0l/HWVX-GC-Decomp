@@ -5900,6 +5900,16 @@ static inline s32 AnimTrack_FindKey(AnimTrack *track, f32 time) {
     }
 }
 
+static inline void AnimTrack_Eval3p(AnimTrack **ptrack, f32 time, f32 *out) {
+    AnimTrack *track = *ptrack;
+    s32 key = AnimTrack_FindKey(track, time);
+
+    out[0] = time * (time * (time * track->coeffs[key][0][0] + track->coeffs[key][0][1]) + track->coeffs[key][0][2]) + track->coeffs[key][0][3];
+    out[1] = time * (time * (time * track->coeffs[key][1][0] + track->coeffs[key][1][1]) + track->coeffs[key][1][2]) + track->coeffs[key][1][3];
+    out[2] = time * (time * (time * track->coeffs[key][2][0] + track->coeffs[key][2][1]) + track->coeffs[key][2][2]) + track->coeffs[key][2][3];
+    *ptrack = track->next;
+}
+
 static inline AnimTrack *AnimTrack_Eval3(AnimTrack *track, f32 time, f32 *out) {
     s32 key = AnimTrack_FindKey(track, time);
 
@@ -5937,13 +5947,12 @@ void AnimExtractKeyFrame_Hybrid(void *animp, void *outp, f32 time) {
         u32 info;
     } Bone;
     void CopyVector(Vector *dst, Vector *src);
-    Anim *anim;
-    Bone *out;
-    u16 *flags;
-    AnimTrack *track;
-    u32 bit;
     u32 i;
-    s32 key;
+    u16 *flags;
+    Bone *out;
+    u32 bit;
+    Anim *anim;
+    AnimTrack *track;
 
     anim = (Anim *)animp;
     out = (Bone *)outp;
@@ -5959,11 +5968,7 @@ void AnimExtractKeyFrame_Hybrid(void *animp, void *outp, f32 time) {
     for (i = 0; i < anim->numBones; i++) {
         if (*flags & 1 | 2 | 4) {
             if (track->type == 3) {
-                key = AnimTrack_FindKey(track, time);
-                out->pos[0] = time * (time * (time * track->coeffs[key][0][0] + track->coeffs[key][0][1]) + track->coeffs[key][0][2]) + track->coeffs[key][0][3];
-                out->pos[1] = time * (time * (time * track->coeffs[key][1][0] + track->coeffs[key][1][1]) + track->coeffs[key][1][2]) + track->coeffs[key][1][3];
-                out->pos[2] = time * (time * (time * track->coeffs[key][2][0] + track->coeffs[key][2][1]) + track->coeffs[key][2][2]) + track->coeffs[key][2][3];
-                track = track->next;
+                track = AnimTrack_Eval3(track, time, out->pos);
             } else {
                 out->pos[0] = track->value[0];
                 out->pos[1] = track->value[1];
@@ -5977,12 +5982,7 @@ void AnimExtractKeyFrame_Hybrid(void *animp, void *outp, f32 time) {
         }
         if (*flags++ & 0x10 | 0x20 | 0x40 | 0x8) {
             if (track->type == 3) {
-                key = AnimTrack_FindKey(track, time);
-                out->rot.x = time * (time * (time * track->coeffs[key][0][0] + track->coeffs[key][0][1]) + track->coeffs[key][0][2]) + track->coeffs[key][0][3];
-                out->rot.y = time * (time * (time * track->coeffs[key][1][0] + track->coeffs[key][1][1]) + track->coeffs[key][1][2]) + track->coeffs[key][1][3];
-                out->rot.z = time * (time * (time * track->coeffs[key][2][0] + track->coeffs[key][2][1]) + track->coeffs[key][2][2]) + track->coeffs[key][2][3];
-                out->rot.w = time * (time * (time * track->coeffs[key][3][0] + track->coeffs[key][3][1]) + track->coeffs[key][3][2]) + track->coeffs[key][3][3];
-                track = track->next;
+                track = AnimTrack_Eval4(track, time, (f32 *)&out->rot);
             } else {
                 CopyVector(&out->rot, (Vector *)track->value);
                 track++;
