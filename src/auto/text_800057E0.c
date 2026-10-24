@@ -7109,7 +7109,7 @@ void DataPack_CloseFiles(void) {
     }
 }
 
-void DataPack_LoadQuadPack(s32 file, QuadPack *quad) {
+void DataPack_LoadQuadPack(s32 file, QuadPack *quad, u32 worldID) {
     void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
     s32 File_Seek(s32 handle, s32 offset, s8 mode);
     u32 File_Read(s32 handle, u32 size, void *buf);
