@@ -18527,7 +18527,6 @@ void State_GetGameStateStr(s32 state, char *str) {
         break;
     }
 }
-#pragma readonly_strings reset
 
 void Creature_MotionStateInit(void *arg0, s32 state, u8 reset, u8 keepTime) {
     typedef struct { u32 anim; u8 pad4[0x5C]; } AnimEntry;
