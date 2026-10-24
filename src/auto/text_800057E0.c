@@ -8877,17 +8877,16 @@ char *GameSettings_GetActiveMemoryCardFileName(s8 bNoDefault, s32 index, char *d
     } g_gameInfo[];
     static s32 cachedStatus = -1;
     static char *cachedMemorySlot = (char *)-1;
-    char *slot;
-    s32 status;
+    u32 i;
+    u32 size;
+    u32 version;
+    u8 *data;
     s32 handle;
     s8 ok;
-    u8 *data;
-    u32 version;
-    u32 size;
+    char *slot;
+    s32 status;
     const char *name;
     u8 *mcp;
-    SaveData *save;
-    u32 i;
     u32 hour;
     u32 hour12;
 
@@ -8921,23 +8920,24 @@ char *GameSettings_GetActiveMemoryCardFileName(s8 bNoDefault, s32 index, char *d
                 File_Close(handle);
             }
             if (ok) {
-                save = (SaveData *)g_pSavedGameData;
+                data = g_pSavedGameData;
                 for (i = 0; i < 8; i++) {
-                    g_bValidFileName_803C6CA4[i] = save->slots[i].valid;
+                    g_bValidFileName_803C6CA4[i] = ((SaveData *)data)->slots[i].valid;
                     if (!g_bValidFileName_803C6CA4[i]) {
                         strcpy(g_fileNames_80110B2C[i], defaultName);
                         break;
                     }
-                    hour = save->slots[i].hour;
+                    hour = ((SaveData *)data)->slots[i].hour;
                     hour12 = hour;
                     if (hour == 0) {
                         hour12 = 12;
                     } else if (hour > 12) {
                         hour12 = hour - 12;
                     }
-                    sprintf(g_fileNames_80110B2C[i], "%s %d/%d/%d %d:%02d %s", save->slots[i].name,
-                            save->slots[i].month, save->slots[i].day, save->slots[i].year, hour12,
-                            save->slots[i].minute, hour >= 12 ? "PM" : "AM");
+                    sprintf(g_fileNames_80110B2C[i], "%s %d/%d/%d %d:%02d %s", ((SaveData *)data)->slots[i].name,
+                            ((SaveData *)data)->slots[i].month, ((SaveData *)data)->slots[i].day,
+                            ((SaveData *)data)->slots[i].year, hour12, ((SaveData *)data)->slots[i].minute,
+                            hour >= 12 ? "PM" : "AM");
                 }
             }
         }
@@ -34716,6 +34716,111 @@ void TRKGetInput(void) {
         }
     }
 }
+#pragma pop
+
+#pragma push
+s32 TRKTestForPacket(void) {
+    typedef struct FramingState {
+        s32 msgBufID;
+        TRKBuffer *buffer;
+        u8 receiveState;
+        s32 isEscape;
+        u8 fcs;
+    } FramingState;
+    enum { PPP_FLAG = 0x7E, PPP_ESCAPE = 0x7D };
+    extern FramingState gTRKFramingState_8030B424;
+    s32 TRKReadUARTPoll(u8 *c);
+    s32 TRKGetFreeBuffer(s32 *msgID, TRKBuffer **outMsg);
+    void TRKStandardACK(TRKBuffer *b, u8 commandID, u8 replyError);
+    s32 err;
+    s32 result;
+    s32 id;
+    s32 isValid;
+    u8 ch;
+
+    err = 0;
+    result = TRKReadUARTPoll(&ch);
+    while (result == 0 && err == 0) {
+        if (gTRKFramingState_8030B424.receiveState != 2) {
+            gTRKFramingState_8030B424.isEscape = 0;
+        }
+        switch (gTRKFramingState_8030B424.receiveState) {
+        case 0:
+            if (ch == PPP_FLAG) {
+                err = TRKGetFreeBuffer(&gTRKFramingState_8030B424.msgBufID, &gTRKFramingState_8030B424.buffer);
+                gTRKFramingState_8030B424.fcs = 0;
+                gTRKFramingState_8030B424.receiveState = 1;
+            }
+            break;
+        case 1:
+            if (ch == PPP_FLAG) {
+                break;
+            }
+            gTRKFramingState_8030B424.receiveState = 2;
+        case 2:
+            if ((s8)ch == PPP_FLAG) {
+                if (gTRKFramingState_8030B424.isEscape) {
+                    TRKStandardACK(gTRKFramingState_8030B424.buffer, 0xFF, 4);
+                    if (gTRKFramingState_8030B424.msgBufID != -1) {
+                        TRKReleaseBuffer(gTRKFramingState_8030B424.msgBufID);
+                        gTRKFramingState_8030B424.msgBufID = -1;
+                    }
+                    gTRKFramingState_8030B424.buffer = NULL;
+                    gTRKFramingState_8030B424.receiveState = 0;
+                    break;
+                }
+                if (gTRKFramingState_8030B424.buffer->length < 2) {
+                    TRKStandardACK(gTRKFramingState_8030B424.buffer, 0xFF, 2);
+                    if (gTRKFramingState_8030B424.msgBufID != -1) {
+                        TRKReleaseBuffer(gTRKFramingState_8030B424.msgBufID);
+                        gTRKFramingState_8030B424.msgBufID = -1;
+                    }
+                    gTRKFramingState_8030B424.buffer = NULL;
+                    gTRKFramingState_8030B424.receiveState = 0;
+                    isValid = 0;
+                } else {
+                    TRKBuffer *b = gTRKFramingState_8030B424.buffer;
+
+                    b->position = 0;
+                    b->length--;
+                    isValid = 1;
+                }
+                if (isValid) {
+                    id = gTRKFramingState_8030B424.msgBufID;
+                    gTRKFramingState_8030B424.buffer = NULL;
+                    gTRKFramingState_8030B424.msgBufID = -1;
+                    gTRKFramingState_8030B424.receiveState = 0;
+                    return id;
+                }
+                gTRKFramingState_8030B424.receiveState = 0;
+                break;
+            }
+            if (gTRKFramingState_8030B424.isEscape) {
+                ch ^= 0x20;
+                gTRKFramingState_8030B424.isEscape = 0;
+            } else if ((s8)ch == PPP_ESCAPE) {
+                gTRKFramingState_8030B424.isEscape = 1;
+                break;
+            }
+            err = TRKAppendBuffer1_ui8(gTRKFramingState_8030B424.buffer, ch);
+            gTRKFramingState_8030B424.fcs += ch;
+            break;
+        case 3:
+            if (ch == PPP_FLAG) {
+                if (gTRKFramingState_8030B424.msgBufID != -1) {
+                    TRKReleaseBuffer(gTRKFramingState_8030B424.msgBufID);
+                    gTRKFramingState_8030B424.msgBufID = -1;
+                }
+                gTRKFramingState_8030B424.buffer = NULL;
+                gTRKFramingState_8030B424.receiveState = 0;
+            }
+            break;
+        }
+        result = TRKReadUARTPoll(&ch);
+    }
+    return -1;
+}
+
 #pragma pop
 
 void usr_puts_serial(const char *msg) {
