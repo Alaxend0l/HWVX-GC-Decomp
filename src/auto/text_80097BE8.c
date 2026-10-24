@@ -985,6 +985,15 @@ u32 VDevice_GetFreeEffect(VDevice *dev);
 void Effect_Init(Effect *effect);
 s32 Effect_UpdateEffect(Effect *effect, u8 *desc);
 
+static inline s32 Effect_Clamp(s32 v, s32 lo, s32 hi) {
+    v = (v < lo) ? lo : v;
+    return (v > hi) ? hi : v;
+}
+
+static inline s32 Effect_AngleToByte(u16 angle) {
+    return ((angle % 360) << 8) / 360;
+}
+
 extern s16 g_iQuarterSineTable_8037BB7C[0x40];
 extern s16 g_iRampUpTable_8037BBFC[0x40];
 extern s32 g_bWaveTablesInitialized_803C7958;
