@@ -19339,8 +19339,8 @@ static inline BOOL GbaSendGameCode(s32 chan) {
 
 static inline BOOL GbaHandshake(s32 chan) {
     u32 cmd;
-    u32 i;
     u8 *buf;
+    u32 i;
 
     if (!GbaReadGameCode(chan)) {
         return FALSE;
