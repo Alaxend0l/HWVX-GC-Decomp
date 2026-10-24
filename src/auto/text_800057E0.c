@@ -7774,9 +7774,9 @@ s32 Destructible_Move(u8 *destructible) {
     Vector4 axis;
     f32 angle;
     u8 *slave;
-    u8 *info;
     u32 id;
     s8 spin;
+    u8 *info;
     s32 max;
 
     if (*(u32 *)(destructible + 0x74) & 0x200000) {
