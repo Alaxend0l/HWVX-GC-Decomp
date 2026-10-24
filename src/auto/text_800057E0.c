@@ -10860,10 +10860,8 @@ void InterfaceManager_RenderInterface(Interface *iface) {
     f32 scale;
     InterfaceSlot *slot;
 
-    if (iface->active) {
-        if (iface->paused) {
-            return;
-        }
+    if (iface->active && iface->paused) {
+        return;
     }
     for (i = 0; i < iface->count; i++) {
         slot = &iface->slots[i];
