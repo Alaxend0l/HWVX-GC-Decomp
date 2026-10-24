@@ -18371,24 +18371,6 @@ void ShowStats(void) {
 
 }
 
-typedef struct TimeBarVtx {
-    f32 x;
-    f32 y;
-    f32 z;
-    f32 w;
-    f32 s;
-    f32 t;
-    GXColor color;
-    u8 pad[4];
-} TimeBarVtx;
-
-static inline void TimeBar_SetRect(TimeBarVtx *v, f32 x, f32 y, f32 w, f32 h) {
-    v[0].x = v[3].x = x;
-    v[0].y = v[1].y = y;
-    v[2].y = v[3].y = h + y;
-    v[1].x = v[2].x = x + w;
-}
-
 void Render_TimeBars(u32 *times) {
     typedef struct {
         f32 x;
