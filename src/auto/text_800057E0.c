@@ -35646,7 +35646,77 @@ void GXSetVtxAttrFmt(s32 vtxfmt, s32 attr, s32 cnt, s32 type, u8 frac) {
 }
 
 #pragma optimization_level 4
-#pragma peephole on
+#pragma dont_inline off
+static inline void SETVAT(u32 *va, u32 *vb, u32 *vc, s32 attr, s32 cnt, s32 type, u8 frac) {
+    switch (attr) {
+    case 9:
+        *va = (*va & ~0x1) | cnt;
+        *va = (*va & ~0xE) | (type << 1);
+        *va = (*va & ~0x1F0) | (frac << 4);
+        break;
+    case 10:
+    case 25:
+        *va = (*va & ~0x1C00) | (type << 10);
+        if (cnt == 2) {
+            *va = (*va & ~0x200) | 0x200;
+            *va = (*va & ~0x80000000) | 0x80000000;
+        } else {
+            *va = (*va & ~0x200) | (cnt << 9);
+            *va = (*va & ~0x80000000);
+        }
+        break;
+    case 11:
+        *va = (*va & ~0x2000) | (cnt << 13);
+        *va = (*va & ~0x1C000) | (type << 14);
+        break;
+    case 12:
+        *va = (*va & ~0x20000) | (cnt << 17);
+        *va = (*va & ~0x1C0000) | (type << 18);
+        break;
+    case 13:
+        *va = (*va & ~0x200000) | (cnt << 21);
+        *va = (*va & ~0x1C00000) | (type << 22);
+        *va = (*va & ~0x3E000000) | (frac << 25);
+        break;
+    case 14:
+        *vb = (*vb & ~0x1) | cnt;
+        *vb = (*vb & ~0xE) | (type << 1);
+        *vb = (*vb & ~0x1F0) | (frac << 4);
+        break;
+    case 15:
+        *vb = (*vb & ~0x200) | (cnt << 9);
+        *vb = (*vb & ~0x1C00) | (type << 10);
+        *vb = (*vb & ~0x3E000) | (frac << 13);
+        break;
+    case 16:
+        *vb = (*vb & ~0x40000) | (cnt << 18);
+        *vb = (*vb & ~0x380000) | (type << 19);
+        *vb = (*vb & ~0x7C00000) | (frac << 22);
+        break;
+    case 17:
+        *vb = (*vb & ~0x8000000) | (cnt << 27);
+        *vb = (*vb & ~0x70000000) | (type << 28);
+        *vc = (*vc & ~0x1F) | frac;
+        break;
+    case 18:
+        *vc = (*vc & ~0x20) | (cnt << 5);
+        *vc = (*vc & ~0x1C0) | (type << 6);
+        *vc = (*vc & ~0x3E00) | (frac << 9);
+        break;
+    case 19:
+        *vc = (*vc & ~0x4000) | (cnt << 14);
+        *vc = (*vc & ~0x38000) | (type << 15);
+        *vc = (*vc & ~0x7C0000) | (frac << 18);
+        break;
+    case 20:
+        *vc = (*vc & ~0x800000) | (cnt << 23);
+        *vc = (*vc & ~0x7000000) | (type << 24);
+        *vc = (*vc & ~0xF8000000) | (frac << 27);
+        break;
+    }
+}
+
+#pragma always_inline on
 void GXSetVtxAttrFmtv(s32 vtxfmt, s32 *list) {
     typedef struct {
         s32 attr;
