@@ -3407,6 +3407,187 @@ void MotionState_BlendTriggerEvents(void *state, void *events, Vector4 *vel) {
     }
 }
 
+void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps) {
+    extern f32 g_fDeltaTimeSec;
+    typedef struct {
+        f32 start;
+        f32 end;
+    } MotionRange;
+    typedef struct {
+        u8 unk0[0x1D];
+        u8 loopMode;
+        u8 pingPong;
+        u8 maxLoops;
+        MotionRange *intro;
+        MotionRange *loop;
+        MotionRange *outro;
+    } MotionAnim;
+    typedef struct {
+        MotionAnim *anim;
+        u8 phase;
+        u8 loops;
+        s8 reverse;
+        f32 time;
+        f32 weight;
+        f32 prevTime;
+        f32 rawTime;
+        s32 done;
+    } MotionLayer;
+    MotionLayer *l = layer;
+    f32 over;
+    f32 step;
+    f32 end;
+    f32 start;
+    f32 raw;
+    f32 prev;
+    f32 time;
+    u8 wrapped;
+    u8 oldPhase;
+    s8 type;
+    s8 reverse;
+
+    l->done = 0;
+    raw = 0.0f;
+    type = 0;
+    type |= 1;
+    start = raw;
+    end = raw;
+    time = l->time;
+    prev = time;
+    reverse = l->reverse;
+    over = -1.0f;
+    wrapped = 0;
+    switch (l->phase) {
+    case 0:
+        start = l->anim->intro->start;
+        end = l->anim->intro->end;
+        break;
+    case 1:
+        start = l->anim->loop->start;
+        end = l->anim->loop->end;
+        switch (l->anim->loopMode) {
+        case 1:
+            if (l->anim->maxLoops == 0 || l->loops < l->anim->maxLoops) {
+                type |= 2;
+            }
+            break;
+        case 2:
+            type |= 4;
+            break;
+        }
+        break;
+    case 2:
+        start = l->anim->outro->start;
+        end = l->anim->outro->end;
+        break;
+    }
+    step = fps * g_fDeltaTimeSec;
+    if (reverse) {
+        switch (type) {
+        case 3:
+            break;
+        case 4:
+            raw = time += step;
+            if (time > end) {
+                over = time - end;
+                reverse = 0;
+                time = end;
+                wrapped = 1;
+            }
+            break;
+        case 5:
+            raw = time -= step;
+            if (time < start) {
+                over = start - time;
+                reverse = 0;
+                time = start;
+                wrapped = 1;
+            }
+            break;
+        case 6:
+            raw = time += step;
+            if (time > end) {
+                over = time - end;
+                reverse = 0;
+                wrapped = 1;
+                time = 2.0f * end - time;
+            }
+            break;
+        case 7:
+            raw = time -= step;
+            if (time < start) {
+                over = start - time;
+                reverse = 0;
+                wrapped = 1;
+                time = 2.0f * start - time;
+            }
+            break;
+        }
+    } else {
+        if (type == 0) {
+            raw = time -= step;
+            if (time < start) {
+                over = start - time;
+                wrapped = 1;
+                time = start;
+            }
+        } else if (type == 1) {
+            raw = time += step;
+            if (time > end) {
+                over = time - end;
+                wrapped = 1;
+                time = end;
+            }
+        }
+    }
+    l->prevTime = prev;
+    l->rawTime = raw;
+    oldPhase = l->phase;
+    l->time = time;
+    l->reverse = reverse;
+    switch (l->phase) {
+    case 0:
+        if (wrapped) {
+            if (l->anim->loopMode & ((u8)mode != 0)) {
+                l->phase = 1;
+            } else if (l->anim->pingPong & ((u8)mode > 1)) {
+                l->phase = 2;
+            }
+        }
+        break;
+    case 1:
+        l->loops += wrapped;
+        if (l->anim->maxLoops != 0 && l->loops >= l->anim->maxLoops) {
+            l->loops = l->anim->maxLoops;
+            if (l->anim->pingPong & ((u8)mode > 1)) {
+                l->phase = 2;
+            } else {
+                l->time = l->anim->loop->end;
+                l->done = 1;
+            }
+        }
+        break;
+    case 2:
+        if (wrapped) {
+            l->done = 1;
+        }
+        break;
+    }
+    if (l->phase != oldPhase) {
+        switch (l->phase) {
+        case 0:
+            l->time = l->anim->intro->start + over;
+            break;
+        case 1:
+            l->time = l->anim->loop->start + over;
+            break;
+        case 2:
+            l->time = l->anim->outro->start + over;
+            break;
+        }
+    }
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void MotionState_MoveSlaves(void *state, Matrix4 *matrix, Vector4 *vel) {
@@ -26331,6 +26512,210 @@ s32 StateProgressionManager_Init(s32 prevState) {
     }
     return 1;
 }
+
+s32 StateProgressionManager_Heartbeat(void) {
+    typedef struct {
+        char *name;
+        s32 id;
+    } ProgPack;
+    typedef struct {
+        u8 type;
+        u8 pad[3];
+        void *data;
+    } ProgStep;
+    typedef struct {
+        u32 count;
+        ProgStep *steps;
+        u16 advance;
+    } ProgSequence;
+    typedef struct {
+        u32 count;
+        ProgSequence *seqs;
+    } ProgSeqList;
+    typedef struct {
+        u32 count;
+        ProgStep *steps;
+        ProgPack *pack;
+        char *world;
+        ProgSeqList win;
+        ProgSeqList lose;
+    } ProgLevel;
+    typedef struct {
+        s32 count;
+        ProgLevel *levels;
+    } ProgScript;
+    typedef struct {
+        ProgScript *script;
+        s32 phase;
+        s32 index;
+        u32 step;
+        s8 loaded;
+        u8 pad[3];
+        s32 worldState;
+    } ProgState;
+    extern ProgState g_GameProgressionState;
+    extern u32 g_GameProgressionEndState[2];
+    extern u8 g_bLoadingDemoLand;
+    static s32 loadingInterfaceID;
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void GameSettings_GetMCP(void);
+    void StateManager_GotoState(s32 state);
+    void StateManager_QueueChange(s32 state);
+    void StateMovie_SetMovieToPlay(void *movie);
+    s32 FileStreaming_LoadDataPack(char *name, s32 arg1, s32 id, s32 arg3);
+    void *FileStreaming_InitializeDataPack(s32 pack, s32 arg1, s32 arg2);
+    s32 FileStreaming_GetPackID(char *name, s32 arg1, s32 id);
+    void FileStreaming_ReleaseDataPack(s32 pack, s32 arg1);
+    void FileStreaming_HeartBeat(void);
+    void *DataPack_GetScript(void *pack, s32 id);
+    void DataPack_EnableLoadingSounds(s32 enable);
+    void DataPack_CloseFiles(void);
+    s32 InterfaceManager_Create(void *script, s32 arg1, s32 arg2);
+    u32 InterfaceManager_GetTotalActiveInterfaces(void);
+    void InterfaceManager_EndInterface(s32 id);
+    void SoundManager_Init(void);
+    void ShowStats_StartFrame(void);
+    void ShowStats_BeginScene(void);
+    void ShowStats_EndScene(void);
+    void ViewManager_PrepForRender(void);
+    void ProcessManager_Heartbeat(s32 activeOnly);
+    void ProcessManager_Render(s32 arg0);
+    void ProcessManager_Release(char *name);
+    s32 LoadWorldProcess(char *world, u8 loaded);
+    int sprintf(char *buf, const char *fmt, ...);
+    char buf[512];
+    ProgSequence *seq;
+    ProgLevel *level;
+    ProgPack *pack;
+    char *world;
+    void *dataPack;
+    s32 id;
+
+    level = NULL;
+    if (g_GameProgressionState.script != NULL) {
+        level = &g_GameProgressionState.script->levels[g_GameProgressionState.index];
+        if (g_GameProgressionState.index >= g_GameProgressionState.script->count || g_GameProgressionState.index < 0) {
+            if (GameSettings_GetCodeVariable(0x198, 0) != 0) {
+                StateManager_GotoState(0xC);
+            } else {
+                StateManager_GotoState(2);
+            }
+            return 1;
+        }
+        world = level->world;
+    } else {
+        world = "DemoLand";
+        g_bLoadingDemoLand = 1;
+    }
+    switch (g_GameProgressionState.phase) {
+    case 0:
+    case 2:
+        if (g_GameProgressionState.phase == 0) {
+            seq = (ProgSequence *)level;
+        } else if (g_GameProgressionEndState[0] == 4) {
+            if (g_GameProgressionEndState[1] > level->win.count) {
+                StateManager_GotoState(2);
+                return 1;
+            }
+            seq = &level->win.seqs[g_GameProgressionEndState[1]];
+        } else {
+            if (g_GameProgressionEndState[1] > level->lose.count) {
+                StateManager_GotoState(2);
+                return 1;
+            }
+            seq = &level->lose.seqs[g_GameProgressionEndState[1]];
+        }
+        if (g_GameProgressionState.step >= seq->count) {
+            if (g_GameProgressionState.phase == 0) {
+                g_GameProgressionState.phase = 1;
+            } else {
+                ProgSeqList *list;
+                if (g_GameProgressionEndState[0] == 4) {
+                    list = &level->win;
+                } else {
+                    list = &level->lose;
+                }
+                g_GameProgressionState.phase = 0;
+                g_GameProgressionState.index += list->seqs[g_GameProgressionEndState[1]].advance;
+                g_GameProgressionState.worldState = 0;
+                g_GameProgressionState.step = 0;
+            }
+        } else {
+            switch (seq->steps[g_GameProgressionState.step].type) {
+            case 0:
+                StateMovie_SetMovieToPlay(seq->steps[g_GameProgressionState.step].data);
+                StateManager_QueueChange(3);
+                break;
+            case 1:
+                if (!g_GameProgressionState.loaded) {
+                    pack = seq->steps[g_GameProgressionState.step].data;
+                    GameSettings_GetMCP();
+                    dataPack = FileStreaming_InitializeDataPack(FileStreaming_LoadDataPack(pack->name, 1, pack->id, 0), 1, 1);
+                    if (dataPack == NULL) {
+                        sprintf(buf, "Could not load data pack %s (%d)XXXXXXXXXXXXXXXXX\n", pack->name, pack->id);
+                    }
+                    InterfaceManager_Create(DataPack_GetScript(dataPack, pack->id), 0, 0);
+                    g_GameProgressionState.loaded = 1;
+                } else if (InterfaceManager_GetTotalActiveInterfaces() == 0) {
+                    pack = seq->steps[g_GameProgressionState.step].data;
+                    g_GameProgressionState.loaded = 0;
+                    g_GameProgressionState.step++;
+                    FileStreaming_ReleaseDataPack(FileStreaming_GetPackID(pack->name, 1, pack->id), 1);
+                    FileStreaming_HeartBeat();
+                    SoundManager_Init();
+                } else {
+                    ShowStats_StartFrame();
+                    ViewManager_PrepForRender();
+                    ProcessManager_Heartbeat(0);
+                    ShowStats_BeginScene();
+                    ProcessManager_Render(1);
+                    ShowStats_EndScene();
+                }
+                break;
+            }
+        }
+        break;
+    case 1:
+        if (g_GameProgressionState.script != NULL && !g_GameProgressionState.loaded && level->pack->name != NULL) {
+            ProcessManager_Release("XXXXXXX");
+            DataPack_EnableLoadingSounds(0);
+            id = FileStreaming_LoadDataPack(level->pack->name, 1, level->pack->id, 0);
+            DataPack_EnableLoadingSounds(1);
+            loadingInterfaceID = InterfaceManager_Create(DataPack_GetScript(FileStreaming_InitializeDataPack(id, 1, 1), level->pack->id), 0, 0);
+            g_GameProgressionState.loaded = 1;
+        }
+        ShowStats_StartFrame();
+        ProcessManager_Heartbeat(0);
+        ShowStats_BeginScene();
+        ProcessManager_Render(1);
+        ShowStats_EndScene();
+        if (g_GameProgressionState.worldState != 7) {
+            g_GameProgressionState.worldState = LoadWorldProcess(world, g_GameProgressionState.loaded);
+            switch (g_GameProgressionState.worldState) {
+            case 8:
+                g_GameProgressionState.worldState = 7;
+                break;
+            case 7:
+                if (g_GameProgressionState.loaded) {
+                    InterfaceManager_EndInterface(loadingInterfaceID);
+                }
+                break;
+            }
+        } else if (InterfaceManager_GetTotalActiveInterfaces() == 0) {
+            if (g_GameProgressionState.loaded) {
+                FileStreaming_ReleaseDataPack(FileStreaming_GetPackID(level->pack->name, 1, level->pack->id), 1);
+                g_GameProgressionState.loaded = 0;
+            }
+            DataPack_CloseFiles();
+            StateManager_QueueChange(5);
+        }
+        break;
+    }
+    return 1;
+}
+#pragma use_lmw_stmw reset
+#pragma pool_strings reset
+#pragma readonly_strings reset
 
 s32 ActionEndLevel(s32 *arg0) {
     extern u8 g_bRestartCurrentLevel;
