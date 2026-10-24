@@ -35646,6 +35646,7 @@ void GXSetVtxAttrFmt(s32 vtxfmt, s32 attr, s32 cnt, s32 type, u8 frac) {
 }
 
 #pragma optimization_level 4
+#pragma peephole on
 void GXSetVtxAttrFmtv(s32 vtxfmt, s32 *list) {
     typedef struct {
         s32 attr;
@@ -35666,7 +35667,8 @@ void GXSetVtxAttrFmtv(s32 vtxfmt, s32 *list) {
     va = (u32 *)(gx + 0x1C) + vtxfmt;
     vb = (u32 *)(gx + 0x3C) + vtxfmt;
     vc = (u32 *)(gx + 0x5C) + vtxfmt;
-    for (fmt = (GXVtxAttrFmtList *)list; fmt->attr != 0xFF; fmt++) {
+    fmt = (GXVtxAttrFmtList *)list;
+    while (fmt->attr != 0xFF) {
         attr = fmt->attr;
         cnt = fmt->cnt;
         type = fmt->type;
@@ -35737,6 +35739,7 @@ void GXSetVtxAttrFmtv(s32 vtxfmt, s32 *list) {
             *vc = (*vc & ~0xF8000000) | (frac << 27);
             break;
         }
+        fmt++;
     }
     *(u32 *)(gx + 0x4F4) |= 0x10;
     *(u8 *)(gx + 0x4F2) |= (u8)(1 << (u8)vtxfmt);
