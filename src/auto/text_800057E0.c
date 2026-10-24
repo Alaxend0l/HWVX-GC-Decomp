@@ -2750,6 +2750,67 @@ s8 AI_Car_EnterState(u8 *ai, u8 *branch, s32 slot) {
     }
     return branch != NULL;
 }
+
+s8 AI_Car_DetermineStateBranch(u8 *car, void *arg, s8 skip) {
+    typedef struct AIStateInfo {
+        u8 unk0[6];
+        u8 unk6;
+    } AIStateInfo;
+    typedef struct AIState {
+        AIStateInfo *info;
+        u32 numChildren;
+        struct AIState *children;
+    } AIState;
+    typedef struct AIStateSlot {
+        AIStateInfo *info;
+        s32 unk4;
+        s32 unk8;
+        s32 unkC;
+        u8 unk10[4];
+        u8 unk14;
+    } AIStateSlot;
+    typedef struct AICar {
+        u8 pad0[0xD0];
+        u8 *params;
+        AIStateSlot slots[32];
+        AIStateSlot *active[4];
+        AIStateSlot *current;
+    } AICar;
+    static u8 iTotal;
+    static u8 iValid;
+    AICar *ai = (AICar *)car;
+    AIState *state = arg;
+    AIStateInfo *found = NULL;
+    u8 i;
+
+    if (state == (AIState *)(ai->params + 0x28)) {
+        iTotal = 0;
+        iValid = 0;
+    }
+    if (state->info != NULL) {
+        if (!skip && AI_Car_EnterState(car, (u8 *)&ai->slots[iTotal], iValid)) {
+            found = state->info;
+            ai->active[iValid++] = &ai->slots[iTotal];
+        }
+        iTotal++;
+    }
+    skip = (!skip && (state->info == NULL || found != NULL)) == 0;
+    for (i = 0; i < state->numChildren; i++) {
+        if (AI_Car_DetermineStateBranch(car, &state->children[i], skip)) {
+            return 1;
+        }
+    }
+    if (skip) {
+        return 0;
+    }
+    if (found != NULL) {
+        ai->current = ai->active[iValid - 1];
+        ai->active[iValid] = NULL;
+        return 1;
+    }
+    return 0;
+}
+
 #pragma pop
 
 s32 AI_Car_DetermineState(u8 *car) {
