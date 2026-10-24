@@ -35645,6 +35645,8 @@ void GXSetVtxAttrFmt(s32 vtxfmt, s32 attr, s32 cnt, s32 type, u8 frac) {
     *(u8 *)(gx + 0x4F2) |= (u8)(1 << (u8)vtxfmt);
 }
 
+#pragma optimization_level 4
+#pragma dont_inline off
 static inline void SETVAT(u32 *va, u32 *vb, u32 *vc, s32 attr, s32 cnt, s32 type, u8 frac) {
     switch (attr) {
     case 9:
