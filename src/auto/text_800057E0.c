@@ -5881,6 +5881,144 @@ void CarA_ComputeForces(u8 *car) {
     }
 }
 
+static inline void CarA_UpdateHealthSlave(u8 *car) {
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    s8 Player_IsHuman(void *player);
+    u8 *slave = ThingManagerList_GetByType(car + 0x344, 0x11);
+
+    if (slave != NULL) {
+        *(f32 *)(slave + 0xB8) = (f32)*(s32 *)(car + 0x78) / (f32)*(s32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x14);
+        if (*(void **)(car + 0x94) != NULL && !Player_IsHuman(*(void **)(car + 0x94))) {
+            *(f32 *)(slave + 0xB8) /= **(f32 **)(*(u8 **)(car + 0x94) + 0xD0);
+        }
+        if (*(f32 *)(slave + 0xB8) > 1.0f) {
+            *(f32 *)(slave + 0xB8) = 1.0f;
+        }
+    }
+}
+
+s32 CarA_Move(u8 *car) {
+    typedef struct CarTrail {
+        u32 handle;
+        f32 scale;
+        u8 pad8[4];
+        u32 color;
+        s32 life;
+        u8 pad14[0x30 - 0x14];
+    } CarTrail;
+    typedef struct CarTrailBone {
+        f32 offset;
+        f32 width0;
+        f32 width1;
+        u8 padC[0x3F - 0xC];
+        u8 parent;
+        u16 bone;
+        u8 pad42[0x50 - 0x42];
+    } CarTrailBone;
+    void Timer_Interrupt300(void);
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    s8 Player_IsHuman(void *player);
+    s8 GameSettings_IsCheatEnabled(s32 cheat);
+    s8 Thing_CollideWithTeleporters(u8 *thing);
+    void CarA_StuntFail(u8 *car);
+    void Thing_CollideWithItems(u8 *thing);
+    void CarA_Extract_Keyframes(u8 *car, void *frames, void *state);
+    void MotionState_Heartbeat(void *state, void *arg1, void *thing);
+    void Trail_AddSegment(u32 *handle, f32 *pos, f32 *dir, u16 texture, u8 *color, s32 life, f32 width0, f32 width1);
+    f32 Sqrt(f32 x);
+    extern Matrix4 g_identity;
+    extern void *g_pSourcePlayer;
+    u8 *slave;
+    s32 *skel;
+    s32 i;
+    f32 dx;
+    f32 dy;
+    f32 dz;
+    f32 scale;
+    u32 color;
+    Vector4 pos;
+    Vector4 trailPos;
+    u8 frames[0x800];
+
+    Timer_Interrupt300();
+    slave = ThingManagerList_GetByType(car + 0x344, 0x11);
+    if (slave != NULL) {
+        *(f32 *)(slave + 0xB8) = (f32)*(s32 *)(car + 0x78) / (f32)*(s32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x14);
+        if (*(void **)(car + 0x94) != NULL && !Player_IsHuman(*(void **)(car + 0x94))) {
+            *(f32 *)(slave + 0xB8) /= **(f32 **)(*(u8 **)(car + 0x94) + 0xD0);
+        }
+        if (*(f32 *)(slave + 0xB8) > 1.0f) {
+            *(f32 *)(slave + 0xB8) = 1.0f;
+        }
+    }
+    scale = 1.0f / Sqrt(*(f32 *)(car + 0x5C) * *(f32 *)(car + 0x5C) +
+                        (*(f32 *)(car + 0x58) * *(f32 *)(car + 0x58) +
+                         (*(f32 *)(car + 0x50) * *(f32 *)(car + 0x50) + *(f32 *)(car + 0x54) * *(f32 *)(car + 0x54))));
+    *(f32 *)(car + 0x50) *= scale;
+    *(f32 *)(car + 0x54) *= scale;
+    *(f32 *)(car + 0x58) *= scale;
+    *(f32 *)(car + 0x5C) *= scale;
+    if (*(void **)(car + 0x94) != NULL && Player_IsHuman(*(void **)(car + 0x94)) && GameSettings_IsCheatEnabled(5)) {
+        *(s32 *)(car + 0x400) = 30000;
+    }
+    if (Thing_CollideWithTeleporters(car)) {
+        CarA_StuntFail(car);
+    }
+    Thing_CollideWithItems(car);
+    skel = *(s32 **)(*(u8 **)(car + 0x330) + 0x14);
+    CarA_Extract_Keyframes(car, frames, *(void **)(car + 0x330));
+    XformVec(car + 0x10, (Vector4 *)(car + 0x520), &pos);
+    TEST_AnimTraverseHeirarchyToMatricesWorld((Vector4 *)(car + 0x50), &pos, frames, *skel, *(void **)(car + 0x340), 1.0f);
+    for (i = 0; i < *(u32 *)(*(u8 **)(car + 0x3BC) + 0xD0); i++) {
+        CarTrailBone *bone = &(*(CarTrailBone **)(*(u8 **)(car + 0x3BC) + 0xD4))[i];
+        CarTrail *trail = &((CarTrail *)(car + 0x1B8))[i];
+
+        if (bone->parent != 0) {
+            s32 p = bone->bone - bone->parent;
+            f32 ox;
+            f32 oy;
+            f32 oz;
+
+            dx = (*(Matrix4 **)(car + 0x340))[p].m[1][0];
+            dy = (*(Matrix4 **)(car + 0x340))[p].m[1][1];
+            dz = (*(Matrix4 **)(car + 0x340))[p].m[1][2];
+            ox = trail->scale * dx;
+            oy = trail->scale * dy;
+            oz = trail->scale * dz;
+            (*(Matrix4 **)(car + 0x340))[p].m[3][0] += ox;
+            (*(Matrix4 **)(car + 0x340))[p].m[3][1] += oy;
+            (*(Matrix4 **)(car + 0x340))[p].m[3][2] += oz;
+            (*(Matrix4 **)(car + 0x340))[bone->bone].m[3][0] += ox;
+            (*(Matrix4 **)(car + 0x340))[bone->bone].m[3][1] += oy;
+            (*(Matrix4 **)(car + 0x340))[bone->bone].m[3][2] += oz;
+        } else {
+            dx = *(f32 *)(car + 0x20);
+            dy = *(f32 *)(car + 0x24);
+            dz = *(f32 *)(car + 0x28);
+            (*(Matrix4 **)(car + 0x340))[bone->bone].m[3][0] += trail->scale * *(f32 *)(car + 0x20);
+            (*(Matrix4 **)(car + 0x340))[bone->bone].m[3][1] += trail->scale * *(f32 *)(car + 0x24);
+            (*(Matrix4 **)(car + 0x340))[bone->bone].m[3][2] += trail->scale * *(f32 *)(car + 0x28);
+        }
+        if (((u8 *)&trail->color)[3] != 0) {
+            CarTrailBone *b = &(*(CarTrailBone **)(*(u8 **)(car + 0x3BC) + 0xD4))[i];
+            f32 t = 0.1f - b->offset;
+
+            trailPos.x = t * dx + (*(Matrix4 **)(car + 0x340))[b->bone].m[3][0];
+            trailPos.y = t * dy + (*(Matrix4 **)(car + 0x340))[b->bone].m[3][1];
+            trailPos.z = t * dz + (*(Matrix4 **)(car + 0x340))[b->bone].m[3][2];
+            color = trail->color;
+            Trail_AddSegment(&trail->handle, &trailPos.x, (*(Matrix4 **)(car + 0x340))[b->bone - 1].m[2],
+                             *(u32 *)(*(u8 **)(car + 0x3BC) + 0x50), (u8 *)&color, trail->life, b->width0, b->width1);
+        } else {
+            trail->handle = -1;
+        }
+    }
+    g_pSourcePlayer = *(void **)(car + 0x94);
+    MotionState_Heartbeat(car + 0x330, &g_identity, car);
+    g_pSourcePlayer = NULL;
+    return 1;
+}
+
 void CarA_SetSlavePlayers(void *car) {
     void *slave;
 
