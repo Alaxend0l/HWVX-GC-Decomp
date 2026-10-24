@@ -14,6 +14,8 @@ extern volatile PPCWGPipe GXWGPipe : 0xCC008000;
 
 s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded);
 
+extern f32 g_frictionTable[9][10];
+
 typedef struct GXColor {
     u8 r;
     u8 g;
