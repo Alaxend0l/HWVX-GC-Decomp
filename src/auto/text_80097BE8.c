@@ -17354,6 +17354,16 @@ void GbaProc__Fv_800CA1D0(void) {
     }
 }
 
+static inline u8 GbaHeaderChecksum(u8 *image) {
+    s32 i;
+    s32 sum = 0xE7;
+
+    for (i = 0xA0; i < 0xBD; i++) {
+        sum -= image[i];
+    }
+    return sum;
+}
+
 static inline u8 GbaCalcCrc(u32 data) {
     u32 crc = 0;
     u32 mask;
@@ -17392,13 +17402,8 @@ void GBACloseCallback__FlP11DVDFileInfo(s32 result, void *fileInfo) {
     u32 *DVDGetCurrentDiskID(void);
     u32 OSGetTick(void);
     void GBAInit(void);
-    s32 i;
-    u32 mask;
-    u32 data;
-    u32 crc;
-    s32 k;
     s32 sum;
-    s32 j;
+    s32 i;
 
     DVDClose(fileInfo);
     DiskId_803C79A8 = DVDGetCurrentDiskID();
@@ -17406,46 +17411,23 @@ void GBACloseCallback__FlP11DVDFileInfo(s32 result, void *fileInfo) {
     *(u32 *)(ClientImage_80386A40 + 0xC8) = HostId_803C79A4;
     *(u32 *)(ClientImage_80386A40 + 0xAC) = *DiskId_803C79A8;
     sum = 0xE7;
-    for (j = 0xA0; j < 0xBD; j++) {
-        sum -= ClientImage_80386A40[j];
+    for (i = 0xA0; i < 0xBD; i++) {
+        sum -= ClientImage_80386A40[i];
     }
     ClientImage_80386A40[0xBD] = sum;
 
     for (i = 0; i < 4; i++) {
-        crc = 0;
-        Param_803C6A40[i].state = crc;
+        Param_803C6A40[i].state = 0;
         Param_803C6A40[i].type = 0x40;
-        Param_803C6A40[i].unk70 = crc;
+        Param_803C6A40[i].unk70 = 0;
         Param_803C6A40[i].program = ClientImage_80386A40;
         Param_803C6A40[i].length = ImageSize_803C79A0;
-        Param_803C6A40[i].unk58 = crc;
-        *(u32 *)Param_803C6A40[i].unk5C = crc;
+        Param_803C6A40[i].unk58 = 0;
+        *(u32 *)Param_803C6A40[i].unk5C = 0;
         Param_803C6A40[i].unk60 = (i + 0x40) << 24;
         Param_803C6A40[i].unk60 |= ((i % 2) ? 0xDF : 0) << 16;
         Param_803C6A40[i].unk60 |= ((i / 2) ? 0x8F : 0) << 8;
-        data = ((Param_803C6A40[i].unk60 >> 16) & 0xFF) | (Param_803C6A40[i].unk60 & 0xFF00);
-        for (k = 0; k < 2; k++) {
-            for (mask = 0x80; mask != 0; mask >>= 1) {
-                crc <<= 1;
-                if (data & mask) {
-                    if (crc & 0x100) {
-                        crc ^= 0xCC;
-                    } else {
-                        crc += 1;
-                    }
-                } else if (crc & 0x100) {
-                    crc ^= 0xCD;
-                }
-            }
-            data >>= 8;
-        }
-        for (k = 0; k < 8; k++) {
-            crc <<= 1;
-            if (crc & 0x100) {
-                crc ^= 0xCD;
-            }
-        }
-        Param_803C6A40[i].unk60 |= (u8)crc;
+        Param_803C6A40[i].unk60 |= GbaCalcCrc(((Param_803C6A40[i].unk60 >> 16) & 0xFF) | (Param_803C6A40[i].unk60 & 0xFF00));
     }
     GBAInit();
 }
