@@ -19366,10 +19366,7 @@ static inline BOOL GbaHandshake(s32 chan) {
     if (!GbaSendGameCode(chan)) {
         return FALSE;
     }
-    if (!GbaReadParams(chan)) {
-        return FALSE;
-    }
-    return TRUE;
+    return GbaReadParams(chan);
 }
 
 void GbaCheckJBResult__Fl(s32 chan) {
@@ -19393,7 +19390,7 @@ void GbaCheckJBResult__Fl(s32 chan) {
         Param_803C6A40[chan].send.unk3 = 1;
         Param_803C6A40[chan].send.hostId = HostId_803C79A4;
         Param_803C6A40[chan].unk58 = 0;
-        if (GbaReadGameCode(chan) && Param_803C6A40[chan].unk58 == 0x41483845 && GbaSendGameCode(chan) && GbaReadParams(chan)) {
+        if (GbaHandshake(chan)) {
             GbaOpen__Fl(chan);
         }
         return;
