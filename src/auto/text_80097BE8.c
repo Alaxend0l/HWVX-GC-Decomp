@@ -9762,6 +9762,7 @@ void Render_DrawShadows(void) {
         Gfx_SetProjectionMatrix(*(f32 *)((u8 *)GetRenderWindow() + 0x270));
     }
 }
+#pragma use_lmw_stmw reset
 
 void CreateSilhouette(void *edges, u32 count, Vector *dir) {
     f32 PSVECDotProduct(Vector *a, Vector *b);
