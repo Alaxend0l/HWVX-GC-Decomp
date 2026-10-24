@@ -30843,7 +30843,6 @@ static inline s8 CarA_StuntsCanStunt(u8 *car, s32 minTime) {
     }
     return ok;
 }
-#pragma pop
 
 #pragma readonly_strings on
 s32 CarA_StuntsGetNewOrientation(u8 *car, Quaternion *outQ, f32 t) {
@@ -30862,7 +30861,6 @@ s32 CarA_StuntsGetNewOrientation(u8 *car, Quaternion *outQ, f32 t) {
         f32 spinScore;
     } StuntParams;
     extern f32 g_fDeltaTimeSec;
-    s8 Player_IsHuman(void *player);
     f32 MagnitudeVector(Vector4 *v);
     void GenerateQuaternion(Vector4 *axis, Quaternion *q, f32 angle);
     void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
@@ -30877,34 +30875,19 @@ s32 CarA_StuntsGetNewOrientation(u8 *car, Quaternion *outQ, f32 t) {
     Vector4 local;
     StuntParams *params;
     u8 *player;
+    s32 minTime;
     f32 frac;
     f32 sign;
     f32 spin;
     f32 roll;
     f32 maxMag;
     f32 mag;
-    s8 ok;
-    s32 minTime;
 
     params = *(StuntParams **)(*(u8 **)(car + 0x3BC) + 0x8C);
     minTime = params->minTime;
     sign = 1.0f;
     frac = (f32)(u32)(*(s32 *)(car + 0x460) - minTime) / params->maxTime;
-    if (*(u8 **)(car + 0x94) == NULL || !Player_IsHuman(*(u8 **)(car + 0x94))) {
-        ok = 0;
-    } else {
-        player = *(u8 **)(car + 0x94);
-        if (player[0x10] == 0 && player[0x1A] == 0 && (s8)player[0] > -64 && (s8)player[0] < 64 &&
-            (s8)player[1] > -64 && (s8)player[1] < 64) {
-            ok = 0;
-        } else if (*(s32 *)(car + 0x460) > minTime && *(s32 *)(car + 0x404) > minTime &&
-                   !(*(u32 *)(car + 0x48C) & 0x40002)) {
-            ok = 1;
-        } else {
-            ok = 0;
-        }
-    }
-    if (!ok) {
+    if (!CarA_StuntsCanStunt(car, minTime)) {
         car[0x491] = 0;
         return 0;
     }
@@ -30998,6 +30981,7 @@ s32 CarA_StuntsGetNewOrientation(u8 *car, Quaternion *outQ, f32 t) {
     return 0;
 }
 #pragma readonly_strings reset
+#pragma pop
 
 void CarA_StuntFail(u8 *car) {
     extern Vector4 g_zeroVector;
