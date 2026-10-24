@@ -9406,6 +9406,122 @@ void InterfaceManager_DrawObject_Standard_Image(u8 *obj) {
     }
 }
 
+void InterfaceManager_DrawRadarBlips(f32 *centre, u8 *obj) {
+    typedef struct RectVtx {
+        f32 x;
+        f32 y;
+        f32 z;
+        f32 pad;
+        f32 s;
+        f32 t;
+        u32 color;
+        u32 pad2;
+    } RectVtx;
+    typedef struct Rect {
+        RectVtx v[4];
+        u16 tex;
+        u8 blendMode;
+        u8 window;
+    } Rect;
+    typedef struct Colour {
+        u8 r, g, b, a;
+    } Colour;
+    typedef struct BlipThing {
+        u8 unk0[0x74];
+        u32 flags;
+        u8 unk78[0xB0 - 0x78];
+        u8 *desc;
+        u8 unkB4[0xC0 - 0xB4];
+        f32 x;
+        f32 y;
+        f32 z;
+        u8 unkCC[0xD0 - 0xCC];
+    } BlipThing;
+    typedef struct BlipManager {
+        u8 unk0[0x77770];
+        BlipThing things[64];
+    } BlipManager;
+    extern u32 g_radarBlip;
+    u32 GetAllTargets(void **targets);
+    Rect *Gfx_Add2DRectangle(void);
+    f32 ArcTan(f32 y, f32 x);
+    void SinCosRad(f32 *s, f32 *c, f32 rad);
+    f32 Sqrt(f32 x);
+    void *targets[32];
+    f32 c, s;
+    Colour colour;
+    u8 *player;
+    u32 count;
+    u32 i;
+    BlipThing *thing;
+    Rect *rect;
+    f32 u1, u0;
+    f32 dx, dz;
+    f32 dist;
+    f32 scale;
+    f32 x, y;
+
+    count = GetAllTargets(targets);
+    player = *(u8 **)(*(u8 **)(obj + 8) + 0x2C);
+    if (obj[0x83] == 0) {
+        g_radarBlip++;
+    }
+    if (g_radarBlip > 15) {
+        g_radarBlip = 0;
+    }
+    u0 = 0.25f * (g_radarBlip >> 2);
+    if (player == NULL || count == 0) {
+        return;
+    }
+    SinCosRad(&s, &c, ArcTan(*(f32 *)(player + 0x38), *(f32 *)(player + 0x30)));
+    s *= -1.0f;
+    c *= -1.0f;
+    u1 = 0.25f + u0;
+    for (i = 0; i < 64; i++) {
+        if (((BlipManager *)&g_thingManager_DARYL)->things[i].flags & 0x1000) {
+            continue;
+        }
+        thing = &((BlipManager *)&g_thingManager_DARYL)->things[i];
+        dx = 0.05f * (thing->x - *(f32 *)(player + 0x40));
+        dz = 0.05f * (thing->z - *(f32 *)(player + 0x48));
+        colour = **(Colour **)(thing->desc + 0x1C);
+        rect = Gfx_Add2DRectangle();
+        dist = dx * dx + dz * dz;
+        if (dist > 2209.0f) {
+            scale = 47.0f / Sqrt(dist);
+            colour.g = 0;
+            colour.b = 0;
+            x = scale * (dx * s - dz * c) + centre[0];
+            y = scale * (dx * c + dz * s) + centre[1];
+        } else {
+            x = centre[0] + (dx * s - dz * c);
+            y = centre[1] + (dx * c + dz * s);
+        }
+        rect->v[0].x = x - 4.0f;
+        rect->v[0].y = y - 4.0f;
+        rect->v[1].x = 4.0f + x;
+        rect->v[1].y = y - 4.0f;
+        rect->v[2].x = 4.0f + x;
+        rect->v[2].y = 4.0f + y;
+        rect->v[3].x = x - 4.0f;
+        rect->v[3].y = 4.0f + y;
+        rect->v[0].color = *(u32 *)&colour;
+        rect->v[1].color = *(u32 *)&colour;
+        rect->v[2].color = *(u32 *)&colour;
+        rect->v[3].color = *(u32 *)&colour;
+        rect->blendMode = 2;
+        rect->tex = *(u32 *)(thing->desc + 0x14);
+        rect->v[0].s = u0;
+        rect->v[0].t = 0.75f;
+        rect->v[1].s = u1;
+        rect->v[1].t = 0.75f;
+        rect->v[2].s = u1;
+        rect->v[2].t = 0.5f;
+        rect->v[3].s = u0;
+        rect->v[3].t = 0.5f;
+    }
+}
+
 s32 ActionInterfacePlay(s32 *arg0) {
     M2C_UNK InterfaceManager_Create(s32, M2C_UNK, M2C_UNK);
     InterfaceManager_Create(*arg0, 0, 0);
@@ -21400,6 +21516,145 @@ void OSCancelThread(void *thread) {
     OSWakeupThread(&t->queueJoin);
     __OSReschedule();
     OSRestoreInterrupts(enabled);
+}
+
+s32 OSResumeThread(void *arg) {
+    typedef struct OSThread OSThread;
+    typedef struct OSThreadQueue { OSThread *head; OSThread *tail; } OSThreadQueue;
+    typedef struct OSThreadLink { OSThread *next; OSThread *prev; } OSThreadLink;
+    typedef struct OSMutex OSMutex;
+    typedef struct OSMutexQueue { OSMutex *head; OSMutex *tail; } OSMutexQueue;
+    typedef struct OSMutexLink { OSMutex *next; OSMutex *prev; } OSMutexLink;
+    struct OSMutex {
+        OSThreadQueue queue;
+        OSThread *thread;
+        s32 count;
+        OSMutexLink link;
+    };
+    struct OSThread {
+        u8 context[0x2C8];
+        u16 state;
+        u16 attr;
+        s32 suspend;
+        s32 priority;
+        s32 base;
+        void *val;
+        OSThreadQueue *queue;
+        OSThreadLink link;
+        OSThreadQueue queueJoin;
+        OSMutex *mutex;
+        OSMutexQueue queueMutex;
+    };
+    extern OSThreadQueue RunQueue_802EEE78[32];
+    extern u32 RunQueueBits_803C7290;
+    extern s32 RunQueueHint_803C7294;
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32 level);
+    s32 __OSGetEffectivePriority(OSThread *thread);
+    OSThread *SetEffectivePriority(OSThread *thread, s32 priority);
+    void SelectThread(s32 yield);
+    OSThread *thread = arg;
+    s32 enabled;
+    s32 suspendCount;
+    s32 priority;
+    OSMutex *mutex;
+    OSThread *blocked;
+    OSThread *next;
+    OSThread *prev;
+
+    enabled = OSDisableInterrupts();
+    suspendCount = thread->suspend--;
+    if (thread->suspend < 0) {
+        thread->suspend = 0;
+    } else if (thread->suspend == 0) {
+        switch (thread->state) {
+        case 1:
+            priority = thread->base;
+            for (mutex = thread->queueMutex.head; mutex; mutex = mutex->link.next) {
+                blocked = mutex->queue.head;
+                if (blocked && blocked->priority < priority) {
+                    priority = blocked->priority;
+                }
+            }
+            thread->priority = priority;
+            thread->queue = &RunQueue_802EEE78[thread->priority];
+            prev = thread->queue->tail;
+            if (prev == NULL) {
+                thread->queue->head = thread;
+            } else {
+                prev->link.next = thread;
+            }
+            thread->link.prev = prev;
+            thread->link.next = NULL;
+            thread->queue->tail = thread;
+            RunQueueBits_803C7290 |= 1u << (31 - thread->priority);
+            RunQueueHint_803C7294 = 1;
+            break;
+        case 4:
+            next = thread->link.next;
+            prev = thread->link.prev;
+            if (next == NULL) {
+                thread->queue->tail = prev;
+            } else {
+                next->link.prev = prev;
+            }
+            if (prev == NULL) {
+                thread->queue->head = next;
+            } else {
+                prev->link.next = next;
+            }
+            priority = thread->base;
+            for (mutex = thread->queueMutex.head; mutex; mutex = mutex->link.next) {
+                blocked = mutex->queue.head;
+                if (blocked && blocked->priority < priority) {
+                    priority = blocked->priority;
+                }
+            }
+            thread->priority = priority;
+            for (next = thread->queue->head; next && next->priority <= thread->priority; next = next->link.next) {
+            }
+            if (next == NULL) {
+                prev = thread->queue->tail;
+                if (prev == NULL) {
+                    thread->queue->head = thread;
+                } else {
+                    prev->link.next = thread;
+                }
+                thread->link.prev = prev;
+                thread->link.next = NULL;
+                thread->queue->tail = thread;
+            } else {
+                thread->link.next = next;
+                prev = next->link.prev;
+                next->link.prev = thread;
+                thread->link.prev = prev;
+                if (prev == NULL) {
+                    thread->queue->head = thread;
+                } else {
+                    prev->link.next = thread;
+                }
+            }
+            if (thread->mutex) {
+                thread = thread->mutex->thread;
+                do {
+                    if (0 < thread->suspend) {
+                        break;
+                    }
+                    priority = __OSGetEffectivePriority(thread);
+                    if (thread->priority == priority) {
+                        break;
+                    }
+                    thread = SetEffectivePriority(thread, priority);
+                } while (thread);
+            }
+            break;
+        }
+        if (RunQueueHint_803C7294) {
+            SelectThread(0);
+        }
+    }
+    OSRestoreInterrupts(enabled);
+    return suspendCount;
 }
 
 s32 OSSuspendThread(void *thread) {
