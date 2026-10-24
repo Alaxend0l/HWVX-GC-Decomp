@@ -19292,75 +19292,55 @@ void JBCallback__Fll(s32 chan, s32 result) {
     Param_803C6A40[chan].result = result;
 }
 
-static inline BOOL GbaReadGameCode(s32 chan) {
-    u32 code;
+#pragma push
+#pragma readonly_strings on
+void GbaCheckJBResult__Fl(s32 chan) {
+    s32 GBAReset(s32 chan, u8 *status);
+    s32 GBAJoyBootAsync(s32 chan, s32 paletteColor, s32 paletteSpeed, u8 *programp, s32 length, u8 *status, void (*callback)(s32, s32));
+    u32 OSGetTick(void);
+    extern s32 HostId_803C79A4;
+    JoyBusParam *p;
+    u8 *status;
+    u32 buf;
 
-    if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0 || Param_803C6A40[chan].status != 0x28) {
-        return FALSE;
-    }
-    if (GBARead(chan, (u8 *)&code, &Param_803C6A40[chan].status) != 0) {
-        return FALSE;
-    }
-    if (code == 0x41483845) {
-        Param_803C6A40[chan].unk58 = code;
-        return TRUE;
-    }
-    Param_803C6A40[chan].unk58 = 0;
-    return FALSE;
-}
-
-static inline BOOL GbaSendGameCode(s32 chan) {
-    void GameSettings_GameBoyConnected(void);
-    extern s32 gLinkFinished;
-
-    if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0 || Param_803C6A40[chan].status != 0x20) {
-        return FALSE;
-    }
-    if (GBAWrite(chan, (u8 *)"GHWE", &Param_803C6A40[chan].status) != 0) {
-        return FALSE;
-    }
-    if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0 || Param_803C6A40[chan].status != 0x30) {
-        return FALSE;
-    }
-    if (Param_803C6A40[chan].status == 0x30) {
-        gLinkFinished = 1;
-        GameSettings_GameBoyConnected();
-    }
-    return TRUE;
-}
-
-static inline BOOL GbaReadParams(s32 chan) {
-    u32 cmd;
-    u32 i;
-    u8 *buf;
-
-    cmd = 0x60000000;
-    if (GBAWrite(chan, (u8 *)&cmd, &Param_803C6A40[chan].status) != 0 || (Param_803C6A40[chan].status & 0x30) != 0x30) {
-        return FALSE;
-    }
-    for (i = 0, buf = (u8 *)&Param_803C6A40[chan].recv; i < 0x20; i += 4, buf += 4) {
-        if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0 || Param_803C6A40[chan].status != 0x38) {
-            return FALSE;
+    p = &Param_803C6A40[chan];
+    if (p->result == 0) {
+        status = &p->status;
+        if (GBAReset(chan, status) != 0) {
+            return;
         }
-        if (GBARead(chan, buf, &Param_803C6A40[chan].status) != 0 || (Param_803C6A40[chan].status & 0x30) != 0x30) {
-            return FALSE;
+        memset(&p->send, 0, 0x20);
+        Param_803C6A40[chan].send.unk0 = 1;
+        Param_803C6A40[chan].send.chan = chan;
+        Param_803C6A40[chan].send.unk3 = 1;
+        Param_803C6A40[chan].send.hostId = HostId_803C79A4;
+        Param_803C6A40[chan].unk58 = 0;
+        if (GbaReadGameCode(chan) && Param_803C6A40[chan].unk58 == 0x41483845 && GbaSendGameCode(chan) && GbaReadParams(chan)) {
+            GbaOpen__Fl(chan);
+        }
+        return;
+    }
+    if (p->result == 3) {
+        status = &p->status;
+        if ((*status & 0xA) == 0xA) {
+            if ((*status & 0x30) != 0x10) {
+                GBARead(chan, (u8 *)&buf, status);
+            }
+        } else if (GbaHandshake(chan)) {
+            GbaOpen__Fl(chan);
+            return;
         }
     }
-    return TRUE;
+    if (OSGetTick() - Param_803C6A40[chan].startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 4000) {
+        OSReport("Timeout to JOYBOOT (chan=%d).\n", chan);
+        Param_803C6A40[chan].state = 0;
+        return;
+    }
+    Param_803C6A40[chan].state = 1;
+    GBAJoyBootAsync(chan, chan * 2, 2, Param_803C6A40[chan].program, Param_803C6A40[chan].length,
+                    &Param_803C6A40[chan].status, JBCallback__Fll);
 }
-
-static inline BOOL GbaHandshake(s32 chan) {
-    if (!GbaReadGameCode(chan)) {
-        return FALSE;
-    }
-    if (Param_803C6A40[chan].unk58 != 0x41483845) {
-        return FALSE;
-    }
-    if (!GbaSendGameCode(chan)) {
-        return FALSE;
-    }
-    return GbaReadParams(chan);
-}
+#pragma pop
 
 void GbaCommunication__Fl(s32 chan) {
     s32 GBAGetStatus(s32 chan, u8 *status);
