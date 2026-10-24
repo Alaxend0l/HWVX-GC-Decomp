@@ -5877,8 +5877,8 @@ typedef struct AnimTrack {
 } AnimTrack;
 
 static inline s32 AnimTrack_FindKey(AnimTrack *track, f32 time) {
-    f32 *times = track->times;
     s32 numKeys = track->numKeys;
+    f32 *times = track->times;
     s32 i = 1;
     u32 step = numKeys;
 
@@ -5969,7 +5969,7 @@ void AnimExtractKeyFrame_Hybrid(void *animp, void *outp, f32 time) {
         u32 *mask;
         u16 *flags;
         f32 *times;
-        u8 *data;
+        AnimTrack *data;
     } Anim;
     typedef struct {
         Vector rot;
@@ -5981,13 +5981,13 @@ void AnimExtractKeyFrame_Hybrid(void *animp, void *outp, f32 time) {
     u16 *flags;
     Bone *out;
     u32 bit;
-    u8 *data;
+    AnimTrack *track;
     Anim *anim;
 
     anim = (Anim *)animp;
     out = (Bone *)outp;
     flags = anim->flags;
-    data = anim->data;
+    track = anim->data;
     bit = 1;
     if (time < anim->minTime) {
         time = anim->minTime;
@@ -5997,13 +5997,13 @@ void AnimExtractKeyFrame_Hybrid(void *animp, void *outp, f32 time) {
     }
     for (i = 0; i < anim->numBones; i++) {
         if (*flags & 1 | 2 | 4) {
-            if (*data == 3) {
-                data = (u8 *)AnimTrack_Eval3((AnimTrack *)data, time, out->pos);
+            if (track->type == 3) {
+                track = AnimTrack_Eval3s(track, time, out->pos);
             } else {
-                out->pos[0] = ((AnimTrack *)data)->value[0];
-                out->pos[1] = ((AnimTrack *)data)->value[1];
-                out->pos[2] = ((AnimTrack *)data)->value[2];
-                data += 0x20;
+                out->pos[0] = track->value[0];
+                out->pos[1] = track->value[1];
+                out->pos[2] = track->value[2];
+                track++;
             }
             bit++;
             if (bit >= 32) {
@@ -6011,11 +6011,11 @@ void AnimExtractKeyFrame_Hybrid(void *animp, void *outp, f32 time) {
             }
         }
         if (*flags++ & 0x10 | 0x20 | 0x40 | 0x8) {
-            if (*data == 3) {
-                data = (u8 *)AnimTrack_Eval4((AnimTrack *)data, time, (f32 *)&out->rot);
+            if (track->type == 3) {
+                track = AnimTrack_Eval4(track, time, (f32 *)&out->rot);
             } else {
-                CopyVector(&out->rot, (Vector *)(data + 0x10));
-                data += 0x20;
+                CopyVector(&out->rot, (Vector *)track->value);
+                track++;
             }
             bit++;
             if (bit >= 32) {
