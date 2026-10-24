@@ -2476,37 +2476,6 @@ static inline void AI_Car_LeadTarget(u8 *ai) {
     }
 }
 
-static inline void AI_Car_FollowPath(u8 *ai, u32 i, Vector4 *p0) {
-    void PSVECScale(void *src, void *dst, f32 scale);
-    void PSVECAdd(void *a, void *b, void *out);
-    void PSVECSubtract(void *a, void *b, void *out);
-    f32 MagnitudeVector(void *v);
-    Vector4 a;
-    Vector4 b;
-    u8 *myPos;
-    Vector4 *p1;
-    f32 ma;
-    f32 mb;
-
-    myPos = *(u8 **)(ai + 0x2C) + 0x40;
-    if (i + 1 >= 32 || (p1 = ((Vector4 **)(ai + 0x420))[i + 1]) == NULL) {
-        PSVECSubtract(myPos, p0, ai + 0x400);
-        PSVECScale(ai + 0x400, ai + 0x400, 0.5f);
-        PSVECAdd(ai + 0x400, p0, ai + 0x400);
-    } else {
-        PSVECSubtract(myPos, p0, &a);
-        PSVECSubtract(p1, p0, &b);
-        ma = MagnitudeVector(&a);
-        mb = MagnitudeVector(&b);
-        PSVECScale(&a, &a, mb / ma);
-        PSVECScale(&b, &b, ma / mb);
-        PSVECScale(&a, &a, -1.0f);
-        PSVECAdd(&a, &b, ai + 0x400);
-        PSVECScale(ai + 0x400, ai + 0x400, -(0.5f * ma / MagnitudeVector(ai + 0x400)));
-        PSVECAdd(ai + 0x400, p0, ai + 0x400);
-    }
-}
-
 #pragma push
 #pragma use_lmw_stmw on
 static inline void AI_Car_LeadThing(u8 *ai, u8 *thing) {
