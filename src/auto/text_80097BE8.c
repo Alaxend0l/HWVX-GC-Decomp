@@ -7523,6 +7523,7 @@ s32 Gfx_FrustrumCullSphereTest(Vector *center, f32 radius) {
     return result;
 }
 
+#pragma use_lmw_stmw on
 u32 Gfx_GetCullLODGX(s32 geom, void *mtx, u8 *lod, u8 flag) {
     extern GfxState g_state;
     extern u8 g_CurrentViews;
