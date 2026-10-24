@@ -19235,16 +19235,26 @@ void Trail_Render(void) {
     }
 }
 
+typedef struct TrailSegment {
+    u32 color[4];
+    f32 v[4][4];
+    s32 life;
+    u8 pad54[8];
+    u16 texture;
+    u16 active;
+} TrailSegment;
+
+extern TrailSegment g_TrialData[1000];
+extern u32 g_nextTrail;
+
 static inline s32 Trail_FindFreeSegment(void) {
-    extern u8 g_TrialData[1000][0x60];
-    extern u32 g_nextTrail;
     s32 i;
 
     for (i = 1000; i-- > 0;) {
         if (g_nextTrail == 1000) {
             g_nextTrail = 0;
         }
-        if (*(s32 *)(g_TrialData[g_nextTrail++] + 0x50) == 0) {
+        if (g_TrialData[g_nextTrail++].life == 0) {
             i = g_nextTrail - 1;
             break;
         }
@@ -19253,16 +19263,6 @@ static inline s32 Trail_FindFreeSegment(void) {
 }
 
 void Trail_AddSegment(u32 *handle, f32 *pos, f32 *dir, u16 texture, u8 *color, s32 life, f32 width0, f32 width1) {
-    typedef struct TrailSegment {
-        u32 color[4];
-        f32 v[4][4];
-        s32 life;
-        u8 pad54[8];
-        u16 texture;
-        u16 active;
-    } TrailSegment;
-    extern TrailSegment g_TrialData[1000];
-    extern u32 g_nextTrail;
     extern f32 g_trailTimer;
     void MemCpy32(void *dst, void *src, u32 size);
     void DistanceXYZ(void *a, void *b, f32 *dist);
