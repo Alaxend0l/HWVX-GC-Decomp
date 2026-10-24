@@ -26515,6 +26515,7 @@ s32 StateProgressionManager_Init(s32 prevState) {
     return 1;
 }
 
+#pragma use_lmw_stmw on
 s32 StateProgressionManager_Heartbeat(void) {
     typedef struct {
         char *name;
