@@ -12764,6 +12764,138 @@ done:
     }
 }
 
+void GameSettings_GatherGameData(void) {
+    typedef struct DDRescueGameData {
+        u8 unk0[0x6C];
+        s32 progressionID;
+        s32 progression;
+        s8 bValid;
+        u8 unk75[0x78 - 0x75];
+        u8 playerStats[0x38];
+        u8 actions[0x880 - 0xB0];
+        f32 unk880[50];
+        u8 unk948[50][2];
+        f32 unk9AC[50];
+        u8 unkA74[50][2];
+        u8 unkAD8[200];
+        u8 unkBA0[1000];
+        u8 unkF88[2000];
+        u8 unk1758[500];
+        u8 unk194C[50];
+        f32 unk1980[50][3];
+        f32 unk1BD8[50];
+        u8 unk1CA0[50];
+        s32 vehicle;
+        s32 item;
+    } DDRescueGameData;
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    void StateProgressionManager_GetProgressionID(s32 *id, s32 *progression);
+    u8 PlayerManager_PlayerHumanCount(void);
+    void *PlayerManager_GetHumanPlayerByIndex(u8 index);
+    void *memcpy(void *, const void *, u32);
+    void Trigger_SaveActions(void *actions, s32 count);
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    void *pack;
+    s32 state;
+    u8 *car;
+    u8 *group;
+    u8 *world;
+    u32 i;
+    u32 j;
+    u32 nTriggers;
+    u32 nSwitches;
+
+    nTriggers = 0;
+    nSwitches = 0;
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        state = mcp[1];
+    } else {
+        state = 0;
+    }
+    switch (state) {
+    case 0:
+        break;
+    case 1:
+        StateProgressionManager_GetProgressionID(&((DDRescueGameData *)g_DDRescueGameData)->progressionID, &((DDRescueGameData *)g_DDRescueGameData)->progression);
+        ((DDRescueGameData *)g_DDRescueGameData)->bValid = g_codeVariables.unk120[0];
+        if (!((DDRescueGameData *)g_DDRescueGameData)->bValid) {
+            ((DDRescueGameData *)g_DDRescueGameData)->progression++;
+            break;
+        }
+        if (PlayerManager_PlayerHumanCount() == 1) {
+            memcpy(((DDRescueGameData *)g_DDRescueGameData)->playerStats, (u8 *)PlayerManager_GetHumanPlayerByIndex(0) + 0x70, 0x38);
+        }
+        Trigger_SaveActions(((DDRescueGameData *)g_DDRescueGameData)->actions, 500);
+        world = g_worldData.world;
+        for (i = 0; i < *(u32 *)(world + 0x50) && i < 50; i++) {
+            ((DDRescueGameData *)g_DDRescueGameData)->unk880[i] = *(f32 *)((*(u8 ***)(world + 0x54))[i] + 0x8);
+            ((DDRescueGameData *)g_DDRescueGameData)->unk948[i][0] = (*(u8 **)((*(u8 ***)(world + 0x54))[i] + 0xC))[0];
+            ((DDRescueGameData *)g_DDRescueGameData)->unk948[i][1] = (*(u8 **)((*(u8 ***)(world + 0x54))[i] + 0xC))[1];
+        }
+        world = g_worldData.world;
+        for (i = 0; i < *(u32 *)(world + 0x48) && i < 50; i++) {
+            ((DDRescueGameData *)g_DDRescueGameData)->unk9AC[i] = *(f32 *)((*(u8 ***)(world + 0x4C))[i] + 0x4);
+            if (*(u8 **)((*(u8 ***)(world + 0x4C))[i] + 0xC) != NULL) {
+                ((DDRescueGameData *)g_DDRescueGameData)->unkA74[i][0] = (*(u8 **)((*(u8 ***)(world + 0x4C))[i] + 0xC))[0];
+                ((DDRescueGameData *)g_DDRescueGameData)->unkA74[i][1] = (*(u8 **)((*(u8 ***)(world + 0x4C))[i] + 0xC))[1];
+            }
+        }
+        world = g_worldData.world;
+        for (i = 0; i < *(u32 *)(world + 0x40) && i < 200; i++) {
+            ((DDRescueGameData *)g_DDRescueGameData)->unkAD8[i] = *(s32 *)(*(u8 **)(world + 0x44) + i * 0x40 + 0x20);
+        }
+        world = g_worldData.world;
+        for (i = 0; i < *(u32 *)(world + 0x20); i++) {
+            group = *(u8 **)(world + 0x24) + i * 0x50;
+            for (j = 0; j < *(u32 *)(*(u8 **)(group + 0x30) + 0x14) && nTriggers < 1000; j++) {
+                ((DDRescueGameData *)g_DDRescueGameData)->unkBA0[nTriggers++] = *(s32 *)(*(u8 **)(*(u8 **)(group + 0x30) + 0x18) + j * 0x40 + 0x28);
+            }
+            for (j = 0; j < *(u32 *)(*(u8 **)(group + 0x30) + 0x4) && nSwitches < 2000; j++) {
+                ((DDRescueGameData *)g_DDRescueGameData)->unkF88[nSwitches++] = *(s32 *)(*(u8 **)(*(u8 **)(group + 0x30) + 0x8) + j * 0x40 + 0x30);
+            }
+        }
+        for (i = 0; i < *(u32 *)(world + 0x10) && i < 500; i++) {
+            ((DDRescueGameData *)g_DDRescueGameData)->unk1758[i] = *(s32 *)(*(u8 **)(world + 0x14) + i * 0x20 + 0x14);
+        }
+        world = g_worldData.world;
+        for (i = 0; i < *(u32 *)(world + 0x8) && i < 50; i++) {
+            ((DDRescueGameData *)g_DDRescueGameData)->unk194C[i] = *(s32 *)(*(u8 **)(world + 0xC) + i * 0x60 + 0x2C);
+            car = *(u8 **)(*(u8 **)(world + 0xC) + i * 0x60 + 0x28);
+            if (car != NULL) {
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][0] = *(f32 *)(car + 0x40);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][1] = *(f32 *)(car + 0x44);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][2] = *(f32 *)(car + 0x48);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1BD8[i] = (f32)*(s32 *)(car + 0x78) / (f32)*(s32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x14);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1CA0[i] = 1;
+            } else {
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][0] = *(f32 *)(*(u8 **)(world + 0xC) + i * 0x60 + 0x0);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][1] = *(f32 *)(*(u8 **)(world + 0xC) + i * 0x60 + 0x4);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][2] = *(f32 *)(*(u8 **)(world + 0xC) + i * 0x60 + 0x8);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1BD8[i] = *(f32 *)(*(u8 **)(world + 0xC) + i * 0x60 + 0x58);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1CA0[i] = 0;
+            }
+        }
+        ((DDRescueGameData *)g_DDRescueGameData)->item = 0;
+        ((DDRescueGameData *)g_DDRescueGameData)->vehicle = g_codeVariables.playerVehicle[0];
+        break;
+    }
+    g_codeVariables.unk120[0] = 0;
+}
+
 void GameSettings_RestoreGameData(void) {
     typedef struct DDRescueGameData {
         u8 unk0[0x74];
@@ -22053,6 +22185,163 @@ void Thing_CollideWithForceBoxes(u8 *thing) {
         }
         break;
     }
+}
+
+static inline u8 Teleporter_IsBelowOrFar(u8 *tp, u8 *thing) {
+    f32 MagnitudeVector(void *v);
+    u8 hit = 0;
+
+    if (*(f32 *)(thing + 0x44) < *(f32 *)(tp + 0x34) || MagnitudeVector(thing + 0x40) > 10000.0f) {
+        hit = 1;
+    }
+    return hit;
+}
+
+s8 Thing_CollideWithTeleporters(u8 *thing) {
+    typedef struct Teleporter {
+        Matrix4 mtx;
+        u8 pad40[4];
+        u32 debris;
+        u8 pad48[4];
+        f32 radius;
+        u32 numDest;
+        u32 flags;
+        u32 *dest;
+        s32 damage;
+        u8 pad60[0x10];
+    } Teleporter;
+    typedef struct DebrisParams {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        Vector4 zero;
+        u32 debris;
+        u32 unk44;
+        f32 unk48;
+        f32 unk4C;
+    } DebrisParams;
+    extern Vector4 g_zeroVector;
+    f32 MagnitudeVector(void *v);
+    f32 PSVECSquareDistance(void *a, void *b);
+    s32 RandomNumberGenerator_GetRandomInteger(s32 min, s32 max);
+    void TransposeSubMatrix(Matrix4 *mtx);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    s8 Player_IsHuman(void *player);
+    Teleporter *tp;
+    Teleporter *dest;
+    s32 hit;
+    DebrisParams destParams;
+    DebrisParams srcParams;
+    Matrix4 inv;
+    Matrix4 rel;
+    Vector4 vel;
+    Vector4 rotated;
+    Vector4 neg;
+    void **world;
+    u32 wasInside;
+    u32 i;
+    u8 inside;
+
+    wasInside = (*(u32 *)(thing + 0x74) >> 11) & 1;
+    world = &g_worldData.world;
+    *(u32 *)(thing + 0x74) &= ~0x800;
+    if (*world == NULL) {
+        return 0;
+    }
+    for (i = 0; i < *(u32 *)((u8 *)*world + 0x30); i++) {
+        tp = &(*(Teleporter **)((u8 *)*world + 0x34))[i];
+        if (tp->numDest == 0) {
+            continue;
+        }
+        if (tp->flags & 4) {
+            hit = 0;
+            if (*(f32 *)(thing + 0x44) < tp->mtx.m[3][1] || MagnitudeVector(thing + 0x40) > 10000.0f) {
+                hit = 1;
+            }
+            inside = hit;
+        } else {
+            inside = tp->radius * tp->radius > PSVECSquareDistance(&tp->mtx.v[3], thing + 0x40);
+        }
+        if (!inside) {
+            continue;
+        }
+        if (!wasInside) {
+            inv = tp->mtx;
+            rel = *(Matrix4 *)(thing + 0x10);
+            vel = *(Vector4 *)thing;
+            neg.x = -tp->mtx.m[3][0];
+            neg.y = -tp->mtx.m[3][1];
+            neg.z = -tp->mtx.m[3][2];
+            dest = &(*(Teleporter **)((u8 *)g_worldData.world + 0x34))[tp->dest[RandomNumberGenerator_GetRandomInteger(0, tp->numDest)]];
+            TransposeSubMatrix(&inv);
+            XformVecOrientation(&inv, &neg, &rotated);
+            inv.m[3][0] = rotated.x;
+            inv.m[3][1] = rotated.y;
+            inv.m[3][2] = rotated.z;
+            MultiplyMatrix((Matrix4 *)(thing + 0x10), &inv, &rel);
+            XformVecOrientation(&inv, (Vector4 *)thing, &vel);
+            if (tp->damage != 0) {
+                *(s32 *)(thing + 0x78) -= tp->damage;
+                if (*(s32 *)(thing + 0x78) < 1) {
+                    *(s32 *)(thing + 0x78) = 1;
+                }
+            }
+            if (dest->flags & 1) {
+                MultiplyMatrix(&rel, dest, (Matrix4 *)(thing + 0x10));
+                SubMatrixToQuaternion(thing + 0x10, (Vector4 *)(thing + 0x50));
+                XformVecOrientation(dest, &vel, (Vector4 *)thing);
+                if (!(dest->flags & 8)) {
+                    *(f32 *)(thing + 0x40) = dest->mtx.m[3][0];
+                    *(f32 *)(thing + 0x44) = dest->mtx.m[3][1];
+                    *(f32 *)(thing + 0x48) = dest->mtx.m[3][2];
+                }
+            } else {
+                *(Matrix4 *)(thing + 0x10) = dest->mtx;
+                SubMatrixToQuaternion(thing + 0x10, (Vector4 *)(thing + 0x50));
+                if (dest->flags & 8) {
+                    XformVec(dest, &rel.v[3], (Vector4 *)(thing + 0x40));
+                }
+            }
+            if (!(dest->flags & 2)) {
+                ((Vector4 *)thing)->x = 0.0f;
+                ((Vector4 *)thing)->y = 0.0f;
+                ((Vector4 *)thing)->z = 0.0f;
+            }
+            if (dest->debris != 0) {
+                destParams.debris = dest->debris;
+                destParams.pos = dest->mtx.v[3];
+                SubMatrixToQuaternion(dest, &destParams.quat);
+                destParams.vel.x = destParams.vel.y = destParams.vel.z = 0.0f;
+                destParams.unk44 = 0;
+                destParams.unk48 = 0.0f;
+                destParams.unk4C = 0.0f;
+                destParams.zero = g_zeroVector;
+                ThingManager_DARYL_CreateThing(1, &destParams);
+            }
+            if (tp->debris != 0) {
+                srcParams.debris = tp->debris;
+                srcParams.pos = tp->mtx.v[3];
+                SubMatrixToQuaternion(tp, &srcParams.quat);
+                srcParams.vel.x = srcParams.vel.y = srcParams.vel.z = 0.0f;
+                srcParams.unk44 = 0;
+                srcParams.unk48 = 0.0f;
+                srcParams.unk4C = 0.0f;
+                srcParams.zero = g_zeroVector;
+                ThingManager_DARYL_CreateThing(1, &srcParams);
+            }
+            if (*(u8 **)(thing + 0x8C) == g_carAVTable) {
+                *(s32 *)(thing + 0x3B0) = -1;
+                if (!Player_IsHuman(*(void **)(thing + 0x94))) {
+                    *(s32 *)(*(u8 **)(thing + 0x94) + 0x4A4) = 0x20;
+                    *(s32 *)(*(u8 **)(thing + 0x94) + 0x634) = -0x78;
+                }
+            }
+        }
+        *(u32 *)(thing + 0x74) |= 0x800;
+        return 1;
+    }
+    return 0;
 }
 
 s32 TriggerP2PActivated(u32 *data) {
