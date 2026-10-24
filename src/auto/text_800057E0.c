@@ -8988,6 +8988,128 @@ void FileStreaming_LoadingThread(void) {
     EndThread();
 }
 
+void LoadQuadrants(s8 refresh) {
+    typedef struct TocEntry {
+        u32 version;
+        u32 type;
+        u32 world;
+        u32 id;
+        u32 size;
+        u32 offset;
+    } TocEntry;
+    typedef struct Quad {
+        u8 pad0[0xC];
+        u32 index;
+        u8 pad10[0x38 - 0x10];
+        u32 id;
+        u32 fileOffset;
+        u32 size;
+        u8 pad44[0x50 - 0x44];
+    } Quad;
+    typedef struct World {
+        u8 pad0[0x20];
+        u32 numQuads;
+        Quad *quads;
+        u8 pad28[0x7C - 0x28];
+        char *fileName;
+        u8 pad80[0x8C - 0x80];
+        char *name;
+        u32 id;
+    } World;
+    typedef struct QuadPack {
+        u8 pad0[0x10];
+        void *loaded;
+        u8 pad14[0x34 - 0x14];
+        s8 inMemory;
+    } QuadPack;
+    extern s32 g_quadFileID;
+    extern u32 g_numQuadPacksToLoad;
+    extern QuadPack *g_QuadrantsToLoad[11];
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void DataPack_RefreshQuadPackPtrs(s32 arg0, QuadPack *quad);
+    int sprintf(char *buf, const char *fmt, ...);
+    char *strcpy(char *dst, const char *src);
+    char *strcat(char *dst, const char *src);
+    static TocEntry tocHeader[50];
+    char path[0x80];
+    char name[0x80];
+    char msg[0x100];
+    s8 error;
+    u32 count;
+    u32 tocSize;
+    u32 i;
+    u32 j;
+    u32 alt;
+    Quad *quad;
+
+    strcpy(name, ((World *)g_worldData.world)->name);
+    strcpy(path, ((World *)g_worldData.world)->name);
+    strcat(path, ".xgc");
+    if (g_quadFileID == -1) {
+        error = 0;
+        g_quadFileID = File_Open(NULL, path, 0, NULL);
+        if (g_quadFileID != -1) {
+            File_Read(g_quadFileID, 0x10, tocHeader);
+            if (tocHeader[0].version != 0x020100A0 || tocHeader[0].type != 0x040100AE) {
+                error = 1;
+            } else if (tocHeader[0].world != 0xB7) {
+                Dprintf(NULL, ((World *)g_worldData.world)->fileName, tocHeader[0].world, 0xB7);
+                error = 1;
+            } else {
+                count = tocHeader[0].id;
+                tocSize = count * sizeof(TocEntry);
+                File_Read(g_quadFileID, tocSize, tocHeader);
+                for (i = 0; i < ((World *)g_worldData.world)->numQuads; i++) {
+                    quad = &((World *)g_worldData.world)->quads[i];
+                    alt = 0;
+                    for (j = 0; j < count; j++) {
+                        u32 id = tocHeader[j].id;
+                        u32 index = id >> 16;
+
+                        if (tocHeader[j].type == 7 && ((World *)g_worldData.world)->id == tocHeader[j].world &&
+                            quad->id == id && index == quad->index) {
+                            if (tocHeader[j].version != 0xB7) {
+                                Dprintf(NULL, ((World *)g_worldData.world)->name, tocHeader[j].version, 0xB7);
+                            } else {
+                                quad->size = tocHeader[j].size;
+                                quad->fileOffset = (tocSize + 0x10) + tocHeader[j].offset;
+                            }
+                            break;
+                        }
+                        if (tocHeader[j].type == 7 && ((World *)g_worldData.world)->id == tocHeader[j].world &&
+                            (u16)quad->id == (u16)id) {
+                            alt = index;
+                        }
+                    }
+                    if (j == count) {
+                        if (alt == 0) {
+                            sprintf(msg, NULL, (u16)quad->id, quad->index);
+                        } else {
+                            sprintf(msg, NULL, (u16)quad->id, quad->index, alt);
+                        }
+                        Dprintf(msg);
+                    }
+                }
+            }
+        }
+        if (error || g_quadFileID == -1) {
+            g_numQuadPacksToLoad = 0;
+            return;
+        }
+    }
+    for (i = 0; i < g_numQuadPacksToLoad; i++) {
+        if (g_QuadrantsToLoad[i]->loaded == NULL) {
+            DataPack_LoadQuadPack(g_quadFileID, (void *)g_QuadrantsToLoad[i], ((World *)g_worldData.world)->id);
+            if (refresh) {
+                DataPack_RefreshQuadPackPtrs(g_worldData.unk8[2], g_QuadrantsToLoad[i]);
+                g_QuadrantsToLoad[i]->inMemory = 1;
+            }
+        }
+    }
+    g_numQuadPacksToLoad = 0;
+}
+
 s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded) {
     extern u32 g_MaxStreamingDataPacks[11];
     extern s8 g_bLoadingThreadRunning;
@@ -15091,6 +15213,14 @@ s32 Projectile_PreMove(u8 *proj) {
     if (*(f32 *)(*(u8 **)(proj + 0x120) + 0x34)) {
         Projectile_ProximityDetection(proj);
     }
+    return 1;
+}
+
+s32 Projectile_Move(u8 *proj) {
+    void Thing_CollideWithForceBoxes(void *thing);
+
+    Projectile_MoveBase(proj);
+    Thing_CollideWithForceBoxes(proj);
     return 1;
 }
 
@@ -23559,6 +23689,9 @@ void Decode(u8 *s, u8 *d) {
         flag--;
     } while (q < os);
 }
+
+extern u8 *FontData_803C7230;
+extern u8 *SheetImage_803C7234;
 
 u16 OSGetFontEncode(void) {
     static u16 fontEncode = 0xFFFF;
