@@ -14738,7 +14738,7 @@ void Projectile_MoveBase(u8 *proj) {
     type = *(u8 *)(*(u8 **)(proj + 0x120) + 0x4);
     if (type != 0) {
         if (type == 1) {
-            *(f32 *)(proj + 0x128) += 30.0f * dt;
+            *(f32 *)(proj + 0x128) += 1000.0f * dt;
         } else if (type == 2) {
             PSVECScale(proj, &move, dt);
             *(f32 *)(proj + 0x128) += MagnitudeVector(&move);
