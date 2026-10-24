@@ -40536,6 +40536,75 @@ s32 TRKDoFlushCache(TRKBuffer *b) {
     return err;
 }
 
+void TRKDoCPUType(TRKBuffer *b) {
+    typedef struct {
+        u8 cpuMajor;
+        u8 cpuMinor;
+        u8 bigEndian;
+        u8 defaultTypeSize;
+        u8 fpTypeSize;
+        u8 extended1TypeSize;
+        u8 extended2TypeSize;
+    } DSCPUType;
+    s32 TRKTargetCPUType(DSCPUType *cpuType);
+    s32 err;
+    s32 ackTries;
+    DSCPUType cpuType;
+
+    if (b->length != 1) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 2);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return;
+    }
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, 0);
+    err = TRKTargetCPUType(&cpuType);
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, cpuType.cpuMajor);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, cpuType.cpuMinor);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, cpuType.bigEndian);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, cpuType.defaultTypeSize);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, cpuType.fpTypeSize);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, cpuType.extended1TypeSize);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, cpuType.extended2TypeSize);
+    }
+    if (err != 0) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 3);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return;
+    }
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+}
+
 void TRKDoSupportMask(TRKBuffer *b) {
     s32 TRKTargetSupportMask(u8 *mask);
     s32 TRKAppendBuffer(TRKBuffer *b, const void *data, u32 length);
