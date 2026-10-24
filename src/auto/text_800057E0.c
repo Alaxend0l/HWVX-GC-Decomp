@@ -9112,6 +9112,40 @@ void InterfaceManager_SetRadarBlip(u16 arg0) {
     g_radarTextureIndex = (s32) arg0;
 }
 
+void InterfaceManager_SetInput(s32 index, s32 input) {
+    typedef struct InterfaceSlot {
+        u8 pad0[0x25C];
+        u8 *object;
+        u8 pad260[0x270 - 0x260];
+        s32 child;
+        u8 pad274[0x300 - 0x274];
+    } InterfaceSlot;
+    typedef struct Interface {
+        u32 count;
+        u8 pad4[0x84 - 0x4];
+        u8 hasInput;
+        u8 pad85[0x88 - 0x85];
+        InterfaceSlot *slots;
+        s32 input;
+        u8 pad90[0x170 - 0x90];
+    } Interface;
+    extern Interface g_interface[];
+    u32 i;
+
+    g_interface[index].input = input;
+    g_interface[index].hasInput = 1;
+    for (i = 0; i < g_interface[index].count; i++) {
+        switch (g_interface[index].slots[i].object[1]) {
+        case 6:
+        case 7:
+            if (g_interface[index].slots[i].object[0] != 3) {
+                InterfaceManager_SetInput(g_interface[index].slots[i].child, input);
+            }
+            break;
+        }
+    }
+}
+
 void InterfaceManager_ReleaseAllInterfaces(void) {
     extern u8 g_interface[][0x170];
     extern s32 g_TargetArrow[7];
