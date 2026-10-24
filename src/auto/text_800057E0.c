@@ -624,6 +624,18 @@ static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
     return 0;
 }
 
+#define TRK_SEND_ACK_DEFINED
+static inline s32 TRKSendACK(TRKBuffer *b) {
+    s32 err;
+    s32 ackTries = 3;
+
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+    return err;
+}
+
 void *TRK_memcpy(void *dst, const void *src, u32 n);
 
 /* TRKReadBuffer, inlined into the msgbuf readers (MetroTRK was built with deferred inlining) */
