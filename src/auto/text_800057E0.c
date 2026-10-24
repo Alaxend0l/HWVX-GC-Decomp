@@ -5744,15 +5744,13 @@ static inline void Anim_AddKeyFrames(AnimKeyFrame *dst, AnimKeyFrame *src, u32 c
     Quaternion q;
 
     for (i = 0; i < count; i++) {
-        if (src->rot.w != 1.0f || src->rot.x != 0.0f || src->rot.y != 0.0f || src->rot.z != 0.0f) {
-            QuaternionMult((Vector4 *)&dst->rot, (Vector4 *)&src->rot, (Vector4 *)&q);
-            dst->rot = q;
+        if (src[i].rot.w != 1.0f || src[i].rot.x != 0.0f || src[i].rot.y != 0.0f || src[i].rot.z != 0.0f) {
+            QuaternionMult((Vector4 *)&dst[i].rot, (Vector4 *)&src[i].rot, (Vector4 *)&q);
+            dst[i].rot = q;
         }
-        dst->pos[0] += src->pos[0];
-        dst->pos[1] += src->pos[1];
-        dst->pos[2] += src->pos[2];
-        src++;
-        dst++;
+        dst[i].pos[0] += src[i].pos[0];
+        dst[i].pos[1] += src[i].pos[1];
+        dst[i].pos[2] += src[i].pos[2];
     }
 }
 
@@ -5768,12 +5766,13 @@ void CarA_Extract_Keyframes(u8 *car, void *frames) {
     } WheelBone;
     u32 *anim;
     u32 i;
+    WheelBone *bone;
     AnimKeyFrame keys[64];
 
     anim = *(u32 **)(*(u8 **)(car + 0x330) + 0x14);
     MotionState_ExtractBlendedKeyFrame(car + 0x330, frames);
     for (i = 0; i < *(u32 *)(*(u8 **)(car + 0x3BC) + 0xD0); i++) {
-        WheelBone *bone = &(*(WheelBone **)(*(u8 **)(car + 0x3BC) + 0xD4))[i];
+        bone = &(*(WheelBone **)(*(u8 **)(car + 0x3BC) + 0xD4))[i];
         SinCosRad(&((AnimKeyFrame *)frames)[bone->bone].rot.x, &((AnimKeyFrame *)frames)[bone->bone].rot.w, 0.5f * *(f32 *)(car + i * 0x30 + 0x1B0));
         ((AnimKeyFrame *)frames)[bone->bone].rot.y = 0.0f;
         ((AnimKeyFrame *)frames)[bone->bone].rot.z = 0.0f;
