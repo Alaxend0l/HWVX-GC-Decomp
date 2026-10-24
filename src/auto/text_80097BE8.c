@@ -735,6 +735,20 @@ static inline void Input_SetKeyUp(VirtualPad *pad, u16 key) {
     }
 }
 static InputUnk108 s_unk108[4];
+
+typedef struct LGPosition {
+    u16 button;
+    s8 unk2;
+    s8 wheel;
+    u8 accelerator;
+    u8 brake;
+    u8 unk6;
+    u8 unk7;
+    u8 unk8;
+    s8 err;
+} LGPosition;
+
+static LGPosition s_lgStatus[4];
 extern u8 g_padUpPos[4];
 extern u8 g_padDownPos[4];
 extern u32 g_StopInput;
