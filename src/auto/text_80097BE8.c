@@ -17134,6 +17134,141 @@ void GbaSetport__Fl(s32 chan) {
     p->state = 3;
 }
 
+static inline void GbaReset(s32 chan) {
+    s32 GBAGetStatus(s32 chan, u8 *status);
+    s32 GBAWrite(s32 chan, u8 *src, u8 *status);
+    u32 OSGetTick(void);
+    u32 cmd;
+
+    Param_803C6A40[chan].startTick = OSGetTick();
+    do {
+        if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0 || OSGetTick() - Param_803C6A40[chan].startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 100) {
+            OSReport("GbaReset: timeout waiting for GBA (chan=%d).\n", chan);
+            Param_803C6A40[chan].state = 0;
+            return;
+        }
+    } while (Param_803C6A40[chan].status & 2);
+    cmd = 0x50000000;
+    if (GBAWrite(chan, (u8 *)&cmd, &Param_803C6A40[chan].status) != 0) {
+        OSReport("GbaReset: GBAWrite failed (chan=%d).\n", chan);
+        Param_803C6A40[chan].state = 0;
+        return;
+    }
+    Param_803C6A40[chan].startTick = OSGetTick();
+    do {
+        if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0 || OSGetTick() - Param_803C6A40[chan].startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 100) {
+            OSReport("GbaReset: timeout waiting for reset (chan=%d).\n", chan);
+            Param_803C6A40[chan].state = 0;
+            return;
+        }
+    } while (Param_803C6A40[chan].status & 2);
+    Param_803C6A40[chan].state = 0;
+}
+
+void GbaProc__Fv_800CA1D0(void) {
+    s32 GBAGetProcessStatus(s32 chan, u8 *percentp);
+    u32 SIProbe(s32 chan);
+    s32 GBAGetStatus(s32 chan, u8 *status);
+    s32 GBAWrite(s32 chan, u8 *src, u8 *status);
+    s32 GBAReset(s32 chan, u8 *status);
+    s32 GBAJoyBootAsync(s32 chan, s32 paletteColor, s32 paletteSpeed, u8 *programp, s32 length, u8 *status, void (*callback)(s32, s32));
+    u32 OSGetTick(void);
+    void GbaCheckJBResult__Fl(s32 chan);
+    void GbaCommunication__Fl(s32 chan);
+    void GbaSetport__Fl(s32 chan);
+    void OSPanic(const char *file, s32 line, const char *msg, ...);
+    s32 chan;
+    u8 percent;
+    u8 *status;
+    u32 *startTick;
+    u32 cmd;
+
+    for (chan = 0; chan < 4; chan++) {
+        if (Param_803C6A40[chan].state == 3) {
+            Param_803C6A40[chan].unk70 = 0;
+        } else if (Param_803C6A40[chan].state == 0 && GBAGetProcessStatus(chan, &percent) != 2) {
+            Param_803C6A40[chan].type = SIProbe(chan);
+        }
+        if (Param_803C6A40[chan].type != 0x40000) {
+            Param_803C6A40[chan].state = 0;
+            continue;
+        }
+        switch (Param_803C6A40[chan].state) {
+        case 0:
+            Param_803C6A40[chan].unk58 = 0;
+            if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0) {
+                break;
+            }
+            Param_803C6A40[chan].startTick = OSGetTick();
+            Param_803C6A40[chan].state = 1;
+            GBAJoyBootAsync(chan, chan * 2, 2, Param_803C6A40[chan].program, Param_803C6A40[chan].length,
+                            &Param_803C6A40[chan].status, JBCallback__Fll);
+            break;
+        case 1:
+            break;
+        case 2:
+            GbaCheckJBResult__Fl(chan);
+            break;
+        case 3:
+            GbaCommunication__Fl(chan);
+            break;
+        case 4:
+            GbaSetport__Fl(chan);
+            break;
+        case 5:
+            Param_803C6A40[chan].startTick = OSGetTick();
+            status = &Param_803C6A40[chan].status;
+            startTick = &Param_803C6A40[chan].startTick;
+            do {
+                if (GBAGetStatus(chan, status) != 0 || OSGetTick() - *startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 100) {
+                    OSReport("GbaReset: timeout waiting for GBA (chan=%d).\n", chan);
+                    Param_803C6A40[chan].state = 0;
+                    goto next;
+                }
+            } while (*status & 2);
+            cmd = 0x50000000;
+            if (GBAWrite(chan, (u8 *)&cmd, &Param_803C6A40[chan].status) != 0) {
+                OSReport("GbaReset: GBAWrite failed (chan=%d).\n", chan);
+                Param_803C6A40[chan].state = 0;
+                break;
+            }
+            Param_803C6A40[chan].startTick = OSGetTick();
+            status = &Param_803C6A40[chan].status;
+            startTick = &Param_803C6A40[chan].startTick;
+            do {
+                if (GBAGetStatus(chan, status) != 0 || OSGetTick() - *startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 100) {
+                    OSReport("GbaReset: timeout waiting for reset (chan=%d).\n", chan);
+                    Param_803C6A40[chan].state = 0;
+                    goto next;
+                }
+            } while (*status & 2);
+            Param_803C6A40[chan].state = 0;
+            break;
+        case 6:
+            GBAReset(chan, &Param_803C6A40[chan].status);
+            Param_803C6A40[chan].state = 0;
+            break;
+        case 7:
+            Param_803C6A40[chan].startTick = OSGetTick();
+            Param_803C6A40[chan].state = 8;
+        case 8:
+            if (GBAReset(chan, &Param_803C6A40[chan].status) != 0) {
+                Param_803C6A40[chan].state = 0;
+                break;
+            }
+            if (OSGetTick() - Param_803C6A40[chan].startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 500) {
+                OSReport("GbaProc: timeout waiting for reset (chan=%d).\n", chan);
+                Param_803C6A40[chan].state = 0;
+            }
+            break;
+        default:
+            OSPanic("gba.c", 726, "GbaProc: invalid state\n");
+            break;
+        }
+    next:;
+    }
+}
+
 void GBACloseCallback__FlP11DVDFileInfo(s32 result, void *fileInfo);
 void GBAConnectivityInit__Fv(void) {
     extern u8 GBAfileInfo_803C6C10[0x3C];
