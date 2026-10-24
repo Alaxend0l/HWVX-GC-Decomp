@@ -524,11 +524,6 @@ typedef struct Vector4 {
     f32 w;
 } Vector4 __attribute__((aligned(16)));
 
-Vector4 g_carPos[80];
-f32 g_carRot[80];
-Vector4 g_carCamPos;
-Vector4 g_carDrivePos;
-
 typedef struct Quaternion {
     f32 x;
     f32 y;
