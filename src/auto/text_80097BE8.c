@@ -19355,11 +19355,12 @@ static inline BOOL GbaHandshake(s32 chan) {
     if (GBAWrite(chan, (u8 *)&cmd, &Param_803C6A40[chan].status) != 0 || (Param_803C6A40[chan].status & 0x30) != 0x30) {
         return FALSE;
     }
-    for (i = 0, buf = (u8 *)&Param_803C6A40[chan].recv; i < 0x20; i += 4, buf += 4) {
+    for (i = 0; i < 0x20; i += 4) {
         if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0 || Param_803C6A40[chan].status != 0x38) {
             return FALSE;
         }
-        if (GBARead(chan, buf, &Param_803C6A40[chan].status) != 0 || (Param_803C6A40[chan].status & 0x30) != 0x30) {
+        if (GBARead(chan, (u8 *)&Param_803C6A40[chan].recv + i, &Param_803C6A40[chan].status) != 0 ||
+            (Param_803C6A40[chan].status & 0x30) != 0x30) {
             return FALSE;
         }
     }
