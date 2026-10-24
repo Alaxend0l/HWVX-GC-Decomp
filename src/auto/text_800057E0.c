@@ -31168,7 +31168,6 @@ s32 TriggerLevelStart(void) {
 }
 
 #pragma push
-#pragma auto_inline off
 f32 GetCodeVariable(s32 var, u8 *thing) {
     u32 GameSettings_GetCodeVariable(s32, s32);
     u8 *vehicle;
