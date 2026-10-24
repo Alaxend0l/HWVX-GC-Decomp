@@ -14969,6 +14969,169 @@ void NavHolder_UseMainRouteOnly(void) {
     gs_useMainRouteOnly_803C7000 = 1;
 }
 
+typedef struct PathNode {
+    f32 pos[3];
+    u8 pad0C[0x10 - 0xC];
+    u32 numLinks;
+    f32 *costs;
+    s32 *links;
+    u8 pad1C[0x37 - 0x1C];
+    u8 flags;
+    struct PathNode *parent;
+    struct PathNode *next;
+    f32 g;
+    f32 h;
+    f32 f;
+} PathNode;
+
+static inline PathNode *NavHolder_PopLowestOpen(void) {
+    extern PathNode *gs_pOpenListHead_803C7008;
+    PathNode *head = gs_pOpenListHead_803C7008;
+    PathNode *prev = NULL;
+    PathNode *best;
+    PathNode *p;
+    PathNode *q;
+    f32 bestF;
+
+    if (head == NULL) {
+        return NULL;
+    }
+    bestF = head->f;
+    p = head;
+    best = head;
+    while ((q = p->next) != NULL) {
+        if (q->f < bestF) {
+            bestF = q->f;
+            prev = p;
+            best = q;
+        }
+        p = q;
+    }
+    if (prev == NULL) {
+        gs_pOpenListHead_803C7008 = head->next;
+    } else {
+        prev->next = best->next;
+    }
+    prev = best;
+    best->flags &= ~2;
+    return prev;
+}
+
+s8 NavHolder_CreatePath(u8 *goal, u8 *start) {
+    typedef struct PathNode {
+        f32 pos[3];
+        u8 pad0C[0x10 - 0xC];
+        u32 numLinks;
+        f32 *costs;
+        s32 *links;
+        u8 pad1C[0x37 - 0x1C];
+        u8 flags;
+        struct PathNode *parent;
+        struct PathNode *next;
+        f32 g;
+        f32 h;
+        f32 f;
+    } PathNode;
+    extern PathNode *gs_pOpenListHead_803C7008;
+    extern PathNode *gs_pClosedListHead_803C7004;
+    u8 *NavHolder_GetNavPoint(s32 index);
+    f32 PSVECSquareDistance(f32 *a, f32 *b);
+    PathNode *cur;
+    PathNode *n;
+    u8 i;
+    PathNode *end = (PathNode *)goal;
+    PathNode *node = (PathNode *)start;
+    PathNode *head;
+    PathNode *best;
+    PathNode *p;
+    PathNode *q;
+    f32 bestF;
+    f32 g;
+
+    node->g = 0.0f;
+    node->h = sqrt(PSVECSquareDistance(end->pos, node->pos));
+    node->f = node->g + node->h;
+    node->next = gs_pOpenListHead_803C7008;
+    gs_pOpenListHead_803C7008 = node;
+    node->flags |= 2;
+    while (1) {
+        head = gs_pOpenListHead_803C7008;
+        cur = NULL;
+        if (head == NULL) {
+        } else {
+            bestF = head->f;
+            p = head;
+            best = head;
+            while ((q = p->next) != NULL) {
+                if (q->f < bestF) {
+                    bestF = q->f;
+                    cur = p;
+                    best = q;
+                }
+                p = q;
+            }
+            if (cur == NULL) {
+                gs_pOpenListHead_803C7008 = head->next;
+            } else {
+                cur->next = best->next;
+            }
+            cur = best;
+            best->flags &= ~2;
+        }
+        if (cur == end) {
+            return 1;
+        }
+        if (cur == NULL) {
+            return 0;
+        }
+        for (i = 0; i < cur->numLinks; i++) {
+            n = (PathNode *)NavHolder_GetNavPoint(cur->links[i]);
+            if (n != end && !(s8)(n->flags & 1)) {
+                if (!(s8)(n->flags & 4)) {
+                    n->next = gs_pClosedListHead_803C7004;
+                    gs_pClosedListHead_803C7004 = n;
+                    n->flags |= 4;
+                }
+            } else {
+                g = cur->g + cur->costs[i];
+                if (!(n->flags & 6)) {
+                    n->g = g;
+                    n->h = sqrt(PSVECSquareDistance(end->pos, n->pos));
+                    n->f = g + n->h;
+                    n->parent = cur;
+                    n->next = gs_pOpenListHead_803C7008;
+                    gs_pOpenListHead_803C7008 = n;
+                    n->flags |= 2;
+                } else if (n->g > g) {
+                    n->g = g;
+                    n->f = g + n->h;
+                    n->parent = cur;
+                    if ((s8)(n->flags & 4)) {
+                        p = gs_pClosedListHead_803C7004;
+                        if (n == p) {
+                            gs_pClosedListHead_803C7004 = p->next;
+                        } else {
+                            for (; p->parent != NULL; p = p->parent) {
+                                if (p->parent == n) {
+                                    p->parent = n->parent;
+                                    break;
+                                }
+                            }
+                        }
+                        n->flags &= ~4;
+                        n->next = gs_pOpenListHead_803C7008;
+                        gs_pOpenListHead_803C7008 = n;
+                        n->flags |= 2;
+                    }
+                }
+            }
+        }
+        cur->next = gs_pClosedListHead_803C7004;
+        gs_pClosedListHead_803C7004 = cur;
+        cur->flags |= 4;
+    }
+}
+
 u8 *NavHolder_FindPath(s32 from, s32 to) {
     extern s8 gs_useMainRouteOnly_803C7000;
     extern void *gs_pOpenListHead_803C7008;
