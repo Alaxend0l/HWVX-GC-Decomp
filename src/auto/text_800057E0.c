@@ -7295,9 +7295,16 @@ typedef struct StreamingDataPack {
     u32 id;
     u32 refs;
     u8 unk10;
-    u8 pad11[0x4C - 0x11];
+    u8 pad11[0x14 - 0x11];
+    u32 start;
+    u8 pad18[0x3C - 0x18];
+    u32 size;
+    s32 unk40;
+    u8 pad44[0x4C - 0x44];
     void *data;
-    u8 pad50[0xA8 - 0x50];
+    u8 pad50[0x78 - 0x50];
+    s8 music;
+    u8 pad79[0xA8 - 0x79];
 } StreamingDataPack;
 
 #pragma push
