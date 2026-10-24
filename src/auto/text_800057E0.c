@@ -8645,7 +8645,7 @@ void DataPack_EnableLoadingSounds(s8 arg0) {
 void DataPack_Initialize(void) {
     u32 i;
     for (i = 0; i < 11; i++) {
-        g_fileTOCCache[i].valid = 0;
+        *((u8 *)&g_fileTOCCache[i] + 0x4B4) = 0;
     }
 }
 
@@ -8663,6 +8663,132 @@ void DataPack_CloseFiles(void) {
         g_openFileDataPackType = 0xB;
     }
 }
+
+#pragma readonly_strings on
+s32 DataPack_LoadFile(char *name, s32 arg1, u32 type, u32 id) {
+    typedef struct DataPackTOCEntry {
+        u32 version;
+        u32 type;
+        u32 id;
+        u8 unkC[0x14 - 0xC];
+        u32 offset;
+    } DataPackTOCEntry;
+    typedef struct DataPackTOC {
+        DataPackTOCEntry entries[50];
+        u32 count;
+        char name[0x4C];
+    } DataPackTOC;
+    extern u32 g_buffer[];
+    char *strcpy(char *dst, const char *src);
+    char *strcat(char *dst, const char *src);
+    int strcmp(const char *a, const char *b);
+    char *strncpy(char *dst, const char *src, u32 n);
+    u32 strlen(const char *s);
+    void *memcpy(void *dst, const void *src, u32 n);
+    int sprintf(char *buf, const char *fmt, ...);
+    void Dprintf(const char *fmt, ...);
+    s32 File_Open(u32 dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    s32 File_Seek(s32 handle, s32 offset, s8 mode);
+    void DataPack_LoadDataPack(s32 file, s32 arg1);
+    DataPackTOC *toc;
+    char *tocName;
+    u32 i;
+    s8 found;
+    char path[0x80];
+
+    found = 0;
+    strcpy(path, name);
+    strcat(path, ".xgc");
+    if ((g_fileID != -1 && ((DataPackTOC *)g_fileTOCCache)[type].name == NULL) || strcmp(((DataPackTOC *)g_fileTOCCache)[type].name, name) != 0) {
+        for (i = 0; i < 11; i++) {
+            if (i != type && ((DataPackTOC *)g_fileTOCCache)[i].name != NULL && strcmp(((DataPackTOC *)g_fileTOCCache)[i].name, name) == 0) {
+                memcpy(&((DataPackTOC *)g_fileTOCCache)[type], &((DataPackTOC *)g_fileTOCCache)[i], 0x500);
+                if (g_fileID != 0 && g_openFileDataPackType == i) {
+                    g_openFileDataPackType = type;
+                } else if (g_openFileDataPackType == type) {
+                    File_Close(g_fileID);
+                    g_fileID = -1;
+                    g_openFileDataPackType = 0xB;
+                }
+                break;
+            }
+        }
+    }
+    if (g_fileID == -1 || (tocName = ((DataPackTOC *)g_fileTOCCache)[type].name) == NULL || strcmp(tocName, name) != 0 ||
+        (g_openFileDataPackType != type && strcmp(tocName, ((DataPackTOC *)g_fileTOCCache)[g_openFileDataPackType].name) != 0)) {
+        if (g_fileID != -1) {
+            File_Close(g_fileID);
+            g_openFileDataPackType = 0xB;
+        }
+        g_fileID = File_Open(0, path, 0, 0);
+        if (g_fileID == -1) {
+            if (strcmp(name, "mcp") != 0) {
+                char msg[0x80];
+                sprintf(msg, "Could not open the data pack: %s\n", path);
+                Dprintf(msg);
+            }
+            return 0;
+        }
+        g_openFileDataPackType = type;
+    }
+    toc = &((DataPackTOC *)g_fileTOCCache)[type];
+    tocName = toc->name;
+    if (tocName == NULL || strcmp(tocName, name) != 0) {
+        File_Read(g_fileID, 0x800, g_buffer);
+        if (g_buffer[0] != 0x020100A0 || g_buffer[1] != 0x040100AE) {
+            File_Close(g_fileID);
+            g_fileID = -1;
+            g_openFileDataPackType = 0xB;
+            return 0;
+        }
+        if (g_buffer[2] != 0xB7) {
+            char msg[0x80];
+            File_Close(g_fileID);
+            g_fileID = -1;
+            g_openFileDataPackType = 0xB;
+            sprintf(msg, "Data pack %s is version %d, expected %dXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n", path, g_buffer[2], 0xB7);
+            Dprintf(msg);
+            return 0;
+        }
+        ((DataPackTOC *)g_fileTOCCache)[type].count = g_buffer[3];
+        memcpy(toc, &g_buffer[4], ((DataPackTOC *)g_fileTOCCache)[type].count * sizeof(DataPackTOCEntry));
+        if (strlen(name) >= 0x4C) {
+            strncpy(tocName, name, 0x4C);
+            ((DataPackTOC *)g_fileTOCCache)[type].name[0x4B] = 0;
+        } else {
+            strcpy(tocName, name);
+        }
+    }
+    for (i = 0; i < toc->count; i++) {
+        if (type == toc->entries[i].type && id == toc->entries[i].id) {
+            if (toc->entries[i].version != 0xB7) {
+                char msg[0x80];
+                sprintf(msg, "Data pack %s is version %d, expected %dXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n", path, toc->entries[i].version, 0xB7);
+                Dprintf(msg);
+                File_Close(g_fileID);
+                g_fileID = -1;
+                g_openFileDataPackType = 0xB;
+                return 0;
+            }
+            File_Seek(g_fileID, ((DataPackTOC *)g_fileTOCCache)[type].entries[i].offset + ((DataPackTOC *)g_fileTOCCache)[type].count * sizeof(DataPackTOCEntry) + 0x10, 0);
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        char msg[0x80];
+        sprintf(msg, "Could not find file %d in data pack %s\n", id, path);
+        Dprintf(msg);
+        File_Close(g_fileID);
+        g_fileID = -1;
+        g_openFileDataPackType = 0xB;
+        return 0;
+    }
+    DataPack_LoadDataPack(g_fileID, arg1);
+    return 1;
+}
+#pragma readonly_strings reset
 
 void DataPack_LoadQuadPack(s32 file, QuadPack *quad, u32 worldID) {
     void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
