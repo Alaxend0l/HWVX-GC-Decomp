@@ -19044,6 +19044,152 @@ void InterfaceManager_DrawBox(u8 *obj) {
     }
 }
 
+void InterfaceManager_DrawLine(u8 *obj) {
+    void Gfx_Add2DFXLine(Vector4 *p0, Vector4 *p1, u32 *c0, u32 *c1, u8 flag);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *a, Vector4 *out);
+    u32 *line = *(u32 **)(obj + 0x258);
+    Vector4 p0 = {0.0f, 0.0f, 0.0f, 0.0f};
+    Vector4 p1 = {0.0f, 0.0f, 0.0f, 0.0f};
+    Vector4 dir;
+    f32 pos;
+    f32 x;
+    f32 y;
+
+    switch (*(u8 *)line) {
+    case 0:
+        p0.x = 0.0f;
+        p0.y = *(f32 *)(obj + 0x64);
+        p1.x = 640.0f;
+        p1.y = *(f32 *)(obj + 0x64);
+        Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+        if (line[1] != 0) {
+            p0.x = *(f32 *)(obj + 0x60) - 10.0f;
+            p0.y = *(f32 *)(obj + 0x64) - 10.0f;
+            p1.x = *(f32 *)(obj + 0x60) + 10.0f;
+            p1.y = *(f32 *)(obj + 0x64) + 10.0f;
+            Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+            p0.x = *(f32 *)(obj + 0x60) + 10.0f;
+            p0.y = *(f32 *)(obj + 0x64) - 10.0f;
+            p1.x = *(f32 *)(obj + 0x60) - 10.0f;
+            p1.y = *(f32 *)(obj + 0x64) + 10.0f;
+            Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+            p0.x = *(f32 *)(obj + 0x60);
+            p0.y = *(f32 *)(obj + 0x64) - 10.0f;
+            p1.x = *(f32 *)(obj + 0x60);
+            p1.y = *(f32 *)(obj + 0x64) + 10.0f;
+            Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+            for (pos = *(f32 *)(obj + 0x60) + line[1]; pos < 640.0f; pos += line[1]) {
+                p0.x = pos;
+                p0.y = *(f32 *)(obj + 0x64) - 10.0f;
+                p1.x = pos;
+                p1.y = *(f32 *)(obj + 0x64) + 10.0f;
+                Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+            }
+            for (pos = *(f32 *)(obj + 0x60) - line[1]; pos > 0.0f; pos -= line[1]) {
+                p0.x = pos;
+                p0.y = *(f32 *)(obj + 0x64) - 10.0f;
+                p1.x = pos;
+                p1.y = *(f32 *)(obj + 0x64) + 10.0f;
+                Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+            }
+        }
+        break;
+    case 1:
+        p0.x = *(f32 *)(obj + 0x60);
+        p0.y = 0.0f;
+        p1.x = *(f32 *)(obj + 0x60);
+        p1.y = 480.0f;
+        Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+        if (line[1] != 0) {
+            p0.x = *(f32 *)(obj + 0x60) - 10.0f;
+            p0.y = *(f32 *)(obj + 0x64) - 10.0f;
+            p1.x = *(f32 *)(obj + 0x60) + 10.0f;
+            p1.y = *(f32 *)(obj + 0x64) + 10.0f;
+            Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+            p0.x = *(f32 *)(obj + 0x60) + 10.0f;
+            p0.y = *(f32 *)(obj + 0x64) - 10.0f;
+            p1.x = *(f32 *)(obj + 0x60) - 10.0f;
+            p1.y = *(f32 *)(obj + 0x64) + 10.0f;
+            Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+            p0.x = *(f32 *)(obj + 0x60) - 10.0f;
+            p0.y = *(f32 *)(obj + 0x64);
+            p1.x = *(f32 *)(obj + 0x60) + 10.0f;
+            p1.y = *(f32 *)(obj + 0x64);
+            Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+            for (pos = *(f32 *)(obj + 0x64) + line[1]; pos < 480.0f; pos += line[1]) {
+                p0.x = *(f32 *)(obj + 0x60) - 10.0f;
+                p0.y = pos;
+                p1.x = *(f32 *)(obj + 0x60) + 10.0f;
+                p1.y = pos;
+                Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+            }
+            for (pos = *(f32 *)(obj + 0x64) - line[1]; pos > 0.0f; pos -= line[1]) {
+                p0.x = *(f32 *)(obj + 0x60) - 10.0f;
+                p0.y = pos;
+                p1.x = *(f32 *)(obj + 0x60) + 10.0f;
+                p1.y = pos;
+                Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+            }
+        }
+        break;
+    case 2:
+        p0.x = 0.0f;
+        p0.y = 480.0f;
+        p1.x = 640.0f;
+        p1.y = 0.0f;
+        Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+        dir.x = p1.x - p0.x;
+        dir.y = p1.y - p0.y;
+        dir.z = 0.0f;
+        if (PSVECSquareMag(&dir)) {
+            PSVECNormalize(&dir, &dir);
+        }
+        if (line[1] != 0) {
+            x = *(f32 *)(obj + 0x60);
+            y = *(f32 *)(obj + 0x64);
+            while (x < 640.0f || y < 480.0f) {
+                p0.x = x - 10.0f;
+                p0.y = y;
+                p1.x = x + 10.0f;
+                p1.y = y;
+                Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+                p0.x = x;
+                p0.y = y - 10.0f;
+                p1.x = x;
+                p1.y = y + 10.0f;
+                Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+                break;
+            }
+        }
+        break;
+    case 3:
+        p0.x = 0.0f;
+        p0.y = 0.0f;
+        p1.x = 640.0f;
+        p1.y = 480.0f;
+        Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+        if (line[1] != 0) {
+            x = *(f32 *)(obj + 0x60);
+            y = *(f32 *)(obj + 0x64);
+            while (x < 640.0f || y < 480.0f) {
+                p0.x = x - 10.0f;
+                p0.y = y;
+                p1.x = x + 10.0f;
+                p1.y = y;
+                Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+                p0.x = x;
+                p0.y = y - 10.0f;
+                p1.x = x;
+                p1.y = y + 10.0f;
+                Gfx_Add2DFXLine(&p0, &p1, (u32 *)(obj + 0x24), (u32 *)(obj + 0x24), 1);
+                break;
+            }
+        }
+        break;
+    }
+}
+
 typedef struct FontData {
     u8 pad0[0x9];
     u8 spacing;
