@@ -8767,6 +8767,8 @@ done:
 }
 
 u8 GameSettings_SaveGeneralGameData(void) {
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
     s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
     u32 File_Read(s32 handle, u32 size, void *buf);
     s8 File_Write(s32 handle, u32 size, void *buf);
@@ -8775,6 +8777,15 @@ u8 GameSettings_SaveGeneralGameData(void) {
     void *memcpy(void *dst, const void *src, u32 n);
     void *memset(void *, s32, u32);
     extern u8 *g_pSavedGameData;
+    extern struct {
+        u8 unk0[0xC];
+        char *fileName;
+        u8 unk10[0x4];
+        u32 version;
+        u32 size;
+    } g_gameInfo[];
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
     const char *name;
     u32 version;
     u32 size;
@@ -8783,12 +8794,33 @@ u8 GameSettings_SaveGeneralGameData(void) {
     s32 handle;
     s8 ok;
     u8 *data;
+    u8 *mcp;
+    void *pack;
 
     status = GameSettings_GetDefaultMemoryCardStatus(&device, 1);
     if (status != 1 && status != 0) {
         return 0;
     }
-    GameSettings_GetSaveFileInfo(&name, &version, &size);
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        name = g_gameInfo[mcp[1]].fileName;
+        version = g_gameInfo[mcp[1]].version;
+        size = g_gameInfo[mcp[1]].size;
+    } else {
+        version = 0;
+        size = version;
+        name = "saveFile";
+    }
     data = g_pSavedGameData;
     ok = 0;
     if ((handle = File_Open((char *)(device + 0xA), name, 0, NULL)) != -1) {
@@ -9128,7 +9160,15 @@ typedef struct GridNode {
     u32 data;
     u32 id;
     struct GridNode *next;
+    struct GridNode *prev;
+    struct GridNode *objNext;
+    struct GridCell *cell;
 } GridNode;
+
+typedef struct GridObject {
+    u8 pad0[0x1C];
+    struct GridObject *next;
+} GridObject;
 
 typedef struct GridResult {
     u32 data;
