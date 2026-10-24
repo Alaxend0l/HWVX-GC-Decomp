@@ -11317,8 +11317,8 @@ void Render_DrawBoundingBoxes(void) {
     extern s32 m_triCount_803C7714;
     void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
     void SetTriFlatVtxDesc(void);
-    s32 cullMode;
     u32 i;
+    s32 cullMode;
     Vector v[8] __attribute__((aligned(16)));
 
     cullMode = m_cullMode;
