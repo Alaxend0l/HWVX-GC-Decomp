@@ -4174,6 +4174,94 @@ s8 RayHitsObjects_CameraSpecial(Vector4 *start, Vector4 *dir, f32 *t, void *info
     return 0;
 }
 
+static inline s8 RayHitsTerrainAndObjects_Camera(Vector4 *start, Vector4 *dir, f32 *t, void *info) {
+    s8 RayHitsTerrain_Aux3(void *, void *, void *, void *);
+    s8 hitTerrain = RayHitsTerrain_Aux3(start, dir, t, info);
+
+    if (RayHitsObjects_CameraSpecial(start, dir, t, info)) {
+        return 1;
+    }
+    return hitTerrain;
+}
+
+void GetTrimmedCameraPos(u8 *camera, Vector4 *from, Vector4 *dir, f32 *trim, f32 dist) {
+    extern f32 g_fDeltaTimeSec;
+    s8 RayHitsTerrain_Aux3(void *, void *, void *, void *);
+    f32 PSVECDotProduct(void *a, void *b);
+    f32 PSVECSquareMag(void *v);
+    void PSVECNormalize(void *src, void *dst);
+    struct {
+        Vector4 point;
+        Vector4 normal;
+        u8 unk20[0x30];
+    } info;
+    Vector4 pos;
+    Vector4 d;
+    f32 t;
+    f32 trimAmt;
+    f32 travelled;
+    f32 len;
+    f32 dot;
+    s8 hit;
+    s8 trimmed;
+
+    trimAmt = *trim;
+    travelled = 0.0f;
+    pos = *from;
+    trimmed = 0;
+    len = MagnitudeVector(dir);
+    d.x = -dir->x;
+    d.y = -dir->y;
+    d.z = -dir->z;
+    do {
+        t = dist - travelled;
+        hit = RayHitsTerrain_Aux3(&pos, &d, &t, &info);
+        hit = RayHitsObjects_CameraSpecial(&pos, &d, &t, &info) ? 1 : hit;
+        pos.x += d.x * t;
+        pos.y += d.y * t;
+        pos.z += d.z * t;
+        if (hit) {
+            dot = -PSVECDotProduct(&info.normal, &d);
+            d.x += dot * info.normal.x;
+            d.y += dot * info.normal.y;
+            d.z += dot * info.normal.z;
+            if (dot < 0.0f) {
+                pos.x = from->x - dir->x * dist;
+                pos.y = from->y - dir->y * dist;
+                pos.z = from->z - dir->z * dist;
+                break;
+            }
+            if (PSVECSquareMag(&d) < 0.1f) {
+                d.y += 1.0f;
+            }
+            if (PSVECSquareMag(&d) == 0.0f) {
+            } else {
+                PSVECNormalize(&d, &d);
+            }
+            trimmed = 1;
+            d.x *= len;
+            d.y *= len;
+            d.z *= len;
+            pos.x += info.normal.x * trimAmt;
+            pos.y += info.normal.y * trimAmt;
+            pos.z += info.normal.z * trimAmt;
+        }
+        travelled += t;
+        if (t < 1e-7f) {
+            break;
+        }
+    } while (travelled < dist);
+    if (trimmed) {
+        *trim += 3.0f * g_fDeltaTimeSec;
+        if (*trim > 1.8f) {
+            *trim = 1.8f;
+        }
+    } else {
+        *trim = 0.0f;
+    }
+    *(Vector4 *)(camera + 0x60) = pos;
+}
+
 void Camera_UpdatePosition_Zoom_Generic(u8 *cam, u8 *mode, Vector4 *target, Vector4 *eye, f32 zoom, f32 shake) {
     extern f32 g_fDeltaTimeSec;
     double sin(double x);
