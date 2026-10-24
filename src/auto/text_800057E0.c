@@ -9184,13 +9184,18 @@ typedef struct GridManager {
     GridCell cells[7][256];
     u32 numX;
     u32 numZ;
-    u8 pad3808[0x3810 - 0x3808];
-    f32 minX;
-    f32 minY;
-    f32 minZ;
-    u8 pad381C[0x3830 - 0x381C];
+    u32 numCells;
+    u8 pad380C[0x3810 - 0x380C];
+    Vector4 min;
+    Vector4 max;
     f32 cellSizeX;
     f32 cellSizeZ;
+    GridNode nodes[4048];
+    GridNode *freeNodes;
+    GridObject objects[1024];
+    GridObject *freeObjects;
+    s32 numFreeObjects;
+    u8 pad233C4[0x233D0 - 0x233C4];
 } GridManager;
 
 extern u8 gGridManager[];
@@ -9199,13 +9204,13 @@ static inline void Grid_GetCell(Vector4 *pos, s32 *cellX, s32 *cellZ) {
     f32 fx;
     f32 fz;
 
-    fx = (pos->x - ((GridManager *)gGridManager)->minX) / ((GridManager *)gGridManager)->cellSizeX;
+    fx = (pos->x - ((GridManager *)gGridManager)->min.x) / ((GridManager *)gGridManager)->cellSizeX;
     if (fx < 0.0f) {
         fx = 0.0f;
     } else if (fx >= (f32)((GridManager *)gGridManager)->numX) {
         fx = (f32)((GridManager *)gGridManager)->numX - 1.0f;
     }
-    fz = (pos->z - ((GridManager *)gGridManager)->minZ) / ((GridManager *)gGridManager)->cellSizeZ;
+    fz = (pos->z - ((GridManager *)gGridManager)->min.z) / ((GridManager *)gGridManager)->cellSizeZ;
     if (fz < 0.0f) {
         fz = 0.0f;
     } else if (fz >= (f32)((GridManager *)gGridManager)->numZ) {
