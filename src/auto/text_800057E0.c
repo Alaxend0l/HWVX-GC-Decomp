@@ -8777,6 +8777,212 @@ void OBoxCache_Set(u32 box0, u32 box1, Vector4 *a, Vector4 *b) {
 
 #pragma push
 #pragma use_lmw_stmw on
+f32 OBoxHitsSegment(void *obox, Vector4 *vel, Vector4 *seg, void *arg3, f32 maxT) {
+    typedef struct {
+        Vector4 center;
+        Vector4 corners[8];
+        f32 extent[3];
+        u8 pad9C[4];
+        Vector4 *axis[3];
+        u8 padAC[4];
+        f32 centerProj[3];
+        u8 padBC[4];
+        f32 velProj[3];
+        u32 unkCC;
+    } OBoxData;
+    typedef struct {
+        Vector4 pos;
+        Vector4 normal;
+        u8 pad20[8];
+        u32 unk28;
+        u8 pad2C[0x14];
+        u8 type;
+    } HitInfo;
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *axb);
+    void Create_Plane(Vector4 *plane, Vector4 *normal, Vector4 *point);
+    f32 Distance_Plane(Vector4 *plane, Vector4 *point);
+    u8 FloatsEqual(f32 a, f32 b, f32 eps);
+    s8 OBoxHitsSegmentZeroTime(void *obox, void *edge, void *arg2);
+    void CollisionTriCache_Set(u32 tri0, u32 tri1, Vector4 *a, Vector4 *b);
+    s32 Collision_ProcessDividingAxis(DividingAxis *axis);
+    DividingAxis da;
+    Vector4 dir;
+    Vector4 axis;
+    Vector4 plane;
+    Vector4 cross;
+    Vector4 diff;
+    s32 i;
+    u32 j;
+    u32 k;
+    u8 type;
+    u8 axisIdx;
+    u8 vert;
+    u8 corner;
+    u8 hiIdx;
+    u8 loIdx;
+    u8 maxIdx;
+    u8 minIdx;
+    f32 a;
+    f32 b;
+    f32 d;
+    HitInfo *hit = arg3;
+    OBoxData *box = obox;
+
+    da.tEnter = 0.0f;
+    da.tExit = maxT;
+    type = 0;
+    axisIdx = 0;
+    vert = 99;
+    for (i = 0; i < 3; i++) {
+        a = PSVECDotProduct(box->axis[i], &seg[0]);
+        b = PSVECDotProduct(box->axis[i], &seg[1]);
+        if (a > b) {
+            da.minA = b;
+            hiIdx = 1;
+            loIdx = 0;
+            da.maxA = a;
+        } else {
+            da.minA = a;
+            hiIdx = 0;
+            loIdx = 1;
+            da.maxA = b;
+        }
+        da.dir = box->velProj[i];
+        da.maxB = box->centerProj[i] + box->extent[i];
+        da.minB = box->centerProj[i] - box->extent[i];
+        switch ((u8)Collision_ProcessDividingAxis(&da)) {
+        case 0:
+            return maxT;
+        case 2:
+            vert = hiIdx;
+            axisIdx = i + 3;
+            type = 1;
+            break;
+        case 3:
+            vert = loIdx;
+            axisIdx = i;
+            type = 1;
+            break;
+        }
+    }
+    PSVECSubtract(&seg[0], &seg[1], &dir);
+    for (j = 0; j < 3; j++) {
+        maxIdx = 0;
+        minIdx = 0;
+        PSVECCrossProduct(box->axis[j], &dir, &axis);
+        da.maxB = da.minB = PSVECDotProduct(&axis, &box->corners[0]);
+        for (k = 1; k < 8; k++) {
+            d = PSVECDotProduct(&axis, &box->corners[k]);
+            if (d < da.minB) {
+                da.minB = d;
+                minIdx = k;
+            } else if (d > da.maxB) {
+                maxIdx = k;
+                da.maxB = d;
+            }
+        }
+        da.maxA = da.minA = PSVECDotProduct(&axis, &seg[0]);
+        da.dir = -PSVECDotProduct(&axis, vel);
+        switch ((u8)Collision_ProcessDividingAxis(&da)) {
+        case 0:
+            return maxT;
+        case 2:
+            axisIdx = j;
+            corner = maxIdx;
+            type = 3;
+            break;
+        case 3:
+            axisIdx = j;
+            corner = minIdx;
+            type = 3;
+            break;
+        }
+    }
+    if (hit != NULL && da.tEnter < maxT) {
+        hit->type = type;
+        hit->unk28 = 0;
+        box->unkCC = 0;
+        switch (type) {
+        case 1:
+            hit->pos = seg[vert];
+            hit->normal = *box->axis[axisIdx % 3];
+            if (axisIdx >= 3) {
+                hit->normal.x *= -1.0f;
+                hit->normal.y *= -1.0f;
+                hit->normal.z *= -1.0f;
+            }
+            CollisionTriCache_Set((u32)box, (u32)seg, &hit->pos, &hit->normal);
+            break;
+        case 3:
+            PSVECCrossProduct(box->axis[axisIdx], vel, &cross);
+            Create_Plane(&plane, &cross, &box->corners[corner]);
+            a = Distance_Plane(&plane, &seg[0]);
+            maxT = a - Distance_Plane(&plane, &seg[1]);
+            if (FloatsEqual(maxT, 0.0f, 0.0001f)) {
+                hit->pos = seg[0];
+                hit->normal.x = -vel->x;
+                hit->normal.y = -vel->y;
+                hit->normal.z = -vel->z;
+                if (PSVECSquareMag(&hit->normal) != 0.0f) {
+                    PSVECNormalize(&hit->normal, &hit->normal);
+                }
+            } else {
+                maxT = a / maxT;
+                PSVECSubtract(&seg[1], &seg[0], &diff);
+                hit->pos.x = diff.x * maxT + seg[0].x;
+                hit->pos.y = diff.y * maxT + seg[0].y;
+                hit->pos.z = diff.z * maxT + seg[0].z;
+                PSVECCrossProduct(box->axis[axisIdx], &diff, &hit->normal);
+                if (PSVECSquareMag(&hit->normal) != 0.0f) {
+                    PSVECNormalize(&hit->normal, &hit->normal);
+                }
+                if (PSVECDotProduct(&hit->normal, vel) > 0.0f) {
+                    hit->normal.x *= -1.0f;
+                    hit->normal.y *= -1.0f;
+                    hit->normal.z *= -1.0f;
+                }
+            }
+            CollisionTriCache_Set((u32)box, (u32)seg, &hit->pos, &hit->normal);
+            break;
+        default:
+            da.tEnter = 0.0f;
+            hit->type = 0xFF;
+            OBoxHitsSegmentZeroTime(box, seg, hit);
+            break;
+        }
+    }
+    return da.tEnter;
+}
+#pragma pop
+
+typedef struct CollisionOBox {
+    Vector4 center;
+    Vector4 corners[8];
+    f32 extent[3];
+    u8 pad9C[4];
+    Vector4 *axis[3];
+    u8 padAC[4];
+    f32 centerProj[3];
+    u8 padBC[4];
+    f32 velProj[3];
+    u32 unkCC;
+} CollisionOBox;
+
+typedef struct CollisionHit {
+    Vector4 pos;
+    Vector4 normal;
+    u8 pad20[8];
+    u32 unk28;
+    u8 pad2C[0x14];
+    u8 type;
+} CollisionHit;
+
+#pragma push
+#pragma use_lmw_stmw on
 s8 OBoxHitsSegmentZeroTime(void *obox, void *edge, void *arg2) {
     typedef struct {
         Vector4 center;
@@ -18467,6 +18673,33 @@ s32 NavHolder_IsNavLinkNearer(f32 *pos, NavLink *link, f32 *nearest, u8 depth) {
     return result;
 }
 
+#pragma push
+#pragma inline_depth(2)
+s32 NavHolder_FindIndexOfNearestNavLink(f32 *pos, NavLink *link, f32 *nearest, u8 depth) {
+    u8 *NavHolder_GetNavPoint(s32 index);
+    s32 result = -1;
+    s32 found;
+    u32 i;
+
+    for (i = 0; i < link->numPrev; i++) {
+        if (link->prev[i] != -0x8000) {
+            found = NavHolder_IsNavLinkNearer(pos, (NavLink *)NavHolder_GetNavPoint(link->prev[i]), nearest, depth);
+            if (found != -1) {
+                result = found;
+            }
+        }
+    }
+    for (i = 0; i < link->numNext; i++) {
+        if (link->next[i] != -0x8000) {
+            found = NavHolder_IsNavLinkNearer(pos, (NavLink *)NavHolder_GetNavPoint(link->next[i]), nearest, depth);
+            if (found != -1) {
+                result = found;
+            }
+        }
+    }
+    return result;
+}
+#pragma pop
 s32 NavHolder_FindIndexOfNearestNavPoint(f32 *pos, s32 hint) {
     s32 NavHolder_FindIndexOfNearestNavLink(f32 *pos, NavLink *link, f32 *nearest, u8 depth);
     s32 NavHolder_GetTotalNavPoints(void);
