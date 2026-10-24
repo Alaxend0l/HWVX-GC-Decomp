@@ -369,7 +369,7 @@ typedef struct THPFileInfo {
     u8 unk6AE[0x6BC - 0x6AE];
 } THPFileInfo;
 
-extern THPFileInfo *__THPInfo_803C7890;
+static THPFileInfo *__THPInfo_803C7890;
 extern u8 *__THPHuffmanBits_803C7824;
 extern u8 *__THPHuffmanSizeTab_803C7828;
 extern u16 *__THPHuffmanCodeTab_803C782C;
@@ -12640,7 +12640,6 @@ u8 __THPReadScaneHeader(void) {
 #pragma use_lmw_stmw on
 u8 __THPReadQuantizationTable(void) {
     extern u8 __THPJpegNaturalOrder_800CE0D8[];
-    extern f64 __THPAANScaleFactor[];
     u16 length, id, i, row, col;
     f32 q_temp[64];
 
@@ -12658,7 +12657,7 @@ u8 __THPReadQuantizationTable(void) {
         i = 0;
         for (row = 0; row < 8; row++) {
             for (col = 0; col < 8; col++) {
-                __THPInfo_803C7890->quantTabs[id][i] = (f32)((f64)q_temp[i] * __THPAANScaleFactor[row] * __THPAANScaleFactor[col]);
+                __THPInfo_803C7890->quantTabs[id][i] = (f32)((f64)q_temp[i] * ((f64 *)(__THPJpegNaturalOrder_800CE0D8 + 0x50))[row] * ((f64 *)(__THPJpegNaturalOrder_800CE0D8 + 0x50))[col]);
                 i++;
             }
         }
