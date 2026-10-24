@@ -7564,7 +7564,7 @@ s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded) {
 #pragma push
 #pragma use_lmw_stmw on
 s32 FileStreaming_GetPackID(char *name, s32 type, u32 id) {
-    extern u8 *g_StreamingDataPacks[11];
+    extern StreamingDataPack *g_StreamingDataPacks[11];
     extern u32 g_MaxStreamingDataPacks[11];
     u8 *pack;
     u32 i;
@@ -7573,7 +7573,7 @@ s32 FileStreaming_GetPackID(char *name, s32 type, u32 id) {
         return -1;
     }
     for (i = 0; i < g_MaxStreamingDataPacks[type]; i++) {
-        pack = g_StreamingDataPacks[type] + i * 0xA8;
+        pack = (u8 *)g_StreamingDataPacks[type] + i * 0xA8;
         if ((s8)pack[0] != 0 && id == M2C_FIELD(pack, u32 *, 8)) {
             if (name == M2C_FIELD(pack, char **, 4) || strcmp(name, M2C_FIELD(pack, char **, 4)) == 0) {
                 return i;
