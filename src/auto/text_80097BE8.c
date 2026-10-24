@@ -12638,7 +12638,6 @@ u8 __THPReadScaneHeader(void) {
 }
 
 #pragma use_lmw_stmw on
-#pragma scheduling off
 u8 __THPReadQuantizationTable(void) {
     extern u8 __THPJpegNaturalOrder_800CE0D8[];
     u16 length, id, i, row, col;
