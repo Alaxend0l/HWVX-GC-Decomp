@@ -34947,6 +34947,7 @@ static inline void SETVAT(u32 *va, u32 *vb, u32 *vc, s32 attr, s32 cnt, s32 type
     }
 }
 
+#pragma dont_inline off
 void GXSetVtxAttrFmt(s32 vtxfmt, s32 attr, s32 cnt, s32 type, u8 frac) {
     extern u8 *gx;
     u32 *va;
