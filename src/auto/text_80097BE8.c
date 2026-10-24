@@ -701,8 +701,12 @@ typedef struct RumbleStatus {
 } RumbleStatus;
 
 typedef struct InputUnk108 {
-    u8 unk0[0xA];
-    u8 unkA;
+    u16 button;
+    u8 unk2[4];
+    u8 unk6;
+    u8 unk7;
+    u8 unk8[2];
+    s8 unkA;
     u8 unkB;
 } InputUnk108;
 
