@@ -15012,26 +15012,11 @@ static inline PathNode *NavHolder_PopLowestOpen(void) {
     } else {
         prev->next = best->next;
     }
-    prev = best;
     best->flags &= ~2;
-    return prev;
+    return best;
 }
 
 s8 NavHolder_CreatePath(u8 *goal, u8 *start) {
-    typedef struct PathNode {
-        f32 pos[3];
-        u8 pad0C[0x10 - 0xC];
-        u32 numLinks;
-        f32 *costs;
-        s32 *links;
-        u8 pad1C[0x37 - 0x1C];
-        u8 flags;
-        struct PathNode *parent;
-        struct PathNode *next;
-        f32 g;
-        f32 h;
-        f32 f;
-    } PathNode;
     extern PathNode *gs_pOpenListHead_803C7008;
     extern PathNode *gs_pClosedListHead_803C7004;
     u8 *NavHolder_GetNavPoint(s32 index);
@@ -15041,11 +15026,7 @@ s8 NavHolder_CreatePath(u8 *goal, u8 *start) {
     u8 i;
     PathNode *end = (PathNode *)goal;
     PathNode *node = (PathNode *)start;
-    PathNode *head;
-    PathNode *best;
     PathNode *p;
-    PathNode *q;
-    f32 bestF;
     f32 g;
 
     node->g = 0.0f;
@@ -15055,29 +15036,7 @@ s8 NavHolder_CreatePath(u8 *goal, u8 *start) {
     gs_pOpenListHead_803C7008 = node;
     node->flags |= 2;
     while (1) {
-        head = gs_pOpenListHead_803C7008;
-        cur = NULL;
-        if (head == NULL) {
-        } else {
-            bestF = head->f;
-            p = head;
-            best = head;
-            while ((q = p->next) != NULL) {
-                if (q->f < bestF) {
-                    bestF = q->f;
-                    cur = p;
-                    best = q;
-                }
-                p = q;
-            }
-            if (cur == NULL) {
-                gs_pOpenListHead_803C7008 = head->next;
-            } else {
-                cur->next = best->next;
-            }
-            cur = best;
-            best->flags &= ~2;
-        }
+        cur = NavHolder_PopLowestOpen();
         if (cur == end) {
             return 1;
         }
