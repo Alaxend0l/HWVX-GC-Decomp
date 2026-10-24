@@ -990,6 +990,14 @@ static inline s32 Effect_Clamp(s32 v, s32 lo, s32 hi) {
     return (v > hi) ? hi : v;
 }
 
+static inline s32 Effect_Min(s32 v, s32 hi) {
+    return (v > hi) ? hi : v;
+}
+
+static inline u32 Effect_MaxU(u32 v, u32 lo) {
+    return (v < lo) ? lo : v;
+}
+
 static inline s32 Effect_AngleToByte(u16 angle) {
     return ((angle % 360) << 8) / 360;
 }
