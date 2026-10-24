@@ -17222,7 +17222,6 @@ exit:
     gba->ret = ret;
 }
 
-#pragma opt_common_subs reset
 static void F35(s32 chan, s32 ret);
 #pragma push
 #pragma opt_common_subs off
