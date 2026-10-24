@@ -35441,6 +35441,7 @@ void GXSetVtxDesc(u32 attr, s32 type) {
     *(u32 *)(gx + 0x4F4) |= 8;
 }
 
+#pragma always_inline on
 static inline void SETVCDATTR(u32 attr, s32 type) {
     extern u8 *gx;
 
@@ -35617,7 +35618,7 @@ void GXSetVtxDescv(const u32 *list) {
     if (*(u8 *)(gx + 0x41C) || *(u8 *)(gx + 0x41D)) {
         *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x1800) | (*(u32 *)(gx + 0x418) << 11);
     } else {
-        *(u32 *)(gx + 0x14) = *(u32 *)(gx + 0x14) & ~0x1800;
+        *(u32 *)(gx + 0x14) &= ~0x1800;
     }
     *(u32 *)(gx + 0x4F4) |= 8;
 }
