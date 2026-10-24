@@ -11503,6 +11503,87 @@ void InterfaceManager_EndInterface(s32 index) {
     }
 }
 
+void InterfaceManager_SetLoadState(u8 *iface, s32 state) {
+    extern u8 g_interface[][0x170];
+    void SoundSequence_Stop(s32 seq);
+    s32 SoundSequence_Play(s8 *seq, Vector4 *pos);
+    void InterfaceManager_SetObjectState(u8 *iface, u8 *obj, s32 state, s32 arg3);
+    void InterfaceManager_SetObjectReactive(u8 *iface, u32 onId, u32 offId);
+    u32 i;
+    u8 *obj;
+
+    if (iface[0x7F] != 0 && (s8)iface[0x115] != 0) {
+        if (*(u32 *)(iface + 4) != *(u32 *)(g_interface[*(u32 *)(iface + 0x15C)] + 4)) {
+            state = *(u32 *)(g_interface[*(u32 *)(iface + 0x15C)] + 4);
+        } else {
+            return;
+        }
+    }
+    *(u32 *)(iface + 0x10) = 0;
+    if (*(u32 *)(iface + 0x14) < 0xFFFFFFFF) {
+        SoundSequence_Stop(*(s32 *)(iface + 0x14));
+    }
+    *(s32 *)(iface + 0x14) = -1;
+    switch (state) {
+    case 0:
+        *(s32 *)(iface + 4) = state;
+        for (i = 0; i < *(u32 *)iface; i++) {
+            InterfaceManager_SetObjectState(iface, *(u8 **)(iface + 0x88) + i * 0x300, 4, 0);
+            obj = *(u8 **)(iface + 0x88) + i * 0x300;
+            if (obj[0x243] == 6) {
+                if ((s8)g_interface[*(u32 *)(obj + 0x270)][0x115] != 0) {
+                    InterfaceManager_SetLoadState(g_interface[*(u32 *)(obj + 0x270)], state);
+                }
+                obj = *(u8 **)(iface + 0x88) + i * 0x300;
+                g_interface[*(u32 *)(obj + 0x270)][0x85] = obj[0x240];
+            }
+        }
+        *(u32 *)(iface + 0x10) = *(u32 *)(*(u8 **)(iface + 0x20) + 4);
+        if (*(s8 **)(*(u8 **)(iface + 0x20) + 0x20) != NULL) {
+            *(s32 *)(iface + 0x14) = SoundSequence_Play(*(s8 **)(*(u8 **)(iface + 0x20) + 0x20), NULL);
+        }
+        break;
+    case 1:
+        *(s32 *)(iface + 4) = state;
+        for (i = 0; i < *(u32 *)iface; i++) {
+            InterfaceManager_SetObjectState(iface, *(u8 **)(iface + 0x88) + i * 0x300, 5, 0);
+            obj = *(u8 **)(iface + 0x88) + i * 0x300;
+            if (obj[0x243] == 6) {
+                if ((s8)g_interface[*(u32 *)(obj + 0x270)][0x115] != 0) {
+                    InterfaceManager_SetLoadState(g_interface[*(u32 *)(obj + 0x270)], state);
+                }
+                obj = *(u8 **)(iface + 0x88) + i * 0x300;
+                g_interface[*(u32 *)(obj + 0x270)][0x85] = obj[0x240];
+            }
+        }
+        *(u32 *)(iface + 0x10) = *(u32 *)(*(u8 **)(iface + 0x20) + 8);
+        if (*(s8 **)(*(u8 **)(iface + 0x20) + 0x28) != NULL) {
+            *(s32 *)(iface + 0x14) = SoundSequence_Play(*(s8 **)(*(u8 **)(iface + 0x20) + 0x28), NULL);
+        }
+        break;
+    case 2:
+        *(s32 *)(iface + 4) = state;
+        for (i = 0; i < *(u32 *)iface; i++) {
+            InterfaceManager_SetObjectState(iface, *(u8 **)(iface + 0x88) + i * 0x300, 1, 0);
+            obj = *(u8 **)(iface + 0x88) + i * 0x300;
+            if (obj[0x243] == 6) {
+                if ((s8)g_interface[*(u32 *)(obj + 0x270)][0x115] != 0) {
+                    InterfaceManager_SetLoadState(g_interface[*(u32 *)(obj + 0x270)], state);
+                }
+                obj = *(u8 **)(iface + 0x88) + i * 0x300;
+                g_interface[*(u32 *)(obj + 0x270)][0x85] = obj[0x240];
+            }
+        }
+        if (*(u8 **)(iface + 0xC) != NULL) {
+            InterfaceManager_SetObjectReactive(iface, 0, **(u8 **)(*(u8 **)(*(u8 **)(iface + 0xC) + 0x25C) + 0x44));
+        }
+        if (*(s8 **)(*(u8 **)(iface + 0x20) + 0x24) != NULL) {
+            *(s32 *)(iface + 0x14) = SoundSequence_Play(*(s8 **)(*(u8 **)(iface + 0x20) + 0x24), NULL);
+        }
+        break;
+    }
+}
+
 void InterfaceManager_LinkThingToObject(s32 index, u32 id, void *thing) {
     typedef struct InterfaceSlot {
         u8 pad0[0x25C];
@@ -23715,6 +23796,56 @@ u16 OSGetFontEncode(void) {
         fontEncode = 0;
     }
     return fontEncode;
+}
+
+void ReadROM(void *buf, int length, int offset);
+u32 OSLoadFont(void *fontData, void *temp) {
+    extern s32 CharsInSheet_803C723C;
+    extern u8 *WidthTable_803C7238;
+    u32 size;
+
+    SheetImage_803C7234 = 0;
+    if (OSGetFontEncode() == 1) {
+        ReadROM(temp, 0x4D000, 0x1AFF00);
+    } else {
+        ReadROM(temp, 0x3000, 0x1FCF00);
+    }
+    if (((u8 *)temp)[0] == 'Y' && ((u8 *)temp)[1] == 'a' && ((u8 *)temp)[2] == 'y') {
+        size = *(u32 *)((u8 *)temp + 4);
+    } else {
+        size = 0;
+    }
+    if (size) {
+        Decode(temp, fontData);
+        FontData_803C7230 = fontData;
+        WidthTable_803C7238 = FontData_803C7230 + *(u16 *)(FontData_803C7230 + 0x22);
+        CharsInSheet_803C723C = *(u16 *)(FontData_803C7230 + 0x1A) * *(u16 *)(FontData_803C7230 + 0x1C);
+        if (OSGetFontEncode() == 1) {
+            u16 fix[4] = { 0x2ABE, 0x003D, 0x003D, 0x003D };
+            u8 *image;
+            int code;
+            int sheet;
+            int numChars;
+            int row;
+            int column;
+            int x;
+            int y;
+            int i;
+
+            code = GetFontCode('T');
+            sheet = code / CharsInSheet_803C723C;
+            numChars = code - sheet * CharsInSheet_803C723C;
+            row = numChars / *(u16 *)(FontData_803C7230 + 0x1A);
+            column = numChars - row * *(u16 *)(FontData_803C7230 + 0x1A);
+            x = column * *(u16 *)(FontData_803C7230 + 0x10);
+            y = row * *(u16 *)(FontData_803C7230 + 0x12);
+            image = FontData_803C7230 + *(u32 *)(FontData_803C7230 + 0x24) + (u32)(sheet * *(s32 *)(FontData_803C7230 + 0x14)) / 2;
+            for (i = 4; i < 8; i++) {
+                *(u16 *)(image + ((*(u16 *)(FontData_803C7230 + 0x1E) / 8 * 32) / 2) * ((y + i) / 8) + (x / 8) * 16 + ((y + i) % 8) * 2 + (x % 8) / 4) = fix[i - 4];
+            }
+        }
+    }
+    return size;
 }
 
 extern u8 *FontData_803C7230;
