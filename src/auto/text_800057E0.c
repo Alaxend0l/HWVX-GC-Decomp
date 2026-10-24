@@ -42443,6 +42443,7 @@ s32 TRKAppendBuffer_ui8(TRKBuffer *b, const u8 *data, s32 count) {
     return err;
 }
 
+#pragma auto_inline off
 s32 TRKAppendBuffer1_ui64(TRKBuffer *b, u64 data) {
     u8 *bigEndianData;
     u8 *byteData;
