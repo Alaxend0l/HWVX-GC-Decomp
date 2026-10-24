@@ -19975,6 +19975,13 @@ static inline void PhysicalObject_ApplyAngularImpulse(u8 *obj, Vector4 *pos, Vec
     PhysicalObject_UpdateSpin(obj);
 }
 
+static inline void PhysicalObject_ProjectSpin(u8 *obj, Vector4 *normal) {
+    void ProjectVectorToNormal(void *n, void *v);
+
+    ProjectVectorToNormal(normal, obj + 0x110);
+    PhysicalObject_UpdateSpin(obj);
+}
+
 static inline s8 PhysicalObject_SettleOnPlane(u8 *obj, u8 *collision, Vector4 *normal) {
     f32 PSVECSquareMag(void *v);
     void Create_Plane(Vector4 *plane, Vector4 *normal, Vector4 *point);
