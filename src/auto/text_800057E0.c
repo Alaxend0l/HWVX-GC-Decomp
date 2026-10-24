@@ -2328,6 +2328,7 @@ void AI_Car_AsyncProcess(void) {
     }
 }
 #pragma use_lmw_stmw reset
+#pragma readonly_strings reset
 
 s32 AI_Car_CheckIfStuck(u8 *ai) {
     f32 PSVECSquareDistance(void *a, void *b);
