@@ -7590,7 +7590,7 @@ s32 FileStreaming_GetPackID(char *name, s32 type, u32 id) {
 s32 FileStreaming_ReleaseAllDataPacks(s32 type, s8 wait) {
     s32 FileStreaming_ReleaseDataPack(u32 index, s32 type);
     void FileStreaming_HeartBeat(void);
-    extern u8 *g_StreamingDataPacks[11];
+    extern StreamingDataPack *g_StreamingDataPacks[11];
     extern u32 g_MaxStreamingDataPacks[11];
     u32 i;
 
@@ -7598,8 +7598,8 @@ s32 FileStreaming_ReleaseAllDataPacks(s32 type, s8 wait) {
         return 0;
     }
     for (i = 0; i < g_MaxStreamingDataPacks[type]; i++) {
-        if (g_StreamingDataPacks[type] != NULL && (s8)g_StreamingDataPacks[type][i * 0xA8 + 1] != 0) {
-            M2C_FIELD(g_StreamingDataPacks[type] + i * 0xA8, s32 *, 0xC) = 1;
+        if (g_StreamingDataPacks[type] != NULL && (s8)((u8 *)g_StreamingDataPacks[type])[i * 0xA8 + 1] != 0) {
+            M2C_FIELD((u8 *)g_StreamingDataPacks[type] + i * 0xA8, s32 *, 0xC) = 1;
             FileStreaming_ReleaseDataPack(i, type);
         }
     }
