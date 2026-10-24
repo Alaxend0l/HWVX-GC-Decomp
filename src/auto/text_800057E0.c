@@ -7701,6 +7701,33 @@ f32 GetBoundingBoxRadius(Vector4 *box, Vector4 *offset) {
     return radius;
 }
 
+static inline void Destructible_Release_inline(u8 *destructible) {
+    void Trigger_DestructibleKilled(void *thing);
+    void OBoxHolder_Release(void *box);
+    void OConvexHullHolder_Release(void *hull);
+    extern u8 g_destructibleVTable[];
+    u8 *trigger;
+    s8 paused;
+
+    Trigger_DestructibleKilled(destructible);
+    if (*(u8 **)(destructible + 0x8C) == g_destructibleVTable) {
+        trigger = *(u8 **)(destructible + 0x90);
+        if (trigger != NULL) {
+            *(u8 **)(destructible + 0x90) = NULL;
+            *(u32 *)(trigger + 0x2C) = 0;
+            paused = Trigger_IsTACSystemPaused();
+            if (paused == 0) {
+                *(u32 *)(trigger + 0x30) = 0;
+            }
+        }
+    }
+    OBoxHolder_Release(*(void **)(destructible + 0xD0));
+    *(void **)(destructible + 0xD0) = NULL;
+    OConvexHullHolder_Release(*(void **)(destructible + 0xCC));
+    *(void **)(destructible + 0xCC) = NULL;
+    Thing_Release((s32)destructible);
+}
+
 #pragma push
 #pragma dont_inline on
 void Destructible_Release(u8 *destructible) {
@@ -7729,33 +7756,6 @@ void Destructible_Release(u8 *destructible) {
     Thing_Release((s32)destructible);
 }
 #pragma pop
-
-static inline void Destructible_Release_inline(u8 *destructible) {
-    void Trigger_DestructibleKilled(void *thing);
-    void OBoxHolder_Release(void *box);
-    void OConvexHullHolder_Release(void *hull);
-    extern u8 g_destructibleVTable[];
-    u8 *trigger;
-    s8 paused;
-
-    Trigger_DestructibleKilled(destructible);
-    if (*(u8 **)(destructible + 0x8C) == g_destructibleVTable) {
-        trigger = *(u8 **)(destructible + 0x90);
-        if (trigger != NULL) {
-            *(u8 **)(destructible + 0x90) = NULL;
-            *(u32 *)(trigger + 0x2C) = 0;
-            paused = Trigger_IsTACSystemPaused();
-            if (paused == 0) {
-                *(u32 *)(trigger + 0x30) = 0;
-            }
-        }
-    }
-    OBoxHolder_Release(*(void **)(destructible + 0xD0));
-    *(void **)(destructible + 0xD0) = NULL;
-    OConvexHullHolder_Release(*(void **)(destructible + 0xCC));
-    *(void **)(destructible + 0xCC) = NULL;
-    Thing_Release((s32)destructible);
-}
 
 void Destructible_Draw(u8 *destructible) {
     f32 Gfx_GetMinCameraDistSquared(void *pos);
