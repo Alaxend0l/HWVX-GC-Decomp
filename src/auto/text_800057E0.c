@@ -2297,6 +2297,80 @@ s32 AI_Car_CheckLocalStats(u8 *ai, u8 *node) {
     return 1;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s8 AI_Car_EnterState(u8 *ai, u8 *branch, u8 slot) {
+    typedef struct { u8 *info; u32 timer0; u32 timer1; u32 timer2; u8 pad10[4]; u8 count; } AIBranch;
+    typedef struct { u8 pad0[0x3D4]; AIBranch *slots[4]; } AICarSlots;
+    extern Vector4 g_zeroVector;
+    u32 AI_UpdateTimer(u32 *timer);
+    s8 AI_Car_DetermineTarget(u8 *ai, u8 *branch, u8 slot);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    struct { Vector4 a; Vector4 b; Vector4 c; Vector4 zero; u32 id; u8 *player; f32 f0; f32 f1; } p;
+    s8 done;
+    u32 id;
+    u8 *car;
+    u8 i;
+
+    done = 0;
+    if ((AIBranch *)branch == ((AICarSlots *)ai)->slots[slot]) {
+        if (((AIBranch *)branch)->timer0 != 0) {
+            AI_UpdateTimer((u32 *)(branch + 4));
+        }
+        if (((AIBranch *)branch)->timer0 == 0 && (*(u32 *)(((AIBranch *)branch)->info + 0x48) != 0 || *(u32 *)(((AIBranch *)branch)->info + 0x4C) != 0)) {
+            done = 1;
+        } else if (!(s8)AI_Car_CheckLocalStats(ai, ((AIBranch *)branch)->info)) {
+            done = 1;
+        } else if (!AI_Car_DetermineTarget(ai, branch, slot)) {
+            done = 1;
+        }
+        if (done) {
+            branch = NULL;
+        }
+    } else {
+        if (((AIBranch *)branch)->info[6] != 0 && ((AIBranch *)branch)->count == 0) {
+            return 0;
+        }
+        if (((AIBranch *)branch)->timer1 != 0) {
+            return 0;
+        }
+        if (!(s8)AI_Car_CheckLocalStats(ai, ((AIBranch *)branch)->info)) {
+            return 0;
+        }
+        if (!AI_Car_DetermineTarget(ai, branch, slot)) {
+            return 0;
+        }
+        if (((AIBranch *)branch)->count != 0) {
+            ((AIBranch *)branch)->count--;
+        }
+        id = *(u32 *)(((AIBranch *)branch)->info + 0x5C);
+        if (id != 0) {
+            p.id = id;
+            car = *(u8 **)(ai + 0x2C);
+            p.a = *(Vector4 *)(car + 0x40);
+            p.b = *(Vector4 *)(car + 0x50);
+            p.c = *(Vector4 *)(car + 0x0);
+            p.player = ai;
+            p.f0 = 1.0f;
+            p.zero = g_zeroVector;
+            ThingManager_DARYL_CreateThing(1, &p);
+        }
+        ((AIBranch *)branch)->timer0 = RandomAdd_s32(*(s32 *)(((AIBranch *)branch)->info + 0x38), *(s32 *)(((AIBranch *)branch)->info + 0x3C));
+        done = 1;
+    }
+    if (done) {
+        for (i = slot; i < 4; i++) {
+            if (((AICarSlots *)ai)->slots[i] == NULL) {
+                break;
+            }
+            ((AICarSlots *)ai)->slots[i]->timer1 = RandomAdd_s32(*(s32 *)(((AICarSlots *)ai)->slots[i]->info + 0x48), *(s32 *)(((AICarSlots *)ai)->slots[i]->info + 0x4C));
+            ((AICarSlots *)ai)->slots[i] = NULL;
+        }
+    }
+    return branch != NULL;
+}
+
 s32 AI_Car_DetermineState(u8 *car) {
     typedef struct { u8 *info; u32 timer0; u32 timer1; u32 timer2; u8 pad10[8]; } AIBranch;
     typedef struct { u8 pad0[0xD4]; AIBranch branches[32]; } AICarBranches;
@@ -21061,6 +21135,66 @@ void __OSResetSWInterruptHandler(s16 exception, void *context) {
     }
     ((volatile u32 *)0xCC003000)[0] = 2;
 }
+
+BOOL OSGetResetButtonState(void) {
+    extern BOOL Down_803C7274;
+    extern BOOL LastState_803C7278;
+    extern s64 HoldUp_803C7280;
+    extern s64 HoldDown_803C7288;
+    extern s64 __OSStartTime;
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32 level);
+    s64 __OSGetSystemTime(void);
+    s32 enabled;
+    BOOL state;
+    u32 reg;
+    s64 now;
+    u8 sram;
+    s64 fire;
+
+    enabled = OSDisableInterrupts();
+    now = __OSGetSystemTime();
+    reg = *(volatile u32 *)0xCC003000;
+    if (!(reg & 0x10000)) {
+        if (!Down_803C7274) {
+            Down_803C7274 = TRUE;
+            state = HoldUp_803C7280 ? TRUE : FALSE;
+            HoldDown_803C7288 = now;
+        } else {
+            state = (HoldUp_803C7280 || (((*(u32 *)0x800000F8 / 4) / 125000) * 100 / 8 < now - HoldDown_803C7288)) ? TRUE : FALSE;
+        }
+    } else if (Down_803C7274) {
+        Down_803C7274 = FALSE;
+        state = LastState_803C7278;
+        if (state) {
+            HoldUp_803C7280 = now;
+        } else {
+            HoldUp_803C7280 = 0;
+        }
+    } else if (HoldUp_803C7280 && (now - HoldUp_803C7280 < ((*(u32 *)0x800000F8 / 4) / 1000) * 40)) {
+        state = TRUE;
+    } else {
+        state = FALSE;
+        HoldUp_803C7280 = 0;
+    }
+    LastState_803C7278 = state;
+    sram = *(u8 *)0x800030E3 & 0x3F;
+    if (sram) {
+        fire = (s64)(sram * 60) * (*(u32 *)0x800000F8 / 4) + __OSStartTime;
+        if (fire < now) {
+            now -= fire;
+            now = (now / (*(u32 *)0x800000F8 / 4)) / 2;
+            if ((now & 1) == 0) {
+                state = TRUE;
+            } else {
+                state = FALSE;
+            }
+        }
+    }
+    OSRestoreInterrupts(enabled);
+    return state;
+}
+
 #pragma pop
 void WriteSramCallback(void) {
     s32 WriteSram(void *, u32, u32);
@@ -22387,6 +22521,89 @@ BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputB
     return TRUE;
 }
 
+void GetTypeCallback(s32 chan, u32 error) {
+    typedef void (*SITypeAndStatusCallback)(s32 chan, u32 type);
+    typedef struct SIPacketEx {
+        u8 pad0[0x120];
+        s64 xferTime[4];
+        u8 pad140[0x160 - 0x140];
+        SITypeAndStatusCallback typeCallback[4][4];
+        u8 pad1A0[0x1F0 - 0x1A0];
+        u32 cmdTypeAndStatus[4];
+    } SIPacketEx;
+    extern u32 Type_800D9E84[4];
+    extern u32 __PADFixBits;
+    s64 __OSGetSystemTime(void);
+    u16 OSGetWirelessID(s32 chan);
+    void OSSetWirelessID(s32 chan, u16 id);
+    s32 SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void (*callback)(s32, u32), s64 delay);
+    SIPacketEx *si = (SIPacketEx *)&Packet_803096E0;
+    u32 type;
+    u32 chanBit;
+    u32 fix;
+    u32 id;
+    s32 i;
+    SITypeAndStatusCallback callback;
+
+    Type_800D9E84[chan] &= ~0x80;
+    Type_800D9E84[chan] |= error;
+    si->xferTime[chan] = __OSGetSystemTime();
+    type = Type_800D9E84[chan];
+    chanBit = 0x80000000 >> chan;
+    fix = __PADFixBits & chanBit;
+    __PADFixBits &= ~chanBit;
+    if ((error & 0xF) || (type & 0x18000000) != 0x08000000 || !(type & 0x80000000) || (type & 0x04000000)) {
+        OSSetWirelessID(chan, 0);
+        type = Type_800D9E84[chan];
+        for (i = 0; i < 4; i++) {
+            callback = si->typeCallback[chan][i];
+            if (callback) {
+                si->typeCallback[chan][i] = 0;
+                callback(chan, type);
+            }
+        }
+        return;
+    }
+    id = (u32)(OSGetWirelessID(chan) << 8);
+    if (fix && (id & 0x100000)) {
+        si->cmdTypeAndStatus[chan] = 0x4E100000 | (id & 0xCFFF00);
+        Type_800D9E84[chan] = 0x80;
+        SITransfer(chan, &si->cmdTypeAndStatus[chan], 3, &Type_800D9E84[chan], 3, GetTypeCallback, 0);
+        return;
+    }
+    if (type & 0x100000) {
+        if ((id & 0xCFFF00) != (type & 0xCFFF00)) {
+            if (!(id & 0x100000)) {
+                id = type & 0xCFFF00;
+                id |= 0x100000;
+                OSSetWirelessID(chan, (u16)((id >> 8) & 0xFFFF));
+            }
+            si->cmdTypeAndStatus[chan] = 0x4E000000 | id;
+            Type_800D9E84[chan] = 0x80;
+            SITransfer(chan, &si->cmdTypeAndStatus[chan], 3, &Type_800D9E84[chan], 3, GetTypeCallback, 0);
+            return;
+        }
+    } else if (type & 0x40000000) {
+        id = type & 0xCFFF00;
+        id |= 0x100000;
+        OSSetWirelessID(chan, (u16)((id >> 8) & 0xFFFF));
+        si->cmdTypeAndStatus[chan] = 0x4E000000 | id;
+        Type_800D9E84[chan] = 0x80;
+        SITransfer(chan, &si->cmdTypeAndStatus[chan], 3, &Type_800D9E84[chan], 3, GetTypeCallback, 0);
+        return;
+    } else {
+        OSSetWirelessID(chan, 0);
+    }
+    type = Type_800D9E84[chan];
+    for (i = 0; i < 4; i++) {
+        callback = si->typeCallback[chan][i];
+        if (callback) {
+            si->typeCallback[chan][i] = 0;
+            callback(chan, type);
+        }
+    }
+}
+
 u32 SIGetType(s32 chan) {
     extern u32 Type_800D9E84[4];
     extern s64 TypeTime_80309800[4];
@@ -22633,6 +22850,76 @@ void SeekTwiceBeforeRead(void *addr, u32 length, u32 offset, void *callback) {
     CommandList_802EF860[10] = -1;
     NextCommandNumber_803C72EC = 0;
     DVDLowSeek(offsetToSeek, callback);
+}
+
+s32 DVDLowRead(void *addr, u32 length, u32 offset, void *callback) {
+    extern s32 CommandList_802EF860[];
+    extern u32 WorkAroundType_803C72CC;
+    extern s32 NextCommandNumber_803C72EC;
+    extern s32 FirstRead_803C6D98;
+    extern s64 LastReadFinished_803C72D8;
+    s64 __OSGetSystemTime(void);
+    s32 DVDGetCurrentDiskID(void);
+    void OSCreateAlarm(void *alarm);
+    void OSSetAlarm(void *alarm, s64 tick, void *handler);
+    void AlarmHandler(void *alarm, void *context);
+    void Read(void *addr, u32 length, u32 offset, void *callback);
+    void SeekTwiceBeforeRead(void *addr, u32 length, u32 offset, void *callback);
+    u32 *prev;
+    u32 *curr;
+    u32 currStart;
+    u32 prevEnd;
+    u32 cacheSize;
+    u32 prevBlock;
+    s64 diff;
+
+    ((volatile u32 *)0xCC006000)[6] = length;
+    curr = (u32 *)&CommandList_802EF860[49];
+    prev = (u32 *)&CommandList_802EF860[46];
+    curr[0] = (u32)addr;
+    curr[1] = length;
+    curr[2] = offset;
+    if (WorkAroundType_803C72CC == 0) {
+        CommandList_802EF860[0] = -1;
+        NextCommandNumber_803C72EC = 0;
+        Read(addr, length, offset, callback);
+    } else if (WorkAroundType_803C72CC == 1) {
+        if (FirstRead_803C6D98) {
+            SeekTwiceBeforeRead(addr, length, offset, callback);
+        } else {
+            currStart = curr[2] >> 15;
+            prevEnd = (prev[2] + prev[1] - 1) >> 15;
+            cacheSize = (*((u8 *)DVDGetCurrentDiskID() + 8) ? TRUE : FALSE) ? 5 : 15;
+            if (!((currStart > prevEnd - 2) || (currStart < prevEnd + cacheSize + 3) ? TRUE : FALSE)) {
+                CommandList_802EF860[0] = -1;
+                NextCommandNumber_803C72EC = 0;
+                Read(addr, length, offset, callback);
+            } else {
+                prevBlock = (prev[2] + prev[1] - 1) >> 15;
+                if (prevBlock == curr[2] >> 15 || prevBlock + 1 == curr[2] >> 15) {
+                    diff = __OSGetSystemTime() - LastReadFinished_803C72D8;
+                    if ((s64)((*(u32 *)0x800000F8 / 4) / 1000 * 5) < diff) {
+                        CommandList_802EF860[0] = -1;
+                        NextCommandNumber_803C72EC = 0;
+                        Read(addr, length, offset, callback);
+                    } else {
+                        CommandList_802EF860[0] = 1;
+                        CommandList_802EF860[1] = (s32)addr;
+                        CommandList_802EF860[2] = length;
+                        CommandList_802EF860[3] = offset;
+                        CommandList_802EF860[4] = (s32)callback;
+                        CommandList_802EF860[5] = -1;
+                        NextCommandNumber_803C72EC = 0;
+                        OSCreateAlarm(&CommandList_802EF860[16]);
+                        OSSetAlarm(&CommandList_802EF860[16], (s64)((*(u32 *)0x800000F8 / 4) / 1000 * 5) - diff + (((*(u32 *)0x800000F8 / 4) / 125000) * 500) / 8, AlarmHandler);
+                    }
+                } else {
+                    SeekTwiceBeforeRead(addr, length, offset, callback);
+                }
+            }
+        }
+    }
+    return 1;
 }
 
 #pragma push
@@ -23503,6 +23790,133 @@ s32 CategorizeError(u32 error) {
         return 2;
     }
     return 3;
+}
+
+void cbForStateGettingError(u32 intType) {
+    typedef struct DVDCommandBlock DVDCommandBlock;
+    typedef void (*DVDCBCallback)(s32 result, DVDCommandBlock *block);
+    struct DVDCommandBlock {
+        DVDCommandBlock *next;
+        DVDCommandBlock *prev;
+        u32 command;
+        s32 state;
+        u32 offset;
+        u32 length;
+        void *addr;
+        u32 currTransferSize;
+        u32 transferredSize;
+        void *id;
+        DVDCBCallback callback;
+        void *userData;
+    };
+    extern DVDCommandBlock *executing_803C7310;
+    extern u32 Canceling_803C7330;
+    extern DVDCommandBlock DummyCommandBlock_802EF9C0;
+    extern u32 ResumeFromHere_803C7338;
+    extern DVDCBCallback CancelCallback_803C7334;
+    extern void (*LastState)(DVDCommandBlock *);
+    void __DVDStoreErrorCode(u32 error);
+    void DVDReset(void);
+    void cbForStateError(u32 intType);
+    void cbForUnrecoveredError(u32 intType);
+    s32 DVDLowStopMotor(void (*callback)(u32));
+    s32 DVDLowSeek(u32 offset, void (*callback)(u32));
+    u32 CategorizeError(u32 error);
+    void stateReady_800725A4(void);
+    void stateGoToRetry(void);
+    void stateMotorStopped(DVDCommandBlock *block);
+    void stateCoverClosed(DVDCommandBlock *block);
+    u32 error;
+    u32 status;
+    u32 errorCategory;
+    u32 resume;
+    DVDCommandBlock *finished;
+    s32 canceled;
+
+    if (intType == 16) {
+        executing_803C7310->state = -1;
+        __DVDStoreErrorCode(0x1234568);
+        DVDReset();
+        cbForStateError(0);
+        return;
+    }
+    if (intType & 2) {
+        executing_803C7310->state = -1;
+        __DVDStoreErrorCode(0x1234567);
+        DVDLowStopMotor(cbForStateError);
+        return;
+    }
+    error = *(volatile u32 *)0xCC006020;
+    status = error & 0xFF000000;
+    errorCategory = CategorizeError(error);
+    if (errorCategory == 1) {
+        executing_803C7310->state = -1;
+        __DVDStoreErrorCode(error);
+        DVDLowStopMotor(cbForStateError);
+        return;
+    }
+    if (errorCategory == 2 || errorCategory == 3) {
+        resume = 0;
+    } else if (status == 0x01000000) {
+        resume = 4;
+    } else if (status == 0x02000000) {
+        resume = 6;
+    } else if (status == 0x03000000) {
+        resume = 3;
+    } else {
+        resume = 5;
+    }
+    if (Canceling_803C7330) {
+        ResumeFromHere_803C7338 = resume;
+        finished = executing_803C7310;
+        Canceling_803C7330 = 0;
+        executing_803C7310 = &DummyCommandBlock_802EF9C0;
+        finished->state = 10;
+        if (finished->callback) {
+            finished->callback(-3, finished);
+        }
+        if (CancelCallback_803C7334) {
+            CancelCallback_803C7334(0, finished);
+        }
+        stateReady_800725A4();
+        canceled = 1;
+    } else {
+        canceled = 0;
+    }
+    if (canceled) {
+        return;
+    }
+    if (errorCategory == 2) {
+        __DVDStoreErrorCode(error);
+        stateGoToRetry();
+        return;
+    }
+    if (errorCategory == 3) {
+        if ((error & 0x00FFFFFF) == 0x00031100) {
+            DVDLowSeek(executing_803C7310->offset, cbForUnrecoveredError);
+        } else {
+            LastState(executing_803C7310);
+        }
+        return;
+    }
+    if (status == 0x01000000) {
+        executing_803C7310->state = 5;
+        stateMotorStopped(executing_803C7310);
+        return;
+    } else if (status == 0x02000000) {
+        executing_803C7310->state = 3;
+        stateCoverClosed(executing_803C7310);
+        return;
+    } else if (status == 0x03000000) {
+        executing_803C7310->state = 4;
+        stateMotorStopped(executing_803C7310);
+        return;
+    } else {
+        executing_803C7310->state = -1;
+        __DVDStoreErrorCode(0x1234567);
+        DVDLowStopMotor(cbForStateError);
+        return;
+    }
 }
 
 void cbForUnrecoveredErrorRetry(u32 intType) {
