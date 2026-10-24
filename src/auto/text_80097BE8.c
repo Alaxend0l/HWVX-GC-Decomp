@@ -13755,6 +13755,7 @@ s32 SetITState(s32 state) {
 }
 #pragma use_lmw_stmw reset
 #pragma opt_strength_reduction reset
+#pragma optimization_level reset
 
 #pragma push
 #pragma optimization_level 1
