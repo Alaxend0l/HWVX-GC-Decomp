@@ -5740,8 +5740,8 @@ typedef struct AnimKeyFrame {
 } AnimKeyFrame;
 
 static inline void Anim_AddKeyFrames(AnimKeyFrame *dst, AnimKeyFrame *src, u32 count) {
-    Quaternion q;
     u32 i;
+    Quaternion q;
 
     for (i = 0; i < count; i++) {
         if (src->rot.w != 1.0f || src->rot.x != 0.0f || src->rot.y != 0.0f || src->rot.z != 0.0f) {
@@ -5762,52 +5762,39 @@ void CarA_Extract_Keyframes(u8 *car, void *frames) {
     void Gfx_AnimExtractKeyFrame(void *anim, f32 time, void *keyFrame, u32 count);
     void SinCosRad(f32 *s, f32 *c, f32 rad);
     typedef struct {
-        Quaternion rot;
-        f32 pos[4];
-    } KeyFrame;
-    typedef struct {
         u8 unk0[0x40];
         u16 bone;
         u8 unk42[0x50 - 0x42];
     } WheelBone;
     u32 *anim;
     u32 i;
-    u32 count;
-    KeyFrame *dst;
-    KeyFrame *src;
-    u8 *wheel;
-    WheelBone *bone;
-    Quaternion q;
-    KeyFrame keys[64];
+    AnimKeyFrame keys[64];
 
     anim = *(u32 **)(*(u8 **)(car + 0x330) + 0x14);
     MotionState_ExtractBlendedKeyFrame(car + 0x330, frames);
-    wheel = car;
     for (i = 0; i < *(u32 *)(*(u8 **)(car + 0x3BC) + 0xD0); i++) {
-        bone = &(*(WheelBone **)(*(u8 **)(car + 0x3BC) + 0xD4))[i];
-        SinCosRad(&((KeyFrame *)frames)[bone->bone].rot.x, &((KeyFrame *)frames)[bone->bone].rot.w, 0.5f * *(f32 *)(wheel + 0x1B0));
-        ((KeyFrame *)frames)[bone->bone].rot.y = 0.0f;
-        ((KeyFrame *)frames)[bone->bone].rot.z = 0.0f;
-        wheel += 0x30;
+        WheelBone *bone = &(*(WheelBone **)(*(u8 **)(car + 0x3BC) + 0xD4))[i];
+        SinCosRad(&((AnimKeyFrame *)frames)[bone->bone].rot.x, &((AnimKeyFrame *)frames)[bone->bone].rot.w, 0.5f * *(f32 *)(car + i * 0x30 + 0x1B0));
+        ((AnimKeyFrame *)frames)[bone->bone].rot.y = 0.0f;
+        ((AnimKeyFrame *)frames)[bone->bone].rot.z = 0.0f;
     }
     if (*(void **)(*(u8 **)(car + 0x3BC) + 0x48) != NULL) {
         Gfx_AnimExtractKeyFrame(*(void **)(*(u8 **)(car + 0x3BC) + 0x48),
                                 10.0f * (*(f32 *)(car + 0x378) / 0.7853982f) * *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x80) + 0x34),
                                 keys, *anim);
-        count = *anim;
-        dst = frames;
-        src = keys;
-        for (i = 0; i < count; i++) {
-            if (src->rot.w != 1.0f || src->rot.x != 0.0f || src->rot.y != 0.0f || src->rot.z != 0.0f) {
-                QuaternionMult((Vector4 *)&dst->rot, (Vector4 *)&src->rot, (Vector4 *)&q);
-                dst->rot = q;
-            }
-            dst->pos[0] += src->pos[0];
-            dst->pos[1] += src->pos[1];
-            dst->pos[2] += src->pos[2];
-            src++;
-            dst++;
-        }
+        Anim_AddKeyFrames(frames, keys, *anim);
+    }
+    if (*(void **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x78) + 0x14) != NULL) {
+        Gfx_AnimExtractKeyFrame(*(void **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x78) + 0x14), -*(f32 *)(car + 0x420), keys, *anim);
+        Anim_AddKeyFrames(frames, keys, *anim);
+    }
+    if (*(void **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x78) + 0x18) != NULL) {
+        Gfx_AnimExtractKeyFrame(*(void **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x78) + 0x18), -*(f32 *)(car + 0x424), keys, *anim);
+        Anim_AddKeyFrames(frames, keys, *anim);
+    }
+    if (*(void **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x78) + 0x1C) != NULL) {
+        Gfx_AnimExtractKeyFrame(*(void **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x78) + 0x1C), -*(f32 *)(car + 0x428), keys, *anim);
+        Anim_AddKeyFrames(frames, keys, *anim);
     }
 }
 #pragma use_lmw_stmw reset
