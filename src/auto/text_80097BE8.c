@@ -1059,7 +1059,7 @@ static inline u32 SimThread_Tick(SimThread *t) {
     return dt;
 }
 
-static inline void SimThread_Update(SimThread *t, u32 dt) {
+static inline void SimThread_Update(SimThread *t, s32 dt) {
     s32 oldPos;
     s32 n;
     s32 accel;
