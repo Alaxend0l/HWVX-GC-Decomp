@@ -26712,7 +26712,6 @@ s32 StateProgressionManager_Heartbeat(void) {
     return 1;
 }
 #pragma use_lmw_stmw reset
-#pragma pool_strings reset
 #pragma readonly_strings reset
 
 s32 ActionEndLevel(s32 *arg0) {
