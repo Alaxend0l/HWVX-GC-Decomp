@@ -5866,6 +5866,164 @@ void AnimExtractKeyFrame_CompoundHybrid(void *animp, void *outp, f32 time) {
         out++;
     }
 }
+
+typedef struct AnimTrack {
+    u8 type;
+    u16 numKeys;
+    f32 *times;
+    f32 (*coeffs)[4][4];
+    struct AnimTrack *next;
+    f32 value[4];
+} AnimTrack;
+
+static inline s32 AnimTrack_FindKey(AnimTrack *track, f32 time) {
+    f32 *times = track->times;
+    s32 numKeys = track->numKeys;
+    s32 i = 1;
+    u32 step = numKeys;
+
+    while (1) {
+        step = (step + 1) >> 1;
+        if (time > times[i]) {
+            i += step;
+            if (i >= numKeys) {
+                return numKeys - 1;
+            }
+        } else if (time <= times[i - 1]) {
+            i -= step;
+        } else {
+            return i;
+        }
+        if (i <= 0) {
+            return 0;
+        }
+    }
+}
+
+void AnimExtractKeyFrame_Hybrid(void *animp, void *outp, f32 time) {
+    typedef struct {
+        u8 pad0[8];
+        f32 minTime;
+        f32 maxTime;
+        u32 numBones;
+        u32 numKeysPerFrame;
+        u32 *mask;
+        u16 *flags;
+        f32 *times;
+        u8 *data;
+    } Anim;
+    typedef struct {
+        Vector rot;
+        f32 pos[3];
+        u32 info;
+    } Bone;
+    typedef struct Track {
+        u8 type;
+        u16 numKeys;
+        f32 *times;
+        f32 (*coeffs)[4][4];
+        struct Track *next;
+        f32 value[4];
+    } Track;
+    void CopyVector(Vector *dst, Vector *src);
+    Anim *anim;
+    Bone *out;
+    u16 *flags;
+    Track *track;
+    u32 bit;
+    u32 i;
+    s32 key;
+    u32 step;
+
+    anim = (Anim *)animp;
+    out = (Bone *)outp;
+    flags = anim->flags;
+    track = (Track *)anim->data;
+    bit = 1;
+    if (time < anim->minTime) {
+        time = anim->minTime;
+    }
+    if (time > anim->maxTime) {
+        time = anim->maxTime;
+    }
+    for (i = 0; i < anim->numBones; i++) {
+        if (*flags & 1 | 2 | 4) {
+            if (track->type == 3) {
+                key = 1;
+                step = track->numKeys;
+                while (1) {
+                    step = (step + 1) >> 1;
+                    if (time > track->times[key]) {
+                        key += step;
+                        if (key >= track->numKeys) {
+                            key = track->numKeys - 1;
+                            break;
+                        }
+                    } else if (time <= track->times[key - 1]) {
+                        key -= step;
+                    } else {
+                        break;
+                    }
+                    if (key <= 0) {
+                        key = 0;
+                        break;
+                    }
+                }
+                out->pos[0] = time * (time * (time * track->coeffs[key][0][0] + track->coeffs[key][0][1]) + track->coeffs[key][0][2]) + track->coeffs[key][0][3];
+                out->pos[1] = time * (time * (time * track->coeffs[key][1][0] + track->coeffs[key][1][1]) + track->coeffs[key][1][2]) + track->coeffs[key][1][3];
+                out->pos[2] = time * (time * (time * track->coeffs[key][2][0] + track->coeffs[key][2][1]) + track->coeffs[key][2][2]) + track->coeffs[key][2][3];
+                track = track->next;
+            } else {
+                out->pos[0] = track->value[0];
+                out->pos[1] = track->value[1];
+                out->pos[2] = track->value[2];
+                track++;
+            }
+            bit++;
+            if (bit >= 32) {
+                bit &= 31;
+            }
+        }
+        if (*flags++ & 0x10 | 0x20 | 0x40 | 0x8) {
+            if (track->type == 3) {
+                key = 1;
+                step = track->numKeys;
+                while (1) {
+                    step = (step + 1) >> 1;
+                    if (time > track->times[key]) {
+                        key += step;
+                        if (key >= track->numKeys) {
+                            key = track->numKeys - 1;
+                            break;
+                        }
+                    } else if (time <= track->times[key - 1]) {
+                        key -= step;
+                    } else {
+                        break;
+                    }
+                    if (key <= 0) {
+                        key = 0;
+                        break;
+                    }
+                }
+                out->rot.x = time * (time * (time * track->coeffs[key][0][0] + track->coeffs[key][0][1]) + track->coeffs[key][0][2]) + track->coeffs[key][0][3];
+                out->rot.y = time * (time * (time * track->coeffs[key][1][0] + track->coeffs[key][1][1]) + track->coeffs[key][1][2]) + track->coeffs[key][1][3];
+                out->rot.z = time * (time * (time * track->coeffs[key][2][0] + track->coeffs[key][2][1]) + track->coeffs[key][2][2]) + track->coeffs[key][2][3];
+                out->rot.w = time * (time * (time * track->coeffs[key][3][0] + track->coeffs[key][3][1]) + track->coeffs[key][3][2]) + track->coeffs[key][3][3];
+                track = track->next;
+            } else {
+                CopyVector(&out->rot, (Vector *)track->value);
+                track++;
+            }
+            bit++;
+            if (bit >= 32) {
+                bit &= 31;
+            }
+        }
+        out++;
+    }
+}
+
 #pragma pop
 
 void AnimExtractKeyFrame(void *anim, s32 frame) {
@@ -16186,6 +16344,61 @@ void PlaySpringForce__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 sat
 void JBCallback__Fll(s32 chan, s32 result) {
     Param_803C6A40[chan].state = 2;
     Param_803C6A40[chan].result = result;
+}
+
+void GbaCommunication__Fl(s32 chan) {
+    s32 GBAGetStatus(s32 chan, u8 *status);
+    s32 GBARead(s32 chan, void *dst, u8 *status);
+    s32 GBAWrite(s32 chan, void *src, u8 *status);
+    u32 OSGetTick(void);
+    u8 *status;
+    s32 i;
+    u32 cmd;
+
+    Param_803C6A40[chan].startTick = OSGetTick();
+    do {
+        if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0 || (Param_803C6A40[chan].status & ~2) != 0x30 || OSGetTick() - Param_803C6A40[chan].startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 100) {
+            OSReport("GbaCommunication: timeout waiting for GBA (chan=%d).\n", chan);
+            Param_803C6A40[chan].state = 0;
+            return;
+        }
+    } while (Param_803C6A40[chan].status != 0x30);
+    cmd = 0x10000000;
+    if (GBAWrite(chan, &cmd, &Param_803C6A40[chan].status) != 0 || (Param_803C6A40[chan].status & ~2) != 0x30) {
+        OSReport("GbaCommunication: GBAWrite failed (chan=%d).\n", chan);
+        Param_803C6A40[chan].state = 0;
+        return;
+    }
+    Param_803C6A40[chan].startTick = OSGetTick();
+    do {
+        if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0 || (Param_803C6A40[chan].status & 0x30) != 0x30 || OSGetTick() - Param_803C6A40[chan].startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 100) {
+            OSReport("GbaCommunication: timeout waiting to receive (chan=%d).\n", chan);
+            Param_803C6A40[chan].state = 0;
+            return;
+        }
+    } while ((Param_803C6A40[chan].status & 0xA) != 8);
+    Param_803C6A40[chan].unk70 = 0;
+    if (GBARead(chan, &Param_803C6A40[chan].unk64, &Param_803C6A40[chan].status) != 0 || (Param_803C6A40[chan].unk64 >> 24) != 0x20 || (Param_803C6A40[chan].status & 0x30) != 0x30) {
+        OSReport("GbaCommunication: receive failed (chan=%d).\n", chan);
+        Param_803C6A40[chan].state = 0;
+        return;
+    }
+    Param_803C6A40[chan].unk70 = 1;
+    for (i = 0; i < 4; i++) {
+        Param_803C6A40[chan].startTick = OSGetTick();
+        do {
+            if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0 || (Param_803C6A40[chan].status & ~2) != 0x30 || OSGetTick() - Param_803C6A40[chan].startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 100) {
+                OSReport("GbaCommunication: timeout waiting to send (chan=%d).\n", chan);
+                Param_803C6A40[chan].state = 0;
+                return;
+            }
+        } while (Param_803C6A40[chan].status != 0x30);
+        if (GBAWrite(chan, &Param_803C6A40[i].unk60, &Param_803C6A40[chan].status) != 0 || (Param_803C6A40[chan].status & ~2) != 0x30) {
+            OSReport("GbaCommunication: send failed (chan=%d).\n", chan);
+            Param_803C6A40[chan].state = 0;
+            return;
+        }
+    }
 }
 
 void GbaSetport__Fl(s32 chan) {
