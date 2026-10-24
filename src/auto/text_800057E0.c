@@ -19936,6 +19936,45 @@ static inline void PhysicalObject_UpdateSpin(u8 *obj) {
     XformVecOrientation(obj + 0x10, &scaled, (Vector4 *)(obj + 0x130));
 }
 
+static inline void PhysicalObject_ApplyAngularImpulse(u8 *obj, Vector4 *pos, Vector4 *dir, f32 force) {
+    void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(void *v);
+    f32 Sqrt(f32 x);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    Vector4 f;
+    Vector4 torque;
+    Vector4 r;
+    Vector4 local;
+    Vector4 scaled;
+    f32 mag;
+
+    PSVECSubtract(pos, (Vector4 *)(obj + 0x40), &r);
+    PSVECScale(dir, &f, force);
+    PSVECCrossProduct(&r, &f, &torque);
+    ((Vector4 *)(obj + 0x110))->x += torque.x;
+    ((Vector4 *)(obj + 0x110))->y += torque.y;
+    ((Vector4 *)(obj + 0x110))->z += torque.z;
+    InverseXformVecOrientation(obj + 0x10, (Vector4 *)(obj + 0x110), &local);
+    scaled.x = ((Vector4 *)(obj + 0x120))->x * local.x;
+    scaled.y = ((Vector4 *)(obj + 0x120))->y * local.y;
+    scaled.z = ((Vector4 *)(obj + 0x120))->z * local.z;
+    mag = PSVECSquareMag(&scaled);
+    if (mag > 10000.0f) {
+        mag = 100.0f / Sqrt(mag);
+        scaled.x *= mag;
+        scaled.y *= mag;
+        scaled.z *= mag;
+        local.x = scaled.x / ((Vector4 *)(obj + 0x120))->x;
+        local.y = scaled.y / ((Vector4 *)(obj + 0x120))->y;
+        local.z = scaled.z / ((Vector4 *)(obj + 0x120))->z;
+        XformVecOrientation(obj + 0x10, &local, (Vector4 *)(obj + 0x110));
+    }
+    PhysicalObject_UpdateSpin(obj);
+}
+
 void PhysicalObject_ProcessForce(u8 *obj, Vector4 *pos, Vector4 *force, f32 scale) {
     void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
@@ -20378,10 +20417,6 @@ void PhysicalObject_DynamicCollideImpact(u8 *obj, u8 *collision, f32 force) {
     Vector4 r;
     Vector4 localB;
     Vector4 scaledB;
-    Vector4 scaled1;
-    Vector4 local1;
-    Vector4 scaled2;
-    Vector4 local2;
     f32 scale;
     f32 mag;
     u8 *other;
@@ -20436,11 +20471,7 @@ void PhysicalObject_DynamicCollideImpact(u8 *obj, u8 *collision, f32 force) {
         }
         if (weight >= 3.0f) {
             ProjectVectorToNormal(collision + 0x10, obj + 0x110);
-            InverseXformVecOrientation(obj + 0x10, (Vector4 *)(obj + 0x110), &local1);
-            scaled1.x = ((Vector4 *)(obj + 0x120))->x * local1.x;
-            scaled1.y = ((Vector4 *)(obj + 0x120))->y * local1.y;
-            scaled1.z = ((Vector4 *)(obj + 0x120))->z * local1.z;
-            XformVecOrientation(obj + 0x10, &scaled1, (Vector4 *)(obj + 0x130));
+            PhysicalObject_UpdateSpin(obj);
             if (PSVECSquareMag(obj + 0x130) < 1.0f && PSVECSquareMag(obj) < 25.0f) {
                 params.pos = *(Vector4 *)(obj + 0x40);
                 params.unk50 = 0;
@@ -20478,11 +20509,7 @@ void PhysicalObject_DynamicCollideImpact(u8 *obj, u8 *collision, f32 force) {
         localB.z = scaledB.z / ((Vector4 *)(obj + 0x120))->z;
         XformVecOrientation(obj + 0x10, &localB, (Vector4 *)(obj + 0x110));
     }
-    InverseXformVecOrientation(obj + 0x10, (Vector4 *)(obj + 0x110), &local2);
-    scaled2.x = ((Vector4 *)(obj + 0x120))->x * local2.x;
-    scaled2.y = ((Vector4 *)(obj + 0x120))->y * local2.y;
-    scaled2.z = ((Vector4 *)(obj + 0x120))->z * local2.z;
-    XformVecOrientation(obj + 0x10, &scaled2, (Vector4 *)(obj + 0x130));
+    PhysicalObject_UpdateSpin(obj);
 }
 
 void PhysicalObject_GetInverseLocalInertiaTensor(void *obj, Quaternion *out) {
