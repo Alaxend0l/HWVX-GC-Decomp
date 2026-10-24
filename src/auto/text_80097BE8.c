@@ -9774,6 +9774,122 @@ void Render_DrawOpaqueGroup(Geometry *geometry, u32 group, void *matrix) {
     }
 }
 
+void Render_DrawAlphaGroup(u16 index) {
+    typedef struct UVScroll {
+        f32 u;
+        f32 v;
+        GXColor color;
+        u32 flags;
+    } UVScroll;
+    extern GDL *g_pGDL;
+    extern u32 g_currentWindow;
+    extern u32 g_onebitflag;
+    extern s32 m_curTexture;
+    extern Texture *m_texture;
+    extern GfxState g_state;
+    void Render_SetTextureHandle(u16 id);
+    void Render_StateBlendMode(u16 mode);
+    void Render_StateZWriteEnable(s32 enable);
+    void Render_SetConstColor(GXColor *color);
+    void SetTriVtxDescIdxAlpha(void);
+    void SetVertexBuffer();
+    void GXSetAlphaCompare(s32 comp0, u8 ref0, s32 op, s32 comp1, u8 ref1);
+    void GXSetZCompLoc(u8 before_tex);
+    void GXLoadPosMtxImm(f32 m[3][4], u32 id);
+    void GXSetCurrentMtx(u32 id);
+    void GXLoadTexMtxImm(f32 mtx[3][4], u32 id, s32 type);
+    void GXSetTexCoordGen2(s32 dst, s32 func, s32 src, u32 mtx, u8 normalize, u32 pt);
+    void DCFlushRange(void *addr, u32 len);
+    void GXCallDisplayList(void *list, u32 nbytes);
+    GeometryGroup *grp;
+    f32 *vb;
+    GDLAlphaGroup *ag;
+    UVScroll *scroll;
+    void *dl;
+    f32 mtx[3][4];
+    f32 tmtx[3][4];
+
+    if (g_pGDL->alphaGroups[index].window != g_currentWindow) {
+        return;
+    }
+    ag = &g_pGDL->alphaGroups[index];
+    vb = ((Geometry *)ag->unk40)->lodDistances;
+    grp = &((Geometry *)ag->unk40)->groups[g_pGDL->alphaGroups[index].unk44];
+    if (grp->unk18 == 0) {
+        Render_SetTextureHandle(*(u16 *)((u8 *)grp + 0x1A));
+    } else {
+        Render_SetTextureHandle(grp->unk18);
+    }
+    if (!g_onebitflag && m_texture[m_curTexture].unk38 == 4 && *(u16 *)((u8 *)grp + 0x14) == 5) {
+        Gfx_SetWorldMatrix(NULL);
+        return;
+    }
+    if (g_onebitflag) {
+        if (m_texture[m_curTexture].unk38 != 4 || *(u16 *)((u8 *)grp + 0x14) != 5) {
+            Gfx_SetWorldMatrix(NULL);
+            return;
+        }
+    } else if (m_texture[m_curTexture].unk38 == 4 && *(u16 *)((u8 *)grp + 0x14) == 5) {
+        Gfx_SetWorldMatrix(NULL);
+        return;
+    }
+    if (m_texture[m_curTexture].unk38 == 4 && *(u16 *)((u8 *)grp + 0x14) == 5) {
+        GXSetAlphaCompare(6, 0x80, 0, 6, 0);
+        GXSetZCompLoc(0);
+        Render_StateZWriteEnable(1);
+    }
+    Render_StateBlendMode(*(u16 *)((u8 *)grp + 0x14));
+    MatrixToMtxTranspose(mtx, ag->matrix);
+    GXLoadPosMtxImm(mtx, 0);
+    GXSetCurrentMtx(0);
+    g_state.unk93 = 0;
+    scroll = *(UVScroll **)((u8 *)grp + 0xC);
+    dl = *(void **)((u8 *)grp + 0x1C);
+    if (scroll != NULL) {
+        tmtx[0][0] = 1.0f;
+        tmtx[0][1] = 0.0f;
+        tmtx[0][2] = 0.0f;
+        tmtx[0][3] = scroll->u;
+        tmtx[1][0] = 0.0f;
+        tmtx[1][1] = 1.0f;
+        tmtx[1][2] = 0.0f;
+        tmtx[1][3] = scroll->v;
+        GXLoadTexMtxImm(tmtx, 30, 1);
+        GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
+        if (scroll->flags & 2) {
+            Render_SetConstColor(&scroll->color);
+        } else if (ag->unk50) {
+            Render_SetConstColor(&ag->color);
+        }
+        SetVertexBuffer(vb, ((Geometry *)ag->unk40)->groups->flags, ((Geometry *)ag->unk40)->unk4);
+        SetTriVtxDescIdxAlpha();
+        DCFlushRange(dl, *(u32 *)((u8 *)grp + 0x10));
+        GXCallDisplayList(dl, *(u32 *)((u8 *)grp + 0x10));
+        if ((scroll->flags & 2) || ag->unk50) {
+            Render_SetConstColor(NULL);
+        }
+        GXSetTexCoordGen2(0, 1, 4, 60, 0, 125);
+    } else if (ag->unk50) {
+        Render_SetConstColor(&ag->color);
+        SetVertexBuffer(vb, ((Geometry *)ag->unk40)->groups->flags, ((Geometry *)ag->unk40)->unk4);
+        SetTriVtxDescIdxAlpha();
+        DCFlushRange(dl, *(u32 *)((u8 *)grp + 0x10));
+        GXCallDisplayList(dl, *(u32 *)((u8 *)grp + 0x10));
+        Render_SetConstColor(NULL);
+    } else {
+        SetVertexBuffer(vb, ((Geometry *)ag->unk40)->groups->flags, ((Geometry *)ag->unk40)->unk4);
+        SetTriVtxDescIdxAlpha();
+        DCFlushRange(dl, *(u32 *)((u8 *)grp + 0x10));
+        GXCallDisplayList(dl, *(u32 *)((u8 *)grp + 0x10));
+    }
+    if (m_texture[m_curTexture].unk38 == 4 && *(u16 *)((u8 *)grp + 0x14) == 5) {
+        GXSetAlphaCompare(7, 0, 1, 7, 0);
+        GXSetZCompLoc(1);
+        Render_StateZWriteEnable(0);
+    }
+    Gfx_SetWorldMatrix(NULL);
+}
+
 #pragma pop
 void Render_UseLighting(u8 arg0) {
     M2C_UNK GXSetChanCtrl(M2C_UNK, M2C_UNK, M2C_UNK, M2C_UNK, s32, M2C_UNK, M2C_UNK);
