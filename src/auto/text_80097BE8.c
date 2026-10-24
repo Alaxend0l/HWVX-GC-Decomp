@@ -351,7 +351,7 @@ typedef struct THPHuffmanTab {
 } THPHuffmanTab;
 
 typedef struct THPFileInfo {
-    u8 unk0[0x300];
+    f32 quantTabs[3][64];
     THPHuffmanTab huffmanTabs[4];
     THPComponent components[3];
     u16 xPixelSize;
@@ -12634,6 +12634,39 @@ u8 __THPReadScaneHeader(void) {
     __THPInfo_803C7890->components[0].predDC = 0;
     __THPInfo_803C7890->components[1].predDC = 0;
     __THPInfo_803C7890->components[2].predDC = 0;
+    return 0;
+}
+
+u8 __THPReadQuantizationTable(void) {
+    extern const u8 __THPJpegNaturalOrder_800CE0D8[];
+    extern const f64 __THPAANScaleFactor[];
+    u16 length, id, i, row, col;
+    f32 q_temp[64];
+
+    length = (u16)((__THPInfo_803C7890->c[0] << 8) | __THPInfo_803C7890->c[1]);
+    __THPInfo_803C7890->c += 2;
+    length -= 2;
+
+    for (;;) {
+        id = *(__THPInfo_803C7890->c)++;
+
+        for (i = 0; i < 64; i++) {
+            q_temp[__THPJpegNaturalOrder_800CE0D8[i]] = (f32)(*(__THPInfo_803C7890->c)++);
+        }
+
+        i = 0;
+        for (row = 0; row < 8; row++) {
+            for (col = 0; col < 8; col++) {
+                ((f32 *)__THPInfo_803C7890)[id * 64 + i] = (f32)((f64)q_temp[i] * __THPAANScaleFactor[row] * __THPAANScaleFactor[col]);
+                i++;
+            }
+        }
+
+        length -= 65;
+        if (!length) {
+            break;
+        }
+    }
     return 0;
 }
 
