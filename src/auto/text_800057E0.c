@@ -18253,6 +18253,91 @@ s32 Thing_AddToGrid(void *thing, s32 type) {
     return M2C_FIELD(thing, s32 *, 0x84);
 }
 
+void Thing_GetDynamicMinMax(void *thing, Vector4 *min, Vector4 *max, f32 expand) {
+    typedef struct Box {
+        u8 pad[0x10];
+        Vector4 corners[8];
+    } Box;
+    void CopyVector(Vector4 *dst, Vector4 *src);
+    void MinMaxVec(Vector4 *min, Vector4 *max, Vector4 *v);
+    Thing *t = (Thing *)thing;
+    Box *box;
+    u32 i;
+    Vector4 p3;
+    Vector4 p2;
+    Vector4 p1;
+
+    min->x = min->y = min->z = min->w = 99999.9f;
+    max->x = max->y = max->z = max->w = -99999.9f;
+    switch (M2C_FIELD(t, s16 *, 0x80)) {
+    case 0:
+        *max = t->mtx.v[3];
+        *min = *max;
+        break;
+    case 3:
+        CopyVector(&p3, &t->mtx.v[3]);
+        CopyVector(min, &t->mtx.v[3]);
+        CopyVector(max, &t->mtx.v[3]);
+        p3.x += t->pos.x * expand;
+        p3.y += t->pos.y * expand;
+        p3.z += t->pos.z * expand;
+        MinMaxVec(min, max, &p3);
+        break;
+    case 2:
+    case 4:
+    case 5:
+    case 6:
+        CopyVector(&p2, &t->mtx.v[3]);
+        CopyVector(min, &t->mtx.v[3]);
+        CopyVector(max, &t->mtx.v[3]);
+        p2.x += t->pos.x * expand;
+        p2.y += t->pos.y * expand;
+        p2.z += t->pos.z * expand;
+        if (p2.x < min->x) {
+            min->x = p2.x;
+        }
+        if (p2.y < min->y) {
+            min->y = p2.y;
+        }
+        if (p2.z < min->z) {
+            min->z = p2.z;
+        }
+        if (p2.x > max->x) {
+            max->x = p2.x;
+        }
+        if (p2.y > max->y) {
+            max->y = p2.y;
+        }
+        if (p2.z > max->z) {
+            max->z = p2.z;
+        }
+        min->x -= M2C_FIELD(t, f32 *, 0x70);
+        min->y -= M2C_FIELD(t, f32 *, 0x70);
+        min->z -= M2C_FIELD(t, f32 *, 0x70);
+        max->x += M2C_FIELD(t, f32 *, 0x70);
+        max->y += M2C_FIELD(t, f32 *, 0x70);
+        max->z += M2C_FIELD(t, f32 *, 0x70);
+        break;
+    case 1:
+        if (M2C_FIELD(t, u32 *, 0x74) & 8) {
+            t = (*(Thing *(**)(Thing *))(M2C_FIELD(t, u8 **, 0x8C) + 0x40))(t);
+            CopyVector(min, (Vector4 *)((u8 *)t + 0xD0));
+            CopyVector(max, (Vector4 *)((u8 *)t + 0xE0));
+        } else {
+            box = (*(Box *(**)(Thing *))(M2C_FIELD(t, u8 **, 0x8C) + 0x40))(t);
+            for (i = 0; i < 8; i++) {
+                p1 = box->corners[i];
+                MinMaxVec(min, max, &p1);
+                p1.x += t->pos.x * expand;
+                p1.y += t->pos.y * expand;
+                p1.z += t->pos.z * expand;
+                MinMaxVec(min, max, &p1);
+            }
+        }
+        break;
+    }
+}
+
 static inline void Thing_GetStaticRotationalMinMax_inline(void *thing, Vector4 *min, Vector4 *max) {
     *max = *(Vector4 *)((u8 *)thing + 0x40);
     *min = *max;
