@@ -7330,7 +7330,7 @@ void FileStreaming_Initialize(void) {
 #pragma pop
 
 void FileStreaming_Destroy(void) {
-    extern u8 *g_StreamingDataPacks[11];
+    extern StreamingDataPack *g_StreamingDataPacks[11];
     s32 FileStreaming_ReleaseAllDataPacks(s32 type, s8 wait);
     void Deallocate(void *);
     u32 i;
@@ -7499,19 +7499,7 @@ void FileStreaming_LoadingThread(void) {
 }
 
 s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded) {
-    typedef struct DataPack {
-        s8 used;
-        u8 unk1;
-        u8 unk2;
-        char *name;
-        u32 id;
-        u32 refs;
-        u8 unk10;
-        u8 pad11[0x4C - 0x11];
-        void *data;
-        u8 pad50[0xA8 - 0x50];
-    } DataPack;
-    extern DataPack *g_StreamingDataPacks[11];
+    extern StreamingDataPack *g_StreamingDataPacks[11];
     extern u32 g_MaxStreamingDataPacks[11];
     extern s8 g_bLoadingThreadRunning;
     extern s8 g_bLoadDataPack;
