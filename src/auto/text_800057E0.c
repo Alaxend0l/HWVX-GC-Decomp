@@ -34761,7 +34761,6 @@ s32 TRKTestForPacket(void) {
     s32 err;
     s32 result;
     s32 id;
-    s32 isValid;
     s8 ch;
 
     err = 0;
@@ -34790,18 +34789,7 @@ s32 TRKTestForPacket(void) {
                     TRKDiscardFrame(&gTRKFramingState_8030B424);
                     break;
                 }
-                if (gTRKFramingState_8030B424.buffer->length < 2) {
-                    TRKStandardACK(gTRKFramingState_8030B424.buffer, 0xFF, 2);
-                    TRKDiscardFrame(&gTRKFramingState_8030B424);
-                    isValid = 0;
-                } else {
-                    TRKBuffer *b = gTRKFramingState_8030B424.buffer;
-
-                    b->position = 0;
-                    b->length--;
-                    isValid = 1;
-                }
-                if (isValid) {
+                if (TRKCheckFrame(&gTRKFramingState_8030B424)) {
                     id = gTRKFramingState_8030B424.msgBufID;
                     gTRKFramingState_8030B424.msgBufID = -1;
                     gTRKFramingState_8030B424.buffer = NULL;
