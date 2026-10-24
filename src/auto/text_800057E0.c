@@ -35714,8 +35714,6 @@ static inline void SETVAT(u32 *va, u32 *vb, u32 *vc, s32 attr, s32 cnt, s32 type
     }
 }
 
-#pragma optimization_level 4
-#pragma dont_inline off
 void GXSetVtxAttrFmtv(s32 vtxfmt, s32 *list) {
     typedef struct {
         s32 attr;
