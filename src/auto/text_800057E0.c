@@ -8760,7 +8760,7 @@ s8 OBoxHitsCellZeroTimeEdgesOnly(void *obox, void *cell, void *arg2) {
             poly = M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u8 **, 0x4C) + M2C_FIELD(cell, u32 **, 0x38)[i] * 0x20;
             if (M2C_FIELD(poly, u32 *, 0x18) != g_worldData.unk4) {
                 M2C_FIELD(poly, u32 *, 0x18) = g_worldData.unk4;
-                hit = OBoxHitsPolyZeroTime(obox, poly, arg2);
+                hit = OBoxHitsPolyZeroTime(obox, (PolyZT *)poly, arg2);
                 if (hit) {
                     return 1;
                 }
