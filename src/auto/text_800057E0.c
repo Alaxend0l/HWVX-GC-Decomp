@@ -53243,7 +53243,6 @@ void __GXSetMatrixIndex(s32 index) {
     *(u16 *)(gx + 2) = 1;
 }
 
-#pragma peephole off
 void GXSetGPMetric(s32 perf0, s32 perf1) {
     extern u8 *gx;
     extern volatile u16 *__cpReg;
