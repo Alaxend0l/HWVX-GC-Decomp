@@ -17601,6 +17601,218 @@ void InterfaceManager_ExecuteActions(u8 *iface, u8 *list) {
         }
     }
 }
+
+void InterfaceManager_CheckConditions(u8 *iface, u8 *obj) {
+    extern u8 g_interface[][0x170];
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    s32 GameSettings_GetGameType(void);
+    void InterfaceManager_SetLoadState(void *iface, s32 state);
+    typedef struct {
+        s8 isVar;
+        u8 pad1;
+        u16 value;
+    } CondValue;
+    typedef struct {
+        s32 id;
+        CondValue *val;
+    } CodeVar;
+    typedef struct {
+        u8 type;
+        u8 pad1[3];
+        s32 value;
+        void *data;
+        u8 padC[0x1C - 0xC];
+    } Condition;
+    typedef struct {
+        u8 type;
+        u32 count;
+        Condition *conds;
+    } ConditionList;
+    typedef struct {
+        u8 type;
+        u8 pad1[3];
+        s32 min;
+        s32 max;
+        s32 offset;
+        CodeVar *data;
+        u8 pad14[0x34 - 0x14];
+    } Variable;
+    typedef struct {
+        u32 count;
+        u32 state;
+        u8 pad8[0x20 - 0x8];
+        u8 *header;
+        u8 pad24[0x88 - 0x24];
+        u8 *objs;
+        u8 pad8C[0x98 - 0x8C];
+        s32 vars[30];
+        u32 numVars;
+    } Iface;
+    typedef struct {
+        u8 pad0[2];
+        u8 id;
+        u8 pad3;
+        f32 value;
+    } WorldVar;
+    typedef struct {
+        u8 pad0[0x48];
+        u32 numVars;
+        WorldVar **vars;
+    } World;
+    u32 i;
+    ConditionList *list;
+    s8 result;
+    s8 old;
+    s8 show;
+    s8 isAnd;
+    s8 pass;
+    s8 changed;
+    Iface *ifc;
+    u8 *car;
+    u8 *info;
+    u32 j;
+    u32 k;
+    CodeVar *cv;
+    u32 sum;
+
+    if (obj == NULL || *(u32 *)(obj + 0x254) == 0 ||
+        (list = *(ConditionList **)(*(u8 **)(obj + 0x25C) + 0x48)) == NULL) {
+        return;
+    }
+    old = obj[0x240];
+    show = (list->type == 1 || list->type == 2);
+    isAnd = (list->type == 0 || list->type == 1);
+    if (isAnd) {
+        result = 1;
+    } else {
+        result = 0;
+    }
+    for (i = 0; i < list->count; i++) {
+        pass = 1;
+        switch (list->conds[i].type) {
+        case 1:
+            if (((CondValue *)list->conds[i].data)->isVar) {
+                if (((Iface *)iface)->vars[((Iface *)iface)->vars[((CondValue *)list->conds[i].data)->value]] != list->conds[i].value) {
+                    pass = 0;
+                }
+            } else if (((Iface *)iface)->vars[((CondValue *)list->conds[i].data)->value] != list->conds[i].value) {
+                pass = 0;
+            }
+            break;
+        case 2:
+            cv = list->conds[i].data;
+            if (GameSettings_GetCodeVariable(cv->id, cv->val->isVar ? ((Iface *)iface)->vars[cv->val->value] : cv->val->value) != list->conds[i].value) {
+                pass = 0;
+            }
+            break;
+        case 3:
+            if (*(u8 **)(iface + 8) == NULL || !(*(u32 *)(*(u8 **)(*(u8 **)(iface + 8) + 0x2C) + 0x48C) & 0x80)) {
+                pass = 0;
+            }
+            break;
+        case 4:
+            if (*(u8 **)(iface + 8) != NULL && (car = *(u8 **)(*(u8 **)(iface + 8) + 0x2C)) != NULL) {
+                info = *(u8 **)(car + 0x3BC);
+                sum = 0;
+                for (j = 0; j < *(u32 *)(info + 0x100); j++) {
+                    sum += *(s32 *)(*(u8 **)(info + 0x104) + j * 0x50 + 0x34);
+                }
+                if (sum != list->conds[i].value) {
+                    pass = 0;
+                }
+            } else {
+                pass = 0;
+            }
+            break;
+        case 5:
+            if (*(u8 **)(iface + 8) != NULL && *(u8 **)(*(u8 **)(iface + 8) + 0x2C) != NULL) {
+                pass = 0;
+            }
+            break;
+        }
+        if (isAnd && !pass) {
+            result = 0;
+            break;
+        }
+        if (!isAnd && pass) {
+            result = 1;
+            break;
+        }
+    }
+    if (obj[0x243] == 6) {
+        ifc = (Iface *)g_interface[*(u32 *)(obj + 0x270)];
+        changed = 0;
+        if (GameSettings_GetGameType() == 1) {
+            return;
+        }
+        if (result) {
+            if (show && ifc->state == 1) {
+                InterfaceManager_SetLoadState(ifc, 0);
+                changed = 1;
+            } else if (!show && ifc->state != 1) {
+                InterfaceManager_SetLoadState(ifc, 1);
+            }
+        } else {
+            if (show && ifc->state != 1) {
+                InterfaceManager_SetLoadState(ifc, 1);
+            } else if (!show && ifc->state == 1) {
+                InterfaceManager_SetLoadState(ifc, 0);
+                changed = 1;
+            }
+        }
+        if (changed) {
+            for (i = 0; i < ifc->numVars; i++) {
+                switch ((*(Variable **)(*(u8 **)(ifc->header + 0x1C) + 4))[i].type) {
+                case 1:
+                    cv = (*(Variable **)(*(u8 **)(ifc->header + 0x1C) + 4))[i].data;
+                    if (cv->val->isVar) {
+                        ifc->vars[i] = GameSettings_GetCodeVariable(cv->id, ifc->vars[cv->val->value]);
+                    } else {
+                        ifc->vars[i] = GameSettings_GetCodeVariable(cv->id, cv->val->value);
+                    }
+                    ifc->vars[i] += (*(Variable **)(*(u8 **)(ifc->header + 0x1C) + 4))[i].offset;
+                    if (ifc->vars[i] > (*(Variable **)(*(u8 **)(ifc->header + 0x1C) + 4))[i].max) {
+                        ifc->vars[i] = ifc->vars[i] - (*(Variable **)(*(u8 **)(ifc->header + 0x1C) + 4))[i].max - 1 + (*(Variable **)(*(u8 **)(ifc->header + 0x1C) + 4))[i].min;
+                    } else if (ifc->vars[i] < (*(Variable **)(*(u8 **)(ifc->header + 0x1C) + 4))[i].min) {
+                        ifc->vars[i] = (*(Variable **)(*(u8 **)(ifc->header + 0x1C) + 4))[i].max - ((*(Variable **)(*(u8 **)(ifc->header + 0x1C) + 4))[i].min - ifc->vars[i] - 1);
+                    }
+                    break;
+                case 4:
+                    if ((World *)g_worldData.world != NULL) {
+                        ifc->vars[0] = 0;
+                        for (k = 0; k < ((World *)g_worldData.world)->numVars; k++) {
+                            if (((World *)g_worldData.world)->vars[k]->id == (*(Variable **)(*(u8 **)(ifc->header + 0x1C) + 4))[i].offset) {
+                                ifc->vars[k] = ((World *)g_worldData.world)->vars[k]->value;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+            for (i = 0; i < ifc->count; i++) {
+                InterfaceManager_CheckConditions((u8 *)ifc, ifc->objs + i * 0x300);
+            }
+        }
+    } else {
+        if (result) {
+            obj[0x240] = !show;
+        } else {
+            obj[0x240] = show;
+        }
+        if (old != obj[0x240]) {
+            obj[0x2C] = 1;
+            obj[0x54] = 1;
+            obj[0x118] = 1;
+            obj[0x84] = 1;
+            obj[0xB4] = 1;
+            obj[0x125] = 1;
+            obj[0x164] = 1;
+            obj[0x194] = 1;
+            obj[0x248] = 1;
+        }
+    }
+}
+
 #pragma pop
 
 #pragma pop
