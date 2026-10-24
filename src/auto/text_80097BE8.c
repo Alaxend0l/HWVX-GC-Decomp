@@ -9053,20 +9053,19 @@ void Render_SaveCamera(void) {
 
 #pragma push
 void Render_LoadCamera(void) {
-    extern f32 GXCameraSpace_8036CF80[3][4];
     void *GetRenderWindow();
     void C_MTXPerspective(f32 m[4][4], f32 fovY, f32 aspect, f32 n, f32 f);
     void GXSetProjection(f32 m[4][4], s32 type);
     void Gfx_SetCameraMatrix(void *a, void *b, void *c, void *d);
     f32 mtx[4][4];
     f32 value;
-    f32 angle;
     f32 fov;
+    f32 angle;
 
-    *(Vector *)((u8 *)GetRenderWindow() + 0x180) = ((Vector *)GXCameraSpace_8036CF80)[3];
-    *(Vector *)((u8 *)GetRenderWindow() + 0x190) = ((Vector *)GXCameraSpace_8036CF80)[4];
-    *(Vector *)((u8 *)GetRenderWindow() + 0x1A0) = ((Vector *)GXCameraSpace_8036CF80)[5];
-    *(Vector *)((u8 *)GetRenderWindow() + 0x1B0) = ((Vector *)GXCameraSpace_8036CF80)[6];
+    *(Vector *)((u8 *)GetRenderWindow() + 0x180) = *(Vector *)GXCameraSpace_8036CF80[3];
+    *(Vector *)((u8 *)GetRenderWindow() + 0x190) = *(Vector *)GXCameraSpace_8036CF80[4];
+    *(Vector *)((u8 *)GetRenderWindow() + 0x1A0) = *(Vector *)GXCameraSpace_8036CF80[5];
+    *(Vector *)((u8 *)GetRenderWindow() + 0x1B0) = *(Vector *)GXCameraSpace_8036CF80[6];
     fov = *(f32 *)((u8 *)GetRenderWindow() + 0x270);
     angle = fov;
     value = sin(0.017453292f * (0.9f * fov));
@@ -10393,6 +10392,92 @@ void THPPlayerStop(void) {
         }
         ActivePlayer.dispTextureSet = NULL;
         ActivePlayer.playAudioBuffer = NULL;
+    }
+}
+
+void PlayControl(u32 retraceCount) {
+    typedef struct THPTextureSet {
+        u8 *ytexture;
+        u8 *utexture;
+        u8 *vtexture;
+        s32 frameNumber;
+    } THPTextureSet;
+    s32 ProperTimingForStart(void);
+    s32 ProperTimingForGettingNextFrame(void);
+    void PushUsedTextureSet(void *buffer);
+    void *PopDecodedTextureSet(s32 flag);
+    s32 diff;
+    s32 frameNumber;
+    THPTextureSet *textureSet;
+
+    if (OldVIPostCallback_803C775C) {
+        ((void (*)(u32))OldVIPostCallback_803C775C)(retraceCount);
+    }
+    textureSet = (THPTextureSet *)-1;
+    if (ActivePlayer.open && ActivePlayer.state == 2) {
+        if (*(s32 *)&ActivePlayer.dispTextureSet || *(s32 *)&ActivePlayer.playAudioBuffer) {
+            ActivePlayer.state = ActivePlayer.unk9D = 5;
+            return;
+        }
+        if (*(s64 *)&ActivePlayer.unkC0 == 0 && ActivePlayer.unk9D == 0) {
+            ActivePlayer.unk9D = 2;
+        }
+        (*(s64 *)&ActivePlayer.unkC0)++;
+        if (ActivePlayer.unk9D == 0 || ActivePlayer.unk9D == 4) {
+            if (ProperTimingForStart()) {
+                if (ActivePlayer.audioExist) {
+                    diff = *(s32 *)&ActivePlayer.unkD4[0x0] - *(s32 *)&ActivePlayer.unkD4[0x4];
+                    if (diff <= 1) {
+                        textureSet = PopDecodedTextureSet(0);
+                        if (ActivePlayer.videoDecodeCount > diff) {
+                            ActivePlayer.videoDecodeCount--;
+                        }
+                    } else {
+                        ActivePlayer.unk9D = 2;
+                    }
+                } else {
+                    textureSet = PopDecodedTextureSet(0);
+                    ActivePlayer.unk9D = 2;
+                }
+            } else {
+                *(s64 *)&ActivePlayer.unkC0 = -1;
+            }
+        } else if (ProperTimingForGettingNextFrame()) {
+            if (ActivePlayer.audioExist) {
+                diff = *(s32 *)&ActivePlayer.unkD4[0x0] - *(s32 *)&ActivePlayer.unkD4[0x4];
+                if (diff <= 1) {
+                    textureSet = PopDecodedTextureSet(0);
+                    if (ActivePlayer.videoDecodeCount > diff) {
+                        ActivePlayer.videoDecodeCount--;
+                    }
+                }
+            } else {
+                textureSet = PopDecodedTextureSet(0);
+            }
+        }
+        if (textureSet && textureSet != (THPTextureSet *)-1) {
+            *(s32 *)&ActivePlayer.unkD4[0x0] = textureSet->frameNumber;
+            if (*(THPTextureSet **)&ActivePlayer.unkD4[0x8]) {
+                PushUsedTextureSet(*(THPTextureSet **)&ActivePlayer.unkD4[0x8]);
+            }
+            *(THPTextureSet **)&ActivePlayer.unkD4[0x8] = textureSet;
+        }
+        if (!(ActivePlayer.playFlag & 1)) {
+            if (ActivePlayer.audioExist) {
+                frameNumber = (*(s32 *)&ActivePlayer.unkD4[0x4] + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+                if (frameNumber == ActivePlayer.numFrames - 1 && *(void **)&ActivePlayer.unkD4[0xC] == NULL) {
+                    frameNumber = (*(s32 *)&ActivePlayer.unkD4[0x0] + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+                    if (frameNumber == ActivePlayer.numFrames - 1 && textureSet == NULL) {
+                        ActivePlayer.state = ActivePlayer.unk9D = 3;
+                    }
+                }
+            } else {
+                frameNumber = (*(s32 *)&ActivePlayer.unkD4[0x0] + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+                if (frameNumber == ActivePlayer.numFrames - 1 && textureSet == NULL) {
+                    ActivePlayer.state = ActivePlayer.unk9D = 3;
+                }
+            }
+        }
     }
 }
 
