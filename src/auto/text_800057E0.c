@@ -2568,8 +2568,7 @@ static inline void AI_Car_SteerAlongPath(u8 *ai, u32 i) {
 
     p0 = ((Vector4 **)(ai + 0x420))[i];
     myPos = *(u8 **)(ai + 0x2C) + 0x40;
-    p1 = i + 1 < 32 ? ((Vector4 **)(ai + 0x420))[i + 1] : NULL;
-    if (p1 == NULL) {
+    if (i + 1 >= 32 || (p1 = ((Vector4 **)(ai + 0x420))[i + 1]) == NULL) {
         PSVECSubtract(myPos, p0, ai + 0x400);
         PSVECScale(ai + 0x400, ai + 0x400, 0.5f);
         PSVECAdd(ai + 0x400, p0, ai + 0x400);
