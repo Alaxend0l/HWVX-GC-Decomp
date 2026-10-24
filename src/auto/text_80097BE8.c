@@ -12935,6 +12935,7 @@ void __THPPrepBitStream(void) {
 
 s32 __THPAudioGetNewSample(u32 *info);
 void __THPAudioInitialize(void *arg0, u8 *arg1);
+#pragma use_lmw_stmw on
 u32 THPAudioDecode(s16 *buffer, u8 *audioFrame, s32 flag) {
     typedef struct THPAudioRecordHeader {
         u32 offsetNextChannel;
