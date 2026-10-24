@@ -2314,18 +2314,16 @@ u32 __fwrite(const void *ptr, u32 memb_size, u32 num_memb, FILE *file) {
         __stdio_atexit();
     }
 
-    always_buffer = !file->mode.binary_io || file->mode.buffer_mode == 2 || file->mode.buffer_mode == 1;
+    always_buffer = ((!file->mode.binary_io || file->mode.buffer_mode == 2) ? 1 : 0) || file->mode.buffer_mode == 1;
 
-    if (file->state.io_state == 0) {
-        if (file->mode.io_mode & 2) {
-            if (file->mode.io_mode & 4) {
-                if (fseek(file, 0, 2)) {
-                    return 0;
-                }
+    if (file->state.io_state == 0 && (file->mode.io_mode & 2)) {
+        if (file->mode.io_mode & 4) {
+            if (fseek(file, 0, 2)) {
+                return 0;
             }
-            file->state.io_state = 1;
-            __prep_buffer(file);
         }
+        file->state.io_state = 1;
+        __prep_buffer(file);
     }
 
     if (file->state.io_state != 1) {
