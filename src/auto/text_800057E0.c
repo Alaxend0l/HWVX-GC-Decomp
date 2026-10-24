@@ -18371,6 +18371,7 @@ void ShowStats(void) {
 
 }
 
+#pragma opt_propagation off
 void Render_TimeBars(u32 *times) {
     typedef struct {
         f32 x;
