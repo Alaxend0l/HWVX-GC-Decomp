@@ -24244,6 +24244,107 @@ void __DVDInitWA(void) {
     __DVDLowSetWAType(0, 0);
     OSInitAlarm();
 }
+
+void __DVDInterruptHandler(s16 interrupt, void *context) {
+    extern s32 CommandList_802EF860[][5];
+    extern s32 NextCommandNumber_803C72EC;
+    extern void (*Callback_803C72B0)(u32);
+    extern void (*ResetCoverCallback_803C72B4)(u32);
+    extern s32 LastCommandWasRead_803C72E8;
+    extern s64 LastReadFinished_803C72D8;
+    extern s64 LastResetEnd_803C72B8;
+    extern s32 FirstRead_803C6D98;
+    extern s32 StopAtNextInt_803C72A8;
+    extern u32 ResetOccurred_803C72C0;
+    extern s32 WaitingCoverClose_803C72C4;
+    extern s32 Breaking_803C72C8;
+    s64 __OSGetSystemTime(void);
+    void OSCancelAlarm(void *alarm);
+    void OSSetCurrentContext(void *context);
+    u8 exceptionContext[0x2C8];
+    u32 cause = 0;
+    u32 reg;
+    u32 intr;
+    u32 mask;
+    void (*callback)(u32);
+
+    OSCancelAlarm(&CommandList_802EF860[5][1]);
+    if (LastCommandWasRead_803C72E8) {
+        LastReadFinished_803C72D8 = __OSGetSystemTime();
+        FirstRead_803C6D98 = 0;
+        CommandList_802EF860[9][1] = CommandList_802EF860[9][4];
+        CommandList_802EF860[9][2] = CommandList_802EF860[10][0];
+        CommandList_802EF860[9][3] = CommandList_802EF860[10][1];
+        if (StopAtNextInt_803C72A8 == 1) {
+            cause |= 8;
+        }
+    }
+    LastCommandWasRead_803C72E8 = 0;
+    StopAtNextInt_803C72A8 = 0;
+    reg = ((volatile u32 *)0xCC006000)[0];
+    mask = reg & 0x2A;
+    intr = (reg & 0x54) & (mask << 1);
+    if (intr & 0x40) {
+        cause |= 8;
+    }
+    if (intr & 0x10) {
+        cause |= 1;
+    }
+    if (intr & 4) {
+        cause |= 2;
+    }
+    if (cause) {
+        ResetOccurred_803C72C0 = 0;
+    }
+    ((volatile u32 *)0xCC006000)[0] = intr | mask;
+    if (ResetOccurred_803C72C0 && (__OSGetSystemTime() - LastResetEnd_803C72B8) < (s64)((*(u32 *)0x800000F8 / 4) / 1000 * 200)) {
+        reg = ((volatile u32 *)0xCC006000)[1];
+        mask = reg & 2;
+        intr = (reg & 4) & (mask << 1);
+        if (intr & 4) {
+            if (ResetCoverCallback_803C72B4) {
+                ResetCoverCallback_803C72B4(4);
+            }
+            ResetCoverCallback_803C72B4 = NULL;
+        }
+        ((volatile u32 *)0xCC006000)[1] = ((volatile u32 *)0xCC006000)[1];
+    } else if (WaitingCoverClose_803C72C4) {
+        reg = ((volatile u32 *)0xCC006000)[1];
+        mask = reg & 2;
+        intr = (reg & 4) & (mask << 1);
+        if (intr & 4) {
+            cause |= 4;
+        }
+        ((volatile u32 *)0xCC006000)[1] = intr | mask;
+        WaitingCoverClose_803C72C4 = 0;
+    } else {
+        ((volatile u32 *)0xCC006000)[1] = 0;
+    }
+    if ((cause & 8) && !Breaking_803C72C8) {
+        cause &= ~8;
+    }
+    if (cause & 1) {
+        if (ProcessNextCommand()) {
+            return;
+        }
+    } else {
+        CommandList_802EF860[0][0] = -1;
+        NextCommandNumber_803C72EC = 0;
+    }
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(exceptionContext);
+    if (cause) {
+        callback = Callback_803C72B0;
+        Callback_803C72B0 = NULL;
+        if (callback) {
+            callback(cause);
+        }
+        Breaking_803C72C8 = 0;
+    }
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(context);
+}
+
 #pragma pop
 
 void AlarmHandler(void *alarm, void *context) {
@@ -25003,6 +25104,120 @@ void __DVDFSInit(void) {
     if (FstStart_803C72F4) {
         MaxEntryNum_803C72FC = FstStart_803C72F4[2];
         FstStringStart_803C72F8 = (char *)FstStart_803C72F4 + MaxEntryNum_803C72FC * 12;
+    }
+}
+
+s32 DVDConvertPathToEntrynum(const char *pathPtr) {
+    typedef struct FSTEntry {
+        u32 isDirAndStringOff;
+        u32 parentOrPosition;
+        u32 nextEntryOrLength;
+    } FSTEntry;
+    extern FSTEntry *FstStart_803C72F4;
+    extern char *FstStringStart_803C72F8;
+    extern u32 currentDirectory_803C7300;
+    extern u32 __DVDLongFileNameFlag;
+    void OSPanic(const char *file, s32 line, const char *msg, ...);
+    s32 tolower(s32 c);
+    const char *ptr;
+    char *stringPtr;
+    BOOL isDir;
+    u32 length;
+    u32 dirLookAt;
+    u32 i;
+    const char *origPathPtr = pathPtr;
+    const char *extentionStart;
+    BOOL illegal;
+    BOOL extention;
+    const char *a;
+    const char *b;
+    BOOL same;
+
+    dirLookAt = currentDirectory_803C7300;
+    while (1) {
+        if (*pathPtr == '\0') {
+            return dirLookAt;
+        } else if (*pathPtr == '/') {
+            dirLookAt = 0;
+            pathPtr++;
+            continue;
+        } else if (*pathPtr == '.') {
+            if (*(pathPtr + 1) == '.') {
+                if (*(pathPtr + 2) == '/') {
+                    dirLookAt = FstStart_803C72F4[dirLookAt].parentOrPosition;
+                    pathPtr += 3;
+                    continue;
+                } else if (*(pathPtr + 2) == '\0') {
+                    return FstStart_803C72F4[dirLookAt].parentOrPosition;
+                }
+            } else if (*(pathPtr + 1) == '/') {
+                pathPtr += 2;
+                continue;
+            } else if (*(pathPtr + 1) == '\0') {
+                return dirLookAt;
+            }
+        }
+        if (__DVDLongFileNameFlag == 0) {
+            extention = FALSE;
+            illegal = FALSE;
+            for (ptr = pathPtr; (*ptr != '\0') && (*ptr != '/'); ptr++) {
+                if (*ptr == '.') {
+                    if ((ptr - pathPtr > 8) || (extention == TRUE)) {
+                        illegal = TRUE;
+                        break;
+                    }
+                    extention = TRUE;
+                    extentionStart = ptr + 1;
+                } else if (*ptr == ' ') {
+                    illegal = TRUE;
+                }
+            }
+            if ((extention == TRUE) && (ptr - extentionStart > 3)) {
+                illegal = TRUE;
+            }
+            if (illegal) {
+                OSPanic("dvdfs.c", 376, "DVDConvertEntrynumToPath(possibly DVDOpen or DVDChangeDir or DVDOpenDir): specified directory or file (%s) doesn't match standard 8.3 format. This is a temporary restriction and will be removed soon\n", origPathPtr);
+            }
+        } else {
+            for (ptr = pathPtr; (*ptr != '\0') && (*ptr != '/'); ptr++) {
+            }
+        }
+        if (*ptr == '\0') {
+            isDir = FALSE;
+        } else {
+            isDir = TRUE;
+        }
+        length = (u32)(ptr - pathPtr);
+        ptr = pathPtr;
+        for (i = dirLookAt + 1; i < FstStart_803C72F4[dirLookAt].nextEntryOrLength;
+             i = (FstStart_803C72F4[i].isDirAndStringOff & 0xFF000000) ? FstStart_803C72F4[i].nextEntryOrLength : i + 1) {
+            if (!(FstStart_803C72F4[i].isDirAndStringOff & 0xFF000000) && isDir == TRUE) {
+                continue;
+            }
+            stringPtr = FstStringStart_803C72F8 + (FstStart_803C72F4[i].isDirAndStringOff & 0xFFFFFF);
+            a = ptr;
+            b = stringPtr;
+            while (1) {
+                if (*b == '\0') {
+                    same = (*a == '/' || *a == '\0');
+                    break;
+                }
+                if (tolower(*b++) != tolower(*a++)) {
+                    same = FALSE;
+                    break;
+                }
+            }
+            if (same == TRUE) {
+                if (isDir == FALSE) {
+                    return i;
+                }
+                dirLookAt = i;
+                pathPtr += length + 1;
+                goto next;
+            }
+        }
+        return -1;
+    next:;
     }
 }
 
@@ -36243,6 +36458,85 @@ s32 TRKDoContinue(TRKBuffer *b) {
     } while (err != 0 && ackTries > 0);
     if (err == 0) {
         err = TRKTargetContinue();
+    }
+    return err;
+}
+
+s32 TRKDoFlushCache(TRKBuffer *b) {
+    s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data);
+    s32 TRKTargetFlushCache(u8 option, u32 start, u32 end);
+    u32 start;
+    u32 end;
+    u8 option;
+    u8 cacheType;
+    s32 err;
+    s32 ackTries;
+    u8 replyError;
+
+    if (b->length != 10) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 2);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return err;
+    }
+    TRKSetBufferPosition(b, 0);
+    err = TRKReadBuffer1_ui8(b, &option);
+    if (err == 0) {
+        err = TRKReadBuffer1_ui8(b, &cacheType);
+    }
+    if (err == 0) {
+        err = TRKReadBuffer1_ui32(b, &start);
+    }
+    if (err == 0) {
+        err = TRKReadBuffer1_ui32(b, &end);
+    }
+    if (start > end) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 0x13);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return err;
+    }
+    if (err == 0) {
+        err = TRKTargetFlushCache(cacheType, start, end);
+    }
+    if (err == 0) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 0);
+    }
+    if (err != 0) {
+        switch (err) {
+        case 0x703:
+            replyError = 0x12;
+            break;
+        default:
+            replyError = 3;
+            break;
+        }
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, replyError);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+    } else {
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
     }
     return err;
 }
