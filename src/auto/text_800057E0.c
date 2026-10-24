@@ -23223,6 +23223,7 @@ OSSramEx *__OSLockSramEx(void) {
     return LockSram(0x14);
 }
 
+#pragma use_lmw_stmw on
 s32 UnlockSram(s32 commit, u32 offset) {
     s32 EXILock(s32 chan, u32 dev, void *unlockedCallback);
     s32 EXIUnlock(s32 chan);
