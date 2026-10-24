@@ -10962,11 +10962,6 @@ static void InterfaceManager_ReleaseInterfaceObjects(u8 *objs) {
 }
 
 void InterfaceManager_ReleaseInterface(u32 index) {
-    typedef struct ObjectAllocation {
-        u32 start;
-        u32 count;
-        s8 free;
-    } ObjectAllocation;
     typedef struct {
         u32 index;
         u16 type;
@@ -10992,13 +10987,9 @@ void InterfaceManager_ReleaseInterface(u32 index) {
         u32 values[(0x170 - 0x98) / 4];
     } Interface;
     extern Interface g_interface[];
-    extern ObjectAllocation g_objectAllocations[28];
-    extern u32 g_numInterfaceObjectAllocations;
-    extern u32 g_numInterfaceObjectsAllocated;
     extern s8 g_bUnloadMusicPack;
     extern char *g_curMusicPackName;
     extern s32 g_curMusicPackID;
-    void *memset(void *dst, int c, u32 n);
     void InterfaceManager_RemoveInterfaceFromRender(u32 id);
     void InterfaceManager_RestoreMissionObjString(u8 *mgr);
     void InterfaceHasEnded(u32 handle);
@@ -11009,13 +11000,11 @@ void InterfaceManager_ReleaseInterface(u32 index) {
     s32 FileStreaming_GetPackID(char *name, s32 type, s32 id);
     void SongManager_StopBKSong(void);
     u32 i;
-    s32 j;
-    u8 *objs;
     u8 *entry;
     u8 *slot;
     Interface *iface;
 
-    if (index >= 0x12 || (iface = g_interface + index)->count == 0) {
+    if (index >= 0x12 || (iface = &g_interface[index])->count == 0) {
         return;
     }
     InterfaceManager_RemoveInterfaceFromRender(index);
@@ -11066,30 +11055,7 @@ void InterfaceManager_ReleaseInterface(u32 index) {
     }
     Trigger_InterfaceEnd(iface->header);
     InterfaceHasEnded(index);
-    objs = g_interface[index].slots;
-    if (objs != NULL) {
-        for (j = g_numInterfaceObjectAllocations - 1; j >= 0; j--) {
-            if (*(u32 *)(objs + 0x2FC) == g_objectAllocations[j].start) {
-                break;
-            }
-        }
-        if (j != -1) {
-            if (g_numInterfaceObjectsAllocated == g_objectAllocations[j].start + g_objectAllocations[j].count) {
-                g_numInterfaceObjectsAllocated -= g_objectAllocations[j].count;
-                g_numInterfaceObjectAllocations--;
-                while (g_numInterfaceObjectAllocations != 0 &&
-                       (g_objectAllocations[g_numInterfaceObjectAllocations - 1].free ||
-                        g_objectAllocations[g_numInterfaceObjectAllocations - 1].count == 0)) {
-                    g_numInterfaceObjectsAllocated -= g_objectAllocations[g_numInterfaceObjectAllocations - 1].count;
-                    memset(&g_objectAllocations[g_numInterfaceObjectAllocations - 1], 0, sizeof(ObjectAllocation));
-                    g_numInterfaceObjectAllocations--;
-                }
-            } else {
-                g_objectAllocations[j].free = 1;
-            }
-            *(u32 *)(objs + 0x2FC) = -1;
-        }
-    }
+    InterfaceManager_ReleaseInterfaceObjects(g_interface[index].slots);
     iface->count = 0;
 }
 
