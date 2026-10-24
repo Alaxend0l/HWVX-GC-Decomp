@@ -13617,6 +13617,7 @@ void DestroyIT(void) {
     }
 }
 
+#pragma use_lmw_stmw on
 s32 SetITState(s32 state) {
     typedef struct ITTrk {
         u8 *voice;
