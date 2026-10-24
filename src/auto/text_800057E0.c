@@ -8729,6 +8729,98 @@ done:
 
 #pragma push
 #pragma readonly_strings on
+u8 GameSettings_SaveGeneralGameData(void) {
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    s8 File_Write(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    u32 FileManager_GetChecksum(u32 size, void *data);
+    void *memcpy(void *dst, const void *src, u32 n);
+    void *memset(void *, s32, u32);
+    extern u8 *g_pSavedGameData;
+    extern struct {
+        u8 unk0[0xC];
+        char *fileName;
+        u8 unk10[0x4];
+        u32 version;
+        u32 size;
+    } g_gameInfo[];
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u32 version;
+    u32 size;
+    s32 device;
+    s32 status;
+    s32 handle;
+    s8 ok;
+    u8 *data;
+    u8 *mcp;
+    void *pack;
+    const char *name;
+
+    status = GameSettings_GetDefaultMemoryCardStatus(&device, 1);
+    if (status != 1 && status != 0) {
+        return 0;
+    }
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        name = g_gameInfo[mcp[1]].fileName;
+        version = g_gameInfo[mcp[1]].version;
+        size = g_gameInfo[mcp[1]].size;
+    } else {
+        version = 0;
+        name = "saveFile";
+        size = version;
+    }
+    data = g_pSavedGameData;
+    ok = 0;
+    if ((handle = File_Open((char *)(device + 0xA), name, 0, NULL)) != -1) {
+        File_Read(handle, size * 8 + 0x15C, data);
+        if (((u32 *)data)[0] == 4 && ((u32 *)data)[1] == version &&
+            ((u32 *)data)[2] == FileManager_GetChecksum(version, data + 0xC)) {
+            ok = 1;
+        }
+        File_Close(handle);
+    }
+    if (!ok) {
+        memset(data + 0x5C, 0, 0x100);
+    }
+    memcpy((u8 *)&g_generalGameSettings + 0x50, data + 0x5C, 0x100);
+    memcpy(data + 0xC, &g_generalGameSettings, 0x150);
+    data = g_pSavedGameData;
+    ok = 0;
+    if ((handle = File_Open((char *)(device + 0xA), name, 5, NULL)) != -1) {
+        ((u32 *)data)[0] = 4;
+        ((u32 *)data)[1] = version;
+        ((u32 *)data)[2] = FileManager_GetChecksum(version, data + 0xC);
+        if (File_Write(handle, size * 8 + 0x15C, data)) {
+            ok = 1;
+        }
+        File_Close(handle);
+    }
+    if (ok) {
+        g_codeVariables.unk11C[0] = 1;
+    } else {
+        g_codeVariables.unk11C[0] = 0;
+    }
+    return g_codeVariables.unk11C[0];
+}
+#pragma pop
+
+#pragma push
+#pragma readonly_strings on
 #pragma use_lmw_stmw on
 u8 GameSettings_LoadGame(void) {
     void *FileStreaming_InitializeDataPack(void *, s32, s32);
