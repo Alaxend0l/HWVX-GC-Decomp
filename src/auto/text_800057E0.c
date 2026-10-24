@@ -10330,6 +10330,162 @@ s32 DataPack_LoadFile(char *name, s32 arg1, u32 type, u32 id) {
     DataPack_LoadDataPack(g_fileID, arg1);
     return 1;
 }
+
+#pragma readonly_strings on
+void DataPack_LoadDataPack(s32 file, DataPack *pack) {
+    extern s8 g_bSoundLoadingEnabled;
+    void *memset(void *dst, s32 c, u32 n);
+    void *memcpy(void *dst, const void *src, u32 n);
+    int sprintf(char *buf, const char *fmt, ...);
+    void Dprintf(const char *fmt, ...);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void UpdatePointers(u32 *offsets, u32 count, u8 *base);
+    void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
+    void Deallocate(void *p);
+    void SongManager_LoadSong(void *song, void *bank);
+    u16 CreateSFX(void *sfx);
+    static DataPackFileHeader header;
+    char msg[0x68];
+    u32 relocSize;
+    s8 freeData;
+    u32 soundIDsSize;
+    u8 *alloc;
+    u32 i;
+    u32 readSize;
+    u32 size;
+    u32 pad;
+    u8 *data;
+    u8 *sfx;
+    u32 offset;
+    u32 *reloc;
+    u32 *pointers;
+    u32 packID;
+    u32 idx;
+
+    memset(pack, 0, sizeof(DataPack));
+    File_Read(file, sizeof(DataPackFileHeader), &header);
+    pack->numRelocs = header.numRelocs;
+    pack->numSoundRelocs = header.numSoundRelocs;
+    pack->numTextures = header.numTextures;
+    pack->numSounds = header.numSounds;
+    pack->palettes = (void *)header.palettes;
+    pack->numShaders = header.numShaders;
+    pack->numGX = header.numGX;
+    pack->numTriggers = header.numTriggers;
+    pack->songLoaded = 0;
+    pack->dataSize = header.dataSize;
+    memcpy(pack->refs, header.refs, sizeof(header.refs));
+    size = header.numRelocs * 8 + (((s32)pack->numSounds + (s32)pack->numTextures) * 2 + pack->numShaders * 2 + header.numGX * 8 + header.numSoundRelocs * 8 + header.dataSize + 0x60) + (relocSize = header.numTexRelocs * 8 + header.numPointers * 4);
+    alloc = Allocate(size, 0, "");
+    if (alloc == NULL) {
+        return;
+    }
+    pack->soundIDs = (u16 *)alloc;
+    soundIDsSize = pack->numSounds * 2;
+    if (header.soundDataSize != 0) {
+        freeData = 0;
+        pad = (header.numSoundPointers * 4) & 0x1F;
+        readSize = header.numSoundPointers * 4;
+        readSize += pad == 0 ? 0 : 0x20 - pad;
+        readSize += header.soundDataSize;
+        if (readSize + 0x60 <= size - soundIDsSize) {
+            pack->soundData = alloc + soundIDsSize;
+        } else {
+            pack->soundData = Allocate(readSize + 0x60, 0, "");
+            freeData = 1;
+        }
+        sfx = (u8 *)(((u32)pack->soundData + 0x3F) & ~0x3F);
+        File_Read(file, readSize, sfx);
+        data = sfx;
+        sfx += header.numSoundPointers * 4;
+        pack->soundBase = (u8 *)(((u32)sfx + 0x1F) & ~0x1F);
+        UpdatePointers((u32 *)data, header.numSoundPointers, pack->soundBase);
+        pack->sfxData = (u8 *)(header.sfxOffset + (u32)pack->soundBase);
+        if (header.songOffset != 0 || (header.soundDataSize != 0 && header.numSoundRelocs == 0)) {
+            pack->song = (void *)(header.songOffset + (u32)pack->soundBase);
+        }
+        if (header.songBankOffset != 0) {
+            pack->songBank = (void *)(header.songBankOffset + (u32)pack->soundBase);
+        }
+        pack->soundDataSize = header.soundDataSize;
+        if (pack->song != NULL && pack->songBank != NULL && g_bSoundLoadingEnabled) {
+            SongManager_LoadSong(pack->song, pack->songBank);
+            pack->songLoaded = 1;
+        }
+        sfx = pack->sfxData;
+        for (i = 0; i < pack->numSounds; i++) {
+            if (g_bSoundLoadingEnabled) {
+                pack->soundIDs[i] = CreateSFX(sfx);
+            } else {
+                pack->soundIDs[i] = 0;
+            }
+            if (pack->soundIDs[i] == 0 && g_bSoundLoadingEnabled) {
+                sprintf(msg, "Could not load the SFX, out of sound space.  SFX size = %d\n", *(u32 *)(sfx + 4));
+                Dprintf(msg);
+            }
+            sfx += 0x20;
+        }
+        if (freeData) {
+            Deallocate(pack->soundData);
+            pack->soundData = NULL;
+            pack->soundBase = NULL;
+            pack->sfxData = NULL;
+            pack->song = NULL;
+            pack->songBank = NULL;
+        }
+        pack->soundData = NULL;
+        pack->soundBase = NULL;
+        pack->sfxData = NULL;
+        pack->song = NULL;
+        pack->songBank = NULL;
+    }
+    pack->textureIDs = (u16 *)(alloc + soundIDsSize);
+    offset = soundIDsSize + pack->numTextures * 2;
+    pack->shaderIDs = (u16 *)(alloc + offset);
+    readSize = header.numRelocs * 8 + header.numGX * 8 + header.numSoundRelocs * 8;
+    pad = readSize & 0x1F;
+    pad = pad == 0 ? 0 : 0x20 - pad;
+    offset += pack->numShaders * 2;
+    data = alloc + offset;
+    data = (u8 *)(((u32)data + 0x3F) & ~0x3F);
+    readSize += pad;
+    readSize += header.dataSize;
+    readSize += relocSize;
+    File_Read(file, readSize, data);
+    pack->relocs = (u32 *)data;
+    offset = header.numRelocs * 8;
+    pack->gxList = (u32 *)(data + offset);
+    offset += header.numGX * 8;
+    pack->soundRelocs = (u32 *)(data + offset);
+    offset += header.numSoundRelocs * 8;
+    pack->base = data + offset;
+    pack->base = (u8 *)(((u32)pack->base + 0x1F) & ~0x1F);
+    offset = header.dataSize + offset;
+    offset = pad + offset;
+    reloc = (u32 *)(data + offset);
+    pointers = reloc + header.numTexRelocs * 2;
+    for (i = 0; i < header.numTexRelocs; i++) {
+        packID = reloc[1] & 0xFFFF0000;
+        if (packID != 0) {
+            packID >>= 16;
+            idx = pack->refs[0].id != packID;
+            if (pack->refs[idx].pack == NULL) {
+                pack->refs[idx].pack = FileStreaming_InitializeDataPack(FileStreaming_LoadDataPack(&pack->refs[idx], 8, packID, 0), 8, 1);
+            }
+            *(u32 *)(pack->base + reloc[0]) = ((u32 *)pack->refs[idx].pack->base)[reloc[1] & 0xFFFF];
+        } else {
+            *(u32 *)(pack->base + reloc[0]) += (u32)pack->base;
+        }
+        reloc += 2;
+    }
+    UpdatePointers(pointers, header.numPointers, pack->base);
+    pack->paletteData = (void *)(header.paletteOffset + (u32)pack->base);
+    pack->shaders = (DataPackShader *)(header.shaderOffset + (u32)pack->base);
+    pack->textureData = header.textureDataOffset + (u32)pack->base;
+    pack->triggers = (u8 *)(header.triggerOffset + (u32)pack->base);
+}
+#pragma readonly_strings reset
+
 #pragma readonly_strings reset
 
 void DataPack_LoadQuadPack(s32 file, QuadPack *quad, u32 worldID) {
@@ -19767,6 +19923,19 @@ void Mover_GetTrackPos(void *mover, f32 *pos, f32 time) {
     pos[2] = keyFrame[6];
 }
 
+static inline void PhysicalObject_UpdateSpin(u8 *obj) {
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    Vector4 scaled;
+    Vector4 local;
+
+    InverseXformVecOrientation(obj + 0x10, (Vector4 *)(obj + 0x110), &local);
+    scaled.x = ((Vector4 *)(obj + 0x120))->x * local.x;
+    scaled.y = ((Vector4 *)(obj + 0x120))->y * local.y;
+    scaled.z = ((Vector4 *)(obj + 0x120))->z * local.z;
+    XformVecOrientation(obj + 0x10, &scaled, (Vector4 *)(obj + 0x130));
+}
+
 void PhysicalObject_ProcessForce(u8 *obj, Vector4 *pos, Vector4 *force, f32 scale) {
     void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
@@ -20184,6 +20353,136 @@ void Mover_DynamicRotation(u8 *mover) {
         ((Thing *)mover)->quat = quat;
         ((Thing *)mover)->mtx = mtx;
     }
+}
+
+void PhysicalObject_DynamicCollideImpact(u8 *obj, u8 *collision, f32 force) {
+    extern Vector4 g_zeroVector;
+    void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(void *v);
+    f32 Sqrt(f32 x);
+    f32 _fabs(f32 x);
+    void Create_Plane(Vector4 *plane, Vector4 *normal, Vector4 *point);
+    f32 Distance_Plane(void *plane, void *point);
+    void ProjectVectorToNormal(void *n, void *v);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    void Destructible_Release(u8 *destructible);
+    struct { Vector4 pos; Vector4 vel; Vector4 spin; Vector4 quat; void *info; u32 unk44; u32 unk48; u32 unk4C; u32 unk50; } params;
+    Quaternion normal;
+    Quaternion pos;
+    Vector4 f;
+    Vector4 torque;
+    Vector4 r;
+    Vector4 localB;
+    Vector4 scaledB;
+    Vector4 scaled1;
+    Vector4 local1;
+    Vector4 scaled2;
+    Vector4 local2;
+    f32 scale;
+    f32 mag;
+    u8 *other;
+
+    normal = *(Quaternion *)(collision + 0x10);
+    pos = *(Quaternion *)collision;
+    scale = force / *(f32 *)(*(u8 **)(*(u8 **)(obj + 0xC0) + 0x10) + 0x20);
+    if (*(u32 *)(obj + 0x74) & 0x200000) {
+        return;
+    }
+    if ((*(u32 *)(obj + 0x74) & 0x100000) && normal.y > 0.9f && _fabs(scale) < 2.0f &&
+        ((other = *(u8 **)(collision + 0x24)) == NULL || (*(u32 *)(other + 0x74) & 8))) {
+        Vector4 center = {0.0f, 0.0f, 0.0f, 0.0f};
+        Vector4 plane;
+        u32 i;
+        u8 *info;
+        u8 *hull;
+        f32 weight;
+        f32 d;
+        f32 w;
+
+        weight = 0.0f;
+        Create_Plane(&plane, (Vector4 *)&normal, (Vector4 *)collision);
+        info = *(u8 **)(*(u8 **)(obj + 0xC0) + 0x10);
+        switch (info[0x10]) {
+        case 0:
+            for (i = 0; i < 8; i++) {
+                d = Distance_Plane(&plane, *(u8 **)(obj + 0xD0) + i * 0x10 + 0x10);
+                if (d < 0.15f) {
+                    w = (0.15f - d) / 0.15f;
+                    center.x += ((Vector4 *)(*(u8 **)(obj + 0xD0) + i * 0x10 + 0x10))->x * w;
+                    center.y += ((Vector4 *)(*(u8 **)(obj + 0xD0) + i * 0x10 + 0x10))->y * w;
+                    center.z += ((Vector4 *)(*(u8 **)(obj + 0xD0) + i * 0x10 + 0x10))->z * w;
+                    weight += w;
+                }
+            }
+            break;
+        case 1:
+        case 6:
+            hull = *(u8 **)(info + 0x48);
+            for (i = 0; i < *(u32 *)(hull + 0xC); i++) {
+                d = Distance_Plane(&plane, *(u8 **)(obj + 0xCC) + i * 0x10);
+                if (d < 0.15f) {
+                    w = (0.15f - d) / 0.15f;
+                    center.x += w * ((Vector4 *)(*(u8 **)(obj + 0xCC) + i * 0x10))->x;
+                    center.y += w * ((Vector4 *)(*(u8 **)(obj + 0xCC) + i * 0x10))->y;
+                    center.z += w * ((Vector4 *)(*(u8 **)(obj + 0xCC) + i * 0x10))->z;
+                    weight += w;
+                }
+            }
+            break;
+        }
+        if (weight >= 3.0f) {
+            ProjectVectorToNormal(collision + 0x10, obj + 0x110);
+            InverseXformVecOrientation(obj + 0x10, (Vector4 *)(obj + 0x110), &local1);
+            scaled1.x = ((Vector4 *)(obj + 0x120))->x * local1.x;
+            scaled1.y = ((Vector4 *)(obj + 0x120))->y * local1.y;
+            scaled1.z = ((Vector4 *)(obj + 0x120))->z * local1.z;
+            XformVecOrientation(obj + 0x10, &scaled1, (Vector4 *)(obj + 0x130));
+            if (PSVECSquareMag(obj + 0x130) < 1.0f && PSVECSquareMag(obj) < 25.0f) {
+                params.pos = *(Vector4 *)(obj + 0x40);
+                params.unk50 = 0;
+                params.unk4C = 0;
+                params.vel = g_zeroVector;
+                params.info = *(void **)(obj + 0xC0);
+                params.quat = *(Vector4 *)(obj + 0x50);
+                params.spin = *(Vector4 *)(obj + 0x130);
+                ThingManager_DARYL_CreateThing(3, &params);
+                Destructible_Release(obj);
+            }
+        }
+    }
+    ((Vector4 *)obj)->x += normal.x * scale;
+    ((Vector4 *)obj)->y += normal.y * scale;
+    ((Vector4 *)obj)->z += normal.z * scale;
+    PSVECSubtract((Vector4 *)&pos, (Vector4 *)(obj + 0x40), &r);
+    PSVECScale((Vector4 *)&normal, &f, force);
+    PSVECCrossProduct(&r, &f, &torque);
+    ((Vector4 *)(obj + 0x110))->x += torque.x;
+    ((Vector4 *)(obj + 0x110))->y += torque.y;
+    ((Vector4 *)(obj + 0x110))->z += torque.z;
+    InverseXformVecOrientation(obj + 0x10, (Vector4 *)(obj + 0x110), &localB);
+    scaledB.x = ((Vector4 *)(obj + 0x120))->x * localB.x;
+    scaledB.y = ((Vector4 *)(obj + 0x120))->y * localB.y;
+    scaledB.z = ((Vector4 *)(obj + 0x120))->z * localB.z;
+    mag = PSVECSquareMag(&scaledB);
+    if (mag > 10000.0f) {
+        mag = 100.0f / Sqrt(mag);
+        scaledB.x *= mag;
+        scaledB.y *= mag;
+        scaledB.z *= mag;
+        localB.x = scaledB.x / ((Vector4 *)(obj + 0x120))->x;
+        localB.y = scaledB.y / ((Vector4 *)(obj + 0x120))->y;
+        localB.z = scaledB.z / ((Vector4 *)(obj + 0x120))->z;
+        XformVecOrientation(obj + 0x10, &localB, (Vector4 *)(obj + 0x110));
+    }
+    InverseXformVecOrientation(obj + 0x10, (Vector4 *)(obj + 0x110), &local2);
+    scaled2.x = ((Vector4 *)(obj + 0x120))->x * local2.x;
+    scaled2.y = ((Vector4 *)(obj + 0x120))->y * local2.y;
+    scaled2.z = ((Vector4 *)(obj + 0x120))->z * local2.z;
+    XformVecOrientation(obj + 0x10, &scaled2, (Vector4 *)(obj + 0x130));
 }
 
 void PhysicalObject_GetInverseLocalInertiaTensor(void *obj, Quaternion *out) {
