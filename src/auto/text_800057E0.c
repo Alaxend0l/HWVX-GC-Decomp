@@ -19678,34 +19678,25 @@ void PlayerManager_Release(void) {
 }
 
 void PlayerManager_Init(void) {
-    typedef struct Player {
-        u8 unk0[0x20];
-        void (*controlReader)();
-        void (*init)();
-        void (*heartbeat)();
-        u8 unk2C[0xB0 - 0x2C];
-        struct Player *next;
-        struct Player *prev;
-    } Player;
     typedef struct {
-        Player base;
+        PlayerLink base;
         u8 unkB8[0x158 - 0xB8];
     } HumanPlayer;
     typedef struct {
-        Player base;
+        PlayerLink base;
         u8 unkB8[0x670 - 0xB8];
     } CarPlayer;
     typedef struct {
-        Player base;
+        PlayerLink base;
         u8 unkB8[0x100 - 0xB8];
     } CreaturePlayer;
     typedef struct {
         HumanPlayer humans[4];
         CarPlayer cars[4];
         CreaturePlayer creature;
-        Player null;
-        Player *active;
-        Player *free;
+        PlayerLink null;
+        PlayerLink *active;
+        PlayerLink *free;
     } PlayerMgr;
     extern PlayerMgr g_playerManager;
     extern s32 g_aiHoldIndex;
@@ -19723,7 +19714,7 @@ void PlayerManager_Init(void) {
     void ForceFeedback_Init(void);
     void Player_ReleaseInterface(void *player);
     PlayerMgr *pm = &g_playerManager;
-    Player *player;
+    PlayerLink *player;
     u8 *p;
     s32 i;
 
@@ -19754,7 +19745,7 @@ void PlayerManager_Init(void) {
         pm->free = player;
     }
     for (i = 0; i < 1; i++) {
-        player = &pm->creature.base;
+        player = &pm->creature.base + i;
         player->controlReader = AI_Creature_Heartbeat;
         player->init = AI_Creature_Init;
         player->heartbeat = Player_Heartbeat;
@@ -19766,7 +19757,7 @@ void PlayerManager_Init(void) {
         pm->free = player;
     }
     for (i = 0; i < 1; i++) {
-        player = &pm->null;
+        player = &pm->null + i;
         player->controlReader = Player_NULL;
         player->init = Player_Init;
         player->heartbeat = Player_NULL;
