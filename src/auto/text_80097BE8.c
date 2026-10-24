@@ -389,8 +389,9 @@ static inline s32 __THPHuffDecodeTab(THPFileInfo *info, THPHuffmanTab *h) {
     code = __rlwnm(cb, cnt + 4, 27, 31);
     if (cnt <= 28) {
         tmp = h->quick[code];
+        i = increment[code];
         if (tmp != 0xFF) {
-            info->cnt = cnt + increment[code];
+            info->cnt = cnt + i;
             return tmp;
         }
         cnt += 5;
@@ -14153,6 +14154,185 @@ void __THPPrepBitStream(void) {
     Yachuff_803C77E0 = &__THPInfo_803C7890->huffmanTabs[(__THPInfo_803C7890->components[0].ACTableSelector << 1) + 1];
     Uachuff_803C7800 = &__THPInfo_803C7890->huffmanTabs[(__THPInfo_803C7890->components[1].ACTableSelector << 1) + 1];
     Vachuff_803C7820 = &__THPInfo_803C7890->huffmanTabs[(__THPInfo_803C7890->components[2].ACTableSelector << 1) + 1];
+}
+
+void __THPHuffDecodeDCTCompY(THPFileInfo *info, s16 *block) {
+    extern THPHuffmanTab *Ydchuff_803C7780;
+    extern THPHuffmanTab *Yachuff_803C77E0;
+    extern u8 __THPJpegNaturalOrder_800CE0D8[];
+    THPHuffmanTab *h;
+    u8 *increment;
+    u32 *c;
+    s32 t;
+    s16 diff;
+    s32 n;
+    s32 rem;
+    s32 cnt;
+    u32 cb;
+    u32 tmp2;
+    s32 k;
+    s32 code;
+    s32 tmp;
+    s32 i;
+    s32 s;
+    s32 r;
+    s32 v;
+
+    __dcbz(block, 0);
+    t = __THPHuffDecodeTab(info, Ydchuff_803C7780);
+    __dcbz(block, 32);
+    diff = 0;
+    __dcbz(block, 64);
+    if (t) {
+        cnt = info->cnt;
+        n = 33 - cnt;
+        cb = info->currByte;
+        rem = t - n;
+        if (rem <= 0) {
+            info->cnt = cnt + t;
+            diff = (cb << (cnt - 1)) >> (32 - t);
+        } else {
+            c = (u32 *)info->c;
+            tmp2 = cb << (cnt - 1);
+            cb = *++c;
+            info->currByte = cb;
+            info->c = (u8 *)c;
+            info->cnt = rem + 1;
+            diff = ((cb >> n) + tmp2) >> (32 - t);
+        }
+        if (__cntlzw(diff) > 32 - t) {
+            diff = (-1 << t) + diff + 1;
+        }
+    }
+    __dcbz(block, 96);
+    block[0] = info->components[0].predDC = info->components[0].predDC + diff;
+
+    h = Yachuff_803C77E0;
+    cnt = info->cnt;
+    increment = h->increment;
+    cb = info->currByte;
+    for (k = 1; k < 64; k++) {
+        code = __rlwnm(cb, cnt + 4, 27, 31);
+        if (cnt <= 28) {
+            tmp = h->quick[code];
+            if (tmp != 0xFF) {
+                cnt += increment[code];
+            } else {
+                cnt += 5;
+                i = 5;
+                for (;;) {
+                    code <<= 1;
+                    if (cnt == 33) {
+                        c = (u32 *)info->c;
+                        cnt = 1;
+                        cb = *++c;
+                        info->c = (u8 *)c;
+                        code = __rlwimi(code, cb, 1, 31, 31);
+                        for (;;) {
+                            cnt++;
+                            i++;
+                            if (code <= h->maxCode[i]) {
+                                break;
+                            }
+                            code = (code << 1) | __rlwnm(cb, cnt, 31, 31);
+                        }
+                        break;
+                    }
+                    code |= __rlwnm(cb, cnt, 31, 31);
+                    cnt++;
+                    i++;
+                    if (code <= h->maxCode[i]) {
+                        break;
+                    }
+                }
+                tmp = (h->Vij + h->valPtr[i])[code];
+            }
+        } else {
+            c = (u32 *)info->c;
+            if (cnt != 33) {
+                if (cnt != 32) {
+                    tmp = h->quick[code];
+                    i = cnt + increment[code];
+                    if (tmp != 0xFF && i <= 33) {
+                        cnt = i;
+                        goto decoded;
+                    }
+                    code = cb & ~(0xFFFFFFFF << (33 - cnt));
+                    i = 33 - cnt + 1;
+                    cb = *++c;
+                    info->c = (u8 *)c;
+                    code = __rlwimi(code << 1, cb, 1, 31, 31);
+                    cnt = 2;
+                    while (code > h->maxCode[i]) {
+                        code = (code << 1) + __rlwnm(cb, cnt, 31, 31);
+                        i++;
+                        cnt++;
+                    }
+                    tmp = (h->Vij + h->valPtr[i])[code];
+                } else {
+                    cb = *++c;
+                    info->c = (u8 *)c;
+                    code = __rlwimi(code, cb, 4, 28, 31);
+                    tmp = h->quick[code];
+                    cnt = increment[code];
+                    if (tmp == 0xFF) {
+                        tmp2 = __rlwimi(code << 27, cb, 31, 1, 31);
+                        cnt = 5;
+                        do {
+                            code = tmp2 >> (31 - cnt);
+                            cnt++;
+                        } while (code > h->maxCode[cnt]);
+                        tmp = (h->Vij + h->valPtr[cnt])[code];
+                    }
+                }
+            } else {
+                cb = *++c;
+                code = cb >> 27;
+                info->c = (u8 *)c;
+                tmp = h->quick[code];
+                cnt = increment[code] + 1;
+                if (tmp == 0xFF) {
+                    i = 5;
+                    do {
+                        code = cb >> (31 - i);
+                        i++;
+                    } while (code > h->maxCode[i]);
+                    cnt = i + 1;
+                    tmp = (h->Vij + h->valPtr[i])[code];
+                }
+            }
+        }
+    decoded:
+        s = tmp & 15;
+        r = tmp >> 4;
+        if (s) {
+            k += r;
+            n = 33 - cnt;
+            rem = s - n;
+            if (rem <= 0) {
+                v = (cb << (cnt - 1)) >> (32 - s);
+                cnt += s;
+            } else {
+                c = (u32 *)info->c;
+                tmp2 = cb << (cnt - 1);
+                cb = *++c;
+                cnt = rem + 1;
+                info->c = (u8 *)c;
+                v = ((cb >> n) + tmp2) >> (32 - s);
+            }
+            if (__cntlzw(v) > 32 - s) {
+                v = (-1 << s) + v + 1;
+            }
+            block[__THPJpegNaturalOrder_800CE0D8[k]] = v;
+        } else {
+            if (r != 15) {
+                break;
+            }
+            k += 15;
+        }
+    }
+    info->cnt = cnt;
+    info->currByte = cb;
 }
 
 s32 __THPAudioGetNewSample(u32 *info);
