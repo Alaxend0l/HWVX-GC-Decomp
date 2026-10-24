@@ -7524,7 +7524,7 @@ s32 Gfx_FrustrumCullSphereTest(Vector *center, f32 radius) {
 }
 
 #pragma use_lmw_stmw on
-u32 Gfx_GetCullLODGX(s32 geom, void *mtx, u8 *lod, u8 flag) {
+u32 Gfx_GetCullLODGX(Geometry *geometry, Vector *matrix, u8 *lod, u8 flag) {
     extern GfxState g_state;
     extern u8 g_CurrentViews;
     void XformVec(Vector *m, Vector *v, Vector *out);
@@ -7533,14 +7533,11 @@ u32 Gfx_GetCullLODGX(s32 geom, void *mtx, u8 *lod, u8 flag) {
     f32 PSVECDotProduct(Vector *a, Vector *b);
     f32 Sqrt(f32 x);
     void Gfx_EnableState(u32 state);
-    s32 Gfx_FrustrumCullSphereTest(Vector *center, f32 radius);
-    Geometry *geometry = (Geometry *)geom;
-    Vector *matrix = (Vector *)mtx;
-    Vector pos __attribute__((aligned(16)));
-    Vector center __attribute__((aligned(16)));
     Vector diff __attribute__((aligned(16)));
-    f32 radius;
+    Vector center __attribute__((aligned(16)));
+    Vector pos __attribute__((aligned(16)));
     f32 dist;
+    f32 radius;
     f32 a;
     f32 b;
     void *window;
@@ -7563,7 +7560,8 @@ u32 Gfx_GetCullLODGX(s32 geom, void *mtx, u8 *lod, u8 flag) {
         radius = geometry->bboxMax[3] * Sqrt(b);
     }
     PSVECSubtract(&center, (Vector *)((u8 *)window + 0x180), &diff);
-    dist = PSVECDotProduct(&diff, (Vector *)((u8 *)window + 0x190)) * ((f32 *)window)[0x9D];
+    dist = PSVECDotProduct(&diff, (Vector *)((u8 *)window + 0x190));
+    dist *= ((f32 *)window)[0x9D];
     if (!(((Geometry *)geometry->groups)->groups->flags & 0x8000) && g_state.farClippingPlane > 0.0f &&
         dist >= g_state.farClippingPlane) {
         return 0;
