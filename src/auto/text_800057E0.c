@@ -5871,6 +5871,157 @@ f32 RayBoxTest(Vector4 *start, Vector4 *dir, Vector4 *box, f32 t, Vector4 *hit) 
     return t;
 }
 
+static inline f32 RayBoxTestLocal(Vector4 *start, Vector4 *dir, Vector4 *box, f32 t, Vector4 *hit) {
+    typedef struct BoxNode {
+        Vector4 plane;
+        u8 type;
+        u8 pad;
+        s16 next;
+    } BoxNode;
+    Vector4 *BSPN0_CollideWithSegment(BoxNode *nodes, s32 node, Vector4 *p0, Vector4 *p1);
+    f32 Distance_Plane(void *plane, void *point);
+    Vector4 end;
+    Vector4 endPt;
+    BoxNode nodes[6] = {
+        { { 1.0f, 0.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, 1.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, 0.0f, 1.0f, 0.0f }, 2, 0, 1 },
+        { { -1.0f, 0.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, -1.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, 0.0f, -1.0f, 0.0f }, 0, 0, 0 },
+    };
+    Vector4 *plane;
+    f32 d0;
+
+    nodes[0].plane.w = -box[1].x;
+    nodes[1].plane.w = -box[1].y;
+    nodes[2].plane.w = -box[1].z;
+    nodes[3].plane.w = box[0].x;
+    nodes[4].plane.w = box[0].y;
+    nodes[5].plane.w = box[0].z;
+    endPt.x = end.x = t * dir->x + start->x;
+    endPt.y = end.y = t * dir->y + start->y;
+    endPt.z = end.z = t * dir->z + start->z;
+    plane = BSPN0_CollideWithSegment(nodes, 0, start, &end);
+    if (plane != NULL) {
+        d0 = Distance_Plane(plane, start);
+        t *= d0 / (d0 - Distance_Plane(plane, &endPt));
+        hit[0].x = dir->x * t + start->x;
+        hit[0].y = dir->y * t + start->y;
+        hit[0].z = dir->z * t + start->z;
+        hit[1] = *plane;
+    }
+    return t;
+}
+
+f32 PhysicalProperties_CollideWithRay(u8 *props, void *mtx, Vector4 *start, Vector4 *dir, f32 t, u8 *hit) {
+    typedef struct BoxNode {
+        Vector4 plane;
+        u8 type;
+        u8 pad;
+        s16 next;
+    } BoxNode;
+    typedef struct RayHit {
+        Vector4 pos;
+        Vector4 normal;
+        u8 pad[0x30];
+    } RayHit;
+    void XformVec(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVec(void *mtx, Vector4 *in, Vector4 *out);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    f32 RaySphereTest(Vector4 *start, Vector4 *dir, Vector4 *center, f32 radius, f32 t, u8 *hit);
+    Vector4 *BSPN0_CollideWithSegment(BoxNode *nodes, s32 node, Vector4 *p0, Vector4 *p1);
+    f32 Distance_Plane(void *plane, void *point);
+    f32 result = t;
+
+    switch (props[0x10]) {
+    case 0: {
+        Vector4 *box = *(Vector4 **)(props + 0x44);
+        Vector4 localDir;
+        Vector4 localStart;
+        RayHit localHit;
+
+        InverseXformVec(mtx, start, &localStart);
+        InverseXformVecOrientation(mtx, dir, &localDir);
+        {
+            f32 bt = t;
+            Vector4 end;
+            Vector4 endPt;
+            BoxNode nodes[6] = {
+                { { 1.0f, 0.0f, 0.0f, 0.0f }, 2, 0, 1 },
+                { { 0.0f, 1.0f, 0.0f, 0.0f }, 2, 0, 1 },
+                { { 0.0f, 0.0f, 1.0f, 0.0f }, 2, 0, 1 },
+                { { -1.0f, 0.0f, 0.0f, 0.0f }, 2, 0, 1 },
+                { { 0.0f, -1.0f, 0.0f, 0.0f }, 2, 0, 1 },
+                { { 0.0f, 0.0f, -1.0f, 0.0f }, 0, 0, 0 },
+            };
+            Vector4 *plane;
+            f32 d0;
+
+            nodes[0].plane.w = -box[1].x;
+            nodes[1].plane.w = -box[1].y;
+            nodes[2].plane.w = -box[1].z;
+            nodes[3].plane.w = box[0].x;
+            nodes[4].plane.w = box[0].y;
+            nodes[5].plane.w = box[0].z;
+            endPt.x = end.x = bt * localDir.x + localStart.x;
+            endPt.y = end.y = bt * localDir.y + localStart.y;
+            endPt.z = end.z = bt * localDir.z + localStart.z;
+            plane = BSPN0_CollideWithSegment(nodes, 0, &localStart, &end);
+            if (plane != NULL) {
+                d0 = Distance_Plane(plane, &localStart);
+                bt *= d0 / (d0 - Distance_Plane(plane, &endPt));
+                localHit.pos.x = localDir.x * bt + localStart.x;
+                localHit.pos.y = localDir.y * bt + localStart.y;
+                localHit.pos.z = localDir.z * bt + localStart.z;
+                localHit.normal = *plane;
+            }
+            result = bt;
+        }
+        if (hit != NULL && result < t) {
+            XformVec(mtx, &localHit.pos, (Vector4 *)hit);
+            XformVecOrientation(mtx, &localHit.normal, (Vector4 *)(hit + 0x10));
+            *(s32 *)(hit + 0x28) = *(s32 *)(props + 0x30);
+        }
+        break;
+    }
+    case 1: {
+        Vector4 localDir;
+        Vector4 localStart;
+        RayHit localHit;
+        f32 d = t;
+
+        InverseXformVec(mtx, start, &localStart);
+        InverseXformVecOrientation(mtx, dir, &localDir);
+        if (hit != NULL && d < t) {
+            XformVec(mtx, &localHit.pos, (Vector4 *)hit);
+            XformVecOrientation(mtx, &localHit.normal, (Vector4 *)(hit + 0x10));
+            *(s32 *)(hit + 0x28) = *(s32 *)(props + 0x30);
+        }
+        break;
+    }
+    case 7: {
+        u32 *list = *(u32 **)(props + 0x44);
+        u32 i;
+        Vector4 center;
+        f32 d;
+
+        for (i = 0; i < list[0]; i++) {
+            Vector4 *sphere = (Vector4 *)(list[1] + i * 0x20);
+            XformVec(mtx, sphere, &center);
+            d = RaySphereTest(start, dir, &center, sphere[1].x, result, hit);
+            if (hit != NULL && d < result) {
+                result = d;
+                *(s32 *)(hit + 0x28) = *(s32 *)(props + 0x30);
+            }
+        }
+        break;
+    }
+    }
+    return result;
+}
+
 void Dprintf(const char *fmt, ...);
 void CollisionPairCache_Clear(void) {
     extern u8 g_aCollisionPairCache[4][0x30];
