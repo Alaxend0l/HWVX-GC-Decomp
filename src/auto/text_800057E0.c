@@ -35717,6 +35717,8 @@ static inline void SETVAT(u32 *va, u32 *vb, u32 *vc, s32 attr, s32 cnt, s32 type
 }
 
 #pragma always_inline on
+#pragma opt_loop_invariants on
+#pragma scheduling on
 void GXSetVtxAttrFmtv(s32 vtxfmt, s32 *list) {
     typedef struct {
         s32 attr;
