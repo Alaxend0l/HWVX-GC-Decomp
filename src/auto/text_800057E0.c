@@ -18827,7 +18827,7 @@ s32 StateGameManager_Heartbeat(void) {
                     g_bInterfacePlaying = 1;
                 }
                 if (g_GameManagerState.step == g_GameManagerState.mcp->numSteps - 1) {
-                    FileStreaming_LoadDataPack(g_GameManagerState.mcp->menuName, 1, g_GameManagerState.mcp->menuFile, 0);
+                    FileStreaming_LoadDataPack((void *)g_GameManagerState.mcp->menuName, 1, g_GameManagerState.mcp->menuFile, 0);
                 }
             }
             ShowStats_StartFrame();
