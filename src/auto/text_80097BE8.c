@@ -632,7 +632,9 @@ typedef struct JoyBusPacket {
 typedef struct JoyBusParam {
     s32 state;
     u8 status;
-    u8 unk5[0x10 - 0x5];
+    u8 unk5[0x8 - 0x5];
+    u8 *program;
+    s32 length;
     s32 result;
     JoyBusPacket send;
     JoyBusPacket recv;
