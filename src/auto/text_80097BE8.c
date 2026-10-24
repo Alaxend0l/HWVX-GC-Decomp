@@ -3131,6 +3131,7 @@ static void round_decimal(decimal *dec, int new_length) {
 
 #pragma push
 #pragma readonly_strings on
+#pragma pool_strings on
 char *double2hex(double num, char *buff, print_format format) {
     char *long2str_8009C164(s32 num, char *buff, print_format format);
     char *strcpy(char *dst, const char *src);
