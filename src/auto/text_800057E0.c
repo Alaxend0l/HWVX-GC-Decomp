@@ -10922,6 +10922,177 @@ void InterfaceManager_SetInput(s32 index, s32 input) {
     }
 }
 
+static void InterfaceManager_ReleaseInterfaceObjects(u8 *objs) {
+    typedef struct ObjectAllocation {
+        u32 start;
+        u32 count;
+        s8 free;
+    } ObjectAllocation;
+    extern ObjectAllocation g_objectAllocations[28];
+    extern u32 g_numInterfaceObjectAllocations;
+    extern u32 g_numInterfaceObjectsAllocated;
+    void *memset(void *dst, int c, u32 n);
+    s32 i;
+
+    if (objs == NULL) {
+        return;
+    }
+    for (i = g_numInterfaceObjectAllocations - 1; i >= 0; i--) {
+        if (*(u32 *)(objs + 0x2FC) == g_objectAllocations[i].start) {
+            break;
+        }
+    }
+    if (i == -1) {
+        return;
+    }
+    if (g_numInterfaceObjectsAllocated == g_objectAllocations[i].start + g_objectAllocations[i].count) {
+        g_numInterfaceObjectsAllocated -= g_objectAllocations[i].count;
+        g_numInterfaceObjectAllocations--;
+        while (g_numInterfaceObjectAllocations != 0 &&
+               (g_objectAllocations[g_numInterfaceObjectAllocations - 1].free ||
+                g_objectAllocations[g_numInterfaceObjectAllocations - 1].count == 0)) {
+            g_numInterfaceObjectsAllocated -= g_objectAllocations[g_numInterfaceObjectAllocations - 1].count;
+            memset(&g_objectAllocations[g_numInterfaceObjectAllocations - 1], 0, sizeof(ObjectAllocation));
+            g_numInterfaceObjectAllocations--;
+        }
+    } else {
+        g_objectAllocations[i].free = 1;
+    }
+    *(u32 *)(objs + 0x2FC) = -1;
+}
+
+void InterfaceManager_ReleaseInterface(u32 index) {
+    typedef struct ObjectAllocation {
+        u32 start;
+        u32 count;
+        s8 free;
+    } ObjectAllocation;
+    typedef struct {
+        u32 index;
+        u16 type;
+        u16 id;
+        s16 unk10;
+        s16 unk12;
+        u8 pad14[0x18];
+        s32 unk2C;
+        s8 unk30;
+        u8 pad31[0x1F];
+    } InterfaceMessage;
+    typedef struct Interface {
+        u32 count;
+        u8 pad4[0x20 - 0x4];
+        u8 *header;
+        u8 pad24[0x7D - 0x24];
+        u8 id;
+        u8 pad7E[0x88 - 0x7E];
+        u8 *slots;
+        u8 pad8C[0x90 - 0x8C];
+        void (*callback)(InterfaceMessage *);
+        u8 pad94[0x98 - 0x94];
+        u32 values[(0x170 - 0x98) / 4];
+    } Interface;
+    extern Interface g_interface[];
+    extern ObjectAllocation g_objectAllocations[28];
+    extern u32 g_numInterfaceObjectAllocations;
+    extern u32 g_numInterfaceObjectsAllocated;
+    extern s8 g_bUnloadMusicPack;
+    extern char *g_curMusicPackName;
+    extern s32 g_curMusicPackID;
+    void *memset(void *dst, int c, u32 n);
+    void InterfaceManager_RemoveInterfaceFromRender(u32 id);
+    void InterfaceManager_RestoreMissionObjString(u8 *mgr);
+    void InterfaceHasEnded(u32 handle);
+    void Trigger_InterfaceEnd(void *header);
+    void Gfx_FontManager_ReleaseFont(u8 font);
+    void SoundSequence_Stop(s32 seq);
+    void FileStreaming_ReleaseAllDataPacks(s32 type, s32 arg1);
+    s32 FileStreaming_GetPackID(char *name, s32 type, s32 id);
+    void SongManager_StopBKSong(void);
+    u32 i;
+    s32 j;
+    u8 *objs;
+    u8 *entry;
+    u8 *slot;
+    Interface *iface;
+
+    if (index >= 0x12 || (iface = g_interface + index)->count == 0) {
+        return;
+    }
+    InterfaceManager_RemoveInterfaceFromRender(index);
+    if (iface->callback != NULL) {
+        InterfaceMessage msg;
+
+        msg.index = iface->id;
+        msg.type = 5;
+        msg.id = 0;
+        msg.unk10 = 0;
+        msg.unk2C = 0;
+        msg.unk12 = 0;
+        msg.unk30 = 0;
+        iface->callback(&msg);
+    }
+    for (i = 0; i < iface->count; i++) {
+        slot = iface->slots + i * 0x300;
+        if (*(u32 *)(slot + 0x26C) != 0 && (slot[0x243] == 4 || slot[0x243] == 3)) {
+            *(u32 *)(slot + 0x26C) = 0;
+            slot[0x244] = 0;
+        } else if (slot[0x243] == 6) {
+            if (&g_interface[*(u32 *)(slot + 0x270)] != iface) {
+                InterfaceManager_ReleaseInterface(*(u32 *)(slot + 0x270));
+            }
+        } else if (slot[0x243] == 5) {
+            Gfx_FontManager_ReleaseFont(slot[0x1B0]);
+        } else if (slot[0x243] == 7) {
+            if (*(u32 *)(slot + 0x2D0) != 0) {
+                SoundSequence_Stop(*(s32 *)(slot + 0x2D4));
+            }
+            FileStreaming_ReleaseAllDataPacks(9, 1);
+        }
+        if (slot[0x245] == 0x34) {
+            InterfaceManager_RestoreMissionObjString(slot);
+        }
+    }
+    for (i = 0; i < **(u32 **)(iface->header + 0x1C); i++) {
+        entry = *(u8 **)(*(u8 **)(iface->header + 0x1C) + 4) + i * 0x34;
+        if (entry[0] == 0 && entry[2] != 0) {
+            *(u32 *)(entry + 0xC) = iface->values[i];
+        }
+    }
+    if (g_bUnloadMusicPack && g_curMusicPackName != NULL) {
+        SongManager_StopBKSong();
+        FileStreaming_GetPackID(g_curMusicPackName, 10, g_curMusicPackID);
+        FileStreaming_ReleaseAllDataPacks(10, 1);
+        g_curMusicPackName = NULL;
+    }
+    Trigger_InterfaceEnd(iface->header);
+    InterfaceHasEnded(index);
+    objs = g_interface[index].slots;
+    if (objs != NULL) {
+        for (j = g_numInterfaceObjectAllocations - 1; j >= 0; j--) {
+            if (*(u32 *)(objs + 0x2FC) == g_objectAllocations[j].start) {
+                break;
+            }
+        }
+        if (j != -1) {
+            if (g_numInterfaceObjectsAllocated == g_objectAllocations[j].start + g_objectAllocations[j].count) {
+                g_numInterfaceObjectsAllocated -= g_objectAllocations[j].count;
+                g_numInterfaceObjectAllocations--;
+                while (g_numInterfaceObjectAllocations != 0 &&
+                       (g_objectAllocations[g_numInterfaceObjectAllocations - 1].free ||
+                        g_objectAllocations[g_numInterfaceObjectAllocations - 1].count == 0)) {
+                    g_numInterfaceObjectsAllocated -= g_objectAllocations[g_numInterfaceObjectAllocations - 1].count;
+                    memset(&g_objectAllocations[g_numInterfaceObjectAllocations - 1], 0, sizeof(ObjectAllocation));
+                    g_numInterfaceObjectAllocations--;
+                }
+            } else {
+                g_objectAllocations[j].free = 1;
+            }
+            *(u32 *)(objs + 0x2FC) = -1;
+        }
+    }
+    iface->count = 0;
+}
+
 void InterfaceManager_ReleaseAllInterfaces(void) {
     extern u8 g_interface[][0x170];
     extern s32 g_TargetArrow[7];
