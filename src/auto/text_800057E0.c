@@ -5864,6 +5864,64 @@ u32 RayHitsBSP(Vector4 *start, Vector4 *dir, Vector4 *bbox, f32 *time, void *bsp
     return result;
 }
 
+s32 RayHitsCell(Vector4 *start, Vector4 *dir, u8 *cell, f32 *time, u8 *out) {
+    extern Vector4 g_zeroVector;
+    f32 RayHitsPoly(Vector4 *start, Vector4 *dir, Vector4 *poly, f32 t);
+    s32 hitAny;
+    u8 *poly;
+    u8 *best;
+    u32 i;
+    f32 t;
+    f32 minT;
+    u32 result;
+    Vector4 normal;
+
+    hitAny = 0;
+    if (*(u32 *)(*(u8 **)g_worldData.world + 0x58) == 1) {
+        if (*(u32 *)(cell + 0x30) != 0) {
+            result = RayHitsBSP(start, dir, (Vector4 *)cell, time, &normal);
+            if (result) {
+                if (out != NULL) {
+                    *(Vector4 *)(out + 0x10) = normal;
+                    ((Vector4 *)out)->x = start->x + dir->x * *time;
+                    ((Vector4 *)out)->y = start->y + dir->y * *time;
+                    ((Vector4 *)out)->z = start->z + dir->z * *time;
+                    *(u32 *)(out + 0x28) = result;
+                    *(Vector4 *)(out + 0x30) = g_zeroVector;
+                }
+                hitAny = 1;
+            }
+        }
+    } else {
+        minT = *time;
+        best = NULL;
+        for (i = 0; i < *(u32 *)(cell + 0x3C); i++) {
+            poly = *(u8 **)(*(u8 **)g_worldData.world + 0x4C) + (*(u32 **)(cell + 0x38))[i] * 0x20;
+            if (*(u32 *)(poly + 0x18) != (u32)g_worldData.unk4) {
+                *(u32 *)(poly + 0x18) = g_worldData.unk4;
+                t = RayHitsPoly(start, dir, (Vector4 *)poly, minT);
+                if (t < minT) {
+                    minT = t;
+                    best = poly;
+                }
+            }
+        }
+        if (minT != *time) {
+            *time = minT;
+            if (out != NULL) {
+                *(Vector4 *)(out + 0x10) = *(Vector4 *)best;
+                ((Vector4 *)out)->x = start->x + dir->x * *time;
+                ((Vector4 *)out)->y = start->y + dir->y * *time;
+                ((Vector4 *)out)->z = start->z + dir->z * *time;
+                *(u32 *)(out + 0x28) = (*(u32 **)(*(u8 **)g_worldData.world + 0x5C))[*(u32 *)(best + 0x1C)];
+                *(Vector4 *)(out + 0x30) = g_zeroVector;
+            }
+            hitAny = 1;
+        }
+    }
+    return hitAny;
+}
+
 typedef struct TerrainGrid {
     Vector4 origin;
     u8 unk10[0x20 - 0x10];
