@@ -7511,6 +7511,120 @@ void FileStreaming_InitializeAllQuads(void) {
     }
 }
 
+void FileStreaming_ResetQuadResources(void) {
+    typedef struct Thing {
+        u8 pad0[0x8C];
+        void (**vtbl)(struct Thing *);
+    } Thing;
+    typedef struct StaticEntry {
+        u8 pad0[0x24];
+        u8 *info;
+        u8 pad28[0x2C - 0x28];
+        Thing *thing;
+        s32 active;
+        u8 pad34[0x36 - 0x34];
+        u8 defActive;
+        u8 pad37[0x40 - 0x37];
+    } StaticEntry;
+    typedef struct DynamicEntry {
+        u8 pad0[0x30];
+        Thing *thing;
+        s32 active;
+        u8 pad38[0x39 - 0x38];
+        u8 defActive;
+        u8 pad3A[0x40 - 0x3A];
+    } DynamicEntry;
+    typedef struct ItemEntry {
+        u8 pad0[0x24];
+        Thing *thing;
+        s32 type;
+        u8 pad2C[0x38 - 0x2C];
+        s8 spawned;
+        u8 defType;
+        u8 pad3A[0x40 - 0x3A];
+    } ItemEntry;
+    typedef struct QuadData {
+        s8 dirty;
+        u32 numStatics;
+        StaticEntry *statics;
+        u32 numDynamics;
+        DynamicEntry *dynamics;
+        u32 numItems;
+        ItemEntry *items;
+    } QuadData;
+    typedef struct Quad {
+        u8 pad0[0x30];
+        QuadData *data;
+        u8 pad34[0x50 - 0x34];
+    } Quad;
+    typedef struct QuadWorld {
+        u8 pad[0x20];
+        u32 numQuads;
+        Quad *quads;
+    } QuadWorld;
+    extern Quad *g_LoadedQuadrants[];
+    extern s32 g_numQuadPacksInMemory;
+    extern Quad *g_pWorldQuadrant;
+    s32 Trigger_IsTACSystemPaused(void);
+    void Trigger_PauseTACSystem(s32 pause);
+    void FileStreaming_SetActiveQuadrants(Quad **quads, s32 count);
+    u32 i;
+    u32 j;
+    s32 paused;
+    StaticEntry *st;
+    DynamicEntry *dyn;
+    ItemEntry *item;
+    Quad *quad;
+
+    paused = Trigger_IsTACSystemPaused();
+    Trigger_PauseTACSystem(1);
+    g_LoadedQuadrants[g_numQuadPacksInMemory] = g_pWorldQuadrant;
+    for (i = 0; i < g_numQuadPacksInMemory + 1; i++) {
+        if (g_LoadedQuadrants[i] != NULL && g_LoadedQuadrants[i]->data->dirty) {
+            g_LoadedQuadrants[i]->data->dirty = 0;
+            for (j = 0; j < g_LoadedQuadrants[i]->data->numStatics; j++) {
+                st = &g_LoadedQuadrants[i]->data->statics[j];
+                if (st->thing != NULL && st->info[7] == 0) {
+                    st->thing->vtbl[1](st->thing);
+                    st->thing = NULL;
+                    st->active = 1;
+                }
+            }
+            for (j = 0; j < g_LoadedQuadrants[i]->data->numDynamics; j++) {
+                dyn = &g_LoadedQuadrants[i]->data->dynamics[j];
+                if (dyn->thing != NULL) {
+                    dyn->thing->vtbl[1](dyn->thing);
+                    dyn->thing = NULL;
+                    dyn->active = 1;
+                }
+            }
+            for (j = 0; j < g_LoadedQuadrants[i]->data->numItems; j++) {
+                item = &g_LoadedQuadrants[i]->data->items[j];
+                if (item->thing != NULL) {
+                    item->thing->vtbl[1](item->thing);
+                    item->thing = NULL;
+                    item->type = 1;
+                }
+            }
+        }
+    }
+    for (i = 0; i < ((QuadWorld *)g_worldData.world)->numQuads; i++) {
+        quad = &((QuadWorld *)g_worldData.world)->quads[i];
+        for (j = 0; j < quad->data->numDynamics; j++) {
+            quad->data->dynamics[j].active = quad->data->dynamics[j].defActive;
+        }
+        for (j = 0; j < quad->data->numItems; j++) {
+            quad->data->items[j].type = quad->data->items[j].defType;
+            quad->data->items[j].spawned = 0;
+        }
+        for (j = 0; j < quad->data->numStatics; j++) {
+            quad->data->statics[j].active = quad->data->statics[j].defActive;
+        }
+    }
+    FileStreaming_SetActiveQuadrants(g_LoadedQuadrants, g_numQuadPacksInMemory + 1);
+    Trigger_PauseTACSystem(paused);
+}
+
 void FileStreaming_HeartBeatItems(void) {
     typedef struct ItemInfo {
         u8 pad0[0x10];
@@ -9232,9 +9346,9 @@ static inline void Grid_PushFreeObject(GridObject *object) {
 }
 
 void Grid_Init(Vector4 *min, Vector4 *max, u32 numX, u32 numZ) {
-    GridManager *gm;
     u16 i;
     u16 j;
+    GridManager *gm;
 
     ((GridManager *)gGridManager)->numX = numX;
     ((GridManager *)gGridManager)->numZ = numZ;
@@ -9252,16 +9366,13 @@ void Grid_Init(Vector4 *min, Vector4 *max, u32 numX, u32 numZ) {
     gm = (GridManager *)gGridManager;
     gm->freeNodes = NULL;
     for (i = 0; i < 4048; i++) {
-        gm->nodes[i].next = gm->freeNodes;
-        gm->freeNodes = &gm->nodes[i];
+        Grid_PushFreeNode(&gm->nodes[i]);
     }
     gm = (GridManager *)gGridManager;
     gm->freeObjects = NULL;
     gm->numFreeObjects = 0;
     for (i = 0; i < 1024; i++) {
-        gm->objects[i].next = gm->freeObjects;
-        gm->freeObjects = &gm->objects[i];
-        gm->numFreeObjects++;
+        Grid_PushFreeObject(&gm->objects[i]);
     }
 }
 
