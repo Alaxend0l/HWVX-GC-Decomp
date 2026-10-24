@@ -8404,6 +8404,7 @@ void *GetRenderWindow() {
     extern u8 g_window[][0x2D0];
     return g_window[g_currentWindow];
 }
+#pragma auto_inline reset
 
 void Gfx_SetRenderWindowSize(s32 x0, s32 y0, s32 x1, s32 y1, s32 arg4) {
     typedef struct {
@@ -9638,6 +9639,127 @@ void Gfx_GetViewport(s32 *arg0, s32 *arg1, s32 *arg2, s32 *arg3) {
     *arg1 = 0;
     *arg2 = 0x280;
     *arg3 = 0x1E0;
+}
+
+void Render_DrawShadows(void) {
+    typedef struct ShadowGroup {
+        u16 unk0;
+        u16 flags;
+        u8 unk4[0x10 - 0x4];
+        u32 numEdges;
+        u8 unk14[0x1C - 0x14];
+        void *edges;
+    } ShadowGroup;
+    typedef struct ShadowGeometry {
+        u16 unk0;
+        u16 numGroups;
+        u8 unk4[0x8 - 0x4];
+        ShadowGroup *groups;
+        f32 (*verts)[3];
+    } ShadowGeometry;
+    typedef struct ShadowModel {
+        u8 unk0[0x8];
+        ShadowGeometry *geometry;
+    } ShadowModel;
+    extern GDL *g_pGDL;
+    extern u32 m_VtxDescFlag;
+    extern u8 ShadowTexture[];
+    extern u8 pShadowImage[];
+    void *Gfx_GetWorldMatrixState(u32 index);
+    void InverseXformVecOrientation(Vector *m, Vector *v, Vector *out);
+    void CreateSilhouette(void *edges, u32 count, Vector *dir);
+    void DrawVolume(f32 (*verts)[3], void *edgeData, u32 numEdges, f32 dx, f32 dy, f32 dz);
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    void GXSetTevColor(s32 id, GXColor color);
+    void Gfx_SetOrthoMatrix(void);
+    Vector lightDir __attribute__((aligned(16)));
+    Vector dir __attribute__((aligned(16)));
+    GXColor color;
+    ShadowModel *model;
+    u32 i;
+    u32 j;
+    u32 numShadows;
+
+    numShadows = 0;
+    lightDir.x = 0.707f;
+    lightDir.y = -0.707f;
+    lightDir.z = 0.0f;
+    lightDir.w = 0.0f;
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xB, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+    m_VtxDescFlag = 0;
+    for (i = 0; i < g_pGDL->numDrawEntries; i++) {
+        model = (ShadowModel *)g_pGDL->drawEntries[i].geometry;
+        Gfx_SetWorldMatrix(Gfx_GetWorldMatrixState(g_pGDL->drawEntries[i].matrix));
+        if (model->geometry->groups->flags & 0x4000) {
+            numShadows++;
+            InverseXformVecOrientation(GetRenderWindow(), &lightDir, &dir);
+            for (j = 0; j < model->geometry->numGroups; j++) {
+                CreateSilhouette(model->geometry->groups[j].edges, model->geometry->groups[j].numEdges, &dir);
+            }
+            GXSetColorUpdate(0);
+            GXSetZMode(1, 1, 0);
+            GXSetAlphaUpdate(1);
+            GXSetTevOp(0, 4);
+            GXSetNumTexGens(0);
+            GXSetTevOrder(0, 0xFF, 0xFF, 4);
+            GXSetBlendMode(1, 1, 1, 5);
+            for (j = 0; j < model->geometry->numGroups; j++) {
+                DrawVolume(model->geometry->verts, model->geometry->groups[j].edges, model->geometry->groups[j].numEdges,
+                           300.0f * dir.x, 300.0f * dir.y, 300.0f * dir.z);
+            }
+            GXSetBlendMode(1, 0, 3, 5);
+            GXSetCullMode(2);
+            for (j = 0; j < model->geometry->numGroups; j++) {
+                DrawVolume(model->geometry->verts, model->geometry->groups[j].edges, model->geometry->groups[j].numEdges,
+                           300.0f * dir.x, 300.0f * dir.y, 300.0f * dir.z);
+            }
+            GXSetCullMode(1);
+        }
+    }
+    if (numShadows) {
+        color.r = 0;
+        color.g = 0;
+        color.b = 0;
+        color.a = 100;
+        GXSetTexCopySrc(0, 0, 0x280, 0x1C0);
+        GXSetTexCopyDst(0x140, 0xE0, 0x27, 1);
+        GXCopyTex(pShadowImage, 0);
+        GXPixModeSync();
+        GXLoadTexObj(ShadowTexture, 0);
+        GXSetTevOrder(0, 0, 0, 0xFF);
+        GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
+        GXSetTevAlphaOp(0, 0xE, 0, 0, 1, 0);
+        GXSetTevAlphaIn(0, 4, 7, 1, 7);
+        GXSetBlendMode(1, 4, 5, 3);
+        GXSetAlphaCompare(7, 0, 1, 7, 0);
+        GXSetTevColor(1, color);
+        GXSetColorUpdate(1);
+        GXSetNumTexGens(1);
+        GXSetTexCoordGen2(0, 1, 0xC, 0x3C, 0, 0x7D);
+        Gfx_SetOrthoMatrix();
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 1);
+        GXSetVtxDesc(0xD, 1);
+        GXSetVtxAttrFmt(0, 9, 1, 3, 0);
+        GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+        GXBegin(0x80, 0, 4);
+        GXPosition3s16(0, 0, 0);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3s16(0, 0x1E0, 0);
+        GXTexCoord2f32(0.0f, 1.0f);
+        GXPosition3s16(0x280, 0x1E0, 0);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3s16(0x280, 0, 0);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXSetAlphaUpdate(1);
+        GXSetZMode(1, 1, 1);
+        Gfx_SetProjectionMatrix(*(f32 *)((u8 *)GetRenderWindow() + 0x270));
+    }
 }
 
 void CreateSilhouette(void *edges, u32 count, Vector *dir) {
