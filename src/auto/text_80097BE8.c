@@ -17613,10 +17613,11 @@ s32 File_Read(u32 id, s32 size, void *data) {
             }
             g_files[idx].position += size;
         }
-        return result;
+    } else {
+        sprintf(msg, "File error: Attempting to read past end of file in:\n %s", g_filedata_PC[idx].name);
+        return 0;
     }
-    sprintf(msg, "File error: Attempting to read past end of file in:\n %s", g_filedata_PC[idx].name);
-    return 0;
+    return result;
 }
 #pragma dont_inline reset
 
