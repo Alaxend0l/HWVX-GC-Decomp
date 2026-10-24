@@ -42319,6 +42319,7 @@ s32 TRKReadBuffer_ui8(TRKBuffer *b, u8 *data, s32 count) {
 #pragma push
 #pragma use_lmw_stmw on
 #pragma opt_propagation off
+#pragma auto_inline off
 s32 TRKReadBuffer1_ui64(TRKBuffer *b, u64 *data) {
     s32 err;
     u32 length;
