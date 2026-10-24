@@ -593,7 +593,7 @@ static u16 s_keyMap[20];
 static u8 s_unkD8[0x30];
 
 static inline void Input_SetKeyDown(VirtualPad *pad, u16 key) {
-    u32 k;
+    s32 k;
 
     for (k = 0; k < 20; k++) {
         if (key == s_keyMap[k]) {
