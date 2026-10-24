@@ -10353,20 +10353,23 @@ void Render_DrawNewBBSprites(void) {
     void SinCos(f32 *s, f32 *c, f32 angle);
     void Set3DRectVtxDesc(void);
     void GXBegin(u8 type, u8 vtxfmt, u16 nverts);
+    void XformVec4x4(Vector *m, Vector *v, Vector *out);
     Vector out __attribute__((aligned(16)));
     f32 s;
     f32 c;
-    u32 blend;
     u32 tex;
+    u32 blend;
     s8 first;
     u16 idx;
-    u16 cur;
-    GDLSprite *sprite;
-    f32 x0, y0, x1, y1, x2, y2, x3, y3;
-    f32 size;
+    u32 cur;
+    f32 z;
     f32 x;
     f32 y;
-    f32 z;
+    f32 x2, x3, x1, y0, y3, y1, y2;
+    f32 x0;
+    f32 size;
+    f32 left;
+    f32 top;
 
     blend = -1;
     if (g_pGDL->numSprites == 0) {
@@ -10376,11 +10379,13 @@ void Render_DrawNewBBSprites(void) {
     for (tex = 0; tex < 0x1FF; tex++) {
         first = 1;
         idx = g_pGDL->spriteHeads[tex];
-        while (idx != 0xFFFF) {
+        if (idx == 0xFFFF) {
+            continue;
+        }
+        while (idx < 0xFFFF) {
             cur = idx;
-            sprite = &g_pGDL->sprites[cur];
-            idx = sprite->next;
-            XformVec4x4((Vector *)((u8 *)GetRenderWindow() + 0x40), &sprite->pos, &out);
+            idx = g_pGDL->sprites[cur].next;
+            XformVec4x4((Vector *)((u8 *)GetRenderWindow() + 0x40), &g_pGDL->sprites[cur].pos, &out);
             if (out.z > -2.0f) {
                 continue;
             }
@@ -10394,18 +10399,22 @@ void Render_DrawNewBBSprites(void) {
                 first = 0;
             }
             size = 0.5f * g_pGDL->sprites[cur].pos.w;
+            z = out.z;
             x = out.x;
             y = out.y;
-            z = out.z;
             if (0.0f == g_pGDL->sprites[cur].rot) {
-                x0 = x + size;
-                y0 = y - size;
-                x1 = x + size;
-                y1 = y + size;
-                x2 = x - size;
-                y2 = y + size;
-                x3 = x - size;
-                y3 = y - size;
+                left = x - size;
+                top = y - size;
+                x += size;
+                y += size;
+                x2 = left;
+                x3 = left;
+                x1 = x;
+                y0 = top;
+                y3 = top;
+                y1 = y;
+                y2 = y;
+                x0 = x;
             } else {
                 SinCos(&s, &c, 45.0f + g_pGDL->sprites[cur].rot);
                 size *= 1.4142137f;
