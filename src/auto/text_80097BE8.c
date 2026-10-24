@@ -373,6 +373,118 @@ static THPFileInfo *__THPInfo_803C7890;
 extern u8 *__THPHuffmanBits_803C7824;
 extern u8 *__THPHuffmanSizeTab_803C7828;
 extern u16 *__THPHuffmanCodeTab_803C782C;
+
+static inline s32 __THPHuffDecodeTab(THPFileInfo *info, THPHuffmanTab *h) {
+    s32 code;
+    s32 cnt;
+    u32 cb;
+    s32 tmp;
+    s32 i;
+    u8 *increment;
+    u32 *c;
+
+    cnt = info->cnt;
+    increment = h->increment;
+    cb = info->currByte;
+    code = __rlwnm(cb, cnt + 4, 27, 31);
+    if (cnt <= 28) {
+        tmp = h->quick[code];
+        if (tmp != 0xFF) {
+            info->cnt = cnt + increment[code];
+            return tmp;
+        }
+        cnt += 5;
+        i = 5;
+        for (;;) {
+            code <<= 1;
+            if (cnt == 33) {
+                c = (u32 *)info->c;
+                cnt = 1;
+                cb = *++c;
+                info->c = (u8 *)c;
+                code = __rlwimi(code, cb, 1, 31, 31);
+                info->currByte = cb;
+                for (;;) {
+                    cnt++;
+                    i++;
+                    if (code <= h->maxCode[i]) {
+                        break;
+                    }
+                    code = (code << 1) | __rlwnm(cb, cnt, 31, 31);
+                }
+                break;
+            }
+            code |= __rlwnm(cb, cnt, 31, 31);
+            cnt++;
+            i++;
+            if (code <= h->maxCode[i]) {
+                break;
+            }
+        }
+        info->cnt = cnt;
+        return (h->Vij + h->valPtr[i])[code];
+    }
+    c = (u32 *)info->c;
+    if (cnt != 33) {
+        if (cnt != 32) {
+            tmp = h->quick[code];
+            i = cnt + increment[code];
+            if (tmp != 0xFF) {
+                info->cnt = i;
+                if (i <= 33) {
+                    return tmp;
+                }
+            }
+            code = cb & ~(0xFFFFFFFF << (33 - cnt));
+            i = 33 - cnt + 1;
+            cb = *++c;
+            info->c = (u8 *)c;
+            code = __rlwimi(code << 1, cb, 1, 31, 31);
+            info->currByte = cb;
+            cnt = 2;
+            while (code > h->maxCode[i]) {
+                code = (code << 1) + __rlwnm(cb, cnt, 31, 31);
+                i++;
+                cnt++;
+            }
+            info->cnt = cnt;
+            return (h->Vij + h->valPtr[i])[code];
+        }
+        cb = *++c;
+        info->c = (u8 *)c;
+        code = __rlwimi(code, cb, 4, 28, 31);
+        tmp = h->quick[code];
+        info->currByte = cb;
+        info->cnt = increment[code];
+        if (tmp != 0xFF) {
+            return tmp;
+        }
+        tmp = __rlwimi(code << 27, cb, 31, 1, 31);
+        cnt = 5;
+        do {
+            code = (u32)tmp >> (31 - cnt);
+            cnt++;
+        } while (code > h->maxCode[cnt]);
+        info->cnt = cnt;
+        return (h->Vij + h->valPtr[cnt])[code];
+    }
+    cb = *++c;
+    code = cb >> 27;
+    info->c = (u8 *)c;
+    tmp = h->quick[code];
+    info->currByte = cb;
+    if (tmp != 0xFF) {
+        info->cnt = increment[code] + 1;
+        return tmp;
+    }
+    i = 5;
+    do {
+        code = cb >> (31 - i);
+        i++;
+    } while (code > h->maxCode[i]);
+    info->cnt = i + 1;
+    return (h->Vij + h->valPtr[i])[code];
+}
 extern void *OldVIPostCallback_803C775C;
 
 void *PopUsedTextureSet(void);
@@ -11648,30 +11760,9 @@ void Render_DrawTriGroup(void) {
     void Render_StateAlphaBlendEnable(s32 enable);
     void Render_StateZWriteEnable(s32 enable);
     void SetTriVtxDesc(void);
-    typedef struct {
-        u32 r, g, b, a;
-        f32 x0, y0, z0, s0;
-        f32 x1, y1, z1, t0;
-        f32 x2, y2, z2, unk3C;
-        f32 s1, t1, s2, t2;
-    } GroupTri;
-    typedef struct {
-        u32 r, g, b, a;
-        f32 x0, y0, z0, s;
-        f32 x1, y1, z1, t;
-        f32 x2, y2, z2, unk3C;
-        f32 x3, y3, z3, unk4C;
-    } GroupQuad;
-    typedef struct {
-        u32 c[3][4];
-        f32 x0, y0, z0, s0;
-        f32 x1, y1, z1, t0;
-        f32 x2, y2, z2, unk5C;
-        f32 s1, t1, s2, t2;
-    } GroupTriLit;
-    GroupTri *tri;
-    GroupQuad *quad;
-    GroupTriLit *lit;
+    GDLGroupTriVtx *tri;
+    GDLGroupQuadVtx *quad;
+    GDLGroupLitTriVtx *lit;
     u32 i;
     u32 j;
     u32 start;
@@ -11690,7 +11781,7 @@ void Render_DrawTriGroup(void) {
             SetTriVtxDesc();
             GXBegin(0x90, 0, g_pGDL->groupTris[i].count * 3);
             for (j = 0; j < g_pGDL->groupTris[i].count; j++) {
-                tri = (GroupTri *)g_pGDL->unk24CDE0 + start++;
+                tri = &((GDLGroupTriVtx *)g_pGDL->unk24CDE0)[start++];
                 GXPosition3f32(tri->x0, tri->y0, tri->z0);
                 GXColor4u8(tri->r, tri->g, tri->b, tri->a);
                 GXTexCoord2f32(tri->s0, tri->t0);
@@ -11706,7 +11797,7 @@ void Render_DrawTriGroup(void) {
             SetTriVtxDesc();
             GXBegin(0x90, 0, g_pGDL->groupTris[i].count * 6);
             for (j = 0; j < g_pGDL->groupTris[i].count; j++) {
-                quad = (GroupQuad *)g_pGDL->unk24CDE8 + start++;
+                quad = &((GDLGroupQuadVtx *)g_pGDL->unk24CDE8)[start++];
                 GXPosition3f32(quad->x0, quad->y0, quad->z0);
                 GXColor4u8(quad->r, quad->g, quad->b, quad->a);
                 GXTexCoord2f32(0.0f, quad->s);
@@ -11731,7 +11822,7 @@ void Render_DrawTriGroup(void) {
             SetTriVtxDesc();
             GXBegin(0x90, 0, g_pGDL->groupTris[i].count * 3);
             for (j = 0; j < g_pGDL->groupTris[i].count; j++) {
-                lit = (GroupTriLit *)g_pGDL->unk24CDEC + start++;
+                lit = &((GDLGroupLitTriVtx *)g_pGDL->unk24CDEC)[start++];
                 GXPosition3f32(lit->x0, lit->y0, lit->z0);
                 GXColor4u8(lit->c[0][0], lit->c[0][1], lit->c[0][2], lit->c[0][3]);
                 GXTexCoord2f32(lit->s0, lit->t0);
