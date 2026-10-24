@@ -5809,6 +5809,7 @@ void CarA_Extract_Keyframes(u8 *car, void *frames) {
         }
     }
 }
+#pragma use_lmw_stmw reset
 
 void CarA_InitInverseBodyInertiaTensor(u8 *car) {
     extern Matrix4 g_identity;
