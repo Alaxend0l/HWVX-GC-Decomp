@@ -2251,8 +2251,6 @@ void __two_exp_800991F0(decimal *result, short exp) {
         }
     }
 }
-#pragma readonly_strings reset
-#pragma pool_strings reset
 
 static void __str2dec(decimal *d, const char *s, short exp) {
     int i;
