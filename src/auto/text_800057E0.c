@@ -18371,6 +18371,24 @@ void ShowStats(void) {
 
 }
 
+typedef struct TimeBarVtx {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 w;
+    f32 s;
+    f32 t;
+    GXColor color;
+    u8 pad[4];
+} TimeBarVtx;
+
+static inline void TimeBar_SetRect(TimeBarVtx *v, f32 x, f32 y, f32 w, f32 h) {
+    v[0].x = v[3].x = x;
+    v[0].y = v[1].y = y;
+    v[2].y = v[3].y = h + y;
+    v[1].x = v[2].x = x + w;
+}
+
 #pragma opt_propagation off
 void Render_TimeBars(u32 *times) {
     typedef struct {
@@ -18387,13 +18405,16 @@ void Render_TimeBars(u32 *times) {
     void *memcpy(void *dst, const void *src, u32 n);
     BarVtx v[4];
     GDLRect *rect;
+    f32 left = 50.0f;
+    f32 top = 23.0f;
+    f32 height = 15.0f;
     f32 x;
     u32 i;
 
-    v[0].x = v[3].x = 50.0f;
-    v[0].y = v[1].y = 23.0f;
-    v[2].y = v[3].y = 15.0f + 23.0f;
-    x = 50.0f + (f32)(times[0] / 60);
+    v[0].x = v[3].x = left;
+    v[0].y = v[1].y = top;
+    v[2].y = v[3].y = height + top;
+    x = left + (f32)(times[0] / 60);
     v[1].x = v[2].x = x;
     v[0].z = v[1].z = v[2].z = v[3].z = 0.0f;
     v[0].w = v[1].w = v[2].w = v[3].w = 1.0f;
@@ -18440,8 +18461,7 @@ void Render_TimeBars(u32 *times) {
     rect->tex = 0;
 
     v[0].x = v[3].x = x;
-    x += (f32)(times[2] / 60);
-    v[1].x = v[2].x = x;
+    v[1].x = v[2].x = x + (f32)(times[2] / 60);
     v[0].color.r = 0;
     v[0].color.b = 0xFF;
     v[0].color.g = 0;
@@ -18459,11 +18479,11 @@ void Render_TimeBars(u32 *times) {
     rect->blendMode = 0;
     rect->tex = 0;
 
-    v[0].x = v[3].x = 50.0f;
-    v[0].y = v[1].y = 40.0f;
-    v[2].y = v[3].y = 15.0f + 40.0f;
-    x = 50.0f + (f32)(times[3] / 60);
-    v[1].x = v[2].x = x;
+    top = 40.0f;
+    v[0].x = v[3].x = left;
+    v[0].y = v[1].y = top;
+    v[2].y = v[3].y = height + top;
+    v[1].x = v[2].x = left + (f32)(times[3] / 60);
     v[0].color.r = 0;
     v[0].color.g = 0xFF;
     v[0].color.b = 0xFF;
@@ -18481,10 +18501,10 @@ void Render_TimeBars(u32 *times) {
     rect->blendMode = 0;
     rect->tex = 0;
 
-    v[0].x = v[3].x = 50.0f;
+    v[0].x = v[3].x = left;
     v[0].y = v[1].y = 23.0f;
     v[2].y = v[3].y = 55.0f;
-    v[1].x = v[2].x = 1.0f + 50.0f;
+    v[1].x = v[2].x = 1.0f + left;
     v[0].color.r = 0xFF;
     v[0].color.g = 0xFF;
     v[0].color.b = 0xFF;
@@ -18503,7 +18523,7 @@ void Render_TimeBars(u32 *times) {
     rect->tex = 0;
 
     for (i = 0; i < 4; i++) {
-        x = 50.0f + 16666.666f / (f32)(0xF0 >> i);
+        x = left + 16666.666f / (f32)(0xF0 >> i);
         v[0].x = v[3].x = x;
         v[1].x = v[2].x = 2.0f + x;
         rect = Gfx_Add2DRectangle();
