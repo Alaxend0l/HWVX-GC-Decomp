@@ -6029,6 +6029,83 @@ f32 RayBoxTest(Vector4 *start, Vector4 *dir, Vector4 *box, f32 t, Vector4 *hit) 
     return t;
 }
 
+f32 RaySphereTest(Vector4 *start, Vector4 *dir, Vector4 *center, f32 radius, f32 t, u8 *hit) {
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *axb);
+    f32 PSVECSquareDistance(Vector4 *a, Vector4 *b);
+    f32 MagnitudeVector(Vector4 *v);
+    f32 Sqrt(f32 x);
+    Vector4 end;
+    Vector4 seg;
+    Vector4 toCenter;
+    Vector4 endToCenter;
+    Vector4 cross;
+    Vector4 unit;
+    Vector4 *pEnd = &end;
+    f32 radiusSq = radius * radius;
+    f32 crossSq;
+    f32 segSq;
+    f32 h;
+    f32 len;
+    f32 inv;
+    f32 dist;
+
+    PSVECSubtract(center, start, &toCenter);
+    if (PSVECSquareMag(&toCenter) < radiusSq) {
+        if (hit != NULL) {
+            *(Vector4 *)hit = *start;
+            PSVECSubtract((Vector4 *)hit, center, (Vector4 *)(hit + 0x10));
+            if (PSVECSquareMag((Vector4 *)(hit + 0x10))) {
+                PSVECNormalize((Vector4 *)(hit + 0x10), (Vector4 *)(hit + 0x10));
+            }
+        }
+        return 0.0f;
+    }
+    pEnd->x = dir->x * t + start->x;
+    pEnd->y = dir->y * t + start->y;
+    pEnd->z = dir->z * t + start->z;
+    PSVECSubtract(pEnd, start, &seg);
+    if (PSVECDotProduct(&seg, &toCenter) < 0.0f) {
+        return t;
+    }
+    PSVECSubtract(center, pEnd, &endToCenter);
+    if (PSVECDotProduct(&seg, &endToCenter) > 0.0f && PSVECSquareMag(&endToCenter) > radiusSq) {
+        return t;
+    }
+    PSVECCrossProduct(&seg, &toCenter, &cross);
+    crossSq = cross.z * cross.z + (cross.x * cross.x + cross.y * cross.y);
+    segSq = seg.z * seg.z + (seg.x * seg.x + seg.y * seg.y);
+    if (crossSq > radiusSq * segSq) {
+        return t;
+    }
+    if (PSVECDotProduct(&seg, &endToCenter) > 0.0f && PSVECSquareDistance(pEnd, center) > radiusSq) {
+        return t;
+    }
+    h = Sqrt(radiusSq - crossSq / segSq);
+    len = MagnitudeVector(&seg);
+    inv = 1.0f / len;
+    unit.x = seg.x * inv;
+    unit.y = seg.y * inv;
+    unit.z = seg.z * inv;
+    dist = inv * (t * (PSVECDotProduct(&unit, &toCenter) - h));
+    if (len < 0.0001f) {
+        return t;
+    }
+    if (hit != NULL) {
+        ((Vector4 *)hit)->x = dist * dir->x + start->x;
+        ((Vector4 *)hit)->y = dist * dir->y + start->y;
+        ((Vector4 *)hit)->z = dist * dir->z + start->z;
+        PSVECSubtract((Vector4 *)hit, center, (Vector4 *)(hit + 0x10));
+        if (PSVECSquareMag((Vector4 *)(hit + 0x10))) {
+            PSVECNormalize((Vector4 *)(hit + 0x10), (Vector4 *)(hit + 0x10));
+        }
+    }
+    return dist;
+}
+
 static inline f32 RayBoxTestLocal(Vector4 *start, Vector4 *dir, Vector4 *box, f32 t, Vector4 *hit) {
     typedef struct BoxNode {
         Vector4 plane;
@@ -31574,6 +31651,65 @@ void InitCallback(void *task) {
     DSPSendMailToDSP((u32)data);
     while (DSPCheckMailToDSP()) {
     }
+}
+
+void DoneCallback(void *task) {
+    s32 EXIUnlock(s32 chan);
+    s32 EXIProbe(s32 chan);
+    void __CARDMountCallback(s32 chan, s32 result);
+    s32 __CARDReadStatus(s32 chan, u8 *status);
+    s32 DummyLen(void);
+    s32 ReadArrayUnlock(s32 chan, u32 data, void *rbuf, s32 rlen, s32 mode);
+    u8 status;
+    u8 buffer[64];
+    s32 chan;
+    CARDControl *card;
+    s32 result;
+    u32 data;
+    s32 dummy;
+    u32 rlen;
+    u32 i;
+    u32 scramble;
+    u32 tmp;
+
+    for (chan = 0; chan < 2; ++chan) {
+        card = &__CARDBlock[chan];
+        if ((void *)((u8 *)card + 0x30) == task) {
+            break;
+        }
+    }
+    data = *(u32 *)((((u32)card->workArea + 0x2F) & ~0x1F) + 0x20);
+    dummy = DummyLen();
+    if (ReadArrayUnlock(chan, (data ^ *(u32 *)((u8 *)card + 0x2C)) & 0xFFFF0000, buffer, dummy, 1) < 0) {
+        EXIUnlock(chan);
+        __CARDMountCallback(chan, -3);
+        return;
+    }
+    rlen = ((dummy + card->latency + 4) * 8) + 1;
+    scramble = *(u32 *)((u8 *)card + 0x2C);
+    for (i = 0; i < rlen; i++) {
+        tmp = ~(scramble ^ (scramble << 7) ^ (scramble << 15) ^ (scramble << 23));
+        scramble = (scramble << 1) | ((tmp >> 30) & 2);
+    }
+    tmp = ~(scramble ^ (scramble << 7) ^ (scramble << 15) ^ (scramble << 23));
+    *(u32 *)((u8 *)card + 0x2C) = scramble | (tmp >> 31);
+    dummy = DummyLen();
+    if (ReadArrayUnlock(chan, ((data << 16) ^ *(u32 *)((u8 *)card + 0x2C)) & 0xFFFF0000, buffer, dummy, 1) < 0) {
+        EXIUnlock(chan);
+        __CARDMountCallback(chan, -3);
+        return;
+    }
+    result = __CARDReadStatus(chan, &status);
+    if (!EXIProbe(chan)) {
+        EXIUnlock(chan);
+        __CARDMountCallback(chan, -3);
+        return;
+    }
+    if (result == 0 && !(status & 0x40)) {
+        EXIUnlock(chan);
+        result = -5;
+    }
+    __CARDMountCallback(chan, result);
 }
 
 s32 __CARDRead(s32 chan, void *addr, u32 length, void *dst, CARDCallback callback) {
