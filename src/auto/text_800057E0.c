@@ -18527,6 +18527,7 @@ void State_GetGameStateStr(s32 state, char *str) {
         break;
     }
 }
+#pragma readonly_strings reset
 
 void Creature_MotionStateInit(void *arg0, s32 state, u8 reset, u8 keepTime) {
     typedef struct { u32 anim; u8 pad4[0x5C]; } AnimEntry;
@@ -26064,6 +26065,28 @@ u32 OSLoadFont(void *fontData, void *temp) {
         }
     }
     return size;
+}
+
+void ExpandFontSheet(u8 *src, u8 *dst, u8 *font) {
+    void DCStoreRange(void *addr, u32 nBytes);
+    u8 *c;
+    int i;
+
+    c = FontData_803C7230 + 0x2C;
+    if (*(u16 *)(FontData_803C7230 + 0x18) == 0) {
+        for (i = *(s32 *)(FontData_803C7230 + 0x28) / 2 - 1; i >= 0; i--) {
+            dst[i * 2 + 0] = (c[(src[i] >> 6) & 3] & 0xF0) | (c[(src[i] >> 4) & 3] & 0x0F);
+            dst[i * 2 + 1] = (c[(src[i] >> 2) & 3] & 0xF0) | (c[(src[i] >> 0) & 3] & 0x0F);
+        }
+    } else if (*(u16 *)(FontData_803C7230 + 0x18) == 2) {
+        for (i = *(s32 *)(FontData_803C7230 + 0x28) / 4 - 1; i >= 0; i--) {
+            dst[i * 4 + 0] = c[(src[i] >> 6) & 3];
+            dst[i * 4 + 1] = c[(src[i] >> 4) & 3];
+            dst[i * 4 + 2] = c[(src[i] >> 2) & 3];
+            dst[i * 4 + 3] = c[(src[i] >> 0) & 3];
+        }
+    }
+    DCStoreRange(dst, *(s32 *)(FontData_803C7230 + 0x28));
 }
 
 extern u8 *FontData_803C7230;
