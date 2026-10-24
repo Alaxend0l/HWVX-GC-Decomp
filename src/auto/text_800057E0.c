@@ -7548,38 +7548,6 @@ s32 Drone_Init(u8 *drone, u8 *data) {
     return 1;
 }
 
-static inline void Drone_ApplyControls(u8 *drone) {
-    void ProjectVectorToNormal(void *n, void *v);
-    f32 PSVECDotProduct(void *a, void *b);
-    f32 _fabs(f32 x);
-    f32 turn;
-    f32 thrust;
-    s8 *input;
-
-    if (drone[0x1DC] == 1) {
-        ProjectVectorToNormal(drone + 0x10, drone);
-        *(f32 *)(drone + 0x180) = PSVECDotProduct(drone, drone + 0x30);
-        input = *(s8 **)(drone + 0x94);
-        if (input != NULL) {
-            thrust = 12.1f * (f32)input[1];
-            turn = 10.0f * (f32)-input[0];
-            ProjectVectorToNormal(drone + 0x20, drone + 0x110);
-            ((Vector4 *)(drone + 0x110))->x += turn * ((Vector4 *)(drone + 0x20))->x;
-            ((Vector4 *)(drone + 0x110))->y += turn * ((Vector4 *)(drone + 0x20))->y;
-            ((Vector4 *)(drone + 0x110))->z += turn * ((Vector4 *)(drone + 0x20))->z;
-            if (_fabs(*(f32 *)(drone + 0x180)) < 100.0f) {
-                ((Vector4 *)(drone + 0xF0))->x += ((Vector4 *)(drone + 0x30))->x * thrust;
-                ((Vector4 *)(drone + 0xF0))->y += ((Vector4 *)(drone + 0x30))->y * thrust;
-                ((Vector4 *)(drone + 0xF0))->z += ((Vector4 *)(drone + 0x30))->z * thrust;
-            }
-        }
-    } else if (_fabs(PSVECDotProduct(drone + 0x10, drone)) < 2.0f) {
-        if (_fabs(PSVECDotProduct(drone + 0x20, drone + 0x130)) < 5.0f) {
-            drone[0x1DC] = 1;
-        }
-    }
-}
-
 void Drone_ComputeSuspensionForces(u8 *drone) {
     extern Vector4 g_zeroVector;
     extern u32 g_iLastDeltaTimeMS;
