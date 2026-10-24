@@ -36238,6 +36238,132 @@ s32 VerifyFAT(CARDControl *card, s32 *outCurrent) {
     return errors;
 }
 
+static s32 DoMount(s32 chan) {
+    typedef struct OSSramEx {
+        u8 flashID[2][12];
+        u32 wirelessKeyboardID;
+        u16 wirelessPadID[4];
+        u8 dvdErrorCode;
+        u8 _padding0;
+        u8 flashIDCheckSum[2];
+    } OSSramEx;
+    extern s32 SectorSizeTable_800D9860[8];
+    extern s32 LatencyTable_800D9880[8];
+    extern u16 __CARDVendorID;
+    void __CARDExiHandler(s32 chan, void *context);
+    void __CARDMountCallback(s32 chan, s32 result);
+    s32 EXIGetID(s32 chan, u32 dev, u32 *id);
+    s32 EXIProbe(s32 chan);
+    s32 EXIUnlock(s32 chan);
+    void *EXISetExiCallback(s32 chan, void *callback);
+    s32 IsCard(u32 id);
+    s32 __CARDClearStatus(s32 chan);
+    s32 __CARDReadStatus(s32 chan, u8 *status);
+    s32 __CARDUnlock(s32 chan, u8 *flashID);
+    s32 __CARDEnableInterrupt(s32 chan, s32 enable);
+    s32 __CARDRead(s32 chan, u32 addr, s32 length, void *dst, void *callback);
+    s32 __CARDPutControlBlock(CARDControl *card, s32 result);
+    OSSramEx *__OSLockSramEx(void);
+    s32 __OSUnlockSramEx(s32 commit);
+    void DCInvalidateRange(void *addr, u32 nBytes);
+    void DoUnmount(s32 chan, s32 result);
+    CARDControl *card;
+    u32 id;
+    u8 status;
+    s32 result;
+    OSSramEx *sram;
+    int i;
+    u8 checkSum;
+    u16 vendorID;
+
+    card = &__CARDBlock[chan];
+    if (card->mountStep == 0) {
+        if (EXIGetID(chan, 0, &id) == 0) {
+            result = -3;
+        } else if (IsCard(id)) {
+            result = 0;
+        } else {
+            result = -2;
+        }
+        if (result < 0) {
+            goto error;
+        }
+        *(u32 *)card->unk108 = id;
+        card->size = id & 0xFC;
+        card->sectorSize = SectorSizeTable_800D9860[(id & 0x00003800) >> 11];
+        card->cBlock = (s32)((card->size * 1024 * 1024) / 8) / card->sectorSize;
+        card->latency = LatencyTable_800D9880[(id & 0x00000700) >> 8];
+        result = __CARDClearStatus(chan);
+        if (result < 0) {
+            goto error;
+        }
+        result = __CARDReadStatus(chan, &status);
+        if (result < 0) {
+            goto error;
+        }
+        if (!EXIProbe(chan)) {
+            result = -3;
+            goto error;
+        }
+        if (!(status & 0x40)) {
+            result = __CARDUnlock(chan, card->unk18);
+            if (result < 0) {
+                goto error;
+            }
+            checkSum = 0;
+            sram = __OSLockSramEx();
+            for (i = 0; i < 12; i++) {
+                sram->flashID[chan][i] = card->unk18[i];
+                checkSum += card->unk18[i];
+            }
+            sram->flashIDCheckSum[chan] = ~checkSum;
+            __OSUnlockSramEx(1);
+            return result;
+        } else {
+            card->mountStep = 1;
+            checkSum = 0;
+            sram = __OSLockSramEx();
+            for (i = 0; i < 12; i++) {
+                checkSum += sram->flashID[chan][i];
+            }
+            __OSUnlockSramEx(0);
+            if (sram->flashIDCheckSum[chan] != (u8)~checkSum) {
+                result = -5;
+                goto error;
+            }
+        }
+    }
+    if (card->mountStep == 1) {
+        if (*(u32 *)card->unk108 == 0x80000004) {
+            vendorID = *(u16 *)__OSLockSramEx()->flashID[chan];
+            __OSUnlockSramEx(0);
+            if (__CARDVendorID == 0xFFFF || vendorID != __CARDVendorID) {
+                result = -2;
+                goto error;
+            }
+        }
+        card->mountStep = 2;
+        result = __CARDEnableInterrupt(chan, 1);
+        if (result < 0) {
+            goto error;
+        }
+        EXISetExiCallback(chan, __CARDExiHandler);
+        EXIUnlock(chan);
+        DCInvalidateRange(card->workArea, 0xA000);
+    }
+    result = __CARDRead(chan, card->sectorSize * (card->mountStep - 2), 0x2000,
+                        (u8 *)card->workArea + ((card->mountStep - 2) << 13), __CARDMountCallback);
+    if (result < 0) {
+        __CARDPutControlBlock(card, result);
+    }
+    return result;
+
+error:
+    EXIUnlock(chan);
+    DoUnmount(chan, result);
+    return result;
+}
+
 static s32 DoMount(s32 chan);
 static void DoUnmount(s32 chan, s32 result);
 s32 __CARDVerify(CARDControl *card);
@@ -42333,6 +42459,116 @@ s32 TRKDoReadRegisters(TRKBuffer *b) {
     }
     return err;
 }
+
+void TRKDoReadMemory(TRKBuffer *b) {
+    s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data);
+    s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data);
+    u8 buf[0x800];
+    u32 start;
+    u32 msg_length;
+    u16 length;
+    u8 c;
+    u8 options;
+    s32 err;
+    s32 ackTries;
+    u8 replyError;
+
+    if (b->length != 8) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 2);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return;
+    }
+    TRKSetBufferPosition(b, 0);
+    err = TRKReadBuffer1_ui8(b, &c);
+    if (err == 0) {
+        err = TRKReadBuffer1_ui8(b, &options);
+    }
+    if (err == 0) {
+        err = TRKReadBuffer1_ui16(b, &length);
+    }
+    if (err == 0) {
+        err = TRKReadBuffer1_ui32(b, &start);
+    }
+    if (options & 2) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 0x12);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return;
+    }
+    if (length > 0x800) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 0x11);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return;
+    }
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, 0);
+    if (err == 0) {
+        msg_length = length;
+        err = TRKTargetAccessMemory(buf, start, &msg_length, (options & 8) ? 0 : 1, 1);
+        length = msg_length;
+        if (err == 0) {
+            err = TRKAppendBuffer1_ui16(b, length);
+        }
+        if (err == 0) {
+            err = TRKAppendBuffer(b, buf, msg_length);
+        }
+    }
+    if (err != 0) {
+        switch (err) {
+        case 0x702:
+            replyError = 0x15;
+            break;
+        case 0x700:
+            replyError = 0x13;
+            break;
+        case 0x704:
+            replyError = 0x21;
+            break;
+        case 0x705:
+            replyError = 0x22;
+            break;
+        case 0x706:
+            replyError = 0x20;
+            break;
+        default:
+            replyError = 3;
+            break;
+        }
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, replyError);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+    } else {
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+    }
+}
+#pragma auto_inline reset
 
 void TRKDoCPUType(TRKBuffer *b) {
     typedef struct {
