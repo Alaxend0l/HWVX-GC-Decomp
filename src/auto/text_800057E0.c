@@ -759,7 +759,11 @@ typedef struct DSPTaskInfo {
     volatile u32 state;
     volatile u32 priority;
     volatile u32 flags;
-    u8 unkC[0x38 - 0xC];
+    u8 unkC[0x28 - 0xC];
+    void (*init_cb)(void *task);
+    void (*res_cb)(void *task);
+    void (*done_cb)(void *task);
+    void (*req_cb)(void *task);
     struct DSPTaskInfo *next;
     struct DSPTaskInfo *prev;
 } DSPTaskInfo;
