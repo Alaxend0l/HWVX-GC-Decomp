@@ -19310,10 +19310,11 @@ static inline BOOL GbaReadGameCode(s32 chan) {
     }
     if (code == 0x41483845) {
         Param_803C6A40[chan].unk58 = code;
-        return TRUE;
+    } else {
+        Param_803C6A40[chan].unk58 = 0;
+        return FALSE;
     }
-    Param_803C6A40[chan].unk58 = 0;
-    return FALSE;
+    return TRUE;
 }
 
 static inline BOOL GbaSendGameCode(s32 chan) {
