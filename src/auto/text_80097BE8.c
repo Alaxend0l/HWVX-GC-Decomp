@@ -994,8 +994,8 @@ static inline s32 SimThread_AddDelta(SimThread *t, s32 dPos, u32 dt) {
     i = t->deltaIdx;
     for (n = 0, sumT = 0, sumP = 0; n < 16 && sumT < 16; n++) {
         sumP += t->deltaPos[i];
-        sumT += t->deltaTime[i];
-        if (++i == 16) {
+        sumT += t->deltaTime[i++];
+        if (i == 16) {
             i = 0;
         }
     }
@@ -16228,8 +16228,8 @@ s32 SimThread_Step(VDevice *dev) {
     s32 sumA = 0;
     s32 sumB = 0;
     u32 dt;
-    u32 k;
     Effect *e;
+    u32 k;
     s32 f;
     s32 flag;
     s32 gain;
@@ -16241,7 +16241,8 @@ s32 SimThread_Step(VDevice *dev) {
         if (e != NULL && (e->flags & 1)) {
             Effect_Update(e, dt);
             if ((e->flags & 1) && e->delay == 0) {
-                f = e->force < -127 ? -127 : e->force;
+                f = e->force;
+                f = f < -127 ? -127 : f;
                 f = f > 127 ? 127 : f;
                 flag = e->flags & 4;
             } else {
