@@ -5199,7 +5199,8 @@ void CarA_ProcessImpulse(u8 *car, Vector4 *normal, Vector4 *pos, Vector4 *pointV
     XformVecOrientation(car + 0x10, &scaled, (Vector4 *)(car + 0x410));
 }
 
-static inline void CarA_ApplyWheelLoads(u8 *car) {
+static void CarA_ApplyWheelLoads(void *thing) {
+    u8 *car = thing;
     typedef struct WheelInfo {
         u8 pad0[0x3F];
         u8 parent;
