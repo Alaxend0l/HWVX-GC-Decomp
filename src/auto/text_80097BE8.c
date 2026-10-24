@@ -12637,6 +12637,7 @@ u8 __THPReadScaneHeader(void) {
     return 0;
 }
 
+#pragma use_lmw_stmw on
 u8 __THPReadQuantizationTable(void) {
     extern u8 __THPJpegNaturalOrder_800CE0D8[];
     extern f64 __THPAANScaleFactor[];
