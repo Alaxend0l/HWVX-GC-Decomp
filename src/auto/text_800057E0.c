@@ -11791,6 +11791,13 @@ f32 DropShip_GetLRTime(s32 index) {
 }
 
 #pragma push
+#pragma readonly_strings on
+#pragma use_lmw_stmw on
+void InterfaceManager_SetMissionObjectiveText(u8 *obj, u8 **data) {
+}
+#pragma pop
+
+#pragma push
 #pragma use_lmw_stmw on
 void InterfaceManager_RestoreMissionObjString(u8 *mgr) {
     u32 strlen(const char *s);
