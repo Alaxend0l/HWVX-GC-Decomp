@@ -10,6 +10,7 @@ void Gfx_SetWorldMatrix(f32 *matrix);
 void Gfx_SetProjectionMatrix(f32 fov);
 void MultiplyMatrix4x4(void *arg0, void *arg1, void *arg2);
 void MatrixToMtxTranspose(void *arg0, void *arg1);
+extern f32 GXCameraSpace_8036CF80[3][4];
 s32 OSSendMessage(void *queue, void *msg, s32 flags);
 s32 OSReceiveMessage(void *queue, void **msg, s32 flags);
 u32 MemCpyA_(u32 dst, u32 src, u32 len);
@@ -9052,21 +9053,20 @@ void Render_SaveCamera(void) {
 
 #pragma push
 void Render_LoadCamera(void) {
-    extern Vector GXCameraSpace_8036CF80[7];
+    extern f32 GXCameraSpace_8036CF80[3][4];
     void *GetRenderWindow();
     void C_MTXPerspective(f32 m[4][4], f32 fovY, f32 aspect, f32 n, f32 f);
     void GXSetProjection(f32 m[4][4], s32 type);
     void Gfx_SetCameraMatrix(void *a, void *b, void *c, void *d);
-    Vector *saved = GXCameraSpace_8036CF80;
     f32 mtx[4][4];
     f32 value;
     f32 angle;
     f32 fov;
 
-    *(Vector *)((u8 *)GetRenderWindow() + 0x180) = saved[3];
-    *(Vector *)((u8 *)GetRenderWindow() + 0x190) = saved[4];
-    *(Vector *)((u8 *)GetRenderWindow() + 0x1A0) = saved[5];
-    *(Vector *)((u8 *)GetRenderWindow() + 0x1B0) = saved[6];
+    *(Vector *)((u8 *)GetRenderWindow() + 0x180) = ((Vector *)GXCameraSpace_8036CF80)[3];
+    *(Vector *)((u8 *)GetRenderWindow() + 0x190) = ((Vector *)GXCameraSpace_8036CF80)[4];
+    *(Vector *)((u8 *)GetRenderWindow() + 0x1A0) = ((Vector *)GXCameraSpace_8036CF80)[5];
+    *(Vector *)((u8 *)GetRenderWindow() + 0x1B0) = ((Vector *)GXCameraSpace_8036CF80)[6];
     fov = *(f32 *)((u8 *)GetRenderWindow() + 0x270);
     angle = fov;
     value = sin(0.017453292f * (0.9f * fov));
