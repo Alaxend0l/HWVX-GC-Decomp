@@ -31269,41 +31269,37 @@ void SetCodeVariable(s32 var, u8 *obj, f32 value) {
     }
 }
 
-static inline s32 TriggerCompareValues(s32 op, f32 value, f32 operand) {
-    switch (op) {
-    case 21:
-        if (value > operand) {
-            return 1;
-        }
-        break;
-    case 20:
-        if (value < operand) {
-            return 1;
-        }
-        break;
-    case 22:
-        if (value == operand) {
-            return 1;
-        }
-        break;
-    case 47:
-        if (value >= operand) {
-            return 1;
-        }
-        break;
-    case 48:
-        if (value <= operand) {
-            return 1;
-        }
-        break;
+#define TRIGGER_COMPARE_RETURN(op, value, operand) \
+    switch (op) {                                  \
+    case 21:                                       \
+        if ((value) > (operand)) {                 \
+            return 1;                              \
+        }                                          \
+        break;                                     \
+    case 20:                                       \
+        if ((value) < (operand)) {                 \
+            return 1;                              \
+        }                                          \
+        break;                                     \
+    case 22:                                       \
+        if ((value) == (operand)) {                \
+            return 1;                              \
+        }                                          \
+        break;                                     \
+    case 47:                                       \
+        if ((value) >= (operand)) {                \
+            return 1;                              \
+        }                                          \
+        break;                                     \
+    case 48:                                       \
+        if ((value) <= (operand)) {                \
+            return 1;                              \
+        }                                          \
+        break;                                     \
     }
-    return 0;
-}
 
 s32 TriggerCodeVariableValueCheck(u32 *data) {
-    f32 GetCodeVariable(s32 var, u8 *thing);
     f32 value;
-    f32 operand;
     u32 i;
 
     if (data[1] < 100) {
@@ -31311,40 +31307,17 @@ s32 TriggerCodeVariableValueCheck(u32 *data) {
             value = GetCodeVariable(data[1], (u8 *)data[i + 3]);
             switch (data[data[2] + 3]) {
             case 0:
-                operand = *(f32 *)&data[data[2] + 4];
+                if (TriggerCompareValues(data[0], value, *(f32 *)&data[data[2] + 4])) {
+                    return 1;
+                }
                 break;
             case 1:
-                operand = *(f32 *)(*(u8 **)data[data[2] + 4] + 4);
+                if (TriggerCompareValues(data[0], value, *(f32 *)(*(u8 **)data[data[2] + 4] + 4))) {
+                    return 1;
+                }
                 break;
             case 2:
-                operand = GetCodeVariable(data[data[2] + 4], (u8 *)data[data[2] + 5]);
-                break;
-            default:
-                continue;
-            }
-            switch (data[0]) {
-            case 21:
-                if (value > operand) {
-                    return 1;
-                }
-                break;
-            case 20:
-                if (value < operand) {
-                    return 1;
-                }
-                break;
-            case 22:
-                if (value == operand) {
-                    return 1;
-                }
-                break;
-            case 47:
-                if (value >= operand) {
-                    return 1;
-                }
-                break;
-            case 48:
-                if (value <= operand) {
+                if (TriggerCompareValues(data[0], value, GetCodeVariable(data[data[2] + 4], (u8 *)data[data[2] + 5]))) {
                     return 1;
                 }
                 break;
@@ -31354,40 +31327,17 @@ s32 TriggerCodeVariableValueCheck(u32 *data) {
         value = GetCodeVariable(data[1], (u8 *)data[2]);
         switch (data[3]) {
         case 0:
-            operand = *(f32 *)&data[4];
+            if (TriggerCompareValues(data[0], value, *(f32 *)&data[4])) {
+                return 1;
+            }
             break;
         case 1:
-            operand = *(f32 *)(*(u8 **)data[4] + 4);
+            if (TriggerCompareValues(data[0], value, *(f32 *)(*(u8 **)data[4] + 4))) {
+                return 1;
+            }
             break;
         case 2:
-            operand = GetCodeVariable(data[4], (u8 *)data[5]);
-            break;
-        default:
-            return 0;
-        }
-        switch (data[0]) {
-        case 21:
-            if (value > operand) {
-                return 1;
-            }
-            break;
-        case 20:
-            if (value < operand) {
-                return 1;
-            }
-            break;
-        case 22:
-            if (value == operand) {
-                return 1;
-            }
-            break;
-        case 47:
-            if (value >= operand) {
-                return 1;
-            }
-            break;
-        case 48:
-            if (value <= operand) {
+            if (TriggerCompareValues(data[0], value, GetCodeVariable(data[4], (u8 *)data[5]))) {
                 return 1;
             }
             break;
