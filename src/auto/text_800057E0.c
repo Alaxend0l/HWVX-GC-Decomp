@@ -26381,7 +26381,6 @@ void StateProgressionManager_RestartCurrentLevel(void) {
 }
 
 #pragma readonly_strings on
-#pragma pool_strings on
 s32 StateProgressionManager_Init(s32 prevState) {
     extern s32 g_GameProgressionID;
     extern s32 g_GameProgressionState[8];
@@ -26587,12 +26586,13 @@ s32 StateProgressionManager_Heartbeat(void) {
     s32 LoadWorldProcess(char *world, u8 loaded);
     int sprintf(char *buf, const char *fmt, ...);
     char buf[512];
-    ProgSequence *seq;
-    ProgLevel *level;
-    ProgPack *pack;
     char *world;
+    ProgLevel *level;
+    ProgSequence *seq;
+    ProgPack *pack;
     void *dataPack;
     s32 id;
+    s32 phase;
 
     level = NULL;
     if (g_GameProgressionState.script != NULL) {
@@ -26610,10 +26610,11 @@ s32 StateProgressionManager_Heartbeat(void) {
         world = "DemoLand";
         g_bLoadingDemoLand = 1;
     }
-    switch (g_GameProgressionState.phase) {
+    phase = g_GameProgressionState.phase;
+    switch (phase) {
     case 0:
     case 2:
-        if (g_GameProgressionState.phase == 0) {
+        if (phase == 0) {
             seq = (ProgSequence *)level;
         } else if (g_GameProgressionEndState[0] == 4) {
             if (g_GameProgressionEndState[1] > level->win.count) {
@@ -26629,17 +26630,11 @@ s32 StateProgressionManager_Heartbeat(void) {
             seq = &level->lose.seqs[g_GameProgressionEndState[1]];
         }
         if (g_GameProgressionState.step >= seq->count) {
-            if (g_GameProgressionState.phase == 0) {
+            if (phase == 0) {
                 g_GameProgressionState.phase = 1;
             } else {
-                ProgSeqList *list;
-                if (g_GameProgressionEndState[0] == 4) {
-                    list = &level->win;
-                } else {
-                    list = &level->lose;
-                }
+                g_GameProgressionState.index += (g_GameProgressionEndState[0] == 4 ? &level->win : &level->lose)->seqs[g_GameProgressionEndState[1]].advance;
                 g_GameProgressionState.phase = 0;
-                g_GameProgressionState.index += list->seqs[g_GameProgressionEndState[1]].advance;
                 g_GameProgressionState.worldState = 0;
                 g_GameProgressionState.step = 0;
             }
@@ -26704,7 +26699,7 @@ s32 StateProgressionManager_Heartbeat(void) {
                 }
                 break;
             }
-        } else if (InterfaceManager_GetTotalActiveInterfaces() == 0) {
+        } else if (g_GameProgressionState.worldState == 7 && InterfaceManager_GetTotalActiveInterfaces() == 0) {
             if (g_GameProgressionState.loaded) {
                 FileStreaming_ReleaseDataPack(FileStreaming_GetPackID(level->pack->name, 1, level->pack->id), 1);
                 g_GameProgressionState.loaded = 0;
