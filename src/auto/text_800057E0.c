@@ -8249,6 +8249,122 @@ s8 OBoxHitsBSPZeroTimeEdgesOnly(void *obox, void *bsp, void *arg2) {
     return 0;
 }
 
+u32 RayHitsBSP2(Vector4 *start, Vector4 *end, Vector4 *bsp, void *node, s32 depth, void *plane, f32 *t, Vector4 *hit) {
+    typedef struct {
+        Vector4 plane;
+        u32 material;
+        u16 front;
+        u16 back;
+    } BSPNode2;
+    f32 Distance_Plane(void *arg0, void *arg1);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    BSPNode2 *n;
+    f32 d0;
+    f32 d1;
+    f32 frac;
+    u32 result;
+
+    n = (BSPNode2 *)(*(u8 **)((u8 *)bsp + 0x30) + (u32)node * 0x20);
+    d0 = Distance_Plane(n, start);
+    d1 = Distance_Plane(n, end);
+    if (d0 == 0.0f && d1 == 0.0f) {
+        if (n->front == 0xFFFF) {
+            return 0;
+        }
+        return RayHitsBSP2(start, end, bsp, (void *)n->front, depth + 1, plane, t, hit);
+    }
+    if (d0 > 0.0f && d1 < 0.0f) {
+        Vector4 dir;
+        Vector4 mid;
+        PSVECSubtract(end, start, &dir);
+        if (d0 != d1) {
+            frac = d0 / (d0 - d1);
+        } else {
+            frac = 0.0f;
+        }
+        mid.x = dir.x * frac + start->x;
+        mid.y = dir.y * frac + start->y;
+        mid.z = dir.z * frac + start->z;
+        if (n->front != 0xFFFF) {
+            result = RayHitsBSP2(start, &mid, bsp, (void *)n->front, depth + 1, plane, t, hit);
+            if (result) {
+                *t *= frac;
+                return result;
+            }
+        }
+        if (n->back != 0xFFFF) {
+            result = RayHitsBSP2(&mid, end, bsp, (void *)n->back, depth + 1, plane, t, hit);
+            if (result) {
+                *t = *t * (1.0f - frac) + frac;
+                if (frac == *t) {
+                    *hit = mid;
+                    *t = frac;
+                    *(Vector4 *)plane = n->plane;
+                    return (*(u32 **)((u8 *)*(void **)g_worldData.world + 0x5C))[n->material];
+                }
+                return result;
+            }
+            return 0;
+        }
+        *hit = mid;
+        *t = frac;
+        *(Vector4 *)plane = n->plane;
+        return (*(u32 **)((u8 *)*(void **)g_worldData.world + 0x5C))[n->material];
+    }
+    if (d0 < 0.0f && d1 > 0.0f) {
+        Vector4 dir;
+        Vector4 mid;
+        PSVECSubtract(end, start, &dir);
+        if (d0 != d1) {
+            frac = d0 / (d0 - d1);
+        } else {
+            frac = 0.0f;
+        }
+        mid.x = dir.x * frac + start->x;
+        mid.y = dir.y * frac + start->y;
+        mid.z = dir.z * frac + start->z;
+        if (n->back != 0xFFFF) {
+            result = RayHitsBSP2(start, &mid, bsp, (void *)n->back, depth + 1, plane, t, hit);
+            if (result) {
+                *t *= frac;
+                return result;
+            }
+        } else {
+            *hit = mid;
+            *t = frac;
+            *(Vector4 *)plane = n->plane;
+            return (*(u32 **)((u8 *)*(void **)g_worldData.world + 0x5C))[n->material];
+        }
+        if (n->front != 0xFFFF) {
+            result = RayHitsBSP2(&mid, end, bsp, (void *)n->front, depth + 1, plane, t, hit);
+            if (result) {
+                *t = *t * (1.0f - frac) + frac;
+                if (frac == *t) {
+                    *hit = mid;
+                    *t = frac;
+                    *(Vector4 *)plane = n->plane;
+                    return (*(u32 **)((u8 *)*(void **)g_worldData.world + 0x5C))[n->material];
+                }
+                return result;
+            }
+        }
+        return 0;
+    }
+    if (d0 > 0.0f || d1 > 0.0f) {
+        if (n->front != 0xFFFF) {
+            return RayHitsBSP2(start, end, bsp, (void *)n->front, depth + 1, plane, t, hit);
+        }
+        return 0;
+    }
+    if (n->back != 0xFFFF) {
+        return RayHitsBSP2(start, end, bsp, (void *)n->back, depth + 1, plane, t, hit);
+    }
+    *hit = *start;
+    *t = 0.0f;
+    *(Vector4 *)plane = n->plane;
+    return (*(u32 **)((u8 *)*(void **)g_worldData.world + 0x5C))[n->material];
+}
+
 u32 RayHitsBSP2(Vector4 *start, Vector4 *end, Vector4 *bbox, void *arg3, s32 arg4, void *bsp, f32 *t, Vector4 *hit);
 u32 RayHitsBSP(Vector4 *start, Vector4 *dir, Vector4 *bbox, f32 *time, void *bsp) {
     f32 t;
