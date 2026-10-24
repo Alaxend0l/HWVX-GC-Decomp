@@ -12438,6 +12438,38 @@ static inline void Grid_RemoveNodes(GridObject *obj) {
     }
 }
 
+static inline void Grid_InsertNodes(GridObject *obj) {
+    u32 z;
+    u32 x;
+    GridNode *prev;
+    GridNode *newNode;
+    GridNode *node;
+
+    prev = NULL;
+    for (x = obj->x0; x <= obj->x1; x++) {
+        for (z = obj->z0; z <= obj->z1; z++) {
+            node = ((GridManager *)gGridManager)->freeNodes;
+            newNode = NULL;
+            if (node != NULL) {
+                ((GridManager *)gGridManager)->freeNodes = node->next;
+                newNode = node;
+                *(GridResult *)node = *(GridResult *)obj;
+                node->objNext = prev;
+                node->cell = &((GridManager *)gGridManager)->cells[node->data][x * ((GridManager *)gGridManager)->numZ + z];
+                node->prev = NULL;
+                node->next = ((GridManager *)gGridManager)->cells[node->data][x * ((GridManager *)gGridManager)->numZ + z].head;
+                if (node->next != NULL) {
+                    node->next->prev = node;
+                }
+                ((GridManager *)gGridManager)->cells[node->data][x * ((GridManager *)gGridManager)->numZ + z].head = node;
+                ((GridManager *)gGridManager)->cells[node->data][x * ((GridManager *)gGridManager)->numZ + z].count++;
+            }
+            prev = newNode;
+        }
+    }
+    obj->nodes = prev;
+}
+
 static inline void Grid_PushFreeObject(GridObject *object) {
     object->next = ((GridManager *)gGridManager)->freeObjects;
     ((GridManager *)gGridManager)->freeObjects = object;
@@ -12542,8 +12574,7 @@ void Grid_MoveObject(GridObject *obj, Vector4 *min, Vector4 *max) {
         Grid_GetCell(min, (s32 *)&x0, (s32 *)&z0);
         Grid_GetCell(max, (s32 *)&x1, (s32 *)&z1);
         if (x0 != obj->x0 || z0 != obj->z0 || x1 != obj->x1 || z1 != obj->z1) {
-            cur = obj->nodes;
-            while (cur != NULL) {
+            for (cur = obj->nodes; cur != NULL; cur = next) {
                 next = cur->objNext;
                 if (cur->next != NULL) {
                     cur->next->prev = cur->prev;
@@ -12554,9 +12585,7 @@ void Grid_MoveObject(GridObject *obj, Vector4 *min, Vector4 *max) {
                     cur->cell->head = cur->next;
                 }
                 cur->cell->count--;
-                cur->next = ((GridManager *)gGridManager)->freeNodes;
-                ((GridManager *)gGridManager)->freeNodes = cur;
-                cur = next;
+                Grid_PushFreeNode(cur);
             }
             obj->x0 = x0;
             obj->z0 = z0;
@@ -12565,8 +12594,8 @@ void Grid_MoveObject(GridObject *obj, Vector4 *min, Vector4 *max) {
             prev = NULL;
             for (x = obj->x0; x <= obj->x1; x++) {
                 for (z = obj->z0; z <= obj->z1; z++) {
-                    node = ((GridManager *)gGridManager)->freeNodes;
                     newNode = NULL;
+                    node = ((GridManager *)gGridManager)->freeNodes;
                     if (node != NULL) {
                         ((GridManager *)gGridManager)->freeNodes = node->next;
                         newNode = node;
