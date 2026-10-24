@@ -414,7 +414,9 @@ typedef struct CodeVariables {
     s32 fileIndex;
     u8 unk11C[3];
     s8 bOverwritingFile;
-    u8 unk120[0x134 - 0x120];
+    u8 unk120[0x124 - 0x120];
+    s32 unk124;
+    u8 unk128[0x134 - 0x128];
 } CodeVariables;
 
 extern CodeVariables g_codeVariables;
