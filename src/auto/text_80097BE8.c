@@ -1036,8 +1036,8 @@ static inline u32 SimThread_Sample(SimThread *t) {
         t->historyIdx = 0;
     }
     accel = 0;
-    for (n = 0; n < 10; n++) {
-        accel += t->history[t->historyIdx++] * t->weights[9 - n];
+    for (n = 9; n >= 0; n--) {
+        accel += t->history[t->historyIdx++] * t->weights[n];
         if (t->historyIdx > 9) {
             t->historyIdx = 0;
         }
