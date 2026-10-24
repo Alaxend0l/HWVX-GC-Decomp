@@ -34756,7 +34756,6 @@ void __GXXfVtxSpecs(void) {
     gx->bpSentNot = 1;
 }
 
-#pragma scheduling off
 void GXSetVtxDesc(u32 attr, s32 type) {
     extern u8 *gx;
     u32 *vcd;
