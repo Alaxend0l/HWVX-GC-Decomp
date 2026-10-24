@@ -31170,8 +31170,12 @@ s32 TriggerLevelStart(void) {
 #pragma push
 f32 GetCodeVariable(s32 var, u8 *thing) {
     u32 GameSettings_GetCodeVariable(s32, s32);
+    typedef struct CodeVarPlayer {
+        u8 unk0[0x94];
+        u16 vars[8];
+    } CodeVarPlayer;
     u8 *vehicle;
-    u8 *player;
+    CodeVarPlayer *player;
     u16 index;
 
     switch (var) {
@@ -31201,9 +31205,9 @@ f32 GetCodeVariable(s32 var, u8 *thing) {
         vehicle = *(u8 **)(thing + 0x28);
         index = (u16)var - 20;
         if (vehicle != NULL) {
-            player = *(u8 **)(vehicle + 0x94);
+            player = *(CodeVarPlayer **)(vehicle + 0x94);
             if (player != NULL) {
-                return ((u16 *)(player + 0x94))[index];
+                return player->vars[index];
             }
         }
         break;
@@ -31300,26 +31304,26 @@ void SetCodeVariable(s32 var, u8 *obj, f32 value) {
 
 s32 TriggerCodeVariableValueCheck(u32 *data) {
     f32 value;
+    f32 operand;
     u32 i;
+    u32 count;
 
     if (data[1] < 100) {
         for (i = 0; i < data[2]; i++) {
             value = GetCodeVariable(data[1], (u8 *)data[i + 3]);
-            switch (data[data[2] + 3]) {
+            count = data[2];
+            switch (data[count + 3]) {
             case 0:
-                if (TriggerCompareValues(data[0], value, *(f32 *)&data[data[2] + 4])) {
-                    return 1;
-                }
+                operand = *(f32 *)&data[count + 4];
+                TRIGGER_COMPARE_RETURN(data[0], value, operand);
                 break;
             case 1:
-                if (TriggerCompareValues(data[0], value, *(f32 *)(*(u8 **)data[data[2] + 4] + 4))) {
-                    return 1;
-                }
+                operand = *(f32 *)(*(u8 **)data[count + 4] + 4);
+                TRIGGER_COMPARE_RETURN(data[0], value, operand);
                 break;
             case 2:
-                if (TriggerCompareValues(data[0], value, GetCodeVariable(data[data[2] + 4], (u8 *)data[data[2] + 5]))) {
-                    return 1;
-                }
+                operand = GetCodeVariable(data[count + 4], (u8 *)data[count + 5]);
+                TRIGGER_COMPARE_RETURN(data[0], value, operand);
                 break;
             }
         }
@@ -31327,19 +31331,16 @@ s32 TriggerCodeVariableValueCheck(u32 *data) {
         value = GetCodeVariable(data[1], (u8 *)data[2]);
         switch (data[3]) {
         case 0:
-            if (TriggerCompareValues(data[0], value, *(f32 *)&data[4])) {
-                return 1;
-            }
+            operand = *(f32 *)&data[4];
+            TRIGGER_COMPARE_RETURN(data[0], value, operand);
             break;
         case 1:
-            if (TriggerCompareValues(data[0], value, *(f32 *)(*(u8 **)data[4] + 4))) {
-                return 1;
-            }
+            operand = *(f32 *)(*(u8 **)data[4] + 4);
+            TRIGGER_COMPARE_RETURN(data[0], value, operand);
             break;
         case 2:
-            if (TriggerCompareValues(data[0], value, GetCodeVariable(data[4], (u8 *)data[5]))) {
-                return 1;
-            }
+            operand = GetCodeVariable(data[4], (u8 *)data[5]);
+            TRIGGER_COMPARE_RETURN(data[0], value, operand);
             break;
         }
     }
