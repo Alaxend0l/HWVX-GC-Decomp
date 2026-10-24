@@ -2162,6 +2162,7 @@ void AI_AsyncHeartbeat(void *arg0) {
 }
 
 #pragma use_lmw_stmw on
+#pragma readonly_strings on
 void AI_Car_AsyncProcess(void) {
     typedef struct AIScripts {
         u8 pad0[0x90];
