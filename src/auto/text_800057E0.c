@@ -17874,7 +17874,7 @@ s32 NavHolder_IsLinked(s32 from, s32 to) {
 }
 
 #pragma peephole on
-void CreateParticleGX();
+void CreateParticleGX(Vector4 *pos, Vector4 *vel, Vector4 *accel, Vector4 *quat, u8 *info, f32 speed, f32 age);
 void CreateParticleSprite(Vector4 *pos, Vector4 *vel, Vector4 *accel, void *owner, u8 *info, f32 speed, f32 age);
 void LineManager_Add();
 void NavHolder_FillPointerArrayPath(u8 *point, u8 **array, u32 max) {
