@@ -459,9 +459,11 @@ static inline s32 __THPHuffDecodeTab(THPFileInfo *info, THPHuffmanTab *h) {
         }
         tmp = __rlwimi(code << 27, cb, 31, 1, 31);
         cnt = 5;
+        maxCode = &h->maxCode[cnt];
         do {
             code = (u32)tmp >> (31 - cnt);
-        } while (code > h->maxCode[++cnt]);
+            cnt++;
+        } while (code > *++maxCode);
         info->cnt = cnt;
         return (h->Vij + h->valPtr[cnt])[code];
     }
