@@ -4259,6 +4259,87 @@ void GetTrimmedCameraPos(u8 *camera, Vector4 *from, Vector4 *dir, f32 *trim, f32
     *(Vector4 *)(camera + 0x60) = pos;
 }
 
+void GetTrimmedCameraPos2(Vector4 *from, Vector4 *to, f32 *trim) {
+    extern f32 g_fDeltaTimeSec;
+    f32 PSVECDotProduct(void *a, void *b);
+    f32 PSVECSquareDistance(void *a, void *b);
+    void PSVECSubtract(void *a, void *b, void *out);
+    f32 Sqrt(f32 x);
+    struct {
+        Vector4 point;
+        Vector4 normal;
+        u8 unk20[0x30];
+    } info;
+    Vector4 pos;
+    Vector4 target;
+    Vector4 d;
+    f32 t;
+    f32 trimAmt;
+    f32 travelled;
+    f32 dist;
+    f32 len;
+    f32 dot;
+    s8 hit;
+    s8 trimmed;
+
+    trimAmt = *trim;
+    travelled = 0.0f;
+    pos = *from;
+    target = *to;
+    dist = Sqrt(PSVECSquareDistance(from, to));
+    trimmed = 0;
+    PSVECSubtract(&target, &pos, &d);
+    do {
+        t = 1.0f - travelled;
+        hit = RayHitsTerrainAndObjects_Camera(&pos, &d, &t, &info);
+        if (t == 0.0f && !trimmed) {
+            hit = 0;
+            t += 0.2f;
+        }
+        pos.x += d.x * t;
+        pos.y += d.y * t;
+        pos.z += d.z * t;
+        if (hit) {
+            dot = -PSVECDotProduct(&info.normal, &d);
+            if (dot < 0.0f) {
+                return;
+            }
+            d.x += dot * info.normal.x;
+            d.y += dot * info.normal.y;
+            d.z += dot * info.normal.z;
+            len = MagnitudeVector(&d);
+            if (len < 0.01f) {
+                trimmed = 1;
+                break;
+            }
+            len = dist / len;
+            trimmed = 1;
+            d.x *= len;
+            d.y *= len;
+            d.z *= len;
+            pos.x += info.normal.x * trimAmt;
+            pos.y += info.normal.y * trimAmt;
+            pos.z += info.normal.z * trimAmt;
+        }
+        travelled += t;
+        if (t < 1e-6f) {
+            break;
+        }
+    } while (travelled < 1.0f);
+    *to = pos;
+    if (trimmed) {
+        *trim += g_fDeltaTimeSec;
+        if (*trim > 1.8f) {
+            *trim = 1.8f;
+        }
+    } else {
+        *trim -= g_fDeltaTimeSec;
+        if (*trim <= 0.0f) {
+            *trim = 0.0f;
+        }
+    }
+}
+
 void Camera_UpdatePosition_Zoom_Generic(u8 *cam, u8 *mode, Vector4 *target, Vector4 *eye, f32 zoom, f32 shake) {
     extern f32 g_fDeltaTimeSec;
     double sin(double x);
