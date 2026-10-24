@@ -13247,6 +13247,72 @@ s32 PhysicalObject_PreMove(u8 *obj) {
     return 1;
 }
 
+s32 Mover_PreMove(u8 *mover) {
+    extern Vector4 g_zeroVector;
+    extern f32 g_fDeltaTimeSec;
+    void Gfx_AnimExtractKeyFrame(void *anim, f32 time, void *keyFrame, u32 count);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void TransposeSubMatrix(Matrix4 *mtx);
+    void MultiplySubMatrix(void *a, Matrix4 *b, Matrix4 *out);
+    void GenerateSpinAngleFromQuaternion(Vector4 *quat, void *axis, f32 *angle);
+    typedef struct {
+        Quaternion rot;
+        f32 pos[4];
+    } KeyFrame;
+    Matrix4 inv;
+    Matrix4 rel;
+    Matrix4 rot;
+    KeyFrame start;
+    KeyFrame key;
+    Vector4 pos;
+    Quaternion quat;
+    Quaternion delta;
+    f32 angle;
+
+    if (!(*(u32 *)(mover + 0x74) & 0x4000)) {
+        *(f32 *)(mover + 0xDC) += *(f32 *)(mover + 0xD8) * g_fDeltaTimeSec;
+        if (*(f32 *)(mover + 0xDC) > *(f32 *)(*(u8 **)(mover + 0xD4) + 0xC)) {
+            *(f32 *)(mover + 0xDC) -= *(f32 *)(*(u8 **)(mover + 0xD4) + 0xC) - *(f32 *)(*(u8 **)(mover + 0xD4) + 0x8);
+            Gfx_AnimExtractKeyFrame(*(void **)(mover + 0xD4), *(f32 *)(*(u8 **)(mover + 0xD4) + 0x8), &start, 1);
+            ((Thing *)mover)->mtx.m[3][0] = start.pos[0];
+            ((Thing *)mover)->mtx.m[3][1] = start.pos[1];
+            ((Thing *)mover)->mtx.m[3][2] = start.pos[2];
+        }
+        Gfx_AnimExtractKeyFrame(*(void **)(mover + 0xD4), *(f32 *)(mover + 0xDC), &key, 1);
+        quat = key.rot;
+        pos.x = key.pos[0];
+        pos.y = key.pos[1];
+        pos.z = key.pos[2];
+        if (*(u32 *)(mover + 0x74) & 4) {
+            ((Vector4 *)mover)->x = (pos.x - ((Thing *)mover)->mtx.m[3][0]) / g_fDeltaTimeSec;
+            ((Vector4 *)mover)->y = (pos.y - ((Thing *)mover)->mtx.m[3][1]) / g_fDeltaTimeSec;
+            ((Vector4 *)mover)->z = (pos.z - ((Thing *)mover)->mtx.m[3][2]) / g_fDeltaTimeSec;
+            inv = ((Thing *)mover)->mtx;
+            Mover_SetRotation(mover, quat);
+            QuaternionToSubMatrix(&quat, &rot);
+            TransposeSubMatrix(&inv);
+            MultiplySubMatrix(&inv, &rot, &rel);
+            SubMatrixToQuaternion(&rel, (Vector4 *)&delta);
+            GenerateSpinAngleFromQuaternion((Vector4 *)&delta, mover + 0x130, &angle);
+            angle /= g_fDeltaTimeSec;
+            *(f32 *)(mover + 0x130) *= angle;
+            *(f32 *)(mover + 0x134) *= angle;
+            *(f32 *)(mover + 0x138) *= angle;
+        } else {
+            QuaternionToSubMatrix(&quat, mover + 0x10);
+            ((Thing *)mover)->mtx.v[3] = pos;
+            *(Quaternion *)&((Thing *)mover)->quat = quat;
+            Mover_SetRotation(mover, quat);
+        }
+        *(u32 *)(mover + 0x74) &= ~0x10;
+    } else {
+        ((Thing *)mover)->pos = g_zeroVector;
+        Mover_SetRotation(mover, *(Quaternion *)&((Thing *)mover)->quat);
+        *(Vector4 *)(mover + 0x130) = g_zeroVector;
+    }
+    return 1;
+}
+
 void Mover_DynamicRotation(u8 *mover) {
     void QuaternionToSubMatrix(void *quat, void *mtx);
     Vector4 quat;
@@ -27817,26 +27883,49 @@ typedef struct EXIControl {
 
 volatile u32 __EXIRegs[15] : 0xCC006800;
 
-static inline BOOL CompleteTransfer(s32 chan) {
-    extern EXIControl Ecb_80309980[3];
-    EXIControl *exi = &Ecb_80309980[chan];
-    u8 *buf;
-    u32 data;
-    s32 i;
-    s32 len;
+static u32 CompleteTransfer(void) {
+    extern s64 XferTime_80309820[4];
+    extern s64 TypeTime_80309800[4];
+    s64 __OSGetSystemTime(void);
+    u32 sr;
+    u32 i;
+    u32 rLen;
+    u8 *input;
+    u32 temp;
 
-    if (exi->state & 3) {
-        if ((exi->state & 2) && (len = exi->immLen) != 0) {
-            buf = exi->immBuf;
-            data = __EXIRegs[chan * 5 + 4];
-            for (i = 0; i < len; i++) {
-                *buf++ = (u8)(data >> ((3 - i) * 8));
+    __SIRegs[13] = (__SIRegs[13] | 0x80000000) & ~1;
+    sr = __SIRegs[14];
+    if (Si_800D9E70.chan != -1) {
+        XferTime_80309820[Si_800D9E70.chan] = __OSGetSystemTime();
+        input = Si_800D9E70.input;
+        rLen = Si_800D9E70.inputBytes / 4;
+        for (i = 0; i < rLen; i++) {
+            *(u32 *)input = __SIRegs[32 + i];
+            input += 4;
+        }
+        rLen = Si_800D9E70.inputBytes & 3;
+        if (rLen) {
+            temp = __SIRegs[32 + i];
+            for (i = 0; i < rLen; i++) {
+                *input++ = (u8)(temp >> ((3 - i) * 8));
             }
         }
-        exi->state &= ~3;
-        return TRUE;
+        if (__SIRegs[13] & 0x20000000) {
+            sr >>= 8 * (3 - Si_800D9E70.chan);
+            sr &= 0xF;
+            if ((sr & 8) && !(((u32 *)(&Si_800D9E70 + 1))[Si_800D9E70.chan] & 0x80)) {
+                ((u32 *)(&Si_800D9E70 + 1))[Si_800D9E70.chan] = 8;
+            }
+            if (sr == 0) {
+                sr = 4;
+            }
+        } else {
+            TypeTime_80309800[Si_800D9E70.chan] = __OSGetSystemTime();
+            sr = 0;
+        }
+        Si_800D9E70.chan = -1;
     }
-    return FALSE;
+    return sr;
 }
 
 void EXIIntrruptHandler(s16 interrupt, void *context) {
