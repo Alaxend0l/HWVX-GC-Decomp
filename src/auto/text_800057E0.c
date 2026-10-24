@@ -19944,11 +19944,11 @@ static inline void PhysicalObject_ApplyAngularImpulse(u8 *obj, Vector4 *pos, Vec
     f32 Sqrt(f32 x);
     void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
     void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
-    Vector4 f;
-    Vector4 torque;
-    Vector4 r;
-    Vector4 local;
     Vector4 scaled;
+    Vector4 local;
+    Vector4 r;
+    Vector4 torque;
+    Vector4 f;
     f32 mag;
 
     PSVECSubtract(pos, (Vector4 *)(obj + 0x40), &r);
@@ -20451,7 +20451,11 @@ void Mover_DynamicRotation(u8 *mover) {
 
 void PhysicalObject_DynamicCollideImpact(u8 *obj, u8 *collision, f32 force) {
     extern Vector4 g_zeroVector;
+    void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
     f32 PSVECSquareMag(void *v);
+    f32 Sqrt(f32 x);
     f32 _fabs(f32 x);
     void Create_Plane(Vector4 *plane, Vector4 *normal, Vector4 *point);
     f32 Distance_Plane(void *plane, void *point);
@@ -20460,6 +20464,10 @@ void PhysicalObject_DynamicCollideImpact(u8 *obj, u8 *collision, f32 force) {
     void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
     void *ThingManager_DARYL_CreateThing(s32 type, void *params);
     void Destructible_Release(u8 *destructible);
+    typedef struct {
+        Vector4 center;
+        Vector4 corners[8];
+    } OBox;
     struct { Vector4 pos; Vector4 vel; Vector4 spin; Vector4 quat; void *info; u32 unk44; u32 unk48; u32 unk4C; u32 unk50; } params;
     Quaternion normal;
     Quaternion pos;
@@ -20489,12 +20497,12 @@ void PhysicalObject_DynamicCollideImpact(u8 *obj, u8 *collision, f32 force) {
         switch (info[0x10]) {
         case 0:
             for (i = 0; i < 8; i++) {
-                d = Distance_Plane(&plane, *(u8 **)(obj + 0xD0) + i * 0x10 + 0x10);
+                d = Distance_Plane(&plane, &(*(OBox **)(obj + 0xD0))->corners[i]);
                 if (d < 0.15f) {
                     w = (0.15f - d) / 0.15f;
-                    center.x += ((Vector4 *)(*(u8 **)(obj + 0xD0) + i * 0x10 + 0x10))->x * w;
-                    center.y += ((Vector4 *)(*(u8 **)(obj + 0xD0) + i * 0x10 + 0x10))->y * w;
-                    center.z += ((Vector4 *)(*(u8 **)(obj + 0xD0) + i * 0x10 + 0x10))->z * w;
+                    center.x += (*(OBox **)(obj + 0xD0))->corners[i].x * w;
+                    center.y += (*(OBox **)(obj + 0xD0))->corners[i].y * w;
+                    center.z += (*(OBox **)(obj + 0xD0))->corners[i].z * w;
                     weight += w;
                 }
             }
@@ -20503,12 +20511,12 @@ void PhysicalObject_DynamicCollideImpact(u8 *obj, u8 *collision, f32 force) {
         case 6:
             hull = *(u8 **)(info + 0x48);
             for (i = 0; i < *(u32 *)(hull + 0xC); i++) {
-                d = Distance_Plane(&plane, *(u8 **)(obj + 0xCC) + i * 0x10);
+                d = Distance_Plane(&plane, &(*(Vector4 **)(obj + 0xCC))[i]);
                 if (d < 0.15f) {
                     w = (0.15f - d) / 0.15f;
-                    center.x += w * ((Vector4 *)(*(u8 **)(obj + 0xCC) + i * 0x10))->x;
-                    center.y += w * ((Vector4 *)(*(u8 **)(obj + 0xCC) + i * 0x10))->y;
-                    center.z += w * ((Vector4 *)(*(u8 **)(obj + 0xCC) + i * 0x10))->z;
+                    center.x += (*(Vector4 **)(obj + 0xCC))[i].x * w;
+                    center.y += (*(Vector4 **)(obj + 0xCC))[i].y * w;
+                    center.z += (*(Vector4 **)(obj + 0xCC))[i].z * w;
                     weight += w;
                 }
             }
@@ -20537,10 +20545,40 @@ void PhysicalObject_DynamicCollideImpact(u8 *obj, u8 *collision, f32 force) {
             }
         }
     }
-    ((Vector4 *)obj)->x += normal.x * scale;
-    ((Vector4 *)obj)->y += normal.y * scale;
-    ((Vector4 *)obj)->z += normal.z * scale;
-    PhysicalObject_ApplyAngularImpulse(obj, (Vector4 *)&pos, (Vector4 *)&normal, force);
+    {
+        Vector4 f;
+        Vector4 torque;
+        Vector4 r;
+        Vector4 local;
+        Vector4 scaled;
+        f32 mag;
+
+        ((Vector4 *)obj)->x += normal.x * scale;
+        ((Vector4 *)obj)->y += normal.y * scale;
+        ((Vector4 *)obj)->z += normal.z * scale;
+        PSVECSubtract((Vector4 *)&pos, (Vector4 *)(obj + 0x40), &r);
+        PSVECScale((Vector4 *)&normal, &f, force);
+        PSVECCrossProduct(&r, &f, &torque);
+        ((Vector4 *)(obj + 0x110))->x += torque.x;
+        ((Vector4 *)(obj + 0x110))->y += torque.y;
+        ((Vector4 *)(obj + 0x110))->z += torque.z;
+        InverseXformVecOrientation(obj + 0x10, (Vector4 *)(obj + 0x110), &local);
+        scaled.x = ((Vector4 *)(obj + 0x120))->x * local.x;
+        scaled.y = ((Vector4 *)(obj + 0x120))->y * local.y;
+        scaled.z = ((Vector4 *)(obj + 0x120))->z * local.z;
+        mag = PSVECSquareMag(&scaled);
+        if (mag > 10000.0f) {
+            mag = 100.0f / Sqrt(mag);
+            scaled.x *= mag;
+            scaled.y *= mag;
+            scaled.z *= mag;
+            local.x = scaled.x / ((Vector4 *)(obj + 0x120))->x;
+            local.y = scaled.y / ((Vector4 *)(obj + 0x120))->y;
+            local.z = scaled.z / ((Vector4 *)(obj + 0x120))->z;
+            XformVecOrientation(obj + 0x10, &local, (Vector4 *)(obj + 0x110));
+        }
+        PhysicalObject_UpdateSpin(obj);
+    }
 }
 
 void PhysicalObject_GetInverseLocalInertiaTensor(void *obj, Quaternion *out) {
