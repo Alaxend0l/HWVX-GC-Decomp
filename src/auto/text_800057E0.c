@@ -42473,7 +42473,6 @@ static inline s32 TRKSendACK(TRKBuffer *b) {
     return err;
 }
 
-#pragma auto_inline off
 void TRKDoReadMemory(TRKBuffer *b) {
     s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data);
     s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data);
