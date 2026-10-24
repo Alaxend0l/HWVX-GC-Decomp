@@ -5900,6 +5900,10 @@ static inline s32 AnimTrack_FindKey(AnimTrack *track, f32 time) {
     }
 }
 
+static inline f32 AnimTrack_Cubic(f32 *c, f32 time) {
+    return time * (time * (time * c[0] + c[1]) + c[2]) + c[3];
+}
+
 void AnimExtractKeyFrame_Hybrid(void *animp, void *outp, f32 time) {
     typedef struct {
         u8 pad0[8];
@@ -5910,35 +5914,26 @@ void AnimExtractKeyFrame_Hybrid(void *animp, void *outp, f32 time) {
         u32 *mask;
         u16 *flags;
         f32 *times;
-        u8 *data;
+        AnimTrack *data;
     } Anim;
     typedef struct {
         Vector rot;
         f32 pos[3];
         u32 info;
     } Bone;
-    typedef struct Track {
-        u8 type;
-        u16 numKeys;
-        f32 *times;
-        f32 (*coeffs)[4][4];
-        struct Track *next;
-        f32 value[4];
-    } Track;
     void CopyVector(Vector *dst, Vector *src);
     Anim *anim;
     Bone *out;
     u16 *flags;
-    Track *track;
+    AnimTrack *track;
     u32 bit;
     u32 i;
     s32 key;
-    u32 step;
 
     anim = (Anim *)animp;
     out = (Bone *)outp;
     flags = anim->flags;
-    track = (Track *)anim->data;
+    track = anim->data;
     bit = 1;
     if (time < anim->minTime) {
         time = anim->minTime;
@@ -5949,26 +5944,7 @@ void AnimExtractKeyFrame_Hybrid(void *animp, void *outp, f32 time) {
     for (i = 0; i < anim->numBones; i++) {
         if (*flags & 1 | 2 | 4) {
             if (track->type == 3) {
-                key = 1;
-                step = track->numKeys;
-                while (1) {
-                    step = (step + 1) >> 1;
-                    if (time > track->times[key]) {
-                        key += step;
-                        if (key >= track->numKeys) {
-                            key = track->numKeys - 1;
-                            break;
-                        }
-                    } else if (time <= track->times[key - 1]) {
-                        key -= step;
-                    } else {
-                        break;
-                    }
-                    if (key <= 0) {
-                        key = 0;
-                        break;
-                    }
-                }
+                key = AnimTrack_FindKey(track, time);
                 out->pos[0] = time * (time * (time * track->coeffs[key][0][0] + track->coeffs[key][0][1]) + track->coeffs[key][0][2]) + track->coeffs[key][0][3];
                 out->pos[1] = time * (time * (time * track->coeffs[key][1][0] + track->coeffs[key][1][1]) + track->coeffs[key][1][2]) + track->coeffs[key][1][3];
                 out->pos[2] = time * (time * (time * track->coeffs[key][2][0] + track->coeffs[key][2][1]) + track->coeffs[key][2][2]) + track->coeffs[key][2][3];
@@ -5986,26 +5962,7 @@ void AnimExtractKeyFrame_Hybrid(void *animp, void *outp, f32 time) {
         }
         if (*flags++ & 0x10 | 0x20 | 0x40 | 0x8) {
             if (track->type == 3) {
-                key = 1;
-                step = track->numKeys;
-                while (1) {
-                    step = (step + 1) >> 1;
-                    if (time > track->times[key]) {
-                        key += step;
-                        if (key >= track->numKeys) {
-                            key = track->numKeys - 1;
-                            break;
-                        }
-                    } else if (time <= track->times[key - 1]) {
-                        key -= step;
-                    } else {
-                        break;
-                    }
-                    if (key <= 0) {
-                        key = 0;
-                        break;
-                    }
-                }
+                key = AnimTrack_FindKey(track, time);
                 out->rot.x = time * (time * (time * track->coeffs[key][0][0] + track->coeffs[key][0][1]) + track->coeffs[key][0][2]) + track->coeffs[key][0][3];
                 out->rot.y = time * (time * (time * track->coeffs[key][1][0] + track->coeffs[key][1][1]) + track->coeffs[key][1][2]) + track->coeffs[key][1][3];
                 out->rot.z = time * (time * (time * track->coeffs[key][2][0] + track->coeffs[key][2][1]) + track->coeffs[key][2][2]) + track->coeffs[key][2][3];
