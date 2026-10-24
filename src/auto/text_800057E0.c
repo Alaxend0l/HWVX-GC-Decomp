@@ -8079,6 +8079,175 @@ void OBoxCache_Set(u32 box0, u32 box1, Vector4 *a, Vector4 *b) {
     *(u32 *)(g_aCollisionPairCache[slot] + 0x24) = box1;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s8 OBoxHitsSegmentZeroTime(void *obox, void *edge, void *arg2) {
+    typedef struct {
+        Vector4 center;
+        Vector4 corners[8];
+        f32 extent[3];
+        u8 pad9C[4];
+        Vector4 *axis[3];
+    } OBoxData;
+    typedef struct {
+        Vector4 pos;
+        Vector4 normal;
+    } HitInfo;
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *axb);
+    void Create_Plane(Vector4 *plane, Vector4 *normal, Vector4 *point);
+    void Reverse_Plane(Vector4 *plane);
+    f32 Distance_Plane(Vector4 *plane, Vector4 *point);
+    u32 k;
+    s32 i;
+    u8 type;
+    u8 axisIdx;
+    u8 corner;
+    u8 idx;
+    HitInfo *hit = arg2;
+    Vector4 *seg = edge;
+    OBoxData *box = obox;
+    u32 j;
+    u8 maxIdx;
+    u8 minIdx;
+    f32 boxMin;
+    f32 lo;
+    f32 hi;
+    f32 min;
+    f32 max;
+    f32 c;
+    f32 d;
+    f32 t;
+    f32 best = -99999.9f;
+    Vector4 dir;
+    Vector4 axis;
+    Vector4 point;
+    Vector4 perp;
+    Vector4 normal;
+    Vector4 plane;
+    Vector4 segDir;
+    Vector4 diff;
+
+    type = 0;
+    axisIdx = 0;
+    i = 0;
+    do {
+        hi = PSVECDotProduct(box->axis[i], &seg[0]);
+        d = PSVECDotProduct(box->axis[i], &seg[1]);
+        if (hi > d) {
+            lo = d;
+            idx = 1;
+        } else {
+            lo = hi;
+            idx = 0;
+            hi = d;
+        }
+        c = PSVECDotProduct(box->axis[i], &box->center);
+        boxMin = c - box->extent[i];
+        c = c + box->extent[i];
+        if (hi < boxMin || c < lo) {
+            return 0;
+        }
+        if (lo < c) {
+            d = lo - c;
+            if (d > best) {
+                best = d;
+                if (hit != NULL) {
+                    hit->pos = seg[idx];
+                    hit->normal = *box->axis[i];
+                    Reverse_Plane(&hit->normal);
+                }
+            }
+        }
+        if (boxMin < hi) {
+            d = boxMin - hi;
+            if (d > best) {
+                best = d;
+                if (hit != NULL) {
+                    hit->pos = seg[idx];
+                    hit->normal = *box->axis[i];
+                }
+            }
+        }
+        i++;
+    } while (i < 3);
+    PSVECSubtract(&seg[0], &seg[1], &dir);
+    for (j = 0; j < 3; j++) {
+        maxIdx = 0;
+        minIdx = 0;
+        PSVECCrossProduct(box->axis[j], &dir, &axis);
+        if (PSVECSquareMag(&axis)) {
+            PSVECNormalize(&axis, &axis);
+        }
+        max = PSVECDotProduct(&axis, &box->corners[0]);
+        min = max;
+        for (k = 1; k < 8; k++) {
+            d = PSVECDotProduct(&axis, &box->corners[k]);
+            if (d < min) {
+                min = d;
+                minIdx = k;
+            } else if (d > max) {
+                maxIdx = k;
+                max = d;
+            }
+        }
+        c = PSVECDotProduct(&axis, &seg[0]);
+        if (c < min || max < c) {
+            return 0;
+        }
+        if (c < max) {
+            d = c - max;
+            if (d > best) {
+                best = d;
+                corner = maxIdx;
+                axisIdx = j;
+                type = 3;
+            }
+        }
+        if (min < c) {
+            d = min - c;
+            if (d > best) {
+                best = d;
+                corner = minIdx;
+                axisIdx = j;
+                type = 3;
+            }
+        }
+    }
+    if (hit != NULL && best < 0.0f) {
+        switch (type) {
+        case 3:
+            point = box->corners[corner];
+            PSVECSubtract(&seg[1], &seg[0], &segDir);
+            PSVECCrossProduct(&segDir, box->axis[axisIdx], &normal);
+            PSVECCrossProduct(&segDir, &normal, &perp);
+            Create_Plane(&plane, &perp, &seg[0]);
+            d = Distance_Plane(&plane, &point);
+            t = -d / PSVECDotProduct(&plane, box->axis[axisIdx]);
+            point.x += box->axis[axisIdx]->x * t;
+            point.y += box->axis[axisIdx]->y * t;
+            point.z += box->axis[axisIdx]->z * t;
+            hit->pos = point;
+            hit->normal = normal;
+            if (PSVECSquareMag(&hit->normal)) {
+                PSVECNormalize(&hit->normal, &hit->normal);
+            }
+            PSVECSubtract(&box->center, &hit->pos, &diff);
+            if (PSVECDotProduct(&diff, &hit->normal) < 0.0f) {
+                hit->normal.x *= -1.0f;
+                hit->normal.y *= -1.0f;
+                hit->normal.z *= -1.0f;
+            }
+            break;
+        }
+    }
+    return 1;
+}
+#pragma pop
+
 void CollisionTriCache_Clear(void) {
     extern u8 g_aCollisionTriPairCache[4][0x30];
     s32 i;
@@ -18009,6 +18178,142 @@ s32 PhysicalObject_PreMove(u8 *obj) {
         XformVecOrientation(obj + 0x10, scaled2, (f32 *)(obj + 0x130));
     }
     return 1;
+}
+
+u8 PhysicalObject_Move(u8 *obj) {
+    typedef struct {
+        u8 pad0[0x14];
+        f32 friction;
+        f32 restitution;
+    } Material;
+    typedef struct {
+        u8 pad0[0x4];
+        void (*stop)(u8 *obj);
+        u8 pad8[0x14 - 0x8];
+        f32 (*getMass)(u8 *obj);
+        void (*applyImpulse)(u8 *obj, void *hit, s32 arg2, f32 impulse);
+        u8 pad1C[0x28 - 0x1C];
+        Material *(*getMaterial)(u8 *obj);
+        u8 pad2C[0x30 - 0x2C];
+        void (*getInverseInertia)(u8 *obj, Vector4 *out);
+        void (*integrate)(u8 *obj, f32 dt);
+    } VTable;
+    typedef struct {
+        Vector4 pos;
+        Vector4 normal;
+        u8 *thing;
+        s32 unk24;
+        Material *material;
+        u8 pad2C[0x40 - 0x2C];
+        u8 type;
+    } CollisionInfo;
+    extern f32 g_fDeltaTimeSec;
+    f32 Sqrt(f32 x);
+    s8 Timer_Interrupt300(void);
+    s32 Thing_HitsTerrain(void *thing, void *arg1, void *arg2);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *axb);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    CollisionInfo hit;
+    Vector4 tmp;
+    Vector4 negVel;
+    Vector4 r;
+    Vector4 rxn;
+    Vector4 angVel;
+    Vector4 invInertia;
+    Vector4 local;
+    Vector4 scaled;
+    f32 dt;
+    f32 elapsed;
+    f32 invMass;
+    f32 vn;
+    f32 e1;
+    f32 e2;
+    f32 friction;
+    f32 inv;
+    u32 iter;
+    s32 hitTerrain;
+
+    if (!(*(u32 *)(obj + 0x74) & 0xD)) {
+        elapsed = 0.0f;
+        iter = 0;
+        if (Timer_Interrupt300()) {
+            inv = 1.0f / Sqrt(((Vector4 *)(obj + 0x50))->x * ((Vector4 *)(obj + 0x50))->x +
+                              ((Vector4 *)(obj + 0x50))->y * ((Vector4 *)(obj + 0x50))->y +
+                              ((Vector4 *)(obj + 0x50))->z * ((Vector4 *)(obj + 0x50))->z +
+                              ((Vector4 *)(obj + 0x50))->w * ((Vector4 *)(obj + 0x50))->w);
+            ((Vector4 *)(obj + 0x50))->x *= inv;
+            ((Vector4 *)(obj + 0x50))->y *= inv;
+            ((Vector4 *)(obj + 0x50))->z *= inv;
+            ((Vector4 *)(obj + 0x50))->w *= inv;
+        }
+        do {
+            dt = g_fDeltaTimeSec - elapsed;
+            hitTerrain = Thing_HitsTerrain(obj, &dt, &hit);
+            ((Vector4 *)(obj + 0x40))->x += ((Vector4 *)obj)->x * dt;
+            ((Vector4 *)(obj + 0x40))->y += ((Vector4 *)obj)->y * dt;
+            ((Vector4 *)(obj + 0x40))->z += ((Vector4 *)obj)->z * dt;
+            *(u32 *)(obj + 0x74) |= 0x100;
+            (*(VTable **)(obj + 0x8C))->integrate(obj, dt);
+            hit.thing = obj;
+            hit.unk24 = 0;
+            if (0.0f == dt) {
+                (*(VTable **)(obj + 0x8C))->stop(obj);
+                return 0;
+            }
+            if ((s8)hitTerrain) {
+                invMass = 1.0f / (*(VTable **)(obj + 0x8C))->getMass(obj);
+                vn = PSVECDotProduct(&hit.normal, (Vector4 *)hit.thing);
+                e1 = (*(VTable **)(hit.thing + 0x8C))->getMaterial(hit.thing)->restitution;
+                e2 = hit.material->restitution;
+                friction = 0.3f * hit.material->friction * (*(VTable **)(hit.thing + 0x8C))->getMaterial(hit.thing)->friction;
+                negVel.x = -((Vector4 *)obj)->x;
+                negVel.y = -((Vector4 *)obj)->y;
+                negVel.z = -((Vector4 *)obj)->z;
+                if (PSVECSquareMag(&negVel) > 0.0f) {
+                    if (friction > 1.0f) {
+                        friction = 1.0f;
+                    }
+                    if (PSVECSquareMag(&negVel)) {
+                        PSVECNormalize(&negVel, &negVel);
+                    }
+                    hit.normal.x = (1.0f - friction) * hit.normal.x + friction * negVel.x;
+                    hit.normal.y = (1.0f - friction) * hit.normal.y + friction * negVel.y;
+                    hit.normal.z = (1.0f - friction) * hit.normal.z + friction * negVel.z;
+                    if (PSVECSquareMag(&hit.normal)) {
+                        PSVECNormalize(&hit.normal, &hit.normal);
+                    }
+                }
+                PSVECSubtract(&hit.pos, (Vector4 *)(hit.thing + 0x40), &r);
+                PSVECCrossProduct(&r, &hit.normal, &rxn);
+                (*(VTable **)(hit.thing + 0x8C))->getInverseInertia(hit.thing, &invInertia);
+                InverseXformVecOrientation(hit.thing + 0x10, &rxn, &local);
+                scaled.x = invInertia.x * local.x;
+                scaled.y = invInertia.y * local.y;
+                scaled.z = invInertia.z * local.z;
+                XformVecOrientation(hit.thing + 0x10, &scaled, &angVel);
+                PSVECCrossProduct(&angVel, &r, &tmp);
+                friction = PSVECDotProduct(&tmp, &hit.normal);
+                friction = invMass * PSVECDotProduct(&hit.normal, &hit.normal) + friction;
+                ((Vector4 *)(obj + 0x40))->x += 0.03f * hit.normal.x;
+                ((Vector4 *)(obj + 0x40))->y += 0.03f * hit.normal.y;
+                ((Vector4 *)(obj + 0x40))->z += 0.03f * hit.normal.z;
+                (*(VTable **)(obj + 0x8C))->applyImpulse(obj, &hit, 0, vn * -(e1 * e2 + 1.0f) / friction);
+            }
+            if (*(u32 *)(obj + 0x74) & 0x200000) {
+                elapsed = g_fDeltaTimeSec;
+            }
+            if (iter++ > 6) {
+                elapsed = g_fDeltaTimeSec;
+            }
+            elapsed += dt;
+        } while (elapsed < g_fDeltaTimeSec);
+    }
+    return Destructible_Move(obj);
 }
 
 s32 Mover_PreMove(u8 *mover) {
