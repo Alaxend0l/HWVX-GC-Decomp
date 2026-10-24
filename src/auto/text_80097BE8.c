@@ -7523,6 +7523,79 @@ s32 Gfx_FrustrumCullSphereTest(Vector *center, f32 radius) {
     return result;
 }
 
+u32 Gfx_GetCullLODGX(s32 geom, void *mtx, u8 *lod, u8 flag) {
+    extern GfxState g_state;
+    extern u8 g_CurrentViews;
+    void XformVec(Vector *m, Vector *v, Vector *out);
+    f32 PSVECSquareMag(Vector *v);
+    void PSVECSubtract(Vector *a, Vector *b, Vector *a_b);
+    f32 PSVECDotProduct(Vector *a, Vector *b);
+    f32 Sqrt(f32 x);
+    void Gfx_EnableState(u32 state);
+    s32 Gfx_FrustrumCullSphereTest(Vector *center, f32 radius);
+    Geometry *geometry = (Geometry *)geom;
+    Vector *matrix = (Vector *)mtx;
+    Vector pos __attribute__((aligned(16)));
+    Vector center __attribute__((aligned(16)));
+    Vector diff __attribute__((aligned(16)));
+    f32 radius;
+    f32 dist;
+    f32 a;
+    f32 b;
+    void *window;
+    u16 i;
+
+    window = GetRenderWindow();
+    pos.x = geometry->center[0];
+    pos.y = geometry->center[1];
+    pos.z = geometry->center[2];
+    pos.w = 1.0f;
+    if (matrix == NULL) {
+        center = pos;
+        radius = geometry->bboxMax[3];
+    } else {
+        XformVec(matrix, &pos, &center);
+        a = PSVECSquareMag(&matrix[0]) >= PSVECSquareMag(&matrix[1]) ? PSVECSquareMag(&matrix[0]) : PSVECSquareMag(&matrix[1]);
+        b = a >= PSVECSquareMag(&matrix[2])
+                ? (PSVECSquareMag(&matrix[0]) >= PSVECSquareMag(&matrix[1]) ? PSVECSquareMag(&matrix[0]) : PSVECSquareMag(&matrix[1]))
+                : PSVECSquareMag(&matrix[2]);
+        radius = geometry->bboxMax[3] * Sqrt(b);
+    }
+    PSVECSubtract(&center, (Vector *)((u8 *)window + 0x180), &diff);
+    dist = PSVECDotProduct(&diff, (Vector *)((u8 *)window + 0x190)) * ((f32 *)window)[0x9D];
+    if (!(((Geometry *)geometry->groups)->groups->flags & 0x8000) && g_state.farClippingPlane > 0.0f &&
+        dist >= g_state.farClippingPlane) {
+        return 0;
+    }
+    switch (Gfx_FrustrumCullSphereTest(&center, radius)) {
+    case 1:
+        *lod = 1;
+        break;
+    case 2:
+        *lod = 0;
+        break;
+    default:
+        return 0;
+    }
+    for (i = 0; i < geometry->numGroups; i++) {
+        if (dist < geometry->lodDistances[i]) {
+            break;
+        }
+    }
+    if (geometry->numGroups == 1 && geometry->lodDistances[0] == 0.0f) {
+        i = 0;
+    }
+    if (i < geometry->numGroups) {
+        if (g_CurrentViews != 1 && i + 1 < geometry->numGroups) {
+            return (u32)geometry->groups + (i + 1) * 0x18;
+        }
+        return (u32)geometry->groups + i * 0x18;
+    }
+    Gfx_EnableState(0x20000);
+    return 0;
+}
+#pragma use_lmw_stmw reset
+
 s32 Gfx_GetLightState(void);
 #pragma push
 #pragma dont_inline on
