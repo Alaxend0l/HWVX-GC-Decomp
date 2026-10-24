@@ -596,7 +596,7 @@ static inline void Input_SetKeyDown(VirtualPad *pad, u16 key) {
     s32 k;
 
     for (k = 0; k < 20; k++) {
-        if (s_keyMap[k] == key) {
+        if (key == s_keyMap[k]) {
             pad->keyDown |= 1 << k;
             pad->keyPress |= 1 << k;
         }
@@ -16162,7 +16162,6 @@ void Input_Heartbeat(void) {
     extern s32 g_iDeltaTimeMS;
     s32 i;
     s32 j;
-    s32 k;
     u16 key;
 
     if (!g_StopInput) {
@@ -16173,22 +16172,12 @@ void Input_Heartbeat(void) {
         g_VirtualPad[i].keyPress = 0;
         for (j = 0; j < g_padDownPos[i]; j++) {
             key = ((u16 (*)[8])s_unk30)[i][j];
-            for (k = 0; k < 20; k++) {
-                if (key == s_keyMap[k]) {
-                    g_VirtualPad[i].keyDown |= 1 << k;
-                    g_VirtualPad[i].keyPress |= 1 << k;
-                }
-            }
+            Input_SetKeyDown(&g_VirtualPad[i], key);
             ((u16 (*)[8])s_unk30)[i][j] = key;
         }
         for (j = 0; j < g_padUpPos[i]; j++) {
             key = ((u16 (*)[8])s_unk70)[i][j];
-            for (k = 0; k < 20; k++) {
-                if (key == s_keyMap[k]) {
-                    g_VirtualPad[i].keyDown &= ~(1 << k);
-                    g_VirtualPad[i].keyRelease |= 1 << k;
-                }
-            }
+            Input_SetKeyUp(&g_VirtualPad[i], key);
             ((u16 (*)[8])s_unk70)[i][j] = key;
         }
         g_padUpPos[i] = 0;
