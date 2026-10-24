@@ -31261,6 +31261,120 @@ BOOL PADInit(void) {
     return PADReset(0xF0000000);
 }
 
+u32 PADRead(void *arg0) {
+    typedef struct {
+        u16 button;
+        s8 stickX;
+        s8 stickY;
+        s8 substickX;
+        s8 substickY;
+        u8 triggerLeft;
+        u8 triggerRight;
+        u8 analogA;
+        u8 analogB;
+        s8 err;
+    } PADStatus_;
+    void OSSetWirelessID(s32, u16);
+    void SIDisablePolling(u32);
+    void OSRestoreInterrupts(s32);
+    BOOL SIIsChanBusy(s32 chan);
+    u32 SIGetStatus(s32 chan);
+    u32 SIGetType(s32 chan);
+    BOOL SIGetResponse(s32 chan, void *data);
+    s32 SIGetTypeAsync(s32 chan, void (*callback)(s32, u32));
+    BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback, s64 delay);
+    void PADReceiveCheckCallback(s32 chan, u32 type);
+    void PADOriginUpdateCallback(s32 chan, u32 error, void *context);
+    void *memset(void *dst, int c, u32 n);
+    extern void (*MakeStatus_803C6DD8)(s32, void *, u32 *);
+    extern u32 CmdReadOrigin_803C6DDC;
+    extern u32 CheckingBits_803C73CC;
+    extern u32 PendingBits_803C73D0;
+    extern u32 WaitingBits_803C73C8;
+    PADStatus_ *status = arg0;
+    s32 enabled;
+    s32 chan;
+    u32 data[2];
+    u32 chanBit;
+    u32 motor;
+    s32 disEnabled;
+
+    enabled = OSDisableInterrupts();
+    motor = 0;
+    for (chan = 0; chan < 4; chan++, status++) {
+        chanBit = 0x80000000 >> chan;
+        if (PendingBits_803C73D0 & chanBit) {
+            PADReset(0);
+            status->err = -2;
+            memset(status, 0, 10);
+            continue;
+        }
+        if ((ResettingBits_803C73C0 & chanBit) || ResettingChan_803C6DC8 == chan) {
+            status->err = -2;
+            memset(status, 0, 10);
+            continue;
+        }
+        if (!(EnabledBits_803C73BC & chanBit)) {
+            status->err = -1;
+            memset(status, 0, 10);
+            continue;
+        }
+        if (SIIsChanBusy(chan)) {
+            status->err = -3;
+            memset(status, 0, 10);
+            continue;
+        }
+        if (SIGetStatus(chan) & 8) {
+            SIGetResponse(chan, data);
+            if (WaitingBits_803C73C8 & chanBit) {
+                status->err = 0;
+                memset(status, 0, 10);
+                if (!(CheckingBits_803C73CC & chanBit)) {
+                    CheckingBits_803C73CC |= chanBit;
+                    SIGetTypeAsync(chan, PADReceiveCheckCallback);
+                }
+                continue;
+            }
+            disEnabled = OSDisableInterrupts();
+            SIDisablePolling(chanBit);
+            EnabledBits_803C73BC &= ~chanBit;
+            WaitingBits_803C73C8 &= ~chanBit;
+            CheckingBits_803C73CC &= ~chanBit;
+            PendingBits_803C73D0 &= ~chanBit;
+            OSSetWirelessID(chan, 0);
+            OSRestoreInterrupts(disEnabled);
+            status->err = -1;
+            memset(status, 0, 10);
+            continue;
+        }
+        if (!(SIGetType(chan) & 0x20000000)) {
+            motor |= chanBit;
+        }
+        if (!SIGetResponse(chan, data)) {
+            status->err = -3;
+            memset(status, 0, 10);
+            continue;
+        }
+        if (data[0] & 0x80000000) {
+            status->err = -3;
+            memset(status, 0, 10);
+            continue;
+        }
+        MakeStatus_803C6DD8(chan, status, data);
+        if (status->button & 0x2000) {
+            status->err = -3;
+            memset(status, 0, 10);
+            SITransfer(chan, &CmdReadOrigin_803C6DDC, 1, Origin_802EFC00[chan], 10, PADOriginUpdateCallback, 0);
+            continue;
+        }
+        status->err = 0;
+        status->button &= ~0x0080;
+    }
+    OSRestoreInterrupts(enabled);
+    return motor;
+}
+#pragma peephole reset
+
 void PADSetSpec(s32 spec) {
     extern void (*MakeStatus_803C6DD8)(s32, void *, u32 *);
     void SPEC0_MakeStatus(s32, void *, u32 *);
