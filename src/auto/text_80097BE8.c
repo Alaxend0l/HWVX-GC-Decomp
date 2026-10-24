@@ -19364,7 +19364,10 @@ static inline BOOL GbaHandshake(s32 chan) {
     if (!GbaSendGameCode(chan)) {
         return FALSE;
     }
-    return GbaReadParams(chan);
+    if (!GbaReadParams(chan)) {
+        return FALSE;
+    }
+    return TRUE;
 }
 
 void GbaCheckJBResult__Fl(s32 chan) {
