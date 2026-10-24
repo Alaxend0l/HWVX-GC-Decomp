@@ -18371,6 +18371,165 @@ void ShowStats(void) {
 
 }
 
+typedef struct TimeBarVtx {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 w;
+    f32 s;
+    f32 t;
+    GXColor color;
+    u8 pad[4];
+} TimeBarVtx;
+
+static inline void TimeBar_SetRect(TimeBarVtx *v, f32 x0, f32 y0, f32 x1, f32 y1) {
+    v[0].x = v[3].x = x0;
+    v[0].y = v[1].y = y0;
+    v[2].y = v[3].y = y1;
+    v[1].x = v[2].x = x1;
+}
+
+void Render_TimeBars(u32 *times) {
+    typedef struct {
+        f32 x;
+        f32 y;
+        f32 z;
+        f32 w;
+        f32 s;
+        f32 t;
+        GXColor color;
+        u8 pad[4];
+    } BarVtx;
+    GDLRect *Gfx_Add2DRectangle(void);
+    void *memcpy(void *dst, const void *src, u32 n);
+    BarVtx v[4];
+    GDLRect *rect;
+    f32 x;
+    u32 i;
+
+    v[0].x = v[3].x = 50.0f;
+    v[0].y = v[1].y = 23.0f;
+    v[2].y = v[3].y = 15.0f + 23.0f;
+    x = 50.0f + (f32)(times[0] / 60);
+    v[1].x = v[2].x = x;
+    v[0].z = v[1].z = v[2].z = v[3].z = 0.0f;
+    v[0].w = v[1].w = v[2].w = v[3].w = 1.0f;
+    v[0].s = v[0].t = 0.0f;
+    v[1].s = v[3].t = 1.0f;
+    v[2].s = v[2].t = 1.0f;
+    v[3].s = v[1].t = 0.0f;
+    v[0].color.r = 0;
+    v[0].color.b = 0;
+    v[0].color.g = 0xFF;
+    v[1].color.r = 0;
+    v[1].color.b = 0;
+    v[1].color.g = 0xFF;
+    v[2].color.r = 0;
+    v[2].color.b = 0;
+    v[2].color.g = 0;
+    v[3].color.r = 0;
+    v[3].color.b = 0;
+    v[3].color.g = 0;
+    v[0].color.a = v[1].color.a = v[2].color.a = v[3].color.a = 0xFF;
+    rect = Gfx_Add2DRectangle();
+    memcpy(rect, v, sizeof(v));
+    rect->blendMode = 0;
+    rect->tex = 0;
+
+    v[0].x = v[3].x = x;
+    x += (f32)(times[1] / 60);
+    v[1].x = v[2].x = x;
+    v[0].color.r = 0xFF;
+    v[0].color.b = 0;
+    v[0].color.g = 0x80;
+    v[1].color.r = 0xFF;
+    v[1].color.b = 0;
+    v[1].color.g = 0x80;
+    v[2].color.r = 0;
+    v[2].color.b = 0;
+    v[2].color.g = 0;
+    v[3].color.r = 0;
+    v[3].color.b = 0;
+    v[3].color.g = 0;
+    rect = Gfx_Add2DRectangle();
+    memcpy(rect, v, sizeof(v));
+    rect->blendMode = 0;
+    rect->tex = 0;
+
+    v[0].x = v[3].x = x;
+    x += (f32)(times[2] / 60);
+    v[1].x = v[2].x = x;
+    v[0].color.r = 0;
+    v[0].color.b = 0xFF;
+    v[0].color.g = 0;
+    v[1].color.r = 0;
+    v[1].color.b = 0xFF;
+    v[1].color.g = 0;
+    v[2].color.r = 0;
+    v[2].color.b = 0;
+    v[2].color.g = 0;
+    v[3].color.r = 0;
+    v[3].color.b = 0;
+    v[3].color.g = 0;
+    rect = Gfx_Add2DRectangle();
+    memcpy(rect, v, sizeof(v));
+    rect->blendMode = 0;
+    rect->tex = 0;
+
+    v[0].x = v[3].x = 50.0f;
+    v[0].y = v[1].y = 40.0f;
+    v[2].y = v[3].y = 15.0f + 40.0f;
+    x = 50.0f + (f32)(times[3] / 60);
+    v[1].x = v[2].x = x;
+    v[0].color.r = 0;
+    v[0].color.g = 0xFF;
+    v[0].color.b = 0xFF;
+    v[1].color.r = 0;
+    v[1].color.g = 0xFF;
+    v[1].color.b = 0xFF;
+    v[2].color.r = 0;
+    v[2].color.g = 0;
+    v[2].color.b = 0;
+    v[3].color.r = 0;
+    v[3].color.g = 0;
+    v[3].color.b = 0;
+    rect = Gfx_Add2DRectangle();
+    memcpy(rect, v, sizeof(v));
+    rect->blendMode = 0;
+    rect->tex = 0;
+
+    v[0].x = v[3].x = 50.0f;
+    v[0].y = v[1].y = 23.0f;
+    v[2].y = v[3].y = 55.0f;
+    v[1].x = v[2].x = 1.0f + 50.0f;
+    v[0].color.r = 0xFF;
+    v[0].color.g = 0xFF;
+    v[0].color.b = 0xFF;
+    v[1].color.r = 0xFF;
+    v[1].color.g = 0xFF;
+    v[1].color.b = 0xFF;
+    v[2].color.r = 0xFF;
+    v[2].color.g = 0xFF;
+    v[2].color.b = 0xFF;
+    v[3].color.r = 0xFF;
+    v[3].color.g = 0xFF;
+    v[3].color.b = 0xFF;
+    rect = Gfx_Add2DRectangle();
+    memcpy(rect, v, sizeof(v));
+    rect->blendMode = 0;
+    rect->tex = 0;
+
+    for (i = 0; i < 4; i++) {
+        x = 50.0f + 16666.666f / (f32)(0xF0 >> i);
+        v[0].x = v[3].x = x;
+        v[1].x = v[2].x = 2.0f + x;
+        rect = Gfx_Add2DRectangle();
+        memcpy(rect, v, sizeof(v));
+        rect->blendMode = 0;
+        rect->tex = 0;
+    }
+}
+
 typedef struct SmartProjParams {
     u8 unk0;
     u8 invertZ;
