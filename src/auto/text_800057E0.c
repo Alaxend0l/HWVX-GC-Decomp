@@ -10131,6 +10131,126 @@ void ExtractActiveKey(u8 *track, u8 *state, f32 dt) {
     s->value = t->keys[s->current].value;
 }
 
+void ExtractUVKey(void *track, void *state, f32 dt) {
+    typedef struct UVKey {
+        f32 u0;
+        f32 v0;
+        f32 u1;
+        f32 v1;
+        f32 u2;
+        f32 v2;
+        f32 u3;
+        f32 v3;
+        u8 active;
+        u8 interp;
+        u8 pad[2];
+        f32 duration;
+    } UVKey;
+    typedef struct UVKeyTrack {
+        u32 count;
+        UVKey *keys;
+    } UVKeyTrack;
+    typedef struct UVKeyState {
+        UVKey v;
+        f32 slopeU0;
+        f32 slopeV0;
+        f32 slopeU1;
+        f32 slopeV1;
+        f32 slopeU2;
+        f32 slopeV2;
+        f32 slopeU3;
+        f32 slopeV3;
+        u8 pad[8];
+        f32 time;
+        u16 index;
+        u16 current;
+        u8 reset;
+    } UVKeyState;
+    UVKeyTrack *t = (UVKeyTrack *)track;
+    UVKeyState *s = (UVKeyState *)state;
+    u32 reset;
+    u16 i;
+    UVKey *keys;
+    UVKey *key;
+    f32 f;
+
+    reset = 0;
+    if (s->reset) {
+        s->reset = 0;
+        reset = 1;
+        s->index = 0;
+        s->time = 0.0f;
+    }
+    if (s->index >= t->count) {
+        return;
+    }
+    s->time += dt;
+    if (reset || s->time >= t->keys[s->index].duration) {
+        s->current = 0;
+        for (;;) {
+            if (s->time < t->keys[s->index].duration) {
+                break;
+            }
+            s->current = s->index;
+            s->time -= t->keys[s->index].duration;
+            s->index++;
+            if (s->index >= t->count) {
+                for (i = 0; i < t->count; i++) {
+                    if (t->keys[i].active) {
+                        s->index = i;
+                        break;
+                    }
+                }
+                if (s->index >= t->count) {
+                    s->v = t->keys[s->current];
+                    return;
+                }
+                break;
+            }
+        }
+        s->slopeU0 = t->keys[s->index].u0 - t->keys[s->current].u0;
+        s->slopeV0 = t->keys[s->index].v0 - t->keys[s->current].v0;
+        s->slopeU3 = t->keys[s->index].u3 - t->keys[s->current].u3;
+        s->slopeV3 = t->keys[s->index].v3 - t->keys[s->current].v3;
+        key = &t->keys[s->index];
+        if (key->interp == 0) {
+            f = 0.0f;
+            if (key->duration > 0.0f) {
+                f = 1.0f / key->duration;
+            }
+            s->slopeU0 *= f;
+            s->slopeV0 *= f;
+            s->slopeU3 *= f;
+            s->slopeV3 *= f;
+        }
+    }
+    keys = t->keys;
+    key = &keys[s->index];
+    if (key->interp == 0) {
+        s->v.u0 = s->slopeU0 * s->time + keys[s->current].u0;
+        s->v.v0 = s->slopeV0 * s->time + t->keys[s->current].v0;
+        s->v.u3 = s->slopeU3 * s->time + t->keys[s->current].u3;
+        s->v.v3 = s->slopeV3 * s->time + t->keys[s->current].v3;
+        return;
+    }
+    f = s->time / key->duration;
+    if (key->interp == 1) {
+        f = 1.0f - (1.0f - f) * (1.0f - f);
+    } else if (key->interp == 2) {
+        f = f * f;
+    } else {
+        f = 0.0f;
+    }
+    s->v.u0 = f * s->slopeU0 + keys[s->current].u0;
+    s->v.v0 = f * s->slopeV0 + t->keys[s->current].v0;
+    s->v.u1 = f * s->slopeU1 + t->keys[s->current].u1;
+    s->v.v1 = f * s->slopeV1 + t->keys[s->current].v1;
+    s->v.u2 = f * s->slopeU2 + t->keys[s->current].u2;
+    s->v.v2 = f * s->slopeV2 + t->keys[s->current].v2;
+    s->v.u3 = f * s->slopeU3 + t->keys[s->current].u3;
+    s->v.v3 = f * s->slopeV3 + t->keys[s->current].v3;
+}
+
 #pragma push
 #pragma auto_inline off
 void ExtractTextureKey(TextureKeyAnim *anim, TextureKeyState *state, f32 dt) {
@@ -25193,6 +25313,181 @@ void AI_Creature_PopulateVolumes(void) {
         } while (idx != gs_aSpawnVolumes_802C4860[v].index);
     } while (v != gs_currentVolume_803C7160);
 }
+
+void AI_Creature_AsyncProcess(void) {
+    typedef struct SpawnVolume {
+        u8 *volume;
+        u32 unk4;
+        u32 index;
+        u32 counts[32];
+    } SpawnVolume;
+    typedef struct Vec {
+        f32 x;
+        f32 y;
+        f32 z;
+        f32 w;
+    } Vec;
+    typedef struct NearestCar {
+        u8 *car;
+        u8 pad4[0x10 - 0x4];
+        Vec pos;
+        f32 speed;
+        f32 range;
+        u8 pad28[0x30 - 0x28];
+    } NearestCar;
+    typedef struct {
+        s32 unk0;
+        u8 pad4[0xD - 0x4];
+        u8 unkD;
+        u8 padE[0x10 - 0xE];
+    } AIPlayerDesc;
+    extern u8 *gs_pCurrentAICreature_803C7150;
+    extern SpawnVolume gs_aSpawnVolumes_802C4860[256];
+    extern u32 gs_currentVolume_803C7160;
+    extern u32 g_volumeTotal;
+    extern NearestCar gs_aNearestCars_802CD460[8];
+    extern u8 g_cameraManager[];
+    void PSVECScale(void *src, void *dst, f32 scale);
+    void PSVECAdd(void *a, void *b, void *out);
+    f32 PSVECSquareDistance(void *a, void *b);
+    f32 PSVECSquareMag(void *v);
+    s32 VolumeManager_GetNumVolumesOfType(u32 type);
+    void *VolumeManager_GetVolumeTypeByIndex(u32 type, u32 index);
+    void MemClr32(void *dst, u32 size);
+    u32 World_GetTotalTiles_Creature(void);
+    void *World_GetTileCreature(u32 index);
+    void *PlayerManager_NewAIPlayer(u8 *desc);
+    s32 ThingManager_GetActiveCars();
+    s32 AI_Creature_Deactivate(u8 *creature);
+    s8 AI_Creature_Spawn(u8 *creature, u8 *spawner, u32 index);
+    void AI_Creature_PopulateVolumes(void);
+    int rand(void);
+    static u32 gs_creatureTile;
+    static u32 s_currentCar;
+    f32 dist;
+    f32 best;
+    u32 j;
+    NearestCar *nearest;
+    u8 *tile;
+    u8 *creature;
+    u32 i;
+    u32 n;
+    u32 count;
+    u8 *player;
+    u8 *cars[8];
+    AIPlayerDesc desc;
+    Vec p;
+
+    if (g_volumeTotal == -1) {
+        gs_pCurrentAICreature_803C7150 = NULL;
+        g_volumeTotal = VolumeManager_GetNumVolumesOfType(5);
+        if (g_volumeTotal != 0) {
+            gs_currentVolume_803C7160 = 0;
+            MemClr32(gs_aSpawnVolumes_802C4860, g_volumeTotal * sizeof(SpawnVolume));
+            for (n = 0; n < g_volumeTotal; n++) {
+                gs_aSpawnVolumes_802C4860[n].volume = VolumeManager_GetVolumeTypeByIndex(5, n);
+            }
+        } else if (World_GetTotalTiles_Creature() == 0) {
+            goto update;
+        }
+        MemClr32(gs_aNearestCars_802CD460, sizeof(gs_aNearestCars_802CD460));
+        desc.unk0 = 0;
+        desc.unkD = 1;
+        player = PlayerManager_NewAIPlayer((u8 *)&desc);
+        if (gs_pCurrentAICreature_803C7150 == NULL) {
+            gs_pCurrentAICreature_803C7150 = player;
+            *(u8 **)(player + 0xD4) = player;
+        } else {
+            *(u8 **)(player + 0xD4) = *(u8 **)(gs_pCurrentAICreature_803C7150 + 0xD4);
+            *(u8 **)(gs_pCurrentAICreature_803C7150 + 0xD4) = player;
+        }
+        player[0xCD] = 0;
+    }
+update:
+    if (gs_pCurrentAICreature_803C7150 == NULL) {
+        return;
+    }
+    count = ThingManager_GetActiveCars(cars, 9);
+    if (count != 0) {
+        for (i = 0; i < count; i++) {
+            gs_aNearestCars_802CD460[i].car = cars[i];
+            PSVECScale(cars[i], &gs_aNearestCars_802CD460[i].pos, 0.18f);
+            PSVECAdd(cars[i] + 0x40, &gs_aNearestCars_802CD460[i].pos, &gs_aNearestCars_802CD460[i].pos);
+        }
+        if (i < 8) {
+            gs_aNearestCars_802CD460[i].car = NULL;
+        }
+        if (s_currentCar >= count) {
+            s_currentCar = 0;
+        }
+        gs_aNearestCars_802CD460[s_currentCar].speed = PSVECSquareMag(gs_aNearestCars_802CD460[s_currentCar].car);
+        if (gs_aNearestCars_802CD460[s_currentCar].speed > 1.0f) {
+            gs_aNearestCars_802CD460[s_currentCar].range = 400.0f * (1.0f - gs_aNearestCars_802CD460[s_currentCar].speed / 100000.0f);
+        } else {
+            gs_aNearestCars_802CD460[s_currentCar].range = 400.0f;
+        }
+        s_currentCar++;
+    }
+    for (n = 0; n < 10; n++) {
+        if (gs_pCurrentAICreature_803C7150[0xCD] != 0 && *(u32 *)(gs_pCurrentAICreature_803C7150 + 0xF8) == 0 &&
+            !(s8)AI_Creature_Deactivate(gs_pCurrentAICreature_803C7150)) {
+            creature = gs_pCurrentAICreature_803C7150;
+            nearest = gs_aNearestCars_802CD460;
+            best = *(f32 *)(*(u8 **)(creature + 0xD0) + 0x18);
+            for (j = 0; j < 8; j++, nearest++) {
+                if (nearest->car == NULL) {
+                    break;
+                }
+                dist = PSVECSquareDistance(*(u8 **)(creature + 0x2C) + 0x40, &nearest->pos);
+                if (best > dist) {
+                    if (*(NearestCar **)(creature + 0xE4) != nearest) {
+                        *(NearestCar **)(creature + 0xE4) = nearest;
+                        *(f32 *)(creature + 0xF0) = (f32)(rand() % 501 + 750) / 1000.0f;
+                        creature[0xEC] = 0;
+                        *(s32 *)(creature + 0xC8) = 1;
+                    }
+                    *(f32 *)(creature + 0xE8) = best;
+                    best = dist;
+                }
+            }
+        }
+        gs_pCurrentAICreature_803C7150 = *(u8 **)(gs_pCurrentAICreature_803C7150 + 0xD4);
+    }
+    if (World_GetTotalTiles_Creature() != 0) {
+        creature = gs_pCurrentAICreature_803C7150;
+        do {
+            if (creature[0xCD] == 0) {
+                break;
+            }
+            creature = *(u8 **)(creature + 0xD4);
+        } while (creature != gs_pCurrentAICreature_803C7150);
+        if (creature[0xCD] == 0) {
+            gs_creatureTile++;
+            if (gs_creatureTile >= World_GetTotalTiles_Creature()) {
+                gs_creatureTile = 0;
+            }
+            tile = World_GetTileCreature(gs_creatureTile);
+            if (*(u32 *)(tile + 0x20) != 0 && *(u8 **)(tile + 0x1C) == NULL) {
+                for (j = 0; j < g_cameraManager[0x640]; j++) {
+                    PSVECScale(g_cameraManager + j * 0x190 + 0x80, &p, 150.0f);
+                    PSVECAdd(g_cameraManager + j * 0x190 + 0x60, &p, &p);
+                    if (360000.0f > PSVECSquareDistance(&p, tile)) {
+                        if (AI_Creature_Spawn(creature, tile, -1)) {
+                            *(u8 **)(*(u8 **)(creature + 0x2C) + 0x90) = tile;
+                            *(u8 **)(tile + 0x1C) = *(u8 **)(creature + 0x2C);
+                            *(u32 *)(tile + 0x20) = 0;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    if (g_volumeTotal != 0) {
+        AI_Creature_PopulateVolumes();
+    }
+}
+
 #pragma pop
 
 #pragma pop
