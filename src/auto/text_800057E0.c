@@ -19926,8 +19926,8 @@ void Mover_GetTrackPos(void *mover, f32 *pos, f32 time) {
 static inline void PhysicalObject_UpdateSpin(u8 *obj) {
     void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
     void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
-    Vector4 scaled;
     Vector4 local;
+    Vector4 scaled;
 
     InverseXformVecOrientation(obj + 0x10, (Vector4 *)(obj + 0x110), &local);
     scaled.x = ((Vector4 *)(obj + 0x120))->x * local.x;
@@ -20458,17 +20458,10 @@ void Mover_DynamicRotation(u8 *mover) {
 
 void PhysicalObject_DynamicCollideImpact(u8 *obj, u8 *collision, f32 force) {
     extern Vector4 g_zeroVector;
-    void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
-    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
-    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
     f32 PSVECSquareMag(void *v);
-    f32 Sqrt(f32 x);
     f32 _fabs(f32 x);
     void Create_Plane(Vector4 *plane, Vector4 *normal, Vector4 *point);
     f32 Distance_Plane(void *plane, void *point);
-    void ProjectVectorToNormal(void *n, void *v);
-    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
-    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
     void *ThingManager_DARYL_CreateThing(s32 type, void *params);
     void Destructible_Release(u8 *destructible);
     typedef struct {
@@ -20530,15 +20523,7 @@ void PhysicalObject_DynamicCollideImpact(u8 *obj, u8 *collision, f32 force) {
             break;
         }
         if (weight >= 3.0f) {
-            Vector4 scaled;
-            Vector4 local;
-
-            ProjectVectorToNormal(collision + 0x10, obj + 0x110);
-            InverseXformVecOrientation(obj + 0x10, (Vector4 *)(obj + 0x110), &local);
-            scaled.x = ((Vector4 *)(obj + 0x120))->x * local.x;
-            scaled.y = ((Vector4 *)(obj + 0x120))->y * local.y;
-            scaled.z = ((Vector4 *)(obj + 0x120))->z * local.z;
-            XformVecOrientation(obj + 0x10, &scaled, (Vector4 *)(obj + 0x130));
+            PhysicalObject_ProjectSpin(obj, (Vector4 *)(collision + 0x10));
             if (PSVECSquareMag(obj + 0x130) < 1.0f && PSVECSquareMag(obj) < 25.0f) {
                 params.pos = *(Vector4 *)(obj + 0x40);
                 params.unk50 = 0;
@@ -20552,40 +20537,10 @@ void PhysicalObject_DynamicCollideImpact(u8 *obj, u8 *collision, f32 force) {
             }
         }
     }
-    {
-        Vector4 f;
-        Vector4 torque;
-        Vector4 r;
-        Vector4 local;
-        Vector4 scaled;
-        f32 mag;
-
-        ((Vector4 *)obj)->x += normal.x * scale;
-        ((Vector4 *)obj)->y += normal.y * scale;
-        ((Vector4 *)obj)->z += normal.z * scale;
-        PSVECSubtract((Vector4 *)&pos, (Vector4 *)(obj + 0x40), &r);
-        PSVECScale((Vector4 *)&normal, &f, force);
-        PSVECCrossProduct(&r, &f, &torque);
-        ((Vector4 *)(obj + 0x110))->x += torque.x;
-        ((Vector4 *)(obj + 0x110))->y += torque.y;
-        ((Vector4 *)(obj + 0x110))->z += torque.z;
-        InverseXformVecOrientation(obj + 0x10, (Vector4 *)(obj + 0x110), &local);
-        scaled.x = ((Vector4 *)(obj + 0x120))->x * local.x;
-        scaled.y = ((Vector4 *)(obj + 0x120))->y * local.y;
-        scaled.z = ((Vector4 *)(obj + 0x120))->z * local.z;
-        mag = PSVECSquareMag(&scaled);
-        if (mag > 10000.0f) {
-            mag = 100.0f / Sqrt(mag);
-            scaled.x *= mag;
-            scaled.y *= mag;
-            scaled.z *= mag;
-            local.x = scaled.x / ((Vector4 *)(obj + 0x120))->x;
-            local.y = scaled.y / ((Vector4 *)(obj + 0x120))->y;
-            local.z = scaled.z / ((Vector4 *)(obj + 0x120))->z;
-            XformVecOrientation(obj + 0x10, &local, (Vector4 *)(obj + 0x110));
-        }
-        PhysicalObject_UpdateSpin(obj);
-    }
+    ((Vector4 *)obj)->x += normal.x * scale;
+    ((Vector4 *)obj)->y += normal.y * scale;
+    ((Vector4 *)obj)->z += normal.z * scale;
+    PhysicalObject_ApplyAngularImpulse(obj, (Vector4 *)&pos, (Vector4 *)&normal, force);
 }
 
 void PhysicalObject_GetInverseLocalInertiaTensor(void *obj, Quaternion *out) {
