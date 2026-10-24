@@ -624,7 +624,6 @@ static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
     return 0;
 }
 
-#define TRK_SEND_ACK_DEFINED
 static inline s32 TRKSendACK(TRKBuffer *b) {
     s32 err;
     s32 ackTries = 3;
