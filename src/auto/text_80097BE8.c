@@ -5882,7 +5882,7 @@ static inline s32 AnimTrack_FindKey(AnimTrack *track, f32 time) {
     s32 i = 1;
     u32 step = numKeys;
 
-    while (1) {
+    do {
         step = (step + 1) >> 1;
         if (time > times[i]) {
             i += step;
@@ -5894,10 +5894,8 @@ static inline s32 AnimTrack_FindKey(AnimTrack *track, f32 time) {
         } else {
             return i;
         }
-        if (i <= 0) {
-            return 0;
-        }
-    }
+    } while (i > 0);
+    return 0;
 }
 
 static inline AnimTrack *AnimTrack_Eval3s(AnimTrack *track, f32 time, f32 *out) {
