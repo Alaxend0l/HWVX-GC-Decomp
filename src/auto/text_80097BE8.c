@@ -9050,6 +9050,19 @@ void Render_SaveCamera(void) {
 }
 #pragma pop
 
+#pragma push
+void Render_LoadCamera(void) {
+    extern Vector GXCameraSpace_8036CF80[7];
+
+    *(Vector *)((u8 *)GetRenderWindow() + 0x180) = GXCameraSpace_8036CF80[3];
+    *(Vector *)((u8 *)GetRenderWindow() + 0x190) = GXCameraSpace_8036CF80[4];
+    *(Vector *)((u8 *)GetRenderWindow() + 0x1A0) = GXCameraSpace_8036CF80[5];
+    *(Vector *)((u8 *)GetRenderWindow() + 0x1B0) = GXCameraSpace_8036CF80[6];
+    Gfx_SetProjectionMatrix(*(f32 *)((u8 *)GetRenderWindow() + 0x270));
+}
+
+#pragma pop
+
 void MultiplyMatrix4x4(void *arg0, void *arg1, void *arg2) {
     M2C_FIELD(arg2, f32 *, 0) = (f32) ((M2C_FIELD(arg1, f32 *, 0x30) * M2C_FIELD(arg0, f32 *, 0xC)) + ((M2C_FIELD(arg1, f32 *, 0x20) * M2C_FIELD(arg0, f32 *, 8)) + ((M2C_FIELD(arg1, f32 *, 0) * M2C_FIELD(arg0, f32 *, 0)) + (M2C_FIELD(arg1, f32 *, 0x10) * M2C_FIELD(arg0, f32 *, 4)))));
     M2C_FIELD(arg2, f32 *, 4) = (f32) ((M2C_FIELD(arg1, f32 *, 0x34) * M2C_FIELD(arg0, f32 *, 0xC)) + ((M2C_FIELD(arg1, f32 *, 0x24) * M2C_FIELD(arg0, f32 *, 8)) + ((M2C_FIELD(arg1, f32 *, 4) * M2C_FIELD(arg0, f32 *, 0)) + (M2C_FIELD(arg1, f32 *, 0x14) * M2C_FIELD(arg0, f32 *, 4)))));
