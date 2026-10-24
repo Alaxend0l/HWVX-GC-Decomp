@@ -10976,8 +10976,8 @@ static inline s8 GameSettings_WriteSaveFile(char *device, const char *name, u32 
     u32 FileManager_GetChecksum(u32 size, void *data);
     extern u8 *g_pSavedGameData;
     u8 *data = g_pSavedGameData;
-    s32 handle;
     s8 ok = 0;
+    s32 handle;
 
     if ((handle = File_Open(device + 0xA, name, 5, NULL)) != -1) {
         ((u32 *)data)[0] = 4;
