@@ -2120,6 +2120,7 @@ void __num2dec(const decform *form, double x, decimal *d) {
 }
 
 void __two_exp_800991F0(decimal *result, short exp);
+static void __str2dec(decimal *d, const char *s, short exp);
 void __timesdec(decimal *result, const decimal *x, const decimal *y);
 void __ull2dec(decimal *result, unsigned long long val);
 double frexp(double x, int *eptr);
@@ -17169,7 +17170,6 @@ void GbaProc__Fv_800CA1D0(void) {
     s32 GBAGetProcessStatus(s32 chan, u8 *percentp);
     u32 SIProbe(s32 chan);
     s32 GBAGetStatus(s32 chan, u8 *status);
-    s32 GBAWrite(s32 chan, u8 *src, u8 *status);
     s32 GBAReset(s32 chan, u8 *status);
     s32 GBAJoyBootAsync(s32 chan, s32 paletteColor, s32 paletteSpeed, u8 *programp, s32 length, u8 *status, void (*callback)(s32, s32));
     u32 OSGetTick(void);
@@ -17179,9 +17179,6 @@ void GbaProc__Fv_800CA1D0(void) {
     void OSPanic(const char *file, s32 line, const char *msg, ...);
     s32 chan;
     u8 percent;
-    u8 *status;
-    u32 *startTick;
-    u32 cmd;
 
     for (chan = 0; chan < 4; chan++) {
         if (Param_803C6A40[chan].state == 3) {
@@ -17216,33 +17213,7 @@ void GbaProc__Fv_800CA1D0(void) {
             GbaSetport__Fl(chan);
             break;
         case 5:
-            Param_803C6A40[chan].startTick = OSGetTick();
-            status = &Param_803C6A40[chan].status;
-            startTick = &Param_803C6A40[chan].startTick;
-            do {
-                if (GBAGetStatus(chan, status) != 0 || OSGetTick() - *startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 100) {
-                    OSReport("GbaReset: timeout waiting for GBA (chan=%d).\n", chan);
-                    Param_803C6A40[chan].state = 0;
-                    goto next;
-                }
-            } while (*status & 2);
-            cmd = 0x50000000;
-            if (GBAWrite(chan, (u8 *)&cmd, &Param_803C6A40[chan].status) != 0) {
-                OSReport("GbaReset: GBAWrite failed (chan=%d).\n", chan);
-                Param_803C6A40[chan].state = 0;
-                break;
-            }
-            Param_803C6A40[chan].startTick = OSGetTick();
-            status = &Param_803C6A40[chan].status;
-            startTick = &Param_803C6A40[chan].startTick;
-            do {
-                if (GBAGetStatus(chan, status) != 0 || OSGetTick() - *startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 100) {
-                    OSReport("GbaReset: timeout waiting for reset (chan=%d).\n", chan);
-                    Param_803C6A40[chan].state = 0;
-                    goto next;
-                }
-            } while (*status & 2);
-            Param_803C6A40[chan].state = 0;
+            GbaReset(chan);
             break;
         case 6:
             GBAReset(chan, &Param_803C6A40[chan].status);
@@ -17265,7 +17236,6 @@ void GbaProc__Fv_800CA1D0(void) {
             OSPanic("gba.c", 726, "GbaProc: invalid state\n");
             break;
         }
-    next:;
     }
 }
 
