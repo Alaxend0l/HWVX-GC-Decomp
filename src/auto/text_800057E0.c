@@ -32849,7 +32849,8 @@ void ViewManager_SetThreePlayer(void) {
 typedef struct TracerPoint {
     f32 pos[4];
     f32 vel[4];
-    u8 unk20[0x20];
+    f32 unk20[4];
+    f32 unk30[4];
     f32 unk40;
     u8 color[4];
     struct TracerPoint *next;
