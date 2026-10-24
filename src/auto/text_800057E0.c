@@ -4186,7 +4186,6 @@ static inline s8 RayHitsTerrainAndObjects_Camera(Vector4 *start, Vector4 *dir, f
 
 void GetTrimmedCameraPos(u8 *camera, Vector4 *from, Vector4 *dir, f32 *trim, f32 dist) {
     extern f32 g_fDeltaTimeSec;
-    s8 RayHitsTerrain_Aux3(void *, void *, void *, void *);
     f32 PSVECDotProduct(void *a, void *b);
     f32 PSVECSquareMag(void *v);
     void PSVECNormalize(void *src, void *dst);
@@ -4215,8 +4214,7 @@ void GetTrimmedCameraPos(u8 *camera, Vector4 *from, Vector4 *dir, f32 *trim, f32
     d.z = -dir->z;
     do {
         t = dist - travelled;
-        hit = RayHitsTerrain_Aux3(&pos, &d, &t, &info);
-        hit = RayHitsObjects_CameraSpecial(&pos, &d, &t, &info) ? 1 : hit;
+        hit = RayHitsTerrainAndObjects_Camera(&pos, &d, &t, &info);
         pos.x += d.x * t;
         pos.y += d.y * t;
         pos.z += d.z * t;
@@ -4234,8 +4232,7 @@ void GetTrimmedCameraPos(u8 *camera, Vector4 *from, Vector4 *dir, f32 *trim, f32
             if (PSVECSquareMag(&d) < 0.1f) {
                 d.y += 1.0f;
             }
-            if (PSVECSquareMag(&d) == 0.0f) {
-            } else {
+            if (PSVECSquareMag(&d)) {
                 PSVECNormalize(&d, &d);
             }
             trimmed = 1;
