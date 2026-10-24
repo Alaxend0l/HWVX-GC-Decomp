@@ -6938,6 +6938,105 @@ u32 Gfx_FontManager_Print(char *str, u32 id, u8 blendMode, f32 x, f32 y, f32 spa
     }
     return g_fontManager.fonts[id].height;
 }
+
+void Gfx_FontManager_PrintParagraph(char *str, u32 maxChars, s32 id, u8 blendMode, s32 align, f32 *scale, f32 x, f32 y, f32 spacing, f32 width, f32 height, f32 lineSpacing) {
+    extern FontManager g_fontManager;
+    u32 strlen(const char *);
+    u32 Gfx_FontManager_Print(char *str, u32 id, u8 blendMode, f32 x, f32 y, f32 spacing);
+    void Gfx_FontManager_PrintScale(char *str, s32 id, f32 *scale, u8 blendMode, f32 x, f32 y, f32 spacing);
+    Font *font = &g_fontManager.fonts[id];
+    f32 center;
+    f32 right;
+    f32 lineY = 0.0f;
+    u32 pos = 0;
+    s8 more = 1;
+    u32 len = strlen(str);
+    f32 sx = scale ? scale[0] : 1.0f;
+    f32 sy = scale ? scale[1] : 1.0f;
+    f32 lastW;
+    f32 lineW;
+    u32 lastSpace;
+    u32 n;
+    s8 c;
+    char buf[256];
+
+    if (maxChars) {
+        right = x + width;
+        center = x + 0.5f * width;
+        while (more) {
+            lastW = 0.0f;
+            lineW = lastW;
+            lastSpace = -1;
+            n = 0;
+            while (str[pos] == ' ' && pos < len) {
+                pos++;
+            }
+            for (;;) {
+                c = str[pos + n];
+                if (font->caseMode == 1 || font->caseMode == 3) {
+                    if (c >= 'a' && c <= 'z') {
+                        c -= 0x20;
+                    }
+                }
+                if (c == '|') {
+                    pos++;
+                    break;
+                }
+                if (c == ' ') {
+                    lastSpace = n;
+                    lastW = lineW;
+                }
+                if (lineW > width) {
+                    if (lastSpace < (u32)-1) {
+                        lineW = lastW;
+                        n = lastSpace;
+                    }
+                    break;
+                }
+                if (pos + n >= len) {
+                    break;
+                }
+                buf[n++] = c;
+                lineW += sx * ((u8)font->chars[c].spacingX + spacing);
+            }
+            while (n != 0 && buf[n - 1] == ' ') {
+                n--;
+                lineW -= sx * ((u8)font->chars[buf[n]].spacingX + spacing);
+            }
+            if (pos + n > maxChars) {
+                more = 0;
+                while (pos + n > maxChars && n != 0) {
+                    n--;
+                    c = buf[n];
+                    buf[n] = 0;
+                    lineW -= sx * ((u8)font->chars[c].spacingX + spacing);
+                }
+            }
+            lineW -= -spacing * sx;
+            buf[n] = 0;
+            pos += n;
+            switch (align) {
+            case 1:
+                x = center - 0.5f * lineW;
+                break;
+            case 2:
+                x = right - lineW;
+                break;
+            }
+            if (scale) {
+                Gfx_FontManager_PrintScale(buf, id, scale, blendMode, x, y, spacing);
+            } else {
+                Gfx_FontManager_Print(buf, id, blendMode, x, y, spacing);
+            }
+            lineY += sy * (font->height + lineSpacing);
+            y += sy * (font->height + lineSpacing);
+            if (lineY + font->height + lineSpacing > height) {
+                more = 0;
+            }
+        }
+    }
+}
+
 #pragma pop
 
 #pragma push
@@ -12640,7 +12739,8 @@ u8 __THPReadScaneHeader(void) {
 #pragma use_lmw_stmw on
 u8 __THPReadQuantizationTable(void) {
     extern u8 __THPJpegNaturalOrder_800CE0D8[];
-    u16 length, id, i, row, col;
+    u16 length, i, row, col;
+    u8 id;
     f32 q_temp[64];
 
     length = (u16)((__THPInfo_803C7890->c[0] << 8) | __THPInfo_803C7890->c[1]);
@@ -17392,6 +17492,132 @@ s32 File_Seek(s32 handle, s32 offset, s8 mode) {
     }
     return 0;
 }
+
+s32 File_Read(u32 id, s32 size, void *data) {
+    extern struct { s32 fileInfo; char name[0x100]; } g_filedata_PC[4];
+    extern s64 g_resetTicks;
+    extern s32 m_reset;
+    extern s32 m_cd_drive_status;
+    extern u32 shithack;
+    s32 MemCard_Read__FUllPv(u32 device, s32 size, void *data);
+    s32 DVDReadPrio(void *fileInfo, void *addr, s32 length, s32 offset, s32 prio);
+    BOOL DVDReadAsyncPrio(void *fileInfo, void *addr, s32 length, s32 offset, void *callback, s32 prio);
+    s32 DVDGetDriveStatus(void);
+    void Render_BeginScene(void);
+    void Render_EndScene(void);
+    void Render_FlipBuffers(void);
+    s64 OSGetTime(void);
+    s32 OSGetResetButtonState(void);
+    void VISetBlack(s32 black);
+    void VIWaitForRetrace(void);
+    void VIFlush(void);
+    void OSResetSystem(s32 reset, u32 resetCode, s32 forceMenu);
+    void *memcpy(void *dst, const void *src, u32 n);
+    s32 sprintf(char *s, const char *format, ...);
+    char msg[0x100];
+    s8 device = (u8)(id >> 16);
+    s8 idx;
+    s32 result;
+    s32 length;
+    s32 buffer;
+    u8 *aligned;
+
+    if (device >= 11) {
+        return MemCard_Read__FUllPv(device, size, data);
+    }
+    if (size == 0) {
+        return 1;
+    }
+    idx = (u8)id;
+    if (size + g_files[idx].position <= g_files[idx].size) {
+        if (size < 0xC800) {
+            length = (size + 0x1F) & ~0x1F;
+            buffer = (s32)Allocate(length + 0x40, 0, "");
+            aligned = (u8 *)((buffer + 0x1F) & ~0x1F);
+            if (isInThread()) {
+                result = DVDReadPrio((void *)g_filedata_PC[idx].fileInfo, aligned, length, g_files[idx].position, 2);
+            } else {
+                result = DVDReadAsyncPrio((void *)g_filedata_PC[idx].fileInfo, aligned, length, g_files[idx].position, NULL, 2);
+                do {
+                    m_cd_drive_status = DVDGetDriveStatus();
+                    switch (m_cd_drive_status) {
+                    case -1:
+                    case 4:
+                    case 5:
+                    case 6:
+                    case 11:
+                        shithack = 1;
+                        Render_BeginScene();
+                        Render_EndScene();
+                        Render_FlipBuffers();
+                        break;
+                    }
+                    if (OSGetResetButtonState()) {
+                        m_reset = 1;
+                    }
+                    if (shithack && m_reset && OSGetResetButtonState() == 0) {
+                        VISetBlack(1);
+                        VIWaitForRetrace();
+                        VIFlush();
+                        VIWaitForRetrace();
+                        VIFlush();
+                        VIWaitForRetrace();
+                        if ((OSGetTime() - g_resetTicks) / (*(u32 *)0x800000F8 / 4) < 8) {
+                            OSResetSystem(1, 0, 0);
+                        } else {
+                            OSResetSystem(0, 0, 0);
+                        }
+                    }
+                } while (m_cd_drive_status != 0);
+            }
+            memcpy(data, aligned, size);
+            Deallocate(buffer);
+            g_files[idx].position += size;
+        } else {
+            if (isInThread()) {
+                result = DVDReadPrio((void *)g_filedata_PC[idx].fileInfo, data, (size + 0x1F) & ~0x1F, g_files[idx].position, 2);
+            } else {
+                result = DVDReadAsyncPrio((void *)g_filedata_PC[idx].fileInfo, data, (size + 0x1F) & ~0x1F, g_files[idx].position, NULL, 2);
+                do {
+                    m_cd_drive_status = DVDGetDriveStatus();
+                    switch (m_cd_drive_status) {
+                    case -1:
+                    case 4:
+                    case 5:
+                    case 6:
+                    case 11:
+                        shithack = 1;
+                        Render_BeginScene();
+                        Render_EndScene();
+                        Render_FlipBuffers();
+                        break;
+                    }
+                    if (OSGetResetButtonState()) {
+                        m_reset = 1;
+                    }
+                    if (shithack && m_reset && OSGetResetButtonState() == 0) {
+                        VISetBlack(1);
+                        VIWaitForRetrace();
+                        VIFlush();
+                        VIWaitForRetrace();
+                        VIFlush();
+                        VIWaitForRetrace();
+                        if ((OSGetTime() - g_resetTicks) / (*(u32 *)0x800000F8 / 4) < 8) {
+                            OSResetSystem(1, 0, 0);
+                        } else {
+                            OSResetSystem(0, 0, 0);
+                        }
+                    }
+                } while (m_cd_drive_status != 0);
+            }
+            g_files[idx].position += size;
+        }
+        return result;
+    }
+    sprintf(msg, "File error: Attempting to read past end of file in:\n %s", g_filedata_PC[idx].name);
+    return 0;
+}
+#pragma dont_inline reset
 
 s32 File_Write(u32 id, s32 size, void *data) {
     s8 device = (u8)(id >> 16);
