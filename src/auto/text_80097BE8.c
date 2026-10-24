@@ -375,13 +375,13 @@ extern u8 *__THPHuffmanSizeTab_803C7828;
 extern u16 *__THPHuffmanCodeTab_803C782C;
 
 static inline s32 __THPHuffDecodeTab(THPFileInfo *info, THPHuffmanTab *h) {
+    s32 i;
+    s32 *maxCode;
     s32 cnt;
     u32 cb;
     u8 *increment;
     s32 code;
     s32 tmp;
-    s32 *maxCode;
-    s32 i;
     u32 *c;
 
     increment = h->increment;
