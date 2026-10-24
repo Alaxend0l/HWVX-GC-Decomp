@@ -23247,9 +23247,11 @@ void *FindHost(Vector4 *pos, Vector4 *dir) {
     Vector4 dir4;
     Vector4 diff4;
     void *bases[4];
-    u32 i;
     u32 count;
-    u8 *thing;
+    u32 i;
+    u32 j;
+    u32 k;
+    u32 m;
 
     count = ThingManager_GetActiveCars(cars);
     for (i = 0; i < count; i++) {
@@ -23264,60 +23266,42 @@ void *FindHost(Vector4 *pos, Vector4 *dir) {
             }
         }
     }
-    count = 0;
-    for (i = 0; i < 1; i++) {
-        thing = g_thingManager_DARYL.unk0 + 0x6D100 + i * 0x5A0;
-        if (!(*(u32 *)(thing + 0x74) & 0x201000)) {
-            pods[count++] = thing;
-        }
-    }
-    for (i = 0; i < count; i++) {
-        PSVECSubtract((Vector4 *)((u8 *)pods[i] + 0x40), pos, &diff2);
+    count = ThingManager_GetActiveUnk6D100(pods);
+    for (j = 0; j < count; j++) {
+        PSVECSubtract((Vector4 *)((u8 *)pods[j] + 0x40), pos, &diff2);
         dir2 = diff2;
         if (!(PSVECSquareMag(&diff2) < 1.0f)) {
             if (PSVECSquareMag(&dir2)) {
                 PSVECNormalize(&dir2, &dir2);
             }
             if (PSVECDotProduct(dir, &dir2) > 0.8f) {
-                return pods[i];
+                return pods[j];
             }
         }
     }
-    count = 0;
-    for (i = 0; i < 1; i++) {
-        thing = g_thingManager_DARYL.unk0 + 0x5B940 + i * 0x5A0;
-        if (!(*(u32 *)(thing + 0x74) & 0x201000)) {
-            bases[count++] = thing;
-        }
-    }
-    for (i = 0; i < count; i++) {
-        PSVECSubtract((Vector4 *)((u8 *)bases[i] + 0x40), pos, &diff3);
+    count = ThingManager_GetActiveUnk5B940(bases);
+    for (k = 0; k < count; k++) {
+        PSVECSubtract((Vector4 *)((u8 *)bases[k] + 0x40), pos, &diff3);
         dir3 = diff3;
         if (!(PSVECSquareMag(&diff3) < 1.0f)) {
             if (PSVECSquareMag(&dir3)) {
                 PSVECNormalize(&dir3, &dir3);
             }
             if (PSVECDotProduct(dir, &dir3) > 0.8f) {
-                return bases[i];
+                return bases[k];
             }
         }
     }
-    count = 0;
-    for (i = 0; i < 500; i++) {
-        thing = g_thingManager_DARYL.unk0 + 0x20280 + i * 0xF0;
-        if (!(*(u32 *)(thing + 0x74) & 0x201000)) {
-            items[count++] = thing;
-        }
-    }
-    for (i = 0; i < count; i++) {
-        PSVECSubtract((Vector4 *)((u8 *)items[i] + 0x40), pos, &diff4);
+    count = ThingManager_GetActiveUnk20280(items);
+    for (m = 0; m < count; m++) {
+        PSVECSubtract((Vector4 *)((u8 *)items[m] + 0x40), pos, &diff4);
         dir4 = diff4;
         if (!(PSVECSquareMag(&diff4) < 1.0f)) {
             if (PSVECSquareMag(&dir4)) {
                 PSVECNormalize(&dir4, &dir4);
             }
             if (PSVECDotProduct(dir, &dir4) > 0.8f) {
-                return items[i];
+                return items[m];
             }
         }
     }
