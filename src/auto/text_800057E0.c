@@ -4641,6 +4641,77 @@ void CarA_ProcessForce(u8 *car, Vector4 *pos, Vector4 *force, f32 scale) {
     *(f32 *)(car + 0x3A8) += torque.z;
 }
 
+void CarA_ProcessImpulse(u8 *car, Vector4 *normal, Vector4 *pos, Vector4 *pointVel, f32 restitution) {
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    f32 PSVECSquareMag(Vector4 *v);
+    f32 Sqrt(f32 x);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    Vector4 impulse;
+    Vector4 r;
+    Vector4 vel = *pointVel;
+    Vector4 rxn;
+    Vector4 ang;
+    Vector4 angxr;
+    Vector4 localRxn;
+    Vector4 scaledRxn;
+    Vector4 torque;
+    Vector4 localAng;
+    Vector4 scaledAng;
+    Vector4 scaled;
+    Vector4 local;
+    f32 num;
+    f32 j;
+    f32 maxAng;
+    f32 mag;
+
+    PSVECSubtract(pos, (Vector4 *)(car + 0x40), &r);
+    num = -(restitution * *(f32 *)(*(u8 **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x30) + 0x18) + 1.0f) * PSVECDotProduct(&vel, normal);
+    PSVECCrossProduct(&r, normal, &rxn);
+    InverseXformVecOrientation(car + 0x10, &rxn, &localRxn);
+    scaledRxn.x = *(f32 *)(car + 0x3C0) * localRxn.x;
+    scaledRxn.y = *(f32 *)(car + 0x3D4) * localRxn.y;
+    scaledRxn.z = *(f32 *)(car + 0x3E8) * localRxn.z;
+    XformVecOrientation(car + 0x10, &scaledRxn, &ang);
+    PSVECCrossProduct(&ang, &r, &angxr);
+    j = num / (1.0f / *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x20) + PSVECDotProduct(&angxr, normal));
+    impulse.x = j * normal->x;
+    impulse.y = j * normal->y;
+    impulse.z = j * normal->z;
+    *(f32 *)(car + 0x0) += impulse.x / *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x20);
+    *(f32 *)(car + 0x4) += impulse.y / *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x20);
+    *(f32 *)(car + 0x8) += impulse.z / *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x20);
+    PSVECCrossProduct(&r, &impulse, &torque);
+    *(f32 *)(car + 0x380) += torque.x;
+    *(f32 *)(car + 0x384) += torque.y;
+    *(f32 *)(car + 0x388) += torque.z;
+    if (*(u32 *)(car + 0x3B8) <= 1) {
+        maxAng = *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x80) + 0x3C);
+        InverseXformVecOrientation(car + 0x10, (Vector4 *)(car + 0x380), &localAng);
+        scaledAng.x = *(f32 *)(car + 0x3C0) * localAng.x;
+        scaledAng.y = *(f32 *)(car + 0x3D4) * localAng.y;
+        scaledAng.z = *(f32 *)(car + 0x3E8) * localAng.z;
+        mag = PSVECSquareMag(&scaledAng);
+        if (mag > maxAng * maxAng) {
+            mag = maxAng / Sqrt(mag);
+            scaledAng.x *= mag;
+            scaledAng.y *= mag;
+            scaledAng.z *= mag;
+            localAng.x = scaledAng.x / *(f32 *)(car + 0x3C0);
+            localAng.y = scaledAng.y / *(f32 *)(car + 0x3D4);
+            localAng.z = scaledAng.z / *(f32 *)(car + 0x3E8);
+            XformVecOrientation(car + 0x10, &localAng, (Vector4 *)(car + 0x380));
+        }
+    }
+    InverseXformVecOrientation(car + 0x10, (Vector4 *)(car + 0x380), &local);
+    scaled.x = *(f32 *)(car + 0x3C0) * local.x;
+    scaled.y = *(f32 *)(car + 0x3D4) * local.y;
+    scaled.z = *(f32 *)(car + 0x3E8) * local.z;
+    XformVecOrientation(car + 0x10, &scaled, (Vector4 *)(car + 0x410));
+}
+
 void CarA_SetSlavePlayers(void *car) {
     void *slave;
 
@@ -15537,7 +15608,126 @@ void TitleScreen_RunDemoLoop(void) {
 #pragma push
 #pragma readonly_strings on
 s32 StateTitleScreen_Init(s32 prevState) {
-    return 0;
+    extern void *g_pTitleDataPack;
+    extern void *g_pInterfaceScript;
+    extern s8 g_bPlayingFMV;
+    extern void *g_mainMenuFile;
+    extern s32 g_mainMenuFileID;
+    extern s8 g_clearTextureCache;
+    extern s32 g_gameDifficulty;
+    void Gfx_SetProjectionMatrix(f32 fov);
+    void Gfx_StateTextureBlendMode(s32);
+    void Gfx_BeginScene(void);
+    void Gfx_EndScene(void);
+    void Gfx_FlipBuffers(void);
+    void GameSettings_ResetGame(void);
+    void Gfx_TextureManager_Init(void);
+    void StateGameManager_RefreshMCPTextures(void);
+    void ShowStats_Init(void);
+    void ProcessManager_Init(void);
+    void TimeHandler_Heartbeat(void);
+    void Input_Init(void);
+    void Input_Heartbeat(void);
+    void SoundManager_Init(void);
+    void SoundManager_Heartbeat(void);
+    void InterfaceManager_Init(void);
+    void InterfaceManager_Heartbeat(void);
+    void InterfaceManager_Render(void);
+    void ParticleManager_Init(void);
+    void ParticleManager_Heartbeat(void);
+    void ParticleManager_Render(void);
+    void ShaderHolder_Heartbeat(void);
+    void ThingManager_DARYL_Init(void);
+    void ThingManager_DARYL_Heartbeat(void);
+    void ThingManager_DARYL_Render(void);
+    void LidHandler_Init(void);
+    void LidHandler_Heartbeat(void);
+    void DataPack_RefreshTextures(void *pack);
+    void InterfaceManager_Create(void *, s32, void (*)(void *));
+    void TitleScreen_Interface(void *);
+    void *FileStreaming_InitializeDataPack(s32, s32, s32);
+    void *DataPack_GetScript(void *, s32);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void GameSettings_SetCodeVariable(s32, s32, s32);
+    void CameraManager_Init(void);
+    void CameraManager_Pause(s32);
+    void PlayerManager_Init(void);
+    void PlayerManager_NewHumanPlayer(void);
+    void Grid_Init(Vector4 *min, Vector4 *max, s32 x, s32 z);
+    void *GetCameraManager(void);
+    void *CameraManager_GetNewCamera(void);
+    void ViewManager_SetCamera(void *camera, s32 view);
+    void GameSettings_ResetPlayerVehicleItem(void);
+    void *camera;
+    void *script;
+    Vector4 min;
+    Vector4 max;
+
+    Gfx_SetProjectionMatrix(90.0f);
+    Gfx_StateTextureBlendMode(2);
+    Gfx_BeginScene();
+    Gfx_EndScene();
+    Gfx_FlipBuffers();
+    Gfx_BeginScene();
+    Gfx_EndScene();
+    Gfx_FlipBuffers();
+    GameSettings_ResetGame();
+    ShowStats_Init();
+    Gfx_TextureManager_Init();
+    StateGameManager_RefreshMCPTextures();
+    ProcessManager_Init();
+    ProcessManager_Add("TimeHandler", NULL, TimeHandler_Heartbeat, 0, 0);
+    ProcessManager_Add("Input", Input_Init, Input_Heartbeat, 0, 1);
+    if (prevState != 0xC && prevState != 3) {
+        ProcessManager_Add("SoundManager", SoundManager_Init, SoundManager_Heartbeat, 0, 1);
+    } else {
+        ProcessManager_Add("SoundManager", NULL, SoundManager_Heartbeat, 0, 1);
+    }
+    ProcessManager_Add("Interface", InterfaceManager_Init, InterfaceManager_Heartbeat, (s32)InterfaceManager_Render, 1);
+    ProcessManager_Add("Particles", ParticleManager_Init, ParticleManager_Heartbeat, (s32)ParticleManager_Render, 0);
+    ProcessManager_Add("Shader", NULL, ShaderHolder_Heartbeat, 0, 0);
+    ProcessManager_Add("ThingManager", ThingManager_DARYL_Init, ThingManager_DARYL_Heartbeat, (s32)ThingManager_DARYL_Render, 0);
+    ProcessManager_Add("LidHandler", LidHandler_Init, LidHandler_Heartbeat, 0, 1);
+    switch (prevState) {
+    case 3:
+        DataPack_RefreshTextures(g_pTitleDataPack);
+        InterfaceManager_Create(g_pInterfaceScript, 0, TitleScreen_Interface);
+        g_bPlayingFMV = 0;
+        g_pInterfaceScript = NULL;
+        break;
+    default:
+        if (g_mainMenuFile == NULL) {
+            return 0;
+        }
+        g_pTitleDataPack = FileStreaming_InitializeDataPack(FileStreaming_LoadDataPack(g_mainMenuFile, 1, g_mainMenuFileID, 0), 1, 1);
+        if (g_pTitleDataPack == NULL) {
+            return 0;
+        }
+        script = DataPack_GetScript(g_pTitleDataPack, g_mainMenuFileID);
+        if (script == NULL) {
+            return 0;
+        }
+        InterfaceManager_Create(script, 0, TitleScreen_Interface);
+        g_clearTextureCache = 0;
+        if (GameSettings_GetCodeVariable(0x198, 0) != 0) {
+            GameSettings_SetCodeVariable(0xC8, 0, g_gameDifficulty);
+            GameSettings_SetCodeVariable(0x198, 0, 0);
+        }
+        break;
+    }
+    CameraManager_Init();
+    CameraManager_Pause(1);
+    PlayerManager_Init();
+    PlayerManager_NewHumanPlayer();
+    min.x = min.y = min.z = -500.0f;
+    max.x = max.y = max.z = 500.0f;
+    Grid_Init(&min, &max, 0x10, 0x10);
+    if (M2C_FIELD(GetCameraManager(), u8 *, 0x640) == 0) {
+        camera = CameraManager_GetNewCamera();
+    }
+    ViewManager_SetCamera(camera, 0);
+    GameSettings_ResetPlayerVehicleItem();
+    return 1;
 }
 #pragma pop
 
