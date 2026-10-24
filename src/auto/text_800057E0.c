@@ -7307,6 +7307,8 @@ typedef struct StreamingDataPack {
     u8 pad79[0xA8 - 0x79];
 } StreamingDataPack;
 
+extern StreamingDataPack *g_StreamingDataPacks[11];
+
 #pragma push
 #pragma use_lmw_stmw on
 void FileStreaming_Initialize(void) {
