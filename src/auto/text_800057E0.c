@@ -13746,6 +13746,61 @@ void InterfaceManager_SetObjectReference(u8 *iface, u32 id, u32 state) {
     }
 }
 
+s32 InterfaceManager_ProcessInput(u8 *iface, u8 *obj, u32 *events) {
+    typedef struct InputSlot {
+        u8 pad0[0x243];
+        u8 type;
+        u8 pad244[0x270 - 0x244];
+        u32 child;
+        u8 pad274[0x300 - 0x274];
+    } InputSlot;
+    typedef struct InputEvent {
+        u8 type;
+        u8 pad1[7];
+        u8 *data;
+    } InputEvent;
+    typedef struct {
+        u32 index;
+        u16 type;
+        u16 id;
+        u16 events;
+        u16 unk12;
+        u8 pad14[0x20 - 0x14];
+        u32 result;
+        s32 unk2C;
+        s8 unk30;
+        u8 pad31[0x44 - 0x31];
+        void *values;
+        u16 unk48;
+        u8 pad4A[2];
+    } InterfaceMessage;
+    extern u8 g_interface[][0x170];
+    u32 InterfaceManager_KeyPress(u8 *iface, void *arg, s32 key);
+    s32 InterfaceManager_PlayEvent(u8 *iface, u8 *obj, InputEvent *event, u16 events);
+    s32 StateManager_CurrState(void);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    u32 i;
+    InputEvent *event;
+    u32 pressed;
+
+    if (obj != NULL && obj[0x240] != 0) {
+        return 1;
+    }
+    for (i = 0; i < events[0]; i++) {
+        event = &((InputEvent *)events[1])[i];
+        pressed = 0;
+        if (event->type == 1) {
+            pressed = InterfaceManager_KeyPress(iface, *(void **)(iface + 0x8C), 6);
+        }
+        if (pressed != 0) {
+            if (!InterfaceManager_PlayEvent(iface, obj, event, pressed)) {
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
 void InterfaceManager_Backup_Key(u8 *iface, u8 *key, u8 flags) {
     extern u8 g_interface[][0x170];
     void InterfaceManager_SetLoadState(void *iface, s32 state);
