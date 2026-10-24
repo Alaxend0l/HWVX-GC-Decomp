@@ -13176,6 +13176,66 @@ u32 MAllocA_(s32 size) {
     return 0;
 }
 
+s32 FreeA_(u32 addr) {
+    typedef struct MemBlk {
+        u32 addr;
+        s32 size;
+        u32 unk8;
+        u32 unkC;
+    } MemBlk;
+    extern MemBlk g_memblk_80371670[];
+    extern s32 g_last_803C78B4;
+    extern u32 g_heap_803C78C4;
+    extern u32 g_free_803C78B8;
+    int printf();
+    u32 i;
+    s32 size;
+    u32 next;
+    u32 prev;
+
+    i = 0;
+    while (i != 0xFFFFFFFF) {
+        if (addr == g_memblk_80371670[i].addr) {
+            size = -g_memblk_80371670[i].size;
+            g_memblk_80371670[i].size = size;
+            next = g_memblk_80371670[i].unkC;
+            prev = g_memblk_80371670[i].unk8;
+            if (next != 0xFFFFFFFF && g_memblk_80371670[next].size > 0) {
+                g_memblk_80371670[i].addr = g_memblk_80371670[next].addr;
+                g_memblk_80371670[i].size += g_memblk_80371670[next].size;
+                g_memblk_80371670[i].unkC = g_memblk_80371670[next].unkC;
+                g_memblk_80371670[g_memblk_80371670[i].unkC].unk8 = i;
+                g_memblk_80371670[next].unkC = g_free_803C78B8;
+                g_memblk_80371670[next].size = 0;
+                g_free_803C78B8 = next;
+            }
+            if (prev != 0xFFFFFFFF && g_memblk_80371670[prev].size > 0) {
+                g_memblk_80371670[prev].addr = g_memblk_80371670[i].addr;
+                g_memblk_80371670[prev].size += g_memblk_80371670[i].size;
+                g_memblk_80371670[prev].unkC = g_memblk_80371670[i].unkC;
+                g_memblk_80371670[g_memblk_80371670[prev].unkC].unk8 = prev;
+                g_memblk_80371670[i].unkC = g_free_803C78B8;
+                g_memblk_80371670[i].size = 0;
+                g_free_803C78B8 = i;
+                i = prev;
+            }
+            if (g_memblk_80371670[i].unkC == 0xFFFFFFFF) {
+                g_last_803C78B4 = i;
+            }
+            return size;
+        }
+        i = g_memblk_80371670[i].unkC;
+    }
+    if (g_heap_803C78C4 == addr) {
+        size = g_memblk_80371670[g_last_803C78B4].addr - g_heap_803C78C4;
+        g_memblk_80371670[g_last_803C78B4].size += size;
+        g_memblk_80371670[g_last_803C78B4].addr = g_heap_803C78C4;
+        return size;
+    }
+    printf("Audio :: FreeA_ - Invalid pointer: %06X\n", addr);
+    return 0;
+}
+
 #pragma pop
 
 void MemCpyDone(void) {
