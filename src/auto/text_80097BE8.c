@@ -12778,7 +12778,133 @@ void DestroyMIDI(void) {
 #pragma optimization_level 1
 #pragma use_lmw_stmw on
 s32 SetMIDIState(s32 state) {
-    return 0;
+    typedef struct {
+        u8 *voice;
+        u8 on;
+        u8 pad5;
+        u8 unk6;
+        u8 unk7;
+        u16 unk8;
+        u8 vol;
+        u8 expr;
+        u32 unkC;
+        u32 pad10;
+        u32 gvol;
+        u32 pitch;
+        u8 bendRange;
+        u8 bend;
+        u8 unk1E;
+        u8 unk1F;
+    } MIDIChn;
+    typedef struct {
+        u32 time;
+        u32 tick;
+        u32 unk8;
+        u32 unkC;
+        u32 tempo;
+        u8 *pos;
+        u32 delta;
+        u8 unk1C;
+        u8 unk1D;
+        u8 marker;
+        u8 unk1F;
+        u32 pitch;
+    } MIDISong;
+    extern u8 *g_pHdr_803C78F4;
+    extern s32 g_musicState;
+    extern void (*SongUpdate)(void);
+    extern u32 g_trkOn;
+    extern u32 g_trkOff;
+    void SetVoiceState_(void *voice, s32 state);
+    u32 ReadVar_(u8 **pp);
+    void ProcessMIDI_800C110C(void);
+    MIDIChn *chn;
+    u32 i;
+    u8 *voice;
+    u8 *next;
+    s32 old;
+
+    if (g_pHdr_803C78F4 == NULL) {
+        return -1;
+    }
+    if (state == 0 || g_pHdr_803C78F4 == NULL) {
+        return g_musicState;
+    }
+    if (state != 1) {
+        SongUpdate = NULL;
+    }
+    switch (state) {
+    case 2:
+        for (chn = (MIDIChn *)g_chn_803769B4, i = 0x10; i != 0; i--) {
+            for (voice = chn++->voice; voice != NULL; voice = *(u8 **)(voice + 4)) {
+                SetVoiceState_(voice, 2);
+            }
+        }
+        break;
+    case 3:
+    case 4:
+        for (chn = (MIDIChn *)g_chn_803769B4, i = 0x10; i != 0; i--) {
+            voice = chn->voice;
+            chn->voice = NULL;
+            chn++;
+            while (voice != NULL) {
+                next = *(u8 **)(voice + 4);
+                SetVoiceState_(voice, 3);
+                voice = next;
+            }
+        }
+        if (state == 3) {
+            break;
+        }
+    case 1:
+        switch (g_musicState) {
+        case 0:
+        case 3:
+        case 4:
+            ((MIDISong *)g_song_80376990)->pos = g_pHdr_803C78F4 + 0x22;
+            ((MIDISong *)g_song_80376990)->delta = ReadVar_(&((MIDISong *)g_song_80376990)->pos);
+            ((MIDISong *)g_song_80376990)->unk1C = 8;
+            ((MIDISong *)g_song_80376990)->unk1D = 0;
+            ((MIDISong *)g_song_80376990)->tick = 500000 / *(u16 *)(g_pHdr_803C78F4 + 0x18);
+            ((MIDISong *)g_song_80376990)->tempo = 0x10000;
+            ((MIDISong *)g_song_80376990)->pitch = 0x10000;
+            ((MIDISong *)g_song_80376990)->marker = 0;
+            ((MIDISong *)g_song_80376990)->unk1F = 0;
+            for (chn = (MIDIChn *)g_chn_803769B4, i = 0x10; i != 0; i--) {
+                chn->on = 1;
+                chn->voice = NULL;
+                chn->unk6 = 0;
+                chn->unk7 = 0;
+                chn->unk8 = 0;
+                chn->vol = 0x7F;
+                chn->expr = 0x64;
+                chn->unkC = 0;
+                chn->gvol = 0x4F5C;
+                chn->bend = 0x40;
+                chn->bendRange = 2;
+                chn->pitch = 0x10000;
+                chn->unk1E = 0;
+                chn->unk1F = 0;
+                chn++;
+            }
+            g_trkOn = 0;
+            g_trkOff = 0;
+            break;
+        case 2:
+            for (chn = (MIDIChn *)g_chn_803769B4, i = 0x10; i != 0; i--) {
+                for (voice = chn++->voice; voice != NULL; voice = *(u8 **)(voice + 4)) {
+                    SetVoiceState_(voice, 1);
+                }
+            }
+            break;
+        }
+        state = 1;
+        SongUpdate = ProcessMIDI_800C110C;
+        break;
+    }
+    old = g_musicState;
+    g_musicState = state;
+    return old;
 }
 #pragma pop
 
