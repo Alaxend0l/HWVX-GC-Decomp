@@ -4391,6 +4391,71 @@ void Camera_UpdatePosition_Zoom_Generic(u8 *cam, u8 *mode, Vector4 *target, Vect
     PSVECSubtract((Vector4 *)(cam + 0x60), &pos, (Vector4 *)(cam + 0x70));
 }
 
+s32 Camera_TriggerActionGetLocation(u8 *cam, u32 *data, Vector4 *out) {
+    extern u8 *g_pNoRayCollideThing;
+    extern s32 g_triggerAction_params_default;
+    void XformVec(void *mtx, Vector4 *in, Vector4 *out);
+    Vector4 offset;
+    Vector4 local;
+    u8 *thing;
+    s32 i = 0;
+
+    switch (data[i++]) {
+    case 5:
+        *out = *(Vector4 *)(cam + 0x60);
+        break;
+    case 6:
+        *out = *(Vector4 *)data[i++];
+        out->x += *(f32 *)&data[i++];
+        out->y += *(f32 *)&data[i++];
+        out->z += *(f32 *)&data[i++];
+        break;
+    case 4:
+        thing = *(u8 **)(data[i++] + 0x10) + 0x10;
+        offset.x = *(f32 *)&data[i++];
+        offset.y = *(f32 *)&data[i++];
+        offset.z = *(f32 *)&data[i++];
+        XformVec(thing, &offset, out);
+        break;
+    case 3:
+        out->x = ((Vector4 *)data[i])->x;
+        out->y = ((Vector4 *)data[i])->y;
+        out->z = ((Vector4 *)data[i++])->z;
+        out->x += *(f32 *)&data[i++];
+        out->y += *(f32 *)&data[i++];
+        out->z += *(f32 *)&data[i++];
+        break;
+    case 2:
+        thing = *(u8 **)(data[i++] + 0x2C);
+        if (thing == NULL) {
+            *out = *(Vector4 *)data[i - 1];
+        } else {
+            *out = *(Vector4 *)(thing + 0x40);
+        }
+        out->x += *(f32 *)&data[i++];
+        out->y += *(f32 *)&data[i++];
+        out->z += *(f32 *)&data[i++];
+        break;
+    case 1:
+        thing = *(u8 **)(data[i++] + 0x28);
+        local.x = *(f32 *)&data[i++];
+        local.y = *(f32 *)&data[i++];
+        local.z = *(f32 *)&data[i++];
+        g_pNoRayCollideThing = thing;
+        if (*(u8 **)(thing + 0x94) != NULL) {
+            *(u32 *)(*(u8 **)(thing + 0x94) + 0x6C) |= 0x80;
+        }
+        if (*(u32 *)(thing + 0x74) & 0x201000) {
+            *(s32 **)(cam + 0xB4) = &g_triggerAction_params_default;
+        }
+        if (thing != NULL) {
+            XformVec(thing + 0x10, &local, out);
+        }
+        break;
+    }
+    return i;
+}
+
 #pragma pop
 
 void Camera_SetPlayer(void **camera, void *player) {
