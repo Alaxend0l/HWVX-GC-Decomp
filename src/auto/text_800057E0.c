@@ -403,7 +403,8 @@ typedef struct CodeVariables {
     s32 unk44[4];
     s32 unk54[4];
     u8 unk64[4];
-    u8 unk68[0xE4 - 0x68];
+    f32 unk68[30];
+    s32 unkE0;
     u8 unkE4;
     s32 unkE8;
     s32 unkEC;
