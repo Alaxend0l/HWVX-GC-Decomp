@@ -11311,7 +11311,6 @@ void Render_DrawSpheres(void) {
 
 #pragma push
 #pragma use_lmw_stmw on
-#pragma auto_inline off
 void Render_DrawBoundingBoxes(void) {
     extern s32 m_cullMode;
     extern GDL *g_pGDL;
