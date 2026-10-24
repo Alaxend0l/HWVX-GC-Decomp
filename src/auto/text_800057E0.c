@@ -180,6 +180,7 @@ void Trigger_PauseTACSystem(s8 paused);
 u8 Trigger_IsTACSystemPaused(void);
 void Thing_Release(s32 thing);
 void ShowStats(void);
+void ExtractColorKey(void *track, void *state, f32 dt);
 void LightHolder_Delete(s32 index);
 void Gfx_EndScene(void);
 void Gfx_FlipBuffers(void);
@@ -2587,6 +2588,152 @@ void AI_Car_Cheat_80008A60(u8 *ai) {
         *(s32 *)(car + 0x400) = 0;
     }
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void AI_Car_AsyncHeartbeat(u8 *ai) {
+    extern u8 g_cameraManager[];
+    void AI_AsyncHeartbeat(void *arg0);
+    f32 PSVECSquareDistance(void *a, void *b);
+    void CarA_Release(u8 *car);
+    s32 PlayerManager_RemovePlayer(void *player);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    s32 NavHolder_IsLinked(s32 from, s32 to);
+    s32 NavHolder_GetTotalNavPoints(void);
+    u8 *NavHolder_GetNavPoint(s32 index);
+    f32 AI_AngleToTarget(u8 *ai, Vector4 *target);
+    void GenerateQuaternion(Vector4 *axis, Vector4 *q, f32 angle);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void AI_Car_Cheat_80008A60(u8 *ai);
+    s32 Trigger_IsTACSystemPaused(void);
+    void Trigger_PauseTACSystem(s32 pause);
+    Vector4 out;
+    Vector4 quat;
+    Vector4 axis;
+    u8 *car;
+    s8 repath;
+    s32 dest;
+    void *holder;
+    s32 paused;
+    u8 *target;
+    u8 *thing;
+    s32 time;
+    u32 j;
+    u8 *tac;
+    u8 i;
+    f32 dist;
+    f32 radius;
+    f32 angle;
+
+    car = *(u8 **)(ai + 0x2C);
+    if (car != NULL && *(u8 **)(car + 0x8C) != g_carAVTable) {
+        return;
+    }
+    AI_AsyncHeartbeat(ai);
+    if (*(s8 *)(ai + 0xCC) || *(u8 **)(ai + 0x2C) == NULL) {
+        ai[0x1B] = 0xFF;
+        return;
+    }
+    if (ai[0xCD] != 3) {
+        dist = *(f32 *)(ai + 0x660);
+        j = 0;
+        do {
+            radius = PSVECSquareDistance(g_cameraManager + j * 0x190 + 0x60, *(u8 **)(ai + 0x2C) + 0x40);
+            if (radius < dist) {
+                dist = radius;
+            }
+            j++;
+        } while (j < g_cameraManager[0x640]);
+        if (dist >= *(f32 *)(ai + 0x660)) {
+            tac = *(u8 **)(ai + 0xA8);
+            paused = Trigger_IsTACSystemPaused();
+            Trigger_PauseTACSystem(1);
+            CarA_Release(*(u8 **)(ai + 0x2C));
+            PlayerManager_RemovePlayer(ai);
+            if (*(s8 *)(tac + 0x5C)) {
+                *(u32 *)(tac + 0x28) = 0;
+            }
+            Trigger_PauseTACSystem(paused);
+            return;
+        }
+    }
+    if (*(u8 **)(ai + 0x3E4) != NULL && (ai + 0x3D4) != NULL) {
+        for (i = 0; i < 4; i++) {
+            u8 **item = *(u8 ***)(ai + 0x3D4 + i * 4);
+            if (item == NULL) {
+                break;
+            }
+            time = RandomAdd_s32(*(s32 *)(*item + 0x40), *(s32 *)(*item + 0x44));
+            if (*(u32 *)(ai + 0xC8) > time) {
+                *(u32 *)(ai + 0xC8) = time;
+            }
+        }
+        thing = *(u8 **)(ai + 0x2C);
+        repath = 0;
+        holder = (*(void *(**)(void *))(*(u8 **)(thing + 0x8C) + 0x2C))(thing);
+        target = *(u8 **)(ai + 0x3E4);
+        if (**(u8 **)target == 10 || **(u8 **)target == 14) {
+            dest = *(s32 *)(*(u8 **)(target + 0x10) + 0x28);
+            if (*(u32 *)(ai + 0x4A4) >= 32 || ((u8 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] == NULL ||
+                *(u32 *)(ai + 0x4AC) == 0) {
+                repath = 1;
+            }
+        } else {
+            thing = *(u8 **)(target + 0x10);
+            if (!(*(u32 *)(thing + 0x74) & 0x1000)) {
+                dest = (*(s32 (**)(void *))(*(u8 **)(thing + 0x8C) + 0x2C))(thing);
+                if ((s8)NavHolder_IsLinked((s32)holder, dest)) {
+                    *(u32 *)(ai + 0x4A4) = 32;
+                    if (*(u32 *)(ai + 0x4A0) < NavHolder_GetTotalNavPoints()) {
+                        dist = PSVECSquareDistance(*(u8 **)(ai + 0x2C) + 0x40, NavHolder_GetNavPoint(*(u32 *)(ai + 0x4A0)));
+                        if (dist < *(f32 *)(NavHolder_GetNavPoint(*(u32 *)(ai + 0x4A0)) + 0x24) *
+                                       *(f32 *)(NavHolder_GetNavPoint(*(u32 *)(ai + 0x4A0)) + 0x24)) {
+                            if (*(u8 *)(NavHolder_GetNavPoint(*(u32 *)(ai + 0x4A0)) + 0x51) == 1) {
+                                *(s32 *)(ai + 0x4A0) = *(s32 *)(NavHolder_GetNavPoint(*(u32 *)(ai + 0x4A0)) + 0x4C);
+                            } else {
+                                *(s32 *)(ai + 0x4A0) = -1;
+                            }
+                        }
+                    }
+                } else if (*(u32 *)(ai + 0x4A4) >= 32 || ((u8 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] == NULL ||
+                           *(u32 *)(ai + 0x4AC) == 0) {
+                    repath = 1;
+                } else if (*(u8 **)(*(u8 **)(*(u8 **)(ai + 0x3E4) + 0x10) + 0x8C) == g_carAVTable &&
+                           dest != *(s32 *)(ai + 0x4A8)) {
+                    repath = 1;
+                }
+            }
+        }
+        if (repath) {
+            AI_Car_PrepareNavPath(ai, holder, dest);
+        }
+        if (*(u32 *)(ai + 0x3EC) != 0 || *(u32 *)(ai + 0x3F0) != 0) {
+            if (ai[0xCD] == 1) {
+                car = *(u8 **)(ai + 0x2C);
+                quat = *(Vector4 *)(car + 0x50);
+                axis.x = 0.0f;
+                axis.y = 1.0f;
+                axis.z = 0.0f;
+                axis.w = 0.0f;
+                if (*(u32 *)(ai + 0x4A4) < 32 && ((u8 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] != NULL) {
+                    angle = AI_AngleToTarget(car, (Vector4 *)((u8 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)]);
+                } else if (*(u8 **)(ai + 0x3EC) != NULL) {
+                    angle = AI_AngleToTarget(*(u8 **)(ai + 0x2C), (Vector4 *)(*(u8 **)(ai + 0x3EC) + 0x40));
+                } else if (*(u8 **)(ai + 0x3F0) != NULL) {
+                    angle = AI_AngleToTarget(*(u8 **)(ai + 0x2C), *(Vector4 **)(ai + 0x3F0));
+                }
+                GenerateQuaternion(&axis, &out, angle);
+                QuaternionMult(&out, &quat, (Vector4 *)(*(u8 **)(ai + 0x2C) + 0x50));
+                ai[0xCD] = 2;
+            }
+            if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1 && GameSettings_GetCodeVariable(0x198, 0) == 0) {
+                AI_Car_Cheat_80008A60(ai);
+            }
+        }
+    }
+}
+#pragma pop
+
 #pragma pop
 
 s32 AI_Heartbeat(u8 *ai) {
@@ -29842,6 +29989,200 @@ void GameRules_Init(void) {
         }
     }
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void GameRules_HeartBeat(void) {
+    extern s8 g_bRoundEnd_803C71CC;
+    extern u32 g_playerNumThatWon_803C71C8;
+    extern s8 g_bWaitingForRoundReset;
+    extern s8 g_bInit_803C71C4;
+    extern GRTrigger **g_pTimer_803C71C0;
+    void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void *PlayerManager_GetPlayerByIndex(u8);
+    void *PlayerManager_GetHumanPlayerByIndex(u8 index);
+    u8 PlayerManager_PlayerCount(void);
+    u8 PlayerManager_PlayerHumanCount(void);
+    void Trigger_GameRoundsComplete(void);
+    void Trigger_GameRoundXComplete(void);
+    s32 StateManager_QueueChange(s32 state);
+    static u32 s_requiredNumWins = -1;
+    s8 useWins;
+    u32 best;
+    u32 i;
+    u32 numRounds;
+    u32 numPlayers;
+    s8 roundOver;
+    u32 winner;
+    s8 gameOver;
+    u32 count;
+    u8 *player;
+    u32 wins;
+
+    roundOver = 0;
+    if (!g_bWaitingForRoundReset && GameSettings_GetCodeVariable(0x12C, 0) != 0) {
+        winner = -1;
+        if (g_bInit_803C71C4) {
+            s8 used[4] = {0, 0, 0, 0};
+
+            numPlayers = PlayerManager_PlayerHumanCount();
+            for (i = 0; i < numPlayers; i++) {
+                used[*(s32 *)((u8 *)PlayerManager_GetHumanPlayerByIndex(i) + 0x60) - 1] = 1;
+            }
+            numPlayers = PlayerManager_PlayerCount();
+            for (i = 0; i < numPlayers; i++) {
+                player = PlayerManager_GetPlayerByIndex(i);
+                if (*(u32 *)(player + 0x60) > 4) {
+                    s32 j;
+                    for (j = 0; j < 4; j++) {
+                        if (!used[j]) {
+                            used[j] = 1;
+                            *(u32 *)(player + 0x60) = j + 1;
+                            break;
+                        }
+                    }
+                }
+            }
+            g_bInit_803C71C4 = 0;
+        }
+        if (g_bRoundEnd_803C71CC) {
+            winner = g_playerNumThatWon_803C71C8;
+            g_bRoundEnd_803C71CC = 0;
+            roundOver = 1;
+        } else if (g_pTimer_803C71C0 != NULL && (*g_pTimer_803C71C0)->time == 0.0f) {
+            roundOver = 1;
+        } else {
+            switch (GameSettings_GetCodeVariable(0x12D, 0)) {
+            case 1:
+                numRounds = GameSettings_GetCodeVariable(0x130, 0);
+                numPlayers = PlayerManager_PlayerCount();
+                for (i = 0; i < numPlayers; i++) {
+                    player = PlayerManager_GetPlayerByIndex(i);
+                    if (*(u32 *)(player + 0x7C) >= numRounds) {
+                        winner = *(u32 *)(player + 0x60);
+                        roundOver = 1;
+                        break;
+                    }
+                }
+                break;
+            case 2:
+                numRounds = GameSettings_GetCodeVariable(0x12F, 0);
+                numPlayers = PlayerManager_PlayerCount();
+                for (i = 0; i < numPlayers; i++) {
+                    player = PlayerManager_GetPlayerByIndex(i);
+                    if (*(u32 *)(player + 0x78) >= numRounds) {
+                        winner = *(u32 *)(player + 0x60);
+                        roundOver = 1;
+                        break;
+                    }
+                    GameSettings_SetCodeVariable(0x193, *(u32 *)(player + 0x60), *(u32 *)(player + 0x78));
+                }
+                break;
+            }
+        }
+        if (!roundOver) {
+            return;
+        }
+        useWins = GameSettings_GetCodeVariable(0x132, 0) != 0;
+        numRounds = GameSettings_GetCodeVariable(0x131, 0);
+        gameOver = 0;
+        count = PlayerManager_PlayerCount();
+        if (winner == -1) {
+            best = 0;
+            for (i = 0; i < count; i++) {
+                player = PlayerManager_GetPlayerByIndex(i);
+                if (*(u32 *)(player + 0x7C) > best) {
+                    best = *(u32 *)(player + 0x7C);
+                    winner = *(u32 *)(player + 0x60);
+                }
+            }
+            switch (GameSettings_GetCodeVariable(0x12D, 0)) {
+            case 1:
+                best = 0;
+                for (i = 0; i < count; i++) {
+                    player = PlayerManager_GetPlayerByIndex(i);
+                    if (*(u32 *)(player + 0x7C) > best) {
+                        best = *(u32 *)(player + 0x7C);
+                        winner = *(u32 *)(player + 0x60);
+                    }
+                }
+                break;
+            case 2:
+                best = 0;
+                for (i = 0; i < count; i++) {
+                    player = PlayerManager_GetPlayerByIndex(i);
+                    if (*(u32 *)(player + 0x78) > best) {
+                        best = *(u32 *)(player + 0x78);
+                        winner = *(u32 *)(player + 0x60);
+                    }
+                }
+                break;
+            case 3:
+                winner = -1;
+                break;
+            }
+        }
+        for (i = 0; i < count; i++) {
+            player = PlayerManager_GetPlayerByIndex(i);
+            GameSettings_SetCodeVariable(0x192, *(u32 *)(player + 0x60), *(u32 *)(player + 0x7C));
+            GameSettings_SetCodeVariable(0x193, *(u32 *)(player + 0x60), *(u32 *)(player + 0x78));
+            if (*(u32 *)(player + 0x60) == winner) {
+                GameSettings_SetCodeVariable(0x191, *(u32 *)(player + 0x60),
+                                             GameSettings_GetCodeVariable(0x191, *(u32 *)(player + 0x60)) + 1);
+                GameSettings_SetCodeVariable(0x194, *(u32 *)(player + 0x60), 1);
+            } else {
+                GameSettings_SetCodeVariable(0x194, *(u32 *)(player + 0x60), 0);
+            }
+        }
+        if (useWins) {
+            best = 0;
+            if (s_requiredNumWins == -1) {
+                s_requiredNumWins = numRounds;
+            }
+            for (i = 0; i < count; i++) {
+                wins = GameSettings_GetCodeVariable(0x191, *(u32 *)((u8 *)PlayerManager_GetPlayerByIndex(i) + 0x60));
+                if (wins >= s_requiredNumWins) {
+                    gameOver = 1;
+                    s_requiredNumWins = -1;
+                    break;
+                }
+                if (wins > best) {
+                    best = wins;
+                }
+            }
+        } else if (numRounds == GameSettings_GetCodeVariable(0x190, 0)) {
+            gameOver = 1;
+        }
+        if (gameOver) {
+            best = 0;
+            for (i = 0; i < count; i++) {
+                player = PlayerManager_GetPlayerByIndex(i);
+                wins = GameSettings_GetCodeVariable(0x191, *(u32 *)(player + 0x60));
+                if (wins >= best) {
+                    best = wins;
+                }
+                GameSettings_SetCodeVariable(0x194, *(u32 *)(player + 0x60), 0);
+            }
+            for (i = 0; i < count; i++) {
+                player = PlayerManager_GetPlayerByIndex(i);
+                wins = GameSettings_GetCodeVariable(0x191, *(u32 *)(player + 0x60));
+                if (wins == best) {
+                    GameSettings_SetCodeVariable(0x194, *(u32 *)(player + 0x60), 1);
+                }
+            }
+            GameSettings_SetCodeVariable(0x197, 0, 1);
+            Trigger_GameRoundsComplete();
+            if (GameSettings_GetCodeVariable(0x198, 0) != 0) {
+                StateManager_QueueChange(0xC);
+            }
+        } else {
+            Trigger_GameRoundXComplete();
+        }
+        g_bWaitingForRoundReset = 1;
+    }
+}
+#pragma pop
 
 #pragma pop
 
