@@ -4,6 +4,23 @@
 #define __HI(x) *(int *)&x
 #define __LO(x) *(1 + (int *)&x)
 static inline double fabs(double x) { return __fabs(x); }
+extern s32 __float_nan[];
+extern s32 __float_huge[];
+static inline double sqrt(double x) {
+    if (x > 0.0) {
+        double guess = __frsqrte(x);
+        guess = .5 * guess * (3.0 - guess * guess * x);
+        guess = .5 * guess * (3.0 - guess * guess * x);
+        guess = .5 * guess * (3.0 - guess * guess * x);
+        guess = .5 * guess * (3.0 - guess * guess * x);
+        return x * guess;
+    } else if (x == 0) {
+        return 0;
+    } else if (x) {
+        return *(f32 *)__float_nan;
+    }
+    return *(f32 *)__float_huge;
+}
 
 void *GetRenderWindow();
 void Gfx_SetWorldMatrix(f32 *matrix);
