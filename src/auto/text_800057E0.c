@@ -6091,7 +6091,7 @@ f32 RaySphereTest(Vector4 *start, Vector4 *dir, Vector4 *center, f32 radius, f32
     unit.y = seg.y * inv;
     unit.z = seg.z * inv;
     dist = inv * (t * (PSVECDotProduct(&unit, &toCenter) - h));
-    if (len < 0.0001f) {
+    if (len < 1e-09f) {
         return t;
     }
     if (hit != NULL) {
