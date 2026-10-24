@@ -8629,6 +8629,7 @@ u16 Gfx_LoadTexture(char *name) {
     return i;
 }
 
+#pragma use_lmw_stmw on
 s32 LoadTGA(const char *name, u32 id) {
     extern u8 *m_texture;
     s32 File_Open(u32 dev, const char *name, u32 flags, s32 *size);
