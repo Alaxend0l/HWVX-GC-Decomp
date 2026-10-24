@@ -41718,6 +41718,7 @@ s32 TRKAppendBuffer(TRKBuffer *b, const void *data, u32 length) {
     b->length = b->position;
     return error;
 }
+#pragma auto_inline reset
 
 #pragma push
 #pragma auto_inline off
