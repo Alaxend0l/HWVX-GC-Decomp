@@ -12670,6 +12670,7 @@ u8 __THPReadQuantizationTable(void) {
     return 0;
 }
 #pragma use_lmw_stmw reset
+#pragma scheduling reset
 
 static void __THPHuffGenerateSizeTable(void);
 void __THPHuffGenerateCodeTable(void);
