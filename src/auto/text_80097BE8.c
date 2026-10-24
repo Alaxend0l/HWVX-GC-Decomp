@@ -10342,6 +10342,102 @@ void Render_DrawSprite(void) {
     Render_StateZWriteEnable(1);
 }
 
+void Render_DrawNewBBSprites(void) {
+    extern GDL *g_pGDL;
+    extern s32 g_debugTriCount;
+    void *GetRenderWindow();
+    void GXSetCurrentMtx(u32 id);
+    void Render_SetTextureHandle(u16 id);
+    void Render_StateBlendMode(u8 mode);
+    void SinCos(f32 *s, f32 *c, f32 angle);
+    void Set3DRectVtxDesc(void);
+    void GXBegin(u8 type, u8 vtxfmt, u16 nverts);
+    Vector out __attribute__((aligned(16)));
+    f32 s;
+    f32 c;
+    u32 blend;
+    u32 tex;
+    s8 first;
+    u16 idx;
+    u16 cur;
+    GDLSprite *sprite;
+    f32 x0, y0, x1, y1, x2, y2, x3, y3;
+    f32 size;
+    f32 x;
+    f32 y;
+    f32 z;
+
+    blend = -1;
+    if (g_pGDL->numSprites == 0) {
+        return;
+    }
+    GXSetCurrentMtx(0x3C);
+    for (tex = 0; tex < 0x1FF; tex++) {
+        first = 1;
+        idx = g_pGDL->spriteHeads[tex];
+        while (idx != 0xFFFF) {
+            cur = idx;
+            sprite = &g_pGDL->sprites[cur];
+            idx = sprite->next;
+            XformVec4x4((Vector *)((u8 *)GetRenderWindow() + 0x40), &sprite->pos, &out);
+            if (out.z > -2.0f) {
+                continue;
+            }
+            g_debugTriCount += 2;
+            if (blend != g_pGDL->sprites[cur].blendMode) {
+                blend = g_pGDL->sprites[cur].blendMode;
+                Render_StateBlendMode(blend);
+            }
+            if (first) {
+                Render_SetTextureHandle(tex);
+                first = 0;
+            }
+            size = 0.5f * g_pGDL->sprites[cur].pos.w;
+            x = out.x;
+            y = out.y;
+            z = out.z;
+            if (0.0f == g_pGDL->sprites[cur].rot) {
+                x0 = x + size;
+                y0 = y - size;
+                x1 = x + size;
+                y1 = y + size;
+                x2 = x - size;
+                y2 = y + size;
+                x3 = x - size;
+                y3 = y - size;
+            } else {
+                SinCos(&s, &c, 45.0f + g_pGDL->sprites[cur].rot);
+                size *= 1.4142137f;
+                s *= size;
+                c *= size;
+                y3 = y + s;
+                x3 = x + c;
+                x1 = x - c;
+                y1 = y - s;
+                x2 = x + s;
+                y2 = y - c;
+                x0 = x - s;
+                y0 = y + c;
+            }
+            Set3DRectVtxDesc();
+            GXBegin(0x80, 0, 4);
+            GXPosition3f32(x0, y0, z);
+            GXColor4u8(g_pGDL->sprites[cur].r, g_pGDL->sprites[cur].g, g_pGDL->sprites[cur].b, g_pGDL->sprites[cur].a);
+            GXTexCoord2f32(1.0f, 0.0f);
+            GXPosition3f32(x1, y1, z);
+            GXColor4u8(g_pGDL->sprites[cur].r, g_pGDL->sprites[cur].g, g_pGDL->sprites[cur].b, g_pGDL->sprites[cur].a);
+            GXTexCoord2f32(1.0f, 1.0f);
+            GXPosition3f32(x2, y2, z);
+            GXColor4u8(g_pGDL->sprites[cur].r, g_pGDL->sprites[cur].g, g_pGDL->sprites[cur].b, g_pGDL->sprites[cur].a);
+            GXTexCoord2f32(0.0f, 1.0f);
+            GXPosition3f32(x3, y3, z);
+            GXColor4u8(g_pGDL->sprites[cur].r, g_pGDL->sprites[cur].g, g_pGDL->sprites[cur].b, g_pGDL->sprites[cur].a);
+            GXTexCoord2f32(0.0f, 0.0f);
+        }
+    }
+}
+#pragma use_lmw_stmw reset
+
 #pragma push
 #pragma dont_inline on
 void Render_DrawRectanglesWindow(void) {
