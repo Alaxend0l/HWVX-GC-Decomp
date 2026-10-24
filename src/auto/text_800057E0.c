@@ -11469,6 +11469,52 @@ void Grid_Release(void) {
 
 }
 
+GridObject *Grid_AddObject(u32 data, u32 id, void *min, void *max) {
+    u32 z;
+    u32 x;
+    GridObject *obj;
+    GridObject *result = NULL;
+    GridNode *prev;
+    GridNode *newNode;
+    GridNode *node;
+
+    obj = ((GridManager *)gGridManager)->freeObjects;
+    if (obj != NULL) {
+        ((GridManager *)gGridManager)->freeObjects = obj->next;
+        ((GridManager *)gGridManager)->numFreeObjects--;
+        Grid_GetCell(min, &obj->x0, &obj->z0);
+        Grid_GetCell(max, &obj->x1, &obj->z1);
+        obj->data = data;
+        obj->id = id;
+        prev = NULL;
+        for (x = obj->x0; x <= obj->x1; x++) {
+            for (z = obj->z0; z <= obj->z1; z++) {
+                node = ((GridManager *)gGridManager)->freeNodes;
+                newNode = NULL;
+                if (node != NULL) {
+                    ((GridManager *)gGridManager)->freeNodes = node->next;
+                    newNode = node;
+                    *(GridResult *)node = *(GridResult *)obj;
+                    node->objNext = prev;
+                    node->cell = &((GridManager *)gGridManager)->cells[node->data][x * ((GridManager *)gGridManager)->numZ + z];
+                    node->prev = NULL;
+                    node->next = ((GridManager *)gGridManager)->cells[node->data][x * ((GridManager *)gGridManager)->numZ + z].head;
+                    if (node->next != NULL) {
+                        node->next->prev = node;
+                    }
+                    ((GridManager *)gGridManager)->cells[node->data][x * ((GridManager *)gGridManager)->numZ + z].head = node;
+                    ((GridManager *)gGridManager)->cells[node->data][x * ((GridManager *)gGridManager)->numZ + z].count++;
+                }
+                prev = newNode;
+            }
+        }
+        obj->nodes = prev;
+        obj->next = NULL;
+        result = obj;
+    }
+    return result;
+}
+
 void Grid_FreeObject(u8 *object) {
     extern u8 gGridManager[];
     u8 *node;
