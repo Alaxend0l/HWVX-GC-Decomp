@@ -10253,6 +10253,87 @@ void Render_ScreenFlash(void) {
     }
 }
 
+void Render_DrawSprite(void) {
+    extern GDL *g_pGDL;
+    extern u8 g_CurrentViews;
+    extern s32 g_debugTriCount;
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    void Gfx_SetRenderWindow(s32 window);
+    void Render_StateSetScissor(void);
+    void Render_StateBlendMode(u8 mode);
+    void Render_SetTextureHandle(u16 id);
+    void Render_StateZWriteEnable(s32 enable);
+    void Set2DRectVtxDesc(void);
+    void SinCos(f32 *s, f32 *c, f32 angle);
+    u32 i;
+    u32 window = 0;
+    f32 s;
+    f32 c;
+    f32 x0, y0, x1, y1, x2, y2, x3, y3;
+    f32 size;
+    f32 x;
+    f32 y;
+
+    Render_StateZWriteEnable(0);
+    for (i = 0; i < g_pGDL->num2DSprites; i++) {
+        g_debugTriCount += 2;
+        Render_StateBlendMode(g_pGDL->sprites2D[i].flag);
+        Render_SetTextureHandle(g_pGDL->sprites2D[i].tex);
+        if (g_CurrentViews != 1 && window != g_pGDL->sprites2D[i].window) {
+            window = g_pGDL->sprites2D[i].window;
+            Gfx_SetRenderWindow(window);
+            Render_StateSetScissor();
+        }
+        size = 0.5f * g_pGDL->sprites2D[i].unkC;
+        x = g_pGDL->sprites2D[i].x;
+        y = g_pGDL->sprites2D[i].y;
+        if (g_pGDL->sprites2D[i].unk1C == 0.0f) {
+            x0 = x - size;
+            y0 = y - size;
+            x1 = x - size;
+            y1 = y + size;
+            x2 = x + size;
+            y2 = y + size;
+            x3 = x + size;
+            y3 = y - size;
+        } else {
+            SinCos(&s, &c, 45.0f + g_pGDL->sprites2D[i].unk1C);
+            size *= 1.4142137f;
+            s *= size;
+            c *= size;
+            y3 = y - s;
+            x3 = x + c;
+            x1 = x - c;
+            y1 = y + s;
+            x2 = x + s;
+            y2 = y + c;
+            x0 = x - s;
+            y0 = y - c;
+        }
+        Set2DRectVtxDesc();
+        GXBegin(0x80, 0, 4);
+        GXPosition2f32(x0, y0);
+        GXColor4u8(g_pGDL->sprites2D[i].color.r, g_pGDL->sprites2D[i].color.g, g_pGDL->sprites2D[i].color.b, g_pGDL->sprites2D[i].color.a);
+        GXTexCoord2f32(0.0f, 1.0f);
+        GXPosition2f32(x1, y1);
+        GXColor4u8(g_pGDL->sprites2D[i].color.r, g_pGDL->sprites2D[i].color.g, g_pGDL->sprites2D[i].color.b, g_pGDL->sprites2D[i].color.a);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition2f32(x2, y2);
+        GXColor4u8(g_pGDL->sprites2D[i].color.r, g_pGDL->sprites2D[i].color.g, g_pGDL->sprites2D[i].color.b, g_pGDL->sprites2D[i].color.a);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition2f32(x3, y3);
+        GXColor4u8(g_pGDL->sprites2D[i].color.r, g_pGDL->sprites2D[i].color.g, g_pGDL->sprites2D[i].color.b, g_pGDL->sprites2D[i].color.a);
+        GXTexCoord2f32(1.0f, 1.0f);
+        i++;
+        i--;
+    }
+    if (window != 0) {
+        Gfx_SetRenderWindow(0);
+        Render_StateSetScissor();
+    }
+    Render_StateZWriteEnable(1);
+}
+
 #pragma push
 #pragma dont_inline on
 void Render_DrawRectanglesWindow(void) {
@@ -13535,6 +13616,142 @@ void DestroyIT(void) {
         memset(g_musicTitle, 0, 0x20);
     }
 }
+
+s32 SetITState(s32 state) {
+    typedef struct ITTrk {
+        u8 *voice;
+        u32 unk4;
+        u8 *smp;
+        u8 *ins;
+        u8 id;
+        u8 unk11;
+        u8 unk12;
+        u8 unk13;
+        u8 unk14;
+        u8 unk15[3];
+        u32 unk18;
+        u32 unk1C;
+        u8 unk20[8];
+        s32 unk28;
+        s32 unk2C;
+        u8 unk30[8];
+        s32 unk38;
+        u8 unk3C[0x70 - 0x3C];
+    } ITTrk;
+    typedef struct ITSong {
+        u32 tick;
+        u32 unk4;
+        u32 unk8;
+        u8 unkC[4];
+        u32 unk10;
+        u8 unk14;
+        u8 order;
+        u8 unk16[2];
+        u32 unk18;
+        u32 pitch;
+        u32 unk20;
+        u32 speed;
+        u32 tempo;
+        u8 unk2C[4];
+        ITTrk trk[0x20];
+        u8 *ins[100];
+        u8 *smp[100];
+        u8 *pat[100];
+    } ITSong;
+    extern u8 *g_pHdr_803C78E8;
+    extern u8 g_song_80375520[0x30];
+    extern s32 g_musicState;
+    extern void (*SongUpdate)(void);
+    extern u32 g_trkOn;
+    extern u32 g_trkOff;
+    void SetVoiceState_(void *voice, s32 state);
+    void ProcessIT_800BF6D8(void);
+    ITSong *song = (ITSong *)g_song_80375520;
+    u8 *next;
+    u8 *voice;
+    u32 i;
+    ITTrk *trk;
+    s32 old;
+
+    if (g_pHdr_803C78E8 == NULL) {
+        return -1;
+    }
+    if (state == 0 || g_pHdr_803C78E8 == NULL) {
+        return g_musicState;
+    }
+    if (state != 1) {
+        SongUpdate = NULL;
+    }
+    if (state == 2) {
+        for (i = 0; i < 0x20; i++) {
+            for (voice = song->trk[i].voice; voice != NULL; voice = *(u8 **)(voice + 4)) {
+                SetVoiceState_(voice, 2);
+            }
+        }
+    }
+    if (state == 3 || state == 4) {
+        song->tick = 0;
+        song->unk4 = 0;
+        for (i = 0; i < 0x20; i++) {
+            voice = song->trk[i].voice;
+            song->trk[i].voice = NULL;
+            song->trk[i].unk4 = 0;
+            while (voice != NULL) {
+                next = *(u8 **)(voice + 4);
+                SetVoiceState_(voice, 3);
+                voice = next;
+            }
+        }
+    }
+    if (state == 1 || state == 4) {
+        if (g_musicState == 3 || state == 4 || g_musicState == 0) {
+            song->unk20 = g_pHdr_803C78E8[0x32];
+            song->speed = g_pHdr_803C78E8[0x33];
+            song->tempo = 0x10000;
+            song->unk8 = 0;
+            song->unk10 = 1;
+            song->unk14 = 0;
+            song->order = 0xFF;
+            song->unk18 = g_pHdr_803C78E8[0x30];
+            song->tick = (song->tempo << 15) / (30000000 / (song->speed * 24));
+            for (trk = song->trk, i = 0; i < 0x20; i++, trk++) {
+                memset(trk, 0, 0x70);
+                trk->id = i;
+                trk->ins = song->ins[0];
+                trk->smp = song->smp[0];
+                trk->unk14 = 0x3C;
+                trk->unk1C = g_pHdr_803C78E8[0x80 + i];
+                trk->unk28 = 0x8000;
+                trk->unk38 = -0x8000;
+                trk->unk12 = 0x10;
+                if ((s8)g_pHdr_803C78E8[0x40 + i] >= 0) {
+                    trk->unk11 = 1;
+                    if (g_pHdr_803C78E8[0x40 + i] == 100) {
+                        trk->unk38 = 0x7FFF;
+                    } else {
+                        trk->unk2C = ((s8)g_pHdr_803C78E8[0x40 + i] << 10) - 0x8000;
+                        trk->unk2C -= trk->unk2C >> 15;
+                    }
+                }
+            }
+            g_trkOn = 0;
+            g_trkOff = 0;
+        }
+        if (g_musicState == 2) {
+            for (i = 0; i < 0x20; i++) {
+                for (voice = song->trk[i].voice; voice != NULL; voice = *(u8 **)(voice + 4)) {
+                    SetVoiceState_(voice, 1);
+                }
+            }
+        }
+        state = 1;
+        SongUpdate = ProcessIT_800BF6D8;
+    }
+    old = g_musicState;
+    g_musicState = state;
+    return old;
+}
+#pragma use_lmw_stmw reset
 
 #pragma push
 #pragma optimization_level 1
@@ -17402,7 +17619,7 @@ void GBACloseCallback__FlP11DVDFileInfo(s32 result, void *fileInfo) {
     u32 *DVDGetCurrentDiskID(void);
     u32 OSGetTick(void);
     void GBAInit(void);
-    s32 sum;
+    u8 sum;
     s32 i;
 
     DVDClose(fileInfo);
