@@ -3075,6 +3075,9 @@ void *__FileWrite(void *File, const char *Buffer, u32 NumChars) {
     return (fwrite(Buffer, 1, NumChars, File) == NumChars ? File : 0);
 }
 
+#pragma use_lmw_stmw on
+#pragma readonly_strings on
+#pragma pool_strings on
 int __pformatter(void *(*WriteProc)(void *, const char *, u32), void *WriteProcArg, const char *format_str, char *arg) {
     void *__va_arg(void *ap, int type);
     const char *parse_format_8009C384(const char *format_string, char *arg, print_format *format);
