@@ -10948,49 +10948,6 @@ static inline u32 GameSettings_GetSaveFileChecksum(char *device, const char *nam
     return -1;
 }
 
-static inline s8 GameSettings_ReadSaveFile(char *device, const char *name, u32 version, u32 size) {
-    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
-    u32 File_Read(s32 handle, u32 size, void *buf);
-    void File_Close(s32 handle);
-    u32 FileManager_GetChecksum(u32 size, void *data);
-    extern u8 *g_pSavedGameData;
-    u8 *data = g_pSavedGameData;
-    s8 ok = 0;
-    s32 handle;
-
-    if ((handle = File_Open(device + 0xA, name, 0, NULL)) != -1) {
-        File_Read(handle, size * 8 + 0x15C, data);
-        if (((u32 *)data)[0] == 4 && ((u32 *)data)[1] == version &&
-            ((u32 *)data)[2] == FileManager_GetChecksum(version, data + 0xC)) {
-            ok = 1;
-        }
-        File_Close(handle);
-    }
-    return ok;
-}
-
-static inline s8 GameSettings_WriteSaveFile(char *device, const char *name, u32 version, u32 size) {
-    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
-    s8 File_Write(s32 handle, u32 size, void *buf);
-    void File_Close(s32 handle);
-    u32 FileManager_GetChecksum(u32 size, void *data);
-    extern u8 *g_pSavedGameData;
-    u8 *data = g_pSavedGameData;
-    s8 ok = 0;
-    s32 handle;
-
-    if ((handle = File_Open(device + 0xA, name, 5, NULL)) != -1) {
-        ((u32 *)data)[0] = 4;
-        ((u32 *)data)[1] = version;
-        ((u32 *)data)[2] = FileManager_GetChecksum(version, data + 0xC);
-        if (File_Write(handle, size * 8 + 0x15C, data)) {
-            ok = 1;
-        }
-        File_Close(handle);
-    }
-    return ok;
-}
-
 u8 GameSettings_SaveGame(void) {
     typedef struct SaveSlot {
         u8 valid;
