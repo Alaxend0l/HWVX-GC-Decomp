@@ -10342,6 +10342,7 @@ void Render_DrawSprite(void) {
     Render_StateZWriteEnable(1);
 }
 
+#pragma use_lmw_stmw on
 void Render_DrawNewBBSprites(void) {
     extern GDL *g_pGDL;
     extern s32 g_debugTriCount;
