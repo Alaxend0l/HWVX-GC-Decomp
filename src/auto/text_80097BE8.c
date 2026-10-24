@@ -11615,6 +11615,218 @@ void Render_DrawAlphaTriangle(u16 index) {
     }
 }
 
+typedef struct GDLGroupTriVtx {
+    u32 r, g, b, a;
+    f32 x0, y0, z0, s0;
+    f32 x1, y1, z1, t0;
+    f32 x2, y2, z2, unk3C;
+    f32 s1, t1, s2, t2;
+} GDLGroupTriVtx;
+
+typedef struct GDLGroupQuadVtx {
+    u32 r, g, b, a;
+    f32 x0, y0, z0, s;
+    f32 x1, y1, z1, t;
+    f32 x2, y2, z2, unk3C;
+    f32 x3, y3, z3, unk4C;
+} GDLGroupQuadVtx;
+
+typedef struct GDLGroupLitTriVtx {
+    u32 c[3][4];
+    f32 x0, y0, z0, s0;
+    f32 x1, y1, z1, t0;
+    f32 x2, y2, z2, unk5C;
+    f32 s1, t1, s2, t2;
+} GDLGroupLitTriVtx;
+
+static inline void Render_DrawGroupTris(u32 group, u32 start) {
+    extern GDL *g_pGDL;
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    void SetTriVtxDesc(void);
+    GDLGroupTriVtx *tri;
+    u32 j;
+
+    SetTriVtxDesc();
+    GXBegin(0x90, 0, g_pGDL->groupTris[group].count * 3);
+    for (j = 0; j < g_pGDL->groupTris[group].count; j++) {
+        tri = &((GDLGroupTriVtx *)g_pGDL->unk24CDE0)[start++];
+        GXPosition3f32(tri->x0, tri->y0, tri->z0);
+        GXColor4u8(tri->r, tri->g, tri->b, tri->a);
+        GXTexCoord2f32(tri->s0, tri->t0);
+        GXPosition3f32(tri->x1, tri->y1, tri->z1);
+        GXColor4u8(tri->r, tri->g, tri->b, tri->a);
+        GXTexCoord2f32(tri->s1, tri->t1);
+        GXPosition3f32(tri->x2, tri->y2, tri->z2);
+        GXColor4u8(tri->r, tri->g, tri->b, tri->a);
+        GXTexCoord2f32(tri->s2, tri->t2);
+    }
+}
+
+static inline void Render_DrawGroupQuads(u32 group, u32 start) {
+    extern GDL *g_pGDL;
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    void SetTriVtxDesc(void);
+    GDLGroupQuadVtx *quad;
+    u32 j;
+
+    SetTriVtxDesc();
+    GXBegin(0x90, 0, g_pGDL->groupTris[group].count * 6);
+    for (j = 0; j < g_pGDL->groupTris[group].count; j++) {
+        quad = &((GDLGroupQuadVtx *)g_pGDL->unk24CDE8)[start++];
+        GXPosition3f32(quad->x0, quad->y0, quad->z0);
+        GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+        GXTexCoord2f32(0.0f, quad->s);
+        GXPosition3f32(quad->x1, quad->y1, quad->z1);
+        GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+        GXTexCoord2f32(1.0f, quad->s);
+        GXPosition3f32(quad->x2, quad->y2, quad->z2);
+        GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+        GXTexCoord2f32(0.0f, quad->t);
+        GXPosition3f32(quad->x1, quad->y1, quad->z1);
+        GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+        GXTexCoord2f32(1.0f, quad->s);
+        GXPosition3f32(quad->x3, quad->y3, quad->z3);
+        GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+        GXTexCoord2f32(1.0f, quad->t);
+        GXPosition3f32(quad->x2, quad->y2, quad->z2);
+        GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+        GXTexCoord2f32(0.0f, quad->t);
+    }
+}
+
+static inline void Render_DrawGroupLitTris(u32 group, u32 start) {
+    extern GDL *g_pGDL;
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    void SetTriVtxDesc(void);
+    GDLGroupLitTriVtx *lit;
+    u32 j;
+
+    SetTriVtxDesc();
+    GXBegin(0x90, 0, g_pGDL->groupTris[group].count * 3);
+    for (j = 0; j < g_pGDL->groupTris[group].count; j++) {
+        lit = &((GDLGroupLitTriVtx *)g_pGDL->unk24CDEC)[start++];
+        GXPosition3f32(lit->x0, lit->y0, lit->z0);
+        GXColor4u8(lit->c[0][0], lit->c[0][1], lit->c[0][2], lit->c[0][3]);
+        GXTexCoord2f32(lit->s0, lit->t0);
+        GXPosition3f32(lit->x1, lit->y1, lit->z1);
+        GXColor4u8(lit->c[1][0], lit->c[1][1], lit->c[1][2], lit->c[1][3]);
+        GXTexCoord2f32(lit->s1, lit->t1);
+        GXPosition3f32(lit->x2, lit->y2, lit->z2);
+        GXColor4u8(lit->c[2][0], lit->c[2][1], lit->c[2][2], lit->c[2][3]);
+        GXTexCoord2f32(lit->s2, lit->t2);
+    }
+}
+
+void Render_DrawTriGroup(void) {
+    extern GDL *g_pGDL;
+    extern s32 g_debugTriCount;
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    void Render_SetTextureHandle(u16 id);
+    void Render_StateBlendMode(u16 mode);
+    void Render_StateAlphaBlendEnable(s32 enable);
+    void Render_StateZWriteEnable(s32 enable);
+    void SetTriVtxDesc(void);
+    typedef struct {
+        u32 r, g, b, a;
+        f32 x0, y0, z0, s0;
+        f32 x1, y1, z1, t0;
+        f32 x2, y2, z2, unk3C;
+        f32 s1, t1, s2, t2;
+    } GroupTri;
+    typedef struct {
+        u32 r, g, b, a;
+        f32 x0, y0, z0, s;
+        f32 x1, y1, z1, t;
+        f32 x2, y2, z2, unk3C;
+        f32 x3, y3, z3, unk4C;
+    } GroupQuad;
+    typedef struct {
+        u32 c[3][4];
+        f32 x0, y0, z0, s0;
+        f32 x1, y1, z1, t0;
+        f32 x2, y2, z2, unk5C;
+        f32 s1, t1, s2, t2;
+    } GroupTriLit;
+    GroupTri *tri;
+    GroupQuad *quad;
+    GroupTriLit *lit;
+    u32 i;
+    u32 j;
+    u32 start;
+    s32 blend;
+
+    Render_StateZWriteEnable(0);
+    for (i = 0; i < g_pGDL->numGroupTris; i++) {
+        blend = g_pGDL->groupTris[i].unk6;
+        start = g_pGDL->groupTris[i].unk8;
+        g_debugTriCount += g_pGDL->groupTris[i].count;
+        Render_StateAlphaBlendEnable(blend > 1);
+        Render_StateBlendMode(blend);
+        Render_SetTextureHandle(g_pGDL->groupTris[i].tex);
+        switch (g_pGDL->groupTris[i].type) {
+        case 0:
+            SetTriVtxDesc();
+            GXBegin(0x90, 0, g_pGDL->groupTris[i].count * 3);
+            for (j = 0; j < g_pGDL->groupTris[i].count; j++) {
+                tri = (GroupTri *)g_pGDL->unk24CDE0 + start++;
+                GXPosition3f32(tri->x0, tri->y0, tri->z0);
+                GXColor4u8(tri->r, tri->g, tri->b, tri->a);
+                GXTexCoord2f32(tri->s0, tri->t0);
+                GXPosition3f32(tri->x1, tri->y1, tri->z1);
+                GXColor4u8(tri->r, tri->g, tri->b, tri->a);
+                GXTexCoord2f32(tri->s1, tri->t1);
+                GXPosition3f32(tri->x2, tri->y2, tri->z2);
+                GXColor4u8(tri->r, tri->g, tri->b, tri->a);
+                GXTexCoord2f32(tri->s2, tri->t2);
+            }
+            break;
+        case 4:
+            SetTriVtxDesc();
+            GXBegin(0x90, 0, g_pGDL->groupTris[i].count * 6);
+            for (j = 0; j < g_pGDL->groupTris[i].count; j++) {
+                quad = (GroupQuad *)g_pGDL->unk24CDE8 + start++;
+                GXPosition3f32(quad->x0, quad->y0, quad->z0);
+                GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+                GXTexCoord2f32(0.0f, quad->s);
+                GXPosition3f32(quad->x1, quad->y1, quad->z1);
+                GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+                GXTexCoord2f32(1.0f, quad->s);
+                GXPosition3f32(quad->x2, quad->y2, quad->z2);
+                GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+                GXTexCoord2f32(0.0f, quad->t);
+                GXPosition3f32(quad->x1, quad->y1, quad->z1);
+                GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+                GXTexCoord2f32(1.0f, quad->s);
+                GXPosition3f32(quad->x3, quad->y3, quad->z3);
+                GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+                GXTexCoord2f32(1.0f, quad->t);
+                GXPosition3f32(quad->x2, quad->y2, quad->z2);
+                GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+                GXTexCoord2f32(0.0f, quad->t);
+            }
+            break;
+        case 1:
+            SetTriVtxDesc();
+            GXBegin(0x90, 0, g_pGDL->groupTris[i].count * 3);
+            for (j = 0; j < g_pGDL->groupTris[i].count; j++) {
+                lit = (GroupTriLit *)g_pGDL->unk24CDEC + start++;
+                GXPosition3f32(lit->x0, lit->y0, lit->z0);
+                GXColor4u8(lit->c[0][0], lit->c[0][1], lit->c[0][2], lit->c[0][3]);
+                GXTexCoord2f32(lit->s0, lit->t0);
+                GXPosition3f32(lit->x1, lit->y1, lit->z1);
+                GXColor4u8(lit->c[1][0], lit->c[1][1], lit->c[1][2], lit->c[1][3]);
+                GXTexCoord2f32(lit->s1, lit->t1);
+                GXPosition3f32(lit->x2, lit->y2, lit->z2);
+                GXColor4u8(lit->c[2][0], lit->c[2][1], lit->c[2][2], lit->c[2][3]);
+                GXTexCoord2f32(lit->s2, lit->t2);
+            }
+            break;
+        }
+    }
+    Render_StateZWriteEnable(1);
+    Render_StateAlphaBlendEnable(1);
+}
+
 void Render_ScreenFlash(void) {
     void *GetRenderWindow();
     void Render_StateZWriteEnable(s32 enable);
