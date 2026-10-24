@@ -12226,6 +12226,203 @@ s32 Emitter_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+void Blast_Action(u8 *blast, Vector4 *pos, u8 *source) {
+    extern Vector4 g_zeroVector;
+    struct GridResult {
+        u32 data;
+        u32 id;
+    };
+    u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, struct GridResult *results, u32 maxResults);
+    f32 PSVECSquareDistance(Vector4 *a, Vector4 *b);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    s8 RayHitsTerrain(Vector4 *start, Vector4 *end, f32 *t, void *hit);
+    f32 Sqrt(f32 x);
+    void CarA_SlaveWeaponStop(u8 *car, s32 slot);
+    void CarA_StuntImpulse(u8 *car, Vector4 *a, Vector4 *b);
+    void MotionState_ReleaseSlavesByType(s32 state, u8 type);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    struct GridResult results[256];
+    struct {
+        Vector4 pos;
+        Vector4 dir;
+        u8 *thing;
+        u8 *source;
+        u32 unk28;
+        u8 unk2C[0x50 - 0x2C];
+    } impact;
+    struct { Vector4 pos; Vector4 quat; Vector4 row; Vector4 vel; u32 id; u32 unk74; f32 unk78; f32 unk7C; } params;
+    Vector4 min;
+    Vector4 max;
+    Vector4 dir;
+    f32 t;
+    u32 count;
+    s32 damageType;
+    u32 i;
+    u8 *thing;
+    u8 *data;
+    s8 skip;
+    u32 mask;
+    f32 outer;
+    f32 range;
+    f32 inner;
+    f32 innerSq;
+    f32 outerSq;
+    f32 force;
+    f32 dist;
+    f32 scale;
+
+    mask = 0;
+    min = *pos;
+    max = min;
+    force = *(f32 *)(*(u8 **)(blast + 0x1C) + 0x10);
+    damageType = *(s32 *)(*(u8 **)(blast + 0x1C) + 0xC);
+    outer = ((f32 *)*(u8 **)(blast + 0x30))[1];
+    inner = ((f32 *)*(u8 **)(blast + 0x30))[0];
+    min.x -= outer;
+    min.y -= outer;
+    min.z -= outer;
+    max.x += outer;
+    max.y += outer;
+    max.z += outer;
+    innerSq = inner * inner;
+    outerSq = outer * outer;
+    if (**(u8 **)(blast + 0x1C) & 1) {
+        mask |= 4;
+    }
+    if (**(u8 **)(blast + 0x1C) & 2) {
+        mask |= 1;
+    }
+    if (**(u8 **)(blast + 0x1C) & 4) {
+        mask |= 2;
+    }
+    count = Grid_GetObjects(&min, &max, mask, results, 0x100);
+    range = outer - inner;
+    for (i = 0; i < count; i++) {
+        thing = (u8 *)results[i].id;
+        skip = 0;
+        if (source != NULL && *(u32 *)(source + 0x94) != 0 && *(u32 *)(thing + 0x94) == *(u32 *)(source + 0x94)) {
+            if (blast[5] == 0) {
+                skip = 1;
+            }
+        } else if (blast[5] == 2) {
+            skip = 1;
+        }
+        if (skip) {
+            continue;
+        }
+        if (*(u32 *)(thing + 0x74) & 0x200000) {
+            continue;
+        }
+        if ((*(u32 *)(thing + 0x74) & 8) && damageType == 0) {
+            continue;
+        }
+        if (*(u32 *)(thing + 0x74) & 0x01000002) {
+            continue;
+        }
+        if (*(s16 *)(thing + 0x80) == 0) {
+            continue;
+        }
+        if (*(s16 *)(thing + 0x80) == 3 && !(**(u8 **)(blast + 0x1C) & 4)) {
+            continue;
+        }
+        dist = PSVECSquareDistance(pos, (Vector4 *)(thing + 0x40));
+        if (!(dist < outerSq)) {
+            continue;
+        }
+        t = 1.0f;
+        scale = t;
+        dir.x = *(f32 *)(thing + 0x40) - pos->x;
+        dir.y = *(f32 *)(thing + 0x44) - pos->y;
+        dir.z = *(f32 *)(thing + 0x48) - pos->z;
+        if (*(*(u8 **)(blast + 0x1C) + 1) && RayHitsTerrain(pos, (Vector4 *)(thing + 0x40), &t, NULL)) {
+            continue;
+        }
+        if (dist > innerSq) {
+            scale = (outer - Sqrt(dist)) / range;
+        }
+        data = *(u8 **)(blast + 0x1C);
+        if (data != NULL) {
+            switch (data[3]) {
+            case 2:
+                if (*(u8 **)(thing + 0x8C) == g_carAVTable) {
+                    Vector4 impulse = {0.0f, -9.0f, 0.0f, 0.0f};
+                    CarA_SlaveWeaponStop(thing, 0);
+                    *(s32 *)(thing + 0x46C) = 9000;
+                    CarA_StuntImpulse(thing, &g_zeroVector, &impulse);
+                }
+                break;
+            case 3:
+                if (*(u8 **)(thing + 0x8C) == g_carAVTable) {
+                    CarA_SlaveWeaponStop(thing, 1);
+                    *(s32 *)(thing + 0x470) = 5000;
+                }
+                break;
+            case 4:
+                if (*(u8 **)(thing + 0x8C) == g_carAVTable) {
+                    CarA_SlaveWeaponStop(thing, 2);
+                    *(s32 *)(thing + 0x474) = 0;
+                }
+                break;
+            case 5:
+                if (*(u8 **)(thing + 0x8C) == g_carAVTable) {
+                    *(s32 *)(thing + 0x78) = *(s32 *)(*(u8 **)(*(u8 **)(thing + 0x3BC) + 0xA0) + 0x14);
+                    *(s32 *)(thing + 0x374) = 0;
+                    MotionState_ReleaseSlavesByType((s32)(thing + 0x330), 2);
+                    CarA_SlaveWeaponStop(thing, 4);
+                    *(s32 *)(thing + 0x47C) = 0;
+                }
+                break;
+            case 6:
+                if (*(u8 **)(thing + 0x8C) == g_carAVTable) {
+                    CarA_SlaveWeaponStop(thing, 3);
+                    *(s32 *)(thing + 0x478) = 0;
+                }
+                break;
+            }
+            if (*(u32 *)(*(u8 **)(blast + 0x1C) + 0x18) != 0) {
+                params.id = *(u32 *)(*(u8 **)(blast + 0x1C) + 0x18);
+                params.pos = *(Vector4 *)(thing + 0x40);
+                params.row = *(Vector4 *)(thing + 0x0);
+                params.quat = *(Vector4 *)(thing + 0x50);
+                params.unk74 = 0;
+                params.unk7C = params.unk78 = 0.0f;
+                params.vel = g_zeroVector;
+                ThingManager_DARYL_CreateThing(1, &params);
+            }
+        }
+        force *= scale;
+        if ((*(f32 (**)(u8 *))(*(u8 **)(thing + 0x8C) + 0x14))(thing) > 0.01f) {
+            force /= (*(f32 (**)(u8 *))(*(u8 **)(thing + 0x8C) + 0x14))(thing);
+        } else {
+            force *= 2000.0f;
+        }
+        if (dir.x == 0.0f && dir.y == 0.0f && dir.z == 0.0f) {
+            dir.y = 1.0f;
+        } else if (PSVECSquareMag(&dir)) {
+            PSVECNormalize(&dir, &dir);
+        }
+        if (force > 600.0f) {
+            force = 600.0f;
+        }
+        impact.dir = dir;
+        impact.pos = *pos;
+        if (*(u8 **)(thing + 0x8C) == g_carAVTable) {
+            impact.pos.x = pos->x - 4.0f * *(f32 *)(thing + 0x30);
+            impact.pos.y = pos->y - 4.0f * *(f32 *)(thing + 0x34);
+            impact.pos.z = pos->z - 4.0f * *(f32 *)(thing + 0x38);
+            impact.pos.x = 2.0f * *(f32 *)(thing + 0x20) + pos->x;
+            impact.pos.y = 2.0f * *(f32 *)(thing + 0x24) + pos->y;
+            impact.pos.z = 2.0f * *(f32 *)(thing + 0x28) + pos->z;
+        }
+        impact.thing = thing;
+        impact.source = source;
+        impact.unk28 = 0;
+        force *= (*(f32 (**)(u8 *))(*(u8 **)(thing + 0x8C) + 0x14))(thing);
+        (*(void (**)(u8 *, void *, s32, f32))(*(u8 **)(thing + 0x8C) + 0x18))(thing, &impact, damageType, force);
+    }
+}
+
 s32 EventSeq_Init(u8 *seq, u8 *data) {
     void QuaternionToSubMatrix(void *quat, void *mtx);
 
@@ -41928,6 +42125,184 @@ s32 __AXGetCommandListCycles(void) {
     return __AXCommandListCycles_803C74B0;
 }
 
+void __AXNextFrame(void *sbuffer, void *buffer) {
+    extern u16 *__AXClWrite_803C74AC;
+    extern u32 __AXCommandListCycles_803C74B0;
+    extern u32 __AXClMode;
+    extern u32 __AXCompressor_803C74B4;
+    extern u16 __AXCompressorTable[];
+    u32 __AXGetStudio(void);
+    u32 __AXGetPBs(void);
+    void __AXGetAuxAInput(u32 *out);
+    void __AXGetAuxAInputDpl2(u32 *out);
+    void __AXGetAuxAOutput(u32 *out);
+    void __AXGetAuxAOutputDpl2R(u32 *out);
+    void __AXGetAuxAOutputDpl2Ls(u32 *out);
+    void __AXGetAuxAOutputDpl2Rs(u32 *out);
+    void __AXGetAuxBInput(u32 *out);
+    void __AXGetAuxBOutput(u32 *out);
+    void __AXGetAuxBForDPL2(u32 *out);
+    void __AXGetAuxBOutputDPL2(u32 *out);
+    u32 data;
+    u16 *pCommandList;
+
+    pCommandList = __AXClWrite_803C74AC;
+    __AXCommandListCycles_803C74B0 = 0x1A9;
+
+    data = __AXGetStudio();
+    *__AXClWrite_803C74AC = 0;
+    __AXClWrite_803C74AC++;
+    *__AXClWrite_803C74AC = (u16)(data >> 16);
+    __AXClWrite_803C74AC++;
+    *__AXClWrite_803C74AC = (u16)data;
+    __AXClWrite_803C74AC++;
+    __AXCommandListCycles_803C74B0 += 0x2E44;
+
+    switch (__AXClMode) {
+    case 0:
+        *__AXClWrite_803C74AC = 7;
+        __AXClWrite_803C74AC++;
+        *__AXClWrite_803C74AC = (u16)((u32)sbuffer >> 16);
+        __AXClWrite_803C74AC++;
+        *__AXClWrite_803C74AC = (u16)(u32)sbuffer;
+        __AXClWrite_803C74AC++;
+        __AXCommandListCycles_803C74B0 += 0x546;
+        break;
+    case 1:
+        *__AXClWrite_803C74AC = 0x11;
+        __AXClWrite_803C74AC++;
+        *__AXClWrite_803C74AC = (u16)((u32)sbuffer >> 16);
+        __AXClWrite_803C74AC++;
+        *__AXClWrite_803C74AC = (u16)(u32)sbuffer;
+        __AXClWrite_803C74AC++;
+        __AXCommandListCycles_803C74B0 += 0x5E6;
+        break;
+    }
+
+    data = __AXGetPBs();
+    *__AXClWrite_803C74AC = 2;
+    __AXClWrite_803C74AC++;
+    *__AXClWrite_803C74AC = (u16)(data >> 16);
+    __AXClWrite_803C74AC++;
+    *__AXClWrite_803C74AC = (u16)data;
+    __AXClWrite_803C74AC++;
+    *__AXClWrite_803C74AC = 3;
+    __AXClWrite_803C74AC++;
+
+    if (__AXClMode == 2) {
+        __AXGetAuxAInput(&data);
+        if (data) {
+            *__AXClWrite_803C74AC = 0x13;
+            __AXClWrite_803C74AC++;
+            *__AXClWrite_803C74AC = (u16)(data >> 16);
+            __AXClWrite_803C74AC++;
+            *__AXClWrite_803C74AC = (u16)data;
+            __AXClWrite_803C74AC++;
+            __AXGetAuxAInputDpl2(&data);
+            *__AXClWrite_803C74AC = (u16)(data >> 16);
+            __AXClWrite_803C74AC++;
+            *__AXClWrite_803C74AC = (u16)data;
+            __AXClWrite_803C74AC++;
+            __AXGetAuxAOutput(&data);
+            *__AXClWrite_803C74AC = (u16)(data >> 16);
+            __AXClWrite_803C74AC++;
+            *__AXClWrite_803C74AC = (u16)data;
+            __AXClWrite_803C74AC++;
+            __AXGetAuxAOutputDpl2R(&data);
+            *__AXClWrite_803C74AC = (u16)(data >> 16);
+            __AXClWrite_803C74AC++;
+            *__AXClWrite_803C74AC = (u16)data;
+            __AXClWrite_803C74AC++;
+            __AXGetAuxAOutputDpl2Ls(&data);
+            *__AXClWrite_803C74AC = (u16)(data >> 16);
+            __AXClWrite_803C74AC++;
+            *__AXClWrite_803C74AC = (u16)data;
+            __AXClWrite_803C74AC++;
+            __AXGetAuxAOutputDpl2Rs(&data);
+            *__AXClWrite_803C74AC = (u16)(data >> 16);
+            __AXClWrite_803C74AC++;
+            *__AXClWrite_803C74AC = (u16)data;
+            __AXClWrite_803C74AC++;
+            __AXCommandListCycles_803C74B0 += 0xDED;
+        }
+        *__AXClWrite_803C74AC = 0x10;
+        __AXClWrite_803C74AC++;
+        __AXGetAuxBForDPL2(&data);
+        *__AXClWrite_803C74AC = (u16)(data >> 16);
+        __AXClWrite_803C74AC++;
+        *__AXClWrite_803C74AC = (u16)data;
+        __AXClWrite_803C74AC++;
+        __AXGetAuxBOutputDPL2(&data);
+        *__AXClWrite_803C74AC = (u16)(data >> 16);
+        __AXClWrite_803C74AC++;
+        *__AXClWrite_803C74AC = (u16)data;
+        __AXClWrite_803C74AC++;
+        __AXCommandListCycles_803C74B0 += 0xDED;
+    } else {
+        __AXGetAuxAInput(&data);
+        if (data) {
+            *__AXClWrite_803C74AC = 4;
+            __AXClWrite_803C74AC++;
+            *__AXClWrite_803C74AC = (u16)(data >> 16);
+            __AXClWrite_803C74AC++;
+            *__AXClWrite_803C74AC = (u16)data;
+            __AXClWrite_803C74AC++;
+            __AXGetAuxAOutput(&data);
+            *__AXClWrite_803C74AC = (u16)(data >> 16);
+            __AXClWrite_803C74AC++;
+            *__AXClWrite_803C74AC = (u16)data;
+            __AXClWrite_803C74AC++;
+            __AXCommandListCycles_803C74B0 += 0xDED;
+        }
+        __AXGetAuxBInput(&data);
+        if (data) {
+            *__AXClWrite_803C74AC = 5;
+            __AXClWrite_803C74AC++;
+            __AXCommandListCycles_803C74B0 += 0xDED;
+            *__AXClWrite_803C74AC = (u16)(data >> 16);
+            __AXClWrite_803C74AC++;
+            *__AXClWrite_803C74AC = (u16)data;
+            __AXClWrite_803C74AC++;
+            __AXGetAuxBOutput(&data);
+            *__AXClWrite_803C74AC = (u16)(data >> 16);
+            __AXClWrite_803C74AC++;
+            *__AXClWrite_803C74AC = (u16)data;
+            __AXClWrite_803C74AC++;
+        }
+    }
+
+    if (__AXCompressor_803C74B4) {
+        *__AXClWrite_803C74AC = 0x12;
+        __AXClWrite_803C74AC++;
+        *__AXClWrite_803C74AC = 0x8000;
+        __AXClWrite_803C74AC++;
+        *__AXClWrite_803C74AC = 0xA;
+        __AXClWrite_803C74AC++;
+        *__AXClWrite_803C74AC = (u16)((u32)__AXCompressorTable >> 16);
+        __AXClWrite_803C74AC++;
+        *__AXClWrite_803C74AC = (u16)(u32)__AXCompressorTable;
+        __AXClWrite_803C74AC++;
+        __AXCommandListCycles_803C74B0 += 0xBB8;
+    }
+
+    *__AXClWrite_803C74AC = 0xE;
+    __AXClWrite_803C74AC++;
+    *__AXClWrite_803C74AC = (u16)((u32)sbuffer >> 16);
+    __AXClWrite_803C74AC++;
+    *__AXClWrite_803C74AC = (u16)(u32)sbuffer;
+    __AXClWrite_803C74AC++;
+    *__AXClWrite_803C74AC = (u16)((u32)buffer >> 16);
+    __AXClWrite_803C74AC++;
+    *__AXClWrite_803C74AC = (u16)(u32)buffer;
+    __AXClWrite_803C74AC++;
+    __AXCommandListCycles_803C74B0 += 0x2710;
+    *__AXClWrite_803C74AC = 0xF;
+    __AXClWrite_803C74AC++;
+    __AXCommandListCycles_803C74B0 += 2;
+
+    DCFlushRange(pCommandList, 0x300);
+}
+
 void __AXClQuit(void) {
 
 }
@@ -44847,6 +45222,99 @@ error:
     card->apiCallback = NULL;
     __CARDPutControlBlock(card, result);
     callback(chan, result);
+}
+
+s32 __CARDFormatRegionAsync(s32 chan, u16 encode, CARDCallback callback) {
+    typedef struct CARDID {
+        u8 serial[32];
+        u16 deviceID;
+        u16 size;
+        u16 encode;
+        u8 padding[0x1FC - 0x26];
+        u16 checkSum;
+        u16 checkSumInv;
+    } CARDID;
+    void *memset(void *dst, s32 c, u32 n);
+    OSSram *__OSLockSram(void);
+    s32 __OSUnlockSram(s32 commit);
+    OSSramEx *__OSLockSramEx(void);
+    s32 __OSUnlockSramEx(s32 commit);
+    s64 OSGetTime(void);
+    void __CARDCheckSum(void *ptr, s32 length, u16 *checksum, u16 *checksumInv);
+    void DCStoreRange(void *addr, u32 nBytes);
+    s32 __CARDEraseSector(s32 chan, u32 addr, CARDCallback callback);
+    void __CARDDefaultApiCallback(void);
+    CARDControl *card;
+    CARDID *id;
+    u8 *dir;
+    CARDDirCheck *check;
+    u16 *fat;
+    s16 i;
+    s32 result;
+    OSSram *sram;
+    OSSramEx *sramEx;
+    u16 viDTVStatus;
+    s64 time;
+    s64 rand;
+
+    result = __CARDGetControlBlock(chan, &card);
+    if (result < 0) {
+        return result;
+    }
+
+    id = card->workArea;
+    memset(id, 0xFF, 0x2000);
+    viDTVStatus = *(volatile u16 *)0xCC00206E;
+
+    id->encode = encode;
+
+    sram = __OSLockSram();
+    *(u32 *)&id->serial[20] = sram->counterBias;
+    *(u32 *)&id->serial[24] = sram->language;
+    __OSUnlockSram(0);
+
+    rand = time = OSGetTime();
+
+    sramEx = __OSLockSramEx();
+    for (i = 0; i < 12; i++) {
+        rand = (rand * 1103515245 + 12345) >> 16;
+        id->serial[i] = (u8)(sramEx->flashID[chan][i] + rand);
+        rand = ((rand * 1103515245 + 12345) >> 16) & 0x7FFF;
+    }
+    __OSUnlockSramEx(0);
+
+    *(u32 *)&id->serial[28] = viDTVStatus;
+    *(s64 *)&id->serial[12] = time;
+
+    id->deviceID = 0;
+    id->size = card->size;
+    __CARDCheckSum(id, sizeof(CARDID) - sizeof(u32), &id->checkSum, &id->checkSumInv);
+
+    for (i = 0; i < 2; i++) {
+        dir = (u8 *)card->workArea + (1 + i) * 0x2000;
+        memset(dir, 0xFF, 0x2000);
+        check = __CARDGetDirCheck(dir);
+        check->checkCode = i;
+        __CARDCheckSum(dir, 0x2000 - sizeof(u32), &check->checkSum, &check->checkSumInv);
+    }
+    for (i = 0; i < 2; i++) {
+        fat = (u16 *)((u8 *)card->workArea + (3 + i) * 0x2000);
+        memset(fat, 0x00, 0x2000);
+        fat[2] = i;
+        fat[3] = card->cBlock - 5;
+        fat[4] = 4;
+        __CARDCheckSum(&fat[2], 0x2000 - sizeof(u32), &fat[0], &fat[1]);
+    }
+
+    card->apiCallback = callback ? callback : (CARDCallback)__CARDDefaultApiCallback;
+    DCStoreRange(card->workArea, 0xA000);
+
+    card->formatStep = 0;
+    result = __CARDEraseSector(chan, card->sectorSize * card->formatStep, FormatCallback);
+    if (result < 0) {
+        __CARDPutControlBlock(card, result);
+    }
+    return result;
 }
 
 s32 CARDFormat(s32 chan) {
