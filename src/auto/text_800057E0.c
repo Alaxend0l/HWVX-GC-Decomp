@@ -26014,6 +26014,88 @@ u8 *getTiming_800742A0(u32 mode) {
     }
 }
 
+void setFbbRegs(void *arg0, u32 *arg1, u32 *arg2, u32 *arg3, u32 *arg4) {
+    extern M2C_UNK changed_803C7390;
+    extern M2C_UNK regs_802EFAA8;
+    s32 temp_r31;
+    s32 temp_r31_2;
+    u32 temp_r8;
+    u32 temp_r8_2;
+    u32 var_r10;
+    u32 var_r8;
+    u32 var_r8_2;
+
+    temp_r31 = M2C_FIELD(arg0, u8 *, 0x2C) << 5;
+    *arg1 = M2C_FIELD(arg0, s32 *, 0x30) + (((M2C_FIELD(arg0, u16 *, 0x16) * 2) & 0xFFFFFFE0) + (temp_r31 * M2C_FIELD(arg0, u16 *, 0xE)));
+    if ((s32) M2C_FIELD(arg0, s32 *, 0x20) == 0) {
+        var_r8 = *arg1;
+    } else {
+        var_r8 = *arg1 + temp_r31;
+    }
+    *arg2 = var_r8;
+    if ((s32) (M2C_FIELD(arg0, u16 *, 0xA) % 2) == 1) {
+        temp_r8 = *arg1;
+        *arg1 = *arg2;
+        *arg2 = temp_r8;
+    }
+    *arg1 &= 0x3FFFFFFF;
+    *arg2 &= 0x3FFFFFFF;
+    if ((s32) M2C_FIELD(arg0, s32 *, 0x44) != 0) {
+        temp_r31_2 = M2C_FIELD(arg0, u8 *, 0x2C) << 5;
+        *arg3 = M2C_FIELD(arg0, s32 *, 0x48) + (((M2C_FIELD(arg0, u16 *, 0x16) * 2) & 0xFFFFFFE0) + (temp_r31_2 * M2C_FIELD(arg0, u16 *, 0xE)));
+        if ((s32) M2C_FIELD(arg0, s32 *, 0x20) == 0) {
+            var_r8_2 = *arg3;
+        } else {
+            var_r8_2 = *arg3 + temp_r31_2;
+        }
+        *arg4 = var_r8_2;
+        if ((s32) (M2C_FIELD(arg0, u16 *, 0xA) % 2) == 1) {
+            temp_r8_2 = *arg3;
+            *arg3 = *arg4;
+            *arg4 = temp_r8_2;
+        }
+        *arg3 &= 0x3FFFFFFF;
+        *arg4 &= 0x3FFFFFFF;
+    }
+    if (((u32) *arg1 < 0x01000000U) && ((u32) *arg2 < 0x01000000U) && ((u32) *arg3 < 0x01000000U) && ((u32) *arg4 < 0x01000000U)) {
+        var_r10 = 0;
+    } else {
+        var_r10 = 1;
+    }
+    if (var_r10 != 0) {
+        *arg1 = (u32) *arg1 >> 5U;
+        *arg2 = (u32) *arg2 >> 5U;
+        *arg3 = (u32) *arg3 >> 5U;
+        *arg4 = (u32) *arg4 >> 5U;
+    }
+    M2C_FIELD(&regs_802EFAA8, s16 *, 0x1E) = (s16) *arg1;
+    M2C_FIELD(&changed_803C7390, s32 *, 4) = (s32) M2C_FIELD(&changed_803C7390, s32 *, 4);
+    M2C_FIELD(&changed_803C7390, s32 *, 0) = (s32) (M2C_FIELD(&changed_803C7390, s32 *, 0) | 0x10000);
+    M2C_FIELD(&regs_802EFAA8, s16 *, 0x1C) = (s16) ((var_r10 << 0xC) | (((u32) *arg1 >> 0x10U) | (M2C_FIELD(arg0, u8 *, 0x3C) << 8)));
+    M2C_FIELD(&changed_803C7390, s32 *, 4) = (s32) M2C_FIELD(&changed_803C7390, s32 *, 4);
+    M2C_FIELD(&changed_803C7390, s32 *, 0) = (s32) (M2C_FIELD(&changed_803C7390, s32 *, 0) | 0x20000);
+    M2C_FIELD(&regs_802EFAA8, s16 *, 0x26) = (s16) *arg2;
+    M2C_FIELD(&changed_803C7390, s32 *, 4) = (s32) M2C_FIELD(&changed_803C7390, s32 *, 4);
+    M2C_FIELD(&changed_803C7390, s32 *, 0) = (s32) (M2C_FIELD(&changed_803C7390, s32 *, 0) | 0x1000);
+    M2C_FIELD(&regs_802EFAA8, s16 *, 0x24) = (s16) ((u32) *arg2 >> 0x10U);
+    M2C_FIELD(&changed_803C7390, s32 *, 4) = (s32) M2C_FIELD(&changed_803C7390, s32 *, 4);
+    M2C_FIELD(&changed_803C7390, s32 *, 0) = (s32) (M2C_FIELD(&changed_803C7390, s32 *, 0) | 0x2000);
+    if ((s32) M2C_FIELD(arg0, s32 *, 0x44) != 0) {
+        M2C_FIELD(&regs_802EFAA8, s16 *, 0x22) = (s16) *arg3;
+        M2C_FIELD(&changed_803C7390, s32 *, 4) = (s32) M2C_FIELD(&changed_803C7390, s32 *, 4);
+        M2C_FIELD(&changed_803C7390, s32 *, 0) = (s32) (M2C_FIELD(&changed_803C7390, s32 *, 0) | 0x4000);
+        M2C_FIELD(&regs_802EFAA8, s16 *, 0x20) = (s16) ((u32) *arg3 >> 0x10U);
+        M2C_FIELD(&changed_803C7390, s32 *, 4) = (s32) M2C_FIELD(&changed_803C7390, s32 *, 4);
+        M2C_FIELD(&changed_803C7390, s32 *, 0) = (s32) (M2C_FIELD(&changed_803C7390, s32 *, 0) | 0x8000);
+        M2C_FIELD(&regs_802EFAA8, s16 *, 0x2A) = (s16) *arg4;
+        M2C_FIELD(&changed_803C7390, s32 *, 4) = (s32) M2C_FIELD(&changed_803C7390, s32 *, 4);
+        M2C_FIELD(&changed_803C7390, s32 *, 0) = (s32) (M2C_FIELD(&changed_803C7390, s32 *, 0) | 0x400);
+        M2C_FIELD(&regs_802EFAA8, s16 *, 0x28) = (s16) ((u32) *arg4 >> 0x10U);
+        M2C_FIELD(&changed_803C7390, s32 *, 4) = (s32) M2C_FIELD(&changed_803C7390, s32 *, 4);
+        M2C_FIELD(&changed_803C7390, s32 *, 0) = (s32) (M2C_FIELD(&changed_803C7390, s32 *, 0) | 0x800);
+    }
+}
+
 void VIFlush(void) {
     extern u32 changeMode_803C7388;
     extern u64 changed_803C7390;
@@ -35542,6 +35624,63 @@ void TRKDoSupportMask(TRKBuffer *b) {
     }
     if (err == 0) {
         err = TRKAppendBuffer1_ui8(b, 2);
+    }
+    if (err != 0) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 3);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return;
+    }
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+}
+
+void TRKDoVersions(TRKBuffer *b) {
+    typedef struct {
+        u8 kernelMajor;
+        u8 kernelMinor;
+        u8 protocolMajor;
+        u8 protocolMinor;
+    } DSVersions;
+    s32 TRKTargetVersions(DSVersions *versions);
+    s32 err;
+    s32 ackTries;
+    DSVersions versions;
+
+    if (b->length != 1) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 2);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return;
+    }
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, 0);
+    err = TRKTargetVersions(&versions);
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, versions.kernelMajor);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, versions.kernelMinor);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, versions.protocolMajor);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, versions.protocolMinor);
     }
     if (err != 0) {
         TRKResetBuffer(b, 1);
