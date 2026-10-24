@@ -31269,6 +31269,37 @@ void SetCodeVariable(s32 var, u8 *obj, f32 value) {
     }
 }
 
+static inline s32 TriggerCompareValues(s32 op, f32 value, f32 operand) {
+    switch (op) {
+    case 21:
+        if (value > operand) {
+            return 1;
+        }
+        break;
+    case 20:
+        if (value < operand) {
+            return 1;
+        }
+        break;
+    case 22:
+        if (value == operand) {
+            return 1;
+        }
+        break;
+    case 47:
+        if (value >= operand) {
+            return 1;
+        }
+        break;
+    case 48:
+        if (value <= operand) {
+            return 1;
+        }
+        break;
+    }
+    return 0;
+}
+
 s32 TriggerCodeVariableValueCheck(u32 *data) {
     f32 GetCodeVariable(s32 var, u8 *thing);
     f32 value;
