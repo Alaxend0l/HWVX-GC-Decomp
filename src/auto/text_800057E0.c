@@ -2622,7 +2622,7 @@ s32 AI_Car_DetermineState(u8 *car) {
 
 #pragma push
 #pragma use_lmw_stmw on
-#pragma inline_depth(3)
+#pragma inline_depth(4)
 void AI_Car_ResetState(u8 *car, void *arg) {
     typedef struct AIStateInfo {
         u8 unk0[6];
