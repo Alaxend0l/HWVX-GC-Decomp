@@ -18520,6 +18520,63 @@ void VolumeManager_SetReverbLevel(Vector4 *point) {
     g_bReset = 0;
 }
 
+void VolumeManager_SetFogLevel(Vector4 *point) {
+    typedef struct VolumeList {
+        u32 count;
+        s32 *volumes;
+    } VolumeList;
+    typedef struct VolumeCell {
+        VolumeList types[7];
+    } VolumeCell;
+    typedef struct FogSettings {
+        u8 type;
+        u8 pad[3];
+        f32 nearDistance;
+        f32 farDistance;
+        GXColor color;
+    } FogSettings;
+    extern u8 *g_VolumeHolder;
+    void Gfx_SetFog(GXColor *color, s32 type, f32 start, f32 end);
+    static u32 fogColor;
+    static u8 fogType = 0xFF;
+    static f32 fogNearDistance = -1.0f;
+    static f32 fogFarDistance = -1.0f;
+    u8 *settings;
+    s32 cell;
+    u8 *volume;
+    u32 count;
+    GXColor color;
+    GXColor worldColor;
+    s32 i;
+
+    settings = M2C_FIELD(g_worldData.world, u8 **, 0x9C);
+    cell = VolumeManager_GetCell(g_VolumeHolder, point);
+    count = g_VolumeHolder != NULL ? M2C_FIELD(g_VolumeHolder, VolumeCell **, 0x10)[cell].types[4].count : 0;
+    for (i = 0; i < count; i++) {
+        if (VolumeManager_IsPointInVolume(point, volume = (u8 *)M2C_FIELD(g_VolumeHolder, VolumeCell **, 0x10)[cell].types[4].volumes[i])) {
+            FogSettings *fog = M2C_FIELD(volume, FogSettings **, 0x2C);
+
+            if (*(u32 *)&fog->color != fogColor || fogType != fog->type || fogNearDistance != fog->nearDistance || fogFarDistance != fog->farDistance) {
+                color = fog->color;
+                Gfx_SetFog(&color, fog->type, fog->nearDistance, fog->farDistance);
+                fogColor = *(u32 *)&fog->color;
+                fogType = fog->type;
+                fogNearDistance = fog->nearDistance;
+                fogFarDistance = fog->farDistance;
+            }
+            return;
+        }
+    }
+    if (*M2C_FIELD(settings, u32 **, 0xC0) != fogColor || fogType != settings[0] || fogNearDistance != M2C_FIELD(settings, f32 *, 0x14) || fogFarDistance != M2C_FIELD(settings, f32 *, 0x18)) {
+        worldColor = *M2C_FIELD(settings, GXColor **, 0xC0);
+        Gfx_SetFog(&worldColor, settings[0], M2C_FIELD(settings, f32 *, 0x14), M2C_FIELD(settings, f32 *, 0x18));
+        fogColor = *M2C_FIELD(settings, u32 **, 0xC0);
+        fogType = settings[0];
+        fogNearDistance = M2C_FIELD(settings, f32 *, 0x14);
+        fogFarDistance = M2C_FIELD(settings, f32 *, 0x18);
+    }
+}
+
 #pragma push
 #pragma dont_inline on
 s32 WildCardRack_Init(void *thing, void *data) {
@@ -19778,7 +19835,7 @@ typedef struct TracerPoint {
     f32 vel[4];
     u8 unk20[0x20];
     f32 unk40;
-    u32 unk44;
+    u8 color[4];
     struct TracerPoint *next;
     u8 unk4C[4];
 } TracerPoint;
