@@ -8388,22 +8388,7 @@ typedef struct HitZT {
     Vector4 normal;
 } HitZT;
 
-s8 OBoxHitsPolyZeroTime(void *obox, void *poly, void *arg2) {
-    typedef struct {
-        Vector4 center;
-        Vector4 corners[8];
-        f32 extents[4];
-        Vector4 *axes[3];
-    } OBoxZT;
-    typedef struct {
-        Vector4 plane;
-        Vector4 *verts;
-        u32 numVerts;
-    } PolyZT;
-    typedef struct {
-        Vector4 pos;
-        Vector4 normal;
-    } HitZT;
+s8 OBoxHitsPolyZeroTime(OBoxZT *box, PolyZT *p, HitZT *hit) {
     f32 PSVECDotProduct(void *a, void *b);
     void PSVECSubtract(void *a, void *b, void *out);
     void PSVECCrossProduct(void *a, void *b, void *out);
@@ -8432,9 +8417,6 @@ s8 OBoxHitsPolyZeroTime(void *obox, void *poly, void *arg2) {
     u8 axis;
     u8 edge;
     s8 flip;
-    HitZT *hit = arg2;
-    PolyZT *p = poly;
-    OBoxZT *box = obox;
 
     best = -99999.9f;
     planeD = -p->plane.w;
@@ -8525,48 +8507,47 @@ s8 OBoxHitsPolyZeroTime(void *obox, void *poly, void *arg2) {
             f32 mag;
             PSVECCrossProduct(box->axes[i], &edgeDir, &n);
             mag = PSVECSquareMag(&n);
-            if (mag < 0.0001f) {
-                continue;
-            }
-            mag = 1.0f / Sqrt(mag);
-            n.x *= mag;
-            n.y *= mag;
-            n.z *= mag;
-            min = max = PSVECDotProduct(&n, &box->corners[0]);
-            for (j = 1; j < 8; j++) {
-                d = PSVECDotProduct(&n, &box->corners[j]);
-                if (d < min) {
-                    min = d;
-                    minIdx = j;
-                } else if (d > max) {
-                    maxIdx = j;
-                    max = d;
+            if (!(mag < 0.0001f)) {
+                mag = 1.0f / Sqrt(mag);
+                n.x *= mag;
+                n.y *= mag;
+                n.z *= mag;
+                min = max = PSVECDotProduct(&n, &box->corners[0]);
+                for (j = 1; j < 8; j++) {
+                    d = PSVECDotProduct(&n, &box->corners[j]);
+                    if (d < min) {
+                        min = d;
+                        minIdx = j;
+                    } else if (d > max) {
+                        maxIdx = j;
+                        max = d;
+                    }
                 }
-            }
-            a = PSVECDotProduct(&n, &p->verts[k]);
-            hi = PSVECDotProduct(&n, &p->verts[(u32)p->verts[k].w]);
-            if (a > hi) {
-                lo = hi;
-                hi = a;
-            } else {
-                lo = a;
-            }
-            if (hi < min || max < lo) {
-                return 0;
-            }
-            if (lo < max && lo - max > best) {
-                best = lo - max;
-                axis = i;
-                edge = k;
-                feature = maxIdx;
-                type = 3;
-            }
-            if (min < hi && min - hi > best) {
-                best = min - hi;
-                axis = i;
-                edge = k;
-                feature = minIdx;
-                type = 3;
+                a = PSVECDotProduct(&n, &p->verts[k]);
+                hi = PSVECDotProduct(&n, &p->verts[(u32)p->verts[k].w]);
+                if (a > hi) {
+                    lo = hi;
+                    hi = a;
+                } else {
+                    lo = a;
+                }
+                if (hi < min || max < lo) {
+                    return 0;
+                }
+                if (lo < max && lo - max > best) {
+                    best = lo - max;
+                    axis = i;
+                    edge = k;
+                    feature = maxIdx;
+                    type = 3;
+                }
+                if (min < hi && min - hi > best) {
+                    best = min - hi;
+                    axis = i;
+                    edge = k;
+                    feature = minIdx;
+                    type = 3;
+                }
             }
         }
     }
@@ -20028,6 +20009,201 @@ void LensFlare_Delete(s32 index) {
         for (i = 0; i < 64; i++) {
             if (*(void **)g_pFlare[i] != NULL) {
                 g_activeFlares = i + 1;
+            }
+        }
+    }
+}
+
+static inline Vector4 LensFlare_GetPos(u8 *thing, Vector4 *pos) {
+    if (thing != NULL) {
+        return *(Vector4 *)(thing + 0x40);
+    }
+    return *pos;
+}
+
+void LensFlare_Render(void) {
+    typedef struct FlareOverlay {
+        GXColor color;
+        u8 mode;
+        u8 pad5[3];
+        f32 scale;
+    } FlareOverlay;
+    typedef struct FlareElement {
+        GXColor color;
+        f32 size;
+        f32 pos;
+        u32 texture;
+        u8 flag;
+        u8 pad11[3];
+    } FlareElement;
+    typedef struct FlareData {
+        u32 count;
+        FlareElement *elements;
+        u8 rayTest;
+        u8 overlay;
+        u8 padA[2];
+        f32 fadeStart;
+        f32 fadeEnd;
+        FlareOverlay *ov;
+    } FlareData;
+    typedef struct Flare {
+        FlareData *flare;
+        u8 *thing;
+        u8 unk8[0x10 - 0x8];
+        Vector4 pos;
+        s8 visible;
+        u8 unk21[0x30 - 0x21];
+    } Flare;
+    extern Flare g_pFlare[64];
+    extern u32 g_activeFlares;
+    extern u32 g_LensFlareRayTest;
+    void Gfx_GetCameraPosition(Vector4 *pos);
+    void Gfx_GetCameraVector(Vector4 *at, Vector4 *up, Vector4 *right);
+    void Gfx_GetViewport(s32 *x, s32 *y, s32 *w, s32 *h);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void XformVec(void *mtx, Vector4 *in, Vector4 *out);
+    f32 Sqrt(f32 x);
+    s8 RayHitsTerrainAndObjects(void *start, void *dir, void *dist, void *hit);
+    void Gfx_ScreenOverlay(GXColor *color, u8 mode);
+    void Gfx_Add2DSprite(Vector4 *pos, u16 tex, GXColor *color, f32 size, u8 flag, f32 rot);
+    Vector4 pos;
+    f32 mtx[4][4];
+    Vector4 dir;
+    Vector4 screen;
+    Vector4 sprite;
+    Vector4 camera;
+    Vector4 at;
+    Vector4 up;
+    Vector4 right;
+    GXColor color;
+    f32 len;
+    s32 vx;
+    s32 vy;
+    s32 w;
+    s32 h;
+    f32 halfW;
+    f32 halfH;
+    f32 x;
+    f32 y;
+    f32 scale;
+    f32 s;
+    Flare *f;
+    FlareData *d;
+    FlareOverlay *ov;
+    FlareElement *e;
+    u32 i;
+    u32 j;
+
+    Gfx_GetCameraPosition(&camera);
+    Gfx_GetCameraVector(&at, &up, &right);
+    mtx[0][3] = 0.0f;
+    mtx[1][3] = 0.0f;
+    mtx[2][3] = 0.0f;
+    mtx[3][0] = 0.0f;
+    mtx[3][1] = 0.0f;
+    mtx[3][2] = 0.0f;
+    mtx[3][3] = 1.0f;
+    mtx[0][0] = right.x;
+    mtx[1][0] = right.y;
+    mtx[2][0] = right.z;
+    mtx[0][1] = up.x;
+    mtx[1][1] = up.y;
+    mtx[2][1] = up.z;
+    mtx[0][2] = at.x;
+    mtx[1][2] = at.y;
+    mtx[2][2] = at.z;
+    Gfx_GetViewport(&vx, &vy, &w, &h);
+    halfW = w >> 1;
+    halfH = h >> 1;
+    sprite.z = -1.0f;
+    if (++g_LensFlareRayTest > g_activeFlares) {
+        g_LensFlareRayTest = 0;
+    }
+    for (i = 0, f = g_pFlare; i < g_activeFlares; i++, f++) {
+        if (f->flare == NULL) {
+            continue;
+        }
+        if (f->thing != NULL) {
+            pos = *(Vector4 *)(f->thing + 0x40);
+        } else {
+            pos = f->pos;
+        }
+        screen = pos;
+        PSVECSubtract(&camera, &screen, &dir);
+        XformVec(mtx, &dir, &screen);
+        screen.z *= -1.0f;
+        if (screen.z > 0.0f) {
+            x = halfW + (-screen.x * halfW) / screen.z;
+            y = halfH + (-screen.y * halfH) / screen.z;
+            if (x < 0.0f || x > (f32)w || y < 0.0f || y > (f32)h) {
+                continue;
+            }
+            d = f->flare;
+            scale = 128.0f;
+            if (screen.z > d->fadeStart) {
+                scale -= scale * ((screen.z - d->fadeStart) / (d->fadeEnd - d->fadeStart));
+            }
+            if (scale <= 0.0f) {
+                continue;
+            }
+            vx = x - halfW;
+            vy = y - halfH;
+            y = (y - Sqrt(vx * vx + vy * vy)) * (1.0f / halfH);
+            if (y > 0.0f) {
+                if (f->flare->rayTest && i == g_LensFlareRayTest) {
+                    len = 1.0f;
+                    if (RayHitsTerrainAndObjects(&camera, &dir, &len, NULL)) {
+                        f->visible = 0;
+                    } else {
+                        f->visible = 1;
+                    }
+                }
+                if (f->visible) {
+                    y *= scale;
+                    if (f->flare->overlay) {
+                        GXColor c;
+                        ov = f->flare->ov;
+                        color = ov->color;
+                        s = y * ov->scale * 0.0078125f;
+                        if (s < 0.0f) {
+                            s = 0.0f;
+                        }
+                        if (ov->mode < 4) {
+                            u32 r = color.r * s;
+                            u32 g = color.g * s;
+                            u32 b = color.b * s;
+                            color.r = r > 255 ? 255 : r;
+                            color.g = g > 255 ? 255 : g;
+                            color.b = b > 255 ? 255 : b;
+                        } else {
+                            u32 a = color.a * s;
+                            color.a = a > 255 ? 255 : a;
+                        }
+                        c = color;
+                        Gfx_ScreenOverlay(&c, f->flare->ov->mode);
+                    }
+                    y *= 0.0078125f;
+                    for (j = 0; j < f->flare->count; j++) {
+                        GXColor c;
+                        e = &f->flare->elements[j];
+                        sprite.x = (f32)vx * e->pos + halfW;
+                        sprite.y = (f32)vy * e->pos + halfH;
+                        color = e->color;
+                        if (f->flare->elements[j].flag < 4) {
+                            u32 r = color.r * y;
+                            u32 g = color.g * y;
+                            u32 b = color.b * y;
+                            color.r = r > 255 ? 255 : r;
+                            color.g = g > 255 ? 255 : g;
+                            color.b = b > 255 ? 255 : b;
+                        } else {
+                            u32 a = color.a * y;
+                            color.a = a > 255 ? 255 : a;
+                        }
+                        c = color;
+                        Gfx_Add2DSprite(&sprite, e->texture, &c, e->size, e->flag, 0.0f);
+                    }
+                }
             }
         }
     }
