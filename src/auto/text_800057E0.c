@@ -5199,6 +5199,117 @@ void CarA_ProcessImpulse(u8 *car, Vector4 *normal, Vector4 *pos, Vector4 *pointV
     XformVecOrientation(car + 0x10, &scaled, (Vector4 *)(car + 0x410));
 }
 
+static inline void CarA_ApplyWheelLoads(u8 *car) {
+    typedef struct WheelInfo {
+        u8 pad0[0x3F];
+        u8 parent;
+        u16 index;
+        u8 pad42[0x50 - 0x42];
+    } WheelInfo;
+    Vector4 *up;
+    WheelInfo *wheel;
+    u32 i;
+    s32 bone;
+
+    for (i = 0; i < *(u32 *)(*(u8 **)(car + 0x3BC) + 0xD0); i++) {
+        wheel = &(*(WheelInfo **)(*(u8 **)(car + 0x3BC) + 0xD4))[i];
+        if (wheel->parent != 0) {
+            bone = wheel->index - wheel->parent;
+            up = (Vector4 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x10);
+            *(f32 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x30) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->x;
+            *(f32 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x34) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->y;
+            *(f32 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x38) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->z;
+        } else {
+            up = (Vector4 *)(car + 0x20);
+        }
+        *(f32 *)(*(u8 **)(car + 0x340) + wheel->index * 0x40 + 0x30) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->x;
+        *(f32 *)(*(u8 **)(car + 0x340) + wheel->index * 0x40 + 0x34) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->y;
+        *(f32 *)(*(u8 **)(car + 0x340) + wheel->index * 0x40 + 0x38) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->z;
+    }
+    *(f32 *)(car + 0x394) += *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x24) * *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x20);
+}
+
+void CarA_ComputeForces(u8 *car) {
+    typedef struct RayHit {
+        Vector4 pos;
+        Vector4 normal;
+        u8 pad20[8];
+        u8 *surface;
+        u8 pad2C[0x24];
+    } RayHit;
+    typedef struct WheelInfo {
+        u8 pad0[0x3F];
+        u8 parent;
+        u16 index;
+        u8 pad42[0x50 - 0x42];
+    } WheelInfo;
+    typedef struct ForcePoint {
+        Vector4 pos;
+        u8 ray;
+        u8 pad11[3];
+        f32 weight;
+        u8 pad18[0x30 - 0x18];
+    } ForcePoint;
+    typedef struct ForcePoints {
+        u8 pad0[4];
+        u32 count;
+        ForcePoint *points;
+    } ForcePoints;
+    extern Vector4 g_zeroVector;
+    void CarA_ComputeSuspensionForces(u8 *car);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    s8 RayHitsTerrainAndObjects(void *start, void *dir, void *dist, void *hit);
+    RayHit hit;
+    Vector4 worldPos;
+    Vector4 down;
+    ForcePoints *forces;
+    Vector4 *up;
+    WheelInfo *wheel;
+    u32 i;
+    s32 bone;
+    f32 dot;
+    f32 scale;
+    f32 dist;
+
+    *(Vector4 *)(car + 0x390) = *(Vector4 *)(car + 0x3A0) = g_zeroVector;
+    for (i = 0; i < *(u32 *)(*(u8 **)(car + 0x3BC) + 0xD0); i++) {
+        wheel = &(*(WheelInfo **)(*(u8 **)(car + 0x3BC) + 0xD4))[i];
+        if (wheel->parent != 0) {
+            bone = wheel->index - wheel->parent;
+            up = (Vector4 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x10);
+            *(f32 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x30) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->x;
+            *(f32 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x34) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->y;
+            *(f32 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x38) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->z;
+        } else {
+            up = (Vector4 *)(car + 0x20);
+        }
+        *(f32 *)(*(u8 **)(car + 0x340) + wheel->index * 0x40 + 0x30) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->x;
+        *(f32 *)(*(u8 **)(car + 0x340) + wheel->index * 0x40 + 0x34) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->y;
+        *(f32 *)(*(u8 **)(car + 0x340) + wheel->index * 0x40 + 0x38) -= *(f32 *)(car + 0x1BC + i * 0x30) * up->z;
+    }
+    *(f32 *)(car + 0x394) += *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x24) * *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x20);
+    CarA_ComputeSuspensionForces(car);
+    dot = PSVECDotProduct((Vector4 *)(car + 0x30), (Vector4 *)car);
+    forces = *(ForcePoints **)(*(u8 **)(car + 0x3BC) + 0xA4);
+    if (dot < 0.0f) {
+        return;
+    }
+    down.x = -*(f32 *)(car + 0x20);
+    down.y = -*(f32 *)(car + 0x24);
+    down.z = -*(f32 *)(car + 0x28);
+    scale = 1.0f - *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x80) + 0x58) * (*(f32 *)(car + 0x24) - 1.0f);
+    for (i = 0; i < forces->count; i++) {
+        if (forces->points[i].ray) {
+            dist = 6.0f;
+            if (*(u32 *)(car + 0x3B8) < *(u32 *)(*(u8 **)(car + 0x3BC) + 0xD0) && !RayHitsTerrainAndObjects(car + 0x40, &down, &dist, &hit)) {
+                continue;
+            }
+        }
+        XformVec(car + 0x10, &forces->points[i].pos, &worldPos);
+        CarA_ProcessForce(car, &worldPos, &down, scale * (dot * forces->points[i].weight));
+    }
+}
+
 void CarA_SetSlavePlayers(void *car) {
     void *slave;
 
