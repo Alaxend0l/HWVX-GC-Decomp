@@ -53609,7 +53609,6 @@ void GXSetGPMetric(s32 perf0, s32 perf1) {
     }
     *(u16 *)(gx + 2) = 0;
 }
-#pragma peephole reset
 
 void GXClearGPMetric(void) {
     extern void *__cpReg;
