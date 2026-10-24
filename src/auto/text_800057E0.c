@@ -18382,11 +18382,11 @@ typedef struct TimeBarVtx {
     u8 pad[4];
 } TimeBarVtx;
 
-static inline void TimeBar_SetRect(TimeBarVtx *v, f32 x0, f32 y0, f32 x1, f32 y1) {
-    v[0].x = v[3].x = x0;
-    v[0].y = v[1].y = y0;
-    v[2].y = v[3].y = y1;
-    v[1].x = v[2].x = x1;
+static inline void TimeBar_SetRect(TimeBarVtx *v, f32 x, f32 y, f32 w, f32 h) {
+    v[0].x = v[3].x = x;
+    v[0].y = v[1].y = y;
+    v[2].y = v[3].y = h + y;
+    v[1].x = v[2].x = x + w;
 }
 
 void Render_TimeBars(u32 *times) {
