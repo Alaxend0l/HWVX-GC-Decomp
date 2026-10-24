@@ -6884,6 +6884,138 @@ void CarA_GetTargetPos(void *car, Vector4 *pos) {
     }
 }
 
+void CarA_GetInterfaceInfo(u8 *car, u8 *info) {
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    s8 GameSettings_IsCheatEnabled(s32 cheat);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    u32 GameSettings_GetNumOfPlayers(void);
+    u32 CameraManager_GetActiveCameras(void);
+    f32 _fabs(f32 x);
+    typedef struct {
+        u32 active;
+        u8 unk4[0x3C];
+        s16 ammo;
+        u8 unk42[0xA];
+        u8 *item;
+    } RackSlot;
+    typedef struct {
+        u8 unk0[0xB0];
+        RackSlot slots[12];
+        u8 current;
+    } WeaponRack;
+    WeaponRack *rack;
+    u32 count;
+
+    rack = ThingManagerList_GetByType(car + 0x344, 8);
+    *(u32 *)(info + 0x10) = 100.0f * ((f32)*(s32 *)(car + 0x78) / (f32)*(s32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x14));
+    if (*(u32 *)(info + 0x10) > 100.0f) {
+        *(u32 *)(info + 0x10) = 100;
+    }
+    if (rack != NULL && rack->slots[rack->current].item != NULL) {
+        if (GameSettings_IsCheatEnabled(0)) {
+            rack->slots[rack->current].ammo = *(u32 *)(*(u8 **)(rack->slots[rack->current].item + 0x30) + 0x28);
+        }
+        if (*(u32 *)(*(u8 **)(rack->slots[rack->current].item + 0x30) + 0x24) != 0) {
+            *(u32 *)(info + 0x38) = 100.0f * ((f32)rack->slots[rack->current].ammo / (f32)*(u32 *)(*(u8 **)(rack->slots[rack->current].item + 0x30) + 0x28));
+            *(u32 *)(info + 0x3C) = *(u32 *)(info + 0x38) / *(u32 *)(*(u8 **)(rack->slots[rack->current].item + 0x30) + 0x24);
+        } else {
+            *(u32 *)(info + 0x38) = 0;
+            *(u32 *)(info + 0x3C) = 0;
+        }
+        if (*(u8 **)(rack->slots[rack->current].item + 0x30) != NULL) {
+            *(u32 *)(info + 0x68) = *(u32 *)(*(u8 **)(rack->slots[rack->current].item + 0x30) + 0x10);
+        }
+    }
+    *(u32 *)(info + 0x14) = _fabs(0.681818f * *(f32 *)(car + 0x458));
+    if (*(s8 *)(car + 0x584) && *(u32 *)(info + 0x14) < *(u32 *)(car + 0x58C)) {
+        (*(u32 *)(car + 0x588))++;
+        if (*(u32 *)(car + 0x588) > 5) {
+            *(s8 *)(car + 0x584) = 0;
+            *(u32 *)(car + 0x588) = 0;
+            *(u32 *)(car + 0x58C) = *(u32 *)(info + 0x14);
+        } else {
+            *(u32 *)(info + 0x14) = *(u32 *)(car + 0x58C);
+        }
+    } else if (*(s8 *)(car + 0x584)) {
+        *(u32 *)(car + 0x588) = 0;
+        *(u32 *)(car + 0x58C) = *(u32 *)(info + 0x14);
+    }
+    if (!*(s8 *)(car + 0x584) && *(u32 *)(info + 0x14) > *(u32 *)(car + 0x58C)) {
+        (*(u32 *)(car + 0x588))++;
+        if (*(u32 *)(car + 0x588) > 5) {
+            *(s8 *)(car + 0x584) = 1;
+            *(u32 *)(car + 0x588) = 0;
+            *(u32 *)(car + 0x58C) = *(u32 *)(info + 0x14);
+        } else {
+            *(u32 *)(info + 0x14) = *(u32 *)(car + 0x58C);
+        }
+    } else if (!*(s8 *)(car + 0x584)) {
+        *(u32 *)(car + 0x588) = 0;
+        *(u32 *)(car + 0x58C) = *(u32 *)(info + 0x14);
+    }
+    *(u32 *)(info + 0x18) = *(f32 *)(car + 0x4E4);
+    *(f32 *)(info + 0x20) = *(s32 *)(car + 0x400) / 300;
+    *(f32 *)(info + 0x2C) = 0.2f * (100.0f + *(f32 *)(car + 0x44));
+    if (*(u8 **)(car + 0x94) != NULL && (*(u32 *)(*(u8 **)(car + 0x94) + 0x6C) & 0x200)) {
+        if (GameSettings_GetCodeVariable(0x198, 0)) {
+            count = CameraManager_GetActiveCameras();
+        } else {
+            count = GameSettings_GetNumOfPlayers();
+        }
+        if (count > 1) {
+            if (count == 2) {
+                *(u32 *)(info + 0x4) = *(u32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x84) + 0x18);
+                if (*(u32 *)(*(u8 **)(car + 0x94) + 0x64) == 1) {
+                    *(s32 *)(info + 0x8) = 0;
+                    *(s32 *)(info + 0xC) = 10;
+                } else {
+                    *(s32 *)(info + 0x8) = 0;
+                    *(s32 *)(info + 0xC) = 230;
+                }
+            } else {
+                *(u32 *)(info + 0x4) = *(u32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x84) + 0x1C);
+                if (*(u32 *)(*(u8 **)(car + 0x94) + 0x64) == 1) {
+                    *(s32 *)(info + 0x8) = 10;
+                    *(s32 *)(info + 0xC) = 10;
+                } else if (*(u32 *)(*(u8 **)(car + 0x94) + 0x64) == 2) {
+                    *(s32 *)(info + 0x8) = 310;
+                    *(s32 *)(info + 0xC) = 10;
+                } else if (*(u32 *)(*(u8 **)(car + 0x94) + 0x64) == 3) {
+                    *(s32 *)(info + 0x8) = 10;
+                    *(s32 *)(info + 0xC) = 230;
+                } else {
+                    *(s32 *)(info + 0x8) = 310;
+                    *(s32 *)(info + 0xC) = 230;
+                }
+            }
+        } else {
+            *(u32 *)(info + 0x4) = *(u32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x84) + 0x10);
+            *(s32 *)(info + 0x8) = 0;
+            *(s32 *)(info + 0xC) = 0;
+        }
+    }
+    if (rack != NULL && rack->slots[rack->current].active != 0) {
+        info[0x34] = 1;
+        *(s16 *)(info + 0x6C) = *(u32 *)(*(u8 **)(rack->slots[rack->current].item + 0x30) + 0x18);
+    }
+    if (*(u32 *)(car + 0x494) != 0) {
+        *(u32 *)(info + 0x44) = *(u32 *)(car + 0x494);
+        *(u32 *)(car + 0x494) = 0;
+    }
+    if (*(u32 *)(car + 0x498) != 0) {
+        *(u32 *)(info + 0x40) = *(u32 *)(car + 0x498);
+        *(u32 *)(car + 0x498) = 0;
+    }
+    if (*(u32 *)(car + 0x49C) != 0) {
+        *(u32 *)(info + 0x48) = *(u32 *)(car + 0x49C);
+        *(u32 *)(car + 0x49C) = 0;
+    }
+    if (*(u32 *)(car + 0x4A0) != 0) {
+        *(u32 *)(info + 0x4C) = *(u32 *)(car + 0x4A0);
+        *(u32 *)(car + 0x4A0) = 0;
+    }
+}
+
 void *CarA_GetOrientedCollision(void *car) {
     void BuildOOBOffset(void *oob, void *pos, void *rot, void *out);
     void BuildOConvexHullOffset(void *out, void *hull, void *pos, void *rot);
