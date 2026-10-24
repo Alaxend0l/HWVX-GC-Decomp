@@ -5223,7 +5223,7 @@ static void CarA_ApplyWheelLoads(void *thing) {
             *(f32 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x34) -= *(f32 *)(susp + 0x1BC) * up->y;
             *(f32 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x38) -= *(f32 *)(susp + 0x1BC) * up->z;
         } else {
-            up = (Vector4 *)((u8 *)thing + 0x20);
+            up = (Vector4 *)(car + 0x20);
         }
         *(f32 *)(*(u8 **)(car + 0x340) + wheel->index * 0x40 + 0x30) -= *(f32 *)(susp + 0x1BC) * up->x;
         *(f32 *)(*(u8 **)(car + 0x340) + wheel->index * 0x40 + 0x34) -= *(f32 *)(susp + 0x1BC) * up->y;
