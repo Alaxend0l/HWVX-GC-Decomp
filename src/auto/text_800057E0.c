@@ -7618,38 +7618,38 @@ s32 FileStreaming_ReleaseAllDataPacks(s32 type, s8 wait) {
 }
 
 s32 FileStreaming_ReleaseDataPack(u32 index, s32 type) {
-    extern u8 *g_StreamingDataPacks[11];
+    extern StreamingDataPack *g_StreamingDataPacks[11];
     extern u32 g_MaxStreamingDataPacks[11];
     extern u32 g_numDataPacksToRelease;
-    extern u8 *g_pPacksToBeReleased[10];
+    extern StreamingDataPack *g_pPacksToBeReleased[10];
     extern void (*DestroyMusic)(void);
     void ThingManager_Invalidate(u32 start, u32 end);
-    u8 *pack;
+    StreamingDataPack *pack;
 
     if (type >= 11 || index >= g_MaxStreamingDataPacks[type]) {
         return 0;
     }
-    pack = g_StreamingDataPacks[type] + index * 0xA8;
-    if ((s8)pack[0] == 0) {
+    pack = g_StreamingDataPacks[type] + index;
+    if (pack->used == 0) {
         return 1;
     }
-    if ((s8)pack[1] == 0) {
-        pack[0] = 0;
+    if ((s8)pack->unk1 == 0) {
+        pack->used = 0;
         return 1;
     }
-    if (--*(s32 *)(pack + 0xC) != 0) {
+    if (--pack->refs != 0) {
         return 1;
     }
-    pack = g_StreamingDataPacks[type] + index * 0xA8;
-    if ((s8)pack[2] == 0) {
-        *(s32 *)(pack + 0x40) = 0;
+    pack = g_StreamingDataPacks[type] + index;
+    if ((s8)pack->unk2 == 0) {
+        pack->unk40 = 0;
     }
-    pack = g_StreamingDataPacks[type] + index * 0xA8;
-    ThingManager_Invalidate(*(u32 *)(pack + 0x14), *(u32 *)(pack + 0x14) + *(u32 *)(pack + 0x3C));
-    if ((s8)g_StreamingDataPacks[type][index * 0xA8 + 0x78] != 0) {
+    pack = g_StreamingDataPacks[type] + index;
+    ThingManager_Invalidate(pack->start, pack->start + pack->size);
+    if ((g_StreamingDataPacks[type] + index)->music != 0) {
         DestroyMusic();
     }
-    g_pPacksToBeReleased[g_numDataPacksToRelease++] = g_StreamingDataPacks[type] + index * 0xA8;
+    g_pPacksToBeReleased[g_numDataPacksToRelease++] = g_StreamingDataPacks[type] + index;
     return 1;
 }
 
