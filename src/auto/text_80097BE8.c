@@ -18198,6 +18198,7 @@ s32 GBAWriteAsync(s32 chan, u8 *src, u8 *status, GBACallback callback) {
 
 #pragma push
 #pragma peephole off
+#pragma auto_inline off
 s32 GBAWrite(s32 chan, u8 *src, u8 *status) {
     GBAControl *gba = &__GBA[chan];
     s32 ret;
