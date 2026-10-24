@@ -22187,6 +22187,16 @@ void Thing_CollideWithForceBoxes(u8 *thing) {
     }
 }
 
+static inline s32 Teleporter_IsBelowOrFar(u8 *tp, u8 *thing) {
+    f32 MagnitudeVector(void *v);
+    s32 hit = 0;
+
+    if (*(f32 *)(thing + 0x44) < *(f32 *)(tp + 0x34) || MagnitudeVector(thing + 0x40) > 10000.0f) {
+        hit = 1;
+    }
+    return hit;
+}
+
 static inline u8 *World_GetTeleporter(u32 index) {
     return *(u8 **)((u8 *)g_worldData.world + 0x34) + index * 0x70;
 }
@@ -22232,19 +22242,17 @@ s8 Thing_CollideWithTeleporters(u8 *thing) {
     Vector4 vel;
     Vector4 rotated;
     Vector4 neg;
-    void **world;
     u32 wasInside;
     u32 i;
     u8 inside;
 
     wasInside = (*(u32 *)(thing + 0x74) >> 11) & 1;
-    world = &g_worldData.world;
     *(u32 *)(thing + 0x74) &= ~0x800;
-    if (*world == NULL) {
+    if (g_worldData.world == NULL) {
         return 0;
     }
-    for (i = 0; i < *(u32 *)((u8 *)*world + 0x30); i++) {
-        tp = &(*(Teleporter **)((u8 *)*world + 0x34))[i];
+    for (i = 0; i < *(u32 *)((u8 *)g_worldData.world + 0x30); i++) {
+        tp = (Teleporter *)World_GetTeleporter(i);
         if (tp->numDest == 0) {
             continue;
         }
@@ -22267,7 +22275,7 @@ s8 Thing_CollideWithTeleporters(u8 *thing) {
             neg.x = -tp->mtx.m[3][0];
             neg.y = -tp->mtx.m[3][1];
             neg.z = -tp->mtx.m[3][2];
-            dest = &(*(Teleporter **)((u8 *)g_worldData.world + 0x34))[tp->dest[RandomNumberGenerator_GetRandomInteger(0, tp->numDest)]];
+            dest = (Teleporter *)World_GetTeleporter(tp->dest[RandomNumberGenerator_GetRandomInteger(0, tp->numDest)]);
             TransposeSubMatrix(&inv);
             XformVecOrientation(&inv, &neg, &rotated);
             inv.m[3][0] = rotated.x;
