@@ -7544,6 +7544,129 @@ void ExtractTextureKey(TextureKeyAnim *anim, TextureKeyState *state, f32 dt) {
         state->time -= anim->frameTime;
     }
 }
+
+s32 ExtractSoundKey(u8 *track, u8 *state, void *pos, f32 dt) {
+    s32 RandomAdd_s32(s32 base, s32 range);
+    f32 RandomAdd(f32 base, f32 range);
+    void *SoundAudioSample_Play(void *sample);
+    void SoundAudioSample_Set(void *voice, s32 type, s32 value);
+    s32 SoundManager_CreateSource(s32 owner);
+    void SoundSource_Set(s32 index, s32 type, void *value);
+    void SoundSource_Play(s32 index);
+    typedef struct Sound {
+        u8 type;
+        u8 unk1[2];
+        u8 owner;
+        u8 unk4[4];
+        f32 volume;
+        f32 pitch;
+        f32 pitchRange;
+        void *sample;
+        u8 *range;
+    } Sound;
+    typedef struct Key {
+        f32 duration;
+        u8 active;
+        u8 pad[3];
+        u32 numSounds;
+        Sound **sounds;
+    } Key;
+    typedef struct KeyTrack {
+        u32 count;
+        Key *keys;
+    } KeyTrack;
+    typedef struct KeyState {
+        s32 unk0;
+        u16 index;
+        u16 current;
+        f32 time;
+        u8 reset;
+    } KeyState;
+    KeyTrack *t = (KeyTrack *)track;
+    KeyState *s = (KeyState *)state;
+    u32 reset;
+    u16 i;
+    s32 ret;
+    Sound *snd;
+    s32 idx;
+
+    s->unk0 = 0;
+    reset = 0;
+    ret = -1;
+    if (s->reset) {
+        s->reset = 0;
+        reset = 1;
+        s->index = 0;
+        s->time = 0.0f;
+    }
+    if (s->index >= t->count) {
+        return -2;
+    }
+    s->time += dt;
+    if (reset || s->time >= t->keys[s->index].duration) {
+        s->current = 0;
+        for (;;) {
+            if (s->time < t->keys[s->index].duration) {
+                break;
+            }
+            s->current = s->index;
+            if (t->keys[s->index].numSounds != 0) {
+                idx = RandomAdd_s32(0, t->keys[s->index].numSounds);
+                snd = t->keys[s->index].sounds[idx];
+                if (snd != NULL) {
+                    if (snd->type == 1) {
+                        void *voice;
+                        f32 pitch;
+
+                        voice = SoundAudioSample_Play(snd->sample);
+                        pitch = RandomAdd(snd->pitch, snd->pitchRange);
+                        SoundAudioSample_Set(voice, 0, 32767.0f * snd->volume);
+                        SoundAudioSample_Set(voice, 1, 65536.0f * pitch);
+                    } else {
+                        s32 src;
+                        void *sample;
+                        f32 pitch;
+
+                        src = SoundManager_CreateSource(snd->owner);
+                        sample = snd->sample;
+                        pitch = RandomAdd(snd->pitch, snd->pitchRange);
+                        SoundSource_Set(src, 8, &sample);
+                        SoundSource_Set(src, 5, pos);
+                        SoundSource_Set(src, 0, &snd->volume);
+                        SoundSource_Set(src, 1, &pitch);
+                        if (snd->type == 0) {
+                            SoundSource_Set(src, 2, snd->range);
+                            SoundSource_Set(src, 3, snd->range + 4);
+                        }
+                        SoundSource_Play(src);
+                        if (snd->owner) {
+                            ret = src;
+                        }
+                    }
+                }
+            }
+            s->time -= t->keys[s->index].duration;
+            s->index++;
+            if (s->index >= t->count) {
+                for (i = 0; i < t->count; i++) {
+                    if (t->keys[i].active) {
+                        s->index = i;
+                        break;
+                    }
+                }
+                if (s->index >= t->count) {
+                    if (ret < 0) {
+                        return -2;
+                    }
+                    return ret;
+                }
+                break;
+            }
+        }
+    }
+    return ret;
+}
+
 #pragma pop
 
 typedef struct StreamingDataPack {
