@@ -8156,6 +8156,97 @@ void Gfx_ScreenOverlay(GXColor *color, u32 mode) {
     }
 }
 
+static inline DLGroup *DisplayList_AddGroup_Opaque(u16 key) {
+    extern DisplayList *g_pDL;
+    DLGroup *group;
+
+    if (g_pDL->numOpaqueGroups == 0x9C4) {
+        return NULL;
+    }
+    group = &g_pDL->opaqueGroups[g_pDL->numOpaqueGroups];
+    group->unkA = g_pDL->unk11DE0[key];
+    g_pDL->unk11DE0[key] = g_pDL->numOpaqueGroups++;
+    return group;
+}
+
+static inline DLGroup *DisplayList_AddGroup_Lit(u16 key) {
+    extern DisplayList *g_pDL;
+    DLGroup *group;
+
+    if (g_pDL->numLitGroups == 0x258) {
+        return NULL;
+    }
+    group = &g_pDL->litGroups[g_pDL->numLitGroups];
+    group->unkA = g_pDL->unk121DE[key];
+    g_pDL->unk121DE[key] = g_pDL->numLitGroups++;
+    return group;
+}
+
+static inline DLGroup *DisplayList_AddGroup_Shadow(void) {
+    extern DisplayList *g_pDL;
+    extern u8 g_CurrentViews;
+    DisplayList *dl;
+
+    if (g_CurrentViews != 1) {
+        return NULL;
+    }
+    dl = g_pDL;
+    if (dl->numShadowGroups == 0x100) {
+        return NULL;
+    }
+    return &dl->shadowGroups[dl->numShadowGroups++];
+}
+
+static inline DLGroup *DisplayList_AddGroup_Alpha(void) {
+    extern DisplayList *g_pDL;
+    DisplayList *dl = g_pDL;
+
+    if (dl->numAlphaGroups == 0x100) {
+        return NULL;
+    }
+    return &dl->alphaGroups[dl->numAlphaGroups++];
+}
+
+static inline DLGroup *DisplayList_AddGroup_Decal(void) {
+    extern DisplayList *g_pDL;
+    DisplayList *dl = g_pDL;
+
+    if (dl->numDecalGroups == 0x200) {
+        return NULL;
+    }
+    return &dl->decalGroups[dl->numDecalGroups++];
+}
+
+static inline DLGroup *DisplayList_AddGroup_Overlay(void) {
+    extern DisplayList *g_pDL;
+    DisplayList *dl = g_pDL;
+
+    if (dl->numOverlayGroups == 0x80) {
+        return NULL;
+    }
+    return &dl->overlayGroups[dl->numOverlayGroups++];
+}
+
+static inline void DisplayList_AddGeometryAlphaGroup(Geometry *geometry, u32 group, u32 matrix, u8 flag, GXColor color) {
+    extern GDL *g_pGDL;
+    extern s32 g_currentWindow;
+    extern u8 g_CurrentViews;
+
+    if (g_pGDL->numAlphaGroups == 0x400) {
+        return;
+    }
+    g_pGDL->alphaGroups[g_pGDL->numAlphaGroups].unk40 = (s32)geometry;
+    g_pGDL->alphaGroups[g_pGDL->numAlphaGroups].unk44 = group;
+    g_pGDL->alphaGroups[g_pGDL->numAlphaGroups].window = g_currentWindow;
+    if (g_CurrentViews != 1) {
+        Gfx_SetWorldMatrix(Gfx_GetWorldMatrixState(matrix));
+    }
+    memcpy(g_pGDL->alphaGroups[g_pGDL->numAlphaGroups].matrix, (u8 *)GetRenderWindow() + 0x80, 0x40);
+    g_pGDL->alphaGroups[g_pGDL->numAlphaGroups].unk50 = flag;
+    g_pGDL->alphaGroups[g_pGDL->numAlphaGroups].color = color;
+    g_pGDL->numAlphaGroups++;
+}
+
 DLSkinGroup *DisplayList_AddGroup_Skin(void) {
     extern DisplayList *g_pDL;
     DisplayList *dl = g_pDL;
