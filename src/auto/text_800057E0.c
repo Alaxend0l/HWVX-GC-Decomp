@@ -20587,6 +20587,9 @@ void CarA_SlaveWeaponStop(void *car, s32 weapon) {
     ThingManagerList_RemoveReleasedThings((u8 *)car + 0x344);
 }
 
+#pragma pop
+#pragma push
+
 typedef struct GRTrigger {
     u8 unk0;
     u8 unk1;
