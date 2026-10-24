@@ -34756,7 +34756,18 @@ void __GXXfVtxSpecs(void) {
     gx->bpSentNot = 1;
 }
 
-#pragma optimization_level 1
+static inline void SETVCDATTR(u32 attr, s32 type) {
+    extern u8 *gx;
+    u32 *vcd;
+
+    switch (attr) {
+    case 0:
+        vcd = (u32 *)(gx + 0x14);
+        *vcd = (*vcd & ~0x1) | type;
+        break;
+    }
+}
+
 void GXSetVtxDesc(u32 attr, s32 type) {
     extern u8 *gx;
 
