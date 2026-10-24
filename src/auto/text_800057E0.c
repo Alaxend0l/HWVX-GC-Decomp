@@ -2568,7 +2568,8 @@ static inline void AI_Car_SteerAlongPath(u8 *ai, u32 i) {
 
     p0 = ((Vector4 **)(ai + 0x420))[i];
     myPos = *(u8 **)(ai + 0x2C) + 0x40;
-    if (i + 1 >= 32 || (p1 = ((Vector4 **)(ai + 0x420))[i + 1]) == NULL) {
+    p1 = i + 1 < 32 ? ((Vector4 **)(ai + 0x420))[i + 1] : NULL;
+    if (p1 == NULL) {
         PSVECSubtract(myPos, p0, ai + 0x400);
         PSVECScale(ai + 0x400, ai + 0x400, 0.5f);
         PSVECAdd(ai + 0x400, p0, ai + 0x400);
@@ -2604,17 +2605,18 @@ static inline s32 AI_Car_UpdateSeekTarget(u8 *ai, f32 *speed) {
     return 1;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 void AI_Car_SeekPoint_80007C7C(u8 *ai) {
     void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed);
     Vector4 target;
     f32 speed;
-    u32 i;
 
     speed = 0.0f;
     if (*(u8 **)(ai + 0x3E8) != NULL) {
         AI_Car_LeadTarget(ai);
-    } else if ((i = *(u32 *)(ai + 0x4A4)) < 32 && ((Vector4 **)(ai + 0x420))[i] != NULL) {
-        AI_Car_SteerAlongPath(ai, i);
+    } else if (*(u32 *)(ai + 0x4A4) < 32 && ((Vector4 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] != NULL) {
+        AI_Car_SteerAlongPath(ai, *(u32 *)(ai + 0x4A4));
         speed = *(f32 *)((u8 *)((Vector4 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] + 0x2C);
     } else if (*(u8 **)(ai + 0x3EC) != NULL) {
         AI_Car_LeadTarget(ai);
