@@ -1210,7 +1210,7 @@ typedef struct GDL {
     u32 numSprites;
     u32 numAlphaGroups;
     u8 unk10[0x14 - 0x10];
-    s32 numTris;
+    u32 numTris;
     u32 numRects2D;
     u8 unk1C[0x20 - 0x1C];
     u32 numRects;
