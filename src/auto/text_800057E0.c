@@ -5756,6 +5756,7 @@ static inline void Anim_AddKeyFrames(AnimKeyFrame *dst, AnimKeyFrame *src, u32 c
     }
 }
 
+#pragma use_lmw_stmw on
 void CarA_Extract_Keyframes(u8 *car, void *frames) {
     void MotionState_ExtractBlendedKeyFrame(u8 *state, void *keyFrame);
     void Gfx_AnimExtractKeyFrame(void *anim, f32 time, void *keyFrame, u32 count);
