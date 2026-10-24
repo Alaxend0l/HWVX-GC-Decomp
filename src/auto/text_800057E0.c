@@ -23719,7 +23719,7 @@ u16 OSGetFontEncode(void) {
 
 extern u8 *FontData_803C7230;
 extern u8 *SheetImage_803C7234;
-u32 OSLoadFont(void *buf);
+u32 OSLoadFont(void *fontData, void *temp);
 void ExpandFontSheet(u8 *src, u8 *dst, u8 *font);
 
 BOOL OSInitFont(void *fontData) {
@@ -23730,7 +23730,7 @@ BOOL OSInitFont(void *fontData) {
     } else {
         buf = (u8 *)fontData + 0x1D120;
     }
-    if (OSLoadFont((void *)((u32)buf & ~31)) == 0) {
+    if (OSLoadFont(fontData, (void *)((u32)buf & ~31)) == 0) {
         return FALSE;
     }
     SheetImage_803C7234 = FontData_803C7230 + *(u32 *)(FontData_803C7230 + 0x24);
