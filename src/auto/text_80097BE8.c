@@ -6873,6 +6873,164 @@ s32 Gfx_FontManager_ReleaseFont(s32 id) {
     return ret;
 }
 
+/* Font letter sets per language and case mode. Only g_lettersE's contents are known;
+   the other sets are placeholders sized to their offsets in the original .data. */
+char g_lettersE[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.,!?abcdefghijklmnopqrstuvwxyz;:+-*/=%\"()&#'";
+static char s_lettersE1[0x38] = "?";
+static char s_lettersE2[0x48] = "?";
+static char s_lettersE3[0x2C] = "?";
+static char s_lettersF0[0x60] = "?";
+static char s_lettersF1[0x3C] = "?";
+static char s_lettersF2[0x48] = "?";
+static char s_lettersF3[0x34] = "?";
+static char s_lettersG0[0x60] = "?";
+static char s_lettersG1[0x3C] = "?";
+static char s_lettersG2[0x48] = "?";
+static char s_lettersG3[0x40] = "?";
+
+u32 Gfx_FontManager_AddFont(u16 texture, u32 caseMode, f32 width, f32 height, f32 spacing) {
+    typedef struct {
+        char mixedE[0x54];
+        char upperE[0x38];
+        char numbersE[0x48];
+        char lowerE[0x2C];
+        char mixedF[0x60];
+        char upperF[0x3C];
+        char numbersF[0x48];
+        char lowerF[0x34];
+        char mixedG[0x60];
+        char upperG[0x3C];
+        char numbersG[0x48];
+        char lowerG[1];
+    } FontLetters;
+    extern FontManager g_fontManager;
+    extern Texture *m_texture;
+    extern s32 g_gameLanguage;
+    u32 strlen(const char *);
+    FontLetters *letters = (FontLetters *)g_lettersE;
+    u32 slot = -1;
+    u32 isNew = 1;
+    Font *font;
+    u32 i;
+    f32 texSize;
+    f32 dv;
+    f32 u;
+    f32 v;
+    f32 du;
+
+    for (i = 0; i < 16; i++) {
+        if (g_fontManager.fonts[i].inUse && g_fontManager.fonts[i].texture == texture) {
+            if (g_fontManager.fonts[i].height == height && g_fontManager.fonts[i].width == width &&
+                g_fontManager.fonts[i].caseMode == caseMode) {
+                g_fontManager.fonts[i].refCount++;
+                return i;
+            }
+            slot = i;
+            isNew = 0;
+            g_fontManager.fonts[i].refCount++;
+        } else if (isNew && !g_fontManager.fonts[i].inUse && slot == -1) {
+            slot = i;
+        }
+    }
+    texSize = m_texture[texture].width;
+    font = &g_fontManager.fonts[slot];
+    font->texture = texture;
+    font->height = height;
+    font->width = width;
+    font->caseMode = caseMode;
+    font->inUse = 1;
+    if (isNew) {
+        font->refCount = 1;
+    }
+    switch (font->caseMode) {
+    case 1:
+        switch (g_gameLanguage) {
+        default:
+        case 0:
+        case 2:
+            font->letters = letters->upperE;
+            break;
+        case 1:
+            font->letters = letters->upperF;
+            break;
+        case 3:
+            font->letters = letters->upperG;
+            break;
+        }
+        break;
+    case 2:
+        switch (g_gameLanguage) {
+        default:
+        case 0:
+        case 2:
+            font->letters = letters->numbersE;
+            break;
+        case 1:
+            font->letters = letters->numbersF;
+            break;
+        case 3:
+            font->letters = letters->numbersG;
+            break;
+        }
+        break;
+    case 3:
+        switch (g_gameLanguage) {
+        default:
+        case 0:
+        case 2:
+            font->letters = letters->lowerE;
+            break;
+        case 1:
+            font->letters = letters->lowerF;
+            break;
+        case 3:
+            font->letters = letters->lowerG;
+            break;
+        }
+        break;
+    default:
+        switch (g_gameLanguage) {
+        default:
+        case 0:
+        case 2:
+            font->letters = letters->mixedE;
+            break;
+        case 1:
+            font->letters = letters->mixedF;
+            break;
+        case 3:
+            font->letters = letters->mixedG;
+            break;
+        }
+        break;
+    }
+    font->unkF = strlen(font->letters);
+    for (i = 0; i < 128; i++) {
+        font->chars[i].spacingX = 0;
+    }
+    du = width / texSize;
+    v = 1.0f;
+    u = 0.0f;
+    dv = height / texSize;
+    font->chars[' '].spacingX = spacing;
+    for (i = 0; i < font->unkF; i++) {
+        font->chars[(u8)font->letters[i]].spacingX = spacing;
+        font->chars[(u8)font->letters[i]].unk0 = u;
+        font->chars[(u8)font->letters[i]].unk4 = v;
+        font->chars[(u8)font->letters[i]].unk8 = u + spacing / texSize;
+        font->chars[(u8)font->letters[i]].unkC = v - dv;
+        u += du;
+        if (u + du > 1.0f) {
+            u = 0.0f;
+            v -= dv;
+        }
+    }
+    if (isNew) {
+        g_fontManager.numFonts++;
+    }
+    return slot;
+}
+
 void Gfx_FontManager_SetCharacterSpacing(s32 id, u8 c, f32 x, f32 y) {
     extern FontManager g_fontManager;
     extern u8 *m_texture;
