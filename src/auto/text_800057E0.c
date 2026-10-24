@@ -6663,6 +6663,7 @@ void CarA_DrawReflection(u8 *car) {
     MotionState_DrawSlavesAttachCoronaOnly(car + 0x330, 0);
     *(Matrix4 **)(car + 0x340) = oldMatrices;
 }
+#pragma pop
 
 #pragma use_lmw_stmw on
 void CarA_DrawScript(u8 *car) {
