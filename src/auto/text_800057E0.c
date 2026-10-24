@@ -8653,7 +8653,7 @@ void DataPack_EnableLoadingSounds(s8 arg0) {
 void DataPack_Initialize(void) {
     u32 i;
     for (i = 0; i < 11; i++) {
-        *((u8 *)&g_fileTOCCache[i] + 0x4B4) = 0;
+        g_fileTOCCache[i].name[0] = 0;
     }
 }
 
