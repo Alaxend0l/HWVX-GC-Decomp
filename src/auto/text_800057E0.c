@@ -20066,7 +20066,6 @@ void LensFlare_Render(void) {
     s8 RayHitsTerrainAndObjects(void *start, void *dir, void *dist, void *hit);
     void Gfx_ScreenOverlay(GXColor *color, u8 mode);
     void Gfx_Add2DSprite(Vector4 *pos, u16 tex, GXColor *color, f32 size, u8 flag, f32 rot);
-    Vector4 pos;
     f32 mtx[4][4];
     Vector4 dir;
     Vector4 screen;
@@ -20081,18 +20080,17 @@ void LensFlare_Render(void) {
     s32 vy;
     s32 w;
     s32 h;
+    f32 scale;
+    f32 y;
     f32 halfW;
     f32 halfH;
     f32 x;
-    f32 y;
-    f32 scale;
-    f32 s;
     Flare *f;
-    FlareData *d;
-    FlareOverlay *ov;
-    FlareElement *e;
     u32 i;
     u32 j;
+    FlareElement *e;
+    FlareData *d;
+    FlareOverlay *ov;
 
     Gfx_GetCameraPosition(&camera);
     Gfx_GetCameraVector(&at, &up, &right);
@@ -20119,16 +20117,12 @@ void LensFlare_Render(void) {
     if (++g_LensFlareRayTest > g_activeFlares) {
         g_LensFlareRayTest = 0;
     }
-    for (i = 0, f = g_pFlare; i < g_activeFlares; i++, f++) {
+    for (i = 0; i < g_activeFlares; i++) {
+        f = &g_pFlare[i];
         if (f->flare == NULL) {
             continue;
         }
-        if (f->thing != NULL) {
-            pos = *(Vector4 *)(f->thing + 0x40);
-        } else {
-            pos = f->pos;
-        }
-        screen = pos;
+        screen = LensFlare_GetPos(f->thing, &f->pos);
         PSVECSubtract(&camera, &screen, &dir);
         XformVec(mtx, &dir, &screen);
         screen.z *= -1.0f;
@@ -20148,7 +20142,8 @@ void LensFlare_Render(void) {
             }
             vx = x - halfW;
             vy = y - halfH;
-            y = (y - Sqrt(vx * vx + vy * vy)) * (1.0f / halfH);
+            y -= Sqrt(vx * vx + vy * vy);
+            y *= 1.0f / halfH;
             if (y > 0.0f) {
                 if (f->flare->rayTest && i == g_LensFlareRayTest) {
                     len = 1.0f;
@@ -20164,25 +20159,41 @@ void LensFlare_Render(void) {
                         GXColor c;
                         ov = f->flare->ov;
                         color = ov->color;
-                        s = y * ov->scale * 0.0078125f;
-                        if (s < 0.0f) {
-                            s = 0.0f;
+                        scale = y * ov->scale / 128.0f;
+                        if (scale < 0.0f) {
+                            scale = 0.0f;
                         }
                         if (ov->mode < 4) {
-                            u32 r = color.r * s;
-                            u32 g = color.g * s;
-                            u32 b = color.b * s;
-                            color.r = r > 255 ? 255 : r;
-                            color.g = g > 255 ? 255 : g;
-                            color.b = b > 255 ? 255 : b;
+                            u32 r = color.r * scale;
+                            u32 g = color.g * scale;
+                            u32 b = color.b * scale;
+                            if (r > 255) {
+                                color.r = 255;
+                            } else {
+                                color.r = r;
+                            }
+                            if (g > 255) {
+                                color.g = 255;
+                            } else {
+                                color.g = g;
+                            }
+                            if (b > 255) {
+                                color.b = 255;
+                            } else {
+                                color.b = b;
+                            }
                         } else {
-                            u32 a = color.a * s;
-                            color.a = a > 255 ? 255 : a;
+                            u32 a = color.a * scale;
+                            if (a > 255) {
+                                color.a = 255;
+                            } else {
+                                color.a = a;
+                            }
                         }
                         c = color;
                         Gfx_ScreenOverlay(&c, f->flare->ov->mode);
                     }
-                    y *= 0.0078125f;
+                    y /= 128.0f;
                     for (j = 0; j < f->flare->count; j++) {
                         GXColor c;
                         e = &f->flare->elements[j];
@@ -20193,12 +20204,28 @@ void LensFlare_Render(void) {
                             u32 r = color.r * y;
                             u32 g = color.g * y;
                             u32 b = color.b * y;
-                            color.r = r > 255 ? 255 : r;
-                            color.g = g > 255 ? 255 : g;
-                            color.b = b > 255 ? 255 : b;
+                            if (r > 255) {
+                                color.r = 255;
+                            } else {
+                                color.r = r;
+                            }
+                            if (g > 255) {
+                                color.g = 255;
+                            } else {
+                                color.g = g;
+                            }
+                            if (b > 255) {
+                                color.b = 255;
+                            } else {
+                                color.b = b;
+                            }
                         } else {
                             u32 a = color.a * y;
-                            color.a = a > 255 ? 255 : a;
+                            if (a > 255) {
+                                color.a = 255;
+                            } else {
+                                color.a = a;
+                            }
                         }
                         c = color;
                         Gfx_Add2DSprite(&sprite, e->texture, &c, e->size, e->flag, 0.0f);
