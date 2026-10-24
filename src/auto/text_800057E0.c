@@ -41822,6 +41822,7 @@ s32 TRKReadBuffer(TRKBuffer *b, void *data, u32 length) {
     b->position += length;
     return error;
 }
+#pragma auto_inline reset
 
 #pragma auto_inline off
 s32 TRKAppendBuffer(TRKBuffer *b, const void *data, u32 length) {
