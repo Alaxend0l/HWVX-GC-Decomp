@@ -1205,7 +1205,7 @@ typedef struct GDLTri {
 } GDLTri;
 
 typedef struct GDL {
-    u8 unk0[0x4];
+    u32 numAlphaEntries;
     u32 num2DSprites;
     u32 numSprites;
     u32 numAlphaGroups;
