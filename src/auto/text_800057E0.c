@@ -34756,7 +34756,7 @@ void __GXXfVtxSpecs(void) {
     gx->bpSentNot = 1;
 }
 
-#pragma peephole on
+#pragma optimization_level 1
 void GXSetVtxDesc(u32 attr, s32 type) {
     extern u8 *gx;
 
