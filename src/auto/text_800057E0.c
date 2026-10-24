@@ -4909,6 +4909,81 @@ s8 OBoxHitsCell(void *obox, Vector4 *vel, void *cell, f32 *time, void *arg4) {
     }
     return hit;
 }
+
+s8 OBoxHitsBSP(void *obox, Vector4 *vel, void *bsp, f32 *time, void *arg4) {
+    typedef struct {
+        u8 pad[0x10];
+        Vector4 corners[8];
+    } OBoxCorners;
+    typedef struct {
+        Vector4 pos;
+        Vector4 normal;
+        s32 unk20;
+        s32 unk24;
+        u32 material;
+        u8 pad2C[0x40 - 0x2C];
+        u8 type;
+    } CollisionInfo;
+    f32 OBoxHitsSegment(void *obox, Vector4 *vel, void *edge, f32 t, void *arg4);
+    u32 RayHitsBSP(Vector4 *start, Vector4 *dir, Vector4 *bbox, f32 *time, void *bsp);
+    u32 i;
+    s8 hitCorner;
+    s8 hitEdge;
+    u32 material;
+    u8 *edge;
+    f32 t;
+    u8 order[8] = {2, 3, 6, 7, 0, 1, 4, 5};
+    Vector4 corner;
+    Vector4 hitNormal;
+    Vector4 normal;
+
+    t = *time;
+    hitCorner = 0;
+    hitEdge = 0;
+    if (*(u32 *)((u8 *)bsp + 0x3C) == 0 && *(u32 *)((u8 *)bsp + 0x40) == 0) {
+        return 0;
+    }
+    for (i = 0; i < *(u32 *)((u8 *)bsp + 0x40) && t > 0.0f; i++) {
+        edge = *(u8 **)((u8 *)*(void **)g_worldData.world + 0x54) + (*(u16 **)((u8 *)bsp + 0x44))[i] * 0x30;
+        if (*(u32 *)(edge + 0x20) != g_worldData.unk4) {
+            f32 hit;
+            *(u32 *)(edge + 0x20) = g_worldData.unk4;
+            hit = OBoxHitsSegment(obox, vel, edge, t, arg4);
+            if (hit < t) {
+                t = hit;
+                hitEdge = 1;
+                if (arg4 != NULL) {
+                    ((CollisionInfo *)arg4)->material = (*(u32 **)((u8 *)*(void **)g_worldData.world + 0x5C))[*(u32 *)(edge + 0x24)];
+                }
+            }
+        }
+    }
+    for (i = 0; i < 8 && t > 0.0f; i++) {
+        u32 m = RayHitsBSP(&((OBoxCorners *)obox)->corners[order[i]], vel, bsp, &t, &hitNormal);
+        if (m) {
+            material = m;
+            hitCorner = 1;
+            corner = ((OBoxCorners *)obox)->corners[order[i]];
+            normal = hitNormal;
+        }
+    }
+    if (!hitEdge && !hitCorner) {
+        return 0;
+    }
+    if (arg4 != NULL && hitCorner) {
+        ((CollisionInfo *)arg4)->type = 0xFE;
+        ((CollisionInfo *)arg4)->material = material;
+        ((CollisionInfo *)arg4)->pos.x = vel->x * t + corner.x;
+        ((CollisionInfo *)arg4)->pos.y = vel->y * t + corner.y;
+        ((CollisionInfo *)arg4)->pos.z = vel->z * t + corner.z;
+        ((CollisionInfo *)arg4)->unk20 = 0;
+        ((CollisionInfo *)arg4)->unk24 = 0;
+        ((CollisionInfo *)arg4)->normal = normal;
+    }
+    *time = t;
+    return 1;
+}
+
 #pragma pop
 
 static inline s8 PointInsideBSP(void *bsp, void *point) {
