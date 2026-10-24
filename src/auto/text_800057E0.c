@@ -12,6 +12,8 @@ typedef union PPCWGPipe {
 #define GXWGFifo (*(volatile PPCWGPipe *)0xCC008000)
 extern volatile PPCWGPipe GXWGPipe : 0xCC008000;
 
+s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded);
+
 typedef struct GXColor {
     u8 r;
     u8 g;
