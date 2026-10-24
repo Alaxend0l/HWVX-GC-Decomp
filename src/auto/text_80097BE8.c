@@ -384,8 +384,8 @@ static inline s32 __THPHuffDecodeTab(THPFileInfo *info, THPHuffmanTab *h) {
     u32 *c;
     s32 *maxCode;
 
-    cnt = info->cnt;
     increment = h->increment;
+    cnt = info->cnt;
     cb = info->currByte;
     code = __rlwnm(cb, cnt + 4, 27, 31);
     if (cnt <= 28) {
