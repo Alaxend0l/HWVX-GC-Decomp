@@ -6082,6 +6082,115 @@ f32 CarA_Transmission_GetTorqueAtWheels(void *car) {
            M2C_FIELD(M2C_FIELD(car, void **, 0x3BC), f32 **, 0xDC)[M2C_FIELD(car, u8 *, 0x4E8) * 2];
 }
 
+void CarA_ExecuteCombo(u8 *car) {
+    typedef struct CarNavPath {
+        u8 pad[0x568];
+        u8 *path[7];
+    } CarNavPath;
+    extern Vector4 g_zeroVector;
+    extern char g_stunt1localString[4];
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    u8 *NavHolder_GetNavPoint(s32 index);
+    void Trigger_VehicleKilled(void *car);
+    void OConvexHullHolder_Release(void *hull);
+    void SoundSource_Stop(s32 index);
+    void MotionState_Release(void *state);
+    void Thing_Release(void *thing);
+    void Thing_ProcessEndEvent(u8 *thing, u8 *event, u8 *collision, Vector4 *vel);
+    void CarA_StuntImpulse(u8 *car, Vector4 *a, Vector4 *b);
+    u8 state;
+
+    switch (*(u8 *)(*(u8 **)(car + 0x94) + 0x32)) {
+    case 2:
+        *(u32 *)(car + 0x78) = *(u32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x14);
+        *(u32 *)(car + 0x374) = 0;
+        break;
+    case 3:
+        *(u8 *)(*(u8 **)(car + 0x94) + 0x32) = 0;
+        Thing_ProcessEndEvent(car, *(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0), NULL, (Vector4 *)(car + 0x410));
+        if (GameSettings_GetCodeVariable(0x12D, 0) >= 3 && *(u8 **)(car + 0x94) != NULL) {
+            u16 i;
+            *(s16 *)(*(u8 **)(car + 0x94) + 0xAC) = *(s32 *)(car + 0x3B0);
+            for (i = 0; i < 6; i++) {
+                if (((CarNavPath *)car)->path[i] == NULL || ((CarNavPath *)car)->path[i + 1] == NULL) {
+                    break;
+                }
+                if (NavHolder_GetNavPoint(*(s32 *)(car + 0x3B0)) == ((CarNavPath *)car)->path[i]) {
+                    *(s16 *)(*(u8 **)(car + 0x94) + 0xAE) = *(s32 *)(((u8 **)(car + 0x568))[i + 1] + 0x28);
+                    break;
+                }
+            }
+        }
+        Trigger_VehicleKilled(car);
+        OConvexHullHolder_Release(*(void **)(car + 0x370));
+        *(void **)(car + 0x370) = NULL;
+        if (*(u32 *)(car + 0x4F0) != 0xFFFFFFFF) {
+            SoundSource_Stop(*(s32 *)(car + 0x4F0));
+        }
+        if (*(u32 *)(car + 0x4F4) != 0xFFFFFFFF) {
+            SoundSource_Stop(*(s32 *)(car + 0x4F4));
+        }
+        if (*(u32 *)(car + 0x4F8) != 0xFFFFFFFF) {
+            SoundSource_Stop(*(s32 *)(car + 0x4F8));
+        }
+        *(s32 *)(car + 0x4F0) = -1;
+        *(s32 *)(car + 0x4F4) = -1;
+        *(s32 *)(car + 0x4F8) = -1;
+        MotionState_Release(car + 0x330);
+        Thing_Release(car);
+        return;
+    case 4:
+        *(u32 *)(car + 0x48C) ^= 1;
+        break;
+    case 5:
+        *(Vector4 *)car = g_zeroVector;
+        *(f32 *)(car + 0x458) = 0.0f;
+        *(f32 *)(car + 0x4E4) = 0.0f;
+        *(u8 *)(car + 0x4E8) = 1;
+        break;
+    case 6:
+        *(s32 *)(car + 0x400) = 30000;
+        break;
+    }
+    if (*(s32 *)(car + 0x460) == 0) {
+        state = *(u8 *)(*(u8 **)(car + 0x94) + 0x32);
+        if (state == 9) {
+            Vector4 a = {0.0f, 0.0f, 0.0f, 1.0f};
+            Vector4 b = {0.0f, 0.0f, 0.0f, 1.0f};
+            CarA_StuntImpulse(car, &a, &b);
+        } else if (state == 10) {
+            Vector4 a = {0.0f, 0.0f, 0.0f, 2.0f};
+            Vector4 b = {0.0f, 0.0f, 0.0f, 2.0f};
+            CarA_StuntImpulse(car, &a, &b);
+        } else if (state == 11) {
+            Vector4 a = {0.0f, 0.0f, 0.0f, 3.0f};
+            Vector4 b = {0.0f, 0.0f, 0.0f, 3.0f};
+            CarA_StuntImpulse(car, &a, &b);
+        } else if (state == 12) {
+            Vector4 a = {0.0f, 0.0f, 0.0f, 4.0f};
+            Vector4 b = {0.0f, 0.0f, 0.0f, 4.0f};
+            CarA_StuntImpulse(car, &a, &b);
+        } else if (state == 13) {
+            Vector4 a = {0.0f, 0.0f, 0.0f, 5.0f};
+            Vector4 b = {0.0f, 0.0f, 0.0f, 5.0f};
+            CarA_StuntImpulse(car, &a, &b);
+        } else if (state == 14) {
+            Vector4 a = {0.0f, 0.0f, 0.0f, 6.0f};
+            Vector4 b = {0.0f, 0.0f, 0.0f, 6.0f};
+            CarA_StuntImpulse(car, &a, &b);
+        } else if (state == 15) {
+            Vector4 b = {0.0f, 0.0f, 0.0f, 7.0f};
+            CarA_StuntImpulse(car, &g_zeroVector, &b);
+            *(char **)(car + 0x494) = g_stunt1localString;
+        } else if (state == 16) {
+            Vector4 b = {0.0f, 0.0f, 0.0f, 8.0f};
+            CarA_StuntImpulse(car, &g_zeroVector, &b);
+            *(char **)(car + 0x494) = g_stunt1localString;
+        }
+    }
+    *(u8 *)(*(u8 **)(car + 0x94) + 0x32) = 0;
+}
+
 void CarA_ProcessForce(u8 *car, Vector4 *pos, Vector4 *force, f32 scale) {
     void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
@@ -20504,6 +20613,215 @@ void SetPlayerControls(void) {
         Input_SetForceFeedbackActive(M2C_FIELD(player, s32 *, 0xC8), settings->data[0]);
     }
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 StateGamePlay_Heartbeat(void) {
+    extern Vector4 g_lastCamPos;
+    extern u32 g_pauseState;
+    extern u32 g_StopInput;
+    extern u8 g_bFreezeWorld;
+    extern u32 g_DemoModeCounter;
+    extern u32 g_iDeltaTimeMS;
+    extern s32 g_DemoModeSwitchVehicleTime;
+    extern u32 g_DemoModeCurrentPlayer;
+    extern s32 g_DemoModeSwitchCameraTime;
+    extern s8 g_bExitStateGamePlay;
+    extern s32 g_targetGameState;
+    extern s32 g_gamePlayCallback;
+    extern s8 g_bRenderWorld;
+    void StateGamePlay_Pause(s32 pause);
+    void ShowStats_StartFrame(void);
+    void ShowStats_BeginScene(void);
+    void ShowStats_EndScene(void);
+    void Gfx_SetCameraMatrix(Vector4 *pos, void *a, void *b, void *c);
+    void Gfx_GetCameraPosition(Vector4 *pos);
+    void Gfx_ScreenOverlay(void *colour, s32 arg);
+    void ProcessManager_Heartbeat(u32 paused);
+    void ProcessManager_Render(s32 renderWorld);
+    void ViewManager_PrepForRender(void);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
+    u8 PlayerManager_PlayerHumanCount(void);
+    u8 PlayerManager_PlayerCount(void);
+    void *PlayerManager_GetHumanPlayerByIndex(u8 index);
+    void *PlayerManager_GetPlayerByIndex(u8 index);
+    s8 Input_KeyPress(u32 chan, u8 key);
+    u32 InterfaceManager_Create(void *arg0, s32 arg1, void (*handler)(void *msg));
+    void InterfaceManager_SetInput(u32 id, s32 input);
+    void InterfaceManager_ReleaseAllUnpausedInterfaces(void);
+    void InterfaceManager_ReleaseInterface(u32 id);
+    void Wheel_PlayAllAirborne(void);
+    u32 CameraManager_GetActiveCameras(void);
+    void **CameraManager_GetCameraByIndex(s32 index);
+    void Camera_SetPlayer(void **camera, void *player);
+    void StateManager_QueueChange(s32 state);
+    s8 IsLoadingThreadRunning(void);
+    void GamePlay_Interface(void *msg);
+    static s32 cameraIndex;
+    static u32 pauseInterfaceID = 0xFFFFFFFF;
+    static s8 bControllerRemoved;
+    s8 removed;
+    s32 input;
+    u32 key;
+    s8 pressed;
+    u32 colour[2];
+
+    pressed = 0;
+    removed = 0;
+    ShowStats_StartFrame();
+    Gfx_SetCameraMatrix(&g_lastCamPos, NULL, NULL, NULL);
+    ProcessManager_Heartbeat(g_pauseState);
+    ViewManager_PrepForRender();
+    Gfx_GetCameraPosition(&g_lastCamPos);
+    if (GameSettings_GetCodeVariable(0x198, 0) == 0) {
+        u32 code;
+        {
+            u32 i;
+            u32 count;
+            void *player;
+
+            count = PlayerManager_PlayerHumanCount();
+            for (i = 0; i < count; i++) {
+                player = PlayerManager_GetHumanPlayerByIndex(i);
+                if (Input_KeyPress(M2C_FIELD(player, u32 *, 0xC8), 0)) {
+                    input = M2C_FIELD(player, u32 *, 0xC8);
+                    pressed = 1;
+                    break;
+                }
+            }
+        }
+        if (GameSettings_GetCodeVariable(0x259, 0) == 0) {
+            input = 0;
+            pressed = 1;
+        }
+        if (g_StopInput != 0) {
+            input = 0;
+            pressed = 1;
+        }
+        if ((code = GameSettings_GetCodeVariable(0xD4, 0)) != 0) {
+            input = code - 1;
+            pressed = 1;
+            removed = 1;
+        }
+        if (pressed && GameSettings_GetCodeVariable(0x19B, 0)) {
+            if (g_pauseState == 0 && M2C_FIELD(M2C_FIELD(g_worldData.world, u8 **, 0x9C), void **, 0xCC) != NULL) {
+                g_pauseState = 1;
+                StateGamePlay_Pause(1);
+                g_bFreezeWorld = 1;
+                bControllerRemoved = removed;
+                pauseInterfaceID = InterfaceManager_Create(M2C_FIELD(M2C_FIELD(g_worldData.world, u8 **, 0x9C), void **, 0xCC), 0, GamePlay_Interface);
+                InterfaceManager_SetInput(pauseInterfaceID, input);
+                GameSettings_SetCodeVariable(0xD5, 0, input + 1);
+            } else if (M2C_FIELD(M2C_FIELD(g_worldData.world, u8 **, 0x9C), void **, 0xCC) != NULL && removed && !bControllerRemoved) {
+                s32 oldInput = GameSettings_GetCodeVariable(0xD5, 0) - 1;
+                bControllerRemoved = removed;
+                InterfaceManager_ReleaseAllUnpausedInterfaces();
+                pauseInterfaceID = InterfaceManager_Create(M2C_FIELD(M2C_FIELD(g_worldData.world, u8 **, 0x9C), void **, 0xCC), 0, GamePlay_Interface);
+                InterfaceManager_SetInput(pauseInterfaceID, oldInput);
+            }
+            Wheel_PlayAllAirborne();
+        } else if (!removed) {
+            bControllerRemoved = 0;
+        }
+        if (g_pauseState != 0) {
+            if (removed) {
+                InterfaceManager_SetInput(pauseInterfaceID, -2);
+            } else {
+                s32 oldInput = GameSettings_GetCodeVariable(0xD5, 0) - 1;
+                InterfaceManager_SetInput(pauseInterfaceID, oldInput);
+            }
+        }
+    } else {
+        if (g_DemoModeCounter > g_iDeltaTimeMS) {
+            g_DemoModeCounter -= g_iDeltaTimeMS;
+        } else {
+            g_DemoModeCounter = 0;
+        }
+        if (g_DemoModeCounter < g_DemoModeSwitchVehicleTime && CameraManager_GetActiveCameras() == 1) {
+            void *player;
+            void **camera;
+
+            g_DemoModeSwitchVehicleTime = g_DemoModeCounter - 8000;
+            if (g_DemoModeSwitchVehicleTime < 0) {
+                g_DemoModeSwitchVehicleTime = 0;
+            }
+            g_DemoModeCurrentPlayer++;
+            if (g_DemoModeCurrentPlayer >= PlayerManager_PlayerCount()) {
+                g_DemoModeCurrentPlayer = 0;
+            }
+            player = PlayerManager_GetPlayerByIndex(g_DemoModeCurrentPlayer);
+            camera = CameraManager_GetCameraByIndex(0);
+            if (*camera != NULL && M2C_FIELD(*camera, u32 *, 0x68) < 0xFFFFFFFF) {
+                InterfaceManager_ReleaseInterface(M2C_FIELD(*camera, u32 *, 0x68));
+                M2C_FIELD(*camera, u32 *, 0x68) = 0xFFFFFFFF;
+            }
+            Camera_SetPlayer(camera, player);
+        }
+        if (g_DemoModeCounter < g_DemoModeSwitchCameraTime) {
+            u32 i;
+            u32 count;
+            u8 *player;
+
+            g_DemoModeSwitchCameraTime = g_DemoModeCounter - 10000;
+            if (g_DemoModeSwitchCameraTime < 0) {
+                g_DemoModeSwitchCameraTime = 0;
+            }
+            count = PlayerManager_PlayerCount();
+            for (i = 0; i < count; i++) {
+                player = PlayerManager_GetPlayerByIndex(i);
+                player[0x31] = cameraIndex++;
+            }
+        }
+        if (g_DemoModeCounter == 0) {
+            g_targetGameState = 12;
+            g_bExitStateGamePlay = 1;
+        } else {
+            for (key = 0; key < 20; key++) {
+                if (Input_KeyPress(0xFFFFFFFF, key)) {
+                    g_targetGameState = 12;
+                    g_bExitStateGamePlay = 1;
+                }
+            }
+        }
+    }
+    ShowStats_BeginScene();
+    ProcessManager_Render(g_bRenderWorld);
+    if (g_pauseState != 0) {
+        colour[1] = 0;
+        colour[0] = 0;
+        Gfx_ScreenOverlay(colour, 0);
+    }
+    ShowStats_EndScene();
+    if (g_bExitStateGamePlay && !IsLoadingThreadRunning()) {
+        StateManager_QueueChange(g_targetGameState);
+    }
+    switch (g_gamePlayCallback) {
+    case 0:
+        break;
+    case 1:
+        g_targetGameState = 2;
+        g_bExitStateGamePlay = 1;
+        break;
+    case 2:
+        g_targetGameState = 5;
+        g_bExitStateGamePlay = 1;
+        break;
+    case 3:
+        g_gamePlayCallback = 0;
+        g_pauseState = 0;
+        StateGamePlay_Pause(0);
+        if (pauseInterfaceID < 0xFFFFFFFF) {
+            InterfaceManager_ReleaseInterface(pauseInterfaceID);
+        }
+        GameSettings_SetCodeVariable(0xD5, 0, 0);
+        g_bFreezeWorld = 0;
+        break;
+    }
+    return 1;
+}
+#pragma pop
+
 #pragma pop
 
 #pragma push
