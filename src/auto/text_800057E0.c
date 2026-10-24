@@ -20440,6 +20440,179 @@ void ParticleGX_MicroStep(void *arg0) {
     }
 }
 
+void ParticleGX_MacroStep(struct ParticleGX_MacroStep_t {
+        Vector4 pos;
+        Vector4 vel;
+        Vector4 accel;
+        Vector4 quat;
+        Vector4 axis;
+        u8 colour[0x30];
+        u8 scale[0x30];
+        f32 bounce;
+        u8 flags;
+        u8 unkB5;
+        u8 visible;
+        u8 frame;
+        f32 speed;
+        u8 *info;
+        void *texture;
+        f32 unkC4;
+        f32 spin;
+        s32 life;
+        f32 rate;
+        s32 frameTimer;
+        f32 unkD8;
+        s32 timer;
+        Vector4 targetPos;
+        Vector4 targetVel;
+    } *particle) {
+    extern Vector4 g_zeroVector;
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    void ExtractColorKey(void *keys, void *out, f32 time);
+    void ExtractScaleKey(void *keys, void *out, f32 time);
+    void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0);
+    s8 RayHitsTerrain(void *thing, void *end, f32 *t, void *hit);
+    void SoundSequence_Play(u32 id, void *pos);
+    void RandomNumberGenerator_GetRandomVector(Vector4 *v);
+    typedef struct {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        Vector4 angVel;
+        u32 id;
+        s32 unk44;
+        f32 unk48;
+        f32 unk4C;
+    } FxParams;
+    typedef struct {
+        Vector4 pos;
+        Vector4 normal;
+        u8 pad20[0x30];
+    } RayHit;
+    FxParams params;
+    RayHit hit;
+    FxParams params2;
+    Vector4 newPos;
+    f32 t;
+    f32 dt;
+    f32 d;
+    f32 rest;
+    u8 *anim;
+    u32 fx;
+    s32 idx;
+    u32 sound;
+    u8 bounced;
+
+    anim = *(u8 **)(particle->info + 0x4);
+    idx = RandomAdd_s32(0, *(s32 *)(particle->info + 0x1C));
+    dt = particle->timer;
+    if (particle->life < 0) {
+        if (*(u32 *)(particle->info + 0x1C) != 0) {
+            fx = (*(u32 **)(particle->info + 0x20))[idx];
+            if (fx != 0) {
+                params.id = fx;
+                params.pos = particle->pos;
+                params.vel = particle->vel;
+                params.quat = particle->quat;
+                params.unk44 = 0;
+                params.unk48 = 0.0f;
+                params.unk4C = 0.0f;
+                params.angVel = g_zeroVector;
+                ThingManager_DARYL_CreateThing(1, &params);
+            }
+        }
+        particle->flags |= 8;
+        return;
+    }
+    particle->life -= particle->timer;
+    if (anim[3] != 0) {
+        if (particle->frameTimer < 0) {
+            particle->frameTimer = *(s32 *)(anim + 0x14);
+            particle->frame++;
+            if (particle->frame >= *(u32 *)(anim + 0x20)) {
+                particle->frame = 0;
+            }
+        } else {
+            particle->frameTimer -= particle->timer;
+        }
+    }
+    ExtractColorKey(particle->info + 0x14, particle->colour, dt * particle->rate);
+    ExtractScaleKey(anim + 0x28, particle->scale, dt * particle->rate);
+    if (anim[1] & 4) {
+        return;
+    }
+    AccumulateVector(&particle->accel, &particle->vel, &particle->vel, dt);
+    AccumulateVector(&particle->vel, &particle->pos, &newPos, dt);
+    if (particle->flags & 1) {
+        t = 1.0f;
+        bounced = 0;
+        if (RayHitsTerrain(particle, &newPos, &t, &hit)) {
+            AccumulateVector(&particle->vel, &particle->pos, &particle->pos, t * dt);
+            if (anim[1] == 1) {
+                if (*(u32 *)(particle->info + 0x1C) != 0) {
+                    fx = (*(u32 **)(particle->info + 0x20))[idx];
+                    if (fx != 0) {
+                        params2.id = fx;
+                        params2.pos = particle->pos;
+                        params2.vel = particle->vel;
+                        params2.quat = particle->quat;
+                        params2.unk44 = 0;
+                        params2.unk48 = 0.0f;
+                        params2.unk4C = 0.0f;
+                        params2.angVel = g_zeroVector;
+                        ThingManager_DARYL_CreateThing(1, &params2);
+                    }
+                }
+                particle->flags |= 8;
+                return;
+            }
+            if (anim[1] == 3) {
+                bounced = 1;
+            } else {
+                bounced = 1;
+                sound = *(u32 *)(anim + 0x18);
+                rest = (1.0f - t) * dt;
+                d = 2.0f * (particle->vel.x * hit.normal.x + particle->vel.y * hit.normal.y + particle->vel.z * hit.normal.z);
+                particle->vel.x -= d * hit.normal.x;
+                particle->vel.y -= d * hit.normal.y;
+                particle->vel.z -= d * hit.normal.z;
+                particle->vel.x *= particle->bounce;
+                particle->vel.y *= particle->bounce;
+                particle->vel.z *= particle->bounce;
+                AccumulateVector(&particle->vel, &particle->pos, &newPos, rest);
+                if (sound != 0 && d * d > 0.002) {
+                    SoundSequence_Play(sound, particle);
+                }
+            }
+        }
+        if (bounced) {
+            if (!(particle->flags & 2) ||
+                particle->vel.x * particle->vel.x + particle->vel.y * particle->vel.y + particle->vel.z * particle->vel.z < 0.0001f ||
+                anim[1] == 3) {
+                particle->vel.x = particle->vel.y = particle->vel.z = particle->spin = 0.0f;
+                particle->flags |= 4;
+                if (anim[1] == 3) {
+                    particle->accel.x = 0.0f;
+                    particle->accel.y = 0.0f;
+                    particle->accel.x = 0.0f;
+                }
+            } else if (particle->vel.x * particle->vel.x + particle->vel.z * particle->vel.z > 2e-05f) {
+                if (particle->bounce < 0.7f) {
+                    particle->spin *= 0.3f + particle->bounce;
+                }
+                RandomNumberGenerator_GetRandomVector(&particle->axis);
+            } else {
+                particle->spin = 0.0f;
+            }
+        }
+    }
+    particle->targetPos = newPos;
+    particle->targetVel.x = (particle->targetPos.x - particle->pos.x) / particle->timer;
+    particle->targetVel.y = (particle->targetPos.y - particle->pos.y) / particle->timer;
+    particle->targetVel.z = (particle->targetPos.z - particle->pos.z) / particle->timer;
+}
+
 void ParticleSprite_Move(u8 *sprite) {
     extern Vector4 g_zeroVector;
     extern f32 g_fDeltaTimeMS;
