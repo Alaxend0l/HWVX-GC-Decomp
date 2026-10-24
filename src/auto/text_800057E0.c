@@ -11202,6 +11202,54 @@ void Grid_FreeObject(u8 *object) {
     }
 }
 
+u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults) {
+    u32 count;
+    u32 x;
+    u32 z;
+    u32 type;
+    GridNode *node;
+    u32 i;
+    s8 found;
+    u32 x0;
+    u32 z0;
+    u32 x1;
+    u32 z1;
+
+    count = 0;
+    Grid_GetCell(min, (s32 *)&x0, (s32 *)&z0);
+    Grid_GetCell(max, (s32 *)&x1, (s32 *)&z1);
+    for (x = x0; x <= x1; x++) {
+        for (z = z0; z <= z1; z++) {
+            for (type = 0; type < 7; type++) {
+                if (typeMask & (1 << type)) {
+                    node = ((GridManager *)gGridManager)->cells[type][x * ((GridManager *)gGridManager)->numZ + z].head;
+                    while (node != NULL) {
+                        found = 0;
+                        i = 0;
+                        while (i < count && !found) {
+                            if (results[i].id == node->id) {
+                                found = 1;
+                            }
+                            i++;
+                        }
+                        if (!found) {
+                            if (count < maxResults) {
+                                results[count] = *(GridResult *)node;
+                                count++;
+                            } else {
+                                Dprintf("%d\n", count);
+                                break;
+                            }
+                        }
+                        node = node->next;
+                    }
+                }
+            }
+        }
+    }
+    return count;
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 u32 Grid_GetNearestObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults, s8 (*filter)(GridNode *, s32), s32 filterArg) {
@@ -22020,6 +22068,101 @@ s32 AI_Creature_Deactivate(u8 *creature) {
             (*(s32 *)(spawner + 0x4))--;
             ((s32 *)(*(u8 **)(creature + 0xD8) + 0xC))[*(s32 *)(creature + 0xDC)]--;
         }
+        return 1;
+    }
+    return 0;
+}
+
+s8 AI_Creature_Spawn(u8 *creature, u8 *spawner, u32 index) {
+    typedef struct CreatureParams {
+        Vector4 pos;
+        f32 angle;
+        u8 *info;
+        u8 *player;
+    } CreatureParams;
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    s32 GameSettings_GetDifficulty(void);
+    void Player_SetThing(u8 *player, u8 *thing);
+    void AI_Reset(void *arg0);
+    int rand(void);
+    CreatureParams params;
+    u8 *info;
+    u8 *list;
+    u8 *thing;
+
+    AI_Reset(creature);
+    *(s32 *)(creature + 0xE4) = 0;
+    *(u8 *)(creature + 0xEC) = 0;
+    *(s32 *)(creature + 0xFC) = 0;
+    *(s32 *)(creature + 0xF8) = 0;
+    *(u8 *)(creature + 0xCD) = 0;
+    *(s32 *)(creature + 0xC8) = 0;
+    *(s32 *)(creature + 0xD8) = 0;
+    *(s32 *)(creature + 0xDC) = -1;
+    *(s32 *)(creature + 0xE0) = 0;
+    *(f32 *)(creature + 0xF0) = (f32)(rand() % 251 + 750) / 1000.0f;
+    if (rand() % 4) {
+        *(u8 *)(creature + 0xED) = 1;
+    } else {
+        *(u8 *)(creature + 0xED) = 0;
+    }
+    *(u32 *)(creature + 0xD0) = 0;
+    if (index != -1) {
+        *(u8 **)(creature + 0xD8) = spawner;
+        info = *(u8 **)(*(u8 **)spawner + 0x2C);
+        *(u8 **)(creature + 0xE0) = (*(u8 ***)(info + 0x10))[index];
+        list = *(u8 **)(info + 0x8);
+        params.info = (*(u8 ***)(list + 4))[rand() % *(u32 *)list];
+        params.pos = **(Vector4 **)(creature + 0xE0);
+        params.angle = 0.017453292f * (f32)(rand() % 360);
+        *(u8 **)(creature + 0xA8) = NULL;
+    } else {
+        params.info = *(u8 **)(spawner + 0x18);
+        params.pos = *(Vector4 *)spawner;
+        params.angle = *(f32 *)(spawner + 0x14);
+        *(u8 **)(creature + 0xD8) = NULL;
+        *(u8 **)(creature + 0xA8) = spawner;
+        switch (GameSettings_GetDifficulty()) {
+        case 0:
+            *(u32 *)(creature + 0xD0) = *(u32 *)(spawner + 0x24);
+            break;
+        case 1:
+            *(u32 *)(creature + 0xD0) = *(u32 *)(spawner + 0x28);
+            break;
+        case 2:
+            *(u32 *)(creature + 0xD0) = *(u32 *)(spawner + 0x2C);
+            break;
+        case 3:
+            *(u32 *)(creature + 0xD0) = *(u32 *)(spawner + 0x30);
+            break;
+        }
+    }
+    params.player = creature;
+    params.pos.y += 0.1f;
+    if (*(u32 *)(creature + 0xD0) == 0 && params.info != NULL) {
+        switch (GameSettings_GetDifficulty()) {
+        case 0:
+            *(u32 *)(creature + 0xD0) = *(u32 *)(params.info + 0x44);
+            break;
+        case 1:
+            *(u32 *)(creature + 0xD0) = *(u32 *)(params.info + 0x48);
+            break;
+        case 2:
+            *(u32 *)(creature + 0xD0) = *(u32 *)(params.info + 0x4C);
+            break;
+        case 3:
+            *(u32 *)(creature + 0xD0) = *(u32 *)(params.info + 0x50);
+            break;
+        }
+    }
+    thing = ThingManager_DARYL_CreateThing(7, &params);
+    if (thing != NULL) {
+        *(u8 *)(creature + 0xCD) = 2;
+        *(s32 *)(creature + 0xC8) = 1;
+        *(u32 *)(creature + 0xDC) = index;
+        Player_SetThing(params.player, thing);
+        *(u32 *)(creature + 0x6C) |= 0x100;
+        *(u8 **)(thing + 0x90) = *(u8 **)(creature + 0xA8);
         return 1;
     }
     return 0;
