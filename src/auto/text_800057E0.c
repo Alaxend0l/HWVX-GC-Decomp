@@ -8729,6 +8729,43 @@ done:
 
 #pragma push
 #pragma readonly_strings on
+static inline void GameSettings_GetSaveFileInfo(const char **name, u32 *version, u32 *size) {
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    extern struct {
+        u8 unk0[0xC];
+        char *fileName;
+        u8 unk10[0x4];
+        u32 version;
+        u32 size;
+    } g_gameInfo[];
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    void *pack;
+
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        *name = g_gameInfo[mcp[1]].fileName;
+        *version = g_gameInfo[mcp[1]].version;
+        *size = g_gameInfo[mcp[1]].size;
+    } else {
+        *version = 0;
+        *size = *version;
+        *name = "saveFile";
+    }
+}
+
 u8 GameSettings_SaveGeneralGameData(void) {
     void *FileStreaming_InitializeDataPack(void *, s32, s32);
     u8 *DataPack_GetScript(void *, s32);
@@ -8749,6 +8786,7 @@ u8 GameSettings_SaveGeneralGameData(void) {
     } g_gameInfo[];
     static s8 bFirstTime = 1;
     static u8 *pMCP;
+    const char *name;
     u32 version;
     u32 size;
     s32 device;
@@ -8758,7 +8796,6 @@ u8 GameSettings_SaveGeneralGameData(void) {
     u8 *data;
     u8 *mcp;
     void *pack;
-    const char *name;
 
     status = GameSettings_GetDefaultMemoryCardStatus(&device, 1);
     if (status != 1 && status != 0) {
@@ -8782,7 +8819,7 @@ done:
     } else {
         version = 0;
         name = "saveFile";
-        size = version;
+        size = 0;
     }
     data = g_pSavedGameData;
     ok = 0;
