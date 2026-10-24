@@ -6889,25 +6889,10 @@ static char s_lettersG2[0x48] = "?";
 static char s_lettersG3[0x40] = "?";
 
 u32 Gfx_FontManager_AddFont(u16 texture, u32 caseMode, f32 width, f32 height, f32 spacing) {
-    typedef struct {
-        char mixedE[0x54];
-        char upperE[0x38];
-        char numbersE[0x48];
-        char lowerE[0x2C];
-        char mixedF[0x60];
-        char upperF[0x3C];
-        char numbersF[0x48];
-        char lowerF[0x34];
-        char mixedG[0x60];
-        char upperG[0x3C];
-        char numbersG[0x48];
-        char lowerG[1];
-    } FontLetters;
     extern FontManager g_fontManager;
     extern Texture *m_texture;
     extern s32 g_gameLanguage;
     u32 strlen(const char *);
-    FontLetters *letters = (FontLetters *)g_lettersE;
     u32 slot = -1;
     u32 isNew = 1;
     Font *font;
@@ -6948,13 +6933,13 @@ u32 Gfx_FontManager_AddFont(u16 texture, u32 caseMode, f32 width, f32 height, f3
         default:
         case 0:
         case 2:
-            font->letters = letters->upperE;
+            font->letters = s_lettersE1;
             break;
         case 1:
-            font->letters = letters->upperF;
+            font->letters = s_lettersF1;
             break;
         case 3:
-            font->letters = letters->upperG;
+            font->letters = s_lettersG1;
             break;
         }
         break;
@@ -6963,13 +6948,13 @@ u32 Gfx_FontManager_AddFont(u16 texture, u32 caseMode, f32 width, f32 height, f3
         default:
         case 0:
         case 2:
-            font->letters = letters->numbersE;
+            font->letters = s_lettersE2;
             break;
         case 1:
-            font->letters = letters->numbersF;
+            font->letters = s_lettersF2;
             break;
         case 3:
-            font->letters = letters->numbersG;
+            font->letters = s_lettersG2;
             break;
         }
         break;
@@ -6978,13 +6963,13 @@ u32 Gfx_FontManager_AddFont(u16 texture, u32 caseMode, f32 width, f32 height, f3
         default:
         case 0:
         case 2:
-            font->letters = letters->lowerE;
+            font->letters = s_lettersE3;
             break;
         case 1:
-            font->letters = letters->lowerF;
+            font->letters = s_lettersF3;
             break;
         case 3:
-            font->letters = letters->lowerG;
+            font->letters = s_lettersG3;
             break;
         }
         break;
@@ -6993,13 +6978,13 @@ u32 Gfx_FontManager_AddFont(u16 texture, u32 caseMode, f32 width, f32 height, f3
         default:
         case 0:
         case 2:
-            font->letters = letters->mixedE;
+            font->letters = g_lettersE;
             break;
         case 1:
-            font->letters = letters->mixedF;
+            font->letters = s_lettersF0;
             break;
         case 3:
-            font->letters = letters->mixedG;
+            font->letters = s_lettersG0;
             break;
         }
         break;
@@ -8643,6 +8628,103 @@ u16 Gfx_LoadTexture(char *name) {
     tex->unk3A = 0;
     return i;
 }
+
+s32 LoadTGA(const char *name, u32 id) {
+    extern u8 *m_texture;
+    s32 File_Open(u32 dev, const char *name, u32 flags, s32 *size);
+    s32 File_Read(u32 id, s32 size, void *data);
+    void File_Close(s32 handle);
+    void Deallocate(void *p);
+    void Render_CreateTextureSlot(u32 id, s32 arg1);
+    u8 header[18];
+    char path[72];
+    s32 handle;
+    s16 width;
+    s16 height;
+    s32 bpp;
+    s32 size;
+    s32 i;
+    u8 *buf;
+    u8 *src;
+    u8 *dst;
+    Texture *tex;
+
+    sprintf(path, "%s.tga", name);
+    handle = File_Open(0, path, 0, 0);
+    if (handle == -1) {
+        return 0;
+    }
+    File_Read(handle, 18, header);
+    tex = &((Texture *)m_texture)[id];
+    tex->width = height = header[14] + header[15] * 256;
+    tex = &((Texture *)m_texture)[id];
+    tex->unk30 = width = header[12] + header[13] * 256;
+    if (height > 0x400 || width > 0x400) {
+        return 0;
+    }
+    if (height == 0 || width == 0) {
+        return 0;
+    }
+    tex = &((Texture *)m_texture)[id];
+    tex->height = 0;
+    bpp = 3;
+    if (header[16] == 32) {
+        bpp = 4;
+    }
+    dst = Allocate(width * height * bpp, 0, "");
+    tex = &((Texture *)m_texture)[id];
+    tex->data = dst;
+    tex = &((Texture *)m_texture)[id];
+    size = (header[16] >> 3) * (tex->unk30 * tex->width);
+    buf = Allocate(size, 0, "");
+    src = buf;
+    switch (header[16]) {
+    case 8:
+        break;
+    case 32:
+        tex = &((Texture *)m_texture)[id];
+        tex->unk38 = 1;
+        File_Read(handle, size, src);
+        for (i = 0; i < size; i += 4) {
+            dst[0] = src[2];
+            dst[1] = src[1];
+            dst[2] = src[0];
+            dst[3] = src[3];
+            src += 4;
+            dst += 4;
+        }
+        break;
+    case 24:
+        tex = &((Texture *)m_texture)[id];
+        tex->unk38 = 0;
+        File_Read(handle, size, src);
+        for (i = 0; i < size; i += 3) {
+            dst[0] = src[2];
+            dst[1] = src[1];
+            dst[2] = src[0];
+            src += 3;
+            dst += 3;
+        }
+        break;
+    case 16:
+        tex = &((Texture *)m_texture)[id];
+        tex->unk38 = 0;
+        File_Read(handle, size, src);
+        for (i = 0; i < size; i += 2) {
+            dst[0] = (src[0] & 0x7C00) >> 7;
+            dst[1] = (src[0] & 0x3E0) >> 2;
+            dst[2] = (src[0] & 0x1F) << 3;
+            src += 2;
+            dst += 3;
+        }
+        break;
+    }
+    File_Close(handle);
+    Deallocate(buf);
+    Render_CreateTextureSlot(id, 1);
+    return 1;
+}
+#pragma use_lmw_stmw reset
 
 #pragma push
 #pragma readonly_strings on
