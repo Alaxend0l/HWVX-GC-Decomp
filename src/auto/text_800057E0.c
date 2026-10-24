@@ -6608,19 +6608,12 @@ void CarA_ProcessDamageSystem(u8 *car, Vector4 *hitPos, s32 level, f32 speed) {
                 partParams.axis.w = 0.017453292f * RandomAdd(100.0f, 1260.0f);
                 thing = ThingManager_DARYL_CreateThing(6, &partParams);
                 if (thing != NULL && list->parts[i].slaveInfo != NULL) {
-                    Vector4 slavePos;
-
                     slaveParams.unk38 = 0.0f;
                     slaveParams.quat.w = 1.0f;
                     slaveParams.quat.x = 0.0f;
                     slaveParams.quat.y = 0.0f;
                     slaveParams.quat.z = 0.0f;
-                    if (list->parts[i].slavePos != NULL) {
-                        slavePos = *list->parts[i].slavePos;
-                    } else {
-                        slavePos = g_zeroVector;
-                    }
-                    slaveParams.pos = slavePos;
+                    slaveParams.pos = Vector4_OrZero(list->parts[i].slavePos);
                     slaveParams.info = list->parts[i].slaveInfo;
                     slaveParams.unk34 = 0;
                     slaveParams.zero = g_zeroVector;
