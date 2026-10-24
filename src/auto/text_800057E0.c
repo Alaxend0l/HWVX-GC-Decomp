@@ -10014,6 +10014,128 @@ s32 GameSettings_GetDefaultMemoryCardStatus(s32 *device, s8 bForce) {
     return s_curStatus;
 }
 
+s32 GameSettings_GetMemoryCardStatus(s32 device, s32 bForce) {
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    s32 File_Open(u32 dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    u32 FileManager_GetChecksum(u32 size, void *data);
+    u32 FileManager_GetDeviceStatus(u32 device);
+    s8 FileManager_IsDeviceFormatted(u32 device);
+    s32 FileManager_GetDeviceLastError(u32 device);
+    s32 FileManager_GetDeviceFreeSpace(u32 device, u64 *freeBytes, u64 *totalBytes);
+    extern s8 g_bRefreshMC_803C6F78;
+    extern s8 g_bRefreshMC_FileList_803C6F79;
+    extern u8 *g_pSavedGameData;
+    extern struct {
+        u8 unk0[0xC];
+        char *fileName;
+        u8 unk10[0x4];
+        u32 version;
+        s32 index;
+    } g_gameInfo[];
+    static u32 s_curCount;
+    static s32 s_curStatus;
+    static u32 s_curActiveDevice;
+    static u32 s_curMemStatus = 0xFFFFFFFF;
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    s32 status;
+    u32 prevDevice;
+    u32 prevMemStatus;
+    u8 *mcp;
+    void *pack;
+    const char *name;
+    u32 version;
+    s32 index;
+    u8 *data;
+    s32 handle;
+    s8 valid;
+    u64 freeBytes;
+    u64 totalBytes;
+
+    status = 2;
+    if (++s_curCount >= 30) {
+        s_curCount = 0;
+    } else if (!g_bRefreshMC_803C6F78 && !(s8)bForce && s_curActiveDevice == device + 10) {
+        return s_curStatus;
+    }
+    prevDevice = s_curActiveDevice;
+    s_curActiveDevice = device + 10;
+    g_bRefreshMC_803C6F78 = 0;
+    do {
+        prevMemStatus = s_curMemStatus;
+        s_curMemStatus = FileManager_GetDeviceStatus(device + 10);
+        if (s_curMemStatus == 1) {
+            status = 1;
+            if (prevMemStatus == s_curMemStatus && !g_bRefreshMC_FileList_803C6F79 && !(s8)bForce && prevDevice == device + 10) {
+                return s_curStatus;
+            }
+            if (bFirstTime) {
+                bFirstTime = 0;
+                pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+                if (pack == NULL) {
+                    mcp = NULL;
+                    goto done;
+                }
+                pMCP = DataPack_GetScript(pack, 0);
+            }
+            mcp = pMCP;
+        done:
+            if (mcp != NULL) {
+                name = g_gameInfo[mcp[1]].fileName;
+                version = g_gameInfo[mcp[1]].version;
+                index = g_gameInfo[mcp[1]].index;
+            } else {
+                name = "saveFile";
+                version = 0;
+                index = 0;
+            }
+            if (!FileManager_IsDeviceFormatted(device + 10)) {
+                status = 4;
+            } else {
+                data = g_pSavedGameData;
+                valid = 0;
+                if ((handle = File_Open(device + 10, name, 0, NULL)) != -1) {
+                    File_Read(handle, index * 8 + 0x15C, data);
+                    if (((u32 *)data)[0] == 4 && ((u32 *)data)[1] == version &&
+                        ((u32 *)data)[2] == FileManager_GetChecksum(version, data + 0xC)) {
+                        valid = 1;
+                    }
+                    File_Close(handle);
+                }
+                if (valid) {
+                    if (!(s8)g_pSavedGameData[0x5C]) {
+                        status = 0;
+                    }
+                } else if ((handle = File_Open(device + 10, name, 0, NULL)) != -1) {
+                    File_Close(handle);
+                    status = 9;
+                } else {
+                    FileManager_GetDeviceFreeSpace(device + 10, &freeBytes, &totalBytes);
+                    if (FileManager_GetDeviceStatus(device + 10) == 0) {
+                        status = 2;
+                    } else if (freeBytes < 0x1C000) {
+                        status = 3;
+                    } else {
+                        status = 0;
+                    }
+                }
+            }
+            s_curStatus = status;
+            return status;
+        } else if (s_curMemStatus == 3) {
+            s32 err = FileManager_GetDeviceLastError(device + 10);
+            if (err == -11) {
+                status = 14;
+            }
+        }
+    } while (s_curMemStatus == 2);
+    s_curStatus = status;
+    return status;
+}
+
 void GameSettings_DetermineIfOverwritingFile(void) {
     if (g_bValidFileName_803C6CA4[g_codeVariables.fileIndex - 1]) {
         g_codeVariables.bOverwritingFile = 1;
@@ -19112,6 +19234,129 @@ void Trail_Render(void) {
         Gfx_End_GroupTri(count);
     }
 }
+
+static inline s32 Trail_FindFreeSegment(void) {
+    extern u8 g_TrialData[1000][0x60];
+    extern u32 g_nextTrail;
+    s32 i;
+
+    for (i = 1000; i-- > 0;) {
+        if (g_nextTrail == 1000) {
+            g_nextTrail = 0;
+        }
+        if (*(s32 *)(g_TrialData[g_nextTrail++] + 0x50) == 0) {
+            i = g_nextTrail - 1;
+            break;
+        }
+    }
+    return i;
+}
+
+void Trail_AddSegment(u32 *handle, f32 *pos, f32 *dir, u16 texture, u8 *color, s32 life, f32 width0, f32 width1) {
+    typedef struct TrailSegment {
+        u32 color[4];
+        f32 v[4][4];
+        s32 life;
+        u8 pad54[8];
+        u16 texture;
+        u16 active;
+    } TrailSegment;
+    extern TrailSegment g_TrialData[1000];
+    extern u32 g_nextTrail;
+    extern f32 g_trailTimer;
+    void MemCpy32(void *dst, void *src, u32 size);
+    void DistanceXYZ(void *a, void *b, f32 *dist);
+    s32 i;
+    s32 last;
+    u32 r;
+    u32 g;
+    u32 b;
+    u32 a;
+    f32 dist;
+
+    if (*handle < 0xFFFFFFFF) {
+        if (g_trailTimer > 0.06666667f) {
+            last = *handle;
+            i = last;
+            if (g_TrialData[i].active == 1) {
+                for (i = 1000; i-- > 0;) {
+                    if (g_nextTrail == 1000) {
+                        g_nextTrail = 0;
+                    }
+                    if (g_TrialData[g_nextTrail++].life == 0) {
+                        i = g_nextTrail - 1;
+                        break;
+                    }
+                }
+                if (i == 0) {
+                    *handle = -1;
+                    return;
+                }
+                r = color[0];
+                g = color[1];
+                b = color[2];
+                a = color[3];
+                g_TrialData[i].life = life << 4;
+                g_TrialData[i].texture = texture;
+                g_TrialData[i].color[0] = r;
+                g_TrialData[i].color[1] = g;
+                g_TrialData[i].color[2] = b;
+                g_TrialData[i].color[3] = a;
+                g_TrialData[i].v[0][3] = g_TrialData[last].v[1][3];
+                MemCpy32(g_TrialData[i].v[0], g_TrialData[last].v[2], 0x10);
+                MemCpy32(g_TrialData[i].v[1], g_TrialData[last].v[3], 0x10);
+            }
+            g_TrialData[i].v[2][0] = pos[0] + width1 * dir[2];
+            g_TrialData[i].v[2][1] = pos[1];
+            g_TrialData[i].v[2][2] = pos[2] - width1 * dir[0];
+            g_TrialData[i].v[3][0] = pos[0] - width0 * dir[2];
+            g_TrialData[i].v[3][1] = pos[1];
+            g_TrialData[i].v[3][2] = pos[2] + width0 * dir[0];
+            DistanceXYZ(g_TrialData[i].v[0], g_TrialData[i].v[2], &dist);
+            g_TrialData[i].v[1][3] = 0.5f * dist + g_TrialData[i].v[0][3];
+            if (g_TrialData[i].v[0][3] >= 16.0f) {
+                g_TrialData[i].v[0][3] -= 16.0f;
+                g_TrialData[i].v[1][3] -= 16.0f;
+            }
+            g_TrialData[i].active = 1;
+            *handle = i;
+        }
+    } else {
+        for (last = 1000; last-- > 0;) {
+            if (g_nextTrail == 1000) {
+                g_nextTrail = 0;
+            }
+            if (g_TrialData[g_nextTrail++].life == 0) {
+                last = g_nextTrail - 1;
+                break;
+            }
+        }
+        if (last == 0) {
+            *handle = -1;
+            return;
+        }
+        r = color[0];
+        g = color[1];
+        b = color[2];
+        a = color[3];
+        g_TrialData[last].active = 0;
+        g_TrialData[last].life = life << 4;
+        g_TrialData[last].texture = texture;
+        g_TrialData[last].color[0] = r;
+        g_TrialData[last].color[1] = g;
+        g_TrialData[last].color[2] = b;
+        g_TrialData[last].color[3] = a;
+        g_TrialData[last].v[0][3] = 0.0f;
+        g_TrialData[last].v[0][0] = pos[0] + width1 * dir[2];
+        g_TrialData[last].v[0][1] = pos[1];
+        g_TrialData[last].v[0][2] = pos[2] - width1 * dir[0];
+        g_TrialData[last].v[1][0] = pos[0] - width0 * dir[2];
+        g_TrialData[last].v[1][1] = pos[1];
+        g_TrialData[last].v[1][2] = pos[2] + width0 * dir[0];
+        *handle = last;
+    }
+}
+
 #pragma pop
 
 s8 TriggerSoundSeqQueueEnd(void) {
@@ -29656,6 +29901,91 @@ static u32 CompleteTransfer(void) {
     return sr;
 }
 
+void SIInterruptHandler(s16 interrupt, void *context) {
+    extern u32 Type_800D9E84[4];
+    typedef void (*SICallback)(s32 chan, u32 sr, void *context);
+    typedef void (*RDSTHandler)(s16 interrupt, void *context);
+    s64 __OSGetSystemTime(void);
+    BOOL __SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback);
+    BOOL OSCancelAlarm(void *alarm);
+    BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback, s64 delay);
+    void GetTypeCallback(s32 chan, u32 error, void *context);
+    u32 VIGetCurrentLine(void);
+    BOOL SIGetResponseRaw(s32 chan);
+    u32 reg;
+
+    reg = __SIRegs[13];
+    if ((reg & 0xC0000000) == 0xC0000000) {
+        s32 chan;
+        u32 sr;
+        SICallback callback;
+        s32 i;
+        s32 next;
+        SIPacket *packet;
+
+        chan = Si_800D9E70.chan;
+        sr = CompleteTransfer();
+        callback = (SICallback)Si_800D9E70.callback;
+        Si_800D9E70.callback = NULL;
+        next = chan;
+        for (i = 0; i < 4; i++) {
+            next++;
+            next %= 4;
+            packet = &Packet_803096E0.packet[next];
+            if (packet->chan != -1 && packet->fire <= __OSGetSystemTime()) {
+                if (__SITransfer(packet->chan, packet->output, packet->outputBytes, packet->input, packet->inputBytes, packet->callback)) {
+                    OSCancelAlarm(Packet_803096E0.alarm[next]);
+                    packet->chan = -1;
+                }
+                break;
+            }
+        }
+        if (callback) {
+            callback(chan, sr, context);
+        }
+        sr = __SIRegs[14];
+        sr &= 0x0F000000 >> (8 * chan);
+        __SIRegs[14] = sr;
+        if (Type_800D9E84[chan] == 0x80) {
+            if (!(Packet_803096E0.packet[chan].chan != -1 || Si_800D9E70.chan == chan)) {
+                static u32 cmdTypeAndStatus = 0;
+                SITransfer(chan, &cmdTypeAndStatus, 1, &Type_800D9E84[chan], 3, GetTypeCallback,
+                           (*(u32 *)0x800000F8 / 4 / 500000) * 65 / 8);
+            }
+        }
+    }
+    if ((reg & 0x18000000) == 0x18000000) {
+        s32 i;
+        u32 vcount;
+        u32 x;
+
+        vcount = VIGetCurrentLine() + 1;
+        x = (Si_800D9E70.poll & 0x03FF0000) >> 16;
+        for (i = 0; i < 4; i++) {
+            if (SIGetResponseRaw(i)) {
+                Packet_803096E0.inputBufferVcount[i] = vcount;
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            if (!(Si_800D9E70.poll & (0x80000000 >> (24 + i)))) {
+                continue;
+            }
+            if (Packet_803096E0.inputBufferVcount[i] == 0 || Packet_803096E0.inputBufferVcount[i] + x / 2 < vcount) {
+                return;
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            Packet_803096E0.inputBufferVcount[i] = 0;
+        }
+        for (i = 0; i < 4; i++) {
+            RDSTHandler handler = ((RDSTHandler *)(Packet_803096E0.unk160 + 0x40))[i];
+            if (handler) {
+                handler(interrupt, context);
+            }
+        }
+    }
+}
+
 void EXIIntrruptHandler(s16 interrupt, void *context) {
     extern u8 Ecb_80309980[3][0x40];
     void OSClearContext(void *context);
@@ -31052,6 +31382,43 @@ void __AXOutInitDSP(void) {
     DSPAddTask(__AXOutBuffer_802F3040 + 0x7B8);
     while (__AXDSPInitFlag_803C74D4 == 0) {
     }
+}
+
+void __AXOutInit(void) {
+    extern u8 __AXOutBuffer_802F3040[];
+    extern u32 __AXOutFrame_803C74C0;
+    extern u32 __AXDebugSteppingMode_803C74DC;
+    extern u32 __AXOutDspReady_803C74C4;
+    extern void (*__AXUserFrameCallback_803C74D0)(void);
+    void __AXOutAiCallback(void);
+    void __AXOutInitDSP(void);
+    void DCFlushRange(void *addr, u32 nBytes);
+    void *AIRegisterDMACallback(void (*callback)(void));
+    void __AXNextFrame(void *sbuffer, void *buffer);
+    void AIInitDMA(u32 start_addr, u32 length);
+    void AIStartDMA(void);
+    u32 i;
+    u32 *p;
+
+    __AXOutFrame_803C74C0 = 0;
+    __AXDebugSteppingMode_803C74DC = 0;
+    p = (u32 *)__AXOutBuffer_802F3040;
+    for (i = 0; i < 320; i++) {
+        p[i] = 0;
+    }
+    DCFlushRange(__AXOutBuffer_802F3040, 0x500);
+    p = (u32 *)(__AXOutBuffer_802F3040 + 0x500);
+    for (i = 0; i < 160; i++) {
+        p[i] = 0;
+    }
+    DCFlushRange(__AXOutBuffer_802F3040 + 0x500, 0x280);
+    __AXOutInitDSP();
+    AIRegisterDMACallback(__AXOutAiCallback);
+    __AXNextFrame(__AXOutBuffer_802F3040 + 0x500, __AXOutBuffer_802F3040 + 0x280);
+    __AXOutDspReady_803C74C4 = 1;
+    __AXUserFrameCallback_803C74D0 = NULL;
+    AIInitDMA((u32)(__AXOutBuffer_802F3040 + __AXOutFrame_803C74C0 * 0x280), 0x280);
+    AIStartDMA();
 }
 
 void __AXOutQuit(void) {
