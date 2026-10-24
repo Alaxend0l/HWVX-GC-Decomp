@@ -31261,6 +31261,7 @@ BOOL PADInit(void) {
     return PADReset(0xF0000000);
 }
 
+#pragma peephole off
 u32 PADRead(void *arg0) {
     typedef struct {
         u16 button;
