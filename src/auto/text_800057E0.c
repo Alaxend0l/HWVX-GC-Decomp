@@ -8799,27 +8799,7 @@ typedef struct CollisionHit {
 
 #pragma push
 #pragma use_lmw_stmw on
-f32 OBoxHitsSegment(void *obox, Vector4 *vel, Vector4 *seg, void *arg3, f32 maxT) {
-    typedef struct {
-        Vector4 center;
-        Vector4 corners[8];
-        f32 extent[3];
-        u8 pad9C[4];
-        Vector4 *axis[3];
-        u8 padAC[4];
-        f32 centerProj[3];
-        u8 padBC[4];
-        f32 velProj[3];
-        u32 unkCC;
-    } OBoxData;
-    typedef struct {
-        Vector4 pos;
-        Vector4 normal;
-        u8 pad20[8];
-        u32 unk28;
-        u8 pad2C[0x14];
-        u8 type;
-    } HitInfo;
+f32 OBoxHitsSegment(CollisionOBox *box, Vector4 *vel, Vector4 *seg, CollisionHit *hit, f32 maxT) {
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
     f32 PSVECSquareMag(Vector4 *v);
     void PSVECNormalize(Vector4 *src, Vector4 *dst);
@@ -8838,21 +8818,19 @@ f32 OBoxHitsSegment(void *obox, Vector4 *vel, Vector4 *seg, void *arg3, f32 maxT
     Vector4 cross;
     Vector4 diff;
     s32 i;
-    u32 j;
-    u32 k;
     u8 type;
-    u8 axisIdx;
-    u8 vert;
-    u8 corner;
-    u8 hiIdx;
+    u32 k;
+    u32 j;
     u8 loIdx;
+    u8 hiIdx;
     u8 maxIdx;
     u8 minIdx;
     f32 a;
     f32 b;
     f32 d;
-    HitInfo *hit = arg3;
-    OBoxData *box = obox;
+    u32 corner;
+    u8 axisIdx;
+    u8 vert;
 
     da.tEnter = 0.0f;
     da.tExit = maxT;
@@ -8896,7 +8874,7 @@ f32 OBoxHitsSegment(void *obox, Vector4 *vel, Vector4 *seg, void *arg3, f32 maxT
         maxIdx = 0;
         minIdx = 0;
         PSVECCrossProduct(box->axis[j], &dir, &axis);
-        da.maxB = da.minB = PSVECDotProduct(&axis, &box->corners[0]);
+        da.minB = da.maxB = PSVECDotProduct(&axis, &box->corners[0]);
         for (k = 1; k < 8; k++) {
             d = PSVECDotProduct(&axis, &box->corners[k]);
             if (d < da.minB) {
@@ -8907,7 +8885,7 @@ f32 OBoxHitsSegment(void *obox, Vector4 *vel, Vector4 *seg, void *arg3, f32 maxT
                 da.maxB = d;
             }
         }
-        da.maxA = da.minA = PSVECDotProduct(&axis, &seg[0]);
+        da.minA = da.maxA = PSVECDotProduct(&axis, &seg[0]);
         da.dir = -PSVECDotProduct(&axis, vel);
         switch ((u8)Collision_ProcessDividingAxis(&da)) {
         case 0:
@@ -8943,23 +8921,23 @@ f32 OBoxHitsSegment(void *obox, Vector4 *vel, Vector4 *seg, void *arg3, f32 maxT
             PSVECCrossProduct(box->axis[axisIdx], vel, &cross);
             Create_Plane(&plane, &cross, &box->corners[corner]);
             a = Distance_Plane(&plane, &seg[0]);
-            maxT = a - Distance_Plane(&plane, &seg[1]);
-            if (FloatsEqual(maxT, 0.0f, 0.0001f)) {
+            b = Distance_Plane(&plane, &seg[1]);
+            if (FloatsEqual(a - b, 0.0f, 0.0001f)) {
                 hit->pos = seg[0];
                 hit->normal.x = -vel->x;
                 hit->normal.y = -vel->y;
                 hit->normal.z = -vel->z;
-                if (PSVECSquareMag(&hit->normal) != 0.0f) {
+                if (PSVECSquareMag(&hit->normal)) {
                     PSVECNormalize(&hit->normal, &hit->normal);
                 }
             } else {
-                maxT = a / maxT;
+                d = a / (a - b);
                 PSVECSubtract(&seg[1], &seg[0], &diff);
-                hit->pos.x = diff.x * maxT + seg[0].x;
-                hit->pos.y = diff.y * maxT + seg[0].y;
-                hit->pos.z = diff.z * maxT + seg[0].z;
+                hit->pos.x = diff.x * d + seg[0].x;
+                hit->pos.y = diff.y * d + seg[0].y;
+                hit->pos.z = diff.z * d + seg[0].z;
                 PSVECCrossProduct(box->axis[axisIdx], &diff, &hit->normal);
-                if (PSVECSquareMag(&hit->normal) != 0.0f) {
+                if (PSVECSquareMag(&hit->normal)) {
                     PSVECNormalize(&hit->normal, &hit->normal);
                 }
                 if (PSVECDotProduct(&hit->normal, vel) > 0.0f) {
