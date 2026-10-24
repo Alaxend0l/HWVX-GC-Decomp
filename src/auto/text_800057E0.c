@@ -14990,22 +14990,19 @@ static inline PathNode *NavHolder_PopLowestOpen(void) {
     PathNode *prev = NULL;
     PathNode *best;
     PathNode *p;
-    PathNode *q;
     f32 bestF;
 
     if (head == NULL) {
         return NULL;
     }
     bestF = head->f;
-    p = head;
     best = head;
-    while ((q = p->next) != NULL) {
-        if (q->f < bestF) {
-            bestF = q->f;
+    for (p = head; p->next != NULL; p = p->next) {
+        if (p->next->f < bestF) {
+            bestF = p->next->f;
             prev = p;
-            best = q;
+            best = p->next;
         }
-        p = q;
     }
     if (prev == NULL) {
         gs_pOpenListHead_803C7008 = head->next;
