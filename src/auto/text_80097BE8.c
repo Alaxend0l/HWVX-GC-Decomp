@@ -2165,6 +2165,95 @@ void __num2dec_internal(decimal *d, double x) {
     }
 }
 
+void __two_exp_800991F0(decimal *result, short exp) {
+    switch (exp) {
+    case -64:
+        __str2dec(result, "542101086242752217003726400434970855712890625", -20);
+        return;
+    case -53:
+        __str2dec(result, "11102230246251565404236316680908203125", -16);
+        return;
+    case -32:
+        __str2dec(result, "23283064365386962890625", -10);
+        return;
+    case -16:
+        __str2dec(result, "152587890625", -5);
+        return;
+    case -8:
+        __str2dec(result, "390625", -3);
+        return;
+    case -7:
+        __str2dec(result, "78125", -3);
+        return;
+    case -6:
+        __str2dec(result, "15625", -2);
+        return;
+    case -5:
+        __str2dec(result, "3125", -2);
+        return;
+    case -4:
+        __str2dec(result, "625", -2);
+        return;
+    case -3:
+        __str2dec(result, "125", -1);
+        return;
+    case -2:
+        __str2dec(result, "25", -1);
+        return;
+    case -1:
+        __str2dec(result, "5", -1);
+        return;
+    case 0:
+        __str2dec(result, "1", 0);
+        return;
+    case 1:
+        __str2dec(result, "2", 0);
+        return;
+    case 2:
+        __str2dec(result, "4", 0);
+        return;
+    case 3:
+        __str2dec(result, "8", 0);
+        return;
+    case 4:
+        __str2dec(result, "16", 1);
+        return;
+    case 5:
+        __str2dec(result, "32", 1);
+        return;
+    case 6:
+        __str2dec(result, "64", 1);
+        return;
+    case 7:
+        __str2dec(result, "128", 2);
+        return;
+    case 8:
+        __str2dec(result, "256", 2);
+        return;
+    }
+    {
+        decimal x2;
+        decimal temp;
+
+        __two_exp_800991F0(&x2, exp / 2);
+        __timesdec(result, &x2, &x2);
+        if (exp & 1) {
+            temp = *result;
+            if (exp > 0) {
+                decimal two;
+                __str2dec(&two, "2", 0);
+                __timesdec(result, &temp, &two);
+            } else {
+                decimal half;
+                __str2dec(&half, "5", -1);
+                __timesdec(result, &temp, &half);
+            }
+        }
+    }
+}
+#pragma readonly_strings reset
+#pragma pool_strings reset
+
 static void __str2dec(decimal *d, const char *s, short exp) {
     int i;
 
