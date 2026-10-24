@@ -41696,6 +41696,7 @@ s32 TRKReadBuffer(TRKBuffer *b, void *data, u32 length) {
     return error;
 }
 
+#pragma auto_inline off
 s32 TRKAppendBuffer(TRKBuffer *b, const void *data, u32 length) {
     s32 error = 0;
     u32 bytesLeft;
@@ -42482,18 +42483,13 @@ void TRKDoReadMemory(TRKBuffer *b) {
     u8 c;
     u8 options;
     s32 err;
-    s32 ackTries;
     u8 replyError;
 
     if (b->length != 8) {
         TRKResetBuffer(b, 1);
         TRKAppendBuffer1_ui8(b, 0x80);
         TRKAppendBuffer1_ui8(b, 2);
-        ackTries = 3;
-        do {
-            err = TRKMessageSend(b);
-            ackTries--;
-        } while (err != 0 && ackTries > 0);
+        TRKSendACK(b);
         return;
     }
     TRKSetBufferPosition(b, 0);
@@ -42511,22 +42507,14 @@ void TRKDoReadMemory(TRKBuffer *b) {
         TRKResetBuffer(b, 1);
         TRKAppendBuffer1_ui8(b, 0x80);
         TRKAppendBuffer1_ui8(b, 0x12);
-        ackTries = 3;
-        do {
-            err = TRKMessageSend(b);
-            ackTries--;
-        } while (err != 0 && ackTries > 0);
+        TRKSendACK(b);
         return;
     }
     if (length > 0x800) {
         TRKResetBuffer(b, 1);
         TRKAppendBuffer1_ui8(b, 0x80);
         TRKAppendBuffer1_ui8(b, 0x11);
-        ackTries = 3;
-        do {
-            err = TRKMessageSend(b);
-            ackTries--;
-        } while (err != 0 && ackTries > 0);
+        TRKSendACK(b);
         return;
     }
     TRKResetBuffer(b, 1);
@@ -42567,17 +42555,9 @@ void TRKDoReadMemory(TRKBuffer *b) {
         TRKResetBuffer(b, 1);
         TRKAppendBuffer1_ui8(b, 0x80);
         TRKAppendBuffer1_ui8(b, replyError);
-        ackTries = 3;
-        do {
-            err = TRKMessageSend(b);
-            ackTries--;
-        } while (err != 0 && ackTries > 0);
+        TRKSendACK(b);
     } else {
-        ackTries = 3;
-        do {
-            err = TRKMessageSend(b);
-            ackTries--;
-        } while (err != 0 && ackTries > 0);
+        TRKSendACK(b);
     }
 }
 #pragma auto_inline reset
