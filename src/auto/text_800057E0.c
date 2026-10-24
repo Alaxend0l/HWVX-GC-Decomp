@@ -18382,13 +18382,6 @@ typedef struct TimeBarVtx {
     u8 pad[4];
 } TimeBarVtx;
 
-static inline void TimeBar_SetRect(TimeBarVtx *v, f32 x, f32 y, f32 w, f32 h) {
-    v[0].x = v[3].x = x;
-    v[0].y = v[1].y = y;
-    v[2].y = v[3].y = h + y;
-    v[1].x = v[2].x = x + w;
-}
-
 #pragma opt_propagation off
 void Render_TimeBars(u32 *times) {
     GDLRect *Gfx_Add2DRectangle(void);
