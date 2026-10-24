@@ -31373,7 +31373,6 @@ u32 PADRead(void *arg0) {
     OSRestoreInterrupts(enabled);
     return motor;
 }
-#pragma peephole reset
 
 void PADSetSpec(s32 spec) {
     extern void (*MakeStatus_803C6DD8)(s32, void *, u32 *);
