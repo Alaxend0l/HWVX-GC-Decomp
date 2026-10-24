@@ -18142,6 +18142,178 @@ s8 ParticleManager_CanCreatureParticle(void *creature) {
     return 0;
 }
 
+void CreateParticleGX(Vector4 *pos, Vector4 *vel, Vector4 *accel, Vector4 *quat, u8 *info, f32 speed, f32 age) {
+    extern Vector4 g_zeroVector;
+    extern s32 g_iDeltaTimeMS;
+    s32 RandomAdd_s32(s32 base, s32 range);
+    f32 RandomAdd(f32 base, f32 range);
+    void ExtractColorKey(void *keys, void *out, f32 time);
+    void ExtractScaleKey(void *keys, void *out, f32 time);
+    void RandomNumberGenerator_GetRandomQuaternion(Vector4 *q);
+    void RandomNumberGenerator_GetRandomVector(Vector4 *v);
+    typedef struct {
+        u8 r;
+        u8 g;
+        u8 b;
+        u8 a;
+    } Colour;
+    typedef struct {
+        Vector4 pos;
+        Vector4 vel;
+        Vector4 accel;
+        Vector4 quat;
+        Vector4 axis;
+        u8 colour[0x2C];
+        u8 colourActive;
+        u8 unk7D[0x3];
+        u8 scale[0x24];
+        u8 scaleActive;
+        u8 unkA5[0xB];
+        f32 unkB0;
+        u8 flags;
+        u8 unkB5;
+        u8 visible;
+        u8 frame;
+        f32 speed;
+        u8 *info;
+        void *texture;
+        f32 unkC4;
+        f32 spin;
+        s32 life;
+        f32 rate;
+        s32 frameTimer;
+        f32 unkD8;
+        s32 timer;
+        Vector4 targetPos;
+        Vector4 targetVel;
+    } ParticleGX;
+    typedef struct {
+        ParticleGX particles[0x280];
+        u32 next;
+        u8 unk28004[0xC];
+    } ParticleGroup;
+    typedef struct {
+        ParticleGroup groups[3];
+        u8 unk78030[0x16010];
+    } ParticleManager;
+    extern ParticleManager g_particleManager;
+    static s8 which;
+    ParticleGroup *group;
+    ParticleGX *particle;
+    u8 *anim;
+    s32 life;
+    f32 lifeF;
+    u32 time;
+    u32 idx;
+    Colour c;
+    f32 rate;
+
+    life = RandomAdd_s32(*(s32 *)(info + 0x8), *(s32 *)(info + 0xC));
+    lifeF = life;
+    anim = *(u8 **)(info + 0x4);
+    time = age * lifeF;
+    if (anim != NULL) {
+        if (anim[1] & 3) {
+            group = &g_particleManager.groups[0];
+        } else if (which++ & 1) {
+            group = &g_particleManager.groups[1];
+        } else {
+            group = &g_particleManager.groups[2];
+        }
+        idx = group->next++;
+        if (group->next >= 0x280) {
+            group->next = 0;
+        }
+        particle = &group->particles[idx];
+        if (anim[3] != 0) {
+            particle->frame = 0;
+            particle->frameTimer = *(s32 *)(anim + 0x14);
+        } else {
+            particle->frame = RandomAdd_s32(0, *(s32 *)(anim + 0x20));
+        }
+        particle->texture = (*(void ***)(anim + 0x24))[particle->frame];
+        if (particle->texture != NULL) {
+            particle->speed = speed;
+            particle->pos = *pos;
+            particle->vel = *vel;
+            particle->accel = *accel;
+            particle->info = info;
+            rate = 1.0f;
+            particle->unkC4 = rate;
+            particle->life = life - time;
+            particle->timer = g_iDeltaTimeMS;
+            particle->targetVel = g_zeroVector;
+            particle->targetPos = *pos;
+            particle->rate = rate;
+            if (*(s32 *)(info + 0xC) != 0 && *(s32 *)(info + 0x8) != 0) {
+                particle->rate = rate / (lifeF / *(s32 *)(info + 0x8));
+            }
+            particle->scaleActive = 1;
+            particle->colourActive = 1;
+            ExtractColorKey(particle->info + 0x14, particle->colour, time);
+            particle->unkD8 = RandomAdd(*(f32 *)(anim + 0xC), *(f32 *)(anim + 0x10));
+            ExtractScaleKey(anim + 0x28, particle->scale, time);
+            particle->visible = 1;
+            if (*(u32 *)(particle->info + 0x14) == 0) {
+                particle->visible = 0;
+            } else if (*(u32 *)(particle->info + 0x14) == 1) {
+                c = **(Colour **)(particle->info + 0x18);
+                if (c.r == 0xFF && c.b == 0xFF && c.g == 0xFF) {
+                    particle->visible = 0;
+                }
+            }
+            particle->flags = anim[1] != 0;
+            if (anim[1] > 1) {
+                particle->flags |= 2;
+            }
+            particle->flags &= ~0xC;
+            if (anim[1] == 3) {
+                particle->unkB0 = 0.0f;
+            } else {
+                particle->unkB0 = 0.75f;
+            }
+            if (anim[0] == 0) {
+                particle->quat = *quat;
+            } else if (anim[0] == 1) {
+                RandomNumberGenerator_GetRandomQuaternion(&particle->quat);
+            } else {
+                particle->quat.x = quat->x = 0.0f;
+                particle->quat.y = quat->y = 0.0f;
+                particle->quat.z = quat->z = 0.0f;
+                particle->quat.w = quat->w = 1.0f;
+            }
+            if (*(f32 *)(anim + 0x4) || *(f32 *)(anim + 0x8)) {
+                switch (anim[2]) {
+                case 0:
+                    RandomNumberGenerator_GetRandomVector(&particle->axis);
+                    break;
+                case 1:
+                    particle->axis.x = 1.0f;
+                    particle->axis.y = 0.0f;
+                    particle->axis.z = 0.0f;
+                    break;
+                case 2:
+                    particle->axis.x = 0.0f;
+                    particle->axis.y = 1.0f;
+                    particle->axis.z = 0.0f;
+                    break;
+                case 3:
+                    particle->axis.x = 0.0f;
+                    particle->axis.y = 0.0f;
+                    particle->axis.z = 1.0f;
+                    break;
+                }
+                particle->spin = 0.1f * (0.017453292f * RandomAdd(*(f32 *)(anim + 0x4), *(f32 *)(anim + 0x8)));
+            } else {
+                particle->spin = 0.0f;
+                particle->axis.x = 1.0f;
+                particle->axis.y = 0.0f;
+                particle->axis.z = 0.0f;
+            }
+        }
+    }
+}
+
 void CreateParticleSprite(Vector4 *pos, Vector4 *vel, Vector4 *accel, void *owner, u8 *info, f32 speed, f32 age) {
     s32 RandomAdd_s32(s32 base, s32 range);
     f32 RandomAdd(f32 base, f32 range);
