@@ -22187,14 +22187,8 @@ void Thing_CollideWithForceBoxes(u8 *thing) {
     }
 }
 
-static inline u8 Teleporter_IsBelowOrFar(u8 *tp, u8 *thing) {
-    f32 MagnitudeVector(void *v);
-    u8 hit = 0;
-
-    if (*(f32 *)(thing + 0x44) < *(f32 *)(tp + 0x34) || MagnitudeVector(thing + 0x40) > 10000.0f) {
-        hit = 1;
-    }
-    return hit;
+static inline u8 *World_GetTeleporter(u32 index) {
+    return *(u8 **)((u8 *)g_worldData.world + 0x34) + index * 0x70;
 }
 
 s8 Thing_CollideWithTeleporters(u8 *thing) {
