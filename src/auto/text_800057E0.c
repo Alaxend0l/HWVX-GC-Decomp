@@ -3890,6 +3890,69 @@ void SoundManager_Create(void) {
     g_sources_803C6F38 = Allocate(0x1F40, 0, "");
     g_tracks_803C6F30 = Allocate(0x500, 0, "");
 }
+
+#pragma use_lmw_stmw on
+void SoundManager_Init(void) {
+    typedef struct SoundListener {
+        Vector4 pos;
+        Vector4 vel;
+        Vector4 fwd;
+        Vector4 up;
+        Vector4 right;
+        Matrix4 mtx;
+    } SoundListener;
+    typedef struct MusicFade {
+        f32 cur;
+        f32 target;
+        f32 time;
+    } MusicFade;
+    typedef struct MusicTrack {
+        u32 active;
+        f32 vol;
+        f32 target;
+        f32 time;
+        u8 pad10[0x28 - 0x10];
+    } MusicTrack;
+    extern s8 g_paused_803C6F2D;
+    extern MusicFade g_globalMusic_800DBE30[3];
+    extern MusicTrack *g_tracks_803C6F30;
+    extern SoundSource *g_sources_803C6F38;
+    extern s32 g_nextSource_803C6F34;
+    extern s32 g_numListeners;
+    extern SoundListener g_listener[4];
+    extern Matrix4 g_identity;
+    extern Vector4 g_zeroVector;
+    void Audio_Init(void);
+    void *memset(void *dst, int c, u32 n);
+    Vector4 fwd = {0.0f, 0.0f, 1.0f, 0.0f};
+    Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
+    Vector4 right = {1.0f, 0.0f, 0.0f, 0.0f};
+    u32 i;
+
+    Audio_Init();
+    memset(g_globalMusic_800DBE30, 0, sizeof(g_globalMusic_800DBE30));
+    g_globalMusic_800DBE30[0].cur = 1.0f;
+    g_listener[0].vel = g_zeroVector;
+    g_listener[0].pos = g_zeroVector;
+    g_listener[0].fwd = fwd;
+    g_listener[0].up = up;
+    g_listener[0].right = right;
+    g_listener[0].mtx = g_identity;
+    g_numListeners = 0;
+    memset(g_sources_803C6F38, 0, 100 * sizeof(SoundSource));
+    for (i = 0; i < 100; i++) {
+        g_sources_803C6F38[i].voice = -1;
+        g_sources_803C6F38[i].unk24 = 0.0f;
+    }
+    g_nextSource_803C6F34 = 0;
+    memset(g_tracks_803C6F30, 0, 32 * sizeof(MusicTrack));
+    for (i = 0; i < 32; i++) {
+        g_tracks_803C6F30[i].active = 1;
+        g_tracks_803C6F30[i].vol = 1.0f;
+    }
+    g_paused_803C6F2D = 0;
+}
+
 #pragma pop
 void SoundManager_Destroy(void) {
     M2C_UNK Audio_Destroy();
