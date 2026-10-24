@@ -5470,19 +5470,18 @@ void AnimExtractKeyFrame_Compound(void *animp, void *outp, f32 time) {
     f32 Distance_Plane(void *arg0, void *arg1);
     Vector tv __attribute__((aligned(16)));
     f32 values[448];
-    Anim *anim;
-    Bone *out;
     u16 *flags;
+    Bone *out;
     u32 numBones;
     u32 *mask;
     u32 bits;
     u32 bit;
     f32 *stat;
     f32 *dyn;
-    s32 idx;
-    u32 i;
+    Anim *anim;
     Vector *plane;
-    f32 *val;
+    u32 i;
+    s32 idx;
     u16 f;
 
     anim = (Anim *)animp;
@@ -5505,8 +5504,8 @@ void AnimExtractKeyFrame_Compound(void *animp, void *outp, f32 time) {
     dyn = values;
     tv.z = time;
     tv.y = time * time;
-    tv.w = 1.0f;
     tv.x = tv.y * time;
+    tv.w = 1.0f;
     idx = 0;
     for (i = 1; i < anim->numFrames; i++) {
         if (time <= anim->times[i]) {
@@ -5515,9 +5514,8 @@ void AnimExtractKeyFrame_Compound(void *animp, void *outp, f32 time) {
         }
     }
     plane = &anim->data[idx * anim->numCompound];
-    val = values;
     for (i = 0; i < anim->numCompound; i++) {
-        *val++ = Distance_Plane(plane++, &tv);
+        values[i] = Distance_Plane(&plane[i], &tv);
     }
     for (i = 0; i < numBones; i++) {
         f = *flags;
