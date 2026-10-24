@@ -2507,115 +2507,54 @@ static inline void AI_Car_FollowPath(u8 *ai, u32 i, Vector4 *p0) {
     }
 }
 
-void AI_Car_SeekPoint_80007C7C(u8 *ai) {
-    f32 PSVECSquareMag(void *v);
-    f32 PSVECSquareDistance(void *a, void *b);
-    f32 PSVECDotProduct(void *a, void *b);
+#pragma push
+#pragma use_lmw_stmw on
+static inline void AI_Car_SteerAlongPath(u8 *ai, u32 i) {
     void PSVECScale(void *src, void *dst, f32 scale);
     void PSVECAdd(void *a, void *b, void *out);
     void PSVECSubtract(void *a, void *b, void *out);
     f32 MagnitudeVector(void *v);
-    f32 Sqrt(f32 x);
+    Vector4 a;
+    Vector4 b;
+    u8 *myPos;
+    Vector4 *p0;
+    Vector4 *p1;
+    f32 ma;
+    f32 mb;
+
+    p0 = ((Vector4 **)(ai + 0x420))[i];
+    myPos = *(u8 **)(ai + 0x2C) + 0x40;
+    if (i + 1 >= 32 || (p1 = ((Vector4 **)(ai + 0x420))[i + 1]) == NULL) {
+        PSVECSubtract(myPos, p0, ai + 0x400);
+        PSVECScale(ai + 0x400, ai + 0x400, 0.5f);
+        PSVECAdd(ai + 0x400, p0, ai + 0x400);
+    } else {
+        PSVECSubtract(myPos, p0, &a);
+        PSVECSubtract(p1, p0, &b);
+        ma = MagnitudeVector(&a);
+        mb = MagnitudeVector(&b);
+        PSVECScale(&a, &a, mb / ma);
+        PSVECScale(&b, &b, ma / mb);
+        PSVECScale(&a, &a, -1.0f);
+        PSVECAdd(&a, &b, ai + 0x400);
+        PSVECScale(ai + 0x400, ai + 0x400, -(0.5f * ma / MagnitudeVector(ai + 0x400)));
+        PSVECAdd(ai + 0x400, p0, ai + 0x400);
+    }
+}
+
+void AI_Car_SeekPoint_80007C7C(u8 *ai) {
     void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed);
     Vector4 target;
-    f32 speed;
-    u8 *thing;
-    u8 *myPos;
-    u8 *thingPos;
-    u8 *car;
-    f32 dist;
-    f32 t;
     u32 i;
+    f32 speed = 0.0f;
 
-    speed = 0.0f;
-    thing = *(u8 **)(ai + 0x3E8);
-    if (thing != NULL) {
-        Vector4 lead;
-
-        myPos = *(u8 **)(ai + 0x2C) + 0x40;
-        if (thing == NULL) {
-            thing = *(u8 **)(ai + 0x3EC);
-        }
-        thingPos = thing + 0x40;
-        if (PSVECSquareMag(thing) < 1.0f) {
-            *(Vector4 *)(ai + 0x400) = *(Vector4 *)thingPos;
-        } else {
-            car = *(u8 **)(ai + 0x2C);
-            dist = PSVECSquareDistance(thingPos, myPos);
-            t = Sqrt(dist / PSVECSquareMag(car));
-            PSVECScale(thing, &lead, t);
-            PSVECAdd(&lead, thingPos, &lead);
-            PSVECScale(thing, &lead, t * Sqrt(PSVECSquareDistance(&lead, myPos) / dist));
-            PSVECAdd(&lead, thingPos, ai + 0x400);
-            if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1) {
-                PSVECSubtract(ai + 0x400, myPos, &lead);
-                PSVECScale(thing + 0x10, &lead,
-                           PSVECDotProduct(*(u8 **)(ai + 0x2C) + 0x10, &lead) >= 0.0f ? -15.0f : 15.0f);
-                PSVECAdd(ai + 0x400, &lead, ai + 0x400);
-            }
-        }
-        if (PSVECSquareDistance(myPos, ai + 0x400) > 400.0f) {
-            PSVECSubtract(ai + 0x400, myPos, ai + 0x400);
-            PSVECScale(ai + 0x400, ai + 0x400, 0.5f);
-            PSVECAdd(ai + 0x400, myPos, ai + 0x400);
-        }
+    if (*(u8 **)(ai + 0x3E8) != NULL) {
+        AI_Car_LeadTarget(ai);
     } else if ((i = *(u32 *)(ai + 0x4A4)) < 32 && ((Vector4 **)(ai + 0x420))[i] != NULL) {
-        Vector4 a;
-        Vector4 b;
-        Vector4 *p0;
-        Vector4 *p1;
-        f32 ma;
-        f32 mb;
-
-        p0 = ((Vector4 **)(ai + 0x420))[i];
-        myPos = *(u8 **)(ai + 0x2C) + 0x40;
-        if (i + 1 >= 32 || (p1 = ((Vector4 **)(ai + 0x420))[i + 1]) == NULL) {
-            PSVECSubtract(myPos, p0, ai + 0x400);
-            PSVECScale(ai + 0x400, ai + 0x400, 0.5f);
-            PSVECAdd(ai + 0x400, p0, ai + 0x400);
-        } else {
-            PSVECSubtract(myPos, p0, &a);
-            PSVECSubtract(p1, p0, &b);
-            ma = MagnitudeVector(&a);
-            mb = MagnitudeVector(&b);
-            PSVECScale(&a, &a, mb / ma);
-            PSVECScale(&b, &b, ma / mb);
-            PSVECScale(&a, &a, -1.0f);
-            PSVECAdd(&a, &b, ai + 0x400);
-            PSVECScale(ai + 0x400, ai + 0x400, -(0.5f * ma / MagnitudeVector(ai + 0x400)));
-            PSVECAdd(ai + 0x400, p0, ai + 0x400);
-        }
+        AI_Car_FollowPath(ai, i, ((Vector4 **)(ai + 0x420))[i]);
         speed = *(f32 *)((u8 *)((Vector4 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] + 0x2C);
     } else if (*(u8 **)(ai + 0x3EC) != NULL) {
-        Vector4 lead;
-
-        myPos = *(u8 **)(ai + 0x2C) + 0x40;
-        if (thing == NULL) {
-            thing = *(u8 **)(ai + 0x3EC);
-        }
-        thingPos = thing + 0x40;
-        if (PSVECSquareMag(thing) < 1.0f) {
-            *(Vector4 *)(ai + 0x400) = *(Vector4 *)thingPos;
-        } else {
-            car = *(u8 **)(ai + 0x2C);
-            dist = PSVECSquareDistance(thingPos, myPos);
-            t = Sqrt(dist / PSVECSquareMag(car));
-            PSVECScale(thing, &lead, t);
-            PSVECAdd(&lead, thingPos, &lead);
-            PSVECScale(thing, &lead, t * Sqrt(PSVECSquareDistance(&lead, myPos) / dist));
-            PSVECAdd(&lead, thingPos, ai + 0x400);
-            if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1) {
-                PSVECSubtract(ai + 0x400, myPos, &lead);
-                PSVECScale(thing + 0x10, &lead,
-                           PSVECDotProduct(*(u8 **)(ai + 0x2C) + 0x10, &lead) >= 0.0f ? -15.0f : 15.0f);
-                PSVECAdd(ai + 0x400, &lead, ai + 0x400);
-            }
-        }
-        if (PSVECSquareDistance(myPos, ai + 0x400) > 400.0f) {
-            PSVECSubtract(ai + 0x400, myPos, ai + 0x400);
-            PSVECScale(ai + 0x400, ai + 0x400, 0.5f);
-            PSVECAdd(ai + 0x400, myPos, ai + 0x400);
-        }
+        AI_Car_LeadTarget(ai);
     } else {
         ai[0x13] = 0xFF;
         if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1) {
@@ -2633,7 +2572,7 @@ void AI_Car_SeekPoint_80007C7C(u8 *ai) {
     }
     AI_Car_DriveToTarget(ai, &target, speed);
 }
-
+#pragma pop
 void AI_Car_ClearedNavPoint_800087C8(u8 *car, s8 arg1) {
     s32 NavHolder_GetTotalNavPoints(void);
     u8 *NavHolder_GetNavPoint(s32 index);
