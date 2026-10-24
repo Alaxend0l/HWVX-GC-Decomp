@@ -35526,6 +35526,7 @@ static inline void SETVCDATTR(u32 attr, s32 type) {
     }
 }
 
+#pragma peephole on
 void GXSetVtxDescv(const u32 *list) {
     extern u8 *gx;
 
