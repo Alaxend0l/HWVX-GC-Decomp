@@ -7508,7 +7508,6 @@ void FileStreaming_LoadingThread(void) {
 }
 
 s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded) {
-    extern StreamingDataPack *g_StreamingDataPacks[11];
     extern u32 g_MaxStreamingDataPacks[11];
     extern s8 g_bLoadingThreadRunning;
     extern s8 g_bLoadDataPack;
