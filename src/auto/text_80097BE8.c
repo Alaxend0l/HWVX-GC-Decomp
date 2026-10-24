@@ -375,14 +375,14 @@ extern u8 *__THPHuffmanSizeTab_803C7828;
 extern u16 *__THPHuffmanCodeTab_803C782C;
 
 static inline s32 __THPHuffDecodeTab(THPFileInfo *info, THPHuffmanTab *h) {
-    s32 code;
     s32 cnt;
     u32 cb;
-    s32 tmp;
-    s32 i;
     u8 *increment;
-    u32 *c;
+    s32 code;
+    s32 tmp;
     s32 *maxCode;
+    s32 i;
+    u32 *c;
 
     increment = h->increment;
     cnt = info->cnt;
@@ -14349,6 +14349,7 @@ void __THPHuffDecodeDCTCompU(THPFileInfo *info, s16 *block) {
     extern THPHuffmanTab *Uachuff_803C7800;
     extern u8 __THPJpegNaturalOrder_800CE0D8[];
     u32 *c;
+    u8 *order;
     s32 t;
     s16 diff;
     s32 n;
@@ -14389,6 +14390,7 @@ void __THPHuffDecodeDCTCompU(THPFileInfo *info, s16 *block) {
         }
     }
     __dcbz(block, 96);
+    order = __THPJpegNaturalOrder_800CE0D8;
     block[0] = info->components[1].predDC = info->components[1].predDC + diff;
 
     for (k = 1; k < 64; k++) {
@@ -14416,7 +14418,7 @@ void __THPHuffDecodeDCTCompU(THPFileInfo *info, s16 *block) {
             if (__cntlzw(v) > 32 - s) {
                 v = (-1 << s) + v + 1;
             }
-            block[__THPJpegNaturalOrder_800CE0D8[k]] = v;
+            block[order[k]] = v;
         } else {
             if (r != 15) {
                 break;
