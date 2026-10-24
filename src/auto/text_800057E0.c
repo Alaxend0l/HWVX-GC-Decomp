@@ -9220,7 +9220,19 @@ static inline void Grid_GetCell(Vector4 *pos, s32 *cellX, s32 *cellZ) {
     *cellZ = fz;
 }
 
+static inline void Grid_PushFreeNode(GridNode *node) {
+    node->next = ((GridManager *)gGridManager)->freeNodes;
+    ((GridManager *)gGridManager)->freeNodes = node;
+}
+
+static inline void Grid_PushFreeObject(GridObject *object) {
+    object->next = ((GridManager *)gGridManager)->freeObjects;
+    ((GridManager *)gGridManager)->freeObjects = object;
+    ((GridManager *)gGridManager)->numFreeObjects++;
+}
+
 void Grid_Init(Vector4 *min, Vector4 *max, u32 numX, u32 numZ) {
+    GridManager *gm;
     u16 i;
     u16 j;
 
@@ -9233,21 +9245,23 @@ void Grid_Init(Vector4 *min, Vector4 *max, u32 numX, u32 numZ) {
     ((GridManager *)gGridManager)->cellSizeZ = (max->z - min->z) / (f32)numZ;
     for (i = 0; i < 7; i++) {
         for (j = 0; j < ((GridManager *)gGridManager)->numCells; j++) {
-            ((GridManager *)gGridManager)->cells[i][j].head = NULL;
             ((GridManager *)gGridManager)->cells[i][j].count = 0;
+            ((GridManager *)gGridManager)->cells[i][j].head = NULL;
         }
     }
-    ((GridManager *)gGridManager)->freeNodes = NULL;
+    gm = (GridManager *)gGridManager;
+    gm->freeNodes = NULL;
     for (i = 0; i < 4048; i++) {
-        ((GridManager *)gGridManager)->nodes[i].next = ((GridManager *)gGridManager)->freeNodes;
-        ((GridManager *)gGridManager)->freeNodes = &((GridManager *)gGridManager)->nodes[i];
+        gm->nodes[i].next = gm->freeNodes;
+        gm->freeNodes = &gm->nodes[i];
     }
-    ((GridManager *)gGridManager)->freeObjects = NULL;
-    ((GridManager *)gGridManager)->numFreeObjects = 0;
+    gm = (GridManager *)gGridManager;
+    gm->freeObjects = NULL;
+    gm->numFreeObjects = 0;
     for (i = 0; i < 1024; i++) {
-        ((GridManager *)gGridManager)->objects[i].next = ((GridManager *)gGridManager)->freeObjects;
-        ((GridManager *)gGridManager)->freeObjects = &((GridManager *)gGridManager)->objects[i];
-        ((GridManager *)gGridManager)->numFreeObjects++;
+        gm->objects[i].next = gm->freeObjects;
+        gm->freeObjects = &gm->objects[i];
+        gm->numFreeObjects++;
     }
 }
 
