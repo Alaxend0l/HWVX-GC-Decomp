@@ -19337,11 +19337,20 @@ static inline BOOL GbaSendGameCode(s32 chan) {
     return TRUE;
 }
 
-static inline BOOL GbaReadParams(s32 chan) {
+static inline BOOL GbaHandshake(s32 chan) {
     u32 cmd;
     u32 i;
     u8 *buf;
 
+    if (!GbaReadGameCode(chan)) {
+        return FALSE;
+    }
+    if (Param_803C6A40[chan].unk58 != 0x41483845) {
+        return FALSE;
+    }
+    if (!GbaSendGameCode(chan)) {
+        return FALSE;
+    }
     cmd = 0x60000000;
     if (GBAWrite(chan, (u8 *)&cmd, &Param_803C6A40[chan].status) != 0 || (Param_803C6A40[chan].status & 0x30) != 0x30) {
         return FALSE;
@@ -19357,35 +19366,18 @@ static inline BOOL GbaReadParams(s32 chan) {
     return TRUE;
 }
 
-static inline BOOL GbaHandshake(s32 chan) {
-    if (!GbaReadGameCode(chan)) {
-        return FALSE;
-    }
-    if (Param_803C6A40[chan].unk58 != 0x41483845) {
-        return FALSE;
-    }
-    if (!GbaSendGameCode(chan)) {
-        return FALSE;
-    }
-    return GbaReadParams(chan);
-}
-
 void GbaCheckJBResult__Fl(s32 chan) {
     s32 GBAReset(s32 chan, u8 *status);
     s32 GBAJoyBootAsync(s32 chan, s32 paletteColor, s32 paletteSpeed, u8 *programp, s32 length, u8 *status, void (*callback)(s32, s32));
     u32 OSGetTick(void);
     extern s32 HostId_803C79A4;
-    JoyBusParam *p;
-    u8 *status;
     u32 buf;
 
-    p = &Param_803C6A40[chan];
-    if (p->result == 0) {
-        status = &p->status;
-        if (GBAReset(chan, status) != 0) {
+    if (Param_803C6A40[chan].result == 0) {
+        if (GBAReset(chan, &Param_803C6A40[chan].status) != 0) {
             return;
         }
-        memset(&p->send, 0, 0x20);
+        memset(&Param_803C6A40[chan].send, 0, 0x20);
         Param_803C6A40[chan].send.unk0 = 1;
         Param_803C6A40[chan].send.chan = chan;
         Param_803C6A40[chan].send.unk3 = 1;
@@ -19396,11 +19388,10 @@ void GbaCheckJBResult__Fl(s32 chan) {
         }
         return;
     }
-    if (p->result == 3) {
-        status = &p->status;
-        if ((*status & 0xA) == 0xA) {
-            if ((*status & 0x30) != 0x10) {
-                GBARead(chan, (u8 *)&buf, status);
+    if (Param_803C6A40[chan].result == 3) {
+        if ((Param_803C6A40[chan].status & 0xA) == 0xA) {
+            if ((Param_803C6A40[chan].status & 0x30) != 0x10) {
+                GBARead(chan, (u8 *)&buf, &Param_803C6A40[chan].status);
             }
         } else if (GbaHandshake(chan)) {
             GbaOpen__Fl(chan);
