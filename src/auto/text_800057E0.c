@@ -12392,6 +12392,111 @@ s8 ParticleManager_CanCreatureParticle(void *creature) {
     return 0;
 }
 
+void CreateParticleSprite(Vector4 *pos, Vector4 *vel, Vector4 *accel, void *owner, u8 *info, f32 speed, f32 age) {
+    s32 RandomAdd_s32(s32 base, s32 range);
+    f32 RandomAdd(f32 base, f32 range);
+    f32 RandomDirVar(f32 base, f32 range);
+    void ExtractColorKey(void *keys, void *out, f32 time);
+    void ExtractF32Key(void *keys, void *out, f32 time);
+    typedef struct {
+        u8 r;
+        u8 g;
+        u8 b;
+        u8 a;
+    } Colour;
+    typedef struct {
+        Vector4 pos;
+        Vector4 vel;
+        Vector4 accel;
+        u8 colour[0x2C];
+        u8 colourActive;
+        u8 unk5D[0x3];
+        u8 size[0x10];
+        u8 sizeActive;
+        u8 unk71[0xF];
+        f32 rot;
+        f32 rotSpeed;
+        s32 life;
+        f32 unk8C;
+        u8 *info;
+        u8 flags;
+        u8 type;
+        u8 visible;
+        u8 frame;
+        f32 speed;
+        f32 rate;
+        s32 frameTimer;
+        u8 unkA4[0xC];
+    } ParticleSprite;
+    typedef struct {
+        ParticleSprite sprites[0x200];
+        u32 next;
+    } SpriteList;
+    typedef struct {
+        u8 unk0[0x78030];
+        SpriteList spriteList;
+        u8 unk8E034[0xC];
+    } ParticleManager;
+    extern ParticleManager g_particleManager;
+    SpriteList *list;
+    ParticleSprite *sprite;
+    u8 *anim;
+    s32 life;
+    f32 lifeF;
+    u32 time;
+    u32 idx;
+    Colour c;
+    f32 rate;
+
+    life = RandomAdd_s32(*(s32 *)(info + 0x8), *(s32 *)(info + 0xC));
+    lifeF = life;
+    time = age * lifeF;
+    anim = *(u8 **)(info + 0x4);
+    if (anim != NULL) {
+        list = &g_particleManager.spriteList;
+        idx = list->next++;
+        if (idx + 1 >= 0x200) {
+            list->next = 0;
+        }
+        sprite = &list->sprites[idx];
+        sprite->pos = *pos;
+        sprite->vel = *vel;
+        sprite->accel = *accel;
+        sprite->info = info;
+        sprite->flags &= ~0xC;
+        if (anim[1] != 0) {
+            sprite->frame = 0;
+            sprite->frameTimer = *(s32 *)(anim + 0x1C);
+        } else {
+            sprite->frame = RandomAdd_s32(0, *(s32 *)(anim + 0x20));
+        }
+        sprite->life = life;
+        sprite->speed = speed;
+        rate = 1.0f;
+        sprite->rate = rate;
+        if (*(s32 *)(info + 0xC) != 0 && *(s32 *)(info + 0x8) != 0) {
+            sprite->rate = rate / (lifeF / *(s32 *)(info + 0x8));
+        }
+        sprite->type = anim[0];
+        sprite->sizeActive = 1;
+        sprite->colourActive = 1;
+        ExtractColorKey(sprite->info + 0x14, sprite->colour, time);
+        sprite->unk8C = RandomAdd(*(f32 *)(anim + 0x14), *(f32 *)(anim + 0x18));
+        ExtractF32Key(anim + 0x28, sprite->size, time);
+        sprite->rot = RandomDirVar(*(f32 *)(anim + 0x4), *(f32 *)(anim + 0x8));
+        sprite->rotSpeed = RandomAdd(*(f32 *)(anim + 0xC), *(f32 *)(anim + 0x10));
+        sprite->visible = 1;
+        if (*(u32 *)(sprite->info + 0x14) == 0) {
+            sprite->visible = 0;
+        } else if (*(u32 *)(sprite->info + 0x14) == 1) {
+            c = **(Colour **)(sprite->info + 0x18);
+            if (c.r == 0xFF && c.b == 0xFF && c.g == 0xFF) {
+                sprite->visible = 0;
+            }
+        }
+    }
+}
+
 void ParticleManager_Heartbeat(void) {
     extern s8 g_bFreezeWorld;
     extern f32 g_fDeltaTimeMS;
