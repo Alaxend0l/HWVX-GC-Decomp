@@ -2370,6 +2370,7 @@ s8 AI_Car_EnterState(u8 *ai, u8 *branch, u8 slot) {
     }
     return branch != NULL;
 }
+#pragma pop
 
 s32 AI_Car_DetermineState(u8 *car) {
     typedef struct { u8 *info; u32 timer0; u32 timer1; u32 timer2; u8 pad10[8]; } AIBranch;
