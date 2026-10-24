@@ -19294,6 +19294,76 @@ void JBCallback__Fll(s32 chan, s32 result) {
 
 #pragma push
 #pragma readonly_strings on
+static inline BOOL GbaReadGameCode(s32 chan) {
+    u32 code;
+
+    if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0 || Param_803C6A40[chan].status != 0x28) {
+        return FALSE;
+    }
+    if (GBARead(chan, (u8 *)&code, &Param_803C6A40[chan].status) != 0) {
+        return FALSE;
+    }
+    if (code == 0x41483845) {
+        Param_803C6A40[chan].unk58 = code;
+        return TRUE;
+    }
+    Param_803C6A40[chan].unk58 = 0;
+    return FALSE;
+}
+
+static inline BOOL GbaSendGameCode(s32 chan) {
+    void GameSettings_GameBoyConnected(void);
+    extern s32 gLinkFinished;
+
+    if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0 || Param_803C6A40[chan].status != 0x20) {
+        return FALSE;
+    }
+    if (GBAWrite(chan, (u8 *)"GHWE", &Param_803C6A40[chan].status) != 0) {
+        return FALSE;
+    }
+    if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0 || Param_803C6A40[chan].status != 0x30) {
+        return FALSE;
+    }
+    if (Param_803C6A40[chan].status == 0x30) {
+        gLinkFinished = 1;
+        GameSettings_GameBoyConnected();
+    }
+    return TRUE;
+}
+
+static inline BOOL GbaReadParams(s32 chan) {
+    u32 cmd;
+    u32 i;
+    u8 *buf;
+
+    cmd = 0x60000000;
+    if (GBAWrite(chan, (u8 *)&cmd, &Param_803C6A40[chan].status) != 0 || (Param_803C6A40[chan].status & 0x30) != 0x30) {
+        return FALSE;
+    }
+    for (i = 0, buf = (u8 *)&Param_803C6A40[chan].recv; i < 0x20; i += 4, buf += 4) {
+        if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0 || Param_803C6A40[chan].status != 0x38) {
+            return FALSE;
+        }
+        if (GBARead(chan, buf, &Param_803C6A40[chan].status) != 0 || (Param_803C6A40[chan].status & 0x30) != 0x30) {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+static inline BOOL GbaHandshake(s32 chan) {
+    if (!GbaReadGameCode(chan)) {
+        return FALSE;
+    }
+    if (Param_803C6A40[chan].unk58 != 0x41483845) {
+        return FALSE;
+    }
+    if (!GbaSendGameCode(chan)) {
+        return FALSE;
+    }
+    return GbaReadParams(chan);
+}
+
 void GbaCheckJBResult__Fl(s32 chan) {
     s32 GBAReset(s32 chan, u8 *status);
     s32 GBAJoyBootAsync(s32 chan, s32 paletteColor, s32 paletteSpeed, u8 *programp, s32 length, u8 *status, void (*callback)(s32, s32));
