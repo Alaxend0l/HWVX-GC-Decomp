@@ -5213,9 +5213,8 @@ static void CarA_ApplyWheelLoads(void *thing) {
     u32 i;
     s32 bone;
 
-    susp = car;
-    for (i = 0; i < *(u32 *)(*(u8 **)(car + 0x3BC) + 0xD0); i++, susp += 0x30) {
-        wheel = &(*(WheelInfo **)(*(u8 **)(car + 0x3BC) + 0xD4))[i];
+    for (i = 0, susp = car; i < *(u32 *)(*(u8 **)(car + 0x3BC) + 0xD0); i++, susp += 0x30) {
+        wheel = *(WheelInfo **)(*(u8 **)(car + 0x3BC) + 0xD4) + i;
         if (wheel->parent != 0) {
             bone = wheel->index - wheel->parent;
             up = (Vector4 *)(*(u8 **)(car + 0x340) + bone * 0x40 + 0x10);
