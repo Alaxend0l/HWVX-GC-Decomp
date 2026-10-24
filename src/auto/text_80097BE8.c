@@ -1048,9 +1048,17 @@ typedef struct GDLAlphaEntry {
 } GDLAlphaEntry;
 
 typedef struct GDLSprite {
-    u8 unk0[0x20];
+    Vector pos;
+    u8 unk10[0x1C - 0x10];
+    f32 rot;
     u32 next;
-    u8 unk24[0x30 - 0x24];
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
+    u8 unk28[2];
+    u8 blendMode;
+    u8 unk2B[0x30 - 0x2B];
 } GDLSprite;
 
 typedef struct GDLRectVtx {
