@@ -479,7 +479,8 @@ static inline s32 __THPHuffDecodeTab(THPFileInfo *info, THPHuffmanTab *h) {
     i = 5;
     do {
         code = cb >> (31 - i);
-    } while (code > h->maxCode[++i]);
+        i++;
+    } while (code > h->maxCode[i]);
     info->cnt = i + 1;
     return (h->Vij + h->valPtr[i])[code];
 }
