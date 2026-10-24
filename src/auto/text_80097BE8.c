@@ -5900,8 +5900,23 @@ static inline s32 AnimTrack_FindKey(AnimTrack *track, f32 time) {
     }
 }
 
-static inline f32 AnimTrack_Cubic(f32 *c, f32 time) {
-    return time * (time * (time * c[0] + c[1]) + c[2]) + c[3];
+static inline AnimTrack *AnimTrack_Eval3(AnimTrack *track, f32 time, f32 *out) {
+    s32 key = AnimTrack_FindKey(track, time);
+
+    out[0] = time * (time * (time * track->coeffs[key][0][0] + track->coeffs[key][0][1]) + track->coeffs[key][0][2]) + track->coeffs[key][0][3];
+    out[1] = time * (time * (time * track->coeffs[key][1][0] + track->coeffs[key][1][1]) + track->coeffs[key][1][2]) + track->coeffs[key][1][3];
+    out[2] = time * (time * (time * track->coeffs[key][2][0] + track->coeffs[key][2][1]) + track->coeffs[key][2][2]) + track->coeffs[key][2][3];
+    return track->next;
+}
+
+static inline AnimTrack *AnimTrack_Eval4(AnimTrack *track, f32 time, f32 *out) {
+    s32 key = AnimTrack_FindKey(track, time);
+
+    out[0] = time * (time * (time * track->coeffs[key][0][0] + track->coeffs[key][0][1]) + track->coeffs[key][0][2]) + track->coeffs[key][0][3];
+    out[1] = time * (time * (time * track->coeffs[key][1][0] + track->coeffs[key][1][1]) + track->coeffs[key][1][2]) + track->coeffs[key][1][3];
+    out[2] = time * (time * (time * track->coeffs[key][2][0] + track->coeffs[key][2][1]) + track->coeffs[key][2][2]) + track->coeffs[key][2][3];
+    out[3] = time * (time * (time * track->coeffs[key][3][0] + track->coeffs[key][3][1]) + track->coeffs[key][3][2]) + track->coeffs[key][3][3];
+    return track->next;
 }
 
 void AnimExtractKeyFrame_Hybrid(void *animp, void *outp, f32 time) {
