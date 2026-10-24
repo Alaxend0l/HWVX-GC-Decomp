@@ -1430,7 +1430,7 @@ typedef struct GDL {
     u32 num3DLines;
     u8 unk28[0x2C - 0x28];
     u32 numSpheres;
-    u8 unk30[0x34 - 0x30];
+    u32 numBoxes;
     u32 numLines;
     s32 unk38;
     s32 unk3C;
