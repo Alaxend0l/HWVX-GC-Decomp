@@ -1370,6 +1370,18 @@ typedef struct GDLSphere {
     u8 unk18[0x20 - 0x18];
 } GDLSphere;
 
+typedef struct GDLBox {
+    u8 unk0[0x10];
+    Vector min;
+    Vector max;
+    u8 unk30[0x40 - 0x30];
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
+    u8 unk44[0x50 - 0x44];
+} GDLBox;
+
 typedef struct GDLPointSprite {
     f32 x;
     f32 y;
