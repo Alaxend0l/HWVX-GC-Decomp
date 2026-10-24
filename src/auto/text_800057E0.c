@@ -7511,6 +7511,117 @@ void FileStreaming_InitializeAllQuads(void) {
     }
 }
 
+void FileStreaming_HeartBeatItems(void) {
+    typedef struct ItemInfo {
+        u8 pad0[0x10];
+        f32 height;
+        u8 pad14[0x28 - 0x14];
+        u32 effect;
+    } ItemInfo;
+    typedef struct Item {
+        Vector4 pos;
+        u8 pad10[0x4];
+        s32 respawn;
+        s32 timer;
+        ItemInfo *info;
+        f32 value;
+        u8 *thing;
+        u32 type;
+        u8 pad2C[0x34 - 0x2C];
+        u8 hasValue;
+        u8 subtype;
+        u8 pad36[0x38 - 0x36];
+        s8 spawned;
+        u8 pad39[0x40 - 0x39];
+    } Item;
+    typedef struct ItemList {
+        u8 pad0[0x14];
+        u32 count;
+        Item *items;
+    } ItemList;
+    typedef struct ItemParams {
+        Vector4 quat;
+        Vector4 pos;
+        f32 unk30;
+        f32 unk34;
+        f32 unk38;
+        u32 unk3C;
+        ItemInfo *info;
+        f32 value;
+        u8 subtype;
+    } ItemParams;
+    extern u8 *g_LoadedQuadrants[];
+    extern s32 g_itemTimer;
+    extern s32 g_iDeltaTimeMS;
+    extern s32 g_numQuadPacksInMemory;
+    extern u8 *g_pWorldQuadrant;
+    extern Vector4 g_zeroVector;
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    u32 GameSettings_GetCodeVariable(s32 id, s32 arg);
+    struct { Vector4 a; Vector4 b; Vector4 c; Vector4 zero; u32 id; s32 player; f32 f0; f32 f1; } p;
+    ItemParams params;
+    u32 i;
+    u32 j;
+    Item *item;
+    u8 *thing;
+
+    g_LoadedQuadrants[g_numQuadPacksInMemory] = g_pWorldQuadrant;
+    g_itemTimer += g_iDeltaTimeMS;
+    if (g_itemTimer > 1500) {
+        g_itemTimer -= 1500;
+        for (i = 0; i < g_numQuadPacksInMemory + 1; i++) {
+            for (j = 0; j < (*(ItemList **)(g_LoadedQuadrants[i] + 0x30))->count; j++) {
+                item = &(*(ItemList **)(g_LoadedQuadrants[i] + 0x30))->items[j];
+                if ((item->timer != 0 || !item->spawned) && item->info != NULL && item->thing == NULL && item->type == 1) {
+                    item->timer -= 1500;
+                    if (item->timer <= 0) {
+                        item->timer = 0;
+                        params.pos = item->pos;
+                        params.pos.y += item->info->height;
+                        params.unk30 = 0.0f;
+                        params.unk34 = 0.0f;
+                        params.unk38 = 0.0f;
+                        params.info = item->info;
+                        params.quat.w = 1.0f;
+                        params.quat.x = 0.0f;
+                        params.quat.y = 0.0f;
+                        params.quat.z = 0.0f;
+                        params.value = item->hasValue ? item->value : 0.0f;
+                        params.subtype = item->subtype;
+                        thing = ThingManager_DARYL_CreateThing(4, &params);
+                        if (thing != NULL) {
+                            item->spawned = 1;
+                            if (GameSettings_GetCodeVariable(0x12D, 0) != 0 && GameSettings_GetCodeVariable(0x136, 0) == 0) {
+                                item->respawn = 0;
+                            }
+                            item->thing = thing;
+                            *(Item **)(thing + 0xD0) = item;
+                            *(Item **)(thing + 0x90) = item;
+                            *(u32 *)(thing + 0x74) |= 1;
+                            if (item->respawn != 0) {
+                                *(Item **)(thing + 0xD0) = item;
+                            }
+                            if (item->info->effect != 0) {
+                                p.id = item->info->effect;
+                                p.a = item->pos;
+                                p.b = params.quat;
+                                p.c.z = 0.0f;
+                                p.c.y = 0.0f;
+                                p.c.x = 0.0f;
+                                p.player = 0;
+                                p.f0 = 0.0f;
+                                p.f1 = 0.0f;
+                                p.zero = g_zeroVector;
+                                ThingManager_DARYL_CreateThing(1, &p);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void FileStreaming_LoadQuadPacks(void **quads, u32 count, s8 threaded) {
@@ -20449,6 +20560,16 @@ void OSClearContext(register void *context) {
     M2C_FIELD(context, u16 *, 0x1A2) = 0;
     if (context == *(void **)0x800000D8) {
         *(void **)0x800000D8 = NULL;
+    }
+}
+
+void OSDumpContext(u8 *context) {
+    void OSReport(const char *fmt, ...);
+    u32 i;
+
+    OSReport("------------------------- Context 0x%08x -------------------------\n", context);
+    for (i = 0; i < 16; i++) {
+        OSReport("r%-2d  = 0x%08x (%14d)  r%-2d  = 0x%08x (%14d)\n", i, ((u32 *)context)[i], ((u32 *)context)[i], i + 16, ((u32 *)context)[i + 16], ((u32 *)context)[i + 16]);
     }
 }
 
