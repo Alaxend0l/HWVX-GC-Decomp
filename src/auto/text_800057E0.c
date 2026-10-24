@@ -2749,7 +2749,6 @@ s8 AI_Car_IsTargetValid_800094EC(u8 *ai, u8 *target, f32 maxDist, f32 minDist, f
         TargetEntry entries[16];
     } AIData;
     s16 i;
-    s8 ok;
     s8 valid;
     TargetLimits *limits;
     u8 *pos;
@@ -2782,16 +2781,8 @@ s8 AI_Car_IsTargetValid_800094EC(u8 *ai, u8 *target, f32 maxDist, f32 minDist, f
         }
     } else if ((u8)(type - 1) <= 1 || type == 3) {
         valid = 1;
-        if (!(*(u32 *)(*(u8 **)(target + 0x10) + 0x74) & 0x1000)) {
-            ok = 1;
-            if (ai == NULL) {
-                ok = 0;
-            } else if (def->subtype == 2) {
-                ok = 0;
-            }
-            if (!ok) {
-                return 0;
-            }
+        if ((*(u32 *)(*(u8 **)(target + 0x10) + 0x74) & 0x1000) || !AI_Car_CanTarget(ai, (u8 *)def)) {
+            return 0;
         }
         if (def->subtype == 3) {
             limits = def->limits;
