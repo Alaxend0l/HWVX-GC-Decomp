@@ -4100,6 +4100,54 @@ s32 AttachThing_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     return 0;
 }
 
+typedef struct GDLRectVtx {
+    f32 x;
+    f32 y;
+    f32 z;
+    u8 unkC[0x10 - 0xC];
+    f32 s;
+    f32 t;
+    GXColor color;
+    u8 unk1C[0x20 - 0x1C];
+} GDLRectVtx;
+
+typedef struct GDLRect {
+    GDLRectVtx v[4];
+    u16 tex;
+    u8 blendMode;
+    u8 window;
+} GDLRect;
+
+GDLRect *Gfx_Add2DRectangleRenderWindow(void);
+
+static inline void Gfx_Draw2DRect(f32 x0, f32 y0, f32 x1, f32 y1, f32 z, GXColor color) {
+    GDLRect *rect = Gfx_Add2DRectangleRenderWindow();
+
+    rect->v[0].x = x0;
+    rect->v[0].y = y0;
+    rect->v[0].z = z;
+    rect->v[1].x = x1;
+    rect->v[1].y = y0;
+    rect->v[1].z = z;
+    rect->v[3].x = x0;
+    rect->v[3].y = y1;
+    rect->v[3].z = z;
+    rect->v[2].x = x1;
+    rect->v[2].y = y1;
+    rect->v[2].z = z;
+    rect->v[0].t = 0.0f;
+    rect->v[0].s = 0.0f;
+    rect->v[3].t = 1.0f;
+    rect->v[1].s = 1.0f;
+    rect->v[2].t = 1.0f;
+    rect->v[2].s = 1.0f;
+    rect->v[1].t = 0.0f;
+    rect->v[3].s = 0.0f;
+    rect->v[0].color = rect->v[1].color = rect->v[2].color = rect->v[3].color = color;
+    rect->blendMode = 0;
+    rect->tex = 0xFFFF;
+}
+
 s32 RadarBlip_Init(u8 *blip, u8 *init) {
     typedef struct { f32 x, y, z, w; } Vec4;
     Thing_Init(blip, 0);
@@ -12594,8 +12642,8 @@ void Grid_MoveObject(GridObject *obj, Vector4 *min, Vector4 *max) {
             prev = NULL;
             for (x = obj->x0; x <= obj->x1; x++) {
                 for (z = obj->z0; z <= obj->z1; z++) {
-                    newNode = NULL;
                     node = ((GridManager *)gGridManager)->freeNodes;
+                    newNode = NULL;
                     if (node != NULL) {
                         ((GridManager *)gGridManager)->freeNodes = node->next;
                         newNode = node;
