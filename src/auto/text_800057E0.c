@@ -20644,11 +20644,10 @@ typedef struct GRWorld {
 } GRWorld;
 
 static inline void GameRules_ResetZone(GRZone *zone) {
-    u32 j = 0;
+    u32 j;
 
-    while (j < zone->sub->numA) {
+    for (j = 0; j < zone->sub->numA; j++) {
         zone->sub->a[j].unk39 = zone->sub->a[j].unk34;
-        j++;
     }
     for (j = 0; j < zone->sub->numC; j++) {
         zone->sub->c[j].unk39 = zone->sub->c[j].unk28;
