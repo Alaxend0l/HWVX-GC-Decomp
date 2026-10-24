@@ -20587,6 +20587,197 @@ void CarA_SlaveWeaponStop(void *car, s32 weapon) {
     ThingManagerList_RemoveReleasedThings((u8 *)car + 0x344);
 }
 
+typedef struct GRTrigger {
+    u8 unk0;
+    u8 unk1;
+    u8 type;
+    u8 unk3;
+    s32 unk4;
+    f32 time;
+} GRTrigger;
+
+typedef struct GRElem {
+    u8 unk0[0x28];
+    u32 unk28;
+    u32 unk2C;
+    u32 unk30;
+    u32 unk34;
+    u8 unk38;
+    u8 unk39;
+    u8 unk3A[6];
+} GRElem;
+
+typedef struct GRElemB {
+    u8 unk0[0x30];
+    u32 unk30;
+    u8 unk34[2];
+    u8 unk36;
+    u8 unk37[9];
+} GRElemB;
+
+typedef struct GRSub {
+    u32 unk0;
+    u32 numB;
+    GRElemB *b;
+    u32 numA;
+    GRElem *a;
+    u32 numC;
+    GRElem *c;
+} GRSub;
+
+typedef struct GRZone {
+    u8 unk0[0x30];
+    GRSub *sub;
+    u8 unk34[0x1C];
+} GRZone;
+
+typedef struct GRWorld {
+    u8 unk0[0x20];
+    u32 numZones;
+    GRZone *zones;
+    u8 unk28[0x28];
+    u32 numTriggers;
+    GRTrigger **triggers;
+} GRWorld;
+
+static inline void GameRules_ResetZone(GRZone *zone) {
+    u32 j;
+
+    for (j = 0; j < zone->sub->numA; j++) {
+        zone->sub->a[j].unk39 = zone->sub->a[j].unk34;
+    }
+    for (j = 0; j < zone->sub->numC; j++) {
+        zone->sub->c[j].unk39 = zone->sub->c[j].unk28;
+        zone->sub->c[j].unk38 = 0;
+    }
+    for (j = 0; j < zone->sub->numB; j++) {
+        zone->sub->b[j].unk36 = zone->sub->b[j].unk30;
+    }
+}
+
+void GameRules_Init(void) {
+    typedef struct GRTrigger {
+        u8 unk0;
+        u8 unk1;
+        u8 type;
+        u8 unk3;
+        s32 unk4;
+        f32 time;
+    } GRTrigger;
+    typedef struct GRElem {
+        u8 unk0[0x28];
+        u32 unk28;
+        u32 unk2C;
+        u32 unk30;
+        u32 unk34;
+        u8 unk38;
+        u8 unk39;
+        u8 unk3A[6];
+    } GRElem;
+    typedef struct GRElemB {
+        u8 unk0[0x30];
+        u32 unk30;
+        u8 unk34[2];
+        u8 unk36;
+        u8 unk37[9];
+    } GRElemB;
+    typedef struct GRSub {
+        u32 unk0;
+        u32 numB;
+        GRElemB *b;
+        u32 numA;
+        GRElem *a;
+        u32 numC;
+        GRElem *c;
+    } GRSub;
+    typedef struct GRZone {
+        u8 unk0[0x30];
+        GRSub *sub;
+        u8 unk34[0x1C];
+    } GRZone;
+    typedef struct GRWorld {
+        u8 unk0[0x20];
+        u32 numZones;
+        GRZone *zones;
+        u8 unk28[0x28];
+        u32 numTriggers;
+        GRTrigger **triggers;
+    } GRWorld;
+    extern s8 g_bRoundEnd_803C71CC;
+    extern u32 g_playerNumThatWon_803C71C8;
+    extern s8 g_bWaitingForRoundReset;
+    extern s8 g_bInit_803C71C4;
+    extern s32 g_savedActions_802E12E0[];
+    extern GRTrigger **g_pTimer_803C71C0;
+    void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void Trigger_SaveActions(s32 *saved, u32 count);
+    u8 *GameSettings_GetMCP(void);
+    u32 i;
+    u8 *mcp;
+    GRTrigger *trig;
+    GRTrigger **slot;
+
+    g_bRoundEnd_803C71CC = 0;
+    g_playerNumThatWon_803C71C8 = 1;
+    g_bWaitingForRoundReset = 0;
+    g_bInit_803C71C4 = 1;
+    GameSettings_SetCodeVariable(0x197, 0, 0);
+    GameSettings_SetCodeVariable(0x190, 0, 1);
+    for (i = 1; i < 5; i++) {
+        GameSettings_SetCodeVariable(0x191, i, 0);
+        GameSettings_SetCodeVariable(0x194, i, 0);
+    }
+    Trigger_SaveActions(g_savedActions_802E12E0, 100);
+    GameSettings_SetCodeVariable(0x190, 0, 1);
+    g_pTimer_803C71C0 = NULL;
+    switch (GameSettings_GetCodeVariable(0x12D, 0)) {
+    case 1:
+    case 2:
+        for (i = 0; i < ((GRWorld *)g_worldData.world)->numTriggers; i++) {
+            slot = &((GRWorld *)g_worldData.world)->triggers[i];
+            if ((*slot)->type == 0xC) {
+                g_pTimer_803C71C0 = slot;
+                (*g_pTimer_803C71C0)->time = GameSettings_GetCodeVariable(0x12E, 0);
+                if ((*g_pTimer_803C71C0)->time == 0.0f) {
+                    g_pTimer_803C71C0 = NULL;
+                }
+                break;
+            }
+        }
+        break;
+    case 3:
+        mcp = GameSettings_GetMCP();
+        if (mcp != NULL && GameSettings_GetCodeVariable(0x198, 0) != 0) {
+            for (i = 0; i < ((GRWorld *)g_worldData.world)->numTriggers; i++) {
+                trig = ((GRWorld *)g_worldData.world)->triggers[i];
+                if (trig->type == 0xC) {
+                    if (trig->time == 0.0f) {
+                        trig->time = (*(u32 **)(mcp + 0x24))[1];
+                    }
+                    break;
+                }
+            }
+        }
+        break;
+    }
+    for (i = 0; i < ((GRWorld *)g_worldData.world)->numZones; i++) {
+        GRZone *zone = &((GRWorld *)g_worldData.world)->zones[i];
+        u32 j;
+
+        for (j = 0; j < zone->sub->numA; j++) {
+            zone->sub->a[j].unk39 = zone->sub->a[j].unk34;
+        }
+        for (j = 0; j < zone->sub->numC; j++) {
+            zone->sub->c[j].unk39 = zone->sub->c[j].unk28;
+            zone->sub->c[j].unk38 = 0;
+        }
+        for (j = 0; j < zone->sub->numB; j++) {
+            zone->sub->b[j].unk36 = zone->sub->b[j].unk30;
+        }
+    }
+}
+
 #pragma pop
 
 void GameRules_ForceRoundEnd(u32 arg0) {
