@@ -8399,6 +8399,7 @@ s32 Gfx_GetRenderWindowIndex(void) {
     return g_currentWindow;
 }
 
+#pragma auto_inline off
 void *GetRenderWindow() {
     extern s32 g_currentWindow;
     extern u8 g_window[][0x2D0];
