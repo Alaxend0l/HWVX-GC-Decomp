@@ -9642,6 +9642,7 @@ void Gfx_GetViewport(s32 *arg0, s32 *arg1, s32 *arg2, s32 *arg3) {
     *arg3 = 0x1E0;
 }
 
+#pragma use_lmw_stmw on
 void Render_DrawShadows(void) {
     typedef struct ShadowGroup {
         u16 unk0;
