@@ -2588,34 +2588,19 @@ static inline void AI_Car_SteerAlongPath(u8 *ai, u32 i) {
 
 #pragma push
 #pragma use_lmw_stmw on
-static inline s32 AI_Car_UpdateSeekTarget(u8 *ai, f32 *speed) {
-    u32 i;
-
-    if (*(u8 **)(ai + 0x3E8) != NULL) {
-        AI_Car_LeadTarget(ai);
-    } else if ((i = *(u32 *)(ai + 0x4A4)) < 32 && ((Vector4 **)(ai + 0x420))[i] != NULL) {
-        AI_Car_SteerAlongPath(ai, i);
-        *speed = *(f32 *)((u8 *)((Vector4 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] + 0x2C);
-    } else if (*(u8 **)(ai + 0x3EC) != NULL) {
-        AI_Car_LeadTarget(ai);
-    } else {
-        return 0;
-    }
-    return 1;
-}
-
 #pragma push
 #pragma use_lmw_stmw on
 void AI_Car_SeekPoint_80007C7C(u8 *ai) {
     void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed);
     Vector4 target;
     f32 speed;
+    u32 i;
 
     speed = 0.0f;
     if (*(u8 **)(ai + 0x3E8) != NULL) {
         AI_Car_LeadTarget(ai);
-    } else if (*(u32 *)(ai + 0x4A4) < 32 && ((Vector4 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] != NULL) {
-        AI_Car_SteerAlongPath(ai, *(u32 *)(ai + 0x4A4));
+    } else if ((i = *(u32 *)(ai + 0x4A4)) < 32 && ((Vector4 **)(ai + 0x420))[i] != NULL) {
+        AI_Car_FollowPath(ai, i, ((Vector4 **)(ai + 0x420))[i]);
         speed = *(f32 *)((u8 *)((Vector4 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] + 0x2C);
     } else if (*(u8 **)(ai + 0x3EC) != NULL) {
         AI_Car_LeadTarget(ai);
