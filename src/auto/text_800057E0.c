@@ -15534,6 +15534,13 @@ void TitleScreen_RunDemoLoop(void) {
     StateProgressionManager_SetProgressionID(0, index);
 }
 
+#pragma push
+#pragma readonly_strings on
+s32 StateTitleScreen_Init(s32 prevState) {
+    return 0;
+}
+#pragma pop
+
 #pragma pop
 
 #pragma pop
