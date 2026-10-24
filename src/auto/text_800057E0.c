@@ -7498,11 +7498,6 @@ void FileStreaming_LoadingThread(void) {
     EndThread();
 }
 
-static inline u8 *FileStreaming_GetDataPack(s32 type, u32 index) {
-    extern u8 *g_StreamingDataPacks[11];
-    return g_StreamingDataPacks[type] + index * 0xA8;
-}
-
 s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded) {
     typedef struct DataPack {
         s8 used;
