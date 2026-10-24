@@ -2161,6 +2161,7 @@ void AI_AsyncHeartbeat(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0xC8) = 0x1F4;
 }
 
+#pragma use_lmw_stmw on
 void AI_Car_AsyncProcess(void) {
     typedef struct AIScripts {
         u8 pad0[0x90];
