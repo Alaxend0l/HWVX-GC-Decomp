@@ -8843,6 +8843,117 @@ done:
 
 #pragma push
 #pragma readonly_strings on
+char *GameSettings_GetActiveMemoryCardFileName(s8 bNoDefault, s32 index, char *defaultName) {
+    typedef struct SaveSlot {
+        u8 valid;
+        char name[11];
+        s32 year;
+        s32 month;
+        s32 day;
+        u32 hour;
+        s32 minute;
+    } SaveSlot;
+    typedef struct SaveData {
+        u8 header[0x5C];
+        SaveSlot slots[8];
+    } SaveData;
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    u32 FileManager_GetChecksum(u32 size, void *data);
+    void *memset(void *, s32, u32);
+    char *strcpy(char *dst, const char *src);
+    int sprintf(char *buf, const char *fmt, ...);
+    s32 GameSettings_GetMemoryCardStatus(s32 device, s32 arg1);
+    extern u8 *g_pSavedGameData;
+    extern s8 g_bRefreshMC_FileList_803C6F79;
+    extern char g_fileNames_80110B2C[8][41];
+    extern struct {
+        u8 unk0[0xC];
+        char *fileName;
+        u8 unk10[0x4];
+        u32 version;
+        u32 size;
+    } g_gameInfo[];
+    static s32 cachedStatus = -1;
+    static char *cachedMemorySlot = (char *)-1;
+    char *slot;
+    s32 status;
+    s32 handle;
+    s8 ok;
+    u8 *data;
+    u32 version;
+    u32 size;
+    const char *name;
+    u8 *mcp;
+    SaveData *save;
+    u32 i;
+    u32 hour;
+    u32 hour12;
+
+    slot = g_codeVariables.device - 1;
+    status = GameSettings_GetMemoryCardStatus((s32)g_codeVariables.device, 0);
+    if (cachedMemorySlot != slot || status != cachedStatus || g_bRefreshMC_FileList_803C6F79) {
+        cachedMemorySlot = slot;
+        cachedStatus = status;
+        g_bRefreshMC_FileList_803C6F79 = 0;
+        memset(g_bValidFileName_803C6CA4, 0, 8);
+        if (status == 1) {
+            mcp = GameSettings_GetMCP();
+            if (mcp != NULL) {
+                name = g_gameInfo[mcp[1]].fileName;
+                version = g_gameInfo[mcp[1]].version;
+                size = g_gameInfo[mcp[1]].size;
+            } else {
+                version = 0;
+                size = version;
+                name = "saveFile";
+            }
+            data = g_pSavedGameData;
+            ok = 0;
+            handle = File_Open(slot + 0xB, name, 0, NULL);
+            if (handle != -1) {
+                File_Read(handle, size * 8 + 0x15C, data);
+                if (((u32 *)data)[0] == 4 && ((u32 *)data)[1] == version &&
+                    ((u32 *)data)[2] == FileManager_GetChecksum(version, data + 0xC)) {
+                    ok = 1;
+                }
+                File_Close(handle);
+            }
+            if (ok) {
+                save = (SaveData *)g_pSavedGameData;
+                for (i = 0; i < 8; i++) {
+                    g_bValidFileName_803C6CA4[i] = save->slots[i].valid;
+                    if (!g_bValidFileName_803C6CA4[i]) {
+                        strcpy(g_fileNames_80110B2C[i], defaultName);
+                        break;
+                    }
+                    hour = save->slots[i].hour;
+                    hour12 = hour;
+                    if (hour == 0) {
+                        hour12 = 12;
+                    } else if (hour > 12) {
+                        hour12 = hour - 12;
+                    }
+                    sprintf(g_fileNames_80110B2C[i], "%s %d/%d/%d %d:%02d %s", save->slots[i].name,
+                            save->slots[i].month, save->slots[i].day, save->slots[i].year, hour12,
+                            save->slots[i].minute, hour >= 12 ? "PM" : "AM");
+                }
+            }
+        }
+    }
+    if (g_bValidFileName_803C6CA4[index - 1]) {
+        return g_fileNames_80110B2C[index - 1];
+    }
+    if (!bNoDefault && (index - 1 == 0 || g_bValidFileName_803C6CA4[index - 2])) {
+        return defaultName;
+    }
+    return NULL;
+}
+#pragma pop
+
+#pragma push
+#pragma readonly_strings on
 static inline void GameSettings_GetSaveFileInfo(const char **name, u32 *version, u32 *size) {
     void *FileStreaming_InitializeDataPack(void *, s32, s32);
     u8 *DataPack_GetScript(void *, s32);
