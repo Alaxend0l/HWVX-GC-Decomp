@@ -12820,6 +12820,189 @@ void EventSeq_Advanced_GetOffset(u8 *seq, void *arg1, Vector4 *out) {
     }
 }
 
+void EventSeq_Advanced_GetInitData_NonDirectional(u8 *emit, Thing *seq, Vector4 *vel, Vector4 *pos, Vector4 *quat, Vector4 *angVel) {
+    f32 RandomAdd(f32 base, f32 range);
+    f32 RandomDirVar(f32 base, f32 range);
+    void RandomNumberGenerator_GetRandomVector(Vector4 *out);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void PSVECAdd(void *a, void *b, void *out);
+    void SetOrientation(void *m, f32 x, f32 y, f32 z);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *a, Vector4 *out);
+    Matrix4 mtx1;
+    Matrix4 res;
+    Matrix4 rot;
+    Matrix4 mtx3;
+    Matrix4 mtx4;
+    Vector4 tmp;
+    Vector4 v;
+    Vector4 a;
+    Vector4 offset;
+    Vector4 dir1;
+    Vector4 dir3;
+    Vector4 dir4;
+
+    EventSeq_Advanced_GetOffset(emit, &seq->mtx, &offset);
+    switch (emit[0x22]) {
+    case 0:
+        XformVecOrientation(&seq->mtx, &offset, &tmp);
+        PSVECAdd(&seq->mtx.v[3], &tmp, pos);
+        v.x = 0.0f;
+        v.y = 0.0f;
+        v.z = RandomAdd(*(f32 *)(emit + 0x8), *(f32 *)(emit + 0xC));
+        a.x = 0.0f;
+        a.y = 0.0f;
+        a.z = 0.001f * RandomAdd(*(f32 *)(emit + 0x10), *(f32 *)(emit + 0x14));
+        XformVecOrientation(&seq->mtx, &v, vel);
+        XformVecOrientation(&seq->mtx, &a, angVel);
+        if (quat != NULL) {
+            *quat = seq->quat;
+        }
+        break;
+    case 1: {
+        f32 speed;
+        f32 spin;
+
+        mtx1 = seq->mtx;
+        speed = RandomAdd(*(f32 *)(emit + 0x8), *(f32 *)(emit + 0xC));
+        spin = 0.001f * RandomAdd(*(f32 *)(emit + 0x10), *(f32 *)(emit + 0x14));
+        RandomNumberGenerator_GetRandomVector(&dir1);
+        XformVecOrientation(&seq->mtx, &offset, &tmp);
+        PSVECAdd(&seq->mtx.v[3], &tmp, pos);
+        v.x = dir1.x * speed;
+        v.y = dir1.y * speed;
+        v.z = dir1.z * speed;
+        a.x = dir1.x * spin;
+        a.y = dir1.y * spin;
+        a.z = dir1.z * spin;
+        if (quat != NULL) {
+            SubMatrixToQuaternion(&mtx1, quat);
+        }
+        XformVecOrientation(&seq->mtx, &v, vel);
+        XformVecOrientation(&seq->mtx, &a, angVel);
+        break;
+    }
+    case 2: {
+        f32 *range = *(f32 **)(emit + 0x2C);
+        f32 ry;
+        f32 rx;
+        f32 rz;
+
+        ry = RandomDirVar(range[2], range[3]);
+        rx = -RandomDirVar(range[0], range[1]);
+        rz = RandomDirVar(range[4], range[5]);
+        XformVecOrientation(&seq->mtx, &offset, &tmp);
+        PSVECAdd(&seq->mtx.v[3], &tmp, pos);
+        SetOrientation(&rot, 0.0174533f * ry, 0.0174533f * rx, 0.0174533f * rz);
+        rot.v[3].x = rot.v[3].y = rot.v[3].z = 0.0f;
+        MultiplyMatrix(&rot, &seq->mtx, &res);
+        v.x = 0.0f;
+        v.y = 0.0f;
+        v.z = RandomAdd(*(f32 *)(emit + 0x8), *(f32 *)(emit + 0xC));
+        a.x = 0.0f;
+        a.y = 0.0f;
+        a.z = 0.001f * RandomAdd(*(f32 *)(emit + 0x10), *(f32 *)(emit + 0x14));
+        if (quat != NULL) {
+            SubMatrixToQuaternion(&res, quat);
+        }
+        XformVecOrientation(&res, &v, vel);
+        XformVecOrientation(&res, &a, angVel);
+        break;
+    }
+    case 3: {
+        f32 speed;
+        f32 spin;
+
+        mtx3 = seq->mtx;
+        speed = RandomAdd(*(f32 *)(emit + 0x8), *(f32 *)(emit + 0xC));
+        spin = 0.001f * RandomAdd(*(f32 *)(emit + 0x10), *(f32 *)(emit + 0x14));
+        dir3 = offset;
+        XformVecOrientation(&seq->mtx, &offset, &tmp);
+        PSVECAdd(&seq->mtx.v[3], &tmp, pos);
+        if (!dir3.x && !dir3.y && !dir3.z) {
+            dir3.x = 0.0f;
+            dir3.y = 0.0f;
+            dir3.z = 1.0f;
+        } else if (PSVECSquareMag(&dir3)) {
+            PSVECNormalize(&dir3, &dir3);
+        }
+        v.x = dir3.x * speed;
+        v.y = dir3.y * speed;
+        v.z = dir3.z * speed;
+        a.x = dir3.x * spin;
+        a.y = dir3.y * spin;
+        a.z = dir3.z * spin;
+        if (quat != NULL) {
+            SubMatrixToQuaternion(&mtx3, quat);
+        }
+        XformVecOrientation(&seq->mtx, &v, vel);
+        XformVecOrientation(&seq->mtx, &a, angVel);
+        break;
+    }
+    case 4: {
+        f32 speed;
+        f32 spin;
+
+        mtx4 = seq->mtx;
+        speed = RandomAdd(*(f32 *)(emit + 0x8), *(f32 *)(emit + 0xC));
+        spin = 0.001f * RandomAdd(*(f32 *)(emit + 0x10), *(f32 *)(emit + 0x14));
+        RandomNumberGenerator_GetRandomVector(&dir4);
+        switch ((*(u8 **)(emit + 0x2C))[0x10]) {
+        case 4:
+            if (dir4.x < 0.0f) {
+                dir4.x *= -1.0f;
+            }
+            break;
+        case 5:
+            if (dir4.x > 0.0f) {
+                dir4.x *= -1.0f;
+            }
+            break;
+        case 2:
+            if (dir4.y < 0.0f) {
+                dir4.y *= -1.0f;
+            }
+            break;
+        case 3:
+            if (dir4.y > 0.0f) {
+                dir4.y *= -1.0f;
+            }
+            break;
+        case 0:
+            if (dir4.z < 0.0f) {
+                dir4.z *= -1.0f;
+            }
+            break;
+        case 1:
+            if (dir4.z > 0.0f) {
+                dir4.z *= -1.0f;
+            }
+            break;
+        }
+        XformVecOrientation(&seq->mtx, &offset, &tmp);
+        PSVECAdd(&seq->mtx.v[3], &tmp, pos);
+        v.x = dir4.x * speed;
+        v.y = dir4.y * speed;
+        v.z = dir4.z * speed;
+        a.x = dir4.x * spin;
+        a.y = dir4.y * spin;
+        a.z = dir4.z * spin;
+        if (quat != NULL) {
+            SubMatrixToQuaternion(&mtx4, quat);
+        }
+        XformVecOrientation(&seq->mtx, &v, vel);
+        XformVecOrientation(&seq->mtx, &a, angVel);
+        break;
+    }
+    }
+    if (emit[0x20]) {
+        vel->x += seq->pos.x * *(f32 *)(emit + 0x24);
+        vel->y += seq->pos.y * *(f32 *)(emit + 0x24);
+        vel->z += seq->pos.z * *(f32 *)(emit + 0x24);
+    }
+    pos->w = 1.0f;
+}
+
 s32 EventSeq_InCameraRange(u8 *seq, f32 range) {
     u32 Gfx_GetCameraPositions(Vector4 *positions);
     f32 PSVECSquareDistance(f32 *a, f32 *b);
@@ -18028,6 +18211,228 @@ void InterfaceManager_SetLoadState(u8 *iface, s32 state) {
         }
         break;
     }
+}
+
+void InterfaceManager_SetObjectState(u8 *iface, u8 *obj, s32 state, s32 arg3) {
+    typedef struct IMState {
+        u8 type;
+        u8 pad1[3];
+        u32 value;
+        u8 *data;
+    } IMState;
+    void SoundSequence_Stop(s32 seq);
+    s32 SoundSequence_Play(s8 *seq, Vector4 *pos);
+    void Thing_Release(s32 thing);
+    void InterfaceManager_ExecuteActions(u8 *iface, u8 *list);
+    void InterfaceManager_CheckConditions(u8 *iface, u8 *obj);
+    void InterfaceManager_MoveObject(u8 *iface, u8 *obj, s32 arg2, f32 dt);
+    u32 i;
+    u8 *numOff = NULL;
+    u8 *numOn = NULL;
+    u8 *numActive = NULL;
+    u8 *numSelected = NULL;
+    u8 *numDisabled = NULL;
+    u32 j;
+
+    if (obj == NULL) {
+        return;
+    }
+    obj[0x240] = 0;
+    obj[0x246] = state;
+    *(s32 *)(*(u8 **)(obj + 0x25C) + 0x18) = -1;
+    *(s32 *)(*(u8 **)(obj + 0x25C) + 0x1C) = -1;
+    *(s32 *)(*(u8 **)(obj + 0x25C) + 0x20) = -1;
+    *(s32 *)(*(u8 **)(obj + 0x25C) + 0x24) = -1;
+    *(s32 *)(*(u8 **)(obj + 0x25C) + 0x28) = -1;
+    *(s32 *)(*(u8 **)(obj + 0x25C) + 0x2C) = -1;
+    for (i = 0; i < *(u32 *)(*(u8 **)(obj + 0x25C) + 0x64); i++) {
+        u8 *info = *(u8 **)(obj + 0x25C);
+        switch ((*(IMState **)(info + 0x68))[i].type) {
+        case 0:
+            if (numOff <= NULL) {
+                *(u32 *)(info + 0x18) = i;
+            }
+            numOff++;
+            break;
+        case 1:
+            if (numOn <= NULL) {
+                *(u32 *)(info + 0x1C) = i;
+            }
+            numOn++;
+            break;
+        case 2:
+            if (numActive <= NULL) {
+                *(u32 *)(info + 0x20) = i;
+            }
+            numActive++;
+            break;
+        case 3:
+            if (numSelected <= NULL) {
+                *(u32 *)(info + 0x24) = i;
+            }
+            numSelected++;
+            break;
+        case 4:
+            if (numOn <= NULL) {
+                *(u32 *)(info + 0x28) = i;
+            }
+            break;
+        case 5:
+            if (numDisabled <= NULL) {
+                *(u32 *)(info + 0x2C) = i;
+            }
+            numDisabled++;
+            break;
+        }
+    }
+    if (*(u32 *)(obj + 0x250) != 0xFFFFFFFF) {
+        SoundSequence_Stop(*(s32 *)(obj + 0x250));
+        *(s32 *)(obj + 0x250) = -1;
+    }
+    if (*(u32 *)(obj + 0x26C) != 0) {
+        Thing_Release(*(s32 *)(obj + 0x26C));
+        *(u32 *)(obj + 0x26C) = 0;
+        obj[0x244] = 0;
+    }
+    switch (state) {
+    case 100:
+        obj[0x240] = 1;
+        obj[0x248] = 0;
+        *(u32 *)(obj + 0x274) = 0;
+        obj[0x247] = 1;
+        *(u8 **)(obj + 0x254) = NULL;
+        return;
+    case 4:
+        if (*(u32 *)(*(u8 **)(obj + 0x25C) + 0x28) == 0xFFFFFFFF) {
+            obj[0x240] = 1;
+            obj[0x248] = 0;
+            *(u8 **)(obj + 0x254) = NULL;
+            return;
+        }
+        *(u8 **)(obj + 0x254) = (*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x28)].data;
+        *(u32 *)(obj + 0x274) = 0;
+        obj[0x247] = 1;
+        if (*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x28)].data + 0x30) != NULL) {
+            *(s32 *)(obj + 0x250) = SoundSequence_Play(*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x28)].data + 0x30), NULL);
+        }
+        InterfaceManager_ExecuteActions(iface, *(u8 **)(obj + 0x254) + 0x34);
+        break;
+    case 5:
+        if (*(u32 *)(*(u8 **)(obj + 0x25C) + 0x2C) == 0xFFFFFFFF) {
+            obj[0x240] = 1;
+            obj[0x248] = 0;
+            *(u8 **)(obj + 0x254) = NULL;
+            return;
+        }
+        *(u8 **)(obj + 0x254) = (*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x2C)].data;
+        *(u32 *)(obj + 0x274) = 0;
+        obj[0x247] = 1;
+        if (*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x2C)].data + 0x30) != NULL) {
+            *(s32 *)(obj + 0x250) = SoundSequence_Play(*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x2C)].data + 0x30), NULL);
+        }
+        InterfaceManager_ExecuteActions(iface, *(u8 **)(obj + 0x254) + 0x34);
+        break;
+    case 0:
+        if (*(u32 *)(*(u8 **)(obj + 0x25C) + 0x18) == 0xFFFFFFFF) {
+            obj[0x240] = 1;
+            obj[0x248] = 0;
+            *(u8 **)(obj + 0x254) = NULL;
+            return;
+        }
+        *(u8 **)(obj + 0x254) = (*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x18)].data;
+        *(u32 *)(obj + 0x274) = 0;
+        obj[0x247] = 1;
+        if (*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x18)].data + 0x30) != NULL) {
+            *(s32 *)(obj + 0x250) = SoundSequence_Play(*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x18)].data + 0x30), NULL);
+        }
+        InterfaceManager_ExecuteActions(iface, *(u8 **)(obj + 0x254) + 0x34);
+        break;
+    case 1:
+        if (*(u32 *)(*(u8 **)(obj + 0x25C) + 0x1C) == 0xFFFFFFFF) {
+            InterfaceManager_SetObjectState(iface, obj, 0, 0);
+            obj[0x246] = 1;
+            return;
+        }
+        *(u8 **)(obj + 0x254) = (*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x1C)].data;
+        *(u32 *)(obj + 0x274) = 0;
+        obj[0x247] = 1;
+        if (*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x1C)].data + 0x30) != NULL) {
+            *(s32 *)(obj + 0x250) = SoundSequence_Play(*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x1C)].data + 0x30), NULL);
+        }
+        InterfaceManager_ExecuteActions(iface, *(u8 **)(obj + 0x254) + 0x34);
+        break;
+    case 2:
+        if (*(u32 *)(*(u8 **)(obj + 0x25C) + 0x20) == 0xFFFFFFFF) {
+            InterfaceManager_SetObjectState(iface, obj, 1, 0);
+            if (*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) != NULL) {
+                obj[0x247] = 0;
+                for (j = 0; j < *(u32 *)(*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) + 0x10); j++) {
+                    *(u32 *)(obj + 0x274) = *(u32 *)(*(u8 **)(*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) + 0x14) + j * 0xC + 4);
+                    if (*(u32 *)(obj + 0x274) != 0) {
+                        break;
+                    }
+                }
+            } else {
+                *(u32 *)(obj + 0x274) = 0;
+                obj[0x247] = 1;
+            }
+            obj[0x248] = 0;
+            return;
+        }
+        *(u8 **)(obj + 0x254) = (*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x20)].data;
+        if (*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) != NULL) {
+            obj[0x247] = 0;
+            for (j = 0; j < *(u32 *)(*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) + 0x10); j++) {
+                *(u32 *)(obj + 0x274) = *(u32 *)(*(u8 **)(*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) + 0x14) + j * 0xC + 4);
+                if (*(u32 *)(obj + 0x274) != 0) {
+                    break;
+                }
+            }
+        } else {
+            *(u32 *)(obj + 0x274) = 0;
+            obj[0x247] = 1;
+        }
+        if (*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x20)].data + 0x30) != NULL) {
+            *(s32 *)(obj + 0x250) = SoundSequence_Play(*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x20)].data + 0x30), NULL);
+        }
+        InterfaceManager_ExecuteActions(iface, *(u8 **)(obj + 0x254) + 0x34);
+        break;
+    case 3:
+        if (*(u32 *)(*(u8 **)(obj + 0x25C) + 0x24) == 0xFFFFFFFF) {
+            InterfaceManager_SetObjectState(iface, obj, 2, 0);
+            obj[0x248] = 0;
+            return;
+        }
+        *(u8 **)(obj + 0x254) = (*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x24)].data;
+        *(u32 *)(iface + 4) = 3;
+        *(u32 *)(iface + 0x10) = (*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x24)].value;
+        if (*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) != NULL) {
+            obj[0x247] = 0;
+            *(u32 *)(obj + 0x274) = *(u32 *)(*(u8 **)(*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) + 0x14) + 4);
+        } else {
+            *(u32 *)(obj + 0x274) = 0;
+            obj[0x247] = 1;
+        }
+        if (*(u32 *)(iface + 0x10) == 0) {
+            obj[0x240] = 1;
+        }
+        if (*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x24)].data + 0x30) != NULL) {
+            *(s32 *)(obj + 0x250) = SoundSequence_Play(*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x24)].data + 0x30), NULL);
+        }
+        InterfaceManager_ExecuteActions(iface, *(u8 **)(obj + 0x254) + 0x34);
+        break;
+    }
+    obj[0x2C] = 1;
+    obj[0x54] = 1;
+    obj[0x118] = 1;
+    obj[0x84] = 1;
+    obj[0xB4] = 1;
+    obj[0x125] = 1;
+    obj[0x164] = 1;
+    obj[0x194] = 1;
+    obj[0x248] = 1;
+    InterfaceManager_CheckConditions(iface, obj);
+    InterfaceManager_MoveObject(iface, obj, 0, 0.0f);
 }
 
 void InterfaceManager_LinkThingToObject(s32 index, u32 id, void *thing) {
@@ -43614,6 +44019,230 @@ void __AXDepopVoice(void *pvpb) {
 s32 __AXGetNumVoices(void) {
     extern s32 __AXNumVoices_803C7510;
     return __AXNumVoices_803C7510;
+}
+
+void __AXServiceVPB(void *p) {
+    typedef struct AXPBData {
+        u16 h[0xD0 / 2];
+    } AXPBData;
+    typedef struct AXVPBData {
+        u8 pad0[0x18];
+        u32 index;
+        u32 sync;
+        u8 pad20[0x28 - 0x20];
+        u32 updateTotal;
+        u8 pad2C[0x34 - 0x2C];
+        u32 updateData[0x40];
+        u32 *itdBuffer;
+        AXPBData pb;
+    } AXVPBData;
+    extern u8 __AXPB_802F78A0[];
+    extern s32 __AXNumVoices_803C7510;
+    AXVPBData *pvpb = p;
+    u8 *pbs;
+    AXPBData *ppb;
+    register AXPBData *user;
+    u32 sync;
+    u32 *src;
+    u32 *dst;
+    u32 n;
+    u32 i;
+
+    pbs = __AXPB_802F78A0;
+    __AXNumVoices_803C7510++;
+    user = &pvpb->pb;
+    ppb = (AXPBData *)(pbs + pvpb->index * 0xEC);
+    sync = pvpb->sync;
+    if (sync == 0) {
+        user->h[0xE / 2] = ppb->h[0xE / 2];
+        user->h[0x64 / 2] = ppb->h[0x64 / 2];
+        user->h[0x7A / 2] = ppb->h[0x7A / 2];
+        user->h[0x7C / 2] = ppb->h[0x7C / 2];
+        return;
+    }
+    if (sync & 0x80000000) {
+        dst = (u32 *)ppb;
+        src = (u32 *)user;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        n = pvpb->updateTotal;
+        if (n) {
+            dst = pvpb->updateData;
+            src = (u32 *)(pbs + 0x4B00 + (pvpb->index << 8));
+            for (; n != 0; n--) {
+                *dst++ = *src++;
+            }
+        }
+        return;
+    }
+    if (sync & 0x1) {
+        ppb->h[0x8 / 2] = user->h[0x8 / 2];
+        ppb->h[0xA / 2] = user->h[0xA / 2];
+    }
+    if (sync & 0x2) {
+        ppb->h[0xC / 2] = user->h[0xC / 2];
+    }
+    if (sync & 0x4) {
+        ppb->h[0xE / 2] = user->h[0xE / 2];
+    } else {
+        user->h[0xE / 2] = ppb->h[0xE / 2];
+    }
+    if (sync & 0x8) {
+        ppb->h[0x10 / 2] = user->h[0x10 / 2];
+    }
+    if (sync & 0x10) {
+        for (i = 0x12 / 2; i <= 0x34 / 2; i++) {
+            ppb->h[i] = user->h[i];
+        }
+    }
+    if (sync & 0x40) {
+        ppb->h[0x40 / 2] = user->h[0x40 / 2];
+        ppb->h[0x42 / 2] = user->h[0x42 / 2];
+    } else if (sync & 0x20) {
+        ppb->h[0x36 / 2] = user->h[0x36 / 2];
+        ppb->h[0x38 / 2] = user->h[0x38 / 2];
+        ppb->h[0x3A / 2] = user->h[0x3A / 2];
+        ppb->h[0x3C / 2] = user->h[0x3C / 2];
+        ppb->h[0x3E / 2] = user->h[0x3E / 2];
+        ppb->h[0x40 / 2] = user->h[0x40 / 2];
+        ppb->h[0x42 / 2] = user->h[0x42 / 2];
+        dst = pvpb->itdBuffer;
+        for (i = 0; i < 16; i++) {
+            dst[i] = 0;
+        }
+    }
+    if (sync & 0x80) {
+        ppb->h[0x44 / 2] = user->h[0x44 / 2];
+        ppb->h[0x46 / 2] = user->h[0x46 / 2];
+        ppb->h[0x48 / 2] = user->h[0x48 / 2];
+        ppb->h[0x4A / 2] = user->h[0x4A / 2];
+        ppb->h[0x4C / 2] = user->h[0x4C / 2];
+        n = pvpb->updateTotal;
+        if (n) {
+            src = pvpb->updateData;
+            dst = (u32 *)(pbs + 0x4B00 + (pvpb->index << 8));
+            for (; n != 0; n--) {
+                *dst++ = *src++;
+            }
+        }
+    }
+    if (sync & 0x100) {
+        ppb->h[0x52 / 2] = user->h[0x52 / 2];
+        ppb->h[0x54 / 2] = user->h[0x54 / 2];
+        ppb->h[0x56 / 2] = user->h[0x56 / 2];
+        ppb->h[0x58 / 2] = user->h[0x58 / 2];
+        ppb->h[0x5A / 2] = user->h[0x5A / 2];
+        ppb->h[0x5C / 2] = user->h[0x5C / 2];
+        ppb->h[0x5E / 2] = user->h[0x5E / 2];
+        ppb->h[0x60 / 2] = user->h[0x60 / 2];
+        ppb->h[0x62 / 2] = user->h[0x62 / 2];
+    }
+    if (sync & 0x400) {
+        user->h[0x64 / 2] = ppb->h[0x64 / 2];
+        ((s16 *)ppb->h)[0x66 / 2] = ((s16 *)user->h)[0x66 / 2];
+    } else if (sync & 0x200) {
+        ppb->h[0x64 / 2] = user->h[0x64 / 2];
+        ((s16 *)ppb->h)[0x66 / 2] = ((s16 *)user->h)[0x66 / 2];
+    }
+    if (sync & 0x800) {
+        ppb->h[0x68 / 2] = user->h[0x68 / 2];
+        ppb->h[0x6A / 2] = user->h[0x6A / 2];
+        ppb->h[0x6C / 2] = user->h[0x6C / 2];
+    }
+    if (sync & 0x1E000) {
+        if (sync & 0x2000) {
+            ppb->h[0x6E / 2] = user->h[0x6E / 2];
+        }
+        if (sync & 0x4000) {
+            *(u32 *)&ppb->h[0x72 / 2] = *(u32 *)&user->h[0x72 / 2];
+        }
+        if (sync & 0x8000) {
+            *(u32 *)&ppb->h[0x76 / 2] = *(u32 *)&user->h[0x76 / 2];
+        }
+        if (sync & 0x10000) {
+            *(u32 *)&ppb->h[0x7A / 2] = *(u32 *)&user->h[0x7A / 2];
+        }
+    } else if (sync & 0x1000) {
+        *(u32 *)&ppb->h[0x6E / 2] = *(u32 *)&user->h[0x6E / 2];
+        *(u32 *)&ppb->h[0x72 / 2] = *(u32 *)&user->h[0x72 / 2];
+        *(u32 *)&ppb->h[0x76 / 2] = *(u32 *)&user->h[0x76 / 2];
+        *(u32 *)&ppb->h[0x7A / 2] = *(u32 *)&user->h[0x7A / 2];
+    } else {
+        user->h[0x7A / 2] = ppb->h[0x7A / 2];
+        user->h[0x7C / 2] = ppb->h[0x7C / 2];
+    }
+    if (sync & 0x20000) {
+        for (i = 0x7E / 2; i < 0xA6 / 2; i += 2) {
+            *(u32 *)&ppb->h[i] = *(u32 *)&user->h[i];
+        }
+    }
+    if (sync & 0x80000) {
+        ppb->h[0xA6 / 2] = user->h[0xA6 / 2];
+        ppb->h[0xA8 / 2] = user->h[0xA8 / 2];
+    } else if (sync & 0x40000) {
+        ppb->h[0xA6 / 2] = user->h[0xA6 / 2];
+        ppb->h[0xA8 / 2] = user->h[0xA8 / 2];
+        ppb->h[0xAA / 2] = user->h[0xAA / 2];
+        ppb->h[0xAC / 2] = user->h[0xAC / 2];
+        ppb->h[0xAE / 2] = user->h[0xAE / 2];
+        ppb->h[0xB0 / 2] = user->h[0xB0 / 2];
+        ppb->h[0xB2 / 2] = user->h[0xB2 / 2];
+    }
+    if (sync & 0x100000) {
+        ppb->h[0xB4 / 2] = user->h[0xB4 / 2];
+        ppb->h[0xB6 / 2] = user->h[0xB6 / 2];
+        ppb->h[0xB8 / 2] = user->h[0xB8 / 2];
+    }
 }
 
 void __AXSyncPBs(u32 lessDspCycles) {
