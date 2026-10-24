@@ -8870,22 +8870,26 @@ void Creature_PartialGibb(u8 *creature, u32 count) {
         u32 unk34;
         f32 unk38;
     } SlaveParams;
+    typedef struct AnimNode {
+        u8 pad0[0x1F];
+        u8 flags;
+    } AnimNode;
     typedef struct AnimNodeList {
         u32 count;
         u8 pad4[0xC];
-        u8 *nodes;
+        AnimNode *nodes;
     } AnimNodeList;
     extern Vector4 g_zeroVector;
     void *memcpy(void *dst, const void *src, u32 n);
     s32 RandomAdd_s32(s32 base, s32 range);
-    s32 AnimNodes_BlowBranch(u8 *node);
+    s32 AnimNodes_BlowBranch(AnimNode *node);
     f32 RandomNumberGenerator_GetRandomFloat(f32 min, f32 max);
     void RandomNumberGenerator_GetRandomVector(Vector4 *v);
     f32 RandomAdd(f32 a, f32 b);
     void *ThingManager_DARYL_CreateThing(s32 type, void *params);
     void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
     void ThingManagerList_Append(void *list, void *thing);
-    u8 nodes[64][0x20];
+    AnimNode nodes[64];
     PartParams partParams;
     DebrisParams debrisParams;
     SlaveParams slaveParams;
@@ -8896,41 +8900,36 @@ void Creature_PartialGibb(u8 *creature, u32 count) {
     u32 i;
     u32 j;
     u32 blown;
-    DamagePartList *list;
     AnimNodeList *anim;
+    DamagePartList *list;
     f32 scale;
     u8 *thing;
     u8 *slave;
     u32 debris;
 
     blown = 0;
-    list = *(DamagePartList **)(*(u8 **)(creature + 0xB8) + 0x70);
     anim = *(AnimNodeList **)(*(u8 **)(creature + 0xCC) + 0x14);
+    list = *(DamagePartList **)(*(u8 **)(creature + 0xB8) + 0x70);
     if (list == NULL) {
         return;
     }
     memcpy(nodes, anim->nodes, anim->count << 5);
     for (i = 0; i < anim->count; i++) {
-        nodes[i][0x1F] = 0;
+        nodes[i].flags = 0;
         if (*(u32 *)(creature + 0x1C8) & (1 << i)) {
-            nodes[i][0x1F] |= 1;
+            nodes[i].flags |= 1;
         }
         blown++;
     }
     do {
-        blown += AnimNodes_BlowBranch(nodes[RandomAdd_s32(2, anim->count - 2)]);
+        i = RandomAdd_s32(2, anim->count - 2);
+        blown += AnimNodes_BlowBranch(&nodes[i]);
     } while (blown < count);
     for (i = 0; i < anim->count; i++) {
-        if (!(nodes[i][0x1F] & 2)) {
+        if (!(nodes[i].flags & 2)) {
             continue;
         }
-        for (j = 0; j < list->count; j++) {
-            if (i == list->parts[j].bone) {
-                goto found;
-            }
-        }
-        j = -1;
-    found:
+        j = Creature_FindDamagePart((u8 *)list, i);
         if (j == -1) {
             continue;
         }
