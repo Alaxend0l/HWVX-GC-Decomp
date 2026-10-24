@@ -31242,6 +31242,63 @@ s32 EXIGetState(s32 chan) {
     return *(s32 *)(Ecb_80309980[chan] + 0xC);
 }
 
+s32 EXIGetID(s32 chan, u32 dev, u32 *id) {
+    extern u8 Ecb_80309980[3][0x40];
+    BOOL __EXIProbe(s32 chan);
+    s32 EXIImm(s32 chan, void *buf, s32 len, u32 type, void *callback);
+    s32 EXISync(s32 chan);
+    s32 EXISelect(s32 chan, u32 dev, u32 freq);
+    s32 EXIDeselect(s32 chan);
+    s32 EXILock(s32 chan, u32 dev, void *unlockedCallback);
+    s32 EXIUnlock(s32 chan);
+    s32 EXIDetach(s32 chan);
+    void UnlockedHandler(s32 chan, void *context);
+    u8 *exi = Ecb_80309980[chan];
+    BOOL err;
+    u32 cmd;
+    s32 startTime;
+    BOOL enabled;
+
+    if (chan < 2 && dev == 0) {
+        if (!__EXIProbe(chan)) {
+            return 0;
+        }
+        if (*(s32 *)(exi + 0x20) == ((s32 *)0x800030C0)[chan]) {
+            *id = *(u32 *)(exi + 0x1C);
+            return *(s32 *)(exi + 0x20);
+        }
+        if (!__EXIAttach(chan, NULL)) {
+            return 0;
+        }
+        startTime = ((s32 *)0x800030C0)[chan];
+    }
+    err = !EXILock(chan, dev, (chan < 2 && dev == 0) ? UnlockedHandler : NULL);
+    if (!err) {
+        err = !EXISelect(chan, dev, 0);
+        if (!err) {
+            cmd = 0;
+            err |= !EXIImm(chan, &cmd, 2, 1, NULL);
+            err |= !EXISync(chan);
+            err |= !EXIImm(chan, id, 4, 0, NULL);
+            err |= !EXISync(chan);
+            err |= !EXIDeselect(chan);
+        }
+        EXIUnlock(chan);
+    }
+    if (chan < 2 && dev == 0) {
+        EXIDetach(chan);
+        enabled = OSDisableInterrupts();
+        err |= (startTime != ((s32 *)0x800030C0)[chan]);
+        if (!err) {
+            *(u32 *)(exi + 0x1C) = *id;
+            *(s32 *)(exi + 0x20) = startTime;
+        }
+        OSRestoreInterrupts(enabled);
+        return err ? 0 : *(s32 *)(exi + 0x20);
+    }
+    return err ? 0 : 1;
+}
+
 s32 InitializeUART(void) {
     s32 OSGetConsoleType();
     extern s32 BarnacleEnabled_803C75C4;
@@ -35384,6 +35441,186 @@ void GXSetVtxDesc(u32 attr, s32 type) {
     *(u32 *)(gx + 0x4F4) |= 8;
 }
 
+static inline void SETVCDATTR(u32 attr, s32 type) {
+    extern u8 *gx;
+
+    switch (attr) {
+    case 0:
+        *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x1) | type;
+        break;
+    case 1:
+        *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x2) | (type << 1);
+        break;
+    case 2:
+        *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x4) | (type << 2);
+        break;
+    case 3:
+        *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x8) | (type << 3);
+        break;
+    case 4:
+        *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x10) | (type << 4);
+        break;
+    case 5:
+        *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x20) | (type << 5);
+        break;
+    case 6:
+        *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x40) | (type << 6);
+        break;
+    case 7:
+        *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x80) | (type << 7);
+        break;
+    case 8:
+        *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x100) | (type << 8);
+        break;
+    case 9:
+        *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x600) | (type << 9);
+        break;
+    case 10:
+        if (type != 0) {
+            *(u8 *)(gx + 0x41C) = 1;
+            *(u8 *)(gx + 0x41D) = 0;
+            *(s32 *)(gx + 0x418) = type;
+        } else {
+            *(u8 *)(gx + 0x41C) = 0;
+        }
+        break;
+    case 25:
+        if (type != 0) {
+            *(u8 *)(gx + 0x41D) = 1;
+            *(u8 *)(gx + 0x41C) = 0;
+            *(s32 *)(gx + 0x418) = type;
+        } else {
+            *(u8 *)(gx + 0x41D) = 0;
+        }
+        break;
+    case 11:
+        *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x6000) | (type << 13);
+        break;
+    case 12:
+        *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x18000) | (type << 15);
+        break;
+    case 13:
+        *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0x3) | type;
+        break;
+    case 14:
+        *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0xC) | (type << 2);
+        break;
+    case 15:
+        *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0x30) | (type << 4);
+        break;
+    case 16:
+        *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0xC0) | (type << 6);
+        break;
+    case 17:
+        *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0x300) | (type << 8);
+        break;
+    case 18:
+        *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0xC00) | (type << 10);
+        break;
+    case 19:
+        *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0x3000) | (type << 12);
+        break;
+    case 20:
+        *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0xC000) | (type << 14);
+        break;
+    }
+}
+
+void GXSetVtxDescv(const u32 *list) {
+    extern u8 *gx;
+
+    while (list[0] != 0xFF) {
+        s32 type = list[1];
+        switch (list[0]) {
+        case 0:
+            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x1) | type;
+            break;
+        case 1:
+            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x2) | (type << 1);
+            break;
+        case 2:
+            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x4) | (type << 2);
+            break;
+        case 3:
+            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x8) | (type << 3);
+            break;
+        case 4:
+            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x10) | (type << 4);
+            break;
+        case 5:
+            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x20) | (type << 5);
+            break;
+        case 6:
+            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x40) | (type << 6);
+            break;
+        case 7:
+            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x80) | (type << 7);
+            break;
+        case 8:
+            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x100) | (type << 8);
+            break;
+        case 9:
+            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x600) | (type << 9);
+            break;
+        case 10:
+            if (type != 0) {
+                *(u8 *)(gx + 0x41C) = 1;
+                *(u8 *)(gx + 0x41D) = 0;
+                *(s32 *)(gx + 0x418) = type;
+            } else {
+                *(u8 *)(gx + 0x41C) = 0;
+            }
+            break;
+        case 25:
+            if (type != 0) {
+                *(u8 *)(gx + 0x41D) = 1;
+                *(u8 *)(gx + 0x41C) = 0;
+                *(s32 *)(gx + 0x418) = type;
+            } else {
+                *(u8 *)(gx + 0x41D) = 0;
+            }
+            break;
+        case 11:
+            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x6000) | (type << 13);
+            break;
+        case 12:
+            *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x18000) | (type << 15);
+            break;
+        case 13:
+            *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0x3) | type;
+            break;
+        case 14:
+            *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0xC) | (type << 2);
+            break;
+        case 15:
+            *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0x30) | (type << 4);
+            break;
+        case 16:
+            *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0xC0) | (type << 6);
+            break;
+        case 17:
+            *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0x300) | (type << 8);
+            break;
+        case 18:
+            *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0xC00) | (type << 10);
+            break;
+        case 19:
+            *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0x3000) | (type << 12);
+            break;
+        case 20:
+            *(u32 *)(gx + 0x18) = (*(u32 *)(gx + 0x18) & ~0xC000) | (type << 14);
+            break;
+        }
+        list += 2;
+    }
+    if (*(u8 *)(gx + 0x41C) || *(u8 *)(gx + 0x41D)) {
+        *(u32 *)(gx + 0x14) = (*(u32 *)(gx + 0x14) & ~0x1800) | (*(u32 *)(gx + 0x418) << 11);
+    } else {
+        *(u32 *)(gx + 0x14) = *(u32 *)(gx + 0x14) & ~0x1800;
+    }
+    *(u32 *)(gx + 0x4F4) |= 8;
+}
+
 #pragma pop
 
 void __GXSetVCD(void) {
@@ -35669,9 +35906,9 @@ void GXSetVtxAttrFmtv(s32 vtxfmt, s32 *list) {
     fmt = (GXVtxAttrFmtList *)list;
     while (fmt->attr != 0xFF) {
         attr = fmt->attr;
-        cnt = fmt->cnt;
-        type = fmt->type;
         frac = fmt->frac;
+        type = fmt->type;
+        cnt = fmt->cnt;
         switch (attr) {
         case 9:
             *va = (*va & ~0x1) | cnt;
@@ -38342,6 +38579,76 @@ void GXSetFieldMode(u8 field_mode, u8 half_aspect_ratio) {
     GXWGFifo.u8 = 0x61;
     GXWGFifo.u32 = field_mode | 0x68000000;
     __GXFlushTextureState();
+}
+
+void GXDrawSphere(u8 numMajor, u8 numMinor) {
+    extern s32 vcd_80309458[54];
+    void GXGetVtxDesc(s32 attr, s32 *type);
+    void GXGetVtxDescv(void *vcd);
+    void GXGetVtxAttrFmtv(s32 fmt, void *vat);
+    void GXClearVtxDesc(void);
+    void GXSetVtxDesc(s32 attr, s32 type);
+    void GXSetVtxAttrFmt(s32 vtxfmt, s32 attr, s32 cnt, s32 type, u8 frac);
+    void GXSetVtxDescv(void *vcd);
+    void GXSetVtxAttrFmtv(s32 fmt, void *vat);
+    void GXBegin(u8 type, u8 vtxfmt, u16 nverts);
+    f32 sinf(f32 x);
+    f32 cosf(f32 x);
+    s32 ttype;
+    f32 radius = 1.0f;
+    f32 majorStep = 3.1415927f / numMajor;
+    f32 minorStep = 6.2831855f / numMinor;
+    s32 i, j;
+    f32 a, b, r0, r1, z0, z1, c, x, y;
+
+    GXGetVtxDesc(0xD, &ttype);
+    GXGetVtxDescv(vcd_80309458);
+    GXGetVtxAttrFmtv(3, &vcd_80309458[54]);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xA, 1);
+    GXSetVtxAttrFmt(3, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(3, 0xA, 0, 4, 0);
+    if (ttype != 0) {
+        GXSetVtxDesc(0xD, 1);
+        GXSetVtxAttrFmt(3, 0xD, 1, 4, 0);
+    }
+    for (i = 0; i < numMajor; i++) {
+        a = i * majorStep;
+        b = a + majorStep;
+        r0 = radius * sinf(a);
+        r1 = radius * sinf(b);
+        z0 = radius * cosf(a);
+        z1 = radius * cosf(b);
+        GXBegin(0x98, 3, (numMinor + 1) * 2);
+        for (j = 0; j <= numMinor; j++) {
+            c = j * minorStep;
+            x = cosf(c);
+            y = sinf(c);
+            GXWGFifo.f32 = x * r1;
+            GXWGFifo.f32 = y * r1;
+            GXWGFifo.f32 = z1;
+            GXWGFifo.f32 = (x * r1) / radius;
+            GXWGFifo.f32 = (y * r1) / radius;
+            GXWGFifo.f32 = z1 / radius;
+            if (ttype != 0) {
+                GXWGFifo.f32 = (f32)j / (f32)numMinor;
+                GXWGFifo.f32 = (f32)(i + 1) / (f32)numMajor;
+            }
+            GXWGFifo.f32 = x * r0;
+            GXWGFifo.f32 = y * r0;
+            GXWGFifo.f32 = z0;
+            GXWGFifo.f32 = (x * r0) / radius;
+            GXWGFifo.f32 = (y * r0) / radius;
+            GXWGFifo.f32 = z0 / radius;
+            if (ttype != 0) {
+                GXWGFifo.f32 = (f32)j / (f32)numMinor;
+                GXWGFifo.f32 = (f32)i / (f32)numMajor;
+            }
+        }
+    }
+    GXSetVtxDescv(vcd_80309458);
+    GXSetVtxAttrFmtv(3, &vcd_80309458[54]);
 }
 
 void __GXSetRange(void) {
