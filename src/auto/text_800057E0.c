@@ -30936,28 +30936,6 @@ void CarA_StuntImpulse(u8 *car, Vector4 *linImpulse, Vector4 *angImpulse) {
 
 #pragma push
 #pragma dont_inline off
-static inline s8 CarA_StuntsCanStunt(u8 *car, s32 minTime) {
-    s8 Player_IsHuman(void *player);
-    u8 *player;
-    s8 ok;
-
-    if (*(u8 **)(car + 0x94) == NULL || !Player_IsHuman(*(u8 **)(car + 0x94))) {
-        ok = 0;
-    } else {
-        player = *(u8 **)(car + 0x94);
-        if (player[0x10] == 0 && player[0x1A] == 0 && (s8)player[0] > -64 && (s8)player[0] < 64 &&
-            (s8)player[1] > -64 && (s8)player[1] < 64) {
-            ok = 0;
-        } else if (*(s32 *)(car + 0x460) > minTime && *(s32 *)(car + 0x404) > minTime &&
-                   !(*(u32 *)(car + 0x48C) & 0x40002)) {
-            ok = 1;
-        } else {
-            ok = 0;
-        }
-    }
-    return ok;
-}
-
 static inline s8 CarA_StuntsAllowed(u8 *car) {
     s8 Player_IsHuman(void *player);
     u8 *player;
