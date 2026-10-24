@@ -35098,8 +35098,6 @@ void __DSPHandler(__OSInterrupt interrupt, void *context) {
     OSClearContext(exceptionContext);
     OSSetCurrentContext(context);
 }
-#pragma peephole on
-#pragma scheduling on
 
 void __DSP_exec_task(DSPTaskInfo *curr, DSPTaskInfo *next) {
     void DSPSendMailToDSP(u32 mail);
