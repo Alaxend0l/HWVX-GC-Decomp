@@ -17493,6 +17493,7 @@ s32 File_Seek(s32 handle, s32 offset, s8 mode) {
     return 0;
 }
 
+#pragma dont_inline on
 s32 File_Read(u32 id, s32 size, void *data) {
     extern struct { s32 fileInfo; char name[0x100]; } g_filedata_PC[4];
     extern s64 g_resetTicks;
