@@ -36,3 +36,7 @@ typedef struct GfxState {
 
 extern FontManager g_fontManager;
 extern GfxState g_state;
+
+void Gfx_SetDebugFont(s16 font) {
+    g_state.debugFont = font;
+}
