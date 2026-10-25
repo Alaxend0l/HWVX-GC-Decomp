@@ -149,5 +149,9 @@ BOOL THPPlayerOpen(char *fileName, BOOL onMemory) {
     return TRUE;
 }
 
+u8 THPPlayerGetState(void) {
+    return M2C_FIELD(&ActivePlayer, u8 *, 0x9C);
+}
+
 #pragma pop
 
