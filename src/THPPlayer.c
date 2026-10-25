@@ -155,6 +155,16 @@ BOOL THPPlayerOpen(char *fileName, BOOL onMemory) {
     return TRUE;
 }
 
+BOOL THPPlayerClose(void) {
+    s32 DVDClose(void *fileInfo);
+    if (ActivePlayer.open && ActivePlayer.state == 0) {
+        ActivePlayer.open = FALSE;
+        DVDClose(ActivePlayer.fileInfo);
+        return TRUE;
+    }
+    return FALSE;
+}
+
 void PrepareReady(void *arg0) {
     extern u8 PrepareReadyQueue_8036ED00[];
     OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
