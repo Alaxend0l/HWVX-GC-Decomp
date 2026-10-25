@@ -10466,6 +10466,7 @@ static inline void Render_SetWindowViewport(void) {
 
 #pragma push
 #pragma use_lmw_stmw on
+#pragma auto_inline off
 void Render_EndScene(void) {
     extern GDL *g_pGDL;
     extern GfxState g_state;
