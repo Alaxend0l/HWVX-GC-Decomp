@@ -1,6 +1,5 @@
 #include "common.h"
 
-#pragma num_str_lit above 2          /* string literals in .rodata */
 
 typedef struct Vector4 {
     f32 x;
