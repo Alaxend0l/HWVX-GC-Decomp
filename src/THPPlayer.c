@@ -31,7 +31,7 @@ extern s64 g_resetTicks;
 s32 DVDOpen(char *fileName, void *fileInfo);
 s32 DVDClose(void *fileInfo);
 s32 DVDReadPrio(void *fileInfo, void *addr, s32 length, s32 offset, s32 prio);
-void DVDReadAsyncPrio(void *fileInfo, void *addr, s32 length, s64 offset, s32 prio);
+void DVDReadAsyncPrio(void *fileInfo, void *addr, s32 length, s32 offset, void *callback, s32 prio);
 s32 DVDGetDriveStatus(void);
 void Render_BeginScene(void);
 void Render_EndScene(void);
@@ -61,7 +61,7 @@ BOOL THPPlayerOpen(char *fileName, BOOL onMemory) {
     if (!DVDOpen(fileName, &ActivePlayer)) {
         return FALSE;
     }
-    DVDReadAsyncPrio(&ActivePlayer, WorkBuffer, 0x40, 0, 2);
+    DVDReadAsyncPrio(&ActivePlayer, WorkBuffer, 0x40, 0, NULL, 2);
     do {
         m_cd_drive_status = DVDGetDriveStatus();
         switch (m_cd_drive_status) {
