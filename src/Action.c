@@ -36,3 +36,7 @@ s32 ActionSetPlayerVehicle(void) {
     return 1;
 }
 
+s32 ActionVehicleRemoveCreature(void) {
+    return 1;
+}
+
