@@ -135,3 +135,7 @@ void SoundAudioSample_Set(void *voice, s32 type, s32 value) {
     }
 }
 
+void SongManager_StopBKSong(void) {
+
+}
+
