@@ -18,3 +18,14 @@ void AI_AsyncProcess_80006C80(void) {
     AI_Creature_AsyncProcess();
 }
 
+u32 AI_UpdateTimer(u32 *arg0) {
+    extern u32 g_iDeltaTimeMS;
+
+    if (*arg0 > g_iDeltaTimeMS) {
+        *arg0 -= g_iDeltaTimeMS;
+    } else {
+        *arg0 = 0;
+    }
+    return *arg0;
+}
+
