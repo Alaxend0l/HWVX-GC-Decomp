@@ -68,3 +68,10 @@ void Creature_Draw(Creature *creature) {
     creature->flags |= 0x4000;
 }
 
+u32 Creature_Invalidate(Creature *creature, u32 start, u32 end) {
+    if ((u32)creature->anims >= start && (u32)creature->anims < end) {
+        return 1;
+    }
+    return 0;
+}
+
