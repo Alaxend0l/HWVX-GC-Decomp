@@ -24,3 +24,22 @@ void DataPack_EnableLoadingSounds(s8 enabled)
 {
     g_bSoundLoadingEnabled = enabled;
 }
+
+void DataPack_Initialize(void)
+{
+    u32 i;
+
+    for (i = 0; i < 21; i++) {
+        g_fileTOCCache[i].name[0] = 0;
+    }
+}
+
+void DataPack_CloseFiles(void)
+{
+    if (g_fileID > 0) {
+        File_Close(g_fileID);
+        g_fileID = -1;
+        g_openFileDataPackType = 0xB;
+    }
+}
+
