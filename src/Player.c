@@ -149,3 +149,36 @@ s32 Player_NULL(void) {
     return 0;
 }
 
+void PlayerHuman_EvaluateCombo(u8 *player) {
+    extern s8 g_bFreezeWorld;
+    void TimeHandler_SetSlowMotion(void);
+    void CameraManager_ReturnAllToPlayer(void);
+    u32 *combo = (u32 *)(player + 0xD8);
+
+    if (!(*(u32 *)(player + 0x6C) & 0x20)) {
+        if (*(u32 *)(player + 0xCC) == 13 && (combo[0] & 0x800) && (combo[1] & 0x800) && (combo[2] & 0x800) &&
+            (combo[3] & 4) && (combo[4] & 4) && (combo[5] & 8) && (combo[6] & 8) && (combo[7] & 0x20) &&
+            (combo[8] & 0x20) && (combo[9] & 0x800) && (combo[10] & 0x800) && (combo[11] & 0x800)) {
+            *(u32 *)(player + 0x6C) |= 0x20;
+        }
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 4) && (combo[2] & 4)) {
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 4) && (combo[2] & 8)) {
+        player[0x32] = 7;
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 4) && (combo[2] & 0x10)) {
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 0x800) && (combo[2] & 0x10)) {
+        player[0x32] = 3;
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 0x800) && (combo[2] & 0x20)) {
+        TimeHandler_SetSlowMotion();
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 0x10) && (combo[2] & 0x10)) {
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 0x10) && (combo[2] & 0x20)) {
+        CameraManager_ReturnAllToPlayer();
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 8) && (combo[2] & 8)) {
+    } else if (*(u32 *)(player + 0xCC) == 6 && (combo[0] & 0x800) && (combo[1] & 0x800) && (combo[2] & 0x800) &&
+               (combo[3] & 0x20) && (combo[4] & 0x20)) {
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 0x20) && (combo[2] & 0x20)) {
+        g_bFreezeWorld = !g_bFreezeWorld;
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 4) && (combo[1] & 8) && (combo[2] & 8)) {
+        player[0x32] = 8;
+    }
+}
+
