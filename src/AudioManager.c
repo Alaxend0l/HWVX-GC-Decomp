@@ -146,3 +146,15 @@ void SongManager_LoadSong(void) {
     g_songLoaded_803C6F2C = 1;
 }
 
+void SongManager_PlaySong(void) {
+    extern s8 g_songLoaded_803C6F2C;
+    extern void (*SetMusicState)(s32);
+    extern f32 g_globalMusic_800DBE30[];
+    void SetMusicVol(u32 vol);
+
+    if (g_songLoaded_803C6F2C) {
+        SetMusicState(1);
+        SetMusicVol(32767.0 * g_globalMusic_800DBE30[0]);
+    }
+}
+
