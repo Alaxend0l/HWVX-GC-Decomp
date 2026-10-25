@@ -94,6 +94,12 @@ void Action_ReleaseAllActions(void) {
     memset(m_Actions_800DBC80, 0, 0x140);
 }
 
+void ActionUnloadInterfacePack(s32 *arg0) {
+    s32 FileStreaming_GetPackID(char *name, s32 type, u32 id);
+    s32 FileStreaming_ReleaseDataPack(u32 index, s32 type);
+    FileStreaming_ReleaseDataPack(FileStreaming_GetPackID((char *)(arg0 + 1), 1, *arg0), 1);
+}
+
 s32 ActionCodeVariableModifyValue(u32 *data) {
     f32 GetCodeVariable(s32 var, u8 *thing);
     void SetCodeVariable(s32 var, u8 *obj, f32 value);
