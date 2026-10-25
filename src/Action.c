@@ -188,3 +188,12 @@ s32 ActionCodeVariableModifyValue(u32 *data) {
     return 1;
 }
 
+s32 ActionMissionObjChangeMode(u32 *action) {
+    u32 i;
+
+    for (i = 0; i < action[1]; i++) {
+        M2C_FIELD(M2C_FIELD(action[i + 2], u8 **, 4), u8 *, 1) = action[0];
+    }
+    return 1;
+}
+
