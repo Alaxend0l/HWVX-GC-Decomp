@@ -76,3 +76,35 @@ s32 Player_InputHeartbeat(void *arg0) {
     return M2C_FIELD(arg0, s8 (**)(), 0x20)() != 0;
 }
 
+void Player_GetInterfaceInfo(void *player, void *info) {
+    int sprintf(char *buf, const char *fmt, ...);
+    void *thing;
+
+    if (M2C_FIELD(player, void **, 0x2C) != NULL) {
+        M2C_FIELD(info, u8 *, 0x80) = 0;
+        thing = M2C_FIELD(player, void **, 0x2C);
+        M2C_FIELD(M2C_FIELD(thing, void **, 0x8C), void (**)(void *, void *), 0x20)(thing, info);
+    } else {
+        M2C_FIELD(info, u8 *, 0x80) = 2;
+        if (M2C_FIELD(player, u8 *, 0x30) != 0) {
+            M2C_FIELD(info, u8 *, 0x80) = 1;
+            M2C_FIELD(player, u8 *, 0x30) = 0;
+        }
+    }
+    if (M2C_FIELD(player, u8 *, 0x71) != 0) {
+        sprintf((char *)info + 0x74, "%s", M2C_FIELD(player, char **, 0x7C));
+        M2C_FIELD(player, u8 *, 0x71) = 0;
+    }
+}
+
+void Player_DetachThingDeath(void *arg0) {
+    void *temp_r5;
+
+    temp_r5 = M2C_FIELD(arg0, void **, 0x2C);
+    M2C_FIELD(arg0, void **, 0x2C) = NULL;
+    M2C_FIELD(arg0, s8 *, 0x30) = 1;
+    if (temp_r5 != NULL) {
+        M2C_FIELD(temp_r5, s32 *, 0x94) = 0;
+    }
+}
+
