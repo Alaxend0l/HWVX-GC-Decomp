@@ -104,3 +104,18 @@ done:
     }
     MotionState_ReleaseSlavesByType((s32)motion, 0xFF);
 }
+
+void MotionState_Release(s32 state) {
+    M2C_UNK ThingManagerList_EmancipateSlaves(s32, s32);
+    M2C_UNK ThingManagerList_ReleaseAll(s32);
+    M2C_UNK ThingManagerList_RemoveReleasedThings(s32);
+    if (M2C_FIELD(state, u32 *, 0x10) != 0) {
+        ThingManagerList_EmancipateSlaves(M2C_FIELD(state, u32 *, 0x10), state + 0x14);
+        MatrixCache_Free(M2C_FIELD(state, u32 *, 0x10));
+        M2C_FIELD(state, u32 *, 0x10) = 0;
+        M2C_FIELD(state, u8 *, 0x7) = 0;
+    }
+    ThingManagerList_ReleaseAll(state + 0x14);
+    ThingManagerList_RemoveReleasedThings(state + 0x14);
+}
+
