@@ -27,6 +27,17 @@ typedef struct Debris {
 void Gfx_DrawGeometry(void *geom, void *mtx);
 void Gfx_DrawGeometry_MatrixNotCached(void *geom, void *mtx);
 
+void Debris_Draw(Debris *debris) {
+    if (debris->visual != NULL) {
+        if (debris->flags & 0x20000000) {
+            Gfx_DrawGeometry(debris->visual, debris->mtx);
+        }
+        else {
+            Gfx_DrawGeometry_MatrixNotCached(debris->visual, debris->mtx);
+        }
+    }
+}
+
 f32 Debris_GetMass(Debris *debris) {
     return debris->mass;
 }
