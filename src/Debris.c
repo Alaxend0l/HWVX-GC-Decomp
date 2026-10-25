@@ -26,3 +26,7 @@ typedef struct Debris {
 
 void Gfx_DrawGeometry(void *geom, void *mtx);
 void Gfx_DrawGeometry_MatrixNotCached(void *geom, void *mtx);
+
+f32 Debris_GetMass(Debris *debris) {
+    return debris->mass;
+}
