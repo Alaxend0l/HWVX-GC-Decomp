@@ -8,3 +8,9 @@ void Thing_SetSlavePlayers(void *thing) {
         M2C_FIELD(slave, s32 *, 0x94) = M2C_FIELD(thing, s32 *, 0x94);
     }
 }
+
+void *Thing_GetSurfaceScript(void) {
+    extern u8 g_defaultSurfaceScript[];
+    return g_defaultSurfaceScript;
+}
+
