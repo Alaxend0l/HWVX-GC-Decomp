@@ -338,6 +338,50 @@ void InterfaceManager_LinkThingToObject(s32 index, u32 id, void *thing) {
     }
 }
 
+void InterfaceManager_Heartbeat(void) {
+    extern u8 g_interface[][0x170];
+    extern s32 g_TargetArrow[7];
+    extern f32 g_fDeltaTimeMS;
+    extern s32 g_iDeltaTimeMS;
+    void InterfaceManager_MoveInterface(void *iface, f32 time);
+    typedef struct {
+        u32 index;
+        u16 type;
+        u16 id;
+        u8 unk8[0x48];
+    } InterfaceMessage;
+    f32 dt = g_fDeltaTimeMS;
+    u32 i;
+
+    for (i = 0; i < 0x12; i++) {
+        if (*(void **)g_interface[i] != NULL && g_interface[i][0x83] == 0 && g_interface[i][0x85] == 0) {
+            void (*callback)(InterfaceMessage *) = *(void (**)(InterfaceMessage *))(g_interface[i] + 0x90);
+
+            if (callback != NULL) {
+                InterfaceMessage msg;
+
+                msg.index = g_interface[i][0x7D];
+                msg.type = 0xC;
+                msg.id = **(u16 **)(g_interface[i] + 0x20);
+                callback(&msg);
+            }
+            InterfaceManager_MoveInterface(g_interface[i], dt);
+        }
+    }
+    if (g_TargetArrow[5] > 0) {
+        g_TargetArrow[5] -= g_iDeltaTimeMS;
+    }
+    if ((u8 *)g_TargetArrow[3] != NULL) {
+        u8 *info = *(u8 **)(g_TargetArrow[3] + 0x94);
+
+        if (info != NULL && *(u8 **)(info + 0x2C) != NULL) {
+            g_TargetArrow[0] = (s32)(*(u8 **)(info + 0x2C) + 0x40);
+        } else {
+            g_TargetArrow[0] = g_TargetArrow[3] + 0x40;
+        }
+    }
+}
+
 void InterfaceManager_SetMissionObjectiveText(u8 *obj, u8 **data) {
     u32 strlen(const char *s);
     char *strcpy(char *dst, const char *src);
