@@ -31,6 +31,6 @@ void FileStreaming_Initialize(void)
 
 s32 FileStreaming_GetNumAvailableQuadPacks(void)
 {
-    return 11;
+    return 0xB;
 }
 
