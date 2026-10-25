@@ -84,44 +84,4 @@ AudioSettings *GameSettings_GetAudioSettings(void) {
     return &g_generalGameSettings.audio;
 }
 
-typedef struct CodeVariables {
-    s32 playerVehicle[4];
-    s32 playerItem[4];
-    s32 controllerState[4];
-    s32 unk30;
-    s32 unk34[4];
-    s32 unk44[4];
-    s32 unk54[4];
-    u8 unk64[4];
-    f32 unk68[30];
-    s32 unkE0;
-    u8 unkE4;
-    s32 unkE8;
-    s32 unkEC;
-    s32 unkF0;
-    s32 unkF4;
-    s32 unkF8;
-    u8 unkFC;
-    s32 unk100;
-    s32 unk104;
-    u8 unk108;
-    u8 unk109[0x111 - 0x109];
-    u8 unk111;
-    u8 unk112[0x114 - 0x112];
-    char *device;
-    s32 fileIndex;
-    u8 unk11C[3];
-    s8 bOverwritingFile;
-    u8 unk120[0x124 - 0x120];
-    s32 unk124;
-    u8 unk128[0x134 - 0x128];
-} CodeVariables;
 
-extern CodeVariables g_codeVariables;
-extern s8 g_bValidFileName[8];
-
-void SetPlayerControls(void);
-void SetMusicGVol(u32);
-void SetSFXVol(u32);
-void SetSpeakerMode(u8);
-void OSSetSoundMode(u32);
