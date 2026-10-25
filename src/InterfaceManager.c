@@ -274,6 +274,39 @@ void InterfaceManager_SetObjectString(u8 *obj, char *str) {
     }
 }
 
+void InterfaceManager_SetObjectText(u8 *obj, char **text) {
+    u32 strlen(const char *s);
+    char *str;
+
+    if (text != NULL) {
+        u8 *info = *(u8 **)(*(u8 **)(obj + 0x258) + 4);
+        obj[0x248] = 1;
+        obj[0x2C] = 1;
+        obj[0x54] = 1;
+        obj[0x84] = 1;
+        obj[0x164] = 1;
+        obj[0x194] = 1;
+        *(u16 *)(obj + 0x1AA) = 0;
+        *(u32 *)(obj + 0x1AC) = *(u32 *)(info + 0x14);
+        *(u16 *)(obj + 0x1A8) = 0;
+        obj[0x1C0] = 0;
+        *(char ***)(obj + 0x1A0) = text;
+        *(char **)(obj + 0x1A4) = NULL;
+        obj[0x1B1] = 0;
+        str = *text;
+        if (str != NULL) {
+            *(char **)(obj + 0x1A4) = str;
+            *(u16 *)(obj + 0x1A8) = strlen(str);
+            if (*(s32 *)(obj + 0x1AC) == 0) {
+                *(u16 *)(obj + 0x1AA) = *(u16 *)(obj + 0x1A8);
+            }
+            if (*(u8 *)(*(u8 **)(obj + 0x258) + 0x12) != 0) {
+                obj[0x1B1] = 1;
+            }
+        }
+    }
+}
+
 void InterfaceManager_SetMissionObjectiveText(u8 *obj, u8 **data) {
     u32 strlen(const char *s);
     char *strcpy(char *dst, const char *src);
