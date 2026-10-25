@@ -155,6 +155,11 @@ BOOL THPPlayerOpen(char *fileName, BOOL onMemory) {
     return TRUE;
 }
 
+void PrepareReady(void *arg0) {
+    extern u8 PrepareReadyQueue_8036ED00[];
+    OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
+}
+
 void THPPlayerStop(void) {
     M2C_UNK AudioDecodeThreadCancel();
     M2C_UNK DVDCancel();
