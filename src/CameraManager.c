@@ -64,3 +64,8 @@ void CameraManager_ResetAllCameras(void) {
     }
 }
 
+void CameraManager_Pause(s8 arg0) {
+    extern s8 g_cameraManagerPause;
+    g_cameraManagerPause = arg0;
+}
+
