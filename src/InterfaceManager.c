@@ -307,6 +307,16 @@ void InterfaceManager_SetObjectText(u8 *obj, char **text) {
     }
 }
 
+void InterfaceManager_EndInterface(s32 index) {
+    extern u8 g_interface[][0x170];
+    void InterfaceManager_SetLoadState(void *iface, s32 state);
+    u8 *iface = g_interface[index];
+
+    if (iface != NULL) {
+        InterfaceManager_SetLoadState(iface, 1);
+    }
+}
+
 void InterfaceManager_SetMissionObjectiveText(u8 *obj, u8 **data) {
     u32 strlen(const char *s);
     char *strcpy(char *dst, const char *src);
