@@ -65,7 +65,11 @@ typedef struct CodeVariables {
 extern CodeVariables g_codeVariables;
 extern s8 g_bValidFileName[8];
 
+static s8 bFirstTime = 1;
+static u8 *pMCP;
+
 s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded);
+u8 *GameSettings_GetMCP(void);
 void *FileStreaming_InitializeDataPack(void *, s32, s32);
 u8 *DataPack_GetScript(void *, s32);
 s32 PlayerManager_PlayerHumanCount(void);
@@ -110,6 +114,7 @@ u8 *GameSettings_GetMCP(void)
     static s8 bFirstTime = 1;
     static u8 *pMCP;
     void *pack;
+    u8 *mcp;
 
     if (bFirstTime)
     {
@@ -117,12 +122,13 @@ u8 *GameSettings_GetMCP(void)
         pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
         if (pack == NULL)
         {
-            pMCP = NULL;
+            mcp = NULL;
         }
         else
         {
-            pMCP = DataPack_GetScript(pack, 0);
+            mcp = DataPack_GetScript(pack, 0);
         }
+        pMCP = mcp;
     }
     return pMCP;
 }
