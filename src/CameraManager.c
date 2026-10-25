@@ -15,3 +15,8 @@ void CameraManager_Destroy(void) {
     fn_800957D4();
 }
 
+u8 CameraManager_GetActiveCameras(void) {
+    extern u8 g_cameraManager[];
+    return g_cameraManager[0x640];
+}
+
