@@ -99,8 +99,8 @@ s32 ActionFXPointChangeMode(ActionFXList *list) {
     return 1;
 }
 
-s32 Emitter_Invalidate(ActionFXList *list, u32 start, u32 end) {
-    if ((u32)list->mode >= start && (u32)list->mode < end) {
+s32 Emitter_Invalidate(Emitter *emitter, u32 start, u32 end) {
+    if ((u32)emitter->fx >= start && (u32)emitter->fx < end) {
         return 1;
     }
     return 0;
