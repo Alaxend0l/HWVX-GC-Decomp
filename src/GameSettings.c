@@ -76,6 +76,10 @@ u8 GameSettings_GetNumOfPlayers(void) {
     return PlayerManager_PlayerHumanCount();
 }
 
+ControllerSettings *GameSettings_GetControllerSettings(s32 player) {
+    return &g_generalGameSettings.controllers[player - 1];
+}
+
 typedef struct CodeVariables {
     s32 playerVehicle[4];
     s32 playerItem[4];
