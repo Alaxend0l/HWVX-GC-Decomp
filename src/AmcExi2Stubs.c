@@ -8,3 +8,7 @@ void EXI2_Reserve(void) {
 
 }
 
+void EXI2_Unreserve(void) {
+
+}
+
