@@ -40,3 +40,7 @@ s32 ActionVehicleRemoveCreature(void) {
     return 1;
 }
 
+s32 ActionScriptLightChangeMode(void) {
+    return 1;
+}
+
