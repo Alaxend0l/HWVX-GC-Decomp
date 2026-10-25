@@ -119,3 +119,15 @@ void MotionState_Release(s32 state) {
     ThingManagerList_RemoveReleasedThings(state + 0x14);
 }
 
+void MotionState_ExtractBlendedKeyFrame(u8 *state, void *keyFrame) {
+    void MemCpy32(void *dst, void *src, u32 size);
+    void Gfx_AnimExtractKeyFrame(void *anim, f32 time, void *keyFrame, u32 count);
+    u8 *anim;
+
+    anim = M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u8 **, 0x14);
+    MemCpy32(keyFrame, M2C_FIELD(anim, void **, 0x10), M2C_FIELD(anim, u32 *, 0x0) << 5);
+    M2C_FIELD(state, f32 *, 0x24) = 1.0f;
+    Gfx_AnimExtractKeyFrame(M2C_FIELD(M2C_FIELD(state, u8 **, 0x18), void **, 0x10),
+                            M2C_FIELD(state, f32 *, 0x20), keyFrame, M2C_FIELD(anim, u32 *, 0x0));
+}
+
