@@ -73,6 +73,23 @@ f32 CarA_GetMass(u8 *car)
     return *(f32 *)(coll + 0x20);
 }
 
+void CarA_GetTargetPos(u8 *car, Vector4 *pos)
+{
+    u8 *coll;
+
+    coll = *(u8 **)(car + 0x3BC);
+    coll = *(u8 **)(coll + 0xA0);
+    switch (*(u8 *)(coll + 0x10))
+    {
+    case 0:
+        *pos = *(Vector4 *)(car + 0xC0);
+        break;
+    case 1:
+        *pos = *(Vector4 *)(*(u8 **)(car + 0x370) + 0x3D0);
+        break;
+    }
+}
+
 void *CarA_GetOrientedCollision(u8 *car)
 {
     void BuildOOBOffset(void *, void *, void *, void *);
