@@ -8,3 +8,7 @@ void PlayerManager_Destroy(void) {
 
 }
 
+void PlayerManager_Render_DEBUG(void) {
+
+}
+
