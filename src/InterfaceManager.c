@@ -223,6 +223,15 @@ s32 InterfaceManager_GetTotalActiveInterfaces(void) {
     return count;
 }
 
+void InterfaceManager_PauseAllInterface(u8 pause) {
+    extern u8 g_interface[][0x170];
+    u32 i;
+
+    for (i = 0; i < 0x12; i++) {
+        g_interface[i][0x83] = pause;
+    }
+}
+
 void InterfaceManager_SetMissionObjectiveText(u8 *obj, u8 **data) {
     u32 strlen(const char *s);
     char *strcpy(char *dst, const char *src);
