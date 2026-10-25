@@ -145,3 +145,7 @@ void PlayerHuman_SetControlBinding(void *arg0, void *arg1) {
     player->unkC7 = binding->unk1;
 }
 
+s32 Player_NULL(void) {
+    return 0;
+}
+
