@@ -155,6 +155,34 @@ BOOL THPPlayerOpen(char *fileName, BOOL onMemory) {
     return TRUE;
 }
 
+void THPPlayerStop(void) {
+    M2C_UNK AudioDecodeThreadCancel();
+    M2C_UNK DVDCancel();
+    u32 PopUsedTextureSet();
+    M2C_UNK ReadThreadCancel();
+    M2C_UNK VISetPostRetraceCallback(s32);
+    M2C_UNK VideoDecodeThreadCancel();
+    extern s32 OldVIPostCallback;
+    if (((s32) M2C_FIELD(&ActivePlayer, s32 *, 0x98) != 0) && ((u8) M2C_FIELD(&ActivePlayer, u8 *, 0x9C) != 0)) {
+        M2C_FIELD(&ActivePlayer, s8 *, 0x9D) = 0;
+        M2C_FIELD(&ActivePlayer, u8 *, 0x9C) = 0U;
+        VISetPostRetraceCallback(OldVIPostCallback);
+        if ((s32) M2C_FIELD(&ActivePlayer, s32 *, 0xA8) == 0) {
+            DVDCancel();
+            ReadThreadCancel();
+        }
+        VideoDecodeThreadCancel();
+        if ((u8) M2C_FIELD(&ActivePlayer, u8 *, 0x9F) != 0) {
+            AudioDecodeThreadCancel();
+        }
+        do {
+
+        } while (PopUsedTextureSet() != 0U);
+        M2C_FIELD(&ActivePlayer, s32 *, 0xA0) = 0;
+        M2C_FIELD(&ActivePlayer, s32 *, 0xA4) = 0;
+    }
+}
+
 u8 THPPlayerGetState(void) {
     return M2C_FIELD(&ActivePlayer, u8 *, 0x9C);
 }
