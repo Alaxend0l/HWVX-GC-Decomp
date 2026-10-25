@@ -148,3 +148,6 @@ BOOL THPPlayerOpen(char *fileName, BOOL onMemory) {
     ActivePlayer.open = TRUE;
     return TRUE;
 }
+
+#pragma pop
+
