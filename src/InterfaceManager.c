@@ -317,6 +317,27 @@ void InterfaceManager_EndInterface(s32 index) {
     }
 }
 
+void InterfaceManager_LinkThingToObject(s32 index, u32 id, void *thing) {
+    typedef struct InterfaceSlot {
+        u8 pad0[0x25C];
+        u8 *object;
+        u8 pad260[0x288 - 0x260];
+        void *thing;
+        u8 pad28C[0x300 - 0x28C];
+    } InterfaceSlot;
+    extern u8 g_interface[][0x170];
+    u8 *iface = g_interface[index];
+    u32 i;
+
+    if (iface != NULL) {
+        for (i = 0; i < *(u32 *)iface; i++) {
+            if (id == *(u32 *)((*(InterfaceSlot **)(iface + 0x88))[i].object + 0x10)) {
+                (*(InterfaceSlot **)(iface + 0x88))[i].thing = thing;
+            }
+        }
+    }
+}
+
 void InterfaceManager_SetMissionObjectiveText(u8 *obj, u8 **data) {
     u32 strlen(const char *s);
     char *strcpy(char *dst, const char *src);
