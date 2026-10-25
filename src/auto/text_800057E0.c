@@ -29906,6 +29906,16 @@ static inline void Thing_SetBoxContactHit(u8 *thing, Vector4 *box, Vector4 *p, V
     XformVecOrientation(thing + 0x10, &normal, (Vector4 *)(hit + 0x10));
 }
 
+static inline s8 Thing_SweptSpheresTouch(u8 *a, u8 *b, f32 t) {
+    s8 SegmentVsSphere(void *center, Vector4 *start, Vector4 *end, f32 radius);
+    Vector4 end;
+
+    end.x = t * (((f32 *)a)[0] - ((f32 *)b)[0]) + ((Vector4 *)(a + 0x40))->x;
+    end.y = t * (((f32 *)a)[1] - ((f32 *)b)[1]) + ((Vector4 *)(a + 0x40))->y;
+    end.z = t * (((f32 *)a)[2] - ((f32 *)b)[2]) + ((Vector4 *)(a + 0x40))->z;
+    return SegmentVsSphere(b + 0x40, (Vector4 *)(a + 0x40), &end, *(f32 *)(a + 0x70) + *(f32 *)(b + 0x70));
+}
+
 s8 Thing_TestThingCollision(u8 *a, u8 *b, f32 *t, u8 *hit) {
     typedef struct CollisionBox {
         Vector4 min;
@@ -29956,21 +29966,20 @@ s8 Thing_TestThingCollision(u8 *a, u8 *b, f32 *t, u8 *hit) {
             break;
         }
         case 6: {
+            RayHit rayHit;
+            RayHit contact;
+            CollisionBox bounds;
+            Vector4 relLocal;
+            Vector4 rel;
+            Vector4 world;
+            Vector4 local;
+            Vector4 p;
+            Vector4 n;
             CollisionBox *box;
             u32 *list;
             u32 i;
             f32 d;
             f32 r;
-            Vector4 n;
-            Vector4 p;
-            Vector4 local;
-            Vector4 world;
-            Vector4 rel;
-            Vector4 relLocal;
-            CollisionBox bounds;
-            Vector4 q;
-            Vector4 normal;
-            RayHit rayHit;
 
             box = (CollisionBox *)Thing_GetLocalCollision(a);
             list = (u32 *)Thing_GetLocalCollision(b);
@@ -29993,67 +30002,70 @@ s8 Thing_TestThingCollision(u8 *a, u8 *b, f32 *t, u8 *hit) {
                         p.x = d * relLocal.x + local.x;
                         p.y = d * relLocal.y + local.y;
                         p.z = d * relLocal.z + local.z;
-                        q = p;
-                        if (q.x < box->min.x) {
-                            q.x = box->min.x;
+                        contact.pos = p;
+                        if (contact.pos.x < box->min.x) {
+                            contact.pos.x = box->min.x;
                         }
-                        if (q.y < box->min.y) {
-                            q.y = box->min.y;
+                        if (contact.pos.y < box->min.y) {
+                            contact.pos.y = box->min.y;
                         }
-                        if (q.z < box->min.z) {
-                            q.z = box->min.z;
+                        if (contact.pos.z < box->min.z) {
+                            contact.pos.z = box->min.z;
                         }
-                        if (q.w < box->min.w) {
-                            q.w = box->min.w;
+                        if (contact.pos.w < box->min.w) {
+                            contact.pos.w = box->min.w;
                         }
-                        if (q.x > box->max.x) {
-                            q.x = box->max.x;
+                        if (contact.pos.x > box->max.x) {
+                            contact.pos.x = box->max.x;
                         }
-                        if (q.y > box->max.y) {
-                            q.y = box->max.y;
+                        if (contact.pos.y > box->max.y) {
+                            contact.pos.y = box->max.y;
                         }
-                        if (q.z > box->max.z) {
-                            q.z = box->max.z;
+                        if (contact.pos.z > box->max.z) {
+                            contact.pos.z = box->max.z;
                         }
-                        if (q.w > box->max.w) {
-                            q.w = box->max.w;
+                        if (contact.pos.w > box->max.w) {
+                            contact.pos.w = box->max.w;
                         }
-                        PSVECSubtract(&q, &p, &n);
-                        normal = n;
-                        if (PSVECSquareMag(&normal) != 0.0f) {
-                            PSVECNormalize(&normal, &normal);
+                        PSVECSubtract(&contact.pos, &p, &n);
+                        contact.normal = n;
+                        if (PSVECSquareMag(&contact.normal)) {
+                            PSVECNormalize(&contact.normal, &contact.normal);
                         }
-                        XformVec(a + 0x10, &q, (Vector4 *)hit);
-                        XformVecOrientation(a + 0x10, &normal, (Vector4 *)(hit + 0x10));
+                        XformVec(a + 0x10, &contact.pos, (Vector4 *)hit);
+                        XformVecOrientation(a + 0x10, &contact.normal, (Vector4 *)(hit + 0x10));
                     }
                     best = d;
                 }
             }
             break;
         }
+        default:
+            break;
         }
         break;
     case 6:
         switch (*(s16 *)(b + 0x80)) {
+        case 0:
+            break;
         case 3:
             best = (*(f32 (**)(void *, void *, void *))(*(u8 **)(b + 0x8C) + 0x38))(a, a + 0x40, a);
             break;
         case 1: {
+            RayHit rayHit;
+            RayHit contact;
+            CollisionBox bounds;
+            Vector4 relLocal;
+            Vector4 rel;
+            Vector4 world;
+            Vector4 local;
+            Vector4 p;
+            Vector4 n;
             CollisionBox *box;
             u32 *list;
             u32 i;
             f32 d;
             f32 r;
-            Vector4 n;
-            Vector4 p;
-            Vector4 local;
-            Vector4 world;
-            Vector4 rel;
-            Vector4 relLocal;
-            CollisionBox bounds;
-            Vector4 q;
-            Vector4 normal;
-            RayHit rayHit;
 
             box = (CollisionBox *)Thing_GetLocalCollision(b);
             list = (u32 *)Thing_GetLocalCollision(a);
@@ -30076,45 +30088,51 @@ s8 Thing_TestThingCollision(u8 *a, u8 *b, f32 *t, u8 *hit) {
                         p.x = d * relLocal.x + local.x;
                         p.y = d * relLocal.y + local.y;
                         p.z = d * relLocal.z + local.z;
-                        q = p;
-                        if (q.x < box->min.x) {
-                            q.x = box->min.x;
+                        contact.pos = p;
+                        if (contact.pos.x < box->min.x) {
+                            contact.pos.x = box->min.x;
                         }
-                        if (q.y < box->min.y) {
-                            q.y = box->min.y;
+                        if (contact.pos.y < box->min.y) {
+                            contact.pos.y = box->min.y;
                         }
-                        if (q.z < box->min.z) {
-                            q.z = box->min.z;
+                        if (contact.pos.z < box->min.z) {
+                            contact.pos.z = box->min.z;
                         }
-                        if (q.w < box->min.w) {
-                            q.w = box->min.w;
+                        if (contact.pos.w < box->min.w) {
+                            contact.pos.w = box->min.w;
                         }
-                        if (q.x > box->max.x) {
-                            q.x = box->max.x;
+                        if (contact.pos.x > box->max.x) {
+                            contact.pos.x = box->max.x;
                         }
-                        if (q.y > box->max.y) {
-                            q.y = box->max.y;
+                        if (contact.pos.y > box->max.y) {
+                            contact.pos.y = box->max.y;
                         }
-                        if (q.z > box->max.z) {
-                            q.z = box->max.z;
+                        if (contact.pos.z > box->max.z) {
+                            contact.pos.z = box->max.z;
                         }
-                        if (q.w > box->max.w) {
-                            q.w = box->max.w;
+                        if (contact.pos.w > box->max.w) {
+                            contact.pos.w = box->max.w;
                         }
-                        PSVECSubtract(&q, &p, &n);
-                        normal = n;
-                        if (PSVECSquareMag(&normal) != 0.0f) {
-                            PSVECNormalize(&normal, &normal);
+                        PSVECSubtract(&contact.pos, &p, &n);
+                        contact.normal = n;
+                        if (PSVECSquareMag(&contact.normal)) {
+                            PSVECNormalize(&contact.normal, &contact.normal);
                         }
-                        XformVec(b + 0x10, &q, (Vector4 *)hit);
-                        XformVecOrientation(b + 0x10, &normal, (Vector4 *)(hit + 0x10));
+                        XformVec(b + 0x10, &contact.pos, (Vector4 *)hit);
+                        XformVecOrientation(b + 0x10, &contact.normal, (Vector4 *)(hit + 0x10));
                     }
                     best = d;
                 }
             }
             break;
         }
+        case 6:
+            break;
+        default:
+            break;
         }
+        break;
+    default:
         break;
     }
     if (best < *t) {
