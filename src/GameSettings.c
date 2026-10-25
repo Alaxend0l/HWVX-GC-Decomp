@@ -177,11 +177,17 @@ AudioSettings *GameSettings_GetAudioSettings(void) {
     return &g_generalGameSettings.audio;
 }
 
+void SetPlayerControls(void);
+void SetMusicGVol(u32);
+void SetSFXVol(u32);
+void SetSpeakerMode(u8);
+void OSSetSoundMode(u32);
+u8 *GameSettings_GetMCP(void);
 void GameSettings_ApplyDefaultGameData(void)
 {
     SetPlayerControls();
-    SetMusicGVol((f32)(g_generalGameSettings.audio.musicVolume * 0x7FFF) / 100.0f);
-    SetSFXVol((f32)(g_generalGameSettings.audio.sfxVolume * 0x7FFF) / 100.0f);
+    SetMusicGVol((u32)((f32)(g_generalGameSettings.audio.musicVolume * 0x7FFF) / 100.0f));
+    SetSFXVol((u32)((f32)(g_generalGameSettings.audio.sfxVolume * 0x7FFF) / 100.0f));
     SetSpeakerMode(g_generalGameSettings.audio.speakerMode);
     OSSetSoundMode(g_generalGameSettings.audio.speakerMode);
 }
