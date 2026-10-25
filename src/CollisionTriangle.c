@@ -27,3 +27,18 @@ void CollisionTriCache_Clear(void) {
         g_aCollisionTriPairCache[i].time = 99999;
     }
 }
+
+s32 CollisionTriCache_Get(u32 triId0, u32 triId1, Vector4 *pos, Vector4 *normal) {
+    u32 i;
+
+    for (i = 0; i < 4; i++) {
+        if (triId0 == g_aCollisionTriPairCache[i].triId0 && triId1 == g_aCollisionTriPairCache[i].triId1) {
+            *pos = g_aCollisionTriPairCache[i].pos;
+            *normal = g_aCollisionTriPairCache[i].normal;
+            g_aCollisionTriPairCache[i].time = 0;
+            return 1;
+        }
+    }
+    return 0;
+}
+
