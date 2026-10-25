@@ -54,3 +54,31 @@ s8 AI_CheckAngleInRange(f32 angle, f32 center, f32 range) {
     return inRange;
 }
 
+s32 AI_ProcessEvent(void) {
+    extern s16 g_AI_FramesSinceAsyncEventProcessed;
+    extern u8 g_AI_Stats[];
+    extern void *gs_pAsyncEventHead_803C6F08;
+    extern void *gs_pAsyncEventTail_803C6F04;
+    u8 *event;
+
+    if (g_AI_FramesSinceAsyncEventProcessed <= 5 && M2C_FIELD(g_AI_Stats, u32 *, 0x1C) >= 250) {
+        return 0;
+    }
+    event = gs_pAsyncEventHead_803C6F08;
+    g_AI_FramesSinceAsyncEventProcessed = 0;
+    if (event != NULL) {
+        gs_pAsyncEventHead_803C6F08 = M2C_FIELD(event, void **, 8);
+        if (gs_pAsyncEventHead_803C6F08 == NULL) {
+            gs_pAsyncEventTail_803C6F04 = NULL;
+        }
+        M2C_FIELD(event, u8 *, 0xC) = 0;
+        if (M2C_FIELD(event, void **, 0) != NULL) {
+            M2C_FIELD(event, void (**)(void *), 4)(M2C_FIELD(event, void **, 0));
+        } else {
+            M2C_FIELD(event, void (**)(void), 4)();
+        }
+        return 1;
+    }
+    return 0;
+}
+
