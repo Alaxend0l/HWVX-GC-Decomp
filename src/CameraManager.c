@@ -69,3 +69,13 @@ void CameraManager_Pause(s8 arg0) {
     g_cameraManagerPause = arg0;
 }
 
+void CameraManager_ReturnAllToPlayer(void) {
+    extern u8 g_cameraManager[];
+    extern u32 g_triggerAction_params_default;
+    u32 i;
+
+    for (i = 0; i < g_cameraManager[0x640]; i++) {
+        M2C_FIELD(g_cameraManager + i * 0x190, u32 **, 0xB4) = &g_triggerAction_params_default;
+    }
+}
+
