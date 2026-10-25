@@ -35,6 +35,16 @@ void FileStreaming_Initialize(void)
     g_pDataPackToLoad = NULL;
 }
 
+void FileStreaming_Destroy(void)
+{
+    u32 i;
+
+    for (i = 0; i < 11; i++) {
+        FileStreaming_ReleaseAllDataPacks(i, 1);
+        Deallocate(g_StreamingDataPacks[i]);
+    }
+}
+
 s32 FileStreaming_GetNumAvailableQuadPacks(void)
 {
     return 0xB;
