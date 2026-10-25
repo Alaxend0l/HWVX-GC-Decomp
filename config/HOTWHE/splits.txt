@@ -652,7 +652,7 @@ Pad.c:
 	.sdata      start:0x803C6DC8 end:0x803C6DE8
 	.sbss       start:0x803C73B8 end:0x803C73E0
 
-ai.c:
+etc/ai.c:
 	.text       start:0x80077628 end:0x80077EF4
 	.sbss       start:0x803C73E0 end:0x803C7420
 
@@ -1481,7 +1481,7 @@ Input_NGC.c:
 	.sbss       start:0x803C7990 end:0x803C79A0
 	.sdata2     start:0x803C8FC0 end:0x803C8FD8
 
-gba.c:
+etc/gba.c:
 	.text       start:0x800C932C end:0x800CA8E8
 	.rodata     start:0x800CEC38 end:0x800CF080
 	.data       start:0x800DBC28 end:0x800DBC4C
