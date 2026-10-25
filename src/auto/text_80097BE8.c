@@ -9364,6 +9364,8 @@ void Gfx_SetBaseColor(GXColor *color) {
     g_state.unk74 = *color;
 }
 
+#pragma push
+#pragma auto_inline off
 void Gfx_SetRenderWindow(s32 window) {
     extern s32 g_currentWindow;
     extern void *g_pWindow;
@@ -9371,6 +9373,7 @@ void Gfx_SetRenderWindow(s32 window) {
     g_currentWindow = window;
     g_pWindow = g_window[window];
 }
+#pragma pop
 
 s32 Gfx_GetRenderWindowIndex(void) {
     extern s32 g_currentWindow;
