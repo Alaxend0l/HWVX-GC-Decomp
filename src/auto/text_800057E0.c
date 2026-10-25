@@ -8582,6 +8582,247 @@ f32 CarA_GetImpactMultiplier(void *car, void *other, f32 scale) {
     return 1.0f - impact;
 }
 
+#pragma readonly_strings on
+void CarA_ComputeSuspensionForces_Aux1(u8 *car) {
+    extern s32 g_iDeltaTimeMS;
+    extern f32 g_fDeltaTimeSec;
+    extern void *g_pSourcePlayer;
+    extern Vector4 g_zeroVector;
+    extern char stunt_msg_buffer_second[];
+    extern char *g_stuntMessageLocalString;
+    f32 PSVECDotProduct(void *a, void *b);
+    void PSVECCrossProduct(void *a, void *b, void *axb);
+    s8 CarA_DoFreeStyleStunts(void *car);
+    void MotionState_InitAllSlavesNow(void *motionState, void *slaves, s32 arg2);
+    void MotionState_ReleaseSlavesByType(void *state, u8 type);
+    f32 _fabs(f32 x);
+    f32 GetComponentOfVector(Vector4 *v, Vector4 *dir);
+    s8 Player_IsHuman(void *player);
+    int sprintf(char *buf, const char *fmt, ...);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    typedef struct DebrisParams {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        Vector4 zero;
+        u32 debris;
+        u32 unk44;
+        f32 unk48;
+        f32 unk4C;
+    } DebrisParams;
+    DebrisParams params;
+    Vector4 torque;
+    Vector4 arm;
+    f32 dot;
+    f32 force;
+    f32 t;
+    f32 range;
+    u8 *info;
+    u8 *stunt;
+    u32 points;
+    u32 numMsgs;
+    u32 numDebris;
+    u32 idx;
+    u8 *rack;
+    s32 n;
+
+    dot = PSVECDotProduct(car + 0x30, car);
+    if (!(*(u32 *)(car + 0x48C) & 2)) {
+        force = -*(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x2C);
+        *(f32 *)(car + 0x3A0) += force * *(f32 *)(car + 0x410);
+        *(f32 *)(car + 0x3A4) += force * *(f32 *)(car + 0x414);
+        *(f32 *)(car + 0x3A8) += force * *(f32 *)(car + 0x418);
+    }
+    if (*(u32 *)(car + 0x3B8) == 0) {
+        *(s32 *)(car + 0x460) += g_iDeltaTimeMS;
+        *(u32 *)(car + 0x504) = 0;
+        if (!(*(u32 *)(car + 0x48C) & 2) && !CarA_DoFreeStyleStunts(car) && *(f32 *)(car + 0x24) > 0.3f) {
+            if (*(s32 *)(car + 0x460) > *(s32 *)((info = *(u8 **)(*(u8 **)(car + 0x3BC) + 0x80)) + 0x10)) {
+                f32 len = *(f32 *)(info + 0x20);
+
+                arm.x = -*(f32 *)(car + 0x20) * len;
+                arm.y = (1.0f - *(f32 *)(car + 0x24)) * len;
+                arm.z = -*(f32 *)(car + 0x28) * len;
+                PSVECCrossProduct(car + 0x20, &arm, &torque);
+                *(f32 *)(car + 0x3A0) += torque.x;
+                *(f32 *)(car + 0x3A4) += torque.y;
+                *(f32 *)(car + 0x3A8) += torque.z;
+            }
+            if (*(s32 *)(car + 0x460) > *(s32 *)((info = *(u8 **)(*(u8 **)(car + 0x3BC) + 0x88)) + 0x30)) {
+                force = *(f32 *)(info + 0x28) * *(s32 *)(car + 0x404) + *(f32 *)(info + 0x24);
+                if (force > *(f32 *)(info + 0x2C)) {
+                    force = *(f32 *)(info + 0x2C);
+                }
+                force = -force;
+                *(f32 *)(car + 0x3A0) += force * *(f32 *)(car + 0x410);
+                *(f32 *)(car + 0x3A4) += force * *(f32 *)(car + 0x414);
+                *(f32 *)(car + 0x3A8) += force * *(f32 *)(car + 0x418);
+            }
+        }
+        if (!(*(u32 *)(car + 0x48C) & 0x80000)) {
+            info = *(u8 **)(car + 0x3BC);
+            if (*(u32 *)(info + 0xE0) > 8 && *(s32 *)(car + 0x460) > *(s32 *)(*(u8 **)(info + 0x80) + 0x10)) {
+                MotionState_InitAllSlavesNow(car + 0x330, *(u8 **)(info + 0xE4) + 0x64, 8);
+                *(u32 *)(car + 0x48C) |= 0x80000;
+            }
+        }
+        *(f32 *)(car + 0x508) = 0.0f;
+    } else {
+        if (*(s32 *)(car + 0x460) > 300) {
+            MotionState_ReleaseSlavesByType(car + 0x330, 4);
+            *(u32 *)(car + 0x48C) &= ~2;
+        }
+        *(s32 *)(car + 0x460) = 0;
+    }
+    t = *(f32 *)(car + 0x50C);
+    force = 20.0f * (*(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x88) + 0x38) * g_fDeltaTimeSec);
+    if (t > 0.0f) {
+        *(f32 *)(car + 0x50C) = t - force;
+    } else if (t < 0.0f) {
+        *(f32 *)(car + 0x50C) = t + force;
+    }
+    if (t * *(f32 *)(car + 0x50C) <= 0.0f) {
+        *(f32 *)(car + 0x50C) = 0.0f;
+    }
+    *(u32 *)(car + 0x48C) &= ~0x40;
+    if (*(u32 *)(car + 0x3B8) == *(u32 *)(*(u8 **)(car + 0x3BC) + 0xD0)) {
+        *(u32 *)(car + 0x48C) &= ~0x80000;
+        MotionState_ReleaseSlavesByType(car + 0x330, 8);
+        if ((*(u32 *)(car + 0x48C) & 0x100) && _fabs(*(f32 *)(car + 0x458)) < 2.0f &&
+            (*(f32 *)(car + 0x24) > 0.83f ||
+             (*(f32 *)(car + 0x24) > 0.6f && *(u8 **)(car + 0x94) != NULL && (*(u32 *)(car + 0x48C) & 0x20) &&
+              (*(u8 **)(car + 0x94))[0x12] == 0))) {
+            *(f32 *)(car + 0x0) *= 0.9f;
+            *(f32 *)(car + 0x4) *= 0.9f;
+            *(f32 *)(car + 0x8) *= 0.9f;
+            GetComponentOfVector((Vector4 *)(car + 0x530), (Vector4 *)(car + 0x390));
+        }
+        if (*(u32 *)(car + 0x48C) & 0x10) {
+            *(f32 *)(car + 0x458) = dot;
+            *(f32 *)(car + 0x4E4) = *(f32 *)(car + 0x458) / *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xDC) + car[0x4E8] * 8);
+            while (*(f32 *)(car + 0x4E4) < *(f32 *)(*(u8 **)(car + 0x3BC) + 0x24) && car[0x4E8] > 1) {
+                car[0x4E8]--;
+                *(f32 *)(car + 0x4E4) = *(f32 *)(car + 0x458) / *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xDC) + car[0x4E8] * 8);
+            }
+            *(u32 *)(car + 0x48C) &= ~0x10;
+        }
+        if (*(void **)(car + 0x94) != NULL) {
+            g_pSourcePlayer = *(void **)(car + 0x94);
+            if ((*(u32 *)(*(u8 **)(car + 0x94) + 0xC) & 1) && dot > 0.0f && *(f32 *)(car + 0x50C) < 0.1f) {
+                *(f32 *)(car + 0x50C) = *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x88) + 0x34) * dot;
+                *(u32 *)(car + 0x48C) |= 0x40;
+                if (*(u32 *)(*(u8 **)(car + 0x3BC) + 0xE0) > 5 && dot > 30.0f) {
+                    MotionState_ReleaseSlavesByType(car + 0x330, 5);
+                    MotionState_ReleaseSlavesByType(car + 0x330, 6);
+                    MotionState_InitAllSlavesNow(car + 0x330, *(u8 **)(*(u8 **)(car + 0x3BC) + 0xE4) + 0x40, 5);
+                }
+            }
+            if ((*(u32 *)(*(u8 **)(car + 0x94) + 0xC) & 0x400) && dot > 0.0f && *(f32 *)(car + 0x50C) > -0.1f) {
+                *(f32 *)(car + 0x50C) = -*(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x88) + 0x34) * dot;
+                *(u32 *)(car + 0x48C) |= 0x40;
+                if (*(u32 *)(*(u8 **)(car + 0x3BC) + 0xE0) > 5 && dot > 30.0f) {
+                    MotionState_ReleaseSlavesByType(car + 0x330, 5);
+                    MotionState_ReleaseSlavesByType(car + 0x330, 6);
+                    MotionState_InitAllSlavesNow(car + 0x330, *(u8 **)(*(u8 **)(car + 0x3BC) + 0xE4) + 0x4C, 6);
+                }
+            }
+            g_pSourcePlayer = NULL;
+        }
+        if (*(void **)(car + 0x94) != NULL && Player_IsHuman(*(void **)(car + 0x94))) {
+            info = *(u8 **)(car + 0x3BC);
+            if (*(f32 *)(car + 0x554) > *(f32 *)(*(u8 **)(info + 0x8C) + 0x2C)) {
+                points = *(f32 *)(car + 0x554);
+                if (*(u32 *)(info + 0xE0) > 7) {
+                    MotionState_InitAllSlavesNow(car + 0x330, *(u8 **)(info + 0xE4) + 0x58, 7);
+                }
+                MotionState_ReleaseSlavesByType(car + 0x330, 8);
+                stunt = *(u8 **)(*(u8 **)(car + 0x3BC) + 0x8C);
+                range = *(f32 *)(stunt + 0x30) - *(f32 *)(stunt + 0x2C);
+                t = ((f32)points - *(f32 *)(stunt + 0x2C)) / range;
+                if (range > 0.0f && (f32)points > *(f32 *)(stunt + 0x2C)) {
+                    numMsgs = *(u32 *)(stunt + 0x3C);
+                    numDebris = *(u32 *)(stunt + 0x34);
+                    if (numMsgs != 0) {
+                        if (*(f32 *)(car + 0x534) < -0.5f) {
+                            sprintf(stunt_msg_buffer_second, "CEILING PLANT!|%d x8", points);
+                            *(char ***)(car + 0x494) = &g_stuntMessageLocalString;
+                            points *= 8;
+                            *(f32 *)(car + 0x554) *= 8.0f;
+                        } else if (*(f32 *)(car + 0x534) < 0.25f) {
+                            sprintf(stunt_msg_buffer_second, "Wall Plant|%d x3", points);
+                            *(char ***)(car + 0x494) = &g_stuntMessageLocalString;
+                            points *= 3;
+                            *(f32 *)(car + 0x554) *= 3.0f;
+                        } else {
+                            idx = 0;
+                            if (numMsgs > 1) {
+                                idx = t * numMsgs + 0.5f;
+                                if (idx >= numMsgs) {
+                                    idx = numMsgs - 1;
+                                }
+                            }
+                            if ((*(char ***)(stunt + 0x40))[idx] != NULL) {
+                                sprintf(stunt_msg_buffer_second, "%s%d\n", *(char **)(*(char ***)(stunt + 0x40))[idx], points);
+                                *(char ***)(car + 0x494) = &g_stuntMessageLocalString;
+                            }
+                        }
+                    }
+                    (*(u8 **)(car + 0x94))[0x71] = 1;
+                    *(u32 *)(*(u8 **)(car + 0x94) + 0x7C) += points;
+                    if (*(u32 *)(*(u8 **)(car + 0x94) + 0x7C) > 99999) {
+                        *(u32 *)(*(u8 **)(car + 0x94) + 0x7C) = 99999;
+                    }
+                    if (numDebris != 0) {
+                        idx = 0;
+                        if (numDebris > 1) {
+                            idx = t * numDebris + 0.5f;
+                            if (idx >= numDebris) {
+                                idx = numDebris - 1;
+                            }
+                        }
+                        params.debris = (*(u32 **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x8C) + 0x38))[idx];
+                        if (params.debris != 0) {
+                            params.pos = *(Vector4 *)(car + 0x40);
+                            params.quat = *(Vector4 *)(car + 0x50);
+                            params.vel.x = *(f32 *)(car + 0x0);
+                            params.vel.y = 0.0f;
+                            params.vel.z = *(f32 *)(car + 0x8);
+                            params.unk44 = 0;
+                            params.unk48 = 0.0f;
+                            params.unk4C = 0.0f;
+                            params.zero = g_zeroVector;
+                            ThingManager_DARYL_CreateThing(1, &params);
+                        }
+                    }
+                }
+                rack = ThingManagerList_GetByType(car + 0x344, 8);
+                for (n = 0; n < 12; n++) {
+                    u8 *slot = rack + 0xB0 + n * 0x50;
+
+                    if (*(u8 **)(slot + 0x4C) != NULL) {
+                        *(s16 *)(slot + 0x40) += (s16)points;
+                        if (*(s16 *)(slot + 0x40) > (s16)*(s32 *)(*(u8 **)(*(u8 **)(slot + 0x4C) + 0x30) + 0x28)) {
+                            *(s16 *)(slot + 0x40) = *(s32 *)(*(u8 **)(*(u8 **)(slot + 0x4C) + 0x30) + 0x28);
+                        }
+                    }
+                }
+                *(s32 *)(car + 0x400) += (s32)((f32)points * *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x8C) + 0x14));
+                if (*(s32 *)(car + 0x400) > 30000) {
+                    *(s32 *)(car + 0x400) = 30000;
+                }
+                *(f32 *)(car + 0x554) = 0.0f;
+            }
+        }
+        *(f32 *)(car + 0x4B0) = 0.0f;
+        *(f32 *)(car + 0x4B4) = 0.0f;
+        *(f32 *)(car + 0x4B8) = 0.0f;
+        *(f32 *)(car + 0x508) = 1.0f;
+        *(s32 *)(car + 0x504) += g_iDeltaTimeMS;
+        *(u32 *)(car + 0x48C) &= ~0x40000;
+    }
+}
+#pragma readonly_strings reset
+
 f32 RayHitsPoly(Vector4 *start, Vector4 *dir, Vector4 *poly, f32 t) {
     typedef struct Poly {
         Vector4 plane;
@@ -8636,7 +8877,7 @@ f32 RayHitsPoly(Vector4 *start, Vector4 *dir, Vector4 *poly, f32 t) {
 
 #pragma push
 #pragma use_lmw_stmw on
-f32 OOBHitsPoly(void *arg0, void *arg1, void *arg2, void *arg3, f32 maxT) {
+f32 OOBHitsPoly(PolyOBox *box, CollisionPoly *poly, Vector4 *vel, PolyHit *hit, f32 maxT) {
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
     void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *out);
     f32 PSVECSquareMag(Vector4 *v);
@@ -8649,30 +8890,7 @@ f32 OOBHitsPoly(void *arg0, void *arg1, void *arg2, void *arg3, f32 maxT) {
     s8 CollisionTriCache_Get(u32 tri0, u32 tri1, Vector4 *a, Vector4 *b);
     void CollisionTriCache_Set(u32 tri0, u32 tri1, Vector4 *a, Vector4 *b);
     s32 Collision_ProcessDividingAxis(DividingAxis *axis);
-    typedef struct PolyOBox {
-        Vector4 center;
-        Vector4 corners[8];
-        f32 extent[3];
-        u8 pad9C[4];
-        Vector4 *axis[3];
-        u8 padAC[0xCC - 0xAC];
-        u32 unkCC;
-    } PolyOBox;
-    typedef struct PolyHit {
-        Vector4 pos;
-        Vector4 normal;
-        u8 pad20[8];
-        u32 unk28;
-        u8 pad2C[0x14];
-        u8 type;
-    } PolyHit;
-    typedef struct CollisionPoly {
-        Vector4 plane;
-        Vector4 *verts;
-        u32 numVerts;
-        u8 pad18[4];
-        u32 material;
-    } CollisionPoly;
+    f32 planeD;
     DividingAxis da;
     Vector4 edge;
     Vector4 axis;
@@ -8685,12 +8903,6 @@ f32 OOBHitsPoly(void *arg0, void *arg1, void *arg2, void *arg3, f32 maxT) {
     Vector4 cross;
     Vector4 corner;
     Vector4 cornerEnd;
-    u8 edgeMax;
-    u8 edgeMin;
-    PolyHit *hit = arg3;
-    Vector4 *vel = arg2;
-    CollisionPoly *poly = arg1;
-    PolyOBox *box = arg0;
     u8 hiIdx;
     s32 j;
     u8 type;
@@ -8703,10 +8915,8 @@ f32 OOBHitsPoly(void *arg0, void *arg1, void *arg2, void *arg3, f32 maxT) {
     u8 vert;
     u8 minIdx;
     u8 maxIdx;
-    s32 m;
     u32 k;
     s32 prev;
-    f32 planeD;
     f32 a;
     f32 b;
     f32 d;
@@ -8779,8 +8989,10 @@ f32 OOBHitsPoly(void *arg0, void *arg1, void *arg2, void *arg3, f32 maxT) {
     for (j = 0, prev = poly->numVerts - 1; j < (s32)poly->numVerts; prev = j, j++) {
         PSVECSubtract(&poly->verts[j], &poly->verts[prev], &edge);
         for (i = 0; i < 3; i++) {
-            edgeMax = 0;
-            edgeMin = 0;
+            u8 edgeMax = 0;
+            u8 edgeMin = 0;
+            s32 m;
+
             PSVECCrossProduct(box->axis[i], &edge, &axis);
             da.minB = da.maxB = PSVECDotProduct(&axis, &box->corners[0]);
             for (m = 1; m < 8; m++) {
@@ -8852,7 +9064,7 @@ f32 OOBHitsPoly(void *arg0, void *arg1, void *arg2, void *arg3, f32 maxT) {
             break;
         case 3:
             p0 = poly->verts[edgeIdx];
-            p1 = poly->verts[(edgeIdx + (poly->numVerts - 1)) % poly->numVerts];
+            p1 = poly->verts[(edgeIdx + poly->numVerts - 1) % poly->numVerts];
             PSVECCrossProduct(box->axis[axisIdx], vel, &cross);
             Create_Plane(&plane, &cross, &box->corners[cornerIdx]);
             start = poly->verts[edgeVert];
