@@ -6258,7 +6258,7 @@ void GetTrimmedCameraPos(u8 *camera, Vector4 *from, Vector4 *dir, f32 *trim, f32
     *(Vector4 *)(camera + 0x60) = pos;
 }
 
-void GetTrimmedCameraPos2(Vector4 *from, Vector4 *to, f32 *trim) {
+void GetTrimmedCameraPos2(Vector4 *from, Vector4 *to, f32 *trim, s32 unused, Matrix4 *mtx) {
     extern f32 g_fDeltaTimeSec;
     f32 PSVECDotProduct(void *a, void *b);
     f32 PSVECSquareDistance(void *a, void *b);
@@ -6336,6 +6336,288 @@ void GetTrimmedCameraPos2(Vector4 *from, Vector4 *to, f32 *trim) {
         if (*trim <= 0.0f) {
             *trim = 0.0f;
         }
+    }
+}
+
+void Camera_UpdatePosition_Default(u8 *cam, f32 *mode) {
+    typedef struct CameraTargetInfo {
+        u8 pad0[0x30];
+        Vector4 up;
+        u8 pad40[0x60 - 0x40];
+        Vector4 pos;
+        Vector4 from;
+        u8 pad80[0x8C - 0x80];
+        f32 lookAhead;
+    } CameraTargetInfo;
+    extern f32 g_fDeltaTimeSec;
+    extern s32 g_iDeltaTimeMS;
+    f32 PSVECSquareMag(void *v);
+    f32 PSVECDotProduct(void *a, void *b);
+    void PSVECNormalize(void *src, void *dst);
+    void PSVECCrossProduct(void *a, void *b, void *out);
+    void PSVECSubtract(void *a, void *b, void *out);
+    f32 Sqrt(f32 x);
+    void Gfx_SetProjectionMatrix(f32 fov);
+    void GenerateQuaternion(void *axis, void *q, f32 angle);
+    void QuaternionToSubMatrix(void *q, void *m);
+    void XformVecOrientation(void *m, void *in, void *out);
+    void GetTrimmedCameraPos2(Vector4 *from, Vector4 *to, f32 *trim);
+    s32 VolumeManager_GetVolumeCellIndex(Vector4 *point);
+    s32 VolumeManager_GetNumVolumesOfTypeByCell(s32 type, s32 cell);
+    s32 VolumeManager_GetVolumeTypeByIndexByCell(s32 type, s32 index, s32 cell);
+    CameraTargetInfo info;
+    Matrix4 sub1;
+    Matrix4 sub2;
+    Matrix4 mtx;
+    Vector4 lookPt;
+    Vector4 target;
+    Vector4 up2;
+    Vector4 up1;
+    Vector4 dir;
+    Vector4 toTarget;
+    Vector4 blend;
+    u8 *player;
+    u8 *car;
+    f32 scale;
+    f32 k;
+    f32 mag;
+    f32 speed;
+    f32 inv;
+    f32 s;
+    f32 kx;
+    f32 ky;
+    f32 damp;
+    f32 t;
+    f32 ax;
+    f32 ay;
+    f32 az;
+    s32 cell;
+    u32 count;
+    u32 i;
+    s8 inVolume;
+
+    player = *(u8 **)cam;
+    car = *(u8 **)(player + 0x2C);
+    scale = 1.0f;
+    (*(void (**)(void *, u8, void *))(*(u8 **)(car + 0x8C) + 0x1C))(car, player[0x31], &info);
+    target = info.pos;
+    if (info.lookAhead != 0.0f) {
+        car = *(u8 **)(*(u8 **)cam + 0x2C);
+        if (*(f32 *)(car + 0x34) < -0.4f && *(f32 *)(car + 0x24) < 0.6f) {
+            *(s32 *)(cam + 0x17C) = 700;
+        }
+        up1 = info.up;
+    } else {
+        up1.x = 0.0f;
+        up1.y = 1.0f;
+        up1.z = 0.0f;
+    }
+    if (*(s32 *)(cam + 0x17C) > 0) {
+        *(s32 *)(cam + 0x17C) -= g_iDeltaTimeMS;
+        scale = 0.0f;
+    }
+    car = *(u8 **)(*(u8 **)cam + 0x2C);
+    k = 350.0f * scale * info.lookAhead + 0.1f;
+    lookPt.x = *(f32 *)(car + 0x30) * k + *(f32 *)(car + 0x0);
+    lookPt.y = *(f32 *)(car + 0x34) * k + *(f32 *)(car + 0x4);
+    lookPt.z = *(f32 *)(car + 0x38) * k + *(f32 *)(car + 0x8);
+    Gfx_SetProjectionMatrix(mode[0]);
+    mag = PSVECSquareMag(&lookPt);
+    if (mag > 80.0f) {
+        inv = 1.0f / Sqrt(mag);
+        dir = lookPt;
+        dir.x *= inv;
+        dir.y *= inv;
+        dir.z *= inv;
+        *(Vector4 *)(cam + 0xE0) = dir;
+    }
+    inVolume = 0;
+    cell = VolumeManager_GetVolumeCellIndex((Vector4 *)(*(u8 **)(*(u8 **)cam + 0x2C) + 0x40));
+    count = VolumeManager_GetNumVolumesOfTypeByCell(3, cell);
+    car = *(u8 **)(*(u8 **)cam + 0x2C);
+    if (*(u8 **)(car + 0x8C) != g_carAVTable || *(s32 *)(car + 0x460) == 0) {
+        for (i = 0; i < count; i++) {
+            f32 dist = 0.0f;
+            if (IsPointWithinVolume((Vector4 *)(*(u8 **)(*(u8 **)cam + 0x2C) + 0x40),
+                                    (u8 *)VolumeManager_GetVolumeTypeByIndexByCell(3, i, cell), &dist)) {
+                inVolume = 1;
+            }
+        }
+    }
+    if (inVolume) {
+        if (info.lookAhead != 0.0f) {
+            up2 = info.up;
+        }
+    } else {
+        up2.x = 0.0f;
+        up2.y = 1.0f;
+        up2.z = 0.0f;
+    }
+
+    {
+        Vector4 cross;
+        PSVECCrossProduct(cam + 0x130, &up2, &cross);
+        mag = MagnitudeVector(&cross);
+        if (mag > 1e-7f) {
+            Vector4 quat;
+            Vector4 force = {0.0f, 0.0f, 0.0f, 0.0f};
+            Vector4 axis;
+            Vector4 xf;
+            inv = 1.0f / mag;
+            cross.x *= inv;
+            cross.y *= inv;
+            cross.z *= inv;
+            if (PSVECDotProduct(cam + 0x130, &info.up) < 0.0f || PSVECDotProduct(cam + 0x130, &up2) < 0.0f || mag > 0.314159f) {
+                force.x = cross.x * 13.978342f;
+                force.y = cross.y * 13.978342f;
+                force.z = cross.z * 13.978342f;
+            } else {
+                force.x = 0.01f * (cross.x * 13.978342f);
+                force.y = 0.01f * (cross.y * 13.978342f);
+                force.z = 0.01f * (cross.z * 13.978342f);
+            }
+            force.x -= 5.5f * *(f32 *)(cam + 0x140);
+            force.y -= 5.5f * *(f32 *)(cam + 0x144);
+            force.z -= 5.5f * *(f32 *)(cam + 0x148);
+            *(f32 *)(cam + 0x140) += force.x * g_fDeltaTimeSec;
+            *(f32 *)(cam + 0x144) += force.y * g_fDeltaTimeSec;
+            *(f32 *)(cam + 0x148) += force.z * g_fDeltaTimeSec;
+            speed = MagnitudeVector(cam + 0x140);
+            inv = 1.0f / speed;
+            if (speed > 1e-6f) {
+                if (speed > 3.0f) {
+                    s = 3.0f * inv;
+                    *(f32 *)(cam + 0x140) *= s;
+                    *(f32 *)(cam + 0x144) *= s;
+                    *(f32 *)(cam + 0x148) *= s;
+                }
+                axis = *(Vector4 *)(cam + 0x140);
+                axis.x = *(f32 *)(cam + 0x140) * inv;
+                axis.y = *(f32 *)(cam + 0x144) * inv;
+                axis.z = *(f32 *)(cam + 0x148) * inv;
+                if (mag < 0.2f) {
+                    speed *= mag / 0.2f;
+                }
+                GenerateQuaternion(&axis, &quat, speed * g_fDeltaTimeSec);
+                QuaternionToSubMatrix(&quat, &sub1);
+                XformVecOrientation(&sub1, cam + 0x130, &xf);
+                *(Vector4 *)(cam + 0x130) = xf;
+            }
+        }
+    }
+
+    {
+        Vector4 cross;
+        PSVECCrossProduct(cam + 0x150, &up1, &cross);
+        mag = MagnitudeVector(&cross);
+        if (mag > 1e-7f) {
+            Vector4 quat;
+            Vector4 force = {0.0f, 0.0f, 0.0f, 0.0f};
+            Vector4 axis;
+            Vector4 xf;
+            inv = 1.0f / mag;
+            cross.x *= inv;
+            cross.y *= inv;
+            cross.z *= inv;
+            if (PSVECDotProduct(cam + 0x150, &up1) < 0.0f || mag > 0.314159f) {
+                force.x = cross.x * 13.978342f;
+                force.y = cross.y * 13.978342f;
+                force.z = cross.z * 13.978342f;
+            } else {
+                force.x = 0.01f * (cross.x * 13.978342f);
+                force.y = 0.01f * (cross.y * 13.978342f);
+                force.z = 0.01f * (cross.z * 13.978342f);
+            }
+            force.x -= 4.5f * *(f32 *)(cam + 0x160);
+            force.y -= 4.5f * *(f32 *)(cam + 0x164);
+            force.z -= 4.5f * *(f32 *)(cam + 0x168);
+            *(f32 *)(cam + 0x160) += force.x * g_fDeltaTimeSec;
+            *(f32 *)(cam + 0x164) += force.y * g_fDeltaTimeSec;
+            *(f32 *)(cam + 0x168) += force.z * g_fDeltaTimeSec;
+            speed = MagnitudeVector(cam + 0x160);
+            inv = 1.0f / speed;
+            if (speed > 1e-6f) {
+                if (speed > 5.0f) {
+                    s = 5.0f * inv;
+                    *(f32 *)(cam + 0x160) *= s;
+                    *(f32 *)(cam + 0x164) *= s;
+                    *(f32 *)(cam + 0x168) *= s;
+                }
+                axis = *(Vector4 *)(cam + 0x160);
+                axis.x = *(f32 *)(cam + 0x160) * inv;
+                axis.y = *(f32 *)(cam + 0x164) * inv;
+                axis.z = *(f32 *)(cam + 0x168) * inv;
+                if (mag < 0.2f) {
+                    speed *= mag / 0.2f;
+                }
+                GenerateQuaternion(&axis, &quat, speed * g_fDeltaTimeSec);
+                QuaternionToSubMatrix(&quat, &sub2);
+                XformVecOrientation(&sub2, cam + 0x150, &xf);
+                *(Vector4 *)(cam + 0x150) = xf;
+            }
+        }
+    }
+
+    kx = 2.0f * mode[3];
+    damp = -mode[4];
+    t = g_fDeltaTimeSec;
+    ky = kx * mode[6];
+    while (t > 0.017f) {
+        t -= 0.017f;
+        ax = kx * (*(f32 *)(cam + 0xE0) - *(f32 *)(cam + 0x110)) + damp * *(f32 *)(cam + 0x120);
+        ay = ky * (*(f32 *)(cam + 0xE4) - *(f32 *)(cam + 0x114)) + damp * *(f32 *)(cam + 0x124);
+        az = kx * (*(f32 *)(cam + 0xE8) - *(f32 *)(cam + 0x118)) + damp * *(f32 *)(cam + 0x128);
+        *(f32 *)(cam + 0x110) += *(f32 *)(cam + 0x120) * 0.017f;
+        *(f32 *)(cam + 0x114) += *(f32 *)(cam + 0x124) * 0.017f;
+        *(f32 *)(cam + 0x118) += *(f32 *)(cam + 0x128) * 0.017f;
+        *(f32 *)(cam + 0x120) += 0.017f * ax;
+        *(f32 *)(cam + 0x124) += 0.017f * ay;
+        *(f32 *)(cam + 0x128) += 0.017f * az;
+    }
+    ax = kx * (*(f32 *)(cam + 0xE0) - *(f32 *)(cam + 0x110)) + damp * *(f32 *)(cam + 0x120);
+    ay = ky * (*(f32 *)(cam + 0xE4) - *(f32 *)(cam + 0x114)) + damp * *(f32 *)(cam + 0x124);
+    az = kx * (*(f32 *)(cam + 0xE8) - *(f32 *)(cam + 0x118)) + damp * *(f32 *)(cam + 0x128);
+    *(f32 *)(cam + 0x110) += *(f32 *)(cam + 0x120) * t;
+    *(f32 *)(cam + 0x114) += *(f32 *)(cam + 0x124) * t;
+    *(f32 *)(cam + 0x118) += *(f32 *)(cam + 0x128) * t;
+    *(f32 *)(cam + 0x120) += t * ax;
+    *(f32 *)(cam + 0x124) += t * ay;
+    *(f32 *)(cam + 0x128) += t * az;
+
+    *(Vector4 *)(cam + 0x80) = *(Vector4 *)(cam + 0x110);
+    *(f32 *)(cam + 0x80) -= *(f32 *)(cam + 0x150) * mode[5];
+    *(f32 *)(cam + 0x84) -= *(f32 *)(cam + 0x154) * mode[5];
+    *(f32 *)(cam + 0x88) -= *(f32 *)(cam + 0x158) * mode[5];
+    if (PSVECSquareMag(cam + 0x80) != 0.0f) {
+        PSVECNormalize(cam + 0x80, cam + 0x80);
+    }
+    *(f32 *)(cam + 0x60) = *(f32 *)(cam + 0x150) * mode[2] + (target.x - mode[1] * *(f32 *)(cam + 0x80));
+    *(f32 *)(cam + 0x64) = *(f32 *)(cam + 0x154) * mode[2] + (target.y - mode[1] * *(f32 *)(cam + 0x84));
+    *(f32 *)(cam + 0x68) = *(f32 *)(cam + 0x158) * mode[2] + (target.z - mode[1] * *(f32 *)(cam + 0x88));
+    car = *(u8 **)(*(u8 **)cam + 0x2C);
+    if (*(u8 **)(car + 0x8C) == g_carAVTable) {
+        mtx = *(Matrix4 *)(car + 0x10);
+        XformVec(car + 0x10, (Vector4 *)(car + 0x520), (Vector4 *)&mtx.m[3][0]);
+        GetTrimmedCameraPos2(&info.from, (Vector4 *)(cam + 0x60), (f32 *)(cam + 0xBC));
+        PSVECSubtract(&target, cam + 0x60, &toTarget);
+        if (PSVECSquareMag(&toTarget) != 0.0f) {
+            PSVECNormalize(&toTarget, &toTarget);
+        }
+        blend.x = toTarget.x * *(f32 *)(cam + 0xBC) + *(f32 *)(cam + 0x80) * (1.0f - *(f32 *)(cam + 0xBC));
+        blend.y = toTarget.y * *(f32 *)(cam + 0xBC) + *(f32 *)(cam + 0x84) * (1.0f - *(f32 *)(cam + 0xBC));
+        blend.z = toTarget.z * *(f32 *)(cam + 0xBC) + *(f32 *)(cam + 0x88) * (1.0f - *(f32 *)(cam + 0xBC));
+        *(Vector4 *)(cam + 0x80) = blend;
+        if (PSVECSquareMag(cam + 0x80) != 0.0f) {
+            PSVECNormalize(cam + 0x80, cam + 0x80);
+        }
+    }
+    PSVECCrossProduct(cam + 0x130, cam + 0x80, cam + 0xA0);
+    PSVECCrossProduct(cam + 0x80, cam + 0xA0, cam + 0x90);
+    if (PSVECSquareMag(cam + 0xA0) != 0.0f) {
+        PSVECNormalize(cam + 0xA0, cam + 0xA0);
+    }
+    if (PSVECSquareMag(cam + 0x90) != 0.0f) {
+        PSVECNormalize(cam + 0x90, cam + 0x90);
     }
 }
 
@@ -9358,6 +9640,306 @@ s8 RayHitsTerrain(Vector4 *start, Vector4 *end, void *arg2, void *arg3) {
     return RayHitsTerrain_Aux3(start, &dir, arg2, arg3);
 }
 
+s8 OBoxHitsTerrain(void *obox, Vector4 *vel, f32 *t, void *info) {
+    typedef struct {
+        Vector4 origin;
+        u8 unk10[0x20 - 0x10];
+        u8 *cells;
+        u8 unk24[0x28 - 0x24];
+        f32 sizeX;
+        f32 sizeY;
+        f32 sizeZ;
+        s32 numX;
+        s32 numY;
+        s32 numZ;
+        s32 *cellIndex;
+    } Grid;
+    void MinMaxVec(Vector4 *min, Vector4 *max, Vector4 *v);
+    void World_NextSweep(void);
+    f32 _fabs(f32 x);
+    s8 OBoxHitsCell(void *obox, Vector4 *vel, void *cell, f32 *time, void *arg4);
+    Vector4 bounds[2];
+    f32 best;
+    s32 numX;
+    s32 numY;
+    s32 numZ;
+    s32 x0;
+    s32 x1;
+    s32 y0;
+    s32 y1;
+    s32 z0;
+    s32 z1;
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 n;
+    s32 index;
+    u32 i;
+    Grid *grid;
+    s8 hit;
+    f32 oy;
+    f32 dtz;
+    f32 ox;
+    f32 dtx;
+    f32 oz;
+    f32 dty;
+    f32 sx;
+    f32 sy;
+    f32 spanX;
+    f32 sz;
+    f32 spanZ;
+    f32 tx;
+    f32 tz;
+    f32 spanY;
+    f32 ty;
+
+    grid = *(Grid **)g_worldData.world;
+    if (g_worldData.world == NULL || grid == NULL) {
+        return 0;
+    }
+    numX = grid->numX;
+    numY = grid->numY;
+    numZ = grid->numZ;
+    hit = 0;
+    ox = grid->origin.x;
+    oy = grid->origin.y;
+    oz = grid->origin.z;
+    sx = grid->sizeX;
+    sy = grid->sizeY;
+    sz = grid->sizeZ;
+    bounds[0].x = 99999.0f;
+    bounds[0].y = 99999.0f;
+    bounds[0].z = 99999.0f;
+    bounds[1].x = -99999.0f;
+    bounds[1].y = -99999.0f;
+    bounds[1].z = -99999.0f;
+    for (i = 0; i < 8; i++) {
+        MinMaxVec(&bounds[0], &bounds[1], (Vector4 *)obox + 1 + i);
+    }
+    World_NextSweep();
+    best = *t;
+    x0 = (bounds[0].x - ox) / sx;
+    x1 = (bounds[1].x - ox) / sx;
+    y0 = (bounds[0].y - oy) / sy;
+    y1 = (bounds[1].y - oy) / sy;
+    z0 = (bounds[0].z - oz) / sz;
+    z1 = (bounds[1].z - oz) / sz;
+    if (x1 < 0) {
+        return 0;
+    }
+    if ((u32)x1 > (u32)grid->numX) {
+        x1 = grid->numX - 1;
+    }
+    if (x0 < 0) {
+        x0 = 0;
+    } else if (x0 > x1) {
+        x0 = x1;
+    }
+    if (y1 < 0) {
+        return 0;
+    }
+    if ((u32)y1 > (u32)grid->numY) {
+        y1 = grid->numY - 1;
+    }
+    if (y0 < 0) {
+        y0 = 0;
+    } else if (y0 > y1) {
+        y0 = y1;
+    }
+    if (z1 < 0) {
+        return 0;
+    }
+    if ((u32)z1 > (u32)grid->numZ) {
+        z1 = grid->numZ - 1;
+    }
+    if (z0 < 0) {
+        z0 = 0;
+    } else if (z0 > z1) {
+        z0 = z1;
+    }
+    for (x = x0; x <= x1; x++) {
+        for (y = y0; y <= y1; y++) {
+            for (z = z0; z <= z1; z++) {
+                grid = *(Grid **)g_worldData.world;
+                if (x < 0 || x >= grid->numX) {
+                    index = -1;
+                } else if (y < 0 || y >= grid->numY) {
+                    index = -1;
+                } else if (z < 0 || z >= grid->numZ) {
+                    index = -1;
+                } else {
+                    index = z * grid->numX + grid->numZ * (y * grid->numX) + x;
+                }
+                if (OBoxHitsCell(obox, vel, index == -1 ? grid->cells : grid->cells + grid->cellIndex[index] * 0x50, &best, info)) {
+                    hit = 1;
+                }
+            }
+        }
+    }
+    if (hit) {
+        *t = best;
+        return 1;
+    }
+    tx = ty = tz = *t;
+    if (vel->x >= 0.0f) {
+        if (x1 < numX - 1 && 0.0f != vel->x) {
+            tx = (ox + ((f32)(x1 + 1) * sx - bounds[1].x)) / vel->x;
+        }
+    } else if (x0 > 0) {
+        tx = (ox + ((f32)x0 * sx - bounds[0].x)) / vel->x;
+    }
+    if (vel->y >= 0.0f) {
+        if (y1 < numY - 1 && 0.0f != vel->y) {
+            ty = (oy + ((f32)(y1 + 1) * sy - bounds[1].y)) / vel->y;
+        }
+    } else if (y0 > 0) {
+        ty = (oy + ((f32)y0 * sy - bounds[0].y)) / vel->y;
+    }
+    if (vel->z >= 0.0f) {
+        if (z1 < numZ - 1 && 0.0f != vel->z) {
+            tz = (oz + ((f32)(z1 + 1) * sz - bounds[1].z)) / vel->z;
+        }
+    } else if (z0 > 0) {
+        tz = (oz + ((f32)z0 * sz - bounds[0].z)) / vel->z;
+    }
+    spanX = (bounds[1].x - bounds[0].x) / sx;
+    spanY = (bounds[1].y = bounds[0].y) / sy;
+    spanZ = (bounds[1].z - bounds[0].z) / sz;
+    if (0.0f != vel->x) {
+        dtx = _fabs(sx / vel->x);
+    } else {
+        dtx = *t;
+    }
+    if (0.0f != vel->y) {
+        dty = _fabs(sx / vel->y);
+    } else {
+        dty = *t;
+    }
+    if (0.0f != vel->z) {
+        dtz = _fabs(sz / vel->z);
+    } else {
+        dtz = *t;
+    }
+    while (tx < best || ty < best || tz < best) {
+        if (tx < tz && tx < ty) {
+            tx += dtx;
+            if (vel->x > 0.0f) {
+                n = ++x1;
+                x0 = (f32)x1 - spanX;
+                if (x1 >= numX) {
+                    tx = best;
+                }
+            } else {
+                n = --x0;
+                x1 = (f32)x0 + spanX;
+                if (x0 <= 0) {
+                    tx = best;
+                }
+            }
+            if (n >= 0 && n < numX) {
+                for (y = y0; y <= y1; y++) {
+                    for (z = z0; z <= z1; z++) {
+                        grid = *(Grid **)g_worldData.world;
+                        if (n < 0 || n >= grid->numX) {
+                            index = -1;
+                        } else if (y < 0 || y >= grid->numY) {
+                            index = -1;
+                        } else if (z < 0 || z >= grid->numZ) {
+                            index = -1;
+                        } else {
+                            index = z * grid->numX + grid->numZ * (y * grid->numX) + n;
+                        }
+                        if (OBoxHitsCell(obox, vel, index == -1 ? grid->cells : grid->cells + grid->cellIndex[index] * 0x50, &best, info)) {
+                            hit = 1;
+                        }
+                    }
+                }
+                if (hit) {
+                    *t = best;
+                    return 1;
+                }
+            }
+        } else if (tz < tx && tz < ty) {
+            tz += dtz;
+            if (vel->z > 0.0f) {
+                n = ++z1;
+                z0 = (f32)z1 - spanZ;
+                if (z1 >= numZ) {
+                    tz = best;
+                }
+            } else {
+                n = --z0;
+                z1 = (f32)z0 + spanZ;
+                if (z0 <= 0) {
+                    tz = best;
+                }
+            }
+            if (n >= 0 && n < numZ) {
+                for (x = x0; x <= x1; x++) {
+                    for (y = y0; y <= y1; y++) {
+                        grid = *(Grid **)g_worldData.world;
+                        if (x < 0 || x >= grid->numX) {
+                            index = -1;
+                        } else if (y < 0 || y >= grid->numY) {
+                            index = -1;
+                        } else if (n < 0 || n >= grid->numZ) {
+                            index = -1;
+                        } else {
+                            index = n * grid->numX + grid->numZ * (y * grid->numX) + x;
+                        }
+                        if (OBoxHitsCell(obox, vel, index == -1 ? grid->cells : grid->cells + grid->cellIndex[index] * 0x50, &best, info)) {
+                            hit = 1;
+                        }
+                    }
+                }
+                if (hit) {
+                    *t = best;
+                    return 1;
+                }
+            }
+        } else {
+            ty += dty;
+            if (vel->y > 0.0f) {
+                n = ++y1;
+                y0 = (f32)y1 - spanY;
+                if (y1 >= numY) {
+                    ty = best;
+                }
+            } else {
+                n = --y0;
+                y1 = (f32)y0 + spanY;
+                if (y0 <= 0) {
+                    ty = best;
+                }
+            }
+            if (n >= 0 && n < numY) {
+                for (x = x0; x <= x1; x++) {
+                    for (z = z0; z <= z1; z++) {
+                        grid = *(Grid **)g_worldData.world;
+                        if (x < 0 || x >= grid->numX) {
+                            index = -1;
+                        } else if (n < 0 || n >= grid->numY) {
+                            index = -1;
+                        } else if (z < 0 || z >= grid->numZ) {
+                            index = -1;
+                        } else {
+                            index = z * grid->numX + grid->numZ * (n * grid->numX) + x;
+                        }
+                        if (OBoxHitsCell(obox, vel, index == -1 ? grid->cells : grid->cells + grid->cellIndex[index] * 0x50, &best, info)) {
+                            hit = 1;
+                        }
+                    }
+                }
+                if (hit) {
+                    *t = best;
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
 s8 OBoxHitsCellZeroTimeEdgesOnly(void *obox, void *cell, void *arg2);
 s8 OBoxHitsTerrainZeroTimeEdgesOnly(void *obox, void *arg1) {
     typedef struct Grid {
@@ -10680,7 +11262,6 @@ f32 OBoxHitsOBox(void *boxA, Vector4 *velA, void *boxB, Vector4 *velB, void *hit
         u8 pad20[0x20];
         u8 type;
     } OBBHit;
-    extern u8 g_aCollisionPairCache[4][0x30];
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
     f32 PSVECSquareMag(Vector4 *v);
     void PSVECNormalize(Vector4 *src, Vector4 *dst);
@@ -10702,27 +11283,27 @@ f32 OBoxHitsOBox(void *boxA, Vector4 *velA, void *boxB, Vector4 *velB, void *hit
     Vector4 plane;
     Vector4 q;
     Vector4 diff;
-    u8 type;
-    u8 corner;
-    u8 axisIdx;
+    u8 maxIdx2;
+    u8 minIdx2;
     s32 i;
-    s32 j;
     s32 k;
     u8 minIdx;
     u8 maxIdx;
-    u8 minIdx2;
-    u8 maxIdx2;
+    s32 j;
+    s32 ia;
+    u8 axisIdx;
+    u8 corner;
+    u8 type;
     f32 d;
     f32 s;
     f32 d1;
     f32 denom;
     f32 mag;
-    s8 found;
-    OBB *a = boxA;
-    OBB *b = boxB;
-    OBBHit *hit = hitInfo;
-    u8 axisB;
     u8 featB;
+    u8 axisB;
+    OBBHit *hit = hitInfo;
+    OBB *b = boxB;
+    OBB *a = boxA;
 
     featB = 0;
     da.tEnter = 0.0f;
@@ -10802,13 +11383,13 @@ f32 OBoxHitsOBox(void *boxA, Vector4 *velA, void *boxB, Vector4 *velB, void *hit
             break;
         }
     }
-    for (i = 0; i < 3; i++) {
+    for (ia = 0; ia < 3; ia++) {
         for (j = 0; j < 3; j++) {
             minIdx = 0;
             maxIdx = 0;
             minIdx2 = 0;
             maxIdx2 = 0;
-            PSVECCrossProduct(a->axis[i], b->axis[j], &n);
+            PSVECCrossProduct(a->axis[ia], b->axis[j], &n);
             if (PSVECDotProduct(&n, &n) < 0.0001) {
                 continue;
             }
@@ -10839,14 +11420,14 @@ f32 OBoxHitsOBox(void *boxA, Vector4 *velA, void *boxB, Vector4 *velB, void *hit
             case 2:
                 featB = minIdx2;
                 corner = maxIdx;
-                axisIdx = i;
+                axisIdx = ia;
                 axisB = j;
                 type = 3;
                 break;
             case 3:
                 featB = maxIdx2;
                 corner = minIdx;
-                axisIdx = i + 3;
+                axisIdx = ia + 3;
                 axisB = j;
                 type = 3;
                 break;
@@ -10922,26 +11503,7 @@ f32 OBoxHitsOBox(void *boxA, Vector4 *velA, void *boxB, Vector4 *velB, void *hit
             OBoxCache_Set((u32)a, (u32)b, &hit->pos, &hit->normal);
             break;
         default:
-            found = 0;
-            for (i = 0; i < 4; i++) {
-                if ((u32)a == *(u32 *)(g_aCollisionPairCache[i] + 0x20) && (u32)b == *(u32 *)(g_aCollisionPairCache[i] + 0x24)) {
-                    hit->pos = *(Vector4 *)(g_aCollisionPairCache[i] + 0x0);
-                    hit->normal = *(Vector4 *)(g_aCollisionPairCache[i] + 0x10);
-                    *(s32 *)(g_aCollisionPairCache[i] + 0x28) = 0;
-                    found = 1;
-                    break;
-                }
-                if ((u32)b == *(u32 *)(g_aCollisionPairCache[i] + 0x20) && (u32)a == *(u32 *)(g_aCollisionPairCache[i] + 0x24)) {
-                    hit->pos = *(Vector4 *)(g_aCollisionPairCache[i] + 0x0);
-                    hit->normal.x = -((Vector4 *)(g_aCollisionPairCache[i] + 0x10))->x;
-                    hit->normal.y = -((Vector4 *)(g_aCollisionPairCache[i] + 0x10))->y;
-                    hit->normal.z = -((Vector4 *)(g_aCollisionPairCache[i] + 0x10))->z;
-                    *(s32 *)(g_aCollisionPairCache[i] + 0x28) = 0;
-                    found = 1;
-                    break;
-                }
-            }
-            if (!found) {
+            if (!OBoxCache_Get((u32)a, (u32)b, &hit->pos, &hit->normal)) {
                 diff.x = a->center.x - b->center.x;
                 diff.y = a->center.y - b->center.y;
                 diff.z = a->center.z - b->center.z;
@@ -38602,6 +39164,425 @@ void GSI_VehicleSelectionInfo(u8 *info) {
             info[0xCC] = M2C_FIELD(M2C_FIELD(vehicle, u8 **, 0x84), u8 *, 0x37);
             return;
         }
+    }
+}
+
+void GSI_VehicleItemSelection(void *arg) {
+    typedef struct VehicleInterfaceData {
+        u32 iface;
+        u32 packID;
+        u32 itemID;
+        u32 packIndex;
+        u32 itemPack;
+        u32 selection;
+        s8 active;
+        u8 unk19[0x1C - 0x19];
+        u8 *players[2];
+        u8 *cars[2];
+        u32 objects[2];
+        s8 locked;
+        u8 unk35[0x38 - 0x35];
+    } VehicleInterfaceData;
+    typedef struct InterfaceMsg {
+        u32 iface;
+        u16 type;
+        u16 sub;
+        u8 unk8[0x20 - 0x8];
+        u32 result;
+        u8 unk24[0x30 - 0x24];
+        u32 selection;
+        u32 objects[2];
+        u32 *list;
+        u16 nextState;
+    } InterfaceMsg;
+    typedef struct CreateCarParams {
+        Vector4 pos;
+        Vector4 rot;
+        Vector4 vel;
+        void *script;
+        u8 unk44[0x4C - 0x44];
+        void *player;
+    } CreateCarParams;
+    extern VehicleInterfaceData g_vehicleInterfaceData[4];
+    extern Vector4 g_zeroVector;
+    u8 *GameSettings_GetMCP(void);
+    void GameSettings_SetCodeVariable(s32 id, s32 index, s32 value);
+    void Input_Init(void);
+    void *PlayerManager_GetHumanPlayerByIndex(u8 index);
+    s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded);
+    void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
+    s32 FileStreaming_GetPackID(void *name, s32 type, u32 id);
+    s32 FileStreaming_ReleaseDataPack(u32 index, s32 type);
+    void FileStreaming_ReleaseAllDataPacks(s32 type, s32 arg);
+    void DataPack_EnableLoadingSounds(s32 enable);
+    u8 *DataPack_GetScript(void *pack, s32 id);
+    u8 *GameSettings_GetControllerSettings(s32 port);
+    void Input_SetForceFeedbackActive(s32 chan, u8 active);
+    void Gfx_SetCameraMatrix(void *a, void *b, void *c, void *d);
+    void Gfx_SetProjectionMatrix(f32 fov);
+    void CameraManager_ResetAllCameras(void);
+    void CameraManager_Pause(s32 pause);
+    void Gfx_SetEnvmap(u16 a, u16 b, s8 flag, f32 x, f32 y);
+    void Gfx_SetEnviroMapMode(u8 mode);
+    void InterfaceManager_SetInfoCallBackRoutine(u32 index, void (*cb)(u8 *));
+    void GSI_VehicleSelectionInfo(u8 *info);
+    void InterfaceManager_LinkThingToObject(s32 index, u32 id, void *thing);
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    void WildCardRack_JettisonAll(void *rack);
+    void WildCardRack_Add(void *rack, void *item, s32 arg);
+    void CarA_Release(void *car);
+    void ParticleManager_Init(void);
+    void Control_ClearControl(void *player);
+    s8 IsLoadingThreadRunning(void);
+    s32 GameSettings_GetGameType(void);
+    s8 GameSettings_IsCheatEnabled(s32 cheat);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    void Player_SetThing(u8 *player, u8 *thing);
+    static s8 bReleaseThings = 1;
+    static s8 bReleaseAllPacks = 1;
+    static u32 lockedID = 0xFFFFFFFF;
+    static void *s_pColGrid;
+    InterfaceMsg *msg = arg;
+    VehicleInterfaceData *data;
+    u8 *mcp;
+    u8 *car;
+    u8 *rack;
+    u8 *pack;
+    u8 *script;
+    u32 id;
+    u32 i;
+    u32 j;
+    s8 busy;
+    CreateCarParams params;
+
+    data = NULL;
+    if (msg->type != 3) {
+        for (i = 0; i < 4; i++) {
+            if (msg->iface == g_vehicleInterfaceData[i].iface) {
+                data = &g_vehicleInterfaceData[i];
+            }
+        }
+        if (data == NULL && msg->sub != 2) {
+            return;
+        }
+        if (data == NULL) {
+            return;
+        }
+    }
+    switch (msg->type) {
+    case 3:
+        mcp = GameSettings_GetMCP();
+        if (msg->sub == 2) {
+            for (i = 1; i <= 4; i++) {
+                GameSettings_SetCodeVariable(0xCB, i, -1);
+            }
+            for (i = 0; i < 4; i++) {
+                if (g_vehicleInterfaceData[i].iface == -1) {
+                    data = &g_vehicleInterfaceData[i];
+                    Input_Init();
+                    for (j = 0; j < 2; j++) {
+                        data->players[j] = PlayerManager_GetHumanPlayerByIndex(0);
+                    }
+                    data->iface = msg->iface;
+                    break;
+                }
+            }
+            bReleaseAllPacks = 1;
+            if (data == NULL && msg->sub != 2) {
+                return;
+            }
+            if (data == NULL) {
+                return;
+            }
+            data->active = 1;
+            if (mcp != NULL) {
+                if (*(void **)(mcp + 0x10) != NULL) {
+                    FileStreaming_LoadDataPack(*(void **)(mcp + 0x10), 8, 1, 0);
+                }
+                if (*(void **)(mcp + 0x8) != NULL) {
+                    FileStreaming_LoadDataPack(*(void **)(mcp + 0x8), 8, 2, 0);
+                }
+            }
+            lockedID = -1;
+        } else if (msg->sub == 3) {
+            data = &g_vehicleInterfaceData[0];
+            if (g_vehicleInterfaceData[0].iface != -1 && g_vehicleInterfaceData[1].iface == -1) {
+                data->iface = msg->iface;
+            } else {
+                if (g_vehicleInterfaceData[0].iface != -1) {
+                    return;
+                }
+                data = &g_vehicleInterfaceData[1];
+                if (g_vehicleInterfaceData[1].iface == -1) {
+                    return;
+                }
+                data->iface = msg->iface;
+            }
+            data->active = 0;
+            for (i = 0; i < 2; i++) {
+                if (data->objects[i] != 0xFF && data->cars[i] != NULL) {
+                    InterfaceManager_LinkThingToObject(msg->iface, data->objects[i], data->cars[i]);
+                }
+            }
+            bReleaseAllPacks = 1;
+            bReleaseThings = 1;
+            if (mcp != NULL && *(void **)(mcp + 0xC) != NULL) {
+                FileStreaming_LoadDataPack(*(void **)(mcp + 0xC), 8, 3, 0);
+            }
+            lockedID = -1;
+        } else {
+            return;
+        }
+        Input_SetForceFeedbackActive(0, *GameSettings_GetControllerSettings(1));
+        if (g_worldData.world != NULL) {
+            s_pColGrid = *(void **)g_worldData.world;
+            *(void **)g_worldData.world = NULL;
+        } else {
+            s_pColGrid = NULL;
+        }
+        Gfx_SetCameraMatrix(NULL, NULL, NULL, NULL);
+        Gfx_SetProjectionMatrix(90.0f);
+        CameraManager_ResetAllCameras();
+        CameraManager_Pause(1);
+        if (mcp != NULL) {
+            Gfx_SetEnvmap(*(u32 *)(mcp + 0x14), *(u32 *)(mcp + 0x18), 1, 100.0f, 100.0f);
+            Gfx_SetEnviroMapMode(1);
+        }
+        InterfaceManager_SetInfoCallBackRoutine(msg->iface, GSI_VehicleSelectionInfo);
+        break;
+    case 5:
+        if (!bReleaseThings) {
+            break;
+        }
+        if (bReleaseAllPacks) {
+            for (i = 0; i < 2; i++) {
+                if (data->cars[i] != NULL) {
+                    WildCardRack_JettisonAll(ThingManagerList_GetByType(data->cars[i] + 0x344, 8));
+                    CarA_Release(data->cars[i]);
+                }
+            }
+            memset(data, 0, sizeof(VehicleInterfaceData));
+            memset(data->objects, 0xFF, 8);
+        } else {
+            for (i = 0; i < 2; i++) {
+                if (data->cars[i] != NULL) {
+                    WildCardRack_JettisonAll(ThingManagerList_GetByType(data->cars[i] + 0x344, 8));
+                    CarA_Release(data->cars[i]);
+                    data->cars[i] = NULL;
+                }
+            }
+        }
+        CameraManager_Pause(0);
+        data->iface = -1;
+        data->selection = -1;
+        data->itemID = -1;
+        ParticleManager_Init();
+        if (bReleaseAllPacks) {
+            data->packIndex = -1;
+            data->packID = -1;
+            FileStreaming_ReleaseAllDataPacks(0, 0);
+            FileStreaming_ReleaseAllDataPacks(2, 0);
+            FileStreaming_ReleaseAllDataPacks(8, 0);
+        }
+        if (g_worldData.world != NULL) {
+            *(void **)g_worldData.world = s_pColGrid;
+        }
+        break;
+    case 0:
+        switch (msg->sub) {
+        case 100:
+            for (i = 0; i < 2; i++) {
+                if (lockedID != -1) {
+                    data->locked = 1;
+                    break;
+                }
+                if (data->cars[i] != NULL) {
+                    rack = ThingManagerList_GetByType(data->cars[i] + 0x344, 8);
+                    if (rack != NULL) {
+                        *(u16 *)(rack + rack[0x470] * 0x50 + 0xF0) = 10000;
+                        *(s32 *)(data->cars[i] + 0x78) = 10000;
+                        (*(u8 **)(data->cars[i] + 0x94))[0x1B] = 0xFF;
+                    }
+                }
+            }
+            break;
+        }
+        break;
+    case 12:
+        for (i = 0; i < 2; i++) {
+            car = data->cars[i];
+            if (car != NULL) {
+                if (!data->locked) {
+                    Control_ClearControl(*(void **)(car + 0x94));
+                }
+                *(s32 *)(car + 0x460) = 0;
+                *(f32 *)(car + 0x458) = 10.0f;
+                ((f32 *)data->cars[i])[0] = 0.0f;
+                ((f32 *)data->cars[i])[1] = 0.0f;
+                ((f32 *)data->cars[i])[2] = 0.0f;
+                *(Vector4 *)(car + 0x390) = g_zeroVector;
+                *(Vector4 *)(car + 0x380) = g_zeroVector;
+                *(Vector4 *)(car + 0x410) = g_zeroVector;
+            }
+        }
+        data->locked = 0;
+        break;
+    case 13:
+        id = msg->list[msg->selection];
+        if (IsLoadingThreadRunning()) {
+            break;
+        }
+        data->selection = msg->selection;
+        if (id != data->packID || (data->cars[0] == NULL && lockedID == -1)) {
+            for (i = 0; i < 2; i++) {
+                if (data->cars[i] != NULL) {
+                    rack = ThingManagerList_GetByType(data->cars[i] + 0x344, 8);
+                    if (rack != NULL) {
+                        WildCardRack_JettisonAll(rack);
+                    }
+                    CarA_Release(data->cars[i]);
+                    data->cars[i] = NULL;
+                    if (msg->objects[i] != 0xFF) {
+                        InterfaceManager_LinkThingToObject(msg->iface, msg->objects[i], NULL);
+                    }
+                }
+            }
+            if (IsLoadingThreadRunning()) {
+                break;
+            }
+            if (lockedID != -1 && lockedID != data->iface) {
+                break;
+            }
+            lockedID = data->iface;
+            ParticleManager_Init();
+            if (data->packIndex != -1 && id != data->packID) {
+                FileStreaming_ReleaseDataPack(data->packIndex, 0);
+                data->packIndex = -1;
+                break;
+            }
+            mcp = GameSettings_GetMCP();
+            if (mcp == NULL || id == data->packID) {
+                break;
+            }
+            FileStreaming_InitializeDataPack(FileStreaming_GetPackID(*(void **)(mcp + 0x8), 8, 2), 8, 1);
+            DataPack_EnableLoadingSounds(0);
+            data->packIndex = FileStreaming_LoadDataPack(*(void **)(mcp + 0x8), 0, id, 1);
+            if (data->packIndex != -1) {
+                data->packID = id;
+            }
+            break;
+        }
+        if (IsLoadingThreadRunning() || (lockedID != -1 && lockedID != data->iface)) {
+            if (!IsLoadingThreadRunning()) {
+                lockedID = -1;
+            }
+            break;
+        }
+        j = 0;
+        if (msg->objects[0] == 0xFF) {
+            break;
+        }
+        if (data->cars[0] == NULL) {
+            pack = FileStreaming_InitializeDataPack(data->packIndex, 0, 1);
+            if (pack == NULL) {
+                lockedID = -1;
+                break;
+            }
+            DataPack_EnableLoadingSounds(1);
+            script = DataPack_GetScript(pack, data->packID);
+            if (script == NULL) {
+                break;
+            }
+            params.pos.x = 0.0f;
+            params.pos.y = -7.0f;
+            params.pos.z = 30.0f;
+            params.player = data->players[0];
+            params.rot.x = 0.0f;
+            params.rot.y = 0.0f;
+            params.rot.z = 0.0f;
+            params.rot.w = 1.0f;
+            params.script = script;
+            params.vel.x = 0.0f;
+            params.vel.y = 0.0f;
+            params.vel.z = 0.0f;
+            for (i = 0; i < *(u32 *)(script + 0xD0); i++) {
+                *(f32 *)(*(u8 **)(script + 0xD4) + i * 0x50 + 0xC) = 0.3f;
+            }
+            data->cars[0] = ThingManager_DARYL_CreateThing(9, &params);
+            *(u32 *)(data->cars[0] + 0x90) = 0;
+            data->objects[0] = msg->objects[0];
+            Player_SetThing(data->players[0], data->cars[0]);
+            *(u32 *)(data->players[0] + 0xA8) = 0;
+            *(u32 *)(data->cars[0] + 0x74) |= 0x60200;
+            if (j == 1) {
+                *(u32 *)(data->cars[0] + 0x74) |= 2;
+            }
+        } else {
+            InterfaceManager_LinkThingToObject(msg->iface, msg->objects[0], data->cars[0]);
+            lockedID = -1;
+        }
+        break;
+    case 14:
+        id = msg->list[msg->selection];
+        if (IsLoadingThreadRunning()) {
+            break;
+        }
+        if (GameSettings_GetGameType() == 0 && id == 3 && GameSettings_IsCheatEnabled(8)) {
+            id = 0x4D;
+        }
+        if (id != data->itemID) {
+            if (lockedID != -1 && lockedID != data->iface) {
+                break;
+            }
+            lockedID = data->iface;
+            mcp = GameSettings_GetMCP();
+            if (mcp != NULL) {
+                data->itemPack = FileStreaming_LoadDataPack(*(void **)(mcp + 0xC), 2, id, 0);
+                if (data->itemPack != -1) {
+                    data->itemID = id;
+                }
+            }
+            Control_ClearControl(*(void **)(data->cars[0] + 0x94));
+            data->locked = 0;
+        }
+        if (lockedID == -1 || lockedID != data->iface) {
+            break;
+        }
+        lockedID = -1;
+        pack = FileStreaming_InitializeDataPack(data->itemPack, 2, 1);
+        if (pack == NULL) {
+            break;
+        }
+        script = DataPack_GetScript(pack, data->itemID);
+        if (script == NULL || data->cars[0] == NULL) {
+            break;
+        }
+        rack = ThingManagerList_GetByType(data->cars[0] + 0x344, 8);
+        if (rack == NULL) {
+            break;
+        }
+        WildCardRack_JettisonAll(rack);
+        WildCardRack_Add(rack, script, *(s32 *)(*(u8 **)(script + 0x30) + 0x20));
+        break;
+    case 15:
+        busy = 0;
+        for (i = 0; i < 2 && !busy; i++) {
+            if (data->cars[i] != NULL || data->packID == -1) {
+                busy = 1;
+            }
+        }
+        if (!busy || IsLoadingThreadRunning() ||
+            (data->selection != -1 && msg->list[data->selection] != data->packID && data->active)) {
+            msg->result = 0xB;
+        }
+        if ((msg->nextState == 3 || msg->nextState == 8) && msg->result != 0xB) {
+            bReleaseAllPacks = 0;
+        }
+        if (msg->nextState == 3 && msg->result != 0xB) {
+            bReleaseThings = 0;
+        }
+        ParticleManager_Init();
+        break;
     }
 }
 
