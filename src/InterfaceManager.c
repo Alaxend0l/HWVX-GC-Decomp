@@ -31,6 +31,11 @@ void InterfaceManager_Init(void) {
     g_playerMessage3 = NULL;
 }
 
+void InterfaceManager_SetRadarBlip(u16 arg0) {
+    extern s32 g_radarTextureIndex;
+    g_radarTextureIndex = (s32) arg0;
+}
+
 void InterfaceManager_SetMissionObjectiveText(u8 *obj, u8 **data) {
     u32 strlen(const char *s);
     char *strcpy(char *dst, const char *src);
