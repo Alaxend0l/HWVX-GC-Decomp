@@ -1,6 +1,14 @@
 #include "common.h"
 
 
+void Geometry_Destroy(void) {
+    M2C_UNK Geometry_Init(M2C_UNK);
+    extern s32 g_pGeometryHandler;
+    Geometry_Init(1);
+    Deallocate(g_pGeometryHandler);
+    g_pGeometryHandler = 0;
+}
+
 void Geometry_Init(s8 clear) {
     void Geometry_FreeGeometry(s32 geometry);
     extern u8 *g_pGeometryHandler;
