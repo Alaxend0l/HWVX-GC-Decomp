@@ -413,6 +413,12 @@ void InterfaceManager_SetControllerConfigInputString(void) {
 
 }
 
+s32 ActionInterfacePlay(s32 *arg0) {
+    M2C_UNK InterfaceManager_Create(s32, M2C_UNK, M2C_UNK);
+    InterfaceManager_Create(*arg0, 0, 0);
+    return 1;
+}
+
 void InterfaceManager_SetMissionObjectiveText(u8 *obj, u8 **data) {
     u32 strlen(const char *s);
     char *strcpy(char *dst, const char *src);
