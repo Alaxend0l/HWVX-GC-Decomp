@@ -124,7 +124,6 @@ u8 GameSettings_GetGameType(void)
 u8 *GameSettings_GetMCP(void)
 {
     void *pack;
-    u8 *mcp;
 
     if (bFirstTime)
     {
@@ -132,13 +131,9 @@ u8 *GameSettings_GetMCP(void)
         pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
         if (pack == NULL)
         {
-            mcp = NULL;
+            return NULL;
         }
-        else
-        {
-            mcp = DataPack_GetScript(pack, 0);
-        }
-        pMCP = mcp;
+        pMCP = DataPack_GetScript(pack, 0);
     }
     return pMCP;
 }
