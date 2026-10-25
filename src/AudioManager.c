@@ -158,3 +158,7 @@ void SongManager_PlaySong(void) {
     }
 }
 
+s32 ActionMusicSetSong(void) {
+    return 1;
+}
+
