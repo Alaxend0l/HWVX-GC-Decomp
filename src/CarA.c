@@ -54,6 +54,42 @@ void CarA_GetInverseLocalInertiaTensor(void *arg0, void *arg1) {
     M2C_FIELD(arg1, f32 *, 8) = (f32) M2C_FIELD(arg0, f32 *, 0x3E8);
 }
 
+f32 CarA_Transmission_GetTorqueAtWheels(u8 *car)
+{
+    u8 *trans;
+    f32 scale;
+    f32 rpm;
+    f32 d;
+    f32 c;
+    f32 b;
+    f32 a;
+
+    a = *(f32 *)(car + 0x4C0);
+    b = *(f32 *)(car + 0x4C4);
+    c = *(f32 *)(car + 0x4C8);
+    d = *(f32 *)(car + 0x4CC);
+    rpm = *(f32 *)(car + 0x4E4);
+    scale = 1.0f;
+    if (*(s32 *)(car + 0x470) < 10000)
+    {
+        scale = 0.5f;
+        rpm *= scale;
+    }
+    else if (*(u32 *)(car + 0x48C) & 0x1000)
+    {
+        trans = *(u8 **)(car + 0x3BC);
+        rpm /= *(f32 *)(trans + 0x30);
+        scale *= *(f32 *)(trans + 0x34);
+    }
+    if (rpm < 0.0f)
+    {
+        rpm *= -1.0f;
+    }
+    trans = *(u8 **)(car + 0x3BC);
+    return scale * (rpm * (rpm * (a * rpm + b) + c) + d) /
+           ((f32 *)(*(u8 **)(trans + 0xDC)))[*(u8 *)(car + 0x4E8) * 2];
+}
+
 void CarA_SetSlavePlayers(u8 *car)
 {
     u8 *slave;
