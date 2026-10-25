@@ -63,6 +63,15 @@ f32 CarA_GetMass(u8 *car)
     return *(f32 *)(coll + 0x20);
 }
 
+s32 CarA_GetSurfaceScript(u8 *car)
+{
+    u8 *coll;
+
+    coll = *(u8 **)(car + 0x3BC);
+    coll = *(u8 **)(coll + 0xA0);
+    return *(s32 *)(coll + 0x30);
+}
+
 s32 CarA_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
