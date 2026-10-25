@@ -24,3 +24,7 @@ s32 ActionSetPlayerOrder(void *action) {
     return 1;
 }
 
+s32 ActionSpeakerChangeMode(void) {
+    return 1;
+}
+
