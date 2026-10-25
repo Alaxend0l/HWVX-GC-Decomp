@@ -29,3 +29,28 @@ u32 AI_UpdateTimer(u32 *arg0) {
     return *arg0;
 }
 
+s8 AI_CheckAngleInRange(f32 angle, f32 center, f32 range) {
+    s8 inRange = 0;
+    f32 diff;
+
+    if (center == 0.0f && range == 0.0f) {
+        return 1;
+    }
+    if (range == 180.0f) {
+        return 1;
+    }
+    if (center > 180.0f) {
+        center -= 360.0f;
+    }
+    diff = angle - center;
+    if (diff > 180.0f) {
+        diff -= 360.0f;
+    } else if (diff < -180.0f) {
+        diff += 360.0f;
+    }
+    if (diff <= range && diff >= -range) {
+        inRange = 1;
+    }
+    return inRange;
+}
+
