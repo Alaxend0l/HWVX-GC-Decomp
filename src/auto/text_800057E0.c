@@ -557,6 +557,33 @@ typedef union Matrix4 {
     Vector4 v[4];
 } Matrix4;
 
+typedef struct PolyOBox {
+    Vector4 center;
+    Vector4 corners[8];
+    f32 extent[3];
+    u8 pad9C[4];
+    Vector4 *axis[3];
+    u8 padAC[0xCC - 0xAC];
+    u32 unkCC;
+} PolyOBox;
+
+typedef struct PolyHit {
+    Vector4 pos;
+    Vector4 normal;
+    u8 pad20[8];
+    u32 unk28;
+    u8 pad2C[0x14];
+    u8 type;
+} PolyHit;
+
+typedef struct CollisionPoly {
+    Vector4 plane;
+    Vector4 *verts;
+    u32 numVerts;
+    u8 pad18[4];
+    u32 material;
+} CollisionPoly;
+
 typedef struct Thing {
     Vector4 pos;  /* 0x00 */
     Matrix4 mtx;  /* 0x10 */
@@ -8606,6 +8633,285 @@ f32 RayHitsPoly(Vector4 *start, Vector4 *dir, Vector4 *poly, f32 t) {
     }
     return 0.0f;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+f32 OOBHitsPoly(void *arg0, void *arg1, void *arg2, void *arg3, f32 maxT) {
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *axb);
+    void Create_Plane(Vector4 *plane, Vector4 *normal, Vector4 *point);
+    f32 Distance_Plane(Vector4 *plane, Vector4 *point);
+    u8 FloatsEqual(f32 a, f32 b, f32 eps);
+    s8 CollisionTriCache_Get(u32 tri0, u32 tri1, Vector4 *a, Vector4 *b);
+    void CollisionTriCache_Set(u32 tri0, u32 tri1, Vector4 *a, Vector4 *b);
+    s32 Collision_ProcessDividingAxis(DividingAxis *axis);
+    typedef struct PolyOBox {
+        Vector4 center;
+        Vector4 corners[8];
+        f32 extent[3];
+        u8 pad9C[4];
+        Vector4 *axis[3];
+        u8 padAC[0xCC - 0xAC];
+        u32 unkCC;
+    } PolyOBox;
+    typedef struct PolyHit {
+        Vector4 pos;
+        Vector4 normal;
+        u8 pad20[8];
+        u32 unk28;
+        u8 pad2C[0x14];
+        u8 type;
+    } PolyHit;
+    typedef struct CollisionPoly {
+        Vector4 plane;
+        Vector4 *verts;
+        u32 numVerts;
+        u8 pad18[4];
+        u32 material;
+    } CollisionPoly;
+    DividingAxis da;
+    Vector4 edge;
+    Vector4 axis;
+    Vector4 p0;
+    Vector4 p1;
+    Vector4 dir;
+    Vector4 start;
+    Vector4 end;
+    Vector4 plane;
+    Vector4 cross;
+    Vector4 corner;
+    Vector4 cornerEnd;
+    u8 edgeMax;
+    u8 edgeMin;
+    PolyHit *hit = arg3;
+    Vector4 *vel = arg2;
+    CollisionPoly *poly = arg1;
+    PolyOBox *box = arg0;
+    u8 hiIdx;
+    s32 j;
+    u8 type;
+    u32 cornerIdx;
+    u8 axisIdx;
+    u8 edgeIdx;
+    u8 edgeVert;
+    s32 i;
+    u8 loIdx;
+    u8 vert;
+    u8 minIdx;
+    u8 maxIdx;
+    s32 m;
+    u32 k;
+    s32 prev;
+    f32 planeD;
+    f32 a;
+    f32 b;
+    f32 d;
+    f32 d2;
+
+    planeD = -poly->plane.w;
+    da.tEnter = 0.0f;
+    da.tExit = maxT;
+    type = 0;
+    axisIdx = 0;
+    vert = 99;
+    edgeIdx = 99;
+    for (i = 0; i < 3; i++) {
+        minIdx = 0;
+        maxIdx = 0;
+        da.minA = da.maxA = PSVECDotProduct(box->axis[i], &poly->verts[0]);
+        for (k = 1; k < poly->numVerts; k++) {
+            d = PSVECDotProduct(box->axis[i], &poly->verts[k]);
+            if (d < da.minA) {
+                da.minA = d;
+                minIdx = k;
+            } else if (d > da.maxA) {
+                da.maxA = d;
+                maxIdx = k;
+            }
+        }
+        da.dir = -PSVECDotProduct(box->axis[i], vel);
+        d = PSVECDotProduct(box->axis[i], &box->center);
+        da.maxB = d + box->extent[i];
+        da.minB = d - box->extent[i];
+        switch ((u8)Collision_ProcessDividingAxis(&da)) {
+        case 0:
+            return maxT;
+        case 2:
+            vert = minIdx;
+            axisIdx = i + 3;
+            type = 1;
+            break;
+        case 3:
+            vert = maxIdx;
+            axisIdx = i;
+            type = 1;
+            break;
+        }
+    }
+    cornerIdx = 0;
+    da.minB = da.maxB = PSVECDotProduct(&poly->plane, &box->corners[0]);
+    for (k = 1; k < 8; k++) {
+        d = PSVECDotProduct(&poly->plane, &box->corners[k]);
+        if (d < da.minB) {
+            da.minB = d;
+            cornerIdx = (u8)k;
+        } else if (d > da.maxB) {
+            da.maxB = d;
+        }
+    }
+    da.dir = -PSVECDotProduct(&poly->plane, vel);
+    da.minA = planeD;
+    da.maxA = planeD;
+    switch ((u8)Collision_ProcessDividingAxis(&da)) {
+    case 0:
+        return maxT;
+    case 2:
+        type = 2;
+        break;
+    case 3:
+        type = 2;
+        break;
+    }
+    for (j = 0, prev = poly->numVerts - 1; j < (s32)poly->numVerts; prev = j, j++) {
+        PSVECSubtract(&poly->verts[j], &poly->verts[prev], &edge);
+        for (i = 0; i < 3; i++) {
+            edgeMax = 0;
+            edgeMin = 0;
+            PSVECCrossProduct(box->axis[i], &edge, &axis);
+            da.minB = da.maxB = PSVECDotProduct(&axis, &box->corners[0]);
+            for (m = 1; m < 8; m++) {
+                d = PSVECDotProduct(&axis, &box->corners[m]);
+                if (d < da.minB) {
+                    da.minB = d;
+                    edgeMin = m;
+                } else if (d > da.maxB) {
+                    edgeMax = m;
+                    da.maxB = d;
+                }
+            }
+            a = PSVECDotProduct(&axis, &poly->verts[j]);
+            b = PSVECDotProduct(&axis, &poly->verts[(u32)poly->verts[j].w]);
+            if (a > b) {
+                da.minA = b;
+                hiIdx = j;
+                da.maxA = a;
+                loIdx = poly->verts[j].w;
+            } else {
+                da.minA = a;
+                loIdx = j;
+                da.maxA = b;
+                hiIdx = poly->verts[j].w;
+            }
+            da.dir = -PSVECDotProduct(&axis, vel);
+            switch ((u8)Collision_ProcessDividingAxis(&da)) {
+            case 0:
+                return maxT;
+            case 2:
+                edgeVert = loIdx;
+                edgeIdx = j;
+                axisIdx = i;
+                cornerIdx = edgeMax;
+                type = 3;
+                break;
+            case 3:
+                edgeVert = hiIdx;
+                edgeIdx = j;
+                axisIdx = i;
+                cornerIdx = edgeMin;
+                type = 3;
+                break;
+            }
+        }
+    }
+    if (hit != NULL && da.tEnter < maxT) {
+        hit->type = type;
+        hit->unk28 = (*(u32 **)(*(u8 **)g_worldData.world + 0x5C))[poly->material];
+        box->unkCC = (u32)poly;
+        switch (type) {
+        case 1:
+            hit->pos = poly->verts[vert];
+            hit->normal = *box->axis[axisIdx % 3];
+            if (axisIdx >= 3) {
+                hit->normal.x *= -1.0f;
+                hit->normal.y *= -1.0f;
+                hit->normal.z *= -1.0f;
+            }
+            CollisionTriCache_Set((u32)box, (u32)poly, &hit->pos, &hit->normal);
+            break;
+        case 2:
+            hit->pos = box->corners[cornerIdx];
+            hit->pos.x += vel->x * da.tEnter;
+            hit->pos.y += vel->y * da.tEnter;
+            hit->pos.z += vel->z * da.tEnter;
+            hit->normal = poly->plane;
+            CollisionTriCache_Set((u32)box, (u32)poly, &hit->pos, &hit->normal);
+            break;
+        case 3:
+            p0 = poly->verts[edgeIdx];
+            p1 = poly->verts[(edgeIdx + (poly->numVerts - 1)) % poly->numVerts];
+            PSVECCrossProduct(box->axis[axisIdx], vel, &cross);
+            Create_Plane(&plane, &cross, &box->corners[cornerIdx]);
+            start = poly->verts[edgeVert];
+            PSVECSubtract(&p1, &p0, &dir);
+            PSVECAdd(&start, &dir, &end);
+            a = Distance_Plane(&plane, &start);
+            b = Distance_Plane(&plane, &end);
+            corner = box->corners[cornerIdx];
+            cornerEnd.x = corner.x + box->axis[axisIdx]->x;
+            cornerEnd.y = corner.y + box->axis[axisIdx]->y;
+            cornerEnd.z = corner.z + box->axis[axisIdx]->z;
+            d = Distance_Plane(&poly->plane, &corner);
+            d2 = Distance_Plane(&poly->plane, &cornerEnd);
+            if (FloatsEqual(d, 0.0f, 0.001f) && FloatsEqual(d2, 0.0f, 0.001f)) {
+                hit->pos = box->corners[cornerIdx];
+                hit->pos.x += vel->x * da.tEnter;
+                hit->pos.y += vel->y * da.tEnter;
+                hit->pos.z += vel->z * da.tEnter;
+                hit->normal = poly->plane;
+                CollisionTriCache_Set((u32)box, (u32)poly, &hit->pos, &hit->normal);
+            } else {
+                if (FloatsEqual(a - b, 0.0f, 0.0001f)) {
+                    hit->pos = poly->verts[edgeVert];
+                    hit->normal.x = -vel->x;
+                    hit->normal.y = -vel->y;
+                    hit->normal.z = -vel->z;
+                    if (PSVECSquareMag(&hit->normal)) {
+                        PSVECNormalize(&hit->normal, &hit->normal);
+                    }
+                } else {
+                    d = a / (a - b);
+                    hit->pos.x = dir.x * d + start.x;
+                    hit->pos.y = dir.y * d + start.y;
+                    hit->pos.z = dir.z * d + start.z;
+                    PSVECCrossProduct(box->axis[axisIdx], &dir, &hit->normal);
+                    if (PSVECSquareMag(&hit->normal)) {
+                        PSVECNormalize(&hit->normal, &hit->normal);
+                    }
+                    if (PSVECDotProduct(&hit->normal, vel) > 0.0f) {
+                        hit->normal.x *= -1.0f;
+                        hit->normal.y *= -1.0f;
+                        hit->normal.z *= -1.0f;
+                    }
+                }
+                CollisionTriCache_Set((u32)box, (u32)poly, &hit->pos, &hit->normal);
+            }
+            break;
+        default:
+            hit->type = 0xFF;
+            if (!CollisionTriCache_Get((u32)box, (u32)poly, &hit->pos, &hit->normal)) {
+                hit->pos = poly->verts[0];
+                hit->normal = poly->plane;
+            }
+            break;
+        }
+    }
+    return da.tEnter;
+}
+#pragma pop
 
 typedef struct OBoxZT {
     Vector4 center;
@@ -45798,6 +46104,100 @@ void __ARHandler(s16 interrupt, void *context) {
     }
     OSClearContext(exceptionContext);
     OSSetCurrentContext(context);
+}
+
+void __ARChecksize(void) {
+    extern u32 __AR_InternalSize_803C7428;
+    extern u32 __AR_ExpansionSize_803C742C;
+    extern u32 __AR_Size_803C7424;
+    void DCFlushRange(void *addr, u32 len);
+    void DCInvalidateRange(void *addr, u32 len);
+    void PPCSync(void);
+    void *memset(void *dst, s32 c, u32 n);
+    u8 test_data_pad[0x40];
+    u8 dummy_data_pad[0x40];
+    u8 buffer_pad[0x40];
+    u32 *test_data;
+    u32 *dummy_data;
+    u32 *buffer;
+    u16 ARAM_mode;
+    u32 ARAM_size;
+    u32 i;
+
+    while (!(__DSPRegs[11] & 1)) {
+    }
+    ARAM_mode = 3;
+    ARAM_size = __AR_InternalSize_803C7428 = 0x1000000;
+    test_data = (u32 *)(((u32)test_data_pad + 0x1F) & ~0x1F);
+    dummy_data = (u32 *)(((u32)dummy_data_pad + 0x1F) & ~0x1F);
+    buffer = (u32 *)(((u32)buffer_pad + 0x1F) & ~0x1F);
+    __DSPRegs[9] = (u16)((__DSPRegs[9] & ~0x3f) | 0x23);
+    for (i = 0; i < 8; i++) {
+        test_data[i] = 0xDEADBEEF;
+        dummy_data[i] = 0xBAD0BAD0;
+    }
+    DCFlushRange(test_data, 0x20);
+    DCFlushRange(dummy_data, 0x20);
+    __AR_ExpansionSize_803C742C = 0;
+    __ARWriteDMA((u32)dummy_data, ARAM_size + 0, 0x20);
+    __ARWriteDMA((u32)dummy_data, ARAM_size + 0x200000, 0x20);
+    __ARWriteDMA((u32)dummy_data, ARAM_size + 0x1000000, 0x20);
+    __ARWriteDMA((u32)dummy_data, ARAM_size + 0x200, 0x20);
+    __ARWriteDMA((u32)dummy_data, ARAM_size + 0x400000, 0x20);
+    memset(buffer, 0, 0x20);
+    DCFlushRange(buffer, 0x20);
+    __ARWriteDMA((u32)test_data, ARAM_size + 0, 0x20);
+    DCInvalidateRange(buffer, 0x20);
+    __ARReadDMA((u32)buffer, ARAM_size + 0, 0x20);
+    PPCSync();
+    if (buffer[0] == test_data[0]) {
+        memset(buffer, 0, 0x20);
+        DCFlushRange(buffer, 0x20);
+        __ARReadDMA((u32)buffer, ARAM_size + 0x200000, 0x20);
+        PPCSync();
+        if (buffer[0] == test_data[0]) {
+            __AR_ExpansionSize_803C742C = 0x200000;
+            ARAM_size += 0x200000;
+            goto end;
+        }
+        memset(buffer, 0, 0x20);
+        DCFlushRange(buffer, 0x20);
+        __ARReadDMA((u32)buffer, ARAM_size + 0x1000000, 0x20);
+        PPCSync();
+        if (buffer[0] == test_data[0]) {
+            __AR_ExpansionSize_803C742C = 0x400000;
+            ARAM_mode |= 8;
+            ARAM_size += 0x400000;
+            goto end;
+        }
+        memset(buffer, 0, 0x20);
+        DCFlushRange(buffer, 0x20);
+        __ARReadDMA((u32)buffer, ARAM_size + 0x200, 0x20);
+        PPCSync();
+        if (buffer[0] == test_data[0]) {
+            __AR_ExpansionSize_803C742C = 0x800000;
+            ARAM_mode |= 0x10;
+            ARAM_size += 0x800000;
+            goto end;
+        }
+        memset(buffer, 0, 0x20);
+        DCFlushRange(buffer, 0x20);
+        __ARReadDMA((u32)buffer, ARAM_size + 0x400000, 0x20);
+        PPCSync();
+        if (buffer[0] == test_data[0]) {
+            __AR_ExpansionSize_803C742C = 0x1000000;
+            ARAM_mode |= 0x18;
+            ARAM_size += 0x1000000;
+        } else {
+            __AR_ExpansionSize_803C742C = 0x2000000;
+            ARAM_mode |= 0x20;
+            ARAM_size += 0x2000000;
+        }
+    end:
+        __DSPRegs[9] = (u16)((__DSPRegs[9] & ~0x3f) | ARAM_mode);
+    }
+    *(u32 *)0xC00000D0 = ARAM_size;
+    __AR_Size_803C7424 = ARAM_size;
 }
 
 void __ARQServiceQueueLo(void) {
