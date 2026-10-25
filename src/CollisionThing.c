@@ -34,3 +34,13 @@ extern OBox g_aOBox[0x200];
 extern OConvexHull g_aOConvexHull[8];
 extern CollisionPair g_aCollisionPairCache[4];
 void Dprintf(const char *, ...);
+
+void CollisionPairCache_Clear(void) {
+    u32 i;
+
+    for (i = 0; i < 4; i++) {
+        g_aCollisionPairCache[i].objectB = 0;
+        g_aCollisionPairCache[i].objectA = 0;
+        g_aCollisionPairCache[i].time = 99999;
+    }
+}
