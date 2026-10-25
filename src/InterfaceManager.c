@@ -240,6 +240,40 @@ void InterfaceManager_SetOffset(s32 index, f32 x, f32 y) {
     *(f32 *)(iface + 0x64) = y;
 }
 
+void InterfaceManager_SetObjectString(u8 *obj, char *str) {
+    u32 strlen(const char *s);
+    char *strncpy(char *dst, const char *src, u32 n);
+    char *strcpy(char *dst, const char *src);
+    u8 *info = *(u8 **)(*(u8 **)(obj + 0x258) + 4);
+
+    obj[0x248] = 1;
+    obj[0x84] = 1;
+    obj[0x2C] = 1;
+    obj[0x164] = 1;
+    obj[0x194] = 1;
+    *(u16 *)(obj + 0x1AA) = 0;
+    *(u32 *)(obj + 0x1AC) = *(u32 *)(info + 0x14);
+    *(u16 *)(obj + 0x1A8) = 0;
+    obj[0x1C0] = 0;
+    *(void **)(obj + 0x1A0) = NULL;
+    *(char **)(obj + 0x1A4) = NULL;
+    obj[0x1B1] = 0;
+    if (str != NULL) {
+        if (strlen(str) > 0x80) {
+            strncpy((char *)(obj + 0x1C0), str, 0x80);
+        } else {
+            strcpy((char *)(obj + 0x1C0), str);
+        }
+        *(u16 *)(obj + 0x1A8) = strlen(str);
+        if (*(s32 *)(obj + 0x1AC) == 0) {
+            *(u16 *)(obj + 0x1AA) = *(u16 *)(obj + 0x1A8);
+        }
+        if (*(u8 *)(*(u8 **)(obj + 0x258) + 0x12) != 0) {
+            obj[0x1B1] = 1;
+        }
+    }
+}
+
 void InterfaceManager_SetMissionObjectiveText(u8 *obj, u8 **data) {
     u32 strlen(const char *s);
     char *strcpy(char *dst, const char *src);
