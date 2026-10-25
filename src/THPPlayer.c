@@ -7,11 +7,14 @@ typedef struct THPPlayer {
     u8 components[0x80 - 0x70];
     u8 videoInfo[8];
     u8 audioInfo[0xC];
+    u8 pad94[4];
+    u8 open;
+    u8 pad99[3];
     u8 state;
     u8 unk9D;
     u8 playFlag;
     u8 audioExist;
-    u8 unk9F_pad[3];
+    u8 padA0[5];
     u32 onMemory;
 } THPPlayer;
 
