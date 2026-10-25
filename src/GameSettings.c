@@ -67,6 +67,11 @@ done:
         break;
     }
 }
+
+s32 GameSettings_GetDifficulty(void) {
+    return g_generalGameSettings.difficulty;
+}
+
 typedef struct CodeVariables {
     s32 playerVehicle[4];
     s32 playerItem[4];
