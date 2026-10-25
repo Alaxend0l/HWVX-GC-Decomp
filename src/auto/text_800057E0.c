@@ -6339,33 +6339,6 @@ void GetTrimmedCameraPos2(Vector4 *from, Vector4 *to, f32 *trim, s32 unused, Mat
     }
 }
 
-static inline s8 Camera_IsInVolume(u8 *cam) {
-    s32 VolumeManager_GetVolumeCellIndex(Vector4 *point);
-    s32 VolumeManager_GetNumVolumesOfTypeByCell(s32 type, s32 cell);
-    s32 VolumeManager_GetVolumeTypeByIndexByCell(s32 type, s32 index, s32 cell);
-    u8 *car;
-    u8 *volume;
-    u32 i;
-    s32 cell;
-    u32 count;
-    s8 inVolume;
-
-    inVolume = 0;
-    cell = VolumeManager_GetVolumeCellIndex((Vector4 *)(*(u8 **)(*(u8 **)cam + 0x2C) + 0x40));
-    count = VolumeManager_GetNumVolumesOfTypeByCell(3, cell);
-    car = *(u8 **)(*(u8 **)cam + 0x2C);
-    if (*(u8 **)(car + 0x8C) != g_carAVTable || *(s32 *)(car + 0x460) == 0) {
-        for (i = 0; i < count; i++) {
-            f32 dist = 0.0f;
-            volume = (u8 *)VolumeManager_GetVolumeTypeByIndexByCell(3, i, cell);
-            if (IsPointWithinVolume((Vector4 *)(*(u8 **)(*(u8 **)cam + 0x2C) + 0x40), volume, &dist)) {
-                inVolume = 1;
-            }
-        }
-    }
-    return inVolume;
-}
-
 void Camera_UpdatePosition_Default(u8 *cam, f32 *mode) {
     typedef struct CameraTargetInfo {
         u8 pad0[0x30];
