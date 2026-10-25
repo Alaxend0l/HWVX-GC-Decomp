@@ -203,3 +203,44 @@ s32 Player_AIControlReader(s8 *ctrl) {
     return 1;
 }
 
+s32 ActionVehicleChangeControl(u32 *action) {
+    extern void Player_DefaultControlReader(void);
+    void Input_SetForceFeedbackActive(s32 input, u8 active);
+    u8 *GameSettings_GetControllerSettings(s32 index);
+    u8 i;
+    u8 *vehicle;
+    u8 *player;
+    s32 isHuman;
+
+    for (i = 0; i < action[2]; i++) {
+        vehicle = *(u8 **)(action[i + 3] + 0x28);
+        if (vehicle == NULL) {
+            continue;
+        }
+        player = *(u8 **)(vehicle + 0x94);
+        if (player == NULL) {
+            continue;
+        }
+        if (action[0] == 0x22) {
+            isHuman = 0;
+            if (player != NULL && *(void **)(player + 0x20) == Player_DefaultControlReader) {
+                isHuman = 1;
+            }
+            if (isHuman) {
+                Input_SetForceFeedbackActive(*(s32 *)(player + 0xC8), 0);
+            }
+            *(u32 *)(player + 0x6C) |= 1;
+        } else {
+            isHuman = 0;
+            if (player != NULL && *(void **)(player + 0x20) == Player_DefaultControlReader) {
+                isHuman = 1;
+            }
+            if (isHuman) {
+                Input_SetForceFeedbackActive(*(s32 *)(player + 0xC8), *GameSettings_GetControllerSettings(*(s32 *)(player + 0x60)));
+            }
+            *(u32 *)(player + 0x6C) &= ~1;
+        }
+    }
+    return 1;
+}
+
