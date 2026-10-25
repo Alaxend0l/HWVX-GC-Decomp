@@ -119,3 +119,7 @@ s32 AI_Heartbeat(u8 *ai) {
     return 1;
 }
 
+void AI_AsyncHeartbeat(void *arg0) {
+    M2C_FIELD(arg0, s32 *, 0xC8) = 0x1F4;
+}
+
