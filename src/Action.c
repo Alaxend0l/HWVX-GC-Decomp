@@ -62,3 +62,30 @@ void Action_Init(void) {
     }
 }
 
+void Action_Heartbeat(void) {
+    typedef struct Action {
+        s32 type;
+        void *data;
+        s32 unk8;
+        s32 unkC;
+        s32 unk10;
+        s32 delay;
+    } Action;
+    extern Action *m_Actions_800DBC80[80];
+    extern void (*pActionFuncArray_800CF500[])(void *);
+    extern s32 g_iDeltaTimeMS;
+    u32 i;
+
+    for (i = 0; i < 80; i++) {
+        Action *action = m_Actions_800DBC80[i];
+        if (action != NULL && action->delay <= 0) {
+            pActionFuncArray_800CF500[action->type](action->data);
+            if (m_Actions_800DBC80[i]->type != 0x14 || ((void **)m_Actions_800DBC80[i]->data)[1] == NULL) {
+                m_Actions_800DBC80[i] = NULL;
+            }
+        } else if (action != NULL) {
+            action->delay -= g_iDeltaTimeMS;
+        }
+    }
+}
+
