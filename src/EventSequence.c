@@ -1,5 +1,7 @@
 
 
+#include "common.h"
+
 void Thing_Release(void *);
 void EventSeq_Release(void *arg0)
 {
