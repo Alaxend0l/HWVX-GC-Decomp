@@ -232,6 +232,14 @@ void InterfaceManager_PauseAllInterface(u8 pause) {
     }
 }
 
+void InterfaceManager_SetOffset(s32 index, f32 x, f32 y) {
+    extern u8 g_interface[][0x170];
+    u8 *iface = g_interface[index];
+    iface[0x82] = 1;
+    *(f32 *)(iface + 0x60) = x;
+    *(f32 *)(iface + 0x64) = y;
+}
+
 void InterfaceManager_SetMissionObjectiveText(u8 *obj, u8 **data) {
     u32 strlen(const char *s);
     char *strcpy(char *dst, const char *src);
