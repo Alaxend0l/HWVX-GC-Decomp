@@ -10470,6 +10470,15 @@ static inline void Render_SetWindowViewport(void) {
     GXSetScissor(*(u32 *)((u8 *)GetRenderWindow() + 0x2B0), stop, swd, sht);
 }
 
+static inline void Render_BeginView(u16 view) {
+    extern GfxState g_state;
+
+    Gfx_SetRenderWindow(view);
+    Render_SetWindowViewport();
+    g_state.unk93 = 0;
+    Gfx_SetWorldMatrix(NULL);
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 #pragma auto_inline off
@@ -10507,11 +10516,12 @@ void Render_EndScene(void) {
     void GXSetBlendMode(s32 type, s32 src, s32 dst, s32 op);
     void Render_Print(void);
     void Render_ScreenFlash(void);
-    u32 fog;
     s32 cull;
     u32 view;
+    u32 fog;
     u32 i;
     u16 v;
+    u16 j;
 
     fog = m_fogMode_803C76CC;
     if (g_CurrentViews != 1) {
@@ -10522,13 +10532,14 @@ void Render_EndScene(void) {
     }
     cull = m_cullMode;
     Render_StateCullMode(0);
+    view = 1;
     g_onebitflag = 1;
     if (g_CurrentViews == 1) {
         for (i = 0; i < g_pGDL->numAlphaGroups; i++) {
             Render_DrawAlphaGroup(i);
         }
     } else {
-        for (view = 1; view < 5; view++) {
+        for (; view < 5; view++) {
             if (g_CurrentViews & (1 << view)) {
                 Gfx_SetRenderWindow(view);
                 Render_SetWindowViewport();
@@ -10636,8 +10647,8 @@ void Render_EndScene(void) {
     Render_DrawRectanglesWindow();
     Render_DrawRectangles();
     Render_SetTextureHandle(0xFFFF);
-    for (i = 0; i < *(u32 *)g_pGDL->unk28; i++) {
-        Render_DrawLine2D((u8 *)g_pGDL + 0xAE700 + i * 0x30);
+    for (j = 0; j < *(u32 *)g_pGDL->unk28; j++) {
+        Render_DrawLine2D((u8 *)g_pGDL + 0xAE700 + j * 0x30);
     }
     Render_StateZWriteEnable(1);
     GXSetBlendMode(1, 4, 5, 5);
