@@ -6383,7 +6383,6 @@ void Camera_UpdatePosition_Default(u8 *cam, f32 *mode) {
     f32 inv;
     f32 s;
     f32 strength;
-    f32 step;
     f32 damp;
     f32 kx;
     f32 ky;
@@ -6394,6 +6393,7 @@ void Camera_UpdatePosition_Default(u8 *cam, f32 *mode) {
     f32 dx;
     f32 dy;
     f32 dz;
+    f32 step;
     u32 i;
     s32 cell;
     u32 count;
@@ -6564,11 +6564,10 @@ void Camera_UpdatePosition_Default(u8 *cam, f32 *mode) {
 
     kx = 2.0f * mode[3];
     damp = -mode[4];
-    t = g_fDeltaTimeSec;
     step = 0.017f;
+    t = g_fDeltaTimeSec;
     ky = kx * mode[6];
     while (t > step) {
-        t -= step;
         sx = kx * (*(f32 *)(cam + 0xE0) - *(f32 *)(cam + 0x110));
         sy = ky * (*(f32 *)(cam + 0xE4) - *(f32 *)(cam + 0x114));
         sz = kx * (*(f32 *)(cam + 0xE8) - *(f32 *)(cam + 0x118));
@@ -6581,6 +6580,7 @@ void Camera_UpdatePosition_Default(u8 *cam, f32 *mode) {
         *(f32 *)(cam + 0x120) += step * (sx + dx);
         *(f32 *)(cam + 0x124) += step * (sy + dy);
         *(f32 *)(cam + 0x128) += step * (sz + dz);
+        t -= step;
     }
     sx = kx * (*(f32 *)(cam + 0xE0) - *(f32 *)(cam + 0x110));
     sy = ky * (*(f32 *)(cam + 0xE4) - *(f32 *)(cam + 0x114));
@@ -6609,10 +6609,11 @@ void Camera_UpdatePosition_Default(u8 *cam, f32 *mode) {
     if (*(u8 **)(car + 0x8C) == g_carAVTable) {
         Vector4 toTarget;
         Vector4 blend;
+        s32 bone;
         mtx = *(Matrix4 *)(car + 0x10);
-        cell = *(s32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x44);
+        bone = *(s32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x44);
         XformVec(car + 0x10, (Vector4 *)(car + 0x520), (Vector4 *)&mtx.m[3][0]);
-        GetTrimmedCameraPos2(&info.from, (Vector4 *)(cam + 0x60), (f32 *)(cam + 0xBC), cell, &mtx);
+        GetTrimmedCameraPos2(&info.from, (Vector4 *)(cam + 0x60), (f32 *)(cam + 0xBC), bone, &mtx);
         PSVECSubtract(&target, cam + 0x60, &toTarget);
         if (PSVECSquareMag(&toTarget)) {
             PSVECNormalize(&toTarget, &toTarget);
