@@ -308,7 +308,7 @@ config.libs = [
             Object(NonMatching, "CollisionTerrain.c"),
             Object(NonMatching, "CollisionThing.c"),
             Object(NonMatching, "CollisionTriangle.c"),
-            Object(NonMatching, "Control.c"),
+            Object(Matching, "Control.c"),
             Object(NonMatching, "CoronaHolder.c"),
             Object(NonMatching, "Creature.c"),
             Object(NonMatching, "DataGamePackLoad.c"),
@@ -436,7 +436,7 @@ config.libs = [
     },
     {
         "lib": "SSystem",
-        "mw_version": config.linker_version,
+        "mw_version": "GC/1.2.5",
         "cflags": cflags_base,
         "progress_category": "sdk",
         "objects": [
