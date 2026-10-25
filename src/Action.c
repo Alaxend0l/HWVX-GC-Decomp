@@ -49,3 +49,7 @@ void Action_Create(void) {
     fn_800957D4();
 }
 
+void Action_Destroy(void) {
+
+}
+
