@@ -53,7 +53,7 @@ void DataPack_Initialize(void)
 {
     u32 i;
 
-    for (i = 0; i < 21; i++) {
+    for (i = 0; i < 11; i++) {
         g_fileTOCCache[i].name[0] = 0;
     }
 }
