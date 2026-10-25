@@ -80,6 +80,10 @@ ControllerSettings *GameSettings_GetControllerSettings(s32 player) {
     return &g_generalGameSettings.controllers[player - 1];
 }
 
+AudioSettings *GameSettings_GetAudioSettings(void) {
+    return &g_generalGameSettings.audio;
+}
+
 typedef struct CodeVariables {
     s32 playerVehicle[4];
     s32 playerItem[4];
