@@ -28,3 +28,7 @@ s32 ActionSpeakerChangeMode(void) {
     return 1;
 }
 
+s32 ActionVehicleAISetNamedPath(void) {
+    return 1;
+}
+
