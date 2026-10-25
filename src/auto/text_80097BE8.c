@@ -4917,6 +4917,237 @@ double __ieee754_atan2(double y, double x) {
     }
 }
 
+double __ieee754_pow(double x, double y) {
+    const double *bp = bp_800CDA80;
+    double z, ax, z_h, z_l, p_h, p_l;
+    double y1, t1, t2, r, s, t, u, v, w;
+    int i, j, k, yisint, n;
+    int hx, hy, ix, iy;
+    unsigned lx, ly;
+
+    hx = __HI(x);
+    lx = __LO(x);
+    hy = __HI(y);
+    ly = __LO(y);
+    ix = hx & 0x7fffffff;
+    iy = hy & 0x7fffffff;
+
+    if ((iy | ly) == 0) {
+        return 1.0;
+    }
+
+    if (ix > 0x7ff00000 || ((ix == 0x7ff00000) && (lx != 0)) || iy > 0x7ff00000 || ((iy == 0x7ff00000) && (ly != 0))) {
+        return x + y;
+    }
+
+    yisint = 0;
+    if (hx < 0) {
+        if (iy >= 0x43400000) {
+            yisint = 2;
+        } else if (iy >= 0x3ff00000) {
+            k = (iy >> 20) - 0x3ff;
+            if (k > 20) {
+                j = ly >> (52 - k);
+                if ((j << (52 - k)) == ly) {
+                    yisint = 2 - (j & 1);
+                }
+            } else if (ly == 0) {
+                j = iy >> (20 - k);
+                if ((j << (20 - k)) == iy) {
+                    yisint = 2 - (j & 1);
+                }
+            }
+        }
+    }
+
+    if (ly == 0) {
+        if (iy == 0x7ff00000) {
+            if (((ix - 0x3ff00000) | lx) == 0) {
+                return y - y;
+            } else if (ix >= 0x3ff00000) {
+                return (hy >= 0) ? y : 0.0;
+            } else {
+                return (hy < 0) ? -y : 0.0;
+            }
+        }
+        if (iy == 0x3ff00000) {
+            if (hy < 0) {
+                return 1.0 / x;
+            } else {
+                return x;
+            }
+        }
+        if (hy == 0x40000000) {
+            return x * x;
+        }
+        if (hy == 0x3fe00000) {
+            if (hx >= 0) {
+                return sqrt(x);
+            }
+        }
+    }
+
+    ax = fabs(x);
+    if (lx == 0) {
+        if (ix == 0x7ff00000 || ix == 0 || ix == 0x3ff00000) {
+            z = ax;
+            if (hy < 0) {
+                z = 1.0 / z;
+            }
+            if (hx < 0) {
+                if (((ix - 0x3ff00000) | yisint) == 0) {
+                    z = (z - z) / (z - z);
+                } else if (yisint == 1) {
+                    z = -z;
+                }
+            }
+            return z;
+        }
+    }
+
+    if ((((hx >> 31) + 1) | yisint) == 0) {
+        errno = 0x21;
+        return *(f32 *)__float_nan;
+    }
+
+    if (iy > 0x41e00000) {
+        if (iy > 0x43f00000) {
+            if (ix <= 0x3fefffff) {
+                return (hy < 0) ? 1.0e300 * 1.0e300 : 1.0e-300 * 1.0e-300;
+            }
+            if (ix >= 0x3ff00000) {
+                return (hy > 0) ? 1.0e300 * 1.0e300 : 1.0e-300 * 1.0e-300;
+            }
+        }
+        if (ix < 0x3fefffff) {
+            return (hy < 0) ? 1.0e300 * 1.0e300 : 1.0e-300 * 1.0e-300;
+        }
+        if (ix > 0x3ff00000) {
+            return (hy > 0) ? 1.0e300 * 1.0e300 : 1.0e-300 * 1.0e-300;
+        }
+        t = x - 1.0;
+        w = (t * t) * (0.5 - t * (0.3333333333333333333333 - t * 0.25));
+        u = 1.44269502162933349609e+00 * t;
+        v = t * 1.92596299112661746887e-08 - w * 1.44269504088896338700e+00;
+        t1 = u + v;
+        __LO(t1) = 0;
+        t2 = v - (t1 - u);
+    } else {
+        double ss, s2, s_h, s_l, t_h, t_l;
+        n = 0;
+        if (ix < 0x00100000) {
+            ax *= 9007199254740992.0;
+            n -= 53;
+            ix = __HI(ax);
+        }
+        n += ((ix) >> 20) - 0x3ff;
+        j = ix & 0x000fffff;
+        ix = j | 0x3ff00000;
+        if (j <= 0x3988E) {
+            k = 0;
+        } else if (j < 0xBB67A) {
+            k = 1;
+        } else {
+            k = 0;
+            n += 1;
+            ix -= 0x00100000;
+        }
+        __HI(ax) = ix;
+
+        u = ax - bp[k];
+        v = 1.0 / (ax + bp[k]);
+        ss = u * v;
+        s_h = ss;
+        __LO(s_h) = 0;
+        t_h = 0.0;
+        __HI(t_h) = ((ix >> 1) | 0x20000000) + 0x00080000 + (k << 18);
+        t_l = ax - (t_h - bp[k]);
+        s_l = v * ((u - s_h * t_h) - s_h * t_l);
+        s2 = ss * ss;
+        r = s2 * s2 * (5.99999999999994648725e-01 + s2 * (4.28571428578550184252e-01 + s2 * (3.33333329818377432918e-01 + s2 * (2.72728123808534006489e-01 + s2 * (2.30660745775561754067e-01 + s2 * 2.06975017800338417784e-01)))));
+        r += s_l * (s_h + ss);
+        s2 = s_h * s_h;
+        t_h = 3.0 + s2 + r;
+        __LO(t_h) = 0;
+        t_l = r - ((t_h - 3.0) - s2);
+        u = s_h * t_h;
+        v = s_l * t_h + t_l * ss;
+        p_h = u + v;
+        __LO(p_h) = 0;
+        p_l = v - (p_h - u);
+        z_h = 9.61796700954437255859e-01 * p_h;
+        z_l = bp[k + 4] + (-7.02846165095275826516e-09 * p_h + p_l * 9.61796693925975554329e-01);
+        t = (double)n;
+        t1 = (((z_h + z_l) + bp[k + 2]) + t);
+        __LO(t1) = 0;
+        t2 = z_l - (((t1 - t) - bp[k + 2]) - z_h);
+    }
+
+    s = 1.0;
+    if ((((hx >> 31) + 1) | (yisint - 1)) == 0) {
+        s = -1.0;
+    }
+
+    y1 = y;
+    __LO(y1) = 0;
+    p_l = (y - y1) * t1 + y * t2;
+    p_h = y1 * t1;
+    z = p_l + p_h;
+    j = __HI(z);
+    i = __LO(z);
+    if (j >= 0x40900000) {
+        if (((j - 0x40900000) | i) != 0) {
+            return s * 1.0e300 * 1.0e300;
+        } else {
+            if (p_l + 8.0085662595372944372e-17 > z - p_h) {
+                return s * 1.0e300 * 1.0e300;
+            }
+        }
+    } else if ((j & 0x7fffffff) >= 0x4090cc00) {
+        if (((j - 0xc090cc00) | i) != 0) {
+            return s * 1.0e-300 * 1.0e-300;
+        } else {
+            if (p_l <= z - p_h) {
+                return s * 1.0e-300 * 1.0e-300;
+            }
+        }
+    }
+
+    i = j & 0x7fffffff;
+    k = (i >> 20) - 0x3ff;
+    n = 0;
+    if (i > 0x3fe00000) {
+        n = j + (0x00100000 >> (k + 1));
+        k = ((n & 0x7fffffff) >> 20) - 0x3ff;
+        t = 0.0;
+        __HI(t) = (n & ~(0x000fffff >> k));
+        n = ((n & 0x000fffff) | 0x00100000) >> (20 - k);
+        if (j < 0) {
+            n = -n;
+        }
+        p_h -= t;
+    }
+    t = p_l + p_h;
+    __LO(t) = 0;
+    u = t * 6.93147182464599609375e-01;
+    w = p_l - (t - p_h);
+    v = w * 6.93147180559945286227e-01 + t * -1.90465429995776804525e-09;
+    z = u + v;
+    w = v - (z - u);
+    t = z * z;
+    t1 = z - t * (1.66666666666666019037e-01 + t * (-2.77777777770155933842e-03 + t * (6.61375632143793436117e-05 + t * (-1.65339022054652515390e-06 + t * 4.13813679705723846039e-08))));
+    r = (z * t1) / (t1 - 2.0) - (w + z * w);
+    z = 1.0 - (r - z);
+    j = __HI(z);
+    j += n << 20;
+    if ((j >> 20) <= 0) {
+        z = ldexp(z, n);
+    } else {
+        __HI(z) += n << 20;
+    }
+    return s * z;
+}
+
 int __ieee754_rem_pio2(double x, double *y) {
     extern const int npio2_hw_800CDBB8[];
     extern const int two_over_pi_800CDAB0[];
@@ -10210,6 +10441,203 @@ void Render_BeginScene(void) {
     m_VtxDescFlag = 0;
     GXSetColorUpdate(1);
     GXSetAlphaUpdate(0);
+}
+
+static inline void Render_SetWindowViewport(void) {
+    f32 top;
+    f32 wd;
+    f32 ht;
+    u32 stop;
+    u32 swd;
+    u32 sht;
+
+    Gfx_SetProjectionMatrix(*(f32 *)((u8 *)GetRenderWindow() + 0x270));
+    ht = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x284);
+    wd = *(u32 *)((u8 *)GetRenderWindow() + 0x280);
+    top = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x2B8);
+    GXSetViewport(*(u32 *)((u8 *)GetRenderWindow() + 0x2B0), top, wd, ht, 0.0f, 1.0f);
+    sht = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x284);
+    swd = (f32)*(u32 *)((u8 *)GetRenderWindow() + 0x280);
+    stop = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x2B8);
+    GXSetScissor(*(u32 *)((u8 *)GetRenderWindow() + 0x2B0), stop, swd, sht);
+}
+
+void Render_EndScene(void) {
+    extern GDL *g_pGDL;
+    extern GfxState g_state;
+    extern u8 g_CurrentViews;
+    extern u32 m_fogMode_803C76CC;
+    extern s32 m_cullMode;
+    extern s32 g_onebitflag;
+    void Render_StateBlendMode(u32 mode);
+    void Render_StateAlphaBlendEnable(s32 enable);
+    void Render_StateCullMode(s32 mode);
+    void Render_StateZEnable(s32 enable);
+    void Render_StateZWriteEnable(s32 enable);
+    void Render_StateFogEnable(s32 enable);
+    void Render_DrawLine2D(void *line);
+    void DisplayList_RenderGXList(void);
+    void Render_GeometryListSplitScreen(void);
+    void Render_GeometryList(void);
+    void Render_DrawAlphaGroup(u16 index);
+    void Render_DrawShadows(void);
+    void Render_DrawTriGroup(void);
+    void Render_SetTextureHandle(u16 id);
+    void Render_DrawSpheres(void);
+    void Render_DrawBoundingBoxes(void);
+    void Render_Draw3DFXLines(void);
+    void Render_Draw3DLines(void);
+    void Render_DrawPointSprites(void);
+    void Render_DrawNewBBSprites(void);
+    void Gfx_SetOrthoMatrix(void);
+    void Render_DrawSprite(void);
+    void Render_DrawRectanglesWindow(void);
+    void Render_DrawRectangles(void);
+    void GXSetBlendMode(s32 type, s32 src, s32 dst, s32 op);
+    void Render_Print(void);
+    void Render_ScreenFlash(void);
+    u32 fog;
+    s32 cull;
+    u32 view;
+    u32 i;
+    u16 v;
+
+    fog = m_fogMode_803C76CC;
+    if (g_CurrentViews != 1) {
+        DisplayList_RenderGXList();
+        Render_GeometryListSplitScreen();
+    } else {
+        Render_GeometryList();
+    }
+    cull = m_cullMode;
+    Render_StateCullMode(0);
+    g_onebitflag = 1;
+    if (g_CurrentViews == 1) {
+        for (i = 0; i < g_pGDL->numAlphaGroups; i++) {
+            Render_DrawAlphaGroup(i);
+        }
+    } else {
+        for (view = 1; view < 5; view++) {
+            if (g_CurrentViews & (1 << view)) {
+                Gfx_SetRenderWindow(view);
+                Render_StateSetScissor();
+                for (i = 0; i < g_pGDL->numAlphaGroups; i++) {
+                    Render_DrawAlphaGroup(i);
+                }
+            }
+        }
+    }
+    Render_StateCullMode(cull);
+    g_onebitflag = 0;
+    Render_StateFogEnable(0);
+    if (g_CurrentViews == 1) {
+        Render_DrawShadows();
+    }
+    Gfx_SetWorldMatrix(NULL);
+    cull = m_cullMode;
+    Render_StateCullMode(0);
+    if (g_CurrentViews == 1) {
+        Render_DrawTriGroup();
+    } else {
+        for (v = 1; v < 5; v++) {
+            if (g_CurrentViews & (1 << v)) {
+                Gfx_SetRenderWindow(v);
+                Render_StateSetScissor();
+                g_state.unk93 = 0;
+                Gfx_SetWorldMatrix(NULL);
+                Render_DrawTriGroup();
+            }
+        }
+    }
+    Render_StateCullMode(cull);
+    if (g_CurrentViews == 1) {
+        Render_SetTextureHandle(0xFFFF);
+        Render_StateAlphaBlendEnable(1);
+        Render_StateBlendMode(6);
+        Render_DrawSpheres();
+        Render_DrawBoundingBoxes();
+        Render_Draw3DFXLines();
+        Render_StateAlphaBlendEnable(0);
+        Render_Draw3DLines();
+        Render_StateZWriteEnable(0);
+        Render_DrawPointSprites();
+        Render_StateZWriteEnable(1);
+    } else {
+        for (v = 1; v < 5; v++) {
+            if (g_CurrentViews & (1 << v)) {
+                Gfx_SetRenderWindow(v);
+                Render_StateSetScissor();
+                g_state.unk93 = 0;
+                Gfx_SetWorldMatrix(NULL);
+                Render_SetTextureHandle(0xFFFF);
+                Render_StateAlphaBlendEnable(1);
+                Render_StateBlendMode(6);
+                Render_DrawSpheres();
+                Render_DrawBoundingBoxes();
+                Render_Draw3DFXLines();
+                Render_StateAlphaBlendEnable(0);
+                Render_Draw3DLines();
+                Render_StateZWriteEnable(0);
+                Render_DrawPointSprites();
+                Render_StateZWriteEnable(1);
+            }
+        }
+    }
+    Gfx_SetWorldMatrix(NULL);
+    cull = m_cullMode;
+    Render_StateZWriteEnable(0);
+    Render_StateFogEnable(fog);
+    Render_StateAlphaBlendEnable(1);
+    Render_StateCullMode(0);
+    if (g_CurrentViews == 1) {
+        Gfx_SortAlpha();
+        if (g_pGDL->numAlphaEntries != 0) {
+            DrawAlphaTable();
+        }
+        Render_DrawNewBBSprites();
+    } else {
+        for (v = 1; v < 5; v++) {
+            if (g_CurrentViews & (1 << v)) {
+                Gfx_SetRenderWindow(v);
+                Render_StateSetScissor();
+                g_state.unk93 = 0;
+                Gfx_SetWorldMatrix(NULL);
+                Gfx_SortAlpha();
+                if (g_pGDL->numAlphaEntries != 0) {
+                    DrawAlphaTable();
+                }
+                Render_DrawNewBBSprites();
+            }
+        }
+    }
+    Render_StateAlphaBlendEnable(0);
+    Render_StateZWriteEnable(1);
+    if (g_CurrentViews != 1) {
+        Gfx_SetRenderWindow(0);
+        Render_StateSetScissor();
+    }
+    Gfx_SetOrthoMatrix();
+    Render_StateZEnable(0);
+    if (g_CurrentViews == 1) {
+        Render_StateAlphaBlendEnable(1);
+        Render_DrawSprite();
+    }
+    Render_DrawRectanglesWindow();
+    Render_DrawRectangles();
+    Render_SetTextureHandle(0xFFFF);
+    for (i = 0; i < *(u32 *)g_pGDL->unk28; i++) {
+        Render_DrawLine2D((u8 *)g_pGDL + 0xAE700 + i * 0x30);
+    }
+    Render_StateZWriteEnable(1);
+    GXSetBlendMode(1, 4, 5, 5);
+    Render_Print();
+    Render_StateAlphaBlendEnable(0);
+    Render_StateCullMode(cull);
+    Render_StateZEnable(1);
+    if (fog == 1) {
+        Render_StateFogEnable(1);
+    }
+    Render_ScreenFlash();
 }
 
 #pragma pop
@@ -20805,77 +21233,102 @@ static inline void GbaReset(s32 chan) {
     Param_803C6A40[chan].state = 0;
 }
 
-void GbaProc__Fv_800CA1D0(void) {
-    s32 GBAGetProcessStatus(s32 chan, u8 *percentp);
-    u32 SIProbe(s32 chan);
-    s32 GBAGetStatus(s32 chan, u8 *status);
-    s32 GBAReset(s32 chan, u8 *status);
-    s32 GBAJoyBootAsync(s32 chan, s32 paletteColor, s32 paletteSpeed, u8 *programp, s32 length, u8 *status, void (*callback)(s32, s32));
-    u32 OSGetTick(void);
-    void GbaCheckJBResult__Fl(s32 chan);
-    void GbaCommunication__Fl(s32 chan);
-    void GbaSetport__Fl(s32 chan);
-    void OSPanic(const char *file, s32 line, const char *msg, ...);
-    s32 chan;
-    u8 percent;
-
-    for (chan = 0; chan < 4; chan++) {
-        if (Param_803C6A40[chan].state == 3) {
-            Param_803C6A40[chan].unk70 = 0;
-        } else if (Param_803C6A40[chan].state == 0 && GBAGetProcessStatus(chan, &percent) != 2) {
-            Param_803C6A40[chan].type = SIProbe(chan);
-        }
-        if (Param_803C6A40[chan].type != 0x40000) {
-            Param_803C6A40[chan].state = 0;
-            continue;
-        }
-        switch (Param_803C6A40[chan].state) {
-        case 0:
-            Param_803C6A40[chan].unk58 = 0;
-            if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0) {
-                break;
-            }
-            Param_803C6A40[chan].startTick = OSGetTick();
-            Param_803C6A40[chan].state = 1;
-            GBAJoyBootAsync(chan, chan * 2, 2, Param_803C6A40[chan].program, Param_803C6A40[chan].length,
-                            &Param_803C6A40[chan].status, JBCallback__Fll);
-            break;
-        case 1:
-            break;
-        case 2:
-            GbaCheckJBResult__Fl(chan);
-            break;
-        case 3:
-            GbaCommunication__Fl(chan);
-            break;
-        case 4:
-            GbaSetport__Fl(chan);
-            break;
-        case 5:
-            GbaReset(chan);
-            break;
-        case 6:
-            GBAReset(chan, &Param_803C6A40[chan].status);
-            Param_803C6A40[chan].state = 0;
-            break;
-        case 7:
-            Param_803C6A40[chan].startTick = OSGetTick();
-            Param_803C6A40[chan].state = 8;
-        case 8:
-            if (GBAReset(chan, &Param_803C6A40[chan].status) != 0) {
-                Param_803C6A40[chan].state = 0;
-                break;
-            }
-            if (OSGetTick() - Param_803C6A40[chan].startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 500) {
-                OSReport("GbaProc: timeout waiting for reset (chan=%d).\n", chan);
-                Param_803C6A40[chan].state = 0;
-            }
-            break;
-        default:
-            OSPanic("gba.c", 726, "GbaProc: invalid state\n");
-            break;
-        }
+void GbaProc__Fv_800CA1D0(void)
+{
+  s32 GBAGetProcessStatus(s32 chan, u8 *percentp);
+  u32 SIProbe(s32 chan);
+  s32 GBAGetStatus(s32 chan, u8 *status);
+  s32 GBAReset(s32 chan, u8 *status);
+  s32 GBAJoyBootAsync(s32 chan, s32 paletteColor, s32 paletteSpeed, u8 *programp, s32 length, u8 *status, void (*callback)(s32, s32));
+  u32 OSGetTick(void);
+  void GbaCheckJBResult__Fl(s32 chan);
+  void GbaCommunication__Fl(s32 chan);
+  void GbaSetport__Fl(s32 chan);
+  void OSPanic(const char *file, s32 line, const char *msg, ...);
+  u8 *new_var;
+  s32 chan;
+  u8 percent;
+  s32 new_var2;
+  for (chan = 0; chan < 4; chan++)
+  {
+    if (Param_803C6A40[chan].state == 3)
+    {
+      Param_803C6A40[chan].unk70 = 0;
     }
+    else
+      if ((Param_803C6A40[chan].state == 0) && (GBAGetProcessStatus(chan, &percent) != 2))
+    {
+      Param_803C6A40[chan].type = SIProbe(chan);
+    }
+    if (Param_803C6A40[chan].type != 0x40000)
+    {
+      Param_803C6A40[chan].state = 0;
+      continue;
+    }
+    switch (Param_803C6A40[chan].state)
+    {
+      case 0:
+        Param_803C6A40[chan].unk58 = 0;
+        if (GBAGetStatus(chan, &Param_803C6A40[chan].status) != 0)
+      {
+        break;
+      }
+        Param_803C6A40[chan].startTick = OSGetTick();
+        Param_803C6A40[chan].state = 1;
+        GBAJoyBootAsync(chan, chan * 2, 2, Param_803C6A40[chan].program, Param_803C6A40[chan].length, &Param_803C6A40[chan].status, JBCallback__Fll);
+        break;
+
+      new_var = &Param_803C6A40[chan].status;
+      case 1:
+        break;
+
+      case 2:
+        GbaCheckJBResult__Fl(chan);
+        break;
+
+      case 3:
+        GbaCommunication__Fl(chan);
+        break;
+
+      new_var2 = chan;
+      case 4:
+        GbaSetport__Fl(new_var2);
+        break;
+
+      case 5:
+        GbaReset(new_var2);
+        break;
+
+      case 6:
+        GBAReset(((((((new_var2 & 0xFFFF) & 0xFFFF) & 0xFFFF) & 0xFFFF) & 0xFFFF) & 0xFFFF) & 0xFFFF, new_var);
+        Param_803C6A40[new_var2].state = 0;
+        break;
+
+      case 7:
+        Param_803C6A40[new_var2].startTick = OSGetTick();
+        Param_803C6A40[new_var2].state = 8;
+
+      case 8:
+        if (GBAReset(new_var2, new_var) != 0)
+      {
+        Param_803C6A40[new_var2].state = 0;
+        break;
+      }
+        if ((OSGetTick() - Param_803C6A40[new_var2].startTick) > ((((*((u32 *) 0x800000F8)) / 4) / 1000) * 500))
+      {
+        OSReport("GbaProc: timeout waiting for reset (chan=%d).\n", new_var2);
+        Param_803C6A40[new_var2].state = 0;
+      }
+        break;
+
+      default:
+        OSPanic("gba.c", 726, "GbaProc: invalid state\n");
+        break;
+
+    }
+
+  }
+
 }
 
 static inline u8 GbaHeaderChecksum(u8 *image) {
