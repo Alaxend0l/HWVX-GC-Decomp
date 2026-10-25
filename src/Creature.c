@@ -55,3 +55,9 @@ void Creature_GetTargetPos(Creature *creature, Vector4 *pos) {
 f32 Creature_GetMass(Creature *creature) {
     return creature->mass;
 }
+
+void Creature_Release(Creature *creature) {
+    MotionState_Release(creature->motion);
+    Thing_Release(creature);
+}
+
