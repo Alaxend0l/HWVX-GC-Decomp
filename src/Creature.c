@@ -44,3 +44,7 @@ typedef struct Creature {
 void MotionState_Draw(void *motionState);
 void MotionState_Release(void *motionState);
 void Thing_Release(void *thing);
+
+f32 Creature_GetMass(Creature *creature) {
+    return creature->mass;
+}
