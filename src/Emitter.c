@@ -47,3 +47,17 @@ typedef struct Emitter {
     f32 range;         /* 0xC8 */
     f32 distSq;        /* 0xCC */
 } Emitter;
+
+void Thing_Release(s32 thing);
+void Emitter_Release(Emitter *emitter) {
+    void *slot;
+
+    if (emitter->vtable == g_emitterVTable) {
+        slot = emitter->thingSlot;
+        if (slot != NULL) {
+            emitter->thingSlot = NULL;
+            *((void **)slot + 0x0C) = NULL;
+        }
+    }
+    Thing_Release((s32)emitter);
+}
