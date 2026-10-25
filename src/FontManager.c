@@ -37,6 +37,11 @@ typedef struct GfxState {
 extern FontManager g_fontManager;
 extern GfxState g_state;
 
+void FontManager_Create(void) {
+    M2C_UNK fn_800957D4();
+    fn_800957D4();
+}
+
 void FontManager_Destroy(void) {
 }
 
