@@ -23,3 +23,16 @@ void SoundManager_Heartbeat(void) {
     OSRestoreInterrupts(temp_r31);
 }
 
+void SFX_Heartbeat(void) {
+    M2C_UNK SFX_ProcessSource(u32);
+    extern s32 g_sscount;
+    u32 var_r31;
+
+    var_r31 = 0U;
+    g_sscount = 0;
+    do {
+        SFX_ProcessSource(var_r31);
+        var_r31 += 1;
+    } while (var_r31 < 0x64U);
+}
+
