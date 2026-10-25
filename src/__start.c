@@ -28,6 +28,16 @@ void __check_pad3(void)
     }
 }
 
+void __init_registers(void)
+{
+}
+
+/* Metrowerks Runtime: __init_data copies the .data section from ROM and zeroes
+   .bss; the tables come from the link file, so the loop counters stay as
+   byte offsets into them (the way the runtime source indexes them). */
+static u32 rom_copy_index;
+static u32 bss_init_index;
+
 void __init_data(void)
 {
     rom_copy_info * iter;
