@@ -215,3 +215,85 @@ s32 AI_Car_DetermineState(u8 *car) {
     return 0;
 }
 
+void AI_Car_Reset(u8 *car) {
+    typedef struct AICarParams {
+        f32 speedScale;
+        f32 gripScale;
+        u8 unk8[4];
+        f32 unkC;
+        u8 unk10[0x18];
+        u8 state[1];
+    } AICarParams;
+    typedef struct AICarTarget {
+        int value;
+        u8 unk4[0x10];
+    } AICarTarget;
+    typedef struct AICarTargets {
+        AICarTarget targets[16];
+        u8 unk0[0x4B0];
+    } AICarTargets;
+    void AI_Car_ResetState(u8 *car, void *state);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    void *memset(void *dst, s32 c, u32 n);
+    register u8 *vehicle;
+    u16 i;
+
+    AI_Reset(car);
+    if (*(AICarParams **)(car + 0xD0) != NULL) {
+        *(f32 *)(car + 0x63C) = (*(AICarParams **)(car + 0xD0))->unkC;
+        vehicle = *(u8 **)(car + 0x2C);
+        if (vehicle != NULL) {
+            *(s32 *)(vehicle + 0x78) = *(s32 *)(vehicle + 0x78) * (*(AICarParams **)(car + 0xD0))->speedScale;
+            *(f32 *)(*(u8 **)(car + 0x2C) + 0x468) *= (*(AICarParams **)(car + 0xD0))->gripScale;
+        }
+        AI_Car_ResetState(car, (*(AICarParams **)(car + 0xD0))->state);
+    }
+    *(s32 *)(car + 0x3EC) = 0;
+    *(s32 *)(car + 0x3F0) = 0;
+    *(s32 *)(car + 0x5F0) = 0;
+    *(s32 *)(car + 0x5F4) = 0;
+    *(s32 *)(car + 0x4A8) = -1;
+    *(s32 *)(car + 0x4A4) = 0;
+    *(s32 *)(car + 0x4AC) = 0;
+    *(s32 *)(car + 0x4A0) = -2;
+    memset(car + 0x420, 0, 0x80);
+    for (i = 0; i < 16; i++) {
+        ((AICarTargets *)car)->targets[i].value = 0;
+    }
+    *(s32 *)(car + 0x608) = RandomAdd_s32(1000, 1000);
+    *(s32 *)(car + 0x3E8) = 0;
+    *(s32 *)(car + 0x3E4) = 0;
+    *(s32 *)(car + 0x630) = 0;
+    *(s32 *)(car + 0x634) = -120;
+    *(s32 *)(car + 0x654) = 1;
+    *(s32 *)(car + 0x658) = 3000;
+}
+
+void AI_Car_Init(u8 *car, u8 *params) {
+    void AI_Car_AsyncHeartbeat(u8 *car);
+    void AI_Car_WeaponAsyncHeartbeat_80008210(u8 *car);
+    void *memset(void *dst, s32 c, u32 n);
+
+    M2C_FIELD(car, s32 *, 0xD0) = M2C_FIELD(params, s32 *, 0x0);
+    AI_Init();
+    M2C_FIELD(car, void **, 0xB8) = car;
+    M2C_FIELD(car, void **, 0xBC) = AI_Car_AsyncHeartbeat;
+    M2C_FIELD(car, u8 *, 0xC4) = 0;
+    M2C_FIELD(car, void **, 0x644) = car;
+    M2C_FIELD(car, void **, 0x648) = AI_Car_WeaponAsyncHeartbeat_80008210;
+    M2C_FIELD(car, u8 *, 0x650) = 0;
+    M2C_FIELD(car, void **, 0x5F8) = car;
+    M2C_FIELD(car, void **, 0x5FC) = AI_Car_AsyncScanDestructibles;
+    M2C_FIELD(car, u8 *, 0x604) = 0;
+    if (M2C_FIELD(params, s8 *, 0xC)) {
+        M2C_FIELD(car, u8 *, 0xCD) = 1;
+    } else {
+        M2C_FIELD(car, u8 *, 0xCD) = 3;
+    }
+    M2C_FIELD(car, f32 *, 0x65C) = M2C_FIELD(params, f32 *, 0x4);
+    M2C_FIELD(car, f32 *, 0x660) = M2C_FIELD(params, f32 *, 0x8);
+    M2C_FIELD(car, s32 *, 0x4A0) = -2;
+    memset(car + 0x3D4, 0, 0x60);
+    M2C_FIELD(car, u8 *, 0xCC) = 1;
+}
+
