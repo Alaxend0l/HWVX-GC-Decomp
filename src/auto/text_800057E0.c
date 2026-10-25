@@ -6339,28 +6339,6 @@ void GetTrimmedCameraPos2(Vector4 *from, Vector4 *to, f32 *trim, s32 unused, Mat
     }
 }
 
-static inline void Camera_SpringStep(u8 *cam, f32 kx, f32 ky, f32 damp, f32 dt) {
-    f32 sx;
-    f32 sy;
-    f32 sz;
-    f32 dx;
-    f32 dy;
-    f32 dz;
-
-    sx = kx * (*(f32 *)(cam + 0xE0) - *(f32 *)(cam + 0x110));
-    sy = ky * (*(f32 *)(cam + 0xE4) - *(f32 *)(cam + 0x114));
-    sz = kx * (*(f32 *)(cam + 0xE8) - *(f32 *)(cam + 0x118));
-    dx = damp * *(f32 *)(cam + 0x120);
-    dy = damp * *(f32 *)(cam + 0x124);
-    dz = damp * *(f32 *)(cam + 0x128);
-    *(f32 *)(cam + 0x110) += *(f32 *)(cam + 0x120) * dt;
-    *(f32 *)(cam + 0x114) += *(f32 *)(cam + 0x124) * dt;
-    *(f32 *)(cam + 0x118) += *(f32 *)(cam + 0x128) * dt;
-    *(f32 *)(cam + 0x120) += dt * (sx + dx);
-    *(f32 *)(cam + 0x124) += dt * (sy + dy);
-    *(f32 *)(cam + 0x128) += dt * (sz + dz);
-}
-
 void Camera_UpdatePosition_Default(u8 *cam, f32 *mode) {
     typedef struct CameraTargetInfo {
         u8 pad0[0x30];
