@@ -6574,6 +6574,16 @@ void CarA_Extract_Keyframes(u8 *car, void *frames) {
 }
 #pragma use_lmw_stmw reset
 
+static inline void CarA_FitCubic(f32 *coef, f32 x0, f32 x1, f32 y0, f32 y1, f32 m0, f32 m1) {
+    f32 dx = x0 - x1;
+    f32 dy = y0 - y1;
+
+    coef[0] = ((m0 + m1) - 2.0f * dy / dx) / (dx * dx);
+    coef[1] = (m0 - dy / dx) / dx - coef[0] * (x0 + x1);
+    coef[2] = m0 - 3.0f * coef[0] * x0 * x0 - 2.0f * coef[1] * x0;
+    coef[3] = y0 - coef[0] * x0 * x0 * x0 - coef[1] * x0 * x0 - coef[2] * x0;
+}
+
 void CarA_InitInverseBodyInertiaTensor(u8 *car) {
     extern Matrix4 g_identity;
     void PSVECAdd(void *a, void *b, Vector4 *out);
