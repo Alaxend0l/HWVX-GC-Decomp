@@ -46,6 +46,9 @@ void *memset(void *dst, s32 c, u32 n);
 void *memcpy(void *dst, const void *src, u32 n);
 s32 strcmp(const char *a, const char *b);
 
+#pragma push
+#pragma use_lmw_stmw on
+
 BOOL THPPlayerOpen(char *fileName, BOOL onMemory) {
     s32 offset;
     u32 i;
