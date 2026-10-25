@@ -36,3 +36,65 @@ void SFX_Heartbeat(void) {
     } while (var_r31 < 0x64U);
 }
 
+void MusicHearbeat(void) {
+    typedef struct MusicFade {
+        f32 cur;
+        f32 target;
+        f32 time;
+    } MusicFade;
+    typedef struct MusicTrack {
+        u32 active;
+        f32 vol;
+        f32 target;
+        f32 time;
+        u8 pad10[0x28 - 0x10];
+    } MusicTrack;
+    extern s8 g_paused_803C6F2D;
+    extern MusicFade g_globalMusic_800DBE30[3];
+    extern MusicTrack *g_tracks_803C6F30;
+    extern f32 g_fDeltaTimeMS;
+    extern void (*SetMusicPitch)(u32);
+    extern void (*SetMusicTempo)(u32);
+    extern void (*SetMusicTrackVol)(u32, u32);
+    void SetMusicVol(u32 vol);
+    u32 i;
+
+    if (g_paused_803C6F2D) {
+        return;
+    }
+    if (g_globalMusic_800DBE30[0].time > 0.0f && g_globalMusic_800DBE30[0].cur != g_globalMusic_800DBE30[0].target) {
+        g_globalMusic_800DBE30[0].cur = (g_globalMusic_800DBE30[0].target - g_globalMusic_800DBE30[0].cur) * (g_fDeltaTimeMS / g_globalMusic_800DBE30[0].time) + g_globalMusic_800DBE30[0].cur;
+        g_globalMusic_800DBE30[0].time -= g_fDeltaTimeMS;
+        if (g_globalMusic_800DBE30[0].cur < 0.0f) {
+            g_globalMusic_800DBE30[0].cur = 0.0f;
+        }
+        SetMusicVol(32767.0f * g_globalMusic_800DBE30[0].cur);
+    }
+    if (g_globalMusic_800DBE30[1].time > 0.0f && g_globalMusic_800DBE30[1].cur != g_globalMusic_800DBE30[1].target) {
+        g_globalMusic_800DBE30[1].cur = (g_globalMusic_800DBE30[1].target - g_globalMusic_800DBE30[1].cur) * (g_fDeltaTimeMS / g_globalMusic_800DBE30[1].time) + g_globalMusic_800DBE30[1].cur;
+        g_globalMusic_800DBE30[1].time -= g_fDeltaTimeMS;
+        if (g_globalMusic_800DBE30[1].cur < 0.0f) {
+            g_globalMusic_800DBE30[1].cur = 0.0f;
+        }
+        SetMusicPitch(65536.0f * g_globalMusic_800DBE30[1].cur);
+    }
+    if (g_globalMusic_800DBE30[2].time > 0.0f && g_globalMusic_800DBE30[2].cur != g_globalMusic_800DBE30[2].target) {
+        g_globalMusic_800DBE30[2].cur = (g_globalMusic_800DBE30[2].target - g_globalMusic_800DBE30[2].cur) * (g_fDeltaTimeMS / g_globalMusic_800DBE30[2].time) + g_globalMusic_800DBE30[2].cur;
+        g_globalMusic_800DBE30[2].time -= g_fDeltaTimeMS;
+        if (g_globalMusic_800DBE30[2].cur < 0.0f) {
+            g_globalMusic_800DBE30[2].cur = 0.0f;
+        }
+        SetMusicTempo(65536.0f * g_globalMusic_800DBE30[2].cur);
+    }
+    for (i = 0; i < 32; i++) {
+        if (g_tracks_803C6F30[i].active && g_tracks_803C6F30[i].time > 0.0f && g_tracks_803C6F30[i].vol != g_tracks_803C6F30[i].target) {
+            g_tracks_803C6F30[i].vol = (g_fDeltaTimeMS / g_tracks_803C6F30[i].time) * (g_tracks_803C6F30[i].target - g_tracks_803C6F30[i].vol) + g_tracks_803C6F30[i].vol;
+            g_tracks_803C6F30[i].time -= g_fDeltaTimeMS;
+            if (g_tracks_803C6F30[i].vol < 0.0f) {
+                g_tracks_803C6F30[i].vol = 0.0f;
+            }
+            SetMusicTrackVol(i, 32767.0f * g_tracks_803C6F30[i].vol);
+        }
+    }
+}
+
