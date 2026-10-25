@@ -8528,6 +8528,8 @@ void Gfx_SortAlpha(void) {
 
 #pragma pop
 
+#pragma push
+#pragma auto_inline off
 void DrawAlphaTable(void) {
     extern GDL *g_pGDL;
     u16 i;
@@ -8539,6 +8541,7 @@ void DrawAlphaTable(void) {
         }
     }
 }
+#pragma pop
 
 s32 Gfx_GetLightState(void) {
     extern GDL *g_pGDL;
