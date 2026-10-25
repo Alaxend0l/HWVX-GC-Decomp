@@ -13,6 +13,9 @@ typedef struct bss_init_info {
 
 extern rom_copy_info _rom_copy_info[];
 extern bss_init_info _bss_init_info[];
+extern u32 _stack_addr[];
+extern u32 _SDA2_BASE_[];
+extern u32 _SDA_BASE_[];
 
 void * memcpy(void *dest, void *source, u32 count);
 void * memset(void *dest, s32 value, u32 count);
