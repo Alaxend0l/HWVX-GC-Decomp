@@ -10472,9 +10472,23 @@ static inline void Render_SetWindowViewport(void) {
 
 static inline void Render_BeginView(u16 view) {
     extern GfxState g_state;
+    f32 ht;
+    f32 wd;
+    f32 top;
+    u32 sht;
+    u32 swd;
+    u32 stop;
 
     Gfx_SetRenderWindow(view);
-    Render_SetWindowViewport();
+    Gfx_SetProjectionMatrix(*(f32 *)((u8 *)GetRenderWindow() + 0x270));
+    ht = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x284);
+    wd = *(u32 *)((u8 *)GetRenderWindow() + 0x280);
+    top = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x2B8);
+    GXSetViewport(*(u32 *)((u8 *)GetRenderWindow() + 0x2B0), top, wd, ht, 0.0f, 1.0f);
+    sht = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x284);
+    swd = (f32)*(u32 *)((u8 *)GetRenderWindow() + 0x280);
+    stop = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x2B8);
+    GXSetScissor(*(u32 *)((u8 *)GetRenderWindow() + 0x2B0), stop, swd, sht);
     g_state.unk93 = 0;
     Gfx_SetWorldMatrix(NULL);
 }
@@ -10484,7 +10498,6 @@ static inline void Render_BeginView(u16 view) {
 #pragma auto_inline off
 void Render_EndScene(void) {
     extern GDL *g_pGDL;
-    extern GfxState g_state;
     extern u8 g_CurrentViews;
     extern u32 m_fogMode_803C76CC;
     extern s32 m_cullMode;
@@ -10563,10 +10576,7 @@ void Render_EndScene(void) {
     } else {
         for (v = 1; v < 5; v++) {
             if (g_CurrentViews & (1 << v)) {
-                Gfx_SetRenderWindow(v);
-                Render_SetWindowViewport();
-                g_state.unk93 = 0;
-                Gfx_SetWorldMatrix(NULL);
+                Render_BeginView(v);
                 Render_DrawTriGroup();
             }
         }
@@ -10587,10 +10597,7 @@ void Render_EndScene(void) {
     } else {
         for (v = 1; v < 5; v++) {
             if (g_CurrentViews & (1 << v)) {
-                Gfx_SetRenderWindow(v);
-                Render_SetWindowViewport();
-                g_state.unk93 = 0;
-                Gfx_SetWorldMatrix(NULL);
+                Render_BeginView(v);
                 Render_SetTextureHandle(0xFFFF);
                 Render_StateAlphaBlendEnable(1);
                 Render_StateBlendMode(6);
@@ -10620,10 +10627,7 @@ void Render_EndScene(void) {
     } else {
         for (v = 1; v < 5; v++) {
             if (g_CurrentViews & (1 << v)) {
-                Gfx_SetRenderWindow(v);
-                Render_SetWindowViewport();
-                g_state.unk93 = 0;
-                Gfx_SetWorldMatrix(NULL);
+                Render_BeginView(v);
                 Gfx_SortAlpha();
                 if (g_pGDL->numAlphaEntries != 0) {
                     DrawAlphaTable();
