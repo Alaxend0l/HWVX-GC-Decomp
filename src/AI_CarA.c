@@ -56,3 +56,38 @@ void AI_Car_ClearedNavPoint_800087C8(u8 *car, s8 arg1) {
         }
     }
 }
+
+s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest) {
+    void *memset(void *dst, s32 val, u32 n);
+    u8 *NavHolder_FindPath(void *holder, s32 dest);
+    void NavHolder_FillPointerArrayPath(u8 *point, u8 **array, u32 max);
+    void AI_Car_ClearedNavPoint_800087C8(u8 *car, s32 arg1);
+    f32 LinearPointTest(void *pos, void *a, void *b);
+    s32 result = 1;
+    u8 *point;
+
+    memset(car + 0x420, 0, 0x80);
+    *(u32 *)(car + 0x4A4) = 0;
+    point = NavHolder_FindPath(holder, dest);
+    if (point != NULL) {
+        NavHolder_FillPointerArrayPath(point, (u8 **)(car + 0x420), 0x20);
+        *(s32 *)(car + 0x4A8) = dest;
+        AI_Car_ClearedNavPoint_800087C8(car, 1);
+        while (*(u32 *)(car + 0x4A4) < 31) {
+            u8 *a = ((u8 **)(car + 0x420))[*(u32 *)(car + 0x4A4)];
+            u8 *b = ((u8 **)(car + 0x420))[*(u32 *)(car + 0x4A4) + 1];
+            if (a == NULL || b == NULL) {
+                break;
+            }
+            if (LinearPointTest(*(u8 **)(car + 0x2C) + 0x40, a, b) < 0.0f) {
+                break;
+            }
+            AI_Car_ClearedNavPoint_800087C8(car, 0);
+        }
+    } else {
+        result = 0;
+        *(s32 *)(car + 0x4A8) = -1;
+    }
+    return result;
+}
+
