@@ -188,6 +188,18 @@ void InterfaceManager_ReleaseAllInterfaces(void) {
     g_TargetArrow[5] = 0;
 }
 
+void InterfaceManager_ReleaseAllUnpausedInterfaces(void) {
+    extern u8 g_interface[][0x170];
+    void InterfaceManager_ReleaseInterface(u32 index);
+    u32 i;
+
+    for (i = 0; i < 0x12; i++) {
+        if (*(void **)g_interface[i] != NULL && g_interface[i][0x83] == 0) {
+            InterfaceManager_ReleaseInterface(i);
+        }
+    }
+}
+
 void InterfaceManager_SetMissionObjectiveText(u8 *obj, u8 **data) {
     u32 strlen(const char *s);
     char *strcpy(char *dst, const char *src);
