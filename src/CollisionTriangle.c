@@ -17,3 +17,13 @@ typedef struct CollisionTri {
 } CollisionTri;
 
 extern CollisionTri g_aCollisionTriPairCache[4];
+
+void CollisionTriCache_Clear(void) {
+    u32 i;
+
+    for (i = 0; i < 4; i++) {
+        g_aCollisionTriPairCache[i].triId0 = 0;
+        g_aCollisionTriPairCache[i].triId1 = 0;
+        g_aCollisionTriPairCache[i].time = 99999;
+    }
+}
