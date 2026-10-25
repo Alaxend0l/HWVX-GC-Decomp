@@ -1,6 +1,13 @@
 #include "common.h"
 
 
+void ThingManager_DARYL_Init(void) {
+    M2C_UNK ThingManager_DARYL_Release();
+    M2C_UNK MatrixCache_Init();
+    ThingManager_DARYL_Release();
+    MatrixCache_Init();
+}
+
 s32 TriggerPlayerVehicleGear(u32 *params) {
     extern u8 g_cameraManager[];
     u8 *vehicle = M2C_FIELD(*(u8 **)g_cameraManager, u8 **, 0x2C);
