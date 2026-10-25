@@ -134,8 +134,6 @@ u8 *GameSettings_GetMCP(void)
 }
 
 void GameSettings_GameBoyConnected(void) {
-    static s8 bFirstTime = 1;
-    static u8 *pMCP;
     u8 *mcp;
     void *pack;
     s32 state;
