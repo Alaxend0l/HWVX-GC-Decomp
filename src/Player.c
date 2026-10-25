@@ -182,3 +182,24 @@ void PlayerHuman_EvaluateCombo(u8 *player) {
     }
 }
 
+s32 Player_AIControlReader(s8 *ctrl) {
+    extern u32 g_playbackStatus;
+    s32 element;
+
+    if (M2C_FIELD(ctrl, u32 *, 0x6C) & 1) {
+        return 0;
+    }
+    if (g_playbackStatus == 2) {
+        element = Playback_GetElement();
+        ctrl[0] = element;
+        ctrl[2] = (s8)(element & 0xFFFF0000) >> 16;
+        element = Playback_GetElement();
+        ctrl[1] = element;
+        ctrl[3] = (s8)(element & 0xFFFF0000) >> 16;
+    } else if (g_playbackStatus == 1) {
+        Playback_PutElement(ctrl[0] + (ctrl[2] << 16));
+        Playback_PutElement(ctrl[1] + (ctrl[3] << 16));
+    }
+    return 1;
+}
+
