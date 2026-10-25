@@ -105,3 +105,17 @@ void SoundListener_SetTotalListeners(u32 arg0) {
     }
 }
 
+void *SoundAudioSample_Play(void *sample) {
+    void *voice;
+
+    if (sample == NULL) {
+        return NULL;
+    }
+    voice = (void *)GetVoice(sample, (u8)(rand() % 10 + 5));
+    if (voice != NULL) {
+        SetVoiceState(voice, 1);
+        return voice;
+    }
+    return NULL;
+}
+
