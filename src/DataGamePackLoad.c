@@ -23,7 +23,6 @@ void File_Close(s32 file);
 typedef struct GXObject {
     u8 pad0[0x1C];
     u32 count;          /* 0x1C */
-    u8 pad1F[0x4];
     s32 *shaderList;    /* 0x20 */
 } GXObject;
 
@@ -64,6 +63,32 @@ void DataPack_CloseFiles(void)
         File_Close(g_fileID);
         g_fileID = -1;
         g_openFileDataPackType = 0xB;
+    }
+}
+
+void DataPack_ReleaseQuadPack(QuadPack *pack)
+{
+    s32 *list;
+    s32 base;
+    u32 i;
+
+    if (pack->gxObject != NULL) {
+        base = pack->gxBase;
+        list = pack->gxObject->shaderList;
+        for (i = 0; i < pack->gxObject->count; i++) {
+            ShaderHolder_RemoveGX(base + *list);
+            list += 2;
+        }
+        if (pack->vertices != NULL) {
+            VertexColorSeqManager_RemoveVertices(pack->vertices);
+        }
+        Deallocate(pack->alloc);
+        pack->alloc = NULL;
+        pack->data = NULL;
+        pack->vertices = NULL;
+        pack->gxBase = 0;
+        pack->gxObject = NULL;
+        pack->flag34 = 0;
     }
 }
 
