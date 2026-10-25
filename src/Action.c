@@ -89,3 +89,8 @@ void Action_Heartbeat(void) {
     }
 }
 
+void Action_ReleaseAllActions(void) {
+    extern u8 m_Actions_800DBC80[];
+    memset(m_Actions_800DBC80, 0, 0x140);
+}
+
