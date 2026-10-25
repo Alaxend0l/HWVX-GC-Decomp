@@ -29864,12 +29864,59 @@ void Thing_Draw(void) {
 
 }
 
+static inline void Thing_SetBoxContactHit(u8 *thing, Vector4 *box, Vector4 *p, Vector4 *dir, u8 *hit) {
+    void XformVec(void *mtx, Vector4 *in, Vector4 *out);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void PSVECSubtract(void *a, void *b, void *out);
+    f32 PSVECSquareMag(void *v);
+    void PSVECNormalize(void *src, void *dst);
+    Vector4 q = *p;
+    Vector4 normal;
+
+    if (q.x < box[0].x) {
+        q.x = box[0].x;
+    }
+    if (q.y < box[0].y) {
+        q.y = box[0].y;
+    }
+    if (q.z < box[0].z) {
+        q.z = box[0].z;
+    }
+    if (q.w < box[0].w) {
+        q.w = box[0].w;
+    }
+    if (q.x > box[1].x) {
+        q.x = box[1].x;
+    }
+    if (q.y > box[1].y) {
+        q.y = box[1].y;
+    }
+    if (q.z > box[1].z) {
+        q.z = box[1].z;
+    }
+    if (q.w > box[1].w) {
+        q.w = box[1].w;
+    }
+    PSVECSubtract(&q, p, dir);
+    normal = *dir;
+    if (PSVECSquareMag(&normal) != 0.0f) {
+        PSVECNormalize(&normal, &normal);
+    }
+    XformVec(thing + 0x10, &q, (Vector4 *)hit);
+    XformVecOrientation(thing + 0x10, &normal, (Vector4 *)(hit + 0x10));
+}
+
 s8 Thing_TestThingCollision(u8 *a, u8 *b, f32 *t, u8 *hit) {
     typedef struct CollisionBox {
         Vector4 min;
         Vector4 max;
         Vector4 extra;
     } CollisionBox;
+    typedef struct RayHit {
+        Vector4 pos;
+        Vector4 normal;
+        u8 pad[0x30];
+    } RayHit;
     void XformVec(void *mtx, Vector4 *in, Vector4 *out);
     void InverseXformVec(void *mtx, Vector4 *in, Vector4 *out);
     void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
@@ -29880,25 +29927,7 @@ s8 Thing_TestThingCollision(u8 *a, u8 *b, f32 *t, u8 *hit) {
     void PSVECSubtract(void *a, void *b, void *out);
     f32 PSVECSquareMag(void *v);
     void PSVECNormalize(void *src, void *dst);
-    Vector4 normal;
-    Vector4 q;
-    Vector4 localHit[2];
-    CollisionBox bounds;
-    Vector4 relLocal;
-    Vector4 rel;
-    Vector4 world;
-    Vector4 local;
-    Vector4 p;
-    Vector4 n;
-    Vector4 end;
     f32 best;
-    f32 d;
-    f32 r;
-    void *boxA;
-    void *boxB;
-    CollisionBox *box;
-    u32 *list;
-    u32 i;
 
     best = *t;
     switch (*(s16 *)(a + 0x80)) {
@@ -29910,7 +29939,11 @@ s8 Thing_TestThingCollision(u8 *a, u8 *b, f32 *t, u8 *hit) {
         case 3:
             best = (*(f32 (**)(void *, void *, void *))(*(u8 **)(a + 0x8C) + 0x38))(a, b + 0x40, b);
             break;
-        case 1:
+        case 1: {
+            void *boxA;
+            void *boxB;
+            Vector4 end;
+
             boxA = (*(void *(**)(void *))(*(u8 **)(a + 0x8C) + 0x40))(a);
             boxB = (*(void *(**)(void *))(*(u8 **)(b + 0x8C) + 0x40))(b);
             end.x = *t * (((f32 *)a)[0] - ((f32 *)b)[0]) + ((Vector4 *)(a + 0x40))->x;
@@ -29921,7 +29954,24 @@ s8 Thing_TestThingCollision(u8 *a, u8 *b, f32 *t, u8 *hit) {
             }
             best = OBoxHitsOBox(boxA, a, boxB, b, hit, *t);
             break;
-        case 6:
+        }
+        case 6: {
+            CollisionBox *box;
+            u32 *list;
+            u32 i;
+            f32 d;
+            f32 r;
+            Vector4 n;
+            Vector4 p;
+            Vector4 local;
+            Vector4 world;
+            Vector4 rel;
+            Vector4 relLocal;
+            CollisionBox bounds;
+            Vector4 q;
+            Vector4 normal;
+            RayHit rayHit;
+
             box = (CollisionBox *)Thing_GetLocalCollision(a);
             list = (u32 *)Thing_GetLocalCollision(b);
             PSVECSubtract(b, a, &rel);
@@ -29937,7 +29987,7 @@ s8 Thing_TestThingCollision(u8 *a, u8 *b, f32 *t, u8 *hit) {
                 bounds.min.z -= r;
                 XformVec(b + 0x10, (Vector4 *)(list[1] + i * 0x20), &world);
                 InverseXformVec(a + 0x10, &world, &local);
-                d = RayBoxTest(&local, &relLocal, &bounds.min, *t, localHit);
+                d = RayBoxTest(&local, &relLocal, &bounds.min, *t, &rayHit.pos);
                 if (d < best && d > 0.0f) {
                     if (hit != NULL) {
                         p.x = d * relLocal.x + local.x;
@@ -29981,16 +30031,89 @@ s8 Thing_TestThingCollision(u8 *a, u8 *b, f32 *t, u8 *hit) {
             }
             break;
         }
+        }
         break;
     case 6:
         switch (*(s16 *)(b + 0x80)) {
         case 3:
-            best = (*(f32 (**)(void *, void *, void *))(*(u8 **)(b + 0x8C) + 0x38))(b, a + 0x40, a);
+            best = (*(f32 (**)(void *, void *, void *))(*(u8 **)(b + 0x8C) + 0x38))(a, a + 0x40, a);
             break;
-        case 1:
-            list = (u32 *)Thing_GetLocalCollision(b);
-            box = (CollisionBox *)Thing_GetLocalCollision(a);
+        case 1: {
+            CollisionBox *box;
+            u32 *list;
+            u32 i;
+            f32 d;
+            f32 r;
+            Vector4 n;
+            Vector4 p;
+            Vector4 local;
+            Vector4 world;
+            Vector4 rel;
+            Vector4 relLocal;
+            CollisionBox bounds;
+            Vector4 q;
+            Vector4 normal;
+            RayHit rayHit;
+
+            box = (CollisionBox *)Thing_GetLocalCollision(b);
+            list = (u32 *)Thing_GetLocalCollision(a);
+            PSVECSubtract(a, b, &rel);
+            InverseXformVecOrientation(b + 0x10, &rel, &relLocal);
+            for (i = 0; i < list[0]; i++) {
+                bounds = *box;
+                r = ((Vector4 *)(list[1] + i * 0x20))[1].x;
+                bounds.max.x += r;
+                bounds.max.y += r;
+                bounds.max.z += r;
+                bounds.min.x -= r;
+                bounds.min.y -= r;
+                bounds.min.z -= r;
+                XformVec(a + 0x10, (Vector4 *)(list[1] + i * 0x20), &world);
+                InverseXformVec(b + 0x10, &world, &local);
+                d = RayBoxTest(&local, &relLocal, &bounds.min, *t, &rayHit.pos);
+                if (d < best) {
+                    if (hit != NULL) {
+                        p.x = d * relLocal.x + local.x;
+                        p.y = d * relLocal.y + local.y;
+                        p.z = d * relLocal.z + local.z;
+                        q = p;
+                        if (q.x < box->min.x) {
+                            q.x = box->min.x;
+                        }
+                        if (q.y < box->min.y) {
+                            q.y = box->min.y;
+                        }
+                        if (q.z < box->min.z) {
+                            q.z = box->min.z;
+                        }
+                        if (q.w < box->min.w) {
+                            q.w = box->min.w;
+                        }
+                        if (q.x > box->max.x) {
+                            q.x = box->max.x;
+                        }
+                        if (q.y > box->max.y) {
+                            q.y = box->max.y;
+                        }
+                        if (q.z > box->max.z) {
+                            q.z = box->max.z;
+                        }
+                        if (q.w > box->max.w) {
+                            q.w = box->max.w;
+                        }
+                        PSVECSubtract(&q, &p, &n);
+                        normal = n;
+                        if (PSVECSquareMag(&normal) != 0.0f) {
+                            PSVECNormalize(&normal, &normal);
+                        }
+                        XformVec(b + 0x10, &q, (Vector4 *)hit);
+                        XformVecOrientation(b + 0x10, &normal, (Vector4 *)(hit + 0x10));
+                    }
+                    best = d;
+                }
+            }
             break;
+        }
         }
         break;
     }
