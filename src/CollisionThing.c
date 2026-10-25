@@ -35,6 +35,19 @@ extern OConvexHull g_aOConvexHull[8];
 extern CollisionPair g_aCollisionPairCache[4];
 void Dprintf(const char *, ...);
 
+OBox *OBoxHolder_Get(void) {
+    u32 i;
+
+    for (i = 0; i < 0x200; i++) {
+        if (g_aOBox[i].inUse == 0) {
+            g_aOBox[i].inUse = 1;
+            return &g_aOBox[i];
+        }
+    }
+    Dprintf("OUT OF OBOXES!!!!\n");
+    return NULL;
+}
+
 void OBoxHolder_Release(OBox *obox) {
     if (obox != NULL) {
         obox->inUse = 0;
