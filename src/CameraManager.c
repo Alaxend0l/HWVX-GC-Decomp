@@ -79,3 +79,24 @@ void CameraManager_ReturnAllToPlayer(void) {
     }
 }
 
+void CameraManager_SetCameraGlobalMode(u32 *mode) {
+    typedef struct Camera {
+        u8 pad0[0xB4];
+        u32 *mode;
+        f32 modeTime;
+        u8 pad1[0x190 - 0xBC];
+    } Camera;
+    extern u8 g_cameraManager[];
+    u32 i;
+
+    if (mode[0] >= 1 && mode[0] <= 4) {
+        ((Camera *)g_cameraManager)[mode[0] - 1].mode = mode + 1;
+        ((Camera *)g_cameraManager)[mode[0] - 1].modeTime = 0.0f;
+        return;
+    }
+    for (i = 0; i < g_cameraManager[0x640]; i++) {
+        ((Camera *)g_cameraManager)[i].mode = mode + (mode[0] == 0);
+        ((Camera *)g_cameraManager)[i].modeTime = 0.0f;
+    }
+}
+
