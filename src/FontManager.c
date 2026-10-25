@@ -40,3 +40,19 @@ extern GfxState g_state;
 void Gfx_SetDebugFont(s16 font) {
     g_state.debugFont = font;
 }
+
+s32 Gfx_FontManager_ReleaseFont(s32 id) {
+    Font *font = &g_fontManager.fonts[id];
+    s32 ret = 0;
+
+    if (!font->inUse) {
+        return 1;
+    }
+    if (--font->refCount == 0) {
+        font->inUse = 0;
+        g_fontManager.numFonts--;
+        ret = 1;
+    }
+    return ret;
+}
+
