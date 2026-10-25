@@ -19,3 +19,8 @@ extern s8 g_bSoundLoadingEnabled;
 extern s32 g_fileID;
 extern s32 g_openFileDataPackType;
 void File_Close(s32 file);
+
+void DataPack_EnableLoadingSounds(s8 enabled)
+{
+    g_bSoundLoadingEnabled = enabled;
+}
