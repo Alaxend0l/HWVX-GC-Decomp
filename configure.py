@@ -292,8 +292,6 @@ config.libs = [
         "cflags": cflags_base,
         "progress_category": "game",
         "objects": [
-            Object(NonMatching, "Runtime.PPCEABI.H/global_destructor_chain.c"),
-            Object(NonMatching, "Runtime.PPCEABI.H/__init_cpp_exceptions.cpp"),
             Object(NonMatching, "Action.c"),
             Object(NonMatching, "AI.c"),
             Object(NonMatching, "AI_CarA.c"),
@@ -421,6 +419,19 @@ config.libs = [
             Object(NonMatching, "FileManager_NGC.c"),
             Object(NonMatching, "Input.c"),
             Object(NonMatching, "Input_NGC.c")
+        ],
+    },
+    {
+        "lib": "main",
+        "mw_version": config.linker_version,
+        "cflags": cflags_base,
+        "progress_category": "game",
+        "objects": [
+            Object(NonMatching, "auto/text_80093714.c"),
+            Object(NonMatching, "auto/text_80096A6C_.c"),
+            Object(NonMatching, "auto/text_80096EC0_.c"),
+            Object(NonMatching, "auto/text_80097074_.cpp"),
+            Object(NonMatching, "auto/text_80097BE8.cpp"),
         ],
     },
     {
@@ -613,7 +624,7 @@ config.libs = [
             Object(NonMatching, "GBARead.c"),
             Object(NonMatching, "GBAWrite.c"),
             Object(NonMatching, "GBAXfer.c"),
-            Object(NonMatching, "GBAKey.c"),
+            Object(NonMatching, "GBAKey.c")
         ],
     },
 ]

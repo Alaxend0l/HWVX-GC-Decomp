@@ -22,7 +22,6 @@ Action.c:
 
 AI.c:
 	.text       start:0x80006C00 end:0x8000704C
-	.data       start:0x800CF600 end:0x800CF610
 	.bss        start:0x800DBDC0 end:0x800DBE30
 	.sbss       start:0x803C6F00 end:0x803C6F04
 	.sdata2     start:0x803C79D0 end:0x803C79E8
@@ -30,7 +29,7 @@ AI.c:
 AI_CarA.c:
 	.text       start:0x8000704C end:0x8000B90C
 	.rodata     start:0x800CC3D8 end:0x800CC408
-	.sbss       start:0x803C6F04 end:0x803C6F20
+	.sbss       start:0x803C6F10 end:0x803C6F20
 	.sdata2     start:0x803C79E8 end:0x803C7AB8
 
 AnimHandler.c:
@@ -932,14 +931,8 @@ mem_TRK.c:
 	.init       start:0x800033A8 end:0x800033FC
 	.text       start:0x80093658 end:0x80093714
 
-targimpl.c:
-	.text       start:0x80093714 end:0x80094FB0
-	.rodata     start:0x800CD708 end:0x800CD790
-	.data       start:0x800DA098 end:0x800DA0C8
-	.bss        start:0x8030B448 end:0x8030B9C8
-
-targsupp.s:
-	.text       start:0x80094FB0 end:0x80094FD0
+auto/text_80093714.c:
+	.text       start:0x80093714 end:0x80094FD0
 
 __exception.s:
 	.init       start:0x800033FC end:0x80005330
@@ -1011,14 +1004,23 @@ __init_cpp_exceptions.cpp:
 	.dtors      start:0x800CC340 end:0x800CC348
 	.sdata      start:0x803C6E80 end:0x803C6E88
 
-Gecko_ExceptionPPC.cp:
-	extab       start:0x80005688 end:0x800056FC
-	extabindex  start:0x8000576C end:0x800057C0
-	.text       start:0x80096824 end:0x80097C5C
-	.rodata     start:0x800CD850 end:0x800CD8E8
-	.data       start:0x800DA158 end:0x800DA240
-	.bss        start:0x8030DC08 end:0x8030DC18
-	.sdata      start:0x803C6E88 end:0x803C6E98
+auto/text_80096A6C_.c:
+	extab       start:0x80005688 end:0x80005690
+	extabindex  start:0x8000576C end:0x80005778
+	.text       start:0x80096A6C end:0x80096AB0
+
+auto/text_80096EC0_.c:
+	extab       start:0x800056A4 end:0x800056D0
+	extabindex  start:0x80005784 end:0x80005790
+	.text       start:0x80096EC0 end:0x80097074
+
+auto/text_80097074_.cpp:
+	extab       start:0x800056D0 end:0x800056D8
+	extabindex  start:0x80005790 end:0x8000579C
+	.text       start:0x80097074 end:0x800970D0
+
+auto/text_80097BE8.cpp:
+	.text       start:0x80097BE8 end:0x80097C5C
 
 GCN_mem_alloc.c:
 	.text       start:0x80097C5C end:0x80097DCC
