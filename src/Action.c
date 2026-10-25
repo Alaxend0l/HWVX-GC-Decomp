@@ -94,6 +94,14 @@ void Action_ReleaseAllActions(void) {
     memset(m_Actions_800DBC80, 0, 0x140);
 }
 
+s8 ActionLoadInterfacePack(s32 *arg0) {
+    s32 FileStreaming_LoadDataPack(void *, M2C_UNK, s32, M2C_UNK);
+    s32 temp_r3;
+
+    temp_r3 = FileStreaming_LoadDataPack(arg0 + 1, 1, *arg0, 1);
+    return (s8) ((u32) ((-1 - temp_r3) | (temp_r3 + 1)) >> 0x1FU);
+}
+
 void ActionUnloadInterfacePack(s32 *arg0) {
     s32 FileStreaming_GetPackID(char *name, s32 type, u32 id);
     s32 FileStreaming_ReleaseDataPack(u32 index, s32 type);
