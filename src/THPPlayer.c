@@ -2,14 +2,16 @@
 
 typedef struct THPPlayer {
     u8 fileInfo[0x3C];
-    u8 magic[0x30];
+    u8 tag[4];
+    u32 version;
+    u8 pad44[0x18];
+    u32 dataOffset;
+    u8 pad60[0xC];
     u32 numComponents;
     u8 components[0x80 - 0x70];
     u8 videoInfo[8];
     u8 audioInfo[0xC];
-    u8 pad94[4];
-    u8 open;
-    u8 pad99[3];
+    BOOL open;
     u8 state;
     u8 unk9D;
     u8 playFlag;
