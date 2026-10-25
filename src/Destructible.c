@@ -1,6 +1,5 @@
 #include "common.h"
 
-
 typedef struct Vector4 {
     f32 x;
     f32 y;
@@ -51,7 +50,69 @@ typedef struct Destructible {
     OBox *orientedBox;       /* 0xD0 */
 } Destructible;
 
-extern s16 g_zeroVector[];
+extern f32 g_zeroVector[4];
 void BuildOOB(void *oob, void *pos, void *out);
 void BuildOConvexHullOffset(void *out, void *hull, void *pos, void *rot);
-f32 PhysicalProperties_CollideWithRay(void *props, void *pos, void *start, void *end, void *hit);
+f32 PhysicalProperties_CollideWithRay(void *props, void *pos, void *start, void *dir, f32 maxDist, void *hit);
+
+f32 Destructible_GetMass(Destructible *destructible) {
+    return destructible->record->info->mass;
+}
+
+s32 Destructible_GetSurfaceScript(Destructible *destructible) {
+    return destructible->record->info->surfaceScript;
+}
+
+u32 Destructible_Invalidate(Destructible *destructible, u32 start, u32 end) {
+    if ((u32)destructible->record >= start && (u32)destructible->record < end) {
+        return 1;
+    }
+    return 0;
+}
+
+void Destructible_CollideWithRay(Destructible *destructible, Vector4 *start, Vector4 *end, Vector4 *hit, f32 maxDist) {
+    f32 dist;
+
+    dist = PhysicalProperties_CollideWithRay(destructible->record->info, destructible->matrix, start, end, maxDist, hit);
+    if (hit != NULL && dist < maxDist) {
+        *(Vector4 *)((u8 *)hit + 0x30) = destructible->pos;
+    }
+}
+
+void Destructible_GetTargetPos(Destructible *destructible, Vector4 *pos) {
+    switch (destructible->record->info->type) {
+    case 0:
+    case 3:
+        *pos = destructible->orientedBox->v[0];
+        break;
+    case 1:
+    case 6:
+        *pos = destructible->hull->point;
+        break;
+    default:
+        *pos = destructible->offsetPos;
+        break;
+    }
+}
+
+void *Destructible_GetOrientedCollision(Destructible *destructible) {
+    DestructibleInfo *info;
+
+    info = destructible->record->info;
+    switch (info->type) {
+    case 0:
+    case 3:
+        if (destructible->flags & 0x180) {
+            BuildOOB(info->box, destructible->matrix, destructible->orientedBox);
+            destructible->flags &= ~0x180;
+        }
+        return destructible->orientedBox;
+    case 1:
+    case 6:
+        BuildOConvexHullOffset(destructible->hull, info->hull, destructible->matrix, g_zeroVector);
+        return destructible->hull;
+    default:
+        return NULL;
+    }
+}
+
