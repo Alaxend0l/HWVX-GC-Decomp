@@ -72,3 +72,7 @@ void Player_ReleaseInterface(void *player) {
     }
 }
 
+s32 Player_InputHeartbeat(void *arg0) {
+    return M2C_FIELD(arg0, s8 (**)(), 0x20)() != 0;
+}
+
