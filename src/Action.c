@@ -32,3 +32,7 @@ s32 ActionVehicleAISetNamedPath(void) {
     return 1;
 }
 
+s32 ActionSetPlayerVehicle(void) {
+    return 1;
+}
+
