@@ -28,3 +28,18 @@ void *CameraManager_GetCameraByIndex(u32 arg0) {
     return g_cameraManager + arg0 * 0x190;
 }
 
+void CameraManager_Init(void) {
+    extern u8 g_cameraManager[];
+    extern s8 g_cameraManagerPause;
+    extern u8 g_springProxy[];
+    g_cameraManagerPause = 0;
+    g_cameraManager[0x640] = 0;
+    SoundListener_SetTotalListeners(0);
+    memset(g_springProxy + 0x60, 0, 0x20);
+    memset(g_springProxy + 0x40, 0, 0x20);
+    M2C_FIELD(g_springProxy, s32 *, 0x1C0) = 0;
+    memset(g_springProxy + 0x140, 0, 0x20);
+    memset(g_springProxy + 0xC0, 0, 0x20);
+    M2C_FIELD(g_springProxy, s32 *, 0x1C4) = 0;
+}
+
