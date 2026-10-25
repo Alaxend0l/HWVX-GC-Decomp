@@ -41,7 +41,7 @@ typedef struct Destructible {
     Vector4 pos;             /* 0x00 */
     f32 matrix[12];          /* 0x10 */
     Vector4 offsetPos;       /* 0x40 */
-    u8 pad44[0x30];          /* 0x44 */
+    u8 pad50[0x24];          /* 0x50 */
     u32 flags;               /* 0x74 */
     u8 pad78[0x48];          /* 0x78 */
     ThingRecord *record;     /* 0xC0 */
