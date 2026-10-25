@@ -54,6 +54,16 @@ void CarA_GetInverseLocalInertiaTensor(void *arg0, void *arg1) {
     M2C_FIELD(arg1, f32 *, 8) = (f32) M2C_FIELD(arg0, f32 *, 0x3E8);
 }
 
+void CarA_SetSlavePlayers(u8 *car)
+{
+    u8 *slave;
+
+    for (slave = *(u8 **)(car + 0x344); slave != NULL; slave = *(u8 **)(slave + 0xA4))
+    {
+        *(s32 *)(slave + 0x94) = *(s32 *)(car + 0x94);
+    }
+}
+
 f32 CarA_GetMass(u8 *car)
 {
     u8 *coll;
