@@ -97,3 +97,25 @@ void AI_AddEvent(void *arg0) {
     }
 }
 
+s32 AI_Heartbeat(u8 *ai) {
+    s8 Player_AIControlReader(u8 *ai);
+
+    if (!Player_AIControlReader(ai)) {
+        return 0;
+    }
+    M2C_FIELD(ai, u8 *, 0x1C) = 0;
+    if (M2C_FIELD(ai, u8 *, 0xCD) != 0 && M2C_FIELD(ai, void **, 0x2C) == NULL) {
+        M2C_FIELD(ai, s8 *, 0xCC) = 1;
+    }
+    if (M2C_FIELD(ai, u32 *, 0xC8) != 0) {
+        AI_UpdateTimer((u32 *)(ai + 0xC8));
+        if (M2C_FIELD(ai, u32 *, 0xC8) == 0) {
+            AI_AddEvent(ai + 0xB8);
+        }
+    }
+    if (M2C_FIELD(ai, s8 *, 0xCC) || !M2C_FIELD(ai, u8 *, 0xCD)) {
+        return 1;
+    }
+    return 1;
+}
+
