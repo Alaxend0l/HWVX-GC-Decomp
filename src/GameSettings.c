@@ -109,10 +109,20 @@ void GameSettings_SetDefaultControllerState(void)
     }
 }
 
+u8 GameSettings_GetGameType(void)
+{
+    u8 *mcp;
+
+    mcp = GameSettings_GetMCP();
+    if (mcp != NULL)
+    {
+        return mcp[1];
+    }
+    return 0;
+}
+
 u8 *GameSettings_GetMCP(void)
 {
-    static s8 bFirstTime = 1;
-    static u8 *pMCP;
     void *pack;
     u8 *mcp;
 
