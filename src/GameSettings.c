@@ -120,4 +120,24 @@ AudioSettings *GameSettings_GetAudioSettings(void) {
     return &g_generalGameSettings.audio;
 }
 
+void GameSettings_ApplyDefaultGameData(void)
+{
+    SetPlayerControls();
+    SetMusicGVol((f32)(g_generalGameSettings.audio.musicVolume * 0x7FFF) / 100.0f);
+    SetSFXVol((f32)(g_generalGameSettings.audio.sfxVolume * 0x7FFF) / 100.0f);
+    SetSpeakerMode(g_generalGameSettings.audio.speakerMode);
+    OSSetSoundMode(g_generalGameSettings.audio.speakerMode);
+}
+
+void GameSettings_DetermineIfOverwritingFile(void)
+{
+    if (g_bValidFileName[g_codeVariables.fileIndex - 1])
+    {
+        g_codeVariables.bOverwritingFile = 1;
+    }
+    else
+    {
+        g_codeVariables.bOverwritingFile = 0;
+    }
+}
 
