@@ -94,3 +94,83 @@ void Action_ReleaseAllActions(void) {
     memset(m_Actions_800DBC80, 0, 0x140);
 }
 
+s32 ActionCodeVariableModifyValue(u32 *data) {
+    f32 GetCodeVariable(s32 var, u8 *thing);
+    void SetCodeVariable(s32 var, u8 *obj, f32 value);
+    f32 value;
+    f32 operand;
+    f32 cur;
+    u32 i;
+
+    if (data[1] < 100) {
+        switch (data[data[2] + 3]) {
+        case 0:
+            value = *(f32 *)&data[data[2] + 4];
+            break;
+        case 1:
+            value = *(f32 *)(*(u8 **)data[data[2] + 4] + 4);
+            break;
+        case 2:
+            value = GetCodeVariable(data[data[2] + 4], (u8 *)data[data[2] + 5]);
+            break;
+        }
+        for (i = 0; i < data[2]; i++) {
+            cur = GetCodeVariable(data[1], (u8 *)data[i + 3]);
+            switch (data[0]) {
+            case 15:
+                cur += value;
+                break;
+            case 16:
+                cur -= value;
+                break;
+            case 45:
+                cur *= value;
+                break;
+            case 46:
+                if (value) {
+                    cur /= value;
+                }
+                break;
+            case 17:
+                cur = value;
+                break;
+            }
+            SetCodeVariable(data[1], (u8 *)data[i + 3], cur);
+        }
+    } else {
+        value = GetCodeVariable(data[1], (u8 *)data[2]);
+        switch (data[3]) {
+        case 0:
+            operand = *(f32 *)&data[4];
+            break;
+        case 1:
+            operand = *(f32 *)(*(u8 **)data[4] + 4);
+            break;
+        case 2:
+            operand = GetCodeVariable(data[4], (u8 *)data[5]);
+            break;
+        }
+        switch (data[0]) {
+        case 15:
+            value += operand;
+            break;
+        case 16:
+            value -= operand;
+            break;
+        case 45:
+            value *= operand;
+            break;
+        case 46:
+            if (operand) {
+                value /= operand;
+            }
+            break;
+        case 17:
+            value = operand;
+            break;
+        }
+        SetCodeVariable(data[1], (u8 *)data[2], value);
+    }
+    return 1;
+}
+
