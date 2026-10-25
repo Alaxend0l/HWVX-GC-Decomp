@@ -6339,6 +6339,33 @@ void GetTrimmedCameraPos2(Vector4 *from, Vector4 *to, f32 *trim, s32 unused, Mat
     }
 }
 
+static inline s8 Camera_IsInVolume(u8 *cam) {
+    s32 VolumeManager_GetVolumeCellIndex(Vector4 *point);
+    s32 VolumeManager_GetNumVolumesOfTypeByCell(s32 type, s32 cell);
+    s32 VolumeManager_GetVolumeTypeByIndexByCell(s32 type, s32 index, s32 cell);
+    u8 *car;
+    u8 *volume;
+    u32 i;
+    s32 cell;
+    u32 count;
+    s8 inVolume;
+
+    inVolume = 0;
+    cell = VolumeManager_GetVolumeCellIndex((Vector4 *)(*(u8 **)(*(u8 **)cam + 0x2C) + 0x40));
+    count = VolumeManager_GetNumVolumesOfTypeByCell(3, cell);
+    car = *(u8 **)(*(u8 **)cam + 0x2C);
+    if (*(u8 **)(car + 0x8C) != g_carAVTable || *(s32 *)(car + 0x460) == 0) {
+        for (i = 0; i < count; i++) {
+            f32 dist = 0.0f;
+            volume = (u8 *)VolumeManager_GetVolumeTypeByIndexByCell(3, i, cell);
+            if (IsPointWithinVolume((Vector4 *)(*(u8 **)(*(u8 **)cam + 0x2C) + 0x40), volume, &dist)) {
+                inVolume = 1;
+            }
+        }
+    }
+    return inVolume;
+}
+
 void Camera_UpdatePosition_Default(u8 *cam, f32 *mode) {
     typedef struct CameraTargetInfo {
         u8 pad0[0x30];
@@ -6361,7 +6388,6 @@ void Camera_UpdatePosition_Default(u8 *cam, f32 *mode) {
     void GenerateQuaternion(void *axis, void *q, f32 angle);
     void QuaternionToSubMatrix(void *q, void *m);
     void XformVecOrientation(void *m, void *in, void *out);
-    void GetTrimmedCameraPos2(Vector4 *from, Vector4 *to, f32 *trim);
     s32 VolumeManager_GetVolumeCellIndex(Vector4 *point);
     s32 VolumeManager_GetNumVolumesOfTypeByCell(s32 type, s32 cell);
     s32 VolumeManager_GetVolumeTypeByIndexByCell(s32 type, s32 index, s32 cell);
@@ -6374,26 +6400,31 @@ void Camera_UpdatePosition_Default(u8 *cam, f32 *mode) {
     Vector4 up2;
     Vector4 up1;
     Vector4 dir;
-    Vector4 toTarget;
-    Vector4 blend;
     u8 *player;
     u8 *car;
+    u8 *volume;
     f32 scale;
     f32 k;
     f32 mag;
     f32 speed;
     f32 inv;
     f32 s;
+    f32 strength;
+    f32 step;
+    f32 damp;
     f32 kx;
     f32 ky;
-    f32 damp;
     f32 t;
-    f32 ax;
-    f32 ay;
-    f32 az;
+    f32 sx;
+    f32 sy;
+    f32 sz;
+    f32 dx;
+    f32 dy;
+    f32 dz;
+    s32 bone;
+    u32 i;
     s32 cell;
     u32 count;
-    u32 i;
     s8 inVolume;
 
     player = *(u8 **)cam;
@@ -6438,8 +6469,8 @@ void Camera_UpdatePosition_Default(u8 *cam, f32 *mode) {
     if (*(u8 **)(car + 0x8C) != g_carAVTable || *(s32 *)(car + 0x460) == 0) {
         for (i = 0; i < count; i++) {
             f32 dist = 0.0f;
-            if (IsPointWithinVolume((Vector4 *)(*(u8 **)(*(u8 **)cam + 0x2C) + 0x40),
-                                    (u8 *)VolumeManager_GetVolumeTypeByIndexByCell(3, i, cell), &dist)) {
+            volume = (u8 *)VolumeManager_GetVolumeTypeByIndexByCell(3, i, cell);
+            if (IsPointWithinVolume((Vector4 *)(*(u8 **)(*(u8 **)cam + 0x2C) + 0x40), volume, &dist)) {
                 inVolume = 1;
             }
         }
@@ -6454,6 +6485,7 @@ void Camera_UpdatePosition_Default(u8 *cam, f32 *mode) {
         up2.z = 0.0f;
     }
 
+    strength = 13.978342f;
     {
         Vector4 cross;
         PSVECCrossProduct(cam + 0x130, &up2, &cross);
@@ -6468,13 +6500,13 @@ void Camera_UpdatePosition_Default(u8 *cam, f32 *mode) {
             cross.y *= inv;
             cross.z *= inv;
             if (PSVECDotProduct(cam + 0x130, &info.up) < 0.0f || PSVECDotProduct(cam + 0x130, &up2) < 0.0f || mag > 0.314159f) {
-                force.x = cross.x * 13.978342f;
-                force.y = cross.y * 13.978342f;
-                force.z = cross.z * 13.978342f;
+                force.x = cross.x * strength;
+                force.y = cross.y * strength;
+                force.z = cross.z * strength;
             } else {
-                force.x = 0.01f * (cross.x * 13.978342f);
-                force.y = 0.01f * (cross.y * 13.978342f);
-                force.z = 0.01f * (cross.z * 13.978342f);
+                force.x = 0.01f * (cross.x * strength);
+                force.y = 0.01f * (cross.y * strength);
+                force.z = 0.01f * (cross.z * strength);
             }
             force.x -= 5.5f * *(f32 *)(cam + 0x140);
             force.y -= 5.5f * *(f32 *)(cam + 0x144);
@@ -6520,13 +6552,13 @@ void Camera_UpdatePosition_Default(u8 *cam, f32 *mode) {
             cross.y *= inv;
             cross.z *= inv;
             if (PSVECDotProduct(cam + 0x150, &up1) < 0.0f || mag > 0.314159f) {
-                force.x = cross.x * 13.978342f;
-                force.y = cross.y * 13.978342f;
-                force.z = cross.z * 13.978342f;
+                force.x = cross.x * strength;
+                force.y = cross.y * strength;
+                force.z = cross.z * strength;
             } else {
-                force.x = 0.01f * (cross.x * 13.978342f);
-                force.y = 0.01f * (cross.y * 13.978342f);
-                force.z = 0.01f * (cross.z * 13.978342f);
+                force.x = 0.01f * (cross.x * strength);
+                force.y = 0.01f * (cross.y * strength);
+                force.z = 0.01f * (cross.z * strength);
             }
             force.x -= 4.5f * *(f32 *)(cam + 0x160);
             force.y -= 4.5f * *(f32 *)(cam + 0x164);
@@ -6561,34 +6593,41 @@ void Camera_UpdatePosition_Default(u8 *cam, f32 *mode) {
     kx = 2.0f * mode[3];
     damp = -mode[4];
     t = g_fDeltaTimeSec;
+    step = 0.017f;
     ky = kx * mode[6];
-    while (t > 0.017f) {
-        t -= 0.017f;
-        ax = kx * (*(f32 *)(cam + 0xE0) - *(f32 *)(cam + 0x110)) + damp * *(f32 *)(cam + 0x120);
-        ay = ky * (*(f32 *)(cam + 0xE4) - *(f32 *)(cam + 0x114)) + damp * *(f32 *)(cam + 0x124);
-        az = kx * (*(f32 *)(cam + 0xE8) - *(f32 *)(cam + 0x118)) + damp * *(f32 *)(cam + 0x128);
-        *(f32 *)(cam + 0x110) += *(f32 *)(cam + 0x120) * 0.017f;
-        *(f32 *)(cam + 0x114) += *(f32 *)(cam + 0x124) * 0.017f;
-        *(f32 *)(cam + 0x118) += *(f32 *)(cam + 0x128) * 0.017f;
-        *(f32 *)(cam + 0x120) += 0.017f * ax;
-        *(f32 *)(cam + 0x124) += 0.017f * ay;
-        *(f32 *)(cam + 0x128) += 0.017f * az;
+    while (t > step) {
+        t -= step;
+        sx = kx * (*(f32 *)(cam + 0xE0) - *(f32 *)(cam + 0x110));
+        sy = ky * (*(f32 *)(cam + 0xE4) - *(f32 *)(cam + 0x114));
+        sz = kx * (*(f32 *)(cam + 0xE8) - *(f32 *)(cam + 0x118));
+        dx = damp * *(f32 *)(cam + 0x120);
+        dy = damp * *(f32 *)(cam + 0x124);
+        dz = damp * *(f32 *)(cam + 0x128);
+        *(f32 *)(cam + 0x110) += *(f32 *)(cam + 0x120) * step;
+        *(f32 *)(cam + 0x114) += *(f32 *)(cam + 0x124) * step;
+        *(f32 *)(cam + 0x118) += *(f32 *)(cam + 0x128) * step;
+        *(f32 *)(cam + 0x120) += step * (sx + dx);
+        *(f32 *)(cam + 0x124) += step * (sy + dy);
+        *(f32 *)(cam + 0x128) += step * (sz + dz);
     }
-    ax = kx * (*(f32 *)(cam + 0xE0) - *(f32 *)(cam + 0x110)) + damp * *(f32 *)(cam + 0x120);
-    ay = ky * (*(f32 *)(cam + 0xE4) - *(f32 *)(cam + 0x114)) + damp * *(f32 *)(cam + 0x124);
-    az = kx * (*(f32 *)(cam + 0xE8) - *(f32 *)(cam + 0x118)) + damp * *(f32 *)(cam + 0x128);
+    sx = kx * (*(f32 *)(cam + 0xE0) - *(f32 *)(cam + 0x110));
+    sy = ky * (*(f32 *)(cam + 0xE4) - *(f32 *)(cam + 0x114));
+    sz = kx * (*(f32 *)(cam + 0xE8) - *(f32 *)(cam + 0x118));
+    dx = damp * *(f32 *)(cam + 0x120);
+    dy = damp * *(f32 *)(cam + 0x124);
+    dz = damp * *(f32 *)(cam + 0x128);
     *(f32 *)(cam + 0x110) += *(f32 *)(cam + 0x120) * t;
     *(f32 *)(cam + 0x114) += *(f32 *)(cam + 0x124) * t;
     *(f32 *)(cam + 0x118) += *(f32 *)(cam + 0x128) * t;
-    *(f32 *)(cam + 0x120) += t * ax;
-    *(f32 *)(cam + 0x124) += t * ay;
-    *(f32 *)(cam + 0x128) += t * az;
+    *(f32 *)(cam + 0x120) += t * (sx + dx);
+    *(f32 *)(cam + 0x124) += t * (sy + dy);
+    *(f32 *)(cam + 0x128) += t * (sz + dz);
 
     *(Vector4 *)(cam + 0x80) = *(Vector4 *)(cam + 0x110);
     *(f32 *)(cam + 0x80) -= *(f32 *)(cam + 0x150) * mode[5];
     *(f32 *)(cam + 0x84) -= *(f32 *)(cam + 0x154) * mode[5];
     *(f32 *)(cam + 0x88) -= *(f32 *)(cam + 0x158) * mode[5];
-    if (PSVECSquareMag(cam + 0x80) != 0.0f) {
+    if (PSVECSquareMag(cam + 0x80)) {
         PSVECNormalize(cam + 0x80, cam + 0x80);
     }
     *(f32 *)(cam + 0x60) = *(f32 *)(cam + 0x150) * mode[2] + (target.x - mode[1] * *(f32 *)(cam + 0x80));
@@ -6596,27 +6635,30 @@ void Camera_UpdatePosition_Default(u8 *cam, f32 *mode) {
     *(f32 *)(cam + 0x68) = *(f32 *)(cam + 0x158) * mode[2] + (target.z - mode[1] * *(f32 *)(cam + 0x88));
     car = *(u8 **)(*(u8 **)cam + 0x2C);
     if (*(u8 **)(car + 0x8C) == g_carAVTable) {
+        Vector4 toTarget;
+        Vector4 blend;
         mtx = *(Matrix4 *)(car + 0x10);
+        bone = *(s32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x44);
         XformVec(car + 0x10, (Vector4 *)(car + 0x520), (Vector4 *)&mtx.m[3][0]);
-        GetTrimmedCameraPos2(&info.from, (Vector4 *)(cam + 0x60), (f32 *)(cam + 0xBC));
+        GetTrimmedCameraPos2(&info.from, (Vector4 *)(cam + 0x60), (f32 *)(cam + 0xBC), bone, &mtx);
         PSVECSubtract(&target, cam + 0x60, &toTarget);
-        if (PSVECSquareMag(&toTarget) != 0.0f) {
+        if (PSVECSquareMag(&toTarget)) {
             PSVECNormalize(&toTarget, &toTarget);
         }
         blend.x = toTarget.x * *(f32 *)(cam + 0xBC) + *(f32 *)(cam + 0x80) * (1.0f - *(f32 *)(cam + 0xBC));
         blend.y = toTarget.y * *(f32 *)(cam + 0xBC) + *(f32 *)(cam + 0x84) * (1.0f - *(f32 *)(cam + 0xBC));
         blend.z = toTarget.z * *(f32 *)(cam + 0xBC) + *(f32 *)(cam + 0x88) * (1.0f - *(f32 *)(cam + 0xBC));
         *(Vector4 *)(cam + 0x80) = blend;
-        if (PSVECSquareMag(cam + 0x80) != 0.0f) {
+        if (PSVECSquareMag(cam + 0x80)) {
             PSVECNormalize(cam + 0x80, cam + 0x80);
         }
     }
     PSVECCrossProduct(cam + 0x130, cam + 0x80, cam + 0xA0);
     PSVECCrossProduct(cam + 0x80, cam + 0xA0, cam + 0x90);
-    if (PSVECSquareMag(cam + 0xA0) != 0.0f) {
+    if (PSVECSquareMag(cam + 0xA0)) {
         PSVECNormalize(cam + 0xA0, cam + 0xA0);
     }
-    if (PSVECSquareMag(cam + 0x90) != 0.0f) {
+    if (PSVECSquareMag(cam + 0x90)) {
         PSVECNormalize(cam + 0x90, cam + 0x90);
     }
 }
