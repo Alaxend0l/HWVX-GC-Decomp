@@ -20821,6 +20821,241 @@ void InterfaceManager_Backup_Key(u8 *iface, u8 *key, u8 flags) {
     }
 }
 
+void InterfaceManager_MoveDialogSystem(u8 *iface, u8 *obj, f32 dt) {
+    typedef struct DialogQuad {
+        u32 v[4];
+    } DialogQuad;
+    typedef struct DialogAnim {
+        TextureKeyAnim anim;
+        u32 pad;
+    } DialogAnim;
+    typedef struct DialogChar {
+        s32 valueA;
+        s32 valueB;
+        u8 *info;
+        u32 *color;
+        u32 numIdle;
+        DialogAnim *idle;
+        u32 numTalk;
+        DialogAnim *talk;
+        u8 state;
+        s32 key;
+        s32 style;
+        u8 pad2C[0x30 - 0x2C];
+        DialogAnim *special;
+        DialogQuad *quad;
+    } DialogChar;
+    typedef struct DialogEntry {
+        u8 active;
+        u8 id;
+        u8 special;
+        u8 specialKey;
+        s32 time;
+        u32 soundID;
+        char *soundName;
+        char **text;
+        DialogChar *chr;
+        u8 actions[8];
+    } DialogEntry;
+    typedef struct DialogList {
+        u32 count;
+        DialogEntry *entries;
+    } DialogList;
+    typedef struct SoundPack {
+        s32 id;
+        u8 *data;
+    } SoundPack;
+    extern u32 g_numInterfaceDialogSoundPacks;
+    extern u32 g_curInterfaceDialogSoundPack;
+    extern u32 g_curInterfaceDialogSoundIndex;
+    extern SoundPack g_interfaceDialogSoundPacks[15];
+    void SoundSequence_Stop(s32 seq);
+    s32 SoundSequence_Play(s8 *seq, Vector4 *pos);
+    s32 FileStreaming_ReleaseDataPack(u32 index, s32 type);
+    void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
+    u8 *DataPack_GetScript(void *pack, s32 id);
+    u32 RandomNumberGenerator_GetRandomInteger(u32 min, u32 max);
+    void InterfaceManager_SetLoadState(void *iface, s32 state);
+    void InterfaceManager_ExecuteActions(u8 *iface, u8 *list);
+    u32 i;
+    DialogList *list;
+    u8 *slot;
+    u8 *object;
+    DialogChar *chr;
+    s8 released;
+    s32 pack;
+    u8 *data;
+    u8 state;
+
+    if (obj[0x246] == 4 || obj[0x246] == 5) {
+        return;
+    }
+    if (obj[0x243] == 7 && obj[0x240] == 0) {
+        list = *(DialogList **)(obj + 0x258);
+        if (obj[0x125] != 0 && list->count != 0) {
+            *(u32 *)(obj + 0x2C4) = 0;
+            *(s8 *)(obj + 0x2D8) = 1;
+        }
+        if (*(s8 *)(obj + 0x2D8) != 0) {
+            *(s8 *)(obj + 0x2D8) = 0;
+            *(s32 *)(obj + 0x2C8) = list->entries[*(u32 *)(obj + 0x2C4)].time;
+            *(DialogChar **)(obj + 0x2DC) = list->entries[*(u32 *)(obj + 0x2C4)].chr;
+            for (i = 0; i < *(u32 *)iface; i++) {
+                slot = *(u8 **)(iface + 0x88) + i * 0x300;
+                if (*(u8 **)(slot + 0x254) == NULL) {
+                    continue;
+                }
+                object = *(u8 **)(slot + 0x25C);
+                switch (object[0]) {
+                case 0x21:
+                    if (slot[0x243] == 5) {
+                        if (list->entries[*(u32 *)(*(u8 **)(iface + 0x158) + 0x2C4)].text != NULL) {
+                            chr = *(DialogChar **)(obj + 0x2DC);
+                            slot[0x1B0] = chr->style;
+                            *(u8 **)(*(u8 **)(slot + 0x258) + 4) = (*(DialogChar **)(obj + 0x2DC))->info;
+                            *(u32 *)(*(u8 **)(slot + 0x254) + 0x10) = 0;
+                            *(u32 *)(*(u8 **)(*(u8 **)(slot + 0x25C) + 0x60) + 0x18) = 1;
+                            **(u32 **)(*(u8 **)(*(u8 **)(slot + 0x25C) + 0x60) + 0x1C) = *(*(DialogChar **)(obj + 0x2DC))->color;
+                            if ((*(DialogChar **)(obj + 0x2DC))->quad != NULL) {
+                                *(u32 *)(*(u8 **)(slot + 0x254) + 0x18) = 0;
+                                *(u32 *)(*(u8 **)(*(u8 **)(slot + 0x25C) + 0x60) + 0x10) = 1;
+                                **(DialogQuad **)(*(u8 **)(*(u8 **)(slot + 0x25C) + 0x60) + 0x14) = *(*(DialogChar **)(obj + 0x2DC))->quad;
+                            }
+                            **(char ****)(slot + 0x258) = list->entries[*(u32 *)(*(u8 **)(iface + 0x158) + 0x2C4)].text;
+                            InterfaceManager_SetObjectText(slot, **(char ****)(slot + 0x258));
+                        } else {
+                            **(char ****)(slot + 0x258) = NULL;
+                            InterfaceManager_SetObjectText(slot, **(char ****)(slot + 0x258));
+                        }
+                    }
+                    break;
+                case 0x22:
+                    if (slot[0x243] == 0) {
+                        if (list->entries[*(u32 *)(obj + 0x2C4)].active && *(u16 *)(object + 0xA) == list->entries[*(u32 *)(obj + 0x2C4)].id) {
+                            *(DialogChar **)(slot + 0x2DC) = *(DialogChar **)(obj + 0x2DC);
+                        }
+                    }
+                    break;
+                case 0x23:
+                    if (slot[0x243] == 5) {
+                        if (list->entries[*(u32 *)(obj + 0x2C4)].active && *(u16 *)(object + 0xA) == list->entries[*(u32 *)(obj + 0x2C4)].id) {
+                            **(s32 **)(object + 0x14) = (*(DialogChar **)(obj + 0x2DC))->valueA;
+                            InterfaceManager_SetObjectText(slot, **(char ****)(obj + 0x258));
+                        }
+                    }
+                    break;
+                case 0x24:
+                    if (slot[0x243] == 5) {
+                        if (list->entries[*(u32 *)(obj + 0x2C4)].active && *(u16 *)(object + 0xA) == list->entries[*(u32 *)(obj + 0x2C4)].id) {
+                            **(s32 **)(object + 0x14) = (*(DialogChar **)(obj + 0x2DC))->valueB;
+                            InterfaceManager_SetObjectText(slot, **(char ****)(obj + 0x258));
+                        }
+                    }
+                    break;
+                }
+            }
+            *(s8 *)(obj + 0x2D9) = 0;
+            if (list->entries[*(u32 *)(obj + 0x2C4)].special) {
+                (*(DialogChar **)(obj + 0x2DC))->state = 5;
+                (*(DialogChar **)(obj + 0x2DC))->key = list->entries[*(u32 *)(obj + 0x2C4)].specialKey;
+            } else {
+                (*(DialogChar **)(obj + 0x2DC))->state = 1;
+            }
+            InterfaceManager_ExecuteActions(iface, list->entries[*(u32 *)(obj + 0x2C4)].actions);
+        } else {
+            *(s32 *)(obj + 0x2C8) -= (s32)dt;
+            if (*(s8 *)(obj + 0x2D9) == 0 && (*(DialogChar **)(obj + 0x2DC))->state == 2) {
+                *(s8 *)(obj + 0x2D9) = 1;
+                if (list->entries[*(u32 *)(obj + 0x2C4)].soundName != NULL) {
+                    released = 0;
+                    if (*(u8 **)(obj + 0x2D0) != NULL) {
+                        SoundSequence_Stop(*(s32 *)(obj + 0x2D4));
+                        FileStreaming_ReleaseDataPack(g_interfaceDialogSoundPacks[g_curInterfaceDialogSoundPack - 1].id, 9);
+                        released = 1;
+                        *(u8 **)(obj + 0x2D0) = NULL;
+                    }
+                    if (g_curInterfaceDialogSoundPack == 15) {
+                        g_curInterfaceDialogSoundPack = 0;
+                    }
+                    *(u8 **)(obj + 0x2D0) = DataPack_GetScript(g_interfaceDialogSoundPacks[g_curInterfaceDialogSoundPack].data, list->entries[*(u32 *)(obj + 0x2C4)].soundID);
+                    if (*(u8 **)(obj + 0x2D0) != NULL) {
+                        *(s32 *)(obj + 0x2D4) = SoundSequence_Play(*(s8 **)(obj + 0x2D0), NULL);
+                    }
+                    g_curInterfaceDialogSoundPack++;
+                    if (released) {
+                        while (g_curInterfaceDialogSoundIndex < list->count && list->entries[g_curInterfaceDialogSoundIndex].soundName == NULL) {
+                            g_curInterfaceDialogSoundIndex++;
+                        }
+                        if (g_curInterfaceDialogSoundIndex < list->count) {
+                            pack = FileStreaming_LoadDataPack(list->entries[g_curInterfaceDialogSoundIndex].soundName, 9, list->entries[g_curInterfaceDialogSoundIndex].soundID, 0);
+                            data = FileStreaming_InitializeDataPack(pack, 9, 1);
+                            if (g_numInterfaceDialogSoundPacks == 15) {
+                                g_numInterfaceDialogSoundPacks = 0;
+                            }
+                            g_interfaceDialogSoundPacks[g_numInterfaceDialogSoundPacks].id = pack;
+                            g_interfaceDialogSoundPacks[g_numInterfaceDialogSoundPacks].data = data;
+                            g_curInterfaceDialogSoundIndex++;
+                            g_numInterfaceDialogSoundPacks++;
+                        }
+                    }
+                }
+            }
+            if (*(s32 *)(obj + 0x2C8) <= 0) {
+                chr = *(DialogChar **)(obj + 0x2DC);
+                if (chr->state == 5 || chr->state == 1 || chr->state == 4) {
+                    if (list->entries[*(u32 *)(obj + 0x2C4)].chr != NULL) {
+                        list->entries[*(u32 *)(obj + 0x2C4)].chr->state = 0;
+                    }
+                    (*(u32 *)(obj + 0x2C4))++;
+                    if (*(u32 *)(obj + 0x2C4) < list->count) {
+                        *(s8 *)(obj + 0x2D8) = 1;
+                    } else {
+                        InterfaceManager_SetLoadState(iface, 1);
+                    }
+                } else {
+                    chr->state = 3;
+                }
+            }
+        }
+    }
+    if (obj[0x243] == 0) {
+        chr = *(DialogChar **)(obj + 0x2DC);
+        if (chr != NULL && obj[0x240] == 0) {
+            *(s32 *)(obj + 0x2E4) -= (s32)dt;
+            if (obj[0x125] != 0 || chr->state != obj[0x2E0] || *(s32 *)(obj + 0x2E4) <= 0) {
+                if (chr->state == 1) {
+                    chr->state = 2;
+                } else if (obj[0x2E0] == 5) {
+                    chr->state = 2;
+                } else if (obj[0x2E0] == 3 || chr->state == 3) {
+                    chr->state = 4;
+                }
+                obj[0x2E0] = chr->state;
+                if (obj[0x2E0] != 3 && obj[0x2E0] != 4) {
+                    if (obj[0x2E0] == 5) {
+                        *(s32 *)(obj + 0x2E4) = chr->special[chr->key].anim.frameTime * chr->special[chr->key].anim.numKeys;
+                    } else if (obj[0x2E0] == 2) {
+                        chr->key = RandomNumberGenerator_GetRandomInteger(0, chr->numTalk);
+                        *(s32 *)(obj + 0x2E4) = chr->talk[chr->key].anim.frameTime * chr->talk[chr->key].anim.numKeys;
+                    } else if (obj[0x2E0] == 0) {
+                        chr->key = RandomNumberGenerator_GetRandomInteger(0, chr->numIdle);
+                        *(s32 *)(obj + 0x2E4) = chr->idle[chr->key].anim.frameTime * chr->idle[chr->key].anim.numKeys;
+                    }
+                    obj[0x2F0] = 1;
+                }
+            }
+            if (chr->state == 5) {
+                ExtractTextureKey(&chr->special[chr->key].anim, (TextureKeyState *)(obj + 0x2E8), dt);
+            } else if (chr->state == 2 || chr->state == 3 || chr->state == 4) {
+                ExtractTextureKey(&chr->talk[chr->key].anim, (TextureKeyState *)(obj + 0x2E8), dt);
+            } else {
+                ExtractTextureKey(&chr->idle[chr->key].anim, (TextureKeyState *)(obj + 0x2E8), dt);
+            }
+            *(u16 *)(obj + 0x24A) = ((TextureKeyState *)(obj + 0x2E8))->texture;
+        }
+    }
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void InterfaceManager_ExecuteActions(u8 *iface, u8 *list) {
