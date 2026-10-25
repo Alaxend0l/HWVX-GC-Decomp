@@ -7,7 +7,13 @@ extern s32 g_numQuadPacksToLoad;
 extern s32 g_itemTimer;
 extern void *g_pDataPackToLoad;
 void *Allocate(u32 size, s32 type, const char *name);
-void memset(void *dest, s32 value, u32 count);
+void memset(void *dst, s32 c, u32 n);
+void Deallocate(void *alloc);
+s32 FileStreaming_ReleaseAllDataPacks(s32 type, s8 wait);
+extern u8 g_bLoadingThreadRunning;
+
+#pragma push
+#pragma use_lmw_stmw on
 
 void FileStreaming_Initialize(void)
 {
