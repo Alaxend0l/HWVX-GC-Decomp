@@ -54,6 +54,15 @@ void CarA_GetInverseLocalInertiaTensor(void *arg0, void *arg1) {
     M2C_FIELD(arg1, f32 *, 8) = (f32) M2C_FIELD(arg0, f32 *, 0x3E8);
 }
 
+f32 CarA_GetMass(u8 *car)
+{
+    u8 *coll;
+
+    coll = *(u8 **)(car + 0x3BC);
+    coll = *(u8 **)(coll + 0xA0);
+    return *(f32 *)(coll + 0x20);
+}
+
 s32 CarA_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
