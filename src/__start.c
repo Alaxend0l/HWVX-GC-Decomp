@@ -19,7 +19,6 @@ void * memset(void *dest, s32 value, u32 count);
 void __flush_cache(void *address, u32 size);
 void OSResetSystem(s32 reset, u32 resetCode, s32 forceMenu);
 
-extern void * memcpy(void *dest, void *source, u32 count);
 void __check_pad3(void)
 {
     if ((*((u16 *)0x800030e4) & 0xeef) == 0xeef)
