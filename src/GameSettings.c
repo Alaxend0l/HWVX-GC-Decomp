@@ -70,6 +70,38 @@ void *FileStreaming_InitializeDataPack(void *, s32, s32);
 u8 *DataPack_GetScript(void *, s32);
 s32 PlayerManager_PlayerHumanCount(void);
 
+void GameSettings_SetDefaultControllerState(void)
+{
+    s32 i;
+
+    for (i = 0; i < 4; i++)
+    {
+        g_codeVariables.controllerState[i] = 1;
+    }
+}
+
+u8 *GameSettings_GetMCP(void)
+{
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    void *pack;
+
+    if (bFirstTime)
+    {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL)
+        {
+            pMCP = NULL;
+        }
+        else
+        {
+            pMCP = DataPack_GetScript(pack, 0);
+        }
+    }
+    return pMCP;
+}
+
 void GameSettings_GameBoyConnected(void) {
     static s8 bFirstTime = 1;
     static u8 *pMCP;
