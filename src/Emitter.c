@@ -61,3 +61,48 @@ void Emitter_Release(Emitter *emitter) {
     }
     Thing_Release((s32)emitter);
 }
+
+s32 ActionFXPointChangeMode(ActionFXList *list) {
+    s32 mode = list->mode;
+    u32 count = list->pointCount;
+    u32 i;
+
+    for (i = 0; i < count; i++) {
+        ActionFXPoint *point = list->points[i];
+        ActionFX *fx = point->fx;
+
+        switch (mode) {
+        case 0:
+            if (fx != NULL) {
+                fx->flags |= 0x02000000;
+            }
+            break;
+        case 1:
+            if (fx != NULL) {
+                fx->flags &= ~0x02000000;
+            }
+            break;
+        case 2:
+            if (fx->flags & 0x02000000) {
+                if (fx != NULL) {
+                    fx->flags &= ~0x02000000;
+                }
+            } else {
+                if (fx != NULL) {
+                    fx->flags |= 0x02000000;
+                }
+            }
+            break;
+        }
+        point->mode = mode;
+    }
+    return 1;
+}
+
+s32 Emitter_Invalidate(ActionFXList *list, u32 start, u32 end) {
+    if ((u32)list->mode >= start && (u32)list->mode < end) {
+        return 1;
+    }
+    return 0;
+}
+
