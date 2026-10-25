@@ -49,6 +49,12 @@ s32 strcmp(const char *a, const char *b);
 #pragma push
 #pragma use_lmw_stmw on
 
+void THPPlayerQuit(void) {
+    M2C_UNK LCDisable();
+    LCDisable();
+    Initialized = 0;
+}
+
 BOOL THPPlayerOpen(char *fileName, BOOL onMemory) {
     s32 offset;
     u32 i;
