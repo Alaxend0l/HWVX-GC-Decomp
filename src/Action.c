@@ -53,3 +53,12 @@ void Action_Destroy(void) {
 
 }
 
+void Action_Init(void) {
+    extern void *m_Actions_800DBC80[80];
+    u32 i;
+
+    for (i = 0; i < 80; i++) {
+        m_Actions_800DBC80[i] = NULL;
+    }
+}
+
