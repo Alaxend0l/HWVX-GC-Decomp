@@ -20,25 +20,25 @@ extern s32 g_fileID;
 extern s32 g_openFileDataPackType;
 void File_Close(s32 file);
 
-typedef struct QuadPack {
-    u8 pad00[0x10];
-    void *data;         /* 0x10 */
-    void *vertices;     /* 0x14 */
-    u8 pad18[0x10];
-    void *gxObject;     /* 0x28 */
-    s32 gxBase;         /* 0x2C */
-    u8 pad30[0x4];
-    u8 flag34;          /* 0x34 */
-    u8 pad35[0xC];
-    void *alloc;        /* 0x44 */
-} QuadPack;
-
 typedef struct GXObject {
     u8 pad0[0x1C];
     u32 count;          /* 0x1C */
     u8 pad1F[0x4];
     s32 *shaderList;    /* 0x20 */
 } GXObject;
+
+typedef struct QuadPack {
+    u8 pad00[0x10];
+    void *data;         /* 0x10 */
+    void *vertices;     /* 0x14 */
+    u8 pad18[0x10];
+    GXObject *gxObject; /* 0x28 */
+    s32 gxBase;         /* 0x2C */
+    u8 pad30[0x4];
+    u8 flag34;          /* 0x34 */
+    u8 pad35[0xC];
+    void *alloc;        /* 0x44 */
+} QuadPack;
 
 void ShaderHolder_RemoveGX(s32 gx);
 void VertexColorSeqManager_RemoveVertices(void *vertices);
