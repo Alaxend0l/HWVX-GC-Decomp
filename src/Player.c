@@ -1,6 +1,16 @@
 #include "common.h"
 
 
+s8 Player_IsHuman(void *player) {
+    extern void Player_DefaultControlReader(void);
+    s32 isHuman = 0;
+
+    if (player != NULL && *(void **)((u8 *)player + 0x20) == Player_DefaultControlReader) {
+        isHuman = 1;
+    }
+    return isHuman;
+}
+
 void Player_Init(void *player) {
     s32 i;
 
