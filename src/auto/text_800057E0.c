@@ -29934,7 +29934,6 @@ s8 Thing_TestThingCollision(u8 *a, u8 *b, f32 *t, u8 *hit) {
     void InverseXformVec(void *mtx, Vector4 *in, Vector4 *out);
     void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
     void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
-    s8 SegmentVsSphere(void *center, Vector4 *start, Vector4 *end, f32 radius);
     f32 OBoxHitsOBox(void *boxA, void *a, void *boxB, void *b, u8 *hit, f32 t);
     f32 RayBoxTest(Vector4 *start, Vector4 *dir, Vector4 *box, f32 t, Vector4 *hit);
     void PSVECSubtract(void *a, void *b, void *out);
@@ -29945,24 +29944,20 @@ s8 Thing_TestThingCollision(u8 *a, u8 *b, f32 *t, u8 *hit) {
     best = *t;
     switch (*(s16 *)(a + 0x80)) {
     case 3:
-        best = (*(f32 (**)(void *, void *, void *))(*(u8 **)(b + 0x8C) + 0x38))(b, a + 0x40, a);
+        best = (*(f32 (**)(void *, Vector4 *, Vector4 *, void *, f32))(*(u8 **)(b + 0x8C) + 0x38))(b, (Vector4 *)(a + 0x40), (Vector4 *)a, hit, *t);
         break;
     case 1:
         switch (*(s16 *)(b + 0x80)) {
         case 3:
-            best = (*(f32 (**)(void *, void *, void *))(*(u8 **)(a + 0x8C) + 0x38))(a, b + 0x40, b);
+            best = (*(f32 (**)(void *, Vector4 *, Vector4 *, void *, f32))(*(u8 **)(a + 0x8C) + 0x38))(a, (Vector4 *)(b + 0x40), (Vector4 *)b, hit, *t);
             break;
         case 1: {
             void *boxA;
             void *boxB;
-            Vector4 end;
 
             boxA = (*(void *(**)(void *))(*(u8 **)(a + 0x8C) + 0x40))(a);
             boxB = (*(void *(**)(void *))(*(u8 **)(b + 0x8C) + 0x40))(b);
-            end.x = *t * (((f32 *)a)[0] - ((f32 *)b)[0]) + ((Vector4 *)(a + 0x40))->x;
-            end.y = *t * (((f32 *)a)[1] - ((f32 *)b)[1]) + ((Vector4 *)(a + 0x40))->y;
-            end.z = *t * (((f32 *)a)[2] - ((f32 *)b)[2]) + ((Vector4 *)(a + 0x40))->z;
-            if (!SegmentVsSphere(b + 0x40, (Vector4 *)(a + 0x40), &end, *(f32 *)(a + 0x70) + *(f32 *)(b + 0x70))) {
+            if (!Thing_SweptSpheresTouch(a, b, *t)) {
                 return 0;
             }
             best = OBoxHitsOBox(boxA, a, boxB, b, hit, *t);
@@ -30043,16 +30038,12 @@ s8 Thing_TestThingCollision(u8 *a, u8 *b, f32 *t, u8 *hit) {
             }
             break;
         }
-        default:
-            break;
         }
         break;
     case 6:
         switch (*(s16 *)(b + 0x80)) {
-        case 0:
-            break;
         case 3:
-            best = (*(f32 (**)(void *, void *, void *))(*(u8 **)(b + 0x8C) + 0x38))(a, a + 0x40, a);
+            best = (*(f32 (**)(void *, Vector4 *, Vector4 *, void *, f32))(*(u8 **)(b + 0x8C) + 0x38))(a, (Vector4 *)(a + 0x40), (Vector4 *)a, hit, *t);
             break;
         case 1: {
             RayHit rayHit;
@@ -30131,11 +30122,7 @@ s8 Thing_TestThingCollision(u8 *a, u8 *b, f32 *t, u8 *hit) {
         }
         case 6:
             break;
-        default:
-            break;
         }
-        break;
-    default:
         break;
     }
     if (best < *t) {
@@ -49559,6 +49546,45 @@ s32 DummyLen(void) {
         len = 4;
     }
     return len;
+}
+
+static inline u32 exnor_1st(u32 data, u32 rshift) {
+    u32 wk;
+    u32 work;
+    u32 i;
+
+    work = data;
+    for (i = 0; i < rshift; i++) {
+        wk = ~(work ^ (work >> 7) ^ (work >> 15) ^ (work >> 23));
+        work = (work >> 1) | ((wk << 30) & 0x40000000);
+    }
+    return work;
+}
+
+static inline u32 exnor(u32 data, u32 lshift) {
+    u32 wk;
+    u32 work;
+    u32 i;
+
+    work = data;
+    for (i = 0; i < lshift; i++) {
+        wk = ~(work ^ (work << 7) ^ (work << 15) ^ (work << 23));
+        work = (work << 1) | ((wk >> 30) & 0x00000002);
+    }
+    return work;
+}
+
+static inline u32 GetInitVal(void) {
+    u32 OSGetTick(void);
+    u32 tmp;
+    u32 tick;
+
+    tick = OSGetTick();
+    DummySRand(tick);
+    tmp = 0x7FEC8000;
+    tmp |= DummyRand();
+    tmp &= 0xFFFFF000;
+    return tmp;
 }
 
 void InitCallback(void *task) {
