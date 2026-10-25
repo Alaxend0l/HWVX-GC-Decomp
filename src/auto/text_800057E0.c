@@ -6651,7 +6651,7 @@ void CarA_GetAngularVelocity(void *car, Vector4 *vel) {
     *vel = M2C_FIELD(car, Vector4 *, 0x410);
 }
 
-s32 CarA_Init(u8 *car, u8 *init) {
+s32 CarA_Init(void *arg0, void *arg1) {
     extern Matrix4 g_identity;
     extern Vector4 g_zeroVector;
     extern void *g_pSourcePlayer;
@@ -6674,8 +6674,8 @@ s32 CarA_Init(u8 *car, u8 *init) {
     } params;
     Vector4 pos;
     u8 frames[0x800];
-    f32 volume;
     u32 sample;
+    f32 volume;
     u8 *info;
     u8 *hull;
     u8 *snd;
@@ -6683,6 +6683,8 @@ s32 CarA_Init(u8 *car, u8 *init) {
     u8 *slave;
     s32 *skel;
     u32 i;
+    u8 *init = arg1;
+    u8 *car = arg0;
 
     Thing_Init(car, (s32)init);
     *(u32 *)(car + 0x94) = *(u32 *)(init + 0x3C);
@@ -6857,11 +6859,10 @@ s32 CarA_Init(u8 *car, u8 *init) {
     *(u32 *)(car + 0x55C) = 0;
     Thing_AddToGrid(car, 0);
     for (i = 0; i < *(u32 *)(*(u8 **)(car + 0x3BC) + 0x100); i++) {
-        params.pos = g_zeroVector;
-        params.quat = g_zeroVector;
+        params.quat = params.pos = g_zeroVector;
         params.info = *(u8 **)(*(u8 **)(car + 0x3BC) + 0x104) + i * 0x50;
         if (params.info != NULL && *(u32 *)(params.info + 0x3C) != 0) {
-            slave = ThingManager_DARYL_CreateSlave(0xD, &params, params.info[0x32]);
+            slave = ThingManager_DARYL_CreateSlave(0xD, &params, *(u16 *)(params.info + 0x32));
             *(u32 *)(slave + 0x94) = *(u32 *)(car + 0x94);
             ThingManagerList_Append(car + 0x344, slave);
         }
@@ -32998,6 +32999,258 @@ void WildCardRack_Release(s32 arg0) {
     Thing_Release(arg0);
 }
 
+#pragma push
+#pragma dont_inline on
+s32 WildCardRack_Move(void *thing) {
+    extern f32 g_fDeltaTimeSec;
+    s8 GameSettings_IsCheatEnabled(s32 cheat);
+    void PSVECSubtract(void *a, void *b, void *out);
+    void PSVECCrossProduct(void *a, void *b, void *out);
+    f32 PSVECSquareMag(void *v);
+    void PSVECNormalize(void *src, void *dst);
+    void SubMatrixToQuaternion(void *mtx, void *quat);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void QuaternionMult(void *a, void *b, void *out);
+    void GenerateQuaternion(void *axis, void *q, f32 angle);
+    s8 Timer_Interrupt300(void);
+    s32 GetAllTargets(void **targets);
+    void InverseXformVec(void *mtx, Vector4 *in, Vector4 *out);
+    f32 _fabs(f32 x);
+    s8 RayHitsTerrain(void *start, void *dir, f32 *t, void *hit);
+    double atan2(double y, double x);
+    u8 FloatsEqual(f32 a, f32 b, f32 eps);
+    void WildcardState_Heartbeat(void *state, u8 *mtx, void *thing);
+    typedef void (*GetTargetPosFn)(void *thing, Vector4 *pos);
+    typedef struct WildcardData {
+        u8 unk0[0x24];
+        u32 numFrames;
+        s32 unk28;
+        u8 spinType;
+        u8 spinLimit;
+        u16 spinBone;
+    } WildcardData;
+    typedef struct WildcardThing {
+        u8 unk0[0x30];
+        WildcardData *data;
+    } WildcardThing;
+    typedef struct WildcardAnim {
+        u8 unk0[0x1E];
+        u8 loop;
+        u8 unk1F[0x24 - 0x1F];
+        f32 *times;
+    } WildcardAnim;
+    typedef struct WildcardInfo {
+        u8 unk0[0x18];
+        f32 unk18;
+    } WildcardInfo;
+    typedef struct WildcardSlot {
+        WildcardInfo *info;
+        u8 unk4[0x10 - 0x4];
+        Matrix4 *matrices;
+        u8 unk14[0x18 - 0x14];
+        WildcardAnim *anim;
+        u8 mode;
+        u8 state;
+        u8 unk1E[0x20 - 0x1E];
+        f32 time;
+        u8 unk24[0x40 - 0x24];
+        s16 count;
+        u8 unk42[0x44 - 0x42];
+        f32 scale;
+        f32 angle;
+        WildcardThing *thing;
+    } WildcardSlot;
+    typedef struct WildcardRack {
+        u8 unk0[0x10];
+        Vector4 mtx[3];
+        Vector4 pos;
+        Vector4 quat;
+        u8 unk60[0x74 - 0x60];
+        u32 flags;
+        u8 unk78[0x94 - 0x78];
+        u8 *player;
+        u8 unk98[0xB0 - 0x98];
+        WildcardSlot slots[12];
+        u8 cur;
+        u8 unk471;
+        u8 unk472;
+        u8 unk473[0x478 - 0x473];
+        u8 *target;
+        f32 unk47C;
+    } WildcardRack;
+    void *targets[32];
+    Matrix4 mtx;
+    Vector4 targetPos;
+    Vector4 local;
+    Vector4 pos;
+    Vector4 local2;
+    Vector4 pos2;
+    Vector4 q;
+    Vector4 out;
+    f32 t;
+    WildcardSlot *slot;
+    WildcardRack *rack = thing;
+    u8 *car;
+
+    if (rack->player != NULL) {
+        car = *(u8 **)(rack->player + 0x2C);
+        if (car != NULL && *(u8 **)(car + 0x8C) == g_carAVTable && ThingManagerList_GetByType(car + 0x344, 4) != NULL) {
+            return 1;
+        }
+    }
+    if (rack->player != NULL && !(rack->flags & 0x200000)) {
+        if (rack->slots[rack->cur].thing != NULL) {
+            s8 ready = 0;
+
+            if (rack->slots[rack->cur].info != NULL && rack->slots[rack->cur].scale > 0.6f) {
+                if (rack->slots[rack->cur].anim->loop) {
+                    ready = rack->slots[rack->cur].mode == 2;
+                } else {
+                    ready = rack->slots[rack->cur].state > 1;
+                }
+            }
+            if (ready &&
+                ((u32)rack->slots[rack->cur].count >= rack->slots[rack->cur].thing->data->numFrames || GameSettings_IsCheatEnabled(0)) &&
+                !rack->unk472 && rack->player[0x1B]) {
+                rack->slots[rack->cur].state = 0;
+                if (GameSettings_IsCheatEnabled(0) ||
+                    rack->slots[rack->cur].count >= (s16)rack->slots[rack->cur].thing->data->numFrames) {
+                    if (!GameSettings_IsCheatEnabled(0)) {
+                        rack->slots[rack->cur].count -= (s16)rack->slots[rack->cur].thing->data->numFrames;
+                    } else {
+                        rack->slots[rack->cur].count = rack->slots[rack->cur].thing->data->unk28;
+                    }
+                    rack->slots[rack->cur].time = rack->slots[rack->cur].anim->times[1];
+                    rack->slots[rack->cur].mode = 1;
+                }
+            }
+        }
+        if (*(u32 *)(rack->player + 0xC) & 2) {
+            u8 old = rack->cur;
+
+            slot = &rack->slots[old];
+            if (slot->info == NULL || slot->mode == 2 || slot->time > *slot->anim->times + slot->info->unk18) {
+                while (++rack->cur <= 24 && rack->slots[rack->cur % 12].info == NULL) {
+                }
+                rack->cur = rack->cur % 12;
+            }
+            if (old != rack->cur) {
+                rack->slots[rack->cur].scale = 0.0f;
+            }
+        }
+    }
+    if (rack->slots[rack->cur].thing != NULL) {
+        u8 type;
+
+        rack->slots[rack->cur].scale += 6.0f * g_fDeltaTimeSec;
+        if (rack->slots[rack->cur].scale > 1.0f) {
+            rack->slots[rack->cur].scale = 1.0f;
+        }
+        type = rack->slots[rack->cur].thing->data->spinType;
+        if (type == 3) {
+            if (rack->target != NULL) {
+                if (*(s32 *)(rack->target + 0x78) < 0 || (*(u32 *)(rack->target + 0x74) & 0x1000)) {
+                    rack->target = NULL;
+                    rack->unk47C = -1.0f;
+                } else {
+                    (*(GetTargetPosFn *)(*(u8 **)(rack->target + 0x8C) + 0x3C))(rack->target, &targetPos);
+                    PSVECSubtract(&targetPos, &rack->pos, &rack->mtx[2]);
+                    PSVECCrossProduct(&rack->mtx[1], &rack->mtx[2], &rack->mtx[0]);
+                    PSVECCrossProduct(&rack->mtx[2], &rack->mtx[0], &rack->mtx[1]);
+                    if (PSVECSquareMag(&rack->mtx[2])) {
+                        PSVECNormalize(&rack->mtx[2], &rack->mtx[2]);
+                    }
+                    if (PSVECSquareMag(&rack->mtx[1])) {
+                        PSVECNormalize(&rack->mtx[1], &rack->mtx[1]);
+                    }
+                    if (PSVECSquareMag(&rack->mtx[0])) {
+                        PSVECNormalize(&rack->mtx[0], &rack->mtx[0]);
+                    }
+                    SubMatrixToQuaternion(&rack->mtx[0], &rack->quat);
+                }
+            }
+        } else if (type == 2) {
+            f32 step;
+            f32 angle;
+
+            slot = &rack->slots[rack->cur];
+            step = 0.9f * g_fDeltaTimeSec;
+            angle = 0.0f;
+            if (Timer_Interrupt300()) {
+                u32 i;
+                u32 count;
+                u32 best;
+                f32 bestDist;
+                f32 dist;
+
+                count = GetAllTargets(targets);
+                bestDist = 1000000.0f;
+                best = -1;
+                if (rack->target != NULL && rack->unk47C > 0.0f) {
+                    targets[count++] = rack->target;
+                }
+                for (i = 0; i < count; i++) {
+                    t = 1.0f;
+                    if (targets[i] != rack && (rack->player == NULL || targets[i] != *(void **)(rack->player + 0x2C))) {
+                        (*(GetTargetPosFn *)(*(u8 **)((u8 *)targets[i] + 0x8C) + 0x3C))(targets[i], &pos);
+                        InverseXformVec(&rack->mtx[0], &pos, &local);
+                        dist = _fabs(local.z * (local.x * local.y));
+                        if (!(local.z < 1.0f) && !(_fabs(local.x / local.z) > 1.0f) && !RayHitsTerrain(&rack->pos, &pos, &t, NULL) &&
+                            dist < bestDist) {
+                            bestDist = dist;
+                            best = i;
+                        }
+                    }
+                }
+                if (best < count) {
+                    rack->target = targets[best];
+                } else {
+                    rack->target = NULL;
+                }
+            }
+            if (rack->target != NULL) {
+                mtx = *(Matrix4 *)&rack->mtx[0];
+                mtx.v[3] = rack->slots[rack->cur].matrices[rack->slots[rack->cur].thing->data->spinBone].v[3];
+                (*(GetTargetPosFn *)(*(u8 **)(rack->target + 0x8C) + 0x3C))(rack->target, &pos2);
+                InverseXformVec(&mtx, &pos2, &local2);
+                angle = -atan2(local2.y, local2.z);
+            }
+            if (FloatsEqual(angle, slot->angle, step)) {
+                slot->angle = angle;
+            } else if (slot->angle > angle) {
+                slot->angle -= step;
+            } else {
+                slot->angle += step;
+            }
+            if (slot->angle > 0.017453292f * slot->thing->data->spinLimit) {
+                slot->angle = 0.017453292f * slot->thing->data->spinLimit;
+            } else if (slot->angle < 0.017453292f * -slot->thing->data->spinLimit) {
+                slot->angle = 0.017453292f * -slot->thing->data->spinLimit;
+            }
+        } else if (type == 1) {
+            if (rack->player != NULL && *(s8 *)(rack->player + 1) != 0) {
+                WildcardSlot *s = &rack->slots[rack->cur];
+
+                s->angle += 0.017453292f * (*(s8 *)(rack->player + 1) * g_fDeltaTimeSec);
+                if (s->angle > 0.017453292f * s->thing->data->spinLimit) {
+                    s->angle = 0.017453292f * s->thing->data->spinLimit;
+                } else if (s->angle < 0.017453292f * -s->thing->data->spinLimit) {
+                    s->angle = 0.017453292f * -s->thing->data->spinLimit;
+                }
+            }
+        }
+        if (rack->slots[rack->cur].info != NULL && rack->slots[rack->cur].scale < 1.0f) {
+            Vector4 axis = {1.0f, 0.0f, 0.0f, 0.0f};
+
+            GenerateQuaternion(&axis, &q, 3.1415927f * (rack->slots[rack->cur].scale - 1.0f));
+            QuaternionMult(&rack->quat, &q, &out);
+            QuaternionToSubMatrix(&out, &rack->mtx[0]);
+        }
+        WildcardState_Heartbeat(&rack->slots[rack->cur], (u8 *)&rack->mtx[0], rack);
+    }
+    return 1;
+}
+#pragma pop
 void WildCardRack_Draw(u8 *rack) {
     typedef struct {
         void *motion;
