@@ -61,3 +61,10 @@ void Creature_Release(Creature *creature) {
     Thing_Release(creature);
 }
 
+void Creature_Draw(Creature *creature) {
+    if (creature->unk1C0 > 0.0f) {
+        MotionState_Draw(creature->motion);
+    }
+    creature->flags |= 0x4000;
+}
+
