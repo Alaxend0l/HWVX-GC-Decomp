@@ -1,6 +1,25 @@
 #include "common.h"
 
 
+void AI_Create(void)
+{
+    u32 GameSettings_GetCodeVariable(u32, u32);
+    extern s32 g_volumeTotal;
+    extern void *gs_pAsyncEventHead_803C6F08;
+    extern void *gs_pAsyncEventTail_803C6F04;
+    extern u32 g_attackDelay;
+    u32 var;
+
+    g_volumeTotal = -1;
+    gs_pAsyncEventHead_803C6F08 = NULL;
+    gs_pAsyncEventTail_803C6F04 = NULL;
+    var = GameSettings_GetCodeVariable(0x12d, 0);
+    if (var >= 3)
+    {
+        g_attackDelay = 8000;
+    }
+}
+
 void AI_Reset(void *arg0) {
     M2C_FIELD(arg0, s32 *, 0xC8) = 1;
     M2C_FIELD(arg0, s8 *, 0xCC) = 0;
