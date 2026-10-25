@@ -100,3 +100,15 @@ void CameraManager_SetCameraGlobalMode(u32 *mode) {
     }
 }
 
+void *CameraManager_GetCameraFromPlayer(void *player) {
+    extern u8 g_cameraManager[];
+    u32 i;
+
+    for (i = 0; i < g_cameraManager[0x640]; i++) {
+        if (M2C_FIELD(g_cameraManager + i * 0x190, void **, 0) == player) {
+            return g_cameraManager + i * 0x190;
+        }
+    }
+    return NULL;
+}
+
