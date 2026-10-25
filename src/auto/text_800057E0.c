@@ -49548,45 +49548,6 @@ s32 DummyLen(void) {
     return len;
 }
 
-static inline u32 exnor_1st(u32 data, u32 rshift) {
-    u32 wk;
-    u32 work;
-    u32 i;
-
-    work = data;
-    for (i = 0; i < rshift; i++) {
-        wk = ~(work ^ (work >> 7) ^ (work >> 15) ^ (work >> 23));
-        work = (work >> 1) | ((wk << 30) & 0x40000000);
-    }
-    return work;
-}
-
-static inline u32 exnor(u32 data, u32 lshift) {
-    u32 wk;
-    u32 work;
-    u32 i;
-
-    work = data;
-    for (i = 0; i < lshift; i++) {
-        wk = ~(work ^ (work << 7) ^ (work << 15) ^ (work << 23));
-        work = (work << 1) | ((wk >> 30) & 0x00000002);
-    }
-    return work;
-}
-
-static inline u32 GetInitVal(void) {
-    u32 OSGetTick(void);
-    u32 tmp;
-    u32 tick;
-
-    tick = OSGetTick();
-    DummySRand(tick);
-    tmp = 0x7FEC8000;
-    tmp |= DummyRand();
-    tmp &= 0xFFFFF000;
-    return tmp;
-}
-
 void InitCallback(void *task) {
     void DSPSendMailToDSP(u32 mail);
     u32 DSPCheckMailToDSP(void);
