@@ -73,6 +73,30 @@ f32 CarA_GetMass(u8 *car)
     return *(f32 *)(coll + 0x20);
 }
 
+void *CarA_GetOrientedCollision(u8 *car)
+{
+    void BuildOOBOffset(void *, void *, void *, void *);
+    void BuildOConvexHullOffset(void *, void *, void *, void *);
+    u8 *coll;
+
+    coll = *(u8 **)(car + 0x3BC);
+    coll = *(u8 **)(coll + 0xA0);
+    switch (*(u8 *)(coll + 0x10))
+    {
+    case 0:
+        if (*(u32 *)(car + 0x74) & 0x180)
+        {
+            BuildOOBOffset(*(u8 **)(coll + 0x44), car + 0x10, car + 0x520, car + 0xC0);
+            *(u32 *)(car + 0x74) &= ~0x180;
+        }
+        return car + 0xC0;
+    case 1:
+        BuildOConvexHullOffset(*(u8 **)(car + 0x370), *(u8 **)(coll + 0x48), car + 0x10, car + 0x520);
+        return *(u8 **)(car + 0x370);
+    }
+    return NULL;
+}
+
 s32 CarA_GetSurfaceScript(u8 *car)
 {
     u8 *coll;
