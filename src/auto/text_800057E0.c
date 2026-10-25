@@ -29909,10 +29909,13 @@ static inline void Thing_SetBoxContactHit(u8 *thing, Vector4 *box, Vector4 *p, V
 static inline s8 Thing_SweptSpheresTouch(u8 *a, u8 *b, f32 t) {
     s8 SegmentVsSphere(void *center, Vector4 *start, Vector4 *end, f32 radius);
     Vector4 end;
+    f32 dx = ((f32 *)a)[0] - ((f32 *)b)[0];
+    f32 dy = ((f32 *)a)[1] - ((f32 *)b)[1];
+    f32 dz = ((f32 *)a)[2] - ((f32 *)b)[2];
 
-    end.x = t * (((f32 *)a)[0] - ((f32 *)b)[0]) + ((Vector4 *)(a + 0x40))->x;
-    end.y = t * (((f32 *)a)[1] - ((f32 *)b)[1]) + ((Vector4 *)(a + 0x40))->y;
-    end.z = t * (((f32 *)a)[2] - ((f32 *)b)[2]) + ((Vector4 *)(a + 0x40))->z;
+    end.x = t * dx + ((Vector4 *)(a + 0x40))->x;
+    end.y = t * dy + ((Vector4 *)(a + 0x40))->y;
+    end.z = t * dz + ((Vector4 *)(a + 0x40))->z;
     return SegmentVsSphere(b + 0x40, (Vector4 *)(a + 0x40), &end, *(f32 *)(a + 0x70) + *(f32 *)(b + 0x70));
 }
 
