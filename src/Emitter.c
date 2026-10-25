@@ -1,5 +1,12 @@
 #include "common.h"
 
+typedef struct Vector4 {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 w;
+} Vector4;
+
 /* Action/EMIX data referenced by emitters and action-FX points. */
 typedef struct ActionFX {
     u8 pad0[0x74];
