@@ -98,3 +98,10 @@ void MusicHearbeat(void) {
     }
 }
 
+void SoundListener_SetTotalListeners(u32 arg0) {
+    extern s32 g_numListeners;
+    if (arg0 != 0U) {
+        g_numListeners = arg0 - 1;
+    }
+}
+
