@@ -200,6 +200,11 @@ void InterfaceManager_ReleaseAllUnpausedInterfaces(void) {
     }
 }
 
+void InterfaceManager_SetCallBackRoutine(s32 index, void *callback) {
+    extern u8 g_interface[][0x170];
+    *(void **)(g_interface[index] + 0x90) = callback;
+}
+
 void InterfaceManager_SetMissionObjectiveText(u8 *obj, u8 **data) {
     u32 strlen(const char *s);
     char *strcpy(char *dst, const char *src);
