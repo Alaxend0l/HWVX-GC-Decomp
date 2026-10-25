@@ -35,6 +35,12 @@ extern OConvexHull g_aOConvexHull[8];
 extern CollisionPair g_aCollisionPairCache[4];
 void Dprintf(const char *, ...);
 
+void OBoxHolder_Release(OBox *obox) {
+    if (obox != NULL) {
+        obox->inUse = 0;
+    }
+}
+
 void CollisionPairCache_Clear(void) {
     u32 i;
 
