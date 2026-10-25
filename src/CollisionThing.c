@@ -35,6 +35,19 @@ extern OConvexHull g_aOConvexHull[8];
 extern CollisionPair g_aCollisionPairCache[4];
 void Dprintf(const char *, ...);
 
+OConvexHull *OConvexHullHolder_Get(void *owner) {
+    u32 i;
+
+    for (i = 0; i < 8; i++) {
+        if (g_aOConvexHull[i].hull == NULL) {
+            g_aOConvexHull[i].hull = owner;
+            return &g_aOConvexHull[i];
+        }
+    }
+    Dprintf("OUT OF CONVEX HULLS!!!!\n");
+    return NULL;
+}
+
 void OConvexHullHolder_Release(OConvexHull *hull) {
     if (hull != NULL) {
         hull->hull = NULL;
