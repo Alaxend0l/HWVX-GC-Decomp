@@ -43,11 +43,11 @@ void FontManager_Destroy(void) {
 void Gfx_FontManager_Init(void) {
     u32 i;
 
+    g_state.debugFont = 0;
     g_fontManager.numFonts = 0;
     for (i = 0; i < 16; i++) {
         g_fontManager.fonts[i].inUse = 0;
     }
-    g_state.debugFont = 0;
 }
 
 void Gfx_SetDebugFont(s16 font) {
