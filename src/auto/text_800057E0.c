@@ -45695,6 +45695,35 @@ void __AI_SRC_INIT(void) {
     }
 }
 #pragma pop
+static inline void __ARWaitForDMA(void) {
+    while (__DSPRegs[5] & 0x200) {
+    }
+}
+
+static inline void __ARWriteDMA(u32 mmem_addr, u32 aram_addr, u32 length) {
+    __DSPRegs[16] = (u16)((__DSPRegs[16] & ~0x3ff) | (mmem_addr >> 16));
+    __DSPRegs[17] = (u16)((__DSPRegs[17] & ~0xffe0) | (0xffff & mmem_addr));
+    __DSPRegs[18] = (u16)((__DSPRegs[18] & ~0x3ff) | (aram_addr >> 16));
+    __DSPRegs[19] = (u16)((__DSPRegs[19] & ~0xffe0) | (0xffff & aram_addr));
+    __DSPRegs[20] = (u16)(__DSPRegs[20] & ~0x8000);
+    __DSPRegs[20] = (u16)((__DSPRegs[20] & ~0x3ff) | (length >> 16));
+    __DSPRegs[21] = (u16)((__DSPRegs[21] & ~0xffe0) | (0xffff & length));
+    __ARWaitForDMA();
+    __DSPRegs[5] = (u16)((__DSPRegs[5] & ~0x88) | 0x20);
+}
+
+static inline void __ARReadDMA(u32 mmem_addr, u32 aram_addr, u32 length) {
+    __DSPRegs[16] = (u16)((__DSPRegs[16] & ~0x3ff) | (mmem_addr >> 16));
+    __DSPRegs[17] = (u16)((__DSPRegs[17] & ~0xffe0) | (0xffff & mmem_addr));
+    __DSPRegs[18] = (u16)((__DSPRegs[18] & ~0x3ff) | (aram_addr >> 16));
+    __DSPRegs[19] = (u16)((__DSPRegs[19] & ~0xffe0) | (0xffff & aram_addr));
+    __DSPRegs[20] = (u16)(__DSPRegs[20] | 0x8000);
+    __DSPRegs[20] = (u16)((__DSPRegs[20] & ~0x3ff) | (length >> 16));
+    __DSPRegs[21] = (u16)((__DSPRegs[21] & ~0xffe0) | (0xffff & length));
+    __ARWaitForDMA();
+    __DSPRegs[5] = (u16)((__DSPRegs[5] & ~0x88) | 0x20);
+}
+
 void ARStartDMA(u32 type, u32 mainmem_addr, u32 aram_addr, u32 length) {
     BOOL enabled = OSDisableInterrupts();
     __DSPRegs[16] = (u16)((__DSPRegs[16] & ~0x3ff) | (mainmem_addr >> 16));
