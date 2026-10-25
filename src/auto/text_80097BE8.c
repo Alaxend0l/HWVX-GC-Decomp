@@ -10443,6 +10443,8 @@ void Render_BeginScene(void) {
     GXSetAlphaUpdate(0);
 }
 
+#pragma pop
+
 static inline void Render_SetWindowViewport(void) {
     f32 top;
     f32 wd;
@@ -10462,6 +10464,8 @@ static inline void Render_SetWindowViewport(void) {
     GXSetScissor(*(u32 *)((u8 *)GetRenderWindow() + 0x2B0), stop, swd, sht);
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 void Render_EndScene(void) {
     extern GDL *g_pGDL;
     extern GfxState g_state;
@@ -10520,7 +10524,7 @@ void Render_EndScene(void) {
         for (view = 1; view < 5; view++) {
             if (g_CurrentViews & (1 << view)) {
                 Gfx_SetRenderWindow(view);
-                Render_StateSetScissor();
+                Render_SetWindowViewport();
                 for (i = 0; i < g_pGDL->numAlphaGroups; i++) {
                     Render_DrawAlphaGroup(i);
                 }
@@ -10542,7 +10546,7 @@ void Render_EndScene(void) {
         for (v = 1; v < 5; v++) {
             if (g_CurrentViews & (1 << v)) {
                 Gfx_SetRenderWindow(v);
-                Render_StateSetScissor();
+                Render_SetWindowViewport();
                 g_state.unk93 = 0;
                 Gfx_SetWorldMatrix(NULL);
                 Render_DrawTriGroup();
@@ -10566,7 +10570,7 @@ void Render_EndScene(void) {
         for (v = 1; v < 5; v++) {
             if (g_CurrentViews & (1 << v)) {
                 Gfx_SetRenderWindow(v);
-                Render_StateSetScissor();
+                Render_SetWindowViewport();
                 g_state.unk93 = 0;
                 Gfx_SetWorldMatrix(NULL);
                 Render_SetTextureHandle(0xFFFF);
@@ -10599,7 +10603,7 @@ void Render_EndScene(void) {
         for (v = 1; v < 5; v++) {
             if (g_CurrentViews & (1 << v)) {
                 Gfx_SetRenderWindow(v);
-                Render_StateSetScissor();
+                Render_SetWindowViewport();
                 g_state.unk93 = 0;
                 Gfx_SetWorldMatrix(NULL);
                 Gfx_SortAlpha();
@@ -10614,7 +10618,7 @@ void Render_EndScene(void) {
     Render_StateZWriteEnable(1);
     if (g_CurrentViews != 1) {
         Gfx_SetRenderWindow(0);
-        Render_StateSetScissor();
+        Render_SetWindowViewport();
     }
     Gfx_SetOrthoMatrix();
     Render_StateZEnable(0);
