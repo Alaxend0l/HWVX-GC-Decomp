@@ -45,6 +45,13 @@ void MotionState_Draw(void *motionState);
 void MotionState_Release(void *motionState);
 void Thing_Release(void *thing);
 
+void Creature_GetTargetPos(Creature *creature, Vector4 *pos) {
+    pos->x = creature->pos.x;
+    pos->y = 4.0f + creature->pos.y;
+    pos->z = creature->pos.z;
+    pos->w = 1.0f;
+}
+
 f32 Creature_GetMass(Creature *creature) {
     return creature->mass;
 }
