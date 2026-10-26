@@ -178,12 +178,12 @@ void MotionState_BuildMatricesWorld(void *a, void *b, void *c, f32 d);
 void QuaternionToSubMatrix(Vector4 *q, void *m);
 s32 Creature_Init(Creature *arg0, CreatureInit *arg1)
 {
-    Creature *creature;
     CreatureInit *init;
+    Creature *creature;
 
-    Thing_Init(arg0, 0);
-    creature = arg0;
     init = arg1;
+    creature = arg0;
+    Thing_Init(creature, 0);
     creature->anims = init->anims;
     creature->pos = init->pos;
     creature->startPos = creature->pos;
@@ -330,6 +330,303 @@ void Creature_MicroStep(void *arg0, f32 dt) {
     }
     creature->flags &= ~0x4000;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void Creature_MacroStep(void *arg0, f32 dt) {
+    extern f32 g_fDeltaTimeSec;
+    extern s32 g_iDeltaTimeMS;
+    void TimeHandler_SetTimeElapsedSec_f32(f32 t);
+    void Creature_InterpretControls(void *creature);
+    s8 RayHitsTerrainAndObjects(void *start, void *dir, void *dist, void *hit);
+    f32 PSVECDotProduct(void *a, void *b);
+    f32 GetDampFactor(u8 type, u32 n);
+    u8 FloatsEqual(f32 a, f32 b, f32 eps);
+    void SinCosRad(f32 *s, f32 *c, f32 rad);
+    void Motion_HeartbeatB2(void *motion, void *thing);
+    void MotionState_BuildMatricesWorld(void *mtx, void *pos, void *state, f32 scale);
+    void Thing_PassiveTargeting(void *thing);
+    void *memset(void *dst, s32 c, u32 n);
+    void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, f32 fps);
+    struct CreatureAnim {
+        u8 unk0[0x18];
+        f32 fps;
+    };
+    struct CreatureEntry {
+        u8 unk0[4];
+        f32 forward;
+        f32 side;
+        f32 lift;
+        f32 start;
+        f32 end;
+        u8 unk18;
+        u8 unk19;
+    };
+    struct CreatureControls {
+        s8 x;
+        u8 unk1[3];
+        f32 angle;
+        f32 speed;
+        u8 unkC[0x6C - 0xC];
+        u32 flags;
+    };
+    struct CreatureModel {
+        u8 unk0[0x14];
+        u32 *numBones;
+    };
+    struct Creature {
+        Vector4 vel;
+        Vector4 mtx[3];
+        Vector4 pos;
+        Vector4 quat;
+        u8 unk60[0x74 - 0x60];
+        u32 flags;
+        s32 unk78;
+        u8 unk7C[0x94 - 0x7C];
+        struct CreatureControls *controls;
+        u8 unk98[0xB0 - 0x98];
+        f32 angle;
+        f32 angVel;
+        u8 unkB8[0xBF - 0xB8];
+        s8 onGround;
+        u8 unkC0[0xC8 - 0xC0];
+        f32 unkC8;
+        struct CreatureModel *model;
+        u8 unkD0[0xDC - 0xD0];
+        u8 *bones;
+        u8 unkE0[0xE4 - 0xE0];
+        struct CreatureAnim *anim;
+        u8 unkE8;
+        u8 unkE9;
+        u8 unkEA[0xEC - 0xEA];
+        f32 time;
+        f32 weight;
+        f32 unkF4;
+        f32 unkF8;
+        u32 unkFC;
+        u8 unk100[0x104 - 0x100];
+        struct CreatureAnim *anim2;
+        u8 unk108[0x110 - 0x108];
+        f32 unk110;
+        u8 unk114[0x118 - 0x114];
+        struct CreatureEntry *entry;
+        u8 unk11C[0x120 - 0x11C];
+        Vector4 normal;
+        f32 unk130;
+        u8 unk134[0x190 - 0x134];
+        Vector4 newPos;
+        Vector4 newVel;
+        s32 unk1B0;
+        u8 unk1B4[0x1C0 - 0x1B4];
+        f32 unk1C0;
+        u8 unk1C4[0x1C8 - 0x1C4];
+        u32 unk1C8;
+    } *creature = arg0;
+    struct {
+        Vector4 point;
+        Vector4 normal;
+        u8 unk20[0x30];
+    } hit __attribute__((aligned(16)));
+    Vector4 pos __attribute__((aligned(16)));
+    f32 t;
+    f32 savedDt = g_fDeltaTimeSec;
+    f32 travelled;
+    f32 speed;
+    f32 forward;
+    f32 side;
+    f32 dot;
+    f32 diff;
+    f32 step;
+    f32 inv;
+    f32 c2;
+    f32 s2;
+    f32 m;
+    u32 count;
+    u32 i;
+    struct CreatureControls *controls;
+    f32 guardC0 = creature->unk1C0;
+    f32 w;
+    f32 a;
+    f32 b;
+
+    if (guardC0 < 1.0f) {
+        return;
+    }
+    TimeHandler_SetTimeElapsedSec_f32(dt);
+    Creature_InterpretControls(creature);
+    if (creature->anim != NULL && !creature->entry->unk19 && creature->time >= creature->entry->start &&
+        creature->time < creature->entry->end) {
+        speed = creature->anim->fps;
+        forward = creature->entry->forward;
+        side = creature->entry->side;
+        if (creature->controls != NULL && (creature->controls->flags & 0x100)) {
+            speed *= creature->controls->speed;
+        }
+        creature->vel.x = speed * (forward * creature->mtx[0].x + side * creature->mtx[2].x);
+        creature->vel.z = speed * (forward * creature->mtx[0].z + side * creature->mtx[2].z);
+    }
+    creature->vel.y += -60.0f * g_fDeltaTimeSec;
+    if (creature->flags && !(creature->flags & 4)) {
+        travelled = 0.0f;
+        count = 0;
+        pos = creature->pos;
+        creature->onGround = 0;
+        do {
+            s8 hitAny;
+            t = g_fDeltaTimeSec - travelled;
+            hitAny = RayHitsTerrainAndObjects(&pos, creature, &t, &hit);
+            pos.x += creature->vel.x * t;
+            pos.y += creature->vel.y * t;
+            pos.z += creature->vel.z * t;
+            if (hitAny) {
+                dot = -PSVECDotProduct(&hit.normal, creature);
+                creature->vel.x += dot * hit.normal.x;
+                creature->vel.y += dot * hit.normal.y;
+                creature->vel.z += dot * hit.normal.z;
+                pos.x += hit.normal.x * creature->unk130;
+                pos.y += hit.normal.y * creature->unk130;
+                pos.z += hit.normal.z * creature->unk130;
+                if (hit.normal.y > 0.3f) {
+                    creature->onGround = 1;
+                    creature->normal = hit.normal;
+                }
+            }
+            travelled += t;
+            if (count++ > 6) {
+                travelled = g_fDeltaTimeSec;
+            }
+        } while (travelled < g_fDeltaTimeSec);
+        creature->newVel.x = 1000.0f * (pos.x - creature->pos.x) / (f32)creature->unk1B0;
+        creature->newVel.y = 1000.0f * (pos.y - creature->pos.y) / (f32)creature->unk1B0;
+        creature->newVel.z = 1000.0f * (pos.z - creature->pos.z) / (f32)creature->unk1B0;
+        creature->newPos = pos;
+        if (!creature->onGround) {
+            Vector4 start __attribute__((aligned(16))) = creature->pos;
+            f32 len = 1.0f;
+            Vector4 down __attribute__((aligned(16))) = {0.0f, -10.5f, 0.0f, 0.0f};
+
+            start.y += 10.0f;
+            creature->onGround = RayHitsTerrainAndObjects(&start, &down, &len, &hit);
+            if (creature->onGround) {
+                creature->normal = hit.normal;
+            }
+        }
+    }
+    controls = creature->controls;
+    if (!(controls->flags & 0x100)) {
+        if (!(creature->flags & 0x10) && creature->unk78 > 0) {
+            if (controls->x > 0x20) {
+                creature->angVel -= 0.3f * g_fDeltaTimeSec * (f32)(controls->x - 0x20);
+            } else if (controls->x < -0x20) {
+                creature->angVel -= 0.3f * g_fDeltaTimeSec * (f32)(controls->x + 0x20);
+            }
+        }
+        if (creature->angVel > 5.0f) {
+            creature->angVel = 5.0f;
+        } else if (creature->angVel < -5.0f) {
+            creature->angVel = -5.0f;
+        }
+        if (creature->onGround) {
+            creature->angVel *= GetDampFactor(8, g_iDeltaTimeMS);
+        }
+        creature->angle += creature->angVel * g_fDeltaTimeSec;
+    } else if (!(creature->flags & 0x10) && creature->unk78 > 0) {
+        diff = controls->angle - creature->angle;
+        step = 10.0f * g_fDeltaTimeSec;
+        while (diff > 3.1415927f) {
+            diff -= 6.2831855f;
+        }
+        while (diff < -3.1415927f) {
+            diff += 6.2831855f;
+        }
+        if (FloatsEqual(diff, 0.0f, step)) {
+            creature->angle = creature->controls->angle;
+        } else if (diff > 0.0f) {
+            creature->angle += step;
+        } else {
+            creature->angle -= step;
+        }
+    }
+    SinCosRad(&creature->quat.y, &creature->quat.w, 0.5f * creature->angle);
+    creature->quat.x = 0.0f;
+    creature->quat.z = 0.0f;
+    c2 = creature->quat.w * creature->quat.w;
+    s2 = creature->quat.y * creature->quat.y;
+    inv = 1.0f / (s2 + c2);
+    m = inv * (c2 - s2);
+    inv *= 2.0f;
+    creature->mtx[0].x = m;
+    creature->mtx[1].y = 1.0f;
+    creature->mtx[2].z = m;
+    creature->mtx[0].y = 0.0f;
+    creature->mtx[0].z = inv * (creature->quat.w * creature->quat.y);
+    creature->mtx[1].x = 0.0f;
+    creature->mtx[1].z = 0.0f;
+    creature->mtx[2].x = inv * (creature->quat.w * creature->quat.y);
+    creature->mtx[2].y = 0.0f;
+    creature->mtx[2].w = 0.0f;
+    creature->mtx[1].w = 0.0f;
+    creature->mtx[0].w = 0.0f;
+    creature->pos.w = 1.0f;
+    if (!(creature->unk1C0 < 1.0f)) {
+        creature->weight += creature->unkC8 * g_fDeltaTimeSec;
+        if (creature->weight > 1.0f) {
+            creature->weight = 1.0f;
+        }
+        w = creature->weight / (creature->weight + creature->unk110);
+        a = 0.0f;
+        b = a;
+        if (creature->anim != NULL) {
+            a = creature->anim->fps;
+        }
+        if (creature->anim2 != NULL) {
+            b = creature->anim2->fps;
+        }
+        b += w * (a - b);
+        if (creature->controls != NULL && (creature->controls->flags & 0x100)) {
+            b *= creature->controls->speed;
+        }
+        Motion_BlendHeartbeat_FPS(&creature->anim, 2, b);
+        if (creature->unkFC != 0) {
+            creature->flags &= ~0x10;
+        }
+        creature->weight = 0.0f;
+        Motion_HeartbeatB2(&creature->model, creature);
+    }
+    if (creature->entry->unk19) {
+        if (creature->unkF4 < creature->entry->start && creature->unkF8 > creature->entry->start) {
+            forward = creature->entry->forward;
+            speed = creature->anim->fps;
+            side = creature->entry->side;
+            if (creature->controls != NULL && (creature->controls->flags & 0x100)) {
+                speed *= creature->controls->speed;
+            }
+            creature->vel.x += speed * (forward * creature->mtx[0].x + side * creature->mtx[2].x);
+            creature->vel.y += creature->entry->lift;
+            creature->vel.z += speed * (forward * creature->mtx[0].z + side * creature->mtx[2].z);
+        }
+        if (creature->onGround) {
+            if (creature->unkF8 > creature->entry->end) {
+                creature->vel.x = 0.0f;
+                creature->vel.z = 0.0f;
+            }
+        } else {
+            creature->unkE9 = 0;
+        }
+    }
+    MotionState_BuildMatricesWorld(&creature->quat, &creature->pos, &creature->model, 1.0f);
+    if (creature->unk1C8 != 0) {
+        u32 *numBones = creature->model->numBones;
+        for (i = 0; i < *numBones; i++) {
+            if (creature->unk1C8 & (1 << i)) {
+                memset(creature->bones + i * 0x40, 0, 0x30);
+            }
+        }
+    }
+    Thing_PassiveTargeting(creature);
+    TimeHandler_SetTimeElapsedSec_f32(savedDt);
+}
+#pragma pop
 
 void Creature_Draw(Creature *creature) {
     if (creature->unk1C0 > 0.0f) {
