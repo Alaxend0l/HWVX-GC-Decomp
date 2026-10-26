@@ -136,6 +136,17 @@ void ThingManager_MoveLookerOnly(void) {
     ThingManagerList_RemoveReleasedThings((s32)&g_thingManager_DARYL.activeList);
 }
 
+void ThingManager_DARYL_Heartbeat(void) {
+    M2C_UNK ThingManager_MoveLookerOnly();
+    M2C_UNK ThingManager_MoveThings_DARYL_SUBTICK();
+    extern u8 g_bFreezeWorld;
+    if ((s8) g_bFreezeWorld != 0) {
+        ThingManager_MoveLookerOnly();
+        return;
+    }
+    ThingManager_MoveThings_DARYL_SUBTICK();
+}
+
 s32 TriggerPlayerVehicleGear(u32 *params) {
     extern u8 g_cameraManager[];
     u8 *vehicle = M2C_FIELD(*(u8 **)g_cameraManager, u8 **, 0x2C);
