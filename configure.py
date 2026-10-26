@@ -542,7 +542,7 @@ config.libs = [
             Object(NonMatching, "dispatch.c"),
             Object(NonMatching, "msghndlr.c"),
             Object(NonMatching, "support.c"),
-            Object(NonMatching, "mutex_TRK.c"),
+            Object(Matching, "mutex_TRK.c"),
             Object(NonMatching, "notify.c"),
             Object(NonMatching, "flush_cache.c"),
             Object(NonMatching, "mem_TRK.c"),
