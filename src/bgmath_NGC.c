@@ -22,10 +22,38 @@ void CopyVector(Vector *dst, Vector *src) {
     *dst = *src;
 }
 
-static f32 Sqrt(f64 x)
+void SinCos(f32 *s, f32 *c, f32 angle) {
+    f32 r;
+
+    while (angle < 0.0f) {
+        angle += 360.0f;
+    }
+    while (angle >= 360.0f) {
+        angle -= 360.0f;
+    }
+    r = 0.017453292f * angle;
+    *s = sin(r);
+    *c = cos(r);
+}
+
+void SinCosRad(f32 *s, f32 *c, f32 rad) {
+    f32 angle = rad * 57.29578f;
+    f32 r;
+
+    while (angle < 0.0f) {
+        angle += 360.0f;
+    }
+    while (angle >= 360.0f) {
+        angle -= 360.0f;
+    }
+    r = 0.017453292f * angle;
+    *s = sin(r);
+    *c = cos(r);
+}
+
+f32 Sqrt(f64 x)
 {
     f64 guess;
-    f64 t;
     f64 result;
     s32 i;
 
@@ -34,8 +62,7 @@ static f32 Sqrt(f64 x)
         guess = __frsqrte(x);
         for (i = 0; i < 4; i++)
         {
-            t = 1.0 - x * guess * guess;
-            guess = 0.5 * guess * t;
+            guess = 0.5 * guess * (3.0 - x * guess * guess);
         }
         result = x * guess;
     }
@@ -51,6 +78,11 @@ static f32 Sqrt(f64 x)
     {
         result = __float_huge;
     }
+    return result;
+}
+
+f32 _fabs(f32 x) {
+    f64 result = __fabs((f64)x);
     return result;
 }
 
