@@ -163,7 +163,7 @@ void CarA_ProcessForce(u8 *car, Vector4 *force, Vector4 *dir)
     Vector4 r;
     Vector4 torque;
     Vector4 carVel;
-    Vector4 scaled;
+    Vector4 scaled __attribute__((aligned(16)));
 
     carVel = *(Vector4 *)car;
     PSVECScale(dir, &scaled, *(u32 *)(car + 8));
