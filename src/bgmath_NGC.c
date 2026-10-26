@@ -6,8 +6,8 @@ typedef struct Vector {
     f32 z;
 } Vector;
 
-extern f32 __float_nan;
-extern f32 __float_huge;
+extern s32 __float_nan[];
+extern s32 __float_huge[];
 
 f32 MagnitudeVector(Vector *v) {
     f32 zero = 0.0f;
@@ -78,11 +78,11 @@ f32 Sqrt(f64 x)
     }
     else if (x != x)
     {
-        result = __float_nan;
+        result = *(f32 *)__float_nan;
     }
     else
     {
-        result = __float_huge;
+        result = *(f32 *)__float_huge;
     }
     return result;
 }
