@@ -68,3 +68,65 @@ s32 FileManager_GetDeviceFreeSpace(s32 device, u32 *freeBytes, u32 *totalBytes) 
     return 1;
 }
 
+u32 FileManager_GetDeviceStatus(u32 device) {
+    s32 CARDProbeEx(s32 chan, s32 *memSize, s32 *sectorSize);
+    s32 CARDMount(s32 chan, void *workArea, void *detachCallback);
+    s32 CARDCheck(s32 chan);
+    s32 CARDGetEncoding(s32 chan, u16 *encode);
+    s32 CARDFreeBlocks(s32 chan, s32 *byteNotUsed, s32 *filesNotUsed);
+    s32 CARDOpen(s32 chan, const char *fileName, CARDFileInfo *fileInfo);
+    s32 CARDClose(CARDFileInfo *fileInfo);
+    s32 CARDUnmount(s32 chan);
+    u16 encoding;
+    s32 memSize;
+    s32 sectorSize;
+    s32 bytesNotUsed;
+    s32 filesNotUsed;
+    CARDFileInfo fileInfo;
+    s32 result;
+
+    if (device == 11 || device == 12) {
+        result = CARDProbeEx(device - 11, &memSize, &sectorSize);
+        if (result != 0) {
+            m_memcardstatus_803C7970[device - 11] = result;
+            return 3;
+        }
+        if (sectorSize != 0x2000) {
+            m_memcardstatus_803C7970[device - 11] = -100;
+            return 3;
+        }
+        result = CARDMount(device - 11, CardWorkArea, 0);
+        if (result == -6) {
+            if (m_memcardstatus_803C7970[device - 11] != -5) {
+                result = CARDCheck(device - 11);
+            } else {
+                result = m_memcardstatus_803C7970[device - 11];
+            }
+        }
+        if ((m_memcardstatus_803C7970[device - 11] = result) != 0) {
+            return 3;
+        }
+        CARDGetEncoding(device - 11, &encoding);
+        if (encoding != 0) {
+            m_memcardstatus_803C7970[device - 11] = -13;
+            CARDUnmount(device - 11);
+            return 3;
+        }
+        CARDFreeBlocks(device - 11, &bytesNotUsed, &filesNotUsed);
+        result = CARDOpen(device - 11, g_appInfo[3], &fileInfo);
+        if (result == 0) {
+            CARDClose(&fileInfo);
+        }
+        CARDUnmount(device - 11);
+        if (result == -4 && (bytesNotUsed == 0 || filesNotUsed == 0)) {
+            m_memcardstatus_803C7970[device - 11] = -9;
+            return 3;
+        }
+        return 1;
+    }
+    if (device == 0) {
+        return 1;
+    }
+    return device == 1;
+}
+
