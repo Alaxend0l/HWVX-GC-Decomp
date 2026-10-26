@@ -22,6 +22,10 @@ MIDI_CHN g_chn[0x10];
 
 void SetVoiceState_(MIDI_VOICE *voice, s32 state);
 
+void SetMIDITrackPriority(void)
+{
+}
+
 void SetMIDITrackOn(u32 mask, s8 deferred)
 {
     extern u32 g_trkOn;
