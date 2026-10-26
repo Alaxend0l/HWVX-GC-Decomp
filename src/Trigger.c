@@ -26,3 +26,7 @@ s32 TriggerGameRoundXComplete(void) {
     return 1;
 }
 
+s32 TriggerItemDropped(void) {
+    return 1;
+}
+
