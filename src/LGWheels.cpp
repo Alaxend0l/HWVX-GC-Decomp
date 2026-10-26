@@ -24,6 +24,11 @@ u8 LGWheels::IsOpened(s32 chan)
 	return limbo.IsOpened(chan);
 }
 
+u8 LGWheels::IsConnected(s32 chan)
+{
+	return limbo.IsConnected(chan);
+}
+
 u8 LGWheels::PedalsConnected(s32 chan)
 {
 	return limbo.PedalsConnected(chan);
