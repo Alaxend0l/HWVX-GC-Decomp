@@ -62,3 +62,43 @@ s32 CollisionTriCache_Get(u32 triId0, u32 triId1, Vector4 *pos, Vector4 *normal)
     return 0;
 }
 
+void CollisionTriCache_Set(u32 triId0, u32 triId1, Vector4 *pos, Vector4 *normal)
+{
+    u32 i;
+    u32 maxTime;
+    u32 slot;
+
+    maxTime = 0;
+    slot = 0;
+    for (i = 0; i < 4; i++)
+    {
+        if (triId0 == g_aCollisionTriPairCache[i].triId0 && triId1 == g_aCollisionTriPairCache[i].triId1)
+        {
+            g_aCollisionTriPairCache[i].time = 0;
+            g_aCollisionTriPairCache[i].normal = *normal;
+            g_aCollisionTriPairCache[i].pos = *pos;
+            return;
+        }
+    }
+
+    for (i = 0; i < 4; i++)
+    {
+        if (g_aCollisionTriPairCache[i].triId0 == 0)
+        {
+            slot = i;
+            break;
+        }
+        if (g_aCollisionTriPairCache[i].time > maxTime)
+        {
+            maxTime = g_aCollisionTriPairCache[i].time;
+            slot = i;
+        }
+    }
+
+    g_aCollisionTriPairCache[slot].time = 0;
+    g_aCollisionTriPairCache[slot].normal = *normal;
+    g_aCollisionTriPairCache[slot].pos = *pos;
+    g_aCollisionTriPairCache[slot].triId0 = triId0;
+    g_aCollisionTriPairCache[slot].triId1 = triId1;
+}
+
