@@ -122,6 +122,20 @@ void ThingManager_DARYL_Release(void) {
     ThingManager_DARYL_CreateMain();
 }
 
+void ThingManager_MoveLookerOnly(void) {
+    M2C_UNK ThingManagerList_RemoveReleasedThings(s32);
+    extern u8 g_soundSeqVTable[];
+    void *thing;
+
+    ((void (*)(void *))(M2C_FIELD(&g_thingManager_DARYL, void ***, 0x6AD9C))[2])(g_thingManager_DARYL.looker);
+    for (thing = g_thingManager_DARYL.activeList; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
+        if (M2C_FIELD(thing, u8 **, 0x8C) == g_soundSeqVTable && (M2C_FIELD(thing, u32 *, 0x74) & 0x100000)) {
+            ((void (*)(void *))(M2C_FIELD(thing, void ***, 0x8C))[3])(thing);
+        }
+    }
+    ThingManagerList_RemoveReleasedThings((s32)&g_thingManager_DARYL.activeList);
+}
+
 s32 TriggerPlayerVehicleGear(u32 *params) {
     extern u8 g_cameraManager[];
     u8 *vehicle = M2C_FIELD(*(u8 **)g_cameraManager, u8 **, 0x2C);
