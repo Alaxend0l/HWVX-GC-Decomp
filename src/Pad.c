@@ -116,3 +116,19 @@ static void SamplingHandler(s16 interrupt, void *context)
     OSSetCurrentContext(context);
 }
 
+s32 SIRegisterPollingHandler(void *handler);
+s32 SIUnregisterPollingHandler(void *handler);
+void *PADSetSamplingCallback(void (*callback)(void))
+{
+    void *prev;
+
+    prev = SamplingCallback;
+    SamplingCallback = callback;
+    if (callback != NULL) {
+        SIRegisterPollingHandler(SamplingHandler);
+    } else {
+        SIUnregisterPollingHandler(SamplingHandler);
+    }
+    return prev;
+}
+
