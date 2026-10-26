@@ -116,6 +116,9 @@ void StopActive(IT_TRACK *trk)
     trk->active = NULL;
 }
 
+#pragma push
+#pragma optimization_level 1
+#pragma dont_inline
 void DestroyITVoice(IT_VOICE *voice)
 {
     IT_TRACK *trk;
@@ -132,10 +135,11 @@ void DestroyITVoice(IT_VOICE *voice)
         trk->head = voice->next;
         return;
     }
-    for (v = trk->head; v->next != voice;)
+    v = trk->head;
+    while (v->next != voice)
     {
         v = v->next;
     }
     v->next = voice->next;
 }
-
+#pragma pop
