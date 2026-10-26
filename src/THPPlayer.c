@@ -61,12 +61,14 @@ s32 strcmp(const char *a, const char *b);
 s32 THPPlayerInit(void)
 {
     void LCEnable(void);
-    void OSInitMessageQueue(char *, char *, s32);
+    void OSInitMessageQueue(u8 *, u8 *, s32);
     s32 THPInit(void);
+    u8 *player;
 
-    memset(&ActivePlayer, 0, 0x198);
+    player = (u8 *)&ActivePlayer;
+    memset(player + 0, 0, 0x198);
     LCEnable();
-    OSInitMessageQueue((char *)&ActivePlayer + 0x198, (char *)&ActivePlayer + 0x1B8, 3);
+    OSInitMessageQueue(player + 0x198, player + 0x1B8, 3);
     if (THPInit())
     {
         Initialized = 1;
@@ -316,6 +318,36 @@ void * PopUsedTextureSet(void)
         return msg;
     }
     return NULL;
+}
+
+void THPPlayerDrawDone(void)
+{
+    void GXDrawDone(void);
+    s32 OSReceiveMessage(void *messageQueue, void **message, s32 block);
+    void PushFreeTextureSet(void *textureSet);
+    void *msg;
+    void *textureSet;
+
+    GXDrawDone();
+    if (Initialized)
+    {
+        while (TRUE)
+        {
+            if (OSReceiveMessage(UsedTextureSetQueue_8036EC78, &msg, 0) == 1)
+            {
+                textureSet = msg;
+            }
+            else
+            {
+                textureSet = NULL;
+            }
+            if (textureSet == NULL)
+            {
+                break;
+            }
+            PushFreeTextureSet(textureSet);
+        }
+    }
 }
 
 #pragma pop
