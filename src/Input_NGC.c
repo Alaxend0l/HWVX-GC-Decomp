@@ -21,6 +21,8 @@ static u8 s_unk30[0x40];
 static u8 s_unk70[0x40];
 static u16 s_keyMap[20];
 static PADStatus s_unkD8[4];
+extern u16 g_pKeyToDI[20];
+
 
 void Input_Destroy(void) {
     M2C_UNK PADControlMotor(M2C_UNK, M2C_UNK);
@@ -49,5 +51,29 @@ void Input_ForceFeedbackPause(void) {
 
 s32 Input_GetContollersPluggedIn(void) {
     return 0xF;
+}
+
+void InitTables__Fv(void) {
+    memset(g_pKeyToDI, 0, sizeof(g_pKeyToDI));
+    g_pKeyToDI[0] = 0x1000;
+    g_pKeyToDI[1] = 0;
+    g_pKeyToDI[2] = 1;
+    g_pKeyToDI[3] = 2;
+    g_pKeyToDI[4] = 8;
+    g_pKeyToDI[5] = 4;
+    g_pKeyToDI[6] = 0x200;
+    g_pKeyToDI[7] = 0x400;
+    g_pKeyToDI[8] = 0x800;
+    g_pKeyToDI[9] = 0x100;
+    g_pKeyToDI[10] = 0;
+    g_pKeyToDI[11] = 0x40;
+    g_pKeyToDI[12] = 0x10;
+    g_pKeyToDI[13] = 0x20;
+    g_pKeyToDI[14] = 0;
+    g_pKeyToDI[15] = 0;
+    g_pKeyToDI[16] = 0;
+    g_pKeyToDI[17] = 0;
+    g_pKeyToDI[18] = 0;
+    g_pKeyToDI[19] = 0;
 }
 
