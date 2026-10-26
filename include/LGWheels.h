@@ -54,42 +54,39 @@ typedef struct Force
 } Force;
 
 /* The effect classes whose methods the port hands to Force: each one is 0xA0
- * bytes and holds the eight effect slots of every channel.  The SDK's names
- * say which effect a class plays, but they share this layout. */
+ * bytes and holds the eight effect slots of every channel, with the id of the
+ * effect that slot plays (-1 once it is free).  Which effect a class plays is
+ * in its name; the bookkeeping they share is this layout. */
 typedef struct Condition
 {
-	/* 0x000 */
-		Force		limbs[4][8];	/* 0x000 is this channel playing this slot? */
-		/* 0x020 */
-		Force		limbs2[4][8];	/* 0x020 effect ids, -1 once the slot is free */
-		/* 0x0A0 */
+	u8		playing[4][8];		/* 0x000 is this channel playing this slot? */
+	/* 0x020 */
+	u32		ids[4][8];		/* 0x020 effect ids, -1 once the slot is free */
+	/* 0x0A0 */
 } Condition;
 
 typedef struct Constant
 {
-	/* 0x000 */
-		Force		limbs[4][8];	/* 0x000 is this channel playing this slot? */
-		/* 0x020 */
-		Force		limbs2[4][8];	/* 0x020 effect ids, -1 once the slot is free */
-		/* 0x0A0 */
+	u8		playing[4][8];		/* 0x000 is this channel playing this slot? */
+	/* 0x020 */
+	u32		ids[4][8];		/* 0x020 effect ids, -1 once the slot is free */
+	/* 0x0A0 */
 } Constant;
 
 typedef struct Periodic
 {
-	/* 0x000 */
-		Force		limbs[4][8];	/* 0x000 is this channel playing this slot? */
-		/* 0x020 */
-		Force		limbs2[4][8];	/* 0x020 effect ids, -1 once the slot is free */
-		/* 0x0A0 */
+	u8		playing[4][8];		/* 0x000 is this channel playing this slot? */
+	/* 0x020 */
+	u32		ids[4][8];		/* 0x020 effect ids, -1 once the slot is free */
+	/* 0x0A0 */
 } Periodic;
 
 typedef struct Ramp
 {
-	/* 0x000 */
-		Force		limbs[4][8];	/* 0x000 is this channel playing this slot? */
-		/* 0x020 */
-		Force		limbs2[4][8];	/* 0x020 effect ids, -1 once the slot is free */
-		/* 0x0A0 */
+	u8		playing[4][8];		/* 0x000 is this channel playing this slot? */
+	/* 0x020 */
+	u32		ids[4][8];		/* 0x020 effect ids, -1 once the slot is free */
+	/* 0x0A0 */
 } Ramp;
 
 typedef struct LGWheels
