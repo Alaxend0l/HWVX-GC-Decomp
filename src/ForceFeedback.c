@@ -23,10 +23,12 @@ typedef struct ForceFeedback {
 
 extern ForceFeedback g_forcefeedback[24];
 
-void ForceFeedback_Init(void) {
-    u32 i;
+void ForceFeedback_Init(void)
+{
+    s32 i;
 
-    for (i = 0; i < 24; i++) {
+    for (i = 0; i < 24; i++)
+    {
         g_forcefeedback[i].effect = 0;
     }
 }
