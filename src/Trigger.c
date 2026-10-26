@@ -208,3 +208,18 @@ s32 Trigger_AddTrigger(s32 *trigger) {
     return 1;
 }
 
+s32 Trigger_ReleaseTrigger(s32 *trigger) {
+    extern u32 TriggerStats_800D3C58[][3];
+    extern s32 **m_Triggers_802C1890[];
+    u32 i;
+
+    for (i = 0; i < TriggerStats_800D3C58[trigger[0]][0]; i++) {
+        if (m_Triggers_802C1890[trigger[0]][i] == trigger) {
+            TriggerStats_800D3C58[trigger[0]][0]--;
+            m_Triggers_802C1890[trigger[0]][i] = m_Triggers_802C1890[trigger[0]][TriggerStats_800D3C58[trigger[0]][0]];
+            return 1;
+        }
+    }
+    return 0;
+}
+
