@@ -1,5 +1,8 @@
 #include "common.h"
 
+extern s8 g_bRoundEnd;
+extern u32 g_playerNumThatWon;
+
 
 void GameRules_SetPlayerOrder(u32 *order, u32 count) {
     void *PlayerManager_GetPlayerByIndex(u8);
