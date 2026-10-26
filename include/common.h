@@ -1038,6 +1038,33 @@ typedef struct {
   u32 unk74;
   u8 pad78[0x78];
 } DrawThing;
+
+typedef struct PathNode {
+    f32 pos[3];
+    u8 pad0C[0x10 - 0xC];
+    u32 numLinks;
+    f32 *costs;
+    s32 *links;
+    u8 pad1C[0x37 - 0x1C];
+    u8 flags;
+    struct PathNode *parent;
+    struct PathNode *next;
+    f32 g;
+    f32 h;
+    f32 f;
+} PathNode;
+
+typedef struct GridResult {
+        u32 data;
+        u32 id;
+    }GridResult;
+
+extern InterfaceCallBackData g_CallBackData;
+extern InterfacePackEntry g_InterfacePackData[10];
+extern u32 g_NumInterfacesPlaying;
+extern u8 g_carAVTable[];
+extern u8 g_creatureVTable[];
+
 /* What machine drafts (m2c) use for what they can't tell yet: autopilot tries
  * them as they are. */
 #ifndef M2C_DEFINES
