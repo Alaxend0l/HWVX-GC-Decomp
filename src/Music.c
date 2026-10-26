@@ -7,16 +7,22 @@ extern u32 g_musicVol2;
 extern u32 g_musicVol;
 u8 g_musicTitle[0x20];
 
-extern s32 (*DestroyMusic)(void);
-extern s32 (*SetMusicState)(void);
-extern s32 (*SetMusicVolume)(void);
-extern s32 (*SetMusicPitch)(void);
-extern s32 (*SetMusicTempo)(void);
-extern s32 (*SetMusicOrder)(void);
-extern s32 (*SetMusicTrackPriority)(void);
-extern s32 (*SetMusicTrackOn)(void);
-extern s32 (*SetMusicTrackOff)(void);
-extern s32 (*SetMusicTrackVol)(void);
+u32 g_musicVol1;
+u32 g_musicVol2;
+u32 g_musicVol;
+u32 g_trkOn;
+u32 g_trkOff;
+s32 g_musicState;
+s32 (*DestroyMusic)(void);
+s32 (*SetMusicState)(void);
+s32 (*SetMusicVolume)(void);
+s32 (*SetMusicPitch)(void);
+s32 (*SetMusicTempo)(void);
+s32 (*SetMusicOrder)(void);
+s32 (*SetMusicTrackPriority)(void);
+s32 (*SetMusicTrackOn)(void);
+s32 (*SetMusicTrackOff)(void);
+s32 (*SetMusicTrackVol)(void);
 s32 AudioVoid(void);
 
 #pragma push
