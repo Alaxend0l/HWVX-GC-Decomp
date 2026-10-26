@@ -210,6 +210,23 @@ void *World_GetGameData(void) {
     return NULL;
 }
 
+void World_ClearSweep(void) {
+    u32 i;
+    void *data;
+
+    data = M2C_FIELD(g_worldData.world, void **, 0x0);
+    if (M2C_FIELD(data, u32 *, 0x58) == 0) {
+        for (i = 0; i < M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u32 *, 0x48); i++) {
+            M2C_FIELD(M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u8 **, 0x4C) + i * 0x20, s32 *, 0x18) = 0;
+        }
+    } else if (M2C_FIELD(data, u32 *, 0x58) == 1) {
+        for (i = 0; i < M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u32 *, 0x50); i++) {
+            M2C_FIELD(M2C_FIELD(M2C_FIELD(g_worldData.world, void **, 0x0), u8 **, 0x54) + i * 0x30, s32 *, 0x20) = 0;
+        }
+    }
+    g_worldData.unk4 = 1;
+}
+
 void World_NextSweep(void) {
     if (++g_worldData.unk4 == 0) {
         World_ClearSweep();
