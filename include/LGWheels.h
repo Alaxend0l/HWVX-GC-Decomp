@@ -127,6 +127,8 @@ typedef struct LGWheels
 		/* 0x1416 */
 		void		GenerateNonLinValues(s32 chan, u8 coefficient);
 		/* 0x1416 */
+		void		InitLGLibrary(void);
+		/* 0x1416 */
 		/* 0x1416 */
 } LGWheels;
 
