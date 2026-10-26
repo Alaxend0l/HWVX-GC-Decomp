@@ -52,8 +52,8 @@ long Force::Destroy(long chan, long effect)
  else
  {
 	 OSReport("ERROR: Trying to destroy force effect on channel %d but we have an invalid effectid\n", chan);
- }
- return result;
+	 }
+	 return result;
 }
 
 void Force::SetOverallForceGain(unsigned long &effectId, long gain)
