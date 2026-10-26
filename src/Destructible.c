@@ -56,6 +56,52 @@ void BuildOOB(void *oob, void *pos, void *out);
 void BuildOConvexHullOffset(void *out, void *hull, void *pos, void *rot);
 f32 PhysicalProperties_CollideWithRay(void *props, void *pos, void *start, void *dir, f32 maxDist, void *hit);
 
+f32 MagnitudeVector(Vector4 *v);
+
+f32 GetBoundingBoxRadius(Vector4 *box, Vector4 *offset)
+{
+    Vector4 corners[8];
+    f32 radius;
+    f32 mag;
+    u32 i;
+
+    radius = 0.0f;
+    corners[0].x = box[1].x;
+    corners[0].y = box[1].y;
+    corners[0].z = box[1].z;
+    corners[1].x = box[1].x;
+    corners[1].y = box[1].y;
+    corners[1].z = box[0].z;
+    corners[2].x = box[1].x;
+    corners[2].y = box[0].y;
+    corners[2].z = box[1].z;
+    corners[3].x = box[1].x;
+    corners[3].y = box[0].y;
+    corners[3].z = box[0].z;
+    corners[4].x = box[0].x;
+    corners[4].y = box[1].y;
+    corners[4].z = box[1].z;
+    corners[5].x = box[0].x;
+    corners[5].y = box[1].y;
+    corners[5].z = box[0].z;
+    corners[6].x = box[0].x;
+    corners[6].y = box[0].y;
+    corners[6].z = box[1].z;
+    corners[7].x = box[0].x;
+    corners[7].y = box[0].y;
+    corners[7].z = box[0].z;
+    for (i = 0; i < 8; i++) {
+        corners[i].x += offset->x;
+        corners[i].y += offset->y;
+        corners[i].z += offset->z;
+        mag = MagnitudeVector(&corners[i]);
+        if (mag > radius) {
+            radius = mag;
+        }
+    }
+    return radius;
+}
+
 void Destructible_Release(Destructible *destructible) {
     void Trigger_DestructibleKilled(void *thing);
     void OBoxHolder_Release(OBox *obox);
