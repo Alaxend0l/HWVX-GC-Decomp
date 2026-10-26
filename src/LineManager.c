@@ -1,6 +1,231 @@
 #include "common.h"
 
 
+void LineManager_Init(void) {
+    extern u8 g_lineManager[128][0xF0];
+    u32 i;
+
+    for (i = 0; i < 128; i++) {
+        *(s32 *)(g_lineManager[i] + 0x50) = 0;
+    }
+}
+
+void LineManager_Add(void *arg, Vector4 *start, Vector4 *dir, Vector4 *colour) {
+    typedef struct LineDef {
+        u8 unk0;
+        u8 unk1;
+        u8 unk2;
+        u8 pad3;
+        f32 base;
+        f32 range;
+        u8 keys[4];
+    } LineDef;
+    typedef struct LineInfo {
+        u8 pad0[4];
+        LineDef *data;
+        s32 life;
+        s32 lifeRange;
+    } LineInfo;
+    typedef struct Line {
+        Vector4 start;
+        Vector4 end;
+        Vector4 origDir;
+        Vector4 dir;
+        Vector4 colour;
+        LineInfo *info;
+        u8 unk54[0x80 - 0x54];
+        u8 unk80;
+        u8 unk81[0xB0 - 0x81];
+        u8 unkB0;
+        u8 unkB1[3];
+        f32 length;
+        u8 unkB8[0xC4 - 0xB8];
+        u8 unkC4;
+        u8 unkC5[0xD4 - 0xC5];
+        f32 life;
+        f32 scale;
+        f32 rate;
+        u8 unkE0;
+        u8 unkE1;
+        u8 unkE2;
+        u8 unkE3[0xF0 - 0xE3];
+    } Line;
+    extern Line g_lineManager[128];
+    s32 RandomAdd_s32(s32 base, s32 range);
+    f32 RandomAdd(f32 base, f32 range);
+    void ExtractF32Key(void *keys, void *out, f32 time);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
+    void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *dst);
+    LineInfo *info = arg;
+    u32 i;
+    LineDef *data;
+
+    for (i = 0; i < 128; i++) {
+        if (g_lineManager[i].info == NULL) {
+            data = info->data;
+            g_lineManager[i].life = RandomAdd_s32(info->life, info->lifeRange);
+            g_lineManager[i].rate = 1.0f;
+            if (info->life && info->lifeRange) {
+                g_lineManager[i].rate = 1.0f / (g_lineManager[i].life / info->life);
+            }
+            g_lineManager[i].start = *start;
+            g_lineManager[i].origDir = *dir;
+            g_lineManager[i].dir = *dir;
+            if (PSVECSquareMag(&g_lineManager[i].dir)) {
+                PSVECNormalize(&g_lineManager[i].dir, &g_lineManager[i].dir);
+            }
+            g_lineManager[i].colour = *colour;
+            g_lineManager[i].info = info;
+            g_lineManager[i].unkE0 = data->unk0;
+            g_lineManager[i].unk80 = 1;
+            g_lineManager[i].unkB0 = 1;
+            g_lineManager[i].unkC4 = 1;
+            g_lineManager[i].unkE2 = 0;
+            g_lineManager[i].unkE1 = 0;
+            g_lineManager[i].scale = RandomAdd(data->base, data->range);
+            if (*(u32 *)data->keys > 1) {
+                g_lineManager[i].unkE1 = 1;
+                g_lineManager[i].unkE2 = 1;
+            } else {
+                ExtractF32Key(data->keys, &g_lineManager[i].length, 0.0f);
+                g_lineManager[i].length *= g_lineManager[i].scale;
+                PSVECScale(&g_lineManager[i].dir, &g_lineManager[i].end, g_lineManager[i].length);
+                PSVECAdd(&g_lineManager[i].start, &g_lineManager[i].end, &g_lineManager[i].end);
+            }
+            if (data->unk2 != 0 || data->unk1 != 0) {
+                g_lineManager[i].unkE2 = 1;
+            }
+            return;
+        }
+    }
+}
+
+void LineManager_Heartbeat(void) {
+    typedef struct LineDef {
+        u8 unk0;
+        u8 unk1;
+        u8 unk2;
+        u8 pad3;
+        f32 base;
+        f32 range;
+        u8 keys[8];
+        u8 colourKeys[4];
+    } LineDef;
+    typedef struct LineInfo {
+        u8 pad0[4];
+        LineDef *data;
+        s32 life;
+        s32 lifeRange;
+        u8 pad10[4];
+        u8 colourKeys[8];
+        u32 numFx;
+        u32 *fx;
+    } LineInfo;
+    typedef struct Line {
+        Vector4 start;
+        Vector4 end;
+        Vector4 vel;
+        Vector4 dir;
+        Vector4 accel;
+        LineInfo *info;
+        u8 colour[0x84 - 0x54];
+        u8 colour2[0xB4 - 0x84];
+        f32 length;
+        u8 unkB8[0xD4 - 0xB8];
+        f32 life;
+        f32 scale;
+        f32 rate;
+        u8 unkE0;
+        u8 unkE1;
+        u8 unkE2;
+        u8 unkE3[0xF0 - 0xE3];
+    } Line;
+    typedef struct {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        Vector4 angVel;
+        u32 id;
+        s32 unk44;
+        f32 unk48;
+        f32 unk4C;
+    } FxParams;
+    extern Line g_lineManager[128];
+    extern s8 g_bFreezeWorld;
+    extern f32 g_fDeltaTimeMS;
+    extern Vector4 g_zeroVector;
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    void ExtractColorKey(void *keys, void *out, f32 time);
+    void ExtractF32Key(void *keys, void *out, f32 time);
+    void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
+    void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *dst);
+    FxParams params;
+    Vector4 delta;
+    u32 i;
+    f32 dt;
+    LineDef *data;
+
+    if (g_bFreezeWorld) {
+        return;
+    }
+    for (i = 0; i < 128; i++) {
+        if (g_lineManager[i].info == NULL) {
+            continue;
+        }
+        dt = g_fDeltaTimeMS;
+        data = g_lineManager[i].info->data;
+        if (g_lineManager[i].life < dt) {
+            if (g_lineManager[i].info->numFx != 0) {
+                s32 idx = RandomAdd_s32(0, g_lineManager[i].info->numFx);
+                data = (LineDef *)g_lineManager[i].info->fx[idx];
+                if (data != NULL) {
+                    params.id = (u32)data;
+                    params.pos = g_lineManager[i].start;
+                    params.vel = g_lineManager[i].vel;
+                    params.quat.w = 1.0f;
+                    params.quat.x = 0.0f;
+                    params.quat.y = 0.0f;
+                    params.quat.z = 0.0f;
+                    params.unk44 = 0;
+                    params.unk48 = 0.0f;
+                    params.unk4C = 0.0f;
+                    params.angVel = g_zeroVector;
+                    ThingManager_DARYL_CreateThing(1, &params);
+                }
+            }
+            g_lineManager[i].info = NULL;
+        } else {
+            g_lineManager[i].life -= dt;
+            PSVECScale(&g_lineManager[i].vel, &delta, dt);
+            AccumulateVector(&g_lineManager[i].accel, &g_lineManager[i].vel, &g_lineManager[i].vel, dt);
+            PSVECAdd(&delta, &g_lineManager[i].start, &g_lineManager[i].start);
+            ExtractColorKey(g_lineManager[i].info->colourKeys, g_lineManager[i].colour, dt * g_lineManager[i].rate);
+            ExtractColorKey(data->colourKeys, g_lineManager[i].colour2, dt * g_lineManager[i].rate);
+            if (g_lineManager[i].unkE2) {
+                if (data->unk1) {
+                    g_lineManager[i].dir = g_lineManager[i].vel;
+                    if (data->unk2 && PSVECSquareMag(&g_lineManager[i].dir)) {
+                        PSVECNormalize(&g_lineManager[i].dir, &g_lineManager[i].dir);
+                    }
+                }
+                if (g_lineManager[i].unkE1) {
+                    ExtractF32Key(data->keys, &g_lineManager[i].length, dt * g_lineManager[i].rate);
+                    g_lineManager[i].length *= g_lineManager[i].scale;
+                }
+                PSVECScale(&g_lineManager[i].dir, &g_lineManager[i].end, g_lineManager[i].length);
+                PSVECAdd(&g_lineManager[i].start, &g_lineManager[i].end, &g_lineManager[i].end);
+            }
+            PSVECAdd(&delta, &g_lineManager[i].end, &g_lineManager[i].end);
+        }
+    }
+}
+
 void LineManager_Render(void) {
     typedef struct LinePoints {
         u32 data[8];
