@@ -22,12 +22,24 @@ void * memset(void *dest, s32 value, u32 count);
 void __flush_cache(void *address, u32 size);
 void OSResetSystem(s32 reset, u32 resetCode, s32 forceMenu);
 
-void __check_pad3(void)
-{
-    if ((*((u16 *)0x800030e4) & 0xeef) == 0xeef)
-    {
+void __check_pad3(void) {
+    if ((s32) (*(u16 *)0x800030E4 & 0xEEF) == 0xEEF) {
         OSResetSystem(0, 0, 0);
     }
+}
+
+void __check_pad3(void);
+void __init_registers(void);
+void __init_data(void);
+void __init_hardware(void);
+void __init_user(void);
+void DBInit(void);
+void OSInit(void);
+void InitMetroTRK(void);
+int main(void *, void *);
+void exit(int);
+void __start(void)
+{
 }
 
 void __init_registers(void)
