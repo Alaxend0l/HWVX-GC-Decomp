@@ -273,3 +273,48 @@ s32 TriggerLevelStart(void) {
     return 1;
 }
 
+f32 GetCodeVariable(s32 var, u8 *thing) {
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    u8 *vehicle;
+    u8 *player;
+    u16 index;
+
+    switch (var) {
+    case 1:
+        vehicle = *(u8 **)(thing + 0x28);
+        if (vehicle != NULL) {
+            return *(s32 *)(vehicle + 0x78);
+        }
+        break;
+    case 2:
+        vehicle = *(u8 **)(thing + 0x28);
+        if (vehicle != NULL) {
+            return *(u32 *)(*(u8 **)(vehicle + 0x94) + 0x7C);
+        }
+        break;
+    case 3:
+    case 4:
+        break;
+    case 20:
+    case 21:
+    case 22:
+    case 23:
+    case 24:
+    case 25:
+    case 26:
+    case 27:
+        vehicle = *(u8 **)(thing + 0x28);
+        index = (u16)var - 20;
+        if (vehicle != NULL) {
+            player = *(u8 **)(vehicle + 0x94);
+            if (player != NULL) {
+                return ((u16 *)(player + 0x94))[index];
+            }
+        }
+        break;
+    default:
+        return GameSettings_GetCodeVariable(var, (s32)thing);
+    }
+    return 0.0f;
+}
+
