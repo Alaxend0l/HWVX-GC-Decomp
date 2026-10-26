@@ -25,6 +25,34 @@ void SPEC0_MakeStatus(s32, void *, u32 *);
 void SPEC1_MakeStatus(s32, void *, u32 *);
 void SPEC2_MakeStatus_80076F6C(s32, void *, u32 *);
 
+static void ClampS8(s8 *var, s8 org)
+{
+    s8 v = *var;
+
+    if (0 < org) {
+        s8 min = (s8)(-128 + org);
+        if (v < min) {
+            v = min;
+        }
+    } else if (org < 0) {
+        s8 max = (s8)(127 + org);
+        if (max < v) {
+            v = max;
+        }
+    }
+    *var = v - org;
+}
+
+static void ClampU8(u8 *var, u8 org)
+{
+    u8 v = *var;
+
+    if (v < org) {
+        v = org;
+    }
+    *var = v - org;
+}
+
 void UpdateOrigin(s32 chan)
 {
     typedef struct {
