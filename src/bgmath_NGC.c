@@ -137,13 +137,9 @@ s32 CompareDistances(Vector *a, Vector *b, f32 dist)
 
 void XformVec(Matrix4 *m, Vector *v, Vector *out)
 {
-    f32 tx = m->v[1].x * v->y + m->v[0].x * v->x;
-    f32 ty = m->v[1].y * v->y + m->v[0].y * v->x;
-    f32 tz = m->v[1].z * v->y + m->v[0].z * v->x;
-
-    tx = m->v[2].x * v->z + tx + m->v[3].x;
-    ty = m->v[2].y * v->z + ty + m->v[3].y;
-    tz = m->v[2].z * v->z + tz + m->v[3].z;
+    f32 tx = m->v[2].x * v->z + (m->v[0].x * v->x + m->v[1].x * v->y) + m->v[3].x;
+    f32 ty = m->v[2].y * v->z + (m->v[0].y * v->x + m->v[1].y * v->y) + m->v[3].y;
+    f32 tz = m->v[2].z * v->z + (m->v[0].z * v->x + m->v[1].z * v->y) + m->v[3].z;
 
     out->x = tx;
     out->y = ty;
