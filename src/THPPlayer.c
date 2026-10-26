@@ -4,7 +4,10 @@ typedef struct THPPlayer {
     u8 fileInfo[0x3C];
     u8 tag[4];
     u32 version;
-    u8 pad44[0x18];
+    u32 unk44;
+    u32 unk48;
+    u8 pad4C[0xC];
+    u32 unk58;
     u32 dataOffset;
     u8 pad60[0xC];
     u32 numComponents;
