@@ -22,6 +22,14 @@ void NavHolder_UseMainRouteOnly(void) {
     gs_useMainRouteOnly_803C7000 = 1;
 }
 
+u8 *NavHolder_GetNavPoint(s32 index) {
+    u8 *point = NULL;
+    if (gs_NavHolder_803C6CD8.data != NULL && index < (s32)gs_NavHolder_803C6CD8.data->numNodes) {
+        point = gs_NavHolder_803C6CD8.data->nodes + index * 0x60;
+    }
+    return point;
+}
+
 void *NavHolder_GetFirstWayPoint(void) {
     return gs_NavHolder_803C6CD8.data->firstWayPoint;
 }
