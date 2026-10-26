@@ -95,3 +95,14 @@ void SetTrackVol(IT_TRACK *trk)
     }
 }
 
+void SetTrackPan(IT_TRACK *trk)
+{
+    IT_VOICE *voice;
+
+    for (voice = trk->head; voice != NULL; voice = voice->next)
+    {
+        voice->pan = trk->pan;
+        SetVoiceVol_(voice, trk->gvol);
+    }
+}
+
