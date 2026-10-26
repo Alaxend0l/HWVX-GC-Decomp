@@ -1,42 +1,18 @@
 #include "common.h"
 
-typedef struct Creature {
-    u8 unk0[0x10];
-    u8 mtx[0x40 - 0x10];
-    Vector4 pos;
-    Vector4 quat;
-    f32 unk60;
-    u8 unk64[0x70 - 0x64];
-    f32 unk70;
-    u32 flags;
-    u32 unk78;
-    u8 unk7C[0x80 - 0x7C];
-    s16 unk80;
-    u8 unk82[0xB0 - 0x82];
-    f32 unkB0;
-    f32 unkB4;
-    u8 *anims;
-    u8 unkBC[0xBF - 0xBC];
-    u8 unkBF;
-    f32 unkC0;
-    u8 unkC4[0xCC - 0xC4];
-    u8 motion[0x130 - 0xCC];
-    f32 unk130;
-    u8 unk134[0x190 - 0x134];
-    Vector4 startPos;
-    u8 unk1A0[0x1B0 - 0x1A0];
-    s32 unk1B0;
-    s32 unk1B4;
-    s32 unk1B8;
-    f32 mass;
-    f32 unk1C0;
-    u8 unk1C4[0x1C8 - 0x1C4];
-    s32 unk1C8;
-} Creature;
-
 void MotionState_Draw(void *motionState);
 void MotionState_Release(void *motionState);
 void Thing_Release(void *thing);
+
+/* parameter 2 of Creature_Init: the spawn description it copies out of */
+typedef struct CreatureInit
+{
+    Vector4 pos;
+    f32 jitterBase;
+    u8 unk14[0x18 - 0x14];
+    u8 *anims;
+} CreatureInit;
+
 
 void Creature_GetTargetPos(Creature *creature, Vector4 *pos) {
     pos->x = creature->pos.x;
@@ -81,6 +57,43 @@ void Creature_MotionStateInitDeath(Creature *creature) {
             *(u32 *)((u8 *)creature + 0x1CC) = 0;
         }
     }
+}
+
+s32 Creature_Init(Creature *creature, void *init)
+{
+    void Creature_MotionStateInit(Creature *creature, s32 arg1, s32 arg2, s32 arg3);
+    void MotionState_BuildMatricesWorld(void *mtx, void *pos, void *state, f32 scale);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    f32 RandomAdd(f32 base, f32 range);
+    void Thing_Init(Creature *thing, s32 arg1);
+    void Thing_AddToGrid(Creature *thing, s32 grid);
+    struct CreatureInit {
+        Vector4 pos;
+        f32 unk10;
+        u8 *unk14;
+    } *initData = init;
+
+    Thing_Init(creature, 0);
+    creature->anims = initData->unk14;
+    creature->pos = initData->pos;
+    creature->startPos = creature->pos;
+    creature->mass = RandomAdd(0.002f, 0.001f);
+    creature->unk1B8 = 0;
+    creature->unk1C8 = 0;
+    QuaternionToSubMatrix(&creature->quat, creature->mtx);
+    creature->unk80 = 0;
+    creature->unk70 = 11.0f;
+    creature->unkB0 = initData->unk10;
+    creature->unk1B4 = 0;
+    creature->unk78 = *(u32 *)((u8 *)creature->anims + 4);
+    Creature_MotionStateInit(creature, 0, 0, 0);
+    creature->unkBF = 0;
+    creature->unk130 = 0.03f;
+    creature->unk1B0 = -1;
+    Thing_AddToGrid(creature, 6);
+    creature->unk1C0 = 1.0f;
+    MotionState_BuildMatricesWorld(&creature->quat, &creature->pos, creature->motion, 1.0f);
+    return 1;
 }
 
 void Creature_Release(Creature *creature) {
