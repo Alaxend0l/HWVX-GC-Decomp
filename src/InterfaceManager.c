@@ -536,6 +536,26 @@ void InterfaceManager_DrawMap(u8 *obj, u8 *iface) {
     rect->v[3].color = *(u32 *)&colour;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s32 InterfaceManager_GetTargetArrowNearestNavPoint(void)
+{
+    typedef struct TargetArrow
+    {
+        s32 pad[4];
+        s32 nearest;
+        s32 timer;
+        s32 flag;
+    } TargetArrow;
+    extern TargetArrow g_TargetArrow;
+    s32 NavHolder_FindIndexOfNearestNavPoint(void *pos, s32 hint);
+
+    if (g_TargetArrow.nearest != -1 && g_TargetArrow.timer <= 0)
+        g_TargetArrow.nearest = NavHolder_FindIndexOfNearestNavPoint((void *)g_TargetArrow.pad[0], g_TargetArrow.nearest), g_TargetArrow.timer = 300;
+
+    return g_TargetArrow.nearest;
+}
+#pragma pop
 s32 DropShip_IsChildInterfaceReady(s32 index) {
     typedef struct DropShipSlot {
         u8 pad0[0x243];
@@ -604,6 +624,30 @@ void DropShip_EndInterface(s32 index) {
         InterfaceManager_SetLoadState(iface, 1);
         InterfaceManager_MoveInterface(iface, 0.0f);
     }
+}
+
+f32 DropShip_GetLRTime(s32 index)
+{
+    typedef struct DropShipSlot
+    {
+        u8 pad0[0x245];
+        u8 state;
+        u8 pad246[0x25C - 0x246];
+        u8 *anim;
+        u8 pad260[0x300 - 0x260];
+    } DropShipSlot;
+    extern u8 g_interface[][0x170];
+    u32 i;
+    u8 *iface = g_interface[index];
+
+    for (i = 0; i < *(u32 *)iface; i++)
+    {
+        if ((*(DropShipSlot **)(iface + 0x88))[i].state == 5)
+        {
+            return (f32)*(u16 *)((*(DropShipSlot **)(iface + 0x88))[i].anim + 0xA);
+        }
+    }
+    return 0.0f;
 }
 
 void InterfaceManager_SetMissionObjectiveText(u8 *obj, u8 **data) {
