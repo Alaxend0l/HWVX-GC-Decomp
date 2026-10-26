@@ -19,6 +19,18 @@ typedef struct CollisionTri {
 extern CollisionTri g_aCollisionTriPairCache[4];
 extern s32 g_iDeltaTimeMS;
 
+typedef struct DividingAxis {
+    f32 dir;                   /* 0x00 */
+    f32 minA;                  /* 0x04 */
+    f32 maxA;                  /* 0x08 */
+    f32 minB;                  /* 0x0C */
+    f32 maxB;                  /* 0x10 */
+    f32 tEnter;                /* 0x14 */
+    f32 tExit;                 /* 0x18 */
+} DividingAxis;
+
+extern f32 _fabs(f32);
+
 void CollisionTriCache_Clear(void) {
     u32 i;
 
