@@ -28,7 +28,7 @@ typedef struct Force
 	u8		unk0[0xA0];
 
 		/* The gain one of these effects plays at, in main/Force. */
-		void		PlayOverallGain(u32 &effectId, s32 gain);
+		void		SetOverallForceGain(u32 &effectId, s32 gain);
 		/* 0x0 */
 		s32		PlayOverallGain(u32 &effectId);
 		/* 0x0 */
