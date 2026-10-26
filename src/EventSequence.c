@@ -36,7 +36,7 @@ s32 EventSeq_InCameraRange(u8 *seq, f32 range)
     if (*(s8 *)(seq + 0xF1))
     {
         count = Gfx_GetCameraPositions(positions);
-        *(f32 *)(seq + 0xF4) = PSVECSquareDistance((f32 *)(seq + 0x40), (f32 *)positions);
+        *(f32 *)(seq + 0xF4) = PSVECSquareDistance((f32 *)(seq + 0x40), (f32 *)&positions[0]);
         if (count > 1)
         {
             for (i = 0, pos = positions; i < 5; i++, pos++)
