@@ -116,6 +116,10 @@ void Thing_CollideWithRay(void)
 {
 }
 
+void Thing_GetTargetPos(void *thing, Quaternion *pos) {
+    *pos = *(Quaternion *)((u8 *)thing + 0x40);
+}
+
 s32 Thing_GetOrientedCollision(void) {
     return 0;
 }
