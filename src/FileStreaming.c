@@ -80,7 +80,7 @@ void FileStreaming_ReleaseQuadPacks(void)
 {
     u32 i;
 
-    while ((s8)g_bLoadingThreadRunning)
+    while (g_bLoadingThreadRunning)
     {
     }
     for (i = 0; i < (u32)g_numQuadPacksInMemory; i++)
