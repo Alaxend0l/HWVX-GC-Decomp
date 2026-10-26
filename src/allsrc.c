@@ -387,6 +387,20 @@ s32 VDevice_DestroyEffect(VDevice *dev, u32 handle)
     return ret;
 }
 
+#pragma push
+#pragma optimize_for_size on
+s32 VDevice_StartEffect(VDevice *dev, u32 handle)
+{
+    s32 ret = -2;
+    Effect *effect = dev->activeEffects[handle & 0x3F];
+
+    if (effect != NULL)
+    {
+        ret = Effect_StartEffect(effect);
+    }
+    return ret;
+}
+
 #pragma pop
 
 #pragma pop
