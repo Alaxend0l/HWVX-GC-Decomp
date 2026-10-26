@@ -112,6 +112,16 @@ void ThingManager_DARYL_Init(void) {
     MatrixCache_Init();
 }
 
+void ThingManager_DARYL_Release(void) {
+    void ThingManagerList_ReleaseAndRemoveAll(void *list);
+    void ThingManager_DARYL_CreateMain(void);
+
+    SharedSlaveHolder_Release();
+    ThingManagerList_ReleaseAndRemoveAll(&g_thingManager_DARYL.activeList);
+    ThingManagerList_ReleaseAndRemoveAll(&g_thingManager_DARYL.activeList);
+    ThingManager_DARYL_CreateMain();
+}
+
 s32 TriggerPlayerVehicleGear(u32 *params) {
     extern u8 g_cameraManager[];
     u8 *vehicle = M2C_FIELD(*(u8 **)g_cameraManager, u8 **, 0x2C);
