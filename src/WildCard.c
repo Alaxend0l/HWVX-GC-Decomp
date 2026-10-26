@@ -45,3 +45,18 @@ s32 WildCardRack_Init(void *thing, void *data) {
     rack->unk47C = -1.0f;
     return 0;
 }
+
+void WildCardRack_Release(s32 arg0) {
+    s32 var_r31;
+    u32 var_r30;
+
+    var_r30 = 0U;
+    var_r31 = arg0;
+    do {
+        MotionState_Release(var_r31 + 0xB0);
+        var_r30 += 1;
+        var_r31 += 0x50;
+    } while (var_r30 < 0xCU);
+    Thing_Release(arg0);
+}
+
