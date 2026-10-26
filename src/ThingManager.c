@@ -181,6 +181,20 @@ s8 OBoxHitsTerrainAndObjectsZeroTimeEdgesOnly(void *obox, void *thing, void *arg
     return OBox_CollideAllThingsZeroTime(obox, thing, arg2);
 }
 
+s32 ThingManager_GetActiveCars(void **cars) {
+    s32 count;
+    s32 i;
+
+    count = 0;
+    for (i = 0; i < 8; i++) {
+        u8 *car = g_thingManager_DARYL.unk0 + 0x60310 + i * 0x5A0;
+        if (!(M2C_FIELD(car, u32 *, 0x74) & 0x201000)) {
+            cars[count++] = car;
+        }
+    }
+    return count;
+}
+
 s32 TriggerPlayerVehicleGear(u32 *params) {
     extern u8 g_cameraManager[];
     u8 *vehicle = M2C_FIELD(*(u8 **)g_cameraManager, u8 **, 0x2C);
