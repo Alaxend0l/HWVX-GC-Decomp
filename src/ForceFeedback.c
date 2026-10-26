@@ -97,3 +97,54 @@ void ForceFeedback_Heartbeat(void)
     }
 }
 
+void ForceFeedback_GetForce(void *ff, u8 *a, u8 *b, f32 *c)
+{
+    s32 i;
+    u8 active;
+    s32 rumble;
+    ForceFeedback *fe;
+    f32 force;
+    f32 dist;
+    f32 scale;
+
+    force = 0.0f;
+    rumble = 0;
+    active = 0;
+    if (ff != NULL)
+    {
+        for (i = 0; i < 24; i++)
+        {
+            fe = &g_forcefeedback[i];
+            if (fe->effect != NULL)
+            {
+                DistanceXYZ(ff, &fe->dir, &dist);
+                if (fe->unk54 > 0 && dist < *(f32 *)(fe->point + 4))
+                {
+                    active = 1;
+                }
+                if (fe->unk58 > 0 && dist < *(f32 *)(fe->point + 4))
+                {
+                    scale = (*(f32 *)(fe->point + 4) - dist) / (*(f32 *)(fe->point + 4) - *(f32 *)(fe->point + 0));
+                    scale *= fe->value;
+                    scale *= 255.0f;
+                    if (scale > rumble)
+                    {
+                        rumble = scale;
+                    }
+                }
+                if (fe->magnitude > 0 && dist < *(f32 *)(fe->point + 4))
+                {
+                    scale = (*(f32 *)(fe->point + 4) - dist) / (*(f32 *)(fe->point + 4) - *(f32 *)(fe->point + 0));
+                    if (scale > force)
+                    {
+                        force = scale;
+                    }
+                }
+            }
+        }
+    }
+    *a = active;
+    *b = rumble;
+    *c = force;
+}
+
