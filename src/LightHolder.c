@@ -65,3 +65,30 @@ void LightHolder_Delete(s32 index) {
     }
 }
 
+void LightHolder_Heartbeat(void) {
+    extern u8 g_pLight[16][0x80];
+    extern u32 g_iDeltaTimeMS;
+    extern f32 g_fDeltaTimeMS;
+    void ExtractColorKey(void *keys, void *out, f32 time);
+    void ExtractF32Key(void *keys, void *out, f32 time);
+    u8 *light;
+    u32 i;
+    u32 delta;
+
+    delta = g_iDeltaTimeMS;
+    for (i = 0; i < 16; i++) {
+        light = g_pLight[i];
+        if (*(u8 **)(light + 0x60) != NULL) {
+            if (*(u32 *)(light + 0x6C) == 0 || *(u32 *)(light + 0x6C) > delta) {
+                if (*(u32 *)(light + 0x6C) != 0) {
+                    *(u32 *)(light + 0x6C) -= delta;
+                }
+                ExtractColorKey(*(u8 **)(light + 0x60) + 0x14, light + 0x10, g_fDeltaTimeMS * *(f32 *)(light + 0x78));
+                ExtractF32Key(*(u8 **)(light + 0x60) + 0xC, light + 0x40, g_fDeltaTimeMS * *(f32 *)(light + 0x78));
+            } else {
+                LightHolder_Delete(i);
+            }
+        }
+    }
+}
+
