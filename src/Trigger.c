@@ -664,3 +664,7 @@ s32 TriggerCreatureKilled(void) {
     return 0;
 }
 
+s32 TriggerCreatureDroppedOff(void) {
+    return 0;
+}
+
