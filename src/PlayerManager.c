@@ -129,3 +129,13 @@ void PlayerManager_Heartbeat(void) {
 void PlayerManager_Render_DEBUG(void) {
 
 }
+
+void PlayerManager_ClearAllCameraFlags_PRIVATE(void) {
+    extern u8 *g_pPlayerManager;
+    void *player;
+
+    for (player = M2C_FIELD(g_pPlayerManager, void **, 0x20D8); player != NULL; player = M2C_FIELD(player, void **, 0xB0)) {
+        M2C_FIELD(player, u32 *, 0x6C) &= ~0x10;
+    }
+}
+
