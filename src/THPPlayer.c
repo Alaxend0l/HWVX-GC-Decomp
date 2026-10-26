@@ -11,7 +11,9 @@ typedef struct THPPlayer {
     u32 unk54;
     u32 unk58;
     u32 dataOffset;
-    u8 pad60[0xC];
+    u32 frameOffsets;   /* 0x60: start of the per-frame offsets, 4 bytes each */
+    u32 unk64;
+    u32 unk68;
     u32 numComponents;
     u8 components[0x80 - 0x70];
     u8 videoInfo[8];
