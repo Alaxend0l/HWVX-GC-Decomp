@@ -1,11 +1,11 @@
 #include "common.h"
 
 /* The sound system's update hooks, installed by the create calls below. */
-volatile void (*SongUpdate)(void);
-volatile void (*VoiceUpdate)(void);
+void (*SongUpdate)(void);
+void (*VoiceUpdate)(void);
 
 /* Set once Audio_Create() has brought everything up; it makes later calls no-ops. */
-volatile s8 g_init;
+s8 g_init;
 
 s8 AudioMusic_Init(void);
 s8 AudioIT_Init(void);
