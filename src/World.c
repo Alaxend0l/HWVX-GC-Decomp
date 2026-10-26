@@ -29,6 +29,14 @@ void *World_GetTileCar(u32 index) {
     return NULL;
 }
 
+void *World_GetTileCreature(u32 index) {
+    void *world = g_worldData.world;
+    if (index < M2C_FIELD(world, u32 *, 0x40)) {
+        return M2C_FIELD(world, u8 **, 0x44) + index * 0x40;
+    }
+    return NULL;
+}
+
 void *World_GetNavHolder(void) {
     return M2C_FIELD(g_worldData.world, void **, 0x78);
 }
