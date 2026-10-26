@@ -167,3 +167,20 @@ s32 LGStartForceEffect(u32 handle)
 
     return VDevice_StartEffect(&device->vdev, handle);
 }
+
+void VDevice_Init(VDevice *dev)
+{
+    s32 i;
+
+    SimThread_Init(dev, dev);
+    dev->unk11F4 = 0xFF;
+    for (i = 0; i < 64; i++) {
+        dev->activeEffects[i] = NULL;
+    }
+    if (g_bGammaInitialized == 0) {
+        VDevice_RecalcGammaTable();
+        g_bGammaInitialized = 1;
+    }
+}
+#pragma pop
+
