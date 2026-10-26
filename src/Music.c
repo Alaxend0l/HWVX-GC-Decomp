@@ -21,8 +21,6 @@ s32 AudioVoid(void);
 
 #pragma push
 #pragma optimization_level 1
-#pragma push
-#pragma optimization_level 1
 s32 AudioMusic_Create(void)
 {
     extern s32 g_musicState;
