@@ -34,10 +34,8 @@ typedef struct CarA {
   OBox orientedBox;         /* 0xC0 BuildOOBOffset writes it; GetOrientedCollision
                                returns car + 0xC0; GetTargetPos reads its v[0] */
   u8 padD0[0x240];          /* 0xF0 */
-  Model *model;             /* 0x330 first word of the embedded MotionState (car + 0x330) */
-  u8 motionStatePad[0xC];   /* 0x334 rest of the MotionState subobject */
-  Matrix4 *animMatrices;    /* 0x340 *(Matrix4 **)(car + 0x340) in DrawReflection */
-  u8 *slavePlayers;         /* 0x344 linked list, next node at +0xA4 */
+  MotionState motionState;   /* 0x330 embedded base subobject: model @0x330,
+                               animMatrices @0x340, slave players list @0x344 */
   u8 pad348[0x28];          /* 0x348 */
   void *hull;               /* 0x370 OConvexHullHolder: Released + NULLed in CarA_Release */
   u32 partVisMask;          /* 0x374 bit per car part in the reflection loop */
