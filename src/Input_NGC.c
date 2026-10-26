@@ -39,3 +39,7 @@ void Input_SetForceFeedback(s32 chan, f32 strength, f32 duration) {
     }
 }
 
+void Input_SetAlternativeForceFeedback(void) {
+
+}
+
