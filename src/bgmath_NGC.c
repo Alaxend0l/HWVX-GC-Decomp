@@ -22,7 +22,10 @@ void CopyVector(Vector *dst, Vector *src) {
     *dst = *src;
 }
 
-void SinCos(f32 *s, f32 *c, f32 angle) {
+void SinCos(f32 *s, f32 *c, f32 angle)
+{
+    f64 sin(f32);
+    f64 cos(f32);
     f32 r;
 
     while (angle < 0.0f) {
