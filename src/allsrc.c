@@ -401,6 +401,21 @@ s32 VDevice_StartEffect(VDevice *dev, u32 handle)
     return ret;
 }
 
+#pragma push
+#pragma optimize_for_size on
+s32 VDevice_Initialize(VDevice *dev, s32 *index)
+{
+    s32 i;
+
+    dev->unk11F4 = 0xFF;
+    for (i = 0; i < 64; i++)
+    {
+        dev->activeEffects[i] = NULL;
+    }
+    dev->unkF0 = index;
+    return 0;
+}
+
 #pragma pop
 
 #pragma pop
