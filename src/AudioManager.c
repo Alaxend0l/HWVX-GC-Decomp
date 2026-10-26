@@ -1,6 +1,24 @@
 #include "common.h"
 
 
+void SoundManager_Create(void) {
+    M2C_UNK8 Audio_Create();
+    void Dprintf(const char *, ...);
+    int printf(const char *, ...);
+    extern s8 g_songLoaded_803C6F2C;
+    extern s32 g_sources_803C6F38;
+    extern s32 g_tracks_803C6F30;
+
+    Dprintf("SoundManager_Create()");
+    if (!Audio_Create()) {
+        printf("AudioManager :: Audio_Create Failed\n");
+    }
+    Dprintf("SoundManager_Create() 1");
+    g_songLoaded_803C6F2C = 0;
+    g_sources_803C6F38 = Allocate(0x1F40, 0, "");
+    g_tracks_803C6F30 = Allocate(0x500, 0, "");
+}
+
 void SoundManager_Destroy(void) {
     M2C_UNK Audio_Destroy();
     extern s32 g_sources_803C6F38;
