@@ -102,3 +102,24 @@ void DataPack_ReleaseQuadPack(QuadPack *pack)
     }
 }
 
+u8 *DataPack_GetScript(void *pack, s32 id)
+{
+    u32 *entries;
+    u32 i;
+    u8 *table = *(u8 **)pack;
+
+    if (table == NULL)
+    {
+        return NULL;
+    }
+    for (i = 0; i < M2C_FIELD(table, u32 *, 0); i++)
+    {
+        entries = M2C_FIELD(table, u32 **, 4);
+        if (id == entries[i * 2 + 1])
+        {
+            return (u8 *)entries[i * 2];
+        }
+    }
+    return NULL;
+}
+
