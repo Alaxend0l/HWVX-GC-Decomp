@@ -181,10 +181,10 @@ s32 THPPlayerPlay(void)
     if (ActivePlayer.open && (ActivePlayer.state == 1 || ActivePlayer.state == 4))
     {
         ActivePlayer.state = 2;
-        ActivePlayer.unkC0 = -1;
-        ActivePlayer.unkC4 = -1;
-        ActivePlayer.unkC8 = 0;
         ActivePlayer.unkCC = 0;
+        ActivePlayer.unkC8 = 0;
+        ActivePlayer.unkC4 = -1;
+        ActivePlayer.unkC0 = -1;
         return 1;
     }
     return 0;
@@ -256,6 +256,18 @@ BOOL THPPlayerGetVideoInfo(void *videoInfo)
 
 u8 THPPlayerGetState(void) {
     return M2C_FIELD(&ActivePlayer, u8 *, 0x9C);
+}
+
+void * PopUsedTextureSet(void)
+{
+    s32 OSReceiveMessage(void *messageQueue, void **message, s32 block);
+    void *msg;
+
+    if (OSReceiveMessage(UsedTextureSetQueue_8036EC78, &msg, 0) == 1)
+    {
+        return msg;
+    }
+    return NULL;
 }
 
 #pragma pop
