@@ -50,3 +50,8 @@ void Gfx_Destroy(void) {
     Gfx_TextureHandler_Destroy();
     Render_Destroy();
 }
+
+void Gfx_SetAmbientColor(GXColor *color) {
+    g_state.ambientColor = *color;
+}
+
