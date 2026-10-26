@@ -146,6 +146,17 @@ void XformVec(Matrix4 *m, Vector *v, Vector *out)
     out->z = tz;
 }
 
+void XformVec4x4(Matrix4 *m, Vector *v, Vector *out)
+{
+    f32 tx = m->v[2].x * v->z + (m->v[0].x * v->x + m->v[1].x * v->y) + m->v[3].x;
+    f32 ty = m->v[2].y * v->z + (m->v[0].y * v->x + m->v[1].y * v->y) + m->v[3].y;
+    f32 tz = m->v[2].z * v->z + (m->v[0].z * v->x + m->v[1].z * v->y) + m->v[3].z;
+
+    out->x = tx;
+    out->y = ty;
+    out->z = tz;
+}
+
 void InverseXformVec(Matrix4 *m, Vector *v, Vector *out)
 {
     f32 dx = v->x - m->v[3].x;
@@ -198,6 +209,17 @@ void TransposeSubMatrix(Matrix4 *m)
     temp = m->v[1].z;
     m->v[1].z = m->v[2].y;
     m->v[2].y = temp;
+}
+
+s32 FloatsEqual(f32 a, f32 b, f32 c)
+{
+    f32 diff = a - b;
+
+    if (diff < 0.0f)
+    {
+        diff = -diff;
+    }
+    return diff < c;
 }
 
 void GetComponentOfVector(void *arg0, void *arg1) {
