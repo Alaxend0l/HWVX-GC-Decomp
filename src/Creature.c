@@ -5,6 +5,18 @@ void MotionState_Release(void *motionState);
 void Thing_Release(void *thing);
 f32 RandomAdd(f32 base, f32 range);
 
+/* animation table: the per-creature list MotionStateInit/Death index */
+typedef struct AnimTable
+{
+    u32 first;
+    u32 unk4;
+    u32 unk8;
+    u32 unkC;
+    u32 unk10;
+    void *entries;
+    u32 count;
+} AnimTable;
+
 /* parameter 2 of Creature_Init: the spawn description it copies out of */
 typedef struct CreatureInit
 {
@@ -64,10 +76,14 @@ void Thing_AddToGrid(void *a, s32 b);
 void Creature_MotionStateInit(void *a, s32 b, s32 c, s32 d);
 void MotionState_BuildMatricesWorld(void *a, void *b, void *c, f32 d);
 void QuaternionToSubMatrix(Vector4 *q, void *m);
-s32 Creature_Init(Creature *creature, CreatureInit *init)
+s32 Creature_Init(Creature *arg0, CreatureInit *arg1)
 {
-    Thing_Init(creature, 0);
-    init = init;
+    Creature *creature;
+    CreatureInit *init;
+
+    Thing_Init(arg0, 0);
+    creature = arg0;
+    init = arg1;
     creature->anims = init->anims;
     creature->pos = init->pos;
     creature->startPos = creature->pos;
