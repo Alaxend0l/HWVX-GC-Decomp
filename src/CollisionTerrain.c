@@ -1,6 +1,7 @@
 #include "common.h"
 
 typedef struct Vector4 { f32 x; f32 y; f32 z; f32 w; } Vector4;
+typedef struct Matrix4 { Vector4 v[4]; } Matrix4;
 
 s8 RayHitsTerrain(Vector4 *start, Vector4 *end, void *arg2, void *arg3)
 {
