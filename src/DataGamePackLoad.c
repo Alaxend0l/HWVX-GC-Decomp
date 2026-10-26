@@ -184,6 +184,99 @@ void DataPack_RefreshQuadPackPtrs(DataPack *pack, void *quad)
         }
     }
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void DataPack_RefreshPtrs(DataPack *pack) {
+    void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
+    u16 ShaderHolder_AddShader(s32 shader);
+    void ShaderHolder_AddGX(void *gx, u32 index);
+    s32 Trigger_AddTrigger(s32 *trigger);
+    u8 *base;
+    u32 i;
+    u8 *trigger;
+    u32 packID;
+    u32 idx;
+    u32 id;
+
+    base = pack->base;
+    if (base != NULL) {
+        DataPack_RefreshTextures(pack);
+        for (i = 0; i < pack->numSoundRelocs; i++) {
+            id = pack->soundRelocs[i * 2 + 1];
+            if (id & 0xFFFF0000) {
+                packID = id >> 16;
+                idx = pack->refs[0].id != packID;
+                if (pack->refs[idx].pack == NULL) {
+                    pack->refs[idx].pack = FileStreaming_InitializeDataPack(FileStreaming_LoadDataPack(&pack->refs[idx], 8, packID, 0), 8, 1);
+                }
+                id = pack->refs[idx].pack->soundIDs[id & 0xFFFF];
+            } else {
+                id = pack->soundIDs[id];
+            }
+            *(u32 *)(base + pack->soundRelocs[i * 2]) = id;
+        }
+        for (i = 0; i < pack->numShaders; i++) {
+            pack->shaderIDs[i] = ShaderHolder_AddShader(pack->shaders[i].shader);
+        }
+        for (i = 0; i < pack->numGX; i++) {
+            ShaderHolder_AddGX(base + pack->gxList[i * 2], pack->shaderIDs[pack->gxList[i * 2 + 1]]);
+        }
+        trigger = pack->triggers;
+        for (i = 0; i < pack->numTriggers; i++) {
+            Trigger_AddTrigger((s32 *)trigger);
+            trigger += 0x2C;
+        }
+    }
+}
+
+void DataPack_ReleaseDataPack(DataPack *pack) {
+    void DestroySFX(u16 id);
+    void ShaderHolder_RemoveShader(s32 shader);
+    void Gfx_UnLoadTexture(u16 id);
+    s32 Trigger_ReleaseTrigger(s32 *trigger);
+    void Action_ReleaseAllActions(void);
+    void *memset(void *dst, s32 c, u32 n);
+    s8 releasedTriggers = 0;
+    u32 *gx;
+    u8 *trigger;
+    u32 i;
+
+    if (pack->soundIDs != NULL) {
+        for (i = 0; i < pack->numSounds; i++) {
+            if (pack->soundIDs[i] != 0) {
+                DestroySFX(pack->soundIDs[i]);
+            }
+        }
+        gx = pack->gxList;
+        for (i = 0; i < pack->numGX; i++) {
+            ShaderHolder_RemoveGX((s32)pack->base + *gx);
+            gx += 2;
+        }
+        for (i = 0; i < pack->numShaders; i++) {
+            ShaderHolder_RemoveShader(pack->shaders[i].shader);
+        }
+        for (i = 0; i < pack->numTextures; i++) {
+            Gfx_UnLoadTexture(pack->textureIDs[i]);
+        }
+        trigger = pack->triggers;
+        for (i = 0; i < pack->numTriggers; i++, trigger += 0x2C) {
+            Trigger_ReleaseTrigger((s32 *)trigger);
+            releasedTriggers = 1;
+        }
+        if (releasedTriggers) {
+            Action_ReleaseAllActions();
+        }
+        Deallocate(pack->soundIDs);
+        Deallocate(pack->soundData);
+        pack->soundIDs = NULL;
+        pack->soundData = NULL;
+        memset(pack, 0, 0x94);
+    }
+}
+
+#pragma pop
+
 #pragma pop
 void DataPack_ReleaseQuadPack(QuadPack *pack)
 {
