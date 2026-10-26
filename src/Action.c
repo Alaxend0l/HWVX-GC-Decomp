@@ -97,6 +97,63 @@ void Action_ReleaseAllActions(void) {
     memset(m_Actions_800DBC80, 0, 0x140);
 }
 
+s32 ActionPrintDebugString(u32 *action)
+{
+    void InterfaceManager_SetPlayerMessage(void *message, u32 player);
+    u32 i;
+    u8 *obj;
+
+    if (*action == 0)
+    {
+        if (action[1] == 0)
+        {
+            action[1] = 0x3c;
+        }
+        action[1] -= 1;
+    }
+    else
+    {
+        action[1] = 0;
+        for (i = 0; i < M2C_FIELD(g_worldData.world, u32 *, 8); i++)
+        {
+            obj = (u8 *)((char *)M2C_FIELD(g_worldData.world, u8 **, 0xC) + i * 0x60);
+            if (M2C_FIELD(obj, u8 *, 0x35) == 1)
+            {
+                switch (*action)
+                {
+                case 0:
+                    break;
+                case 1:
+                    M2C_FIELD(M2C_FIELD(obj, u8 **, 0x28), u32 *, 0x498) = action[2];
+                    break;
+                case 2:
+                    M2C_FIELD(M2C_FIELD(obj, u8 **, 0x28), u32 *, 0x494) = action[2];
+                    break;
+                case 3:
+                    M2C_FIELD(M2C_FIELD(obj, u8 **, 0x28), u32 *, 0x494) = action[2];
+                    break;
+                case 4:
+                    InterfaceManager_SetPlayerMessage((void *)action[2], 0);
+                    break;
+                case 5:
+                    M2C_FIELD(M2C_FIELD(obj, u8 **, 0x28), u32 *, 0x49C) = action[2];
+                    break;
+                case 6:
+                    M2C_FIELD(M2C_FIELD(obj, u8 **, 0x28), u32 *, 0x4A0) = action[2];
+                    break;
+                case 7:
+                    InterfaceManager_SetPlayerMessage((void *)action[2], 1);
+                    break;
+                case 8:
+                    InterfaceManager_SetPlayerMessage((void *)action[2], 2);
+                    break;
+                }
+            }
+        }
+    }
+    return 1;
+}
+
 s8 ActionLoadInterfacePack(s32 *arg0) {
     s32 FileStreaming_LoadDataPack(void *, M2C_UNK, s32, M2C_UNK);
     s32 temp_r3;
