@@ -307,6 +307,17 @@ void GamePlay_Interface(void *msg) {
     }
 }
 
+void GamePlay_Startup(void) {
+    extern void GamePlay_PauseOptions_HandleInput(void *msg);
+    extern struct {
+        void (*handleInput)(void *msg);
+        void (*update)(void);
+    } g_handleInterfaceGP;
+
+    g_handleInterfaceGP.handleInput = GamePlay_PauseOptions_HandleInput;
+    g_handleInterfaceGP.update = NULL;
+}
+
 void InterfaceInputAnimator_Release(void) {
     static const char name[] = "InterfaceInput";
     ProcessManager_Release((char *)name);
