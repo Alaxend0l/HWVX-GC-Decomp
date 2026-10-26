@@ -61,7 +61,9 @@ typedef struct CarA {
   u8 pad45C[8];             /* 0x45C */
   s32 stuckCounter;         /* 0x464 > 600 marks the AI car stuck */
   f32 gripScale;            /* 0x468 *= AI gripScale */
-  u8 pad46C[4];             /* 0x46C */
+  s32 slaveWeaponRpm[1];      /* 0x46C indexed by weapon slot (0..2) in CarA_SlaveWeaponStop,
+                                which writes 10001, just past the 10000 rpm test on the word
+                                that follows; only slot 0 is sized here */
   s32 engineRpmState;       /* 0x470 compared < 10000 in GetTorqueAtWheels */
   u8 pad474[0x18];          /* 0x474 */
   u32 transmissionFlags;    /* 0x48C & 0x1000 selects 4WD torque split */
