@@ -9,6 +9,14 @@ void stateGettingError(void)
     DVDLowRequestError(cbForStateGettingError);
 }
 
+void stateMotorStopped(void)
+{
+    void DVDLowWaitCoverClose(void (*cb)(u32));
+    void cbForStateMotorStopped(u32 code);
+
+    DVDLowWaitCoverClose(cbForStateMotorStopped);
+}
+
 s32 DVDSetAutoInvalidation(s32 arg0) {
     extern s32 autoInvalidation;
     s32 temp_r0;
