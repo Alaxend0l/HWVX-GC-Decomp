@@ -41,13 +41,47 @@ typedef struct QuadPack {
 
 void ShaderHolder_RemoveGX(s32 gx);
 
-/* In DataGamePackLoad.c the quad pack's shader object is reached through a
-   plain u32 pointer, so this file's view of a QuadPack is just its header. */
+typedef struct DataPackShader {
+    s32 shader;             /* 0x00 */
+    u8 pad04[0x8];
+} DataPackShader;
+
+typedef struct DataPackRef {
+    char name[0xC];         /* 0x00 */
+    u32 id;                 /* 0x0C */
+    struct DataPack *pack;  /* 0x10 */
+} DataPackRef;
+
 typedef struct DataPack {
-    u8 pad00[0x20];
-    u16 *shaderIDs;   /* 0x20 */
-    u8 pad24[0xC];
-    u16 *textureIDs;  /* 0x30 */
+    u8 *base;               /* 0x00 */
+    u32 numRelocs;          /* 0x04 */
+    s32 *relocs;            /* 0x08 */
+    u32 numSoundRelocs;     /* 0x0C */
+    u32 *soundRelocs;       /* 0x10 */
+    void *palettes;         /* 0x14 */
+    u32 numShaders;         /* 0x18 */
+    u32 numGX;              /* 0x1C */
+    u16 *shaderIDs;         /* 0x20 */
+    u32 *gxList;            /* 0x24 */
+    u32 dataSize;           /* 0x28 */
+    u32 numTextures;        /* 0x2C */
+    u16 *textureIDs;        /* 0x30 */
+    u32 numSounds;          /* 0x34 */
+    u16 *soundIDs;          /* 0x38 */
+    void *soundData;        /* 0x3C */
+    u8 *soundBase;          /* 0x40 */
+    u32 textureData;        /* 0x44 */
+    u8 *sfxData;            /* 0x48 */
+    void *paletteData;      /* 0x4C */
+    DataPackShader *shaders;/* 0x50 */
+    u32 numTriggers;        /* 0x54 */
+    u8 *triggers;           /* 0x58 */
+    void *song;             /* 0x5C */
+    void *songBank;         /* 0x60 */
+    s8 songLoaded;          /* 0x64 */
+    u8 pad65[3];            /* 0x65 */
+    DataPackRef refs[2];    /* 0x68 */
+    u32 soundDataSize;      /* 0x90 */
 } DataPack;
 
 typedef struct QuadPackRef {
