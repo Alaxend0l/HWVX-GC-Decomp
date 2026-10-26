@@ -67,3 +67,29 @@ s32 AttachThing_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     }
     return 0;
 }
+
+s32 RadarBlip_Init(void *blip, void *init) {
+    s32 Thing_Init(void *, s32);
+
+    Thing_Init(blip, 0);
+    M2C_FIELD(blip, u32 *, 0x40) = M2C_FIELD(init, u32 *, 0x10);
+    M2C_FIELD(blip, u32 *, 0x44) = M2C_FIELD(init, u32 *, 0x14);
+    M2C_FIELD(blip, u32 *, 0x48) = M2C_FIELD(init, u32 *, 0x18);
+    M2C_FIELD(blip, u32 *, 0x4C) = M2C_FIELD(init, u32 *, 0x1C);
+    M2C_FIELD(blip, void **, 0xB0) = M2C_FIELD(init, void **, 0x0);
+    M2C_FIELD(blip, s32 *, 0xB4) = 0;
+    M2C_FIELD(blip, f32 *, 0xB8) = 1.0f;
+    if (M2C_FIELD(M2C_FIELD(blip, u8 **, 0xB0), u8 *, 0x3) == 0) {
+        M2C_FIELD(blip, u32 *, 0x74) |= 0x200;
+    }
+    return 1;
+}
+
+s32 RadarBlip_Move(void *blip)
+{
+    typedef struct { u32 x, y, z, w; } Vec4;
+
+    *(Vec4 *)((u8 *)blip + 0xC0) = *(Vec4 *)((u8 *)blip + 0x40);
+    return 1;
+}
+
