@@ -227,6 +227,103 @@ void ExtractColorKey(void *track, void *state, f32 dt) {
     s->c.a = s->a;
 }
 
+void ExtractPointKey(u8 *track, u8 *state, f32 dt) {
+    typedef struct Key {
+        f32 x;
+        f32 y;
+        f32 duration;
+        u8 active;
+        u8 interp;
+        u8 pad[2];
+    } Key;
+    typedef struct KeyTrack {
+        u32 count;
+        Key *keys;
+    } KeyTrack;
+    typedef struct KeyState {
+        f32 x;
+        f32 y;
+        f32 slopeX;
+        f32 slopeY;
+        f32 time;
+        u16 index;
+        u16 current;
+        u8 reset;
+    } KeyState;
+    KeyTrack *t = (KeyTrack *)track;
+    KeyState *s = (KeyState *)state;
+    u32 reset;
+    u16 i;
+    Key *keys;
+    Key *key;
+    f32 f;
+
+    reset = 0;
+    if (s->reset) {
+        s->reset = 0;
+        reset = 1;
+        s->index = 0;
+        s->time = 0.0f;
+    }
+    if (s->index >= t->count) {
+        return;
+    }
+    s->time += dt;
+    if (reset || s->time >= t->keys[s->index].duration) {
+        s->current = 0;
+        for (;;) {
+            if (s->time < t->keys[s->index].duration) {
+                break;
+            }
+            s->current = s->index;
+            s->time -= t->keys[s->index].duration;
+            s->index++;
+            if (s->index >= t->count) {
+                for (i = 0; i < t->count; i++) {
+                    if (t->keys[i].active) {
+                        s->index = i;
+                        break;
+                    }
+                }
+                if (s->index >= t->count) {
+                    s->x = t->keys[s->current].x;
+                    s->y = t->keys[s->current].y;
+                    return;
+                }
+                break;
+            }
+        }
+        s->slopeX = t->keys[s->index].x - t->keys[s->current].x;
+        s->slopeY = t->keys[s->index].y - t->keys[s->current].y;
+        key = &t->keys[s->index];
+        if (key->interp == 0) {
+            f = 0.0f;
+            if (key->duration > 0.0f) {
+                f = 1.0f / key->duration;
+            }
+            s->slopeX *= f;
+            s->slopeY *= f;
+        }
+    }
+    keys = t->keys;
+    key = &keys[s->index];
+    if (key->interp == 0) {
+        s->x = s->slopeX * s->time + keys[s->current].x;
+        s->y = s->slopeY * s->time + t->keys[s->current].y;
+        return;
+    }
+    f = s->time / key->duration;
+    if (key->interp == 1) {
+        f = 1.0f - (1.0f - f) * (1.0f - f);
+    } else if (key->interp == 2) {
+        f = f * f;
+    } else {
+        f = 0.0f;
+    }
+    s->x = f * s->slopeX + keys[s->current].x;
+    s->y = f * s->slopeY + t->keys[s->current].y;
+}
+
 void ExtractTextureKey(TextureKeyAnim *anim, TextureKeyState *state, f32 dt) {
     if (state->reset) {
         if (anim->numKeys == 0) {
