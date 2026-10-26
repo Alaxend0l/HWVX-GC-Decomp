@@ -53,4 +53,27 @@ void __TRK_reset(void)
         }
     }
 }
+
+s32 TRKInitializeTarget(void)
+{
+    *(s32 *)(gTRKState + 0x98) = 1;
+    *(s32 *)(gTRKState + 0x8C) = __TRK_get_MSR();
+    lc_base = 0xE0000000;
+    return 0;
+}
+
+u32 TRKTargetTranslate(u32 addr)
+{
+    if ((addr < lc_base) || (addr >= (lc_base + 0x4000)) || !(*(u32 *)(gTRKCPUState + 0x238) & 3))
+    {
+        return (addr & 0x3FFFFFFF) | 0x80000000;
+    }
+    return addr;
+}
+
+void EnableMetroTRKInterrupts(void)
+{
+    EnableEXI2Interrupts();
+}
+
 #pragma pop

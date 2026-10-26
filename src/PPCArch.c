@@ -2,6 +2,12 @@
 
 extern s32 PPCMfhid0(void);
 extern void PPCMthid0(s32);
+void PPCHalt(void) {
+    M2C_SYNC();
+loop_1:
+    goto loop_1;
+}
+
 void PPCDisableSpeculation(void) {
     s32 PPCMfhid0();
     M2C_UNK PPCMthid0(s32);

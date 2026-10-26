@@ -12,9 +12,11 @@ extern struct DestructNode *__global_destructor_chain;
 
 void __destroy_global_chain(void) {
     struct DestructNode *node;
+    void (*destructor)();
 
     while ((node = __global_destructor_chain) != NULL) {
         __global_destructor_chain = node->next;
-        (*node->destructor)(node->object, -1);
+        destructor = node->destructor;
+        destructor(node->object, -1);
     }
 }
