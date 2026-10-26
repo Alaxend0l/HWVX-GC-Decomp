@@ -562,3 +562,52 @@ s32 TriggerVehicleKilled(u32 *data) {
     return 0;
 }
 
+void Trigger_VehicleKilled(void *vehicle) {
+    extern u32 TriggerStats_800D3C58[][3];
+    extern u32 **m_Triggers_802C1890[];
+    extern s8 g_bTACSystemPaused_803C7124;
+    s8 TriggerCheckConditions(u8, s32, s32);
+    s32 Action_AddAction(s32);
+    u32 i;
+    u32 actions;
+    u32 *trigger;
+    u32 j;
+    s8 found;
+    u32 count;
+
+    if (!g_bTACSystemPaused_803C7124) {
+        for (i = 0; i < TriggerStats_800D3C58[12][0]; i++) {
+            trigger = m_Triggers_802C1890[12][i];
+            count = *(u32 *)trigger[1];
+            if (trigger[9] != 2) {
+                found = 0;
+                for (j = 0; j < count && !found; j++) {
+                    if (((void **)((u32 *)m_Triggers_802C1890[12][i][1] + 1)[j])[10] == vehicle) {
+                        found = 1;
+                    }
+                }
+                if (found && TriggerCheckConditions(((u8 *)trigger)[0x28], trigger[4], trigger[3])) {
+                    actions = 0;
+                    for (j = 0; j < m_Triggers_802C1890[12][i][7]; j++) {
+                        actions += Action_AddAction(m_Triggers_802C1890[12][i][5] + j * 0x18);
+                    }
+                    if (actions == 0) {
+                        m_Triggers_802C1890[12][i][9] = 2;
+                    }
+                }
+            }
+        }
+    }
+}
+
+s32 TriggerDesructibleKilled(u32 *data) {
+    u32 i;
+
+    for (i = 0; i < data[0]; i++) {
+        if (M2C_FIELD((data + 1)[i], u32 *, 0x30) == 3) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
