@@ -35,3 +35,9 @@ void Trigger_Create(void) {
     fn_800957D4();
 }
 
+void Trigger_Destroy(void) {
+    extern s32 m_triggerData_803C7120;
+    Deallocate(m_triggerData_803C7120);
+    m_triggerData_803C7120 = 0;
+}
+
