@@ -506,6 +506,22 @@ s32 Thing_GetOrientedCollision(void) {
     return 0;
 }
 
+s32 Thing_HitsTerrain(void *thing, void *arg1, void *arg2) {
+    s32 OBoxHitsTerrain(void *obox, void *thing, void *arg1, void *arg2);
+    s32 RayHitsTerrain_Aux3(void *pos, void *thing, void *arg1, void *arg2);
+
+    if (g_worldData.world == NULL) {
+        return 0;
+    }
+    switch (M2C_FIELD(thing, s16 *, 0x80)) {
+    case 3:
+        return RayHitsTerrain_Aux3((u8 *)thing + 0x40, thing, arg1, arg2);
+    case 1:
+        return OBoxHitsTerrain(M2C_FIELD(M2C_FIELD(thing, void **, 0x8C), void *(**)(void *), 0x40)(thing), thing, arg1, arg2);
+    }
+    return 0;
+}
+
 void Thing_PassiveTargeting(void)
 {
 }
