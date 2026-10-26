@@ -69,6 +69,213 @@ void CameraManager_Pause(s8 arg0) {
     g_cameraManagerPause = arg0;
 }
 
+void GetTrimmedCameraPos(u8 *camera, Vector4 *from, Vector4 *dir, f32 *trim, f32 dist) {
+    extern f32 g_fDeltaTimeSec;
+    f32 PSVECDotProduct(void *a, void *b);
+    f32 PSVECSquareMag(void *v);
+    void PSVECNormalize(void *src, void *dst);
+    struct {
+        Vector4 point;
+        Vector4 normal;
+        u8 unk20[0x30];
+    } info;
+    Vector4 pos;
+    Vector4 d;
+    f32 t;
+    f32 trimAmt;
+    f32 travelled;
+    f32 len;
+    f32 dot;
+    s8 hit;
+    s8 trimmed;
+
+    trimAmt = *trim;
+    travelled = 0.0f;
+    pos = *from;
+    trimmed = 0;
+    len = MagnitudeVector(dir);
+    d.x = -dir->x;
+    d.y = -dir->y;
+    d.z = -dir->z;
+    do {
+        t = dist - travelled;
+        hit = RayHitsTerrainAndObjects_Camera(&pos, &d, &t, &info);
+        pos.x += d.x * t;
+        pos.y += d.y * t;
+        pos.z += d.z * t;
+        if (hit) {
+            dot = -PSVECDotProduct(&info.normal, &d);
+            d.x += dot * info.normal.x;
+            d.y += dot * info.normal.y;
+            d.z += dot * info.normal.z;
+            if (dot < 0.0f) {
+                pos.x = from->x - dir->x * dist;
+                pos.y = from->y - dir->y * dist;
+                pos.z = from->z - dir->z * dist;
+                break;
+            }
+            if (PSVECSquareMag(&d) < 0.1f) {
+                d.y += 1.0f;
+            }
+            if (PSVECSquareMag(&d)) {
+                PSVECNormalize(&d, &d);
+            }
+            trimmed = 1;
+            d.x *= len;
+            d.y *= len;
+            d.z *= len;
+            pos.x += info.normal.x * trimAmt;
+            pos.y += info.normal.y * trimAmt;
+            pos.z += info.normal.z * trimAmt;
+        }
+        travelled += t;
+        if (t < 1e-7f) {
+            break;
+        }
+    } while (travelled < dist);
+    if (trimmed) {
+        *trim += 3.0f * g_fDeltaTimeSec;
+        if (*trim > 1.8f) {
+            *trim = 1.8f;
+        }
+    } else {
+        *trim = 0.0f;
+    }
+    *(Vector4 *)(camera + 0x60) = pos;
+}
+
+void GetTrimmedCameraPos2(Vector4 *from, Vector4 *to, f32 *trim) {
+    extern f32 g_fDeltaTimeSec;
+    f32 PSVECDotProduct(void *a, void *b);
+    f32 PSVECSquareDistance(void *a, void *b);
+    void PSVECSubtract(void *a, void *b, void *out);
+    f32 Sqrt(f32 x);
+    struct {
+        Vector4 point;
+        Vector4 normal;
+        u8 unk20[0x30];
+    } info;
+    Vector4 pos;
+    Vector4 target;
+    Vector4 d;
+    f32 t;
+    f32 trimAmt;
+    f32 travelled;
+    f32 dist;
+    f32 len;
+    f32 dot;
+    s8 hit;
+    s8 trimmed;
+
+    trimAmt = *trim;
+    travelled = 0.0f;
+    pos = *from;
+    target = *to;
+    dist = Sqrt(PSVECSquareDistance(from, to));
+    trimmed = 0;
+    PSVECSubtract(&target, &pos, &d);
+    do {
+        t = 1.0f - travelled;
+        hit = RayHitsTerrainAndObjects_Camera(&pos, &d, &t, &info);
+        if (t == 0.0f && !trimmed) {
+            hit = 0;
+            t += 0.2f;
+        }
+        pos.x += d.x * t;
+        pos.y += d.y * t;
+        pos.z += d.z * t;
+        if (hit) {
+            dot = -PSVECDotProduct(&info.normal, &d);
+            if (dot < 0.0f) {
+                return;
+            }
+            d.x += dot * info.normal.x;
+            d.y += dot * info.normal.y;
+            d.z += dot * info.normal.z;
+            len = MagnitudeVector(&d);
+            if (len < 0.01f) {
+                trimmed = 1;
+                break;
+            }
+            len = dist / len;
+            trimmed = 1;
+            d.x *= len;
+            d.y *= len;
+            d.z *= len;
+            pos.x += info.normal.x * trimAmt;
+            pos.y += info.normal.y * trimAmt;
+            pos.z += info.normal.z * trimAmt;
+        }
+        travelled += t;
+        if (t < 1e-6f) {
+            break;
+        }
+    } while (travelled < 1.0f);
+    *to = pos;
+    if (trimmed) {
+        *trim += g_fDeltaTimeSec;
+        if (*trim > 1.8f) {
+            *trim = 1.8f;
+        }
+    } else {
+        *trim -= g_fDeltaTimeSec;
+        if (*trim <= 0.0f) {
+            *trim = 0.0f;
+        }
+    }
+}
+
+void Camera_UpdatePosition_Zoom_Generic(u8 *cam, u8 *mode, Vector4 *target, Vector4 *eye, f32 zoom, f32 shake) {
+    extern f32 g_fDeltaTimeSec;
+    double sin(double x);
+    double atan2(double y, double x);
+    f32 MagnitudeVector(void *v);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
+    void Gfx_SetProjectionMatrix(f32 fov);
+    Vector4 pos;
+
+    pos = *target;
+    *(f32 *)(cam + 0xB8) += 0.2f * g_fDeltaTimeSec;
+    pos.x = shake * (*(f32 *)(cam + 0xA0) * (f32)sin(*(f32 *)(cam + 0xB8))) + target->x;
+    pos.y = shake * (*(f32 *)(cam + 0xA4) * (f32)sin(*(f32 *)(cam + 0xB8))) + target->y;
+    pos.z = shake * (*(f32 *)(cam + 0xA8) * (f32)sin(*(f32 *)(cam + 0xB8))) + target->z;
+    {
+        Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
+        Vector4 dir;
+        f32 mag;
+        f32 inv;
+        f32 fov;
+
+        PSVECSubtract(eye, &pos, &dir);
+        mag = MagnitudeVector(&dir);
+        inv = 1.0f / mag;
+        fov = *(f32 *)(mode + 0x10) * (zoom * (zoom * (f32)atan2(40.0, mag)));
+        *(f32 *)(cam + 0x80) = dir.x * inv;
+        *(f32 *)(cam + 0x84) = dir.y * inv;
+        *(f32 *)(cam + 0x88) = dir.z * inv;
+        PSVECCrossProduct(&up, (Vector4 *)(cam + 0x80), (Vector4 *)(cam + 0xA0));
+        PSVECCrossProduct((Vector4 *)(cam + 0x80), (Vector4 *)(cam + 0xA0), (Vector4 *)(cam + 0x90));
+        inv = 1.0f / MagnitudeVector(cam + 0xA0);
+        *(f32 *)(cam + 0xA0) *= inv;
+        *(f32 *)(cam + 0xA4) *= inv;
+        *(f32 *)(cam + 0xA8) *= inv;
+        inv = 1.0f / MagnitudeVector(cam + 0x90);
+        *(f32 *)(cam + 0x90) *= inv;
+        *(f32 *)(cam + 0x94) *= inv;
+        *(f32 *)(cam + 0x98) *= inv;
+        if (fov > 150.0f) {
+            fov = 150.0f;
+        }
+        if (fov < 6.0f) {
+            fov = 6.0f;
+        }
+        Gfx_SetProjectionMatrix(fov);
+    }
+    *(Vector4 *)(cam + 0x60) = pos;
+    PSVECSubtract((Vector4 *)(cam + 0x60), &pos, (Vector4 *)(cam + 0x70));
+}
+
 s32 Camera_TriggerActionGetLocation(u8 *cam, u32 *data, Vector4 *out) {
     extern u8 *g_pNoRayCollideThing;
     extern s32 g_triggerAction_params_default;

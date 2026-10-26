@@ -223,6 +223,196 @@ void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed) {
     }
 }
 
+void AI_Car_WeaponAsyncHeartbeat_80008210(u8 *ai) {
+    typedef struct WeaponParams {
+        u8 pad0[0x24];
+        u32 minAmmo;
+        u8 pad28[0x30 - 0x28];
+        u32 reloadTime;
+        u8 priority;
+        u8 pad35[3];
+        f32 minRange;
+        f32 maxRange;
+        f32 aimAngle;
+        f32 farAngle;
+        f32 nearAngle;
+    } WeaponParams;
+    typedef struct WeaponDef {
+        u8 type;
+        u8 pad1[0x20 - 0x1];
+        char **name;
+        u8 pad24[0x30 - 0x24];
+        WeaponParams *params;
+    } WeaponDef;
+    typedef struct WeaponSlot {
+        u8 pad0[0x40];
+        s16 ammo;
+        u8 pad42[0x4C - 0x42];
+        WeaponDef *def;
+    } WeaponSlot;
+    typedef struct WeaponHolder {
+        u8 pad0[0xB0];
+        WeaponSlot slots[12];
+        u8 current;
+    } WeaponHolder;
+    extern u32 g_attackDelay;
+    extern u8 g_itemVTable[];
+    extern const char g_jetBoostersName_800CC3E4[];
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    s32 ThingManager_GetActiveCars();
+    s8 Player_IsHuman(void *player);
+    f32 PSVECSquareDistance(void *a, void *b);
+    f32 Sqrt(f32 x);
+    f32 AI_AngleToTarget(u8 *ai, Vector4 *target);
+    s8 AI_CheckAngleInRange(f32 angle, f32 center, f32 range);
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    f32 RandomAdd(f32 base, f32 range);
+    int strcmp(const char *a, const char *b);
+    u8 *cars[8];
+    u8 *target;
+    WeaponHolder *holder;
+    WeaponParams *params;
+    s16 i;
+    s8 lowHealth;
+    s16 best;
+    s16 preferred;
+    WeaponSlot *slot;
+    WeaponParams *reload;
+    WeaponDef *def;
+    Vector4 *targetPos;
+    f32 nearest;
+    f32 distSq;
+    f32 dist;
+    f32 angle;
+    f32 angleRange;
+    u32 numCars;
+    u8 n;
+    u8 type;
+
+    target = NULL;
+    lowHealth = 0;
+    if (*(u8 **)(ai + 0x2C) == NULL) {
+        return;
+    }
+    if (GameSettings_GetCodeVariable(0x12D, 0) >= 3) {
+        numCars = ThingManager_GetActiveCars(cars, 8);
+        nearest = 1e10f;
+        for (n = 0; n < numCars; n++) {
+            if (cars[n] != *(u8 **)(ai + 0x2C) && !(*(u32 *)(cars[n] + 0x74) & 0x1000) &&
+                (GameSettings_GetCodeVariable(0x12D, 0) != 4 || Player_IsHuman(*(void **)(cars[n] + 0x94)))) {
+                distSq = PSVECSquareDistance(*(u8 **)(ai + 0x2C) + 0x40, cars[n] + 0x40);
+                if (nearest > distSq) {
+                    nearest = distSq;
+                    target = cars[n];
+                }
+            }
+        }
+    } else if (*(u8 **)(ai + 0x3E8) != NULL) {
+        target = *(u8 **)(ai + 0x3E8);
+    } else if (*(u8 **)(ai + 0x3EC) != NULL &&
+               (*(u8 **)(*(u8 **)(ai + 0x3EC) + 0x8C) == g_carAVTable ||
+                (*(u8 **)(*(u8 **)(ai + 0x3EC) + 0x8C) == g_itemVTable && **(u8 **)(*(u8 **)(ai + 0x3EC) + 0xC0) == 2))) {
+        target = *(u8 **)(ai + 0x3EC);
+    }
+    if (target != NULL && *(u8 **)(ai + 0x2C) != NULL) {
+        targetPos = (Vector4 *)(target + 0x40);
+        best = -1;
+        preferred = -1;
+        distSq = PSVECSquareDistance(*(u8 **)(ai + 0x2C) + 0x40, targetPos);
+        dist = Sqrt(distSq);
+        angle = 57.29578f * AI_AngleToTarget(*(u8 **)(ai + 0x2C), targetPos);
+        if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1 && g_attackDelay == 0 && distSq < 400.0f) {
+            if (AI_CheckAngleInRange(angle, 90.0f, 12.5f)) {
+                ai[0x10] = 0xFF;
+                *(u32 *)(ai + 0xC) |= 1;
+            } else if (AI_CheckAngleInRange(angle, 270.0f, 12.5f)) {
+                ai[0x1A] = 0xFF;
+                *(u32 *)(ai + 0xC) |= 0x400;
+            }
+        }
+        if ((f32)*(s32 *)(*(u8 **)(ai + 0x2C) + 0x78) <
+            0.3f * ((f32)*(s32 *)(*(u8 **)(*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC) + 0xA0) + 0x14) *
+                    **(f32 **)(ai + 0xD0))) {
+            lowHealth = 1;
+        }
+        holder = ThingManagerList_GetByType(*(u8 **)(ai + 0x2C) + 0x344, 8);
+        for (i = 0; holder != NULL && i < 12; i++) {
+            slot = &holder->slots[i];
+            if (slot == NULL || slot->def == NULL) {
+                continue;
+            }
+            params = slot->def->params;
+            if (slot->ammo < params->minAmmo) {
+                continue;
+            }
+            type = slot->def->type;
+            if (type == 1) {
+                if (lowHealth) {
+                    best = i;
+                    preferred = -1;
+                    break;
+                }
+                continue;
+            }
+            if (lowHealth && type == 6 && dist <= params->maxRange && dist >= params->minRange) {
+                best = i;
+                preferred = i;
+            }
+            if (preferred != -1) {
+                continue;
+            }
+            if (best != -1 && params->priority != (*(u8 **)(ai + 0xD0))[0x26] &&
+                holder->slots[best].def->params->priority <= params->priority) {
+                continue;
+            }
+            if ((params->maxRange || params->minRange) &&
+                !(dist <= params->maxRange && dist >= params->minRange)) {
+                continue;
+            }
+            angleRange = params->nearAngle + (params->farAngle - params->nearAngle) * (dist - params->minRange) /
+                                                 (params->maxRange - params->minRange);
+            if ((params->nearAngle || params->farAngle) &&
+                !AI_CheckAngleInRange(angle, params->aimAngle, angleRange)) {
+                continue;
+            }
+            best = i;
+            if (params->priority == (*(u8 **)(ai + 0xD0))[0x26]) {
+                preferred = i;
+            }
+        }
+        if (preferred != -1) {
+            best = preferred;
+        }
+        if (holder->current == best) {
+            def = holder->slots[best].def;
+            if (g_attackDelay == 0 || RandomAdd_s32(0, 50) == 0 || def->type != 3 ||
+                strcmp(*def->name, g_jetBoostersName_800CC3E4) == 0) {
+                ai[0x1B] = 0xFF;
+                *(u32 *)(ai + 0xC) |= 0x800;
+            }
+        } else if (best != -1 && *(u32 *)(ai + 0x658) == 0) {
+            ai[0x11] = 0xFF;
+            *(u32 *)(ai + 0xC) |= 2;
+            *(u32 *)(ai + 0x658) = 3000;
+        }
+        reload = NULL;
+        if (best != -1) {
+            reload = holder->slots[best].def->params;
+        } else if (holder->slots[holder->current].def != NULL) {
+            reload = holder->slots[holder->current].def->params;
+        }
+        if (reload != NULL) {
+            *(u32 *)(ai + 0x654) = (f32)reload->reloadTime *
+                                   RandomAdd(*(f32 *)(*(u8 **)(ai + 0xD0) + 0x14), *(f32 *)(*(u8 **)(ai + 0xD0) + 0x18));
+        }
+    }
+    if (*(u32 *)(ai + 0x654) == 0) {
+        *(u32 *)(ai + 0x654) =
+            300.0f * RandomAdd(*(f32 *)(*(u8 **)(ai + 0xD0) + 0x14), *(f32 *)(*(u8 **)(ai + 0xD0) + 0x18));
+    }
+}
+
 void AI_Car_ClearedNavPoint_800087C8(u8 *car, s8 arg1) {
     s32 NavHolder_GetTotalNavPoints(void);
     u8 *NavHolder_GetNavPoint(s32 index);
@@ -483,7 +673,8 @@ s8 AI_Car_EnterState(u8 *ai, u8 *branch, s32 slot) {
             done = 1;
         } else if (!(s8)AI_Car_CheckLocalStats(ai, ((AIBranch *)branch)->info)) {
             done = 1;
-        } else if (!AI_Car_DetermineTarget(ai, branch, slot)) {
+        }
+ else if (!AI_Car_DetermineTarget(ai, branch, slot)) {
             done = 1;
         }
         if (done) {

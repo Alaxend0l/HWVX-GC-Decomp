@@ -143,6 +143,72 @@ f32 RaySphereTest(Vector4 *start, Vector4 *dir, Vector4 *center, f32 radius, f32
     return dist;
 }
 
+f32 PhysicalProperties_CollideWithRay(u8 *props, void *mtx, Vector4 *start, Vector4 *dir, f32 t, u8 *hit) {
+    typedef struct RayHit {
+        Vector4 pos;
+        Vector4 normal;
+        u8 pad[0x30];
+    } RayHit;
+    void XformVec(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVec(void *mtx, Vector4 *in, Vector4 *out);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    f32 RaySphereTest(Vector4 *start, Vector4 *dir, Vector4 *center, f32 radius, f32 t, u8 *hit);
+    f32 result = t;
+
+    switch (props[0x10]) {
+    case 0: {
+        Vector4 *box = *(Vector4 **)(props + 0x44);
+        Vector4 localDir;
+        Vector4 localStart;
+        RayHit localHit;
+
+        InverseXformVec(mtx, start, &localStart);
+        InverseXformVecOrientation(mtx, dir, &localDir);
+        result = RayBoxTestLocal(&localStart, &localDir, box, t, &localHit.pos);
+        if (hit != NULL && result < t) {
+            XformVec(mtx, &localHit.pos, (Vector4 *)hit);
+            XformVecOrientation(mtx, &localHit.normal, (Vector4 *)(hit + 0x10));
+            *(s32 *)(hit + 0x28) = *(s32 *)(props + 0x30);
+        }
+        break;
+    }
+    case 1: {
+        Vector4 localDir;
+        Vector4 localStart;
+        RayHit localHit;
+        f32 d = t;
+
+        InverseXformVec(mtx, start, &localStart);
+        InverseXformVecOrientation(mtx, dir, &localDir);
+        if (hit != NULL && d < t) {
+            XformVec(mtx, &localHit.pos, (Vector4 *)hit);
+            XformVecOrientation(mtx, &localHit.normal, (Vector4 *)(hit + 0x10));
+            *(s32 *)(hit + 0x28) = *(s32 *)(props + 0x30);
+        }
+        break;
+    }
+    case 7: {
+        u32 *list = *(u32 **)(props + 0x44);
+        u32 i;
+        Vector4 center;
+        f32 d;
+
+        for (i = 0; i < list[0]; i++) {
+            Vector4 *sphere = (Vector4 *)(list[1] + i * 0x20);
+            XformVec(mtx, sphere, &center);
+            d = RaySphereTest(start, dir, &center, sphere[1].x, result, hit);
+            if (hit != NULL && d < result) {
+                result = d;
+                *(s32 *)(hit + 0x28) = *(s32 *)(props + 0x30);
+            }
+        }
+        break;
+    }
+    }
+    return result;
+}
+
 void CollisionPairCache_Clear(void) {
     u32 i;
 
