@@ -1,6 +1,48 @@
 #include "common.h"
 
 
+void ParticleManager_Init(void) {
+    typedef struct {
+        u8 unk0[0x94];
+        u8 flags;
+        u8 unk95[0xB0 - 0x95];
+    } ParticleSprite;
+    typedef struct {
+        u8 unk0[0xB4];
+        u8 flags;
+        u8 unkB5[0x100 - 0xB5];
+    } ParticleGX;
+    typedef struct {
+        struct {
+            ParticleGX particles[0x280];
+            s32 unk28000;
+            s32 unk28004;
+            u8 unk28008[0x8];
+        } groups[3];
+        ParticleSprite sprites[0x200];
+        s32 unk8E030;
+        u8 unk8E034[0xC];
+    } ParticleManager;
+    extern ParticleManager g_particleManager;
+    extern s32 g_numParticlesCreatedThisFrame;
+    ParticleManager *pm = &g_particleManager;
+    u32 j;
+    u32 i;
+
+    for (i = 0; i < 3; i++) {
+        for (j = 0; j < 0x280; j++) {
+            pm->groups[i].particles[j].flags |= 0xC;
+        }
+        pm->groups[i].unk28004 = 0;
+        pm->groups[i].unk28000 = 0;
+    }
+    for (j = 0; j < 0x200; j++) {
+        pm->sprites[j].flags |= 0xC;
+    }
+    pm->unk8E030 = 0;
+    g_numParticlesCreatedThisFrame = 0;
+}
+
 s8 ParticleManager_CanCreatureParticle(void *creature) {
     extern u32 g_numParticlesCreatedThisFrame;
     u32 count;
