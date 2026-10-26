@@ -128,4 +128,27 @@ void __init_registers(void)
 
 void __init_data(void)
 {
+    rom_copy_info * info;
+    bss_init_info * bss;
+
+    info = _rom_copy_info;
+    while (info->size != 0)
+    {
+        if ((info->source != NULL) && (info->source != info->target))
+        {
+            memcpy(info->target, info->source, info->size);
+            __flush_cache(info->target, info->size);
+        }
+        info++;
+    }
+
+    bss = _bss_init_info;
+    while (bss->size != 0)
+    {
+        if (bss->target != NULL)
+        {
+            memset(bss->target, 0, bss->size);
+        }
+        bss++;
+    }
 }
