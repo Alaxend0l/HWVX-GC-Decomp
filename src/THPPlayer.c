@@ -244,6 +244,16 @@ returnFalse:
     return FALSE;
 }
 
+BOOL THPPlayerGetVideoInfo(void *videoInfo)
+{
+    if (ActivePlayer.open)
+    {
+        memcpy(videoInfo, &ActivePlayer.videoInfo, 8);
+        return TRUE;
+    }
+    return FALSE;
+}
+
 u8 THPPlayerGetState(void) {
     return M2C_FIELD(&ActivePlayer, u8 *, 0x9C);
 }
