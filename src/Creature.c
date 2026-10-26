@@ -78,8 +78,8 @@ s32 Creature_Init(Creature *creature, CreatureInit *init)
     creature->unk70 = 11.0f;
     creature->unkB0 = init->jitterBase;
     creature->unkB4 = 0.0f;
-    creature->unk1B4 = 0;
     creature->unkC0 = 0.0f;
+    creature->unk1B4 = 0;
     creature->unk78 = *(u32 *)(creature->anims + 4);
     Creature_MotionStateInit(creature, 0, 0, 0);
     creature->unkBF = 0;
