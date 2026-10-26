@@ -143,6 +143,15 @@ s32 Effect_UpdateEffect(Effect *effect, u8 *desc);
 
 #pragma push
 #pragma optimize_for_size on
+#pragma push
+#pragma optimize_for_size on
+void SteeringResetCallback(s32 index, s32 result)
+{
+    if (result != 0)
+        g_lgDevices[index].unk4D = -1;
+}
+#pragma pop
+
 s32 LGStartForceEffect(u32 handle)
 {
     u32 index = handle >> 16;
