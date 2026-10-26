@@ -1,6 +1,22 @@
 #include "common.h"
 
 
+void StateGameManager_RefreshMCPTextures(void) {
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    void Gfx_UnLoadTexture(u16 id);
+    void DataPack_RefreshTextures(void *pack);
+    void *pack;
+    u32 i;
+
+    pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+    if (pack != NULL) {
+        for (i = 0; i < M2C_FIELD(pack, u32 *, 0x2C); i++) {
+            Gfx_UnLoadTexture(M2C_FIELD(pack, u16 **, 0x30)[i]);
+        }
+        DataPack_RefreshTextures(pack);
+    }
+}
+
 s32 StateGameManager_Heartbeat(void) {
     typedef struct { s32 name; s32 script; } PackRef;
     typedef struct { u8 type; void *movie; PackRef *pack; } Step;
