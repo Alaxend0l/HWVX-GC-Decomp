@@ -8,13 +8,15 @@ void LGWheels::InitLGLibrary(void)
 	LGInit();
 }
 
-u8 SameSpringForceParams__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 saturation, s16 coefficient) {
-    u8 *p = (u8 *)wheels + chan * 4;
-
-    if (*(s8 *)(p + 0x13CE) == offset && p[0x13CF] == saturation && *(s16 *)(p + 0x13D0) == coefficient) {
-        return 1;
-    }
-    return 0;
+u8 LGWheels::SameSpringForceParams(s32 chan, s8 offset, u8 saturation, s16 coefficient)
+{
+	if (limp[chan].offet == offset && limp[chan].overflow == saturation && limp[chan].efficiency == coefficient)
+	{
+		{
+			return 1;
+		}
+	}
+	return 0;
 }
 
 u8 LGWheels::IsOpened(s32 chan)
