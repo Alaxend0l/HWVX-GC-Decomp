@@ -16,7 +16,7 @@ typedef struct Corona {
     u8 pad59[7];        /* 0x59 */
 } Corona;
 
-extern Corona g_aCorona[64];
+Corona g_aCorona[64];
 extern u32 g_iDeltaTimeMS;
 void ExtractColorKey(void *track, f32 *color, f64 time);
 
@@ -25,10 +25,12 @@ void CoronaHolder_Init(void) {
     g_totalCoronas = 0;
 }
 
+#pragma peepblock off
 void CoronaHolder_Heartbeat(void) {
     Corona *corona;
     u32 i;
     u32 delta;
+    f64 t;
 
     delta = g_iDeltaTimeMS;
     for (i = 0; i < g_totalCoronas; i++) {
@@ -37,17 +39,19 @@ void CoronaHolder_Heartbeat(void) {
             if (corona->time < *(u16 *)(corona->track + 0x02)) {
                 corona->active = 1;
                 corona->time += delta;
-                ExtractColorKey(corona->track + 0x18, corona->color, corona->time);
+                t = corona->time;
+                ExtractColorKey(corona->track + 0x18, corona->color, t);
             }
         } else if (corona->time != 0) {
             corona->active = 1;
             if (delta < corona->time) {
                 corona->time -= delta;
-                ExtractColorKey(corona->track + 0x18, corona->color, corona->time);
+                t = corona->time;
+                ExtractColorKey(corona->track + 0x18, corona->color, t);
             } else {
                 corona->time = 0;
             }
         }
     }
 }
-
+#pragma peepblock on
