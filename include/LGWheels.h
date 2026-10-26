@@ -46,7 +46,7 @@ typedef struct LGWheels
 		u8		offet;
 		/* 0x13F0 */
 		s16		efficiency;
-		}		limbo[4];
+		}		limper[4];
 		/* 0x13FE */
 	s16		limbi[4];		/* 0x140E frontal collision force */
 		/* 0x1416 */
