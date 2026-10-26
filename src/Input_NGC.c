@@ -23,6 +23,7 @@ static u16 s_keyMap[20];
 static PADStatus s_unkD8[4];
 extern u16 g_pKeyToDI[20];
 extern void *wheels;
+u8 IsOpened__8LGWheelsFl(void *wheels, s32 chan);
 
 void Input_Destroy(void) {
     M2C_UNK PADControlMotor(M2C_UNK, M2C_UNK);
