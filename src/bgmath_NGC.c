@@ -163,9 +163,9 @@ void InverseXformVec(Matrix4 *m, Vector *v, Vector *out)
 
 void XformVecOrientation(Matrix4 *m, Vector *v, Vector *out)
 {
-    f32 tx = m->v[1].x * v->y + (m->v[0].x * v->x + m->v[2].x * v->z);
-    f32 ty = m->v[1].y * v->y + (m->v[0].y * v->x + m->v[2].y * v->z);
-    f32 tz = m->v[1].z * v->y + (m->v[0].z * v->x + m->v[2].z * v->z);
+    f32 tx = m->v[2].x * v->z + (m->v[0].x * v->x + m->v[1].x * v->y);
+    f32 ty = m->v[2].y * v->z + (m->v[0].y * v->x + m->v[1].y * v->y);
+    f32 tz = m->v[2].z * v->z + (m->v[0].z * v->x + m->v[1].z * v->y);
 
     out->x = tx;
     out->y = ty;
