@@ -9,3 +9,11 @@ void ShaderHolder_Destroy(void) {
         g_pShaderHolder = NULL;
     }
 }
+
+void ShaderHolder_Init(void) {
+    extern ShaderHolder *g_pShaderHolder;
+
+    g_pShaderHolder->numShaders = 0;
+    g_pShaderHolder->numGX = 0;
+}
+
