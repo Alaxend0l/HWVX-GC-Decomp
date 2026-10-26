@@ -21,6 +21,11 @@ u8 AIGetStreamVolLeft(void)
     return (u8) *(s32 *)0xCC006C04;
 }
 
+u8 AIGetStreamVolRight(void)
+{
+    return (u8) ((u32) *(u32 *)0xCC006C04 >> 8U);
+}
+
 void AIReset(void) {
     extern s32 __AI_init_flag;
     __AI_init_flag = 0;
