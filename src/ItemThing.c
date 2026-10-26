@@ -67,3 +67,100 @@ s32 Item_PreMove(void) {
     return 1;
 }
 
+s8 Item_Move(u8 *item) {
+    typedef struct ItemHit {
+        Vector4 pos;
+        Vector4 normal;
+        s32 unk20;
+        s32 unk24;
+        u8 pad[0x28];
+    } ItemHit;
+    typedef struct ItemQuat {
+        f32 x, y, z, w;
+    } ItemQuat;
+    extern f32 g_fDeltaTimeSec;
+    extern s32 g_iDeltaTimeMS;
+    extern Vector4 g_zeroVector;
+    extern u8 *g_pNoRayCollideThing;
+    s8 VectorHitsTerrain(void *pos);
+    s8 RayHitsTerrainAndObjects(void *pos, void *vel, f32 *t, ItemHit *hit);
+    f32 PSVECDotProduct(void *a, void *b);
+    void AccumulateVector(void *vel, void *pos, void *out, f32 t);
+    void GenerateQuaternion(void *axis, ItemQuat *q, f32 angle);
+    void QuaternionMult(void *a, ItemQuat *b, ItemQuat *out);
+    ItemHit hit;
+    ItemQuat q;
+    ItemQuat rot;
+    f32 dt;
+    u8 hitSomething;
+    s8 hitTerrain;
+    f32 d;
+    Vector4 *vel = (Vector4 *)item;
+
+    if (!(*(u32 *)(item + 0x74) & 8)) {
+        hitSomething = 0;
+        dt = g_fDeltaTimeSec;
+        vel->y += -130.0f * dt;
+        hitTerrain = VectorHitsTerrain(item + 0x40);
+        if (hitTerrain) {
+            *vel = g_zeroVector;
+            *(u32 *)(item + 0x74) |= 1;
+            *(u32 *)(item + 0x74) |= 8;
+            return hitTerrain;
+        }
+        hit.unk20 = hit.unk24 = 0;
+        if (*(u8 **)(item + 0x94) != NULL) {
+            g_pNoRayCollideThing = *(u8 **)(*(u8 **)(item + 0x94) + 0x2C);
+        }
+        if (RayHitsTerrainAndObjects(item + 0x40, item, &dt, &hit)) {
+            f32 push = 0.001f;
+            hitSomething = 1;
+            d = 2.0f * PSVECDotProduct(item, &hit.normal);
+            vel->x -= d * hit.normal.x;
+            vel->y -= d * hit.normal.y;
+            vel->z -= d * hit.normal.z;
+            ((Vector4 *)(item + 0x40))->x += hit.normal.x * push;
+            ((Vector4 *)(item + 0x40))->y += hit.normal.y * push;
+            ((Vector4 *)(item + 0x40))->z += hit.normal.z * push;
+        }
+        g_pNoRayCollideThing = NULL;
+        if (hitSomething) {
+            vel->x *= 0.5f;
+            vel->y *= 0.5f;
+            vel->z *= 0.5f;
+            if (hit.normal.y > 0.7f && vel->x * vel->x + vel->y * vel->y + vel->z * vel->z < 1.0f) {
+                vel->x = vel->y = vel->z = 0.0f;
+                *(u32 *)(item + 0x74) |= 1;
+                *(u32 *)(item + 0x74) |= 8;
+            }
+        }
+        AccumulateVector(item, item + 0x40, item + 0x40, dt);
+    }
+    if (*(s16 *)(item + 0xCC) > 0) {
+        *(s16 *)(item + 0xCC) -= (u16)g_iDeltaTimeMS;
+        if (*(s16 *)(item + 0xCC) < 0) {
+            *(u8 **)(item + 0x94) = NULL;
+        }
+    }
+    if (*(u32 *)(item + 0xD8) != 0) {
+        *(s32 *)(item + 0xDC) -= g_iDeltaTimeMS;
+        if (*(s32 *)(item + 0xDC) < 0) {
+            *(u32 *)(item + 0xD8) = 0;
+        }
+    }
+    if (*(f32 *)(item + 0xC4)) {
+        GenerateQuaternion(item + 0xB0, &q, 10.0f * (*(f32 *)(item + 0xC4) * g_fDeltaTimeSec));
+        QuaternionMult(item + 0x50, &q, &rot);
+        *(ItemQuat *)(item + 0x50) = rot;
+    }
+    if (**(u8 **)(item + 0xC0) == 7 && *(u8 **)(item + 0x94) != NULL && *(u8 **)(*(u8 **)(item + 0x94) + 0x2C) != NULL) {
+        u8 *obj = *(u8 **)(*(u8 **)(item + 0x94) + 0x2C);
+        *(s32 *)(item + 0xD4) = (*(s32 (**)(void *))(*(u8 **)(obj + 0x8C) + 0x2C))(obj);
+    }
+    return 1;
+}
+
+s32 Item_GetNearestNavPoint(void *arg0) {
+    return M2C_FIELD(arg0, s32 *, 0xD4);
+}
+
