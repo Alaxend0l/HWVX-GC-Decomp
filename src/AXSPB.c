@@ -24,3 +24,7 @@ typedef struct {
 } tVoicePacket;
 
 extern u8 __AXStudio[];
+
+void *__AXGetStudio(void) {
+    return __AXStudio;
+}
