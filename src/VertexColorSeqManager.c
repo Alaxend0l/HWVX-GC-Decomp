@@ -76,3 +76,20 @@ void VertexColorSeqManager_RemoveVertices(void *vertices) {
     }
 }
 
+s32 VertexColorSeqManager_GetLightIndex(void *light) {
+    typedef struct VertexColorTile {
+        u8 *light;
+        u8 key[0x30];
+    } VertexColorTile;
+    extern VertexColorTile g_VertexColorTiles[64];
+    extern s32 g_iTotalVertexColorTiles;
+    u32 i;
+
+    for (i = 0; i < g_iTotalVertexColorTiles; i++) {
+        if (light == g_VertexColorTiles[i].light) {
+            return i;
+        }
+    }
+    return -1;
+}
+
