@@ -9,7 +9,7 @@ typedef struct Vector4 {
 
 typedef struct ForceFeedback {
     void *effect;                 /* 0x00 */
-    u8 point[0x1C - 0x4];         /* 0x04 */
+    f32 point[0x1C / 4 - 1];      /* 0x04 */
     u8 active;                    /* 0x1C */
     u8 pad1D[0x20 - 0x1D];        /* 0x1D */
     f32 value;                    /* 0x20 */
