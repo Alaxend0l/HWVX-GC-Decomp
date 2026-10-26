@@ -142,6 +142,8 @@ typedef struct LGWheels
 		/* 0x1416 */
 		u8		SameSpringForceParams(s32 chan, s8 offset, u8 saturation, s16 coefficient);
 		/* 0x1416 */
+    u8 IsConnected(s32 chan);
+    /* 0x1416 */
 } LGWheels;
 
 #endif /* LGWHEELS_H */
