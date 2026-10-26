@@ -88,7 +88,7 @@ typedef struct SimThread {
 
 typedef struct VDevice {
     SimThread sim;
-    s32 unkF0;
+    s32 *unkF0;
     Effect *activeEffects[64];
     Effect effects[64];
     s32 unk11F4;
