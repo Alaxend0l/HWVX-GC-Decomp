@@ -370,7 +370,7 @@ config.libs = [
             Object(NonMatching, "FlashHolder.c"),
             Object(NonMatching, "BulletHoles.c"),
             Object(NonMatching, "Motion.c"),
-            Object(NonMatching, "PPCArch.c"),
+            Object(NonMatching, "PPCArch.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "OS.c"),
             Object(NonMatching, "DebuggerDriver.c"),
             Object(NonMatching, "bgmath_NGC.c"),
