@@ -181,6 +181,77 @@ void CarA_ProcessForce(u8 *car, Vector4 *force, Vector4 *dir)
     *(f32 *)(car + 0x3A8) += torque.z;
 }
 
+void CarA_ProcessImpulse(u8 *car, Vector4 *normal, Vector4 *pos, Vector4 *pointVel, f32 restitution) {
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    f32 PSVECSquareMag(Vector4 *v);
+    f32 Sqrt(f32 x);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    Vector4 impulse;
+    Vector4 r;
+    Vector4 vel = *pointVel;
+    Vector4 rxn;
+    Vector4 ang;
+    Vector4 angxr;
+    Vector4 localRxn;
+    Vector4 scaledRxn;
+    Vector4 torque;
+    Vector4 localAng;
+    Vector4 scaledAng;
+    Vector4 scaled;
+    Vector4 local;
+    f32 num;
+    f32 j;
+    f32 maxAng;
+    f32 mag;
+
+    PSVECSubtract(pos, (Vector4 *)(car + 0x40), &r);
+    num = -(restitution * *(f32 *)(*(u8 **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x30) + 0x18) + 1.0f) * PSVECDotProduct(&vel, normal);
+    PSVECCrossProduct(&r, normal, &rxn);
+    InverseXformVecOrientation(car + 0x10, &rxn, &localRxn);
+    scaledRxn.x = *(f32 *)(car + 0x3C0) * localRxn.x;
+    scaledRxn.y = *(f32 *)(car + 0x3D4) * localRxn.y;
+    scaledRxn.z = *(f32 *)(car + 0x3E8) * localRxn.z;
+    XformVecOrientation(car + 0x10, &scaledRxn, &ang);
+    PSVECCrossProduct(&ang, &r, &angxr);
+    j = num / (1.0f / *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x20) + PSVECDotProduct(&angxr, normal));
+    impulse.x = j * normal->x;
+    impulse.y = j * normal->y;
+    impulse.z = j * normal->z;
+    *(f32 *)(car + 0x0) += impulse.x / *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x20);
+    *(f32 *)(car + 0x4) += impulse.y / *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x20);
+    *(f32 *)(car + 0x8) += impulse.z / *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x20);
+    PSVECCrossProduct(&r, &impulse, &torque);
+    *(f32 *)(car + 0x380) += torque.x;
+    *(f32 *)(car + 0x384) += torque.y;
+    *(f32 *)(car + 0x388) += torque.z;
+    if (*(u32 *)(car + 0x3B8) <= 1) {
+        maxAng = *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x80) + 0x3C);
+        InverseXformVecOrientation(car + 0x10, (Vector4 *)(car + 0x380), &localAng);
+        scaledAng.x = *(f32 *)(car + 0x3C0) * localAng.x;
+        scaledAng.y = *(f32 *)(car + 0x3D4) * localAng.y;
+        scaledAng.z = *(f32 *)(car + 0x3E8) * localAng.z;
+        mag = PSVECSquareMag(&scaledAng);
+        if (mag > maxAng * maxAng) {
+            mag = maxAng / Sqrt(mag);
+            scaledAng.x *= mag;
+            scaledAng.y *= mag;
+            scaledAng.z *= mag;
+            localAng.x = scaledAng.x / *(f32 *)(car + 0x3C0);
+            localAng.y = scaledAng.y / *(f32 *)(car + 0x3D4);
+            localAng.z = scaledAng.z / *(f32 *)(car + 0x3E8);
+            XformVecOrientation(car + 0x10, &localAng, (Vector4 *)(car + 0x380));
+        }
+    }
+    InverseXformVecOrientation(car + 0x10, (Vector4 *)(car + 0x380), &local);
+    scaled.x = *(f32 *)(car + 0x3C0) * local.x;
+    scaled.y = *(f32 *)(car + 0x3D4) * local.y;
+    scaled.z = *(f32 *)(car + 0x3E8) * local.z;
+    XformVecOrientation(car + 0x10, &scaled, (Vector4 *)(car + 0x410));
+}
+
 void CarA_SetSlavePlayers(u8 *car)
 {
     u8 *slave;
@@ -353,6 +424,80 @@ void CarA_DrawReflection(void *thing) {
     }
 }
 
+void CarA_DrawScript(u8 *car) {
+    typedef struct { void *geom; u16 mtxIndex; u8 pad6[2]; } ModelPart;
+    typedef struct {
+        u32 numGeoms;
+        void **geoms;
+        u32 numParts;
+        ModelPart *parts;
+        u8 pad10[4];
+        s32 *skel;
+    } Model;
+    typedef struct CarPart {
+        u8 flags;
+        u8 xform;
+        u8 pad2[2];
+        u16 mtxIndex;
+        u8 pad6[2];
+        void *geom;
+        Vector4 *offset;
+        u8 pad10[0xC];
+    } CarPart;
+    typedef struct CarPartList {
+        u32 count;
+        CarPart *parts;
+    } CarPartList;
+    void LightManager_LightThing(void *thing);
+    void Gfx_DrawAnimGeometryAux(void *geom, void *mtx, s32 skel, s32 arg3);
+    void Gfx_DrawGeometry_MatrixNotCached(void *geom, void *mtx);
+    void Gfx_DrawGeometry(void *geom, void *mtx);
+    Matrix4 *matrices;
+    u32 i;
+    s32 *skel;
+    u32 j;
+    CarPartList *list;
+    CarPart *part;
+    u32 bit;
+    void *geom;
+    Matrix4 mtx;
+
+    matrices = *(Matrix4 **)(car + 0x340);
+    if (matrices == NULL) {
+        return;
+    }
+    LightManager_LightThing(car);
+    skel = (*(Model **)(car + 0x330))->skel;
+    for (i = 0; i < (*(Model **)(car + 0x330))->numGeoms; i++) {
+        Gfx_DrawAnimGeometryAux((*(Model **)(car + 0x330))->geoms[i], matrices, *skel, 0);
+    }
+    for (i = 0; i < (*(Model **)(car + 0x330))->numParts; i++) {
+        ModelPart *e = &(*(Model **)(car + 0x330))->parts[i];
+        Gfx_DrawGeometry_MatrixNotCached(e->geom, &matrices[e->mtxIndex]);
+    }
+    list = *(CarPartList **)(*(u8 **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x78) + 0x10) + 0x38);
+    if (list != NULL) {
+        for (j = 0; j < list->count; j++) {
+            part = &list->parts[j];
+            geom = part->geom;
+            bit = *(u32 *)(car + 0x374) & (1 << j);
+            if (bit && !(part->flags & 1)) {
+                continue;
+            }
+            if (!bit && (part->flags & 1)) {
+                continue;
+            }
+            if (part->xform) {
+                mtx = matrices[part->mtxIndex];
+                XformVec(&mtx, list->parts[j].offset, &mtx.v[3]);
+                Gfx_DrawGeometry(geom, &mtx);
+            } else {
+                Gfx_DrawGeometry_MatrixNotCached(geom, &matrices[part->mtxIndex]);
+            }
+        }
+    }
+}
+
 void CarA_Draw(u8 *car)
 {
     s8 Player_IsHuman(void *player);
@@ -413,6 +558,99 @@ f32 CarA_GetMass(u8 *car)
     return *(f32 *)(coll + 0x20);
 }
 
+void CarA_DynamicRotation(u8 *car, f32 dt) {
+    typedef struct OBox {
+        Vector4 center;
+        Vector4 corners[8];
+        u8 pad[0x60];
+    } OBox;
+    typedef struct RayHit {
+        Vector4 pos;
+        Vector4 normal;
+        u8 pad20[8];
+        u8 *surface;
+        u8 pad2C[0x24];
+    } RayHit;
+    extern u8 *g_pNoRayCollideThing;
+    f32 MagnitudeVector(Vector4 *v);
+    void GenerateQuaternion(Vector4 *axis, Quaternion *q, f32 angle);
+    void QuaternionToSubMatrix(Quaternion *q, Matrix4 *m);
+    void CarA_StuntsGetNewOrientation(u8 *car, Quaternion *q, f32 t);
+    void *CarA_GetOrientedCollision(void *car);
+    void BuildOOBOffset(void *oob, void *pos, void *rot, void *out);
+    s8 RayHitsTerrainAndObjects(void *pos, void *vel, f32 *t, RayHit *hit);
+    s8 OBoxHitsTerrainAndObjectsZeroTimeEdgesOnly(void *obox, void *thing, void *hit);
+    void PSVECSubtract(void *a, void *b, Vector4 *out);
+    void PSVECCrossProduct(void *a, void *b, Vector4 *out);
+    OBox obox;
+    RayHit hit;
+    Matrix4 mtx;
+    Quaternion q;
+    Quaternion newQ;
+    Vector4 axis;
+    Vector4 dir;
+    Vector4 r;
+    Vector4 v;
+    f32 t;
+    f32 mag;
+    u32 i;
+    OBox *old;
+    void *box;
+    s8 hitAny;
+
+    t = dt;
+    axis = *(Vector4 *)(car + 0x410);
+    mag = MagnitudeVector(&axis);
+    if (mag > 0.0001f) {
+        axis.x /= mag;
+        axis.y /= mag;
+        axis.z /= mag;
+    }
+    GenerateQuaternion(&axis, &q, mag * t);
+    QuaternionMult((Vector4 *)&q, (Vector4 *)(car + 0x50), (Vector4 *)&newQ);
+    CarA_StuntsGetNewOrientation(car, &newQ, t);
+    QuaternionToSubMatrix(&newQ, &mtx);
+    mtx.v[3] = *(Vector4 *)(car + 0x40);
+    switch ((*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0))[0x10]) {
+    case 0:
+        box = *(void **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x44);
+        old = CarA_GetOrientedCollision(car);
+        hitAny = 0;
+        BuildOOBOffset(box, &mtx, car + 0x520, &obox);
+        g_pNoRayCollideThing = car;
+        for (i = 0; i < 8; i++) {
+            if (t > 0.0f) {
+                dir.x = (obox.corners[i].x - old->corners[i].x) / dt;
+                dir.y = (obox.corners[i].y - old->corners[i].y) / dt;
+                dir.z = (obox.corners[i].z - old->corners[i].z) / dt;
+                if (RayHitsTerrainAndObjects(&old->corners[i], &dir, &t, &hit)) {
+                    hitAny = 1;
+                    CarA_ProcessImpulse(car, &hit.normal, &hit.pos, &dir, *(f32 *)(hit.surface + 0x18));
+                }
+            }
+        }
+        g_pNoRayCollideThing = NULL;
+        if (!hitAny) {
+            if (OBoxHitsTerrainAndObjectsZeroTimeEdgesOnly(&obox, car, &hit)) {
+                PSVECSubtract(&hit.pos, car + 0x40, &r);
+                PSVECCrossProduct(car + 0x410, &r, &v);
+                CarA_ProcessImpulse(car, &hit.normal, &hit.pos, &v, 0.5f);
+            } else {
+                *(Quaternion *)(car + 0x50) = newQ;
+                *(Matrix4 *)(car + 0x10) = mtx;
+                *(OBox *)(car + 0xC0) = obox;
+                *(u8 **)(car + 0x160) = car + 0x30;
+                *(u8 **)(car + 0x164) = car + 0x10;
+                *(u8 **)(car + 0x168) = car + 0x20;
+                *(u32 *)(car + 0x74) &= ~0x180;
+            }
+        }
+        break;
+    case 1:
+        break;
+    }
+}
+
 void CarA_GetTargetPos(u8 *car, Vector4 *pos)
 {
     u8 *coll;
@@ -427,6 +665,138 @@ void CarA_GetTargetPos(u8 *car, Vector4 *pos)
     case 1:
         *pos = *(Vector4 *)(*(u8 **)(car + 0x370) + 0x3D0);
         break;
+    }
+}
+
+void CarA_GetInterfaceInfo(u8 *car, u8 *info) {
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    s8 GameSettings_IsCheatEnabled(s32 cheat);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    u32 GameSettings_GetNumOfPlayers(void);
+    u32 CameraManager_GetActiveCameras(void);
+    f32 _fabs(f32 x);
+    typedef struct {
+        u32 active;
+        u8 unk4[0x3C];
+        s16 ammo;
+        u8 unk42[0xA];
+        u8 *item;
+    } RackSlot;
+    typedef struct {
+        u8 unk0[0xB0];
+        RackSlot slots[12];
+        u8 current;
+    } WeaponRack;
+    WeaponRack *rack;
+    u32 count;
+
+    rack = ThingManagerList_GetByType(car + 0x344, 8);
+    *(u32 *)(info + 0x10) = 100.0f * ((f32)*(s32 *)(car + 0x78) / (f32)*(s32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x14));
+    if (*(u32 *)(info + 0x10) > 100.0f) {
+        *(u32 *)(info + 0x10) = 100;
+    }
+    if (rack != NULL && rack->slots[rack->current].item != NULL) {
+        if (GameSettings_IsCheatEnabled(0)) {
+            rack->slots[rack->current].ammo = *(u32 *)(*(u8 **)(rack->slots[rack->current].item + 0x30) + 0x28);
+        }
+        if (*(u32 *)(*(u8 **)(rack->slots[rack->current].item + 0x30) + 0x24) != 0) {
+            *(u32 *)(info + 0x38) = 100.0f * ((f32)rack->slots[rack->current].ammo / (f32)*(u32 *)(*(u8 **)(rack->slots[rack->current].item + 0x30) + 0x28));
+            *(u32 *)(info + 0x3C) = *(u32 *)(info + 0x38) / *(u32 *)(*(u8 **)(rack->slots[rack->current].item + 0x30) + 0x24);
+        } else {
+            *(u32 *)(info + 0x38) = 0;
+            *(u32 *)(info + 0x3C) = 0;
+        }
+        if (*(u8 **)(rack->slots[rack->current].item + 0x30) != NULL) {
+            *(u32 *)(info + 0x68) = *(u32 *)(*(u8 **)(rack->slots[rack->current].item + 0x30) + 0x10);
+        }
+    }
+    *(u32 *)(info + 0x14) = _fabs(0.681818f * *(f32 *)(car + 0x458));
+    if (*(s8 *)(car + 0x584) && *(u32 *)(info + 0x14) < *(u32 *)(car + 0x58C)) {
+        (*(u32 *)(car + 0x588))++;
+        if (*(u32 *)(car + 0x588) > 5) {
+            *(s8 *)(car + 0x584) = 0;
+            *(u32 *)(car + 0x588) = 0;
+            *(u32 *)(car + 0x58C) = *(u32 *)(info + 0x14);
+        } else {
+            *(u32 *)(info + 0x14) = *(u32 *)(car + 0x58C);
+        }
+    } else if (*(s8 *)(car + 0x584)) {
+        *(u32 *)(car + 0x588) = 0;
+        *(u32 *)(car + 0x58C) = *(u32 *)(info + 0x14);
+    }
+    if (!*(s8 *)(car + 0x584) && *(u32 *)(info + 0x14) > *(u32 *)(car + 0x58C)) {
+        (*(u32 *)(car + 0x588))++;
+        if (*(u32 *)(car + 0x588) > 5) {
+            *(s8 *)(car + 0x584) = 1;
+            *(u32 *)(car + 0x588) = 0;
+            *(u32 *)(car + 0x58C) = *(u32 *)(info + 0x14);
+        } else {
+            *(u32 *)(info + 0x14) = *(u32 *)(car + 0x58C);
+        }
+    } else if (!*(s8 *)(car + 0x584)) {
+        *(u32 *)(car + 0x588) = 0;
+        *(u32 *)(car + 0x58C) = *(u32 *)(info + 0x14);
+    }
+    *(u32 *)(info + 0x18) = *(f32 *)(car + 0x4E4);
+    *(f32 *)(info + 0x20) = *(s32 *)(car + 0x400) / 300;
+    *(f32 *)(info + 0x2C) = 0.2f * (100.0f + *(f32 *)(car + 0x44));
+    if (*(u8 **)(car + 0x94) != NULL && (*(u32 *)(*(u8 **)(car + 0x94) + 0x6C) & 0x200)) {
+        if (GameSettings_GetCodeVariable(0x198, 0)) {
+            count = CameraManager_GetActiveCameras();
+        } else {
+            count = GameSettings_GetNumOfPlayers();
+        }
+        if (count > 1) {
+            if (count == 2) {
+                *(u32 *)(info + 0x4) = *(u32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x84) + 0x18);
+                if (*(u32 *)(*(u8 **)(car + 0x94) + 0x64) == 1) {
+                    *(s32 *)(info + 0x8) = 0;
+                    *(s32 *)(info + 0xC) = 10;
+                } else {
+                    *(s32 *)(info + 0x8) = 0;
+                    *(s32 *)(info + 0xC) = 230;
+                }
+            } else {
+                *(u32 *)(info + 0x4) = *(u32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x84) + 0x1C);
+                if (*(u32 *)(*(u8 **)(car + 0x94) + 0x64) == 1) {
+                    *(s32 *)(info + 0x8) = 10;
+                    *(s32 *)(info + 0xC) = 10;
+                } else if (*(u32 *)(*(u8 **)(car + 0x94) + 0x64) == 2) {
+                    *(s32 *)(info + 0x8) = 310;
+                    *(s32 *)(info + 0xC) = 10;
+                } else if (*(u32 *)(*(u8 **)(car + 0x94) + 0x64) == 3) {
+                    *(s32 *)(info + 0x8) = 10;
+                    *(s32 *)(info + 0xC) = 230;
+                } else {
+                    *(s32 *)(info + 0x8) = 310;
+                    *(s32 *)(info + 0xC) = 230;
+                }
+            }
+        } else {
+            *(u32 *)(info + 0x4) = *(u32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x84) + 0x10);
+            *(s32 *)(info + 0x8) = 0;
+            *(s32 *)(info + 0xC) = 0;
+        }
+    }
+    if (rack != NULL && rack->slots[rack->current].active != 0) {
+        info[0x34] = 1;
+        *(s16 *)(info + 0x6C) = *(u32 *)(*(u8 **)(rack->slots[rack->current].item + 0x30) + 0x18);
+    }
+    if (*(u32 *)(car + 0x494) != 0) {
+        *(u32 *)(info + 0x44) = *(u32 *)(car + 0x494);
+        *(u32 *)(car + 0x494) = 0;
+    }
+    if (*(u32 *)(car + 0x498) != 0) {
+        *(u32 *)(info + 0x40) = *(u32 *)(car + 0x498);
+        *(u32 *)(car + 0x498) = 0;
+    }
+    if (*(u32 *)(car + 0x49C) != 0) {
+        *(u32 *)(info + 0x48) = *(u32 *)(car + 0x49C);
+        *(u32 *)(car + 0x49C) = 0;
+    }
+    if (*(u32 *)(car + 0x4A0) != 0) {
+        *(u32 *)(info + 0x4C) = *(u32 *)(car + 0x4A0);
+        *(u32 *)(car + 0x4A0) = 0;
     }
 }
 
