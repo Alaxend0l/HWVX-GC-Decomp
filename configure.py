@@ -442,7 +442,7 @@ config.libs = [
         "objects": [
             Object(NonMatching, "OSAlarm.c"),
             Object(NonMatching, "OSAlloc.c"),
-            Object(NonMatching, "OSArena.c"),
+            Object(Matching, "OSArena.c"),
             Object(NonMatching, "OSAudioSystem.c"),
             Object(NonMatching, "OSCache.c"),
             Object(NonMatching, "OSContext.c"),
