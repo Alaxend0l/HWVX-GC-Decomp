@@ -414,6 +414,22 @@ void InterfaceManager_SetControllerConfigInputString(void) {
 
 }
 
+void InterfaceManager_Render(void) {
+    extern u8 g_interface[][0x170];
+    extern u32 g_interfaceRenderOrder[0x12];
+    extern s32 g_numInterfacesToRender;
+    void InterfaceManager_RenderInterface(u8 *iface);
+    u32 i;
+    u8 *iface;
+
+    for (i = 0; i < g_numInterfacesToRender; i++) {
+        iface = g_interface[g_interfaceRenderOrder[i]];
+        if (*(void **)iface != NULL && (*(u32 *)(iface + 4) != 1 || *(u32 *)(iface + 0x10) != 0) && iface[0x7F] == 0) {
+            InterfaceManager_RenderInterface(iface);
+        }
+    }
+}
+
 s32 ActionInterfacePlay(s32 *arg0) {
     M2C_UNK InterfaceManager_Create(s32, M2C_UNK, M2C_UNK);
     InterfaceManager_Create(*arg0, 0, 0);
