@@ -32,6 +32,8 @@ typedef struct LGWheels
 {
 	u8		unk0[0x28];			/* 0x000 port state */
 	u8		nonLinValues[0x800];		/* 0x028 copy of the wheel's table */
+		/* 0x828 */
+		u32		limbo_pad;		/* unknown; pads the wheel subobject to 0x82C */
 	Wheels		limbo;		/* 0x82C */
 	Force		limb;		/* 0x10AC */
 	Condition	condition;		/* 0x114C */
