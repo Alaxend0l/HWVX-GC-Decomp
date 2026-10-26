@@ -1,6 +1,44 @@
 #include "common.h"
 
 
+s32 ThingManagerList_Get(void *list, void *target) {
+    void *thing;
+
+    for (thing = *(void **)list; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
+        if (target == thing) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+void ThingManagerList_ReleaseSlavesBySlaveType(void **list, u8 type) {
+    void *thing;
+    void *next;
+    void **freeList;
+    void *head;
+
+    thing = *list;
+    while (thing != NULL) {
+        next = M2C_FIELD(thing, void **, 0xA4);
+        if (M2C_FIELD(thing, u8 *, 0x83) == type) {
+            M2C_FIELD(M2C_FIELD(thing, void **, 0x8C), void (**)(void *), 4)(thing);
+            ThingManagerList_Remove(list, thing);
+            M2C_FIELD(thing, u32 *, 0x74) &= ~0x200000;
+            M2C_FIELD(thing, u32 *, 0x74) |= 0x1000;
+            freeList = &g_thingManager_DARYL.freeList[M2C_FIELD(thing, s32 *, 0xA8)];
+            M2C_FIELD(thing, void **, 0xA4) = *freeList;
+            M2C_FIELD(thing, void **, 0xA0) = NULL;
+            head = M2C_FIELD(thing, void **, 0xA4);
+            if (head != NULL) {
+                M2C_FIELD(head, void **, 0xA0) = thing;
+            }
+            *freeList = thing;
+        }
+        thing = next;
+    }
+}
+
 void ThingManagerList_ReleaseAll(void **list) {
     void *thing;
     void *next;
