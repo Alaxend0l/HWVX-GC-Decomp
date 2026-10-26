@@ -192,6 +192,102 @@ u32 Destructible_Invalidate(Destructible *destructible, u32 start, u32 end) {
     return 0;
 }
 
+s32 ActionDestructibleChangeMode(u32 *action) {
+    void Thing_ProcessEndEvent(u8 *thing, u8 *event, u8 *collision, Vector4 *vel);
+    void ThingManagerList_ReleaseSlavesBySlaveType(void **list, u8 type);
+    s32 mode;
+    u32 count;
+    u32 i;
+    u8 *thing;
+    u8 *destructible;
+
+    mode = action[0];
+    count = action[1];
+    for (i = 0; i < count; i++) {
+        thing = (u8 *)action[i + 2];
+        destructible = *(u8 **)(thing + 0x2C);
+        if (destructible != NULL) {
+            switch (mode) {
+            case 3:
+                Thing_ProcessEndEvent(destructible, *(u8 **)(*(u8 **)(destructible + 0xC0) + 0x10), NULL, NULL);
+                Destructible_Release_inline(destructible);
+                break;
+            case 0:
+                ThingManagerList_ReleaseSlavesBySlaveType((void **)(destructible + 0x88), 0xFF);
+                *(u32 *)(destructible + 0x74) |= 0x200;
+                *(u32 *)(destructible + 0x74) |= 0x2;
+                break;
+            case 1:
+                Thing_InitAllSlavesNow(destructible, *(u8 **)(destructible + 0xC0) + 0x18, 0xFF);
+                *(u32 *)(destructible + 0x74) &= ~0x200;
+                *(u32 *)(destructible + 0x74) &= ~0x2;
+                break;
+            case 25:
+                Destructible_Release_inline(destructible);
+                break;
+            case 26:
+                ThingManagerList_ReleaseSlavesBySlaveType((void **)(destructible + 0x88), 0xFF);
+                Thing_ProcessEndEvent(destructible, *(u8 **)(*(u8 **)(destructible + 0xC0) + 0x10), NULL, NULL);
+                *(u32 *)(destructible + 0x74) |= 0x200;
+                *(u32 *)(destructible + 0x74) |= 0x2;
+                break;
+            }
+        }
+        *(s32 *)(thing + 0x30) = mode;
+    }
+    return 1;
+}
+
+s32 ActionMoveableChangeMode(u32 *action) {
+    typedef struct {
+        u8 pad0[0x10];
+        u8 *mover;
+    } Thing;
+    typedef struct {
+        u8 pad0[0x8];
+        f32 start;
+        f32 end;
+    } Anim;
+    u32 i;
+    u8 *mover;
+
+    for (i = 0; i < action[4]; i++) {
+        mover = ((Thing *)action[i + 5])->mover;
+        if (mover != NULL) {
+            switch (action[0]) {
+            case 6:
+                *(f32 *)(mover + 0xD8) = action[2];
+                break;
+            case 12:
+                *(u32 *)(mover + 0x74) |= 0x4000;
+                break;
+            case 11:
+                *(u32 *)(mover + 0x74) &= ~0x4000;
+                *(f32 *)(mover + 0xD8) = action[2];
+                break;
+            case 3:
+                (*(void (**)(void *))(*(u8 **)(mover + 0x8C) + 4))(mover);
+                break;
+            }
+            switch (action[1]) {
+            case 13:
+                if (*(Anim **)(mover + 0xD4) != NULL) {
+                    *(f32 *)(mover + 0xDC) = (*(Anim **)(mover + 0xD4))->start;
+                }
+                Mover_GetTrackPos(mover, (f32 *)(mover + 0x40), *(f32 *)(mover + 0xDC));
+                break;
+            case 14:
+                if (*(Anim **)(mover + 0xD4) != NULL) {
+                    *(f32 *)(mover + 0xDC) = (*(Anim **)(mover + 0xD4))->end;
+                }
+                Mover_GetTrackPos(mover, (f32 *)(mover + 0x40), *(f32 *)(mover + 0xDC));
+                break;
+            }
+        }
+    }
+    return 1;
+}
+
 void Destructible_CollideWithRay(Destructible *destructible, Vector4 *start, Vector4 *end, Vector4 *hit, f32 maxDist) {
     f32 dist;
 
