@@ -140,3 +140,30 @@ s32 VDevice_StartEffect(VDevice *dev, u32 handle);
 u32 VDevice_GetFreeEffect(VDevice *dev);
 void Effect_Init(Effect *effect);
 s32 Effect_UpdateEffect(Effect *effect, u8 *desc);
+
+#pragma push
+#pragma optimize_for_size on
+s32 LGStartForceEffect(u32 handle)
+{
+    u32 index = handle >> 16;
+    LGDevice *device;
+
+    if (index >= 4)
+        return -2;
+
+    device = &g_lgDevices[index];
+    if (!device->opened)
+        return -2;
+
+    if (device->started) {
+        if (device != NULL && (u32)device != 0xFFFFFFFF && device->opened) {
+            device->opened = 0;
+            device->started = 0;
+            VDevice_Shutdown(&device->vdev);
+            device->unk8 = -1;
+        }
+        return -2;
+    }
+
+    return VDevice_StartEffect(&device->vdev, handle);
+}
