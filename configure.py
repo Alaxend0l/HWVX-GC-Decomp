@@ -479,7 +479,7 @@ config.libs = [
             Object(NonMatching, "etc/ai.c"),
             Object(NonMatching, "ar.c"),
             Object(NonMatching, "arq.c"),
-            Object(NonMatching, "AX.c"),
+            Object(Matching, "AX.c"),
             Object(NonMatching, "AXAlloc.c"),
             Object(NonMatching, "AXAux.c"),
             Object(NonMatching, "AXCL.c"),
