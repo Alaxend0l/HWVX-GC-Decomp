@@ -37,6 +37,13 @@ void *World_GetTileCreature(u32 index) {
     return NULL;
 }
 
+void *World_GetTileLight(u32 index) {
+    if (index < M2C_FIELD(g_worldData.world, u32 *, 0x38)) {
+        return M2C_FIELD(g_worldData.world, u8 **, 0x3C) + index * 0x20;
+    }
+    return NULL;
+}
+
 void *World_GetNavHolder(void) {
     return M2C_FIELD(g_worldData.world, void **, 0x78);
 }
