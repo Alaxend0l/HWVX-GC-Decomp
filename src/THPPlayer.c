@@ -218,6 +218,32 @@ void THPPlayerStop(void) {
     }
 }
 
+s32 ProperTimingForStart(void)
+{
+    u32 VIGetNextField();
+
+    if (ActivePlayer.playFlag & 2)
+    {
+        if (VIGetNextField() == 0)
+        {
+            return TRUE;
+        }
+        goto returnFalse;
+    }
+    if (ActivePlayer.playFlag & 4)
+    {
+        if (VIGetNextField() == 1)
+        {
+            return TRUE;
+        }
+        goto returnFalse;
+    }
+    return TRUE;
+
+returnFalse:
+    return FALSE;
+}
+
 u8 THPPlayerGetState(void) {
     return M2C_FIELD(&ActivePlayer, u8 *, 0x9C);
 }
