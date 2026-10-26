@@ -4,6 +4,11 @@ extern VehicleInterfaceData g_vehicleInterfaceData[4];
 
 void GSI_VehicleItemInit(void);
 
+void GSI_Init(void)
+{
+    GSI_VehicleItemInit();
+}
+
 void GSI_VehicleItemInit(void)
 {
     VehicleInterfaceData *data;
@@ -11,14 +16,15 @@ void GSI_VehicleItemInit(void)
     void *memset(void *dst, s32 c, u32 n);
     u32 i;
 
-    for (i = 0, data = g_vehicleInterfaceData; i < 4; i++, data++) {
+    data = g_vehicleInterfaceData;
+    for (i = 0; i < 4; i++, data++) {
         memset(data, 0, sizeof(VehicleInterfaceData));
         data->iface = -1;
-        memset(data->objects, 0xFF, 8);
         data->packIndex = -1;
         data->packID = -1;
         data->itemID = -1;
         data->selection = -1;
+        memset(data->objects, 0xFF, 8);
     }
     PlayerManager_Init();
 }
