@@ -38,26 +38,27 @@ u32 GetEnvRate(u16 arg0)
 }
 #pragma pop
 
+#pragma push
+#pragma optimization_level 1
 void DestroyMIDIVoice(MIDI_VOICE *voice)
 {
     MIDI_VOICE *v;
-    MIDI_VOICE *next;
 
-    next = voice->next;
     v = g_chn[voice->channel].voice;
     if (v == voice)
     {
-        g_chn[voice->channel].voice = next;
-        return;
+        g_chn[voice->channel].voice = voice->next;
     }
-    for (; v->next != voice; v = v->next)
+    else
     {
+        for (; v->next != voice; v = v->next)
+        {
+        }
+        v->next = voice->next;
     }
-    v->next = next;
     voice->state = 0;
     voice->channel = 0xFF;
 }
-
 void DestroyVoice(MIDI_VOICE *voice)
 {
     MIDI_VOICE *v;
