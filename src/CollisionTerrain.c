@@ -75,6 +75,49 @@ s8 OBoxHitsCellZeroTimeEdgesOnly(void *obox, void *cell, void *arg2)
     }
     return hit;
 }
+
+s8 OBoxHitsCell(void *obox, Vector4 *vel, void *cell, f32 *time, void *arg4) {
+    s8 OBoxHitsBSP(void *obox, Vector4 *vel, void *bsp, f32 *time, void *arg4);
+    f32 OOBHitsPoly(void *obox, void *poly, Vector4 *vel, void *arg4, f32 t);
+    f32 PSVECDotProduct(void *a, void *b);
+    extern Vector4 g_zeroVector;
+    s8 hit = 0;
+    u32 i;
+    u8 *poly;
+    f32 best;
+    f32 t;
+
+    if (vel == &g_zeroVector) {
+        return OBoxHitsCellZeroTime(obox, cell, arg4);
+    }
+    *(f32 *)((u8 *)obox + 0xB0) = PSVECDotProduct(*(void **)((u8 *)obox + 0xA0), obox);
+    *(f32 *)((u8 *)obox + 0xB4) = PSVECDotProduct(*(void **)((u8 *)obox + 0xA4), obox);
+    *(f32 *)((u8 *)obox + 0xB8) = PSVECDotProduct(*(void **)((u8 *)obox + 0xA8), obox);
+    *(f32 *)((u8 *)obox + 0xC0) = -PSVECDotProduct(*(void **)((u8 *)obox + 0xA0), vel);
+    *(f32 *)((u8 *)obox + 0xC4) = -PSVECDotProduct(*(void **)((u8 *)obox + 0xA4), vel);
+    *(f32 *)((u8 *)obox + 0xC8) = -PSVECDotProduct(*(void **)((u8 *)obox + 0xA8), vel);
+    if (*(u32 *)((u8 *)*(void **)g_worldData.world + 0x58) == 1) {
+        hit = OBoxHitsBSP(obox, vel, cell, time, arg4);
+    } else {
+        best = *time;
+        for (i = 0; i < *(u32 *)((u8 *)cell + 0x3C); i++) {
+            poly = *(u8 **)((u8 *)*(void **)g_worldData.world + 0x4C) + (*(u32 **)((u8 *)cell + 0x38))[i] * 0x20;
+            if (*(u32 *)(poly + 0x18) != g_worldData.unk4) {
+                *(u32 *)(poly + 0x18) = g_worldData.unk4;
+                t = OOBHitsPoly(obox, poly, vel, arg4, best);
+                if (t < best) {
+                    best = t;
+                    hit = 1;
+                }
+            }
+        }
+        if (hit) {
+            *time = best;
+        }
+    }
+    return hit;
+}
+
 s8 OBoxHitsBSP(void *obox, Vector4 *vel, void *bsp, f32 *time, void *arg4)
 {
     Vector4 corner __attribute__((aligned(16)));
@@ -146,6 +189,36 @@ s8 OBoxHitsBSP(void *obox, Vector4 *vel, void *bsp, f32 *time, void *arg4)
     *time = t;
     return 1;
 }
+
+s8 OBoxHitsBSPZeroTime(void *obox, void *bsp, void *arg2) {
+    typedef struct {
+        u8 pad[0x10];
+        Vector4 corners[8];
+    } OBoxCorners;
+    s8 OBoxHitsSegmentZeroTime(void *obox, void *edge, void *arg2);
+    u8 *edge;
+    u32 i;
+
+    if (*(u32 *)((u8 *)bsp + 0x3C) == 0 && *(u32 *)((u8 *)bsp + 0x40) == 0) {
+        return 0;
+    }
+    for (i = 0; i < *(u32 *)((u8 *)bsp + 0x40); i++) {
+        edge = *(u8 **)((u8 *)*(void **)g_worldData.world + 0x54) + (*(u16 **)((u8 *)bsp + 0x44))[i] * 0x30;
+        if (*(u32 *)(edge + 0x20) != g_worldData.unk4) {
+            *(u32 *)(edge + 0x20) = g_worldData.unk4;
+            if (OBoxHitsSegmentZeroTime(obox, edge, arg2)) {
+                return 1;
+            }
+        }
+    }
+    for (i = 0; i < 8; i++) {
+        if (PointInsideBSP(bsp, &((OBoxCorners *)obox)->corners[i])) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 s8 OBoxHitsBSPZeroTimeEdgesOnly(void *obox, void *bsp, void *arg2)
 {
     u8 *edge;
@@ -169,6 +242,122 @@ s8 OBoxHitsBSPZeroTimeEdgesOnly(void *obox, void *bsp, void *arg2)
         }
     }
     return 0;
+}
+
+u32 RayHitsBSP2(Vector4 *start, Vector4 *end, Vector4 *bsp, void *node, s32 depth, void *plane, f32 *t, Vector4 *hit) {
+    typedef struct {
+        Vector4 plane;
+        u32 material;
+        u16 front;
+        u16 back;
+    } BSPNode2;
+    f32 Distance_Plane(void *arg0, void *arg1);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    BSPNode2 *n;
+    f32 d0;
+    f32 d1;
+    f32 frac;
+    u32 result;
+
+    n = (BSPNode2 *)(*(u8 **)((u8 *)bsp + 0x30) + (u32)node * 0x20);
+    d0 = Distance_Plane(n, start);
+    d1 = Distance_Plane(n, end);
+    if (d0 == 0.0f && d1 == 0.0f) {
+        if (n->front == 0xFFFF) {
+            return 0;
+        }
+        return RayHitsBSP2(start, end, bsp, (void *)n->front, depth + 1, plane, t, hit);
+    }
+    if (d0 > 0.0f && d1 < 0.0f) {
+        Vector4 dir;
+        Vector4 mid;
+        PSVECSubtract(end, start, &dir);
+        if (d0 != d1) {
+            frac = d0 / (d0 - d1);
+        } else {
+            frac = 0.0f;
+        }
+        mid.x = dir.x * frac + start->x;
+        mid.y = dir.y * frac + start->y;
+        mid.z = dir.z * frac + start->z;
+        if (n->front != 0xFFFF) {
+            result = RayHitsBSP2(start, &mid, bsp, (void *)n->front, depth + 1, plane, t, hit);
+            if (result) {
+                *t *= frac;
+                return result;
+            }
+        }
+        if (n->back != 0xFFFF) {
+            result = RayHitsBSP2(&mid, end, bsp, (void *)n->back, depth + 1, plane, t, hit);
+            if (result) {
+                *t = *t * (1.0f - frac) + frac;
+                if (frac == *t) {
+                    *hit = mid;
+                    *t = frac;
+                    *(Vector4 *)plane = n->plane;
+                    return (*(u32 **)((u8 *)*(void **)g_worldData.world + 0x5C))[n->material];
+                }
+                return result;
+            }
+            return 0;
+        }
+        *hit = mid;
+        *t = frac;
+        *(Vector4 *)plane = n->plane;
+        return (*(u32 **)((u8 *)*(void **)g_worldData.world + 0x5C))[n->material];
+    }
+    if (d0 < 0.0f && d1 > 0.0f) {
+        Vector4 dir;
+        Vector4 mid;
+        PSVECSubtract(end, start, &dir);
+        if (d0 != d1) {
+            frac = d0 / (d0 - d1);
+        } else {
+            frac = 0.0f;
+        }
+        mid.x = dir.x * frac + start->x;
+        mid.y = dir.y * frac + start->y;
+        mid.z = dir.z * frac + start->z;
+        if (n->back != 0xFFFF) {
+            result = RayHitsBSP2(start, &mid, bsp, (void *)n->back, depth + 1, plane, t, hit);
+            if (result) {
+                *t *= frac;
+                return result;
+            }
+        } else {
+            *hit = mid;
+            *t = frac;
+            *(Vector4 *)plane = n->plane;
+            return (*(u32 **)((u8 *)*(void **)g_worldData.world + 0x5C))[n->material];
+        }
+        if (n->front != 0xFFFF) {
+            result = RayHitsBSP2(&mid, end, bsp, (void *)n->front, depth + 1, plane, t, hit);
+            if (result) {
+                *t = *t * (1.0f - frac) + frac;
+                if (frac == *t) {
+                    *hit = mid;
+                    *t = frac;
+                    *(Vector4 *)plane = n->plane;
+                    return (*(u32 **)((u8 *)*(void **)g_worldData.world + 0x5C))[n->material];
+                }
+                return result;
+            }
+        }
+        return 0;
+    }
+    if (d0 > 0.0f || d1 > 0.0f) {
+        if (n->front != 0xFFFF) {
+            return RayHitsBSP2(start, end, bsp, (void *)n->front, depth + 1, plane, t, hit);
+        }
+        return 0;
+    }
+    if (n->back != 0xFFFF) {
+        return RayHitsBSP2(start, end, bsp, (void *)n->back, depth + 1, plane, t, hit);
+    }
+    *hit = *start;
+    *t = 0.0f;
+    *(Vector4 *)plane = n->plane;
+    return (*(u32 **)((u8 *)*(void **)g_worldData.world + 0x5C))[n->material];
 }
 
 u32 RayHitsBSP(Vector4 *start, Vector4 *dir, void *bbox, f32 *time, void *bsp) {
@@ -206,6 +395,64 @@ u32 RayHitsBSP(Vector4 *start, Vector4 *dir, void *bbox, f32 *time, void *bsp) {
     return result;
 }
 
+s32 RayHitsCell(Vector4 *start, Vector4 *dir, u8 *cell, f32 *time, u8 *out) {
+    extern Vector4 g_zeroVector;
+    f32 RayHitsPoly(Vector4 *start, Vector4 *dir, Vector4 *poly, f32 t);
+    s32 hitAny;
+    u8 *poly;
+    u8 *best;
+    u32 i;
+    f32 t;
+    f32 minT;
+    u32 result;
+    Vector4 normal;
+
+    hitAny = 0;
+    if (*(u32 *)(*(u8 **)g_worldData.world + 0x58) == 1) {
+        if (*(u32 *)(cell + 0x30) != 0) {
+            result = RayHitsBSP(start, dir, (Vector4 *)cell, time, &normal);
+            if (result) {
+                if (out != NULL) {
+                    *(Vector4 *)(out + 0x10) = normal;
+                    ((Vector4 *)out)->x = start->x + dir->x * *time;
+                    ((Vector4 *)out)->y = start->y + dir->y * *time;
+                    ((Vector4 *)out)->z = start->z + dir->z * *time;
+                    *(u32 *)(out + 0x28) = result;
+                    *(Vector4 *)(out + 0x30) = g_zeroVector;
+                }
+                hitAny = 1;
+            }
+        }
+    } else {
+        minT = *time;
+        best = NULL;
+        for (i = 0; i < *(u32 *)(cell + 0x3C); i++) {
+            poly = *(u8 **)(*(u8 **)g_worldData.world + 0x4C) + (*(u32 **)(cell + 0x38))[i] * 0x20;
+            if (*(u32 *)(poly + 0x18) != (u32)g_worldData.unk4) {
+                *(u32 *)(poly + 0x18) = g_worldData.unk4;
+                t = RayHitsPoly(start, dir, (Vector4 *)poly, minT);
+                if (t < minT) {
+                    minT = t;
+                    best = poly;
+                }
+            }
+        }
+        if (minT != *time) {
+            *time = minT;
+            if (out != NULL) {
+                *(Vector4 *)(out + 0x10) = *(Vector4 *)best;
+                ((Vector4 *)out)->x = start->x + dir->x * *time;
+                ((Vector4 *)out)->y = start->y + dir->y * *time;
+                ((Vector4 *)out)->z = start->z + dir->z * *time;
+                *(u32 *)(out + 0x28) = (*(u32 **)(*(u8 **)g_worldData.world + 0x5C))[*(u32 *)(best + 0x1C)];
+                *(Vector4 *)(out + 0x30) = g_zeroVector;
+            }
+            hitAny = 1;
+        }
+    }
+    return hitAny;
+}
+
 void BuildOOBOffset(void *oob, void *pos, void *rot, void *out)
 {
     void XformVec(void *, void *, void *);
@@ -222,3 +469,55 @@ void BuildOOBOffset(void *oob, void *pos, void *rot, void *out)
     *(void **)((char *)out + 0xa4) = (char *)pos;
     *(void **)((char *)out + 0xa8) = (char *)pos + 0x10;
 }
+
+void BuildOConvexHullOffset(void *out, void *hull, void *pos, void *rot) {
+    typedef struct HullFace {
+        Vector4 normal;
+        u8 unk10[4];
+        u32 *verts;
+        u8 unk18[8];
+    } HullFace;
+    typedef struct Hull {
+        u8 unk0[8];
+        u32 numFaces;
+        u32 numVerts;
+        u8 unk10[8];
+        HullFace *faces;
+        Vector4 *verts;
+    } Hull;
+    typedef struct OConvexHull {
+        Vector4 verts[32];
+        Vector4 planes[16];
+        Hull *hull;
+        u8 unk304[0x3C4 - 0x304];
+        s32 unk3C4;
+        s32 unk3C8;
+        u8 unk3CC[4];
+        Vector4 pos;
+    } OConvexHull;
+    struct Local {
+        double d[8];
+    };
+    void XformVec(void *, void *, void *);
+    void XformVecOrientation(void *, Vector4 *, Vector4 *);
+    void Create_Plane3(Vector4 *, Vector4 *, Vector4 *);
+    Vector4 normal;
+    struct Local local __attribute__((aligned(16)));
+    u32 i;
+
+    local = *(struct Local *)pos;
+    XformVec(pos, rot, &local.d[6]);
+    for (i = 0; i < ((Hull *)hull)->numVerts; i++) {
+        XformVec(&local, ((Hull *)hull)->verts + i, ((OConvexHull *)out)->verts + i);
+    }
+    for (i = 0; i < ((Hull *)hull)->numFaces; i++) {
+        XformVecOrientation(&local, &((Hull *)hull)->faces[i].normal, &normal);
+        Create_Plane3(&((OConvexHull *)out)->planes[i], &normal,
+                      &((OConvexHull *)out)->verts[*((Hull *)hull)->faces[i].verts]);
+    }
+    ((OConvexHull *)out)->hull = hull;
+    ((OConvexHull *)out)->unk3C8 = 0;
+    ((OConvexHull *)out)->unk3C4 = 0;
+    ((OConvexHull *)out)->pos = *(Vector4 *)&local.d[6];
+}
+
