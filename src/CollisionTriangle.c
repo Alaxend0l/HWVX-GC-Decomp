@@ -16,7 +16,7 @@ typedef struct CollisionTri {
     u8 pad2C[4];                 /* 0x2C */
 } CollisionTri;
 
-extern CollisionTri g_aCollisionTriPairCache[4];
+CollisionTri g_aCollisionTriPairCache[4];
 extern s32 g_iDeltaTimeMS;
 
 typedef struct DividingAxis {
