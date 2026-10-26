@@ -72,6 +72,104 @@ void Creature_MotionStateInitDeath(Creature *creature) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void Creature_MotionStateInit(void *arg0, s32 state, u8 reset, u8 keepTime)
+{
+    Creature *creature;
+    AnimTable *anims;
+    AnimEntry *entry;
+    f32 time;
+    u32 index;
+    u8 *motion;
+
+    creature = arg0;
+    time = *(f32 *)(creature->motion + 0x20);
+    motion = creature->motion;
+    index = 0;
+    if (reset && state == *(s32 *)((u8 *)creature + 0xC4) && *(u8 *)(creature->motion + 0x1C) != 2)
+    {
+        *(u8 *)(creature->motion + 0x1D) = 0;
+        return;
+    }
+    if (creature->flags & 0x10)
+    {
+        return;
+    }
+    creature->flags &= ~0x20;
+    switch (state)
+    {
+    case 0:
+        index = 0;
+        break;
+    case 1:
+        index = 1;
+        break;
+    case 2:
+        index = 2;
+        break;
+    case 4:
+        index = 5;
+        break;
+    case 5:
+        index = 6;
+        break;
+    case 6:
+        index = 7;
+        break;
+    case 7:
+        index = 8;
+        creature->flags |= 0x10;
+        break;
+    case 8:
+        index = 9;
+        creature->flags |= 0x10;
+        break;
+    case 9:
+        index = 10;
+        break;
+    case 10:
+        index = 0x10;
+        creature->flags |= 0x10;
+        break;
+    case 11:
+        index = 0x16;
+        creature->flags |= 0x10;
+        break;
+    case 14:
+        index = 0xE;
+        creature->unkB4 = 0.0f;
+        creature->flags |= 0x10;
+        break;
+    case 15:
+        index = 0xF;
+        creature->flags |= 0x10;
+        break;
+    }
+    anims = (AnimTable *)creature->anims;
+    entry = anims->entries + index;
+    if (index >= anims->count || entry->anim == 0)
+    {
+        entry = anims->entries;
+        state = 0;
+        index = 0;
+    }
+    *(u32 *)creature->motion = entry->anim;
+    if (!reset)
+    {
+        *(f32 *)(motion + 0x24) = 0.0f;
+        *(s32 *)((u8 *)creature + 0x114) = 0xFFFF;
+    }
+    MotionState_Init(motion, reset);
+    *(s32 *)((u8 *)creature + 0xC4) = state;
+    *(s32 *)((u8 *)creature + 0x114) = index;
+    *(u32 *)((u8 *)creature + 0x118) = (u32)entry;
+    if (keepTime)
+    {
+        *(f32 *)((u8 *)creature + 0xEC) = time;
+    }
+}
+
 void Thing_Init(void *a, s32 b);
 void Thing_AddToGrid(void *a, s32 b);
 void Creature_MotionStateInit(void *a, s32 b, u8 c, u8 d);
