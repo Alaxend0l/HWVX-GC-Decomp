@@ -92,6 +92,19 @@ void ThingManagerList_ReleaseAll(void **list) {
     }
 }
 
+void ThingManager_DARYL_Destroy(void) {
+    void *thing;
+    u32 i;
+
+    for (thing = g_thingManager_DARYL.activeList; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
+        ((void (*)(void *))(M2C_FIELD(thing, void ***, 0x8C))[1])(thing);
+    }
+    g_thingManager_DARYL.activeList = NULL;
+    for (i = 0; i < 18; i++) {
+        g_thingManager_DARYL.freeList[i] = NULL;
+    }
+}
+
 void ThingManager_DARYL_Init(void) {
     M2C_UNK ThingManager_DARYL_Release();
     M2C_UNK MatrixCache_Init();
