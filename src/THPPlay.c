@@ -1,6 +1,10 @@
 #include "common.h"
 
 
+void Mpeg_Destroy(void) {
+
+}
+
 void AudioCallback(void) {
     s32 OSEnableInterrupts(void);
     void OSRestoreInterrupts(s32 level);
