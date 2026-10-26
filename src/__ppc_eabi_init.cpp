@@ -42,12 +42,11 @@ extern "C" void __init_user(void)
     __init_cpp();
 }
 
-extern "C" void __init_cpp(void)
-{
+void __init_cpp(void) {
+    extern void (*_ctors[])(void);
     void (**constructor)(void);
 
-    for (constructor = _ctors; *constructor; constructor++)
-    {
+    for (constructor = _ctors; *constructor; constructor++) {
         (*constructor)();
     }
 }

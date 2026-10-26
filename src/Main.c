@@ -1,4 +1,4 @@
-
+#include "common.h"
 
 s32 Main_Init(void) {
     typedef struct {
@@ -82,4 +82,61 @@ s32 Main_Init(void) {
     GameSettings_GetGameInfo(&info);
     FileManager_SetAppInfo(info.a, info.b, info.c, info.d, info.e);
     return StateManager_GotoState(12) != -1;
+}
+
+
+s32 Main_Loop(void) {
+    extern s32 (*Heartbeat_Process)(void);
+    s32 StateManager_QueuedState(void);
+    s32 StateManager_GotoState(s32 state);
+    s32 queued;
+
+    queued = StateManager_QueuedState();
+    if (queued != -1 && queued != StateManager_GotoState(queued)) {
+        return 0;
+    }
+    return Heartbeat_Process();
+}
+
+s32 Main_Shutdown(void) {
+    void PlayerManager_Destroy(void);
+    void ThingManager_DARYL_Destroy(void);
+    void Input_Destroy(void);
+    void ShaderHolder_Destroy(void);
+    void VertexColorSeqManager_Destroy(void);
+    void MatrixCache_Destroy(void);
+    void World_Destroy(void);
+    void Geometry_Destroy(void);
+    void StateManager_Destroy(void);
+    void CameraManager_Destroy(void);
+    void Trigger_Destroy(void);
+    void Action_Destroy(void);
+    void LogHandler_Destroy(void);
+    void FileManager_Destroy(void);
+    void Gfx_Destroy(void);
+    void StateGameManager_Release(void);
+    void FileStreaming_Destroy(void);
+    void SoundManager_Destroy(void);
+    void HeapDump(void);
+
+    PlayerManager_Destroy();
+    ThingManager_DARYL_Destroy();
+    Input_Destroy();
+    ShaderHolder_Destroy();
+    VertexColorSeqManager_Destroy();
+    MatrixCache_Destroy();
+    World_Destroy();
+    Geometry_Destroy();
+    StateManager_Destroy();
+    CameraManager_Destroy();
+    Trigger_Destroy();
+    Action_Destroy();
+    LogHandler_Destroy();
+    FileManager_Destroy();
+    Gfx_Destroy();
+    StateGameManager_Release();
+    FileStreaming_Destroy();
+    SoundManager_Destroy();
+    HeapDump();
+    return 1;
 }

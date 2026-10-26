@@ -103,3 +103,24 @@ void CollisionPairCache_Clear(void) {
         g_aCollisionPairCache[i].time = 99999;
     }
 }
+
+void CollisionPairCache_Heartbeat(void)
+{
+    u32 i;
+
+    for (i = 0; i < 4; i++)
+    {
+        if (g_aCollisionPairCache[i].objectA == 0)
+        {
+            continue;
+        }
+        g_aCollisionPairCache[i].time += g_iDeltaTimeMS;
+        if ((u32) g_aCollisionPairCache[i].time > 1000)
+        {
+            g_aCollisionPairCache[i].objectB = 0;
+            g_aCollisionPairCache[i].objectA = 0;
+            g_aCollisionPairCache[i].time = 99999;
+        }
+    }
+}
+

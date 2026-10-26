@@ -151,3 +151,197 @@ void MotionState_Draw(void *state) {
     MotionState_DrawSlaves(state, 0);
 }
 
+void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps) {
+    extern f32 g_fDeltaTimeSec;
+    typedef struct {
+        f32 start;
+        f32 end;
+    } MotionRange;
+    typedef struct {
+        u8 unk0[0x1D];
+        u8 loopMode;
+        u8 pingPong;
+        u8 maxLoops;
+        MotionRange *intro;
+        MotionRange *loop;
+        MotionRange *outro;
+    } MotionAnim;
+    typedef struct {
+        MotionAnim *anim;
+        u8 phase;
+        u8 loops;
+        s8 reverse;
+        f32 time;
+        f32 weight;
+        f32 prevTime;
+        f32 rawTime;
+        s32 done;
+    } MotionLayer;
+    MotionLayer *l = layer;
+    f32 over;
+    f32 step;
+    f32 end;
+    f32 start;
+    f32 raw;
+    f32 prev;
+    f32 time;
+    u8 wrapped;
+    u8 oldPhase;
+    s8 type;
+    s8 reverse;
+
+    l->done = 0;
+    raw = 0.0f;
+    type = 0;
+    type |= 1;
+    start = raw;
+    end = raw;
+    time = l->time;
+    prev = time;
+    reverse = l->reverse;
+    over = -1.0f;
+    wrapped = 0;
+    switch (l->phase) {
+    case 0:
+        start = l->anim->intro->start;
+        end = l->anim->intro->end;
+        break;
+    case 1:
+        start = l->anim->loop->start;
+        end = l->anim->loop->end;
+        switch (l->anim->loopMode) {
+        case 1:
+            if (l->anim->maxLoops == 0 || l->loops < l->anim->maxLoops) {
+                type |= 2;
+            }
+            break;
+        case 2:
+            type |= 4;
+            break;
+        }
+        break;
+    case 2:
+        start = l->anim->outro->start;
+        end = l->anim->outro->end;
+        break;
+    }
+    step = fps * g_fDeltaTimeSec;
+    if (reverse) {
+        switch (type) {
+        case 3:
+            break;
+        case 4:
+            raw = time += step;
+            if (time > end) {
+                over = time - end;
+                reverse = 0;
+                time = end;
+                wrapped = 1;
+            }
+            break;
+        case 5:
+            raw = time -= step;
+            if (time < start) {
+                over = start - time;
+                reverse = 0;
+                time = start;
+                wrapped = 1;
+            }
+            break;
+        case 6:
+            raw = time += step;
+            if (time > end) {
+                over = time - end;
+                reverse = 0;
+                wrapped = 1;
+                time = 2.0f * end - time;
+            }
+            break;
+        case 7:
+            raw = time -= step;
+            if (time < start) {
+                over = start - time;
+                reverse = 0;
+                wrapped = 1;
+                time = 2.0f * start - time;
+            }
+            break;
+        }
+    } else {
+        if (type == 0) {
+            raw = time -= step;
+            if (time < start) {
+                over = start - time;
+                wrapped = 1;
+                time = start;
+            }
+        } else if (type == 1) {
+            raw = time += step;
+            if (time > end) {
+                over = time - end;
+                wrapped = 1;
+                time = end;
+            }
+        }
+    }
+    l->prevTime = prev;
+    l->rawTime = raw;
+    oldPhase = l->phase;
+    l->time = time;
+    l->reverse = reverse;
+    switch (l->phase) {
+    case 0:
+        if (wrapped) {
+            if (l->anim->loopMode & ((u8)mode != 0)) {
+                l->phase = 1;
+            } else if (l->anim->pingPong & ((u8)mode > 1)) {
+                l->phase = 2;
+            }
+        }
+        break;
+    case 1:
+        l->loops += wrapped;
+        if (l->anim->maxLoops != 0 && l->loops >= l->anim->maxLoops) {
+            l->loops = l->anim->maxLoops;
+            if (l->anim->pingPong & ((u8)mode > 1)) {
+                l->phase = 2;
+            } else {
+                l->time = l->anim->loop->end;
+                l->done = 1;
+            }
+        }
+        break;
+    case 2:
+        if (wrapped) {
+            l->done = 1;
+        }
+        break;
+    }
+    if (l->phase != oldPhase) {
+        switch (l->phase) {
+        case 0:
+            l->time = l->anim->intro->start + over;
+            break;
+        case 1:
+            l->time = l->anim->loop->start + over;
+            break;
+        case 2:
+            l->time = l->anim->outro->start + over;
+            break;
+        }
+    }
+}
+
+void MotionState_BuildMatricesWorld(void *arg0, void *arg1, void *motionState, f32 time) {
+    u8 frames[0x800];
+    void *anim;
+    s32 *skel;
+
+    if (M2C_FIELD(motionState, u32 *, 0x10) != 0) {
+        anim = M2C_FIELD(motionState, void **, 0);
+        skel = M2C_FIELD(anim, s32 **, 0x14);
+        MotionState_ExtractBlendedKeyFrame(motionState, frames);
+        TEST_AnimTraverseHeirarchyToMatricesWorld(arg0, arg1, frames, *skel, M2C_FIELD(motionState, u32 *, 0x10), time);
+    }
+}
+

@@ -116,12 +116,12 @@ void Creature_MicroStep(void *arg0, f32 dt) {
         u8 unkE0[0x1A0 - 0xE0];
         Vector4 vel;
     } *creature = arg0;
-    Vector4 pos[1];
+    Vector4 pos;
     u32 i;
     u32 *numBones;
 
-    AccumulateVector(&creature->vel, &creature->pos, pos, dt);
-    creature->pos = pos[0];
+    AccumulateVector(&creature->vel, &creature->pos, &pos, dt);
+    creature->pos = pos;
     numBones = creature->model->numBones;
     for (i = 0; i < *numBones; i++) {
         creature->bones[i].v[3].x += creature->vel.x * dt;

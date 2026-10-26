@@ -9,6 +9,15 @@ typedef struct Vector {
 extern f32 __float_nan;
 extern f32 __float_huge;
 
+f32 MagnitudeVector(Vector *v) {
+    f32 zero = 0.0f;
+
+    if (v->x != zero || v->y != zero || v->z != zero) {
+        return PSVECMag(v);
+    }
+    return zero;
+}
+
 static f32 Sqrt(f64 x)
 {
     f64 guess;
@@ -43,13 +52,14 @@ static f32 Sqrt(f64 x)
 
 void DistanceXYZ(Vector *a, Vector *b, f32 *dist)
 {
-    f32 dx;
     f32 dy;
+    f32 dx;
     f32 dz;
 
-    dx = a->x - b->x;
     dy = a->y - b->y;
+    sq:
+    dx = a->x - b->x;
     dz = a->z - b->z;
-    *dist = Sqrt(dx * dx + dy * dy + dz * dz);
+    *dist = Sqrt(dy * dy + dx * dx + dz * dz);
 }
 
