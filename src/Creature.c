@@ -67,6 +67,7 @@ void QuaternionToSubMatrix(Vector4 *q, void *m);
 s32 Creature_Init(Creature *creature, CreatureInit *init)
 {
     Thing_Init(creature, 0);
+    init = init;
     creature->anims = init->anims;
     creature->pos = init->pos;
     creature->startPos = creature->pos;
