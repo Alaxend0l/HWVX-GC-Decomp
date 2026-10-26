@@ -1,6 +1,11 @@
 #include "common.h"
 
 
+void Thing_Draw(void)
+{
+
+}
+
 void Thing_DynamicRotation(void)
 {
 
