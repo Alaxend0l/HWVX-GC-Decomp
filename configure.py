@@ -307,7 +307,7 @@ config.libs = [
             Object(NonMatching, "CollisionPoly.c"),
             Object(NonMatching, "CollisionTerrain.c"),
             Object(NonMatching, "CollisionThing.c"),
-            Object(NonMatching, "CollisionTriangle.c"),
+            Object(Matching, "CollisionTriangle.c"),
             Object(Matching, "Control.c"),
             Object(NonMatching, "CoronaHolder.c"),
             Object(NonMatching, "Creature.c"),
