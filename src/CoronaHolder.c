@@ -3,11 +3,13 @@
 s32 g_coronaRayTest;
 s32 g_totalCoronas;
 
+typedef struct Vector4 { f32 x; f32 y; f32 z; f32 w; } Vector4;
+
 /* An emitter's corona: its colour track and the interpolation state. */
 typedef struct Corona {
     u8 *track;          /* 0x00 */
     u8 pad04[0x0C];     /* 0x04 */
-    f32 pos[4];         /* 0x10 */
+    Vector4 pos;        /* 0x10 */
     f32 color[4];       /* 0x20 */
     u8 pad30[0x1C];     /* 0x30 */
     u8 active;          /* 0x4C */
