@@ -17,3 +17,12 @@ s32 stricmp(const char *s1, const char *s2) {
     }
     return *s2 ? -1 : 0;
 }
+
+s32 FileManager_GetDeviceFreeSpace(s32 device, u32 *freeBytes, u32 *totalBytes) {
+    freeBytes[1] = 0x32000;
+    freeBytes[0] = 0;
+    totalBytes[1] = 0x32000;
+    totalBytes[0] = 0;
+    return 1;
+}
+
