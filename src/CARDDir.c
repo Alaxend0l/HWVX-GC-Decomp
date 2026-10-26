@@ -41,3 +41,7 @@ typedef struct CARDControl {
 } CARDControl;
 
 extern CARDControl __CARDBlock[2];
+
+u8 *__CARDGetDirBlock(CARDControl *card) {
+    return card->currentDir;
+}
