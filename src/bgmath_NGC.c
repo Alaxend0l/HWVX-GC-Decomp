@@ -107,15 +107,13 @@ void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0) {
 
 void DistanceXYZ(Vector *a, Vector *b, f32 *dist)
 {
-    f32 dy;
-    f32 dx;
-    f32 dz;
-
-    dy = a->y - b->y;
-    sq:
-    dx = a->x - b->x;
-    dz = a->z - b->z;
-    *dist = Sqrt(dy * dy + dx * dx + dz * dz);
+  f32 dx;
+  f32 dy;
+  f32 dz;
+  ;
+  dx = a->x - b->x;
+  dz = a->z - b->z;
+  *dist = Sqrt((((a->y - b->y) * (a->y - b->y)) + (dx * dx)) + (dz * dz));
 }
 
 s32 CompareDistances(Vector *a, Vector *b, f32 dist)
