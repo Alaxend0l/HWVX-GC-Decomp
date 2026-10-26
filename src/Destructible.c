@@ -51,6 +51,7 @@ typedef struct Destructible {
 } Destructible;
 
 extern f32 g_zeroVector[4];
+extern u8 g_destructibleVTable[];
 void BuildOOB(void *oob, void *pos, void *out);
 void BuildOConvexHullOffset(void *out, void *hull, void *pos, void *rot);
 f32 PhysicalProperties_CollideWithRay(void *props, void *pos, void *start, void *dir, f32 maxDist, void *hit);
