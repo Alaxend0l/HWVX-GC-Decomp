@@ -178,6 +178,40 @@ s32 FileStreaming_ReleaseAllDataPacks(s32 type, s8 wait)
     return 1;
 }
 
+s32 FileStreaming_ReleaseDataPack(u32 index, s32 type)
+{
+    if (type >= 11 || index >= g_MaxStreamingDataPacks[type])
+    {
+        return 0;
+    }
+    if ((s8)g_StreamingDataPacks[type][index * 0xA8] == 0)
+    {
+        return 1;
+    }
+    if ((s8)g_StreamingDataPacks[type][index * 0xA8 + 1] == 0)
+    {
+        g_StreamingDataPacks[type][index * 0xA8] = 0;
+        return 1;
+    }
+    if (--M2C_FIELD(g_StreamingDataPacks[type] + index * 0xA8, s32 *, 0xC) != 0)
+    {
+        return 1;
+    }
+    if ((s8)g_StreamingDataPacks[type][index * 0xA8 + 2] == 0)
+    {
+        *(s32 *)&g_StreamingDataPacks[type][index * 0xA8 + 0x40] = 0;
+    }
+    ThingManager_Invalidate(M2C_FIELD(g_StreamingDataPacks[type] + index * 0xA8, u32 *, 0x14),
+                            M2C_FIELD(g_StreamingDataPacks[type] + index * 0xA8, u32 *, 0x14) +
+                                M2C_FIELD(g_StreamingDataPacks[type] + index * 0xA8, u32 *, 0x3C));
+    if ((s8)g_StreamingDataPacks[type][index * 0xA8 + 0x78] != 0)
+    {
+        DestroyMusic();
+    }
+    g_pPacksToBeReleased[g_numDataPacksToRelease++] = g_StreamingDataPacks[type] + index * 0xA8;
+    return 1;
+}
+
 #pragma push
 #pragma use_lmw_stmw off
 void FileStreaming_HeartBeat(void)
