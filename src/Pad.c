@@ -18,6 +18,9 @@ void *MakeStatus = NULL;
 f32 CmdReadOrigin = 8.0f;
 f32 CmdCalibrate = 32.0f;
 
+u8 Origin[4][12];
+u32 CmdProbeDevice[4];
+
 void SPEC0_MakeStatus(s32, void *, u32 *);
 void SPEC1_MakeStatus(s32, void *, u32 *);
 void SPEC2_MakeStatus_80076F6C(s32, void *, u32 *);
