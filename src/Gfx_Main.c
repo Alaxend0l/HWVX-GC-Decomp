@@ -51,6 +51,10 @@ void Gfx_Destroy(void) {
     Render_Destroy();
 }
 
+void Gfx_SetEnviroMapMode(u8 mode) {
+    g_state.enviroMapMode = mode;
+}
+
 void Gfx_SetFarClippingPlane(f32 farPlane) {
     g_state.farClippingPlane = farPlane;
 }
