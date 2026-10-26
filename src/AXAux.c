@@ -52,3 +52,8 @@ void __AXGetAuxBForDPL2(void **out)
     *out = __AXBufferAuxB[__AXAuxDspWritePositionDpl2];
 }
 
+void __AXGetAuxBOutputDPL2(void **out)
+{
+    *out = __AXBufferAuxB[__AXAuxDspReadPositionDpl2];
+}
+
