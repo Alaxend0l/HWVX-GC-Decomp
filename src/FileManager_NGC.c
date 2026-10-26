@@ -94,6 +94,17 @@ void File_Close(s32 handle) {
     g_files[idx].slot = -1;
 }
 
+s32 File_Seek(s32 handle, s32 offset, s8 mode) {
+    s8 idx = (u8)handle;
+
+    if (mode == 0) {
+        g_files[idx].position = offset;
+    } else {
+        g_files[idx].position += offset;
+    }
+    return 0;
+}
+
 u32 FileManager_GetDeviceStatus(u32 device) {
     s32 CARDProbeEx(s32 chan, s32 *memSize, s32 *sectorSize);
     s32 CARDMount(s32 chan, void *workArea, void *detachCallback);
