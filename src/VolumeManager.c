@@ -39,3 +39,11 @@ s32 VolumeManager_GetVolumeCellIndex(Vector4 *point) {
     return M2C_FIELD(holder, s32 **, 0x14)[z * M2C_FIELD(holder, s32 *, 0x2C) + M2C_FIELD(holder, s32 *, 0x34) * (y * M2C_FIELD(holder, s32 *, 0x2C)) + x];
 }
 
+s32 VolumeManager_GetNumVolumesOfTypeByCell(s32 type, s32 cell) {
+    extern s32 g_VolumeHolder;
+    if ((void *)g_VolumeHolder != NULL) {
+        return M2C_FIELD(M2C_FIELD(g_VolumeHolder, u8 **, 0x10) + cell * 0x38 + type * 8, s32 *, 0x0);
+    }
+    return 0;
+}
+
