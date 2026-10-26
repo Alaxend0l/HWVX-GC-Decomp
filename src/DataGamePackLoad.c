@@ -44,21 +44,26 @@ void ShaderHolder_RemoveGX(s32 gx);
 /* In DataGamePackLoad.c the quad pack's shader object is reached through a
    plain u32 pointer, so this file's view of a QuadPack is just its header. */
 typedef struct QuadPackRef {
-    void *pack;                            /* 0x00 */
-    u32 id;                                /* 0x04 */
+    char name[0xC];        /* 0x00 */
+    u32 id;                /* 0x0C */
+    void *pack;            /* 0x10 */
 } QuadPackRef;
 
+/* The quad pack's header carries its pack references inline, at 0x2C. */
 typedef struct QuadPackHeader {
     u32 numRelocs;    /* 0x00 */
-    u32 numShaders;   /* 0x04 */
-    u32 numRefs;      /* 0x08 */
-    void *refs;       /* 0x0C */
-    u32 *relocs;      /* 0x10 */
-    u32 *shaders;     /* 0x14 */
-    u32 unk18[4];     /* 0x18 */
-    u32 texCount;     /* 0x28 */
-    u16 *texIDs;      /* 0x2C */
+    u32 *relocs;      /* 0x08 */
+    u32 numShaders;   /* 0x10 */
+    u32 *shaderList;  /* 0x14 */
+    u32 pad18[0x14];  /* 0x18 */
+    QuadPackRef refs[2]; /* 0x28 */
 } QuadPackHeader;
+
+typedef struct DataPack {
+    u8 pad00[0x30];
+    u16 *textureID;   /* 0x30 */
+    u16 *shaderID;    /* 0x38 */
+} DataPack;
 void VertexColorSeqManager_RemoveVertices(void *vertices);
 void Deallocate(void *alloc);
 
