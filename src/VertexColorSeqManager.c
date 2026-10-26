@@ -25,3 +25,8 @@ s32 ActionVertexColorSeqChangeMode(s32 *data) {
     }
     return 1;
 }
+
+void VertexColorSeqManager_Create(void) {
+
+}
+
