@@ -66,6 +66,34 @@ void Emitter_Release(Emitter *emitter) {
     Thing_Release((s32)emitter);
 }
 
+s32 Emitter_InCameraRange(Emitter *emitter, f32 range) {
+    Vector4 positions[5] __attribute__((aligned(16)));
+    Vector4 *pos;
+    f32 dist;
+    u32 count;
+    u32 i;
+
+    if (range == 0.0f) {
+        return 1;
+    }
+    if (emitter->flags & 0x10) {
+        count = Gfx_GetCameraPositions(positions);
+        emitter->distSq = PSVECSquareDistance((f32 *)&emitter->pos, (f32 *)&positions[0]);
+        if (count > 1) {
+            for (i = 0, pos = positions; i < 5; i++, pos++) {
+                if (g_CurrentViews & (1 << i)) {
+                    dist = PSVECSquareDistance((f32 *)&emitter->pos, (f32 *)pos);
+                    if (dist < emitter->distSq) {
+                        emitter->distSq = dist;
+                    }
+                }
+            }
+        }
+        emitter->flags &= ~0x10;
+    }
+    return range * range > emitter->distSq;
+}
+
 s32 ActionFXPointChangeMode(ActionFXList *list) {
     s32 mode = list->mode;
     u32 count = list->pointCount;
