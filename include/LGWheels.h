@@ -12,7 +12,7 @@ typedef struct Wheels
 {
 	u8		unk0[0x28];			/* 0x000 handle state */
 	u8		nonLinValues[0x800];	/* 0x028 non-linear force table */
-	s32		overallGainId[4];		/* 0x828 per-channel gain ids, handed to Force */
+	u32		overallGainId[4];		/* 0x828 per-channel gain ids, handed to Force (by reference) */
 	u8		unk838[0x48];		/* 0x838 */
 } Wheels;
 
