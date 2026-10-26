@@ -72,6 +72,13 @@ void Gfx_SetFarClippingPlane(f32 farPlane) {
     g_state.farClippingPlane = farPlane;
 }
 
+void Gfx_RemovePointLights(void) {
+    if ((u8) M2C_FIELD(&g_state, u8 *, 0x90) != 0) {
+        M2C_FIELD(&g_state, u8 *, 0x90) = 0U;
+        M2C_FIELD(&g_state, s8 *, 0x8E) = 1;
+    }
+}
+
 void Gfx_SetAmbientColor(GXColor *color) {
     g_state.ambientColor = *color;
 }
