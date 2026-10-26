@@ -3,10 +3,20 @@
 void OSClearContext(void *);
 void OSSetCurrentContext(void *);
 
+static u32 RecalibrateBits;
+static u32 WaitingBits;
+static u32 CheckingBits;
+static u32 PendingBits;
 void (*SamplingCallback)(void);
 s32 __PADSpec;
-s32 Spec;
-void *MakeStatus;
+
+u32 ResettingChan = 0x20;
+u32 XPatchBits = 0xF0000000;
+u32 AnalogMode = 0x300;
+s32 Spec = 5;
+void *MakeStatus = NULL;
+f32 CmdReadOrigin = 8.0f;
+f32 CmdCalibrate = 32.0f;
 
 void SPEC0_MakeStatus(s32, void *, u32 *);
 void SPEC1_MakeStatus(s32, void *, u32 *);
@@ -31,3 +41,17 @@ void PADSetSpec(s32 spec)
     }
     Spec = spec;
 }
+
+static void SamplingHandler(s16 interrupt, void *context)
+{
+    u32 exceptionContext[0x2C8 / 4];
+
+    if (SamplingCallback) {
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(exceptionContext);
+        SamplingCallback();
+    }
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(context);
+}
+
