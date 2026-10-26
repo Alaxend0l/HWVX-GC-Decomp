@@ -1,5 +1,18 @@
 #include "common.h"
 
+struct TracerEntry {
+    u8 pad0[0x4CE];
+    s16 active;
+    u8 pad4D0[0x4E0 - 0x4D0];
+};
+extern struct TracerEntry tracers[32];
+
+struct Thing {
+    u8 pad0[0xB0];
+    s32 tracer;
+    s32 tracerIndex;
+};
+
 
 s32 Tracer_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
