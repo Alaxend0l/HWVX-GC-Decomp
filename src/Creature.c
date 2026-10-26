@@ -444,12 +444,11 @@ void Creature_MacroStep(void *arg0, f32 dt) {
     u32 count;
     u32 i;
     struct CreatureControls *controls;
-    f32 guardC0 = creature->unk1C0;
-    f32 w;
     f32 a;
     f32 b;
+    f32 w;
 
-    if (guardC0 < 1.0f) {
+    if (creature->unk1C0 < 1.0f) {
         return;
     }
     TimeHandler_SetTimeElapsedSec_f32(dt);
