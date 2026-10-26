@@ -27,7 +27,7 @@ void __AXAuxQuit(void) {
 
 void __AXGetAuxAInput(void **out)
 {
-    if (__AXCallbackAuxA)
+    if ((u32)__AXCallbackAuxA)
     {
         *out = __AXBufferAuxA[__AXAuxDspWritePosition];
     }
@@ -50,6 +50,11 @@ void __AXGetAuxAOutput(void **out)
 void __AXGetAuxAOutputDpl2R(void **out)
 {
     *out = &__AXBufferAuxA[__AXAuxDspReadPosition][160];
+}
+
+void __AXGetAuxAOutputDpl2Rs(void **out)
+{
+    *out = &__AXBufferAuxB[__AXAuxDspReadPosition][320];
 }
 
 void __AXGetAuxBOutput(void **out)
