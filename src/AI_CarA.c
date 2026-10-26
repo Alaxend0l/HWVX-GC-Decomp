@@ -1,6 +1,74 @@
 #include "common.h"
 
 
+s32 AI_Car_CheckIfStuck(u8 *ai) {
+    f32 PSVECSquareDistance(void *a, void *b);
+    f32 PSVECDotProduct(void *a, void *b);
+    f32 AI_AngleToTarget(u8 *ai, Vector4 *target);
+    double acos(double x);
+    u8 *car = *(u8 **)(ai + 0x2C);
+    s32 timer;
+    u8 mode;
+    f32 dot;
+
+    if (*(s32 *)(*(u8 **)(ai + 0x2C) + 0x464) > 600) {
+        ai[0] = 0x7F;
+        return 1;
+    }
+    timer = *(s32 *)(ai + 0x634);
+    if (timer == 0) {
+        if (*(s32 *)(*(u8 **)(ai + 0x2C) + 0x404) < 500 && PSVECSquareDistance(ai + 0x620, *(u8 **)(ai + 0x2C) + 0x40) < 0.5f) {
+            (*(u32 *)(ai + 0x630))++;
+            if (*(u32 *)(ai + 0x630) >= 10) {
+                *(s32 *)(ai + 0x634) = 120;
+                *(s16 *)(ai + 0x640) = AI_AngleToTarget(car, (Vector4 *)(ai + 0x400)) < 0.0f ? -127 : 127;
+                *(Quaternion *)(ai + 0x610) = *(Quaternion *)(car + 0x30);
+            }
+        } else {
+            *(u32 *)(ai + 0x630) = 0;
+        }
+        *(Quaternion *)(ai + 0x620) = *(Quaternion *)(*(u8 **)(ai + 0x2C) + 0x40);
+        if (*(s32 *)(ai + 0x634) == 0) {
+            return 0;
+        }
+    } else if (timer < 0) {
+        *(s32 *)(ai + 0x634) = timer + 1;
+        return 0;
+    }
+    ai[0] = *(s16 *)(ai + 0x640);
+    (*(s32 *)(ai + 0x634))--;
+    if (*(s32 *)(ai + 0x634) == 0) {
+        *(s32 *)(ai + 0x634) = -120;
+    }
+    mode = (*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11];
+    if (mode == 1) {
+        ai[0x13] = 0xFF;
+        dot = PSVECDotProduct(car + 0x30, ai + 0x610);
+        if (dot > 1.0f) {
+            dot = 1.0f;
+        }
+        if (dot < -1.0f) {
+            dot = -1.0f;
+        }
+        if (30.0 <= 57.29578f * acos(dot)) {
+            *(s32 *)(ai + 0x634) = -120;
+        }
+    } else if (mode == 2) {
+        ai[0x14] = 0xFF;
+        dot = PSVECDotProduct(car + 0x30, ai + 0x610);
+        if (dot > 1.0f) {
+            dot = 1.0f;
+        }
+        if (dot < -1.0f) {
+            dot = -1.0f;
+        }
+        if (45.0 <= 57.29578f * acos(dot)) {
+            *(s32 *)(ai + 0x634) = -180;
+        }
+    }
+    return 1;
+}
+
 void AI_Car_ClearedNavPoint_800087C8(u8 *car, s8 arg1) {
     s32 NavHolder_GetTotalNavPoints(void);
     u8 *NavHolder_GetNavPoint(s32 index);
