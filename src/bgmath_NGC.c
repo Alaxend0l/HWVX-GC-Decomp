@@ -83,3 +83,13 @@ void GetComponentOfVector(void *arg0, void *arg1) {
     M2C_FIELD(arg1, f32 *, 8) = (f32) (temp_f1 * M2C_FIELD(arg0, f32 *, 8));
 }
 
+void ProjectVectorToNormal(Vector *n, Vector *v) {
+    f32 PSVECDotProduct();
+    f32 scale;
+
+    scale = -PSVECDotProduct(n, v);
+    v->x = scale * n->x + v->x;
+    v->y = scale * n->y + v->y;
+    v->z = scale * n->z + v->z;
+}
+
