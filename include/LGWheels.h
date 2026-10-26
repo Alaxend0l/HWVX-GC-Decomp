@@ -115,8 +115,9 @@ typedef struct LGWheels
 		/* 0x1416 */
 
 	/* The port's own methods, defined in src/LGWheels.cpp; these are the ROM's
-	 * IsOpened__8LGWheelsFl, SetOverallForceGain__8LGWheelsFll, GetOverallForceGain__8LGWheelsFl and
-	 * GenerateNonLinValues__8LGWheelsFlUc, which hand their arguments to the subobjects. */
+	 * IsOpened__8LGWheelsFl, PedalsConnected__8LGWheelsFl, SetOverallForceGain__8LGWheelsFll,
+	 * GetOverallForceGain__8LGWheelsFl, GenerateNonLinValues__8LGWheelsFlUc and
+	 * SameSpringForceParams__8LGWheelsFlScUcs, which hand their arguments to the subobjects. */
 	u8		IsOpened(s32 chan);
 		/* 0x1416 */
 	u8		PedalsConnected(s32 chan);
