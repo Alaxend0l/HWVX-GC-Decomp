@@ -68,7 +68,7 @@ f32 Sqrt(f64 x)
         guess = __frsqrte(x);
         for (i = 0; i < 4; i++)
         {
-            guess = 0.5 * guess * (3.0 - x * guess * guess);
+            guess = 0.5 * guess * (3.0 - x * (guess * guess));
         }
         result = x * guess;
     }
@@ -76,7 +76,7 @@ f32 Sqrt(f64 x)
     {
         result = 0.0;
     }
-    else if (x != x)
+    else if (x)
     {
         result = *(f32 *)__float_nan;
     }
