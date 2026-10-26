@@ -123,6 +123,47 @@ void FileStreaming_ReleaseQuadPacks(void)
     }
 }
 
+void FileStreaming_LoadQuadPacks(void **quads, u32 count, s8 threaded)
+{
+    u32 i;
+    void *quad;
+
+    if (g_bLoadingThreadRunning || (u32)g_numQuadPacksToRelease != 0)
+    {
+        return;
+    }
+    for (i = 0; i < count; i++)
+    {
+        quad = quads[i];
+        if (M2C_FIELD(quad, void **, 0x10) != NULL && (s8)M2C_FIELD(quad, s8 *, 0x34) == 0)
+        {
+            DataPack_RefreshQuadPackPtrs(g_worldData.unk8[2], quads[i]);
+            M2C_FIELD(quads[i], s8 *, 0x34) = 1;
+        }
+        else if (M2C_FIELD(quad, void **, 0xC) == NULL)
+        {
+            M2C_FIELD(quad, s8 *, 0x34) = 1;
+        }
+        else if ((s8)M2C_FIELD(quad, s8 *, 0x34) == 0)
+        {
+            g_QuadrantsToLoad[g_numQuadPacksToLoad++] = quad;
+        }
+    }
+    if ((u32)g_numQuadPacksToLoad != 0)
+    {
+        if (threaded)
+        {
+            g_bLoadQuadrants = 1;
+            g_bLoadingThreadRunning = 1;
+            g_loadingThreadID = RunThread(FileStreaming_LoadingThread, 0x63);
+        }
+        else
+        {
+            LoadQuadrants(1);
+        }
+    }
+}
+
 void FileStreaming_LoadingThread(void)
 {
     g_bLoadingThreadRunning = 1;
