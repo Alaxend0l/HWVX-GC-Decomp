@@ -30,3 +30,25 @@ s32 StateTitleScreen_Shutdown(void) {
     return 1;
 }
 
+s32 StateTitleScreen_Heartbeat(void) {
+    M2C_UNK ProcessManager_Heartbeat(M2C_UNK);
+    M2C_UNK ProcessManager_Render(M2C_UNK);
+    M2C_UNK ShowStats_EndScene();
+    M2C_UNK TextureManager_ReleaseCache();
+    M2C_UNK ViewManager_PrepForRender();
+    M2C_UNK Wheel_PlayAllAirborne();
+    extern u8 g_clearTextureCache;
+    ShowStats_StartFrame();
+    ViewManager_PrepForRender();
+    ProcessManager_Heartbeat(0);
+    ShowStats_BeginScene();
+    ProcessManager_Render(1);
+    Wheel_PlayAllAirborne();
+    ShowStats_EndScene();
+    if ((s8) g_clearTextureCache == 0) {
+        TextureManager_ReleaseCache();
+        g_clearTextureCache = 1;
+    }
+    return 1;
+}
+
