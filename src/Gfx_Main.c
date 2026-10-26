@@ -60,6 +60,10 @@ void Gfx_EnableState(s32 arg0) {
     M2C_FIELD(&g_state, s32 *, 0x7C) = (s32) (M2C_FIELD(&g_state, s32 *, 0x7C) | arg0);
 }
 
+void Gfx_DisableState(s32 arg0) {
+    M2C_FIELD(&g_state, s32 *, 0x7C) = (s32) (M2C_FIELD(&g_state, s32 *, 0x7C) & ~arg0);
+}
+
 void Gfx_SetEnviroMapMode(u8 mode) {
     g_state.enviroMapMode = mode;
 }
