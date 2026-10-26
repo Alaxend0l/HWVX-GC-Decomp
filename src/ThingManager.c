@@ -1,6 +1,24 @@
 #include "common.h"
 
 
+void ThingManagerList_Remove(void **arg0, void *arg1) {
+    void *temp_r5;
+    void *temp_r5_2;
+
+    temp_r5 = M2C_FIELD(arg1, void **, 0xA0);
+    if (temp_r5 == NULL) {
+        *arg0 = M2C_FIELD(arg1, void **, 0xA4);
+    } else {
+        M2C_FIELD(temp_r5, void **, 0xA4) = (void *) M2C_FIELD(arg1, void **, 0xA4);
+    }
+    temp_r5_2 = M2C_FIELD(arg1, void **, 0xA4);
+    if (temp_r5_2 != NULL) {
+        M2C_FIELD(temp_r5_2, void **, 0xA0) = (void *) M2C_FIELD(arg1, void **, 0xA0);
+        M2C_FIELD(arg1, void **, 0xA4) = NULL;
+    }
+    M2C_FIELD(arg1, void **, 0xA0) = NULL;
+}
+
 void *ThingManagerList_GetByType(void *list, s32 type) {
     void *thing;
 
