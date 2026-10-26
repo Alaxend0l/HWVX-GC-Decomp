@@ -11,6 +11,21 @@ Force::Force()
 {
 }
 
+void Force::InitVars()
+{
+	s32 i;
+	s32 j;
+
+	for (i = 0; i < 4; i++)
+	{
+		for (j = 0; j < 8; j++)
+		{
+			playing[i][j] = 0;
+		 effectIds[i][j] = -1;
+		}
+	}
+}
+
 long Force::Start(long chan, long effect)
 {
 	s32 result = 0;
