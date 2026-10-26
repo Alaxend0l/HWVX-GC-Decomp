@@ -39,7 +39,10 @@ void SinCos(f32 *s, f32 *c, f32 angle)
     *c = cos(r);
 }
 
-void SinCosRad(f32 *s, f32 *c, f32 rad) {
+void SinCosRad(f32 *s, f32 *c, f32 rad)
+{
+    f64 sin(f32);
+    f64 cos(f32);
     f32 angle = rad * 57.29578f;
     f32 r;
 
