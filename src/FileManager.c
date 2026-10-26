@@ -1,6 +1,18 @@
 #include "common.h"
 
 
+s32 FileManager_Create(void) {
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        g_files[i].slot = -1;
+    }
+    for (i = 0; i < 5; i++) {
+        g_appInfo[i][0] = 0;
+    }
+    return 1;
+}
+
 void FileManager_Destroy(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
