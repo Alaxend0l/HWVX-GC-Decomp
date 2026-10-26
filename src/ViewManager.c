@@ -13,6 +13,11 @@ void ViewManager_Init(void) {
     g_viewFormat = 0;
 }
 
+void ViewManager_SetCamera(void *camera, s32 view) {
+    extern void *m_Views_802CD5E0[5];
+    m_Views_802CD5E0[view] = camera;
+}
+
 void ViewManager_PrepForRender(void) {
     extern void *m_Views_802CD5E0[5];
     extern u8 g_CurrentViews;
