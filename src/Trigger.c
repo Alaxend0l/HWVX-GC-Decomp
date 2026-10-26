@@ -22,3 +22,7 @@ s32 TriggerGameRoundsComplete(void) {
     return 1;
 }
 
+s32 TriggerGameRoundXComplete(void) {
+    return 1;
+}
+
