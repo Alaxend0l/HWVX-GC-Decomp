@@ -25,6 +25,11 @@ typedef struct ForceFeedback {
 
 extern ForceFeedback g_forcefeedback[24];
 
+extern f32 g_fDeltaTimeMS;
+extern s32 g_iDeltaTimeMS;
+void ExtractPointKey(void *keys, void *out, f32 time);
+void ExtractF32Key(void *keys, void *out, f32 time);
+
 void ForceFeedback_Init(void)
 {
     s32 i;
