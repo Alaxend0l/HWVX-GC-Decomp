@@ -150,6 +150,36 @@ void SteeringResetCallback(s32 index, s32 result)
     if (result != 0)
         g_lgDevices[index].unk4D = -1;
 }
+
+s8 AutoCalibrateAxisSigned(s8 *min, s8 *max, s8 value, s8 deadzone, s8 *out)
+{
+    s32 lo = *min;
+    s32 hi = *max;
+    s32 range;
+    s32 result;
+
+    if (value < lo)
+    {
+        *min = value;
+        lo = value;
+    }
+    if (value > hi)
+    {
+        hi = value;
+        *max = value;
+    }
+    range = hi - lo - deadzone * 2;
+    if (range == 0)
+        range = 1;
+    result = (value - (lo + deadzone)) * 255 / range - 127;
+    if (result < -128)
+        result = -128;
+    if (result > 127)
+        result = 127;
+    *out = result;
+    return result;
+}
+
 #pragma pop
 
 s32 LGStartForceEffect(u32 handle)
