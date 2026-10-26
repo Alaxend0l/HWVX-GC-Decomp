@@ -47,3 +47,7 @@ void Input_ForceFeedbackPause(void) {
 
 }
 
+s32 Input_GetContollersPluggedIn(void) {
+    return 0xF;
+}
+
