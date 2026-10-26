@@ -3,6 +3,7 @@
 void OSClearContext(void *);
 void OSSetCurrentContext(void *);
 
+void (*SamplingCallback)(void);
 s32 __PADSpec;
 s32 Spec;
 void *MakeStatus;
