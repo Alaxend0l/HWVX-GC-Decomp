@@ -195,6 +195,20 @@ s32 ThingManager_GetActiveCars(void **cars) {
     return count;
 }
 
+s32 ThingManager_GetActiveItems(void **items) {
+    s32 count;
+    s32 i;
+
+    count = 0;
+    for (i = 0; i < 96; i++) {
+        u8 *item = g_thingManager_DARYL.unk0 + 0x3D740 + i * 0xF0;
+        if (!(*(u32 *)(item + 0x74) & 0x201000)) {
+            items[count++] = item;
+        }
+    }
+    return count;
+}
+
 s32 TriggerPlayerVehicleGear(u32 *params) {
     extern u8 g_cameraManager[];
     u8 *vehicle = M2C_FIELD(*(u8 **)g_cameraManager, u8 **, 0x2C);
