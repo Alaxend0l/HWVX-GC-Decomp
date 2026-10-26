@@ -9,3 +9,11 @@ void LightHolder_Init(void) {
         *(void **)(g_pLight[i] + 0x60) = NULL;
     }
 }
+
+void LightHolder_SetTexture(u16 index) {
+    void Gfx_SetTextureWrapMode(u16 id, s16 mode);
+    extern u16 g_lightTextureIndex;
+    g_lightTextureIndex = index;
+    Gfx_SetTextureWrapMode(index, 1);
+}
+
