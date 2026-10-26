@@ -142,6 +142,42 @@ u8 *GameSettings_GetMCP(void)
     return pMCP;
 }
 
+#pragma push
+#pragma use_lmw_stmw off
+void GameSettings_ResetControllerConfig(s32 player)
+{
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    ControllerSettings *GameSettings_GetControllerSettings(s32 player);
+    u8 *mcp;
+    void *pack;
+    ControllerSettings *settings;
+    u8 *src;
+
+    if (bFirstTime)
+    {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL)
+        {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    settings = GameSettings_GetControllerSettings(player);
+    if (mcp == NULL || *(u32 *)((char *)mcp + 0x3c) == 0)
+    {
+        memset(&settings->data[2], 0, 0x10);
+    }
+    else
+    {
+        src = (u8 *)*(u32 *)((char *)*(u32 *)((char *)*(u32 *)((char *)*(u32 *)((char *)mcp + 0x40) + 0) + 0) + 4);
+        memcpy(&settings->data[2], src, 0x10);
+    }
+}
 void GameSettings_GameBoyConnected(void) {
     u8 *mcp;
     void *pack;
