@@ -1,6 +1,13 @@
 #include "common.h"
 
-extern OBox g_aOBox[0x200];
+typedef struct OBoxHolder {
+    Vector4 v[3];                 /* 0x00 */
+    u8 pad30[0x9D - 0x30];        /* 0x30 */
+    s8 inUse;                     /* 0x9D */
+    u8 pad9E[0xF0 - 0x9E];        /* 0x9E */
+} OBoxHolder;
+
+extern OBoxHolder g_aOBox[0x200];
 extern OConvexHull g_aOConvexHull[8];
 extern CollisionPair g_aCollisionPairCache[4];
 void Dprintf(const char *, ...);
