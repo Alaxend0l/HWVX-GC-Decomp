@@ -26,6 +26,18 @@ void SetMIDITrackVol(void)
 {
 }
 
+#pragma push
+#pragma optimization_level 1
+u32 GetEnvRate(u16 arg0)
+{
+    if (arg0 != 0)
+    {
+        return -1U / (u32)(arg0 * 0x3E8);
+    }
+    return -1U;
+}
+#pragma pop
+
 void DestroyMIDIVoice(MIDI_VOICE *voice)
 {
     MIDI_VOICE *v;
