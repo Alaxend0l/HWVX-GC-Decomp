@@ -42,6 +42,10 @@ f32 Thing_GetMass(void) {
     return g_LR_Counter;
 }
 
+void Thing_DynamicCollideImpact(void)
+{
+}
+
 void Thing_DynamicRotation(void)
 {
 
@@ -55,6 +59,44 @@ s32 Thing_GetSource(void *arg0) {
         return M2C_FIELD(temp_r3, s32 *, 0x2C);
     }
     return 0;
+}
+
+s32 TriggerCreatureVolumeEntered(u32 *arg0) {
+    M2C_UNK sp8;
+    s32 temp_r30;
+    u32 *var_r31;
+    u32 temp_r27;
+    u32 temp_r3;
+    u32 var_r26;
+    u32 var_r28;
+    void *temp_r29;
+
+    var_r28 = 0U;
+    var_r31 = arg0;
+    temp_r27 = *arg0;
+    temp_r30 = (temp_r27 * 4) + 4;
+loop_9:
+    if (var_r28 >= temp_r27) {
+        return 0;
+    }
+    temp_r29 = M2C_FIELD(var_r31, void **, 4);
+    if ((u32) M2C_FIELD(temp_r29, u32 *, 4) == 1U) {
+        var_r26 = 0U;
+loop_7:
+        if (var_r26 >= (u32) *(arg0 + temp_r30)) {
+            goto block_8;
+        }
+        temp_r3 = M2C_FIELD(*(arg0 + ((temp_r27 + var_r26 + 2) * 4)), u32 *, 0x1C);
+        if ((temp_r3 != 0U) && (IsPointWithinVolume(temp_r3 + 0x40, temp_r29, &sp8) != 0)) {
+            return 1;
+        }
+        var_r26 += 1;
+        goto loop_7;
+    }
+block_8:
+    var_r31 += 4;
+    var_r28 += 1;
+    goto loop_9;
 }
 
 void Thing_SetSlavePlayers(void *thing) {
