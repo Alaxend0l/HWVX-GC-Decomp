@@ -69,6 +69,160 @@ s32 AI_Car_CheckIfStuck(u8 *ai) {
     return 1;
 }
 
+void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed) {
+    f32 PSVECSquareDistance(void *a, void *b);
+    f32 PSVECSquareMag(void *v);
+    f32 PSVECDotProduct(void *a, void *b);
+    f32 Sqrt(f32 x);
+    f32 _fabs(f32 x);
+    f32 AI_AngleToTarget(u8 *ai, Vector4 *target);
+    void CarA_GetAngularVelocity(void *car, Vector4 *vel);
+    void DistanceXYZ(void *a, void *b, f32 *dist);
+    Vector4 angVel;
+    f32 dist;
+    f32 angle;
+    u8 *car;
+    u8 *range;
+    f32 distSq;
+    f32 velSq;
+    f32 vel;
+    f32 deg;
+    f32 t;
+    f32 yaw;
+    f32 r;
+    f32 far;
+    f32 near;
+    f32 mid;
+    f32 margin;
+    f32 hi;
+    f32 lo;
+    s32 v;
+    s16 s;
+    s8 full;
+    u8 brake;
+    u8 reverse;
+    u8 accel;
+
+    car = *(u8 **)(ai + 0x2C);
+    brake = 0;
+    reverse = 0;
+    accel = 0;
+    distSq = PSVECSquareDistance(ai + 0x400, car + 0x40);
+    velSq = PSVECSquareMag(car);
+    vel = Sqrt(velSq);
+    angle = AI_AngleToTarget(car, (Vector4 *)(ai + 0x400));
+    deg = 57.29578f * angle;
+    if (__fabs(deg) <= 5.0 || 0.0f == velSq) {
+        brake = 0xFF;
+        *(s16 *)(ai + 0x640) = (s8)(-6.0f * deg);
+        ai[0] = *(s16 *)(ai + 0x640);
+    } else if (velSq < 1600.0f && __fabs(deg) >= 100.0 && __fabs(deg) <= 125.0 && distSq < 900.0f) {
+        accel = 0xFF;
+        if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1) {
+            *(s32 *)(ai + 0x634) = 80;
+        } else {
+            *(s32 *)(ai + 0x634) = 120;
+        }
+        *(s16 *)(ai + 0x640) = deg < 0.0f ? -127 : 127;
+        *(Quaternion *)(ai + 0x610) = *(Quaternion *)(car + 0x30);
+    } else if (velSq > 1600.0f && __fabs(deg) >= 45.0 && distSq < 5625.0f) {
+        accel = 0xFF;
+        reverse = 0xFF;
+        *(s16 *)(ai + 0x640) = deg < 0.0f ? 127 : -127;
+        ai[0] = *(s16 *)(ai + 0x640);
+    } else {
+        t = Sqrt(distSq / velSq);
+        CarA_GetAngularVelocity(car, &angVel);
+        yaw = PSVECDotProduct(car + 0x20, &angVel);
+        if (yaw <= 0.01f) {
+            yaw = 0.01f;
+        }
+        r = angle / yaw;
+        if (r < 0.0f) {
+            r = -r;
+            r += yaw * (yaw >= 0.0f ? 3.0f : -3.0f);
+        }
+        r /= t;
+        if (*(s16 *)(ai + 0x640) == 0 || ((*(s16 *)(ai + 0x640) << 16) ^ *(s32 *)&angle) < 0) {
+            *(s16 *)(ai + 0x640) = (-127.0f / 3.1415927f) * angle;
+        }
+        full = angle > 0.0f ? -127 : 127;
+        if (r <= 1.0f) {
+            brake = 0xFF;
+            *(s16 *)(ai + 0x640) = r * (f32)(full - *(s16 *)(ai + 0x640)) + (f32)*(s16 *)(ai + 0x640);
+        } else {
+            s = r * (f32)*(s16 *)(ai + 0x640);
+            if (_fabs(s) < _fabs(full)) {
+                *(s16 *)(ai + 0x640) = s;
+                brake = 0xFF;
+            } else {
+                *(s16 *)(ai + 0x640) = full;
+                reverse = 0xFF;
+                brake = 0xFF;
+            }
+        }
+    }
+    DistanceXYZ(car + 0x40, target, &dist);
+    range = **(u8 ***)(ai + 0x3E4);
+    far = *(f32 *)(range + 0x28);
+    near = *(f32 *)(range + 0x24);
+    mid = (far - near) / 2.0f + near;
+    if (dist < mid && accel != 0xFF) {
+        v = 255 - (s32)(255.0f * ((dist - near) / (mid - near)));
+        if (v > 255) {
+            v = 255;
+        }
+        if (accel < v) {
+            accel = v;
+        }
+        brake = 0;
+    } else if (dist < far && brake) {
+        v = 255.0f * ((dist - mid) / (far - mid));
+        if (brake > v) {
+            brake = v;
+        }
+    }
+    if (*(f32 *)(ai + 0x63C) && (!speed || *(f32 *)(ai + 0x63C) < speed)) {
+        speed = *(f32 *)(ai + 0x63C);
+    }
+    margin = 0.1f * speed;
+    hi = speed + margin;
+    lo = speed - margin;
+    if (speed && vel > speed && accel != 0xFF) {
+        v = 255.0f * ((vel - speed) / (hi - speed));
+        if (v > 255) {
+            v = 255;
+        }
+        if (accel < v) {
+            accel = v;
+        }
+        brake = 0;
+    } else if (speed && vel > lo && brake) {
+        v = 255 - (s32)(255.0f * ((vel - lo) / (speed - lo)));
+        if (brake > v) {
+            brake = v;
+        }
+    }
+    if (velSq < 100.0f || *(f32 *)(car + 0x458) < 0.0f) {
+        brake = 0xFF;
+        accel = 0;
+    }
+    if (*(s16 *)(ai + 0x640) > 127) {
+        *(s16 *)(ai + 0x640) = 127;
+    } else if (*(s16 *)(ai + 0x640) < -127) {
+        *(s16 *)(ai + 0x640) = -127;
+    }
+    ai[0] = *(s16 *)(ai + 0x640);
+    if (brake) {
+        ai[0x12] = brake;
+    } else if (accel) {
+        ai[0x13] = accel;
+    }
+    if (reverse) {
+        ai[0x15] = reverse;
+    }
+}
+
 void AI_Car_ClearedNavPoint_800087C8(u8 *car, s8 arg1) {
     s32 NavHolder_GetTotalNavPoints(void);
     u8 *NavHolder_GetNavPoint(s32 index);
