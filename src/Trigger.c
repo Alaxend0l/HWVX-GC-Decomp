@@ -18,3 +18,7 @@ s32 TriggerTrue(void) {
     return 1;
 }
 
+s32 TriggerGameRoundsComplete(void) {
+    return 1;
+}
+
