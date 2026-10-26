@@ -24,6 +24,7 @@ typedef struct Wheels
 	u32		overallGainId[4];		/* 0x828 per-channel gain ids, handed to Force (by reference) */
 		/* 0x838 */
 		u32		unk838[4];		/* device type, as returned by SIProbe */
+		/* 0x848 */
 		u8		unk848[0x38];
 		/* 0x880 */
 
