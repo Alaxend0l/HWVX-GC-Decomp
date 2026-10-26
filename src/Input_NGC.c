@@ -43,3 +43,7 @@ void Input_SetAlternativeForceFeedback(void) {
 
 }
 
+void Input_ForceFeedbackPause(void) {
+
+}
+
