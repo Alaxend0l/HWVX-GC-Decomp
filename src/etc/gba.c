@@ -10,7 +10,7 @@ void GBAConnectivityInit__Fv(void)
     s32 DVDOpen(const char *name, void *fileInfo);
     BOOL DVDReadAsyncPrio(void *fileInfo, void *addr, s32 length, s32 offset, void *callback, s32 prio);
     void GBACloseCallback__FlP11DVDFileInfo(s32 result, void *fileInfo);
-    s32 length;
+    u32 length;
 
     gLinkFinished = 0;
     DVDOpen("client_thread.bin", GBAfileInfo_803C6C10);
