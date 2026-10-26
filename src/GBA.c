@@ -18,6 +18,22 @@ typedef struct GBAControl
 extern GBAControl __GBA[4];
 extern s32 __GBAReset;
 
+void ShortCommandProc(s32 chan)
+{
+	GBAControl *gba = &__GBA[chan];
+
+	if (gba->ret != 0)
+	{
+		return;
+	}
+	if (gba->input[0] != 0 || gba->input[1] != 4)
+	{
+		gba->ret = 1;
+		return;
+	}
+	*gba->status = gba->input[2] & 0x3A;
+}
+
 s32 OnReset(void)
 {
 	__GBAReset = 1;
