@@ -89,3 +89,9 @@ void __AXGetAuxBOutputDPL2(void **out)
     *out = __AXBufferAuxB[__AXAuxDspReadPositionDpl2];
 }
 
+void AXRegisterAuxACallback(void *callback, void *context)
+{
+    __AXCallbackAuxA = callback;
+    __AXContextAuxA = context;
+}
+
