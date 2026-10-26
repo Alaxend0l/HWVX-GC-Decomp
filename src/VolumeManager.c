@@ -47,3 +47,16 @@ s32 VolumeManager_GetNumVolumesOfTypeByCell(s32 type, s32 cell) {
     return 0;
 }
 
+s32 VolumeManager_GetVolumeTypeByIndexByCell(s32 type, s32 index, s32 cell) {
+    typedef struct VolumeList {
+        s32 count;
+        s32 *volumes;
+    } VolumeList;
+    typedef struct VolumeCell {
+        VolumeList types[7];
+    } VolumeCell;
+    extern s32 g_VolumeHolder;
+    VolumeCell *cells = M2C_FIELD(g_VolumeHolder, VolumeCell **, 0x10);
+    return cells[cell].types[type].volumes[index];
+}
+
