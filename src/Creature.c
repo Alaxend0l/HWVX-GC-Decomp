@@ -466,7 +466,7 @@ void Creature_MacroStep(void *arg0, f32 dt) {
         creature->vel.z = speed * (forward * creature->mtx[0].z + side * creature->mtx[2].z);
     }
     creature->vel.y += -60.0f * g_fDeltaTimeSec;
-    if (creature->flags && !(creature->flags & 4)) {
+    if (!(creature->flags & 4)) {
         travelled = 0.0f;
         count = 0;
         pos = creature->pos;
