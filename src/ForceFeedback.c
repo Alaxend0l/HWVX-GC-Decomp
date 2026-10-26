@@ -16,7 +16,7 @@ typedef struct ForceFeedback {
     u8 pad5C[0x60 - 0x5C];        /* 0x5C */
 } ForceFeedback;
 
-extern ForceFeedback g_forcefeedback[24];
+ForceFeedback g_forcefeedback[24];
 
 extern f32 g_fDeltaTimeMS;
 extern s32 g_iDeltaTimeMS;
