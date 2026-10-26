@@ -1,6 +1,10 @@
 #include "common.h"
 
 
+void AnimExtractKeyFrame_NonCompound(void) {
+
+}
+
 void AnimExtractKeyFrame(void *anim, s32 frame) {
     void AnimExtractKeyFrame_Compound(void *anim, s32 frame);
     void AnimExtractKeyFrame_CompoundHybrid(void *anim, s32 frame);
