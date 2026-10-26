@@ -318,7 +318,7 @@ config.libs = [
             Object(NonMatching, "EventSequence.c"),
             Object(NonMatching, "ExtractKeys.c"),
             Object(NonMatching, "FileStreaming.c"),
-            Object(NonMatching, "ForceFeedback.c"),
+            Object(Matching, "ForceFeedback.c"),
             Object(NonMatching, "GameSettings.c"),
             Object(NonMatching, "GeometryHandler.c"),
             Object(NonMatching, "GridManager.c"),
