@@ -11,12 +11,12 @@ void * __AXAuxADspWrite;
 void * __AXAuxADspRead;
 void * __AXAuxBDspWrite;
 void * __AXAuxBDspRead;
-s32 __AXAuxDspWritePosition;
-s32 __AXAuxDspReadPosition;
-s32 __AXAuxDspWritePositionDpl2;
-s32 __AXAuxDspReadPositionDpl2;
-s32 __AXAuxCpuReadWritePosition;
-s32 __AXClMode;
+u32 __AXAuxDspWritePosition;
+u32 __AXAuxDspReadPosition;
+u32 __AXAuxDspWritePositionDpl2;
+u32 __AXAuxDspReadPositionDpl2;
+u32 __AXAuxCpuReadWritePosition;
+u32 __AXClMode;
 
 
 void __AXAuxQuit(void) {
@@ -88,6 +88,69 @@ void __AXGetAuxBForDPL2(void **out)
 void __AXGetAuxBOutputDPL2(void **out)
 {
     *out = __AXBufferAuxB[__AXAuxDspReadPositionDpl2];
+}
+
+void __AXProcessAux(void)
+{
+    void DCInvalidateRange(void *addr, u32 size);
+    void DCFlushRangeNoSync(void *addr, u32 size);
+
+    __AXAuxADspWrite = __AXBufferAuxA[__AXAuxDspWritePosition];
+    __AXAuxADspRead = __AXBufferAuxA[__AXAuxDspReadPosition];
+    __AXAuxBDspWrite = __AXBufferAuxB[__AXAuxDspWritePosition];
+    __AXAuxBDspRead = __AXBufferAuxB[__AXAuxDspReadPosition];
+
+    if (__AXCallbackAuxA)
+    {
+        if (__AXClMode == 2)
+        {
+            u32 *data[4];
+
+            data[0] = __AXBufferAuxA[__AXAuxCpuReadWritePosition];
+            data[1] = data[0] + 160;
+            data[2] = data[0] + 320;
+            data[3] = data[0] + 1760;
+            DCInvalidateRange(data[0], 0x780);
+            DCInvalidateRange(data[3], 0x280);
+            ((void (*)(void *, void *))__AXCallbackAuxA)(data, __AXContextAuxA);
+            DCFlushRangeNoSync(data[0], 0x780);
+            DCFlushRangeNoSync(data[3], 0x280);
+        }
+        else
+        {
+            u32 *data[3];
+
+            data[0] = __AXBufferAuxA[__AXAuxCpuReadWritePosition];
+            data[1] = data[0] + 160;
+            data[2] = data[0] + 320;
+            DCInvalidateRange(data[0], 0x780);
+            ((void (*)(void *, void *))__AXCallbackAuxA)(data, __AXContextAuxA);
+            DCFlushRangeNoSync(data[0], 0x780);
+        }
+    }
+
+    if (__AXCallbackAuxB && __AXClMode != 2)
+    {
+        u32 *data[3];
+
+        data[0] = __AXBufferAuxB[__AXAuxCpuReadWritePosition];
+        data[1] = data[0] + 160;
+        data[2] = data[0] + 320;
+        DCInvalidateRange(data[0], 0x780);
+        ((void (*)(void *, void *))__AXCallbackAuxB)(data, __AXContextAuxB);
+        DCFlushRangeNoSync(data[0], 0x780);
+    }
+
+    __AXAuxDspWritePosition++;
+    __AXAuxDspReadPosition++;
+    __AXAuxCpuReadWritePosition++;
+    __AXAuxDspWritePositionDpl2++;
+    __AXAuxDspReadPositionDpl2++;
+    __AXAuxDspWritePosition %= 3;
+    __AXAuxDspReadPosition %= 3;
+    __AXAuxDspWritePositionDpl2 %= 2;
+    __AXAuxDspReadPositionDpl2 %= 2;
+    __AXAuxCpuReadWritePosition %= 3;
 }
 
 void AXRegisterAuxACallback(void *callback, void *context)
