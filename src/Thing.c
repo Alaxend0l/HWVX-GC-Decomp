@@ -1,6 +1,11 @@
 #include "common.h"
 
 
+void Thing_DynamicRotation(void)
+{
+
+}
+
 void Thing_SetSlavePlayers(void *thing) {
     void *slave;
 
