@@ -2,6 +2,12 @@
 #include "LGWheels.h"
 
 extern "C" void *memcpy(void *dst, const void *src, u32 n);
+extern "C" void LGInit(void);
+void LGWheels::InitLGLibrary(void)
+{
+	LGInit();
+}
+
 u8 SameSpringForceParams__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 saturation, s16 coefficient) {
     u8 *p = (u8 *)wheels + chan * 4;
 
