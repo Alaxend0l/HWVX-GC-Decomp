@@ -36,6 +36,18 @@ void DataPack_ReleaseQuadPack(void *pack);
 void LoadQuadrants(s32 arg0);
 void EndThread(void);
 
+typedef struct WorldData
+{
+    void *world;
+    s32 unk4;
+    s32 unk8[4];
+} WorldData;
+extern WorldData g_worldData;
+extern void *g_QuadrantsToLoad[11];
+s32 RunThread(void *func, s32 priority);
+void DataPack_RefreshQuadPackPtrs(s32 pack, void *quad);
+void FileStreaming_LoadQuadPacks(void **quads, u32 count, s8 threaded);
+
 #pragma push
 #pragma use_lmw_stmw on
 
