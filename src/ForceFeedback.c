@@ -9,9 +9,11 @@ typedef struct Vector4 {
 
 typedef struct ForceFeedback {
     void *effect;                 /* 0x00 */
-    u8 pad04[0x1C - 0x4];         /* 0x04 */
+    u8 point[0x1C - 0x4];         /* 0x04 */
     u8 active;                    /* 0x1C */
-    u8 pad1D[0x30 - 0x1D];        /* 0x1D */
+    u8 pad1D[0x20 - 0x1D];        /* 0x1D */
+    f32 value;                    /* 0x20 */
+    u8 pad24[0x30 - 0x24];        /* 0x24 */
     u8 playing;                   /* 0x30 */
     u8 pad31[0x40 - 0x31];        /* 0x31 */
     Vector4 dir;                  /* 0x40 */
