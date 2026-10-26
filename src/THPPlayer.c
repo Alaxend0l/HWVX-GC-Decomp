@@ -19,10 +19,19 @@ typedef struct THPPlayer {
     u8 audioExist;
     u8 padA0[5];
     u32 onMemory;
+    u8 padAC[0x14];
+    u32 unkC0;
+    u32 unkC4;
+    u32 unkC8;
+    u32 unkCC;
 } THPPlayer;
 
 extern THPPlayer ActivePlayer;
 extern u8 WorkBuffer[0x40];
+typedef struct UsedTextureSetQueue
+{
+    u8 pad[0x20];
+} UsedTextureSetQueue;
 static s32 Initialized;
 static s32 m_cd_drive_status;
 static s32 m_reset;
@@ -168,6 +177,18 @@ BOOL THPPlayerClose(void) {
 void PrepareReady(void *arg0) {
     extern u8 PrepareReadyQueue_8036ED00[];
     OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
+}
+
+s32 THPPlayerPlay(void)
+{
+    if (ActivePlayer.open && (ActivePlayer.state == 1 || ActivePlayer.state == 4))
+    {
+        ActivePlayer.state = 2;
+        ActivePlayer.unk9D = -1;
+        ActivePlayer.playFlag = 0;
+        return 1;
+    }
+    return 0;
 }
 
 void THPPlayerStop(void) {
