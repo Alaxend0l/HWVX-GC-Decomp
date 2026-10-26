@@ -63,3 +63,7 @@ void Gfx_SetAmbientColor(GXColor *color) {
     g_state.ambientColor = *color;
 }
 
+void Gfx_SetBaseColor(GXColor *color) {
+    g_state.unk74 = *color;
+}
+
