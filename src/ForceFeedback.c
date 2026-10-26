@@ -57,3 +57,42 @@ void ForceFeedback_Play(void *effect, Vector4 *dir) {
     }
 }
 
+void ForceFeedback_Heartbeat(void)
+{
+    ForceFeedback *ff;
+    s32 i;
+
+    for (i = 0; i < 24; i++)
+    {
+        ff = &g_forcefeedback[i];
+        if (ff->effect != NULL)
+        {
+            ExtractPointKey((char *)ff->effect + 0x2C, ff->point, g_fDeltaTimeMS);
+            if (ff->unk54 > 0)
+            {
+                ff->unk54 -= g_iDeltaTimeMS;
+            }
+            if (ff->unk58 > 0)
+            {
+                ff->unk58 -= g_iDeltaTimeMS;
+                if (ff->unk58 >= 0)
+                {
+                    ExtractF32Key(*(u8 **)((char *)ff->effect + 0x28), &ff->value, g_fDeltaTimeMS);
+                }
+            }
+            if (ff->magnitude > 0)
+            {
+                ff->magnitude -= g_iDeltaTimeMS;
+                if (ff->magnitude >= 0)
+                {
+                    ExtractF32Key(*(u8 **)((char *)ff->effect + 0x24), &ff->value, g_fDeltaTimeMS);
+                }
+            }
+        }
+        if (ff->unk54 <= 0 && ff->unk58 <= 0 && ff->magnitude <= 0)
+        {
+            ff->effect = NULL;
+        }
+    }
+}
+
