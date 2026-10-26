@@ -744,6 +744,49 @@ void InterfaceManager_SetMissionObjectiveText(u8 *obj, u8 **data) {
     InterfaceManager_SetObjectText(obj, text);
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void InterfaceManager_RestoreMissionObjString(u8 *mgr)
+{
+    u32 strlen(const char *s);
+    char *strcpy(char *dst, const char *src);
+    u32 i;
+    u32 id;
+    u8 *obj;
+    char **str;
+    f32 zero;
+
+    if (*(u32 *)((char *)mgr + 0x25c) == 0)
+    {
+        return;
+    }
+    id = *(u16 *)((char *)*(u8 **)((char *)mgr + 0x25c) + 0xa);
+    if (strlen((char *)(mgr + 0x290)) == 0)
+    {
+        return;
+    }
+    if (g_worldData.world == NULL)
+    {
+        return;
+    }
+    zero = 0.0f;
+    for (i = 0; i < *(u32 *)((char *)g_worldData.world + 0x58); i++)
+    {
+        obj = *(u8 **)((char *)*(u8 **)((char *)g_worldData.world + 0x5c) + i * 8 + 4);
+        if (obj[2] == id)
+        {
+            if (*(f32 *)((char *)*(f32 **)((char *)obj + 0xc) + 4) != zero)
+            {
+                str = *(char ***)((char *)obj + 0x18);
+            }
+            else
+            {
+                str = *(char ***)((char *)obj + 0x14);
+            }
+            strcpy(*str, (char *)(mgr + 0x290));
+        }
+    }
+}
 void InterfaceManager_SetPlayerMessage(void *message, u32 player) {
     extern void *g_playerMessage1;
     extern void *g_playerMessage2;
