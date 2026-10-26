@@ -76,3 +76,8 @@ void Gfx_SetRenderWindow(s32 window) {
     g_pWindow = g_window[window];
 }
 
+s32 Gfx_GetRenderWindowIndex(void) {
+    extern s32 g_currentWindow;
+    return g_currentWindow;
+}
+
