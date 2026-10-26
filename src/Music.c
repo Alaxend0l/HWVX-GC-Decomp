@@ -25,6 +25,11 @@ s32 (*SetMusicTrackOff)(void);
 s32 (*SetMusicTrackVol)(void);
 s32 AudioVoid(void);
 
+extern s32 DestroyMIDI(), SetMIDIState(), SetMIDIVol(), SetMIDIPitch(), SetMIDITempo(), SetMIDIMarker(),
+    SetMIDITrackPriority(), SetMIDITrackOn(), SetMIDITrackOff(), SetMIDITrackVol();
+extern s32 DestroyIT(), SetITState(), SetITVol(), SetITPitch(), SetITTempo(), SetITOrder(),
+    SetITTrackPriority(), SetITTrackOn(), SetITTrackOff(), SetITTrackVol();
+
 #pragma push
 #pragma optimization_level 1
 s32 AudioMusic_Create(void)
@@ -83,59 +88,59 @@ s32 AudioVoid(void)
 #pragma optimization_level 1
 void CreateMusic(u8 *data, u32 size)
 {
-    s8 CmpType_(u8 *chunk, s32 type);
-    s8 CmpID_(u8 *chunk, s32 id);
-    void CreateMIDI(u8 *data, u32 size);
-    void CreateIT(u8 *data, u32 size);
-    extern s32 DestroyMIDI();
-    extern s32 SetMIDIState();
-    extern s32 SetMIDIVol();
-    extern s32 SetMIDIPitch();
-    extern s32 SetMIDITempo();
-    extern s32 SetMIDIMarker();
-    extern s32 SetMIDITrackPriority();
-    extern s32 SetMIDITrackOn();
-    extern s32 SetMIDITrackOff();
-    extern s32 SetMIDITrackVol();
-    extern s32 DestroyIT();
-    extern s32 SetITState();
-    extern s32 SetITVol();
-    extern s32 SetITPitch();
-    extern s32 SetITTempo();
-    extern s32 SetITOrder();
-    extern s32 SetITTrackPriority();
-    extern s32 SetITTrackOn();
-    extern s32 SetITTrackOff();
-    extern s32 SetITTrackVol();
+	s8 CmpType_(u8 *chunk, s32 type);
+	s8 CmpID_(u8 *chunk, s32 id);
+	void CreateMIDI(u8 *data, u32 size);
+	void CreateIT(u8 *data, u32 size);
+	extern s32 DestroyMIDI();
+	extern s32 SetMIDIState();
+	extern s32 SetMIDIVol();
+	extern s32 SetMIDIPitch();
+	extern s32 SetMIDITempo();
+	extern s32 SetMIDIMarker();
+	extern s32 SetMIDITrackPriority();
+	extern s32 SetMIDITrackOn();
+	extern s32 SetMIDITrackOff();
+	extern s32 SetMIDITrackVol();
+	extern s32 DestroyIT();
+	extern s32 SetITState();
+	extern s32 SetITVol();
+	extern s32 SetITPitch();
+	extern s32 SetITTempo();
+	extern s32 SetITOrder();
+	extern s32 SetITTrackPriority();
+	extern s32 SetITTrackOn();
+	extern s32 SetITTrackOff();
+	extern s32 SetITTrackVol();
 
-    if (data && size) {
-        if (CmpType_(data, 'MIDI')) {
-            DestroyMusic = DestroyMIDI;
-            SetMusicState = SetMIDIState;
-            SetMusicVolume = SetMIDIVol;
-            SetMusicPitch = SetMIDIPitch;
-            SetMusicTempo = SetMIDITempo;
-            SetMusicOrder = SetMIDIMarker;
-            SetMusicTrackPriority = SetMIDITrackPriority;
-            SetMusicTrackOn = SetMIDITrackOn;
-            SetMusicTrackOff = SetMIDITrackOff;
-            SetMusicTrackVol = SetMIDITrackVol;
-            CreateMIDI(data, size);
-        }
-        else if (CmpID_(data, 'IMPM')) {
-            DestroyMusic = DestroyIT;
-            SetMusicState = SetITState;
-            SetMusicVolume = SetITVol;
-            SetMusicPitch = SetITPitch;
-            SetMusicTempo = SetITTempo;
-            SetMusicOrder = SetITOrder;
-            SetMusicTrackPriority = SetITTrackPriority;
-            SetMusicTrackOn = SetITTrackOn;
-            SetMusicTrackOff = SetITTrackOff;
-            SetMusicTrackVol = SetITTrackVol;
-            CreateIT(data, size);
-        }
-    }
+	if (data && size) {
+		if (CmpType_(data, 'MIDI')) {
+			DestroyMusic = DestroyMIDI;
+			SetMusicState = SetMIDIState;
+			SetMusicVolume = SetMIDIVol;
+			SetMusicPitch = SetMIDIPitch;
+			SetMusicTempo = SetMIDITempo;
+			SetMusicOrder = SetMIDIMarker;
+			SetMusicTrackPriority = SetMIDITrackPriority;
+			SetMusicTrackOn = SetMIDITrackOn;
+			SetMusicTrackOff = SetMIDITrackOff;
+			SetMusicTrackVol = SetMIDITrackVol;
+			CreateMIDI(data, size);
+		}
+		else if (CmpID_(data, 'IMPM')) {
+			DestroyMusic = DestroyIT;
+			SetMusicState = SetITState;
+			SetMusicVolume = SetITVol;
+			SetMusicPitch = SetITPitch;
+			SetMusicTempo = SetITTempo;
+			SetMusicOrder = SetITOrder;
+			SetMusicTrackPriority = SetITTrackPriority;
+			SetMusicTrackOn = SetITTrackOn;
+			SetMusicTrackOff = SetITTrackOff;
+			SetMusicTrackVol = SetITTrackVol;
+			CreateIT(data, size);
+		}
+	}
 }
 #pragma pop
 
