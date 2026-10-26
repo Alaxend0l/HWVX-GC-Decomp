@@ -8,3 +8,11 @@ typedef struct SoundSequence {
 } SoundSequence;
 
 u32 ThingManager_GetActiveSoundSequences(u8 **list, u32 max);
+
+s32 SoundSeq_Invalidate(SoundSequence *seq, u32 start, u32 end)
+{
+    if ((u32)seq->params >= start && (u32)seq->params < end) {
+        return 1;
+    }
+    return 0;
+}
