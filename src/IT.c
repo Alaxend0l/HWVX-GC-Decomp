@@ -54,3 +54,44 @@ void SetITTrackOn(u32 mask, s8 deferred)
     }
 }
 
+void SetITTrackOff(u32 mask, s8 deferred)
+{
+    extern u32 g_trkOff;
+    IT_TRACK *trk;
+    IT_VOICE *voice;
+    IT_VOICE *next;
+
+    if (deferred)
+    {
+        g_trkOff |= mask;
+        return;
+    }
+    for (trk = g_trk; mask != 0; trk++)
+    {
+        if (mask & 1)
+        {
+            trk->state = 0;
+            voice = trk->head;
+            trk->head = NULL;
+            trk->active = NULL;
+            while (voice != NULL)
+            {
+                next = voice->next;
+                SetVoiceState_(voice, 3);
+                voice = next;
+            }
+        }
+        mask >>= 1;
+    }
+}
+
+void SetTrackVol(IT_TRACK *trk)
+{
+    IT_VOICE *voice;
+
+    for (voice = trk->head; voice != NULL; voice = voice->next)
+    {
+        SetVoiceVol_(voice, trk->gvol);
+    }
+}
+
