@@ -53,6 +53,7 @@ typedef struct LGWheels
 
 	/* The wheel's own methods, defined in src/LGWheels.cpp. */
 	u8		IsOpened(s32 chan);
+		/* 0x1416 */
 	void		PlayOverallForceGain(s32 chan, s32 gain);
 		/* 0x1416 */
 } LGWheels;
