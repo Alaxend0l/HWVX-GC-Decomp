@@ -1,6 +1,18 @@
 #include "common.h"
 
 
+void ThingManagerList_ReleaseAll(void **list) {
+    void *thing;
+    void *next;
+
+    thing = *list;
+    while (thing != NULL) {
+        next = M2C_FIELD(thing, void **, 0xA4);
+        M2C_FIELD(M2C_FIELD(thing, void **, 0x8C), void (**)(void *), 4)(thing);
+        thing = next;
+    }
+}
+
 void ThingManager_DARYL_Init(void) {
     M2C_UNK ThingManager_DARYL_Release();
     M2C_UNK MatrixCache_Init();
