@@ -223,6 +223,10 @@ s32 ThingManager_GetActiveSoundSequences(void **seqs) {
     return count;
 }
 
+s32 GetAllTargets(void **targets) {
+    return ThingManager_GetActiveCars(targets);
+}
+
 s32 TriggerPlayerVehicleGear(u32 *params) {
     extern u8 g_cameraManager[];
     u8 *vehicle = M2C_FIELD(*(u8 **)g_cameraManager, u8 **, 0x2C);
