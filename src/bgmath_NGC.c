@@ -22,6 +22,13 @@ void CopyVector(Vector *dst, Vector *src) {
     *dst = *src;
 }
 
+void CopyMatrix(Matrix4 *dst, Matrix4 *src)
+{
+    void *memcpy(void *dst, const void *src, u32 n);
+
+    memcpy(dst, src, 0x40);
+}
+
 void SinCos(f32 *s, f32 *c, f32 angle)
 {
     f64 sin(f32);
@@ -109,6 +116,22 @@ void DistanceXYZ(Vector *a, Vector *b, f32 *dist)
     dx = a->x - b->x;
     dz = a->z - b->z;
     *dist = Sqrt(dy * dy + dx * dx + dz * dz);
+}
+
+s32 CompareDistances(Vector *a, Vector *b, f32 dist)
+{
+    f32 dy = a->y - b->y;
+    f32 dx = a->x - b->x;
+    f32 dz = a->z - b->z;
+    f32 len = dy * dy + dx * dx + dz * dz;
+
+    if (len > dist * dist) {
+        return 1;
+    }
+    if (len < dist * dist) {
+        return -1;
+    }
+    return 0;
 }
 
 void GetComponentOfVector(void *arg0, void *arg1) {
