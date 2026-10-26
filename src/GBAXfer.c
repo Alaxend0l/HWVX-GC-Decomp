@@ -11,3 +11,13 @@ typedef struct GBAControl
 } GBAControl;
 
 extern GBAControl __GBA[4];
+
+s64 __GBASetDelay(s32 chan, s64 delay)
+{
+	GBAControl *gba = &__GBA[chan];
+	s64 oldDelay = gba->delay;
+
+	gba->delay = delay;
+
+ return oldDelay;
+}
