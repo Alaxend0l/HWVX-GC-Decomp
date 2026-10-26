@@ -14,6 +14,12 @@ typedef struct Wheels
 	u8		nonLinValues[0x800];	/* 0x028 non-linear force table */
 	u32		overallGainId[4];		/* 0x828 per-channel gain ids, handed to Force (by reference) */
 	u8		unk838[0x48];		/* 0x838 */
+
+		/* The wheel's own methods, in main/Wheels. */
+		u8		IsOpened(s32 chan);
+		/* 0x880 */
+		void		GenerateNonLinValues(s32 chan, u8 coefficient);
+		/* 0x880 */
 } Wheels;
 
 /* The force-feedback effect set: 0xA0 bytes, embedded in LGWheels at 0x10AC. */
