@@ -47,6 +47,16 @@ void Thing_DynamicRotation(void)
 
 }
 
+s32 Thing_GetSource(void *arg0) {
+    void *temp_r3;
+
+    temp_r3 = M2C_FIELD(arg0, void **, 0x94);
+    if (temp_r3 != NULL) {
+        return M2C_FIELD(temp_r3, s32 *, 0x2C);
+    }
+    return 0;
+}
+
 void Thing_SetSlavePlayers(void *thing) {
     void *slave;
 
