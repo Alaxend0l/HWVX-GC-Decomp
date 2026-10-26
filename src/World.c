@@ -66,6 +66,14 @@ void *World_GetTileLight(u32 index) {
     return NULL;
 }
 
+void *World_GetVolume(u32 index) {
+    void *world = g_worldData.world;
+    if (index < M2C_FIELD(world, u32 *, 0x68)) {
+        return M2C_FIELD(world, u8 **, 0x6C) + index * 0x30;
+    }
+    return NULL;
+}
+
 void *World_GetNavHolder(void) {
     return M2C_FIELD(g_worldData.world, void **, 0x78);
 }
