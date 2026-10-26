@@ -279,6 +279,34 @@ s32 StateGamePlay_Shutdown(void) {
     return 1;
 }
 
+void GamePlay_Interface(void *msg) {
+    void GamePlay_Startup(void);
+    extern struct {
+        void (*handleInput)(void *msg);
+        void (*update)(void *msg);
+    } g_handleInterfaceGP;
+
+    switch (M2C_FIELD(msg, u16 *, 4)) {
+    case 3:
+        GamePlay_Startup();
+        if (g_handleInterfaceGP.handleInput != NULL) {
+            g_handleInterfaceGP.handleInput(msg);
+        }
+        break;
+    case 1:
+        if (g_handleInterfaceGP.update != NULL) {
+            g_handleInterfaceGP.update(msg);
+        }
+        break;
+    case 2:
+    default:
+        if (g_handleInterfaceGP.handleInput != NULL) {
+            g_handleInterfaceGP.handleInput(msg);
+        }
+        break;
+    }
+}
+
 void InterfaceInputAnimator_Release(void) {
     static const char name[] = "InterfaceInput";
     ProcessManager_Release((char *)name);
