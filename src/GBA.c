@@ -17,3 +17,10 @@ typedef struct GBAControl
 
 extern GBAControl __GBA[4];
 extern s32 __GBAReset;
+
+s32 OnReset(void)
+{
+	__GBAReset = 1;
+
+ return 1;
+}
