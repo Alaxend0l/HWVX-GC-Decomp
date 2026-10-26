@@ -11,6 +11,22 @@ void memset(void *dst, s32 c, u32 n);
 void Deallocate(void *alloc);
 s32 FileStreaming_ReleaseAllDataPacks(s32 type, s8 wait);
 extern u8 g_bLoadingThreadRunning;
+extern s8 g_bLoadQuadrants;
+extern s8 g_bLoadDataPack;
+extern s32 g_numDataPacksToRelease;
+extern s32 g_numQuadPacksToRelease;
+extern void *g_pPacksToBeReleased[10];
+extern void *g_pQuadPackToBeReleased[11];
+extern s32 g_dataPackToLoadType;
+s32 FileStreaming_GetPackID(char *name, s32 type, u32 id);
+void FileStreaming_HeartBeat(void);
+void LoadDataPack(void);
+void FileStreaming_LoadingThread(void);
+void DataPack_LoadFile(s32 file, void *pack, s32 type, s32 size, s32 *out);
+void DataPack_ReleaseDataPack(void *pack);
+void DataPack_ReleaseQuadPack(void *pack);
+void LoadQuadrants(s32 arg0);
+void EndThread(void);
 
 #pragma push
 #pragma use_lmw_stmw on
