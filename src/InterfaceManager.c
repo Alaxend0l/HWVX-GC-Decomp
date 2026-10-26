@@ -419,6 +419,136 @@ s32 ActionInterfacePlay(s32 *arg0) {
     return 1;
 }
 
+s32 ActionHUDChangeMode(u32 *action) {
+    extern u8 g_cameraManager[];
+    void Player_RefreshInterface(void *player);
+    void InterfaceManager_ReleaseInterface(u32 index);
+    s32 i;
+
+    for (i = 0; i < g_cameraManager[0x640]; i++) {
+        if (action[1] == 1) {
+            Player_RefreshInterface(M2C_FIELD(g_cameraManager + i * 0x190, void **, 0));
+        } else {
+            InterfaceManager_ReleaseInterface(M2C_FIELD(M2C_FIELD(g_cameraManager + i * 0x190, u8 **, 0), u32 *, 0x68));
+            M2C_FIELD(M2C_FIELD(g_cameraManager + i * 0x190, u8 **, 0), s32 *, 0x68) = -1;
+        }
+    }
+    return 1;
+}
+
+void InterfaceManager_DrawMap(u8 *obj, u8 *iface) {
+    typedef struct RectVtx {
+        f32 x;
+        f32 y;
+        f32 z;
+        f32 pad;
+        f32 s;
+        f32 t;
+        u32 color;
+        u32 pad2;
+    } RectVtx;
+    typedef struct Rect {
+        RectVtx v[4];
+        u16 tex;
+        u8 blendMode;
+        u8 window;
+    } Rect;
+    typedef struct Colour {
+        u8 r, g, b, a;
+    } Colour;
+    Rect *Gfx_Add2DRectangle(void);
+    f32 ArcTan(f32 y, f32 x);
+    void SinCosRad(f32 *s, f32 *c, f32 rad);
+    Colour colour;
+    f32 s;
+    f32 c;
+    Rect *rect;
+    f32 x, z;
+    f32 scaleX, scaleZ;
+    f32 offsetX, offsetZ;
+    f32 halfW, halfH;
+    u8 *player;
+
+    if (*(u8 **)(iface + 8) != NULL && *(u8 **)(*(u8 **)(iface + 8) + 0x2C) != NULL &&
+        *(u32 *)((u8 *)World_GetGameData() + 0x78) != 0) {
+        x = *(f32 *)(*(u8 **)(*(u8 **)(iface + 8) + 0x2C) + 0x40);
+        z = *(f32 *)(*(u8 **)(*(u8 **)(iface + 8) + 0x2C) + 0x48);
+    } else {
+        return;
+    }
+    scaleX = *(f32 *)((u8 *)World_GetGameData() + 0x4);
+    scaleZ = *(f32 *)((u8 *)World_GetGameData() + 0x8);
+    offsetX = *(f32 *)((u8 *)World_GetGameData() + 0x58);
+    offsetZ = *(f32 *)((u8 *)World_GetGameData() + 0x5C);
+    halfW = *(f32 *)((u8 *)World_GetGameData() + 0x60);
+    halfH = *(f32 *)((u8 *)World_GetGameData() + 0x64);
+    rect = Gfx_Add2DRectangle();
+    rect->blendMode = 2;
+    rect->tex = *(u32 *)((u8 *)World_GetGameData() + 0x78);
+    rect->v[0].x = *(f32 *)(obj + 0x60);
+    rect->v[0].y = *(f32 *)(obj + 0x64);
+    rect->v[1].x = *(f32 *)(obj + 0x60) + *(f32 *)(obj + 0x30);
+    rect->v[1].y = *(f32 *)(obj + 0x64);
+    rect->v[2].x = *(f32 *)(obj + 0x60) + *(f32 *)(obj + 0x30);
+    rect->v[2].y = *(f32 *)(obj + 0x64) + *(f32 *)(obj + 0x34);
+    rect->v[3].x = *(f32 *)(obj + 0x60);
+    rect->v[3].y = *(f32 *)(obj + 0x64) + *(f32 *)(obj + 0x34);
+    x = offsetX + x / scaleX;
+    z = offsetZ + -z / scaleZ;
+    player = *(u8 **)(*(u8 **)(iface + 8) + 0x2C);
+    SinCosRad(&s, &c, 1.5707964f + ArcTan(*(f32 *)(player + 0x38), *(f32 *)(player + 0x30)));
+    rect->v[0].s = x - halfW * c;
+    rect->v[0].t = halfH * s + z;
+    rect->v[1].s = halfW * s + x;
+    rect->v[1].t = halfH * c + z;
+    rect->v[2].s = halfW * c + x;
+    rect->v[2].t = z - halfH * s;
+    rect->v[3].s = x - halfW * s;
+    rect->v[3].t = z - halfH * c;
+    rect->v[0].color = *(u32 *)(obj + 0x24);
+    rect->v[1].color = *(u32 *)(obj + 0x24);
+    rect->v[2].color = *(u32 *)(obj + 0x24);
+    rect->v[3].color = *(u32 *)(obj + 0x24);
+    rect = Gfx_Add2DRectangle();
+    rect->blendMode = 2;
+    rect->tex = 0xFFFF;
+    colour.r = colour.g = colour.b = 0xFF;
+    colour.a = 0xFF;
+    rect->v[0].x = *(f32 *)(obj + 0x30) / 2.0f + *(f32 *)(obj + 0x60) - 1.0f;
+    rect->v[0].y = *(f32 *)(obj + 0x34) / 2.0f + *(f32 *)(obj + 0x64) - 1.0f;
+    rect->v[1].x = 1.0f + (*(f32 *)(obj + 0x30) / 2.0f + *(f32 *)(obj + 0x60));
+    rect->v[1].y = *(f32 *)(obj + 0x34) / 2.0f + *(f32 *)(obj + 0x64) - 1.0f;
+    rect->v[2].x = 1.0f + (*(f32 *)(obj + 0x30) / 2.0f + *(f32 *)(obj + 0x60));
+    rect->v[2].y = 1.0f + (*(f32 *)(obj + 0x34) / 2.0f + *(f32 *)(obj + 0x64));
+    rect->v[3].x = *(f32 *)(obj + 0x30) / 2.0f + *(f32 *)(obj + 0x60) - 1.0f;
+    rect->v[3].y = 1.0f + (*(f32 *)(obj + 0x34) / 2.0f + *(f32 *)(obj + 0x64));
+    rect->v[0].s = 0.0f;
+    rect->v[0].t = 1.0f;
+    rect->v[1].s = 1.0f;
+    rect->v[1].t = 1.0f;
+    rect->v[2].s = 1.0f;
+    rect->v[2].t = 0.0f;
+    rect->v[3].s = 0.0f;
+    rect->v[3].t = 0.0f;
+    rect->v[0].color = *(u32 *)&colour;
+    rect->v[1].color = *(u32 *)&colour;
+    rect->v[2].color = *(u32 *)&colour;
+    rect->v[3].color = *(u32 *)&colour;
+}
+
+void DropShip_EndInterface(s32 index) {
+    extern u8 g_interface[][0x170];
+    void InterfaceManager_SetLoadState(void *iface, s32 state);
+    void InterfaceManager_MoveInterface(void *iface, f32 time);
+    u8 *iface = g_interface[index];
+
+    *(u16 *)(*(u32 *)(*(u32 *)(iface + 0x1C) + 8) + 6) = 8;
+    if (*(u32 *)(iface + 4) != 1) {
+        InterfaceManager_SetLoadState(iface, 1);
+        InterfaceManager_MoveInterface(iface, 0.0f);
+    }
+}
+
 void InterfaceManager_SetMissionObjectiveText(u8 *obj, u8 **data) {
     u32 strlen(const char *s);
     char *strcpy(char *dst, const char *src);
