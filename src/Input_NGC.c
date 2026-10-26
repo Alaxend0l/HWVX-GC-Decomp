@@ -121,3 +121,16 @@ void Wheel_PlayAllAirborne(void) {
 
 }
 
+void PadSamplingCallback__Fv(void) {
+    PADStatus pads[4];
+    s32 i;
+
+    PADRead(pads);
+    PADClamp(pads);
+    for (i = 0; i < 4; i++) {
+        if (pads[i].err != -3) {
+            memcpy(&ngcPad[i], &pads[i], sizeof(PADStatus));
+        }
+    }
+}
+
