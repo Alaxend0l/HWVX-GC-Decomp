@@ -95,6 +95,42 @@ void Creature_Release(Creature *creature) {
     Thing_Release(creature);
 }
 
+void Creature_MicroStep(void *arg0, f32 dt) {
+    void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0);
+    struct CreatureModel {
+        u8 unk0[0x14];
+        u32 *numBones;
+    };
+    struct Matrix4 {
+        Vector4 v[4];
+    };
+    struct Creature {
+        u8 unk0[0x40];
+        Vector4 pos;
+        u8 unk50[0x74 - 0x50];
+        u32 flags;
+        u8 unk78[0xCC - 0x78];
+        struct CreatureModel *model;
+        u8 unkD0[0xDC - 0xD0];
+        struct Matrix4 *bones;
+        u8 unkE0[0x1A0 - 0xE0];
+        Vector4 vel;
+    } *creature = arg0;
+    Vector4 pos[1];
+    u32 i;
+    u32 *numBones;
+
+    AccumulateVector(&creature->vel, &creature->pos, pos, dt);
+    creature->pos = pos[0];
+    numBones = creature->model->numBones;
+    for (i = 0; i < *numBones; i++) {
+        creature->bones[i].v[3].x += creature->vel.x * dt;
+        creature->bones[i].v[3].y += creature->vel.y * dt;
+        creature->bones[i].v[3].z += creature->vel.z * dt;
+    }
+    creature->flags &= ~0x4000;
+}
+
 void Creature_Draw(Creature *creature) {
     if (creature->unk1C0 > 0.0f) {
         MotionState_Draw(creature->motion);
