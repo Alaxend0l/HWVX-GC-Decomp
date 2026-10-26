@@ -24,6 +24,10 @@ void Thing_Release(s32 thing) {
     }
 }
 
+s32 Thing_PreMove(void) {
+    return 1;
+}
+
 void Thing_Draw(void)
 {
 
