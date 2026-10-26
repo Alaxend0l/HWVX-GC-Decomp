@@ -15,3 +15,9 @@ s32 DSPCheckInit(void) {
     extern s32 __DSP_init_flag;
     return __DSP_init_flag;
 }
+
+s32 DSPGetDMAStatus(void)
+{
+    return *(u16 *)0xCC00500A & 0x200;
+}
+
