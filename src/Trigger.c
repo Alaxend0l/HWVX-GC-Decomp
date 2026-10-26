@@ -14,3 +14,7 @@ s32 TriggerCreaturePickedUp(void) {
     return 1;
 }
 
+s32 TriggerTrue(void) {
+    return 1;
+}
+
