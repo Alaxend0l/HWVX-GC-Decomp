@@ -6,17 +6,9 @@ void __CARDDefaultApiCallback(void)
 }
 
 extern int CARDUnmount(int);
-int OnReset(int arg0)
+s32 OnReset(s32 arg0)
 {
-    if (arg0 != 0)
-    {
-        return 1;
-    }
-    if (CARDUnmount(0) == -1)
-    {
-        return 0;
-    }
-    if (CARDUnmount(1) == -1)
+    if ((arg0 == 0) && ((CARDUnmount(0) == -1) || (CARDUnmount(1) == -1)))
     {
         return 0;
     }
