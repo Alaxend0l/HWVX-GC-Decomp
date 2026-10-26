@@ -8,6 +8,7 @@ typedef struct Corona {
     u8 *track;          /* 0x00 */
     u8 pad04[0x1C];     /* 0x04 */
     f32 color[4];       /* 0x20 */
+    u8 pad30[0x1C];     /* 0x30 */
     u8 active;          /* 0x4C */
     u8 pad4D[7];        /* 0x4D */
     u32 time;           /* 0x54 */
@@ -23,3 +24,30 @@ void CoronaHolder_Init(void) {
     g_coronaRayTest = 0;
     g_totalCoronas = 0;
 }
+
+void CoronaHolder_Heartbeat(void) {
+    Corona *corona;
+    u32 delta;
+    u32 i;
+
+    delta = g_iDeltaTimeMS;
+    for (i = 0; i < g_totalCoronas; i++) {
+        corona = &g_aCorona[i];
+        if (corona->playing) {
+            if (corona->time < *(u16 *)(corona->track + 0x02)) {
+                corona->active = 1;
+                corona->time += delta;
+                ExtractColorKey(corona->track + 0x18, corona->color, corona->time);
+            }
+        } else if (corona->time != 0) {
+            corona->active = 1;
+            if (delta < corona->time) {
+                corona->time -= delta;
+                ExtractColorKey(corona->track + 0x18, corona->color, corona->time);
+            } else {
+                corona->time = 0;
+            }
+        }
+    }
+}
+
