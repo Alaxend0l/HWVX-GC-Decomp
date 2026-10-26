@@ -24,8 +24,7 @@ void OSResetSystem(s32 reset, u32 resetCode, s32 forceMenu);
 
 void __check_pad3(void)
 {
-    if ((*((u16 *)0x800030e4) & 0xeef) == 0xeef)
-    {
+    if ((*((u16 *)0x800030e4) & 0xeef) == 0xeef) {
         OSResetSystem(0, 0, 0);
     }
 }
