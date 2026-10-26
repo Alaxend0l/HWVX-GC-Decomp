@@ -16,6 +16,7 @@ s32 __AXAuxDspReadPosition;
 s32 __AXAuxDspWritePositionDpl2;
 s32 __AXAuxDspReadPositionDpl2;
 s32 __AXAuxCpuReadWritePosition;
+s32 __AXClMode;
 
 
 void __AXAuxQuit(void) {
