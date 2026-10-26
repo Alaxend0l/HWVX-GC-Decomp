@@ -61,6 +61,44 @@ s32 Thing_GetSource(void *arg0) {
     return 0;
 }
 
+s32 TriggerAirboxEntered(u32 *arg0) {
+    M2C_UNK sp8;
+    s32 temp_r30;
+    u32 *var_r31;
+    u32 temp_r27;
+    u32 temp_r3;
+    u32 var_r26;
+    u32 var_r28;
+    void *temp_r29;
+
+    var_r28 = 0U;
+    var_r31 = arg0;
+    temp_r27 = *arg0;
+    temp_r30 = (temp_r27 * 4) + 4;
+loop_9:
+    if (var_r28 >= temp_r27) {
+        return 0;
+    }
+    temp_r29 = M2C_FIELD(var_r31, void **, 4);
+    if ((u32) M2C_FIELD(temp_r29, u32 *, 4) == 1U) {
+        var_r26 = 0U;
+loop_7:
+        if (var_r26 >= (u32) *(arg0 + temp_r30)) {
+            goto block_8;
+        }
+        temp_r3 = M2C_FIELD(*(arg0 + ((temp_r27 + var_r26 + 2) * 4)), u32 *, 0x28);
+        if ((temp_r3 != 0U) && (IsPointWithinVolume(temp_r3 + 0x40, temp_r29, &sp8) != 0)) {
+            return 1;
+        }
+        var_r26 += 1;
+        goto loop_7;
+    }
+block_8:
+    var_r31 += 4;
+    var_r28 += 1;
+    goto loop_9;
+}
+
 s32 TriggerCreatureVolumeEntered(u32 *arg0) {
     M2C_UNK sp8;
     s32 temp_r30;
@@ -97,6 +135,107 @@ block_8:
     var_r31 += 4;
     var_r28 += 1;
     goto loop_9;
+}
+
+s32 TriggerItemVolumeEntered(u32 *trigger) {
+    f32 dist;
+    u8 *thing;
+    u32 i;
+    u32 numThings;
+    u32 j;
+    u8 *volume;
+
+    numThings = trigger[0];
+    for (i = 0; i < numThings; i++) {
+        thing = (u8 *)trigger[i + 1];
+        for (j = 0; j < trigger[numThings + 1]; j++) {
+            volume = M2C_FIELD(trigger[numThings + 2 + j], u8 **, 0x24);
+            if (volume != NULL) {
+                if (M2C_FIELD(volume, u8 **, 0x94) != NULL && M2C_FIELD(M2C_FIELD(volume, u8 **, 0x94), u8 **, 0x2C) != NULL) {
+                    volume = M2C_FIELD(M2C_FIELD(volume, u8 **, 0x94), u8 **, 0x2C);
+                }
+                if (M2C_FIELD(thing, u32 *, 4) == 1 && IsPointWithinVolume((Vector4 *)(volume + 0x40), thing, &dist)) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+s32 TriggerMovableVolumeEntered(u32 *trigger) {
+    f32 dist;
+    u8 *thing;
+    u32 i;
+    u32 numThings;
+    u32 j;
+    u8 *volume;
+
+    numThings = trigger[0];
+    for (i = 0; i < numThings; i++) {
+        thing = (u8 *)trigger[i + 1];
+        for (j = 0; j < trigger[numThings + 1]; j++) {
+            volume = M2C_FIELD(trigger[numThings + 2 + j], u8 **, 0x10);
+            if (volume != NULL && M2C_FIELD(thing, u32 *, 4) == 1 && IsPointWithinVolume((Vector4 *)(volume + 0x40), thing, &dist)) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+s32 TriggerAirboxStopIn(u32 *trigger) {
+    f32 PSVECSquareMag(Vector4 *v);
+    f32 dist;
+    u8 *volume;
+    u8 *thing;
+    u32 i;
+    u32 numThings;
+    u32 j;
+
+    numThings = trigger[0];
+    for (i = 0; i < numThings; i++) {
+        thing = (u8 *)trigger[i + 1];
+        for (j = 0; j < trigger[numThings + 1]; j++) {
+            volume = M2C_FIELD(trigger[numThings + 2 + j], u8 **, 0x28);
+            if (M2C_FIELD(thing, u32 *, 4) == 1 && PSVECSquareMag((Vector4 *)volume) < 50.0f && IsPointWithinVolume((Vector4 *)(volume + 0x40), thing, &dist)) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+s32 TriggerAirboxExited(u32 *arg0) {
+    M2C_UNK sp8;
+    s32 temp_r30;
+    u32 *var_r31;
+    u32 temp_r27;
+    u32 var_r26;
+    u32 var_r28;
+    void *temp_r29;
+
+    var_r28 = 0U;
+    var_r31 = arg0;
+    temp_r27 = *arg0;
+    temp_r30 = (temp_r27 * 4) + 4;
+loop_8:
+    if (var_r28 >= temp_r27) {
+        return 1;
+    }
+    temp_r29 = M2C_FIELD(var_r31, void **, 4);
+    var_r26 = 0U;
+loop_6:
+    if (var_r26 >= (u32) *(arg0 + temp_r30)) {
+        var_r31 += 4;
+        var_r28 += 1;
+        goto loop_8;
+    }
+    if (((u32) M2C_FIELD(temp_r29, u32 *, 4) == 1U) && (IsPointWithinVolume(M2C_FIELD(*(arg0 + ((temp_r27 + var_r26 + 2) * 4)), s32 *, 0x28) + 0x40, temp_r29, &sp8) != 0)) {
+        return 0;
+    }
+    var_r26 += 1;
+    goto loop_6;
 }
 
 s32 ActionAirboxChangeMode(s32 *data) {
