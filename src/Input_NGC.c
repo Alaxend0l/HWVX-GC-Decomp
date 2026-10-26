@@ -22,7 +22,7 @@ static u8 s_unk70[0x40];
 static u16 s_keyMap[20];
 static PADStatus s_unkD8[4];
 extern u16 g_pKeyToDI[20];
-
+extern void *wheels;
 
 void Input_Destroy(void) {
     M2C_UNK PADControlMotor(M2C_UNK, M2C_UNK);
@@ -75,5 +75,49 @@ void InitTables__Fv(void) {
     g_pKeyToDI[17] = 0;
     g_pKeyToDI[18] = 0;
     g_pKeyToDI[19] = 0;
+}
+
+void Wheel_PlaySpringForce(s32 chan, s8 offset, u8 saturation, s16 coefficient) {
+    if (IsOpened__8LGWheelsFl(wheels, chan)) {
+        PlaySpringForce__8LGWheelsFlScUcs(wheels, chan, offset, saturation, coefficient);
+    }
+}
+
+void Wheel_PlayDamperForce(s32 chan, u8 coefficient, s16 offset) {
+    if (IsOpened__8LGWheelsFl(wheels, chan)) {
+        PlayDamperForce__8LGWheelsFlUcs(wheels, chan, coefficient, offset);
+    }
+}
+
+void Wheel_PlayConstantForce(s32 chan, u8 coefficient, s16 offset) {
+    if (IsOpened__8LGWheelsFl(wheels, chan)) {
+        PlayConstantForce__8LGWheelsFlsUs(wheels, chan, coefficient, offset);
+    }
+}
+
+void Wheel_PlayCarAirborne(s32 chan) {
+    if (IsOpened__8LGWheelsFl(wheels, chan)) {
+        PlayCarAirborne__8LGWheelsFl(wheels, chan);
+    }
+}
+
+void Wheel_StopCarAirborne(s32 chan) {
+    if (IsOpened__8LGWheelsFl(wheels, chan)) {
+        StopCarAirborne__8LGWheelsFl(wheels, chan);
+    }
+}
+
+void Wheel_PlayFrontalCollisionForce(s32 chan, u8 force) {
+    if (IsOpened__8LGWheelsFl(wheels, chan)) {
+        PlayFrontalCollisionForce__8LGWheelsFlUc(wheels, chan, force);
+    }
+}
+
+s32 Wheel_IsConnected(s32 chan) {
+    return IsConnected__8LGWheelsFl(wheels, chan);
+}
+
+void Wheel_PlayAllAirborne(void) {
+
 }
 
