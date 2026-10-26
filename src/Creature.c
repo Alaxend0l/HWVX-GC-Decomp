@@ -3,6 +3,7 @@
 void MotionState_Draw(void *motionState);
 void MotionState_Release(void *motionState);
 void Thing_Release(void *thing);
+f32 RandomAdd(f32 base, f32 range);
 
 /* parameter 2 of Creature_Init: the spawn description it copies out of */
 typedef struct CreatureInit
