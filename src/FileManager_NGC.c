@@ -68,6 +68,10 @@ s32 FileManager_GetDeviceFreeSpace(s32 device, u32 *freeBytes, u32 *totalBytes) 
     return 1;
 }
 
+s8 FileManager_IsDeviceFormatted(s32 device) {
+    return m_memcardstatus_803C7970[device - 11] == 0;
+}
+
 u32 FileManager_GetDeviceStatus(u32 device) {
     s32 CARDProbeEx(s32 chan, s32 *memSize, s32 *sectorSize);
     s32 CARDMount(s32 chan, void *workArea, void *detachCallback);
@@ -128,6 +132,51 @@ u32 FileManager_GetDeviceStatus(u32 device) {
         return 1;
     }
     return device == 1;
+}
+
+s32 MemCard_Open__FUlPCScUlPl(u32 device, const char *fileName, u32 flags, s32 *unused) {
+    u32 chan;
+    CARDFileInfo *fileInfo;
+    s32 *blockSize;
+
+    chan = device - 11;
+    if (FileManager_GetDeviceStatus(device) == 3) {
+        return 0;
+    }
+    m_memcardstatus_803C7970[chan] = CARDMount(chan, CardWorkArea, 0);
+    OSReport("CARDMount\n");
+    if (m_memcardstatus_803C7970[chan] < 0) {
+        OSReport("CARD error %d\n", m_memcardstatus_803C7970[chan]);
+        return 0;
+    }
+    blockSize = &memCardBlockSize[chan];
+    CARDGetSectorSize(chan, blockSize);
+    fileInfo = &memCardfileInfo[chan];
+    m_memcardstatus_803C7970[chan] = CARDOpen(chan, fileName, fileInfo);
+    if (m_memcardstatus_803C7970[chan] == 0) {
+        return 1;
+    }
+    if (m_memcardstatus_803C7970[chan] == -4 && (flags & 1)) {
+        m_memcardstatus_803C7970[chan] = CARDCreate(chan, fileName, *blockSize, fileInfo);
+        if (m_memcardstatus_803C7970[chan] < 0) {
+            m_memcardstatus_803C7970[chan] = CARDUnmount(chan);
+            OSReport("CARD error %d\n", m_memcardstatus_803C7970[chan]);
+            return 0;
+        }
+        OSReport("CARDCreate\n");
+    } else {
+        m_memcardstatus_803C7970[chan] = CARDUnmount(chan);
+        return 0;
+    }
+    return 1;
+}
+
+void MemCard_Close__Fl(s32 device) {
+    s32 chan = device - 11;
+
+    m_memcardstatus_803C7970[chan] = CARDClose(&memCardfileInfo[chan]);
+    m_memcardstatus_803C7970[chan] = CARDUnmount(chan);
+    OSReport("CARDClose\n");
 }
 
 s32 MemCard_Read__FUllPv(u32 device, s32 size, void *data) {
