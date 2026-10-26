@@ -241,6 +241,49 @@ void GameSettings_ApplyDefaultGameData(void)
     OSSetSoundMode(g_generalGameSettings.audio.speakerMode);
 }
 
+void GameSettings_GetLoadedProgression(s32 *arg0, s32 *arg1)
+{
+    void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
+    extern s8 g_DDRescueGameData[];
+    u8 *mcp;
+    void *pack;
+    s32 state;
+
+    if (bFirstTime)
+    {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL)
+        {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL)
+    {
+        state = mcp[1];
+    }
+    else
+    {
+        state = 0;
+    }
+    switch (state)
+    {
+    case 0:
+        *arg0 = 0;
+        *arg1 = 0;
+        break;
+    case 1:
+        *arg0 = *(s32 *)&g_DDRescueGameData[0x6c];
+        *arg1 = *(s32 *)&g_DDRescueGameData[0x70];
+        GameSettings_SetCodeVariable(0xcb, 1, *(s32 *)&g_DDRescueGameData[0x1cd4]);
+        break;
+    }
+}
+
 void GameSettings_DetermineIfOverwritingFile(void)
 {
     if (g_bValidFileName[g_codeVariables.fileIndex - 1])
