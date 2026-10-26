@@ -137,4 +137,5 @@ void CreateMusic(u8 *data, u32 size)
         }
     }
 }
+#pragma pop
 
