@@ -3,6 +3,16 @@
 typedef struct Vector4 { f32 x; f32 y; f32 z; f32 w; } Vector4;
 typedef struct Matrix4 { Vector4 v[4]; } Matrix4;
 
+typedef struct WorldData
+{
+    void *world;
+    s32 unk4;
+    s32 unk8[4];
+} WorldData;
+extern WorldData g_worldData;
+
+s8 OBoxHitsSegmentZeroTime(void *, void *, void *);
+
 s8 RayHitsTerrain(Vector4 *start, Vector4 *end, void *arg2, void *arg3)
 {
     s8 RayHitsTerrain_Aux3(void *, void *, void *, void *);
