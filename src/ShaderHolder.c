@@ -17,3 +17,19 @@ void ShaderHolder_Init(void) {
     g_pShaderHolder->numGX = 0;
 }
 
+void ShaderHolder_RemoveGX(s32 gx) {
+    extern ShaderHolder *g_pShaderHolder;
+    u32 i;
+
+    if (g_pShaderHolder == NULL) {
+        return;
+    }
+    for (i = 0; i < g_pShaderHolder->numGX; i++) {
+        if (g_pShaderHolder->gx[i].gx == (void *)gx) {
+            g_pShaderHolder->numGX--;
+            g_pShaderHolder->gx[i] = g_pShaderHolder->gx[g_pShaderHolder->numGX];
+            return;
+        }
+    }
+}
+
