@@ -1,12 +1,12 @@
 #include "common.h"
 
+extern s32 g_sources_803C6F38;
 
 void SoundManager_Create(void) {
     M2C_UNK8 Audio_Create();
     void Dprintf(const char *, ...);
     int printf(const char *, ...);
     extern s8 g_songLoaded_803C6F2C;
-    extern s32 g_sources_803C6F38;
     extern s32 g_tracks_803C6F30;
 
     Dprintf("SoundManager_Create()");
@@ -21,7 +21,6 @@ void SoundManager_Create(void) {
 
 void SoundManager_Destroy(void) {
     M2C_UNK Audio_Destroy();
-    extern s32 g_sources_803C6F38;
     extern s32 g_tracks_803C6F30;
     Audio_Destroy();
     Deallocate(g_sources_803C6F38);
@@ -177,6 +176,18 @@ void SoundListener_SetTotalListeners(u32 arg0) {
     if (arg0 != 0U) {
         g_numListeners = arg0 - 1;
     }
+}
+
+void SoundSource_Play(s32 index) {
+}
+
+void SoundSource_Stop(s32 index) {
+}
+
+s8 SoundSource_IsActive(s32 index) {
+}
+
+s8 SoundSource_IsLooping(s32 index) {
 }
 
 void *SoundAudioSample_Play(void *sample) {

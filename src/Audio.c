@@ -28,7 +28,7 @@ s8 Audio_Create(void)
 
 		if (AudioMusic_Create() && AudioIT_Create() && AudioMIDI_Create() && AudioVoice_Create() && Audio_Create_())
 		{
-		 g_init = 1;
+			g_init = 1;
 		}
 	}
 
@@ -37,15 +37,15 @@ s8 Audio_Create(void)
 
 s8 Audio_Init(void)
 {
-	VoiceUpdate = NULL;
+	VoiceUpdate = 0;
 	SongUpdate = NULL;
 
 	if (AudioMusic_Init() && AudioIT_Init() && AudioMIDI_Init() && AudioVoice_Init() && Audio_Init_())
 	{
-		 return 1;
+	 return 1;
 	}
 
-	return 0;
+ return 0;
 }
 
 void Audio_Update(void)

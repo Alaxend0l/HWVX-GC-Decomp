@@ -816,26 +816,6 @@ typedef struct TracerPoint {
   struct TracerPoint *next;
   u8 unk4C[4];
 } TracerPoint;
-
-typedef struct Tracer {
-  TracerPoint points[14];
-  u8 unk460[0x48];
-  TracerPoint *unk4A8;
-  u8 unk4AC[4];
-  TracerPoint *head;
-  TracerPoint *tail;
-  s8 unk4B8[0x4];
-  f32 unk4BC;
-  f32 unk4C0;
-  u32 unk4C4;
-  u32 unk4C8;
-  u16 unk4CC;
-  u16 active;
-  u16 unk4D0;
-  u16 unk4D2;
-  u16 unk4D4;
-  u8 unk4D6[0xA];
-} Tracer;
 typedef struct SpawnVolume {
   u8 *volume;
   u32 unk4;

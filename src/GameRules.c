@@ -106,3 +106,125 @@ void GameRules_SetPlayerOrder(u32 *order, u32 count) {
         }
     }
 }
+
+void GameRules_ResetRound(s8 resetMotion, s8 resetPosition, s8 jettison) {
+    typedef struct SpawnPoint {
+        Vector4 pos;
+        f32 rotX;
+        f32 rotY;
+        f32 rotZ;
+        u8 pad1C[0x24 - 0x1C];
+        u8 *info;
+        u8 *thing;
+    } SpawnPoint;
+    typedef struct CarParams {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        u8 *info;
+        u8 pad34[0x3C - 0x34];
+        u8 *player;
+    } CarParams;
+    extern s8 g_bWaitingForRoundReset;
+    extern s32 g_savedActions_802E12E0[];
+    extern GRTrigger **g_pTimer_803C71C0;
+    extern u32 g_attackDelay;
+    extern Vector4 g_zeroVector;
+    void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void FileStreaming_ResetQuadResources(void);
+    void Trigger_RestoreActions(s32 *saved, u32 count);
+    void InterfaceManager_ReleaseAllInterfaces(void);
+    void *PlayerManager_GetPlayerByIndex(u8);
+    u8 PlayerManager_PlayerCount(void);
+    void SetOrientation(void *m, f32 x, f32 y, f32 z);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    void Player_SetThing(u8 *player, u8 *thing);
+    void MotionState_ReleaseSlavesByType(s32 state, u8 type);
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    s8 Player_IsHuman(void *player);
+    void AI_Car_Reset(u8 *car);
+    void WildCardRack_JettisonAll(void *rack);
+    u32 numPlayers;
+    u32 i;
+    SpawnPoint *spawn;
+    SpawnPoint *sp;
+    u8 *player;
+    u8 *car;
+    void *rack;
+    CarParams params;
+    Matrix4 mtx;
+
+    GameSettings_SetCodeVariable(0x190, 0, GameSettings_GetCodeVariable(0x190, 0) + 1);
+    g_bWaitingForRoundReset = 0;
+    FileStreaming_ResetQuadResources();
+    Trigger_RestoreActions(g_savedActions_802E12E0, 100);
+    InterfaceManager_ReleaseAllInterfaces();
+    if (g_pTimer_803C71C0 != NULL) {
+        (*g_pTimer_803C71C0)->time = GameSettings_GetCodeVariable(0x12E, 0);
+    }
+    if (GameSettings_GetCodeVariable(0x12D, 0) >= 3) {
+        g_attackDelay = 8000;
+    }
+    numPlayers = PlayerManager_PlayerCount();
+    for (i = 0; i < numPlayers; i++) {
+        player = PlayerManager_GetPlayerByIndex(i);
+        GameSettings_SetCodeVariable(0x194, *(s32 *)(player + 0x60), 0);
+        GameSettings_SetCodeVariable(0x193, *(s32 *)(player + 0x60), 0);
+        *(s32 *)(player + 0x78) = 0;
+        *(s32 *)(player + 0x7C) = 0;
+        spawn = *(SpawnPoint **)(player + 0xA8);
+        if (spawn != NULL) {
+            if (*(u8 **)(player + 0x2C) == NULL) {
+                params.pos = spawn->pos;
+                params.pos.y += 10.0f;
+                params.player = player;
+                params.info = spawn->info;
+                params.vel = g_zeroVector;
+                SetOrientation(&mtx, spawn->rotY, spawn->rotX, spawn->rotZ);
+                SubMatrixToQuaternion(&mtx, &params.quat);
+                spawn->thing = ThingManager_DARYL_CreateThing(9, &params);
+                Player_SetThing(player, spawn->thing);
+                *(u8 **)(spawn->thing + 0x90) = *(u8 **)(player + 0xA8);
+            }
+            sp = *(SpawnPoint **)(player + 0xA8);
+            car = *(u8 **)(player + 0x2C);
+            if (resetMotion) {
+                *(u32 *)(car + 0x78) = *(u32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x14);
+                *(u32 *)(car + 0x374) = 0;
+                MotionState_ReleaseSlavesByType((s32)(car + 0x330), 2);
+            }
+            if (resetPosition) {
+                car = *(u8 **)(player + 0x2C);
+                SetOrientation(car + 0x10, sp->rotY, sp->rotX, sp->rotZ);
+                SubMatrixToQuaternion(*(u8 **)(player + 0x2C) + 0x10, (Vector4 *)(*(u8 **)(player + 0x2C) + 0x50));
+                *(f32 *)(*(u8 **)(player + 0x2C) + 0x40) = sp->pos.x;
+                *(f32 *)(*(u8 **)(player + 0x2C) + 0x44) = 10.0f + sp->pos.y;
+                *(f32 *)(*(u8 **)(player + 0x2C) + 0x48) = sp->pos.z;
+                *(f32 *)(*(u8 **)(player + 0x2C) + 0x0) = 0.0f;
+                *(f32 *)(*(u8 **)(player + 0x2C) + 0x4) = 0.0f;
+                *(f32 *)(*(u8 **)(player + 0x2C) + 0x8) = 0.0f;
+                *(Vector4 *)(car + 0x390) = g_zeroVector;
+                *(Vector4 *)(car + 0x380) = g_zeroVector;
+                *(Vector4 *)(car + 0x410) = g_zeroVector;
+                *(f32 *)(car + 0x4E4) = 0.0f;
+                *(f32 *)(car + 0x458) = 0.0f;
+                *(u8 *)(car + 0x4E8) = 1;
+                *(s32 *)(car + 0x3B0) = -1;
+                *(s32 *)(car + 0x3B4) = 1;
+                (*(void (**)(void *))(*(u8 **)(*(u8 **)(player + 0x2C) + 0x8C) + 0xC))(*(u8 **)(player + 0x2C));
+                *(u32 *)(*(u8 **)(player + 0x2C) + 0x74) |= 0x800;
+            }
+            if (jettison || GameSettings_GetCodeVariable(0x135, 0) != 0) {
+                rack = ThingManagerList_GetByType(*(u8 **)(player + 0x2C) + 0x344, 8);
+                if (rack != NULL) {
+                    WildCardRack_JettisonAll(rack);
+                }
+            }
+            if (!Player_IsHuman(player)) {
+                AI_Car_Reset(player);
+            }
+        }
+    }
+}
+

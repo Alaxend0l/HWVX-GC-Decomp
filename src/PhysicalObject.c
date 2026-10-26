@@ -442,3 +442,23 @@ void PhysicalObject_GetInverseLocalInertiaTensor(void *obj, Quaternion *out) {
     *out = *(Quaternion *)((u8 *)obj + 0x120);
 }
 
+f32 PhysicalObject_CollideWithRay(void *thing, void *start, void *end, void *hit, f32 maxDist) {
+    f32 PhysicalProperties_CollideWithRay(void *props, void *pos, void *start, void *end, void *hit);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *out);
+    Vector4 cross;
+    Vector4 offset;
+    Vector4 angVel;
+    f32 dist;
+
+    dist = PhysicalProperties_CollideWithRay(M2C_FIELD(M2C_FIELD(thing, void **, 0xC0), void **, 0x10), (u8 *)thing + 0x10, start, end, hit);
+    if (hit != NULL && dist < maxDist) {
+        angVel = M2C_FIELD(thing, Vector4 *, 0x130);
+        PSVECSubtract((Vector4 *)hit, (Vector4 *)((u8 *)thing + 0x40), &offset);
+        PSVECCrossProduct(&angVel, &offset, &cross);
+        PSVECAdd((Vector4 *)thing, &cross, (Vector4 *)((u8 *)hit + 0x30));
+    }
+    return dist;
+}
+
