@@ -65,6 +65,20 @@ u8 PlayerManager_PlayerCount(void) {
     return count;
 }
 
+void *PlayerManager_GetPlayerByIndex(u8 index) {
+    extern u8 *g_pPlayerManager;
+    u8 i = 0;
+    void *player;
+
+    for (player = M2C_FIELD(g_pPlayerManager, void **, 0x20D8); player != NULL; player = M2C_FIELD(player, void **, 0xB0)) {
+        if (i == index) {
+            return player;
+        }
+        i++;
+    }
+    return NULL;
+}
+
 void PlayerManager_Render_DEBUG(void) {
 
 }
