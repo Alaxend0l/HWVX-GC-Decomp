@@ -63,3 +63,7 @@ void Item_Release(void *item) {
     Thing_Release((s32)item);
 }
 
+s32 Item_PreMove(void) {
+    return 1;
+}
+
