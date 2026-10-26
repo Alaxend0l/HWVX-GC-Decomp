@@ -21,6 +21,10 @@ void World_Init(void) {
     fn_800957D4();
 }
 
+u32 World_GetTotalTiles_Car(void) {
+    return M2C_FIELD(g_worldData.world, u32 *, 0x8);
+}
+
 void *World_GetTileCar(u32 index) {
     void *world = g_worldData.world;
     if (index < M2C_FIELD(world, u32 *, 0x8)) {
