@@ -95,3 +95,9 @@ void AXRegisterAuxACallback(void *callback, void *context)
     __AXContextAuxA = context;
 }
 
+void AXRegisterAuxBCallback(void *callback, void *context)
+{
+    __AXCallbackAuxB = callback;
+    __AXContextAuxB = context;
+}
+
