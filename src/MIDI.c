@@ -22,6 +22,28 @@ MIDI_CHN g_chn[0x10];
 
 void SetVoiceState_(MIDI_VOICE *voice, s32 state);
 
+void AudioMIDI_Destroy(void)
+{
+}
+
+void SetMIDIVol(void)
+{
+    void SetGVol(void *chn);
+    void SetVoiceVol_(void *voice, s32 vol);
+    u8 *chn;
+    u8 *voice;
+    s32 i;
+
+    for (chn = (u8 *)g_chn, i = 0x10; i != 0; chn += 0x20, i--)
+    {
+        SetGVol(chn);
+        for (voice = *(u8 **)chn; voice != NULL; voice = *(u8 **)((u8 *)voice + 4))
+        {
+            SetVoiceVol_(voice, *(s32 *)((u8 *)chn + 0x14));
+        }
+    }
+}
+
 void SetMIDITempo(u32 tempo)
 {
     extern void *g_pHdr;
