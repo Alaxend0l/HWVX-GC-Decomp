@@ -1,6 +1,16 @@
 #include "common.h"
 
 
+void Mover_GetTrackPos(void *mover, f32 *pos, f32 time) {
+    void Gfx_AnimExtractKeyFrame(void *anim, f32 time, void *keyFrame, u32 count);
+    f32 keyFrame[8];
+
+    Gfx_AnimExtractKeyFrame(M2C_FIELD(mover, void **, 0xD4), time, keyFrame, 1);
+    pos[0] = keyFrame[4];
+    pos[1] = keyFrame[5];
+    pos[2] = keyFrame[6];
+}
+
 void PhysicalObject_ProcessForce(u8 *obj, Vector4 *force, Vector4 *dir)
 {
     void PSVECScale(Vector4 *src, Vector4 *dst, u32 scale);
