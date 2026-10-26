@@ -1,6 +1,59 @@
 #include "common.h"
 
 
+s32 AttachThing_Init(void *attach, void *data)
+{
+    f32 RandomAdd(f32, f32);
+    void ExtractColorKey(void *, void *, f32);
+    void ExtractScaleKey(void *, void *, f32);
+    double cos(double);
+    extern u8 g_attachGeometryVTable[];
+    extern u8 g_attachVTable[];
+    typedef struct { u32 x, y, z, w; } Vec4;
+
+    Thing_Init(attach, (s32)data);
+    M2C_FIELD(attach, u32 *, 0x94) = M2C_FIELD(data, u32 *, 0x24);
+    *(Vec4 *)((u8 *)attach + 0x40) = *(Vec4 *)((u8 *)data + 0x10);
+    M2C_FIELD(attach, void **, 0xB4) = M2C_FIELD(data, void **, 0);
+    M2C_FIELD(attach, u8 *, 0x124) = 1;
+    M2C_FIELD(attach, u8 *, 0xF4) = 1;
+    M2C_FIELD(attach, u8 *, 0x15C) = 1;
+    if (M2C_FIELD(M2C_FIELD(attach, void **, 0xB4), void **, 0x2C))
+    {
+        M2C_FIELD(attach, f32 *, 0xC0) = RandomAdd(*(f32 *)((u8 *)M2C_FIELD(M2C_FIELD(attach, void **, 0xB4), void **, 0x2C) + 0x10),
+                                                   *(f32 *)((u8 *)M2C_FIELD(M2C_FIELD(attach, void **, 0xB4), void **, 0x2C) + 0x14));
+    }
+    if ((M2C_FIELD(M2C_FIELD(attach, void **, 0xB4), u32 *, 0x1C) <= 1) &&
+        (M2C_FIELD(M2C_FIELD(attach, void **, 0xB4), u32 *, 0x14) <= 1) &&
+        (M2C_FIELD(M2C_FIELD(attach, void **, 0xB4), u32 *, 0xC) <= 1))
+    {
+        M2C_FIELD(attach, u32 *, 0x74) |= 0x4000;
+    }
+    if (M2C_FIELD(M2C_FIELD(attach, void **, 0xB4), u8 *, 2) == 1)
+    {
+        M2C_FIELD(attach, f32 *, 0xB0) = (f32)cos(0.01745329238474369f * M2C_FIELD(M2C_FIELD(M2C_FIELD(attach, void **, 0xB4), void **, 0x28), f32 *, 0x10));
+    }
+    ExtractColorKey((u8 *)M2C_FIELD(attach, void **, 0xB4) + 0x1C, (u8 *)attach + 0x130, 0.0f);
+    ExtractScaleKey((u8 *)M2C_FIELD(attach, void **, 0xB4) + 0x14, (u8 *)attach + 0xD0, 0.0f);
+    ExtractScaleKey((u8 *)M2C_FIELD(attach, void **, 0xB4) + 0xC, (u8 *)attach + 0x100, 0.0f);
+    M2C_FIELD(attach, u32 *, 0x74) |= 0x400000;
+    M2C_FIELD(attach, u32 *, 0x74) |= 2;
+    M2C_FIELD(attach, u32 *, 0xB8) = 100;
+    M2C_FIELD(attach, f32 *, 0xBC) = 1.0f;
+    M2C_FIELD(attach, f32 *, 0) = 0.0f;
+    M2C_FIELD(attach, f32 *, 4) = 0.0f;
+    M2C_FIELD(attach, f32 *, 8) = 1.0f;
+    if (M2C_FIELD(data, u32 *, 0x20) != 0)
+    {
+        M2C_FIELD(attach, void **, 0x8C) = (void *)g_attachGeometryVTable;
+    }
+    else
+    {
+        M2C_FIELD(attach, void **, 0x8C) = (void *)g_attachVTable;
+    }
+    return 1;
+}
+
 s32 AttachThing_Move(void *thing) {
     extern f32 g_fDeltaTimeMS;
     if (!(M2C_FIELD(thing, u32 *, 0x74) & 0x4000)) {
