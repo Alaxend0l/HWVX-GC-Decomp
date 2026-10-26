@@ -54,3 +54,11 @@ void VertexColorSeqManager_Heartbeat(void) {
     }
 }
 
+void VertexColorSeqManager_AddVertices(void *vertices) {
+    extern s32 g_iTotalVertexColorSeq;
+    extern void *g_pVertexColorSeqList[64];
+    if (vertices != NULL) {
+        g_pVertexColorSeqList[g_iTotalVertexColorSeq++] = vertices;
+    }
+}
+
