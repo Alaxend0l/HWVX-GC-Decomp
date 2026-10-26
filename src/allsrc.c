@@ -180,6 +180,35 @@ s8 AutoCalibrateAxisSigned(s8 *min, s8 *max, s8 value, s8 deadzone, s8 *out)
     return result;
 }
 
+u8 AutoCalibrateAxisUnsigned(u8 *min, u8 *max, u8 value, u8 deadzone, u8 *out)
+{
+    s32 lo = *min;
+    s32 hi = *max;
+    s32 range;
+    s32 result;
+
+    if (value < lo)
+    {
+        *min = value;
+        lo = value;
+    }
+    if (value > hi)
+    {
+        hi = value;
+        *max = value;
+    }
+    range = hi - lo - deadzone * 2;
+    if (range == 0)
+        range = 1;
+    result = (value - (lo + deadzone)) * 255 / range;
+    if (result < 0)
+        result = 0;
+    if (result > 255)
+        result = 255;
+    *out = result;
+    return result;
+}
+
 #pragma pop
 
 s32 LGStartForceEffect(u32 handle)
