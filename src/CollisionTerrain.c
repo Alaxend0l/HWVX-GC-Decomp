@@ -44,6 +44,77 @@ s8 RayHitsTerrain(Vector4 *start, Vector4 *end, void *arg2, void *arg3)
 
 #pragma push
 #pragma use_lmw_stmw on
+s8 OBoxHitsBSP(void *obox, Vector4 *vel, void *bsp, f32 *time, void *arg4)
+{
+    Vector4 corner __attribute__((aligned(16)));
+    Vector4 hitNormal __attribute__((aligned(16)));
+    Vector4 normal __attribute__((aligned(16)));
+    u8 order[8] = {2, 3, 6, 7, 0, 1, 4, 5};
+    u8 *edge;
+    f32 t;
+    f32 hit;
+    u32 i;
+    s8 hitCorner;
+    s8 hitEdge;
+    u32 m;
+    u32 material;
+
+    t = *time;
+    hitCorner = 0;
+    hitEdge = 0;
+    if (*(u32 *)((u8 *)bsp + 0x3c) == 0 && *(u32 *)((u8 *)bsp + 0x40) == 0)
+    {
+        return 0;
+    }
+    for (i = 0; i < *(u32 *)((u8 *)bsp + 0x40) && t > 0.0f; i++)
+    {
+        edge = (u8 *)(*(u8 **)((u8 *)*(void **)g_worldData.world + 0x54) +
+                      (*(u16 **)((u8 *)bsp + 0x44))[i] * 0x30);
+        if (*(u32 *)(edge + 0x20) != g_worldData.unk4)
+        {
+            *(u32 *)(edge + 0x20) = g_worldData.unk4;
+            hit = OBoxHitsSegment(obox, vel, edge, t, arg4);
+            if (hit < t)
+            {
+                t = hit;
+                hitEdge = 1;
+                if (arg4 != NULL)
+                {
+                    ((CollisionInfo *)arg4)->material =
+                        (*(u32 **)((u8 *)*(void **)g_worldData.world + 0x5c))[*(u32 *)(edge + 0x24)];
+                }
+            }
+        }
+    }
+    for (i = 0; i < 8 && t > 0.0f; i++)
+    {
+        m = RayHitsBSP(&((OBoxCorners *)obox)->corners[order[i]], vel, bsp, &t, &hitNormal);
+        if (m != 0)
+        {
+            material = m;
+            hitCorner = 1;
+            corner = ((OBoxCorners *)obox)->corners[order[i]];
+            normal = hitNormal;
+        }
+    }
+    if (!hitEdge && !hitCorner)
+    {
+        return 0;
+    }
+    if (arg4 != NULL && hitCorner)
+    {
+        ((CollisionInfo *)arg4)->type = 0xfe;
+        ((CollisionInfo *)arg4)->material = material;
+        ((CollisionInfo *)arg4)->pos.x = vel->x * t + corner.x;
+        ((CollisionInfo *)arg4)->pos.y = vel->y * t + corner.y;
+        ((CollisionInfo *)arg4)->pos.z = vel->z * t + corner.z;
+        ((CollisionInfo *)arg4)->unk20 = 0;
+        ((CollisionInfo *)arg4)->unk24 = 0;
+        ((CollisionInfo *)arg4)->normal = normal;
+    }
+    *time = t;
+    return 1;
+}
 s8 OBoxHitsBSPZeroTimeEdgesOnly(void *obox, void *bsp, void *arg2)
 {
     u8 *edge;
