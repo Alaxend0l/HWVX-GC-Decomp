@@ -138,6 +138,19 @@ void ReleaseMIDIVoice(void *voice)
     }
 }
 
+#pragma push
+#pragma optimization_level 1
+void ChannelOff(void *chn)
+{
+    void *v;
+
+    for (v = *(void **)chn; v != NULL; v = *(void **)((u8 *)v + 4))
+    {
+        ReleaseMIDIVoice(v);
+    }
+}
+#pragma pop
+
 #pragma pop
 
 #pragma push
