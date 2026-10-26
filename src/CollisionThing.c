@@ -42,6 +42,17 @@ void OConvexHullHolder_Release(OConvexHull *hull) {
     }
 }
 
+void OBoxHolder_Init(void)
+{
+    u32 i;
+
+    Dprintf("OBOXHOLDER: %x\n", g_aOBox);
+    for (i = 0; i < 0x200; i++)
+    {
+        g_aOBox[i].inUse = 0;
+    }
+}
+
 OBoxHolder *OBoxHolder_Get(void) {
     u32 i;
 
