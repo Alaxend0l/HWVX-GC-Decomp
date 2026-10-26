@@ -388,3 +388,19 @@ void MotionState_BuildMatricesWorld(void *arg0, void *arg1, void *motionState, f
     }
 }
 
+s32 AnimNodes_BlowBranch(u8 *node) {
+    s32 count = 1;
+    u32 i;
+    u8 *child = node + 0x20;
+
+    if (node[0x1F] & 3) {
+        return 0;
+    }
+    node[0x1F] |= 2;
+    for (i = 0; i < node[0x1C]; i++) {
+        count += AnimNodes_BlowBranch(child);
+        child += child[0x1E] << 5;
+    }
+    return count;
+}
+

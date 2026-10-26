@@ -64,6 +64,93 @@ s32 AttachThing_Move(void *thing) {
     return 1;
 }
 
+void AttachThing_DrawCorona(void *arg0) {
+    extern s32 g_iDeltaTimeMS;
+    u32 ViewManager_GetViewFormat(void);
+    void Thing_Release(void *thing);
+    void Gfx_TransformVector(Vector4 *in, Vector4 *out);
+    void Gfx_GetCameraPosition(Vector4 *pos);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    s8 RayHitsTerrainAndObjects(void *start, void *dir, void *dist, void *hit);
+    void Gfx_AddCorona(Vector4 *pos, u16 texture, void *color, f32 scaleX, f32 scaleY, s32 blend);
+    typedef struct CoronaColor {
+        u8 r;
+        u8 g;
+        u8 b;
+        u8 a;
+    } CoronaColor;
+    struct AttachData {
+        u8 type;
+        u8 blend;
+        u8 pad2[0x8 - 0x2];
+        u32 texture;
+        u8 padC[0x24 - 0xC];
+        f32 *range;
+    };
+    struct AttachCorona {
+        u8 pad00[0x40];
+        Vector4 pos;
+        u8 pad50[0x74 - 0x50];
+        u32 flags;
+        u8 pad78[0xB4 - 0x78];
+        struct AttachData *data;
+        s32 timer;
+        f32 fade;
+        u8 padC0[0xD0 - 0xC0];
+        f32 scaleX;
+        u8 padD4[0x100 - 0xD4];
+        f32 scaleY;
+        u8 pad104[0x154 - 0x104];
+        CoronaColor color;
+    } *thing = arg0;
+    Vector4 screen;
+    Vector4 camera;
+    Vector4 dir;
+    f32 dist;
+    CoronaColor scaled;
+    CoronaColor color;
+    f32 farDist;
+    f32 nearDist;
+    f32 depth;
+    f32 fade;
+
+    if (ViewManager_GetViewFormat() > 1) {
+        Thing_Release(thing);
+        return;
+    }
+    farDist = thing->data->range[1];
+    nearDist = thing->data->range[0];
+    Gfx_TransformVector(&thing->pos, &screen);
+    depth = screen.w;
+    if (!(depth < 0.0f) && !(depth > farDist)) {
+        thing->timer -= g_iDeltaTimeMS;
+        if (thing->timer < 0) {
+            dist = 1.0f;
+            Gfx_GetCameraPosition(&camera);
+            PSVECSubtract(&thing->pos, &camera, &dir);
+            thing->timer = 100;
+            if (RayHitsTerrainAndObjects(&camera, &dir, &dist, NULL)) {
+                thing->flags |= 0x20;
+                return;
+            }
+            thing->flags &= ~0x20;
+        }
+        if (!(thing->flags & 0x20)) {
+            if (depth > nearDist) {
+                fade = thing->fade * (1.0f - (depth - nearDist) / (farDist - nearDist));
+            } else {
+                fade = thing->fade;
+            }
+            scaled.r = thing->color.r * fade;
+            scaled.g = thing->color.g * fade;
+            scaled.b = thing->color.b * fade;
+            scaled.a = thing->color.a;
+            color = scaled;
+            Gfx_AddCorona(&screen, thing->data->texture, &color, thing->scaleX, thing->scaleY, thing->data->blend);
+        }
+    }
+}
+
 void AttachThing_Draw(void *arg0) {
     M2C_UNK AttachThing_DrawCorona(void *);
     void *Gfx_AddBillBoardSprite(u16);

@@ -22,6 +22,12 @@ typedef struct Matrix4 { Vector4 v[4]; } Matrix4;
 #ifndef NULL
 #define NULL ((void*)0)
 #endif
+typedef struct WorldData
+{
+    void *world;
+    s32 unk4;
+    s32 unk8[4];
+} WorldData;
 
 
 /* What machine drafts (m2c) use for what they can't tell yet: autopilot tries them as they are. */

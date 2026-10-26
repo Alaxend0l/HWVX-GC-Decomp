@@ -36,12 +36,6 @@ void DataPack_ReleaseQuadPack(void *pack);
 void LoadQuadrants(s32 arg0);
 void EndThread(void);
 
-typedef struct WorldData
-{
-    void *world;
-    s32 unk4;
-    s32 unk8[4];
-} WorldData;
 extern WorldData g_worldData;
 extern s32 g_loadingThreadID;
 extern void *g_QuadrantsToLoad[11];
@@ -373,4 +367,3 @@ void LoadDataPack(void)
         DataPack_LoadFile(M2C_FIELD(pack, s32 *, 4), pack + 0x14, g_dataPackToLoadType, M2C_FIELD(pack, s32 *, 8), &result);
     }
 }
-
