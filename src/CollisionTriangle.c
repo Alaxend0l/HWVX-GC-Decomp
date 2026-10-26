@@ -17,6 +17,7 @@ typedef struct CollisionTri {
 } CollisionTri;
 
 extern CollisionTri g_aCollisionTriPairCache[4];
+extern s32 g_iDeltaTimeMS;
 
 void CollisionTriCache_Clear(void) {
     u32 i;
