@@ -99,6 +99,105 @@ block_8:
     goto loop_9;
 }
 
+s32 TriggerP2PActivated(u32 *data) {
+    u32 n = data[0];
+    u32 i;
+    u32 j;
+    u32 k = n + 1;
+
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < data[k]; j++) {
+            if (M2C_FIELD((data + 1)[j + k], s32 *, 0x74) & 0x800) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+s32 ActionVehicleTeleport(u32 *action) {
+    extern Vector4 g_zeroVector;
+    s8 Player_IsHuman(void *player);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    typedef struct {
+        Matrix4 mtx;
+        u8 pad40[0x44 - 0x40];
+        u32 fx;
+        u8 pad48[0x54 - 0x48];
+        u32 flags;
+    } TeleportData;
+    typedef struct {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        Vector4 angVel;
+        u32 id;
+        s32 unk44;
+        f32 unk48;
+        f32 unk4C;
+    } FxParams;
+    typedef struct {
+        Vector4 vel;
+        Matrix4 mtx;
+        Vector4 quat;
+        u8 pad60[0x74 - 0x60];
+        u32 flags;
+        u8 pad78[0x8C - 0x78];
+        void (**vtbl)(void *);
+        u8 pad90[0x94 - 0x90];
+        u8 *player;
+        u8 pad98[0x3B0 - 0x98];
+        s32 unk3B0;
+    } Car;
+    TeleportData *data;
+    u32 i;
+    Car *car;
+    Vector4 local;
+    FxParams params;
+
+    data = (TeleportData *)action[1];
+    for (i = 0; i < action[2]; i++) {
+        car = *(Car **)(action[i + 3] + 0x28);
+        if (data->fx != 0) {
+            params.id = data->fx;
+            params.pos = data->mtx.v[3];
+            SubMatrixToQuaternion(data, &params.quat);
+            params.vel.x = params.vel.y = params.vel.z = 0.0f;
+            params.unk44 = 0;
+            params.unk48 = 0.0f;
+            params.unk4C = 0.0f;
+            params.angVel = g_zeroVector;
+            ThingManager_DARYL_CreateThing(1, &params);
+        }
+        if (data->flags & 2) {
+            InverseXformVecOrientation(&car->mtx, &car->vel, &local);
+            XformVecOrientation(data, &local, &car->vel);
+        } else if (car->player != NULL && *(Car **)(car->player + 0x2C) != NULL &&
+                   *(Car **)(car->player + 0x2C) == car) {
+            car->player[0x32] = 5;
+        }
+        car->mtx = data->mtx;
+        SubMatrixToQuaternion(&car->mtx, &car->quat);
+        car->vtbl[3](car);
+        car->flags |= 0x800;
+        car->unk3B0 = -1;
+        if (!Player_IsHuman(car->player)) {
+            *(s32 *)(car->player + 0x4A4) = 0x20;
+            *(s32 *)(car->player + 0x634) = -0x78;
+        }
+    }
+    return 1;
+}
+
+void Thing_GetInterfaceInfo(void *thing, void *info) {
+    M2C_FIELD(info, s32 *, 0x10) = M2C_FIELD(thing, s32 *, 0x78);
+    M2C_FIELD(info, u32 *, 0x14) = 0.681818f * MagnitudeVector(thing);
+    M2C_FIELD(info, s32 *, 0x18) = 0;
+    M2C_FIELD(info, s32 *, 0x4) = 0;
+}
+
 void Thing_SetSlavePlayers(void *thing) {
     void *slave;
 
