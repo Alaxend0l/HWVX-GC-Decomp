@@ -116,6 +116,10 @@ void Thing_CollideWithRay(void)
 {
 }
 
+s32 Thing_GetOrientedCollision(void) {
+    return 0;
+}
+
 void Thing_PassiveTargeting(void)
 {
 }
