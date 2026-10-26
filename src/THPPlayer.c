@@ -21,7 +21,7 @@ typedef struct THPPlayer {
     u8 playFlag;
     u8 audioExist;
     u8 padA0[5];
-    u32 onMemory;
+    s32 onMemory;
     u8 padAC[0x14];
     u32 unkC0;
     u32 unkC4;
@@ -57,6 +57,23 @@ s32 strcmp(const char *a, const char *b);
 
 #pragma push
 #pragma use_lmw_stmw on
+
+s32 THPPlayerInit(void)
+{
+    void LCEnable(void);
+    void OSInitMessageQueue(char *, char *, s32);
+    s32 THPInit(void);
+
+    memset(&ActivePlayer, 0, 0x198);
+    LCEnable();
+    OSInitMessageQueue((char *)&ActivePlayer + 0x198, (char *)&ActivePlayer + 0x1B8, 3);
+    if (THPInit())
+    {
+        Initialized = 1;
+        return TRUE;
+    }
+    return FALSE;
+}
 
 void THPPlayerQuit(void) {
     M2C_UNK LCDisable();
@@ -172,6 +189,34 @@ BOOL THPPlayerClose(void) {
         return TRUE;
     }
     return FALSE;
+}
+
+s32 THPPlayerCalcNeedMemory(void)
+{
+    u32 pixels;
+    u32 need;
+
+    if (ActivePlayer.open)
+    {
+        if (ActivePlayer.onMemory)
+        {
+            need = (ActivePlayer.unk58 + 0x1F) & ~0x1F;
+        }
+        else
+        {
+            need = ((ActivePlayer.unk44 + 0x1F) & ~0x1F) * 10;
+        }
+        pixels = *(u32 *)&ActivePlayer.videoInfo[0] * *(u32 *)&ActivePlayer.videoInfo[4];
+        need += ((pixels + 0x1F) & ~0x1F) * 3;
+        need += (((pixels >> 2) + 0x1F) & ~0x1F) * 3;
+        need += (((pixels >> 2) + 0x1F) & ~0x1F) * 3;
+        if (ActivePlayer.audioExist)
+        {
+            need += (((ActivePlayer.unk48 << 2) + 0x1F) & ~0x1F) * 3;
+        }
+        return need + 0x1000;
+    }
+    return 0;
 }
 
 void PrepareReady(void *arg0) {
