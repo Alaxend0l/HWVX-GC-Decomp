@@ -112,6 +112,99 @@ void *Thing_GetSurfaceScript(void) {
     return g_defaultSurfaceScript;
 }
 
+void Thing_GetStaticRotationalMinMax(void *thing, Vector4 *min, Vector4 *max) {
+    *max = *(Vector4 *)((u8 *)thing + 0x40);
+    *min = *max;
+    min->x -= M2C_FIELD(thing, f32 *, 0x70);
+    min->y -= M2C_FIELD(thing, f32 *, 0x70);
+    min->z -= M2C_FIELD(thing, f32 *, 0x70);
+    max->x += M2C_FIELD(thing, f32 *, 0x70);
+    max->y += M2C_FIELD(thing, f32 *, 0x70);
+    max->z += M2C_FIELD(thing, f32 *, 0x70);
+}
+
+void Thing_DynamicGridMove(void *thing, f32 expand) {
+    void Grid_MoveObject(s32 obj, Vector4 *min, Vector4 *max);
+    Vector4 min;
+    Vector4 max;
+
+    if (M2C_FIELD(thing, u32 *, 0x84) != 0) {
+        Thing_GetDynamicMinMax(thing, &min, &max, expand);
+        Grid_MoveObject(M2C_FIELD(thing, s32 *, 0x84), &min, &max);
+    }
+}
+
+void Thing_StaticGridMove(void *thing) {
+    void Grid_MoveObject(s32 obj, Vector4 *min, Vector4 *max);
+    Vector4 min;
+    Vector4 max;
+
+    if (M2C_FIELD(thing, u32 *, 0x84) != 0) {
+        Thing_GetDynamicMinMax(thing, &min, &max, 0.0f);
+        Grid_MoveObject(M2C_FIELD(thing, s32 *, 0x84), &min, &max);
+    }
+}
+
+void Thing_RotationalGridMove(void *thing) {
+    void Grid_MoveObject(s32 obj, Vector4 *min, Vector4 *max);
+    Vector4 min;
+    Vector4 max;
+
+    if (M2C_FIELD(thing, u32 *, 0x84) != 0) {
+        Thing_GetStaticRotationalMinMax(thing, &min, &max);
+        Grid_MoveObject(M2C_FIELD(thing, s32 *, 0x84), &min, &max);
+    }
+}
+
+void Thing_ProcessEndEvent(u8 *thing, u8 *event, u8 *collision, Vector4 *vel) {
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    extern Vector4 g_zeroVector;
+    struct {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 origin;
+        Vector4 vel;
+        void *data;
+        s32 owner;
+        f32 a;
+        f32 b;
+    } params;
+    void *data;
+    u8 *other;
+
+    data = NULL;
+    if (event != NULL && *(u32 *)(event + 0x34) != 0) {
+        data = (*(void ***)(event + 0x38))[RandomAdd_s32(0, *(u32 *)(event + 0x34))];
+    }
+    if (data != NULL) {
+        params.data = data;
+        params.pos = *(Vector4 *)(thing + 0x40);
+        params.quat = *(Vector4 *)(thing + 0x50);
+        params.origin = *(Vector4 *)(thing + 0x0);
+        params.owner = *(s32 *)(thing + 0x94);
+        params.a = 0.0f;
+        params.b = 0.0f;
+        if (vel != NULL) {
+            params.vel = *vel;
+        } else {
+            params.vel = g_zeroVector;
+        }
+        if (collision != NULL) {
+            other = *(u8 **)(collision + 0x20);
+            if (other != NULL && other != thing) {
+                params.owner = *(s32 *)(other + 0x94);
+            } else {
+                other = *(u8 **)(collision + 0x24);
+                if (other != NULL && other != thing) {
+                    params.owner = *(s32 *)(other + 0x94);
+                }
+            }
+        }
+        ThingManager_DARYL_CreateThing(1, &params);
+    }
+}
+
 void Thing_CollideWithRay(void)
 {
 }
