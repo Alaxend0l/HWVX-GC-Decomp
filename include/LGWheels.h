@@ -119,7 +119,9 @@ typedef struct LGWheels
 	 * GenerateNonLinValues__8LGWheelsFlUc, which hand their arguments to the subobjects. */
 	u8		IsOpened(s32 chan);
 		/* 0x1416 */
-	void		SetOverallForceGain(s32 chan, s32 gain);
+	u8		PedalsConnected(s32 chan);
+			/* 0x1416 */
+		void		SetOverallForceGain(s32 chan, s32 gain);
 		s32		GetOverallForceGain(s32 chan);
 		/* 0x1416 */
 		void		GenerateNonLinValues(s32 chan, u8 coefficient);
