@@ -38,12 +38,12 @@ void CollisionTriCache_Heartbeat(void)
         if (g_aCollisionTriPairCache[i].triId0 != 0)
         {
             g_aCollisionTriPairCache[i].time += g_iDeltaTimeMS;
-            if (g_aCollisionTriPairCache[i].time > 1000)
-            {
-                g_aCollisionTriPairCache[i].triId0 = 0;
-                g_aCollisionTriPairCache[i].triId1 = 0;
-                g_aCollisionTriPairCache[i].time = 99999;
-            }
+        }
+        if (g_aCollisionTriPairCache[i].time > 1000)
+        {
+            g_aCollisionTriPairCache[i].triId0 = 0;
+            g_aCollisionTriPairCache[i].triId1 = 0;
+            g_aCollisionTriPairCache[i].time = 99999;
         }
     }
 }
