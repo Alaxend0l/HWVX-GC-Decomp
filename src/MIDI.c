@@ -27,6 +27,18 @@ MIDI_CHN g_chn[0x10];
 
 void SetVoiceState_(MIDI_VOICE *voice, s32 state);
 
+s32 AudioMIDI_Create(void)
+{
+    extern u8 g_song[0x24];
+    extern void *g_pHdr;
+    void *memset(void *dst, s32 c, u32 n);
+
+    memset(g_song, 0, 0x24);
+    memset(g_chn, 0, 0x200);
+    g_pHdr = NULL;
+    return 1;
+}
+
 s32 AudioMIDI_Init(void)
 {
     extern void *g_pHdr;
