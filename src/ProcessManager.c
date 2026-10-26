@@ -71,3 +71,15 @@ void ProcessManager_Heartbeat(u32 activeOnly) {
     }
 }
 
+void ProcessManager_Render(u32 all) {
+    u32 i;
+
+    for (i = 0; i < g_processManager.count; i++) {
+        if ((void (*)(void))g_processManager.processes[i].arg != NULL) {
+            if (all != 0 || (g_processManager.processes[i].flags & 1) != 0) {
+                ((void (*)(void))g_processManager.processes[i].arg)();
+            }
+        }
+    }
+}
+
