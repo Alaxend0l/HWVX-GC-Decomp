@@ -1,6 +1,17 @@
 #include "common.h"
 
 
+void *ThingManagerList_GetByType(void *list, s32 type) {
+    void *thing;
+
+    for (thing = *(void **)list; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
+        if (M2C_FIELD(thing, s32 *, 0xA8) == type) {
+            return thing;
+        }
+    }
+    return NULL;
+}
+
 s32 ThingManagerList_Get(void *list, void *target) {
     void *thing;
 
