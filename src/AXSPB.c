@@ -41,3 +41,6 @@ void __AXSPBInit(void) {
     __AXSpbAL = 0;
 }
 
+void __AXSPBQuit(void) {
+}
+
