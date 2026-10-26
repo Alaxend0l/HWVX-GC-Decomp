@@ -432,6 +432,46 @@ s32 VDevice_Shutdown(VDevice *dev)
     return 0;
 }
 
+#pragma push
+#pragma optimize_for_size on
+u32 VDevice_GetFreeEffect(VDevice *dev)
+{
+    static u32 jumbleeffectid;
+    static u32 createcount;
+    u32 handle = 0xFFFFFFFF;
+    s32 i;
+    u32 index;
+
+    for (i = 0; i < 64; i++)
+    {
+        index = (i + jumbleeffectid) & 0x3F;
+        if (dev->activeEffects[index] == NULL)
+        {
+            jumbleeffectid = index + 1;
+            jumbleeffectid &= 0x3F;
+            handle = (*dev->unkF0 << 16) | ((createcount & 0xFF) << 8) | index;
+            break;
+        }
+    }
+    return handle;
+}
+
+#pragma push
+#pragma optimize_for_size on
+s32 Effect_StartEffect(Effect *effect)
+{
+    effect->flags |= 1;
+    effect->flags &= 0xFFFFFFFD;
+    effect->elapsed = 0;
+    effect->delay = effect->startDelay;
+    if (effect->flags & 0x40)
+    {
+        effect->phase = effect->params.periodic.phase << 16;
+    }
+    return 0;
+}
+#pragma pop
+
 #pragma pop
 
 #pragma pop
