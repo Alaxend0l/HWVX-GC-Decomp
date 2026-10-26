@@ -34,6 +34,7 @@ extern OBox g_aOBox[0x200];
 extern OConvexHull g_aOConvexHull[8];
 extern CollisionPair g_aCollisionPairCache[4];
 void Dprintf(const char *, ...);
+extern s32 g_iDeltaTimeMS;
 
 void OConvexHullHolder_Init(void)
 {
