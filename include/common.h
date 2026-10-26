@@ -1059,6 +1059,33 @@ typedef struct GridResult {
         u32 id;
     }GridResult;
 
+    typedef struct FileEntry {
+    s32 id;
+    u8 unk4[0xC - 0x4];
+    s32 size;
+    u8 unk10[0x14 - 0x10];
+    s32 position;
+    s8 slot;
+    u8 unk19[0x1C - 0x19];
+} FileEntry;
+
+typedef struct CARDFileInfo {
+    s32 chan;
+    s32 fileNo;
+    s32 offset;
+    s32 length;
+    u16 iBlock;
+    u16 pad;
+} CARDFileInfo;
+
+extern FileEntry g_files[4];
+extern char g_appInfo[5][0x40];
+
+extern u8 CardWorkArea[0xA000];
+extern CARDFileInfo memCardfileInfo[2];
+extern s32 memCardBlockSize[2];
+extern s32 m_memcardstatus_803C7970[2];
+
 extern InterfaceCallBackData g_CallBackData;
 extern InterfacePackEntry g_InterfacePackData[10];
 extern u32 g_NumInterfacesPlaying;
