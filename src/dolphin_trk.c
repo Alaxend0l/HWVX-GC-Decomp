@@ -5,13 +5,7 @@ u32 TRK_ISR_OFFSETS[15] = {
     0x800, 0x900, 0xC00, 0xD00, 0xF00, 0x1300, 0x1400, 0x1700
 };
 
-#pragma push
-#pragma gpe_off
-
 u32 lc_base;
-u32 gap_08_8030B9CC;
-
-#pragma pop
 
 extern u8 gTRKCPUState[];
 extern u8 gTRKInterruptVectorTable[];
