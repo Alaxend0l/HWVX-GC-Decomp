@@ -169,6 +169,7 @@ void Creature_MotionStateInit(void *arg0, s32 state, u8 reset, u8 keepTime)
         *(f32 *)((u8 *)creature + 0xEC) = time;
     }
 }
+#pragma pop
 
 void Thing_Init(void *a, s32 b);
 void Thing_AddToGrid(void *a, s32 b);
