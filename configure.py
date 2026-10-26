@@ -521,7 +521,7 @@ config.libs = [
             Object(NonMatching, "GXTev.c"),
             Object(NonMatching, "GXPixel.c"),
             Object(NonMatching, "GXDraw.c"),
-            Object(NonMatching, "GXStubs.c"),
+            Object(Matching, "GXStubs.c"),
             Object(NonMatching, "GXDisplayList.c"),
             Object(NonMatching, "GXTransform.c"),
             Object(NonMatching, "GXPerf.c"),
