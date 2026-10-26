@@ -13,6 +13,19 @@ void InterfaceInputAnimator_Release(void) {
     ProcessManager_Release((char *)name);
 }
 
+void InterfaceInputAnimator_SetCounter(s32 which, f32 value) {
+    extern f32 g_LR_Counter;
+    extern f32 g_UD_Counter;
+    switch (which) {
+    case 0:
+        g_LR_Counter = value;
+        break;
+    case 1:
+        g_UD_Counter = value;
+        break;
+    }
+}
+
 void InterfaceInputAnimator_Count(s32 arg0, s32 arg1, f32 farg0) {
     extern s32 g_LR_Direction;
     extern f32 g_LR_Max_Min;
