@@ -449,15 +449,13 @@ u32 VDevice_GetFreeEffect(VDevice *dev)
         {
             jumbleeffectid = index + 1;
             jumbleeffectid &= 0x3F;
-            handle = (*dev->unkF0 << 16) | ((createcount & 0xFF) << 8) | index;
+            handle = (*dev->unkF0 << 16) | ((createcount & 0xFF) << 8) | (index & 0x3F);
             break;
         }
     }
     return handle;
 }
-
-#pragma push
-#pragma optimize_for_size on
+#pragma pop
 s32 Effect_StartEffect(Effect *effect)
 {
     effect->flags |= 1;
