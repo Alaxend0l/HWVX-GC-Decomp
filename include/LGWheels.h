@@ -59,36 +59,36 @@ typedef struct Force
 typedef struct Condition
 {
 	/* 0x000 */
-		Force		limbs[8];		/* 0x000 the effect class' own Force */
+		Force		limbs[4][8];	/* 0x000 is this channel playing this slot? */
 		/* 0x020 */
-		Force		limbs2[4][8];		/* 0x020 effect ids, -1 once the slot is free */
+		Force		limbs2[4][8];	/* 0x020 effect ids, -1 once the slot is free */
 		/* 0x0A0 */
 } Condition;
 
 typedef struct Constant
 {
 	/* 0x000 */
-		Force		limbs[8];		/* 0x000 the effect class' own Force */
+		Force		limbs[4][8];	/* 0x000 is this channel playing this slot? */
 		/* 0x020 */
-		Force		limbs2[4][8];		/* 0x020 effect ids, -1 once the slot is free */
+		Force		limbs2[4][8];	/* 0x020 effect ids, -1 once the slot is free */
 		/* 0x0A0 */
 } Constant;
 
 typedef struct Periodic
 {
 	/* 0x000 */
-		Force		limbs[8];		/* 0x000 the effect class' own Force */
+		Force		limbs[4][8];	/* 0x000 is this channel playing this slot? */
 		/* 0x020 */
-		Force		limbs2[4][8];		/* 0x020 effect ids, -1 once the slot is free */
+		Force		limbs2[4][8];	/* 0x020 effect ids, -1 once the slot is free */
 		/* 0x0A0 */
 } Periodic;
 
 typedef struct Ramp
 {
 	/* 0x000 */
-		Force		limbs[8];		/* 0x000 the effect class' own Force */
+		Force		limbs[4][8];	/* 0x000 is this channel playing this slot? */
 		/* 0x020 */
-		Force		limbs2[4][8];		/* 0x020 effect ids, -1 once the slot is free */
+		Force		limbs2[4][8];	/* 0x020 effect ids, -1 once the slot is free */
 		/* 0x0A0 */
 } Ramp;
 
