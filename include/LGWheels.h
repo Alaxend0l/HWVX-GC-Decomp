@@ -98,6 +98,11 @@ typedef struct LGWheels
 	Wheels		limbo;		/* 0x82C */
 	Force		limb;		/* 0x10AC */
 	Condition	condition;		/* 0x114C */
+	Constant constantForce;		/* 0x11EC */
+	Periodic periodicForce;		/* 0x128C */
+	Ramp rampForce;		/* 0x132C */
+	u8 savedGain;		/* 0x13CC */
+	u8 unk13CD;		/* 0x13CD */
 	struct {
 		/* 0x13CE spring force last played on the channel */
 		s8		offet;
