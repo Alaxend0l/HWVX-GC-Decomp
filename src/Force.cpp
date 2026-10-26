@@ -17,20 +17,20 @@ long Force::Start(long chan, long effect)
 	if (effectIds[chan][effect] != -1)
 	{
 	 result = LGStartForceEffect(effectIds[chan][effect]);
-		if (result < 0)
-		{
+	 if (result < 0)
+	 {
 		 OSReport("ERROR: Failed to start force effect on channel %d\n", chan);
-		}
+	 }
 	 else
-	{
+	 {
 		playing[chan][effect] = 1;
 	 }
  }
  else
  {
 	 OSReport("ERROR: Trying to start force effect on channel %d but we have an invalid effectid\n", chan);
- }
-	 return result;
+	 }
+ return result;
 }
 
 long Force::Destroy(long chan, long effect)
