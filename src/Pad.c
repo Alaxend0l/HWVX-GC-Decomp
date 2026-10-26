@@ -132,3 +132,31 @@ void *PADSetSamplingCallback(void (*callback)(void))
     return prev;
 }
 
+static void ClampS8(s8 *var, s8 org)
+{
+    s8 v = *var;
+
+    if (0 < org) {
+        s8 min = (s8)(-128 + org);
+        if (v < min) {
+            v = min;
+        }
+    } else if (org < 0) {
+        s8 max = (s8)(127 + org);
+        if (max < v) {
+            v = max;
+        }
+    }
+    *var = v - org;
+}
+
+static void ClampU8(u8 *var, u8 org)
+{
+    u8 v = *var;
+
+    if (v < org) {
+        v = org;
+    }
+    *var = v - org;
+}
+
