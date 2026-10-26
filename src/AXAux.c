@@ -4,7 +4,7 @@ u32 __AXBufferAuxA[3][480];
 u32 __AXBufferAuxB[3][480];
 
 void * __AXCallbackAuxA;
-s32 __AXCallbackAuxB;
+void * __AXCallbackAuxB;
 void * __AXContextAuxA;
 void * __AXContextAuxB;
 s32 __AXAuxADspWrite;
@@ -20,7 +20,7 @@ s32 __AXAuxCpuReadWritePosition;
 
 void __AXAuxQuit(void) {
     extern void *__AXCallbackAuxA;
-    extern s32 __AXCallbackAuxB;
+    extern void *__AXCallbackAuxB;
     __AXCallbackAuxA = 0;
     __AXCallbackAuxB = 0;
 }
