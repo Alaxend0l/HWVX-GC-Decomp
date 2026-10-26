@@ -36,3 +36,21 @@ void SetVoiceVol_(IT_VOICE *voice, s32 vol);
 void AudioIT_Destroy(void) {
 
 }
+
+void SetITTrackOn(u32 mask, s8 deferred)
+{
+    extern u32 g_trkOn;
+    IT_TRACK *trk;
+
+    if (deferred)
+    {
+        g_trkOn |= mask;
+        return;
+    }
+    for (trk = g_trk; mask != 0; trk++)
+    {
+        trk->state |= mask & 1;
+        mask >>= 1;
+    }
+}
+
