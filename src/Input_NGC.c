@@ -90,7 +90,7 @@ void Wheel_PlayDamperForce(s32 chan, s32 coefficient, s32 offset) {
     }
 }
 
-void Wheel_PlayConstantForce(s32 chan, u8 coefficient, s16 offset) {
+void Wheel_PlayConstantForce(s32 chan, s32 coefficient, s32 offset) {
     if (IsOpened__8LGWheelsFl(wheels, chan)) {
         PlayConstantForce__8LGWheelsFlsUs(wheels, chan, coefficient, offset);
     }
