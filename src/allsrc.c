@@ -182,5 +182,46 @@ void VDevice_Init(VDevice *dev)
         g_bGammaInitialized = 1;
     }
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 VDevice_DownloadEffect(VDevice *dev, u32 *handle, u8 *desc)
+{
+    s32 ret = 0;
+    u32 index;
+    Effect *effect;
+
+    *handle = VDevice_GetFreeEffect(dev);
+    if (*handle == 0xFFFFFFFF) {
+        ret = -5;
+    } else {
+        index = *handle & 0x3F;
+        effect = &dev->effects[index];
+        switch (desc[0]) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+            Effect_Init(effect);
+            effect->state = (EffectState *)dev;
+            Effect_UpdateEffect(effect, desc);
+            break;
+        default:
+            ret = -2;
+            *handle = -1;
+            break;
+        }
+        if (effect != NULL) {
+            dev->activeEffects[index] = effect;
+        }
+    }
+    return ret;
+}
+
 #pragma pop
 
