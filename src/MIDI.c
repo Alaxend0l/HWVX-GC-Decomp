@@ -36,6 +36,30 @@ u32 GetEnvRate(u16 arg0)
     }
     return -1U;
 }
+
+#pragma push
+#pragma optimization_level 1
+void ReleaseMIDIVoice(void *voice)
+{
+    void SetVoicePriority_(void *voice);
+    u32 rate;
+
+    if (*(u8 *)((u8 *)voice + 0x16) != 4)
+    {
+        *(u8 *)((u8 *)voice + 0x16) = 4;
+        *(u8 *)((u8 *)voice + 0x17) = 0;
+        rate = GetEnvRate(*(u16 *)((u8 *)(*(u32 *)((u8 *)voice + 0x10)) + 0x1E));
+        if (rate + 0x10000 == 0xFFFF)
+        {
+            rate = 0;
+            *(s32 *)((u8 *)voice + 0x1C) = 0x10000;
+        }
+        *(u32 *)((u8 *)voice + 0x18) = rate;
+        *(u8 *)((u8 *)voice + 0x14) -= 15;
+        SetVoicePriority_(voice);
+    }
+}
+
 #pragma pop
 
 #pragma push
