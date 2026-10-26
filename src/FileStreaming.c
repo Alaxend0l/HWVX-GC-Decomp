@@ -18,7 +18,7 @@ extern s32 g_numQuadPacksToRelease;
 extern void *g_pPacksToBeReleased[10];
 extern void *g_pQuadPackToBeReleased[11];
 extern s32 g_dataPackToLoadType;
-extern u32 *g_LoadedQuadrants[11];
+extern u8 *g_LoadedQuadrants[11];
 extern void *g_pWorldQuadrant;
 extern s32 g_quadFileID;
 s32 FileStreaming_GetPackID(char *name, s32 type, u32 id);
@@ -74,6 +74,37 @@ u8 IsLoadingThreadRunning(void)
 s32 FileStreaming_GetNumAvailableQuadPacks(void)
 {
     return 0xB;
+}
+
+void FileStreaming_ReleaseQuadPacks(void)
+{
+    u32 i;
+
+    while (g_bLoadingThreadRunning)
+    {
+    }
+    for (i = 0; i < (u32)g_numQuadPacksInMemory; i++)
+    {
+        if (g_LoadedQuadrants[i] != NULL && (s8)g_LoadedQuadrants[i][0x34] != 0)
+        {
+            DataPack_ReleaseQuadPack(g_LoadedQuadrants[i]);
+        }
+    }
+    if (g_pWorldQuadrant != NULL && (s8)((u8 *)g_pWorldQuadrant)[0x34] != 0)
+    {
+        DataPack_ReleaseQuadPack(g_pWorldQuadrant);
+    }
+    g_numQuadPacksInMemory = 0;
+    g_numQuadPacksToLoad = 0;
+    FileStreaming_HeartBeat();
+    FileStreaming_HeartBeat();
+    FileStreaming_SetActiveQuadrants(0, 0);
+    g_itemTimer = 0;
+    if (g_quadFileID != -1)
+    {
+        File_Close(g_quadFileID);
+        g_quadFileID = -1;
+    }
 }
 
 void FileStreaming_LoadingThread(void)
