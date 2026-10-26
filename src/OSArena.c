@@ -12,3 +12,8 @@ s32 OSGetArenaLo(void) {
     extern s32 __OSArenaLo;
     return __OSArenaLo;
 }
+
+void OSSetArenaHi(s32 arg0) {
+    __OSArenaHi = arg0;
+}
+
