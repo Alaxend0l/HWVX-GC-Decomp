@@ -22,10 +22,19 @@ typedef struct Wheels
 		}		unk0[4];			/* 0x000 */
 	s16		nonLinValues[4][256];	/* 0x028 non-linear force table */
 	u32		overallGainId[4];		/* 0x828 per-channel gain ids, handed to Force (by reference) */
-	u8		unk838[0x48];		/* 0x838 */
+		/* 0x838 */
+		u32		unk838[4];		/* device type, as returned by SIProbe */
+		u8		unk848[0x38];
+		/* 0x880 */
 
 		/* The wheel's own methods, in main/Wheels. */
+		u8		IsConnected(s32 chan);
+		/* 0x880 */
 		u8		IsOpened(s32 chan);
+		/* 0x880 */
+		u8		PedalsConnected(s32 chan);
+		/* 0x880 */
+		f32		CalculateNonLinValue(s32 input, u8 coefficient, s16 min, s16 max);
 		/* 0x880 */
 		void		GenerateNonLinValues(s32 chan, u8 coefficient);
 		/* 0x880 */
