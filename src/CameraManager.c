@@ -80,12 +80,7 @@ void CameraManager_ReturnAllToPlayer(void) {
 }
 
 void CameraManager_SetCameraGlobalMode(u32 *mode) {
-    typedef struct Camera {
-        u8 pad0[0xB4];
-        u32 *mode;
-        f32 modeTime;
-        u8 pad1[0x190 - 0xBC];
-    } Camera;
+   
     extern u8 g_cameraManager[];
     u32 i;
 
@@ -111,4 +106,3 @@ void *CameraManager_GetCameraFromPlayer(void *player) {
     }
     return NULL;
 }
-

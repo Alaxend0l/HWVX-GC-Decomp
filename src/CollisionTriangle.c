@@ -1,26 +1,9 @@
 #include "common.h"
 
-typedef struct CollisionTri {
-    Vector4 pos;                 /* 0x00 */
-    Vector4 normal;              /* 0x10 */
-    u32 triId1;                  /* 0x20 */
-    u32 triId0;                  /* 0x24 */
-    u32 time;                    /* 0x28 */
-    u8 pad2C[4];                 /* 0x2C */
-} CollisionTri;
+
 
 CollisionTri g_aCollisionTriPairCache[4];
 extern s32 g_iDeltaTimeMS;
-
-typedef struct DividingAxis {
-    f32 dir;                   /* 0x00 */
-    f32 minA;                  /* 0x04 */
-    f32 maxA;                  /* 0x08 */
-    f32 minB;                  /* 0x0C */
-    f32 maxB;                  /* 0x10 */
-    f32 tEnter;                /* 0x14 */
-    f32 tExit;                 /* 0x18 */
-} DividingAxis;
 
 extern f32 _fabs(f32);
 

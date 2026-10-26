@@ -22,6 +22,7 @@ typedef struct Matrix4 { Vector4 v[4]; } Matrix4;
 #ifndef NULL
 #define NULL ((void*)0)
 #endif
+
 typedef struct WorldData
 {
     void *world;
@@ -29,6 +30,111 @@ typedef struct WorldData
     s32 unk8[4];
 } WorldData;
 
+typedef struct Camera {
+    u8 pad0[0xB4];
+    u32 *mode;
+    f32 modeTime;
+    u8 pad1[0x190 - 0xBC];
+} Camera;
+
+typedef struct GXColor {
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
+} GXColor;
+
+typedef struct GXColorS10 {
+    s16 r;
+    s16 g;
+    s16 b;
+    s16 a;
+} GXColorS10;
+
+typedef struct GXLightObjInt {
+    u32 reserved[3];
+    u32 Color;
+    f32 a[3];
+    f32 k[3];
+    f32 lpos[3];
+    f32 ldir[3];
+} GXLightObjInt;
+
+typedef struct ShaderHolderGX {
+    void *gx;
+    void *shader;
+} ShaderHolderGX;
+
+typedef struct ShaderDef {
+    u8 pad0[4];
+    u32 numColorKeys;
+    u8 pad8[4];
+    u32 numPointKeys;
+    u8 pad10[4];
+    u32 *textureKeys;
+} ShaderDef;
+
+typedef struct Shader {
+    u8 pad0[0x2C];
+    u8 unk2C;
+    u8 pad2D[0x38 - 0x2D];
+    u8 unk38;
+    u8 pad39[0x58 - 0x39];
+    u8 unk58;
+    u8 pad59[0x5C - 0x59];
+    ShaderDef *def;
+    u8 hasColorKey;
+    u8 hasTextureKey;
+    u8 hasPointKey;
+    u8 pad63;
+    u32 refCount;
+    u8 pad68[4];
+} Shader;
+
+typedef struct ShaderHolder {
+    void *shaders[0x40];
+    Shader slots[0x40];
+    ShaderHolderGX gx[0x80];
+    u32 numShaders;
+    u32 numGX;
+} ShaderHolder;
+
+typedef struct DividingAxis {
+    f32 dir;
+    f32 minA;
+    f32 maxA;
+    f32 minB;
+    f32 maxB;
+    f32 tEnter;
+    f32 tExit;
+} DividingAxis;
+
+typedef struct DVDQueue {
+    struct DVDQueue *next;
+    struct DVDQueue *prev;
+} DVDQueue;
+
+typedef struct TextureKeyAnim {
+    u32 numKeys;
+    u32 *keys;
+    u32 frameTime;
+} TextureKeyAnim;
+
+typedef struct TextureKeyState {
+    u16 texture;
+    u16 key;
+    f32 time;
+    u8 reset;
+} TextureKeyState;
+
+typedef struct CollisionTri {
+    Vector4 pos;                 /* 0x00 */
+    Vector4 normal;              /* 0x10 */
+    u32 triId1;                  /* 0x20 */
+    u32 triId0;                  /* 0x24 */
+    u32 time;                    /* 0x28 */
+    u8 pad2C[4];                 /* 0x2C */
+} CollisionTri;
 
 /* What machine drafts (m2c) use for what they can't tell yet: autopilot tries them as they are. */
 #ifndef M2C_DEFINES

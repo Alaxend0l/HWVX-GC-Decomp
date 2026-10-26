@@ -1,18 +1,5 @@
 #include "common.h"
 
-typedef struct TextureKeyAnim {
-    u32 numKeys;
-    u32 *keys;
-    u32 frameTime;
-} TextureKeyAnim;
-
-typedef struct TextureKeyState {
-    u16 texture;
-    u16 key;
-    f32 time;
-    u8 reset;
-} TextureKeyState;
-
 void ExtractF32Key(u8 *track, u8 *state, f32 dt) {
     typedef struct Key {
         f32 value;
@@ -752,4 +739,3 @@ s32 ExtractSoundKey(u8 *track, u8 *state, void *pos, f32 dt) {
     }
     return ret;
 }
-
