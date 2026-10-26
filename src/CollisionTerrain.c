@@ -508,12 +508,15 @@ void BuildOConvexHullOffset(void *out, void *hull, void *pos, void *rot) {
     local = *(struct Local *)pos;
     XformVec(pos, rot, &local.d[6]);
     for (i = 0; i < ((Hull *)hull)->numVerts; i++) {
-        XformVec(&local, ((Hull *)hull)->verts + i, ((OConvexHull *)out)->verts + i);
+        XformVec(&local, &((Hull *)hull)->verts[i], &((OConvexHull *)out)->verts[i]);
     }
-    for (i = 0; i < ((Hull *)hull)->numFaces; i++) {
-        XformVecOrientation(&local, &((Hull *)hull)->faces[i].normal, &normal);
-        Create_Plane3(&((OConvexHull *)out)->planes[i], &normal,
-                      &((OConvexHull *)out)->verts[*((Hull *)hull)->faces[i].verts]);
+    {
+        OConvexHull *o = (OConvexHull *)out;
+        for (i = 0; i < ((Hull *)hull)->numFaces; i++) {
+            XformVecOrientation(&local, &((Hull *)hull)->faces[i].normal, &normal);
+            Create_Plane3(&o->planes[i], &normal,
+                          &((OConvexHull *)out)->verts[*((Hull *)hull)->faces[i].verts]);
+        }
     }
     ((OConvexHull *)out)->hull = hull;
     ((OConvexHull *)out)->unk3C8 = 0;
