@@ -11,7 +11,8 @@ typedef struct Corona {
     f32 color[4];       /* 0x20 */
     u8 pad30[0x1C];     /* 0x30 */
     u8 active;          /* 0x4C */
-    u8 pad4D[7];        /* 0x4D */
+    u8 pad4D[0x03];     /* 0x4D */
+    s32 flare;          /* 0x50 */
     u32 time;           /* 0x54 */
     u8 playing;         /* 0x58 */
     u8 pad59[7];        /* 0x59 */
