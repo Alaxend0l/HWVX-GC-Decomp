@@ -29,3 +29,22 @@ extern "C" void __flush_cache(void * address, u32 size)
     } while ((s32)size >= 0);
     __isync();
 }
+extern "C" void __init_user(void)
+{
+    __init_cpp();
+}
+
+extern "C" void __init_cpp(void)
+{
+    void (**constructor)(void);
+
+    for (constructor = _ctors; *constructor; constructor++)
+    {
+        (*constructor)();
+    }
+}
+
+extern "C" void _ExitProcess(void)
+{
+    PPCHalt();
+}
