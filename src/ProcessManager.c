@@ -20,6 +20,8 @@ typedef struct ProcessManager {
 
 ProcessManager g_processManager;
 
+char *strcpy(char *dst, const char *src);
+
 void ProcessManager_Create(void) {
 }
 
