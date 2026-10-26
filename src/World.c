@@ -44,6 +44,13 @@ void *World_GetTilePath(u32 index) {
     return NULL;
 }
 
+void *World_GetTileSpeaker(u32 index) {
+    if (index < M2C_FIELD(g_worldData.world, u32 *, 0x28)) {
+        return M2C_FIELD(g_worldData.world, u8 **, 0x2C) + index * 0x40;
+    }
+    return NULL;
+}
+
 void *World_GetTileLight(u32 index) {
     if (index < M2C_FIELD(g_worldData.world, u32 *, 0x38)) {
         return M2C_FIELD(g_worldData.world, u8 **, 0x3C) + index * 0x20;
