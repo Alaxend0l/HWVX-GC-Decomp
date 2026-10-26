@@ -19,19 +19,31 @@ extern s32 (*SetMusicTrackOff)(void);
 extern s32 (*SetMusicTrackVol)(void);
 s32 AudioVoid(void);
 
-void SetMusicVol(u32 vol)
+#pragma push
+#pragma optimization_level 1
+s32 AudioMusic_Init(void)
 {
-	g_musicVol1 = vol;
-	g_musicVol = (g_musicVol1 * g_musicVol2) >> 15;
-	SetMusicVolume();
-}
+    s32 AudioVoid(void);
+    void *memset(void *dst, s32 c, u32 n);
 
-void SetMusicGVol(u32 vol)
-{
-	g_musicVol2 = vol;
-	g_musicVol = (g_musicVol1 * g_musicVol2) >> 15;
-	SetMusicVolume();
+    DestroyMusic = AudioVoid;
+    SetMusicState = AudioVoid;
+    SetMusicVolume = AudioVoid;
+    SetMusicPitch = AudioVoid;
+    SetMusicTempo = AudioVoid;
+    SetMusicOrder = AudioVoid;
+    SetMusicTrackPriority = AudioVoid;
+    SetMusicTrackOn = AudioVoid;
+    SetMusicTrackOff = AudioVoid;
+    SetMusicTrackVol = AudioVoid;
+    memset(g_musicTitle, 0, 0x20);
+    return 1;
 }
+#pragma pop
+
+void SetMusicVol(u32 vol) { u32 p; g_musicVol1 = vol; p = g_musicVol2 * g_musicVol1; g_musicVol = p >> 15; SetMusicVolume(); }
+
+void SetMusicGVol(u32 vol) { u32 p; g_musicVol2 = vol; p = g_musicVol1 * g_musicVol2; g_musicVol = p >> 15; SetMusicVolume(); }
 
 s32 AudioVoid(void)
 {
