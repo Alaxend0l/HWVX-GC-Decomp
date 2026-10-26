@@ -13,6 +13,25 @@ extern WorldData g_worldData;
 
 s8 OBoxHitsSegmentZeroTime(void *, void *, void *);
 
+typedef struct OBoxCorners
+{
+    u8 pad[0x10];
+    Vector4 corners[8];
+} OBoxCorners;
+typedef struct CollisionInfo
+{
+    Vector4 pos;
+    Vector4 normal;
+    s32 unk20;
+    s32 unk24;
+    u32 material;
+    u8 pad2C[0x40 - 0x2C];
+    u8 type;
+} CollisionInfo;
+
+f32 OBoxHitsSegment(void *, Vector4 *, void *, f32, void *);
+u32 RayHitsBSP(Vector4 *, Vector4 *, void *, f32 *, void *);
+
 s8 RayHitsTerrain(Vector4 *start, Vector4 *end, void *arg2, void *arg3)
 {
     s8 RayHitsTerrain_Aux3(void *, void *, void *, void *);
