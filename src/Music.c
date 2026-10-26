@@ -21,6 +21,20 @@ s32 AudioVoid(void);
 
 #pragma push
 #pragma optimization_level 1
+#pragma push
+#pragma optimization_level 1
+s32 AudioMusic_Create(void)
+{
+    extern s32 g_musicState;
+
+    g_musicVol = 0x7FFF;
+    g_musicVol1 = 0x7FFF;
+    g_musicVol2 = 0x7FFF;
+    g_musicState = 0;
+    g_musicTitle[0x1F] = 0;
+    return 1;
+}
+
 s32 AudioMusic_Init(void)
 {
     void *memset(void *dst, s32 c, u32 n);
@@ -48,7 +62,6 @@ void SetMusicVol(u32 vol)
     g_musicVol = (g_musicVol2 * g_musicVol1) >> 15;
     SetMusicVolume();
 }
-
 void SetMusicGVol(u32 vol)
 {
     g_musicVol2 = vol;
