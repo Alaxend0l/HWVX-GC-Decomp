@@ -59,6 +59,10 @@ void CarA_InitInverseBodyInertiaTensor(u8 *car) {
     *(f32 *)(car + 0x3E8) = 1.0f / (*(f32 *)(coll + 0x8) * *(f32 *)(coll + 0x20) * (ext[2].x * ext[2].x + ext[2].y * ext[2].y));
 }
 
+void CarA_GetAngularVelocity(void *car, Vector4 *vel) {
+    *vel = M2C_FIELD(car, Vector4 *, 0x410);
+}
+
 void CarA_Release(u8 *car) {
     typedef struct CarNavPath {
         u8 pad[0x568];
