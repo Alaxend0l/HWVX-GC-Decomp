@@ -28,6 +28,10 @@ s32 Thing_PreMove(void) {
     return 1;
 }
 
+s32 Thing_Move(void) {
+    return 1;
+}
+
 void Thing_Draw(void)
 {
 
