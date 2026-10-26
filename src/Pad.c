@@ -43,12 +43,10 @@ static void ClampS8(s8 *var, s8 org)
 
 static void ClampU8(u8 *var, u8 org)
 {
-    u8 v = *var;
-
-    if (v < org) {
-        v = org;
+    if (*var < org) {
+        *var = org;
     }
-    *var = v - org;
+    *var -= org;
 }
 
 void UpdateOrigin(s32 chan)
