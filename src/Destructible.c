@@ -56,6 +56,33 @@ void BuildOOB(void *oob, void *pos, void *out);
 void BuildOConvexHullOffset(void *out, void *hull, void *pos, void *rot);
 f32 PhysicalProperties_CollideWithRay(void *props, void *pos, void *start, void *dir, f32 maxDist, void *hit);
 
+void Destructible_Release(Destructible *destructible) {
+    void Trigger_DestructibleKilled(void *thing);
+    void OBoxHolder_Release(OBox *obox);
+    void OConvexHullHolder_Release(void *hull);
+    void Thing_Release(void *thing);
+    s8 paused;
+    u8 *trigger;
+
+    Trigger_DestructibleKilled(destructible);
+    if (*(u8 **)((u8 *)destructible + 0x8C) == g_destructibleVTable) {
+        trigger = *(u8 **)((u8 *)destructible + 0x90);
+        if (trigger != NULL) {
+            *(u8 **)((u8 *)destructible + 0x90) = NULL;
+            *(u32 *)(trigger + 0x2C) = 0;
+            paused = Trigger_IsTACSystemPaused();
+            if (paused == 0) {
+                *(u32 *)(trigger + 0x30) = 0;
+            }
+        }
+    }
+    OBoxHolder_Release(destructible->orientedBox);
+    destructible->orientedBox = NULL;
+    OConvexHullHolder_Release(destructible->hull);
+    destructible->hull = NULL;
+    Thing_Release(destructible);
+}
+
 f32 Destructible_GetMass(Destructible *destructible) {
     return destructible->record->info->mass;
 }
