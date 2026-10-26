@@ -7,8 +7,8 @@ extern volatile u32 g_musicVol2;
 extern u32 g_musicVol;
 extern u8 g_musicTitle[0x20];
 
-extern s32 (*SetMusicState)(void);
 extern s32 (*DestroyMusic)(void);
+extern s32 (*SetMusicState)(void);
 extern s32 (*SetMusicVolume)(void);
 extern s32 (*SetMusicPitch)(void);
 extern s32 (*SetMusicTempo)(void);
