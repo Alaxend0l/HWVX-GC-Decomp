@@ -1,6 +1,14 @@
 #include "common.h"
 
 
+void stateGettingError(void)
+{
+    void DVDLowRequestError(void (*cb)(u32));
+    void cbForStateGettingError(u32 code);
+
+    DVDLowRequestError(cbForStateGettingError);
+}
+
 s32 DVDSetAutoInvalidation(s32 arg0) {
     extern s32 autoInvalidation;
     s32 temp_r0;
