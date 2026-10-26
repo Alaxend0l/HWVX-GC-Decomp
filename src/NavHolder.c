@@ -1,5 +1,9 @@
 #include "common.h"
 
+extern NavHolder gs_NavHolder_803C6CD8;
+extern s8 gs_useMainRouteOnly_803C7000;
+extern PathNode *gs_pOpenListHead_803C7008;
+extern PathNode *gs_pClosedListHead_803C7004;
 
 void NavHolder_FillPointerArrayPath(u8 *point, u8 **array, u32 max) {
     u8 **out = array;
@@ -15,12 +19,10 @@ void NavHolder_FillPointerArrayPath(u8 *point, u8 **array, u32 max) {
 }
 
 void NavHolder_UseMainRouteOnly(void) {
-    extern s8 gs_useMainRouteOnly_803C7000;
     gs_useMainRouteOnly_803C7000 = 1;
 }
 
-s32 NavHolder_GetTotalNavPoints(void) {
-    extern void *gs_NavHolder_803C6CD8;
-    return M2C_FIELD(gs_NavHolder_803C6CD8, s32 *, 4);
+void *NavHolder_GetFirstWayPoint(void) {
+    return gs_NavHolder_803C6CD8.data->firstWayPoint;
 }
 
