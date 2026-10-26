@@ -40,9 +40,22 @@ s32 AudioMusic_Init(void)
 }
 #pragma pop
 
-void SetMusicVol(u32 vol) { u32 p; g_musicVol1 = vol; p = g_musicVol2 * g_musicVol1; g_musicVol = p >> 15; SetMusicVolume(); }
+#pragma push
+#pragma optimization_level 1
+void SetMusicVol(u32 vol)
+{
+    g_musicVol1 = vol;
+    g_musicVol = (g_musicVol2 * g_musicVol1) >> 15;
+    SetMusicVolume();
+}
 
-void SetMusicGVol(u32 vol) { u32 p; g_musicVol2 = vol; p = g_musicVol1 * g_musicVol2; g_musicVol = p >> 15; SetMusicVolume(); }
+void SetMusicGVol(u32 vol)
+{
+    g_musicVol2 = vol;
+    g_musicVol = (g_musicVol1 * g_musicVol2) >> 15;
+    SetMusicVolume();
+}
+#pragma pop
 
 s32 AudioVoid(void)
 {
