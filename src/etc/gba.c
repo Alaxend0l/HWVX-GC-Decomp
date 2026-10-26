@@ -38,6 +38,12 @@ s32 HostId;
 s32 DiskId;
 s32 gLinkFinished;
 
+void JBCallback__Fll(s32 chan, s32 result)
+{
+    Param[chan].state = 2;
+    Param[chan].result = result;
+}
+
 void GBAConnectivityInit__Fv(void)
 {
     s32 DVDOpen(const char *name, void *fileInfo);
