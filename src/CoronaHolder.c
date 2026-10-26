@@ -1,7 +1,7 @@
 #include "common.h"
 
 s32 g_coronaRayTest;
-s32 g_totalCoronas;
+u32 g_totalCoronas;          /* compared unsigned: cmplwi r0, 0x40 */
 
 typedef struct Vector4 { f32 x; f32 y; f32 z; f32 w; } Vector4;
 
@@ -27,6 +27,33 @@ void ExtractColorKey(void *track, f32 *color, f64 time);
 void CoronaHolder_Init(void) {
     g_coronaRayTest = 0;
     g_totalCoronas = 0;
+}
+
+s32 CoronaHolder_Add(void *corona, Vector4 *pos)
+{
+    Corona *c;
+    void *lens;
+    u32 n;
+
+    n = g_totalCoronas;
+    if (n >= 64) {
+        return -1;
+    }
+    if (corona == NULL) {
+        return -1;
+    }
+    g_aCorona[n].track = (u8 *)corona;
+    c = &g_aCorona[n];
+    c->pos = *pos;
+    c->flare = -1;
+    c->playing = 0;
+    c->time = 0;
+    c->active = 1;
+    lens = *(void **)((u8 *)corona + 0x20);
+    if (lens != NULL) {
+        c->flare = LensFlare_Add(lens, 0, pos);
+    }
+    return g_totalCoronas++;
 }
 
 #pragma peepblock off
