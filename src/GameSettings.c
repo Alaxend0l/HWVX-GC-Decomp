@@ -113,6 +113,17 @@ void GameSettings_SetDefaultControllerState(void)
     }
 }
 
+void GameSettings_ResetPlayerVehicleItem(void) {
+    M2C_FIELD(&g_codeVariables, s32 *, 0) = -1;
+    M2C_FIELD(&g_codeVariables, s32 *, 0x10) = -1;
+    M2C_FIELD(&g_codeVariables, s32 *, 4) = -1;
+    M2C_FIELD(&g_codeVariables, s32 *, 0x14) = -1;
+    M2C_FIELD(&g_codeVariables, s32 *, 8) = -1;
+    M2C_FIELD(&g_codeVariables, s32 *, 0x18) = -1;
+    M2C_FIELD(&g_codeVariables, s32 *, 0xC) = -1;
+    M2C_FIELD(&g_codeVariables, s32 *, 0x1C) = -1;
+}
+
 u8 GameSettings_GetGameType(void)
 {
     u8 *mcp;
