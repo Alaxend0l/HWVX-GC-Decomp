@@ -6,15 +6,16 @@ void Thing_Release(void *thing);
 f32 RandomAdd(f32 base, f32 range);
 
 /* animation table: the per-creature list MotionStateInit/Death index */
+typedef struct AnimEntry
+{
+    u32 anim;
+    u8 unk4[0x60 - 0x4];
+} AnimEntry;
 typedef struct AnimTable
 {
-    u32 first;
-    u32 unk4;
-    u32 unk8;
-    u32 unkC;
-    u32 unk10;
-    void *entries;
+    u8 unk0[0x14];
     u32 count;
+    AnimEntry *entries;
 } AnimTable;
 
 /* parameter 2 of Creature_Init: the spawn description it copies out of */
