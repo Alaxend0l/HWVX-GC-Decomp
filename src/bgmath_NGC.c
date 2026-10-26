@@ -12,19 +12,33 @@ extern f32 __float_huge;
 static f32 Sqrt(f64 x)
 {
     f64 guess;
-    f64 acc;
+    f64 t;
+    f64 result;
+    s32 i;
 
     if (x > 0.0)
     {
         guess = __frsqrte(x);
-        guess = 0.5 * guess * (1.0 - x * guess * guess);
-        guess = 0.5 * guess * (1.0 - x * guess * guess);
-        guess = 0.5 * guess * (1.0 - x * guess * guess);
-        guess = 0.5 * guess * (1.0 - x * guess * guess);
-        acc = guess * (1.0 - x * guess * guess);
-        return x * acc;
+        for (i = 0; i < 4; i++)
+        {
+            t = 1.0 - x * guess * guess;
+            guess = 0.5 * guess * t;
+        }
+        result = x * guess * t;
     }
-    return 0.0f;
+    else if (x == 0.0)
+    {
+        result = 0.0;
+    }
+    else if (x == x)
+    {
+        result = __float_huge;
+    }
+    else
+    {
+        result = __float_nan;
+    }
+    return result;
 }
 
 void DistanceXYZ(Vector *a, Vector *b, f32 *dist)
