@@ -121,3 +121,16 @@ s32 StateGameManager_GetProgScript(u32 index) {
     return M2C_FIELD(g_GameManagerState.mcp, s32 **, 0x38)[index];
 }
 
+void StateGameManager_InterfaceHandler(void *event) {
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    extern u8 g_bInterfacePlaying;
+    switch (M2C_FIELD(event, u16 *, 4)) {
+    case 5:
+        if (GameSettings_GetCodeVariable(0x198, 0) != 0) {
+            StateManager_QueueChange(0xB);
+        }
+        g_bInterfacePlaying = 0;
+        break;
+    }
+}
+
