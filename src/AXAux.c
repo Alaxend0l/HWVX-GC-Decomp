@@ -3,12 +3,12 @@
 u32 __AXBufferAuxA[3][480];
 u32 __AXBufferAuxB[3][480];
 
-s32 __AXAuxADspWrite;
 void * __AXCallbackAuxA;
 void * __AXCallbackAuxB;
 void * __AXContextAuxA;
 void * __AXContextAuxB;
-s32 __AXAuxADspRead;
+void * __AXAuxADspWrite;
+void * __AXAuxADspRead;
 s32 __AXAuxBDspWrite;
 s32 __AXAuxBDspRead;
 s32 __AXAuxDspWritePosition;
