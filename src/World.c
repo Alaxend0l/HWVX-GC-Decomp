@@ -10,6 +10,12 @@ s32 World_Create(void) {
     return 1;
 }
 
+void World_Destroy(void) {
+    if (g_worldData.world != NULL) {
+        World_Unload();
+    }
+}
+
 void World_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
