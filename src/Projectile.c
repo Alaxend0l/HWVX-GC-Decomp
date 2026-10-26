@@ -1,5 +1,23 @@
 #include "common.h"
 
+void Projectile_DynamicCollideImpact(void * proj, void * dir, s32 damage, f32 force)
+{
+    void Projectile_DynamicCollisionCorrection(void *);
+    f32 scale;
+    void * temp;
+
+    ((s32 *)proj)[0x1e] -= damage;
+    if (dir != NULL)
+    {
+        temp = ((void **)proj)[0x48];
+        scale = force / ((f32 *)temp)[0xb];
+        ((f32 *)proj)[0] = ((f32 *)dir)[4] * scale + ((f32 *)proj)[0];
+        ((f32 *)proj)[1] = ((f32 *)dir)[5] * scale + ((f32 *)proj)[1];
+        ((f32 *)proj)[2] = ((f32 *)dir)[6] * scale + ((f32 *)proj)[2];
+        Projectile_DynamicCollisionCorrection(proj);
+    }
+}
+
 f32 Projectile_GetMass(void * arg0)
 {
     void * temp;
