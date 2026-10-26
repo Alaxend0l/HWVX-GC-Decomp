@@ -217,3 +217,15 @@ void GameSettings_DetermineIfOverwritingFile(void)
     }
 }
 
+s32 GameSettings_FormatMemoryCard(void)
+{
+    u8 result;
+
+    result = FileManager_FormatDevice(g_codeVariables.device + 0xA);
+    g_codeVariables.unk11C[2] = result;
+    g_bRefreshMC = 1;
+    g_bRefreshMC_FileList = 1;
+    g_bRefreshMC_FileInfo = 1;
+    return result;
+}
+
