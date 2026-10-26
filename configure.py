@@ -615,7 +615,7 @@ config.libs = [
             Object(NonMatching, "Force.cpp"),
             Object(NonMatching, "LGWheels.cpp"),
             Object(NonMatching, "Periodic.cpp"),
-            Object(NonMatching, "Ramp.cpp"),
+            Object(NonMatching, "Ramp.cpp", mw_version="GC/1.3"),
             Object(NonMatching, "Wheels.cpp"),
             Object(NonMatching, "Conditon.cpp"),
             Object(NonMatching, "GBA.c"),
