@@ -10,6 +10,7 @@ public:
 	 long Start(long chan, long effect);
 	long Destroy(long chan, long effect);
 	void SetOverallForceGain(unsigned long &effectId, long gain);
+	void InitVars();
 
 	/* Which effect slots each channel is using, and the ids they play. */
 	unsigned char playing[4][8];
