@@ -23,7 +23,6 @@ s32 AudioVoid(void);
 #pragma optimization_level 1
 s32 AudioMusic_Init(void)
 {
-    s32 AudioVoid(void);
     void *memset(void *dst, s32 c, u32 n);
 
     SetMusicState = AudioVoid;
