@@ -27,6 +27,18 @@ MIDI_CHN g_chn[0x10];
 
 void SetVoiceState_(MIDI_VOICE *voice, s32 state);
 
+s32 AudioMIDI_Init(void)
+{
+    extern void *g_pHdr;
+    s32 DestroyMIDI(void);
+
+    if (g_pHdr != NULL)
+    {
+        DestroyMIDI();
+    }
+    return 1;
+}
+
 void AudioMIDI_Destroy(void)
 {
 }
