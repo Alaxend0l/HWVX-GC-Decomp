@@ -105,3 +105,19 @@ void StateGameManager_Release(void) {
     FileStreaming_ReleaseAllDataPacks(3, 1);
 }
 
+s32 StateGameManager_GetProgScript(u32 index) {
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    extern struct { u8 *mcp; s32 unk4; } g_GameManagerState;
+
+    if (GameSettings_GetCodeVariable(0x198, 0) != 0) {
+        if (g_GameManagerState.mcp != NULL) {
+            return M2C_FIELD(M2C_FIELD(g_GameManagerState.mcp, u8 **, 0x24), s32 *, 8);
+        }
+        return 0;
+    }
+    if (g_GameManagerState.mcp == NULL || index >= M2C_FIELD(g_GameManagerState.mcp, u32 *, 0x34)) {
+        return 0;
+    }
+    return M2C_FIELD(g_GameManagerState.mcp, s32 **, 0x38)[index];
+}
+
