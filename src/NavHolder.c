@@ -5,6 +5,19 @@ extern s8 gs_useMainRouteOnly_803C7000;
 extern PathNode *gs_pOpenListHead_803C7008;
 extern PathNode *gs_pClosedListHead_803C7004;
 
+void NavHolder_Init(NavData *data) {
+    u32 i;
+
+    gs_NavHolder_803C6CD8.data = data;
+    gs_NavHolder_803C6CD8.objects = NULL;
+    if (data->numNodes != 0) {
+        gs_NavHolder_803C6CD8.objects = (void **)Allocate(data->numNodes * 4, 0, "");
+    }
+    for (i = 0; i < gs_NavHolder_803C6CD8.data->numNodes; i++) {
+        gs_NavHolder_803C6CD8.objects[i] = (void *)Grid_AddObject(5, i, gs_NavHolder_803C6CD8.data->nodes + i * 0x60, gs_NavHolder_803C6CD8.data->nodes + i * 0x60);
+    }
+}
+
 void NavHolder_FillPointerArrayPath(u8 *point, u8 **array, u32 max) {
     u8 **out = array;
     u32 i = 0;
