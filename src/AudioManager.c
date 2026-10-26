@@ -116,6 +116,30 @@ void MusicHearbeat(void) {
     }
 }
 
+void SoundListener_Set(s32 listener, s32 param, void *value) {
+    typedef struct Vector4 { f32 x; f32 y; f32 z; f32 w; } Vector4;
+    typedef struct SoundListener {
+        Vector4 pos;
+        Vector4 vel;
+        u8 unk20[0x30];
+        u8 mtx[0x40];
+    } SoundListener;
+    extern SoundListener g_listener[4];
+    void *memcpy(void *dst, const void *src, u32 n);
+
+    switch (param) {
+    case 5:
+        g_listener[listener].pos = *(Vector4 *)value;
+        break;
+    case 6:
+        g_listener[listener].vel = *(Vector4 *)value;
+        break;
+    case 7:
+        memcpy(g_listener[listener].mtx, value, 0x40);
+        break;
+    }
+}
+
 void SoundListener_SetTotalListeners(u32 arg0) {
     extern s32 g_numListeners;
     if (arg0 != 0U) {
