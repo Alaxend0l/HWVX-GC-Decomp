@@ -112,3 +112,7 @@ void *Thing_GetSurfaceScript(void) {
     return g_defaultSurfaceScript;
 }
 
+void Thing_CollideWithRay(void)
+{
+}
+
