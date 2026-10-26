@@ -73,3 +73,13 @@ void DistanceXYZ(Vector *a, Vector *b, f32 *dist)
     *dist = Sqrt(dy * dy + dx * dx + dz * dz);
 }
 
+void GetComponentOfVector(void *arg0, void *arg1) {
+    f32 PSVECDotProduct();
+    f32 temp_f1;
+
+    temp_f1 = PSVECDotProduct();
+    M2C_FIELD(arg1, f32 *, 0) = (f32) (temp_f1 * M2C_FIELD(arg0, f32 *, 0));
+    M2C_FIELD(arg1, f32 *, 4) = (f32) (temp_f1 * M2C_FIELD(arg0, f32 *, 4));
+    M2C_FIELD(arg1, f32 *, 8) = (f32) (temp_f1 * M2C_FIELD(arg0, f32 *, 8));
+}
+
