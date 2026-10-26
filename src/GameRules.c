@@ -4,6 +4,14 @@ extern s8 g_bRoundEnd;
 extern u32 g_playerNumThatWon;
 
 
+void GameRules_ForceRoundEnd(u32 arg0) {
+    g_bRoundEnd = 1;
+    g_playerNumThatWon = arg0;
+    if ((arg0 < 1U) && (arg0 > 4U)) {
+        g_playerNumThatWon = -1U;
+    }
+}
+
 void GameRules_SetPlayerOrder(u32 *order, u32 count) {
     void *PlayerManager_GetPlayerByIndex(u8);
     u8 PlayerManager_PlayerCount(void);
