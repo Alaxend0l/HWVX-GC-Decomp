@@ -50,6 +50,33 @@ void SetMIDIVol(void)
         }
     }
 }
+
+#pragma push
+#pragma optimization_level 1
+#pragma dont_inline on
+void SetMIDIPitch(u32 pitch)
+{
+    u32 i;
+    MIDI_CHN *chn;
+    MIDI_VOICE *voice;
+    extern u8 g_song[0x24];
+    s32 Mul16_(s32, s32);
+    u32 GetPitchWheel_(u8 note, u8 count);
+    s8 SetVoiceRate_(void *voice);
+
+    *(u32 *)(g_song + 0x20) = pitch;
+    for (chn = g_chn, i = 0x10; i != 0; chn++, i--)
+    {
+        chn->pitch = Mul16_(GetPitchWheel_(chn->note, chn->count), pitch);
+        for (voice = chn->voice; voice != NULL; voice = voice->next)
+        {
+            *(s32 *)((u8 *)voice + 0x34) = chn->pitch;
+            SetVoiceRate_(voice);
+        }
+    }
+}
+#pragma pop
+
 #pragma pop
 void SetMIDITempo(u32 tempo)
 {
