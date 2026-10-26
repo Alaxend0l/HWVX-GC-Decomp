@@ -44,3 +44,15 @@ void __AXSPBInit(void) {
 void __AXSPBQuit(void) {
 }
 
+void __AXDepopVoice(tVoicePacket *pvpb) {
+    __AXSpbAL += pvpb->dL;
+    __AXSpbAAL += pvpb->dAL;
+    __AXSpbABL += pvpb->dBL;
+    __AXSpbAR += pvpb->dR;
+    __AXSpbAAR += pvpb->dAR;
+    __AXSpbABR += pvpb->dBR;
+    __AXSpbAS += pvpb->dS;
+    __AXSpbAAS += pvpb->dAS;
+    __AXSpbABS += pvpb->dBS;
+}
+
