@@ -51,6 +51,10 @@ void Gfx_Destroy(void) {
     Render_Destroy();
 }
 
+void Gfx_SetFarClippingPlane(f32 farPlane) {
+    g_state.farClippingPlane = farPlane;
+}
+
 void Gfx_SetAmbientColor(GXColor *color) {
     g_state.ambientColor = *color;
 }
