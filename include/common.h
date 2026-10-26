@@ -310,7 +310,6 @@ typedef struct MatrixCacheData {
   MatrixCacheEntry large[4];
 } MatrixCacheData;
 
-
 typedef struct SharedSlaveHolder {
   void *key;
   void *slaves;
@@ -481,85 +480,526 @@ typedef struct TRKEventQueue {
 } TRKEventQueue;
 
 typedef struct GXObject {
-    u8 pad0[0x1C];
-    u32 count;          /* 0x1C */
-    s32 *shaderList;    /* 0x20 */
+  u8 pad0[0x1C];
+  u32 count;       /* 0x1C */
+  s32 *shaderList; /* 0x20 */
 } GXObject;
 
 typedef struct QuadPack {
-    u8 pad00[0x10];
-    void *data;         /* 0x10 */
-    void *vertices;     /* 0x14 */
-    u8 pad18[0x10];
-    GXObject *gxObject; /* 0x28 */
-    s32 gxBase;         /* 0x2C */
-    u8 pad30[0x4];
-    u8 flag34;          /* 0x34 */
-    u8 pad35[0xC];
-    void *alloc;        /* 0x44 */
+  u8 pad00[0x10];
+  void *data;     /* 0x10 */
+  void *vertices; /* 0x14 */
+  u8 pad18[0x10];
+  GXObject *gxObject; /* 0x28 */
+  s32 gxBase;         /* 0x2C */
+  u8 pad30[0x4];
+  u8 flag34; /* 0x34 */
+  u8 pad35[0xC];
+  void *alloc; /* 0x44 */
 } QuadPack;
 
 typedef struct DataPackShader {
-    s32 shader;             /* 0x00 */
-    u8 pad04[0x8];
+  s32 shader; /* 0x00 */
+  u8 pad04[0x8];
 } DataPackShader;
 
 typedef struct DataPackRef {
-    char name[0xC];         /* 0x00 */
-    u32 id;                 /* 0x0C */
-    struct DataPack *pack;  /* 0x10 */
+  char name[0xC];        /* 0x00 */
+  u32 id;                /* 0x0C */
+  struct DataPack *pack; /* 0x10 */
 } DataPackRef;
 
 typedef struct DataPack {
-    u8 *base;               /* 0x00 */
-    u32 numRelocs;          /* 0x04 */
-    s32 *relocs;            /* 0x08 */
-    u32 numSoundRelocs;     /* 0x0C */
-    u32 *soundRelocs;       /* 0x10 */
-    void *palettes;         /* 0x14 */
-    u32 numShaders;         /* 0x18 */
-    u32 numGX;              /* 0x1C */
-    u16 *shaderIDs;         /* 0x20 */
-    u32 *gxList;            /* 0x24 */
-    u32 dataSize;           /* 0x28 */
-    u32 numTextures;        /* 0x2C */
-    u16 *textureIDs;        /* 0x30 */
-    u32 numSounds;          /* 0x34 */
-    u16 *soundIDs;          /* 0x38 */
-    void *soundData;        /* 0x3C */
-    u8 *soundBase;          /* 0x40 */
-    u32 textureData;        /* 0x44 */
-    u8 *sfxData;            /* 0x48 */
-    void *paletteData;      /* 0x4C */
-    DataPackShader *shaders;/* 0x50 */
-    u32 numTriggers;        /* 0x54 */
-    u8 *triggers;           /* 0x58 */
-    void *song;             /* 0x5C */
-    void *songBank;         /* 0x60 */
-    s8 songLoaded;          /* 0x64 */
-    u8 pad65[3];            /* 0x65 */
-    DataPackRef refs[2];    /* 0x68 */
-    u32 soundDataSize;      /* 0x90 */
+  u8 *base;                /* 0x00 */
+  u32 numRelocs;           /* 0x04 */
+  s32 *relocs;             /* 0x08 */
+  u32 numSoundRelocs;      /* 0x0C */
+  u32 *soundRelocs;        /* 0x10 */
+  void *palettes;          /* 0x14 */
+  u32 numShaders;          /* 0x18 */
+  u32 numGX;               /* 0x1C */
+  u16 *shaderIDs;          /* 0x20 */
+  u32 *gxList;             /* 0x24 */
+  u32 dataSize;            /* 0x28 */
+  u32 numTextures;         /* 0x2C */
+  u16 *textureIDs;         /* 0x30 */
+  u32 numSounds;           /* 0x34 */
+  u16 *soundIDs;           /* 0x38 */
+  void *soundData;         /* 0x3C */
+  u8 *soundBase;           /* 0x40 */
+  u32 textureData;         /* 0x44 */
+  u8 *sfxData;             /* 0x48 */
+  void *paletteData;       /* 0x4C */
+  DataPackShader *shaders; /* 0x50 */
+  u32 numTriggers;         /* 0x54 */
+  u8 *triggers;            /* 0x58 */
+  void *song;              /* 0x5C */
+  void *songBank;          /* 0x60 */
+  s8 songLoaded;           /* 0x64 */
+  u8 pad65[3];             /* 0x65 */
+  DataPackRef refs[2];     /* 0x68 */
+  u32 soundDataSize;       /* 0x90 */
 } DataPack;
+typedef struct GRTrigger {
+  u8 unk0;
+  u8 unk1;
+  u8 type;
+  u8 unk3;
+  s32 unk4;
+  f32 time;
+} GRTrigger;
+
+typedef struct GRElem {
+  u8 unk0[0x28];
+  u32 unk28;
+  u32 unk2C;
+  u32 unk30;
+  u32 unk34;
+  u8 unk38;
+  u8 unk39;
+  u8 unk3A[6];
+} GRElem;
+
+typedef struct GRElemB {
+  u8 unk0[0x30];
+  u32 unk30;
+  u8 unk34[2];
+  u8 unk36;
+  u8 unk37[9];
+} GRElemB;
+
+typedef struct GRSub {
+  u32 unk0;
+  u32 numB;
+  GRElemB *b;
+  u32 numA;
+  GRElem *a;
+  u32 numC;
+  GRElem *c;
+} GRSub;
+typedef struct {
+  char *name;
+  s32 id;
+} ProgPack;
+typedef struct {
+  u8 type;
+  u8 pad[3];
+  void *data;
+} ProgStep;
+typedef struct {
+  u32 count;
+  ProgStep *steps;
+  u16 advance;
+} ProgSequence;
+typedef struct {
+  u32 count;
+  ProgSequence *seqs;
+} ProgSeqList;
+typedef struct {
+  u32 count;
+  ProgStep *steps;
+  ProgPack *pack;
+  char *world;
+  ProgSeqList win;
+  ProgSeqList lose;
+} ProgLevel;
+typedef struct {
+  s32 count;
+  ProgLevel *levels;
+} ProgScript;
+typedef struct {
+  ProgScript *script;
+  s32 phase;
+  s32 index;
+  u32 step;
+  s8 loaded;
+  u8 pad[3];
+  s32 worldState;
+} ProgState;
+typedef struct {
+  s32 name;
+  s32 script;
+} PackRef;
+typedef struct {
+  u8 type;
+  void *movie;
+  PackRef *pack;
+} Step;
+typedef struct {
+  u8 pad0[4];
+  s32 menuName;
+  u8 pad8[0x20];
+  s32 menuFile;
+  u32 numSteps;
+  Step *steps;
+} MCP;
+typedef struct PodPart {
+  u8 flags;
+  u8 xform;
+  u8 pad2[2];
+  u16 mtxIndex;
+  u8 pad6[2];
+  void *geom;
+  Vector4 *offset;
+  u8 pad10[0xC];
+} PodPart;
+typedef struct PodPartList {
+  u32 count;
+  PodPart *parts;
+} PodPartList;
+typedef struct GRZone {
+  u8 unk0[0x30];
+  GRSub *sub;
+  u8 unk34[0x1C];
+} GRZone;
+typedef struct StuntParams {
+  f32 pitchRate;
+  f32 rollRate;
+  f32 spinRate;
+  f32 maxTime;
+  u8 pad10[8];
+  f32 pitchScore;
+  f32 rollScore;
+  u8 pad20[8];
+  s32 minTime;
+  f32 scoreMax;
+  u8 pad30[0x24];
+  f32 spinScore;
+} StuntParams;
+typedef struct {
+  Vector4 pos;
+  Vector4 quat;
+  Vector4 vel;
+  Vector4 angVel;
+  u32 id;
+  s32 unk44;
+  f32 unk48;
+  f32 unk4C;
+} FxParams;
+typedef struct GRWorld {
+  u8 unk0[0x20];
+  u32 numZones;
+  GRZone *zones;
+  u8 unk28[0x28];
+  u32 numTriggers;
+  GRTrigger **triggers;
+} GRWorld;
+typedef struct SpawnPoint {
+  Vector4 pos;
+  f32 rotX;
+  f32 rotY;
+  f32 rotZ;
+  u8 pad1C[0x24 - 0x1C];
+  u8 *info;
+  u8 *thing;
+} SpawnPoint;
+typedef struct CarParams {
+  Vector4 pos;
+  Vector4 quat;
+  Vector4 vel;
+  u8 *info;
+  u8 pad34[0x3C - 0x34];
+  u8 *player;
+} CarParams;
+typedef struct VehicleInterfaceData {
+  u32 iface;
+  u32 packID;
+  u32 itemID;
+  u32 packIndex;
+  u32 itemPack;
+  u32 selection;
+  s8 active;
+  u8 unk19[0x1C - 0x19];
+  u8 *players[2];
+  u8 *cars[2];
+  u32 objects[2];
+  s8 locked;
+  u8 unk35[0x38 - 0x35];
+} VehicleInterfaceData;
+typedef struct InterfaceMsg {
+  u32 iface;
+  u16 type;
+  u16 sub;
+  u8 unk8[0x20 - 0x8];
+  u32 result;
+  u8 unk24[0x30 - 0x24];
+  u32 selection;
+  u32 objects[2];
+  u32 *list;
+  u16 nextState;
+} InterfaceMsg;
+typedef struct CreateCarParams {
+  Vector4 pos;
+  Vector4 rot;
+  Vector4 vel;
+  void *script;
+  u8 unk44[0x4C - 0x44];
+  void *player;
+} CreateCarParams;
+typedef struct Flash {
+  Vector4 pos;
+  u8 unk10[0x3C - 0x10];
+  u8 active;
+  u8 unk3D[0x58 - 0x3D];
+  u8 visible;
+  u8 unk59[0x5C - 0x59];
+  void *flash;
+  s32 unk60;
+  u8 unk64[0x68 - 0x64];
+  s32 unk68;
+  u8 unk6C[0x74 - 0x6C];
+  f32 time;
+  u8 unk78[0x80 - 0x78];
+} Flash;
+
+typedef struct BulletHole {
+  u32 r;
+  u32 g;
+  u32 b;
+  u32 a;
+  f32 v[16];
+  s32 life;
+  u8 unk54[0x5C - 0x54];
+  s16 texture;
+  u8 unk5E[0x60 - 0x5E];
+} BulletHole;
 
 typedef struct QuadPackRef {
-    char name[0xC];        /* 0x00 */
-    u32 id;                /* 0x0C */
-    DataPack *pack;        /* 0x10 */
+  char name[0xC]; /* 0x00 */
+  u32 id;         /* 0x0C */
+  DataPack *pack; /* 0x10 */
 } QuadPackRef;
 
 /* The quad pack's header carries its pack references inline, at 0x2C. */
 typedef struct QuadPackHeader {
-    u32 pad00[2];          /* 0x00 */
-    u32 numRelocs;         /* 0x08 */
-    s32 *relocs;           /* 0x0C */
-    u32 pad10[3];          /* 0x10 */
-    u32 numShaders;        /* 0x1C */
-    s32 *shaderList;       /* 0x20 */
-    u32 pad24[2];          /* 0x24 */
-    QuadPackRef refs[2];   /* 0x2C */
+  u32 pad00[2];        /* 0x00 */
+  u32 numRelocs;       /* 0x08 */
+  s32 *relocs;         /* 0x0C */
+  u32 pad10[3];        /* 0x10 */
+  u32 numShaders;      /* 0x1C */
+  s32 *shaderList;     /* 0x20 */
+  u32 pad24[2];        /* 0x24 */
+  QuadPackRef refs[2]; /* 0x2C */
 } QuadPackHeader;
 
+typedef struct Light {
+        u8 unk0[0x10];
+        u8 r;
+        u8 g;
+        u8 b;
+        u8 unk13;
+        s32 index;
+        u8 type;
+    } Light;
+    typedef struct Volume {
+        u8 unk0[0xC];
+        u32 type;
+        u8 unp10[0x1C];
+        Light *light;
+    } Volume;
+    typedef struct LightWorld {
+        u8 unk0[0x64];
+        u8 *lights;
+        u32 numVolumes;
+        u8 *volumes;
+    } LightWorld;
+    typedef struct TracerPoint {
+    f32 pos[4];
+    f32 vel[4];
+    f32 unk20[4];
+    f32 unk30[4];
+    f32 unk40;
+    u8 color[4];
+    struct TracerPoint *next;
+    u8 unk4C[4];
+} TracerPoint;
+
+typedef struct Tracer {
+    TracerPoint points[14];
+    u8 unk460[0x48];
+    TracerPoint *unk4A8;
+    u8 unk4AC[4];
+    TracerPoint *head;
+    TracerPoint *tail;
+    s8 unk4B8[0x4];
+    f32 unk4BC;
+    f32 unk4C0;
+    u32 unk4C4;
+    u32 unk4C8;
+    u16 unk4CC;
+    u16 active;
+    u16 unk4D0;
+    u16 unk4D2;
+    u16 unk4D4;
+    u8 unk4D6[0xA];
+} Tracer;
+ typedef struct SpawnVolume {
+        u8 *volume;
+        u32 unk4;
+        u32 index;
+        u32 counts[32];
+    } SpawnVolume;
+    typedef struct Vec {
+        f32 x;
+        f32 y;
+        f32 z;
+        f32 w;
+    } Vec;
+    typedef struct NearestCar {
+        u8 *car;
+        u8 pad4[0x10 - 0x4];
+        Vec pos;
+        f32 speed;
+        f32 range;
+        u8 pad28[0x30 - 0x28];
+    } NearestCar;
+    typedef struct {
+        s32 unk0;
+        u8 pad4[0xD - 0x4];
+        u8 unkD;
+        u8 padE[0x10 - 0xE];
+    } AIPlayerDesc;
+    typedef struct CreatureParams {
+        Vector4 pos;
+        f32 angle;
+        u8 *info;
+        u8 *player;
+    } CreatureParams;
+    typedef struct {
+        PlayerLink base;
+        u8 unkB8[0x158 - 0xB8];
+    } HumanPlayer;
+    typedef struct {
+        PlayerLink base;
+        u8 unkB8[0x670 - 0xB8];
+    } CarPlayer;
+    typedef struct {
+        PlayerLink base;
+        u8 unkB8[0x100 - 0xB8];
+    } CreaturePlayer;
+    typedef struct {
+        HumanPlayer humans[4];
+        CarPlayer cars[4];
+        CreaturePlayer creature;
+        PlayerLink null;
+        PlayerLink *active;
+        PlayerLink *free;
+    } PlayerMgr;
+    typedef struct {
+        u8 unk0;
+        u8 type;
+    } TimerDef;
+    typedef struct {
+        u8 unk0[3];
+        u8 countUp;
+        u8 unk4[4];
+        f32 time;
+        TimerDef *def;
+    } Timer;
+    typedef struct {
+        u8 unk0[0x50];
+        u32 numTimers;
+        Timer **timers;
+    } TimerWorld;
+    typedef struct Quad {
+        u8 pad0[0x1C];
+        void *bsp;
+        u32 numNeighbors;
+        u32 *neighbors;
+        u8 pad28[0x34 - 0x28];
+        s8 loaded;
+        s8 visible;
+        u8 pad36[0x50 - 0x36];
+    } Quad;
+    typedef struct QuadWorld {
+        u8 pad[0x20];
+        u32 numQuads;
+        Quad *quads;
+    } QuadWorld;
+    typedef struct WildCard {
+        u8 pad0[0x1E];
+        u8 unk1E;
+        u8 pad1F[0x24 - 0x1F];
+        f32 *unk24;
+        f32 *unk28;
+    } WildCard;
+    typedef struct WildCardData {
+        WildCard *card;
+        u8 pad4[0x28 - 0x4];
+        s32 max;
+    } WildCardData;
+    typedef struct WildcardData {
+        u8 unk0[0x24];
+        u32 numFrames;
+        s32 unk28;
+        u8 spinType;
+        u8 spinLimit;
+        u16 spinBone;
+    } WildcardData;
+    typedef struct WildCardItem {
+        u8 pad0[0x30];
+        WildCardData *data;
+    } WildCardItem;
+    typedef struct WildcardInfo {
+        u8 unk0[0x18];
+        f32 unk18;
+    } WildcardInfo;
+    typedef struct WildcardAnim {
+        u8 unk0[0x1E];
+        u8 loop;
+        u8 unk1F[0x24 - 0x1F];
+        f32 *times;
+    } WildcardAnim;
+    typedef struct WildcardThing {
+        u8 unk0[0x30];
+        WildcardData *data;
+    } WildcardThing;
+    typedef struct WildcardSlot {
+        WildcardInfo *info;
+        u8 unk4[0x10 - 0x4];
+        Matrix4 *matrices;
+        u8 unk14[0x18 - 0x14];
+        WildcardAnim *anim;
+        u8 mode;
+        u8 state;
+        u8 unk1E[0x20 - 0x1E];
+        f32 time;
+        u8 unk24[0x40 - 0x24];
+        s16 count;
+        u8 unk42[0x44 - 0x42];
+        f32 scale;
+        f32 angle;
+        WildcardThing *thing;
+    } WildcardSlot;
+    typedef struct WildCardSlot {
+        void *card;
+        u8 pad4[0x44 - 0x4];
+        f32 unk44;
+        u8 pad48[0x4C - 0x48];
+        void *unk4C;
+    } WildCardSlot;
+    typedef struct WildCardRack {
+        u8 pad0[0x74];
+        u32 flags;
+        u8 pad78[0xB0 - 0x78];
+        WildCardSlot slots[12];
+        u8 unk470;
+    } WildCardRack;
+    typedef struct {
+        void *motion;
+        u8 pad4[0x40];
+        f32 scale;
+        u8 pad48[0x8];
+    } RackState;
+    typedef struct {
+        u8 pad0[0xB0];
+        RackState states[1];
+    } Rack;
+    typedef struct { void *pad0; void *pad4; void *geom; } StaticGeom;
+    typedef struct { u8 *geom; u8 noDraw; u8 pad5; u8 hasDist; u8 visible; f32 dist; u8 padC[0xC]; u32 slaves[2]; } Model;
+    typedef struct { Vector4 pos; Vector4 quat; u8 pad20[4]; Model *model; f32 dist; u8 pad2C[8]; u8 useDist; u8 pad35[7]; f32 radius; } Instance;
+    typedef struct { u32 pad0; u32 count; Instance *instances; } InstanceList;
+    typedef struct { u8 pad0[0x10]; f32 mtx[3][4]; Vector4 pos; Vector4 quat; u8 pad60[0x14]; u32 unk74; u8 pad78[0x78]; } DrawThing;
 /* What machine drafts (m2c) use for what they can't tell yet: autopilot tries
  * them as they are. */
 #ifndef M2C_DEFINES
