@@ -72,7 +72,7 @@ void VertexColorSeqManager_RemoveVertices(void *vertices);
 void Deallocate(void *alloc);
 s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded);
 void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
-void ShaderHolder_AddGX(s32 gx, u32 index);
+void ShaderHolder_AddGX(void *gx, u32 index);
 void VertexColorSeqManager_AddVertices(void *vertices);
 
 void DataPack_EnableLoadingSounds(s8 enabled)
