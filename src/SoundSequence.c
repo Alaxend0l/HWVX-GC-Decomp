@@ -16,3 +16,21 @@ s32 SoundSeq_Invalidate(SoundSequence *seq, u32 start, u32 end)
     }
     return 0;
 }
+
+s32 SoundSequence_GetTotalElementsInQueue(void)
+{
+    u8 *list[128];
+    u32 count;
+    s32 total;
+
+    total = 0;
+    count = ThingManager_GetActiveSoundSequences(list, 128);
+    while (count != 0) {
+        count--;
+        if (((SoundSequence *)list[count])->flags & 0x40000000) {
+            total++;
+        }
+    }
+    return total;
+}
+
