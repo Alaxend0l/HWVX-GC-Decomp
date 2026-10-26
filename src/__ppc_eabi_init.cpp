@@ -9,7 +9,7 @@ extern "C" u32 __mfmsr(void);
 extern "C" void __mtmsr(u32);
 extern "C" void __dcbst(void *, int);
 extern "C" void __icbi(void *, int);
-extern "C" void *_ctors[];
+extern "C" void (*_ctors[])(void);
 
 extern "C" void __flush_cache(void * address, u32 size)
 {
