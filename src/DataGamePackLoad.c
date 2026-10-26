@@ -98,6 +98,59 @@ void DataPack_CloseFiles(void)
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void DataPack_RefreshQuadPackPtrs(DataPack *pack, void *quad)
+{
+    s32 *reloc;
+    s32 *shader;
+    u32 id;
+    QuadPackHeader *header;
+    u8 *base;
+    u32 i;
+    u32 idx;
+    u32 texID;
+
+    header = *(QuadPackHeader **)((u8 *)quad + 0x28);
+    base = *(u8 **)((u8 *)quad + 0x2C);
+    reloc = header != NULL ? header->relocs : NULL;
+    shader = header != NULL ? header->shaderList : NULL;
+    if (header != NULL)
+    {
+        for (i = 0; i < header->numRelocs; i++)
+        {
+            id = reloc[1];
+            if (id & 0xFFFF0000)
+            {
+                u32 packID = id >> 16;
+                idx = header->refs[0].id != packID;
+                if (header->refs[idx].pack == NULL)
+                {
+                    header->refs[idx].pack =
+                        FileStreaming_InitializeDataPack(
+                            FileStreaming_LoadDataPack(&header->refs[idx], 8, packID, 0), 8, 1);
+                }
+                texID = header->refs[idx].pack->textureIDs[id & 0xFFFF];
+            }
+            else
+            {
+                texID = pack->textureIDs[id];
+            }
+            *(u32 *)(base + reloc[0]) = texID;
+            reloc += 2;
+        }
+        for (i = 0; i < header->numShaders; i++)
+        {
+            ShaderHolder_AddGX(base + shader[0], pack->shaderIDs[shader[1]]);
+            shader += 2;
+        }
+        if (*(void **)((u8 *)quad + 0x14) != NULL)
+        {
+            VertexColorSeqManager_AddVertices(*(void **)((u8 *)quad + 0x14));
+        }
+    }
+}
+#pragma pop
 void DataPack_ReleaseQuadPack(QuadPack *pack)
 {
     s32 *list;
