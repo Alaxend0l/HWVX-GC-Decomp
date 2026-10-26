@@ -3,10 +3,10 @@
 u32 __AXBufferAuxA[3][480];
 u32 __AXBufferAuxB[3][480];
 
-s32 __AXCallbackAuxA;
+void * __AXCallbackAuxA;
 s32 __AXCallbackAuxB;
-s32 __AXContextAuxA;
-s32 __AXContextAuxB;
+void * __AXContextAuxA;
+void * __AXContextAuxB;
 s32 __AXAuxADspWrite;
 s32 __AXAuxADspRead;
 s32 __AXAuxBDspWrite;
@@ -19,7 +19,7 @@ s32 __AXAuxCpuReadWritePosition;
 
 
 void __AXAuxQuit(void) {
-    extern s32 __AXCallbackAuxA;
+    extern void *__AXCallbackAuxA;
     extern s32 __AXCallbackAuxB;
     __AXCallbackAuxA = 0;
     __AXCallbackAuxB = 0;
@@ -27,7 +27,7 @@ void __AXAuxQuit(void) {
 
 void __AXGetAuxAInput(void **out)
 {
-    if ((u32)__AXCallbackAuxA)
+    if (__AXCallbackAuxA)
     {
         *out = __AXBufferAuxA[__AXAuxDspWritePosition];
     }
