@@ -1,6 +1,11 @@
 #include "common.h"
 
 
+void Mpeg_Create(void)
+{
+    Mpeg_Init();
+}
+
 void Mpeg_Destroy(void) {
 
 }
