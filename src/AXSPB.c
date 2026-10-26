@@ -28,3 +28,16 @@ extern u8 __AXStudio[];
 void *__AXGetStudio(void) {
     return __AXStudio;
 }
+
+void __AXSPBInit(void) {
+    __AXSpbABS = 0;
+    __AXSpbABR = 0;
+    __AXSpbABL = 0;
+    __AXSpbAAS = 0;
+    __AXSpbAAR = 0;
+    __AXSpbAAL = 0;
+    __AXSpbAS = 0;
+    __AXSpbAR = 0;
+    __AXSpbAL = 0;
+}
+
