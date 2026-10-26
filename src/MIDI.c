@@ -15,7 +15,12 @@ typedef struct MIDI_VOICE
 typedef struct MIDI_CHN
 {
     struct MIDI_VOICE *voice;
-    u8 pad_4_20[0x1C];
+    u8 pad_4_14[0x10];
+    s32 vol;
+    s32 pitch;
+    u8 pad_1C_1D[0x1];
+    u8 bend;
+    u8 pad_1E_20[0x2];
 } MIDI_CHN;
 
 MIDI_CHN g_chn[0x10];
