@@ -105,6 +105,146 @@ s32 File_Seek(s32 handle, s32 offset, s8 mode) {
     return 0;
 }
 
+s32 File_Read(u32 id, s32 size, void *data) {
+    extern struct { s32 fileInfo; char name[0x100]; } g_filedata_PC[4];
+    extern s64 g_resetTicks;
+    extern s32 m_reset;
+    extern s32 m_cd_drive_status;
+    extern u32 shithack;
+    s32 MemCard_Read__FUllPv(u32 device, s32 size, void *data);
+    s32 DVDReadPrio(void *fileInfo, void *addr, s32 length, s32 offset, s32 prio);
+    BOOL DVDReadAsyncPrio(void *fileInfo, void *addr, s32 length, s32 offset, void *callback, s32 prio);
+    s32 DVDGetDriveStatus(void);
+    void Render_BeginScene(void);
+    void Render_EndScene(void);
+    void Render_FlipBuffers(void);
+    s64 OSGetTime(void);
+    s32 OSGetResetButtonState(void);
+    void VISetBlack(s32 black);
+    void VIWaitForRetrace(void);
+    void VIFlush(void);
+    void OSResetSystem(s32 reset, u32 resetCode, s32 forceMenu);
+    void *memcpy(void *dst, const void *src, u32 n);
+    s32 sprintf(char *s, const char *format, ...);
+    char msg[0x100];
+    s8 device = (u8)(id >> 16);
+    s8 idx;
+    s32 result;
+    s32 length;
+    s32 buffer;
+    u8 *aligned;
+
+    if (device >= 11) {
+        return MemCard_Read__FUllPv(device, size, data);
+    }
+    if (size == 0) {
+        return 1;
+    }
+    idx = (u8)id;
+    if (size + g_files[idx].position <= g_files[idx].size) {
+        if (size < 0xC800) {
+            length = (size + 0x1F) & ~0x1F;
+            buffer = (s32)Allocate(length + 0x40, 0, "");
+            aligned = (u8 *)((buffer + 0x1F) & ~0x1F);
+            if (isInThread()) {
+                result = DVDReadPrio((void *)g_filedata_PC[idx].fileInfo, aligned, length, g_files[idx].position, 2);
+            } else {
+                result = DVDReadAsyncPrio((void *)g_filedata_PC[idx].fileInfo, aligned, length, g_files[idx].position, NULL, 2);
+                do {
+                    m_cd_drive_status = DVDGetDriveStatus();
+                    switch (m_cd_drive_status) {
+                    case -1:
+                    case 4:
+                    case 5:
+                    case 6:
+                    case 11:
+                        shithack = 1;
+                        Render_BeginScene();
+                        Render_EndScene();
+                        Render_FlipBuffers();
+                        break;
+                    }
+                    if (OSGetResetButtonState()) {
+                        m_reset = 1;
+                    }
+                    if (shithack && m_reset && OSGetResetButtonState() == 0) {
+                        VISetBlack(1);
+                        VIWaitForRetrace();
+                        VIFlush();
+                        VIWaitForRetrace();
+                        VIFlush();
+                        VIWaitForRetrace();
+                        if ((OSGetTime() - g_resetTicks) / (*(u32 *)0x800000F8 / 4) < 8) {
+                            OSResetSystem(1, 0, 0);
+                        } else {
+                            OSResetSystem(0, 0, 0);
+                        }
+                    }
+                } while (m_cd_drive_status != 0);
+            }
+            memcpy(data, aligned, size);
+            Deallocate(buffer);
+            g_files[idx].position += size;
+        } else {
+            if (isInThread()) {
+                result = DVDReadPrio((void *)g_filedata_PC[idx].fileInfo, data, (size + 0x1F) & ~0x1F, g_files[idx].position, 2);
+            } else {
+                result = DVDReadAsyncPrio((void *)g_filedata_PC[idx].fileInfo, data, (size + 0x1F) & ~0x1F, g_files[idx].position, NULL, 2);
+                do {
+                    m_cd_drive_status = DVDGetDriveStatus();
+                    switch (m_cd_drive_status) {
+                    case -1:
+                    case 4:
+                    case 5:
+                    case 6:
+                    case 11:
+                        shithack = 1;
+                        Render_BeginScene();
+                        Render_EndScene();
+                        Render_FlipBuffers();
+                        break;
+                    }
+                    if (OSGetResetButtonState()) {
+                        m_reset = 1;
+                    }
+                    if (shithack && m_reset && OSGetResetButtonState() == 0) {
+                        VISetBlack(1);
+                        VIWaitForRetrace();
+                        VIFlush();
+                        VIWaitForRetrace();
+                        VIFlush();
+                        VIWaitForRetrace();
+                        if ((OSGetTime() - g_resetTicks) / (*(u32 *)0x800000F8 / 4) < 8) {
+                            OSResetSystem(1, 0, 0);
+                        } else {
+                            OSResetSystem(0, 0, 0);
+                        }
+                    }
+                } while (m_cd_drive_status != 0);
+            }
+            g_files[idx].position += size;
+        }
+    } else {
+        sprintf(msg, "File error: Attempting to read past end of file in:\n %s", g_filedata_PC[idx].name);
+        return 0;
+    }
+    return result;
+}
+
+s32 File_Delete(s32 device, const char *fileName) {
+    s32 chan = device - 11;
+
+    if (CARDMount(chan, CardWorkArea, 0) != 0) {
+        return 0;
+    }
+    if (CARDDelete(chan, fileName) == 0) {
+        CARDUnmount(chan);
+        return 1;
+    }
+    CARDUnmount(chan);
+    return 0;
+}
+
 u32 FileManager_GetDeviceStatus(u32 device) {
     s32 CARDProbeEx(s32 chan, s32 *memSize, s32 *sectorSize);
     s32 CARDMount(s32 chan, void *workArea, void *detachCallback);
