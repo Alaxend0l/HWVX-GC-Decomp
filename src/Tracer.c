@@ -14,6 +14,14 @@ struct Thing {
 };
 
 
+void Tracer_Release(struct Thing *thing) {
+    void Thing_Release(void *);
+
+    tracers[thing->tracerIndex].active = 0;
+    thing->tracer = 0;
+    Thing_Release(thing);
+}
+
 s32 Tracer_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
