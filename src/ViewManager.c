@@ -13,6 +13,11 @@ void ViewManager_Init(void) {
     g_viewFormat = 0;
 }
 
+s32 ViewManager_GetViewFormat(void) {
+    extern s32 g_viewFormat;
+    return g_viewFormat;
+}
+
 void ViewManager_SetSinglePlayer(void) {
     extern s32 g_viewFormat;
     extern u8 g_CurrentViews;
