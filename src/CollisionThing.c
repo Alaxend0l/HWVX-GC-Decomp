@@ -35,6 +35,16 @@ extern OConvexHull g_aOConvexHull[8];
 extern CollisionPair g_aCollisionPairCache[4];
 void Dprintf(const char *, ...);
 
+void OConvexHullHolder_Init(void)
+{
+    u32 i;
+
+    for (i = 0; i < 8; i++)
+    {
+        g_aOConvexHull[i].hull = NULL;
+    }
+}
+
 OConvexHull *OConvexHullHolder_Get(void *owner) {
     u32 i;
 
