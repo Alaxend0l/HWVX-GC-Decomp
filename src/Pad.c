@@ -30,25 +30,29 @@ static void ClampS8(s8 *var, s8 org)
     s8 v = *var;
 
     if (0 < org) {
-        s8 min = (s8)(org - 128);
+        s8 min = (s8)(-128 + org);
         if (v < min) {
             v = min;
         }
     } else if (org < 0) {
-        s8 max = (s8)(org + 127);
+        s8 max = (s8)(127 + org);
         if (max < v) {
             v = max;
         }
     }
-    *var = v - org;
+    v -= org;
+    *var = v;
 }
 
 static void ClampU8(u8 *var, u8 org)
 {
-    if (*var < org) {
-        *var = org;
+    u8 v = *var;
+
+    if (v < org) {
+        v = org;
     }
-    *var -= org;
+    v -= org;
+    *var = v;
 }
 
 void UpdateOrigin(s32 chan)
