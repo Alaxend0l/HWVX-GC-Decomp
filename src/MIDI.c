@@ -22,6 +22,49 @@ MIDI_CHN g_chn[0x10];
 
 void SetVoiceState_(MIDI_VOICE *voice, s32 state);
 
+void SetMIDITrackOn(u32 mask, s8 deferred)
+{
+    extern u32 g_trkOn;
+    extern u32 g_trkOff;
+    u8 *chn;
+
+    if (deferred)
+    {
+        g_trkOff &= ~mask;
+        g_trkOn |= mask;
+        return;
+    }
+    for (chn = (u8 *)g_chn; mask != 0; chn += 0x20)
+    {
+        chn[4] |= mask & 1;
+        mask >>= 1;
+    }
+}
+
+void SetMIDITrackOff(u32 mask, s8 deferred)
+{
+    extern u32 g_trkOn;
+    extern u32 g_trkOff;
+    void ChannelOff(void *chn);
+    u8 *chn;
+
+    if (deferred)
+    {
+        g_trkOn &= ~mask;
+        g_trkOff |= mask;
+        return;
+    }
+    for (chn = (u8 *)g_chn; mask != 0; chn += 0x20)
+    {
+        if (mask & 1)
+        {
+            chn[4] = 0;
+            ChannelOff(chn);
+        }
+        mask >>= 1;
+    }
+}
+
 void SetMIDITrackVol(void)
 {
 }
