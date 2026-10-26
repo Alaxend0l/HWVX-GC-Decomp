@@ -90,7 +90,9 @@ void ForceFeedback_Heartbeat(void)
     }
 }
 
-void ForceFeedback_GetForce(Vector4 *ff, u8 *a, u8 *b, f32 *c)
+#pragma push
+#pragma use_lmw_stmw on
+void ForceFeedback_GetForce(void *ff, u8 *a, u8 *b, f32 *c)
 {
     s32 i;
     u8 active;
@@ -140,3 +142,4 @@ void ForceFeedback_GetForce(Vector4 *ff, u8 *a, u8 *b, f32 *c)
     *b = rumble;
     *c = force;
 }
+#pragma pop
