@@ -9,6 +9,7 @@ extern "C" s32 LGSetDeviceProperty(u32 handle, u32 property, s32 value);
 extern "C" s32 LGGetDeviceProperty(u32 handle, u32 property, void *value);
 Force::Force()
 {
+	InitVars();
 }
 
 void Force::InitVars()
