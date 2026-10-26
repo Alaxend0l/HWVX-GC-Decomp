@@ -1,5 +1,18 @@
 #include "common.h"
 
+void Projectile_Release(void * projectile)
+{
+    void LensFlare_Delete(s32);
+    void Thing_Release(s32);
+    void LightHolder_Delete(s32);
+    extern u8 g_projectileVTable[];
+
+    LensFlare_Delete(((s32 *)projectile)[0x4c]);
+    Thing_Release((s32)projectile);
+    LightHolder_Delete(((s32 *)projectile)[0x4d]);
+    ((s32 *)projectile)[0x23] = (s32)g_projectileVTable;
+}
+
 void Projectile_DynamicCollideImpact(void * proj, void * dir, s32 damage, f32 force)
 {
     void Projectile_DynamicCollisionCorrection(void *);
