@@ -34,3 +34,16 @@ void Wheels::GenerateNonLinValues(s32 chan, u8 coefficient)
 	}
 }
 
+f32 Wheels::CalculateNonLinValue(s32 input, u8 coefficient, s16 min, s16 max)
+{
+f32 x;
+f32 k;
+s32 half;
+s32 mid;
+k = (f32)coefficient / 100.0f;
+x = ((f32)input - 127.5f) / 127.5f;
+half = (max - min) / 2;
+mid = (max + min) / 2;
+return (f32)half * ((1.0f - k) * x + k * (x * (x * x))) + (f32)mid;
+}
+
