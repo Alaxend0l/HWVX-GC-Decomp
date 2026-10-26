@@ -4,8 +4,10 @@
 class Force
 {
 public:
-	Force();
-	long Start(long chan, long effect);
+		Force();
+
+	 long GetOverallForceGain(unsigned long &effectId);
+	 long Start(long chan, long effect);
 	long Destroy(long chan, long effect);
 	void SetOverallForceGain(unsigned long &effectId, long gain);
 
