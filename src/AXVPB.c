@@ -11,3 +11,6 @@ void *__AXGetPBs(void) {
     return __AXPB;
 }
 
+void __AXVPBQuit(void) {
+}
+
