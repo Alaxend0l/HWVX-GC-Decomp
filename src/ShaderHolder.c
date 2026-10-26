@@ -17,6 +17,24 @@ void ShaderHolder_Init(void) {
     g_pShaderHolder->numGX = 0;
 }
 
+void ShaderHolder_AddGX(void *gx, u32 index) {
+    extern ShaderHolder *g_pShaderHolder;
+    u32 i;
+    u32 n;
+
+    if (gx == NULL || index >= g_pShaderHolder->numShaders) {
+        return;
+    }
+    for (i = 0; i < g_pShaderHolder->numGX; i++) {
+        if (g_pShaderHolder->gx[i].gx == gx) {
+            return;
+        }
+    }
+    n = g_pShaderHolder->numGX++;
+    g_pShaderHolder->gx[n].gx = gx;
+    g_pShaderHolder->gx[n].shader = g_pShaderHolder->shaders[index];
+}
+
 void ShaderHolder_RemoveGX(s32 gx) {
     extern ShaderHolder *g_pShaderHolder;
     u32 i;
@@ -29,6 +47,51 @@ void ShaderHolder_RemoveGX(s32 gx) {
             g_pShaderHolder->numGX--;
             g_pShaderHolder->gx[i] = g_pShaderHolder->gx[g_pShaderHolder->numGX];
             return;
+        }
+    }
+}
+
+void ShaderHolder_Heartbeat(void) {
+    extern ShaderHolder *g_pShaderHolder;
+    extern f32 g_fDeltaTimeMS;
+    void ExtractColorKey(void *keys, void *out, f32 time);
+    void ExtractPointKey(void *keys, void *out, f32 time);
+    u16 MovieManager_GetTextureIndex(void);
+    u32 i;
+    f32 dt;
+
+    dt = g_fDeltaTimeMS;
+    for (i = 0; i < g_pShaderHolder->numShaders; i++) {
+        if (((u8 *)g_pShaderHolder->shaders[i])[0x60] != 0) {
+            ExtractColorKey(*(u8 **)((u8 *)g_pShaderHolder->shaders[i] + 0x5C) + 4, g_pShaderHolder->shaders[i], dt);
+        }
+        if (((u8 *)g_pShaderHolder->shaders[i])[0x62] != 0) {
+            ExtractPointKey(*(u8 **)((u8 *)g_pShaderHolder->shaders[i] + 0x5C) + 0xC, (u8 *)g_pShaderHolder->shaders[i] + 0x40, dt);
+        }
+        if (((u8 *)g_pShaderHolder->shaders[i])[0x61] != 0) {
+            ExtractTextureKey(*(TextureKeyAnim **)(*(u8 **)((u8 *)g_pShaderHolder->shaders[i] + 0x5C) + 0x14), (TextureKeyState *)((u8 *)g_pShaderHolder->shaders[i] + 0x30), dt);
+        }
+    }
+    for (i = 0; i < g_pShaderHolder->numGX; i++) {
+        u8 *shader = g_pShaderHolder->gx[i].shader;
+        u8 *gx = g_pShaderHolder->gx[i].gx;
+        u8 *mtx = *(u8 **)(gx + 0xC);
+
+        if (**(u8 **)(shader + 0x5C) != 0) {
+            *(u16 *)(gx + 0x18) = MovieManager_GetTextureIndex();
+        }
+        if (*(u16 *)(shader + 0x30) != 0) {
+            *(u16 *)(gx + 0x18) = *(u16 *)(shader + 0x30);
+        }
+        if (mtx != NULL) {
+            if (shader[0x60] != 0) {
+                *(u32 *)(mtx + 0x8) = *(u32 *)(shader + 0x24);
+                *(u32 *)(mtx + 0xC) = 2;
+            }
+            if (shader[0x62] != 0) {
+                *(f32 *)(mtx + 0x0) = *(f32 *)(shader + 0x40);
+                *(f32 *)(mtx + 0x4) = *(f32 *)(shader + 0x44);
+            }
         }
     }
 }
