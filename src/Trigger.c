@@ -130,3 +130,81 @@ u8 Trigger_IsTACSystemPaused(void) {
     return g_bTACSystemPaused_803C7124;
 }
 
+void Trigger_Heartbeat(void) {
+    extern u32 TriggerStats_800D3C58[][3];
+    extern u32 **m_Triggers_802C1890[];
+    extern s8 g_bTACSystemPaused_803C7124;
+    extern s8 (*pTriggerFuncArray_800D3DA8[])(void *param);
+    extern s32 m_ReleasedInterface_803C7128;
+    s8 TriggerCheckConditions(u8, s32, s32);
+    s32 Action_AddAction(s32);
+    u32 type;
+    u32 i;
+    u32 j;
+    u32 actions;
+    u32 *trigger;
+
+    if (!g_bTACSystemPaused_803C7124) {
+        for (type = 0; type < 28; type++) {
+            if (*(s8 *)&TriggerStats_800D3C58[type][2]) {
+                continue;
+            }
+            for (i = 0; i < TriggerStats_800D3C58[type][0]; i++) {
+                trigger = m_Triggers_802C1890[type][i];
+                if ((trigger[9] & 1) && pTriggerFuncArray_800D3DA8[trigger[0]]((void *)trigger[1])) {
+                    trigger = m_Triggers_802C1890[type][i];
+                    if (TriggerCheckConditions(((u8 *)trigger)[0x28], trigger[4], trigger[3])) {
+                        actions = 0;
+                        trigger = m_Triggers_802C1890[type][i];
+                        if ((s32)trigger[0] == 0x12 && ((u32 *)trigger[1])[2] == 0) {
+                            for (j = 0; j < m_Triggers_802C1890[type][i][8]; j++) {
+                                actions += Action_AddAction((s32)((u8 *)m_Triggers_802C1890[type][i][6] + j * 0x18));
+                            }
+                        } else {
+                            for (j = 0; j < m_Triggers_802C1890[type][i][7]; j++) {
+                                actions += Action_AddAction((s32)((u8 *)m_Triggers_802C1890[type][i][5] + j * 0x18));
+                            }
+                        }
+                        if (actions == 0) {
+                            m_Triggers_802C1890[type][i][9] = 2;
+                        } else {
+                            m_Triggers_802C1890[type][i][9] = 0x10;
+                        }
+                    } else {
+                        m_Triggers_802C1890[type][i][9] = 0x10;
+                    }
+                }
+                trigger = m_Triggers_802C1890[type][i];
+                if ((trigger[9] & 0x10) && !pTriggerFuncArray_800D3DA8[trigger[0]]((void *)trigger[1])) {
+                    m_Triggers_802C1890[type][i][9] |= 1;
+                    m_Triggers_802C1890[type][i][9] &= ~0x10;
+                }
+            }
+        }
+        m_ReleasedInterface_803C7128 = -1;
+    }
+}
+
+s32 Trigger_AddTrigger(s32 *trigger) {
+    extern u32 TriggerStats_800D3C58[][3];
+    extern char *triggerLabelsArray_800D3BE8[];
+    extern s32 **m_Triggers_802C1890[];
+    extern s8 g_bTACSystemPaused_803C7124;
+    int sprintf(char *buf, const char *fmt, ...);
+    char buf[0x200];
+    s32 type = trigger[0];
+
+    if (TriggerStats_800D3C58[type][0] == TriggerStats_800D3C58[type][1]) {
+        sprintf(buf, "Could not add the trigger: \"%s\", please notify Peter.", triggerLabelsArray_800D3BE8[type]);
+        return 0;
+    }
+    m_Triggers_802C1890[type][TriggerStats_800D3C58[type][0]++] = trigger;
+    if (trigger[0] == 8) {
+        trigger[9] = 1;
+    } else {
+        trigger[9] = 0x10;
+    }
+    g_bTACSystemPaused_803C7124 = 0;
+    return 1;
+}
+
