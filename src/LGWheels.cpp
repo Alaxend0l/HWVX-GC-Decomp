@@ -8,8 +8,8 @@ s32 GetOverallForceGain__5ForceFRUl(Force *force, u32 *effectId);
 void *memcpy(void *dst, const void *src, u32 n);
 u8 IsOpened__8LGWheelsFl(LGWheels *wheels, s32 chan)
 {
-	return IsOpened__6WheelsFl(&wheels->limbo, chan);
-}
+			return IsOpened__6WheelsFl(&wheels->limbo, chan);
+		}
 
 void SetOverallForceGain__8LGWheelsFll(LGWheels *wheels, s32 chan, s32 gain)
 {
