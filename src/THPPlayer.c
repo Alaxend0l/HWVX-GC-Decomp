@@ -28,10 +28,7 @@ typedef struct THPPlayer {
 
 extern THPPlayer ActivePlayer;
 extern u8 WorkBuffer[0x40];
-typedef struct UsedTextureSetQueue
-{
-    u8 pad[0x20];
-} UsedTextureSetQueue;
+extern u8 UsedTextureSetQueue_8036EC78[];
 static s32 Initialized;
 static s32 m_cd_drive_status;
 static s32 m_reset;
