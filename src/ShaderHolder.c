@@ -17,6 +17,24 @@ void ShaderHolder_Init(void) {
     g_pShaderHolder->numGX = 0;
 }
 
+void ShaderHolder_RemoveShader(void *id) {
+    extern ShaderHolder *g_pShaderHolder;
+    u32 i;
+
+    if (g_pShaderHolder == NULL) {
+        return;
+    }
+    for (i = 0; i < g_pShaderHolder->numShaders; i++) {
+        if (M2C_FIELD(g_pShaderHolder->shaders[i], void **, 0x5C) == id) {
+            if (--M2C_FIELD(g_pShaderHolder->shaders[i], s32 *, 0x64) == 0) {
+                g_pShaderHolder->numShaders--;
+                g_pShaderHolder->shaders[i] = g_pShaderHolder->shaders[g_pShaderHolder->numShaders];
+            }
+            return;
+        }
+    }
+}
+
 void ShaderHolder_AddGX(void *gx, u32 index) {
     extern ShaderHolder *g_pShaderHolder;
     u32 i;
