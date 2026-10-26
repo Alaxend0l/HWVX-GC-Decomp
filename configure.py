@@ -473,7 +473,7 @@ config.libs = [
             Object(NonMatching, "dvdqueue.c"),
             Object(NonMatching, "dvderror.c"),
             Object(NonMatching, "fstload.c"),
-            Object(NonMatching, "vi.c"),
+            Object(NonMatching, "vi.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "Padclamp.c"),
             Object(NonMatching, "Pad.c"),
             Object(NonMatching, "etc/ai.c"),
