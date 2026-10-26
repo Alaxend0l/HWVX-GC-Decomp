@@ -1,6 +1,19 @@
 #include "common.h"
 
 
+s32 AIRegisterDMACallback(s32 cb) {
+    extern s32 __AID_Callback;
+    s32 OSDisableInterrupts(void);
+    void OSRestoreInterrupts(void);
+    s32 old;
+
+    old = __AID_Callback;
+    OSDisableInterrupts();
+    __AID_Callback = cb;
+    OSRestoreInterrupts();
+    return old;
+}
+
 s32 AIGetStreamPlayState(void)
 {
     return *(s32 *)0xCC006C00 & 1;
