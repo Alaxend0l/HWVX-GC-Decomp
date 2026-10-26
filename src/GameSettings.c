@@ -5,7 +5,7 @@ extern GeneralGameSettings g_generalGameSettings;
 
 extern HotWheelsGameData g_HotWheelsGameData;
 
-
+extern s8 g_DDRescueGameData[];
 
 extern CodeVariables g_codeVariables;
 extern s8 g_bValidFileName[8];
@@ -200,7 +200,6 @@ void GameSettings_ApplyDefaultGameData(void)
 void GameSettings_GetLoadedProgression(s32 *arg0, s32 *arg1)
 {
     void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
-    extern s8 g_DDRescueGameData[];
     u8 *mcp;
     void *pack;
     s32 state;
@@ -236,6 +235,107 @@ done:
         *arg0 = *(s32 *)&g_DDRescueGameData[0x6c];
         *arg1 = *(s32 *)&g_DDRescueGameData[0x70];
         GameSettings_SetCodeVariable(0xcb, 1, *(s32 *)&g_DDRescueGameData[0x1cd4]);
+        break;
+    }
+}
+
+void GameSettings_RestoreGameData(void) {
+    typedef struct DDRescueGameData {
+        u8 unk0[0x74];
+        s8 bValid;
+        u8 unk75[0xB0 - 0x75];
+        u8 actions[0x880 - 0xB0];
+        f32 unk880[50];
+        u8 unk948[50][2];
+        f32 unk9AC[50];
+        u8 unkA74[50][2];
+        u8 unkAD8[200];
+        u8 unkBA0[1000];
+        u8 unkF88[2000];
+        u8 unk1758[500];
+        u8 unk194C[50];
+        f32 unk1980[50][3];
+        f32 unk1BD8[50];
+        u8 unk1CA0[50];
+        s32 vehicle;
+        s32 item;
+    } DDRescueGameData;
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    void Trigger_RestoreActions(void *actions, s32 count);
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    void *pack;
+    s32 state;
+    u8 *group;
+    u32 i;
+    u32 j;
+    u32 nTriggers;
+    u32 nSwitches;
+
+    nTriggers = 0;
+    nSwitches = 0;
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        state = mcp[1];
+    } else {
+        state = 0;
+    }
+    switch (state) {
+    case 0:
+        break;
+    case 1:
+        if (((DDRescueGameData *)g_DDRescueGameData)->bValid) {
+            Trigger_RestoreActions(((DDRescueGameData *)g_DDRescueGameData)->actions, 500);
+            for (i = 0; i < *(u32 *)((u8 *)g_worldData.world + 0x50) && i < 50; i++) {
+                *(f32 *)((*(u8 ***)((u8 *)g_worldData.world + 0x54))[i] + 0x8) = ((DDRescueGameData *)g_DDRescueGameData)->unk880[i];
+                (*(u8 **)((*(u8 ***)((u8 *)g_worldData.world + 0x54))[i] + 0xC))[0] = ((DDRescueGameData *)g_DDRescueGameData)->unk948[i][0];
+                (*(u8 **)((*(u8 ***)((u8 *)g_worldData.world + 0x54))[i] + 0xC))[1] = ((DDRescueGameData *)g_DDRescueGameData)->unk948[i][1];
+            }
+            for (i = 0; i < *(u32 *)((u8 *)g_worldData.world + 0x48) && i < 50; i++) {
+                *(f32 *)((*(u8 ***)((u8 *)g_worldData.world + 0x4C))[i] + 0x4) = ((DDRescueGameData *)g_DDRescueGameData)->unk9AC[i];
+                if (*(u8 **)((*(u8 ***)((u8 *)g_worldData.world + 0x4C))[i] + 0xC) != NULL) {
+                    (*(u8 **)((*(u8 ***)((u8 *)g_worldData.world + 0x4C))[i] + 0xC))[0] = ((DDRescueGameData *)g_DDRescueGameData)->unkA74[i][0];
+                    (*(u8 **)((*(u8 ***)((u8 *)g_worldData.world + 0x4C))[i] + 0xC))[1] = ((DDRescueGameData *)g_DDRescueGameData)->unkA74[i][1];
+                }
+            }
+            for (i = 0; i < *(u32 *)((u8 *)g_worldData.world + 0x40) && i < 200; i++) {
+                *(s32 *)(*(u8 **)((u8 *)g_worldData.world + 0x44) + i * 0x40 + 0x20) = ((DDRescueGameData *)g_DDRescueGameData)->unkAD8[i];
+            }
+            for (i = 0; i < *(u32 *)((u8 *)g_worldData.world + 0x20); i++) {
+                group = *(u8 **)((u8 *)g_worldData.world + 0x24) + i * 0x50;
+                for (j = 0; j < *(u32 *)(*(u8 **)(group + 0x30) + 0x14) && nTriggers < 1000; j++) {
+                    *(s32 *)(*(u8 **)(*(u8 **)(group + 0x30) + 0x18) + j * 0x40 + 0x28) = ((DDRescueGameData *)g_DDRescueGameData)->unkBA0[nTriggers++];
+                }
+                for (j = 0; j < *(u32 *)(*(u8 **)(group + 0x30) + 0x4) && nSwitches < 2000; j++) {
+                    *(s32 *)(*(u8 **)(*(u8 **)(group + 0x30) + 0x8) + j * 0x40 + 0x30) = ((DDRescueGameData *)g_DDRescueGameData)->unkF88[nSwitches++];
+                }
+            }
+            for (i = 0; i < *(u32 *)((u8 *)g_worldData.world + 0x10) && i < 500; i++) {
+                *(s32 *)(*(u8 **)((u8 *)g_worldData.world + 0x14) + i * 0x20 + 0x14) = ((DDRescueGameData *)g_DDRescueGameData)->unk1758[i];
+            }
+            for (i = 0; i < *(u32 *)((u8 *)g_worldData.world + 0x8) && i < 50; i++) {
+                *(s32 *)(*(u8 **)((u8 *)g_worldData.world + 0xC) + i * 0x60 + 0x2C) = ((DDRescueGameData *)g_DDRescueGameData)->unk194C[i];
+                *(f32 *)(*(u8 **)((u8 *)g_worldData.world + 0xC) + i * 0x60 + 0x0) = ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][0];
+                *(f32 *)(*(u8 **)((u8 *)g_worldData.world + 0xC) + i * 0x60 + 0x4) = ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][1];
+                *(f32 *)(*(u8 **)((u8 *)g_worldData.world + 0xC) + i * 0x60 + 0x8) = ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][2];
+                *(f32 *)(*(u8 **)((u8 *)g_worldData.world + 0xC) + i * 0x60 + 0x58) = ((DDRescueGameData *)g_DDRescueGameData)->unk1BD8[i];
+                *(u8 *)(*(u8 **)((u8 *)g_worldData.world + 0xC) + i * 0x60 + 0x5F) = ((DDRescueGameData *)g_DDRescueGameData)->unk1CA0[i];
+            }
+            g_codeVariables.playerItem[0] = ((DDRescueGameData *)g_DDRescueGameData)->item;
+            g_codeVariables.playerVehicle[0] = ((DDRescueGameData *)g_DDRescueGameData)->vehicle;
+        }
         break;
     }
 }
