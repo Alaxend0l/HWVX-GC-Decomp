@@ -181,8 +181,8 @@ s32 THPPlayerPlay(void)
     if (ActivePlayer.open && (ActivePlayer.state == 1 || ActivePlayer.state == 4))
     {
         ActivePlayer.state = 2;
-        ActivePlayer.unkCC = 0;
         ActivePlayer.unkC8 = 0;
+        ActivePlayer.unkCC = 0;
         ActivePlayer.unkC4 = -1;
         ActivePlayer.unkC0 = -1;
         return 1;
