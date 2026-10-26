@@ -116,3 +116,7 @@ void Thing_CollideWithRay(void)
 {
 }
 
+void Thing_PassiveTargeting(void)
+{
+}
+
