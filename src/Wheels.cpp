@@ -11,12 +11,13 @@ u8 Wheels::IsOpened(s32 chan)
 u8 Wheels::IsConnected(s32 chan)
 {
 	unk838[chan] = SIProbe(chan);
-	if (unk838[chan] == 0x08000000)
+	switch (unk838[chan])
 	{
-		return 1;
+		case 0x08000000:
+			return 1;
+		}
+		return 0;
 	}
-	return 0;
-}
 
 u8 Wheels::PedalsConnected(s32 chan)
 {
