@@ -15,24 +15,29 @@ u8 SameSpringForceParams__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8
     return 0;
 }
 
-u8 IsOpened__8LGWheelsFl(LGWheels *wheels, s32 chan)
+u8 LGWheels::IsOpened(s32 chan)
 {
-	return IsOpened__6WheelsFl(&wheels->limbo, chan);
+	return limbo.IsOpened(chan);
 }
 
-void SetOverallForceGain__8LGWheelsFll(LGWheels *wheels, s32 chan, s32 gain)
+u8 LGWheels::PedalsConnected(s32 chan)
 {
-	SetOverallForceGain__5ForceFRUll(&wheels->limb, &wheels->limbo.overallGainId[chan], gain);
+	return limbo.PedalsConnected(chan);
 }
 
-s32 GetOverallForceGain__8LGWheelsFl(LGWheels *wheels, s32 chan)
+void LGWheels::SetOverallForceGain(s32 chan, s32 gain)
 {
-	return GetOverallForceGain__5ForceFRUl(&wheels->limb, &wheels->limbo.overallGainId[chan]);
+	limb.SetOverallForceGain(limbo.overallGainId[chan], gain);
 }
 
-void GenerateNonLinValues__8LGWheelsFlUc(LGWheels *wheels, s32 chan, u8 coefficient)
+s32 LGWheels::GetOverallForceGain(s32 chan)
 {
-	GenerateNonLinValues__6WheelsFlUc(&wheels->limbo, chan, coefficient);
-	memcpy(wheels->nonLinValues, wheels->limbo.nonLinValues, 0x800);
+	return limb.GetOverallForceGain(limbo.overallGainId[chan]);
+}
+
+void LGWheels::GenerateNonLinValues(s32 chan, u8 coefficient)
+{
+	limbo.GenerateNonLinValues(chan, coefficient);
+	memcpy(nonLinValues, limbo.nonLinValues, 0x800);
 }
 
