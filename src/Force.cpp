@@ -65,3 +65,17 @@ void Force::SetOverallForceGain(unsigned long &effectId, long gain)
 	 }
  }
 
+long Force::GetOverallForceGain(unsigned long &effectId)
+{
+	s32 gain;
+	s32 result;
+
+	result = LGGetDeviceProperty(effectId, 3, &gain);
+	if (result < 0)
+	{
+	 OSReport("ERROR: Failed to get overall force gain.\n");
+	 return result;
+	}
+	return gain;
+}
+
