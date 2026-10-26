@@ -30,13 +30,13 @@ static f32 Sqrt(f64 x)
     {
         result = 0.0;
     }
-    else if (x == x)
+    else if (x != x)
     {
-        result = __float_huge;
+        result = __float_nan;
     }
     else
     {
-        result = __float_nan;
+        result = __float_huge;
     }
     return result;
 }
