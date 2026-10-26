@@ -9,3 +9,7 @@ s32 StateShutdown_Heartbeat(void) {
     return 0;
 }
 
+s32 StateShutdown_Shutdown(void) {
+    return 1;
+}
+
