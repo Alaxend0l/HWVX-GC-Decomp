@@ -64,6 +64,10 @@ typedef struct CodeVariables {
 
 extern CodeVariables g_codeVariables;
 extern s8 g_bValidFileName[8];
+extern s8 g_bRefreshMC;
+extern s8 g_bRefreshMC_FileList;
+extern s8 g_bRefreshMC_FileInfo;
+u8 FileManager_FormatDevice(char *device);
 
 static s8 bFirstTime = 1;
 static u8 *pMCP;
