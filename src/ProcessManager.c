@@ -53,6 +53,21 @@ void ProcessManager_Add(char *name, void (*init)(void), void (*update)(void), s3
     g_processManager.processes[index].unk14 = 0;
 }
 
+void ProcessManager_Release(char *name) {
+    int strcmp(const char *a, const char *b);
+    u32 i;
+
+    for (i = 0; i < g_processManager.count; i++) {
+        if (strcmp(name, g_processManager.processes[i].name) == 0) {
+            for (; i < g_processManager.count - 1; i++) {
+                g_processManager.processes[i] = g_processManager.processes[i + 1];
+            }
+            g_processManager.count--;
+            return;
+        }
+    }
+}
+
 void ProcessManager_Heartbeat(u32 activeOnly) {
     s32 StateManager_CurrState(void);
     extern u32 g_StopInput;
