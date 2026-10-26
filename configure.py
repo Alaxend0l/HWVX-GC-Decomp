@@ -476,7 +476,7 @@ config.libs = [
             Object(NonMatching, "vi.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "Padclamp.c"),
             Object(NonMatching, "Pad.c"),
-            Object(NonMatching, "etc/ai.c"),
+            Object(NonMatching, "etc/ai.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "ar.c"),
             Object(NonMatching, "arq.c"),
             Object(Matching, "AX.c"),
