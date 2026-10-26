@@ -27,6 +27,7 @@ extern ForceFeedback g_forcefeedback[24];
 
 extern f32 g_fDeltaTimeMS;
 extern s32 g_iDeltaTimeMS;
+void DistanceXYZ(void *a, void *b, f32 *dist);
 void ExtractPointKey(void *keys, void *out, f32 time);
 void ExtractF32Key(void *keys, void *out, f32 time);
 
