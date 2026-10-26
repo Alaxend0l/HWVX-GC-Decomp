@@ -43,6 +43,7 @@ typedef struct WorldData
     s32 unk8[4];
 } WorldData;
 extern WorldData g_worldData;
+extern s32 g_loadingThreadID;
 extern void *g_QuadrantsToLoad[11];
 s32 RunThread(void *func, s32 priority);
 void DataPack_RefreshQuadPackPtrs(s32 pack, void *quad);
