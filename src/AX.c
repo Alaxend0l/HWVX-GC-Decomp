@@ -9,3 +9,13 @@ void AXInit(void) {
     __AXClInit();
     __AXOutInit();
 }
+
+void AXQuit(void) {
+    __AXAllocQuit();
+    __AXVPBQuit();
+    __AXSPBQuit();
+    __AXAuxQuit();
+    __AXClQuit();
+    __AXOutQuit();
+}
+
