@@ -128,6 +128,102 @@ f32 Destructible_GetMass(Destructible *destructible) {
     return destructible->record->info->mass;
 }
 
+void Destructible_DynamicCollideImpact(u8 *destructible, u8 *collision, s32 damage, f32 force) {
+    typedef struct OBox {
+        Vector4 v[3];
+    } OBox;
+    typedef struct DestructibleInfo {
+        f32 inertia[3];
+        u8 pad0C[0x10 - 0xC];
+        u8 type;
+        u8 takesDamage;
+        u8 pad12[0x18 - 0x12];
+        s32 armour;
+        u8 pad1C[0x20 - 0x1C];
+        f32 mass;
+        u8 pad24[0x44 - 0x24];
+        OBox *box;
+    } DestructibleInfo;
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void Thing_ProcessEndEvent(u8 *thing, u8 *event, u8 *collision, Vector4 *vel);
+    u8 *CollisionInfo_GetOther(void *collision, void *thing);
+    s8 Player_IsHuman(void *player);
+    DestructibleInfo *info;
+    OBox box;
+    Vector4 angVel;
+    Vector4 torque;
+    Vector4 impulse;
+    Vector4 r;
+    Vector4 local;
+    Vector4 scaled;
+    f32 scale;
+    f32 invX;
+    f32 invY;
+    f32 invZ;
+    f32 inertia;
+    u8 *other;
+
+    info = *(DestructibleInfo **)(*(u8 **)(destructible + 0xC0) + 0x10);
+    damage -= info->armour;
+    if (*(u32 *)(destructible + 0x74) & 0x200000) {
+        return;
+    }
+    if (info->takesDamage && damage > 0) {
+        *(s32 *)(destructible + 0x78) -= damage;
+    }
+    if (*(s32 *)(destructible + 0x78) > 0) {
+        return;
+    }
+    scale = force / (*(DestructibleInfo **)(*(u8 **)(destructible + 0xC0) + 0x10))->mass;
+    ((Vector4 *)destructible)->x += ((Vector4 *)(collision + 0x10))->x * scale;
+    ((Vector4 *)destructible)->y += ((Vector4 *)(collision + 0x10))->y * scale;
+    ((Vector4 *)destructible)->z += ((Vector4 *)(collision + 0x10))->z * scale;
+    PSVECSubtract((Vector4 *)collision, (Vector4 *)(destructible + 0x40), &r);
+    impulse.x = force * ((Vector4 *)(collision + 0x10))->x;
+    impulse.y = force * ((Vector4 *)(collision + 0x10))->y;
+    impulse.z = force * ((Vector4 *)(collision + 0x10))->z;
+    PSVECCrossProduct(&r, &impulse, &torque);
+    info = *(DestructibleInfo **)(*(u8 **)(destructible + 0xC0) + 0x10);
+    switch (info->type) {
+    case 0:
+        box = *info->box;
+        invX = 1.0f / (info->inertia[0] * info->mass * (box.v[1].y * box.v[1].y + box.v[1].z * box.v[1].z));
+        invY = 1.0f / (info->inertia[1] * info->mass * (box.v[1].x * box.v[1].x + box.v[1].z * box.v[1].z));
+        invZ = 1.0f / (info->inertia[2] * info->mass * (box.v[1].x * box.v[1].x + box.v[1].y * box.v[1].y));
+        break;
+    case 1:
+        break;
+    case 7:
+        inertia = 0.4f * info->mass * *(f32 *)(destructible + 0x70) * *(f32 *)(destructible + 0x70);
+        invX = 1.0f / (info->inertia[0] * inertia);
+        invY = 1.0f / (info->inertia[1] * inertia);
+        invZ = 1.0f / (info->inertia[2] * inertia);
+        break;
+    }
+    InverseXformVecOrientation(destructible + 0x10, &torque, &local);
+    scaled.x = invX * local.x;
+    scaled.y = invY * local.y;
+    scaled.z = invZ * local.z;
+    XformVecOrientation(destructible + 0x10, &scaled, &angVel);
+    Thing_ProcessEndEvent(destructible, *(u8 **)(*(u8 **)(destructible + 0xC0) + 0x10), collision, &angVel);
+    if (*(u8 **)(destructible + 0x90) != NULL && *(u32 *)(*(u8 **)(destructible + 0x90) + 0x30) == 0x1A) {
+        *(u32 *)(destructible + 0x74) |= 0x200;
+        *(u32 *)(destructible + 0x74) |= 2;
+        return;
+    }
+    other = CollisionInfo_GetOther(collision, destructible);
+    if (other != NULL && *(void **)(other + 0x94) != NULL && Player_IsHuman(*(void **)(other + 0x94))) {
+        *(u32 *)(destructible + 0x74) |= 0x20;
+    }
+    Destructible_Release_inline(destructible);
+    if (*(u8 **)(destructible + 0x90) != NULL) {
+        *(u32 *)(*(u8 **)(destructible + 0x90) + 0x30) = 3;
+    }
+}
+
 s32 Destructible_GetSurfaceScript(Destructible *destructible) {
     return destructible->record->info->surfaceScript;
 }

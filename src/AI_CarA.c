@@ -337,6 +337,201 @@ void AI_Car_AsyncScanDestructibles(u8 *car) {
     }
 }
 
+s8 AI_Car_IsTargetValid_800094EC(u8 *ai, u8 *target, f32 maxDist, f32 minDist, f32 center, f32 range) {
+    extern u8 g_itemVTable[];
+    s8 Player_IsHuman(void *player);
+    f32 PSVECSquareDistance(void *a, void *b);
+    f32 AI_AngleToTarget(u8 *ai, Vector4 *target);
+    s8 AI_CheckAngleInRange(f32 angle, f32 center, f32 range);
+    u32 NavHolder_GetTotalNavPoints(void);
+    void *NavHolder_GetNavPoint(u32 index);
+    typedef struct {
+        s32 limit0;
+        s32 limit4;
+        s32 limit8;
+        s32 limitC;
+        u8 mode;
+        u8 compare;
+    } TargetLimits;
+    typedef struct {
+        u8 type;
+        u8 subtype;
+        u8 pad2[3];
+        u8 unk5;
+        u8 pad6[0x58 - 6];
+        TargetLimits *limits;
+    } TargetDef;
+    typedef struct {
+        u8 *thing;
+        s16 v4;
+        s16 v6;
+        s16 v8;
+        s16 vA;
+        u8 padC[8];
+    } TargetEntry;
+    typedef struct {
+        u8 pad0[0x4B0];
+        TargetEntry entries[16];
+    } AIData;
+    s16 i;
+    s8 valid;
+    TargetLimits *limits;
+    u8 *pos;
+    u8 *thing;
+    u8 type;
+    TargetDef *def;
+    f32 dist;
+
+    def = *(TargetDef **)target;
+    type = def->type;
+    if (type == 6 || (u8)(type - 7) <= 2 || type == 11 || type == 13) {
+        thing = *(u8 **)(target + 0x10);
+        if (thing != NULL && *(u8 **)(thing + 0x8C) == g_itemVTable && !(*(u32 *)(thing + 0x74) & 0x1000)) {
+            pos = NULL;
+            if (**(u8 **)(thing + 0xC0) == 7 && *(u8 **)(thing + 0x94) != NULL && *(u32 *)(*(u8 **)(thing + 0x94) + 0x2C) != 0) {
+                if (Player_IsHuman(*(u8 **)(thing + 0x94))) {
+                    pos = *(u8 **)(*(u8 **)(*(u8 **)(target + 0x10) + 0x94) + 0x2C) + 0x40;
+                }
+            } else {
+                pos = thing + 0x40;
+            }
+            if (pos != NULL) {
+                dist = PSVECSquareDistance(pos, *(u8 **)(ai + 0x2C) + 0x40);
+                if ((!minDist && !maxDist) || (dist <= maxDist && dist >= minDist)) {
+                    if (AI_CheckAngleInRange(57.29578f * AI_AngleToTarget(*(u8 **)(ai + 0x2C), (Vector4 *)pos), center, range)) {
+                        return 1;
+                    }
+                }
+            }
+        }
+    } else if ((u8)(type - 1) <= 1 || type == 3) {
+        valid = 1;
+        if ((*(u32 *)(*(u8 **)(target + 0x10) + 0x74) & 0x1000) || !AI_Car_CanTarget(ai, (u8 *)def)) {
+            return 0;
+        }
+        if (def->subtype == 3) {
+            limits = def->limits;
+            valid = limits->mode != 1;
+            for (i = 0; i < 16 && ((AIData *)ai)->entries[i].thing != NULL; i++) {
+                if (((AIData *)ai)->entries[i].thing == *(u8 **)(target + 0x10)) {
+                    if (limits->compare == 1) {
+                        if ((limits->limit8 > 0 && ((TargetEntry *)(ai + 0x4B0))[i].v8 > limits->limit8) ||
+                            (limits->limitC > 0 && ((TargetEntry *)(ai + 0x4B0))[i].vA > limits->limitC) ||
+                            (limits->limit0 > 0 && ((TargetEntry *)(ai + 0x4B0))[i].v4 > limits->limit0) ||
+                            (limits->limit4 > 0 && ((TargetEntry *)(ai + 0x4B0))[i].v6 > limits->limit4)) {
+                            valid = limits->mode == 1;
+                        }
+                    } else {
+                        if ((limits->limit8 == 0 || ((TargetEntry *)(ai + 0x4B0))[i].v8 > limits->limit8) &&
+                            (limits->limitC == 0 || ((TargetEntry *)(ai + 0x4B0))[i].vA > limits->limitC) &&
+                            (limits->limit0 == 0 || ((TargetEntry *)(ai + 0x4B0))[i].v4 > limits->limit0) &&
+                            (limits->limit4 == 0 || ((TargetEntry *)(ai + 0x4B0))[i].v6 > limits->limit4)) {
+                            valid = limits->mode == 1;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        if (valid) {
+            dist = PSVECSquareDistance(*(u8 **)(target + 0x10) + 0x40, *(u8 **)(ai + 0x2C) + 0x40);
+            if ((!minDist && !maxDist) || (dist <= maxDist && dist >= minDist)) {
+                if (AI_CheckAngleInRange(57.29578f * AI_AngleToTarget(*(u8 **)(ai + 0x2C), (Vector4 *)(*(u8 **)(target + 0x10) + 0x40)), center, range)) {
+                    return 1;
+                }
+            }
+        }
+        return 0;
+    } else if (type == 10) {
+        u8 *nav = *(u8 **)(target + 0x10);
+
+        if (nav != NULL && nav[0x50] != 0) {
+            if (def->unk5 != 0 || PSVECSquareDistance(nav, *(u8 **)(ai + 0x2C) + 0x40) > *(f32 *)(nav + 0x24) * *(f32 *)(nav + 0x24)) {
+                return 1;
+            }
+        }
+    } else if (type == 14) {
+        if (*(u8 **)(target + 0x10) != NULL) {
+            if (*(u32 *)(ai + 0x4A0) < NavHolder_GetTotalNavPoints()) {
+                *(void **)(target + 0x10) = NavHolder_GetNavPoint(*(u32 *)(ai + 0x4A0));
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+s8 AI_Car_EnterState(u8 *ai, u8 *branch, s32 slot) {
+    typedef struct { u8 *info; u32 timer0; u32 timer1; u32 timer2; u8 pad10[4]; u8 count; } AIBranch;
+    extern Vector4 g_zeroVector;
+    u32 AI_UpdateTimer(u32 *timer);
+    s8 AI_Car_DetermineTarget(u8 *ai, u8 *branch, s32 slot);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    struct { Vector4 a; Vector4 b; Vector4 c; Vector4 zero; u32 id; u8 *player; f32 f0; f32 f1; } p;
+    u32 id;
+    u8 *car;
+    u8 i;
+    s8 done;
+
+    done = 0;
+    if (branch == ((u8 **)(ai + 0x3D4))[(u8)slot]) {
+        if (*(u32 *)(branch + 4) != 0) {
+            AI_UpdateTimer((u32 *)((u32)branch + 4));
+        }
+        if (*(u32 *)(branch + 4) == 0 && (*(u32 *)(((AIBranch *)branch)->info + 0x48) != 0 || *(u32 *)(((AIBranch *)branch)->info + 0x4C) != 0)) {
+            done = 1;
+        } else if (!(s8)AI_Car_CheckLocalStats(ai, ((AIBranch *)branch)->info)) {
+            done = 1;
+        } else if (!AI_Car_DetermineTarget(ai, branch, slot)) {
+            done = 1;
+        }
+        if (done) {
+            branch = NULL;
+        }
+    } else {
+        if (((AIBranch *)branch)->info[6] != 0 && ((AIBranch *)branch)->count == 0) {
+            return 0;
+        }
+        if (((AIBranch *)branch)->timer1 != 0) {
+            return 0;
+        }
+        if (!(s8)AI_Car_CheckLocalStats(ai, ((AIBranch *)branch)->info)) {
+            return 0;
+        }
+        if (!AI_Car_DetermineTarget(ai, branch, slot)) {
+            return 0;
+        }
+        if (((AIBranch *)branch)->count != 0) {
+            ((AIBranch *)branch)->count--;
+        }
+        id = *(u32 *)(((AIBranch *)branch)->info + 0x5C);
+        if (id != 0) {
+            p.id = id;
+            car = *(u8 **)(ai + 0x2C);
+            p.a = *(Vector4 *)(car + 0x40);
+            p.b = *(Vector4 *)(car + 0x50);
+            p.c = *(Vector4 *)(car + 0x0);
+            p.player = ai;
+            p.f0 = 1.0f;
+            p.zero = g_zeroVector;
+            ThingManager_DARYL_CreateThing(1, &p);
+        }
+        ((AIBranch *)branch)->timer0 = RandomAdd_s32(*(s32 *)(((AIBranch *)branch)->info + 0x38), *(s32 *)(((AIBranch *)branch)->info + 0x3C));
+        done = 1;
+    }
+    if (done) {
+        for (i = slot; i < 4; i++) {
+            if (*(AIBranch **)(ai + 0x3D4 + i * 4) == NULL) {
+                break;
+            }
+            (*(AIBranch **)(ai + 0x3D4 + i * 4))->timer1 = RandomAdd_s32(*(s32 *)((*(AIBranch **)(ai + 0x3D4 + i * 4))->info + 0x48), *(s32 *)((*(AIBranch **)(ai + 0x3D4 + i * 4))->info + 0x4C));
+            *(AIBranch **)(ai + 0x3D4 + i * 4) = NULL;
+        }
+    }
+    return branch != NULL;
+}
+
 s8 AI_Car_DetermineStateBranch(u8 *car, void *arg, s8 skip) {
     typedef struct AIStateInfo {
         u8 unk0[6];

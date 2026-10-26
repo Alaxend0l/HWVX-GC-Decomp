@@ -151,6 +151,49 @@ void MotionState_Draw(void *state) {
     MotionState_DrawSlaves(state, 0);
 }
 
+void MotionState_Draw2(void *state, s32 mtx, u8 *matrices) {
+    void MotionState_ExtractBlendedKeyFrame(u8 *state, void *keyFrame);
+    void Gfx_DrawAnimGeometryAux(void *geom, void *mtx, s32 skel, s32 arg3);
+    void Gfx_DrawGeometry(void *geom, void *mtx);
+    void MotionState_DrawSlaves(void *state, s32 arg1);
+    void TEST_AnimTraverseHeirarchyToMatricesWorld(Vector4 *quat, void *pos, void *frames, s32 skel, void *matrices, f32 time);
+    s32 *skel;
+    u8 *cached;
+    u32 i;
+    u8 *e;
+    Vector4 quat;
+    Matrix4 out;
+    u8 frames[0x800];
+
+    skel = M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), s32 **, 0x14);
+    if (M2C_FIELD(state, u8 **, 0x10) == NULL) {
+        MotionState_ExtractBlendedKeyFrame(state, frames);
+        SubMatrixToQuaternion((void *)mtx, &quat);
+        TEST_AnimTraverseHeirarchyToMatricesWorld(&quat, (void *)(mtx + 0x30), frames, *skel, matrices, 1.0f);
+        for (i = 0; i < M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u32 *, 0x0); i++) {
+            Gfx_DrawAnimGeometryAux(M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), void ***, 0x4)[i], matrices, *skel, 0);
+        }
+        for (i = 0; i < M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u32 *, 0x8); i++) {
+            e = M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u8 **, 0xC) + i * 8;
+            Gfx_DrawGeometry(M2C_FIELD(e, void **, 0x0), matrices + (M2C_FIELD(e, u16 *, 0x4) << 6));
+        }
+        MotionState_DrawSlaves(state, 0);
+    } else {
+        cached = M2C_FIELD(state, u8 **, 0x10);
+        for (i = 0; i < M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u32 *, 0x0); i++) {
+            Gfx_DrawAnimGeometryAux(M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), void ***, 0x4)[i], cached, *skel, mtx);
+        }
+        for (i = 0; i < M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u32 *, 0x8); i++) {
+            void *geom;
+            e = M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u8 **, 0xC) + i * 8;
+            geom = M2C_FIELD(e, void **, 0x0);
+            MultiplyMatrix((Matrix4 *)(cached + (M2C_FIELD(e, u16 *, 0x4) << 6)), (void *)mtx, &out);
+            Gfx_DrawGeometry(geom, &out);
+        }
+        MotionState_DrawSlaves(state, mtx);
+    }
+}
+
 void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps) {
     extern f32 g_fDeltaTimeSec;
     typedef struct {

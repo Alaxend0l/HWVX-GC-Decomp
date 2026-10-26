@@ -1,5 +1,185 @@
+#include "common.h"
 
+
+s32 Looker_PreMove(u8 *thing) {
+    typedef struct {
+        s8 lookX;
+        s8 lookY;
+        s8 moveX;
+        s8 moveY;
+        u8 unk4[0xC];
+        u8 locked;
+        u8 unk11;
+        u8 back;
+        u8 left;
+        u8 forward;
+        u8 right;
+        u8 unk16[4];
+        u8 fast;
+        u8 unk1B[0x17];
+        u8 pressed;
+    } LookerInput;
+    typedef struct Looker {
+        Vector4 vel;
+        Vector4 right;
+        Vector4 up;
+        Vector4 forward;
+        Vector4 pos;
+        Vector4 quat;
+        u8 unk60[0x34];
+        LookerInput *player;
+        u8 unk98[0x1C];
+        f32 yaw;
+        f32 pitch;
+        struct Looker *host;
+    } Looker;
+    extern f32 g_fDeltaTimeSec;
+    s8 Player_IsHuman(void *player);
+    Looker *FindHost(Vector4 *pos, Vector4 *dir);
+    void SetOrientation(void *m, f32 x, f32 y, f32 z);
+    void SubMatrixToQuaternion(void *m, Vector4 *q);
+    void Thing_CollideWithItems(u8 *thing);
+    Looker *looker = (Looker *)thing;
+    f32 speed;
+    f32 f;
+    f32 t;
+    f32 step;
+    u32 i;
+    s32 x;
+
+    speed = 10.0f * g_fDeltaTimeSec;
+    if (looker->player == NULL) {
+        return 0;
+    }
+    if (!Player_IsHuman(looker->player)) {
+        return 0;
+    }
+    if (looker->player->fast) {
+        speed *= 4.0f;
+    }
+    switch (looker->player->pressed) {
+    case 7:
+        if (looker->host != NULL) {
+            looker->host = NULL;
+        } else {
+            looker->host = FindHost(&looker->pos, &looker->forward);
+            if (looker->host == looker) {
+                looker->host = NULL;
+            }
+        }
+        break;
+    }
+    looker->player->pressed = 0;
+    looker->vel.x = 0.0f;
+    looker->vel.y = 0.0f;
+    looker->vel.z = 0.0f;
+    x = looker->player->moveX;
+    if (x > 32 || x < -32) {
+        f = 0.25f * (f32)-x * g_fDeltaTimeSec;
+        looker->vel.x += f * looker->right.x;
+        looker->vel.y += f * looker->right.y;
+        looker->vel.z += f * looker->right.z;
+    }
+    if (looker->player->moveY > 32 || looker->player->moveY < -32) {
+        f = 0.25f * (f32)looker->player->moveY * g_fDeltaTimeSec;
+        looker->vel.x += f * looker->forward.x;
+        looker->vel.y += f * looker->forward.y;
+        looker->vel.z += f * looker->forward.z;
+    }
+    if (looker->player->lookX > 32 || looker->player->lookX < -32) {
+        looker->yaw -= 0.02f * (f32)looker->player->lookX * g_fDeltaTimeSec;
+    }
+    if (looker->player->lookY > 32 || looker->player->lookY < -32) {
+        looker->pitch -= 0.02f * (f32)looker->player->lookY * g_fDeltaTimeSec;
+        if (looker->pitch > 1.5f) {
+            looker->pitch = 1.5f;
+        }
+        if (looker->pitch < -1.5f) {
+            looker->pitch = -1.5f;
+        }
+    }
+    SetOrientation(&looker->right, looker->yaw, looker->pitch, 0.0f);
+    SubMatrixToQuaternion(&looker->right, &looker->quat);
+    if (!looker->player->locked && looker->player->forward) {
+        looker->vel.x += speed * looker->forward.x;
+        looker->vel.y += speed * looker->forward.y;
+        looker->vel.z += speed * looker->forward.z;
+    }
+    if (!looker->player->locked && looker->player->back) {
+        looker->vel.x -= speed * looker->forward.x;
+        looker->vel.y -= speed * looker->forward.y;
+        looker->vel.z -= speed * looker->forward.z;
+    }
+    if (!looker->player->locked && looker->player->right) {
+        looker->vel.x += speed * looker->right.x;
+        looker->vel.y += speed * looker->right.y;
+        looker->vel.z += speed * looker->right.z;
+    }
+    if (!looker->player->locked && looker->player->left) {
+        looker->vel.x -= speed * looker->right.x;
+        looker->vel.y -= speed * looker->right.y;
+        looker->vel.z -= speed * looker->right.z;
+    }
+    t = 0.0f;
+    i = 0;
+    do {
+        step = g_fDeltaTimeSec - t;
+        looker->pos.x += looker->vel.x * step;
+        looker->pos.y += looker->vel.y * step;
+        looker->pos.z += looker->vel.z * step;
+        t += step;
+        if (i++ > 6) {
+            t = g_fDeltaTimeSec;
+        }
+    } while (t < g_fDeltaTimeSec);
+    Thing_CollideWithItems(thing);
+    return 1;
+}
 
 void Looker_Draw(void)
 {
 }
+
+void Looker_GetCameraOrientationInfo(u8 *looker, void *arg1, u8 *info) {
+    typedef struct LookerCamera {
+        Vector4 pos;
+        Matrix4 orient;
+        u8 unk50[0x3C];
+        struct { u8 unk0[0x1C]; void (*getOrientationInfo)(struct LookerCamera *, void *, u8 *); } *vtable;
+    } LookerCamera;
+    typedef struct {
+        Vector4 pos;
+        Matrix4 orient;
+        u8 unk50[0x6C];
+        LookerCamera *camera;
+        u8 unkC0[0xC];
+        f32 fov;
+    } Looker;
+    typedef struct {
+        u8 unk0[0x14];
+        f32 fov;
+        u8 unk18[0x8];
+        Matrix4 orient;
+        Vector4 eye;
+        Vector4 target;
+        s32 unk80;
+        s32 unk84;
+    } OrientationInfo;
+    Looker *l = (Looker *)looker;
+    OrientationInfo *o = (OrientationInfo *)info;
+    LookerCamera *cam = l->camera;
+
+    if (cam != NULL) {
+        l->orient = cam->orient;
+        l->pos = l->camera->pos;
+        l->camera->vtable->getOrientationInfo(l->camera, arg1, info);
+        return;
+    }
+    o->fov = l->fov;
+    o->unk80 = 0;
+    o->unk84 = 0;
+    o->orient = l->orient;
+    o->eye = l->orient.v[3];
+    o->target = l->orient.v[3];
+}
+
