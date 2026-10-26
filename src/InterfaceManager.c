@@ -7,6 +7,7 @@ void InterfaceManager_Init(void) {
     extern void *g_pInterfaceToEnd;
     extern s32 g_numInterfaceObjectsAllocated;
     extern s32 g_numInterfaceObjectAllocations;
+void *memset(void *dst, s32 val, u32 n);
     extern s32 g_numInterfacesToRender;
     extern void *g_playerMessage1;
     extern void *g_playerMessage2;
