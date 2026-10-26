@@ -17,3 +17,7 @@ void OSSetArenaHi(s32 arg0) {
     __OSArenaHi = arg0;
 }
 
+void OSSetArenaLo(s32 arg0) {
+    __OSArenaLo = arg0;
+}
+
