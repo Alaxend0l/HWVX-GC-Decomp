@@ -54,3 +54,14 @@ s32 LightHolder_Add(u8 *owner, Vector4 *pos, void *thing) {
     return -1;
 }
 
+void LightHolder_Delete(s32 index) {
+    extern struct {
+        u8 unk0[0x60];
+        void *owner;
+        u8 unk64[0x1C];
+    } g_pLight[16];
+    if (index >= 0) {
+        g_pLight[index].owner = NULL;
+    }
+}
+
