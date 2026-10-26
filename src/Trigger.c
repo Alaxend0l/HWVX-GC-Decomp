@@ -94,3 +94,29 @@ void Trigger_SaveActions(s32 *saved, u32 count) {
     }
 }
 
+void Trigger_RestoreActions(s32 *saved, u32 count) {
+    typedef struct { u32 pad[4]; u32 value; u32 pad2; } TrigAction;
+    extern u32 TriggerStats_800D3C58[][3];
+    extern u32 **m_Triggers_802C1890[];
+    u32 type;
+    u32 i;
+    u32 j;
+    u32 n;
+
+    n = 0;
+    for (type = 0; type < 28; type++) {
+        for (i = 0; i < TriggerStats_800D3C58[type][0]; i++) {
+            for (j = 0; j < m_Triggers_802C1890[type][i][7] && n < count; j++) {
+                if (((TrigAction *)m_Triggers_802C1890[type][i][5])[j].value != 0xFFFFFFFF) {
+                    ((TrigAction *)m_Triggers_802C1890[type][i][5])[j].value = saved[n++];
+                }
+            }
+            if (type == 8) {
+                m_Triggers_802C1890[type][i][9] = 1;
+            } else {
+                m_Triggers_802C1890[type][i][9] = 0x10;
+            }
+        }
+    }
+}
+
