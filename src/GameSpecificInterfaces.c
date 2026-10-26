@@ -11,20 +11,18 @@ void GSI_Init(void)
 
 void GSI_VehicleItemInit(void)
 {
-    VehicleInterfaceData *data;
     void PlayerManager_Init(void);
     void *memset(void *dst, s32 c, u32 n);
     u32 i;
 
-    data = g_vehicleInterfaceData;
-    for (i = 0; i < 4; i++, data++) {
-        memset(data, 0, sizeof(VehicleInterfaceData));
-        data->iface = -1;
-        data->packIndex = -1;
-        data->packID = -1;
-        data->itemID = -1;
-        data->selection = -1;
-        memset(data->objects, 0xFF, 8);
+    for (i = 0; i < 4; i++) {
+        memset(&g_vehicleInterfaceData[i], 0, sizeof(VehicleInterfaceData));
+        g_vehicleInterfaceData[i].iface = -1;
+        g_vehicleInterfaceData[i].packIndex = -1;
+        g_vehicleInterfaceData[i].packID = -1;
+        g_vehicleInterfaceData[i].itemID = -1;
+        g_vehicleInterfaceData[i].selection = -1;
+        memset(g_vehicleInterfaceData[i].objects, 0xFF, 8);
     }
     PlayerManager_Init();
 }
