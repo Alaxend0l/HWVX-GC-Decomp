@@ -22,6 +22,37 @@ MIDI_CHN g_chn[0x10];
 
 void SetVoiceState_(MIDI_VOICE *voice, s32 state);
 
+void SetMIDITempo(u32 tempo)
+{
+    extern void *g_pHdr;
+    extern u8 g_song[0x24];
+    u32 inv;
+
+    inv = -1U / tempo;
+    *(u32 *)(g_song + 0x10) = inv;
+    *(u32 *)(g_song + 4) = (u32)Mul16_(*(u32 *)(g_song + 0xC), inv) / *(u16 *)((u8 *)g_pHdr + 0x18);
+}
+
+#pragma push
+#pragma optimization_level 1
+void SetMIDIMarker(u8 marker, s8 keep)
+{
+    extern void *g_pHdr;
+    extern u32 g_mrk[0x40][2];
+    extern u8 g_song[0x24];
+    s32 flag;
+
+    if (g_pHdr != NULL && marker < 0x40 && g_mrk[marker][0] != 0)
+    {
+        flag = !keep;
+        g_song[0x1E] = marker;
+        g_song[0x1F] = flag;
+        return;
+    }
+    g_song[0x1E] = 0;
+    g_song[0x1F] = 0;
+}
+#pragma pop
 void SetMIDITrackPriority(void)
 {
 }
