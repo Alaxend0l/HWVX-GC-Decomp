@@ -23,6 +23,32 @@ s8 RayHitsTerrain(Vector4 *start, Vector4 *end, void *arg2, void *arg3)
     return RayHitsTerrain_Aux3(start, &dir, arg2, arg3);
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s8 OBoxHitsBSPZeroTimeEdgesOnly(void *obox, void *bsp, void *arg2)
+{
+    u8 *edge;
+    u32 i;
+
+    if (*(u32 *)((char *)bsp + 0x3c) == 0 && *(u32 *)((char *)bsp + 0x40) == 0)
+    {
+        return 0;
+    }
+    for (i = 0; i < *(u32 *)((char *)bsp + 0x40); i++)
+    {
+        edge = (u8 *)(*(u8 **)((char *)*(void **)g_worldData.world + 0x54) +
+                      (*(u16 **)((char *)bsp + 0x44))[i] * 0x30);
+        if (*(u32 *)(edge + 0x20) != g_worldData.unk4)
+        {
+            *(u32 *)(edge + 0x20) = g_worldData.unk4;
+            if (OBoxHitsSegmentZeroTime(obox, edge, arg2))
+            {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
 void BuildOOBOffset(void *oob, void *pos, void *rot, void *out)
 {
     void XformVec(void *, void *, void *);
