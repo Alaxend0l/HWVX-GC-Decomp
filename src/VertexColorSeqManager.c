@@ -62,3 +62,17 @@ void VertexColorSeqManager_AddVertices(void *vertices) {
     }
 }
 
+void VertexColorSeqManager_RemoveVertices(void *vertices) {
+    extern s32 g_iTotalVertexColorSeq;
+    extern void *g_pVertexColorSeqList[64];
+    u32 i;
+
+    for (i = 0; i < g_iTotalVertexColorSeq; i++) {
+        if (g_pVertexColorSeqList[i] == vertices) {
+            g_iTotalVertexColorSeq--;
+            g_pVertexColorSeqList[i] = g_pVertexColorSeqList[g_iTotalVertexColorSeq];
+            return;
+        }
+    }
+}
+
