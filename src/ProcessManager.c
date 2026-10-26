@@ -12,7 +12,7 @@ typedef struct Process {
 } Process;
 
 typedef struct ProcessManager {
-    u32 count;
+    s32 count;
     s32 unk4;
     s32 unk8;
     Process processes[27];
@@ -51,5 +51,24 @@ void ProcessManager_Add(char *name, void (*init)(void), void (*update)(void), s3
     g_processManager.processes[index].flags = flags;
     g_processManager.processes[index].unk10 = 0;
     g_processManager.processes[index].unk14 = 0;
+}
+
+void ProcessManager_Heartbeat(u32 activeOnly) {
+    s32 StateManager_CurrState(void);
+    extern u32 g_StopInput;
+    s32 i;
+
+    if (g_StopInput != 0 && StateManager_CurrState() != 5) {
+        return;
+    }
+    FileStreaming_HeartBeat();
+    for (i = 0; i < (s32)g_processManager.count; i++) {
+        Process *p = &g_processManager.processes[i];
+        if (activeOnly == 0 || (p->flags & 1) != 0) {
+            if (p->update != NULL) {
+                p->update();
+            }
+        }
+    }
 }
 
