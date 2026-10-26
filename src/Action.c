@@ -316,6 +316,34 @@ s32 ActionSwapAIScript(u32 *action) {
     return 1;
 }
 
+s32 ActionPlaySoundSequence(void *arg0) {
+    void SoundSequence_ClearQueue();
+    void SoundSequence_Play(u32, s32);
+    void SoundSequence_PlayQueued(u32, s32);
+    extern u8 g_soundSeqVTable[];
+    u32 id;
+    void *thing;
+
+    id = M2C_FIELD(arg0, u32 *, 8);
+    if (M2C_FIELD(arg0, u32 *, 0) != 0) {
+        if (id != 0) {
+            if (M2C_FIELD(arg0, u32 *, 4) != 0) {
+                SoundSequence_PlayQueued(id, 0);
+            } else {
+                SoundSequence_Play(id, 0);
+            }
+        }
+    } else if (M2C_FIELD(arg0, u32 *, 4) != 0) {
+        SoundSequence_ClearQueue();
+    } else {
+        for (thing = g_thingManager_DARYL.activeList; thing != NULL; thing = M2C_FIELD(thing, void **, 0xA4)) {
+            if (M2C_FIELD(thing, u8 **, 0x8C) == g_soundSeqVTable && M2C_FIELD(thing, u32 *, 0xB0) == id) {
+                ((void (*)(void *))(M2C_FIELD(thing, void ***, 0x8C))[1])(thing);
+            }
+        }
+    }
+}
+
 s32 ActionCreatureChangeMode(u32 *action) {
     void Creature_MotionStateInitDeath(u8 *creature);
     void Creature_Release(u32 handle);
