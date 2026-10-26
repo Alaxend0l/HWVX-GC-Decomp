@@ -266,3 +266,61 @@ s32 ActionTimerChangeMode(u32 *action) {
     return 1;
 }
 
+s32 TriggerTimerValueCheck(u32 *data) {
+    f32 GetCodeVariable(s32 var, u8 *thing);
+    u32 i;
+    f32 value;
+    s32 op;
+    u8 **timer;
+
+    switch (data[data[0] + 1]) {
+    case 0:
+        op = data[data[0] + 3];
+        value = *(f32 *)&data[data[0] + 2];
+        break;
+    case 1:
+        op = data[data[0] + 3];
+        value = *(f32 *)(*(u8 **)data[data[0] + 2] + 4);
+        break;
+    case 2:
+        value = GetCodeVariable(data[data[0] + 2], (u8 *)data[data[0] + 3]);
+        if (data[data[0] + 2] < 20) {
+            op = data[data[0] + 4];
+        } else {
+            op = data[data[0] + 3];
+        }
+        break;
+    }
+    for (i = 0; i < data[0]; i++) {
+        timer = (u8 **)data[i + 1];
+        switch (op) {
+        case 20:
+            if (*(f32 *)(*timer + 8) < value) {
+                return 1;
+            }
+            break;
+        case 21:
+            if (*(f32 *)(*timer + 8) > value) {
+                return 1;
+            }
+            break;
+        case 22:
+            if (*(f32 *)(*timer + 8) == value) {
+                return 1;
+            }
+            break;
+        case 47:
+            if (*(f32 *)(*timer + 8) >= value) {
+                return 1;
+            }
+            break;
+        case 48:
+            if (*(f32 *)(*timer + 8) <= value) {
+                return 1;
+            }
+            break;
+        }
+    }
+    return 0;
+}
+
