@@ -17,6 +17,21 @@ extern s32 (*SetMusicTrackPriority)(void);
 extern s32 (*SetMusicTrackOn)(void);
 extern s32 (*SetMusicTrackOff)(void);
 extern s32 (*SetMusicTrackVol)(void);
+s32 AudioVoid(void);
+
+void SetMusicVol(u32 vol)
+{
+	g_musicVol1 = vol;
+	g_musicVol = (g_musicVol1 * g_musicVol2) >> 15;
+	SetMusicVolume();
+}
+
+void SetMusicGVol(u32 vol)
+{
+	g_musicVol2 = vol;
+	g_musicVol = (g_musicVol1 * g_musicVol2) >> 15;
+	SetMusicVolume();
+}
 
 s32 AudioVoid(void)
 {
