@@ -6,6 +6,11 @@ void Mpeg_Create(void)
     Mpeg_Init();
 }
 
+void Mpeg_Render(void)
+{
+    Render_FlipBuffers();
+}
+
 void Mpeg_Destroy(void) {
 
 }
