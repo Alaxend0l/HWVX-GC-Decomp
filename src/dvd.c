@@ -9,6 +9,14 @@ void stateGettingError(void)
     DVDLowRequestError(cbForStateGettingError);
 }
 
+void stateGoToRetry(void)
+{
+    void DVDLowStopMotor(void (*cb)(u32));
+    void cbForStateGoToRetry(u32 code);
+
+    DVDLowStopMotor(cbForStateGoToRetry);
+}
+
 void stateMotorStopped(void)
 {
     void DVDLowWaitCoverClose(void (*cb)(u32));
