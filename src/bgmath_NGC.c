@@ -24,7 +24,7 @@ static f32 Sqrt(f64 x)
             t = 1.0 - x * guess * guess;
             guess = 0.5 * guess * t;
         }
-        result = x * guess * t;
+        result = x * (guess * t);
     }
     else if (x == 0.0)
     {
@@ -43,6 +43,13 @@ static f32 Sqrt(f64 x)
 
 void DistanceXYZ(Vector *a, Vector *b, f32 *dist)
 {
-    *dist = Sqrt((a->y - b->y) * (a->y - b->y) + (a->x - b->x) * (a->x - b->x) + (a->z - b->z) * (a->z - b->z));
+    f32 dx;
+    f32 dy;
+    f32 dz;
+
+    dy = a->y - b->y;
+    dx = a->x - b->x;
+    dz = a->z - b->z;
+    *dist = Sqrt(dy * dy + dx * dx + dz * dz);
 }
 
