@@ -24,7 +24,7 @@ static f32 Sqrt(f64 x)
             t = 1.0 - x * guess * guess;
             guess = 0.5 * guess * t;
         }
-        result = x * (guess * t);
+        result = x * guess;
     }
     else if (x == 0.0)
     {
