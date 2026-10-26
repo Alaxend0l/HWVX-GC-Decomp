@@ -374,3 +374,152 @@ void SetCodeVariable(s32 var, u8 *obj, f32 value) {
     }
 }
 
+s32 TriggerCodeVariableValueCheck(u32 *data) {
+    f32 value;
+    f32 operand;
+    u32 i;
+
+    if (data[1] < 100) {
+        for (i = 0; i < data[2]; i++) {
+            value = GetCodeVariable(data[1], (u8 *)data[i + 3]);
+            switch (data[data[2] + 3]) {
+            case 0:
+                operand = *(f32 *)&data[data[2] + 4];
+                TRIGGER_COMPARE_RETURN(data[0], value, operand);
+                break;
+            case 1:
+                operand = *(f32 *)(*(u8 **)data[data[2] + 4] + 4);
+                TRIGGER_COMPARE_RETURN(data[0], value, operand);
+                break;
+            case 2:
+                operand = GetCodeVariable(data[data[2] + 4], (u8 *)data[data[2] + 5]);
+                TRIGGER_COMPARE_RETURN(data[0], value, operand);
+                break;
+            }
+        }
+    } else {
+        value = GetCodeVariable(data[1], (u8 *)data[2]);
+        switch (data[3]) {
+        case 0:
+            operand = *(f32 *)&data[4];
+            TRIGGER_COMPARE_RETURN(data[0], value, operand);
+            break;
+        case 1:
+            operand = *(f32 *)(*(u8 **)data[4] + 4);
+            TRIGGER_COMPARE_RETURN(data[0], value, operand);
+            break;
+        case 2:
+            operand = GetCodeVariable(data[4], (u8 *)data[5]);
+            TRIGGER_COMPARE_RETURN(data[0], value, operand);
+            break;
+        }
+    }
+    return 0;
+}
+
+void Trigger_ItemPickedUp(void *vehicle, void *item) {
+    extern u32 TriggerStats_800D3C58[][3];
+    extern u32 **m_Triggers_802C1890[];
+    extern s8 g_bTACSystemPaused_803C7124;
+    s8 TriggerCheckConditions(u8, s32, s32);
+    s32 Action_AddAction(s32);
+    u32 i;
+    u32 actions;
+    u32 *trigger;
+    u32 j;
+    u32 *list;
+    s8 foundItem;
+    s8 foundVehicle;
+    u32 count;
+    u32 count2;
+
+    if (!g_bTACSystemPaused_803C7124) {
+        for (i = 0; i < TriggerStats_800D3C58[6][0]; i++) {
+            trigger = m_Triggers_802C1890[6][i];
+            list = (u32 *)trigger[1];
+            count = list[0];
+            count2 = list[count + 1];
+            if (trigger[9] != 2) {
+                foundItem = 0;
+                foundVehicle = 0;
+                for (j = 0; j < count && !foundItem; j++) {
+                    if (((void **)((u32 *)m_Triggers_802C1890[6][i][1] + 1)[j])[9] == item) {
+                        foundItem = 1;
+                    }
+                }
+                if (foundItem) {
+                    for (j = 0; j < count2 && !foundVehicle; j++) {
+                        if (((void **)*(u32 *)(m_Triggers_802C1890[6][i][1] + (2 + count + j) * 4))[10] == vehicle) {
+                            foundVehicle = 1;
+                        }
+                    }
+                    if (foundVehicle && TriggerCheckConditions(((u8 *)trigger)[0x28], trigger[4], trigger[3])) {
+                        actions = 0;
+                        for (j = 0; j < m_Triggers_802C1890[6][i][7]; j++) {
+                            actions += Action_AddAction(m_Triggers_802C1890[6][i][5] + j * 0x18);
+                        }
+                        if (actions == 0) {
+                            m_Triggers_802C1890[6][i][9] = 2;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void Trigger_ItemDropped(void *vehicle, void *item) {
+    extern u32 TriggerStats_800D3C58[][3];
+    extern u32 **m_Triggers_802C1890[];
+    extern s8 g_bTACSystemPaused_803C7124;
+    s8 TriggerCheckConditions(u8, s32, s32);
+    s32 Action_AddAction(s32);
+    u32 i;
+    u32 actions;
+    u32 *trigger;
+    u32 j;
+    u32 *list;
+    s8 foundItem;
+    s8 foundVehicle;
+    u32 count;
+    u32 count2;
+
+    if (!g_bTACSystemPaused_803C7124) {
+        for (i = 0; i < TriggerStats_800D3C58[24][0]; i++) {
+            trigger = m_Triggers_802C1890[24][i];
+            list = (u32 *)trigger[1];
+            count = list[0];
+            count2 = list[count + 1];
+            if (trigger[9] != 2) {
+                foundItem = 0;
+                foundVehicle = 0;
+                for (j = 0; j < count && !foundItem; j++) {
+                    if (((void **)((u32 *)m_Triggers_802C1890[24][i][1] + 1)[j])[9] == item) {
+                        foundItem = 1;
+                    }
+                }
+                if (foundItem) {
+                    for (j = 0; j < count2 && !foundVehicle; j++) {
+                        if (((void **)*(u32 *)(m_Triggers_802C1890[24][i][1] + (2 + count + j) * 4))[10] == vehicle) {
+                            foundVehicle = 1;
+                        }
+                    }
+                    if (foundVehicle && TriggerCheckConditions(((u8 *)trigger)[0x28], trigger[4], trigger[3])) {
+                        actions = 0;
+                        for (j = 0; j < m_Triggers_802C1890[24][i][7]; j++) {
+                            actions += Action_AddAction(m_Triggers_802C1890[24][i][5] + j * 0x18);
+                        }
+                        if (actions == 0) {
+                            m_Triggers_802C1890[24][i][9] = 2;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+s32 TriggerInterfaceEnd(void) {
+    return 1;
+}
+
