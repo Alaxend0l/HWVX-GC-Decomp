@@ -295,6 +295,68 @@ void Creature_InterpretControls(void *arg0) {
     }
 }
 
+s32 Creature_Move(Creature *creature)
+{
+    extern s32 g_iDeltaTimeMS;
+    extern f32 g_fDeltaTimeMS;
+    f32 Gfx_GetMinCameraDistSquared(void *pos);
+    f32 Sqrt(f32 x);
+    f32 RandomAdd(f32 base, f32 range);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    void Creature_MacroStep(void *creature, f32 dt);
+    void Creature_MicroStep(void *creature, f32 dt);
+    f32 dt;
+    f32 dist;
+
+    if (creature->unk1C0 < 1.0f)
+    {
+        return 1;
+    }
+    if (creature->unk1B0 <= 0)
+    {
+        dt = 500.0f;
+        creature->pos = creature->startPos;
+        dist = Sqrt(Gfx_GetMinCameraDistSquared(&creature->pos));
+        if (dist > 900.0f)
+        {
+            creature->unk1B0 = RandomAdd_s32(500, 50);
+        }
+        else
+        {
+            dt = ((dist - 60.0f) / 840.0f) * dt + RandomAdd(0.0f, 50.0f);
+            creature->unk1B0 = dt;
+        }
+        if (creature->unk1B0 < g_iDeltaTimeMS)
+        {
+            creature->unk1B0 = g_iDeltaTimeMS;
+            dt = g_fDeltaTimeMS;
+        }
+        Creature_MacroStep(creature, 0.001f * dt);
+    }
+    dt = g_fDeltaTimeMS;
+    if (creature->unk1B0 < g_iDeltaTimeMS)
+    {
+        dt = creature->unk1B0;
+    }
+    Creature_MicroStep(creature, 0.001f * dt);
+    creature->unk1B0 -= g_iDeltaTimeMS;
+    if ((s32)creature->unk78 < 0)
+    {
+        creature->unk1B4 += g_iDeltaTimeMS;
+        if (*(u8 *)(creature->motion + 0x1C) == 2)
+        {
+            creature->flags &= ~0x20;
+        }
+        if (creature->unk1B4 > 20000)
+        {
+            MotionState_Release(creature->motion);
+            Thing_Release(creature);
+            return 0;
+        }
+    }
+    return 1;
+}
+
 void Creature_MicroStep(void *arg0, f32 dt) {
     void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0);
     struct CreatureModel {
@@ -531,6 +593,9 @@ void Creature_MacroStep(void *arg0, f32 dt) {
     f32 dot;
     f32 diff;
     f32 step;
+    f32 a;
+    f32 b;
+    f32 w;
     f32 inv;
     f32 c2;
     f32 s2;
@@ -538,9 +603,6 @@ void Creature_MacroStep(void *arg0, f32 dt) {
     u32 count;
     u32 i;
     struct CreatureControls *controls;
-    f32 a;
-    f32 b;
-    f32 w;
 
     if (creature->unk1C0 < 1.0f) {
         return;
@@ -666,9 +728,9 @@ void Creature_MacroStep(void *arg0, f32 dt) {
         if (creature->weight > 1.0f) {
             creature->weight = 1.0f;
         }
-        w = creature->weight / (creature->weight + creature->unk110);
         a = 0.0f;
         b = a;
+        w = creature->weight / (creature->weight + creature->unk110);
         if (creature->anim != NULL) {
             a = creature->anim->fps;
         }
@@ -726,6 +788,38 @@ void Creature_Draw(Creature *creature) {
         MotionState_Draw(creature->motion);
     }
     creature->flags |= 0x4000;
+}
+
+s32 Creature_ProcessItemPickup(u8 *creature, void *item)
+{
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    void WildCardRack_Add(void *thing, u8 *item, s16 count);
+    void Item_Release(void *item);
+    void *rack;
+    void *motion;
+
+    switch (*M2C_FIELD(item, u8 **, 0xC0))
+    {
+    case 0:
+    case 1:
+    case 2:
+        break;
+    case 3:
+        rack = ThingManagerList_GetByType(creature + 0xE0, 8);
+        if (rack != NULL)
+        {
+            WildCardRack_Add(rack, M2C_FIELD(item, u8 **, 0xC0), M2C_FIELD(item, s16 *, 0xCE));
+            Item_Release(item);
+            motion = M2C_FIELD(item, void **, 0xD0);
+            if (motion != NULL)
+            {
+                M2C_FIELD(motion, s32 *, 0x18) = M2C_FIELD(motion, s32 *, 0x14);
+            }
+            return 1;
+        }
+        break;
+    }
+    return 0;
 }
 
 u32 Creature_Invalidate(Creature *creature, u32 start, u32 end) {
