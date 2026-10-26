@@ -5,7 +5,7 @@
 extern u32 g_musicVol1;
 extern u32 g_musicVol2;
 extern u32 g_musicVol;
-extern u8 g_musicTitle[0x20];
+u8 g_musicTitle[0x20];
 
 extern s32 (*DestroyMusic)(void);
 extern s32 (*SetMusicState)(void);
