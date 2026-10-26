@@ -1,11 +1,7 @@
 #include "common.h"
 #include "LGWheels.h"
 
-u8 IsOpened__6WheelsFl(Wheels *wheels, s32 chan);
-void GenerateNonLinValues__6WheelsFlUc(Wheels *wheels, s32 chan, u8 coefficient);
-void SetOverallForceGain__5ForceFRUll(Force *force, u32 *effectId, s32 gain);
-s32 GetOverallForceGain__5ForceFRUl(Force *force, u32 *effectId);
-void *memcpy(void *dst, const void *src, u32 n);
+extern "C" void *memcpy(void *dst, const void *src, u32 n);
 u8 SameSpringForceParams__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 saturation, s16 coefficient) {
     u8 *p = (u8 *)wheels + chan * 4;
 
