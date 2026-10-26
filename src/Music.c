@@ -2,8 +2,8 @@
 
 /* main/Music.  Song state: the two raw volumes are combined into the one the
  * player uses, and every per-track hook starts out as AudioVoid. */
-extern u32 g_musicVol1;
-extern u32 g_musicVol2;
+extern volatile u32 g_musicVol1;
+extern volatile u32 g_musicVol2;
 extern u32 g_musicVol;
 extern u8 g_musicTitle[0x20];
 
