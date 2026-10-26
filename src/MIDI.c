@@ -18,8 +18,8 @@ typedef struct MIDI_CHN
     u8 pad_4_14[0x10];
     s32 vol;
     s32 pitch;
-    u8 pad_1C_1D[0x1];
-    u8 bend;
+    u8 count;
+    u8 note;
     u8 pad_1E_20[0x2];
 } MIDI_CHN;
 
