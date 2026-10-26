@@ -54,6 +54,9 @@ void SetITTrackOn(u32 mask, s8 deferred)
     }
 }
 
+#pragma push
+#pragma optimization_level 1
+#pragma dont_inline
 void SetITTrackOff(u32 mask, s8 deferred)
 {
     extern u32 g_trkOff;
@@ -74,7 +77,7 @@ void SetITTrackOff(u32 mask, s8 deferred)
             voice = trk->head;
             trk->head = NULL;
             trk->active = NULL;
-            while (voice != NULL)
+            while (voice)
             {
                 next = voice->next;
                 SetVoiceState_(voice, 3);
@@ -84,7 +87,7 @@ void SetITTrackOff(u32 mask, s8 deferred)
         mask >>= 1;
     }
 }
-
+#pragma pop
 void SetTrackVol(IT_TRACK *trk)
 {
     IT_VOICE *voice;
@@ -111,5 +114,28 @@ void StopActive(IT_TRACK *trk)
     trk->head = trk->head->next;
     SetVoiceState_(trk->active, 3);
     trk->active = NULL;
+}
+
+void DestroyITVoice(IT_VOICE *voice)
+{
+    IT_TRACK *trk;
+    IT_VOICE *v;
+
+    if (voice->track > 0x20)
+    {
+        return;
+    }
+    trk = &g_trk[voice->track];
+    if (trk->active == voice)
+    {
+        trk->active = NULL;
+        trk->head = voice->next;
+        return;
+    }
+    for (v = trk->head; v->next != voice;)
+    {
+        v = v->next;
+    }
+    v->next = voice->next;
 }
 
