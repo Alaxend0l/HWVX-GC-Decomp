@@ -59,10 +59,10 @@ void DestroyMIDIVoice(MIDI_VOICE *voice)
     voice->state = 0;
     voice->channel = 0xFF;
 }
-void DestroyVoice(MIDI_VOICE *voice)
+MIDI_VOICE *DestroyVoice(MIDI_VOICE *voice)
 {
-    MIDI_VOICE *v;
     MIDI_VOICE *next;
+    MIDI_VOICE *v;
 
     next = voice->next;
     v = g_chn[voice->channel].voice;
@@ -77,8 +77,7 @@ void DestroyVoice(MIDI_VOICE *voice)
         }
         v->next = next;
     }
-    voice->state = 3;
-    voice->channel = 0xFF;
     SetVoiceState_(voice, 3);
+    return next;
 }
-
+#pragma pop
