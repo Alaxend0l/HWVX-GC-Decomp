@@ -53,11 +53,44 @@ typedef struct Force
 		/* 0x0 */
 } Force;
 
-/* The LG "Condition" effect bookkeeping, embedded in LGWheels at 0x114C. */
+/* The effect classes whose methods the port hands to Force: each one is 0xA0
+ * bytes and holds the eight effect slots of every channel.  The SDK's names
+ * say which effect a class plays, but they share this layout. */
 typedef struct Condition
 {
-	u8		unk0[0x282];		/* 0x000 playing flags, effect ids, ... */
+	/* 0x000 */
+		Force		limbs[8];		/* 0x000 the effect class' own Force */
+		/* 0x020 */
+		Force		limbs2[4][8];		/* 0x020 effect ids, -1 once the slot is free */
+		/* 0x0A0 */
 } Condition;
+
+typedef struct Constant
+{
+	/* 0x000 */
+		Force		limbs[8];		/* 0x000 the effect class' own Force */
+		/* 0x020 */
+		Force		limbs2[4][8];		/* 0x020 effect ids, -1 once the slot is free */
+		/* 0x0A0 */
+} Constant;
+
+typedef struct Periodic
+{
+	/* 0x000 */
+		Force		limbs[8];		/* 0x000 the effect class' own Force */
+		/* 0x020 */
+		Force		limbs2[4][8];		/* 0x020 effect ids, -1 once the slot is free */
+		/* 0x0A0 */
+} Periodic;
+
+typedef struct Ramp
+{
+	/* 0x000 */
+		Force		limbs[8];		/* 0x000 the effect class' own Force */
+		/* 0x020 */
+		Force		limbs2[4][8];		/* 0x020 effect ids, -1 once the slot is free */
+		/* 0x0A0 */
+} Ramp;
 
 typedef struct LGWheels
 {
