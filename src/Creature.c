@@ -56,6 +56,40 @@ f32 Creature_GetMass(Creature *creature) {
     return creature->mass;
 }
 
+void MotionState_Init(void *motion, s8 reset);
+void Creature_MotionStateInitDeath(Creature *creature) {
+    u8 *motion;
+    s32 state;
+    u32 index;
+    u8 *entry;
+    u8 *anims;
+
+    motion = creature->motion;
+    index = *(u32 *)((u8 *)creature + 0x1CC);
+    state = 0xFFFF;
+    if (creature->unk1B4 == 0) {
+        anims = creature->anims;
+        if (*(u32 **)(anims + 0x30) != NULL) {
+            entry = (u8 *)*(u32 **)(anims + 0x30) + index * 0x60;
+            if (index >= *(u32 *)(anims + 0x2C) || *(u32 *)entry == 0) {
+                entry = (u8 *)*(u32 **)(anims + 0x18);
+                state = 0;
+                index = 0;
+            }
+            *(u32 *)((u8 *)creature + 0xCC) = *(u32 *)entry;
+            MotionState_Init(motion, 0);
+            *(s32 *)((u8 *)creature + 0xC4) = state;
+            *(s32 *)((u8 *)creature + 0x114) = index;
+            *(u32 *)((u8 *)creature + 0x118) = (u32)entry;
+            creature->flags |= 0x20;
+            if (*(u8 **)((u8 *)creature + 0x90) != NULL) {
+                *(s32 *)(*(u8 **)((u8 *)creature + 0x90) + 0x1C) = 0;
+            }
+            *(u32 *)((u8 *)creature + 0x1CC) = 0;
+        }
+    }
+}
+
 void Creature_Release(Creature *creature) {
     MotionState_Release(creature->motion);
     Thing_Release(creature);
