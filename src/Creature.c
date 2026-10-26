@@ -10,7 +10,6 @@ typedef struct CreatureInit
 {
     Vector4 pos;
     f32 jitterBase;
-    u8 unk14[0x18 - 0x14];
     u8 *anims;
 } CreatureInit;
 
