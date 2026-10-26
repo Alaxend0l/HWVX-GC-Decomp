@@ -172,6 +172,122 @@ void *ThingManager_DARYL_CreateThing(s32 type, void *params) {
     return NULL;
 }
 
+s32 OBox_CollideAllThingsZeroTime(void *obox, void *thing, void *info) {
+    u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults);
+    s8 OBoxHitsOBoxZeroTime(void *a, void *b, void *info);
+    f32 PSVECSquareDistance(f32 *a, f32 *b);
+    Vector4 min;
+    Vector4 max;
+    GridResult results[256];
+    u32 count;
+    u32 i;
+    u8 *other;
+    f32 t;
+    f32 dist;
+    f32 r;
+    void *otherBox;
+
+    Thing_GetStaticRotationalMinMax(thing, &min, &max);
+    count = Grid_GetObjects(&min, &max, 5, results, 0x100);
+    for (i = 0; i < count; i++) {
+        other = (u8 *)results[i].id;
+        if (!(*(u32 *)(other + 0x74) & 2) && *(s16 *)(other + 0x80) != 0 && other != thing) {
+            dist = PSVECSquareDistance((f32 *)((u8 *)thing + 0x40), (f32 *)(other + 0x40));
+            r = *(f32 *)(other + 0x70) + *(f32 *)((u8 *)thing + 0x70);
+            if (r * r > dist) {
+                t = 1.0f;
+                if (*(s16 *)(other + 0x80) == 1) {
+                    otherBox = (*(void *(**)(void *))(*(u8 **)(other + 0x8C) + 0x40))(other);
+                    if (OBoxHitsOBoxZeroTime(obox, otherBox, info)) {
+                        if (info != NULL) {
+                            *(void **)((u8 *)info + 0x20) = thing;
+                            *(void **)((u8 *)info + 0x24) = other;
+                        }
+                        t = 0.0f;
+                    } else {
+                        t = 1.0f;
+                    }
+                }
+                if (t < 1.0f) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+s8 RayHitsObjects_Aux(Vector4 *start, Vector4 *dir, f32 *t, void *info) {
+    extern void *g_pNoRayCollideThing;
+    u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults);
+    s8 SegmentVsSphere(void *center, Vector4 *start, Vector4 *end, f32 radius);
+    Vector4 min;
+    Vector4 max;
+    Vector4 end;
+    GridResult results[512];
+    u32 count;
+    u32 i;
+    u8 *other;
+    f32 best;
+    f32 hit;
+
+    best = *t;
+    max = *start;
+    end.x = dir->x * best + start->x;
+    end.y = dir->y * best + start->y;
+    end.z = dir->z * best + start->z;
+    min = end;
+    if (start->x < min.x) {
+        min.x = start->x;
+    }
+    if (start->y < min.y) {
+        min.y = start->y;
+    }
+    if (start->z < min.z) {
+        min.z = start->z;
+    }
+    if (end.x > max.x) {
+        max.x = end.x;
+    }
+    if (end.y > max.y) {
+        max.y = end.y;
+    }
+    if (end.z > max.z) {
+        max.z = end.z;
+    }
+    count = Grid_GetObjects(&min, &max, 5, results, 0x200);
+    for (i = 0; i < count; i++) {
+        other = (u8 *)results[i].id;
+        if (!(*(u32 *)(other + 0x74) & 2) && other != g_pNoRayCollideThing &&
+            SegmentVsSphere(other + 0x40, start, &end, *(f32 *)(other + 0x70))) {
+            hit = (*(f32 (**)(void *, Vector4 *, Vector4 *, void *, f32))(*(u8 **)(other + 0x8C) + 0x38))(other, start, dir, info, best);
+            if (hit < *t) {
+                best = hit;
+            }
+        }
+    }
+    if (best < *t) {
+        *t = best;
+        return 1;
+    }
+    return 0;
+}
+
+s8 RayHitsTerrainAndObjects(void *arg0, void *arg1, void *arg2, void *arg3) {
+    s8 RayHitsTerrain_Aux3(void *, void *, void *, void *);
+    s8 RayHitsObjects_Aux(void *, void *, void *, void *);
+    s8 hitTerrain;
+
+    if (g_worldData.world == NULL || *(void **)g_worldData.world == NULL) {
+        return 0;
+    }
+    hitTerrain = RayHitsTerrain_Aux3(arg0, arg1, arg2, arg3);
+    if (RayHitsObjects_Aux(arg0, arg1, arg2, arg3)) {
+        return 1;
+    }
+    return hitTerrain;
+}
+
 s8 OBoxHitsTerrainAndObjectsZeroTimeEdgesOnly(void *obox, void *thing, void *arg2) {
     s8 OBoxHitsTerrainZeroTimeEdgesOnly(void *, void *);
     s32 OBox_CollideAllThingsZeroTime(void *, void *, void *);
