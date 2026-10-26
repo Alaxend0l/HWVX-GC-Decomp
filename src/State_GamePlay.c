@@ -8,6 +8,11 @@ void ExitStateGamePlay(s32 arg0) {
     g_bExitStateGamePlay = 1;
 }
 
+void InterfaceInputAnimator_Release(void) {
+    static const char name[] = "InterfaceInput";
+    ProcessManager_Release((char *)name);
+}
+
 void InterfaceInputAnimator_Count(s32 arg0, s32 arg1, f32 farg0) {
     extern s32 g_LR_Direction;
     extern f32 g_LR_Max_Min;
