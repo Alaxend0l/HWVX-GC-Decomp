@@ -10,7 +10,7 @@ void *Allocate(u32 size, s32 type, const char *name);
 void memset(void *dst, s32 c, u32 n);
 void Deallocate(void *alloc);
 s32 FileStreaming_ReleaseAllDataPacks(s32 type, s8 wait);
-extern u8 g_bLoadingThreadRunning;
+extern s8 g_bLoadingThreadRunning;
 extern s8 g_bLoadQuadrants;
 extern s8 g_bLoadDataPack;
 extern s32 g_numDataPacksToRelease;
@@ -80,7 +80,7 @@ void FileStreaming_ReleaseQuadPacks(void)
 {
     u32 i;
 
-    while (g_bLoadingThreadRunning)
+    while ((s8)g_bLoadingThreadRunning)
     {
     }
     for (i = 0; i < (u32)g_numQuadPacksInMemory; i++)
