@@ -209,3 +209,16 @@ void WildCardRack_Add(void *thing, u8 *item, s16 count) {
     }
 }
 
+s32 WildCardRack_Invalidate(u8 *rack, u32 start, u32 end) {
+    u32 i;
+    u32 addr;
+
+    for (i = 0; i < 12; i++) {
+        addr = *(u32 *)(rack + i * 0x50 + 0xFC);
+        if (addr >= start && addr < end) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
