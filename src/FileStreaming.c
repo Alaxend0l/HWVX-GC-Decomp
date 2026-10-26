@@ -157,6 +157,28 @@ void FileStreaming_HeartBeat(void)
     }
     g_numQuadPacksToRelease = 0;
 }
+
+#pragma push
+#pragma use_lmw_stmw off
+void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh)
+{
+    if (type >= 11 || index >= g_MaxStreamingDataPacks[type])
+    {
+        return NULL;
+    }
+    if ((s8)g_StreamingDataPacks[type][index * 0xA8] == 0 || (s8)g_StreamingDataPacks[type][index * 0xA8 + 1] == 0)
+    {
+        return NULL;
+    }
+    if ((s8)g_StreamingDataPacks[type][index * 0xA8 + 2] == 0 && refresh)
+    {
+        DataPack_RefreshPtrs(g_StreamingDataPacks[type] + index * 0xA8 + 0x14);
+    }
+    g_StreamingDataPacks[type][index * 0xA8 + 2] = 1;
+    return g_StreamingDataPacks[type] + index * 0xA8 + 0x14;
+}
+#pragma pop
+
 #pragma pop
 
 #pragma push
