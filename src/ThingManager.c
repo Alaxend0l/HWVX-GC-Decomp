@@ -172,6 +172,15 @@ void *ThingManager_DARYL_CreateThing(s32 type, void *params) {
     return NULL;
 }
 
+s8 OBoxHitsTerrainAndObjectsZeroTimeEdgesOnly(void *obox, void *thing, void *arg2) {
+    s8 OBoxHitsTerrainZeroTimeEdgesOnly(void *, void *);
+    s32 OBox_CollideAllThingsZeroTime(void *, void *, void *);
+    if (!(M2C_FIELD(thing, u32 *, 0x74) & 0x40000) && OBoxHitsTerrainZeroTimeEdgesOnly(obox, arg2)) {
+        return 1;
+    }
+    return OBox_CollideAllThingsZeroTime(obox, thing, arg2);
+}
+
 s32 TriggerPlayerVehicleGear(u32 *params) {
     extern u8 g_cameraManager[];
     u8 *vehicle = M2C_FIELD(*(u8 **)g_cameraManager, u8 **, 0x2C);
