@@ -26,8 +26,8 @@ s32 AudioMusic_Init(void)
     s32 AudioVoid(void);
     void *memset(void *dst, s32 c, u32 n);
 
-    DestroyMusic = AudioVoid;
     SetMusicState = AudioVoid;
+    DestroyMusic = AudioVoid;
     SetMusicVolume = AudioVoid;
     SetMusicPitch = AudioVoid;
     SetMusicTempo = AudioVoid;
