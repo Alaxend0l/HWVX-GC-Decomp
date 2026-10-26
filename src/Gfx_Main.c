@@ -51,6 +51,11 @@ void Gfx_Destroy(void) {
     Render_Destroy();
 }
 
+void Gfx_CreateView(void) {
+    M2C_UNK fn_800957D4();
+    fn_800957D4();
+}
+
 void Gfx_SetEnviroMapMode(u8 mode) {
     g_state.enviroMapMode = mode;
 }
