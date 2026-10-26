@@ -223,5 +223,17 @@ s32 VDevice_DownloadEffect(VDevice *dev, u32 *handle, u8 *desc)
     return ret;
 }
 
+s32 VDevice_UpdateEffect(VDevice *dev, u32 handle, u8 *desc)
+{
+    s32 ret = -2;
+    Effect *effect = dev->activeEffects[handle & 0x3F];
+
+    if (effect != NULL) {
+        ret = Effect_UpdateEffect(effect, desc);
+    }
+    return ret;
+}
+#pragma pop
+
 #pragma pop
 
