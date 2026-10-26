@@ -12,7 +12,7 @@ typedef struct CollisionTri {
     Vector4 normal;              /* 0x10 */
     u32 triId1;                  /* 0x20 */
     u32 triId0;                  /* 0x24 */
-    s32 time;                    /* 0x28 */
+    u32 time;                    /* 0x28 */
     u8 pad2C[4];                 /* 0x2C */
 } CollisionTri;
 
@@ -26,6 +26,25 @@ void CollisionTriCache_Clear(void) {
         g_aCollisionTriPairCache[i].triId0 = 0;
         g_aCollisionTriPairCache[i].triId1 = 0;
         g_aCollisionTriPairCache[i].time = 99999;
+    }
+}
+
+void CollisionTriCache_Heartbeat(void)
+{
+    u32 i;
+
+    for (i = 0; i < 4; i++)
+    {
+        if (g_aCollisionTriPairCache[i].triId0 != 0)
+        {
+            g_aCollisionTriPairCache[i].time += g_iDeltaTimeMS;
+            if (g_aCollisionTriPairCache[i].time > 1000)
+            {
+                g_aCollisionTriPairCache[i].triId0 = 0;
+                g_aCollisionTriPairCache[i].triId1 = 0;
+                g_aCollisionTriPairCache[i].time = 99999;
+            }
+        }
     }
 }
 
