@@ -25,3 +25,13 @@ void ShowStats_StartFrame(void) {
     Release_Performance_Get(g_pActiveTimeBar);
 }
 
+void ShowStats_BeginScene(void) {
+    M2C_UNK Gfx_BeginScene();
+    M2C_UNK Release_Performance_Diff(s32);
+    M2C_UNK Release_Performance_Get(s32);
+    extern s32 g_pActiveTimeBar;
+    Release_Performance_Diff(g_pActiveTimeBar);
+    Release_Performance_Get(g_pActiveTimeBar + 4);
+    Gfx_BeginScene();
+}
+
