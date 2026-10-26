@@ -24,3 +24,20 @@ void Motion_Release(s32 arg0) {
     Thing_Release(arg0);
 }
 
+s32 Motion_Move(u8 *motion) {
+    void MotionState_Heartbeat(void *state, void *arg1, void *thing);
+    MotionState_BuildMatricesWorld(motion + 0x50, motion + 0x40, motion + 0xB0, 1.0f);
+    MotionState_Heartbeat(motion + 0xB0, motion + 0x10, motion);
+    return 1;
+}
+
+void Motion_Draw(u8 *motion) {
+    extern u8 g_aMatStack[4096];
+    void MotionState_Draw2(void *state, void *arg1, void *matStack);
+    if (M2C_FIELD(motion, u32 *, 0xC0) != 0) {
+        MotionState_Draw(motion + 0xB0);
+    } else {
+        MotionState_Draw2(motion + 0xB0, motion + 0x10, g_aMatStack);
+    }
+}
+
