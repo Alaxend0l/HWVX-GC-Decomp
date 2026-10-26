@@ -21,6 +21,130 @@ void World_Init(void) {
     fn_800957D4();
 }
 
+void World_Render(void) {
+    typedef struct Quad {
+        u8 pad0[0x1C];
+        void *bsp;
+        u32 numNeighbors;
+        u32 *neighbors;
+        u8 pad28[0x34 - 0x28];
+        s8 loaded;
+        s8 visible;
+        u8 pad36[0x50 - 0x36];
+    } Quad;
+    typedef struct QuadWorld {
+        u8 pad[0x20];
+        u32 numQuads;
+        Quad *quads;
+    } QuadWorld;
+    u32 Gfx_GetCameraPositions(Vector4 *positions);
+    s8 BSPN0_CollideWithVector(void *bsp, Vector4 *point);
+    void FileStreaming_LoadQuadPacks(void **quads, u32 count, s8 threaded);
+    void FileStreaming_SetActiveQuadrants(void **quads, s32 count);
+    void VolumeManager_SetReverbLevel(Vector4 *point);
+    void VolumeManager_SetFogLevel(Vector4 *point);
+    void RenderQuadrant(Quad *quadrant);
+    static Quad *pCurrentQuadrant[5];
+    static Quad *pWorldQuadrant;
+    u32 numLoad = 0;
+    u32 numActive = 0;
+    s8 threaded = 1;
+    u32 numCameras;
+    u32 i;
+    u32 j;
+    u32 count;
+    Quad *quad;
+    Quad *load[20];
+    Quad *active[20];
+    Vector4 positions[5];
+
+    if (g_worldData.world == NULL) {
+        return;
+    }
+    if (*(s8 *)&g_worldData.unk8[3]) {
+        *(s8 *)&g_worldData.unk8[3] = 0;
+        for (i = 0; i < ((QuadWorld *)g_worldData.world)->numQuads; i++) {
+            if (((QuadWorld *)g_worldData.world)->quads[i].bsp == NULL) {
+                pWorldQuadrant = &((QuadWorld *)g_worldData.world)->quads[i];
+                break;
+            }
+        }
+        FileStreaming_LoadQuadPacks((void **)&pWorldQuadrant, 1, 0);
+        FileStreaming_SetActiveQuadrants((void **)&pWorldQuadrant, 1);
+        pCurrentQuadrant[0] = NULL;
+        pCurrentQuadrant[1] = NULL;
+        pCurrentQuadrant[2] = NULL;
+        pCurrentQuadrant[3] = NULL;
+        pCurrentQuadrant[4] = NULL;
+    }
+    for (i = 0; i < ((QuadWorld *)g_worldData.world)->numQuads; i++) {
+        ((QuadWorld *)g_worldData.world)->quads[i].visible = 0;
+    }
+    numCameras = Gfx_GetCameraPositions(positions);
+    for (i = 0; i < numCameras; i++) {
+        VolumeManager_SetReverbLevel(&positions[i]);
+        VolumeManager_SetFogLevel(&positions[i]);
+        if (pCurrentQuadrant[i] != NULL && BSPN0_CollideWithVector(pCurrentQuadrant[i]->bsp, &positions[i])) {
+            pCurrentQuadrant[i]->visible = 1;
+            for (j = 0; j < pCurrentQuadrant[i]->numNeighbors; j++) {
+                ((QuadWorld *)g_worldData.world)->quads[pCurrentQuadrant[i]->neighbors[j]].visible = 1;
+            }
+        } else if (pCurrentQuadrant[i] != NULL) {
+            count = pCurrentQuadrant[i]->numNeighbors;
+            for (j = 0; j < count; j++) {
+                quad = &((QuadWorld *)g_worldData.world)->quads[pCurrentQuadrant[i]->neighbors[j]];
+                if (BSPN0_CollideWithVector(quad->bsp, &positions[i])) {
+                    pCurrentQuadrant[i] = quad;
+                    break;
+                }
+            }
+            if (j == count) {
+                pCurrentQuadrant[i] = NULL;
+            } else {
+                pCurrentQuadrant[i]->visible = 1;
+                for (j = 0; j < pCurrentQuadrant[i]->numNeighbors; j++) {
+                    ((QuadWorld *)g_worldData.world)->quads[pCurrentQuadrant[i]->neighbors[j]].visible = 1;
+                }
+            }
+        }
+        if (pCurrentQuadrant[i] == NULL) {
+            threaded = 0;
+            for (j = 0; j < ((QuadWorld *)g_worldData.world)->numQuads; j++) {
+                quad = &((QuadWorld *)g_worldData.world)->quads[j];
+                if (quad != pWorldQuadrant && BSPN0_CollideWithVector(quad->bsp, &positions[i])) {
+                    pCurrentQuadrant[i] = quad;
+                    break;
+                }
+            }
+            if (pCurrentQuadrant[i] != NULL) {
+                pCurrentQuadrant[i]->visible = 1;
+                for (j = 0; j < pCurrentQuadrant[i]->numNeighbors; j++) {
+                    ((QuadWorld *)g_worldData.world)->quads[pCurrentQuadrant[i]->neighbors[j]].visible = 1;
+                }
+            }
+        }
+    }
+    for (i = 0; i < ((QuadWorld *)g_worldData.world)->numQuads; i++) {
+        if (((QuadWorld *)g_worldData.world)->quads[i].visible) {
+            active[numActive++] = &((QuadWorld *)g_worldData.world)->quads[i];
+            if (!((QuadWorld *)g_worldData.world)->quads[i].loaded) {
+                load[numLoad++] = &((QuadWorld *)g_worldData.world)->quads[i];
+            } else {
+                RenderQuadrant(&((QuadWorld *)g_worldData.world)->quads[i]);
+            }
+        }
+    }
+    FileStreaming_SetActiveQuadrants((void **)active, numActive);
+    if (numLoad != 0) {
+        FileStreaming_LoadQuadPacks((void **)load, numLoad, threaded);
+    }
+    if (pWorldQuadrant != NULL && pWorldQuadrant->loaded) {
+        RenderQuadrant(pWorldQuadrant);
+    } else if (pWorldQuadrant != NULL) {
+        FileStreaming_LoadQuadPacks((void **)&pWorldQuadrant, 1, 0);
+    }
+}
+
 u32 World_GetTotalTiles_Car(void) {
     return M2C_FIELD(g_worldData.world, u32 *, 0x8);
 }
@@ -84,6 +208,12 @@ void *World_GetGameData(void) {
         return M2C_FIELD(world, void **, 0x9C);
     }
     return NULL;
+}
+
+void World_NextSweep(void) {
+    if (++g_worldData.unk4 == 0) {
+        World_ClearSweep();
+    }
 }
 
 s32 ActionItemChangeMode(u32 *action) {

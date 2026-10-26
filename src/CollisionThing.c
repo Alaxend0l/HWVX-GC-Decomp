@@ -66,6 +66,83 @@ OBoxHolder *OBoxHolder_Get(void) {
     return NULL;
 }
 
+f32 RaySphereTest(Vector4 *start, Vector4 *dir, Vector4 *center, f32 radius, f32 t, u8 *hit) {
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *axb);
+    f32 PSVECSquareDistance(Vector4 *a, Vector4 *b);
+    f32 MagnitudeVector(Vector4 *v);
+    f32 Sqrt(f32 x);
+    Vector4 end;
+    Vector4 seg;
+    Vector4 toCenter;
+    Vector4 endToCenter;
+    Vector4 cross;
+    Vector4 unit;
+    Vector4 *pEnd = &end;
+    f32 radiusSq = radius * radius;
+    f32 crossSq;
+    f32 segSq;
+    f32 h;
+    f32 len;
+    f32 inv;
+    f32 dist;
+
+    PSVECSubtract(center, start, &toCenter);
+    if (PSVECSquareMag(&toCenter) < radiusSq) {
+        if (hit != NULL) {
+            *(Vector4 *)hit = *start;
+            PSVECSubtract((Vector4 *)hit, center, (Vector4 *)(hit + 0x10));
+            if (PSVECSquareMag((Vector4 *)(hit + 0x10))) {
+                PSVECNormalize((Vector4 *)(hit + 0x10), (Vector4 *)(hit + 0x10));
+            }
+        }
+        return 0.0f;
+    }
+    pEnd->x = dir->x * t + start->x;
+    pEnd->y = dir->y * t + start->y;
+    pEnd->z = dir->z * t + start->z;
+    PSVECSubtract(pEnd, start, &seg);
+    if (PSVECDotProduct(&seg, &toCenter) < 0.0f) {
+        return t;
+    }
+    PSVECSubtract(center, pEnd, &endToCenter);
+    if (PSVECDotProduct(&seg, &endToCenter) > 0.0f && PSVECSquareMag(&endToCenter) > radiusSq) {
+        return t;
+    }
+    PSVECCrossProduct(&seg, &toCenter, &cross);
+    crossSq = cross.z * cross.z + (cross.x * cross.x + cross.y * cross.y);
+    segSq = seg.z * seg.z + (seg.x * seg.x + seg.y * seg.y);
+    if (crossSq > radiusSq * segSq) {
+        return t;
+    }
+    if (PSVECDotProduct(&seg, &endToCenter) > 0.0f && PSVECSquareDistance(pEnd, center) > radiusSq) {
+        return t;
+    }
+    h = Sqrt(radiusSq - crossSq / segSq);
+    len = MagnitudeVector(&seg);
+    inv = 1.0f / len;
+    unit.x = seg.x * inv;
+    unit.y = seg.y * inv;
+    unit.z = seg.z * inv;
+    dist = inv * (t * (PSVECDotProduct(&unit, &toCenter) - h));
+    if (len < 0.0001f) {
+        return t;
+    }
+    if (hit != NULL) {
+        ((Vector4 *)hit)->x = dist * dir->x + start->x;
+        ((Vector4 *)hit)->y = dist * dir->y + start->y;
+        ((Vector4 *)hit)->z = dist * dir->z + start->z;
+        PSVECSubtract((Vector4 *)hit, center, (Vector4 *)(hit + 0x10));
+        if (PSVECSquareMag((Vector4 *)(hit + 0x10))) {
+            PSVECNormalize((Vector4 *)(hit + 0x10), (Vector4 *)(hit + 0x10));
+        }
+    }
+    return dist;
+}
+
 void CollisionPairCache_Clear(void) {
     u32 i;
 

@@ -35,6 +35,7 @@ typedef struct Matrix4 {
 #define NULL ((void *)0)
 #endif
 
+
 typedef struct GameInfo {
   const char *a;
   const char *b;
@@ -49,6 +50,8 @@ typedef struct WorldData {
   s32 unk4;
   s32 unk8[4];
 } WorldData;
+
+extern WorldData g_worldData;
 
 typedef struct Camera {
   u8 pad0[0xB4];
@@ -783,223 +786,258 @@ typedef struct QuadPackHeader {
 } QuadPackHeader;
 
 typedef struct Light {
-        u8 unk0[0x10];
-        u8 r;
-        u8 g;
-        u8 b;
-        u8 unk13;
-        s32 index;
-        u8 type;
-    } Light;
-    typedef struct Volume {
-        u8 unk0[0xC];
-        u32 type;
-        u8 unp10[0x1C];
-        Light *light;
-    } Volume;
-    typedef struct LightWorld {
-        u8 unk0[0x64];
-        u8 *lights;
-        u32 numVolumes;
-        u8 *volumes;
-    } LightWorld;
-    typedef struct TracerPoint {
-    f32 pos[4];
-    f32 vel[4];
-    f32 unk20[4];
-    f32 unk30[4];
-    f32 unk40;
-    u8 color[4];
-    struct TracerPoint *next;
-    u8 unk4C[4];
+  u8 unk0[0x10];
+  u8 r;
+  u8 g;
+  u8 b;
+  u8 unk13;
+  s32 index;
+  u8 type;
+} Light;
+typedef struct Volume {
+  u8 unk0[0xC];
+  u32 type;
+  u8 unp10[0x1C];
+  Light *light;
+} Volume;
+typedef struct LightWorld {
+  u8 unk0[0x64];
+  u8 *lights;
+  u32 numVolumes;
+  u8 *volumes;
+} LightWorld;
+typedef struct TracerPoint {
+  f32 pos[4];
+  f32 vel[4];
+  f32 unk20[4];
+  f32 unk30[4];
+  f32 unk40;
+  u8 color[4];
+  struct TracerPoint *next;
+  u8 unk4C[4];
 } TracerPoint;
 
 typedef struct Tracer {
-    TracerPoint points[14];
-    u8 unk460[0x48];
-    TracerPoint *unk4A8;
-    u8 unk4AC[4];
-    TracerPoint *head;
-    TracerPoint *tail;
-    s8 unk4B8[0x4];
-    f32 unk4BC;
-    f32 unk4C0;
-    u32 unk4C4;
-    u32 unk4C8;
-    u16 unk4CC;
-    u16 active;
-    u16 unk4D0;
-    u16 unk4D2;
-    u16 unk4D4;
-    u8 unk4D6[0xA];
+  TracerPoint points[14];
+  u8 unk460[0x48];
+  TracerPoint *unk4A8;
+  u8 unk4AC[4];
+  TracerPoint *head;
+  TracerPoint *tail;
+  s8 unk4B8[0x4];
+  f32 unk4BC;
+  f32 unk4C0;
+  u32 unk4C4;
+  u32 unk4C8;
+  u16 unk4CC;
+  u16 active;
+  u16 unk4D0;
+  u16 unk4D2;
+  u16 unk4D4;
+  u8 unk4D6[0xA];
 } Tracer;
- typedef struct SpawnVolume {
-        u8 *volume;
-        u32 unk4;
-        u32 index;
-        u32 counts[32];
-    } SpawnVolume;
-    typedef struct Vec {
-        f32 x;
-        f32 y;
-        f32 z;
-        f32 w;
-    } Vec;
-    typedef struct NearestCar {
-        u8 *car;
-        u8 pad4[0x10 - 0x4];
-        Vec pos;
-        f32 speed;
-        f32 range;
-        u8 pad28[0x30 - 0x28];
-    } NearestCar;
-    typedef struct {
-        s32 unk0;
-        u8 pad4[0xD - 0x4];
-        u8 unkD;
-        u8 padE[0x10 - 0xE];
-    } AIPlayerDesc;
-    typedef struct CreatureParams {
-        Vector4 pos;
-        f32 angle;
-        u8 *info;
-        u8 *player;
-    } CreatureParams;
-    typedef struct {
-        PlayerLink base;
-        u8 unkB8[0x158 - 0xB8];
-    } HumanPlayer;
-    typedef struct {
-        PlayerLink base;
-        u8 unkB8[0x670 - 0xB8];
-    } CarPlayer;
-    typedef struct {
-        PlayerLink base;
-        u8 unkB8[0x100 - 0xB8];
-    } CreaturePlayer;
-    typedef struct {
-        HumanPlayer humans[4];
-        CarPlayer cars[4];
-        CreaturePlayer creature;
-        PlayerLink null;
-        PlayerLink *active;
-        PlayerLink *free;
-    } PlayerMgr;
-    typedef struct {
-        u8 unk0;
-        u8 type;
-    } TimerDef;
-    typedef struct {
-        u8 unk0[3];
-        u8 countUp;
-        u8 unk4[4];
-        f32 time;
-        TimerDef *def;
-    } Timer;
-    typedef struct {
-        u8 unk0[0x50];
-        u32 numTimers;
-        Timer **timers;
-    } TimerWorld;
-    typedef struct Quad {
-        u8 pad0[0x1C];
-        void *bsp;
-        u32 numNeighbors;
-        u32 *neighbors;
-        u8 pad28[0x34 - 0x28];
-        s8 loaded;
-        s8 visible;
-        u8 pad36[0x50 - 0x36];
-    } Quad;
-    typedef struct QuadWorld {
-        u8 pad[0x20];
-        u32 numQuads;
-        Quad *quads;
-    } QuadWorld;
-    typedef struct WildCard {
-        u8 pad0[0x1E];
-        u8 unk1E;
-        u8 pad1F[0x24 - 0x1F];
-        f32 *unk24;
-        f32 *unk28;
-    } WildCard;
-    typedef struct WildCardData {
-        WildCard *card;
-        u8 pad4[0x28 - 0x4];
-        s32 max;
-    } WildCardData;
-    typedef struct WildcardData {
-        u8 unk0[0x24];
-        u32 numFrames;
-        s32 unk28;
-        u8 spinType;
-        u8 spinLimit;
-        u16 spinBone;
-    } WildcardData;
-    typedef struct WildCardItem {
-        u8 pad0[0x30];
-        WildCardData *data;
-    } WildCardItem;
-    typedef struct WildcardInfo {
-        u8 unk0[0x18];
-        f32 unk18;
-    } WildcardInfo;
-    typedef struct WildcardAnim {
-        u8 unk0[0x1E];
-        u8 loop;
-        u8 unk1F[0x24 - 0x1F];
-        f32 *times;
-    } WildcardAnim;
-    typedef struct WildcardThing {
-        u8 unk0[0x30];
-        WildcardData *data;
-    } WildcardThing;
-    typedef struct WildcardSlot {
-        WildcardInfo *info;
-        u8 unk4[0x10 - 0x4];
-        Matrix4 *matrices;
-        u8 unk14[0x18 - 0x14];
-        WildcardAnim *anim;
-        u8 mode;
-        u8 state;
-        u8 unk1E[0x20 - 0x1E];
-        f32 time;
-        u8 unk24[0x40 - 0x24];
-        s16 count;
-        u8 unk42[0x44 - 0x42];
-        f32 scale;
-        f32 angle;
-        WildcardThing *thing;
-    } WildcardSlot;
-    typedef struct WildCardSlot {
-        void *card;
-        u8 pad4[0x44 - 0x4];
-        f32 unk44;
-        u8 pad48[0x4C - 0x48];
-        void *unk4C;
-    } WildCardSlot;
-    typedef struct WildCardRack {
-        u8 pad0[0x74];
-        u32 flags;
-        u8 pad78[0xB0 - 0x78];
-        WildCardSlot slots[12];
-        u8 unk470;
-    } WildCardRack;
-    typedef struct {
-        void *motion;
-        u8 pad4[0x40];
-        f32 scale;
-        u8 pad48[0x8];
-    } RackState;
-    typedef struct {
-        u8 pad0[0xB0];
-        RackState states[1];
-    } Rack;
-    typedef struct { void *pad0; void *pad4; void *geom; } StaticGeom;
-    typedef struct { u8 *geom; u8 noDraw; u8 pad5; u8 hasDist; u8 visible; f32 dist; u8 padC[0xC]; u32 slaves[2]; } Model;
-    typedef struct { Vector4 pos; Vector4 quat; u8 pad20[4]; Model *model; f32 dist; u8 pad2C[8]; u8 useDist; u8 pad35[7]; f32 radius; } Instance;
-    typedef struct { u32 pad0; u32 count; Instance *instances; } InstanceList;
-    typedef struct { u8 pad0[0x10]; f32 mtx[3][4]; Vector4 pos; Vector4 quat; u8 pad60[0x14]; u32 unk74; u8 pad78[0x78]; } DrawThing;
+typedef struct SpawnVolume {
+  u8 *volume;
+  u32 unk4;
+  u32 index;
+  u32 counts[32];
+} SpawnVolume;
+typedef struct Vec {
+  f32 x;
+  f32 y;
+  f32 z;
+  f32 w;
+} Vec;
+typedef struct NearestCar {
+  u8 *car;
+  u8 pad4[0x10 - 0x4];
+  Vec pos;
+  f32 speed;
+  f32 range;
+  u8 pad28[0x30 - 0x28];
+} NearestCar;
+typedef struct {
+  s32 unk0;
+  u8 pad4[0xD - 0x4];
+  u8 unkD;
+  u8 padE[0x10 - 0xE];
+} AIPlayerDesc;
+typedef struct CreatureParams {
+  Vector4 pos;
+  f32 angle;
+  u8 *info;
+  u8 *player;
+} CreatureParams;
+typedef struct {
+  PlayerLink base;
+  u8 unkB8[0x158 - 0xB8];
+} HumanPlayer;
+typedef struct {
+  PlayerLink base;
+  u8 unkB8[0x670 - 0xB8];
+} CarPlayer;
+typedef struct {
+  PlayerLink base;
+  u8 unkB8[0x100 - 0xB8];
+} CreaturePlayer;
+typedef struct {
+  HumanPlayer humans[4];
+  CarPlayer cars[4];
+  CreaturePlayer creature;
+  PlayerLink null;
+  PlayerLink *active;
+  PlayerLink *free;
+} PlayerMgr;
+typedef struct {
+  u8 unk0;
+  u8 type;
+} TimerDef;
+typedef struct {
+  u8 unk0[3];
+  u8 countUp;
+  u8 unk4[4];
+  f32 time;
+  TimerDef *def;
+} Timer;
+typedef struct {
+  u8 unk0[0x50];
+  u32 numTimers;
+  Timer **timers;
+} TimerWorld;
+typedef struct Quad {
+  u8 pad0[0x1C];
+  void *bsp;
+  u32 numNeighbors;
+  u32 *neighbors;
+  u8 pad28[0x34 - 0x28];
+  s8 loaded;
+  s8 visible;
+  u8 pad36[0x50 - 0x36];
+} Quad;
+typedef struct QuadWorld {
+  u8 pad[0x20];
+  u32 numQuads;
+  Quad *quads;
+} QuadWorld;
+typedef struct WildCard {
+  u8 pad0[0x1E];
+  u8 unk1E;
+  u8 pad1F[0x24 - 0x1F];
+  f32 *unk24;
+  f32 *unk28;
+} WildCard;
+typedef struct WildCardData {
+  WildCard *card;
+  u8 pad4[0x28 - 0x4];
+  s32 max;
+} WildCardData;
+typedef struct WildcardData {
+  u8 unk0[0x24];
+  u32 numFrames;
+  s32 unk28;
+  u8 spinType;
+  u8 spinLimit;
+  u16 spinBone;
+} WildcardData;
+typedef struct WildCardItem {
+  u8 pad0[0x30];
+  WildCardData *data;
+} WildCardItem;
+typedef struct WildcardInfo {
+  u8 unk0[0x18];
+  f32 unk18;
+} WildcardInfo;
+typedef struct WildcardAnim {
+  u8 unk0[0x1E];
+  u8 loop;
+  u8 unk1F[0x24 - 0x1F];
+  f32 *times;
+} WildcardAnim;
+typedef struct WildcardThing {
+  u8 unk0[0x30];
+  WildcardData *data;
+} WildcardThing;
+typedef struct WildcardSlot {
+  WildcardInfo *info;
+  u8 unk4[0x10 - 0x4];
+  Matrix4 *matrices;
+  u8 unk14[0x18 - 0x14];
+  WildcardAnim *anim;
+  u8 mode;
+  u8 state;
+  u8 unk1E[0x20 - 0x1E];
+  f32 time;
+  u8 unk24[0x40 - 0x24];
+  s16 count;
+  u8 unk42[0x44 - 0x42];
+  f32 scale;
+  f32 angle;
+  WildcardThing *thing;
+} WildcardSlot;
+typedef struct WildCardSlot {
+  void *card;
+  u8 pad4[0x44 - 0x4];
+  f32 unk44;
+  u8 pad48[0x4C - 0x48];
+  void *unk4C;
+} WildCardSlot;
+typedef struct WildCardRack {
+  u8 pad0[0x74];
+  u32 flags;
+  u8 pad78[0xB0 - 0x78];
+  WildCardSlot slots[12];
+  u8 unk470;
+} WildCardRack;
+typedef struct {
+  void *motion;
+  u8 pad4[0x40];
+  f32 scale;
+  u8 pad48[0x8];
+} RackState;
+typedef struct {
+  u8 pad0[0xB0];
+  RackState states[1];
+} Rack;
+typedef struct {
+  void *pad0;
+  void *pad4;
+  void *geom;
+} StaticGeom;
+typedef struct {
+  u8 *geom;
+  u8 noDraw;
+  u8 pad5;
+  u8 hasDist;
+  u8 visible;
+  f32 dist;
+  u8 padC[0xC];
+  u32 slaves[2];
+} Model;
+typedef struct {
+  Vector4 pos;
+  Vector4 quat;
+  u8 pad20[4];
+  Model *model;
+  f32 dist;
+  u8 pad2C[8];
+  u8 useDist;
+  u8 pad35[7];
+  f32 radius;
+} Instance;
+typedef struct {
+  u32 pad0;
+  u32 count;
+  Instance *instances;
+} InstanceList;
+typedef struct {
+  u8 pad0[0x10];
+  f32 mtx[3][4];
+  Vector4 pos;
+  Vector4 quat;
+  u8 pad60[0x14];
+  u32 unk74;
+  u8 pad78[0x78];
+} DrawThing;
 /* What machine drafts (m2c) use for what they can't tell yet: autopilot tries
  * them as they are. */
 #ifndef M2C_DEFINES

@@ -1,9 +1,5 @@
 #include "common.h"
 
-extern WorldData g_worldData;
-
-
-
 s32 ActionCameraSetTargets(void) {
     M2C_UNK CameraManager_SetCameraGlobalMode();
     CameraManager_SetCameraGlobalMode();
@@ -390,4 +386,3 @@ s32 ActionCreatureChangeMode(u32 *action) {
     }
     return 1;
 }
-

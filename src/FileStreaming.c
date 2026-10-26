@@ -36,7 +36,6 @@ void DataPack_ReleaseQuadPack(void *pack);
 void LoadQuadrants(s32 arg0);
 void EndThread(void);
 
-extern WorldData g_worldData;
 extern s32 g_loadingThreadID;
 extern void *g_QuadrantsToLoad[11];
 s32 RunThread(void *func, s32 priority);

@@ -1,10 +1,6 @@
 #include "common.h"
 
 
-
-
-extern WorldData g_worldData;
-
 s8 OBoxHitsSegmentZeroTime(void *, void *, void *);
 
 typedef struct OBoxCorners
@@ -523,4 +519,3 @@ void BuildOConvexHullOffset(void *out, void *hull, void *pos, void *rot) {
     ((OConvexHull *)out)->unk3C4 = 0;
     ((OConvexHull *)out)->pos = *(Vector4 *)&local.d[6];
 }
-

@@ -348,6 +348,57 @@ void CarA_DrawReflection(void *thing) {
     }
 }
 
+void CarA_Draw(u8 *car)
+{
+    s8 Player_IsHuman(void *player);
+    s32 StateManager_CurrState(void);
+    u32 ViewManager_GetViewFormat(void);
+    void Gfx_DrawGeometry(void *, Matrix4 *);
+    void CarA_DrawScript(u8 *);
+    void XformVec(void *, Vector4 *, Vector4 *);
+    void MotionState_DrawSlaves(void *, s32);
+    extern void *g_pNoRayCollideThing;
+    Matrix4 mtx __attribute__((aligned(16)));
+    f64 b;
+    f64 a;
+    u8 *p2;
+
+    if (*(u8 **)(car + 0x94) != NULL && (*(u32 *)(*(u8 **)(car + 0x94) + 0x6C) & 0x10) &&
+        !(*(u32 *)(*(u8 **)(car + 0x94) + 0x6C) & 0x80) && ViewManager_GetViewFormat() <= 1) {
+        p2 = *(u8 **)(*(u8 **)(car + 0x3BC) + 0x80);
+        if ((*((u8 **)(p2 + 0x84)))[((*(u8 **)(car + 0x94))[0x31] % *(u32 *)(p2 + 0x80)) * 0xC] == 4) {
+            goto skipscript;
+        }
+    }
+    CarA_DrawScript(car);
+skipscript:
+    if (*(void **)(*(u8 **)(car + 0x3BC) + 0x54) != NULL && StateManager_CurrState() == 5) {
+        a = ((f64 *)(car + 0x10))[0];
+        b = ((f64 *)(car + 0x10))[1];
+        ((f64 *)&mtx)[0] = a;
+        ((f64 *)&mtx)[1] = b;
+        b = ((f64 *)(car + 0x10))[3];
+        a = ((f64 *)(car + 0x10))[2];
+        ((f64 *)&mtx)[2] = a;
+        ((f64 *)&mtx)[3] = b;
+        b = ((f64 *)(car + 0x10))[5];
+        a = ((f64 *)(car + 0x10))[4];
+        ((f64 *)&mtx)[4] = a;
+        ((f64 *)&mtx)[5] = b;
+        b = ((f64 *)(car + 0x10))[7];
+        a = ((f64 *)(car + 0x10))[6];
+        ((f64 *)&mtx)[6] = a;
+        ((f64 *)&mtx)[7] = b;
+        XformVec(car + 0x10, (Vector4 *)(car + 0x520), &mtx.v[3]);
+        if (Player_IsHuman(*(void **)(car + 0x94))) {
+            Gfx_DrawGeometry(*(void **)(*(u8 **)(car + 0x3BC) + 0x54), &mtx);
+        }
+    }
+    g_pNoRayCollideThing = car;
+    MotionState_DrawSlaves(car + 0x330, 0);
+    g_pNoRayCollideThing = NULL;
+}
+
 f32 CarA_GetMass(u8 *car)
 {
     u8 *coll;

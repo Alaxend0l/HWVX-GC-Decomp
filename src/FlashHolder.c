@@ -44,3 +44,58 @@ s32 FlashHolder_Add(void *flash, Vector4 *pos, s32 arg2, f32 time) {
     return -1;
 }
 
+void FlashHolder_Heartbeat(void) {
+    extern u8 g_pFlash[16][0x80];
+    extern u32 g_iDeltaTimeMS;
+    extern f32 g_fDeltaTimeMS;
+    void ExtractColorKey(void *key, void *out, f32 dt);
+    void ExtractPointKey(void *key, void *out, f32 dt);
+    u8 *flash;
+    u32 i;
+    u32 delta;
+
+    delta = g_iDeltaTimeMS;
+    for (i = 0; i < 16; i++) {
+        flash = g_pFlash[i];
+        if (*(u8 **)(flash + 0x5C) != NULL) {
+            if (*(u32 *)(flash + 0x68) == 0 || *(u32 *)(flash + 0x68) > delta) {
+                if (*(u32 *)(flash + 0x68) != 0) {
+                    *(u32 *)(flash + 0x68) -= delta;
+                }
+                ExtractColorKey(*(u8 **)(*(u8 **)(flash + 0x5C) + 0x20) + 4, flash + 0x10, g_fDeltaTimeMS);
+                ExtractPointKey(*(u8 **)(flash + 0x5C) + 0x2C, flash + 0x40, g_fDeltaTimeMS);
+                if (**(u8 **)(*(u8 **)(flash + 0x5C) + 0x20) == 5) {
+                    flash[0x37] = flash[0x37] * *(f32 *)(flash + 0x74);
+                } else {
+                    flash[0x34] = flash[0x34] * *(f32 *)(flash + 0x74);
+                    flash[0x35] = flash[0x35] * *(f32 *)(flash + 0x74);
+                    flash[0x36] = flash[0x36] * *(f32 *)(flash + 0x74);
+                }
+            } else {
+                FlashHolder_Remove(i);
+            }
+        }
+    }
+}
+
+void FlashHolder_Render(void) {
+    extern u8 g_pFlash[16][0x80];
+    void Gfx_GetCameraPosition(Vector4 *pos);
+    void Gfx_ScreenOverlay(GXColor *color, u8 mode);
+    Vector4 camera;
+    GXColor color;
+    u8 *flash;
+    u8 *owner;
+    u32 i;
+
+    Gfx_GetCameraPosition(&camera);
+    for (i = 0; i < 16; i++) {
+        flash = g_pFlash[i];
+        owner = *(u8 **)(flash + 0x5C);
+        if (owner != NULL && owner[1] != 0) {
+            color = *(GXColor *)(flash + 0x34);
+            Gfx_ScreenOverlay(&color, **(u8 **)(owner + 0x20));
+        }
+    }
+}
+

@@ -66,7 +66,7 @@ s32 THPPlayerInit(void)
     u8 *player;
 
     player = (u8 *)&ActivePlayer;
-    memset(player + 0, 0, 0x198);
+    memset(player, 0, 0x198);
     LCEnable();
     OSInitMessageQueue(player + 0x198, player + 0x1B8, 3);
     if (THPInit())
