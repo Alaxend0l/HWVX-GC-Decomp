@@ -1,106 +1,16 @@
 #include "common.h"
 
-typedef struct FileTOCEntry {
-    u32 version;
-    u32 type;
-    u32 id;
-    u8 unkC[0x14 - 0xC];
-    u32 offset;
-} FileTOCEntry;
-
-typedef struct FileTOCCacheEntry {
-    FileTOCEntry entries[50];
-    u32 count;
-    char name[0x4C];
-} FileTOCCacheEntry;
-
 extern FileTOCCacheEntry g_fileTOCCache[11];
 extern s8 g_bSoundLoadingEnabled;
 extern s32 g_fileID;
 extern s32 g_openFileDataPackType;
 void File_Close(s32 file);
 
-typedef struct GXObject {
-    u8 pad0[0x1C];
-    u32 count;          /* 0x1C */
-    s32 *shaderList;    /* 0x20 */
-} GXObject;
 
-typedef struct QuadPack {
-    u8 pad00[0x10];
-    void *data;         /* 0x10 */
-    void *vertices;     /* 0x14 */
-    u8 pad18[0x10];
-    GXObject *gxObject; /* 0x28 */
-    s32 gxBase;         /* 0x2C */
-    u8 pad30[0x4];
-    u8 flag34;          /* 0x34 */
-    u8 pad35[0xC];
-    void *alloc;        /* 0x44 */
-} QuadPack;
 
 void ShaderHolder_RemoveGX(s32 gx);
 
-typedef struct DataPackShader {
-    s32 shader;             /* 0x00 */
-    u8 pad04[0x8];
-} DataPackShader;
 
-typedef struct DataPackRef {
-    char name[0xC];         /* 0x00 */
-    u32 id;                 /* 0x0C */
-    struct DataPack *pack;  /* 0x10 */
-} DataPackRef;
-
-typedef struct DataPack {
-    u8 *base;               /* 0x00 */
-    u32 numRelocs;          /* 0x04 */
-    s32 *relocs;            /* 0x08 */
-    u32 numSoundRelocs;     /* 0x0C */
-    u32 *soundRelocs;       /* 0x10 */
-    void *palettes;         /* 0x14 */
-    u32 numShaders;         /* 0x18 */
-    u32 numGX;              /* 0x1C */
-    u16 *shaderIDs;         /* 0x20 */
-    u32 *gxList;            /* 0x24 */
-    u32 dataSize;           /* 0x28 */
-    u32 numTextures;        /* 0x2C */
-    u16 *textureIDs;        /* 0x30 */
-    u32 numSounds;          /* 0x34 */
-    u16 *soundIDs;          /* 0x38 */
-    void *soundData;        /* 0x3C */
-    u8 *soundBase;          /* 0x40 */
-    u32 textureData;        /* 0x44 */
-    u8 *sfxData;            /* 0x48 */
-    void *paletteData;      /* 0x4C */
-    DataPackShader *shaders;/* 0x50 */
-    u32 numTriggers;        /* 0x54 */
-    u8 *triggers;           /* 0x58 */
-    void *song;             /* 0x5C */
-    void *songBank;         /* 0x60 */
-    s8 songLoaded;          /* 0x64 */
-    u8 pad65[3];            /* 0x65 */
-    DataPackRef refs[2];    /* 0x68 */
-    u32 soundDataSize;      /* 0x90 */
-} DataPack;
-
-typedef struct QuadPackRef {
-    char name[0xC];        /* 0x00 */
-    u32 id;                /* 0x0C */
-    DataPack *pack;        /* 0x10 */
-} QuadPackRef;
-
-/* The quad pack's header carries its pack references inline, at 0x2C. */
-typedef struct QuadPackHeader {
-    u32 pad00[2];          /* 0x00 */
-    u32 numRelocs;         /* 0x08 */
-    s32 *relocs;           /* 0x0C */
-    u32 pad10[3];          /* 0x10 */
-    u32 numShaders;        /* 0x1C */
-    s32 *shaderList;       /* 0x20 */
-    u32 pad24[2];          /* 0x24 */
-    QuadPackRef refs[2];   /* 0x2C */
-} QuadPackHeader;
 
 void VertexColorSeqManager_RemoveVertices(void *vertices);
 void Deallocate(void *alloc);
@@ -324,4 +234,3 @@ u8 *DataPack_GetScript(void *pack, s32 id)
     }
     return NULL;
 }
-

@@ -1,14 +1,7 @@
 #include "common.h"
 
 s32 Main_Init(void) {
-    typedef struct {
-        const char *a;
-        const char *b;
-        const char *c;
-        const char *d;
-        const char *e;
-        u8 unk14[0xC];
-    } GameInfo;
+    
     void TimeHandler_Init(void);
     void Init_Math3D(void);
     void Gfx_Create(void);

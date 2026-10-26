@@ -59,23 +59,16 @@ void Creature_MotionStateInitDeath(Creature *creature) {
     }
 }
 
-s32 Creature_Init(Creature *creature, void *init)
+void Thing_Init(void *a, s32 b);
+void Thing_AddToGrid(void *a, s32 b);
+void Creature_MotionStateInit(void *a, s32 b, s32 c, s32 d);
+void MotionState_BuildMatricesWorld(void *a, void *b, void *c, f32 d);
+void QuaternionToSubMatrix(Vector4 *q, void *m);
+s32 Creature_Init(Creature *creature, CreatureInit *init)
 {
-    void Creature_MotionStateInit(Creature *creature, s32 arg1, s32 arg2, s32 arg3);
-    void MotionState_BuildMatricesWorld(void *mtx, void *pos, void *state, f32 scale);
-    void QuaternionToSubMatrix(void *quat, void *mtx);
-    f32 RandomAdd(f32 base, f32 range);
-    void Thing_Init(Creature *thing, s32 arg1);
-    void Thing_AddToGrid(Creature *thing, s32 grid);
-    struct CreatureInit {
-        Vector4 pos;
-        f32 unk10;
-        u8 *unk14;
-    } *initData = init;
-
     Thing_Init(creature, 0);
-    creature->anims = initData->unk14;
-    creature->pos = initData->pos;
+    creature->anims = init->anims;
+    creature->pos = init->pos;
     creature->startPos = creature->pos;
     creature->mass = RandomAdd(0.002f, 0.001f);
     creature->unk1B8 = 0;
@@ -83,15 +76,17 @@ s32 Creature_Init(Creature *creature, void *init)
     QuaternionToSubMatrix(&creature->quat, creature->mtx);
     creature->unk80 = 0;
     creature->unk70 = 11.0f;
-    creature->unkB0 = initData->unk10;
+    creature->unkB0 = init->jitterBase;
+    creature->unkB4 = 0.0f;
     creature->unk1B4 = 0;
-    creature->unk78 = *(u32 *)((u8 *)creature->anims + 4);
+    creature->unkC0 = 0.0f;
+    creature->unk78 = *(u32 *)(creature->anims + 4);
     Creature_MotionStateInit(creature, 0, 0, 0);
     creature->unkBF = 0;
     creature->unk130 = 0.03f;
     creature->unk1B0 = -1;
-    Thing_AddToGrid(creature, 6);
     creature->unk1C0 = 1.0f;
+    Thing_AddToGrid(creature, 6);
     MotionState_BuildMatricesWorld(&creature->quat, &creature->pos, creature->motion, 1.0f);
     return 1;
 }
