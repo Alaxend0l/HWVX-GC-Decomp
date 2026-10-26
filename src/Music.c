@@ -140,7 +140,7 @@ void CreateMusic(u8 *data, u32 size)
 			SetMusicTrackVol = SetITTrackVol;
 			CreateIT(data, size);
 		}
-	}
+}
 }
 #pragma pop
 
