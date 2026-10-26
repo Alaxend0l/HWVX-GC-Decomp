@@ -365,6 +365,19 @@ s32 ActionEndInterfacePack(u32 *pack) {
     return 0;
 }
 
+void InterfaceHasEnded(u32 handle) {
+    u32 i;
+
+    for (i = 0; i < g_NumInterfacesPlaying; i++) {
+        if (handle == g_InterfacePackData[i].unk8) {
+            for (; i < g_NumInterfacesPlaying - 1; i++) {
+                g_InterfacePackData[i] = g_InterfacePackData[i + 1];
+            }
+            g_NumInterfacesPlaying--;
+        }
+    }
+}
+
 void InterfaceInputAnimator_Release(void) {
     static const char name[] = "InterfaceInput";
     ProcessManager_Release((char *)name);
