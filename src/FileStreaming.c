@@ -71,6 +71,23 @@ s32 FileStreaming_GetNumAvailableQuadPacks(void)
     return 0xB;
 }
 
+void FileStreaming_LoadingThread(void)
+{
+    g_bLoadingThreadRunning = 1;
+    if (g_bLoadQuadrants)
+    {
+        LoadQuadrants(0);
+    }
+    if (g_bLoadDataPack)
+    {
+        LoadDataPack();
+    }
+    g_bLoadQuadrants = 0;
+    g_bLoadDataPack = 0;
+    g_bLoadingThreadRunning = 0;
+    EndThread();
+}
+
 s32 FileStreaming_GetPackID(char *name, s32 type, u32 id)
 {
     u8 *pack;
