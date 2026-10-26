@@ -21,6 +21,10 @@ void World_Init(void) {
     fn_800957D4();
 }
 
+void *World_GetNavHolder(void) {
+    return M2C_FIELD(g_worldData.world, void **, 0x78);
+}
+
 void *World_GetGameData(void) {
     void *world = g_worldData.world;
     if (world != NULL) {
