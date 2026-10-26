@@ -22,3 +22,8 @@ ProcessManager g_processManager;
 
 void ProcessManager_Create(void) {
 }
+
+void ProcessManager_Init(void) {
+    g_processManager.count = 0;
+}
+
