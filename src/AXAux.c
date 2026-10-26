@@ -94,6 +94,7 @@ void __AXProcessAux(void)
 {
     void DCInvalidateRange(void *addr, u32 size);
     void DCFlushRangeNoSync(void *addr, u32 size);
+    u32 *base;
 
     __AXAuxADspWrite = __AXBufferAuxA[__AXAuxDspWritePosition];
     __AXAuxADspRead = __AXBufferAuxA[__AXAuxDspReadPosition];
@@ -106,10 +107,11 @@ void __AXProcessAux(void)
         {
             u32 *data[4];
 
-            data[0] = __AXBufferAuxA[__AXAuxCpuReadWritePosition];
-            data[1] = data[0] + 160;
-            data[2] = data[0] + 320;
-            data[3] = data[0] + 1760;
+            base = __AXBufferAuxA[__AXAuxCpuReadWritePosition];
+            data[0] = base;
+            data[1] = base + 160;
+            data[2] = base + 320;
+            data[3] = base + 1760;
             DCInvalidateRange(data[0], 0x780);
             DCInvalidateRange(data[3], 0x280);
             ((void (*)(void *, void *))__AXCallbackAuxA)(data, __AXContextAuxA);
@@ -120,9 +122,10 @@ void __AXProcessAux(void)
         {
             u32 *data[3];
 
-            data[0] = __AXBufferAuxA[__AXAuxCpuReadWritePosition];
-            data[1] = data[0] + 160;
-            data[2] = data[0] + 320;
+            base = __AXBufferAuxA[__AXAuxCpuReadWritePosition];
+            data[0] = base;
+            data[1] = base + 160;
+            data[2] = base + 320;
             DCInvalidateRange(data[0], 0x780);
             ((void (*)(void *, void *))__AXCallbackAuxA)(data, __AXContextAuxA);
             DCFlushRangeNoSync(data[0], 0x780);
@@ -133,9 +136,10 @@ void __AXProcessAux(void)
     {
         u32 *data[3];
 
-        data[0] = __AXBufferAuxB[__AXAuxCpuReadWritePosition];
-        data[1] = data[0] + 160;
-        data[2] = data[0] + 320;
+        base = __AXBufferAuxB[__AXAuxCpuReadWritePosition];
+        data[0] = base;
+        data[1] = base + 160;
+        data[2] = base + 320;
         DCInvalidateRange(data[0], 0x780);
         ((void (*)(void *, void *))__AXCallbackAuxB)(data, __AXContextAuxB);
         DCFlushRangeNoSync(data[0], 0x780);
