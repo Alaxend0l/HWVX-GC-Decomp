@@ -1,8 +1,8 @@
 #include "common.h"
 
 typedef struct Vector {
-    f32 y;
     f32 x;
+    f32 y;
     f32 z;
 } Vector;
 
@@ -43,13 +43,13 @@ static f32 Sqrt(f64 x)
 
 void DistanceXYZ(Vector *a, Vector *b, f32 *dist)
 {
-    f32 dy;
     f32 dx;
+    f32 dy;
     f32 dz;
 
-    dy = a->y - b->y;
     dx = a->x - b->x;
+    dy = a->y - b->y;
     dz = a->z - b->z;
-    *dist = Sqrt(dy * dy + dx * dx + dz * dz);
+    *dist = Sqrt(dx * dx + dy * dy + dz * dz);
 }
 
