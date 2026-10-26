@@ -1,5 +1,22 @@
 #include "common.h"
 
+u32 __AXBufferAuxA[3][480];
+u32 __AXBufferAuxB[3][480];
+
+s32 __AXCallbackAuxA;
+s32 __AXCallbackAuxB;
+s32 __AXContextAuxA;
+s32 __AXContextAuxB;
+s32 __AXAuxADspWrite;
+s32 __AXAuxADspRead;
+s32 __AXAuxBDspWrite;
+s32 __AXAuxBDspRead;
+s32 __AXAuxDspWritePosition;
+s32 __AXAuxDspReadPosition;
+s32 __AXAuxDspWritePositionDpl2;
+s32 __AXAuxDspReadPositionDpl2;
+s32 __AXAuxCpuReadWritePosition;
+
 
 void __AXAuxQuit(void) {
     extern s32 __AXCallbackAuxA;
