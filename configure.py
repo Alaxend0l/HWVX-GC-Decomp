@@ -411,7 +411,7 @@ config.libs = [
             Object(NonMatching, "Voice.c"),
             Object(NonMatching, "IT.c"),
             Object(NonMatching, "MIDI.c"),
-            Object(NonMatching, "Music.c"),
+            Object(Matching, "Music.c"),
             Object(NonMatching, "Audio.c"),
             Object(NonMatching, "allsrc.c"),
             Object(NonMatching, "DataChunk.c"),
