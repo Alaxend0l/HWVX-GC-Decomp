@@ -22,3 +22,29 @@ typedef struct ForceFeedback {
 } ForceFeedback;
 
 extern ForceFeedback g_forcefeedback[24];
+
+void ForceFeedback_Init(void) {
+    u32 i;
+
+    for (i = 0; i < 24; i++) {
+        g_forcefeedback[i].effect = 0;
+    }
+}
+
+void ForceFeedback_Play(void *effect, Vector4 *dir) {
+    u32 i;
+
+    for (i = 0; i < 24; i++) {
+        if (g_forcefeedback[i].effect == 0) {
+            g_forcefeedback[i].effect = effect;
+            g_forcefeedback[i].active = 1;
+            g_forcefeedback[i].playing = 1;
+            g_forcefeedback[i].dir = *dir;
+            g_forcefeedback[i].unk54 = M2C_FIELD(effect, s32 *, 0x14);
+            g_forcefeedback[i].unk58 = M2C_FIELD(effect, s32 *, 0x18);
+            g_forcefeedback[i].magnitude = M2C_FIELD(effect, s32 *, 0x10);
+            return;
+        }
+    }
+}
+
