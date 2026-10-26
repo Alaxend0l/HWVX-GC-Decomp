@@ -609,7 +609,7 @@ config.libs = [
             Object(NonMatching, "w_pow.c"),
             Object(NonMatching, "math_ppc.c"),
             Object(NonMatching, "AmcExi2Stubs.c"),
-            Object(NonMatching, "odenotstub.c"),
+            Object(Matching, "odenotstub.c"),
             Object(NonMatching, "etc/gba.c"),
             Object(NonMatching, "Constant.cpp", mw_version="GC/1.3"),
             Object(NonMatching, "Force.cpp"),
