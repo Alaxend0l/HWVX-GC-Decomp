@@ -6,6 +6,9 @@ typedef struct Vector {
     f32 z;
 } Vector;
 
+extern f32 __float_nan;
+extern f32 __float_huge;
+
 static f32 Sqrt(f64 x)
 {
     f64 guess;
@@ -23,3 +26,9 @@ static f32 Sqrt(f64 x)
     }
     return 0.0f;
 }
+
+void DistanceXYZ(Vector *a, Vector *b, f32 *dist)
+{
+    *dist = Sqrt((a->y - b->y) * (a->y - b->y) + (a->x - b->x) * (a->x - b->x) + (a->z - b->z) * (a->z - b->z));
+}
+
