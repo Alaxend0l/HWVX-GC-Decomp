@@ -269,3 +269,7 @@ s8 TriggerCheckConditions(u8 mode, s32 count, s32 conds) {
     return 0;
 }
 
+s32 TriggerLevelStart(void) {
+    return 1;
+}
+
