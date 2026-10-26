@@ -78,4 +78,5 @@ void * TRK_memcpy(void * dst, const void * src, u32 count)
     {
         *++d = *++s;
     }
+    return dst;
 }
