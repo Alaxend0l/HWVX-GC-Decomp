@@ -10,8 +10,17 @@
 /* The wheel itself: 0x880 bytes, embedded in LGWheels at 0x82C. */
 typedef struct Wheels
 {
-	u8		unk0[0x28];			/* 0x000 handle state */
-	u8		nonLinValues[0x800];	/* 0x028 non-linear force table */
+	struct {
+		/* 0x000 per-channel controller state */
+		u8		unk0[2];
+		/* 0x002 */
+		u8		pedalFlags;		/* bit 3 says both pedals are connected */
+		/* 0x003 */
+		u8		unk3[6];
+		/* 0x009 */
+		s8		opensErr;		/* 0 once the wheel opened */
+		}		unk0[4];			/* 0x000 */
+	s16		nonLinValues[4][256];	/* 0x028 non-linear force table */
 	u32		overallGainId[4];		/* 0x828 per-channel gain ids, handed to Force (by reference) */
 	u8		unk838[0x48];		/* 0x838 */
 
