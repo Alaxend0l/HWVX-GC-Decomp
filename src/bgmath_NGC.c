@@ -217,7 +217,7 @@ s32 FloatsEqual(f32 a, f32 b, f32 c)
 
     if (diff < 0.0f)
     {
-        diff = -diff;
+        diff *= -1.0f;
     }
     return diff < c;
 }
