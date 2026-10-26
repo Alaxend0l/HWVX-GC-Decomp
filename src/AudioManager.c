@@ -28,6 +28,39 @@ void SoundManager_Destroy(void) {
     Deallocate(g_tracks_803C6F30);
 }
 
+void SoundSource_Set(u32 index, u32 type, void *data) {
+    extern s32 g_sources;
+    void *memcpy(void *, void *, u32);
+
+    switch (type) {
+    case 0:
+        break;
+    case 1:
+        memcpy((u8 *)g_sources + index * 0x50, data, 0x10);
+        break;
+    case 2:
+        memcpy((u8 *)g_sources + index * 0x50 + 0x10, data, 0x10);
+        break;
+    case 3:
+        memcpy((u8 *)g_sources + index * 0x50 + 0x24, data, 4);
+        break;
+    case 4:
+        memcpy((u8 *)g_sources + index * 0x50 + 0x20, data, 4);
+        break;
+    case 5:
+        memcpy((u8 *)g_sources + index * 0x50 + 0x28, data, 4);
+        break;
+    case 6:
+        memcpy((u8 *)g_sources + index * 0x50 + 0x34, data, 4);
+        break;
+    case 7:
+        memcpy((u8 *)g_sources + index * 0x50 + 0x38, data, 4);
+        break;
+    case 8:
+        break;
+    }
+}
+
 void SoundManager_Heartbeat(void) {
     M2C_UNK MusicHearbeat();
     s32 OSDisableInterrupts();
