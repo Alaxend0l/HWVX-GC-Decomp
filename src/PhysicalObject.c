@@ -31,3 +31,9 @@ void PhysicalObject_ProcessForce(u8 *obj, Vector4 *force, Vector4 *dir)
     *(f32 *)(obj + 0x104) += torque.y;
     *(f32 *)(obj + 0x108) += torque.z;
 }
+
+void Mover_Init(void) {
+    M2C_UNK fn_800957D4();
+    fn_800957D4();
+}
+
