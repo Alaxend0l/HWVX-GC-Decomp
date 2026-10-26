@@ -27,8 +27,8 @@ void CoronaHolder_Init(void) {
 
 void CoronaHolder_Heartbeat(void) {
     Corona *corona;
-    u32 delta;
     u32 i;
+    u32 delta;
 
     delta = g_iDeltaTimeMS;
     for (i = 0; i < g_totalCoronas; i++) {
