@@ -56,7 +56,7 @@ void ProcessManager_Add(char *name, void (*init)(void), void (*update)(void), s3
 void ProcessManager_Heartbeat(u32 activeOnly) {
     s32 StateManager_CurrState(void);
     extern u32 g_StopInput;
-    s32 i;
+    u32 i;
 
     if (g_StopInput != 0 && StateManager_CurrState() != 5) {
         return;
