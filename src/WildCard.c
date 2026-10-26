@@ -60,3 +60,14 @@ void WildCardRack_Release(s32 arg0) {
     Thing_Release(arg0);
 }
 
+void WildCardRack_JettisonAll(void *rack) {
+    void WildCardRack_Jettison(void *rack, u8 slot);
+    u32 i;
+
+    if (rack != NULL) {
+        for (i = 0; i < 12; i++) {
+            WildCardRack_Jettison(rack, i);
+        }
+    }
+}
+
