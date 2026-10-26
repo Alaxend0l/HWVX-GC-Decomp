@@ -21,3 +21,51 @@ typedef struct MIDI_CHN
 MIDI_CHN g_chn[0x10];
 
 void SetVoiceState_(MIDI_VOICE *voice, s32 state);
+
+void SetMIDITrackVol(void)
+{
+}
+
+void DestroyMIDIVoice(MIDI_VOICE *voice)
+{
+    MIDI_VOICE *v;
+    MIDI_VOICE *next;
+
+    next = voice->next;
+    v = g_chn[voice->channel].voice;
+    if (v == voice)
+    {
+        g_chn[voice->channel].voice = next;
+        return;
+    }
+    for (; v->next != voice; v = v->next)
+    {
+    }
+    v->next = next;
+    voice->state = 0;
+    voice->channel = 0xFF;
+}
+
+void DestroyVoice(MIDI_VOICE *voice)
+{
+    MIDI_VOICE *v;
+    MIDI_VOICE *next;
+
+    next = voice->next;
+    v = g_chn[voice->channel].voice;
+    if (v == voice)
+    {
+        g_chn[voice->channel].voice = next;
+    }
+    else
+    {
+        for (; v->next != voice; v = v->next)
+        {
+        }
+        v->next = next;
+    }
+    voice->state = 3;
+    voice->channel = 0xFF;
+    SetVoiceState_(voice, 3);
+}
+
