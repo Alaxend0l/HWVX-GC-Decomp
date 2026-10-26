@@ -1,5 +1,13 @@
 #include "common.h"
 
+typedef struct WorldData
+{
+    void *world;
+    s32 unk4;
+    s32 unk8[4];
+} WorldData;
+extern WorldData g_worldData;
+
 
 void InterfaceManager_Init(void) {
     extern u8 g_interface[][0x170];
