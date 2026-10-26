@@ -37,6 +37,11 @@ void __AXGetAuxAInput(void **out)
     }
 }
 
+void __AXGetAuxAInputDpl2(void **out)
+{
+    *out = &__AXBufferAuxB[__AXAuxDspWritePosition][320];
+}
+
 void __AXGetAuxAOutput(void **out)
 {
     *out = __AXBufferAuxA[__AXAuxDspReadPosition];
