@@ -256,3 +256,50 @@ s32 ActionSwapAIScript(u32 *action) {
     return 1;
 }
 
+s32 ActionCreatureChangeMode(u32 *action) {
+    void Creature_MotionStateInitDeath(u8 *creature);
+    void Creature_Release(u32 handle);
+    u32 handle;
+    u32 i;
+    u8 *creature;
+
+    for (i = 0; i < action[1]; i++) {
+        creature = (u8 *)action[i + 2];
+        handle = M2C_FIELD(creature, u32 *, 0x1C);
+        switch (action[0]) {
+        case 0:
+            M2C_FIELD(creature, u32 *, 0x20) = 0;
+            if (handle != 0) {
+                M2C_FIELD(creature, u32 *, 0x1C) = 0;
+                Creature_Release(handle);
+            }
+            break;
+        case 1:
+            M2C_FIELD(creature, u32 *, 0x20) = 1;
+            break;
+        case 3:
+            M2C_FIELD(creature, u32 *, 0x20) = 0;
+            if (handle != 0) {
+                M2C_FIELD(creature, u32 *, 0x1C) = 0;
+                Creature_MotionStateInitDeath((u8 *)handle);
+            }
+            break;
+        case 25:
+            M2C_FIELD(creature, u32 *, 0x20) = 0;
+            if (handle != 0) {
+                M2C_FIELD(creature, u32 *, 0x1C) = 0;
+                Creature_Release(handle);
+            }
+            break;
+        case 26:
+            M2C_FIELD(creature, u32 *, 0x20) = 1;
+            if (handle != 0) {
+                M2C_FIELD(creature, u32 *, 0x1C) = 0;
+                Creature_MotionStateInitDeath((u8 *)handle);
+            }
+            break;
+        }
+    }
+    return 1;
+}
+
