@@ -120,3 +120,13 @@ void Thing_PassiveTargeting(void)
 {
 }
 
+u32 CollisionInfo_GetOther(void *arg0, u32 arg1) {
+    u32 temp_r0;
+
+    temp_r0 = M2C_FIELD(arg0, u32 *, 0x20);
+    if (temp_r0 == arg1) {
+        return M2C_FIELD(arg0, u32 *, 0x24);
+    }
+    return temp_r0;
+}
+
