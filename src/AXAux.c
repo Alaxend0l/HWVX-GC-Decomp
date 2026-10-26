@@ -24,3 +24,9 @@ void __AXAuxQuit(void) {
     __AXCallbackAuxA = 0;
     __AXCallbackAuxB = 0;
 }
+
+void __AXGetAuxAOutput(void **out)
+{
+    *out = __AXBufferAuxA[__AXAuxDspReadPosition];
+}
+
