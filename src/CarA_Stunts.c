@@ -32,7 +32,7 @@ void Drone_DynamicCollideImpact(u8 *drone, u8 *collision, f32 force)
     if (drone[0x1DC] != 2)
     {
         scale = force / *(f32 *)(*(u8 **)(*(u8 **)(drone + 0xC0) + 0x10) + 0x20);
-        ((Vector4 *)drone)->x += normal.x * scale * 1.0f;
+        ((Vector4 *)drone)->x += normal.x * scale;
         ((Vector4 *)drone)->y += normal.y * scale;
         ((Vector4 *)drone)->z += normal.z * scale;
         PSVECSubtract(&pos, (Vector4 *)(drone + 0x40), &r);
