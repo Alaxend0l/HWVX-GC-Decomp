@@ -13,18 +13,18 @@ void Drone_GetCameraOrientationInfo(void *drone, void *camera, void *info) {
 void Drone_DynamicCollideImpact(u8 *drone, u8 *collision, f32 force)
 {
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    /* xx */
     void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
     void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
     void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
     void Thing_ProcessEndEvent(u8 *thing, u8 *record, u8 *collision, Vector4 *angVel);
     void Thing_Release(u8 *thing);
-    Vector4 normal;
-    Vector4 pos;
     Vector4 impulse;
     Vector4 torque;
     Vector4 r;
     Vector4 scaled;
-    Vector4 local;
+    Vector4 pos;
+    Vector4 normal;
     f32 scale;
 
     normal = *(Vector4 *)(collision + 0x10);
@@ -43,10 +43,10 @@ void Drone_DynamicCollideImpact(u8 *drone, u8 *collision, f32 force)
         ((Vector4 *)(drone + 0x110))->x += torque.x;
         ((Vector4 *)(drone + 0x110))->y += torque.y;
         ((Vector4 *)(drone + 0x110))->z += torque.z;
-        InverseXformVecOrientation(drone + 0x10, (Vector4 *)(drone + 0x110), &local);
-        scaled.x = ((Vector4 *)(drone + 0x120))->x * local.x;
-        scaled.y = ((Vector4 *)(drone + 0x120))->y * local.y;
-        scaled.z = ((Vector4 *)(drone + 0x120))->z * local.z;
+        InverseXformVecOrientation(drone + 0x10, (Vector4 *)(drone + 0x110), &pos);
+        scaled.x = ((Vector4 *)(drone + 0x120))->x * pos.x;
+        scaled.y = ((Vector4 *)(drone + 0x120))->y * pos.y;
+        scaled.z = ((Vector4 *)(drone + 0x120))->z * pos.z;
         XformVecOrientation(drone + 0x10, &scaled, (Vector4 *)(drone + 0x130));
         if (*(s32 *)(drone + 0x78) <= 0)
         {
