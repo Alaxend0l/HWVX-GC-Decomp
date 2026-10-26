@@ -50,6 +50,11 @@ typedef struct LGWheels
 		/* 0x13FE */
 	s16		limbi[4];		/* 0x140E frontal collision force */
 		/* 0x1416 */
+
+	/* The wheel's own methods, defined in src/LGWheels.cpp. */
+	u8		IsOpened(s32 chan);
+	void		PlayOverallForceGain(s32 chan, s32 gain);
+		/* 0x1416 */
 } LGWheels;
 
 #endif /* LGWHEELS_H */
