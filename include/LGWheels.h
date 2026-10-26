@@ -109,6 +109,11 @@ typedef struct LGWheels
 		u8		overflow;
 		s16		efficiency;
 		}		limp[4];
+  struct {
+    /* 0x13DE constant force last played on the channel */
+    s16 force;
+    u16 direction;
+    } constantParams[4];
 	struct {
 		/* 0x13EE damper force last played on the channel */
 		u8		offet;
