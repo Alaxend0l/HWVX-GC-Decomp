@@ -71,3 +71,19 @@ s32 FileStreaming_GetNumAvailableQuadPacks(void)
     return 0xB;
 }
 
+#pragma push
+#pragma use_lmw_stmw off
+void LoadDataPack(void)
+{
+    s32 result;
+    u8 *pack;
+
+    pack = (u8 *)g_pDataPackToLoad;
+    if (pack != NULL)
+    {
+        g_pDataPackToLoad = NULL;
+        pack[1] = 1;
+        DataPack_LoadFile(M2C_FIELD(pack, s32 *, 4), pack + 0x14, g_dataPackToLoadType, M2C_FIELD(pack, s32 *, 8), &result);
+    }
+}
+
