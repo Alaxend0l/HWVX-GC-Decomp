@@ -170,6 +170,42 @@ s8 OBoxHitsBSPZeroTimeEdgesOnly(void *obox, void *bsp, void *arg2)
     }
     return 0;
 }
+
+u32 RayHitsBSP(Vector4 *start, Vector4 *dir, void *bbox, f32 *time, void *bsp) {
+    u32 RayHitsBSP2(void *, void *, void *, void *, u32, void *, f32 *, Vector4 *);
+    f32 t;
+    Vector4 end __attribute__((aligned(16)));
+    Vector4 hit __attribute__((aligned(16)));
+    u32 result;
+    s8 inside;
+    f32 eps;
+
+    t = 1.0f;
+    end.x = start->x + dir->x * *time;
+    end.y = start->y + dir->y * *time;
+    end.z = start->z + dir->z * *time;
+    result = RayHitsBSP2(start, &end, bbox, NULL, 0, bsp, &t, &hit);
+    if (result) {
+        eps = 0.1f;
+        if (hit.x < ((Vector4 *)bbox)[0].x - eps ||
+            hit.x > ((Vector4 *)bbox)[1].x + eps ||
+            hit.y < ((Vector4 *)bbox)[0].y - eps ||
+            hit.y > ((Vector4 *)bbox)[1].y + eps ||
+            hit.z < ((Vector4 *)bbox)[0].z - eps ||
+            hit.z > ((Vector4 *)bbox)[1].z + eps) {
+            inside = 0;
+        } else {
+            inside = 1;
+        }
+        if (inside) {
+            *time = t * *time;
+        } else {
+            result = 0;
+        }
+    }
+    return result;
+}
+
 void BuildOOBOffset(void *oob, void *pos, void *rot, void *out)
 {
     void XformVec(void *, void *, void *);
