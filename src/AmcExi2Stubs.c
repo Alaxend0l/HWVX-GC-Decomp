@@ -1,5 +1,9 @@
 
 
+void EXI2_Init(void)
+{
+}
+
 void EXI2_EnableInterrupts(void) {
 
 }
