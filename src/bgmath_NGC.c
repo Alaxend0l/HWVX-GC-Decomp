@@ -123,15 +123,85 @@ s32 CompareDistances(Vector *a, Vector *b, f32 dist)
     f32 dy = a->y - b->y;
     f32 dx = a->x - b->x;
     f32 dz = a->z - b->z;
+    f32 sq = dist * dist;
     f32 len = dy * dy + dx * dx + dz * dz;
 
-    if (len > dist * dist) {
+    if (len > sq) {
         return 1;
     }
-    if (len < dist * dist) {
+    if (len < sq) {
         return -1;
     }
     return 0;
+}
+
+void XformVec(Matrix4 *m, Vector *v, Vector *out)
+{
+    f32 tx = m->v[1].x * v->y + m->v[0].x * v->x;
+    f32 ty = m->v[1].y * v->y + m->v[0].y * v->x;
+    f32 tz = m->v[1].z * v->y + m->v[0].z * v->x;
+
+    tx = m->v[2].x * v->z + tx + m->v[3].x;
+    ty = m->v[2].y * v->z + ty + m->v[3].y;
+    tz = m->v[2].z * v->z + tz + m->v[3].z;
+
+    out->x = tx;
+    out->y = ty;
+    out->z = tz;
+}
+
+void InverseXformVec(Matrix4 *m, Vector *v, Vector *out)
+{
+    f32 dx = v->x - m->v[3].x;
+    f32 dy = v->y - m->v[3].y;
+    f32 dz = v->z - m->v[3].z;
+
+    f32 tx = m->v[0].x * dx + m->v[1].x * dy + m->v[2].x * dz;
+    f32 ty = m->v[0].y * dx + m->v[1].y * dy + m->v[2].y * dz;
+    f32 tz = m->v[0].z * dx + m->v[1].z * dy + m->v[2].z * dz;
+
+    out->x = tx;
+    out->y = ty;
+    out->z = tz;
+}
+
+void XformVecOrientation(Matrix4 *m, Vector *v, Vector *out)
+{
+    f32 tx = m->v[1].x * v->y + (m->v[0].x * v->x + m->v[2].x * v->z);
+    f32 ty = m->v[1].y * v->y + (m->v[0].y * v->x + m->v[2].y * v->z);
+    f32 tz = m->v[1].z * v->y + (m->v[0].z * v->x + m->v[2].z * v->z);
+
+    out->x = tx;
+    out->y = ty;
+    out->z = tz;
+}
+
+void InverseXformVecOrientation(Matrix4 *m, Vector *v, Vector *out)
+{
+    f32 tx = m->v[0].y * v->y + (m->v[0].x * v->x + m->v[0].z * v->z);
+    f32 ty = m->v[1].y * v->y + (m->v[1].x * v->x + m->v[1].z * v->z);
+    f32 tz = m->v[2].y * v->y + (m->v[2].x * v->x + m->v[2].z * v->z);
+
+    out->x = tx;
+    out->y = ty;
+    out->z = tz;
+}
+
+void TransposeSubMatrix(Matrix4 *m)
+{
+    f32 temp;
+
+    temp = m->v[0].y;
+    m->v[0].y = m->v[1].x;
+    m->v[1].x = temp;
+
+    temp = m->v[0].z;
+    m->v[0].z = m->v[2].x;
+    m->v[2].x = temp;
+
+    temp = m->v[1].z;
+    m->v[1].z = m->v[2].y;
+    m->v[2].y = temp;
 }
 
 void GetComponentOfVector(void *arg0, void *arg1) {
