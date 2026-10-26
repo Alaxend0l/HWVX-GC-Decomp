@@ -15,3 +15,10 @@ void StateProgressionManager_GetProgressionID(s32 *id, s32 *subID) {
     *subID = g_GameProgressionState[2];
 }
 
+void StateProgressionManager_RestartCurrentLevel(void) {
+    extern u8 g_bRestartCurrentLevel;
+    void ExitStateGamePlay(s32 state);
+    g_bRestartCurrentLevel = 1;
+    ExitStateGamePlay(0xB);
+}
+
