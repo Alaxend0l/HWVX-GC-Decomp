@@ -1521,6 +1521,36 @@ void InterfaceManager_SetPlayerMessage(void *message, u32 player) {
     }
 }
 
+s32 ActionEndInterface(void *action) {
+    extern u8 g_interface[][0x170];
+    extern void *g_pInterfaceToEnd;
+    void InterfaceManager_SetLoadState(void *iface, s32 state);
+    u32 i;
+    s8 found;
+
+    if (M2C_FIELD(action, u32 *, 0) == 0xFFFFFFFF) {
+        for (i = 0; i < 0x12; i++) {
+            if (*(void **)g_interface[i] != NULL && g_interface[i] != NULL) {
+                InterfaceManager_SetLoadState(g_interface[i], 1);
+            }
+        }
+    } else {
+        found = 0;
+        for (i = 0; i < 0x12; i++) {
+            if (*(void **)g_interface[i] != NULL && M2C_FIELD(g_interface[i], void **, 0x20) == M2C_FIELD(action, void **, 4)) {
+                if (g_interface[i] != NULL) {
+                    InterfaceManager_SetLoadState(g_interface[i], 1);
+                }
+                found = 1;
+            }
+        }
+        if (found == 0 && M2C_FIELD(action, void **, 8) != NULL) {
+            g_pInterfaceToEnd = M2C_FIELD(action, void **, 4);
+        }
+    }
+    return 1;
+}
+
 s32 InterfaceManager_AddFont(u8 *font) {
     s32 Gfx_FontManager_AddFont(u16, u8, f32, f32, f32);
     void Gfx_FontManager_SetCharacterSpacing(s32 id, u8 c, f32 x, f32 y);
