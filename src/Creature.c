@@ -74,7 +74,7 @@ void Creature_MotionStateInitDeath(Creature *creature) {
 
 void Thing_Init(void *a, s32 b);
 void Thing_AddToGrid(void *a, s32 b);
-void Creature_MotionStateInit(void *a, s32 b, s32 c, s32 d);
+void Creature_MotionStateInit(void *a, s32 b, u8 c, u8 d);
 void MotionState_BuildMatricesWorld(void *a, void *b, void *c, f32 d);
 void QuaternionToSubMatrix(Vector4 *q, void *m);
 s32 Creature_Init(Creature *arg0, CreatureInit *arg1)
