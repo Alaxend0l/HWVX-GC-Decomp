@@ -53,7 +53,9 @@ typedef struct LGWheels
 	s16		limbi[4];		/* 0x140E frontal collision force */
 		/* 0x1416 */
 
-	/* The wheel's own methods, defined in src/LGWheels.cpp. */
+	/* The port's own methods, defined in src/LGWheels.cpp; these are the ROM's
+	 * IsOpened__8LGWheelsFl, SetOverallForceGain__8LGWheelsFll, GetOverallForceGain__8LGWheelsFl and
+	 * GenerateNonLinValues__8LGWheelsFlUc, which hand their arguments to the subobjects. */
 	u8		IsOpened(s32 chan);
 		/* 0x1416 */
 	void		PlayOverallForceGain(s32 chan, s32 gain);
