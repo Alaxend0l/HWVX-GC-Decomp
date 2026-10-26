@@ -284,6 +284,44 @@ done:
     }
 }
 
+s32 GameSettings_GetDefaultMemoryCardStatus(s32 *device, s8 bForce)
+{
+    static u32 s_updateCntr = 10;
+    static s32 s_curStatus;
+    static s32 s_curDevice;
+    s32 GameSettings_GetMemoryCardStatus(s32 device, s32 arg1);
+    s32 status1;
+    s32 status2;
+
+    if (++s_updateCntr < 10 && !bForce && !g_bRefreshMC)
+    {
+        *device = s_curDevice;
+        return s_curStatus;
+    }
+    s_updateCntr = 0;
+    s_curStatus = 2;
+    g_bRefreshMC = 0;
+    status1 = GameSettings_GetMemoryCardStatus(1, 1);
+    status2 = GameSettings_GetMemoryCardStatus(2, 1);
+    if (status1 == 1 || status1 == 0)
+    {
+        s_curStatus = status1;
+        s_curDevice = 1;
+    }
+    else if (status1 == 2 && status2 != 2)
+    {
+        s_curStatus = status2;
+        s_curDevice = 2;
+    }
+    else
+    {
+        s_curStatus = status1;
+        s_curDevice = 1;
+    }
+    *device = s_curDevice;
+    return s_curStatus;
+}
+
 void GameSettings_DetermineIfOverwritingFile(void)
 {
     if (g_bValidFileName[g_codeVariables.fileIndex - 1])
