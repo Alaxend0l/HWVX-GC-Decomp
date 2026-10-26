@@ -1520,3 +1520,20 @@ void InterfaceManager_SetPlayerMessage(void *message, u32 player) {
         g_playerMessage3 = message;
     }
 }
+
+void InterfaceManager_RemoveInterfaceFromRender(u32 id) {
+    extern u32 g_interfaceRenderOrder[];
+    extern u32 g_numInterfacesToRender;
+    u32 i;
+
+    for (i = 0; i < g_numInterfacesToRender; i++) {
+        if (id == g_interfaceRenderOrder[i]) {
+            g_numInterfacesToRender--;
+            for (; i < g_numInterfacesToRender; i++) {
+                g_interfaceRenderOrder[i] = g_interfaceRenderOrder[i + 1];
+            }
+            return;
+        }
+    }
+}
+
