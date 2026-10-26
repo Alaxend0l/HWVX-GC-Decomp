@@ -72,6 +72,28 @@ s8 FileManager_IsDeviceFormatted(s32 device) {
     return m_memcardstatus_803C7970[device - 11] == 0;
 }
 
+void File_Close(s32 handle) {
+    extern struct { s32 fileInfo; u8 pad[0x100]; } g_filedata_PC[4];
+    s32 DVDClose(void *fileInfo);
+    void MemCard_Close__Fl(s32 device);
+    s32 slot = (s8)(u8)((u32)handle >> 8);
+    s32 idx = (s8)(u8)handle;
+    s32 device = (s8)(u8)((u32)handle >> 16);
+
+    if (device >= 11) {
+        MemCard_Close__Fl(device);
+        g_files[idx].slot = -1;
+        return;
+    }
+    if (!(idx >= 0 && idx < 4 && slot == g_files[idx].slot)) {
+        return;
+    }
+    DVDClose((void *)g_filedata_PC[idx].fileInfo);
+    Deallocate(g_filedata_PC[idx].fileInfo);
+    g_filedata_PC[idx].fileInfo = 0;
+    g_files[idx].slot = -1;
+}
+
 u32 FileManager_GetDeviceStatus(u32 device) {
     s32 CARDProbeEx(s32 chan, s32 *memSize, s32 *sectorSize);
     s32 CARDMount(s32 chan, void *workArea, void *detachCallback);
