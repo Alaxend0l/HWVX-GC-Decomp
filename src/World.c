@@ -21,6 +21,14 @@ void World_Init(void) {
     fn_800957D4();
 }
 
+void *World_GetTileCar(u32 index) {
+    void *world = g_worldData.world;
+    if (index < M2C_FIELD(world, u32 *, 0x8)) {
+        return M2C_FIELD(world, u8 **, 0xC) + index * 0x60;
+    }
+    return NULL;
+}
+
 void *World_GetNavHolder(void) {
     return M2C_FIELD(g_worldData.world, void **, 0x78);
 }
