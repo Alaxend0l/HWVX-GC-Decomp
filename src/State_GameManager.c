@@ -100,3 +100,8 @@ s32 StateGameManager_Shutdown(void) {
     return 1;
 }
 
+void StateGameManager_Release(void) {
+    M2C_UNK FileStreaming_ReleaseAllDataPacks(M2C_UNK, M2C_UNK);
+    FileStreaming_ReleaseAllDataPacks(3, 1);
+}
+
