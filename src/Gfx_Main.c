@@ -86,3 +86,8 @@ s32 Gfx_GetRenderWindowIndex(void) {
     return g_currentWindow;
 }
 
+void Gfx_ClearScreen(void)
+{
+    Render_ClearScreen();
+}
+
