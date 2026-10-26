@@ -106,3 +106,10 @@ void SetTrackPan(IT_TRACK *trk)
     }
 }
 
+void StopActive(IT_TRACK *trk)
+{
+    trk->head = trk->head->next;
+    SetVoiceState_(trk->active, 3);
+    trk->active = NULL;
+}
+
