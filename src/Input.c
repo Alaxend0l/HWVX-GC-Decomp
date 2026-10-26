@@ -72,6 +72,23 @@ s8 Input_KeyPress(s32 chan, u8 key) {
     return 0;
 }
 
+u8 Input_KeyDown(s32 chan, u8 key) {
+    s32 i;
+    if (key == 0xFF) {
+        return 0;
+    }
+    if (chan == -1) {
+        for (i = 0; i < 4; i++) {
+            if ((g_VirtualPad[i].keyDown >> key) & 1) {
+                return g_VirtualPad[chan].keyValue[key];
+            }
+        }
+    } else if ((g_VirtualPad[chan].keyDown >> key) & 1) {
+        return g_VirtualPad[chan].keyValue[key];
+    }
+    return 0;
+}
+
 void Input_SetForceFeedbackActive(s32 chan, u8 active) {
     g_VirtualPad[chan].forceFeedbackActive = active;
 }
