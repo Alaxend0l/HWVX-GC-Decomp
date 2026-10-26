@@ -124,6 +124,26 @@ s32 FileStreaming_ReleaseAllDataPacks(s32 type, s8 wait)
 
 #pragma push
 #pragma use_lmw_stmw off
+void FileStreaming_HeartBeat(void)
+{
+    u32 i;
+
+    for (i = 0; i < g_numDataPacksToRelease; i++)
+    {
+        DataPack_ReleaseDataPack((u8 *)g_pPacksToBeReleased[i] + 0x14);
+        ((u8 *)g_pPacksToBeReleased[i])[0] = 0;
+    }
+    g_numDataPacksToRelease = 0;
+    for (i = 0; i < g_numQuadPacksToRelease; i++)
+    {
+        DataPack_ReleaseQuadPack(g_pQuadPackToBeReleased[i]);
+    }
+    g_numQuadPacksToRelease = 0;
+}
+#pragma pop
+
+#pragma push
+#pragma use_lmw_stmw off
 void LoadDataPack(void)
 {
     s32 result;
