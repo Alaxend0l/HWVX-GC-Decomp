@@ -14,6 +14,8 @@ typedef unsigned long long u64;
 typedef float f32;
 typedef double f64;
 typedef int BOOL;
+typedef struct Vector4 { f32 x; f32 y; f32 z; f32 w; } Vector4;
+typedef struct Matrix4 { Vector4 v[4]; } Matrix4;
 #define TRUE 1
 #define FALSE 0
 #ifndef NULL

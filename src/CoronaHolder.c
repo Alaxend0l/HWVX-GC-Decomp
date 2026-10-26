@@ -3,8 +3,6 @@
 s32 g_coronaRayTest;
 u32 g_totalCoronas;          /* compared unsigned: cmplwi r0, 0x40 */
 
-typedef struct Vector4 { f32 x; f32 y; f32 z; f32 w; } Vector4;
-
 /* An emitter's corona: its colour track and the interpolation state. */
 typedef struct Corona {
     u8 *track;          /* 0x00 */

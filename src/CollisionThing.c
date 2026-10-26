@@ -1,12 +1,5 @@
 #include "common.h"
 
-typedef struct Vector4 {
-    f32 x;
-    f32 y;
-    f32 z;
-    f32 w;
-} Vector4;
-
 typedef struct OBox {
     Vector4 center;            /* 0x00 */
     Vector4 corners[8];        /* 0x10 */
@@ -123,4 +116,3 @@ void CollisionPairCache_Heartbeat(void)
         }
     }
 }
-

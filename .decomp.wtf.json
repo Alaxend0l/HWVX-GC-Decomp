@@ -32,8 +32,8 @@
     ]
   ],
   "rebuild": {
-    "identical": false,
-    "detail": "ninja: build stopped: interrupted by user.",
-    "t": 1792945445.3880067
+    "identical": true,
+    "detail": "identical",
+    "t": 1792995077.2510736
   }
 }

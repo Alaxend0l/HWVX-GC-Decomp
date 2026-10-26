@@ -1,12 +1,5 @@
 #include "common.h"
 
-typedef struct Vector4 {
-    f32 x;
-    f32 y;
-    f32 z;
-    f32 w;
-} Vector4;
-
 typedef struct Creature {
     u8 unk0[0x10];
     u8 mtx[0x40 - 0x10];
@@ -144,4 +137,3 @@ u32 Creature_Invalidate(Creature *creature, u32 start, u32 end) {
     }
     return 0;
 }
-

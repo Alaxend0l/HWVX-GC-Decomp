@@ -1,7 +1,6 @@
 #include "common.h"
 
-typedef struct Vector4 { f32 x; f32 y; f32 z; f32 w; } Vector4;
-typedef struct Matrix4 { Vector4 v[4]; } Matrix4;
+
 
 typedef struct WorldData
 {
@@ -192,4 +191,3 @@ void BuildOOBOffset(void *oob, void *pos, void *rot, void *out)
     *(void **)((char *)out + 0xa4) = (char *)pos;
     *(void **)((char *)out + 0xa8) = (char *)pos + 0x10;
 }
-

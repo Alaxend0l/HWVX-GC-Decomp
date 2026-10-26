@@ -1,12 +1,5 @@
 #include "common.h"
 
-typedef struct Vector4 {
-    f32 x;
-    f32 y;
-    f32 z;
-    f32 w;
-} Vector4;
-
 typedef struct ForceFeedback {
     void *effect;                 /* 0x00 */
     f32 point[0x1C / 4 - 1];      /* 0x04 */
@@ -147,4 +140,3 @@ void ForceFeedback_GetForce(Vector4 *ff, u8 *a, u8 *b, f32 *c)
     *b = rumble;
     *c = force;
 }
-

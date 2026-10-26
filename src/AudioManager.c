@@ -117,7 +117,6 @@ void MusicHearbeat(void) {
 }
 
 void SoundListener_Set(s32 listener, s32 param, void *value) {
-    typedef struct Vector4 { f32 x; f32 y; f32 z; f32 w; } Vector4;
     typedef struct SoundListener {
         Vector4 pos;
         Vector4 vel;
@@ -203,4 +202,3 @@ void SongManager_PlaySong(void) {
 s32 ActionMusicSetSong(void) {
     return 1;
 }
-

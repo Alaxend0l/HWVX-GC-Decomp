@@ -249,6 +249,492 @@ void InterfaceManager_SetOffset(s32 index, f32 x, f32 y) {
     *(f32 *)(iface + 0x64) = y;
 }
 
+s32 InterfaceManager_Create(u8 *header, u8 *owner, void (*callback)(void *msg)) {
+    typedef struct {
+        s8 isVar;
+        u8 pad1;
+        u16 value;
+    } CondValue;
+    typedef struct {
+        s32 id;
+        CondValue *val;
+    } CodeVar;
+    typedef struct {
+        u8 type;
+        u8 pad1[3];
+        s32 min;
+        s32 max;
+        s32 offset;
+        CodeVar *data;
+        u8 pad14[0x34 - 0x14];
+    } Variable;
+    typedef struct {
+        u32 count;
+        Variable *vars;
+    } VariableList;
+    typedef struct {
+        u8 type;
+        u8 pad1[3];
+        u32 value;
+        u8 pad8[0xC - 0x8];
+    } Property;
+    typedef struct {
+        u16 id;
+        u8 pad2[0xC - 0x2];
+        u32 numObjects;
+        u8 *objects;
+        u32 numProps;
+        Property *props;
+        VariableList *vars;
+        u8 pad20[0x34 - 0x20];
+        u32 layer;
+        u8 pad38[0x3C - 0x38];
+        u8 mode;
+    } Header;
+    typedef struct {
+        u8 id;
+        u8 pad1[0x10 - 0x1];
+        u32 unk10;
+        u32 *unk14;
+    } ObjectData;
+    typedef struct {
+        u8 pad0[0x8];
+        u8 active;
+        u8 pad9[0x44 - 0x9];
+        ObjectData *data;
+    } Object;
+    typedef struct {
+        u8 pad0[0x25C];
+        Object *object;
+        u8 pad260[0x300 - 0x260];
+    } Slot;
+    typedef struct {
+        u32 count;
+        u32 state;
+        u8 *owner;
+        Slot *selected;
+        u8 pad10[0x14 - 0x10];
+        s32 unk14;
+        f32 unk18;
+        Property *unk1C;
+        Header *header;
+        u32 unk24;
+        u8 pad28[0x7D - 0x28];
+        u8 index;
+        u8 unk7E;
+        u8 unk7F;
+        u8 unk80;
+        u8 unk81;
+        u8 unk82;
+        u8 paused;
+        u8 unk84;
+        u8 unk85;
+        u8 pad86[0x88 - 0x86];
+        Slot *slots;
+        s32 mode;
+        void (*callback)(void *msg);
+        u32 unk94;
+        s32 vars[30];
+        u32 numVars;
+        u8 player;
+        u8 unk115;
+        u8 unk116[0x40];
+        u8 pad156[0x158 - 0x156];
+        u32 unk158;
+        u8 pad15C[0x160 - 0x15C];
+        u8 unk160;
+        u8 unk161;
+        u8 pad162[0x164 - 0x162];
+        f32 unk164;
+        u8 unk168;
+        u8 pad169[0x170 - 0x169];
+    } Interface;
+    typedef struct {
+        u8 pad0[2];
+        u8 id;
+        u8 pad3;
+        f32 value;
+    } WorldVar;
+    typedef struct {
+        u8 pad0[0x48];
+        u32 numVars;
+        WorldVar **vars;
+    } World;
+    typedef struct {
+        u32 index;
+        u16 type;
+        u16 id;
+        u8 pad8[0xA - 0x8];
+        u16 result;
+        u8 padC[0x28 - 0xC];
+        u8 unk28;
+        u8 pad29[0x3C - 0x29];
+        s32 *vars;
+        u8 pad40[0x48 - 0x40];
+    } InterfaceMessage;
+    extern Interface g_interface[];
+    extern Header *g_pInterfaceToEnd;
+    extern s32 g_playerIndex;
+    extern s8 g_bMemoryCardHWHack;
+    void Trigger_InterfaceEnd(void *header);
+    void *InterfaceManager_GetInterfaceObjects(u32 num);
+    void *memset(void *dst, int c, u32 n);
+    void InterfaceManager_AddInterfaceToRender(s32 index, u32 layer);
+    s32 GameSettings_GetGameType(void);
+    s32 StateManager_CurrState(void);
+    void GameSettings_SetDefaultControllerState(void);
+    void GSI_VehicleItemSelection(void *msg);
+    void ArmageddonDropShip(void *msg);
+    void TitleScreen_Interface(void *msg);
+    void InterfaceManager_AddObject(void *iface, void *obj);
+    void InterfaceManager_SetLoadState(void *iface, s32 state);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void GameSettings_GetSaveGameName(void *name);
+    void InterfaceManager_PreprocessInterface(void *iface);
+    InterfaceMessage msg;
+    Header *hdr = (Header *)header;
+    s32 index;
+    u32 minId;
+    Interface *iface;
+    u32 i;
+    u32 j;
+    Slot *slot;
+    CodeVar *cv;
+
+    index = -1;
+    minId = -1;
+    iface = NULL;
+    if (hdr == NULL) {
+        return -1;
+    }
+    if (hdr == g_pInterfaceToEnd) {
+        g_pInterfaceToEnd = NULL;
+        Trigger_InterfaceEnd(hdr);
+        return -1;
+    }
+    for (i = 0; i < 0x12; i++) {
+        if (g_interface[i].count == 0) {
+            index = i;
+            iface = &g_interface[i];
+            break;
+        }
+    }
+    if (iface == NULL) {
+        return -1;
+    }
+    iface->slots = InterfaceManager_GetInterfaceObjects(hdr->numObjects);
+    if (iface->slots == NULL) {
+        return -1;
+    }
+    iface->paused = 0;
+    iface->count = 0;
+    iface->owner = owner;
+    iface->selected = NULL;
+    iface->header = hdr;
+    iface->unk24 = 0;
+    iface->callback = callback;
+    iface->unk14 = -1;
+    iface->unk7E = 0;
+    iface->unk7F = 0;
+    iface->unk115 = 0;
+    iface->unk84 = 0;
+    iface->unk80 = 0;
+    iface->unk81 = 0;
+    iface->unk82 = 0;
+    iface->unk1C = NULL;
+    iface->unk18 = 0.0f;
+    iface->unk94 = 0;
+    iface->unk85 = 0;
+    iface->unk158 = 0;
+    iface->player = g_playerIndex;
+    iface->index = index;
+    iface->unk160 = 0;
+    iface->unk161 = 0;
+    iface->unk164 = 500.0f;
+    iface->unk168 = 0;
+    switch (hdr->mode) {
+    case 1:
+        iface->mode = 0;
+        break;
+    case 2:
+        iface->mode = 1;
+        break;
+    case 3:
+        iface->mode = 2;
+        break;
+    case 4:
+        iface->mode = 3;
+        break;
+    case 0:
+    default:
+        iface->mode = -1;
+        break;
+    }
+    memset(iface->unk116, 0, 0x40);
+    if (hdr->layer == 0) {
+        hdr->layer = 5;
+    }
+    InterfaceManager_AddInterfaceToRender(index, hdr->layer);
+    switch (hdr->id) {
+    case 2:
+        if (GameSettings_GetGameType() == 0) {
+            iface->callback = GSI_VehicleItemSelection;
+        } else if (GameSettings_GetGameType() == 1) {
+            if (StateManager_CurrState() == 2) {
+                iface->callback = GSI_VehicleItemSelection;
+            } else {
+                iface->callback = ArmageddonDropShip;
+            }
+        }
+        GameSettings_SetDefaultControllerState();
+        break;
+    case 3:
+        if (GameSettings_GetGameType() == 0) {
+            iface->callback = GSI_VehicleItemSelection;
+        } else if (GameSettings_GetGameType() == 1) {
+            iface->callback = ArmageddonDropShip;
+        }
+        GameSettings_SetDefaultControllerState();
+        break;
+    case 8:
+        iface->callback = TitleScreen_Interface;
+        break;
+    }
+    for (i = 0; i < hdr->numObjects; i++) {
+        InterfaceManager_AddObject(iface, hdr->objects + i * 0x6C);
+    }
+    InterfaceManager_SetLoadState(iface, 0);
+    for (i = 0; i < iface->header->numProps; i++) {
+        if (iface->header->props[i].type == 0x1E) {
+            iface->unk1C = &iface->header->props[i];
+            iface->unk18 = iface->header->props[i].value;
+            break;
+        }
+    }
+    for (i = 0; i < iface->count; i++) {
+        slot = &iface->slots[i];
+        if (slot->object->active && slot->object->data->id != 0 && slot->object->data->id < minId) {
+            minId = slot->object->data->id;
+            iface->selected = slot;
+        }
+    }
+    for (i = 0, iface->numVars = 0; i < hdr->vars->count && i < 30; i++, iface->numVars++) {
+        switch (hdr->vars->vars[i].type) {
+        case 0:
+            iface->vars[i] = hdr->vars->vars[i].offset;
+            break;
+        case 1:
+            cv = hdr->vars->vars[i].data;
+            if (cv->val->isVar) {
+                iface->vars[i] = GameSettings_GetCodeVariable(cv->id, iface->vars[cv->val->value]);
+            } else {
+                iface->vars[i] = GameSettings_GetCodeVariable(cv->id, cv->val->value);
+            }
+            iface->vars[i] += hdr->vars->vars[i].offset;
+            if (iface->vars[i] > hdr->vars->vars[i].max) {
+                iface->vars[i] = iface->vars[i] - hdr->vars->vars[i].max - 1 + hdr->vars->vars[i].min;
+            } else if (iface->vars[i] < hdr->vars->vars[i].min) {
+                iface->vars[i] = hdr->vars->vars[i].max - (hdr->vars->vars[i].min - iface->vars[i] - 1);
+            }
+            break;
+        case 2:
+            if (owner != NULL) {
+                iface->vars[i] = *(s32 *)(owner + 0x60);
+            } else {
+                iface->vars[i] = g_playerIndex;
+            }
+            break;
+        case 3:
+            if (iface->selected != NULL) {
+                iface->vars[i] = iface->selected->object->data->id;
+            } else {
+                iface->vars[i] = 0;
+            }
+            break;
+        case 4:
+            if ((World *)g_worldData.world != NULL) {
+                iface->vars[i] = 0;
+                for (j = 0; j < ((World *)g_worldData.world)->numVars; j++) {
+                    if (((World *)g_worldData.world)->vars[j]->id == hdr->vars->vars[i].offset) {
+                        iface->vars[i] = ((World *)g_worldData.world)->vars[j]->value;
+                    }
+                }
+            }
+            break;
+        }
+    }
+    if (hdr->id == 7) {
+        GameSettings_GetSaveGameName(iface->vars);
+    }
+    if (iface->callback != NULL) {
+        msg.index = iface->index;
+        msg.type = 3;
+        msg.id = hdr->id;
+        msg.result = 0;
+        msg.unk28 = 0;
+        msg.vars = iface->vars;
+        iface->callback(&msg);
+        if (msg.result != 0) {
+            for (i = 0; i < iface->count; i++) {
+                slot = &iface->slots[i];
+                if (slot->object->active && slot->object->data->id == msg.result) {
+                    iface->selected = slot;
+                }
+            }
+        }
+    }
+    InterfaceManager_PreprocessInterface(iface);
+    if (g_bMemoryCardHWHack && iface->count == 14 && iface->slots[9].object->active &&
+        iface->slots[9].object->data->id == 6 && iface->slots[9].object->data->unk10 == 1) {
+        g_bMemoryCardHWHack = 0;
+        iface->slots[9].object->data->unk14[1] = 100;
+    }
+    return index;
+}
+
+void InterfaceManager_PreprocessInterface(u8 *iface) {
+    typedef struct MusicInfo {
+        char *name;
+        u32 id;
+    } MusicInfo;
+    typedef struct InterfaceHeader {
+        u8 pad0[0x30];
+        MusicInfo *music;
+        u8 pad34[0x38 - 0x34];
+        f32 volume;
+    } InterfaceHeader;
+    typedef struct FontInfo {
+        u8 pad0[0x8];
+        u8 *name;
+        u8 padC[0x28 - 0xC];
+        s32 id;
+    } FontInfo;
+    typedef struct ResourceEntry {
+        u8 pad0[0x8];
+        u32 soundID;
+        char *soundName;
+        u8 pad10[0x14 - 0x10];
+        FontInfo *font;
+        u8 pad18[0x20 - 0x18];
+    } ResourceEntry;
+    typedef struct ResourceList {
+        u32 count;
+        ResourceEntry *entries;
+    } ResourceList;
+    typedef struct SoundPack {
+        s32 id;
+        u8 *data;
+    } SoundPack;
+    typedef struct InterfaceSlot {
+        u8 pad0[0x245];
+        u8 type;
+        u8 pad246[0x25C - 0x246];
+        u8 *object;
+        u8 pad260[0x300 - 0x260];
+    } InterfaceSlot;
+    typedef struct WorldObjective {
+        u32 unk0;
+        u8 *info;
+    } WorldObjective;
+    typedef struct World {
+        u8 pad0[0x58];
+        u32 numObjectives;
+        WorldObjective *objectives;
+    } World;
+    extern char *g_curMusicPackName;
+    extern u32 g_curMusicPackID;
+    extern u32 g_numInterfaceDialogSoundPacks;
+    extern u32 g_curInterfaceDialogSoundPack;
+    extern u32 g_curInterfaceDialogSoundIndex;
+    extern SoundPack g_interfaceDialogSoundPacks[15];
+    void SongManager_StopBKSong(void);
+    void SongManager_PlaySong(void);
+    void SetMusicVol(u32 vol);
+    s32 FileStreaming_GetPackID(char *name, s32 type, u32 id);
+    s32 FileStreaming_ReleaseDataPack(u32 index, s32 type);
+    void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
+    s32 InterfaceManager_AddFont(u8 *font);
+    void InterfaceManager_SetObjectText(u8 *obj, char **text);
+    void InterfaceManager_SetMissionObjectiveText(u8 *obj, void *objective);
+    u32 i;
+    u32 total;
+    ResourceList *list;
+    InterfaceSlot *slot;
+    s32 pack;
+    u8 *data;
+    SoundPack *sp;
+    World *world;
+    u32 k;
+    u8 *info;
+    WorldObjective *objective;
+    u32 id;
+
+    if ((*(InterfaceHeader **)(iface + 0x20))->music != NULL && (*(InterfaceHeader **)(iface + 0x20))->music->name != NULL) {
+        if (g_curMusicPackName == NULL || strcmp(g_curMusicPackName, (*(InterfaceHeader **)(iface + 0x20))->music->name) != 0
+            || g_curMusicPackID != (*(InterfaceHeader **)(iface + 0x20))->music->id) {
+            SongManager_StopBKSong();
+            if (g_curMusicPackName != NULL) {
+                FileStreaming_ReleaseDataPack(FileStreaming_GetPackID(g_curMusicPackName, 10, g_curMusicPackID), 10);
+            }
+            FileStreaming_InitializeDataPack(FileStreaming_LoadDataPack((*(InterfaceHeader **)(iface + 0x20))->music->name, 10, (*(InterfaceHeader **)(iface + 0x20))->music->id, 0), 10, 1);
+            SongManager_PlaySong();
+            SetMusicVol(32767.0f * (*(InterfaceHeader **)(iface + 0x20))->volume);
+            g_curMusicPackName = (*(InterfaceHeader **)(iface + 0x20))->music->name;
+            g_curMusicPackID = (*(InterfaceHeader **)(iface + 0x20))->music->id;
+        }
+    }
+    g_numInterfaceDialogSoundPacks = 0;
+    g_curInterfaceDialogSoundPack = 0;
+    g_curInterfaceDialogSoundIndex = 0;
+    if (*(u8 **)(iface + 0x158) != NULL) {
+        list = *(ResourceList **)(*(u8 **)(iface + 0x158) + 0x258);
+        total = 0;
+        for (i = 0; i < list->count; i++) {
+            if (list->entries[i].font != NULL) {
+                if (list->entries[i].font->name == NULL) {
+                    continue;
+                }
+                list->entries[i].font->id = InterfaceManager_AddFont(list->entries[i].font->name);
+            }
+            if (list->entries[i].soundName != NULL && g_numInterfaceDialogSoundPacks < 15 && total < 1000000) {
+                pack = FileStreaming_LoadDataPack(list->entries[i].soundName, 9, list->entries[i].soundID, 0);
+                data = FileStreaming_InitializeDataPack(pack, 9, 1);
+                sp = &g_interfaceDialogSoundPacks[g_numInterfaceDialogSoundPacks];
+                g_numInterfaceDialogSoundPacks++;
+                sp->id = pack;
+                sp->data = data;
+                total += *(u32 *)(data + 0x90);
+                g_curInterfaceDialogSoundIndex = i + 1;
+            }
+        }
+    }
+    g_curInterfaceDialogSoundPack = 0;
+    for (i = 0; i < *(u32 *)iface; i++) {
+        slot = &(*(InterfaceSlot **)(iface + 0x88))[i];
+        switch (slot->type) {
+        case 0x34:
+            id = *(u16 *)(slot->object + 0xA);
+            world = g_worldData.world;
+            if (world == NULL) {
+                break;
+            }
+            for (k = 0; k < world->numObjectives; k++) {
+                objective = &world->objectives[k];
+                info = objective->info;
+                if (info[2] == id) {
+                    if (info[1] == 0x17) {
+                        InterfaceManager_SetMissionObjectiveText((u8 *)slot, objective);
+                    } else {
+                        InterfaceManager_SetObjectText((u8 *)slot, NULL);
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+    }
+}
+
 void InterfaceManager_SetObjectString(u8 *obj, char *str) {
     u32 strlen(const char *s);
     char *strncpy(char *dst, const char *src, u32 n);
