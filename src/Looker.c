@@ -1,6 +1,38 @@
 #include "common.h"
 
 
+s32 Looker_Init(u8 *looker, u8 *init) {
+    typedef struct { f32 x, y, z, w; } Vec4;
+    void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
+    void ThingManagerList_Append(void **arg0, void *arg1);
+    Vector4 params;
+    u8 *slave;
+    void *world;
+
+    Thing_Init(looker, 0);
+    M2C_FIELD(looker, u32 *, 0x74) |= 2;
+    M2C_FIELD(looker, f32 *, 0xB4) = 0.0f;
+    M2C_FIELD(looker, f32 *, 0xB8) = 0.0f;
+    params.x = 0.0f;
+    params.y = 2.0f;
+    params.z = 1.0f;
+    slave = ThingManager_DARYL_CreateSlave(8, &params, 0xFF);
+    if (slave != NULL) {
+        slave[0x83] = 0;
+        ThingManagerList_Append((void **)(looker + 0x88), slave);
+    }
+    world = g_worldData.world;
+    if (M2C_FIELD(world, u32 *, 0x8) != 0) {
+        M2C_FIELD(looker, Vec4 *, 0x40) = *M2C_FIELD(world, Vec4 **, 0xC);
+    }
+    M2C_FIELD(looker, s16 *, 0x80) = 3;
+    M2C_FIELD(looker, s32 *, 0xBC) = 0;
+    M2C_FIELD(looker, f32 *, 0xCC) = 60.0f;
+    M2C_FIELD(looker, s32 *, 0xC4) = -1;
+    M2C_FIELD(looker, s32 *, 0xC8) = -1;
+    return 1;
+}
+
 s32 Looker_PreMove(u8 *thing) {
     typedef struct {
         s8 lookX;

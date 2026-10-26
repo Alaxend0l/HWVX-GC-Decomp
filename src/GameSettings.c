@@ -178,6 +178,54 @@ ControllerSettings *GameSettings_GetControllerSettings(s32 player) {
     return &g_generalGameSettings.controllers[player - 1];
 }
 
+void GameSettings_GetGameInfo(void *info) {
+    typedef struct GameInfo {
+        const char *name;
+        const char *id;
+        const char *title;
+        const char *fileName;
+        const char *icon;
+        s32 unk14;
+        s32 unk18;
+    } GameInfo;
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    extern GameInfo g_gameInfo[];
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    void *pack;
+
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        ((GameInfo *)info)->name = g_gameInfo[mcp[1]].name;
+        ((GameInfo *)info)->id = g_gameInfo[mcp[1]].id;
+        ((GameInfo *)info)->title = g_gameInfo[mcp[1]].title;
+        ((GameInfo *)info)->fileName = g_gameInfo[mcp[1]].fileName;
+        ((GameInfo *)info)->icon = g_gameInfo[mcp[1]].icon;
+        ((GameInfo *)info)->unk14 = g_gameInfo[mcp[1]].unk14;
+        ((GameInfo *)info)->unk18 = g_gameInfo[mcp[1]].unk18;
+    } else {
+        ((GameInfo *)info)->name = "XXXXXXXXXXXXXXXXXXX";
+        ((GameInfo *)info)->id = "SLUS_001.00";
+        ((GameInfo *)info)->title = "XXXXXXXXXXX";
+        ((GameInfo *)info)->fileName = "saveFile";
+        ((GameInfo *)info)->icon = "mm.ico";
+        ((GameInfo *)info)->unk14 = 0;
+        ((GameInfo *)info)->unk18 = 0;
+    }
+}
+
 AudioSettings *GameSettings_GetAudioSettings(void) {
     return &g_generalGameSettings.audio;
 }
