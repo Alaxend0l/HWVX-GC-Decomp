@@ -416,6 +416,22 @@ s32 VDevice_Initialize(VDevice *dev, s32 *index)
     return 0;
 }
 
+#pragma push
+#pragma optimize_for_size on
+s32 VDevice_Shutdown(VDevice *dev)
+{
+    s32 i;
+
+    for (i = 0; i < 64; i++)
+    {
+        if (dev->activeEffects[i] != NULL)
+        {
+            dev->activeEffects[i] = NULL;
+        }
+    }
+    return 0;
+}
+
 #pragma pop
 
 #pragma pop
