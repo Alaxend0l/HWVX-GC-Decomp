@@ -21,6 +21,14 @@ void World_Init(void) {
     fn_800957D4();
 }
 
+void *World_GetGameData(void) {
+    void *world = g_worldData.world;
+    if (world != NULL) {
+        return M2C_FIELD(world, void **, 0x9C);
+    }
+    return NULL;
+}
+
 s32 ActionItemChangeMode(u32 *action) {
     u32 i;
     u8 *item;
