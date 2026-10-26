@@ -31,24 +31,26 @@ void AudioMIDI_Destroy(void)
 {
 }
 
+#pragma push
+#pragma optimization_level 1
 void SetMIDIVol(void)
 {
+    MIDI_CHN *chn;
+    MIDI_VOICE *voice;
+    s32 i;
     void SetGVol(void *chn);
     void SetVoiceVol_(void *voice, s32 vol);
-    u8 *chn;
-    u8 *voice;
-    s32 i;
 
-    for (chn = (u8 *)g_chn, i = 0x10; i != 0; chn += 0x20, i--)
+    for (chn = g_chn, i = 0x10; i != 0; chn++, i--)
     {
         SetGVol(chn);
-        for (voice = *(u8 **)chn; voice != NULL; voice = *(u8 **)((u8 *)voice + 4))
+        for (voice = chn->voice; voice != NULL; voice = voice->next)
         {
-            SetVoiceVol_(voice, *(s32 *)((u8 *)chn + 0x14));
+            SetVoiceVol_(voice, chn->vol);
         }
     }
 }
-
+#pragma pop
 void SetMIDITempo(u32 tempo)
 {
     extern void *g_pHdr;
