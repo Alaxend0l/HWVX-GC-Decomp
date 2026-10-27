@@ -28,9 +28,14 @@ typedef struct CARDControl {
     s32 offset;                // 0xB4
     u8 unkB8[0xBE - 0xB8];
     u16 startBlock;            // 0xBE
-    CARDFileInfo *fileInfo;    // 0xC0
-    CARDCallback extCallback;  // 0xC4  txCallback 0xC8  exiCallback 0xCC
-    CARDCallback apiCallback;  // 0xD0  xferCallback 0xD4  eraseCallback 0xD8  unlockCallback 0xDC
+    CARDFileInfo *fileInfo;      // 0xC0
+    CARDCallback extCallback;    // 0xC4
+    CARDCallback txCallback;     // 0xC8
+    CARDCallback exiCallback;    // 0xCC
+    CARDCallback apiCallback;    // 0xD0
+    CARDCallback xferCallback;   // 0xD4
+    CARDCallback eraseCallback;  // 0xD8
+    CARDCallback unlockCallback; // 0xDC
     u8 alarm[0x28];            // 0xE0
     u8 unk108[0x110 - 0x108];
 } CARDControl;
@@ -40,3 +45,20 @@ extern CARDControl __CARDBlock[2];
 s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, void *callback);
 s32 __CARDPutControlBlock(void *card, s32 result);
 static void WriteCallback(s32 chan, s32 result);
+
+void EraseCallback(s32 chan, s32 result) {
+    CARDControl *card;
+    CARDCallback callback;
+
+    card = &__CARDBlock[chan];
+    if (result >= 0) {
+        result = __CARDWrite(chan, card->fileInfo->iBlock * card->sectorSize, card->sectorSize, (void *)card->offset, WriteCallback);
+        if (result >= 0) {
+            return;
+        }
+    }
+    callback = card->apiCallback;
+    card->apiCallback = NULL;
+    __CARDPutControlBlock(card, result);
+    callback(chan, result);
+}
