@@ -225,6 +225,8 @@ void SPEC2_MakeStatus(s32 chan, void *arg1, u32 *data)
     ClampU8(&status->triggerRight, origin->triggerRight);
 }
 
+#pragma push
+#pragma peephole off
 BOOL OnReset(BOOL final)
 {
     static BOOL recalibrated = FALSE;
@@ -271,6 +273,7 @@ BOOL OnReset(BOOL final)
     recalibrated = FALSE;
     return TRUE;
 }
+#pragma pop
 
 static void SamplingHandler(s16 interrupt, void *context)
 {
