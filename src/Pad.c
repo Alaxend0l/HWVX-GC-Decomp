@@ -19,6 +19,7 @@ s32 SIGetTypeAsync(s32, void (*)(void));
 void PADTypeAndStatusCallback(void);
 BOOL SIBusy(void);
 void *memset(void *, int, u32);
+void *PADSetSamplingCallback(void (*callback)(void));
 
 u32 ResettingChan = 0x20;
 u32 XPatchBits = 0xF0000000;
