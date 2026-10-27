@@ -13,6 +13,50 @@ void Projectile_Release(void * projectile)
     ((s32 *)projectile)[0x23] = (s32)g_projectileVTable;
 }
 
+s32 Projectile_PreMove(u8 *proj)
+{
+    void GenerateQuaternion(void *axis, void *q, f32 angle);
+    void QuaternionMult(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    f32 Sqrt(f32 x);
+    void Projectile_ProximityDetection(void *proj);
+    extern f32 g_fDeltaTimeSec;
+    Vector4 q;
+    Vector4 result;
+    void *temp;
+    f32 step;
+    f32 mag;
+    f32 scale;
+
+    GenerateQuaternion(proj + 0xB0, &q, ((f32 *)proj)[0x4F] * g_fDeltaTimeSec);
+    QuaternionMult((Vector4 *)(proj + 0x50), &q, &result);
+    *(Vector4 *)(proj + 0x50) = result;
+    ((f32 *)proj)[1] += ((f32 *)proj)[0x52] * g_fDeltaTimeSec;
+    temp = ((void **)proj)[0x48];
+    if (((f32 *)temp)[0x10])
+    {
+        step = ((f32 *)temp)[0x10] * g_fDeltaTimeSec;
+        ((f32 *)proj)[0] += ((f32 *)(proj + 0x30))[0] * step;
+        ((f32 *)proj)[1] += ((f32 *)(proj + 0x30))[1] * step;
+        ((f32 *)proj)[2] += ((f32 *)(proj + 0x30))[2] * step;
+    }
+    mag = PSVECSquareMag((Vector4 *)proj);
+    temp = ((void **)proj)[0x48];
+    if (mag > (((f32 *)temp)[0x11] * ((f32 *)temp)[0x11]))
+    {
+        scale = 1.0f / Sqrt(mag);
+        ((f32 *)proj)[0] *= scale;
+        ((f32 *)proj)[1] *= scale;
+        ((f32 *)proj)[2] *= scale;
+    }
+    temp = ((void **)proj)[0x48];
+    if (((f32 *)temp)[0xD])
+    {
+        Projectile_ProximityDetection(proj);
+    }
+    return 1;
+}
+
 void Projectile_YAim(u8 *proj, Vector4 *target)
 {
     void InverseXformVec(void *mtx, Vector4 *in, Vector4 *out);
