@@ -200,6 +200,59 @@ void LGWheels::PlayDamperForce(s32 chan, u8 coefficient, s16 offset)
 		OSReport("ERROR: trying to play a force on port %d but no wheel opened.\n", chan);
 	}
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void LGWheels::PlayFrontalCollisionForce(s32 chan, u8 force)
+{
+	if (limbo.IsOpened(chan))
+	{
+	 if (periodicForce.playing[chan][0])
+		{
+		 if (SameFrontalCollisionForceParams(chan, force))
+			{
+		 ((Force *) &periodicForce)->Start(chan, 0);
+			}
+		 else
+			{
+			 if (periodicForce.UpdateForce(chan, 0, 3, 150, 0, force, 90, 75, 0, 0, 0, 20, 0, 0) >= 0)
+				{
+				 limbi[chan] = force;
+				}
+		 ((Force *) &periodicForce)->Start(chan, 0);
+			}
+		}
+	 else
+		{
+		 if (periodicForce.ids[chan][0] == -1)
+			{
+			 if (periodicForce.DownloadForce(chan, 0, limbo.overallGainId[chan], 3, 150, 0, force, 90, 75, 0, 0, 0, 20, 0, 0) >= 0)
+				{
+				 limbi[chan] = force;
+				}
+		 ((Force *) &periodicForce)->Start(chan, 0);
+			}
+		 else if (SameFrontalCollisionForceParams(chan, force))
+			{
+		 ((Force *) &periodicForce)->Start(chan, 0);
+			}
+		 else
+			{
+			 if (periodicForce.UpdateForce(chan, 0, 3, 150, 0, force, 90, 75, 0, 0, 0, 20, 0, 0) >= 0)
+				{
+				 limbi[chan] = force;
+				}
+		 ((Force *) &periodicForce)->Start(chan, 0);
+			}
+		}
+	}
+ else
+	{
+	 OSReport("ERROR: trying to play a force on port %d but no wheel opened.\n", chan);
+	}
+}
+#pragma pop
+
 #pragma pop
 
 #pragma pop
