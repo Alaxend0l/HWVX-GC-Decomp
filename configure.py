@@ -611,7 +611,7 @@ config.libs = [
             Object(NonMatching, "AmcExi2Stubs.c"),
             Object(Matching, "odenotstub.c"),
             Object(NonMatching, "etc/gba.c", mw_version="GC/1.3"),
-            Object(NonMatching, "Constant.cpp", mw_version="GC/1.3"),
+            Object(Matching, "Constant.cpp", mw_version="GC/1.3"),
             Object(NonMatching, "Force.cpp", mw_version="GC/1.3"),
             Object(NonMatching, "LGWheels.cpp", mw_version="GC/1.3"),
             Object(NonMatching, "Periodic.cpp", mw_version="GC/1.3"),
