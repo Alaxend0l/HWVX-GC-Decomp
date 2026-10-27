@@ -96,10 +96,18 @@ typedef struct Constant
 
 typedef struct Periodic
 {
-	u8		playing[4][8];		/* 0x000 is this channel playing this slot? */
+	u8		playing[4][8];			/* 0x000 is this channel playing this slot? */
 	/* 0x020 */
-	u32		ids[4][8];		/* 0x020 effect ids, -1 once the slot is free */
+	u32		ids[4][8];			/* 0x020 effect ids, -1 once the slot is free */
 	/* 0x0A0 */
+
+		/* The effect classes' methods, in main/Periodic: periodic effect 1 is the
+		 * slot PlayFrontalCollisionForce plays. */
+		/* 0x0 */
+		long DownloadForce(long chan, long effect, unsigned long &device, unsigned char type, unsigned long duration, unsigned long startDelay, unsigned char saturation, unsigned short offset, unsigned short coefficient, unsigned short end, short decay, unsigned long rate, unsigned long repeatTime, unsigned char a, unsigned char b);
+		/* 0x0A0 */
+		long UpdateForce(long chan, long effect, unsigned char type, unsigned long duration, unsigned long startDelay, unsigned char saturation, unsigned short offset, unsigned short coefficient, unsigned short end, short decay, unsigned long rate, unsigned long repeatTime, unsigned char a, unsigned char b);
+		/* 0x0 */
 } Periodic;
 
 typedef struct Ramp
