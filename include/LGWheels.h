@@ -70,6 +70,14 @@ typedef struct Condition
 	/* 0x020 */
 	u32		ids[4][8];		/* 0x020 effect ids, -1 once the slot is free */
 	/* 0x0A0 */
+
+	/* The condition class's methods, in main/Condition: damper effect 1 is the
+	 * slot LGWheels' PlayDamperForce plays. */
+	/* 0x0 */
+	long DownloadForce(long chan, long effect, unsigned long &device, unsigned char type, unsigned long duration, unsigned long startDelay, signed char offset, unsigned char deadband, unsigned char saturationPos, unsigned char saturationNeg, short coefficientPos, short coefficientNeg);
+	/* 0x0 */
+	long UpdateForce(long chan, long effect, unsigned char type, unsigned long duration, unsigned long startDelay, signed char offset, unsigned char deadband, unsigned char saturationPos, unsigned char saturationNeg, short coefficientPos, short coefficientNeg);
+	/* 0x0 */
 } Condition;
 
 typedef struct Constant
