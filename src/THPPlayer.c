@@ -313,6 +313,92 @@ returnFalse:
     return FALSE;
 }
 
+s32 THPPlayerAudioOutput(s16 *destination, u32 sample, s32 volume)
+{
+    s32 ret;
+    u32 requestSample;
+    s16 *dst;
+    u16 vol;
+    u32 sampleNum;
+    s16 *src;
+    s32 mix;
+    u32 i;
+    THPAudioBuffer *buf;
+
+    if (volume < 0)
+    {
+        volume = 0;
+    }
+    if (volume > 0x7F)
+    {
+        volume = 0x7F;
+    }
+    vol = VolumeTable[volume];
+    if (ActivePlayer.open && ActivePlayer.unk9D == 2 && ActivePlayer.audioExist)
+    {
+        requestSample = sample;
+        dst = destination;
+        ret = 0;
+        while (TRUE)
+        {
+            if (ActivePlayer.audioBuffer == NULL)
+            {
+                buf = PopDecodedAudioBuffer(0);
+                ActivePlayer.audioBuffer = buf;
+                if (buf == NULL)
+                {
+                    break;
+                }
+                ActivePlayer.audioFrameNumber = buf->frameNumber;
+            }
+            sampleNum = ActivePlayer.audioBuffer->validSample;
+            if (sampleNum)
+            {
+                if (sampleNum >= requestSample)
+                {
+                    sampleNum = requestSample;
+                }
+                src = ActivePlayer.audioBuffer->curPtr;
+                for (i = 0; i < sampleNum * 2; i++)
+                {
+                    mix = *dst + ((vol * *src) >> 15);
+                    if (mix < -32767)
+                    {
+                        mix = -32767;
+                    }
+                    if (mix > 32768)
+                    {
+                        mix = 32768;
+                    }
+                    *dst = mix;
+                    dst++;
+                    src++;
+                }
+                ret += sampleNum;
+                requestSample -= sampleNum;
+                ActivePlayer.audioBuffer->validSample -= sampleNum;
+                ActivePlayer.audioBuffer->curPtr = src;
+                if (ActivePlayer.audioBuffer->validSample == 0)
+                {
+                    PushFreeAudioBuffer(ActivePlayer.audioBuffer);
+                    buf = PopDecodedAudioBuffer(0);
+                    ActivePlayer.audioBuffer = buf;
+                    if (buf != NULL)
+                    {
+                        ActivePlayer.audioFrameNumber = buf->frameNumber;
+                    }
+                }
+                if (requestSample == 0)
+                {
+                    break;
+                }
+            }
+        }
+        return ret;
+    }
+    return 0;
+}
+
 BOOL THPPlayerGetVideoInfo(void *videoInfo)
 {
     if (ActivePlayer.open)
