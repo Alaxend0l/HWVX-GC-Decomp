@@ -160,7 +160,7 @@ typedef struct LGWheels
 		/* 0x1416 */
             u8		IsConnected(s32 chan);
         /* 0x1416 */
-		u8		PlayConstantForce(s32 chan, s16 magnitude, u16 direction);
+		void		PlayConstantForce(s32 chan, s16 magnitude, u16 direction);
 		/* 0x1416 */
 		u8		SameConstantForceParams(s32 chan, s16 magnitude, u16 direction);
 		/* 0x1416 */
