@@ -13,6 +13,93 @@ void Projectile_Release(void * projectile)
     ((s32 *)projectile)[0x23] = (s32)g_projectileVTable;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void Projectile_ProximityDetection(u8 *proj)
+{
+    extern s32 g_iDeltaTimeMS;
+    extern Vector4 g_zeroVector;
+    extern u8 g_projectileVTable[];
+    void *Thing_GetSource(void *thing);
+    s32 ThingManager_GetActiveCars(u8 **cars, s32 max);
+    f32 PSVECSquareDistance(void *a, void *b);
+    void InverseXformVec(void *mtx, Vector4 *in, Vector4 *out);
+    void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    void ThingManagerList_Append(void *list, void *thing);
+    void LensFlare_Delete(s32 flare);
+    void Thing_Release(s32 thing);
+    void LightHolder_Delete(s32 light);
+    struct { Vector4 a; Vector4 b; Vector4 c; Vector4 zero; u32 id; s32 player; f32 f0; f32 f1; } p __attribute__((aligned(16)));
+    u8 *cars[16];
+    u32 count, i;
+    void *source;
+    f32 radius;
+    u8 *info;
+    u32 id;
+    u8 *slave;
+    radius = ((f32 *)((void **)proj)[0x48])[0xD];
+    source = Thing_GetSource(proj);
+    ((s32 *)proj)[0x51] -= g_iDeltaTimeMS;
+    if (((s32 *)proj)[0x51] < 0)
+    {
+        count = ThingManager_GetActiveCars(cars, 16);
+        for (i = 0; i < count; i++)
+        {
+            if (cars[i] != source)
+            {
+                if (PSVECSquareDistance(proj + 0x40, cars[i] + 0x40) < (radius + ((f32 *)cars[i])[0x1C]) * (radius + ((f32 *)cars[i])[0x1C]))
+                {
+                    info = ((void **)proj)[0x48];
+                    id = ((u32 *)info)[0x1D];
+                    if (id != 0)
+                    {
+                        p.f0 = 0.0f;
+                        p.f1 = 0.0f;
+                        p.player = ((s32 *)proj)[0x25];
+                        p.id = id;
+                        p.zero = g_zeroVector;
+                        if (((u8 *)info)[7] != 0)
+                        {
+                            p.b = *(Vector4 *)(proj + 0x50);
+                            p.c.x = 0.0f;
+                            p.c.y = 0.0f;
+                            p.c.z = 0.0f;
+                            InverseXformVec(cars[i] + 0x10, (Vector4 *)(proj + 0x40), &p.a);
+                            slave = ThingManager_DARYL_CreateSlave(1, &p, 0xFF);
+                            if (slave != NULL)
+                            {
+                                slave[0x83] = 0;
+                                ThingManagerList_Append(cars[i] + 0x88, slave);
+                            }
+                        }
+                        else
+                        {
+                            p.c = *(Vector4 *)(proj + 0x00);
+                            p.a = *(Vector4 *)(proj + 0x40);
+                            p.b.w = 1.0f;
+                            p.b.x = 0.0f;
+                            p.b.y = 0.0f;
+                            p.b.z = 0.0f;
+                            ThingManager_DARYL_CreateThing(1, &p);
+                        }
+                    }
+                    ((Vector4 *)proj)->x = 0.0f;
+                    ((Vector4 *)proj)->y = 0.0f;
+                    ((Vector4 *)proj)->z = 0.0f;
+                    LensFlare_Delete(((s32 *)proj)[0x4C]);
+                    Thing_Release((s32)proj);
+                    LightHolder_Delete(((s32 *)proj)[0x4D]);
+                    *(void **)(proj + 0x8C) = g_projectileVTable;
+                    ((u32 *)proj)[0x1D] |= 2;
+                    return;
+                }
+            }
+        }
+        ((s32 *)proj)[0x51] += ((s32 *)((void **)proj)[0x48])[0xE];
+    }
+}
+#pragma pop
 s32 Projectile_PreMove(u8 *proj)
 {
     void GenerateQuaternion(void *axis, void *q, f32 angle);
