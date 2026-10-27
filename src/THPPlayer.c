@@ -31,6 +31,11 @@ typedef struct THPPlayer {
     u32 unkC4;
     u32 unkC8;
     u32 unkCC;
+    u32 unkD0;
+    u8 padD4[4];
+    s32 audioFrameNumber;
+    u8 padDC[4];
+    struct THPAudioBuffer *audioBuffer;
 } THPPlayer;
 
 extern THPPlayer ActivePlayer;
