@@ -46,5 +46,5 @@ desc.fadeLevel = fadeLevel;
 		effectIds[chan][effect] = 0xFFFFFFFF;
 		}
 
-		// return
+		return result;
 }
