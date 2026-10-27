@@ -24,6 +24,8 @@ static PADStatus s_unkD8[4];
 extern u16 g_pKeyToDI[20];
 extern void *wheels;
 u8 IsOpened__8LGWheelsFl(void *wheels, s32 chan);
+void PlaySpringForce__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 saturation, s16 coefficient);
+void PlayFrontalCollisionForce__8LGWheelsFlUc(void *wheels, s32 chan, u8 force);
 
 void Input_Destroy(void) {
     M2C_UNK PADControlMotor(M2C_UNK, M2C_UNK);
