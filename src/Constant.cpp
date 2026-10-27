@@ -11,6 +11,7 @@ Constant::Constant()
 extern "C" void OSReport(const char *msg, ...);
 extern "C" long LGUpdateForceEffect(unsigned long handle, unsigned char *desc);
 extern "C" void memset(void *, int, unsigned long);
+extern "C" long LGDownloadForceEffect(unsigned long device, unsigned long *effectId, unsigned char *desc);
 
 struct ForceDesc
 {
