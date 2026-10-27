@@ -57,6 +57,59 @@ s32 Projectile_PreMove(u8 *proj)
     return 1;
 }
 
+void Projectile_Draw(u8 *proj)
+{
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void MultiplyMatrix(Matrix4 *a, void *b, Matrix4 *out);
+    void *memset(void *dst, s32 val, u32 n);
+    void Gfx_SetBaseColor(u32 *color);
+    void Gfx_EnableState(s32 state);
+    void Gfx_DisableState(s32 state);
+    void Gfx_DrawGeometry(void *geom, void *mtx);
+    void *Gfx_AddBillBoardSprite(u16 arg0);
+    void *sprite;
+    Matrix4 mtx __attribute__((aligned(16)));
+    Matrix4 scale __attribute__((aligned(16)));
+    u32 color;
+
+    if (((u8 *)((void **)proj)[0x48])[0] == 1)
+    {
+        QuaternionToSubMatrix(proj + 0x50, proj + 0x10);
+        memset(&scale, 0, sizeof(Matrix4));
+        scale.v[0].x = ((f32 *)proj)[0x30];
+        scale.v[1].y = ((f32 *)proj)[0x31];
+        scale.v[2].z = ((f32 *)proj)[0x32];
+        scale.v[3].w = 1.0f;
+        MultiplyMatrix(&scale, proj + 0x10, &mtx);
+        switch (((u8 *)((void **)proj)[0x48])[1])
+        {
+        case 0:
+            if (((u32 *)proj)[0x1d] & 0x4000)
+            {
+                color = ((u32 *)proj)[0x45];
+                Gfx_SetBaseColor(&color);
+                Gfx_EnableState(0x10);
+            }
+            Gfx_DrawGeometry(((void **)((void **)proj)[0x48])[4], &mtx);
+            if (((u32 *)proj)[0x1d] & 0x4000)
+            {
+                Gfx_DisableState(0x10);
+            }
+            break;
+        case 1:
+            sprite = Gfx_AddBillBoardSprite(0);
+            *(u8 *)((u8 *)sprite + 0x2a) = *(u8 *)((void **)((void **)proj)[0x48])[0x18];
+            *(u32 *)((u8 *)sprite + 0x24) = ((u32 *)proj)[0x45];
+            *(f32 *)((u8 *)sprite + 0xc) = ((f32 *)proj)[0x30];
+            *(f32 *)((u8 *)sprite + 0x0) = ((f32 *)proj)[0x10];
+            *(f32 *)((u8 *)sprite + 0x4) = ((f32 *)proj)[0x11];
+            *(f32 *)((u8 *)sprite + 0x8) = ((f32 *)proj)[0x12];
+            *(f32 *)((u8 *)sprite + 0x1c) = 360.0f;
+            break;
+        }
+    }
+}
+
 void Projectile_YAim(u8 *proj, Vector4 *target)
 {
     void InverseXformVec(void *mtx, Vector4 *in, Vector4 *out);
