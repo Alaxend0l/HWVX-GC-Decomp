@@ -458,6 +458,74 @@ void LGInit(void)
         g_lgInitialized = 1;
     }
 }
+
+s32 LGOpen(s32 chan, LGDevice **out)
+{
+    void InitDevice(LGDevice *device, s32 index);
+    s32 SIResetSteeringAsync(s32 chan, void *callback);
+    void SIReadSteering(s32 chan, SISteeringStatus *status);
+    void HandlePedals(u8 *cur, SISteeringStatus *status, SISteeringStatus *calib);
+    void HandleTriggers(u8 *cur, SISteeringStatus *status, SISteeringStatus *calib);
+    s32 VDevice_Initialize(VDevice *dev, s32 owner);
+    s32 LGClose(LGDevice *device);
+    void AutoCalibrateAxisSigned(s8 *min, s8 *max, s8 value, s8 deadzone, s8 *out);
+    LGDevice *device;
+    SISteeringStatus *calib;
+    SISteeringStatus *status;
+    u8 *cur;
+
+    if (chan >= 4 || chan < 0)
+    {
+        return -2;
+    }
+    if (out == NULL)
+    {
+        return -2;
+    }
+    device = &g_lgDevices[chan];
+    if (device->started)
+    {
+        LGClose(device);
+    }
+    if (device->opened)
+    {
+        *out = (LGDevice *)device->unk8;
+        return -3;
+    }
+    if (SIResetSteeringAsync(chan, SteeringResetCallback) != -1)
+    {
+        InitDevice(device, chan);
+        status = &device->status;
+        SIReadSteering(chan, status);
+        switch ((s8)g_lgDevices[chan].status.err)
+        {
+        case -1:
+            g_lgDevices[chan].unk4D = -1;
+            return -4;
+        case 0:
+            calib = &device->calibMin;
+            cur = (u8 *)&device->curButton;
+            AutoCalibrateAxisSigned(&calib->steering, &calib[1].steering,
+                                    g_lgDevices[chan].status.steering,
+                                    g_lgDevices[chan].calibDeadzone.steering, (s8 *)cur + 3);
+            HandlePedals(cur, status, calib);
+            HandleTriggers(cur, status, calib);
+            g_lgDevices[chan].curButton = g_lgDevices[chan].status.button;
+            g_lgDevices[chan].curMisc = g_lgDevices[chan].status.misc;
+            g_lgDevices[chan].prev = g_lgDevices[chan].status;
+            g_lgDevices[chan].unk4D = 0;
+        }
+        g_lgDevices[chan].unk4D = 0;
+        *out = device;
+        *(s32 *)&device->unk0[0] = chan;
+        device->unk8 = (s32)*out;
+        VDevice_Initialize(&device->vdev, (s32)device);
+        device->opened = 1;
+        return 0;
+    }
+    return -4;
+}
+
 #pragma pop
 
 s32 LGClose(LGDevice *device)
