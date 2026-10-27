@@ -155,6 +155,8 @@ void SteeringResetCallback(s32 index, s32 result)
         g_lgDevices[index].unk4D = -1;
 }
 
+#pragma dont_inline on
+
 s8 AutoCalibrateAxisSigned(s8 *min, s8 *max, s8 value, s8 deadzone, s8 *out)
 {
     s32 lo = *min;
@@ -211,6 +213,47 @@ u8 AutoCalibrateAxisUnsigned(u8 *min, u8 *max, u8 value, u8 deadzone, u8 *out)
         result = 255;
     *out = result;
     return result;
+}
+
+#pragma push
+#pragma optimize_for_size on
+void SteeringSamplingCallback(void)
+{
+    void SIReadSteering(s32 chan, SISteeringStatus *status);
+    void HandlePedals(void *cur, SISteeringStatus *status, SISteeringStatus *calib);
+    void HandleTriggers(void *cur, SISteeringStatus *status, SISteeringStatus *calib);
+    void SimThread_Step(VDevice *dev);
+    s32 i;
+    LGDevice *device;
+    SISteeringStatus *status;
+
+    for (i = 0; i < 4; i++)
+    {
+        device = &g_lgDevices[i];
+        if (device->opened)
+        {
+            status = &device->status;
+            SIReadSteering(i, status);
+            if ((s8)status->err == 0)
+            {
+                AutoCalibrateAxisSigned(&device->calibMin.steering, &device->calibMax.steering,
+                                        status->steering, device->calibDeadzone.steering,
+                                        &device->curSteering);
+                HandlePedals(&device->curButton, status, &device->calibMin);
+                HandleTriggers(&device->curButton, status, &device->calibMin);
+                device->curButton = status->button;
+                device->curMisc = status->misc;
+                device->prev = *status;
+                device->unk4D = 0;
+                SimThread_Step(&device->vdev);
+            }
+            else if ((s8)status->err == -1)
+            {
+                device->unk4D = -1;
+                device->started = 1;
+            }
+        }
+    }
 }
 
 #pragma push
