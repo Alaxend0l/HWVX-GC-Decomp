@@ -63,6 +63,9 @@ void OSResetSystem(s32 reset, u32 resetCode, s32 forceMenu);
 void *memset(void *dst, s32 c, u32 n);
 void *memcpy(void *dst, const void *src, u32 n);
 s32 strcmp(const char *a, const char *b);
+extern u16 VolumeTable[];
+void *PopDecodedAudioBuffer(s32 arg0);
+void PushFreeAudioBuffer(void *arg0);
 
 #pragma push
 #pragma use_lmw_stmw on
