@@ -188,6 +188,11 @@ typedef struct LGWheels
 		/* 0x1416 */
 		/* Damper force (chan, coefficient, offset) the same ones limper plays now? */
 		/* 0x1416 */
+		/* Frontal collision force (chan, force) the port replays through the periodic effect. */
+		void		PlayFrontalCollisionForce(s32 chan, u8 force);
+		/* 0x1416 */
+		u8		SameFrontalCollisionForceParams(s32 chan, s16 force);
+		/* 0x1416 */
 } LGWheels;
 
 #endif /* LGWHEELS_H */
