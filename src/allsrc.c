@@ -285,7 +285,6 @@ s32 LGRead(SISteeringStatus *status)
     }
     return 0;
 }
-
 s32 LGUpdateForceEffect(u32 handle, u8 *desc)
 {
     s32 VDevice_UpdateEffect(VDevice *dev, u32 handle, u8 *desc);
