@@ -93,6 +93,61 @@ void LGWheels::PlayConstantForce(s32 chan, s16 magnitude, u16 direction)
 	OSReport("ERROR: trying to play a force on port %d but no wheel opened.\n", chan);
 	}
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void LGWheels::PlayDamperForce(s32 chan, u8 coefficient, s16 offset)
+{
+	if (condition.playing[chan][2])
+	{
+	 return;
+	}
+	if (limbo.IsOpened(chan))
+	{
+	 if (condition.playing[chan][1])
+		{
+			if (!SameDamperForceParams(chan, coefficient, offset))
+			{
+			 if (condition.UpdateForce(chan, 1, 8, -1, 0, 0, 0, coefficient, coefficient, offset, offset) >= 0)
+				{
+				 limper[chan].offet = coefficient;
+				 limper[chan].efficiency = offset;
+				}
+			}
+		}
+	 else
+		{
+		 if (condition.ids[chan][1] == -1)
+			{
+			 if (condition.DownloadForce(chan, 1, limbo.overallGainId[chan], 8, -1, 0, 0, 0, coefficient, coefficient, offset, offset) >= 0)
+				{
+				 limper[chan].offet = coefficient;
+				 limper[chan].efficiency = offset;
+				}
+			 ((Force *) &condition)->Start(chan, 1);
+			}
+			 else if (SameDamperForceParams(chan, coefficient, offset))
+			{
+			 ((Force *) &condition)->Start(chan, 1);
+			}
+			 else
+			{
+			 if (condition.UpdateForce(chan, 1, 8, -1, 0, 0, 0, coefficient, coefficient, offset, offset) >= 0)
+				{
+				 limper[chan].offet = coefficient;
+				 limper[chan].efficiency = offset;
+				}
+			 ((Force *) &condition)->Start(chan, 1);
+			}
+		}
+	}
+ else
+	{
+		OSReport("ERROR: trying to play a force on port %d but no wheel opened.\n", chan);
+	}
+}
+#pragma pop
+
 #pragma pop
 u8 LGWheels::IsOpened(s32 chan)
 {
