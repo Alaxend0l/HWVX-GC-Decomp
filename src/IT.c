@@ -30,6 +30,8 @@ typedef struct IT_TRACK
 
 IT_TRACK g_trk[0x20];
 
+s32 g_song[0xC];
+
 void SetVoiceState_(IT_VOICE *voice, s32 state);
 void SetVoiceVol_(IT_VOICE *voice, s32 vol);
 void StopActive(IT_TRACK *trk);
