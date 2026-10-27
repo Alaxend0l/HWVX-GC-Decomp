@@ -34,6 +34,59 @@ void LGWheels::ReadAll()
 	}
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void LGWheels::PlaySpringForce(s32 chan, s8 offset, u8 saturation, s16 coefficient)
+{
+	if (limbo.IsOpened(chan))
+	{
+	 if (condition.playing[chan][0])
+		{
+		 if (!SameSpringForceParams(chan, offset, saturation, coefficient))
+			{
+			 if (condition.UpdateForce(chan, 0, 7, -1, 0, offset, 0, saturation, saturation, coefficient, coefficient) >= 0)
+				{
+				 limp[chan].offet = offset;
+				 limp[chan].overflow = saturation;
+				 limp[chan].efficiency = coefficient;
+				}
+			}
+		}
+	 else
+		{
+		 if (condition.ids[chan][0] == -1)
+			{
+			 if (condition.DownloadForce(chan, 0, limbo.overallGainId[chan], 7, -1, 0, offset, 0, saturation, saturation, coefficient, coefficient) >= 0)
+				{
+				 limp[chan].offet = offset;
+				 limp[chan].overflow = saturation;
+				 limp[chan].efficiency = coefficient;
+				}
+			 ((Force *) &condition)->Start(chan, 0);
+			}
+		 else if (SameSpringForceParams(chan, offset, saturation, coefficient))
+			{
+			 ((Force *) &condition)->Start(chan, 0);
+			}
+		 else
+			{
+			 if (condition.UpdateForce(chan, 0, 7, -1, 0, offset, 0, saturation, saturation, coefficient, coefficient) >= 0)
+				{
+				 limp[chan].offet = offset;
+				 limp[chan].overflow = saturation;
+				 limp[chan].efficiency = coefficient;
+				}
+			 ((Force *) &condition)->Start(chan, 0);
+			}
+		}
+	}
+ else
+	{
+	 OSReport("ERROR: trying to play a force on port %d but no wheel opened.\n", chan);
+	}
+}
+#pragma pop
+
 u8 LGWheels::SameSpringForceParams(s32 chan, s8 offset, u8 saturation, s16 coefficient)
 {
 	if (limp[chan].offet == offset && limp[chan].overflow == saturation && limp[chan].efficiency == coefficient)
