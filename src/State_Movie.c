@@ -10,8 +10,9 @@ static char *StateMovie_GetNextMovieName(void) {
 	/* the name is copied out of the list one character at a time */
 	extern u32 strlen(char *);
 	static char buffer[32];
-	char *src;
-	u32 n;
+		char *src;
+	char *name;
+		u32 n;
 	u32 len;
 
 	n = 0;
