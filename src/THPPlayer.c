@@ -1,5 +1,12 @@
 #include "common.h"
 
+typedef struct THPAudioBuffer {
+    s16 *buffer;
+    s16 *curPtr;
+    u32 validSample;
+    s32 frameNumber;
+} THPAudioBuffer;
+
 typedef struct THPPlayer {
     u8 fileInfo[0x3C];
     u8 tag[4];
