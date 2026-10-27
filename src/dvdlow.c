@@ -11,7 +11,26 @@ typedef struct DVDCommand
 } DVDCommand;
 
 extern DVDCommand CommandList[3];
-static s32 NextCommandNumber;
+s32 NextCommandNumber;
 
 extern s32 Read(s32, s32, s32, s32);
 extern s32 DVDLowSeek(s32, s32);
+
+void AlarmHandler(void)
+{
+    s32 n;
+    s32 command;
+
+    n = NextCommandNumber;
+    command = CommandList[n].command;
+    if (command == 1)
+    {
+        NextCommandNumber++;
+        Read(CommandList[n].readArg1, CommandList[n].readArg2, CommandList[n].seekLba, CommandList[n].seekSectors);
+    }
+    else if (command == 2)
+    {
+        NextCommandNumber++;
+        DVDLowSeek(CommandList[n].seekLba, CommandList[n].seekSectors);
+    }
+}
