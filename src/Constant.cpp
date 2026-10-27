@@ -36,6 +36,7 @@ long Constant::UpdateForce(long chan, long effect, unsigned long duration, unsig
 	desc.attackLevel = attackLevel;
 
 			// fade
+		// fade2
 		result = LGUpdateForceEffect( effectIds[chan][effect], (unsigned char *)&desc );
 	
 		// error
