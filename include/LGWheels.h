@@ -39,6 +39,9 @@ typedef struct Wheels
 		/* 0x880 */
 		void		GenerateNonLinValues(s32 chan, u8 coefficient);
 		/* 0x880 */
+		s16		ReadAll(void);		/* opens every wheel that is connected but not open yet;
+												the channel that gave up, -1 once they all read fine */
+		/* 0x880 */
 } Wheels;
 
 /* The force-feedback effect set: 0xA0 bytes, embedded in LGWheels at 0x10AC. */
