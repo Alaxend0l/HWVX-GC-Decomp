@@ -42,7 +42,7 @@ desc.fadeLevel = fadeLevel;
 	
 		if ( result < 0 )
 {
-	OSReport( "ERROR: UpdateForce(constant force) on channel %d returned %d\n", chan, result );
+			OSReport( "ERROR: UpdateForce(constant force) on channel %d returned %d\n", chan, result );
 		}
 
 		// return
