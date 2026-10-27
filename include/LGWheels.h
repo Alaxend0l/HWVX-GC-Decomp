@@ -172,7 +172,9 @@ typedef struct LGWheels
 		/* 0x1416 */
 		u8		SameConstantForceParams(s32 chan, s16 magnitude, u16 direction);
 		/* 0x1416 */
-		void		PlayDamperForce(s32 chan, u8 coefficient, s16 offset);
+		u8		PlayDamperForce(s32 chan, u8 coefficient, s16 offset);
+		/* 0x1416 */
+		u8		SameDamperForceParams(s32 chan, u8 coefficient, s16 offset);
 		/* 0x1416 */
 		/* Damper force (chan, coefficient, offset) the same ones limper plays now? */
 		/* 0x1416 */
