@@ -43,6 +43,7 @@ desc.fadeLevel = fadeLevel;
 		if ( result < 0 )
 {
 			OSReport( "ERROR: UpdateForce(constant force) on channel %d returned %d\n", chan, result );
+		effectIds[chan][effect] = 0xFFFFFFFF;
 		}
 
 		// return
