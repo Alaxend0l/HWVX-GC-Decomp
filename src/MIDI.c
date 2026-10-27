@@ -353,7 +353,7 @@ MIDI_VOICE *DestroyVoice(MIDI_VOICE *voice)
 #pragma dont_inline on
 void FindMarkers(u8 *p)
 {
-    extern u32 g_mrk[0x40][2];
+    extern u8 g_mrk[0x40][8];
     u32 ReadVar_(u8 **pp);
     u32 n;
     u8 status;
@@ -362,9 +362,9 @@ void FindMarkers(u8 *p)
     n = 1;
     status = 8;
     chan = 0;
-    g_mrk[0][0] = (u32)p;
-    *(u8 *)&g_mrk[0][1] = status;
-    *(1 + (u8 *)&g_mrk[0][1]) = chan;
+    *(u8 **)g_mrk[0] = p;
+    g_mrk[0][4] = status;
+    g_mrk[0][5] = chan;
     for (;;)
     {
         if (*p < 0xF0)
@@ -378,13 +378,12 @@ void FindMarkers(u8 *p)
             if (status == 0xB)
             {
                 p += 2;
-                if (p[-2] == (char)'n')
+                if ((s32)p[-2] == 0x6E)
                 {
-                    *(u32 *)&g_mrk[n][0] = (u32)p;
-                    *(4 + (u8 *)&g_mrk[n][0]) = status;
-                    *(5 + (u8 *)&g_mrk[n][0]) = chan;
-                    n++;
-                    if (n >= 0x40)
+                    *(u8 **)g_mrk[n] = p;
+                    g_mrk[n][4] = status;
+                    g_mrk[n][5] = chan;
+                    if (++n >= 0x40)
                     {
                         return;
                     }
@@ -399,22 +398,22 @@ void FindMarkers(u8 *p)
                 }
             }
         }
-        else if ((*p++ & 0xF) == 0xF)
+        else if ((*p & 0xF) == 0xF)
         {
-            switch ((s8)*p)
+            p++;
+            switch ((s8)*p++)
             {
+            case 0x2F:
+                return;
             case 0x51:
                 p += 4;
                 break;
             case 0x54:
             case 0x58:
             case 0x59:
-                p++;
                 p += *p;
                 p++;
                 break;
-            case 0x2F:
-                return;
             default:
                 p += ReadVar_(&p);
                 break;
@@ -424,20 +423,20 @@ void FindMarkers(u8 *p)
         {
             switch (*p++ & 0xF)
             {
-            case 2:
-                p += 2;
-                break;
             case 0:
             case 4:
             case 5:
                 while ((s8)*p++ >= -8)
                 {
                 }
-                if ((s8)*p != -9)
+                if ((s8)p[-1] != 0xF7)
                 {
-                    p -= 2;
+                    p--;
                     continue;
                 }
+                break;
+            case 2:
+                p += 2;
                 break;
             case 1:
             case 3:
@@ -445,6 +444,7 @@ void FindMarkers(u8 *p)
                 break;
             }
         }
+        ReadVar_(&p);
     }
 }
 #pragma pop
