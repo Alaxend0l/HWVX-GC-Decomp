@@ -32,6 +32,10 @@ IT_TRACK g_trk[0x20];
 
 void SetVoiceState_(IT_VOICE *voice, s32 state);
 void SetVoiceVol_(IT_VOICE *voice, s32 vol);
+void StopActive(IT_TRACK *trk);
+void StartVoice_(void *voice);
+void *GetVoice_(u8 type, u32 priority);
+u32 GetNoteRate_(u32 rate, u8 note);
 
 void AudioIT_Destroy(void) {
 
