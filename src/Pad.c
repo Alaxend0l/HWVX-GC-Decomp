@@ -3,12 +3,22 @@
 void OSClearContext(void *);
 void OSSetCurrentContext(void *);
 
+u32 EnabledBits;
+u32 ResettingBits;
 static u32 RecalibrateBits;
 static u32 WaitingBits;
 static u32 CheckingBits;
 static u32 PendingBits;
 void (*SamplingCallback)(void);
 s32 __PADSpec;
+
+s32 OSDisableInterrupts(void);
+void OSRestoreInterrupts(s32);
+void SIDisablePolling(u32);
+s32 SIGetTypeAsync(s32, void (*)(void));
+void PADTypeAndStatusCallback(void);
+BOOL SIBusy(void);
+void *memset(void *, int, u32);
 
 u32 ResettingChan = 0x20;
 u32 XPatchBits = 0xF0000000;
