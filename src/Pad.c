@@ -21,7 +21,7 @@ BOOL SIBusy(void);
 void *memset(void *, int, u32);
 void *PADSetSamplingCallback(void (*callback)(void));
 
-u32 ResettingChan = 0x20;
+s32 ResettingChan = 0x20;
 u32 XPatchBits = 0xF0000000;
 u32 AnalogMode = 0x300;
 s32 Spec = 5;
@@ -223,6 +223,53 @@ void SPEC2_MakeStatus(s32 chan, void *arg1, u32 *data)
     ClampS8(&status->substickY, origin->substickY);
     ClampU8(&status->triggerLeft, origin->triggerLeft);
     ClampU8(&status->triggerRight, origin->triggerRight);
+}
+
+BOOL OnReset(BOOL final)
+{
+    static BOOL recalibrated = FALSE;
+    BOOL sync;
+    BOOL enabled;
+    u32 mask;
+    u32 disableBits;
+
+    if (SamplingCallback) {
+        PADSetSamplingCallback(NULL);
+    }
+    if (!final) {
+        sync = FALSE;
+        if (ResettingBits == 0 && ResettingChan == 32 && !SIBusy()) {
+            sync = TRUE;
+        }
+        if (!recalibrated && sync) {
+            mask = 0xF0000000;
+            enabled = OSDisableInterrupts();
+            mask |= PendingBits;
+            PendingBits = 0;
+            mask &= ~(WaitingBits | CheckingBits);
+            ResettingBits |= mask;
+            disableBits = ResettingBits & EnabledBits;
+            EnabledBits &= ~mask;
+            if (!(*(u8 *)0x800030E3 & 0x40)) {
+                RecalibrateBits |= mask;
+            }
+            SIDisablePolling(disableBits);
+            if (ResettingChan == 32) {
+                ResettingChan = __cntlzw(ResettingBits);
+                if (ResettingChan != 32) {
+                    ResettingBits &= ~(0x80000000U >> ResettingChan);
+                    memset(Origin[ResettingChan], 0, 12);
+                    SIGetTypeAsync(ResettingChan, PADTypeAndStatusCallback);
+                }
+            }
+            OSRestoreInterrupts(enabled);
+            recalibrated = TRUE;
+            return FALSE;
+        }
+        return sync;
+    }
+    recalibrated = FALSE;
+    return TRUE;
 }
 
 static void SamplingHandler(s16 interrupt, void *context)
