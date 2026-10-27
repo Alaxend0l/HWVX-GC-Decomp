@@ -38,7 +38,7 @@ typedef struct MIDI_SND
     u8 pad_0_10[0x10];
     u32 count;
     u32 size;
-    u8 pad_18_20[4];
+    u8 pad_18_20[8];
     MIDI_INST inst[1];
 } MIDI_SND;
 
@@ -78,18 +78,17 @@ void AudioMIDI_Destroy(void)
 #pragma optimization_level 1
 void CreateMIDI(u8 *hdr, u8 *snd)
 {
+    extern MIDI_SND *g_pSnd;
     extern void *g_pHdr;
-    extern void *g_pSnd;
-    extern void *g_pProg[0x80];
-    extern void *g_pDrum[0x80];
+    extern MIDI_INST *g_pProg[0x80];
+    extern MIDI_INST *g_pDrum[0x80];
     extern s32 g_musicState;
     extern void (*DestroySongVoice)();
     extern s32 __OSCurrHeap;
     void *OSAllocFromHeap(s32 heap, u32 size);
     void FindMarkers(u8 *p);
-    s32 CreateMIDI_(void *snd);
+    s32 CreateMIDI_(MIDI_SND *snd);
     void DestroyMIDIVoice();
-    u32 size;
     u32 i;
     s32 j;
 
@@ -97,32 +96,31 @@ void CreateMIDI(u8 *hdr, u8 *snd)
     {
         return;
     }
-    size = *(u32 *)(hdr + 4) + 8;
-    g_pHdr = OSAllocFromHeap(__OSCurrHeap, size + *(u32 *)(snd + 0x14));
-    g_pSnd = (u8 *)g_pHdr + size;
-    memcpy(g_pHdr, hdr, size);
-    memcpy(g_pSnd, snd, *(u32 *)(snd + 0x14));
-    *(u32 *)((u8 *)g_pSnd + 0x14) += (u32)snd;
+    i = *(u32 *)(hdr + 4) + 8;
+    g_pHdr = OSAllocFromHeap(__OSCurrHeap, i + *(u32 *)(snd + 0x14));
+    g_pSnd = (MIDI_SND *)((u8 *)g_pHdr + i);
+    memcpy(g_pHdr, hdr, i);
+    memcpy((u8 *)g_pSnd, snd, *(u32 *)(snd + 0x14));
+    g_pSnd->size += (u32)snd;
     FindMarkers((u8 *)g_pHdr + 0x22);
     memset(g_pProg, 0, 0x200);
     memset(g_pDrum, 0, 0x200);
     j = 0x80;
-    for (i = 0; i < *(u32 *)((u8 *)g_pSnd + 0x10); i++)
+    for (i = 0; i < g_pSnd->count; i++)
     {
-        if (*(u8 *)((u8 *)g_pSnd + (i << 5) + 0x34) != 0x80)
+        if (g_pSnd->inst[i].prog != 0x80)
         {
-            if (j != *(u8 *)((u8 *)g_pSnd + (i << 5) + 0x34))
+            if (j != g_pSnd->inst[i].prog)
             {
-                j = *(u8 *)((u8 *)g_pSnd + (i << 5) + 0x34);
-                g_pProg[j] = (u8 *)g_pSnd + (i << 5) + 0x20;
+                j = g_pSnd->inst[i].prog;
+                g_pProg[j] = &g_pSnd->inst[i];
             }
         }
         else
         {
-            for (j = *(u8 *)((u8 *)g_pSnd + (i << 5) + 0x36);
-                j <= *(u8 *)((u8 *)g_pSnd + (i << 5) + 0x37); j++)
+            for (j = g_pSnd->inst[i].lo; j <= g_pSnd->inst[i].hi; j++)
             {
-                g_pDrum[j] = (u8 *)g_pSnd + (i << 5) + 0x20;
+                g_pDrum[j] = &g_pSnd->inst[i];
             }
             j = 0x80;
         }
