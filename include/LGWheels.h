@@ -158,8 +158,12 @@ typedef struct LGWheels
 		void		ReadAll(void);		/* 0x1416 lets every wheel read; frees chan's slots in
 															 every effect class once one gives up */
 		/* 0x1416 */
-    u8 IsConnected(s32 chan);
-    /* 0x1416 */
+            u8		IsConnected(s32 chan);
+        /* 0x1416 */
+		u8		PlayConstantForce(s32 chan, s16 magnitude, u16 direction);
+		/* 0x1416 */
+		u8		SameConstantForceParams(s32 chan, s16 magnitude, u16 direction);
+		/* 0x1416 */
 } LGWheels;
 
 #endif /* LGWHEELS_H */
