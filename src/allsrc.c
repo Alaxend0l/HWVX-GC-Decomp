@@ -220,6 +220,46 @@ u8 AutoCalibrateAxisUnsigned(u8 *min, u8 *max, u8 value, u8 deadzone, u8 *out)
 #pragma push
 #pragma optimize_for_size on
 #pragma use_lmw_stmw on
+#pragma dont_inline on
+void HandleTriggers(u8 *cur, SISteeringStatus *status, SISteeringStatus *calib)
+{
+    s32 diff;
+
+    if ((status->button ^ calib[3].button) & 0x40)
+    {
+        diff = status->left - calib[2].right;
+        calib[1].right = 0 > diff ? 0 : diff;
+        cur[7] = 0xFF;
+    }
+    else if (status->button & 0x40)
+    {
+        cur[7] = 0xFF;
+    }
+    else
+    {
+        AutoCalibrateAxisUnsigned(&calib[0].right, &calib[1].right, status->left, calib[2].right, &cur[7]);
+    }
+    if ((status->button ^ calib[3].button) & 0x20)
+    {
+        diff = status->right - calib[2].err;
+        calib[1].err = 0 > diff ? 0 : diff;
+        cur[8] = 0xFF;
+    }
+    else if (status->button & 0x20)
+    {
+        cur[8] = 0xFF;
+    }
+    else
+    {
+        AutoCalibrateAxisUnsigned(&calib[0].err, &calib[1].err, status->right, calib[2].err, &cur[8]);
+    }
+}
+#pragma pop
+#pragma pop
+
+#pragma push
+#pragma optimize_for_size on
+#pragma use_lmw_stmw on
 void SteeringSamplingCallback(void)
 {
     void SIReadSteering(s32 chan, SISteeringStatus *status);
