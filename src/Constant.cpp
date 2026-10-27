@@ -29,6 +29,7 @@ long Constant::UpdateForce(long chan, long effect, unsigned long duration, unsig
 ForceDesc desc;
 long result;
 memset(&desc, 0, sizeof(desc));
+desc.type = 0;
 desc.duration = duration;
 desc.startDelay = startDelay;
 desc.magnitude = magnitude;
