@@ -39,7 +39,7 @@ typedef struct Wheels
 		/* 0x880 */
 		void		GenerateNonLinValues(s32 chan, u8 coefficient);
 		/* 0x880 */
-		s32		DownloadForce(s32 chan, s32 gainId, u32 &overallGainId, u32 max, s16 magnitude, u16 direction, u32 lockout, u8 a, u8 b, u8 c);
+		s32		DownloadForce(s32 chan, u32 &gainId, u32 max, s16 magnitude, u16 direction, u32 a, u8 b, u8 c, u8 d);
 		/* 0x880 */
 		s16		ReadAll(void);		/* opens every wheel that is connected but not open yet;
 												the channel that gave up, -1 once they all read fine */
