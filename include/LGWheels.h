@@ -145,6 +145,9 @@ typedef struct LGWheels
 		/* 0x1416 */
 		u8		SameSpringForceParams(s32 chan, s8 offset, u8 saturation, s16 coefficient);
 		/* 0x1416 */
+		void		ReadAll(void);		/* 0x1416 lets every wheel read; frees chan's slots in
+															 every effect class once one gives up */
+		/* 0x1416 */
     u8 IsConnected(s32 chan);
     /* 0x1416 */
 } LGWheels;
