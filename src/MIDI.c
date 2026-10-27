@@ -23,6 +23,25 @@ typedef struct MIDI_CHN
     u8 pad_1E_20[0x2];
 } MIDI_CHN;
 
+typedef struct MIDI_INST
+{
+    u8 pad_0_14[0x14];
+    u8 prog;
+    u8 pad_15[1];
+    u8 lo;
+    u8 hi;
+    u8 pad_18_20[8];
+} MIDI_INST;
+
+typedef struct MIDI_SND
+{
+    u8 pad_0_10[0x10];
+    u32 count;
+    u32 size;
+    u8 pad_18_20[4];
+    MIDI_INST inst[1];
+} MIDI_SND;
+
 MIDI_CHN g_chn[0x10];
 
 void SetVoiceState_(MIDI_VOICE *voice, s32 state);
@@ -57,6 +76,61 @@ void AudioMIDI_Destroy(void)
 
 #pragma push
 #pragma optimization_level 1
+void CreateMIDI(u8 *hdr, u8 *snd)
+{
+    extern void *g_pHdr;
+    extern void *g_pSnd;
+    extern void *g_pProg[0x80];
+    extern void *g_pDrum[0x80];
+    extern s32 g_musicState;
+    extern void (*DestroySongVoice)();
+    extern s32 __OSCurrHeap;
+    void *OSAllocFromHeap(s32 heap, u32 size);
+    void FindMarkers(u8 *p);
+    s32 CreateMIDI_(void *snd);
+    void DestroyMIDIVoice();
+    u32 size;
+    u32 i;
+    s32 j;
+
+    if (hdr == NULL || snd == NULL)
+    {
+        return;
+    }
+    size = *(u32 *)(hdr + 4) + 8;
+    g_pHdr = OSAllocFromHeap(__OSCurrHeap, size + *(u32 *)(snd + 0x14));
+    g_pSnd = (u8 *)g_pHdr + size;
+    memcpy(g_pHdr, hdr, size);
+    memcpy(g_pSnd, snd, *(u32 *)(snd + 0x14));
+    *(u32 *)((u8 *)g_pSnd + 0x14) += (u32)snd;
+    FindMarkers((u8 *)g_pHdr + 0x22);
+    memset(g_pProg, 0, 0x200);
+    memset(g_pDrum, 0, 0x200);
+    j = 0x80;
+    for (i = 0; i < *(u32 *)((u8 *)g_pSnd + 0x10); i++)
+    {
+        if (*(u8 *)((u8 *)g_pSnd + (i << 5) + 0x34) != 0x80)
+        {
+            if (j != *(u8 *)((u8 *)g_pSnd + (i << 5) + 0x34))
+            {
+                j = *(u8 *)((u8 *)g_pSnd + (i << 5) + 0x34);
+                g_pProg[j] = (u8 *)g_pSnd + (i << 5) + 0x20;
+            }
+        }
+        else
+        {
+            for (j = *(u8 *)((u8 *)g_pSnd + (i << 5) + 0x36);
+                j <= *(u8 *)((u8 *)g_pSnd + (i << 5) + 0x37); j++)
+            {
+                g_pDrum[j] = (u8 *)g_pSnd + (i << 5) + 0x20;
+            }
+            j = 0x80;
+        }
+    }
+    CreateMIDI_(g_pSnd);
+    g_musicState = 0;
+    DestroySongVoice = DestroyMIDIVoice;
+}
 void SetMIDIVol(void)
 {
     MIDI_CHN *chn;
