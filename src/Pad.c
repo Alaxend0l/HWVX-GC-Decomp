@@ -226,10 +226,9 @@ void SPEC2_MakeStatus(s32 chan, void *arg1, u32 *data)
 }
 
 #pragma push
-#pragma peephole off
 BOOL OnReset(BOOL final)
 {
-    static BOOL recalibrated;
+    static BOOL recalibrated = FALSE;
     BOOL sync;
     BOOL enabled;
     u32 mask;
