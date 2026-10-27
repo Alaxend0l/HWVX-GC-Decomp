@@ -217,6 +217,7 @@ u8 AutoCalibrateAxisUnsigned(u8 *min, u8 *max, u8 value, u8 deadzone, u8 *out)
 
 #pragma push
 #pragma optimize_for_size on
+#pragma use_lmw_stmw on
 void SteeringSamplingCallback(void)
 {
     void SIReadSteering(s32 chan, SISteeringStatus *status);
