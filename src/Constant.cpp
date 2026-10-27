@@ -2,6 +2,7 @@
 
 #pragma push
 #pragma use_lmw_stmw on
+#pragma readonly_strings on
 
 
 Constant::Constant()
