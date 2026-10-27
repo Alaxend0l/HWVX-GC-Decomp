@@ -40,7 +40,7 @@ static char *StateMovie_GetNextMovieName(void) {
 
 
 void StateMovie_SetMovieToPlay(s32 arg0) {
-    extern s32 g_moviePlaybackName;
+		(void) 0;
     g_moviePlaybackName = arg0;
 }
 
