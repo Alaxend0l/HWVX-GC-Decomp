@@ -74,10 +74,16 @@ typedef struct Condition
 
 typedef struct Constant
 {
-	u8		playing[4][8];		/* 0x000 is this channel playing this slot? */
+	u8		playing[4][8];			/* 0x000 is this channel playing this slot? */
 	/* 0x020 */
-	u32		ids[4][8];		/* 0x020 effect ids, -1 once the slot is free */
+	u32		ids[4][8];			/* 0x020 effect ids, -1 once the slot is free */
 	/* 0x0A0 */
+
+		/* The effect classes' methods, in main/Constant. */
+		long		DownloadForce(long chan, long effect, unsigned long &device, unsigned long duration, unsigned long startDelay, short magnitude, unsigned short direction, unsigned long attackTime, unsigned long fadeTime, unsigned char attackLevel, unsigned char fadeLevel);
+		/* 0x0A0 */
+		long		UpdateForce(long chan, long effect, unsigned long duration, unsigned long startDelay, short magnitude, unsigned short direction, unsigned long attackTime, unsigned long fadeTime, unsigned char attackLevel, unsigned char fadeLevel);
+		/* 0x0 */
 } Constant;
 
 typedef struct Periodic
