@@ -51,6 +51,8 @@ typedef struct Force
 
 		/* The gain one of these effects plays at, in main/Force. */
 		void		SetOverallForceGain(u32 &effectId, s32 gain);
+		/* Start playing one of the class's effects on a channel, in main/Force. */
+		s32		Start(s32 chan, s32 effectId);
 		/* 0x0 */
 		s32		GetOverallForceGain(u32 &effectId);
 		/* 0x0 */
