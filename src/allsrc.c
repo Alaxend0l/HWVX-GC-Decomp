@@ -369,6 +369,67 @@ void SteeringSamplingCallback(void)
     }
 }
 
+void InitDevice(LGDevice *device, s32 index)
+{
+    s32 combined;
+
+    *(s32 *)device->unk0 = index;
+    device->opened = 0;
+    device->started = 0;
+    device->unk8 = -1;
+    device->status.button = 0;
+    device->status.misc = 0;
+    device->status.steering = 0;
+    device->status.gas = 0x80;
+    device->status.brake = 0x80;
+    device->status.left = 0x80;
+    device->status.right = 0x80;
+    *(s8 *)&device->status.err = -1;
+    device->calibMin.steering = -0x40;
+    device->calibMin.right = 0x50;
+    *(u8 *)&device->calibMin.err = 0x50;
+    device->calibMax.steering = 0x40;
+    device->calibMax.right = 0xB0;
+    *(u8 *)&device->calibMax.err = 0xB0;
+    device->calibDeadzone.steering = 6;
+    device->calibDeadzone.right = 0xC;
+    *(u8 *)&device->calibDeadzone.err = 0xC;
+    device->calibMin.gas = 0x50;
+    device->calibMin.brake = 0x50;
+    combined = (device->calibMin.gas - device->calibMin.brake) / 2;
+    if (combined < -128)
+    {
+        combined = -128;
+    }
+    else if (combined > 127)
+    {
+        combined = 127;
+    }
+    device->calibMin.left = combined;
+    device->calibMax.gas = 0xB0;
+    device->calibMax.brake = 0xB0;
+    combined = (device->calibMax.gas - device->calibMax.brake) / 2;
+    if (combined < -128)
+    {
+        combined = -128;
+    }
+    else if (combined > 127)
+    {
+        combined = 127;
+    }
+    device->calibMax.left = combined;
+    device->calibDeadzone.gas = 10;
+    device->calibDeadzone.brake = 10;
+    AutoCalibrateAxisSigned(&device->calibMin.steering, &device->calibMax.steering, device->status.steering,
+                            device->calibDeadzone.steering, &device->curSteering);
+    HandlePedals((u8 *)&device->curButton, &device->status, &device->calibMin);
+    HandleTriggers((u8 *)&device->curButton, &device->status, &device->calibMin);
+    device->curButton = device->status.button;
+    device->curMisc = device->status.misc;
+    device->prev = device->status;
+    device->unk4D = 0;
+}
+
 #pragma push
 #pragma optimize_for_size on
 #pragma use_lmw_stmw on
