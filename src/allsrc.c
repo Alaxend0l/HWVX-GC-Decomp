@@ -186,6 +186,8 @@ s8 AutoCalibrateAxisSigned(s8 *min, s8 *max, s8 value, s8 deadzone, s8 *out)
     return result;
 }
 
+#pragma dont_inline off
+
 u8 AutoCalibrateAxisUnsigned(u8 *min, u8 *max, u8 value, u8 deadzone, u8 *out)
 {
     s32 lo = *min;
