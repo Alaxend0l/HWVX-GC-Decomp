@@ -557,7 +557,7 @@ config.libs = [
             Object(NonMatching, "target_options.c"),
             Object(NonMatching, "mslsupp.c"),
             Object(NonMatching, "__va_arg.c"),
-            Object(NonMatching, "global_destructor_chain.c"),
+            Object(NonMatching, "global_destructor_chain.c", mw_version="GC/1.3"),
             Object(NonMatching, "New.cp"),
             Object(NonMatching, "NewMore.cp"),
             Object(NonMatching, "NMWException.cp"),
