@@ -237,8 +237,13 @@ void SteeringSamplingCallback(void)
         {
             status = &device->status;
             SIReadSteering(i, status);
-            if ((s8)status->err == 0)
+            switch ((s8)status->err)
             {
+            case -1:
+                device->unk4D = -1;
+                device->started = 1;
+                break;
+            case 0:
                 AutoCalibrateAxisSigned(&device->calibMin.steering, &device->calibMax.steering,
                                         status->steering, device->calibDeadzone.steering,
                                         &device->curSteering);
@@ -249,11 +254,7 @@ void SteeringSamplingCallback(void)
                 device->prev = *status;
                 device->unk4D = 0;
                 SimThread_Step(&device->vdev);
-            }
-            else if ((s8)status->err == -1)
-            {
-                device->unk4D = -1;
-                device->started = 1;
+                break;
             }
         }
     }
