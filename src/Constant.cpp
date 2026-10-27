@@ -35,11 +35,8 @@ long Constant::UpdateForce(long chan, long effect, unsigned long duration, unsig
 	desc.attackTime = attackTime;
 	desc.attackLevel = attackLevel;
 
-		// fade
-
+	// fade
 		// call
-
 		// error
-
 		// return
 }
