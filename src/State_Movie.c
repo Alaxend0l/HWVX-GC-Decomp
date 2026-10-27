@@ -55,6 +55,8 @@ s32 StateMovie_Init(s32 returnState) {
 	AudioSettings *GameSettings_GetAudioSettings();
 	AudioSettings *audio;
 
+	(void) 0;
+
 	audio = GameSettings_GetAudioSettings();
 	ProcessManager_Init();
 	ProcessManager_Add("TimeHandler", 0, TimeHandler_Heartbeat, 0, 0);
