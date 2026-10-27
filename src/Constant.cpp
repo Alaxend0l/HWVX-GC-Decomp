@@ -1,5 +1,10 @@
 #include "Constant.h"
 
+extern "C" void OSReport(const char *msg, ...);
+extern "C" long LGUpdateForceEffect(unsigned long handle, unsigned char *desc);
+extern "C" void memset(void *, int, unsigned long);
+extern "C" long LGDownloadForceEffect(unsigned long device, unsigned long *effectId, unsigned char *desc);
+
 #pragma push
 #pragma use_lmw_stmw on
 #pragma readonly_strings on
