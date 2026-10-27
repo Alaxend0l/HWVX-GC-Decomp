@@ -347,4 +347,106 @@ MIDI_VOICE *DestroyVoice(MIDI_VOICE *voice)
     SetVoiceState_(voice, 3);
     return next;
 }
+
+#pragma push
+#pragma optimization_level 1
+#pragma dont_inline on
+void FindMarkers(u8 *p)
+{
+    extern u32 g_mrk[0x40][2];
+    u32 ReadVar_(u8 **pp);
+    u32 n;
+    u8 status;
+    u8 chan;
+
+    n = 1;
+    status = 8;
+    chan = 0;
+    g_mrk[0][0] = (u32)p;
+    *(u8 *)&g_mrk[0][1] = status;
+    *(1 + (u8 *)&g_mrk[0][1]) = chan;
+    for (;;)
+    {
+        if (*p < 0xF0)
+        {
+            if ((s8)*p < 0)
+            {
+                status = (*p & 0xF0) >> 4;
+                chan = *p & 0xF;
+                p++;
+            }
+            if (status == 0xB)
+            {
+                p += 2;
+                if (p[-2] == (char)'n')
+                {
+                    *(u32 *)&g_mrk[n][0] = (u32)p;
+                    *(4 + (u8 *)&g_mrk[n][0]) = status;
+                    *(5 + (u8 *)&g_mrk[n][0]) = chan;
+                    n++;
+                    if (n >= 0x40)
+                    {
+                        return;
+                    }
+                }
+            }
+            else
+            {
+                p++;
+                if (status < 0xB || status == 0xE)
+                {
+                    p++;
+                }
+            }
+        }
+        else if ((*p++ & 0xF) == 0xF)
+        {
+            switch ((s8)*p)
+            {
+            case 0x51:
+                p += 4;
+                break;
+            case 0x54:
+            case 0x58:
+            case 0x59:
+                p++;
+                p += *p;
+                p++;
+                break;
+            case 0x2F:
+                return;
+            default:
+                p += ReadVar_(&p);
+                break;
+            }
+        }
+        else
+        {
+            switch (*p++ & 0xF)
+            {
+            case 2:
+                p += 2;
+                break;
+            case 0:
+            case 4:
+            case 5:
+                while ((s8)*p++ >= -8)
+                {
+                }
+                if ((s8)*p != -9)
+                {
+                    p -= 2;
+                    continue;
+                }
+                break;
+            case 1:
+            case 3:
+                p++;
+                break;
+            }
+        }
+    }
+}
+#pragma pop
+
 #pragma pop
