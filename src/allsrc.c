@@ -102,8 +102,8 @@ typedef struct SISteeringStatus {
     u8 brake;
     u8 left;
     u8 right;
-    s8 err;
-    u8 unk9;
+    u8 err;
+    s8 unk9;
 } SISteeringStatus;
 
 typedef struct LGDevice {
@@ -249,6 +249,40 @@ s32 LGClose(LGDevice *device)
     device->started = 0;
     VDevice_Shutdown(&device->vdev);
     device->unk8 = -1;
+    return 0;
+}
+
+#pragma use_lmw_stmw on
+s32 LGRead(SISteeringStatus *status)
+{
+    s32 i;
+    LGDevice *device;
+
+    if (status == NULL)
+        return -2;
+
+    for (i = 0; i < 4; i++)
+    {
+        device = &g_lgDevices[i];
+        if (device->started)
+        {
+            if (device != NULL && (u32)device != 0xFFFFFFFF && device->opened)
+            {
+                device->opened = 0;
+                device->started = 0;
+                VDevice_Shutdown(&device->vdev);
+                device->unk8 = -1;
+            }
+        }
+        if (device->opened)
+        {
+            status[i] = *(SISteeringStatus *)&device->curButton;
+        }
+        else
+        {
+            status[i].unk9 = -1;
+        }
+    }
     return 0;
 }
 
