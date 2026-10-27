@@ -40,6 +40,10 @@ desc.fadeLevel = fadeLevel;
 
 		result = LGUpdateForceEffect( effectIds[chan][effect], (unsigned char *)&desc );
 	
-		// error
+		if ( result < 0 )
+{
+	OSReport( "ERROR: UpdateForce(constant force) on channel %d returned %d\n", chan, result );
+		}
+
 		// return
 }
