@@ -468,7 +468,80 @@ s32 Effect_StartEffect(Effect *effect)
     }
     return 0;
 }
+
+#pragma push
+#pragma optimize_for_size on
+s32 Effect_UpdateSpring(Effect *effect, EffectCondition *cond)
+{
+    s32 force;
+    s32 saturation;
+    s32 delta;
+
+    if (effect->state->position < effect->deadbandLow)
+    {
+        saturation = cond->negSaturation;
+        delta = effect->state->position - effect->deadbandLow;
+        force = delta * cond->negCoefficient / 0x20000;
+        if (-saturation > force)
+        {
+            force = -saturation;
+        }
+        if (saturation < force)
+        {
+            force = saturation;
+        }
+        return -force;
+    }
+
+    if (effect->state->position > effect->deadbandHigh)
+    {
+        saturation = cond->posSaturation;
+        delta = effect->state->position - effect->deadbandHigh;
+        force = delta * cond->posCoefficient / 0x20000;
+        if (-saturation > force)
+        {
+            force = -saturation;
+        }
+        if (saturation < force)
+        {
+            force = saturation;
+        }
+        return -force;
+    }
+    return 0;
+}
 #pragma pop
+
+#pragma push
+#pragma optimize_for_size on
+s32 Effect_UpdateDamper(Effect *effect, EffectCondition *cond)
+{
+    s32 velocity = effect->state->velocity;
+    s32 force;
+    s32 coefficient;
+    s32 saturation;
+
+    if (velocity < 0)
+    {
+        coefficient = -cond->negCoefficient;
+        saturation = cond->negSaturation;
+    }
+    else
+    {
+        coefficient = -cond->posCoefficient;
+        saturation = cond->posSaturation;
+    }
+    force = velocity * coefficient * 20 / 0xFF000;
+    if (-saturation > force)
+    {
+        force = -saturation;
+    }
+    if (force < saturation)
+    {
+        force = saturation;
+    }
+    return force;
+}
 
 #pragma pop
 
