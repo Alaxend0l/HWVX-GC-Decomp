@@ -52,7 +52,7 @@ void EraseCallback(s32 chan, s32 result) {
 
     card = &__CARDBlock[chan];
     if (result >= 0) {
-        result = __CARDWrite(chan, card->fileInfo->iBlock * card->sectorSize, card->sectorSize, (void *)card->offset, WriteCallback);
+        result = __CARDWrite(chan, card->sectorSize * card->fileInfo->iBlock, card->sectorSize, (void *)card->offset, WriteCallback);
         if (result >= 0) {
             return;
         }
