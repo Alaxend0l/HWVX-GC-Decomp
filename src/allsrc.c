@@ -133,6 +133,10 @@ LGDevice g_lgDevices[4];
 s32 g_lgInitialized;
 s32 g_bGammaInitialized;
 
+s16 g_iQuarterSineTable[0x40];
+s16 g_iRampUpTable[0x40];
+s32 g_bWaveTablesInitialized;
+
 void SimThread_Init(VDevice *dev, VDevice *owner);
 void VDevice_RecalcGammaTable(void);
 s32 VDevice_Shutdown(VDevice *dev);
