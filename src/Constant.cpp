@@ -32,4 +32,6 @@ long Constant::UpdateForce(long chan, long effect, unsigned long duration, unsig
 	desc.startDelay = startDelay;
 	desc.magnitude = magnitude;
 	desc.direction = direction;
+	desc.attackTime = attackTime;
+	desc.attackLevel = attackLevel;
 	}
