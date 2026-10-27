@@ -93,6 +93,54 @@ void SetITTrackOff(u32 mask, s8 deferred)
         mask >>= 1;
     }
 }
+
+s32 PlayNote(IT_TRACK *trk)
+{
+    u32 rate;
+    u8 stolen;
+    u8 *voice;
+    u8 *song;
+
+    stolen = 0;
+    rate = GetNoteRate_(*(u32 *)(*(u8 **)trk->pad_8_10 + 0x3C), trk->pad_12_19[7]);
+    if (rate > 0x2EE00 || rate < 0x60)
+    {
+        if (!stolen && trk->active != NULL)
+        {
+            StopActive(trk);
+        }
+        return 0;
+    }
+    if (trk->active == NULL)
+    {
+        trk->active = (IT_VOICE *)GetVoice_(0, trk->pad_12_19[0]);
+        if (trk->active == NULL)
+        {
+            return 0;
+        }
+        trk->active->track = trk->pad_8_10[8];
+        trk->active->pad_2_3[0] = trk->pad_12_19[2];
+        trk->active->next = trk->head;
+        trk->head = trk->active;
+    }
+    voice = (u8 *)trk->active;
+    *(u32 *)(voice + 0x10) = *(u32 *)trk->pad_8_10;
+    song = *(u8 **)trk->pad_8_10;
+    *(u32 *)(voice + 0x20) = *(u32 *)(song + 0x48);
+    *(s32 *)(voice + 0x24) = (song[0x12] & 0x10) ? *(s32 *)(song + 0x34) : -1;
+    *(s32 *)(voice + 0x28) = (song[0x12] & 0x10) ? *(s32 *)(song + 0x38) : *(s32 *)(song + 0x30);
+    voice[0x2C] = (song[0x12] & 2) ? 0x10 : 8;
+    *(u32 *)(voice + 0x30) = rate;
+    *(s32 *)(voice + 0x34) = g_song[7];
+    *(u32 *)(voice + 0x38) = *(u32 *)(trk->pad_30_6F + 0x14);
+    *(s32 *)(voice + 0x3C) = song[0x11] << 9;
+    *(s32 *)(voice + 0x40) = trk->pan;
+    *(s32 *)(voice + 0x44) = -0x7FFF;
+    StartVoice_((void *)voice);
+    SetVoiceVol_((IT_VOICE *)voice, trk->gvol);
+    return 1;
+}
+
 #pragma pop
 void SetTrackVol(IT_TRACK *trk)
 {
