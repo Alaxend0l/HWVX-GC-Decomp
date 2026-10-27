@@ -801,9 +801,11 @@ s32 Creature_ProcessItemPickup(u8 *creature, void *item)
     switch (*M2C_FIELD(item, u8 **, 0xC0))
     {
     case 0:
+        goto end;
     case 1:
+        goto end;
     case 2:
-        break;
+        goto end;
     case 3:
         rack = ThingManagerList_GetByType(creature + 0xE0, 8);
         if (rack != NULL)
@@ -819,6 +821,7 @@ s32 Creature_ProcessItemPickup(u8 *creature, void *item)
         }
         break;
     }
+    end:
     return 0;
 }
 

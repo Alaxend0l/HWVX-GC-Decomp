@@ -43,7 +43,6 @@ extern "C" void __init_user(void)
 }
 
 void __init_cpp(void) {
-    extern void (*_ctors[])(void);
     void (**constructor)(void);
 
     for (constructor = _ctors; *constructor; constructor++) {
