@@ -49,3 +49,19 @@ s32 LensFlare_Add(void *flare, s32 arg1, Vector4 *pos) {
     return -1;
 }
 
+void LensFlare_Delete(s32 arg0) {
+    extern u8 g_pFlare[64][0x30];
+    extern s32 g_activeFlares;
+    s32 i;
+
+    if (arg0 != -1) {
+        g_activeFlares = 0;
+        *(s32 *)g_pFlare[arg0] = 0;
+        for (i = 0; i < 64; i++) {
+            if (*(u32 *)g_pFlare[i] != 0) {
+                g_activeFlares = i + 1;
+            }
+        }
+    }
+}
+
