@@ -521,6 +521,27 @@ u32 VDevice_GetFreeEffect(VDevice *dev)
     }
     return handle;
 }
+
+#pragma push
+#pragma optimize_for_size on
+void Effect_Init(Effect *effect)
+{
+    void zero_mem_aligned(void *dst, s32 count);
+    double sin(double);
+    s32 i;
+
+    zero_mem_aligned(effect, 0x40);
+    if (g_bWaveTablesInitialized == 0)
+    {
+        for (i = 0; i < 0x40; i++)
+        {
+            g_iQuarterSineTable[i] = 1024.0f * (f32)sin((3.1415927410125732f * i) / 128.0f);
+            g_iRampUpTable[i] = (i * 0x400) / 63;
+        }
+        g_bWaveTablesInitialized = 1;
+    }
+}
+
 #pragma pop
 s32 Effect_StartEffect(Effect *effect)
 {
