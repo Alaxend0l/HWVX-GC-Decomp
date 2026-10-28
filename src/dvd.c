@@ -48,6 +48,8 @@ u32 FirstTimeInBootrom;
 u32 DVDInitialized;
 u32 LastState;
 
+#define DVD_SET_DI_REG() ((volatile u32 *)0xCC006000)[1] = ((volatile u32 *)0xCC006000)[1]
+
 
 void stateGettingError(void)
 {
