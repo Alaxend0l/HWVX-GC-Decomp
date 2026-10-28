@@ -297,11 +297,11 @@ void SetMIDITempo(u32 tempo)
 void SetMIDIMarker(u8 marker, s8 keep)
 {
     extern void *g_pHdr;
-    extern u32 g_mrk[0x40][2];
+    extern u8 g_mrk[0x40][8];
     extern u8 g_song[0x24];
     s32 flag;
 
-    if (g_pHdr != NULL && marker < 0x40 && g_mrk[marker][0] != 0)
+    if (g_pHdr != NULL && marker < 0x40 && *(u32 *)g_mrk[marker] != 0)
     {
         flag = !keep;
         g_song[0x1E] = marker;
