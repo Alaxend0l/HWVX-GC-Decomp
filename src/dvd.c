@@ -39,7 +39,7 @@ s32 FatalErrorFlag;
 u32 CurrCommand;
 u32 Canceling;
 u32 CancelCallback;
-volatile u32 ResumeFromHere;
+u32 ResumeFromHere;
 u32 CancelLastError;
 u32 LastError;
 u32 NumInternalRetry;
@@ -89,6 +89,7 @@ void stateReady(void)
     void cbForStateError(u32 code);
     void AlarmHandler(void *alarm, void *context);
     DVDCommandBlock *finished;
+    OSAlarm *alarm;
 
     if (!__DVDCheckWaitingQueue())
     {
@@ -158,8 +159,9 @@ void stateReady(void)
                 break;
             default:
                 DVDReset();
-                OSCreateAlarm((OSAlarm *)(tmpBuffer + 0xb0));
-                OSSetAlarm((OSAlarm *)(tmpBuffer + 0xb0),
+                alarm = (OSAlarm *)(tmpBuffer + 0xb0);
+                OSCreateAlarm(alarm);
+                OSSetAlarm(alarm,
                            (*(u32 *)(0x80000000 + 0xf8) / 4) / 1000 * 1150,
                            AlarmHandler);
                 break;
@@ -170,14 +172,12 @@ void stateReady(void)
             __DVDStoreErrorCode(CancelLastError);
             DVDLowStopMotor(cbForStateError);
             ResumeFromHere = 0;
-            return;
+            break;
         }
+        return;
     }
-    else
-    {
-        executing->state = 1;
-        stateBusy(executing);
-    }
+    executing->state = 1;
+    stateBusy(executing);
 }
 
 s32 DVDSetAutoInvalidation(s32 arg0) {
