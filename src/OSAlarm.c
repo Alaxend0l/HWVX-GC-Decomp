@@ -32,6 +32,83 @@ void OSCreateAlarm(s32 *arg0)
     *arg0 = 0;
 }
 
+void InsertAlarm(OSAlarm *alarm, s64 time, void *(*handler)(void *, void *))
+{
+    void PPCMtdec(u32 newDec);
+    s64 __OSGetSystemTime(void);
+    OSAlarm *cursor;
+    OSAlarm *prev;
+    s64 now;
+    s64 delta;
+
+    if (0 < alarm->fire2)
+    {
+        now = __OSGetSystemTime();
+        time = alarm->last;
+        if (alarm->last < now)
+        {
+            delta = (now - alarm->last) / alarm->fire2;
+            time += alarm->fire2 * (delta + 1);
+        }
+    }
+    alarm->handler = handler;
+    alarm->fire = time;
+    cursor = AlarmQueue.head;
+    while (cursor != NULL)
+    {
+        if (time < cursor->fire)
+        {
+            alarm->prev = cursor->prev;
+            cursor->prev = alarm;
+            alarm->next = cursor;
+            prev = alarm->prev;
+            if (prev != NULL)
+            {
+                prev->next = alarm;
+                return;
+            }
+            AlarmQueue.head = alarm;
+            delta = alarm->fire - __OSGetSystemTime();
+            if (delta < 0)
+            {
+                PPCMtdec(0);
+                return;
+            }
+            if (delta < 0x80000000LL)
+            {
+                PPCMtdec((u32)delta);
+                return;
+            }
+            PPCMtdec(0x7FFFFFFF);
+            return;
+        }
+        cursor = cursor->next;
+    }
+    alarm->next = NULL;
+    prev = AlarmQueue.tail;
+    AlarmQueue.tail = alarm;
+    alarm->prev = prev;
+    if (prev != NULL)
+    {
+        prev->next = alarm;
+        return;
+    }
+    AlarmQueue.tail = alarm;
+    AlarmQueue.head = alarm;
+    delta = alarm->fire - __OSGetSystemTime();
+    if (delta < 0)
+    {
+        PPCMtdec(0);
+        return;
+    }
+    if (delta < 0x80000000LL)
+    {
+        PPCMtdec((u32)delta);
+        return;
+    }
+    PPCMtdec(0x7FFFFFFF);
+}
+
 void DecrementerExceptionCallback(u32 arg0, void *arg1)
 {
     void OSClearContext(void *context);
