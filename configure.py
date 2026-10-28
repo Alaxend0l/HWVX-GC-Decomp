@@ -534,7 +534,7 @@ config.libs = [
             Object(NonMatching, "EXIUart.c"),
             Object(NonMatching, "mainloop.c"),
             Object(NonMatching, "nubevent.c"),
-            Object(NonMatching, "nubinit.c"),
+            Object(NonMatching, "nubinit.c", mw_version="GC/1.3"),
             Object(NonMatching, "msg.c"),
             Object(NonMatching, "msgbuf.c"),
             Object(NonMatching, "serpoll.c"),
