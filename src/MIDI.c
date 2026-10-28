@@ -129,6 +129,59 @@ void CreateMIDI(u8 *hdr, u8 *snd)
     g_musicState = 0;
     DestroySongVoice = DestroyMIDIVoice;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 SetMIDIState(s32 state) {
+ typedef struct MIDI_VOICE *MV; typedef struct MIDI_CHN MC;
+ extern void *g_pHdr; extern s32 g_musicState; extern u32 SongUpdate, g_trkOn, g_trkOff;
+ extern u8 g_song[0x24];
+ void ProcessMIDI(void); void SetVoiceState_(MV, s32); u32 ReadVar_(u8 **pp);
+ MC *chn; MV voice, next; u32 i; s32 old;
+ if (g_pHdr == NULL) return -1;
+ if (state == 0 || g_pHdr == NULL) return g_musicState;
+ if (state != 1) SongUpdate = 0;
+ switch (state) {
+ case 2:
+  for (chn = g_chn, i = 0x10; i != 0; i--)
+   for (voice = (chn++)->voice; voice != NULL; voice = voice->next) SetVoiceState_(voice, 2);
+  break;
+ case 3: case 4:
+  for (chn = g_chn, i = 0x10; i != 0; i--) {
+   voice = chn->voice; (chn++)->voice = NULL;
+   while (voice != NULL) { next = voice->next; SetVoiceState_(voice, 3); voice = next; }
+  }
+  if (state == 3) break;
+ case 1:
+  switch (g_musicState) {
+  case 0: case 3: case 4:
+   *(u32 *)(g_song + 0x14) = (u32)g_pHdr + 0x22;
+   *(u32 *)(g_song + 0x18) = ReadVar_((u8 **)(g_song + 0x14));
+   g_song[0x1C] = 8; g_song[0x1D] = 0;
+   *(u32 *)(g_song + 4) = 500000 / *(u16 *)((u8 *)g_pHdr + 0x18);
+   *(u32 *)(g_song + 0x10) = 0x10000; *(u32 *)(g_song + 0x20) = 0x10000;
+   g_song[0x1E] = 0; g_song[0x1F] = 0;
+   for (chn = g_chn, i = 0x10; i != 0; i--) {
+    *(u8 *)((u8 *)chn + 4) = 1; chn->voice = NULL;
+    *(u8 *)((u8 *)chn + 6) = 0; *(u8 *)((u8 *)chn + 7) = 0; *(u16 *)((u8 *)chn + 8) = 0;
+    *(u8 *)((u8 *)chn + 0xA) = 0x7F; *(u8 *)((u8 *)chn + 0xB) = 0x64;
+    *(u32 *)((u8 *)chn + 0xC) = 0; chn->vol = 0x4F5C; chn->note = 0x40; chn->count = 2;
+    chn->pitch = 0x10000;
+    *(u8 *)((u8 *)chn + 0x1E) = 0; *(u8 *)((u8 *)chn + 0x1F) = 0; chn++;
+   }
+   g_trkOn = 0; g_trkOff = 0;
+   break;
+  case 2:
+   for (chn = g_chn, i = 0x10; i != 0; i--)
+    for (voice = (chn++)->voice; voice != NULL; voice = voice->next) SetVoiceState_(voice, 1);
+   break;
+  }
+  state = 1; SongUpdate = (u32)ProcessMIDI;
+  break;
+ }
+ old = g_musicState; g_musicState = state; return old;
+}
+#pragma pop
 void SetMIDIVol(void)
 {
     MIDI_CHN *chn;
