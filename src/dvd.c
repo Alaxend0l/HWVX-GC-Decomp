@@ -48,7 +48,12 @@ u32 FirstTimeInBootrom;
 u32 DVDInitialized;
 u32 LastState;
 
-#define DVD_SET_DI_REG() ((volatile u32 *)0xCC006000)[1] = ((volatile u32 *)0xCC006000)[1]
+typedef struct DVDDIReg {
+    u32 unk0;
+    u32 diReg;
+} DVDDIReg;
+
+#define DVD_SET_DI_REG() ((DVDDIReg *)0xCC006000)->diReg = ((DVDDIReg *)0xCC006000)->diReg
 
 
 void stateGettingError(void)
@@ -180,6 +185,84 @@ void stateReady(void)
     }
     executing->state = 1;
     stateBusy(executing);
+}
+
+void stateBusy(DVDCommandBlock *block)
+{
+ void cbForStateBusy(u32 intType);
+ void DVDLowReadDiskID(void *diskID, void (*callback)(u32));
+ void DVDLowRead(void *addr, u32 length, u32 offset, void (*callback)(u32));
+ void DVDLowSeek(u32 offset, void (*callback)(u32));
+ void DVDLowStopMotor(void (*callback)(u32));
+ void DVDLowRequestAudioStatus(u32 subcmd, void (*callback)(u32));
+ void DVDLowAudioStream(u32 subcmd, u32 length, u32 offset, void (*callback)(u32));
+ void DVDLowAudioBufferConfig(u32 enable, u32 size, void (*callback)(u32));
+ void DVDLowInquiry(void *info, void (*callback)(u32));
+
+ LastState = (u32)stateBusy;
+ switch (block->command)
+ {
+ case 5:
+  DVD_SET_DI_REG();
+  block->currTransferSize = 0x20;
+  DVDLowReadDiskID(block->address, cbForStateBusy);
+  break;
+ case 1:
+ case 4:
+  DVD_SET_DI_REG();
+  block->currTransferSize = (block->length - block->transferredSize > 0x80000) ? 0x80000 : (block->length - block->transferredSize);
+  DVDLowRead((u8 *)block->address + block->transferredSize, block->currTransferSize, block->offset + block->transferredSize, cbForStateBusy);
+  break;
+ case 2:
+  DVD_SET_DI_REG();
+  DVDLowSeek(block->offset, cbForStateBusy);
+  break;
+ case 3:
+  DVDLowStopMotor(cbForStateBusy);
+  break;
+ case 15:
+  DVDLowStopMotor(cbForStateBusy);
+  break;
+ case 6:
+  DVD_SET_DI_REG();
+  if (AutoFinishing) { executing->currTransferSize = 0; DVDLowRequestAudioStatus(0, cbForStateBusy); }
+  else { executing->currTransferSize = 1; DVDLowAudioStream(0, block->length, block->offset, cbForStateBusy); }
+  break;
+ case 7:
+  DVD_SET_DI_REG();
+  DVDLowAudioStream(0x10000, 0, 0, cbForStateBusy);
+  break;
+ case 8:
+  DVD_SET_DI_REG();
+  AutoFinishing = 1;
+  DVDLowAudioStream(0, 0, 0, cbForStateBusy);
+  break;
+ case 9:
+  DVD_SET_DI_REG();
+  DVDLowRequestAudioStatus(0, cbForStateBusy);
+  break;
+ case 10:
+  DVD_SET_DI_REG();
+  DVDLowRequestAudioStatus(0x10000, cbForStateBusy);
+  break;
+ case 11:
+  DVD_SET_DI_REG();
+  DVDLowRequestAudioStatus(0x20000, cbForStateBusy);
+  break;
+ case 12:
+  DVD_SET_DI_REG();
+  DVDLowRequestAudioStatus(0x30000, cbForStateBusy);
+  break;
+ case 13:
+  DVD_SET_DI_REG();
+  DVDLowAudioBufferConfig(block->offset, block->length, cbForStateBusy);
+  break;
+ case 14:
+  DVD_SET_DI_REG();
+  block->currTransferSize = 0x20;
+  DVDLowInquiry(block->address, cbForStateBusy);
+  break;
+ }
 }
 
 s32 DVDSetAutoInvalidation(s32 arg0) {
