@@ -23,10 +23,6 @@ s32 ThingManager_GetActiveCars(u8 **cars, u32 max);
 u8 *ThingManager_DARYL_CreateSlave(s32 type, void *params, u32 id);
 void ThingManagerList_Append(void *list, u8 *thing);
 void Projectile_Release(u8 *proj);
-void VTableThunk0(void *a, void *b);
-void VTableThunk1(void *a, void *b, void *c, s32 d);
-
-extern void *vtable_0[];
 
 typedef struct SmartProjParams {
     u8 unk0;
