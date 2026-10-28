@@ -39,7 +39,7 @@ s32 FatalErrorFlag;
 u32 CurrCommand;
 u32 Canceling;
 u32 CancelCallback;
-u32 ResumeFromHere;
+volatile u32 ResumeFromHere;
 u32 CancelLastError;
 u32 LastError;
 u32 NumInternalRetry;
