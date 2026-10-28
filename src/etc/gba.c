@@ -38,10 +38,178 @@ s32 HostId;
 s32 DiskId;
 s32 gLinkFinished;
 
+/* 4-byte .sdata2 literal used by GbaCheckJBResult__Fl (GBAWrite payload). */
+extern u32 g_GBAWritePayload;
+
 void JBCallback__Fll(s32 chan, s32 result)
 {
     Param[chan].state = 2;
     Param[chan].result = result;
+}
+
+void GbaCheckJBResult__Fl(s32 chan)
+{
+s32 GBAGetStatus(s32, u8 *);
+s32 GBARead(s32, void *, u8 *);
+s32 GBAWrite(s32, void *, u8 *);
+s32 GBAReset(s32, u8 *);
+s32 GBAJoyBootAsync(s32, s32, s32, u8 *, s32, u8 *, void (*)(s32, s32));
+u32 OSGetTick(void);
+void OSReport(const char *, ...);
+void *memset(void *dst, s32 c, u32 n);
+s32 buf;
+s32 *p58;
+
+if (Param[chan].result == 0)
+{
+    if (GBAReset(chan, &Param[chan].status) != 0)
+    {
+        return;
+    }
+    memset(&Param[chan].send, 0, 0x20);
+    Param[chan].send.unk0 = 1;
+    Param[chan].send.chan = chan;
+    Param[chan].send.unk3 = 1;
+    Param[chan].send.hostId = HostId;
+    Param[chan].unk58 = 0;
+    if (GBAGetStatus(chan, &Param[chan].status) == 0 && Param[chan].status == 0x28)
+    {
+        if (GBARead(chan, &buf, &Param[chan].status) == 0)
+        {
+            p58 = &Param[chan].unk58;
+            if (Param[chan].unk58 == 0x41483845)
+            {
+                *p58 = buf;
+            }
+            else
+            {
+                *p58 = 0;
+            }
+        }
+        else
+        {
+            p58 = &Param[chan].unk58;
+            *p58 = 0;
+        }
+        if (*p58 == 0x41483845)
+        {
+            if (GBAGetStatus(chan, &Param[chan].status) == 0 && Param[chan].status == 0x20)
+            {
+                GBAWrite(chan, (u8 *)"GHWE", &Param[chan].status);
+            }
+        }
+    }
+    return;
+}
+if (Param[chan].result == 3)
+{
+    if ((Param[chan].status & 0xA) == 0xA)
+    {
+        if ((Param[chan].status & 0x30) != 0x10)
+        {
+            GBARead(chan, &buf, &Param[chan].status);
+        }
+        return;
+    }
+    if (GBAGetStatus(chan, &Param[chan].status) != 0)
+    {
+        return;
+    }
+    buf = 0;
+    if (Param[chan].status != 0x28)
+    {
+        if (GBARead(chan, &buf, &Param[chan].status) != 0)
+        {
+            buf = 0;
+        }
+    }
+    else if (buf == 0x41483845)
+    {
+        Param[chan].unk58 = buf;
+    }
+    else
+    {
+        Param[chan].unk58 = 0;
+    }
+    if (buf == 0x41483845)
+    {
+        if (GBAGetStatus(chan, &Param[chan].status) != 0)
+        {
+            return;
+        }
+        if (Param[chan].status != 0x20)
+        {
+            return;
+        }
+        if (GBAWrite(chan, (u8 *)"GHWE", &Param[chan].status) != 0)
+        {
+            return;
+        }
+        if (GBAGetStatus(chan, &Param[chan].status) != 0)
+        {
+            return;
+        }
+        if (Param[chan].status != 0x30)
+        {
+            return;
+        }
+        if (Param[chan].type != 0x47484500)
+        {
+            return;
+        }
+        if (GBAGetStatus(chan, &Param[chan].status) != 0)
+        {
+            return;
+        }
+        if (Param[chan].status != 0x38)
+        {
+            return;
+        }
+        if (GBARead(chan, &Param[chan].unk60, &Param[chan].status) != 0)
+        {
+            return;
+        }
+        if ((Param[chan].unk60 & 0x30) != 0x30)
+        {
+            return;
+        }
+        Param[chan].state = 4;
+        return;
+    }
+    GBAWrite(chan, &Param[chan].unk64, &Param[chan].status);
+    buf = Param[chan].unk64;
+    if ((buf & 0x30) != 0x30)
+    {
+        return;
+    }
+    if (GBAGetStatus(chan, &Param[chan].status) != 0)
+    {
+        return;
+    }
+    if (Param[chan].status != 0x38)
+    {
+        return;
+    }
+    if (GBARead(chan, &Param[chan].unk60, &Param[chan].status) != 0)
+    {
+        return;
+    }
+    if ((Param[chan].unk60 & 0x30) != 0x30)
+    {
+        return;
+    }
+    Param[chan].state = 4;
+    return;
+}
+if ((OSGetTick() - Param[chan].startTick) > ((*(u32 *)0x800000F8 / 4) / 1000) * 4000)
+{
+    OSReport("Timeout to JOYBOOT (chan=%d).\n", chan);
+    Param[chan].state = 0;
+    return;
+}
+Param[chan].state = 1;
+GBAJoyBootAsync(chan, chan * 2, 2, Param[chan].program, Param[chan].length,
+                &Param[chan].status, JBCallback__Fll);
 }
 
 void GBAConnectivityInit__Fv(void)
