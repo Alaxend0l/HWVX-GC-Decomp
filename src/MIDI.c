@@ -130,6 +130,23 @@ void CreateMIDI(u8 *hdr, u8 *snd)
     DestroySongVoice = DestroyMIDIVoice;
 }
 
+void DestroyMIDI(void)
+{
+    extern void *g_pHdr;
+    extern u8 g_musicTitle[0x20];
+    void SetMIDIState(s32 state);
+    void DestroyMIDI_(void *hdr);
+
+    if (g_pHdr == NULL)
+    {
+        return;
+    }
+    SetMIDIState(3);
+    DestroyMIDI_(g_pHdr);
+    g_pHdr = NULL;
+    memset(g_musicTitle, 0, 0x20);
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 s32 SetMIDIState(s32 state) {
