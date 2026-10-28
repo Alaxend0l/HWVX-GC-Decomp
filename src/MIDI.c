@@ -7,30 +7,65 @@ typedef struct MIDI_VOICE
     u8 byte2;
     u8 byte3;
     struct MIDI_VOICE *next;
-    u8 pad_8_15[0xD];
+    u8 pad_8_F[8];
+    struct MIDI_INST *prog;
+    u8 priority;
     u8 state;
-    u8 pad_16_20[0x10];
+    u8 state2;
+    u8 byte17;
+    u32 rate;
+    u32 count;
+    u32 field_20;
+    u32 field_24;
+    u32 field_28;
+    u8 byte2C;
+    u8 pad_2D_30[3];
+    u32 noteRate;
+    u32 pitch2;
+    u32 field_38;
+    u32 field_3C;
+    u32 field_40;
+    u32 field_44;
+    u32 field_48;
+    u8 pad_4C_50[4];
 } MIDI_VOICE;
 
 typedef struct MIDI_CHN
 {
     struct MIDI_VOICE *voice;
-    u8 pad_4_14[0x10];
-    s32 vol;
-    s32 pitch;
+    u8 field_4;
+    u8 field_5;
+    u8 prog;
+    u8 field_7;
+    u16 field_8;
+    u16 field_A;
+    u32 field_C;
+    u32 field_10;
+    u32 vol;
+    u32 pitch;
     u8 count;
     u8 note;
-    u8 pad_1E_20[0x2];
+    u8 field_1E;
+    u8 field_1F;
 } MIDI_CHN;
 
 typedef struct MIDI_INST
 {
-    u8 pad_0_14[0x14];
+    u32 field_0;
+    u32 field_4;
+    u32 field_8;
+    u32 field_C;
+    u8 field_10;
+    u8 field_11;
+    u8 field_12;
+    u8 field_13;
     u8 prog;
-    u8 pad_15[1];
+    u8 field_15;
     u8 lo;
     u8 hi;
-    u8 pad_18_20[8];
+    u16 field_18;
+    u16 field_1A;
+    u16 field_1C;
 } MIDI_INST;
 
 typedef struct MIDI_SND
