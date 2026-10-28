@@ -38,8 +38,6 @@ s32 HostId;
 s32 DiskId;
 s32 gLinkFinished;
 
-/* 4-byte .sdata2 literal used by GbaCheckJBResult__Fl (GBAWrite payload). */
-extern u32 g_GBAWritePayload;
 
 void JBCallback__Fll(s32 chan, s32 result)
 {
