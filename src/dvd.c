@@ -244,7 +244,7 @@ void stateBusy(DVDCommandBlock *block)
   DVDLowRequestAudioStatus(0, cbForStateBusy);
   break;
  case 10:
-  ((volatile u32 *)0xCC006000)[1] = *(volatile u32 *)0xCC006004;
+  DVD_SET_DI_REG();
   DVDLowRequestAudioStatus(0x10000, cbForStateBusy);
   break;
  case 11:
