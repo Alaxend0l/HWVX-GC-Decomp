@@ -1,6 +1,12 @@
 #include "common.h"
 
 
+void PushFreeAudioBuffer(void *arg0)
+{
+    extern u8 UsedTextureSetQueue_8036EC78[];
+    OSSendMessage(UsedTextureSetQueue_8036EC78, arg0, 0);
+}
+
 void PushDecodedAudioBuffer(void *arg0) {
     extern u8 PrepareReadyQueue_8036ED00[];
     OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
