@@ -47,9 +47,103 @@ void JBCallback__Fll(s32 chan, s32 result)
     Param[chan].result = result;
 }
 
+s32 GBAGetStatus(s32, u8 *);
+s32 GBARead(s32, void *, u8 *);
+s32 GBAWrite(s32, void *, u8 *);
+void GameSettings_GameBoyConnected(void);
+void GbaOpen__Fl(s32);
+
+#pragma push
+#pragma readonly_strings on
+#pragma dont_inline off
+#pragma auto_inline off
+#pragma inline_depth(4)
+
+static inline BOOL GbaReadGameCode(s32 chan)
+{
+    u32 code;
+
+    if (GBAGetStatus(chan, &Param[chan].status) != 0 || Param[chan].status != 0x28)
+    {
+        return FALSE;
+    }
+    if (GBARead(chan, (u8 *)&code, &Param[chan].status) != 0)
+    {
+        return FALSE;
+    }
+    if (code == 0x41483845)
+    {
+        Param[chan].unk58 = code;
+    }
+    else
+    {
+        Param[chan].unk58 = 0;
+        return FALSE;
+    }
+    return TRUE;
+}
+
+static inline BOOL GbaSendGameCode(s32 chan)
+{
+    if (GBAGetStatus(chan, &Param[chan].status) != 0 || Param[chan].status != 0x20)
+    {
+        return FALSE;
+    }
+    if (GBAWrite(chan, (u8 *)"GHWE", &Param[chan].status) != 0)
+    {
+        return FALSE;
+    }
+    if (GBAGetStatus(chan, &Param[chan].status) != 0 || Param[chan].status != 0x30)
+    {
+        return FALSE;
+    }
+    if (Param[chan].status == 0x30)
+    {
+        gLinkFinished = 1;
+        GameSettings_GameBoyConnected();
+    }
+    return TRUE;
+}
+
+static inline BOOL GbaHandshake(s32 chan)
+{
+    u32 cmd;
+    u32 i;
+
+    if (!GbaReadGameCode(chan))
+    {
+        return FALSE;
+    }
+    if (Param[chan].unk58 != 0x41483845)
+    {
+        return FALSE;
+    }
+    if (!GbaSendGameCode(chan))
+    {
+        return FALSE;
+    }
+    cmd = 0x60000000;
+    if (GBAWrite(chan, (u8 *)&cmd, &Param[chan].status) != 0 || (Param[chan].status & 0x30) != 0x30)
+    {
+        return FALSE;
+    }
+    for (i = 0; i < 0x20; i += 4)
+    {
+        if (GBAGetStatus(chan, &Param[chan].status) != 0 || Param[chan].status != 0x38)
+        {
+            return FALSE;
+        }
+        if (GBARead(chan, (u8 *)&Param[chan].recv + i, &Param[chan].status) != 0 ||
+            (Param[chan].status & 0x30) != 0x30)
+        {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
 void GbaCheckJBResult__Fl(s32 chan)
 {
-s32 GBAGetStatus(s32, u8 *);
 s32 GBARead(s32, void *, u8 *);
 s32 GBAWrite(s32, void *, u8 *);
 s32 GBAReset(s32, u8 *);
