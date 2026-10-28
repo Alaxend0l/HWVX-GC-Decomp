@@ -71,7 +71,7 @@ typedef struct SmartProjVTable {
 
 typedef struct CreateSlaveParams {
     Vector4 a;
-    Vector4 b;
+    Quaternion b;
     Vector4 c;
     Vector4 zero;
     u32 id;
