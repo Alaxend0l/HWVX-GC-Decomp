@@ -7,7 +7,7 @@ typedef struct OSAlarm {
 	struct OSAlarm *prev;
 	struct OSAlarm *next;
 	s64 fire2;
-	s64 field_20;
+	s64 last;
 } OSAlarm;
 
 typedef struct OSAlarmQueue {
