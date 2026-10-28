@@ -1,0 +1,79 @@
+#include "common.h"
+
+
+void VolumeManager_Create(void) {
+    extern s32 g_VolumeHolder;
+    g_VolumeHolder = 0;
+}
+
+void VolumeManager_Release(void) {
+    extern s32 g_VolumeHolder;
+    void SetReverb(s32 a, s32 b, s32 c, s32 d);
+    g_VolumeHolder = 0;
+    SetReverb(0, 0, 0, 0);
+    SetReverb(1, 0, 0, 0);
+}
+
+s32 VolumeManager_GetVolumeCellIndex(Vector4 *point) {
+    extern u8 *g_VolumeHolder;
+    u8 *holder = g_VolumeHolder;
+    s32 x;
+    s32 y;
+    s32 z;
+
+    if (holder == NULL) {
+        return 0;
+    }
+    x = (point->x - M2C_FIELD(holder, f32 *, 0x0)) / M2C_FIELD(holder, f32 *, 0x20);
+    y = (point->y - M2C_FIELD(holder, f32 *, 0x4)) / M2C_FIELD(holder, f32 *, 0x24);
+    z = (point->z - M2C_FIELD(holder, f32 *, 0x8)) / M2C_FIELD(holder, f32 *, 0x28);
+    if (x < 0 || x >= M2C_FIELD(holder, s32 *, 0x2C)) {
+        return 0;
+    }
+    if (y < 0 || y >= M2C_FIELD(holder, s32 *, 0x30)) {
+        return 0;
+    }
+    if (z < 0 || z >= M2C_FIELD(holder, s32 *, 0x34)) {
+        return 0;
+    }
+    return M2C_FIELD(holder, s32 **, 0x14)[z * M2C_FIELD(holder, s32 *, 0x2C) + M2C_FIELD(holder, s32 *, 0x34) * (y * M2C_FIELD(holder, s32 *, 0x2C)) + x];
+}
+
+s32 VolumeManager_GetNumVolumesOfTypeByCell(s32 type, s32 cell) {
+    extern s32 g_VolumeHolder;
+    if ((void *)g_VolumeHolder != NULL) {
+        return M2C_FIELD(M2C_FIELD(g_VolumeHolder, u8 **, 0x10) + cell * 0x38 + type * 8, s32 *, 0x0);
+    }
+    return 0;
+}
+
+s32 VolumeManager_GetVolumeTypeByIndexByCell(s32 type, s32 index, s32 cell) {
+    typedef struct VolumeList {
+        s32 count;
+        s32 *volumes;
+    } VolumeList;
+    typedef struct VolumeCell {
+        VolumeList types[7];
+    } VolumeCell;
+    extern s32 g_VolumeHolder;
+    VolumeCell *cells = M2C_FIELD(g_VolumeHolder, VolumeCell **, 0x10);
+    return cells[cell].types[type].volumes[index];
+}
+
+s8 IsPointWithinVolume(Vector4 *point, u8 *volume, f32 *distSq) {
+    s8 BSPN0_CollideWithVector(void *bsp, Vector4 *point);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    Vector4 diff;
+
+    switch (M2C_FIELD(volume, s32 *, 0x8)) {
+    case 0:
+        return BSPN0_CollideWithVector(M2C_FIELD(volume, void **, 0x28), point);
+    case 1:
+        PSVECSubtract(point, (Vector4 *)(volume + 0x10), &diff);
+        *distSq = PSVECSquareMag(&diff);
+        return *distSq < M2C_FIELD(volume, f32 *, 0x24);
+    }
+    return 0;
+}
+

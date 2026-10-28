@@ -1,0 +1,597 @@
+#include "common.h"
+
+extern GeneralGameSettings g_generalGameSettings;
+
+
+extern HotWheelsGameData g_HotWheelsGameData;
+
+extern s8 g_DDRescueGameData[];
+
+extern CodeVariables g_codeVariables;
+extern s8 g_bValidFileName[8];
+extern s8 g_bRefreshMC;
+extern s8 g_bRefreshMC_FileList;
+extern s8 g_bRefreshMC_FileInfo;
+u8 FileManager_FormatDevice(char *device);
+
+static s8 bFirstTime = 1;
+static u8 *pMCP;
+
+s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded);
+u8 *GameSettings_GetMCP(void);
+void *FileStreaming_InitializeDataPack(void *, s32, s32);
+u8 *DataPack_GetScript(void *, s32);
+s32 PlayerManager_PlayerHumanCount(void);
+
+void GameSettings_ResetGame(void)
+{
+    s32 i;
+
+    g_codeVariables.unk30 = 1;
+    for (i = 0; i < 4; i++)
+    {
+        g_codeVariables.unk34[i] = 0;
+        g_codeVariables.unk44[i] = 0;
+        g_codeVariables.unk54[i] = 0;
+        g_codeVariables.unk64[i] = 0;
+    }
+    g_codeVariables.unkE4 = 0;
+    g_codeVariables.unkE8 = 0;
+    g_codeVariables.unkEC = 300000;
+    g_codeVariables.unkF0 = 10;
+    g_codeVariables.unkF4 = 1000;
+    g_codeVariables.unkF8 = 3;
+    g_codeVariables.unkFC = 0;
+    g_codeVariables.unk100 = 3;
+    g_codeVariables.unk104 = 1;
+    g_codeVariables.unk108 = 1;
+    g_codeVariables.unk111 = 1;
+}
+
+void GameSettings_SetDefaultControllerState(void)
+{
+    s32 i;
+
+    for (i = 0; i < 4; i++)
+    {
+        g_codeVariables.controllerState[i] = 1;
+    }
+}
+
+void GameSettings_ResetPlayerVehicleItem(void) {
+    M2C_FIELD(&g_codeVariables, s32 *, 0) = -1;
+    M2C_FIELD(&g_codeVariables, s32 *, 0x10) = -1;
+    M2C_FIELD(&g_codeVariables, s32 *, 4) = -1;
+    M2C_FIELD(&g_codeVariables, s32 *, 0x14) = -1;
+    M2C_FIELD(&g_codeVariables, s32 *, 8) = -1;
+    M2C_FIELD(&g_codeVariables, s32 *, 0x18) = -1;
+    M2C_FIELD(&g_codeVariables, s32 *, 0xC) = -1;
+    M2C_FIELD(&g_codeVariables, s32 *, 0x1C) = -1;
+}
+
+u8 GameSettings_GetGameType(void)
+{
+    u8 *mcp;
+
+    mcp = GameSettings_GetMCP();
+    if (mcp != NULL)
+    {
+        return mcp[1];
+    }
+    return 0;
+}
+
+u8 *GameSettings_GetMCP(void)
+{
+    void *pack;
+
+    if (bFirstTime)
+    {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL)
+        {
+            return NULL;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    return pMCP;
+}
+
+#pragma push
+#pragma use_lmw_stmw off
+void GameSettings_ResetControllerConfig(s32 player)
+{
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    ControllerSettings *GameSettings_GetControllerSettings(s32 player);
+    u8 *mcp;
+    void *pack;
+    ControllerSettings *settings;
+    u8 *src;
+
+    if (bFirstTime)
+    {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL)
+        {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    settings = GameSettings_GetControllerSettings(player);
+    if (mcp == NULL || *(u32 *)((char *)mcp + 0x3c) == 0)
+    {
+        memset(&settings->data[2], 0, 0x10);
+    }
+    else
+    {
+        src = (u8 *)*(u32 *)((char *)*(u32 *)((char *)*(u32 *)((char *)*(u32 *)((char *)mcp + 0x40) + 0) + 0) + 4);
+        memcpy(&settings->data[2], src, 0x10);
+    }
+}
+void GameSettings_GameBoyConnected(void) {
+    u8 *mcp;
+    void *pack;
+    s32 state;
+
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        state = mcp[1];
+    } else {
+        state = 0;
+    }
+    switch (state) {
+    case 0:
+        g_HotWheelsGameData.unk0 = 1;
+        g_HotWheelsGameData.unk1 = 1;
+        g_HotWheelsGameData.unk2 = 1;
+        break;
+    case 1:
+        break;
+    }
+}
+
+s32 GameSettings_GetDifficulty(void) {
+    return g_generalGameSettings.difficulty;
+}
+
+u8 GameSettings_GetNumOfPlayers(void) {
+    return PlayerManager_PlayerHumanCount();
+}
+
+ControllerSettings *GameSettings_GetControllerSettings(s32 player) {
+    return &g_generalGameSettings.controllers[player - 1];
+}
+
+void GameSettings_GetGameInfo(void *info) {
+    typedef struct GameInfo {
+        const char *name;
+        const char *id;
+        const char *title;
+        const char *fileName;
+        const char *icon;
+        s32 unk14;
+        s32 unk18;
+    } GameInfo;
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    extern GameInfo g_gameInfo[];
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    void *pack;
+
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        ((GameInfo *)info)->name = g_gameInfo[mcp[1]].name;
+        ((GameInfo *)info)->id = g_gameInfo[mcp[1]].id;
+        ((GameInfo *)info)->title = g_gameInfo[mcp[1]].title;
+        ((GameInfo *)info)->fileName = g_gameInfo[mcp[1]].fileName;
+        ((GameInfo *)info)->icon = g_gameInfo[mcp[1]].icon;
+        ((GameInfo *)info)->unk14 = g_gameInfo[mcp[1]].unk14;
+        ((GameInfo *)info)->unk18 = g_gameInfo[mcp[1]].unk18;
+    } else {
+        ((GameInfo *)info)->name = "XXXXXXXXXXXXXXXXXXX";
+        ((GameInfo *)info)->id = "SLUS_001.00";
+        ((GameInfo *)info)->title = "XXXXXXXXXXX";
+        ((GameInfo *)info)->fileName = "saveFile";
+        ((GameInfo *)info)->icon = "mm.ico";
+        ((GameInfo *)info)->unk14 = 0;
+        ((GameInfo *)info)->unk18 = 0;
+    }
+}
+
+AudioSettings *GameSettings_GetAudioSettings(void) {
+    return &g_generalGameSettings.audio;
+}
+
+void SetPlayerControls(void);
+void SetMusicGVol(u32);
+void SetSFXVol(u32);
+void SetSpeakerMode(u8);
+void OSSetSoundMode(u32);
+u8 *GameSettings_GetMCP(void);
+void GameSettings_ApplyDefaultGameData(void)
+{
+    SetPlayerControls();
+    SetMusicGVol((u32)((f32)(g_generalGameSettings.audio.musicVolume * 0x7FFF) / 100.0f));
+    SetSFXVol((u32)((f32)(g_generalGameSettings.audio.sfxVolume * 0x7FFF) / 100.0f));
+    SetSpeakerMode(g_generalGameSettings.audio.speakerMode);
+    OSSetSoundMode(g_generalGameSettings.audio.speakerMode);
+}
+
+void GameSettings_GetLoadedProgression(s32 *arg0, s32 *arg1)
+{
+    void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
+    u8 *mcp;
+    void *pack;
+    s32 state;
+
+    if (bFirstTime)
+    {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL)
+        {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL)
+    {
+        state = mcp[1];
+    }
+    else
+    {
+        state = 0;
+    }
+    switch (state)
+    {
+    case 0:
+        *arg0 = 0;
+        *arg1 = 0;
+        break;
+    case 1:
+        *arg0 = *(s32 *)&g_DDRescueGameData[0x6c];
+        *arg1 = *(s32 *)&g_DDRescueGameData[0x70];
+        GameSettings_SetCodeVariable(0xcb, 1, *(s32 *)&g_DDRescueGameData[0x1cd4]);
+        break;
+    }
+}
+
+void GameSettings_RestorePlayerStats(void) {
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    u8 PlayerManager_PlayerHumanCount(void);
+    void *PlayerManager_GetHumanPlayerByIndex(u8 index);
+    void *memcpy(void *, const void *, u32);
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    void *pack;
+    s32 state;
+
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        state = mcp[1];
+    } else {
+        state = 0;
+    }
+    switch (state) {
+    case 0:
+        break;
+    case 1:
+        if (g_DDRescueGameData[0x74] && PlayerManager_PlayerHumanCount() == 1) {
+            memcpy((u8 *)PlayerManager_GetHumanPlayerByIndex(0) + 0x70, &g_DDRescueGameData[0x78], 0x38);
+        }
+        break;
+    }
+}
+
+void GameSettings_RestoreGameData(void) {
+    typedef struct DDRescueGameData {
+        u8 unk0[0x74];
+        s8 bValid;
+        u8 unk75[0xB0 - 0x75];
+        u8 actions[0x880 - 0xB0];
+        f32 unk880[50];
+        u8 unk948[50][2];
+        f32 unk9AC[50];
+        u8 unkA74[50][2];
+        u8 unkAD8[200];
+        u8 unkBA0[1000];
+        u8 unkF88[2000];
+        u8 unk1758[500];
+        u8 unk194C[50];
+        f32 unk1980[50][3];
+        f32 unk1BD8[50];
+        u8 unk1CA0[50];
+        s32 vehicle;
+        s32 item;
+    } DDRescueGameData;
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    void Trigger_RestoreActions(void *actions, s32 count);
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    void *pack;
+    s32 state;
+    u8 *group;
+    u32 i;
+    u32 j;
+    u32 nTriggers;
+    u32 nSwitches;
+
+    nTriggers = 0;
+    nSwitches = 0;
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        state = mcp[1];
+    } else {
+        state = 0;
+    }
+    switch (state) {
+    case 0:
+        break;
+    case 1:
+        if (((DDRescueGameData *)g_DDRescueGameData)->bValid) {
+            Trigger_RestoreActions(((DDRescueGameData *)g_DDRescueGameData)->actions, 500);
+            for (i = 0; i < *(u32 *)((u8 *)g_worldData.world + 0x50) && i < 50; i++) {
+                *(f32 *)((*(u8 ***)((u8 *)g_worldData.world + 0x54))[i] + 0x8) = ((DDRescueGameData *)g_DDRescueGameData)->unk880[i];
+                (*(u8 **)((*(u8 ***)((u8 *)g_worldData.world + 0x54))[i] + 0xC))[0] = ((DDRescueGameData *)g_DDRescueGameData)->unk948[i][0];
+                (*(u8 **)((*(u8 ***)((u8 *)g_worldData.world + 0x54))[i] + 0xC))[1] = ((DDRescueGameData *)g_DDRescueGameData)->unk948[i][1];
+            }
+            for (i = 0; i < *(u32 *)((u8 *)g_worldData.world + 0x48) && i < 50; i++) {
+                *(f32 *)((*(u8 ***)((u8 *)g_worldData.world + 0x4C))[i] + 0x4) = ((DDRescueGameData *)g_DDRescueGameData)->unk9AC[i];
+                if (*(u8 **)((*(u8 ***)((u8 *)g_worldData.world + 0x4C))[i] + 0xC) != NULL) {
+                    (*(u8 **)((*(u8 ***)((u8 *)g_worldData.world + 0x4C))[i] + 0xC))[0] = ((DDRescueGameData *)g_DDRescueGameData)->unkA74[i][0];
+                    (*(u8 **)((*(u8 ***)((u8 *)g_worldData.world + 0x4C))[i] + 0xC))[1] = ((DDRescueGameData *)g_DDRescueGameData)->unkA74[i][1];
+                }
+            }
+            for (i = 0; i < *(u32 *)((u8 *)g_worldData.world + 0x40) && i < 200; i++) {
+                *(s32 *)(*(u8 **)((u8 *)g_worldData.world + 0x44) + i * 0x40 + 0x20) = ((DDRescueGameData *)g_DDRescueGameData)->unkAD8[i];
+            }
+            for (i = 0; i < *(u32 *)((u8 *)g_worldData.world + 0x20); i++) {
+                group = *(u8 **)((u8 *)g_worldData.world + 0x24) + i * 0x50;
+                for (j = 0; j < *(u32 *)(*(u8 **)(group + 0x30) + 0x14) && nTriggers < 1000; j++) {
+                    *(s32 *)(*(u8 **)(*(u8 **)(group + 0x30) + 0x18) + j * 0x40 + 0x28) = ((DDRescueGameData *)g_DDRescueGameData)->unkBA0[nTriggers++];
+                }
+                for (j = 0; j < *(u32 *)(*(u8 **)(group + 0x30) + 0x4) && nSwitches < 2000; j++) {
+                    *(s32 *)(*(u8 **)(*(u8 **)(group + 0x30) + 0x8) + j * 0x40 + 0x30) = ((DDRescueGameData *)g_DDRescueGameData)->unkF88[nSwitches++];
+                }
+            }
+            for (i = 0; i < *(u32 *)((u8 *)g_worldData.world + 0x10) && i < 500; i++) {
+                *(s32 *)(*(u8 **)((u8 *)g_worldData.world + 0x14) + i * 0x20 + 0x14) = ((DDRescueGameData *)g_DDRescueGameData)->unk1758[i];
+            }
+            for (i = 0; i < *(u32 *)((u8 *)g_worldData.world + 0x8) && i < 50; i++) {
+                *(s32 *)(*(u8 **)((u8 *)g_worldData.world + 0xC) + i * 0x60 + 0x2C) = ((DDRescueGameData *)g_DDRescueGameData)->unk194C[i];
+                *(f32 *)(*(u8 **)((u8 *)g_worldData.world + 0xC) + i * 0x60 + 0x0) = ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][0];
+                *(f32 *)(*(u8 **)((u8 *)g_worldData.world + 0xC) + i * 0x60 + 0x4) = ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][1];
+                *(f32 *)(*(u8 **)((u8 *)g_worldData.world + 0xC) + i * 0x60 + 0x8) = ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][2];
+                *(f32 *)(*(u8 **)((u8 *)g_worldData.world + 0xC) + i * 0x60 + 0x58) = ((DDRescueGameData *)g_DDRescueGameData)->unk1BD8[i];
+                *(u8 *)(*(u8 **)((u8 *)g_worldData.world + 0xC) + i * 0x60 + 0x5F) = ((DDRescueGameData *)g_DDRescueGameData)->unk1CA0[i];
+            }
+            g_codeVariables.playerItem[0] = ((DDRescueGameData *)g_DDRescueGameData)->item;
+            g_codeVariables.playerVehicle[0] = ((DDRescueGameData *)g_DDRescueGameData)->vehicle;
+        }
+        break;
+    }
+}
+
+s32 GameSettings_GetDefaultMemoryCardStatus(s32 *device, s8 bForce)
+{
+    static u32 s_updateCntr = 10;
+    static s32 s_curStatus;
+    static s32 s_curDevice;
+    s32 GameSettings_GetMemoryCardStatus(s32 device, s32 arg1);
+    s32 status1;
+    s32 status2;
+
+    if (++s_updateCntr < 10 && !bForce && !g_bRefreshMC)
+    {
+        *device = s_curDevice;
+        return s_curStatus;
+    }
+    s_updateCntr = 0;
+    s_curStatus = 2;
+    g_bRefreshMC = 0;
+    status1 = GameSettings_GetMemoryCardStatus(1, 1);
+    status2 = GameSettings_GetMemoryCardStatus(2, 1);
+    if (status1 == 1 || status1 == 0)
+    {
+        s_curStatus = status1;
+        s_curDevice = 1;
+    }
+    else if (status1 == 2 && status2 != 2)
+    {
+        s_curStatus = status2;
+        s_curDevice = 2;
+    }
+    else
+    {
+        s_curStatus = status1;
+        s_curDevice = 1;
+    }
+    *device = s_curDevice;
+    return s_curStatus;
+}
+
+void GameSettings_DetermineIfOverwritingFile(void)
+{
+    if (g_bValidFileName[g_codeVariables.fileIndex - 1])
+    {
+        g_codeVariables.bOverwritingFile = 1;
+    }
+    else
+    {
+        g_codeVariables.bOverwritingFile = 0;
+    }
+}
+
+char *GameSettings_GetActiveMemoryCardLevelDetails(void) {
+    s32 GameSettings_GetMemoryCardStatus(s32 device, s32 arg1);
+    int sprintf(char *buf, const char *fmt, ...);
+    extern u8 *g_pSavedGameData;
+    extern s8 g_bRefreshMC_FileInfo_803C6F7A;
+    typedef struct SaveSlot {
+        s8 valid;
+        u8 unk1[0x1F];
+    } SaveSlot;
+    typedef struct SaveData {
+        u8 header[0x5C];
+        SaveSlot slots[8];
+    } SaveData;
+    static s32 cachedStatus = -1;
+    static char *cachedMemorySlot = (char *)-1;
+    static u32 cachedFileSlot = -1;
+    static char levelDetails[256];
+    char *slot;
+    s32 status;
+    u32 fileSlot;
+    SaveData *data;
+    u8 *mcp;
+    s8 *save;
+    u32 i;
+    u32 mission;
+    u32 challenge;
+    u32 cars;
+    u32 items;
+    u32 battles;
+    u32 races;
+
+    slot = g_codeVariables.device - 1;
+    status = GameSettings_GetMemoryCardStatus((s32)g_codeVariables.device, 0);
+    fileSlot = g_codeVariables.fileIndex - 1;
+    if (cachedMemorySlot != slot || status != cachedStatus) {
+        g_bRefreshMC_FileInfo_803C6F7A = 1;
+    }
+    if (cachedFileSlot != fileSlot || g_bRefreshMC_FileInfo_803C6F7A) {
+        cachedMemorySlot = slot;
+        cachedFileSlot = fileSlot;
+        cachedStatus = status;
+        if (fileSlot >= 8 || status != 1) {
+            return NULL;
+        }
+        data = (SaveData *)g_pSavedGameData;
+        mcp = GameSettings_GetMCP();
+        switch (mcp != NULL ? mcp[1] : 0) {
+        case 0:
+            save = (s8 *)(g_pSavedGameData + cachedFileSlot * 0xF4 + 0x15C);
+            if (data->slots[cachedFileSlot].valid) {
+                mission = 1;
+                for (i = 5; i < 19; i++) {
+                    if (save[0x21 + i]) {
+                        mission = i;
+                    }
+                }
+                challenge = 1;
+                for (i = 39; i < 57; i++) {
+                    if (save[0x21 + i]) {
+                        challenge = i;
+                    }
+                }
+                cars = 0;
+                for (i = 0; i < 33; i++) {
+                    if (save[i]) {
+                        cars++;
+                    }
+                }
+                items = 0;
+                for (i = 0; i < 9; i++) {
+                    if (save[0x96 + i]) {
+                        items++;
+                    }
+                }
+                races = 0;
+                for (i = 0; i < 2; i++) {
+                    if (save[0x42 + i]) {
+                        races++;
+                    }
+                }
+                battles = 0;
+                for (i = 0; i < 4; i++) {
+                    if (save[0x38 + i]) {
+                        battles++;
+                    }
+                }
+                sprintf(levelDetails, "Mission %d|Challenge %d|Available Cars %d|Available Items %d|Available Races %d|Available Battles %d|Completed %d%%",
+                        mission - 4, challenge - 38, cars, items + 3, races + 4, battles + 4,
+                        (u32)(100.0f * ((f32)(cars + items + (mission - 4) + (challenge - 38) + (races + 4) + (battles + 4) - 13) / 75.0f)));
+                g_codeVariables.unk124 = mission - 5;
+            } else {
+                levelDetails[0] = 0;
+                g_codeVariables.unk124 = 0;
+            }
+            break;
+        case 1:
+            levelDetails[0] = 0;
+            g_codeVariables.unk124 = 0;
+            break;
+        }
+    } else {
+        levelDetails[0] = 0;
+        g_codeVariables.unk124 = 0;
+    }
+    return levelDetails;
+}
+
+s32 GameSettings_FormatMemoryCard(void)
+{
+    u8 result;
+
+    result = FileManager_FormatDevice(g_codeVariables.device + 0xA);
+    g_codeVariables.unk11C[2] = result;
+    g_bRefreshMC = 1;
+    g_bRefreshMC_FileList = 1;
+    g_bRefreshMC_FileInfo = 1;
+    return result;
+}

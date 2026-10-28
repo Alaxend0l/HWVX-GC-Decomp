@@ -1,0 +1,362 @@
+#include "common.h"
+
+extern s32 g_sources_803C6F38;
+
+void SoundManager_Create(void) {
+    M2C_UNK8 Audio_Create();
+    void Dprintf(const char *, ...);
+    int printf(const char *, ...);
+    extern s8 g_songLoaded_803C6F2C;
+    extern s32 g_tracks_803C6F30;
+
+    Dprintf("SoundManager_Create()");
+    if (!Audio_Create()) {
+        printf("AudioManager :: Audio_Create Failed\n");
+    }
+    Dprintf("SoundManager_Create() 1");
+    g_songLoaded_803C6F2C = 0;
+    g_sources_803C6F38 = Allocate(0x1F40, 0, "");
+    g_tracks_803C6F30 = Allocate(0x500, 0, "");
+}
+
+void SoundManager_Destroy(void) {
+    M2C_UNK Audio_Destroy();
+    extern s32 g_tracks_803C6F30;
+    Audio_Destroy();
+    Deallocate(g_sources_803C6F38);
+    Deallocate(g_tracks_803C6F30);
+}
+
+void SoundSource_Set(u32 index, u32 type, void *data) {
+    extern s32 g_sources;
+    void *memcpy(void *, void *, u32);
+
+    switch (type) {
+    case 0:
+        break;
+    case 1:
+        memcpy((u8 *)g_sources + index * 0x50, data, 0x10);
+        break;
+    case 2:
+        memcpy((u8 *)g_sources + index * 0x50 + 0x10, data, 0x10);
+        break;
+    case 3:
+        memcpy((u8 *)g_sources + index * 0x50 + 0x24, data, 4);
+        break;
+    case 4:
+        memcpy((u8 *)g_sources + index * 0x50 + 0x20, data, 4);
+        break;
+    case 5:
+        memcpy((u8 *)g_sources + index * 0x50 + 0x28, data, 4);
+        break;
+    case 6:
+        memcpy((u8 *)g_sources + index * 0x50 + 0x34, data, 4);
+        break;
+    case 7:
+        memcpy((u8 *)g_sources + index * 0x50 + 0x38, data, 4);
+        break;
+    case 8:
+        break;
+    }
+}
+
+void SoundManager_Heartbeat(void) {
+    M2C_UNK MusicHearbeat();
+    s32 OSDisableInterrupts();
+    M2C_UNK OSRestoreInterrupts(s32);
+    M2C_UNK SFX_Heartbeat();
+    s32 temp_r31;
+
+    temp_r31 = OSDisableInterrupts();
+    SFX_Heartbeat();
+    MusicHearbeat();
+    OSRestoreInterrupts(temp_r31);
+}
+
+void SFX_Heartbeat(void) {
+    M2C_UNK SFX_ProcessSource(u32);
+    extern s32 g_sscount;
+    u32 var_r31;
+
+    var_r31 = 0U;
+    g_sscount = 0;
+    do {
+        SFX_ProcessSource(var_r31);
+        var_r31 += 1;
+    } while (var_r31 < 0x64U);
+}
+
+void MusicHearbeat(void) {
+    typedef struct MusicFade {
+        f32 cur;
+        f32 target;
+        f32 time;
+    } MusicFade;
+    typedef struct MusicTrack {
+        u32 active;
+        f32 vol;
+        f32 target;
+        f32 time;
+        u8 pad10[0x28 - 0x10];
+    } MusicTrack;
+    extern s8 g_paused_803C6F2D;
+    extern MusicFade g_globalMusic_800DBE30[3];
+    extern MusicTrack *g_tracks_803C6F30;
+    extern f32 g_fDeltaTimeMS;
+    extern void (*SetMusicPitch)(u32);
+    extern void (*SetMusicTempo)(u32);
+    extern void (*SetMusicTrackVol)(u32, u32);
+    void SetMusicVol(u32 vol);
+    u32 i;
+
+    if (g_paused_803C6F2D) {
+        return;
+    }
+    if (g_globalMusic_800DBE30[0].time > 0.0f && g_globalMusic_800DBE30[0].cur != g_globalMusic_800DBE30[0].target) {
+        g_globalMusic_800DBE30[0].cur = (g_globalMusic_800DBE30[0].target - g_globalMusic_800DBE30[0].cur) * (g_fDeltaTimeMS / g_globalMusic_800DBE30[0].time) + g_globalMusic_800DBE30[0].cur;
+        g_globalMusic_800DBE30[0].time -= g_fDeltaTimeMS;
+        if (g_globalMusic_800DBE30[0].cur < 0.0f) {
+            g_globalMusic_800DBE30[0].cur = 0.0f;
+        }
+        SetMusicVol(32767.0f * g_globalMusic_800DBE30[0].cur);
+    }
+    if (g_globalMusic_800DBE30[1].time > 0.0f && g_globalMusic_800DBE30[1].cur != g_globalMusic_800DBE30[1].target) {
+        g_globalMusic_800DBE30[1].cur = (g_globalMusic_800DBE30[1].target - g_globalMusic_800DBE30[1].cur) * (g_fDeltaTimeMS / g_globalMusic_800DBE30[1].time) + g_globalMusic_800DBE30[1].cur;
+        g_globalMusic_800DBE30[1].time -= g_fDeltaTimeMS;
+        if (g_globalMusic_800DBE30[1].cur < 0.0f) {
+            g_globalMusic_800DBE30[1].cur = 0.0f;
+        }
+        SetMusicPitch(65536.0f * g_globalMusic_800DBE30[1].cur);
+    }
+    if (g_globalMusic_800DBE30[2].time > 0.0f && g_globalMusic_800DBE30[2].cur != g_globalMusic_800DBE30[2].target) {
+        g_globalMusic_800DBE30[2].cur = (g_globalMusic_800DBE30[2].target - g_globalMusic_800DBE30[2].cur) * (g_fDeltaTimeMS / g_globalMusic_800DBE30[2].time) + g_globalMusic_800DBE30[2].cur;
+        g_globalMusic_800DBE30[2].time -= g_fDeltaTimeMS;
+        if (g_globalMusic_800DBE30[2].cur < 0.0f) {
+            g_globalMusic_800DBE30[2].cur = 0.0f;
+        }
+        SetMusicTempo(65536.0f * g_globalMusic_800DBE30[2].cur);
+    }
+    for (i = 0; i < 32; i++) {
+        if (g_tracks_803C6F30[i].active && g_tracks_803C6F30[i].time > 0.0f && g_tracks_803C6F30[i].vol != g_tracks_803C6F30[i].target) {
+            g_tracks_803C6F30[i].vol = (g_fDeltaTimeMS / g_tracks_803C6F30[i].time) * (g_tracks_803C6F30[i].target - g_tracks_803C6F30[i].vol) + g_tracks_803C6F30[i].vol;
+            g_tracks_803C6F30[i].time -= g_fDeltaTimeMS;
+            if (g_tracks_803C6F30[i].vol < 0.0f) {
+                g_tracks_803C6F30[i].vol = 0.0f;
+            }
+            SetMusicTrackVol(i, 32767.0f * g_tracks_803C6F30[i].vol);
+        }
+    }
+}
+
+void SoundListener_Set(s32 listener, s32 param, void *value) {
+    typedef struct SoundListener {
+        Vector4 pos;
+        Vector4 vel;
+        u8 unk20[0x30];
+        u8 mtx[0x40];
+    } SoundListener;
+    extern SoundListener g_listener[4];
+    void *memcpy(void *dst, const void *src, u32 n);
+
+    switch (param) {
+    case 5:
+        g_listener[listener].pos = *(Vector4 *)value;
+        break;
+    case 6:
+        g_listener[listener].vel = *(Vector4 *)value;
+        break;
+    case 7:
+        memcpy(g_listener[listener].mtx, value, 0x40);
+        break;
+    }
+}
+
+void SoundListener_SetTotalListeners(u32 arg0) {
+    extern s32 g_numListeners;
+    if (arg0 != 0U) {
+        g_numListeners = arg0 - 1;
+    }
+}
+
+void SoundSource_Play(s32 index) {
+}
+
+void SoundSource_Stop(s32 index) {
+}
+
+s8 SoundSource_IsActive(s32 index) {
+}
+
+s8 SoundSource_IsLooping(s32 index) {
+}
+
+void *SoundAudioSample_Play(void *sample) {
+    void *voice;
+
+    if (sample == NULL) {
+        return NULL;
+    }
+    voice = (void *)GetVoice(sample, (u8)(rand() % 10 + 5));
+    if (voice != NULL) {
+        SetVoiceState(voice, 1);
+        return voice;
+    }
+    return NULL;
+}
+
+void SoundAudioSample_Set(void *voice, s32 type, s32 value) {
+    switch (type) {
+    case 0:
+        SetVoiceVol(voice, (s16)value);
+        break;
+    case 1:
+        SetVoicePitch(voice, value);
+        break;
+    case 4:
+        SetVoicePos(voice, (s16)value, -0x7FFF);
+        break;
+    case 9:
+        break;
+    }
+}
+
+void SongManager_StopBKSong(void) {
+
+}
+
+void SongManager_LoadSong(void) {
+    M2C_UNK CreateMusic();
+    extern s8 g_songLoaded_803C6F2C;
+    CreateMusic();
+    g_songLoaded_803C6F2C = 1;
+}
+
+void SongManager_PlaySong(void) {
+    extern s8 g_songLoaded_803C6F2C;
+    extern void (*SetMusicState)(s32);
+    extern f32 g_globalMusic_800DBE30[];
+    void SetMusicVol(u32 vol);
+
+    if (g_songLoaded_803C6F2C) {
+        SetMusicState(1);
+        SetMusicVol(32767.0 * g_globalMusic_800DBE30[0]);
+    }
+}
+
+s32 ActionMusicChange(void *data) {
+    typedef struct MusicFade {
+        f32 cur;
+        f32 target;
+        f32 time;
+    } MusicFade;
+    typedef struct MusicTrack {
+        u32 active;
+        f32 vol;
+        f32 target;
+        f32 time;
+        u8 pad10[0x28 - 0x10];
+    } MusicTrack;
+    typedef struct MusicChangeTrackOld {
+        u32 unk0;
+        u32 track;
+        u32 active;
+        u8 padC[0x24 - 0xC];
+    } MusicChangeTrackOld;
+    typedef struct MusicChangeTrack {
+        u32 unk0;
+        u32 track;
+        u32 active;
+        f32 vol;
+        u8 pad10[0x28 - 0x10];
+    } MusicChangeTrack;
+    typedef struct MusicChange {
+        f32 vol;
+        u32 volTime;
+        f32 pitch;
+        u32 pitchTime;
+        f32 tempo;
+        u32 tempoTime;
+        u32 orderMode;
+        u32 order;
+        u32 orderType;
+        u32 numTracks;
+        union {
+            MusicChangeTrackOld old[1];
+            MusicChangeTrack tracks[1];
+        } u;
+    } MusicChange;
+    typedef struct MusicScale {
+        u8 pad0[0x30];
+        f32 vol;
+        f32 pitch;
+        f32 tempo;
+    } MusicScale;
+    extern s8 g_paused_803C6F2D;
+    extern s8 g_songLoaded_803C6F2C;
+    extern MusicFade g_globalMusic_800DBE30[3];
+    extern MusicTrack *g_tracks_803C6F30;
+    extern void (*SetMusicPitch)(u32);
+    extern void (*SetMusicTempo)(u32);
+    extern void (*SetMusicOrder)(u8, s8);
+    void SetMusicVol(u32 vol);
+    MusicChange *action = data;
+    u32 i;
+    f32 vol;
+
+    if (g_paused_803C6F2D) {
+        return 0;
+    }
+    if (!g_songLoaded_803C6F2C) {
+        return 0;
+    }
+    if (action->volTime == 0) {
+        g_globalMusic_800DBE30[0].cur = action->vol;
+        if (g_worldData.world != NULL) {
+            g_globalMusic_800DBE30[0].cur = action->vol * (*(MusicScale **)((u8 *)g_worldData.world + 0x9C))->vol;
+        }
+        SetMusicVol(32767.0f * g_globalMusic_800DBE30[0].cur);
+    } else {
+        g_globalMusic_800DBE30[0].target = action->vol;
+    }
+    g_globalMusic_800DBE30[0].time = *(f32 *)&action->volTime;
+    if (action->pitchTime == 0) {
+        g_globalMusic_800DBE30[1].cur = action->pitch;
+        if (g_worldData.world != NULL) {
+            g_globalMusic_800DBE30[1].cur = action->pitch * (*(MusicScale **)((u8 *)g_worldData.world + 0x9C))->pitch;
+        }
+        SetMusicPitch(65536.0f * g_globalMusic_800DBE30[1].cur);
+    } else {
+        g_globalMusic_800DBE30[1].target = action->pitch;
+    }
+    g_globalMusic_800DBE30[1].time = *(f32 *)&action->pitchTime;
+    if (action->tempoTime == 0) {
+        g_globalMusic_800DBE30[2].cur = action->tempo;
+        if (g_worldData.world != NULL) {
+            g_globalMusic_800DBE30[2].cur = action->tempo * (*(MusicScale **)((u8 *)g_worldData.world + 0x9C))->tempo;
+        }
+        SetMusicTempo(65536.0f * g_globalMusic_800DBE30[2].cur);
+    } else {
+        g_globalMusic_800DBE30[2].target = action->tempo;
+    }
+    g_globalMusic_800DBE30[2].time = *(f32 *)&action->tempoTime;
+    if (action->orderMode == 0x29) {
+        SetMusicOrder(action->order, action->orderType == 0x27);
+        for (i = 0; i < 15; i++) {
+            g_tracks_803C6F30[i].active = 0;
+        }
+    }
+    for (i = 0; i < action->numTracks; i++) {
+        g_tracks_803C6F30[action->u.old[i].track].active = action->u.old[i].active;
+        g_tracks_803C6F30[action->u.tracks[i].track].active = action->u.tracks[i].active;
+        vol = *(f32 *)&((u32 *)data)[i * 10 + 13];
+        if (vol > 0.0f) {
+            g_tracks_803C6F30[action->u.tracks[i].track].target = vol;
+            g_tracks_803C6F30[action->u.tracks[i].track].time = vol;
+        }
+    }
+    return 1;
+}
+
+s32 ActionMusicSetSong(void) {
+    return 1;
+}

@@ -1,0 +1,256 @@
+#include "common.h"
+
+
+s8 Player_IsHuman(void *player) {
+    extern void Player_DefaultControlReader(void);
+    s32 isHuman = 0;
+
+    if (player != NULL && *(void **)((u8 *)player + 0x20) == Player_DefaultControlReader) {
+        isHuman = 1;
+    }
+    return isHuman;
+}
+
+void Player_Init(void *player) {
+    s32 i;
+
+    Control_ClearControl(player);
+    M2C_FIELD(player, u8 *, 0x40) = 0;
+    M2C_FIELD(player, u8 *, 0x31) = 0;
+    M2C_FIELD(player, s32 *, 0x3C) = 0;
+    M2C_FIELD(player, s32 *, 0x68) = -1;
+    M2C_FIELD(player, s32 *, 0x6C) = 0;
+    memset((u8 *)player + 0x70, 0, 0x38);
+    M2C_FIELD(player, u8 *, 0x71) = 1;
+    M2C_FIELD(player, s32 *, 0x34) = 0;
+    for (i = 0; i < 8; i++) {
+        ((s16 *)((u8 *)player + 0x94))[i] = 30;
+    }
+    M2C_FIELD(player, s16 *, 0xA2) = 0;
+    M2C_FIELD(player, s32 *, 0x6C) = 0;
+    M2C_FIELD(player, s16 *, 0xAC) = -1;
+    M2C_FIELD(player, s16 *, 0xAE) = -1;
+}
+
+void Player_SetName(void *player, s32 port, const char *name) {
+    char *strcpy(char *dst, const char *src);
+    s32 Input_GetPlayerDevice(s32 port);
+
+    strcpy((char *)player + 0x40, name);
+    M2C_FIELD(player, s32 *, 0x60) = port;
+    if (Player_IsHuman(player)) {
+        M2C_FIELD(player, s32 *, 0xC8) = Input_GetPlayerDevice(M2C_FIELD(player, s32 *, 0x60));
+    }
+}
+
+void Player_RefreshInterface(void *player) {
+    u32 InterfaceManager_Create();
+    void InterfaceManager_ReleaseInterface(u32 index);
+    struct {
+        u32 unk0;
+        u8 *script;
+        u32 x;
+        u32 y;
+        u8 unk10[0xC0];
+    } info;
+    void *thing;
+
+    if (M2C_FIELD(player, void **, 0x2C) != NULL && (M2C_FIELD(player, u32 *, 0x6C) & 0x10)) {
+        memset(&info, 0, sizeof(info));
+        M2C_FIELD(player, u32 *, 0x6C) |= 0x200;
+        thing = M2C_FIELD(player, void **, 0x2C);
+        M2C_FIELD(M2C_FIELD(thing, void **, 0x8C), void (**)(void *, void *), 0x20)(thing, &info);
+        if (M2C_FIELD(player, u32 *, 0x68) < 0xFFFFFFFF) {
+            InterfaceManager_ReleaseInterface(M2C_FIELD(player, u32 *, 0x68));
+            M2C_FIELD(player, u32 *, 0x68) = 0xFFFFFFFF;
+        }
+        if (info.script != NULL) {
+            M2C_FIELD(player, u32 *, 0x68) = InterfaceManager_Create(info.script, player, 0);
+            InterfaceManager_SetOffset(M2C_FIELD(player, u32 *, 0x68), info.x, info.y);
+            M2C_FIELD(player, u8 *, 0x71) = 1;
+        }
+        M2C_FIELD(player, u32 *, 0x6C) &= ~0x200;
+    }
+}
+
+void Player_ReleaseInterface(void *player) {
+    void InterfaceManager_ReleaseInterface(u32 index);
+    u32 index = M2C_FIELD(player, u32 *, 0x68);
+
+    if (index != 0xFFFFFFFF) {
+        InterfaceManager_ReleaseInterface(index);
+    }
+}
+
+s32 Player_InputHeartbeat(void *arg0) {
+    return M2C_FIELD(arg0, s8 (**)(), 0x20)() != 0;
+}
+
+void Player_GetInterfaceInfo(void *player, void *info) {
+    int sprintf(char *buf, const char *fmt, ...);
+    void *thing;
+
+    if (M2C_FIELD(player, void **, 0x2C) != NULL) {
+        M2C_FIELD(info, u8 *, 0x80) = 0;
+        thing = M2C_FIELD(player, void **, 0x2C);
+        M2C_FIELD(M2C_FIELD(thing, void **, 0x8C), void (**)(void *, void *), 0x20)(thing, info);
+    } else {
+        M2C_FIELD(info, u8 *, 0x80) = 2;
+        if (M2C_FIELD(player, u8 *, 0x30) != 0) {
+            M2C_FIELD(info, u8 *, 0x80) = 1;
+            M2C_FIELD(player, u8 *, 0x30) = 0;
+        }
+    }
+    if (M2C_FIELD(player, u8 *, 0x71) != 0) {
+        sprintf((char *)info + 0x74, "%s", M2C_FIELD(player, char **, 0x7C));
+        M2C_FIELD(player, u8 *, 0x71) = 0;
+    }
+}
+
+void Player_DetachThingDeath(void *arg0) {
+    void *temp_r5;
+
+    temp_r5 = M2C_FIELD(arg0, void **, 0x2C);
+    M2C_FIELD(arg0, void **, 0x2C) = NULL;
+    M2C_FIELD(arg0, s8 *, 0x30) = 1;
+    if (temp_r5 != NULL) {
+        M2C_FIELD(temp_r5, s32 *, 0x94) = 0;
+    }
+}
+
+void PlayerHuman_Heartbeat(void *player) {
+    void ForceFeedback_GetForce(void *ff, u8 *a, u8 *b, s32 *c);
+    void Input_SetAlternativeForceFeedback(s32 input, u8 a, u8 b);
+    void Player_Heartbeat(void *player);
+    s32 c;
+    u8 a;
+    u8 b;
+    void *car;
+
+    car = M2C_FIELD(player, void **, 0x2C);
+    if (car != NULL && !(M2C_FIELD(car, u32 *, 0x74) & 2)) {
+        ForceFeedback_GetForce((u8 *)car + 0x40, &a, &b, &c);
+        Input_SetAlternativeForceFeedback(M2C_FIELD(player, s32 *, 0xC8), a, b);
+    }
+    Player_Heartbeat(player);
+}
+
+void PlayerHuman_SetControlBinding(void *arg0, void *arg1) {
+    typedef struct { u8 unk0; u8 unk1; u8 keys[14]; } KeyBinding;
+    typedef struct { u8 pad0[0xB8]; u8 keys[14]; u8 unkC6; u8 unkC7; } PlayerHuman;
+    extern KeyBinding g_keyBinding[9];
+    void *memset(void *dst, int c, u32 n);
+    PlayerHuman *player = arg0;
+    KeyBinding *binding = arg1;
+    u16 i;
+
+    memset(player->keys, 0, 0x10);
+    for (i = 0; i < 14; i++) {
+        player->keys[i] = 0xFF;
+    }
+    for (i = 0; i < 14; i++) {
+        player->keys[g_keyBinding[0].keys[i]] = binding->keys[i];
+    }
+    player->unkC6 = binding->unk0;
+    player->unkC7 = binding->unk1;
+}
+
+s32 Player_NULL(void) {
+    return 0;
+}
+
+void PlayerHuman_EvaluateCombo(u8 *player) {
+    extern s8 g_bFreezeWorld;
+    void TimeHandler_SetSlowMotion(void);
+    void CameraManager_ReturnAllToPlayer(void);
+    u32 *combo = (u32 *)(player + 0xD8);
+
+    if (!(*(u32 *)(player + 0x6C) & 0x20)) {
+        if (*(u32 *)(player + 0xCC) == 13 && (combo[0] & 0x800) && (combo[1] & 0x800) && (combo[2] & 0x800) &&
+            (combo[3] & 4) && (combo[4] & 4) && (combo[5] & 8) && (combo[6] & 8) && (combo[7] & 0x20) &&
+            (combo[8] & 0x20) && (combo[9] & 0x800) && (combo[10] & 0x800) && (combo[11] & 0x800)) {
+            *(u32 *)(player + 0x6C) |= 0x20;
+        }
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 4) && (combo[2] & 4)) {
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 4) && (combo[2] & 8)) {
+        player[0x32] = 7;
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 4) && (combo[2] & 0x10)) {
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 0x800) && (combo[2] & 0x10)) {
+        player[0x32] = 3;
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 0x800) && (combo[2] & 0x20)) {
+        TimeHandler_SetSlowMotion();
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 0x10) && (combo[2] & 0x10)) {
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 0x10) && (combo[2] & 0x20)) {
+        CameraManager_ReturnAllToPlayer();
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 8) && (combo[2] & 8)) {
+    } else if (*(u32 *)(player + 0xCC) == 6 && (combo[0] & 0x800) && (combo[1] & 0x800) && (combo[2] & 0x800) &&
+               (combo[3] & 0x20) && (combo[4] & 0x20)) {
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 0x800) && (combo[1] & 0x20) && (combo[2] & 0x20)) {
+        g_bFreezeWorld = !g_bFreezeWorld;
+    } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 4) && (combo[1] & 8) && (combo[2] & 8)) {
+        player[0x32] = 8;
+    }
+}
+
+s32 Player_AIControlReader(s8 *ctrl) {
+    extern u32 g_playbackStatus;
+    s32 element;
+
+    if (M2C_FIELD(ctrl, u32 *, 0x6C) & 1) {
+        return 0;
+    }
+    if (g_playbackStatus == 2) {
+        element = Playback_GetElement();
+        ctrl[0] = element;
+        ctrl[2] = (s8)(element & 0xFFFF0000) >> 16;
+        element = Playback_GetElement();
+        ctrl[1] = element;
+        ctrl[3] = (s8)(element & 0xFFFF0000) >> 16;
+    } else if (g_playbackStatus == 1) {
+        Playback_PutElement(ctrl[0] + (ctrl[2] << 16));
+        Playback_PutElement(ctrl[1] + (ctrl[3] << 16));
+    }
+    return 1;
+}
+
+s32 ActionVehicleChangeControl(u32 *action) {
+    extern void Player_DefaultControlReader(void);
+    void Input_SetForceFeedbackActive(s32 input, u8 active);
+    u8 *GameSettings_GetControllerSettings(s32 index);
+    u8 i;
+    u8 *vehicle;
+    u8 *player;
+    s32 isHuman;
+
+    for (i = 0; i < action[2]; i++) {
+        vehicle = *(u8 **)(action[i + 3] + 0x28);
+        if (vehicle == NULL) {
+            continue;
+        }
+        player = *(u8 **)(vehicle + 0x94);
+        if (player == NULL) {
+            continue;
+        }
+        if (action[0] == 0x22) {
+            isHuman = 0;
+            if (player != NULL && *(void **)(player + 0x20) == Player_DefaultControlReader) {
+                isHuman = 1;
+            }
+            if (isHuman) {
+                Input_SetForceFeedbackActive(*(s32 *)(player + 0xC8), 0);
+            }
+            *(u32 *)(player + 0x6C) |= 1;
+        } else {
+            isHuman = 0;
+            if (player != NULL && *(void **)(player + 0x20) == Player_DefaultControlReader) {
+                isHuman = 1;
+            }
+            if (isHuman) {
+                Input_SetForceFeedbackActive(*(s32 *)(player + 0xC8), *GameSettings_GetControllerSettings(*(s32 *)(player + 0x60)));
+            }
+            *(u32 *)(player + 0x6C) &= ~1;
+        }
+    }
+    return 1;
+}
+

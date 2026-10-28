@@ -1,0 +1,450 @@
+#include "common.h"
+
+
+s32 AI_Creature_Deactivate(u8 *creature) {
+    extern u8 g_cameraManager[];
+    void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
+    void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareDistance(void *a, void *b);
+    void Creature_Release(s32 arg0);
+    u8 *thing;
+    u8 *spawner;
+    u8 *cam;
+    u32 i;
+    u8 *pos;
+    f32 dist;
+    f32 minDist;
+    Vector4 p;
+
+    thing = *(u8 **)(creature + 0x2C);
+    if (thing != NULL && !(*(u32 *)(thing + 0x74) & 0x1000)) {
+        minDist = 360000.0f;
+        pos = thing + 0x40;
+        cam = g_cameraManager;
+        for (i = 0; i < g_cameraManager[0x640]; cam += 0x190, i++) {
+            PSVECScale((Vector4 *)(cam + 0x80), &p, 150.0f);
+            PSVECAdd((Vector4 *)(cam + 0x60), &p, &p);
+            dist = PSVECSquareDistance(&p, pos);
+            if (minDist > dist) {
+                minDist = dist;
+            }
+        }
+        if (360000.0f == minDist) {
+            *(u8 *)(creature + 0xCD) = 0;
+            spawner = *(u8 **)(creature + 0xD8);
+            if (spawner != NULL) {
+                (*(s32 *)(spawner + 0x4))--;
+                ((s32 *)(*(u8 **)(creature + 0xD8) + 0xC))[*(s32 *)(creature + 0xDC)]--;
+            } else {
+                thing = *(u8 **)(creature + 0x2C);
+                spawner = *(u8 **)(thing + 0x90);
+                if (spawner != NULL && *(s32 *)(thing + 0x1B4) == 0 && *(u32 *)(creature + 0xF8) == 0) {
+                    *(s32 *)(spawner + 0x20) = 1;
+                    *(s32 *)(*(u8 **)(*(u8 **)(creature + 0x2C) + 0x90) + 0x1C) = 0;
+                }
+            }
+            Creature_Release(*(s32 *)(creature + 0x2C));
+            return 1;
+        }
+    } else {
+        *(u8 *)(creature + 0xCD) = 0;
+        spawner = *(u8 **)(creature + 0xD8);
+        if (spawner != NULL) {
+            (*(s32 *)(spawner + 0x4))--;
+            ((s32 *)(*(u8 **)(creature + 0xD8) + 0xC))[*(s32 *)(creature + 0xDC)]--;
+        }
+        return 1;
+    }
+    return 0;
+}
+
+s8 AI_Creature_Spawn(u8 *creature, u8 *spawner, u32 index) {
+    typedef struct CreatureParams {
+        Vector4 pos;
+        f32 angle;
+        u8 *info;
+        u8 *player;
+    } CreatureParams;
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    s32 GameSettings_GetDifficulty(void);
+    void Player_SetThing(u8 *player, u8 *thing);
+    void AI_Reset(void *arg0);
+    int rand(void);
+    CreatureParams params;
+    u8 *info;
+    u8 *list;
+    u8 *thing;
+
+    AI_Reset(creature);
+    *(s32 *)(creature + 0xE4) = 0;
+    *(u8 *)(creature + 0xEC) = 0;
+    *(s32 *)(creature + 0xFC) = 0;
+    *(s32 *)(creature + 0xF8) = 0;
+    *(u8 *)(creature + 0xCD) = 0;
+    *(s32 *)(creature + 0xC8) = 0;
+    *(s32 *)(creature + 0xD8) = 0;
+    *(s32 *)(creature + 0xDC) = -1;
+    *(s32 *)(creature + 0xE0) = 0;
+    *(f32 *)(creature + 0xF0) = (f32)(rand() % 251 + 750) / 1000.0f;
+    if (rand() % 4) {
+        *(u8 *)(creature + 0xED) = 1;
+    } else {
+        *(u8 *)(creature + 0xED) = 0;
+    }
+    *(u32 *)(creature + 0xD0) = 0;
+    if (index != -1) {
+        *(u8 **)(creature + 0xD8) = spawner;
+        info = *(u8 **)(*(u8 **)spawner + 0x2C);
+        *(u8 **)(creature + 0xE0) = (*(u8 ***)(info + 0x10))[index];
+        list = *(u8 **)(info + 0x8);
+        params.info = (*(u8 ***)(list + 4))[rand() % *(u32 *)list];
+        params.pos = **(Vector4 **)(creature + 0xE0);
+        params.angle = 0.017453292f * (f32)(rand() % 360);
+        *(u8 **)(creature + 0xA8) = NULL;
+    } else {
+        params.info = *(u8 **)(spawner + 0x18);
+        params.pos = *(Vector4 *)spawner;
+        params.angle = *(f32 *)(spawner + 0x14);
+        *(u8 **)(creature + 0xD8) = NULL;
+        *(u8 **)(creature + 0xA8) = spawner;
+        switch (GameSettings_GetDifficulty()) {
+        case 0:
+            *(u32 *)(creature + 0xD0) = *(u32 *)(spawner + 0x24);
+            break;
+        case 1:
+            *(u32 *)(creature + 0xD0) = *(u32 *)(spawner + 0x28);
+            break;
+        case 2:
+            *(u32 *)(creature + 0xD0) = *(u32 *)(spawner + 0x2C);
+            break;
+        case 3:
+            *(u32 *)(creature + 0xD0) = *(u32 *)(spawner + 0x30);
+            break;
+        }
+    }
+    params.player = creature;
+    params.pos.y += 0.1f;
+    if (*(u32 *)(creature + 0xD0) == 0 && params.info != NULL) {
+        switch (GameSettings_GetDifficulty()) {
+        case 0:
+            *(u32 *)(creature + 0xD0) = *(u32 *)(params.info + 0x44);
+            break;
+        case 1:
+            *(u32 *)(creature + 0xD0) = *(u32 *)(params.info + 0x48);
+            break;
+        case 2:
+            *(u32 *)(creature + 0xD0) = *(u32 *)(params.info + 0x4C);
+            break;
+        case 3:
+            *(u32 *)(creature + 0xD0) = *(u32 *)(params.info + 0x50);
+            break;
+        }
+    }
+    thing = ThingManager_DARYL_CreateThing(7, &params);
+    if (thing != NULL) {
+        *(u8 *)(creature + 0xCD) = 2;
+        *(s32 *)(creature + 0xC8) = 1;
+        *(u32 *)(creature + 0xDC) = index;
+        Player_SetThing(params.player, thing);
+        *(u32 *)(creature + 0x6C) |= 0x100;
+        *(u8 **)(thing + 0x90) = *(u8 **)(creature + 0xA8);
+        return 1;
+    }
+    return 0;
+}
+
+void AI_Creature_PopulateVolumes(void) {
+    typedef struct SpawnVolume {
+        u8 *volume;
+        u32 unk4;
+        u32 index;
+        u32 counts[32];
+    } SpawnVolume;
+    extern u8 *gs_pCurrentAICreature_803C7150;
+    extern SpawnVolume gs_aSpawnVolumes_802C4860[256];
+    extern u32 gs_currentVolume_803C7160;
+    extern u32 g_volumeTotal;
+    extern u8 g_cameraManager[];
+    void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
+    void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareDistance(void *a, void *b);
+    s8 AI_Creature_Spawn(u8 *creature, SpawnVolume *vol, u32 index);
+    u32 v;
+    u32 idx;
+    u8 *info;
+    u8 *spawner;
+    u8 *creature;
+    u32 i;
+    f32 dist;
+    f32 minDist;
+    Vector4 p;
+
+    creature = gs_pCurrentAICreature_803C7150;
+    do {
+        if (creature[0xCD] == 0) {
+            break;
+        }
+        creature = *(u8 **)(creature + 0xD4);
+    } while (creature != gs_pCurrentAICreature_803C7150);
+    if (creature[0xCD] != 0) {
+        return;
+    }
+    v = gs_currentVolume_803C7160;
+    do {
+        if (++v == g_volumeTotal) {
+            v = 0;
+        }
+        info = *(u8 **)(gs_aSpawnVolumes_802C4860[v].volume + 0x2C);
+        if (*(u32 *)(gs_aSpawnVolumes_802C4860[v].volume + 4) == 0 || *(u32 *)(info + 4) == gs_aSpawnVolumes_802C4860[v].unk4 || *(u32 *)(info + 0xC) == 0 || info[0] != 0) {
+            continue;
+        }
+        idx = gs_aSpawnVolumes_802C4860[v].index;
+        do {
+            if (++idx == *(u32 *)(info + 0xC)) {
+                idx = 0;
+            }
+            spawner = (*(u8 ***)(info + 0x10))[idx];
+            if (*(u32 *)(spawner + 0x14) == 0 || (f32)gs_aSpawnVolumes_802C4860[v].counts[idx] >= 1.0f + (f32)(*(u32 *)(info + 4) / *(u32 *)(info + 0xC))) {
+                continue;
+            }
+            minDist = 360000.0f;
+            for (i = 0; i < g_cameraManager[0x640]; i++) {
+                PSVECScale((Vector4 *)(g_cameraManager + i * 0x190 + 0x80), &p, 150.0f);
+                PSVECAdd((Vector4 *)(g_cameraManager + i * 0x190 + 0x60), &p, &p);
+                dist = PSVECSquareDistance(&p, spawner);
+                if (minDist > dist) {
+                    minDist = dist;
+                }
+            }
+            if (minDist > 160000.0f && minDist < 360000.0f) {
+                gs_currentVolume_803C7160 = v;
+                gs_aSpawnVolumes_802C4860[v].index = idx;
+                if (AI_Creature_Spawn(creature, &gs_aSpawnVolumes_802C4860[v], idx)) {
+                    (*(s32 *)(*(u8 **)(creature + 0xD8) + 4))++;
+                    ((s32 *)(*(u8 **)(creature + 0xD8) + 0xC))[idx]++;
+                }
+                return;
+            }
+        } while (idx != gs_aSpawnVolumes_802C4860[v].index);
+    } while (v != gs_currentVolume_803C7160);
+}
+
+void AI_Creature_Heartbeat(void) {
+}
+
+void AI_Creature_VolumeState(u8 *creature) {
+    int rand(void);
+    f32 ArcTan(f32 y, f32 x);
+    u8 *thing;
+    u8 *target;
+    f32 dist;
+    f32 angle;
+    f32 diff;
+    u8 r;
+
+    thing = *(u8 **)(creature + 0x2C);
+    if (IsPointWithinVolume((Vector4 *)(thing + 0x40), **(u8 ***)(creature + 0xD8), &dist) || *(u32 *)(*(u8 **)(creature + 0xE0) + 0x14) == 0) {
+        if (*(u8 *)(creature + 0xEC) == 0) {
+            r = rand() % 50;
+            if (r == 0) {
+                *(f32 *)(creature + 0xF0) = (f32)(rand() % 501 + 500) / -1000.0f;
+                *(f32 *)(creature + 0xF4) = 0.017453292f * (f32)(rand() % 360 - 180);
+                *(u8 *)(creature + 0xED) = 0;
+            } else if (r < 3) {
+                *(f32 *)(creature + 0xF0) = (f32)(rand() % 251 + 750) / 1000.0f;
+                *(u8 *)(creature + 0xED) = 0;
+            } else {
+                *(f32 *)(creature + 0xF0) = (f32)(rand() % 251 + 750) / 1000.0f;
+                *(f32 *)(creature + 0xF4) = 0.017453292f * (f32)(rand() % 360 - 180);
+                if (rand() % 4) {
+                    *(u8 *)(creature + 0xED) = 1;
+                } else {
+                    *(u8 *)(creature + 0xED) = 0;
+                }
+            }
+            *(u8 *)(creature + 0xEC) = rand() % 128 + 127;
+        }
+        *(f32 *)(creature + 0x4) = *(f32 *)(creature + 0xF4);
+        *(s8 *)(creature + 0x1) = 127.0f * *(f32 *)(creature + 0xF0);
+    } else {
+        if (*(f32 *)(creature + 0xF0) <= 0.75f) {
+            *(f32 *)(creature + 0xF0) = (f32)(rand() % 251 + 750) / 1000.0f;
+        }
+        *(s32 *)(creature + 0xC8) = 0xFA;
+        target = *(u8 **)(creature + 0xE0);
+        thing = *(u8 **)(creature + 0x2C);
+        angle = ArcTan(*(f32 *)(target + 0x0) - *(f32 *)(thing + 0x40), *(f32 *)(target + 0x8) - *(f32 *)(thing + 0x48));
+        *(f32 *)(creature + 0x4) = angle;
+        thing = *(u8 **)(creature + 0x2C);
+        diff = ArcTan(*(f32 *)(thing + 0x30), *(f32 *)(thing + 0x38)) - angle;
+        while (diff > 3.1415927f) {
+            diff -= 6.2831855f;
+        }
+        while (diff < -3.1415927f) {
+            diff += 6.2831855f;
+        }
+        if (*(f32 *)(creature + 0xF0) >= 0.0f) {
+            *(s8 *)(creature + 0x1) = 127;
+        } else {
+            *(s8 *)(creature + 0x1) = -127;
+        }
+        *(u8 *)(creature + 0xEC) = rand() % 128 + 127;
+        *(f32 *)(creature + 0xF4) = *(f32 *)(creature + 0x4);
+    }
+    if (*(s8 *)(creature + 0xED)) {
+        *(u8 *)(creature + 0x14) = 0xFF;
+    }
+}
+
+void AI_Creature_AsyncHeartbeat(u8 *creature) {
+    int rand(void);
+    f32 ArcTan(f32 y, f32 x);
+    f32 PSVECSquareDistance(void *a, void *b);
+    void Creature_Release(s32 arg0);
+    void Control_ClearControl(void *control);
+    void AI_AsyncHeartbeat(void *arg0);
+    u8 *list;
+    u8 *thing;
+    u8 *node;
+    u8 *next;
+    u8 *spawner;
+    f32 angle;
+    f32 diff;
+
+    if (*(u8 *)(creature + 0xCD) == 0 || *(s8 *)(creature + 0xCC) || *(u8 **)(creature + 0x2C) == NULL) {
+        *(s32 *)(creature + 0xC8) = 0;
+        return;
+    }
+    AI_AsyncHeartbeat(creature);
+    Control_ClearControl(creature);
+    node = *(u8 **)(creature + 0xE0);
+    if (node != NULL && (*(u32 *)(node + 0x14) == 0 || PSVECSquareDistance(node, *(u8 **)(creature + 0x2C) + 0x40) < 25.0f)) {
+        node = *(u8 **)(creature + 0xE0);
+        if (*(u32 *)(node + 0x18) != 0) {
+            next = (*(u8 ***)(node + 0x1C))[rand() % *(u32 *)(node + 0x18)];
+            if (*(u32 *)(next + 0x14) != 0) {
+                *(u8 **)(creature + 0xE0) = next;
+            }
+        }
+    }
+    if (*(u32 *)(creature + 0xF8) != 0) {
+        if (*(s32 *)(creature + 0xFC) != 0 || 1.0f != *(f32 *)(*(u8 **)(creature + 0x2C) + 0x1C0)) {
+            *(s32 *)(creature + 0xC8) = 1000;
+        } else {
+            spawner = *(u8 **)(creature + 0xD8);
+            if (*(u8 **)(creature + 0xE0) == NULL) {
+                if (*(u32 *)(spawner + 0xC) == 0) {
+                    goto end;
+                }
+                *(u8 **)(creature + 0xE0) = (*(u8 ***)(spawner + 0x10))[rand() % *(u32 *)(spawner + 0xC)];
+            }
+            if (PSVECSquareDistance(*(u8 **)(creature + 0xE0), *(u8 **)(creature + 0x2C) + 0x40) < 25.0f) {
+                Creature_Release(*(s32 *)(creature + 0x2C));
+                *(u8 *)(creature + 0xCD) = 0;
+            } else {
+                *(s32 *)(creature + 0xC8) = 0xFA;
+                node = *(u8 **)(creature + 0xE0);
+                angle = ArcTan(*(f32 *)(node + 0x0) - *(f32 *)(*(u8 **)(creature + 0x2C) + 0x40),
+                               *(f32 *)(node + 0x8) - *(f32 *)(*(u8 **)(creature + 0x2C) + 0x48));
+                *(f32 *)(creature + 0x4) = angle;
+                thing = *(u8 **)(creature + 0x2C);
+                diff = ArcTan(*(f32 *)(thing + 0x30), *(f32 *)(thing + 0x38)) - angle;
+                while (diff > 3.1415927f) {
+                    diff -= 6.2831855f;
+                }
+                while (diff < -3.1415927f) {
+                    diff += 6.2831855f;
+                }
+                if (*(f32 *)(creature + 0xF0) >= 0.0f) {
+                    *(s8 *)(creature + 0x1) = 127;
+                } else {
+                    *(s8 *)(creature + 0x1) = -127;
+                }
+                *(u8 *)(creature + 0x14) = 0xFF;
+            }
+        }
+    } else {
+        thing = *(u8 **)(creature + 0x2C);
+        if (*(u32 *)(thing + 0x1B8) & 1) {
+            if (*(u8 *)(creature + 0xEC) == 0) {
+                *(f32 *)(creature + 0xF0) = (f32)(rand() % 201 + 800) / 1000.0f;
+                *(f32 *)(creature + 0xF4) = 0.017453292f * (f32)(rand() % 360 - 180);
+                *(u8 *)(creature + 0xED) = 1;
+                *(u8 *)(creature + 0xEC) = rand() % 64 + 64;
+            }
+            *(f32 *)(creature + 0x4) = *(f32 *)(creature + 0xF4);
+            if (*(f32 *)(creature + 0xF0) >= 0.0f) {
+                *(s8 *)(creature + 0x1) = 127;
+            } else {
+                *(s8 *)(creature + 0x1) = -127;
+            }
+            if (*(s8 *)(creature + 0xED)) {
+                *(u8 *)(creature + 0x14) = 0xFF;
+            }
+        } else {
+            list = *(u8 **)(creature + 0xE4);
+            if (list == NULL || *(u32 *)list == 0) {
+                if (*(u32 *)(creature + 0xDC) == -1) {
+                    if (PSVECSquareDistance(thing + 0x40, *(u8 **)(thing + 0x90)) > 25.0f) {
+                        thing = *(u8 **)(creature + 0x2C);
+                        node = *(u8 **)(thing + 0x90);
+                        angle = ArcTan(*(f32 *)(node + 0x0) - *(f32 *)(thing + 0x40), *(f32 *)(node + 0x8) - *(f32 *)(thing + 0x48));
+                        *(f32 *)(creature + 0x4) = angle;
+                        thing = *(u8 **)(creature + 0x2C);
+                        diff = ArcTan(*(f32 *)(thing + 0x30), *(f32 *)(thing + 0x38)) - angle;
+                        while (diff > 3.1415927f) {
+                            diff -= 6.2831855f;
+                        }
+                        while (diff < -3.1415927f) {
+                            diff += 6.2831855f;
+                        }
+                        if (*(f32 *)(creature + 0xF0) >= 0.0f) {
+                            *(s8 *)(creature + 0x1) = 127;
+                        } else {
+                            *(s8 *)(creature + 0x1) = -127;
+                        }
+                        *(u8 *)(creature + 0x14) = 0xFF;
+                        *(s32 *)(creature + 0xC8) = 0xFA;
+                    }
+                } else {
+                    AI_Creature_VolumeState(creature);
+                }
+            }
+        }
+    }
+end:
+    if (*(f32 *)(creature + 0xF0) >= 0.0f) {
+        *(f32 *)(creature + 0x8) = *(f32 *)(creature + 0xF0);
+    } else {
+        *(f32 *)(creature + 0x8) = -*(f32 *)(creature + 0xF0);
+    }
+}
+
+void AI_Creature_Init(u8 *creature, u8 *params) {
+    void AI_Creature_AsyncHeartbeat(u8 *creature);
+    int rand(void);
+
+    AI_Init();
+    *(s32 *)(creature + 0xD0) = *(s32 *)(params + 0x0);
+    *(void **)(creature + 0xB8) = creature;
+    *(void **)(creature + 0xBC) = AI_Creature_AsyncHeartbeat;
+    *(u8 *)(creature + 0xC4) = 0;
+    AI_Reset(creature);
+    *(s32 *)(creature + 0xE4) = 0;
+    *(u8 *)(creature + 0xEC) = 0;
+    *(s32 *)(creature + 0xFC) = 0;
+    *(s32 *)(creature + 0xF8) = 0;
+    *(u8 *)(creature + 0xCD) = 0;
+    *(s32 *)(creature + 0xC8) = 0;
+    *(s32 *)(creature + 0xD8) = 0;
+    *(s32 *)(creature + 0xDC) = -1;
+    *(s32 *)(creature + 0xE0) = 0;
+    *(f32 *)(creature + 0xF0) = (f32)(rand() % 251 + 750) / 1000.0f;
+    if (rand() % 4) {
+        *(u8 *)(creature + 0xED) = 1;
+    } else {
+        *(u8 *)(creature + 0xED) = 0;
+    }
+    *(u8 *)(creature + 0xCD) = 3;
+}
+
