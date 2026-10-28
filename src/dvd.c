@@ -57,7 +57,7 @@ typedef struct DVDDIRegs {
     {                                                              \
         volatile DVDDIRegs *regs = (DVDDIRegs *)0xCC006000;        \
                                                                  \
-        regs->status = *(volatile u32 *)0xCC006004;                \
+        ((volatile u32 *)regs)[1] = *(volatile u32 *)0xCC006004;  \
     }
 
 
