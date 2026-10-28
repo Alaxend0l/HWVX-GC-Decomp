@@ -91,7 +91,8 @@ typedef struct HitRecord {
 
 typedef struct SmartProjectile {
     Vector4 vel;
-    u8 mtx[0x30];
+    u8 mtx[0x20];
+    Vector4 dir;
     Vector4 pos;
     Quaternion quat;
     u8 pad60[0x74 - 0x60];
