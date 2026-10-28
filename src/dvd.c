@@ -159,8 +159,9 @@ void stateReady(void)
                 break;
             default:
                 DVDReset();
-                OSCreateAlarm((OSAlarm *)&tmpBuffer[0xb0]);
-                OSSetAlarm((OSAlarm *)(tmpBuffer + 0xb0),
+                alarm = (OSAlarm *)(tmpBuffer + 0xb0);
+                OSCreateAlarm(alarm);
+                OSSetAlarm(alarm,
                            (*(u32 *)(0x80000000 + 0xf8) / 4) / 1000 * 1150,
                            AlarmHandler);
                 break;
