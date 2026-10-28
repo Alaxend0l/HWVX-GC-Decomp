@@ -1,7 +1,7 @@
 #include "common.h"
 
 typedef struct OSAlarm {
-	void *handler;
+	void *(*handler)(void *, void *);
 	u32 tag;
 	s64 fire;
 	struct OSAlarm *prev;
