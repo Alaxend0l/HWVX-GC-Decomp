@@ -31,8 +31,8 @@ typedef struct SmartProjParams {
     f32 turnMax;
     f32 turnOut;
     f32 turnIn;
+    f32 dropRange;
     f32 gain;
-    f32 turnGain;
     u8 pad18[0x1C - 0x18];
     f32 fov;
     f32 minRange;
