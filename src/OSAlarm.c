@@ -18,12 +18,11 @@ typedef struct OSAlarmQueue {
 OSAlarmQueue AlarmQueue;
 
 void OSInitAlarm(void) {
-    extern void *AlarmQueue_803C7210[2];
     void *__OSGetExceptionHandler(u8 exception);
     void *__OSSetExceptionHandler(u8 exception, void *handler);
     void DecrementerExceptionHandler(void);
     if (__OSGetExceptionHandler(8) != DecrementerExceptionHandler) {
-        AlarmQueue_803C7210[0] = AlarmQueue_803C7210[1] = NULL;
+        AlarmQueue.head = AlarmQueue.tail = NULL;
         __OSSetExceptionHandler(8, DecrementerExceptionHandler);
     }
 }
