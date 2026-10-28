@@ -216,7 +216,7 @@ void stateBusy(DVDCommandBlock *block)
   DVDLowRead((u8 *)block->address + block->transferredSize, block->currTransferSize, block->offset + block->transferredSize, cbForStateBusy);
   break;
  case 2:
-  ((volatile DVDDIRegs *)0xCC006000)->status = ((volatile DVDDIRegs *)0xCC006000)->status;
+  DVD_SET_DI_REG();
   DVDLowSeek(block->offset, cbForStateBusy);
   break;
  case 3:
