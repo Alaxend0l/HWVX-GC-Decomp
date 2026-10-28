@@ -829,96 +829,92 @@ void Effect_Init(Effect *effect)
 
 s32 Effect_UpdateEffect(Effect *effect, u8 *desc)
 {
-    Effect *src = (Effect *)desc;
-    s32 ret = 0;
-    s16 value;
-
-    effect->type = src->type;
-    effect->duration = src->duration;
-    effect->startDelay = src->startDelay;
-    switch (src->type)
-    {
-    case 0:
-        effect->flags |= 0x14;
-        value = src->params.constant.magnitude;
-        if (value < -0xff) { value = -0xff; }
-        if (value > 0xff) { value = 0xff; }
-        effect->params.constant.magnitude = value;
-        effect->params.constant.angle = (src->params.constant.angle % 360) * 0x100 / 360;
-        effect->params.constant.envelope.attackTime = src->params.constant.envelope.attackTime;
-        effect->params.constant.envelope.fadeTime = src->params.constant.envelope.fadeTime;
-        value = src->params.constant.envelope.attackLevel;
-        if (value > 0xff) { value = 0xff; }
-        effect->params.constant.envelope.attackLevel = value;
-        value = src->params.constant.envelope.fadeLevel;
-        if (value > 0xff) { value = 0xff; }
-        effect->params.constant.envelope.fadeLevel = value;
-        break;
-    case 1:
-        effect->flags |= 0x24;
-        value = src->params.ramp.start;
-        if (value < -0xff) { value = -0xff; }
-        if (value > 0xff) { value = 0xff; }
-        effect->params.ramp.start = value;
-        value = src->params.ramp.end;
-        if (value < -0xff) { value = -0xff; }
-        if (value > 0xff) { value = 0xff; }
-        effect->params.ramp.end = value;
-        effect->params.ramp.angle = (src->params.ramp.angle % 360) * 0x100 / 360;
-        break;
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 6:
-        effect->flags |= 0x44;
-        value = src->params.periodic.magnitude;
-        if (value > 0xff) { value = 0xff; }
-        effect->params.periodic.magnitude = value;
-        effect->params.periodic.angle = (src->params.periodic.angle % 360) * 0x100 / 360;
-        value = src->params.periodic.period;
-        if ((u16)value < 2) { value = 2; }
-        effect->params.periodic.period = value;
-        effect->params.periodic.phase = (src->params.periodic.phase % 360) * 0x100 / 360;
-        value = src->params.periodic.offset;
-        if (value < -0xff) { value = -0xff; }
-        if (value > 0xff) { value = 0xff; }
-        effect->params.periodic.offset = value;
-        effect->params.periodic.envelope.attackTime = src->params.periodic.envelope.attackTime;
-        effect->params.periodic.envelope.fadeTime = src->params.periodic.envelope.fadeTime;
-        value = src->params.periodic.envelope.attackLevel;
-        if (value > 0xff) { value = 0xff; }
-        effect->params.periodic.envelope.attackLevel = value;
-        value = src->params.periodic.envelope.fadeLevel;
-        if (value > 0xff) { value = 0xff; }
-        effect->params.periodic.envelope.fadeLevel = value;
-        if (effect->params.periodic.period < 4) { effect->params.periodic.phase = 0x40; }
-        break;
-    case 7:
-    case 8:
-        effect->flags |= 0x80;
-        effect->params.condition.unk0[0] = src->params.condition.unk0[0];
-        effect->params.condition.unk0[1] = src->params.condition.unk0[1];
-        value = src->params.condition.posCoefficient;
-        if (value < -0xff) { value = -0xff; }
-        if (value > 0xff) { value = 0xff; }
-        effect->params.condition.posCoefficient = value;
-        value = src->params.condition.negCoefficient;
-        if (value < -0xff) { value = -0xff; }
-        if (value > 0xff) { value = 0xff; }
-        effect->params.condition.negCoefficient = value;
-        effect->params.condition.negSaturation = src->params.condition.negSaturation >> 1;
-        effect->params.condition.posSaturation = src->params.condition.posSaturation >> 1;
-        value = (s8)effect->params.condition.unk0[0];
-        effect->deadbandLow = (value - (effect->params.condition.unk0[1] >> 1)) << 12;
-        value = (s8)effect->params.condition.unk0[0];
-        effect->deadbandHigh = (value + (effect->params.condition.unk0[1] >> 1)) << 12;
-        break;
-    default:
-        ret = -2;
-        break;
-    }
-    return ret;
+Effect *src = (Effect *)desc;
+s32 value;
+s32 ret = 0;
+u16 period;
+u8 sat;
+effect->type = src->type;
+effect->duration = src->duration;
+effect->startDelay = src->startDelay;
+switch (src->type)
+{
+case 0:
+effect->flags |= 0x14;
+value = src->params.constant.magnitude;
+value = (value < -0xff) ? -0xff : value;
+value = (value > 0xff) ? 0xff : value;
+effect->params.constant.magnitude = value;
+effect->params.constant.angle = (src->params.constant.angle % 360) * 0x100 / 360;
+effect->params.constant.envelope.attackTime = src->params.constant.envelope.attackTime;
+effect->params.constant.envelope.fadeTime = src->params.constant.envelope.fadeTime;
+value = src->params.constant.envelope.attackLevel;
+value = (value > 0xff) ? 0xff : value;
+effect->params.constant.envelope.attackLevel = value;
+value = src->params.constant.envelope.fadeLevel;
+value = (value > 0xff) ? 0xff : value;
+effect->params.constant.envelope.fadeLevel = value;
+break;
+case 1:
+effect->flags |= 0x24;
+value = src->params.ramp.start;
+value = (value < -0xff) ? -0xff : value;
+value = (value > 0xff) ? 0xff : value;
+effect->params.ramp.start = value;
+value = src->params.ramp.end;
+value = (value < -0xff) ? -0xff : value;
+value = (value > 0xff) ? 0xff : value;
+effect->params.ramp.end = value;
+effect->params.ramp.angle = (src->params.ramp.angle % 360) * 0x100 / 360;
+break;
+case 2: case 3: case 4: case 5: case 6:
+effect->flags |= 0x44;
+value = src->params.periodic.magnitude;
+value = (value > 0xff) ? 0xff : value;
+effect->params.periodic.magnitude = value;
+effect->params.periodic.angle = (src->params.periodic.angle % 360) * 0x100 / 360;
+period = src->params.periodic.period;
+period = (period < 2) ? 2 : period;
+effect->params.periodic.period = period;
+effect->params.periodic.phase = (src->params.periodic.phase % 360) * 0x100 / 360;
+value = src->params.periodic.offset;
+value = (value < -0xff) ? -0xff : value;
+value = (value > 0xff) ? 0xff : value;
+effect->params.periodic.offset = value;
+effect->params.periodic.envelope.attackTime = src->params.periodic.envelope.attackTime;
+effect->params.periodic.envelope.fadeTime = src->params.periodic.envelope.fadeTime;
+value = src->params.periodic.envelope.attackLevel;
+value = (value > 0xff) ? 0xff : value;
+effect->params.periodic.envelope.attackLevel = value;
+value = src->params.periodic.envelope.fadeLevel;
+value = (value > 0xff) ? 0xff : value;
+effect->params.periodic.envelope.fadeLevel = value;
+if (effect->params.periodic.period < 4) { effect->params.periodic.phase = 0x40; }
+break;
+case 7: case 8:
+effect->flags |= 0x80;
+effect->params.condition.unk0[0] = src->params.condition.unk0[0];
+effect->params.condition.unk0[1] = src->params.condition.unk0[1];
+value = src->params.condition.posCoefficient;
+value = (value < -0xff) ? -0xff : value;
+value = (value > 0xff) ? 0xff : value;
+effect->params.condition.posCoefficient = value;
+value = src->params.condition.negCoefficient;
+value = (value < -0xff) ? -0xff : value;
+value = (value > 0xff) ? 0xff : value;
+effect->params.condition.negCoefficient = value;
+sat = src->params.condition.negSaturation;
+effect->params.condition.negSaturation = (sat >> 1) & 0xff;
+sat = src->params.condition.posSaturation;
+effect->params.condition.posSaturation = (sat >> 1) & 0xff;
+effect->deadbandLow = ((s8)effect->params.condition.unk0[0] - ((u32)effect->params.condition.unk0[1] >> 1)) << 12;
+effect->deadbandHigh = ((s8)effect->params.condition.unk0[0] + ((u32)effect->params.condition.unk0[1] >> 1)) << 12;
+break;
+default:
+ret = -2;
+break;
+}
+return ret;
 }
 
 #pragma pop
