@@ -440,7 +440,7 @@ config.libs = [
         "cflags": cflags_base,
         "progress_category": "sdk",
         "objects": [
-            Object(NonMatching, "OSAlarm.c"),
+            Object(NonMatching, "OSAlarm.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "OSAlloc.c"),
             Object(Matching, "OSArena.c"),
             Object(NonMatching, "OSAudioSystem.c"),
