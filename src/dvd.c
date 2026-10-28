@@ -54,8 +54,8 @@ typedef struct DVDDIRegs {
 } DVDDIRegs;
 
 #define DVD_SET_DI_REG()                                            \
-    ((volatile DVDDIRegs *)0xCC006000)->status =                \
-        *(volatile u32 *)0xCC006004
+    ((volatile u32 *)0xCC006000)[1] =                              \
+        ((volatile u32 *)0xCC006000)[1]
 
 
 void stateGettingError(void)
