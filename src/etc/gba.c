@@ -39,6 +39,47 @@ s32 DiskId;
 s32 gLinkFinished;
 
 
+#pragma use_lmw_stmw on
+void GbaOpen__Fl(s32 chan)
+{
+  int memcmp(const void*,const void*,unsigned long);
+  s32 GBAGetStatus(s32,u8*),GBARead(s32,void*,u8*),GBAWrite(s32,void*,u8*);
+  u32 OSGetTick(void);
+  JoyBusParam*p;u32*sk;u8*a;s32*b;u8 k2;s32 kC;u32 key;s32 ok,re,rv;u32 t0,t1;
+
+  sk=&Param[chan].send.key;key=Param[chan].recv.key;Param[chan].recv.key=Param[chan].send.key;
+  ok=0;re=0;
+  if(Param[chan].recv.unk0==0){
+    if(Param[chan].recv.unk3==0){
+      memset(&Param[chan].send,0,0x20);
+      Param[chan].send.chan=chan;Param[chan].send.unk3=1;Param[chan].send.hostId=HostId;
+      Param[chan].send.unk2=Param[chan].recv.unk2;Param[chan].send.unkC=Param[chan].recv.unkC;
+      Param[chan].key=OSGetTick();*sk=Param[chan].key;Param[chan].state=4;
+    }else{
+      if(memcmp(&Param[chan].recv,&Param[chan].send,0x20)==0&&(key==*sk||key==Param[chan].key)){
+        *sk=key;ok=1;Param[chan].key=key;
+      }
+      if(ok==0){re=1;Param[chan].state=5;}
+    }
+  }else{
+    k2=Param[chan].recv.unk2;Param[chan].recv.unk2=Param[chan].send.unk2;
+    a=&Param[chan].send.unk2;b=&Param[chan].send.unkC;
+    kC=Param[chan].recv.unkC;Param[chan].recv.unkC=Param[chan].send.unkC;
+    if(memcmp(&Param[chan].recv,&Param[chan].send,0x20)==0&&(key==*sk||key==Param[chan].key)){
+      *sk=key;ok=1;Param[chan].key=key;*a=k2;*b=kC;
+    }
+    if(ok==0)Param[chan].state=7;
+  }
+  if(ok==0&&re==0)return;
+  p=&Param[chan];
+  if(GBAGetStatus(chan,&p->status)!=0||Param[chan].status!=0x30)return;
+  if(re)t0=key;else{t0=OSGetTick();*sk=t0;}
+  if(GBAWrite(chan,&t0,&Param[chan].status)!=0||(Param[chan].status&0x30)!=0x30)return;
+  if(GBAGetStatus(chan,&Param[chan].status)!=0||Param[chan].status!=0x38)return;
+  rv=GBARead(chan,&t1,&Param[chan].status);
+  if(re!=0||rv!=0||t0!=t1||(Param[chan].status&0x30)!=0x30)return;
+  Param[chan].key=t0;Param[chan].state=3;
+}
 void JBCallback__Fll(s32 chan, s32 result)
 {
     Param[chan].state = 2;

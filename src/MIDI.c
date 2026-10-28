@@ -363,6 +363,108 @@ void SetMIDITrackVol(void)
 
 #pragma push
 #pragma optimization_level 1
+void ProcessMIDI(s32 time)
+{
+    extern u8 g_song[0x24];
+    extern u16 g_envelope[0x1000000];
+    MIDI_VOICE *voice;
+    MIDI_CHN *chn;
+    s32 i;
+    u32 mask;
+    u32 rate;
+    u8 *p;
+    struct MIDI_VOICE *DestroyVoice(struct MIDI_VOICE *voice);
+    s32 Mul16_(s32, s32);
+    u32 GetEnvRate(u16 arg0);
+    void SetVoiceVol_(void *voice, s32 vol);
+
+    if ((signed char)g_song[0x1F] != 0)
+    {
+        JumpToMarker();
+        g_song[0x1F] = 0;
+    }
+    for (chn = g_chn, i = 0x10; i != 0; i--)
+    {
+        for (voice = chn->voice; voice != NULL; voice = voice->next)
+        {
+            if (voice->state2 != 3)
+            {
+                voice->count += Mul16_(voice->rate, time);
+                if (voice->state2 != 3)
+                {
+                    if (voice->state >= 5)
+                    {
+                        continue;
+                    }
+                    if (voice->state == 1)
+                    {
+                        if (voice->count < 0x10000)
+                        {
+                            rate = GetEnvRate(voice->prog->field_1A);
+                            if (rate + 0x10000 != 0xFFFF)
+                            {
+                                voice->rate = rate;
+                            }
+                            else
+                            {
+                                voice->count = 0;
+                                voice->field_38 = 0x7FFF;
+                            }
+                            voice->state = 2;
+                        }
+                    }
+                    else
+                    {
+                        voice->state = 3;
+                        continue;
+                    }
+                }
+            }
+            if (voice->count >= 0x10000)
+            {
+                voice->field_38 = voice->count >> 1;
+            }
+            else
+            {
+                voice->field_38 = g_envelope[(voice->count >> 1) & 0x1FFFFFE];
+            }
+            if (voice->field_38 <= 0)
+            {
+                voice = DestroyVoice(voice);
+                continue;
+            }
+            SetVoiceVol_(voice, chn->vol);
+        }
+    }
+    *(u32 *)(g_song + 8) += time;
+    if (*(u32 *)(g_song + 4) != 0)
+    {
+        *(u32 *)(g_song) += *(u32 *)(g_song + 8) / *(u32 *)(g_song + 4);
+        *(u32 *)(g_song + 8) %= *(u32 *)(g_song + 4);
+    }
+    p = (u8 *)*(u32 *)(g_song + 0x14);
+    chn = (MIDI_CHN *)((u8 *)g_chn + (g_song[0x1D] << 5));
+    mask = 0;
+    while (1)
+    {
+        if (*p < 0xf0)
+        {
+            if ((signed char)*p >= 0)
+            {
+                g_song[0x1C] = (*p & 0xf0) >> 4;
+                g_song[0x1D] = *p & 0xf;
+                chn = (MIDI_CHN *)((u8 *)g_chn + (g_song[0x1D] << 5));
+                switch (g_song[0x1C] - 8)
+                {
+                }
+            }
+        }
+    }
+}
+#pragma pop
+
+#pragma push
+#pragma optimization_level 1
 u32 GetEnvRate(u16 arg0)
 {
     if (arg0 != 0)

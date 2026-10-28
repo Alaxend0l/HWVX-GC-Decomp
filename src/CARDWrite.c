@@ -62,3 +62,19 @@ void EraseCallback(s32 chan, s32 result) {
     __CARDPutControlBlock(card, result);
     callback(chan, result);
 }
+
+void CARDWrite(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset)
+{
+    s32 CARDWriteAsync(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset, CARDCallback callback);
+    s32 __CARDSync(s32 chan);
+    void __CARDSyncCallback(s32 chan, s32 result);
+    s32 result;
+
+    result = CARDWriteAsync(fileInfo, buf, length, offset, __CARDSyncCallback);
+    if (result >= 0) {
+        __CARDSync(fileInfo->chan);
+    }
+    else {
+    }
+}
+

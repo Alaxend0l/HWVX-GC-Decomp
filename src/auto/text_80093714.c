@@ -103,6 +103,6 @@ s32 TRKTargetVersions(u8 *targetVersions)
     return 0;
 }
 
-void fn_80094FB0(void)
-{
+void fn_80094FB0(void) {
+    M2C_ERROR(/* unknown instruction: twui $r0, 0x0 */);
 }
