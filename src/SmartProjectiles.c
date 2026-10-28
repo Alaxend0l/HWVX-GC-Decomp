@@ -54,9 +54,11 @@ typedef struct SmartProjInfo {
 
 typedef struct SmartTarget {
     Vector4 vec00;
-    u8 pad10[0x40 - 0x10];
+    u8 mtx[0x20];
+    u8 pad30[0x40 - 0x30];
     Vector4 pos;
-    u8 pad50[0x8C - 0x50];
+    u8 pad50[0x88 - 0x50];
+    u32 list;
     void **vtable;
 } SmartTarget;
 
