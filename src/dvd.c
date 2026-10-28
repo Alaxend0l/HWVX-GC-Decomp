@@ -54,8 +54,8 @@ typedef struct DVDDIRegs {
 } DVDDIRegs;
 
 #define DVD_SET_DI_REG()                                            \
-    ((volatile u32 *)0xCC006000)[1] =                           \
-        ((volatile u32 *)0xCC006000)[1]
+    ((volatile DVDDIRegs *)0xCC006000)->status =                \
+        *(volatile u32 *)0xCC006004
 
 
 void stateGettingError(void)
@@ -205,7 +205,7 @@ void stateBusy(DVDCommandBlock *block)
  switch (block->command)
  {
  case 5:
-  DVD_SET_DI_REG();
+  *(volatile u32 *)0xCC006004 = ((volatile u32 *)0xCC006000)[1];
   block->currTransferSize = 0x20;
   DVDLowReadDiskID(block->address, cbForStateBusy);
   break;
@@ -216,7 +216,7 @@ void stateBusy(DVDCommandBlock *block)
   DVDLowRead((u8 *)block->address + block->transferredSize, block->currTransferSize, block->offset + block->transferredSize, cbForStateBusy);
   break;
  case 2:
-  DVD_SET_DI_REG();
+  ((volatile DVDDIRegs *)0xCC006000)->status = ((volatile DVDDIRegs *)0xCC006000)->status;
   DVDLowSeek(block->offset, cbForStateBusy);
   break;
  case 3:
@@ -244,7 +244,7 @@ void stateBusy(DVDCommandBlock *block)
   DVDLowRequestAudioStatus(0, cbForStateBusy);
   break;
  case 10:
-  DVD_SET_DI_REG();
+  ((volatile u32 *)0xCC006000)[1] = *(volatile u32 *)0xCC006004;
   DVDLowRequestAudioStatus(0x10000, cbForStateBusy);
   break;
  case 11:
