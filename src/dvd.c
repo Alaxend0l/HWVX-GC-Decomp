@@ -32,7 +32,7 @@ OSAlarm ResetAlarm;
 DVDCommandBlock *executing;
 u32 currID;
 u32 bootInfo;
-u32 PauseFlag;
+s32 PauseFlag;
 u32 PausingFlag;
 u32 AutoFinishing;
 s32 FatalErrorFlag;
