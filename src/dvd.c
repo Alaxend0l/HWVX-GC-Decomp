@@ -57,10 +57,7 @@ volatile u32 __DIRegs[16] : 0xCC006000;
 
 #define DVD_SET_DI_REG()    \
     {                        \
-        volatile u32 status;                          \
-                                                                   \
-        status = *(volatile u32 *)0xCC006004UL;       \
-        __DIRegs[1] = status;                         \
+        __DIRegs[1] = __DIRegs[1];   \
     }
 
 
