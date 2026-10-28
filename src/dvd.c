@@ -48,12 +48,7 @@ u32 FirstTimeInBootrom;
 u32 DVDInitialized;
 u32 LastState;
 
-typedef struct DVDDIReg {
-    u32 unk0;
-    u32 diReg;
-} DVDDIReg;
-
-#define DVD_SET_DI_REG() ((DVDDIReg *)0xCC006000)->diReg = ((DVDDIReg *)0xCC006000)->diReg
+#define DVD_SET_DI_REG() ((volatile u32 *)0xCC006000)[1] = ((volatile u32 *)0xCC006000)[1]
 
 
 void stateGettingError(void)
