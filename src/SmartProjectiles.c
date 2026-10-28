@@ -83,8 +83,8 @@ typedef struct CreateSlaveParams {
 typedef struct HitRecord {
     Vector4 pos;
     Vector4 normal;
-    SmartTarget *thing;
-    SmartTarget *other;
+    u8 *thing;
+    u8 *other;
     s32 time;
     u8 pad2C[0x50 - 0x2C];
 } HitRecord;
