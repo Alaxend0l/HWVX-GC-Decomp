@@ -153,7 +153,7 @@ s32 SetMIDIState(s32 state) {
  typedef struct MIDI_VOICE *MV; typedef struct MIDI_CHN MC;
  extern void *g_pHdr; extern s32 g_musicState; extern u32 SongUpdate, g_trkOn, g_trkOff;
  extern u8 g_song[0x24];
- void ProcessMIDI(void); void SetVoiceState_(MV, s32); u32 ReadVar_(u8 **pp);
+     void ProcessMIDI(s32); void SetVoiceState_(MV, s32); u32 ReadVar_(u8 **pp);
  MC *chn; MV voice, next; u32 i; s32 old;
  if (g_pHdr == NULL) return -1;
  if (state == 0 || g_pHdr == NULL) return g_musicState;
