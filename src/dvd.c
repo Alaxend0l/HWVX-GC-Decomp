@@ -53,11 +53,11 @@ typedef struct DVDDIRegs {
     u32 status;
 } DVDDIRegs;
 
-#define DVD_SET_DI_REG()                                            \
-    {                                                              \
-        volatile DVDDIRegs *regs = (DVDDIRegs *)0xCC006000;        \
-                                                                 \
-        ((volatile u32 *)regs)[1] = *(volatile u32 *)0xCC006004;  \
+extern volatile u32 __DIRegs[];
+
+#define DVD_SET_DI_REG()    \
+    {                        \
+        __DIRegs[1] = __DIRegs[1];   \
     }
 
 
@@ -215,7 +215,7 @@ void stateBusy(DVDCommandBlock *block)
     case 1:
     case 4:
         DVD_SET_DI_REG();
-        block->currTransferSize = (block->length - block->transferredSize > 0x80000) ? 0x80000 : (block->length - block->transferredSize);
+        block->currTransferSize = ((u32)(block->length - block->transferredSize) > 0x80000) ? 0x80000 : (block->length - block->transferredSize);
         DVDLowRead((u8 *)block->address + block->transferredSize, block->currTransferSize, block->offset + block->transferredSize, cbForStateBusy);
         break;
     case 2:
