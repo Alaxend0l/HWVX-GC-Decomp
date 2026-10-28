@@ -193,7 +193,80 @@ Param[chan].state = 1;
 GBAJoyBootAsync(chan, chan * 2, 2, Param[chan].program, Param[chan].length,
                 &Param[chan].status, JBCallback__Fll);
 }
-#pragma pop
+
+#pragma push
+#pragma readonly_strings on
+#pragma use_lmw_stmw on
+void GbaCommunication__Fl(s32 chan)
+{
+    s32 GBAGetStatus(s32, u8 *);
+    s32 GBARead(s32, void *, u8 *);
+    s32 GBAWrite(s32, void *, u8 *);
+    u32 OSGetTick(void);
+    void OSReport(const char *, ...);
+    u8 *status;
+    s32 i;
+    u32 cmd;
+
+    Param[chan].startTick = OSGetTick();
+    do
+    {
+        if (GBAGetStatus(chan, &Param[chan].status) != 0 || (Param[chan].status & ~2) != 0x30 ||
+            OSGetTick() - Param[chan].startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 100)
+        {
+            OSReport("GbaCommunication: An error occurred before to command (chan=%d).\n", chan);
+            Param[chan].state = 0;
+            return;
+        }
+    } while (Param[chan].status != 0x30);
+    cmd = 0x10000000;
+    if (GBAWrite(chan, &cmd, &Param[chan].status) != 0 || (Param[chan].status & ~2) != 0x30)
+    {
+        OSReport("GbaCommunication: An error occurred to command 'FROMGC_REQUEST_PADDATA' (chan=%d).\n", chan);
+        Param[chan].state = 0;
+        return;
+    }
+    Param[chan].startTick = OSGetTick();
+    do
+    {
+        if (GBAGetStatus(chan, &Param[chan].status) != 0 || (Param[chan].status & 0x30) != 0x30 ||
+            OSGetTick() - Param[chan].startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 100)
+        {
+            OSReport("GbaCommunication: An error occurred before to read (chan=%d).\n", chan);
+            Param[chan].state = 0;
+            return;
+        }
+    } while ((Param[chan].status & 0xA) != 8);
+    Param[chan].unk70 = 0;
+    if (GBARead(chan, &Param[chan].unk64, &Param[chan].status) != 0 || (Param[chan].unk64 >> 24) != 0x20 ||
+        (Param[chan].status & 0x30) != 0x30)
+    {
+        OSReport("GbaCommunication: An error occurred in reading (chan=%d).\n", chan);
+        Param[chan].state = 0;
+        return;
+    }
+    Param[chan].unk70 = 1;
+    for (i = 0; i < 4; i++)
+    {
+        Param[chan].startTick = OSGetTick();
+        do
+        {
+            if (GBAGetStatus(chan, &Param[chan].status) != 0 || (Param[chan].status & ~2) != 0x30 ||
+                OSGetTick() - Param[chan].startTick > ((*(u32 *)0x800000F8 / 4) / 1000) * 100)
+            {
+                OSReport("GbaCommunication: An error occurred before to write (chan=%d).\n", chan);
+                Param[chan].state = 0;
+                return;
+            }
+        } while (Param[chan].status != 0x30);
+        if (GBAWrite(chan, &Param[i].unk60, &Param[chan].status) != 0 || (Param[chan].status & ~2) != 0x30)
+        {
+            OSReport("GbaCommunication: An error occurred in writing (chan=%d).\n", chan);
+            Param[chan].state = 0;
+            return;
+        }
+    }
+}
 
 void GBAConnectivityInit__Fv(void)
 {
