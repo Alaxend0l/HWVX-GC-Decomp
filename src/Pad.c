@@ -124,6 +124,28 @@ void UpdateOrigin(s32 chan)
     }
 }
 
+void PADControlMotor(s32 arg0, u32 arg1)
+{
+  M2C_UNK SISetCommand(s32, s32);
+  M2C_UNK SITransferCommands();
+  int new_var;
+  s32 temp_r31;
+  u32 var_r30;
+  var_r30 = arg1;
+  temp_r31 = OSDisableInterrupts();
+  if ((EnabledBits & (0x80000000U >> arg0)) && (!(SIGetType(arg0) & 0x20000000)))
+  {
+    if ((((u32) Spec) < 2U) && (var_r30 == 2))
+    {
+      new_var = 0;
+      var_r30 = new_var;
+    }
+    SISetCommand(arg0, (AnalogMode | 0x400000) | (var_r30 & 3));
+    SITransferCommands();
+  }
+  OSRestoreInterrupts(temp_r31);
+}
+
 void PADSetSpec(s32 spec)
 {
     __PADSpec = 0;
