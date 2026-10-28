@@ -305,6 +305,7 @@ Param[chan].state = 1;
 GBAJoyBootAsync(chan, chan * 2, 2, Param[chan].program, Param[chan].length,
                 &Param[chan].status, JBCallback__Fll);
 }
+#pragma pop
 
 void GBAConnectivityInit__Fv(void)
 {
