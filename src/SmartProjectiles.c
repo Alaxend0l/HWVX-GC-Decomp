@@ -1,5 +1,33 @@
 #include "common.h"
 
+extern f32 g_fDeltaTimeSec;
+extern s32 g_iDeltaTimeMS;
+extern Vector4 g_zeroVector;
+
+u8 FloatsEqual(f32 a, f32 b, f32 eps);
+f32 _fabs(f32 x);
+double acos(double x);
+f32 Sqrt(f32 x);
+f32 MagnitudeVector(Vector4 *v);
+f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
+void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+f32 PSVECSquareMag(Vector4 *v);
+void PSVECNormalize(Vector4 *src, Vector4 *dst);
+f32 PSVECSquareDistance(Vector4 *a, Vector4 *b);
+void GenerateQuaternion(Vector4 *axis, Quaternion *q, f32 angle);
+void QuaternionMult(Quaternion *a, Quaternion *b, Quaternion *out);
+void QuaternionToSubMatrix(Quaternion *quat, u8 *mtx);
+void InverseXformVec(u8 *mtx, Vector4 *in, Vector4 *out);
+s32 ThingManager_GetActiveCars(u8 **cars, u32 max);
+u8 *ThingManager_DARYL_CreateSlave(s32 type, void *params, u32 id);
+void ThingManagerList_Append(void *list, u8 *thing);
+void Projectile_Release(u8 *proj);
+void VTableThunk0(void *a, void *b);
+void VTableThunk1(void *a, void *b, void *c, s32 d);
+
+extern void *vtable_0[];
+
 typedef struct SmartProjParams {
     u8 unk0;
     u8 invertZ;
