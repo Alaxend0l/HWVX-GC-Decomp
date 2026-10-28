@@ -39,7 +39,7 @@ typedef struct SmartProjParams {
 } SmartProjParams;
 
 typedef struct SmartProjInfo {
-    u8 pad0[0xC];
+    u8 pad0[0x1C];
     s32 damage;
     u8 pad20[0x34 - 0x20];
     f32 f34;
