@@ -87,6 +87,20 @@ void SetITPitch(s32 pitch)
         SetVoiceRate_(voice);
     }
 }
+
+#pragma push
+#pragma optimization_level 1
+void SetITTempo(u32 tempo)
+{
+    if (tempo > 0x1FFFF)
+    {
+        tempo = 0x1FFFF;
+    }
+    g_song[0xA] = tempo;
+    g_song[0] = ((u32)g_song[0xA] << 0xF) / (0x1C9C380U / ((u32)g_song[9] * 0x18));
+}
+#pragma pop
+
 #pragma pop
 
 #pragma push
