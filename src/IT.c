@@ -72,18 +72,19 @@ void SetITPitch(s32 pitch)
     IT_VOICE *voice;
     s32 i;
 
-    voice = g_voice;
-    i = 0x20;
     g_song[7] = pitch;
-    while (i != 0)
+    for (voice = g_voice, i = 0x20; i != 0; voice++, i--)
     {
-        if (voice->track != 0 && voice->byte0 == 0)
+        if (voice->pad_8_3B[0x0D] == 0)
         {
-            voice->pad_8_3B[0x2C] = pitch;
-            SetVoiceRate_(voice);
+            continue;
         }
-        voice++;
-        i--;
+        if (voice->byte0 != 0)
+        {
+            continue;
+        }
+        *(s32 *)((u8 *)voice + 0x34) = pitch;
+        SetVoiceRate_(voice);
     }
 }
 #pragma pop
