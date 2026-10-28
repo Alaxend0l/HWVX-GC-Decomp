@@ -45,9 +45,9 @@ void JBCallback__Fll(s32 chan, s32 result)
     Param[chan].result = result;
 }
 
-s32 GBAGetStatus(s32 chan, u8 *status);
-s32 GBARead(s32 chan, void *dst, u8 *status);
-s32 GBAWrite(s32 chan, void *src, u8 *status);
+s32 GBAGetStatus(s32, u8 *);
+s32 GBARead(s32, void *, u8 *);
+s32 GBAWrite(s32, void *, u8 *);
 void GameSettings_GameBoyConnected(void);
 void GbaOpen__Fl(s32);
 
