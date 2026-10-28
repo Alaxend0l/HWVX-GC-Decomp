@@ -43,6 +43,27 @@ void AudioIT_Destroy(void) {
 
 }
 
+#pragma push
+#pragma optimization_level 1
+void SetITOrder(u8 order, s8 deferred)
+{
+    extern void *g_pHdr;
+
+    if (g_pHdr == NULL)
+    {
+        return;
+    }
+    if (order < *(u16 *)((u8 *)g_pHdr + 0x20))
+    {
+        *((u8 *)g_song + 0x15) = order;
+        if (deferred == 0)
+        {
+            g_song[4] = 1;
+        }
+    }
+}
+#pragma pop
+
 void SetITTrackOn(u32 mask, s8 deferred)
 {
     extern u32 g_trkOn;
