@@ -34,7 +34,7 @@ u32 currID;
 u32 bootInfo;
 s32 PauseFlag;
 u32 PausingFlag;
-u32 AutoFinishing;
+s32 AutoFinishing;
 s32 FatalErrorFlag;
 u32 CurrCommand;
 u32 Canceling;
