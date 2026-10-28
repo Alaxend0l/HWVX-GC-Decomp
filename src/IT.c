@@ -45,6 +45,51 @@ void AudioIT_Destroy(void) {
 
 #pragma push
 #pragma optimization_level 1
+void DestroyIT(void)
+{
+    extern void *g_pHdr;
+    extern u8 g_musicTitle[0x20];
+    void SetITState(s32 state);
+    void DestroyIT_(void *hdr);
+
+    if (g_pHdr == NULL)
+    {
+        return;
+    }
+    SetITState(3);
+    DestroyIT_(g_pHdr);
+    g_pHdr = NULL;
+    memset(g_musicTitle, 0, 0x20);
+}
+#pragma pop
+
+#pragma push
+#pragma optimization_level 1
+void SetITPitch(s32 pitch)
+{
+    extern IT_VOICE g_voice[0x20];
+    void SetVoiceRate_(IT_VOICE *voice);
+    IT_VOICE *voice;
+    s32 i;
+
+    voice = g_voice;
+    i = 0x20;
+    g_song[7] = pitch;
+    while (i != 0)
+    {
+        if (voice->track != 0 && voice->byte0 == 0)
+        {
+            voice->pad_8_3B[0x2C] = pitch;
+            SetVoiceRate_(voice);
+        }
+        voice++;
+        i--;
+    }
+}
+#pragma pop
+
+#pragma push
+#pragma optimization_level 1
 void SetITOrder(u8 order, s8 deferred)
 {
     extern void *g_pHdr;
