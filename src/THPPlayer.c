@@ -413,6 +413,12 @@ u8 THPPlayerGetState(void) {
     return M2C_FIELD(&ActivePlayer, u8 *, 0x9C);
 }
 
+void PushUsedTextureSet(void *arg0)
+{
+    extern u8 UsedTextureSetQueue_8036EC78[];
+    OSSendMessage(UsedTextureSetQueue_8036EC78, arg0, 0);
+}
+
 void * PopUsedTextureSet(void)
 {
     s32 OSReceiveMessage(void *messageQueue, void **message, s32 block);
