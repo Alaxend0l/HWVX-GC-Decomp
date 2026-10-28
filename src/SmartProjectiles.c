@@ -66,8 +66,28 @@ typedef struct SmartProjVTable {
     u8 pad0[0x18];
     void (*applyImpulse)(u8 *obj, void *hit, f32 impulse, s32 damage);
     u8 pad1C[0x3C - 0x1C];
-    void (*getPos)(u8 *obj, Vector4 *out);
+    void (*getPos)(SmartTarget *obj, Vector4 *out);
 } SmartProjVTable;
+
+typedef struct CreateSlaveParams {
+    Vector4 a;
+    Vector4 b;
+    Vector4 c;
+    Vector4 zero;
+    u32 id;
+    s32 player;
+    f32 f0;
+    f32 f1;
+} CreateSlaveParams;
+
+typedef struct HitRecord {
+    Vector4 pos;
+    Vector4 normal;
+    SmartTarget *thing;
+    SmartTarget *other;
+    s32 time;
+    u8 pad2C[0x50 - 0x2C];
+} HitRecord;
 
 typedef struct SmartProjectile {
     Vector4 vel;
