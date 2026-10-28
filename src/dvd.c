@@ -53,7 +53,7 @@ typedef struct DVDDIRegs {
     u32 status;
 } DVDDIRegs;
 
-extern volatile u32 __DIRegs[];
+volatile u32 __DIRegs[16] : 0xCC006000;
 
 #define DVD_SET_DI_REG()    \
     {                        \
