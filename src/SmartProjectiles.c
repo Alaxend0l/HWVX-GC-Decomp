@@ -64,7 +64,7 @@ typedef struct SmartTarget {
 
 typedef struct SmartProjVTable {
     u8 pad0[0x18];
-    void (*applyImpulse)(u8 *obj, void *hit, f32 impulse, s32 damage);
+    void (*applyImpulse)(SmartTarget *obj, void *hit, f32 impulse, s32 damage);
     u8 pad1C[0x3C - 0x1C];
     void (*getPos)(SmartTarget *obj, Vector4 *out);
 } SmartProjVTable;
