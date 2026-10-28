@@ -122,6 +122,39 @@ void SetITOrder(u8 order, s8 deferred)
         }
     }
 }
+
+#pragma push
+#pragma optimization_level 1
+void SetITTrackPriority(s32 track, s32 priority)
+{
+    void SetVoicePriority_(void *voice);
+    void *voice;
+    void *next;
+
+    priority *= 2;
+    g_trk[track].pad_12_19[0x00] = priority;
+    voice = g_trk[track].active;
+    if (voice != NULL)
+    {
+        *(u8 *)((u8 *)voice + 0x14) = priority;
+        SetVoicePriority_(voice);
+        voice = *(void **)((u8 *)voice + 0x08);
+    }
+    else
+    {
+        voice = g_trk[track].head;
+    }
+    priority--;
+    while (voice != NULL)
+    {
+        next = *(void **)((u8 *)voice + 0x04);
+        *(u8 *)((u8 *)voice + 0x14) = priority;
+        SetVoicePriority_(voice);
+        voice = next;
+    }
+}
+#pragma pop
+
 #pragma pop
 
 void SetITTrackOn(u32 mask, s8 deferred)
