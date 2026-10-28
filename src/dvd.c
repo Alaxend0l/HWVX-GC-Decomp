@@ -57,7 +57,7 @@ extern volatile u32 __DIRegs[];
 
 #define DVD_SET_DI_REG()    \
     {                        \
-        __DIRegs[1] = __DIRegs[1];   \
+        __DIRegs[1] = *(volatile u32 *)0xCC006004UL;   \
     }
 
 
