@@ -107,7 +107,7 @@ typedef struct SmartProjectile {
     f32 turnY;
     f32 turnZ;
     u16 hits15C;
-    u16 timer;
+    s16 timer;
 } SmartProjectile;
 
 s32 SmartProjectileA_PreMove(SmartProjectile *proj)
