@@ -2,6 +2,61 @@
 // split_file divides it into the game's real files (file_status shows its range).
 #include "common.h"
 
+void TRKPostInterruptEvent(void)
+{
+    typedef struct TRKCPURegs {
+        u32 gpr[32];
+        u32 pc;
+    } TRKCPURegs;
+    typedef struct TRKCPUState {
+        TRKCPURegs regs;
+        u8 pad_84[0x2F8 - 0x84];
+        u32 field_2F8;
+    } TRKCPUState;
+    typedef struct TRKState {
+        u8 pad_0[0x9C];
+        s32 field_9C;
+    } TRKState;
+    extern TRKCPUState gTRKCPUState;
+    extern TRKState gTRKState;
+    void TRKConstructEvent(void *event, s32 eventType);
+    s32 TRKPostEvent(void *event);
+    s32 TRKTargetAccessMemory(void *data, u32 start, u32 *length, s32 space, s32 read);
+    s32 eventType;
+    u32 inst;
+    u32 size;
+    u8 event[0x10];
+
+    if (gTRKState.field_9C)
+    {
+        gTRKState.field_9C = 0;
+    }
+    else
+    {
+        switch (gTRKCPUState.field_2F8 & 0xFFFF)
+        {
+        case 0xD00:
+        case 0x700:
+            size = 4;
+            TRKTargetAccessMemory(&inst, gTRKCPUState.regs.pc, &size, 0, 1);
+            if (inst == 0x0FE00000)
+            {
+                eventType = 5;
+            }
+            else
+            {
+                eventType = 3;
+            }
+            break;
+        default:
+            eventType = 4;
+            break;
+        }
+        TRKConstructEvent(event, eventType);
+        TRKPostEvent(event);
+    }
+}
+
 s32 TRKTargetSupportMask(u8 *mask)
 {
     mask[0] = 0x7A;
