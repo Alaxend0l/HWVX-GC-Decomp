@@ -27,6 +27,7 @@ typedef struct DVDCommandBlock {
 
 u8 tmpBuffer[0x80];
 DVDCommandBlock DummyCommandBlock;
+
 OSAlarm ResetAlarm;
 
 DVDCommandBlock *executing;
