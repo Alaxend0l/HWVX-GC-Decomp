@@ -50,6 +50,7 @@ void DecrementerExceptionCallback(u32 arg0, void *arg1)
     s64 delta;
     void *(*handler)(void *, void *);
     u64 tmpContext[0x59];
+    u64 tmpPad[1];
 
     time = __OSGetSystemTime();
     alarm = AlarmQueue.head;
