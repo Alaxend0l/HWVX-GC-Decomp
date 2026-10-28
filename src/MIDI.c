@@ -49,6 +49,8 @@ typedef struct MIDI_CHN
     u8 field_1F;
 } MIDI_CHN;
 
+extern u8 g_song[0x24];
+
 typedef struct MIDI_INST
 {
     u32 field_0;
