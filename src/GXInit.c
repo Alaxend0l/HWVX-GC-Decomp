@@ -22,6 +22,19 @@ typedef struct GXData {
 extern GXData *gx;
 
 #pragma peephole off
+s32 GXGetTexObjFmt(GXTexObj *obj);
+GXTexRegion *__GXDefaultTexRegionCallback(GXTexObj *t_obj, s32 id)
+{
+    s32 fmt;
+
+    fmt = GXGetTexObjFmt(t_obj);
+    if (fmt != 8 && fmt != 9 && fmt != 10) {
+        return &gx->TexRegions[gx->nextTexRgn++ & 7];
+    } else {
+        return &gx->TexRegionsCI[gx->nextTexRgnCI++ & 3];
+    }
+}
+
 GXTlutRegion *__GXDefaultTlutRegionCallback(u32 idx)
 {
     if (idx >= 20) {
