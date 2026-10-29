@@ -1,13 +1,13 @@
 #include "common.h"
 
-CodeVariables g_codeVariables;
-GeneralGameSettings g_generalGameSettings;
-HotWheelsGameData g_HotWheelsGameData;
-u8 g_HWsavedGameData[0x8FC];
-s8 g_DDRescueGameData[0x1CDC];
-u8 g_DDRsavedGameData[0xE83C];
-char g_fileNames[8][41];
 char g_saveFileName[11];
+char g_fileNames[8][41];
+u8 g_DDRsavedGameData[0xE83C];
+s8 g_DDRescueGameData[0x1CDC];
+u8 g_HWsavedGameData[0x8FC];
+HotWheelsGameData g_HotWheelsGameData;
+GeneralGameSettings g_generalGameSettings;
+CodeVariables g_codeVariables;
 extern s8 g_bValidFileName[8];
 extern s8 g_bRefreshMC;
 extern s8 g_bRefreshMC_FileList;
@@ -133,6 +133,372 @@ done:
         src = (u8 *)*(u32 *)((char *)*(u32 *)((char *)*(u32 *)((char *)*(u32 *)((char *)mcp + 0x40) + 0) + 0) + 4);
         memcpy(&settings->data[2], src, 0x10);
     }
+}
+
+#pragma use_lmw_stmw on
+u32 GameSettings_GetCodeVariable(s32 var, u32 arg) {
+    typedef struct WorldEntry {
+        u32 unk0;
+        u8 *thing;
+    } WorldEntry;
+    typedef struct World {
+        u8 pad0[0x58];
+        u32 numEntries;
+        WorldEntry *entries;
+    } World;
+    void GameSetting_Init(void);
+    s8 GameSettings_IsCheatEnabled(u32 cheat);
+    s32 Input_GetContollersPluggedIn(void);
+    s32 StateManager_CurrState(void);
+    u8 PlayerManager_PlayerCount(void);
+    u8 *PlayerManager_GetPlayerByIndex(u8 index);
+    u8 *PlayerManager_GetHumanPlayerByIndex(u8 index);
+    s8 Player_IsHuman(void *player);
+    s8 GameSettings_GetDefaultMemoryCardStatus(s32 *status, s32 arg1);
+    s8 GameSettings_GetMemoryCardStatus(u32 device, s32 arg1);
+    extern s8 g_bGameSettingsInitialized;
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    void *pack;
+    u8 type;
+    u8 *player;
+    u8 count;
+    u8 i;
+    s32 plugged;
+    s32 port;
+    s32 n;
+    s32 status;
+    World *world;
+
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        type = mcp[1];
+    } else {
+        type = 0;
+    }
+    if (!g_bGameSettingsInitialized) {
+        GameSetting_Init();
+    }
+
+    switch (var) {
+    case 0x64:
+        if (GameSettings_IsCheatEnabled(1)) {
+            return 1;
+        }
+        switch (type) {
+        case 0:
+            if (arg < 0x21) {
+                return g_HotWheelsGameData.cars[arg];
+            }
+            break;
+        case 1:
+            if (arg < 0x14) {
+                return g_DDRescueGameData[arg];
+            }
+            break;
+        }
+        break;
+    case 0x65:
+        if (GameSettings_IsCheatEnabled(3)) {
+            return 1;
+        }
+        switch (type) {
+        case 0:
+            if (arg < 0x39) {
+                return g_HotWheelsGameData.tracks[arg];
+            }
+            break;
+        case 1:
+            if (arg < 0xA) {
+                return g_DDRescueGameData[0x14 + arg];
+            }
+            break;
+        }
+        break;
+    case 0x66:
+        if (GameSettings_IsCheatEnabled(2)) {
+            return 1;
+        }
+        switch (type) {
+        case 0:
+            if (arg < 0xC) {
+                return g_HotWheelsGameData.unk93[arg];
+            }
+            break;
+        }
+        break;
+    case 0x68:
+        if (GameSettings_IsCheatEnabled(4)) {
+            return 1;
+        }
+        switch (type) {
+        case 0:
+            if (arg < 5) {
+                return g_HotWheelsGameData.unkAA[arg];
+            }
+            break;
+        case 1:
+            if (arg < 5) {
+                return g_DDRescueGameData[0x29 + arg];
+            }
+            break;
+        }
+        break;
+    case 0x69:
+        return GameSettings_IsCheatEnabled(9);
+    case 0x6A:
+        switch (type) {
+        case 0:
+            return g_HotWheelsGameData.unk9F[arg] || g_HotWheelsGameData.unkA9;
+        case 1:
+            return g_DDRescueGameData[0x1E + arg] || g_DDRescueGameData[0x28];
+        }
+        break;
+    case 0x6B:
+        return GameSettings_IsCheatEnabled(arg);
+    case 0x6C:
+        return g_codeVariables.unk128[arg];
+    case 0xC8:
+        return g_generalGameSettings.difficulty;
+    case 0xC9:
+        if ((1 << (arg - 1)) & Input_GetContollersPluggedIn()) {
+            return g_codeVariables.controllerState[arg - 1];
+        }
+        g_codeVariables.playerVehicle[arg - 1] = -1;
+        g_codeVariables.controllerState[arg - 1] = 1;
+        return 0;
+    case 0xCA:
+        switch (type) {
+        case 0:
+            if (arg < 0x1E) {
+                return g_HotWheelsGameData.unkB0[arg];
+            }
+            break;
+        case 1:
+            if (arg < 0x1E) {
+                return *(u16 *)&g_DDRescueGameData[0x2E + arg * 2];
+            }
+            break;
+        }
+        break;
+    case 0xCB:
+        if (StateManager_CurrState() == 5) {
+            count = PlayerManager_PlayerCount();
+            for (i = 0; i < count; i++) {
+                player = PlayerManager_GetPlayerByIndex(i);
+                if (*(u32 *)(player + 0x60) == arg && *(u8 **)(player + 0xA8) != NULL) {
+                    return *(u32 *)(*(u8 **)(player + 0xA8) + 0x30);
+                }
+            }
+        }
+        if (arg == 1 && g_codeVariables.unkE8 == 0) {
+            switch (type) {
+            case 0:
+                return g_HotWheelsGameData.unkEC;
+            case 1:
+                return *(s32 *)&g_DDRescueGameData[0x1CD4];
+            }
+            break;
+        }
+        return g_codeVariables.playerVehicle[arg - 1];
+    case 0xCC:
+        return g_codeVariables.playerItem[arg - 1];
+    case 0xCD:
+        n = 0;
+        for (port = 0; port < 4; port++) {
+            if (g_codeVariables.playerVehicle[port] != -1) {
+                n++;
+            }
+        }
+        return n;
+    case 0xCE:
+        if (arg <= 4) {
+            return g_generalGameSettings.controllers[arg - 1].data[1];
+        }
+        return 0;
+    case 0xD1:
+        if (arg <= 4) {
+            return (s8)g_generalGameSettings.controllers[arg - 1].data[0];
+        }
+        return 0;
+    case 0xD2:
+        if (arg <= 4) {
+            return g_codeVariables.playerVehicle[arg - 1] != -1;
+        }
+        return 0;
+    case 0xCF:
+        return g_generalGameSettings.audio.musicVolume;
+    case 0xD0:
+        return g_generalGameSettings.audio.sfxVolume;
+    case 0xD6:
+        return g_generalGameSettings.audio.speakerMode;
+    case 0xD3:
+        plugged = Input_GetContollersPluggedIn();
+        n = 0;
+        for (port = 0; port < 4; port++) {
+            if ((1 << port) & plugged) {
+                n++;
+            }
+        }
+        return n;
+    case 0xD4:
+        plugged = Input_GetContollersPluggedIn();
+        count = PlayerManager_PlayerHumanCount();
+        for (i = 0; i < count; i++) {
+            port = *(s32 *)(PlayerManager_GetHumanPlayerByIndex(i) + 0xC8);
+            if (!(plugged & (1 << port))) {
+                return port + 1;
+            }
+        }
+        return 0;
+    case 0x19A:
+        world = g_worldData.world;
+        if (world != NULL) {
+            n = 0;
+            for (port = 0; port < world->numEntries; port++) {
+                if (world->entries[port].thing[1] == 0x17) {
+                    n++;
+                }
+            }
+            return n;
+        }
+        break;
+    case 0xD5:
+        return g_codeVariables.unkE0;
+    case 0x12C:
+        return g_codeVariables.unkE4;
+    case 0x12D:
+        return g_codeVariables.unkE8;
+    case 0x12E:
+        return g_codeVariables.unkEC;
+    case 0x12F:
+        return g_codeVariables.unkF0;
+    case 0x130:
+        return g_codeVariables.unkF4;
+    case 0x131:
+        return g_codeVariables.unkF8;
+    case 0x132:
+        return g_codeVariables.unkFC;
+    case 0x133:
+        return g_codeVariables.unk100;
+    case 0x134:
+        return g_codeVariables.unk104;
+    case 0x136:
+        return g_codeVariables.unk108;
+    case 0x135:
+        return g_codeVariables.unk109[7];
+    case 0x190:
+        return g_codeVariables.unk30;
+    case 0x191:
+        if (arg <= 4) {
+            return g_codeVariables.unk34[arg - 1];
+        }
+        break;
+    case 0x192:
+        if (arg <= 4) {
+            return g_codeVariables.unk44[arg - 1];
+        }
+        break;
+    case 0x193:
+        if (arg <= 4) {
+            return g_codeVariables.unk54[arg - 1];
+        }
+        break;
+    case 0x194:
+        if (arg <= 4) {
+            return g_codeVariables.unk64[arg - 1];
+        }
+        break;
+    case 0x195:
+        if (type != 0) {
+            break;
+        }
+        if (GameSettings_IsCheatEnabled(3)) {
+            return 0xD;
+        }
+        for (n = 0x12; n > 4; n--) {
+            if (g_HotWheelsGameData.tracks[n]) {
+                return n - 5;
+            }
+        }
+        break;
+    case 0x199:
+        switch (type) {
+        case 0:
+            if (GameSettings_IsCheatEnabled(3)) {
+                return 0x11;
+            }
+            for (n = 0x38; n > 0x26; n--) {
+                if (g_HotWheelsGameData.tracks[n]) {
+                    return n - 0x27;
+                }
+            }
+            break;
+        }
+        break;
+    case 0x196:
+        count = PlayerManager_PlayerCount();
+        for (i = 0; i < count; i++) {
+            player = PlayerManager_GetPlayerByIndex(i);
+            if (*(u32 *)(player + 0x60) == arg) {
+                if (Player_IsHuman(player)) {
+                    return *(u32 *)(player + 0x60);
+                }
+                return 5;
+            }
+        }
+        return 0;
+    case 0x197:
+        return g_codeVariables.unk109[0];
+    case 0x198:
+        return g_codeVariables.unk109[1];
+    case 0x1F4:
+        return GameSettings_GetDefaultMemoryCardStatus(&status, 0);
+    case 0x1F5:
+        GameSettings_GetDefaultMemoryCardStatus(&status, 0);
+        return status;
+    case 0x1F6:
+        return GameSettings_GetMemoryCardStatus(arg, 0);
+    case 0x1F7:
+        return (u32)g_codeVariables.device;
+    case 0x1F8:
+        return g_codeVariables.fileIndex;
+    case 0x1F9:
+        return g_codeVariables.unk11C[0];
+    case 0x1FA:
+        return g_codeVariables.unk11C[1];
+    case 0x1FB:
+        return g_codeVariables.bOverwritingFile;
+    case 0x1FC:
+        return g_codeVariables.unk124;
+    case 0x1FD:
+        return g_codeVariables.unk11C[2];
+    case 0x1FE:
+        return g_codeVariables.unk120[0];
+    case 0x258:
+        return 2;
+    case 0x259:
+        return 1;
+    case 0x19B:
+        return g_codeVariables.unk111;
+    case 0x19C:
+        if (arg < 0x1E) {
+            return g_codeVariables.unk68[arg];
+        }
+        break;
+    }
+    return 0;
 }
 void GameSettings_GameBoyConnected(void) {
     u8 *mcp;
