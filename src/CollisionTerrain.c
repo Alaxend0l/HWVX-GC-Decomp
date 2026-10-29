@@ -535,6 +535,153 @@ s32 RayHitsCell(Vector4 *start, Vector4 *dir, u8 *cell, f32 *time, u8 *out) {
     return hitAny;
 }
 
+s8 RayHitsTerrain_Aux3(Vector4 *start, Vector4 *dir, f32 *t, void *info) {
+    void World_NextSweep(void);
+    f32 _fabs(f32 x);
+    s32 numX;
+    s32 numY;
+    s32 numZ;
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 n;
+    TerrainGrid *grid;
+    f32 oy;
+    f32 dtz;
+    f32 ox;
+    f32 dtx;
+    f32 oz;
+    f32 sx;
+    f32 sy;
+    f32 sz;
+    f32 tx;
+    f32 tz;
+    f32 maxT;
+    f32 ty;
+    f32 dty;
+
+    if (g_worldData.world == NULL || *(TerrainGrid **)g_worldData.world == NULL) {
+        return 0;
+    }
+    grid = *(TerrainGrid **)g_worldData.world;
+    numX = grid->numX;
+    numY = grid->numY;
+    numZ = grid->numZ;
+    ox = grid->origin.x;
+    oy = grid->origin.y;
+    oz = grid->origin.z;
+    sx = grid->sizeX;
+    sy = grid->sizeY;
+    sz = grid->sizeZ;
+    World_NextSweep();
+    maxT = *t;
+    x = (start->x - ox) / sx;
+    y = (start->y - oy) / sy;
+    z = (start->z - oz) / sz;
+    if ((s8)RayHitsCell(start, dir, TerrainGrid_GetCellXYZ(*(TerrainGrid **)g_worldData.world, x, y, z), t, info)) {
+        return 1;
+    }
+    tx = ty = tz = dtx = *t;
+    if (dir->x >= 0.0f) {
+        if (x < numX - 1 && 0.0f != dir->x) {
+            tx = (ox + ((f32)(x + 1) * sx - start->x)) / dir->x;
+        }
+    } else if (x > 0) {
+        tx = (ox + ((f32)x * sx - start->x)) / dir->x;
+    }
+    if (dir->y >= 0.0f) {
+        if (y < numY - 1 && 0.0f != dir->y) {
+            ty = (oy + ((f32)(y + 1) * sy - start->y)) / dir->y;
+        }
+    } else if (y > 0) {
+        ty = (oy + ((f32)y * sy - start->y)) / dir->y;
+    }
+    if (dir->z >= 0.0f) {
+        if (z < numZ - 1 && 0.0f != dir->z) {
+            tz = (oz + ((f32)(z + 1) * sz - start->z)) / dir->z;
+        }
+    } else if (z > 0) {
+        tz = (oz + ((f32)z * sz - start->z)) / dir->z;
+    }
+    if (0.0f != dir->x) {
+        dtx = _fabs(sx / dir->x);
+    }
+    if (0.0f != dir->y) {
+        dty = _fabs(sy / dir->y);
+    } else {
+        dty = *t;
+    }
+    if (0.0f != dir->z) {
+        dtz = _fabs(sz / dir->z);
+    } else {
+        dtz = *t;
+    }
+    while (tx < maxT || ty < maxT || tz < maxT) {
+        if (tx <= tz && tx <= ty) {
+            tx += dtx;
+            if (dir->x >= 0.0f) {
+                n = ++x;
+                x = (f32)x;
+                if (x >= numX) {
+                    tx = maxT;
+                }
+            } else {
+                n = --x;
+                x = (f32)x;
+                if (x <= 0) {
+                    tx = maxT;
+                }
+            }
+            if (n >= 0 && n < numX) {
+                if ((s8)RayHitsCell(start, dir, TerrainGrid_GetCellXYZ(*(TerrainGrid **)g_worldData.world, n, y, z), t, info)) {
+                    return 1;
+                }
+            }
+        } else if (tz <= ty && tz <= tx) {
+            tz += dtz;
+            if (dir->z >= 0.0f) {
+                n = ++z;
+                z = (f32)z;
+                if (z >= numZ) {
+                    tz = maxT;
+                }
+            } else {
+                n = --z;
+                z = (f32)z;
+                if (z <= 0) {
+                    tz = maxT;
+                }
+            }
+            if (n >= 0 && n < numZ) {
+                if ((s8)RayHitsCell(start, dir, TerrainGrid_GetCellXYZ(*(TerrainGrid **)g_worldData.world, x, y, n), t, info)) {
+                    return 1;
+                }
+            }
+        } else {
+            ty += dty;
+            if (dir->y >= 0.0f) {
+                n = ++y;
+                y = (f32)y;
+                if (y >= numY) {
+                    ty = maxT;
+                }
+            } else {
+                n = --y;
+                y = (f32)y;
+                if (y <= 0) {
+                    ty = maxT;
+                }
+            }
+            if (n >= 0 && n < numY) {
+                if ((s8)RayHitsCell(start, dir, TerrainGrid_GetCellXYZ(*(TerrainGrid **)g_worldData.world, x, n, z), t, info)) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
 void BuildOOB(Vector4 *bounds, Matrix4 *mtx, u8 *oob) {
     void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
     void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *out);
