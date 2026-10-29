@@ -123,6 +123,24 @@ void Render_StateBlendMode(u32 mode) {
     GXSetBlendMode(1, m_srcBlend, m_dstBlend, 5);
 }
 
+void Gfx_StateTextureBlendMode(s32 mode) {
+    m_blendMode = mode;
+    switch (mode) {
+    case 1:
+        GXSetTevOp(0, 1);
+        break;
+    case 2:
+        GXSetTevOp(0, 0);
+        break;
+    case 3:
+        GXSetTevOp(0, 3);
+        break;
+    case 4:
+        GXSetTevOp(0, 2);
+        break;
+    }
+}
+
 void Render_StateAlphaBlendEnable(s32 enable) {
     s32 fogMode = m_fogMode;
 
