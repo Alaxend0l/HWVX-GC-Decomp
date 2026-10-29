@@ -28,12 +28,21 @@ s32 InitializeUART(u32 baudRate) {
     return 0;
 }
 
-s32 EXILock(s32 chan, u32 dev, void *unlockedCallback);
-s32 EXISelect(s32 chan, u32 dev, u32 freq);
-s32 EXIImm(s32 chan, void *buf, s32 len, u32 type, void *callback);
-s32 EXISync(s32 chan);
-s32 EXIDeselect(s32 chan);
-s32 EXIUnlock(s32 chan);
+static s32 QueueLength(void) {
+    u32 cmd;
+
+    if (!EXISelect(Chan, Dev, 3)) {
+        return -1;
+    }
+    cmd = 0x20010000;
+    EXIImm(Chan, &cmd, 4, 1, 0);
+    EXISync(Chan);
+    EXIImm(Chan, &cmd, 1, 0, 0);
+    EXISync(Chan);
+    EXIDeselect(Chan);
+    return 16 - (s32)((cmd >> 24) & 0xFF);
+}
+
 s32 WriteUARTN(const void *buf, u32 len) {
     u32 cmd;
     s32 qLen;
