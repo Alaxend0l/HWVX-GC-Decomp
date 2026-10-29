@@ -19,7 +19,9 @@ typedef struct GXData {
     u32 tevc[16];
     u32 teva[16];
     u32 tevKsel[8];
-    u8 pad1D0[0x49C - 0x1D0];
+    u8 pad1D0[0x204 - 0x1D0];
+    u32 genMode;
+    u8 pad208[0x49C - 0x208];
     u32 texmapId[16];
     u8 pad4DC[0x4E0 - 0x4DC];
     u32 tevTcEnab;
