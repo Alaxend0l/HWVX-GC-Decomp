@@ -54,6 +54,29 @@ void GXSetTevColor(s32 id, GXColor color) {
     gx->bpSentNot = 0;
 }
 
+void GXSetTevColorS10(s32 id, GXColorS10 color) {
+    u32 regRA;
+    u32 regBG;
+
+    regRA = 0;
+    regRA = ((u32)regRA & ~0x7FF) | ((u32)color.r & 0x7FF);
+    regRA = ((u32)regRA & ~0x7FF000) | (((u32)color.a & 0x7FF) << 12);
+    regRA = ((u32)regRA & ~0xFF000000) | ((u32)(0xE0 + id * 2) << 24);
+    regBG = 0;
+    regBG = ((u32)regBG & ~0x7FF) | ((u32)color.b & 0x7FF);
+    regBG = ((u32)regBG & ~0x7FF000) | (((u32)color.g & 0x7FF) << 12);
+    regBG = ((u32)regBG & ~0xFF000000) | ((u32)(0xE1 + id * 2) << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = regRA;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = regBG;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = regBG;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = regBG;
+    gx->bpSentNot = 0;
+}
+
 void GXSetTevKColorSel(s32 stage, s32 sel) {
     u32 *Kreg;
 
