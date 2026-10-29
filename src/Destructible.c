@@ -201,37 +201,37 @@ s32 ActionDestructibleChangeMode(u32 *action) {
     u32 count;
     u32 i;
     u8 *thing;
-    u8 *destructible;
+    Destructible *destructible;
 
     mode = action[0];
     count = action[1];
     for (i = 0; i < count; i++) {
         thing = (u8 *)action[i + 2];
-        destructible = *(u8 **)(thing + 0x2C);
+        destructible = *(Destructible **)(thing + 0x2C);
         if (destructible != NULL) {
             switch (mode) {
             case 3:
-                Thing_ProcessEndEvent(destructible, *(u8 **)(*(u8 **)(destructible + 0xC0) + 0x10), NULL, NULL);
-                Destructible_Release_inline(destructible);
+                Thing_ProcessEndEvent((u8 *)destructible, (u8 *)destructible->record->info, NULL, NULL);
+                Destructible_Release(destructible);
                 break;
             case 0:
-                ThingManagerList_ReleaseSlavesBySlaveType((void **)(destructible + 0x88), 0xFF);
-                *(u32 *)(destructible + 0x74) |= 0x200;
-                *(u32 *)(destructible + 0x74) |= 0x2;
+                ThingManagerList_ReleaseSlavesBySlaveType(&destructible->slaves, 0xFF);
+                destructible->flags |= 0x200;
+                destructible->flags |= 0x2;
                 break;
             case 1:
-                Thing_InitAllSlavesNow(destructible, *(u8 **)(destructible + 0xC0) + 0x18, 0xFF);
-                *(u32 *)(destructible + 0x74) &= ~0x200;
-                *(u32 *)(destructible + 0x74) &= ~0x2;
+                Thing_InitAllSlavesNow(destructible, (u8 *)destructible->record + 0x18, 0xFF);
+                destructible->flags &= ~0x200;
+                destructible->flags &= ~0x2;
                 break;
             case 25:
-                Destructible_Release_inline(destructible);
+                Destructible_Release(destructible);
                 break;
             case 26:
-                ThingManagerList_ReleaseSlavesBySlaveType((void **)(destructible + 0x88), 0xFF);
-                Thing_ProcessEndEvent(destructible, *(u8 **)(*(u8 **)(destructible + 0xC0) + 0x10), NULL, NULL);
-                *(u32 *)(destructible + 0x74) |= 0x200;
-                *(u32 *)(destructible + 0x74) |= 0x2;
+                ThingManagerList_ReleaseSlavesBySlaveType(&destructible->slaves, 0xFF);
+                Thing_ProcessEndEvent((u8 *)destructible, (u8 *)destructible->record->info, NULL, NULL);
+                destructible->flags |= 0x200;
+                destructible->flags |= 0x2;
                 break;
             }
         }
