@@ -31,6 +31,30 @@ extern GXData *gx;
 
 void __GXFlushTextureState(void);
 
+void GXSetFogRangeAdj(u8 enable, u16 center, u16 *table) {
+    u32 i;
+    u32 range_adj;
+    u32 range_c;
+
+    if (enable) {
+        for (i = 0; i < 10; i += 2) {
+            range_adj = 0;
+            range_adj = (range_adj & ~0xFFF) | table[i];
+            range_adj = (range_adj & ~0xFFF000) | (table[i + 1] << 12);
+            range_adj = (range_adj & ~0xFF000000) | ((i / 2 + 0xE9) << 24);
+            GXWGFifo.u8 = 0x61;
+            GXWGFifo.u32 = range_adj;
+        }
+    }
+    range_c = 0;
+    range_c = (range_c & ~0x3FF) | (center + 342);
+    range_c = (range_c & ~0x400) | (enable << 10);
+    range_c = (range_c & ~0xFF000000) | (0xE8 << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = range_c;
+    gx->bpSentNot = 0;
+}
+
 void GXSetColorUpdate(u8 update_enable) {
     gx->cmode0 = (gx->cmode0 & ~8) | (update_enable << 3);
     GXWGFifo.u8 = 0x61;
