@@ -56,6 +56,16 @@ void GXProject(f32 x, f32 y, f32 z, f32 mtx[3][4], f32 *pm, f32 *vp, f32 *sx, f3
     *sz = vp[5] + (wc * (zc * (vp[5] - vp[4])));
 }
 
+void WriteMTXPS4x3(f32 mtx[3][4], volatile f32 *wgpipe);
+#pragma peephole off
+void GXLoadPosMtxImm(f32 mtx[3][4], u32 id) {
+    u32 reg;
+    GXWGFifo.u8 = 0x10;
+    reg = (id * 4) | 0xB0000;
+    GXWGFifo.u32 = reg;
+    WriteMTXPS4x3(mtx, (volatile f32 *)0xCC008000);
+}
+
 void GXSetViewportJitter(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz, u32 field);
 #pragma peephole off
 void GXSetViewport(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz) {
