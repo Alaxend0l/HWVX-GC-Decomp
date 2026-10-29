@@ -394,7 +394,7 @@ char *float2str(double num, char *buff, print_format format) {
     __num2dec(&form, num, &dec);
 
     p = (char *)dec.sig.text + dec.sig.length;
-    while (dec.sig.length > 1 && *--p == '0') {
+    while (dec.sig.length > 1 && (s8)*--p == '0') {
         --dec.sig.length;
         ++dec.exp;
     }
