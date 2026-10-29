@@ -689,6 +689,50 @@ s32 LGDestroyForceEffect(u32 handle)
     return VDevice_DestroyEffect(&device->vdev, handle);
 }
 
+void zero_mem_aligned(void *dst, u32 n) {
+    u32 i;
+    union {
+        u8 *cpd;
+        u32 *lpd;
+    } dstu;
+
+    dstu.cpd = ((u8 *)dst) - 1;
+
+    if (n >= 32) {
+        dstu.lpd = ((u32 *)dst) - 1;
+
+        i = n >> 5;
+        if (i) {
+            do {
+                *++dstu.lpd = 0;
+                *++dstu.lpd = 0;
+                *++dstu.lpd = 0;
+                *++dstu.lpd = 0;
+                *++dstu.lpd = 0;
+                *++dstu.lpd = 0;
+                *++dstu.lpd = 0;
+                *++dstu.lpd = 0;
+            } while (--i);
+        }
+
+        i = (n & 31) >> 2;
+        if (i) {
+            do
+                *++dstu.lpd = 0;
+            while (--i);
+        }
+
+        dstu.cpd = ((u8 *)(dstu.lpd + 1)) - 1;
+        n &= 3;
+    }
+
+    if (n) {
+        do
+            *++dstu.cpd = 0;
+        while (--n);
+    }
+}
+
 void VDevice_Init(VDevice *dev)
 {
     s32 i;
