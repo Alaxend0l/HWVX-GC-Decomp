@@ -33,6 +33,35 @@ extern volatile u16 *__cpReg;
 void GXInitFifoPtrs(GXFifoObj *fifo, void *readPtr, void *writePtr);
 void GXInitFifoLimits(GXFifoObj *fifo, u32 hiWatermark, u32 loWatermark);
 
+#pragma peephole on
+void GXInitFifoBase(GXFifoObj *fifo, void *base, u32 size) {
+    __GXFifoObj *realFifo = (__GXFifoObj *)fifo;
+
+    realFifo->base = base;
+    realFifo->top = (u8 *)base + size - 4;
+    realFifo->size = size;
+    realFifo->count = 0;
+    GXInitFifoLimits(fifo, size - 0x4000, (size >> 1) & ~0x1F);
+    GXInitFifoPtrs(fifo, base, base);
+    return;
+}
+
+s32 OSDisableInterrupts(void);
+s32 OSRestoreInterrupts(s32 level);
+void GXInitFifoPtrs(GXFifoObj *fifo, void *readPtr, void *writePtr) {
+    __GXFifoObj *realFifo = (__GXFifoObj *)fifo;
+    s32 enabled;
+
+    enabled = OSDisableInterrupts();
+    realFifo->rdPtr = readPtr;
+    realFifo->wrPtr = writePtr;
+    realFifo->count = (u8 *)writePtr - (u8 *)readPtr;
+    if (realFifo->count < 0) {
+        realFifo->count += realFifo->size;
+    }
+    OSRestoreInterrupts(enabled);
+}
+
 void GXInitFifoLimits(GXFifoObj *fifo, u32 hiWatermark, u32 loWatermark) {
     __GXFifoObj *realFifo = (__GXFifoObj *)fifo;
 
