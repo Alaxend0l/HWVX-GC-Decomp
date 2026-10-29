@@ -122,7 +122,7 @@ typedef struct GDL {
     u32 numCachedMatrices;
     u8 unk54[0x6C - 0x54];
     u32 numEnvmapStates;
-    u8 unk70[0x74 - 0x70];
+    u32 num2DFXLines;
     u32 numMatrices;
     u8 unk78[0x80 - 0x78];
     u16 alphaTable[0x100];
