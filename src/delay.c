@@ -25,6 +25,46 @@ BOOL AXFXDelaySettings(AXFX_DELAY *delay);
 
 extern void *(*__AXFXAlloc)(u32);
 BOOL AXFXDelayShutdown(AXFX_DELAY *delay);
+void AXFXDelayCallback(AXFX_BUFFERUPDATE *bufferUpdate, AXFX_DELAY *delay)
+{
+    s32 l;
+    s32 r;
+    s32 s;
+    s32 *leftD;
+    s32 *rightD;
+    s32 *surD;
+    s32 *lBusData;
+    s32 *rBusData;
+    s32 *sBusData;
+    u32 i;
+
+    lBusData = bufferUpdate->left;
+    rBusData = bufferUpdate->right;
+    sBusData = bufferUpdate->surround;
+    leftD = delay->left + (delay->currentPos[0] * 160);
+    rightD = delay->right + (delay->currentPos[1] * 160);
+    surD = delay->sur + (delay->currentPos[2] * 160);
+
+    for (i = 0; i < 160; i++) {
+        l = *leftD;
+        r = *rightD;
+        s = *surD;
+        *leftD = *lBusData + ((s32)(l * delay->currentFeedback[0]) >> 7);
+        *rightD = *rBusData + ((s32)(r * delay->currentFeedback[1]) >> 7);
+        *surD = *sBusData + ((s32)(s * delay->currentFeedback[2]) >> 7);
+        *lBusData++ = (s32)(l * delay->currentOutput[0]) >> 7;
+        *rBusData++ = (s32)(r * delay->currentOutput[1]) >> 7;
+        *sBusData++ = (s32)(s * delay->currentOutput[2]) >> 7;
+        leftD++;
+        rightD++;
+        surD++;
+    }
+
+    delay->currentPos[0] = (delay->currentPos[0] + 1) % delay->currentSize[0];
+    delay->currentPos[1] = (delay->currentPos[1] + 1) % delay->currentSize[1];
+    delay->currentPos[2] = (delay->currentPos[2] + 1) % delay->currentSize[2];
+}
+
 BOOL AXFXDelaySettings(AXFX_DELAY *delay)
 {
     u32 i;
