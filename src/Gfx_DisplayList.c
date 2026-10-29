@@ -182,6 +182,13 @@ void Gfx_End_GroupTri(s32 n) {
     }
 }
 
+GDLRect *Gfx_Add2DRectangle(void) {
+    if (g_pGDL->numRects2D >= 0x400) {
+        g_pGDL->numRects2D = 0;
+    }
+    return &g_pGDL->rects2D[g_pGDL->numRects2D++];
+}
+
 void Gfx_Add2DRectangleBack(void)
 {
     Render_DrawRectangle();
