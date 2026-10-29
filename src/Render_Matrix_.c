@@ -15,3 +15,7 @@ void GXSetProjection(f32 m[3][4], s32 type);
 void PSMTXIdentity(f32 m[3][4]);
 void GXLoadPosMtxImm(f32 m[3][4], u32 id);
 void GXSetCurrentMtx(u32 id);
+
+f32 Gfx_GetProjectionMatrix(void) {
+    return GetRenderWindow()->fov;
+}
