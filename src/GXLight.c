@@ -55,7 +55,6 @@ void GXInitLightPos(GXLightObjInt *lt_obj, f32 x, f32 y, f32 z) {
 void GXInitLightColor(GXLightObjInt *lt_obj, GXColor color) {
     lt_obj->Color = (color.r << 24) | (color.g << 16) | (color.b << 8) | color.a;
 }
-#include "common.h"
 
 typedef union PPCWGPipe {
     u8 u8;
