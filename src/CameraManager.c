@@ -411,10 +411,17 @@ static inline void Camera_ZoomOnVehicle(Camera *cam, u8 *params) {
 static inline void Camera_OrbitVehicle(Camera *cam, CameraOrbitParams *params) {
     extern f32 g_fDeltaTimeSec;
     void SinCosRad(f32 *s, f32 *c, f32 angle);
+    double sin(double x);
+    double cos(double x);
+    f32 PSVECSquareMag(void *v);
+    void PSVECNormalize(void *src, void *dst);
+    void PSVECSubtract(void *a, void *b, void *out);
+    void PSVECCrossProduct(void *a, void *b, void *out);
+    void Gfx_SetProjectionMatrix(f32 fov);
     Vector4 targetPos;
     Vector4 *center;
-    f32 c;
     f32 s;
+    f32 c;
 
     cam->modeTime += params->speed * g_fDeltaTimeSec;
     SinCosRad(&s, &c, cam->modeTime);
@@ -424,7 +431,33 @@ static inline void Camera_OrbitVehicle(Camera *cam, CameraOrbitParams *params) {
     } else {
         center = &cam->mtx.v[3];
     }
-    Camera_Orbit(cam, center, center, params->radius, params->height, params->speed, params->fov);
+    {
+        Vector4 eye;
+        Vector4 dir;
+        Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
+
+        cam->modeTime += params->speed * g_fDeltaTimeSec;
+        s = sin(cam->modeTime);
+        c = cos(cam->modeTime);
+        eye.x = params->radius * s + center->x;
+        eye.y = center->y + params->height;
+        eye.z = params->radius * c + center->z;
+        PSVECSubtract(center, &eye, &dir);
+        GetTrimmedCameraPos((u8 *)cam, center, &dir, &cam->trim, 1.0f);
+        PSVECSubtract(center, &cam->pos, &cam->dir);
+        if (PSVECSquareMag(&cam->dir)) {
+            PSVECNormalize(&cam->dir, &cam->dir);
+        }
+        PSVECCrossProduct(&up, &cam->dir, &cam->right);
+        PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
+        if (PSVECSquareMag(&cam->right)) {
+            PSVECNormalize(&cam->right, &cam->right);
+        }
+        if (PSVECSquareMag(&cam->up)) {
+            PSVECNormalize(&cam->up, &cam->up);
+        }
+        Gfx_SetProjectionMatrix(params->fov);
+    }
 }
 
 s32 Camera_TriggerActionGetLocation(u8 *cam, u32 *data, Vector4 *out) {
