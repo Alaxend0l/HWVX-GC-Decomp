@@ -123,11 +123,11 @@ s32 StateManager_CurrState(void) {
 }
 
 s32 StateManager_QueuedState(void) {
-    extern void *g_pStateManager;
+    extern StateManager *g_pStateManager;
     s32 state;
 
-    state = M2C_FIELD(g_pStateManager, s32 *, 0xD4);
-    M2C_FIELD(g_pStateManager, s32 *, 0xD4) = -1;
+    state = g_pStateManager->next;
+    g_pStateManager->next = -1;
     return state;
 }
 
