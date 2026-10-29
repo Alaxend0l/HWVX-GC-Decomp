@@ -7,3 +7,14 @@ void *TRK_memcpy(void *dst, const void *src, u32 n);
 s32 TRKReleaseBuffer(s32 idx);
 
 TRKEventQueue gTRKEventQueue;
+
+void TRKDestructEvent(TRKEvent *event) {
+    TRKReleaseBuffer(event->msgBufID);
+}
+
+void TRKConstructEvent(TRKEvent *event, s32 eventType) {
+    event->eventType = eventType;
+    event->eventID = 0;
+    event->msgBufID = -1;
+}
+
