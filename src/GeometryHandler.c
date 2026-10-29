@@ -35,12 +35,13 @@ s32 Geometry_Create(void) {
     return 1;
 }
 
+void Geometry_Init(s8 clear);
+void Geometry_FreeGeometry(void *geometry);
 void Geometry_Destroy(void) {
-    M2C_UNK Geometry_Init(M2C_UNK);
-    extern s32 g_pGeometryHandler;
+    extern GeometryHandler *g_pGeometryHandler;
     Geometry_Init(1);
     Deallocate(g_pGeometryHandler);
-    g_pGeometryHandler = 0;
+    g_pGeometryHandler = NULL;
 }
 
 void Geometry_Init(s8 clear) {
