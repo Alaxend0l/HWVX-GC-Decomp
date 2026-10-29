@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 
 s32 Pod_Init(u8 *pod, u8 *init) {
     u8 *motion;
