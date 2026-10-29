@@ -116,6 +116,16 @@ s32 Gfx_FontManager_ReleaseFont(s32 id) {
     return ret;
 }
 
+void Gfx_FontManager_SetCharacterSpacing(s32 id, u8 c, f32 x, f32 y) {
+    Font *font = &g_fontManager.fonts[id];
+    f32 width = m_texture[font->texture].width;
+
+    font->chars[c].spacingX = x;
+    font->chars[c].spacingY = y;
+    x /= width;
+    font->chars[c].unk8 = font->chars[c].unk0 + x;
+}
+
 u32 Gfx_FontManager_Print(char *str, u32 id, u8 blendMode, f32 x, f32 y, f32 spacing) {
     extern GXColor g_textcolor;
     GDLRect *Gfx_Add2DRectangle(void);
