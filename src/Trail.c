@@ -50,6 +50,8 @@ void Trail_Heartbeat(void) {
     g_trailTimer += g_fDeltaTimeSec;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 void Trail_Render(void) {
     extern u8 g_TrialData[1000][0x60];
     void *Gfx_Begin_GroupQuadFlat(u16 texture, s32 arg1, s32 arg2);
@@ -84,4 +86,4 @@ void Trail_Render(void) {
         Gfx_End_GroupTri(count);
     }
 }
-
+#pragma pop
