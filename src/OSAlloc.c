@@ -18,6 +18,20 @@ extern void *ArenaStart;
 extern void *ArenaEnd;
 extern s32 __OSCurrHeap;
 
+Cell *DLInsert(Cell *list, Cell *cell);
+
+static inline Cell *DLExtract(Cell *list, Cell *cell)
+{
+    if (cell->next) {
+        cell->next->prev = cell->prev;
+    }
+    if (cell->prev == NULL) {
+        return cell->next;
+    }
+    cell->prev->next = cell->next;
+    return list;
+}
+
 s32 OSSetCurrentHeap(s32 arg0) {
     extern s32 __OSCurrHeap;
     s32 temp_r0;
