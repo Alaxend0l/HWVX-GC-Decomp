@@ -26,6 +26,20 @@ extern u8 m_firstFrame;
 extern s32 m_srcBlend;
 extern s32 m_dstBlend;
 
+void GXSetZMode(u8 compare_enable, s32 func, u8 update_enable);
+void GXSetCullMode(s32 mode);
+void GXSetFog(s32 type, f32 startz, f32 endz, f32 nearz, f32 farz, GXColor color);
+
+extern s32 m_zwrite;
+extern s32 m_zstate;
+extern s32 m_zmode;
+extern f32 m_fogRange2;
+extern f32 m_fogRange1;
+extern u8 m_fogType;
+extern GXColor m_fogColor;
+extern s32 m_fogMode;
+extern s32 m_cullMode;
+
 void Render_FlipBuffers(void) {
     PrintDVDMessage();
     GXSetColorUpdate(1);
