@@ -127,10 +127,45 @@ s32 __OSGetEffectivePriority(void * thread)
 }
 
 void SelectThread(s32 yield);
-extern s32 RunQueueHint;
+extern volatile s32 RunQueueHint;
 void __OSReschedule(void) {
     if (RunQueueHint) {
         SelectThread(0);
     }
+}
+
+void OSClearContext(void *context);
+void __OSUnlockAllMutex(OSThread *thread);
+void OSWakeupThread(OSThreadQueue *queue);
+void OSExitThread(void *val) {
+    BOOL enabled;
+    OSThread *currentThread;
+
+    enabled = OSDisableInterrupts();
+    currentThread = __OSCurrentThread;
+    OSClearContext(currentThread);
+    if (currentThread->attr & OS_THREAD_ATTR_DETACH) {
+        OSThread *next = currentThread->linkActive.next;
+        OSThread *prev = currentThread->linkActive.prev;
+        if (next == NULL) {
+            __OSActiveThreadQueue.tail = prev;
+        } else {
+            next->linkActive.prev = prev;
+        }
+        if (prev == NULL) {
+            __OSActiveThreadQueue.head = next;
+        } else {
+            prev->linkActive.next = next;
+        }
+        currentThread->state = 0;
+    } else {
+        currentThread->state = OS_THREAD_STATE_MORIBUND;
+        currentThread->val = val;
+    }
+    __OSUnlockAllMutex(currentThread);
+    OSWakeupThread(&currentThread->queueJoin);
+    RunQueueHint = TRUE;
+    __OSReschedule();
+    OSRestoreInterrupts(enabled);
 }
 
