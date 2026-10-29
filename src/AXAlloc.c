@@ -26,9 +26,6 @@ void *__AXGetStackHead(u32 priority)
     return __AXStackHead[priority];
 }
 
-void *__AXPopCallbackStack(void);
-void __AXRemoveFromStack(AXVPB *p);
-void __AXPushFreeStack(AXVPB *p);
 void __AXServiceCallbackStack(void)
 {
     AXVPB *pvpb;
