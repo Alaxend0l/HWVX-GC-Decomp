@@ -39,7 +39,7 @@ typedef struct AXPROFILE {
     u32 pad;
 } AXPROFILE;
 
-u8 __AXOutBuffer[2][0x280] __attribute__((aligned(32)));
+static u8 __AXOutBuffer[2][0x280] __attribute__((aligned(32)));
 static u32 __AXOutSBuffer[160] __attribute__((aligned(32)));
 static AXPROFILE __AXLocalProfile;
 static DSPTaskInfo task;
