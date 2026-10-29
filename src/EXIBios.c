@@ -465,6 +465,38 @@ void EXTIntrruptHandler(s16 interrupt, OSContext *context) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+BOOL EXILock(s32 chan, u32 dev, EXICallback unlockedCallback) {
+    EXIControl *exi = &Ecb[chan];
+    BOOL enabled;
+    int i;
+
+    enabled = OSDisableInterrupts();
+    if (exi->state & 0x10) {
+        if (unlockedCallback) {
+            for (i = 0; i < exi->items; i++) {
+                if (exi->queue[i].dev == dev) {
+                    OSRestoreInterrupts(enabled);
+                    return FALSE;
+                }
+            }
+            exi->queue[exi->items].callback = unlockedCallback;
+            exi->queue[exi->items].dev = dev;
+            exi->items++;
+        }
+        OSRestoreInterrupts(enabled);
+        return FALSE;
+    }
+
+    exi->state |= 0x10;
+    exi->dev = dev;
+    SetExiInterruptMask(chan, exi);
+
+    OSRestoreInterrupts(enabled);
+    return TRUE;
+}
+#pragma pop
 void *memmove(void *dst, const void *src, u32 n);
 BOOL EXIUnlock(s32 chan) {
     EXIControl *exi = &Ecb[chan];
