@@ -96,6 +96,27 @@ extern void *m_defaultFifoObj;
 extern u8 ShadowTexture[];
 extern u8 pShadowImage[];
 
+void GXSetViewport(f32 xOrig, f32 yOrig, f32 wd, f32 ht, f32 nearZ, f32 farZ);
+void GXSetScissor(u32 xOrig, u32 yOrig, u32 wd, u32 ht);
+void *GXInit(void *base, u32 size);
+void GXSetDispCopySrc(u16 left, u16 top, u16 wd, u16 ht);
+void GXSetDispCopyDst(u16 wd, u16 ht);
+u32 GXSetDispCopyYScale(f32 vscale);
+void GXSetCopyFilter(u8 aa, u8 sample_pattern[12][2], u8 vf, u8 vfilter[7]);
+void GXSetPixelFmt(s32 pix_fmt, s32 z_fmt);
+void GXSetDispCopyGamma(s32 gamma);
+void Gfx_SetRenderWindow(s32 window);
+void Gfx_SetCameraMatrix(void *a, void *b, void *c, void *d);
+void GXSetNumChans(u8 n);
+void GXSetNumTexGens(u8 n);
+void GXSetNumTevStages(u8 n);
+void GXSetTevOrder(s32 stage, s32 coord, s32 map, s32 color);
+void GXEnableTexOffsets(s32 coord, u8 line, u8 point);
+void GXSetPointSize(u8 size, s32 fmt);
+void GXInitTexObj(void *obj, void *image, u16 width, u16 height, s32 format, s32 wrapS, s32 wrapT, u8 mipmap);
+void Dprintf(const char *fmt, ...);
+s32 DisplayList_Create(void);
+
 typedef struct GfxState {
     u8 unk0[0x60];
     f32 lightDir[4];
