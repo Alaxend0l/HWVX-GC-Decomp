@@ -127,6 +127,45 @@ void __num2dec(const decform *form, double x, decimal *d) {
     }
 }
 
+void __num2dec_internal(decimal *d, double x) {
+    signed char sign = (signed char)(*(u32 *)&x >> 31);
+
+    if (x == 0.0) {
+        d->sign = sign;
+        d->exp = 0;
+        d->sig.length = 1;
+        d->sig.text[0] = 0;
+        return;
+    }
+
+    if (!(__fpclassifyd(x) > 2)) {
+        d->sign = sign;
+        d->exp = 0;
+        d->sig.length = 1;
+        d->sig.text[0] = (__fpclassifyd(x) == 1) ? 'N' : 'I';
+        return;
+    }
+
+    if (sign) {
+        x = -x;
+    }
+
+    {
+        int exp;
+        double frac = frexp(x, &exp);
+        short num_bits_extract = 53 - __count_trailing_zero(frac);
+        decimal int_d;
+        decimal pow2_d;
+        double integer;
+
+        __two_exp(&pow2_d, (short)(exp - num_bits_extract));
+        modf(ldexp(frac, num_bits_extract), &integer);
+        __ull2dec(&int_d, (unsigned long long)integer);
+        __timesdec(d, &int_d, &pow2_d);
+        d->sign = sign;
+    }
+}
+
 static void __str2dec(decimal *d, const signed char *s, short exp) {
     int i;
 
