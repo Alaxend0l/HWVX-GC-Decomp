@@ -61,7 +61,9 @@ struct CameraInfo;
 typedef struct ThingVTable {
   u8 pad00[0x1C];
   void (*getCameraInfo)(struct CarA *thing, u8 index, struct CameraInfo *info); /* 0x1C */
-  u8 pad20[0x1C];
+  u8 pad20[8];
+  void *(*getSurface)(void *thing); /* 0x28 */
+  u8 pad2C[0x10];
   void (*getTargetPos)(struct CarA *thing, Vector4 *out); /* 0x3C */
 } ThingVTable;
 
