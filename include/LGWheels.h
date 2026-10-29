@@ -29,6 +29,7 @@ typedef struct Wheels
 		/* 0x880 */
 
 		/* The wheel's own methods, in main/Wheels. */
+		Wheels();
 		u8		IsConnected(s32 chan);
 		/* 0x880 */
 		u8		IsOpened(s32 chan);
