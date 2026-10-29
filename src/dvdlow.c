@@ -18,17 +18,17 @@ extern s32 DVDLowSeek(s32, s32);
 
 void AlarmHandler(void)
 {
-    DVDCommand *cmd;
+    s32 n;
 
-    cmd = &CommandList[NextCommandNumber];
-    if (cmd->command == 1)
+    n = NextCommandNumber;
+    if (CommandList[n].command == 1)
     {
         NextCommandNumber++;
-        Read(cmd->readArg1, cmd->readArg2, cmd->seekLba, cmd->seekSectors);
+        Read(CommandList[n].readArg1, CommandList[n].readArg2, CommandList[n].seekLba, CommandList[n].seekSectors);
     }
-    else if (cmd->command == 2)
+    else if (CommandList[n].command == 2)
     {
         NextCommandNumber++;
-        DVDLowSeek(cmd->seekLba, cmd->seekSectors);
+        DVDLowSeek(CommandList[n].seekLba, CommandList[n].seekSectors);
     }
 }
