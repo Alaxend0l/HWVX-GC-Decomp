@@ -13,7 +13,7 @@ typedef struct OSAlarm {
 typedef struct DVDCommandBlock {
     s32 unk0;
     s32 unk4;
-    s32 command;
+    u32 command;
     s32 state;
     s32 offset;
     s32 length;
@@ -154,6 +154,38 @@ void stateGettingError(void)
     void cbForStateGettingError(u32 code);
 
     DVDLowRequestError(cbForStateGettingError);
+}
+
+s32 CategorizeError(u32 error) {
+    if (error == 0x20400) {
+        LastError = error;
+        return 1;
+    }
+
+    error &= 0xFFFFFF;
+
+    if ((error == 0x62800) || (error == 0x23A00) || (error == 0xB5A01)) {
+        return 0;
+    }
+
+    ++NumInternalRetry;
+    if (NumInternalRetry == 2) {
+        if (error == LastError) {
+            LastError = error;
+            return 1;
+        } else {
+            LastError = error;
+            return 2;
+        }
+    } else {
+        LastError = error;
+
+        if ((error == 0x31100) || (executing->command == 5)) {
+            return 2;
+        } else {
+            return 3;
+        }
+    }
 }
 
 void cbForUnrecoveredError(u32 intType) {
