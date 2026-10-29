@@ -83,6 +83,11 @@ void stateCheckID3(DVDCommandBlock *block) {
     DVDLowAudioBufferConfig(((u8 *)currID)[8], 10, cbForStateCheckID3);
 }
 
+void cbForStateCheckID2(u32 intType);
+void stateCheckID2(DVDCommandBlock *block) {
+    DVDLowRead(tmpBuffer, 0x20, 0x420, cbForStateCheckID2);
+}
+
 void DCInvalidateRange(void *addr, u32 nBytes);
 void stateCoverClosed_CMD(DVDCommandBlock *block);
 void AlarmHandler(void *alarm, void *context)
