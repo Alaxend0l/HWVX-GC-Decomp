@@ -555,7 +555,7 @@ config.libs = [
             Object(NonMatching, "dolphin_trk_glue.c", mw_version="GC/1.3"),
             Object(Matching, "targcont.c", mw_version="GC/1.3"),
             Object(Matching, "target_options.c"),
-            Object(NonMatching, "mslsupp.c"),
+            Object(NonMatching, "mslsupp.c", mw_version="GC/1.3"),
             Object(Matching, "__va_arg.c", mw_version="GC/1.3.2r"),
             Object(NonMatching, "global_destructor_chain.c", mw_version="GC/1.3"),
             Object(NonMatching, "New.cp"),
