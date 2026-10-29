@@ -30,6 +30,34 @@ extern GXData *gx;
 #pragma push
 #pragma peephole on
 #pragma peephole on
+void __GXSetSUTexRegs(void);
+void __GXUpdateBPMask(void);
+void __GXSetGenMode(void);
+void __GXSetVCD(void);
+void __GXSetVAT(void);
+void __GXCalculateVLim(void);
+void __GXSetDirtyState(void) {
+    if (gx->dirtyState & 1) {
+        __GXSetSUTexRegs();
+    }
+    if (gx->dirtyState & 2) {
+        __GXUpdateBPMask();
+    }
+    if (gx->dirtyState & 4) {
+        __GXSetGenMode();
+    }
+    if (gx->dirtyState & 8) {
+        __GXSetVCD();
+    }
+    if (gx->dirtyState & 0x10) {
+        __GXSetVAT();
+    }
+    if (gx->dirtyState & 0x18) {
+        __GXCalculateVLim();
+    }
+    gx->dirtyState = 0;
+}
+
 void __GXSendFlushPrim(void) {
     u32 i;
     u32 numD = gx->vNum * gx->vLim;
