@@ -23,6 +23,25 @@ void *FileStreaming_InitializeDataPack(void *, s32, s32);
 u8 *DataPack_GetScript(void *, s32);
 s32 PlayerManager_PlayerHumanCount(void);
 
+static inline u8 *GameSettings_LoadMCP(void)
+{
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    void *pack;
+
+    if (bFirstTime)
+    {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL)
+        {
+            return NULL;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    return pMCP;
+}
+
 void GameSetting_Init(void) {
     typedef struct GameInfo {
         const char *name;
@@ -1048,3 +1067,48 @@ s32 GameSettings_FormatMemoryCard(void)
     g_bRefreshMC_FileInfo = 1;
     return result;
 }
+
+#pragma push
+#pragma readonly_strings on
+s32 GameSettings_DeleteGameFile(void) {
+    typedef struct GameInfo {
+        const char *name;
+        const char *id;
+        const char *title;
+        const char *fileName;
+        const char *icon;
+        s32 unk14;
+        s32 unk18;
+    } GameInfo;
+    u8 File_Delete(char *device, const char *fileName);
+    extern GameInfo g_gameInfo[];
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    char *device;
+    u8 *mcp;
+    void *pack;
+    const char *name;
+    u8 result;
+
+    device = g_codeVariables.device + 0xA;
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    name = (mcp != NULL) ? g_gameInfo[mcp[1]].fileName : "saveFile";
+    result = File_Delete(device, name);
+    g_bRefreshMC = 1;
+    g_codeVariables.unk11C[2] = result;
+    g_bRefreshMC_FileList = 1;
+    g_bRefreshMC_FileInfo = 1;
+    return result;
+}
+#pragma pop
+
