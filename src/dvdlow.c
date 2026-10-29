@@ -47,3 +47,13 @@ s32 DVDLowBreak(void)
     return 1;
 }
 
+DVDLowCallback DVDLowClearCallback(void)
+{
+    DVDLowCallback old;
+
+    __DIRegs[1] = 0;
+    old = Callback;
+    Callback = NULL;
+    return old;
+}
+
