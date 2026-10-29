@@ -26,3 +26,16 @@ void *__memrchr(const void *src, int val, unsigned long n) {
     return 0;
 }
 
+void *memchr(const void *src, int val, unsigned long n) {
+    const unsigned char *p;
+    unsigned long v = (val & 0xff);
+
+    for (p = (unsigned char *)src - 1, n++; --n;) {
+        if (*++p == v) {
+            return (void *)p;
+        }
+    }
+
+    return 0;
+}
+
