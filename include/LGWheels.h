@@ -108,6 +108,7 @@ typedef struct Periodic
 		/* The effect classes' methods, in main/Periodic: periodic effect 1 is the
 		 * slot PlayFrontalCollisionForce plays. */
 		/* 0x0 */
+		Periodic();
 		long DownloadForce(long chan, long effect, unsigned long &device, unsigned char type, unsigned long duration, unsigned long startDelay, unsigned char saturation, unsigned short offset, unsigned short coefficient, unsigned short end, short decay, unsigned long rate, unsigned long repeatTime, unsigned char a, unsigned char b);
 		/* 0x0A0 */
 		long UpdateForce(long chan, long effect, unsigned char type, unsigned long duration, unsigned long startDelay, unsigned char saturation, unsigned short offset, unsigned short coefficient, unsigned short end, short decay, unsigned long rate, unsigned long repeatTime, unsigned char a, unsigned char b);
