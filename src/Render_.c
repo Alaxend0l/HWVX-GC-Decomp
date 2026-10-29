@@ -240,6 +240,53 @@ void Render_Create(void) {
     OSInitFont(FontData);
 }
 
+s32 Render_CreateView(s32 view, u32 width, u32 height) {
+    m_defaultFifo = OSAllocFromHeap(__OSCurrHeap, 0x40000);
+    m_defaultFifoObj = GXInit(m_defaultFifo, 0x40000);
+    GXSetViewport(0.0f, 0.0f, rmode->fbWidth, rmode->xfbHeight, 0.0f, 1.0f);
+    GXSetScissor(0, 0, rmode->fbWidth, rmode->efbHeight);
+    GXSetDispCopySrc(0, 0, rmode->fbWidth, rmode->efbHeight);
+    GXSetDispCopyDst(rmode->fbWidth, rmode->xfbHeight);
+    GXSetDispCopyYScale((f32)rmode->xfbHeight / (f32)rmode->efbHeight);
+    GXSetCopyFilter(rmode->aa, rmode->sample_pattern, 1, rmode->vfilter);
+    GXSetPixelFmt(1, 0);
+    GXCopyDisp(g_currentBuffer, 1);
+    GXSetDispCopyGamma(1);
+    Gfx_SetRenderWindow(0);
+    GetRenderWindow()->width = width;
+    GetRenderWindow()->halfWidth = width >> 1;
+    GetRenderWindow()->height = height;
+    GetRenderWindow()->halfHeight = height >> 1;
+    GetRenderWindow()->unk278 = 0.0f;
+    GetRenderWindow()->unk27C = 0.0f;
+    GetRenderWindow()->unk298 = (width * 16) / 640.0f;
+    GetRenderWindow()->unk29C = (height * 16) / 480.0f;
+    GetRenderWindow()->unk290 = ((0x1000 - width) >> 1) * 16;
+    GetRenderWindow()->unk294 = ((0x1000 - height) >> 1) * 16;
+    GetRenderWindow()->unk2A0 = GetRenderWindow()->unk298;
+    GetRenderWindow()->unk2A4 = GetRenderWindow()->unk29C;
+    GetRenderWindow()->unk2A8 = GetRenderWindow()->unk290;
+    GetRenderWindow()->unk2AC = GetRenderWindow()->unk294;
+    GetRenderWindow()->unk2B0 = 0;
+    GetRenderWindow()->unk2B8 = 0;
+    GetRenderWindow()->unk2B4 = width - 1;
+    GetRenderWindow()->unk2BC = height - 1;
+    GetRenderWindow()->unk2C4 = 0;
+    Gfx_SetCameraMatrix(NULL, NULL, NULL, NULL);
+    memcpy(GetRenderWindow()->unk140, GetRenderWindow()->unk40, 0x40);
+    DisplayList_Create();
+    GXSetNumChans(1);
+    GXSetNumTexGens(1);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevOp(0, 0);
+    GXEnableTexOffsets(0, 0, 1);
+    GXSetPointSize(0xFF, 5);
+    GXInitTexObj(ShadowTexture, pShadowImage, 0x140, 0xE0, 1, 0, 0, 0);
+    Dprintf("Render Init\n");
+    return 1;
+}
+
 void Gfx_SetProjectionMatrix(f32 fov);
 void GXSetViewport(f32 xOrig, f32 yOrig, f32 wd, f32 ht, f32 nearZ, f32 farZ);
 void GXSetScissor(u32 xOrig, u32 yOrig, u32 wd, u32 ht);
