@@ -2,9 +2,20 @@
 
 /* The transform every Thing starts with. */
 typedef struct Thing {
-    u8 pad0[0x10];
-    Matrix4 mtx;   /* 0x10 */
-    Quaternion quat; /* 0x50 */
+    Vector4 unk0;      /* 0x00 */
+    Matrix4 mtx;       /* 0x10 */
+    Quaternion quat;   /* 0x50 */
+    Vector4 unk60;     /* 0x60 */
+    f32 unk70;         /* 0x70 */
+    u32 flags;         /* 0x74 */
+    u8 pad78[8];
+    s16 unk80;         /* 0x80 */
+    u8 unk82;          /* 0x82 */
+    u8 unk83;          /* 0x83 */
+    s32 unk84;         /* 0x84 */
+    s32 unk88;         /* 0x88 */
+    u8 pad8C[8];
+    s32 unk94;         /* 0x94 */
 } Thing;
 
 void Thing_Release(s32 thing) {
