@@ -67,7 +67,7 @@ void Render_Draw3DLines(void) {
     void Gfx_SetWorldMatrix(void *matrix);
     void Render_SetTextureHandle(s32 handle);
     void Render_StateAlphaBlendEnable(s32 enable);
-    s32 i;
+    u32 i;
 
     Gfx_SetWorldMatrix(NULL);
     Render_SetTextureHandle(0xFFFF);
