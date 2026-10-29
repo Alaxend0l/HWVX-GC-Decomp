@@ -1140,6 +1140,37 @@ s32 Effect_UpdateDamper(Effect *effect, EffectCondition *cond)
     return force;
 }
 
+void SimThread_Init(VDevice *dev, VDevice *owner) {
+    static f32 a[10] = {
+        0.0995392948f, 0.0998378024f, 0.1000645086f, 0.1002266929f, 0.1003241092f,
+        0.1003241092f, 0.1002266929f, 0.1000645086f, 0.0998378024f, 0.0995392948f,
+    };
+    static s32 ia[10];
+    SimThread *t = &dev->sim;
+    s32 w[1] = {0x1000};
+    s32 i;
+    s32 j;
+
+    t->lastTick = 0;
+    t->historyIdx = 0;
+    t->deltaIdx = 0;
+    for (i = 0; i < 16; i++) {
+        t->deltaPos[i] = 0;
+        t->deltaTime[i] = 0;
+    }
+    t->owner = owner;
+    t->lastForce = 0;
+    t->posScaled = 0;
+    t->pos = 0;
+    t->accel = 0;
+    t->lastTick = OSGetTick() / ((*(u32 *)0x800000F8 / 4) / 1000);
+    SimThread_SetWeights(t, w);
+    for (j = 0; j < 10; j++) {
+        ia[j] = 4096.0f * a[j];
+    }
+    SimThread_SetWeights(t, ia);
+}
+
 #pragma pop
 
 #pragma pop
