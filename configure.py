@@ -343,7 +343,7 @@ config.libs = [
             Object(Matching, "SmartProjectiles.c"),
             Object(NonMatching, "SoundSequence.c"),
             Object(NonMatching, "State_GamePlay.c"),
-            Object(NonMatching, "State_Movie.c"),
+            Object(Matching, "State_Movie.c"),
             Object(NonMatching, "State_RenderTest.c"),
             Object(Matching, "State_Shutdown.c"),
             Object(NonMatching, "State_TitleScreen.c"),
