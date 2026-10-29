@@ -30,6 +30,9 @@ typedef struct GXData {
 extern GXData *gx;
 extern volatile u16 *__cpReg;
 
+void GXInitFifoPtrs(GXFifoObj *fifo, void *readPtr, void *writePtr);
+void GXInitFifoLimits(GXFifoObj *fifo, u32 hiWatermark, u32 loWatermark);
+
 void GXInitFifoLimits(GXFifoObj *fifo, u32 hiWatermark, u32 loWatermark) {
     __GXFifoObj *realFifo = (__GXFifoObj *)fifo;
 
