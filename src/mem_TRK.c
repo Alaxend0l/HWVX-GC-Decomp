@@ -8,67 +8,66 @@ void *TRK_memset(void *dst, int val, u32 count)
     return dst;
 }
 
-void TRK_fill_mem(void * dst, int val, u32 count)
+void TRK_fill_mem(void *dst, int val, u32 count)
 {
-    u8 b;
-    u32 w;
+    u32 v = (u8)val;
     u32 i;
+    union {
+        u8 *cpd;
+        u32 *lpd;
+    } dstu;
 
-    ((u8 *)dst) = ((u8 *)dst) - 1;
-    b = (u8)val;
-    w = b;
-    if (count >= 0x20)
+    dstu.cpd = ((u8 *)dst) - 1;
+
+    if (count >= 32)
     {
-        i = (~(u32)dst) & 3;
+        i = (~(u32)dstu.cpd) & 3;
         if (i)
         {
             count -= i;
             do
-            {
-                i -= 1;
-                *++((u8 *)dst) = b;
-            } while (i);
+                *++dstu.cpd = v;
+            while (--i);
         }
-        if (b)
-        {
-            w |= (w << 24) | (w << 16) | (w << 8);
-        }
+
+        if (v)
+            v |= v << 24 | v << 16 | v << 8;
+
+        dstu.lpd = ((u32 *)(dstu.cpd + 1)) - 1;
+
         i = count >> 5;
-        ((u32 *)dst) = ((u32 *)(((u8 *)dst) + 1)) - 1;
         if (i)
         {
             do
             {
-                *++((u32 *)dst) = w;
-                i -= 1;
-                *++((u32 *)dst) = w;
-                *++((u32 *)dst) = w;
-                *++((u32 *)dst) = w;
-                *++((u32 *)dst) = w;
-                *++((u32 *)dst) = w;
-                *++((u32 *)dst) = w;
-                *++((u32 *)dst) = w;
-            } while (i);
+                *++dstu.lpd = v;
+                *++dstu.lpd = v;
+                *++dstu.lpd = v;
+                *++dstu.lpd = v;
+                *++dstu.lpd = v;
+                *++dstu.lpd = v;
+                *++dstu.lpd = v;
+                *++dstu.lpd = v;
+            } while (--i);
         }
-        i = (count & 0x1f) >> 2;
+
+        i = (count & 31) >> 2;
         if (i)
         {
             do
-            {
-                i -= 1;
-                *++((u32 *)dst) = w;
-            } while (i);
+                *++dstu.lpd = v;
+            while (--i);
         }
-        ((u8 *)dst) = ((u8 *)(((u32 *)dst) + 1)) - 1;
-        count %= 4;
+
+        dstu.cpd = ((u8 *)(dstu.lpd + 1)) - 1;
+        count &= 3;
     }
+
     if (count)
     {
         do
-        {
-            count -= 1;
-            *++((u8 *)dst) = b;
-        } while (count);
+            *++dstu.cpd = v;
+        while (--count);
     }
 }
 
