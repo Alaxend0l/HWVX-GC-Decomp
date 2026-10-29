@@ -2,6 +2,13 @@
 
 #pragma use_lmw_stmw on
 
+typedef struct MemBlk {
+    u32 addr;
+    s32 size;
+    u32 prev;
+    u32 next;
+} MemBlk;
+
 
 s32 Audio_Create_(void) {
     void Audio_Update_(void);
