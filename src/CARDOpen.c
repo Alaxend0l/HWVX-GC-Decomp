@@ -29,6 +29,20 @@ s32 __CARDIsPublic(CARDDir *ent) {
     return -10;
 }
 
+s32 __CARDGetControlBlock(s32 chan, void **pcard);
+s32 __CARDPutControlBlock(void *card, s32 result);
+s32 CARDClose(CARDFileInfo *fileInfo) {
+    void *card;
+    s32 result;
+
+    result = __CARDGetControlBlock(fileInfo->chan, &card);
+    if (result < 0) {
+        return result;
+    }
+    fileInfo->chan = -1;
+    return __CARDPutControlBlock(card, 0);
+}
+
 s32 __CARDIsOpened(void) {
     return 0;
 }
