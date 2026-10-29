@@ -85,3 +85,12 @@ void *memcpy(void *dst, const void *src, u32 n);
 s32 __GBATransfer(s32 chan, s32 w1, s32 r1, void *proc);
 void __GBASyncCallback(s32 chan, s32 ret);
 s32 __GBASync(s32 chan);
+
+void ReadProc(s32 chan) {
+    GBAControl *gba = &__GBA[chan];
+
+    if (gba->ret == 0) {
+        memcpy(gba->ptr, gba->input, 4);
+        *gba->status = gba->input[4] & 0x3A;
+    }
+}
