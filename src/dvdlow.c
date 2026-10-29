@@ -25,6 +25,24 @@ s32 OSDisableInterrupts(void);
 s32 OSRestoreInterrupts(s32 level);
 
 volatile u32 __DIRegs[16] : 0xCC006000;
+u32 __OSBusClock : 0x800000F8;
+
+typedef struct OSAlarm OSAlarm;
+typedef void (*OSAlarmHandler)(OSAlarm *alarm, void *context);
+struct OSAlarm {
+    OSAlarmHandler handler;
+    u32 tag;
+    s64 fire;
+    OSAlarm *prev;
+    OSAlarm *next;
+    s64 period;
+    s64 start;
+};
+
+static OSAlarm AlarmForTimeout;
+
+void OSCreateAlarm(OSAlarm *alarm);
+void OSSetAlarm(OSAlarm *alarm, s64 tick, OSAlarmHandler handler);
 
 extern s32 Read(s32, s32, s32, s32);
 extern s32 DVDLowSeek(s32, s32);
