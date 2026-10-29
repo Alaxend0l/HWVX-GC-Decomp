@@ -122,11 +122,11 @@ void Gfx_SetBaseColor(GXColor *color) {
 
 void Gfx_SetRenderWindow(s32 window) {
     extern s32 g_currentWindow;
-    extern void *g_pWindow;
-    extern u8 g_window[][0x2D0];
+    extern GfxWindow *g_pWindow;
+    extern GfxWindow g_window[];
 
     g_currentWindow = window;
-    g_pWindow = g_window[window];
+    g_pWindow = &g_window[window];
 }
 
 s32 Gfx_GetRenderWindowIndex(void) {
