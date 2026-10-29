@@ -299,8 +299,8 @@ void __timesdec(decimal *result, const decimal *x, const decimal *y) {
     u8 *jp;
     u8 *end;
 
-    result->sign = 0;
     end = pDigit = mantissa + i + 1;
+    result->sign = 0;
 
     while (i > 0) {
         int k = y->sig.length - 1;
@@ -322,8 +322,8 @@ void __timesdec(decimal *result, const decimal *x, const decimal *y) {
         for (; l > 0; --l, ++ip, --jp) {
             accumulator += *ip * *jp;
         }
-        *--pDigit = (u8)(accumulator % 10);
-        accumulator = accumulator / 10;
+        *--pDigit = accumulator % 10;
+        accumulator /= 10;
         --i;
     }
 
