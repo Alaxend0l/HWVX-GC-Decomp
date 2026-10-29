@@ -404,12 +404,14 @@ s32 Thing_GetNearestNavPoint(void) {
 }
 
 s32 Thing_AddToGrid(void *thing, s32 type) {
-    Vector4 min;
-    Vector4 max;
+    void Thing_GetDynamicMinMax(void *thing, Vector4 *min, Vector4 *max, f32 expand);
+    s32 Grid_AddObject(s32 type, void *thing, Vector4 *min, Vector4 *max);
+    Vector4 min __attribute__((aligned(16)));
+    Vector4 max __attribute__((aligned(16)));
 
     Thing_GetDynamicMinMax(thing, &min, &max, 0.0f);
-    M2C_FIELD(thing, s32 *, 0x84) = Grid_AddObject(type, thing, &min, &max);
-    return M2C_FIELD(thing, s32 *, 0x84);
+    *(s32 *)((u8 *)thing + 0x84) = Grid_AddObject(type, thing, &min, &max);
+    return *(s32 *)((u8 *)thing + 0x84);
 }
 
 void Thing_GetStaticRotationalMinMax(void *thing, Vector4 *min, Vector4 *max) {
