@@ -42,7 +42,9 @@ extern GfxState g_state;
 typedef struct GfxWindow {
     u8 unk0[0x180];
     Vector cameraPos;
-    u8 unk190[0x2D0 - 0x190];
+    u8 unk190[0x270 - 0x190];
+    f32 fov;
+    u8 unk274[0x2D0 - 0x274];
 } GfxWindow;
 
 f32 PSVECSquareMag(Vector *v);
