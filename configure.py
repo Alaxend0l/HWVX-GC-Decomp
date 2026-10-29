@@ -372,7 +372,7 @@ config.libs = [
             Object(Matching, "Motion.c"),
             Object(NonMatching, "PPCArch.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "OS.c", mw_version="GC/1.2.5n"),
-            Object(NonMatching, "DebuggerDriver.c"),
+            Object(NonMatching, "DebuggerDriver.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "bgmath_NGC.c"),
             Object(Matching, "Debug_NGC.c"),
             Object(NonMatching, "Main_NGC.c"),
