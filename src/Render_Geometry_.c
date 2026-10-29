@@ -38,11 +38,28 @@ typedef struct Geometry {
 extern f32 g_identity[4][4];
 extern u32 m_fillMode;
 void Gfx_SetWorldMatrix(f32 (*matrix)[4]);
-void RenderGroup(Geometry *geometry, u16 group, f32 (*matrix)[4]);
+void RenderGroup(Geometry *geometry, u32 group, f32 (*matrix)[4]);
 
 extern u32 m_VtxDescFlag;
 extern u32 *m_vertexBuffer;
 extern u32 m_pointLightMask;
+
+void Gfx_DrawGeometryLOD_Immediate(Geometry *geometry, f32 (*matrix)[4]) {
+    u16 i;
+
+    if (geometry != NULL) {
+        if (matrix == g_identity) {
+            Gfx_SetWorldMatrix(NULL);
+        } else {
+            Gfx_SetWorldMatrix(matrix);
+        }
+        for (i = 0; i < geometry->numGroups; i++) {
+            geometry->groups[i].flags |= m_fillMode;
+            RenderGroup(geometry, i, matrix);
+            geometry->groups[i].flags &= ~m_fillMode;
+        }
+    }
+}
 
 void Render_UseLighting(u8 enable) {
     if (enable) {
