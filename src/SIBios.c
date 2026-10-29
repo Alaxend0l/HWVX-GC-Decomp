@@ -16,6 +16,13 @@ static SIControl Si = {-1, 0, 0, NULL, NULL};
 static SIPacket Packet[4];
 static OSAlarm Alarm[4];
 static u32 Type[4];
+static s64 TypeTime[4];
+static s64 XferTime[4];
+static void *TypeCallback[4][4];
+static void *RDSTHandler[4];
+static BOOL InputBufferValid[4];
+static u32 InputBuffer[4][2];
+static volatile u32 InputBufferVcount[4];
 
 BOOL __SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback);
 
