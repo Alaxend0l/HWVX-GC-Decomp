@@ -31,6 +31,20 @@ typedef struct GXData {
 
 extern GXData *gx;
 
+void GXSetTevKColorSel(s32 stage, s32 sel) {
+    u32 *Kreg;
+
+    Kreg = &gx->tevKsel[stage >> 1];
+    if (stage & 1) {
+        *Kreg = ((u32)*Kreg & ~0x7C000) | ((u32)sel << 14);
+    } else {
+        *Kreg = ((u32)*Kreg & ~0x1F0) | ((u32)sel << 4);
+    }
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *Kreg;
+    gx->bpSentNot = 0;
+}
+
 void GXSetTevSwapMode(s32 stage, s32 ras_sel, s32 tex_sel) {
     u32 *pTevReg;
 
