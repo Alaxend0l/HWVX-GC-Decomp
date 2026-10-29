@@ -97,3 +97,8 @@ s32 SIDecodeType(s32 type) {
     return 0x40;
 }
 
+u32 SIGetType(s32 chan);
+u32 SIProbe(s32 chan) {
+    return SIDecodeType(SIGetType(chan));
+}
+
