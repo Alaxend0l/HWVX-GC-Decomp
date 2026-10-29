@@ -13,3 +13,7 @@ RandomNumberGenerator g_randomNumberGenerator;
 
 s32 RandomAdd_s32(s32 base, s32 range);
 f32 RandomAdd(f32 base, f32 range);
+
+s32 RandomNumberGenerator_GetRandomInteger(s32 min, s32 max) {
+    return RandomAdd_s32(min, max - min);
+}
