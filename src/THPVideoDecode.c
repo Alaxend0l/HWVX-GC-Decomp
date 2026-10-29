@@ -26,6 +26,16 @@ typedef struct THPPlayer {
 
 extern THPPlayer ActivePlayer;
 
+typedef struct THPTextureSet {
+    u8 *ytexture;
+    u8 *utexture;
+    u8 *vtexture;
+    s32 frameNumber;
+} THPTextureSet;
+
+extern s32 First;
+extern u8 VideoDecodeThread[];
+
 void VideoDecodeThreadStart(void) {
     extern s32 VideoDecodeThreadCreated;
     extern u8 VideoDecodeThread[];
