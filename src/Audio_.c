@@ -34,6 +34,8 @@ void Audio_Update_(void) {
     Audio_Update(0xD05);
 }
 
+#pragma push
+#pragma optimization_level 1
 u32 HAllocA_(s32 size) {
     typedef struct MemBlk {
         u32 addr;
@@ -42,7 +44,7 @@ u32 HAllocA_(s32 size) {
         u32 unkC;
     } MemBlk;
     extern MemBlk g_memblk[];
-    extern volatile s32 g_last;
+    extern s32 g_last;
     extern u32 g_heap;
 
     size = (size + 0x1F) & ~0x1F;
@@ -53,7 +55,7 @@ u32 HAllocA_(s32 size) {
     g_memblk[g_last].size -= size;
     return g_heap;
 }
-
+#pragma pop
 void MemCpyDone(void) {
     extern s32 g_arqWait;
     g_arqWait = 0;
