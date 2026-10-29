@@ -75,6 +75,37 @@ s32 AIGetStreamPlayState(void)
     return __AIRegs[0] & 1;
 }
 
+s32 AIGetDSPSampleRate(void);
+void AISetDSPSampleRate(u32 rate) {
+    s32 old;
+    s32 state;
+    u8 left;
+    u8 right;
+    u32 sampleRate;
+
+    if (rate == AIGetDSPSampleRate()) {
+        return;
+    }
+    __AIRegs[0] &= ~0x40;
+    if (rate == 0) {
+        left = AIGetStreamVolLeft();
+        right = AIGetStreamVolRight();
+        state = AIGetStreamPlayState();
+        sampleRate = AIGetStreamSampleRate();
+        AISetStreamVolLeft(0);
+        AISetStreamVolRight(0);
+        old = OSDisableInterrupts();
+        __AI_SRC_INIT();
+        __AIRegs[0] = (__AIRegs[0] & ~0x20) | 0x20;
+        __AIRegs[0] = (__AIRegs[0] & ~2) | (sampleRate << 1);
+        __AIRegs[0] = (__AIRegs[0] & ~1) | state;
+        __AIRegs[0] |= 0x40;
+        OSRestoreInterrupts(old);
+        AISetStreamVolLeft(left);
+        AISetStreamVolRight(right);
+    }
+}
+
 s32 AIGetDSPSampleRate(void)
 {
     return (((u32) *(u32 *)0xCC006C00 >> 6U) & 1) ^ 1;
