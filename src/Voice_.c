@@ -153,6 +153,27 @@ s32 AudioVoice_Init_(void) {
     AXRegisterAuxBCallback(AXFXDelayCallback, &g_reverb[1]);
     return 1;
 }
+
+u32 MAllocA_(u32 size);
+u32 CreateSFX_(u32 *sfx) {
+    u32 size;
+    u32 data;
+
+    size = (sfx[1] + 0x1F) & ~0x1F;
+    data = MAllocA_(size);
+    if (data == 0) {
+        return 0;
+    }
+    DCFlushRange((void *)sfx[0], size);
+    MemCpyA_(data, sfx[0], size);
+    if (((u8 *)sfx)[0x11] == 0x10) {
+        sfx[1] >>= 1;
+        *(u32 *)&data >>= 1;
+        ((s32 *)sfx)[2] >>= 1;
+    }
+    sfx[0] = data;
+    return data;
+}
 #pragma pop
 void AudioVoice_Destroy_(void) {
     AXRegisterAuxBCallback(NULL, NULL);
