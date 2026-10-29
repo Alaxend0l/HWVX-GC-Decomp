@@ -30,10 +30,13 @@ typedef struct THPPlayer {
 } THPPlayer;
 
 extern THPPlayer ActivePlayer;
-extern u8 AudioDecodeThread[];
-extern s32 AudioDecodeThreadCreated;
-extern u8 FreeAudioBufferQueue[];
-extern u8 DecodedAudioBufferQueue[];
+static u8 AudioDecodeThread[0x310];
+u8 AudioDecodeThreadStack[0x1000];
+u8 FreeAudioBufferQueue[0x20];
+void *FreeAudioBufferMessage[3];
+u8 DecodedAudioBufferQueue[0x20];
+void *DecodedAudioBufferMessage[3];
+s32 AudioDecodeThreadCreated;
 s32 OSSuspendThread(void *thread);
 
 void *PopReadedBuffer(void);
