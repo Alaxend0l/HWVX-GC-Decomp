@@ -111,3 +111,25 @@ static void F23(s32 chan, s32 ret) {
     }
     gba->ret = ret;
 }
+
+static void F25(s32 chan, s32 ret) {
+    GBAControl *gba;
+    GBABootInfo *bootInfo;
+    GBACallback callback;
+
+    gba = &__GBA[chan];
+    bootInfo = &gba->bootInfo;
+    if (ret == 0 && *bootInfo->status != D54[0x25]) {
+        ret = 3;
+    }
+    if (ret != 0 || (ret = GBAGetStatusAsync(chan, bootInfo->status, F27)) != 0) {
+        bootInfo->begin = 0;
+        if (bootInfo->callback) {
+            callback = bootInfo->callback;
+            bootInfo->callback = NULL;
+            callback(chan, ret);
+        }
+    }
+    gba->ret = ret;
+}
+
