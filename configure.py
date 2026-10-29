@@ -489,7 +489,7 @@ config.libs = [
             Object(NonMatching, "AXComp.c"),
             Object(NonMatching, "DSPCode.c"),
             Object(NonMatching, "AXProf.c"),
-            Object(NonMatching, "delay.c"),
+            Object(NonMatching, "delay.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "axfx.c"),
             Object(NonMatching, "dsp.c"),
             Object(Matching, "dsp_debug.c"),
