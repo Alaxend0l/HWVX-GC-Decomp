@@ -699,6 +699,86 @@ void Render_DrawSpheres(void) {
     Render_StateCullMode(cullMode);
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void Render_DrawBoundingBoxes(void) {
+    u32 i;
+    s32 cullMode;
+    Vector4 v[8] __attribute__((aligned(16)));
+
+    cullMode = m_cullMode;
+    Render_StateCullMode(0);
+    for (i = 0; i < g_pGDL->numBoxes; i++) {
+        v[0] = v[1] = v[2] = v[3] = g_pGDL->boxes[i].min;
+        v[1].x = g_pGDL->boxes[i].max.x;
+        v[2].x = g_pGDL->boxes[i].max.x;
+        v[2].z = g_pGDL->boxes[i].max.z;
+        v[3].z = g_pGDL->boxes[i].max.z;
+        v[4] = v[5] = v[6] = v[7] = g_pGDL->boxes[i].max;
+        v[5].x = g_pGDL->boxes[i].min.x;
+        v[6].x = g_pGDL->boxes[i].min.x;
+        v[6].z = g_pGDL->boxes[i].min.z;
+        v[7].z = g_pGDL->boxes[i].min.z;
+        SetTriFlatVtxDesc();
+        GXBegin(0x80, 0, 24);
+        GXPosition3f32(v[0].x, v[0].y, v[0].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[1].x, v[1].y, v[1].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[2].x, v[2].y, v[2].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[3].x, v[3].y, v[3].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+
+        GXPosition3f32(v[4].x, v[4].y, v[4].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[5].x, v[5].y, v[5].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[6].x, v[6].y, v[6].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[7].x, v[7].y, v[7].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+
+        GXPosition3f32(v[0].x, v[0].y, v[0].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[6].x, v[6].y, v[6].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[7].x, v[7].y, v[7].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[1].x, v[1].y, v[1].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+
+        GXPosition3f32(v[3].x, v[3].y, v[3].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[5].x, v[5].y, v[5].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[4].x, v[4].y, v[4].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[2].x, v[2].y, v[2].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+
+        GXPosition3f32(v[0].x, v[0].y, v[0].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[6].x, v[6].y, v[6].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[5].x, v[5].y, v[5].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[3].x, v[3].y, v[3].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+
+        GXPosition3f32(v[2].x, v[2].y, v[2].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[4].x, v[4].y, v[4].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[7].x, v[7].y, v[7].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+        GXPosition3f32(v[1].x, v[1].y, v[1].z);
+        GXColor4u8(g_pGDL->boxes[i].r, g_pGDL->boxes[i].g, g_pGDL->boxes[i].b, g_pGDL->boxes[i].a);
+    }
+    Render_StateCullMode(cullMode);
+    m_triCount += 12;
+}
+#pragma pop
 void SetVertexBuffer(u32 *vb, u16 flags, u16 unk) {
     u8 *data;
 
