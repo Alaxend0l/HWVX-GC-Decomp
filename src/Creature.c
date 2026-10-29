@@ -378,7 +378,7 @@ void Creature_MicroStep(void *arg0, f32 dt) {
         u8 unkE0[0x1A0 - 0xE0];
         Vector4 vel;
     } *creature = arg0;
-    Vector4 pos;
+    Vector4 pos __attribute__((aligned(16)));
     u32 i;
     u32 *numBones;
 
