@@ -258,6 +258,24 @@ extern GDL *g_pGDL;
 void CopyMatrix(f32 (*dst)[4], f32 (*src)[4]);
 extern DisplayList *g_pDL;
 
+void *Allocate(u32 size, u32 flags, const char *name);
+#pragma use_lmw_stmw on
+s32 Gfx_DisplayList_Create(void) {
+    u32 i;
+
+    g_pGDL = Allocate(0x24D200, 0, "");
+    if (g_pGDL == NULL) {
+        return 0;
+    }
+    for (i = 0; i < 2000; i++) {
+        g_pGDL->tris[i].v[0].w = 1.0f;
+        g_pGDL->tris[i].v[1].w = 1.0f;
+        g_pGDL->tris[i].v[2].w = 1.0f;
+    }
+    g_pGDL->unk24D1F2 = 0;
+    return 1;
+}
+#pragma use_lmw_stmw reset
 void Gfx_DisplayList_Destroy(void) {
     Deallocate(g_pGDL);
     Deallocate(g_pDL);
