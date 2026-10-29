@@ -4,17 +4,34 @@
 
 typedef struct SFX {
     void *data;
-    u8 unk4[0x1C];
+    u32 unk4;
+    u32 unk8;
+    u32 unkC;
+    u8 unk10;
+    u8 unk11;
+    u16 unk12;
+    u8 unk14[0xC];
 } SFX;
 
 typedef struct Voice {
     union {
         u32 id;
-        u8 kind;
+        struct {
+            u8 kind;
+            u8 sfxIndex;
+            u8 serial;
+        };
     };
-    u8 unk4[0x11];
+    u8 unk4[0xC];
+    SFX *sfx;
+    u8 unk14;
     u8 state;
-    u8 unk16[0x1E];
+    u8 unk16[0xA];
+    u32 unk20;
+    u32 unk24;
+    u32 unk28;
+    u8 unk2C;
+    u32 unk30;
     s32 pitch;
     s32 vol;
     u8 unk3C[4];
