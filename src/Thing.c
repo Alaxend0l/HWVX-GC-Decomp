@@ -303,6 +303,112 @@ s32 ActionAirboxChangeMode(s32 *data) {
     return 1;
 }
 
+void Thing_CollideWithForceBoxes(u8 *thing) {
+    typedef struct ForceBox {
+        Vector4 force;
+        s8 oneShot;
+        s8 carOnly;
+        u16 type;
+    } ForceBox;
+    extern u8 g_carAVTable[];
+    u8 *IsPointWithinForceBox(Vector4 *point);
+    f32 MagnitudeVector(void *v);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    Vector4 *vel = (Vector4 *)thing;
+    ForceBox *box;
+    u8 *volume;
+    u32 wasInside;
+    f32 mag;
+    f32 dot;
+    Vector4 dir __attribute__((aligned(16)));
+    Vector4 velDir __attribute__((aligned(16)));
+    Vector4 forceDir __attribute__((aligned(16)));
+    Vector4 dir2 __attribute__((aligned(16)));
+    Vector4 velDir2 __attribute__((aligned(16)));
+    Vector4 forceDir2 __attribute__((aligned(16)));
+
+    wasInside = *(u32 *)(thing + 0x74) & 0x400;
+    volume = IsPointWithinForceBox((Vector4 *)(thing + 0x40));
+    *(u32 *)(thing + 0x74) &= ~0x400;
+    if (volume == NULL) {
+        return;
+    }
+    box = *(ForceBox **)(volume + 0x2C);
+    if (box->carOnly && *(u8 **)(thing + 0x8C) == g_carAVTable && *(s32 *)(thing + 0x460) != 0) {
+        return;
+    }
+    if (box->oneShot) {
+        if (!wasInside) {
+            switch (box->type) {
+            case 0:
+                dir = *vel;
+                mag = MagnitudeVector(box);
+                if (PSVECSquareMag(&dir)) {
+                    PSVECNormalize(&dir, &dir);
+                }
+                vel->x += dir.x * mag;
+                vel->y += dir.y * mag;
+                vel->z += dir.z * mag;
+                break;
+            case 1:
+                vel->x += box->force.x;
+                vel->y += box->force.y;
+                vel->z += box->force.z;
+                break;
+            case 2:
+                velDir = *vel;
+                forceDir = box->force;
+                if (PSVECSquareMag(&velDir)) {
+                    PSVECNormalize(&velDir, &velDir);
+                }
+                if (PSVECSquareMag(&forceDir)) {
+                    PSVECNormalize(&forceDir, &forceDir);
+                }
+                dot = PSVECDotProduct(&velDir, &forceDir);
+                if (dot > 0.0f) {
+                    vel->x += box->force.x * dot;
+                    vel->y += box->force.y * dot;
+                    vel->z += box->force.z * dot;
+                }
+                break;
+            }
+        }
+        *(u32 *)(thing + 0x74) |= 0x400;
+        return;
+    }
+    switch (box->type) {
+    case 0:
+        dir2 = *vel;
+        vel->x += dir2.x;
+        vel->y += dir2.y;
+        vel->z += dir2.z;
+        break;
+    case 1:
+        vel->x += box->force.x;
+        vel->y += box->force.y;
+        vel->z += box->force.z;
+        break;
+    case 2:
+        velDir2 = *vel;
+        forceDir2 = box->force;
+        if (PSVECSquareMag(&velDir2)) {
+            PSVECNormalize(&velDir2, &velDir2);
+        }
+        if (PSVECSquareMag(&forceDir2)) {
+            PSVECNormalize(&forceDir2, &forceDir2);
+        }
+        dot = PSVECDotProduct(&velDir2, &forceDir2);
+        if (dot > 0.0f) {
+            vel->x += box->force.x * dot;
+            vel->y += box->force.y * dot;
+            vel->z += box->force.z * dot;
+        }
+        break;
+    }
+}
+
 s32 TriggerP2PActivated(u32 *data) {
     u32 n = data[0];
     u32 i;
