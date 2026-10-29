@@ -77,6 +77,52 @@ typedef struct GDLMatrix {
     f32 m[16];
 } __attribute__((aligned(16))) GDLMatrix;
 
+typedef struct DLSkinGroup {
+    void *lod;
+    s32 lightState;
+    f32 *matrices;
+    u32 count;
+    u16 matrix;
+    u8 group;
+    u8 window;
+} DLSkinGroup;
+
+typedef struct DLGroup {
+    void *geometry;
+    s32 lightState;
+    u16 matrix;
+    u16 unkA;
+    u8 group;
+    u8 unkD;
+    u8 unkE;
+    u8 window;
+} DLGroup;
+
+typedef struct DisplayList {
+    u16 numOpaqueGroups;
+    u16 numLitGroups;
+    u16 numShadowGroups;
+    u16 numAlphaGroups;
+    u8 unk8[0x10 - 0x8];
+    u16 numSkinGroups;
+    u8 unk12[0x14 - 0x12];
+    u16 numDecalGroups;
+    u16 numOverlayGroups;
+    u8 unk18[0x20 - 0x18];
+    DLGroup opaqueGroups[0x9C4];
+    DLGroup litGroups[0x258];
+    DLGroup shadowGroups[0x100];
+    DLGroup alphaGroups[0x100];
+    DLGroup decalGroups[0x200];
+    DLGroup overlayGroups[0x80];
+    DLSkinGroup skinGroups[0x100];
+    u16 unk11DE0[0x1FF];
+    u16 unk121DE[0x1FF];
+} DisplayList;
+
+extern DisplayList *g_pDL;
+extern u8 g_CurrentViews;
+
 extern GDL *g_pGDL;
 extern s32 m_cullMode;
 void Render_SetTextureHandle(s32 handle);
