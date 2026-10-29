@@ -174,6 +174,10 @@ static inline void SimThread_SetWeights(SimThread *t, const s32 *weights) {
 }
 void VDevice_RecalcGammaTable(void);
 double pow(double x, double y);
+
+static inline f32 VDevice_GammaCurve(s32 v, f32 gamma) {
+    return 128.0f * (f32)pow((f32)v / 128.0f, gamma) + 0.5f;
+}
 s32 VDevice_Shutdown(VDevice *dev);
 s32 VDevice_StartEffect(VDevice *dev, u32 handle);
 u32 VDevice_GetFreeEffect(VDevice *dev);
@@ -822,6 +826,27 @@ void VDevice_Init(VDevice *dev)
         g_bGammaInitialized = 1;
     }
 }
+
+#pragma push
+#pragma optimize_for_size on
+#pragma use_lmw_stmw on
+void VDevice_RecalcGammaTable(void) {
+    s32 i;
+    f32 gamma = 0.6666667f;
+    f32 v;
+
+    for (i = 0; i < 129; i++) {
+        if (i < 0) {
+            v = (f32)-i / 128.0f;
+            v = -(128.0f * (f32)pow(v, gamma) + 0.5f);
+        } else {
+            v = (f32)i / 128.0f;
+            v = 128.0f * (f32)pow(v, gamma) + 0.5f;
+        }
+        g_iGammaLookup[i] = v;
+    }
+}
+#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
