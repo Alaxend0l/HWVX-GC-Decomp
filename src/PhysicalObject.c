@@ -423,6 +423,195 @@ s32 Mover_PreMove(u8 *mover) {
     return 1;
 }
 
+void PhysicalObject_DynamicRotation(u8 *arg0, f32 dt) {
+    typedef struct OBox {
+        Vector4 center;
+        Vector4 corners[8];
+        u8 pad90[0xD];
+        u8 valid;
+        u8 pad9E[2];
+        void *row2;
+        void *row0;
+        void *row1;
+        u8 padAC[0xF0 - 0xAC];
+    } OBox;
+    typedef struct RayHit {
+        Vector4 pos;
+        Vector4 normal;
+        u8 pad20[8];
+        u8 *surface;
+        u8 pad2C[0x24];
+    } RayHit;
+    typedef struct PhysProps {
+        u8 pad0[0x10];
+        u8 type;
+        u8 pad11[0x20 - 0x11];
+        f32 mass;
+        u8 pad24[0x30 - 0x24];
+        u8 *material;
+        u8 pad34[0x44 - 0x34];
+        void *box;
+    } PhysProps;
+    typedef struct PhysInfo {
+        u8 pad0[0x10];
+        PhysProps *props;
+    } PhysInfo;
+    typedef struct PhysObj {
+        Vector4 vel;
+        Matrix4 mtx;
+        Quaternion quat;
+        u8 pad60[0x74 - 0x60];
+        u32 flags;
+        u8 pad78[0xC0 - 0x78];
+        PhysInfo *info;
+        u8 padC4[0xD0 - 0xC4];
+        OBox *obox;
+        u8 padD4[0x110 - 0xD4];
+        Vector4 angMomentum;
+        Vector4 invInertia;
+        Vector4 angVel;
+    } PhysObj;
+    f32 MagnitudeVector(Vector4 *v);
+    void XformVecOrientation(void *mtx, void *in, void *out);
+    void InverseXformVecOrientation(void *mtx, void *in, void *out);
+    void GenerateQuaternion(Vector4 *axis, Quaternion *q, f32 angle);
+    void QuaternionToSubMatrix(Quaternion *q, Matrix4 *m);
+    OBox *Destructible_GetOrientedCollision(void *thing);
+    void BuildOOB(void *oob, Matrix4 *mtx, OBox *out);
+    s8 RayHitsTerrain_Aux3(void *start, void *dir, f32 *t, RayHit *hit);
+    s8 OBoxHitsTerrainAndObjectsZeroTime(void *obox, void *thing, void *info);
+    void PSVECSubtract(void *a, void *b, void *out);
+    void PSVECCrossProduct(void *a, void *b, void *out);
+    f32 PSVECDotProduct(void *a, void *b);
+    OBox obox;
+    RayHit hit;
+    Matrix4 mtx;
+    Vector4 spin __attribute__((aligned(16)));
+    Quaternion q __attribute__((aligned(16)));
+    Quaternion newQ __attribute__((aligned(16)));
+    Vector4 axis __attribute__((aligned(16)));
+    Vector4 dir __attribute__((aligned(16)));
+    f32 scaled[4];
+    f32 local[4];
+    Vector4 torque;
+    f32 bScaled[4];
+    f32 bLocal[4];
+    Vector4 tmp;
+    Vector4 angVel;
+    Vector4 rxn;
+    Vector4 vel;
+    Vector4 r;
+    Vector4 impulse;
+    f32 scaled3[4];
+    f32 local3[4];
+    f32 t;
+    f32 mag;
+    u32 i;
+    PhysObj *obj = (PhysObj *)arg0;
+    void *box;
+    OBox *old;
+    s8 hitTerrain;
+    f32 e1;
+    f32 num;
+    f32 j;
+
+    t = dt;
+    if (obj->flags & 8) {
+        return;
+    }
+    if (obj->flags & 0x200000) {
+        return;
+    }
+    InverseXformVecOrientation(&obj->mtx, &obj->angMomentum, local);
+    scaled[0] = obj->invInertia.x * local[0];
+    scaled[1] = obj->invInertia.y * local[1];
+    scaled[2] = obj->invInertia.z * local[2];
+    XformVecOrientation(&obj->mtx, scaled, &spin);
+    axis = spin;
+    mag = MagnitudeVector(&axis);
+    if (mag > 0.0001f) {
+        axis.x /= mag;
+        axis.y /= mag;
+        axis.z /= mag;
+    }
+    GenerateQuaternion(&axis, &q, mag * t);
+    QuaternionMult((Vector4 *)&q, (Vector4 *)&obj->quat, (Vector4 *)&newQ);
+    QuaternionToSubMatrix(&newQ, &mtx);
+    mtx.v[3].x = obj->mtx.v[3].x;
+    mtx.v[3].y = obj->mtx.v[3].y;
+    mtx.v[3].z = obj->mtx.v[3].z;
+    if (obj->flags & 2) {
+        obj->quat = newQ;
+        obj->mtx = mtx;
+        return;
+    }
+    switch (obj->info->props->type) {
+    case 0:
+        box = obj->info->props->box;
+        old = Destructible_GetOrientedCollision(obj);
+        obox.valid = 1;
+        BuildOOB(box, &mtx, &obox);
+        for (i = 0; i < 8; i++) {
+            if (t > 0.00005f) {
+                dir.x = (obox.corners[i].x - old->corners[i].x) / dt;
+                dir.y = (obox.corners[i].y - old->corners[i].y) / dt;
+                dir.z = (obox.corners[i].z - old->corners[i].z) / dt;
+                hitTerrain = 0;
+                obj->flags |= 2;
+                if (!(obj->flags & 0x40000)) {
+                    hitTerrain = RayHitsTerrain_Aux3(&old->corners[i], &dir, &t, &hit);
+                }
+                obj->flags &= ~2;
+                if (hitTerrain) {
+                    e1 = *(f32 *)(hit.surface + 0x18);
+                    vel = dir;
+                    PSVECSubtract(&hit.pos, &obj->mtx.v[3], &r);
+                    num = -(e1 * *(f32 *)(obj->info->props->material + 0x18) + 1.0f) * PSVECDotProduct(&vel, &hit.normal);
+                    PSVECCrossProduct(&r, &hit.normal, &rxn);
+                    InverseXformVecOrientation(&obj->mtx, &rxn, bLocal);
+                    bScaled[0] = obj->invInertia.x * bLocal[0];
+                    bScaled[1] = obj->invInertia.y * bLocal[1];
+                    bScaled[2] = obj->invInertia.z * bLocal[2];
+                    XformVecOrientation(&obj->mtx, bScaled, &angVel);
+                    PSVECCrossProduct(&angVel, &r, &tmp);
+                    j = num / (1.0f / obj->info->props->mass + PSVECDotProduct(&tmp, &hit.normal));
+                    impulse.x = j * hit.normal.x;
+                    impulse.y = j * hit.normal.y;
+                    impulse.z = j * hit.normal.z;
+                    obj->vel.x += impulse.x / obj->info->props->mass;
+                    obj->vel.y += impulse.y / obj->info->props->mass;
+                    obj->vel.z += impulse.z / obj->info->props->mass;
+                    obj->mtx.v[3].x += 0.03f * hit.normal.x;
+                    obj->mtx.v[3].y += 0.03f * hit.normal.y;
+                    obj->mtx.v[3].z += 0.03f * hit.normal.z;
+                    PSVECCrossProduct(&r, &impulse, &torque);
+                    obj->angMomentum.x += torque.x;
+                    obj->angMomentum.y += torque.y;
+                    obj->angMomentum.z += torque.z;
+                    InverseXformVecOrientation(&obj->mtx, &obj->angMomentum, local3);
+                    scaled3[0] = obj->invInertia.x * local3[0];
+                    scaled3[1] = obj->invInertia.y * local3[1];
+                    scaled3[2] = obj->invInertia.z * local3[2];
+                    XformVecOrientation(&obj->mtx, scaled3, &obj->angVel);
+                }
+            }
+        }
+        if (!OBoxHitsTerrainAndObjectsZeroTime(&obox, obj, NULL)) {
+            obj->quat = newQ;
+            obj->mtx = mtx;
+            *obj->obox = obox;
+            obj->obox->row2 = &obj->mtx.v[2];
+            obj->obox->row0 = &obj->mtx.v[0];
+            obj->obox->row1 = &obj->mtx.v[1];
+            obj->flags &= ~0x180;
+        }
+        break;
+    case 1:
+    case 6:
+        break;
+    }
+}
+
 void Mover_DynamicRotation(u8 *mover) {
     typedef struct Mover {
         u8 pad0[0x10];
