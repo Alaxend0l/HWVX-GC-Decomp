@@ -23,7 +23,9 @@ typedef struct GXDataSUTex {
     u32 iref;
     u8 unk124[0x204 - 0x124];
     u32 genMode;
-    u8 unk208[0x49C - 0x208];
+    u8 unk208[0x410 - 0x208];
+    void *texRegionCallback;
+    u8 unk414[0x49C - 0x414];
     u32 texmapId[16];
     u32 tcsManEnab;
     u32 tevTcEnab;
