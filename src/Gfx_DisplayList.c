@@ -226,3 +226,12 @@ void *Gfx_GetWorldMatrixState(u32 index) {
     return g_pGDL->matrices[index];
 }
 
+DLSkinGroup *DisplayList_AddGroup_Skin(void) {
+    DisplayList *dl = g_pDL;
+
+    if (dl->numSkinGroups == 0x100) {
+        return NULL;
+    }
+    return &dl->skinGroups[dl->numSkinGroups++];
+}
+
