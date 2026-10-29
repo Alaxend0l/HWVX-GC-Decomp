@@ -27,6 +27,24 @@ BOOL SIIsChanBusy(s32 chan) {
     return Packet[chan].chan != -1 || Si.chan == chan;
 }
 
+u32 SIGetStatus(s32 chan) {
+    BOOL enabled;
+    u32 sr;
+    int chanShift;
+
+    enabled = OSDisableInterrupts();
+    sr = __SIRegs[14];
+    chanShift = 8 * (3 - chan);
+    sr >>= chanShift;
+    if (sr & 8) {
+        if (!(Type[chan] & 0x80)) {
+            Type[chan] = 8;
+        }
+    }
+    OSRestoreInterrupts(enabled);
+    return sr;
+}
+
 void SISetCommand(s32 chan, u32 command) {
     __SIRegs[3 * chan] = command;
 }
