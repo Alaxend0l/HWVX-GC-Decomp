@@ -250,6 +250,8 @@ s32 TriggerAirboxStopIn(u32 *trigger) {
     return 0;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 s32 TriggerAirboxExited(u32 *trigger) {
     f32 dist;
     u8 *volume;
@@ -270,7 +272,7 @@ s32 TriggerAirboxExited(u32 *trigger) {
     }
     return 1;
 }
-
+#pragma pop
 s32 ActionAirboxChangeMode(s32 *data) {
     u32 count = data[1];
     s32 mode = data[0];
