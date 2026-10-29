@@ -615,33 +615,11 @@ void CarA_DrawReflection(void *thing) {
         ModelPart *parts;
         u8 pad10[4];
         s32 *skel;
-    } Model;
-    typedef struct CarPart {
-        u8 flags;
-        u8 xform;
-        u8 pad2[2];
-        u16 mtxIndex;
-        u8 pad6[2];
-        void *geom;
-        Vector4 *offset;
-        u8 pad10[0xC];
-    } CarPart;
-    typedef struct CarPartList {
-        u32 count;
-        CarPart *parts;
-    } CarPartList;
-    typedef struct CarTrailBone {
-        f32 offset;
-        f32 width0;
-        f32 width1;
-        u8 padC[0x3F - 0xC];
-        u8 parent;
-        u16 bone;
-        u8 pad42[0x50 - 0x42];
-    } CarTrailBone;
+    } CarModel;
     void LightManager_LightThing(void *thing);
     void Gfx_DrawGeometry(void *geom, void *mtx);
-    void CarA_Extract_Keyframes(u8 *car, void *frames, void *state);
+    void CarA_Extract_Keyframes(CarA *car, void *frames, void *state);
+    void TEST_AnimTraverseHeirarchyToMatricesWorld(Vector4 *quat, void *pos, void *frames, s32 skel, void *matrices, f32 time);
     void Create_Plane3(Vector4 *plane, Vector4 *normal, Vector4 *point);
     f32 Distance_Plane(void *plane, void *point);
     void Gfx_AnimTraverseHeirarchyToMatrices(void *frames, s32 skel, Matrix4 *matrices);
@@ -656,33 +634,33 @@ void CarA_DrawReflection(void *thing) {
     Matrix4 partMtx2;
     Vector4 plane;
     Vector4 pos;
-    u8 *car = thing;
+    CarA *car = thing;
     f32 offset = 0.0f;
-    Matrix4 *oldMatrices = *(Matrix4 **)(car + 0x340);
+    Matrix4 *oldMatrices = car->motionState.animMatrices;
     f32 h;
 
-    if (*(Model **)(car + 0x330) != NULL) {
+    if (car->motionState.model != NULL) {
         LightManager_LightThing(car);
-        *(Matrix4 **)(car + 0x340) = matrices;
+        car->motionState.animMatrices = matrices;
         {
-            s32 *skel = (*(Model **)(car + 0x330))->skel;
-            CarA_Extract_Keyframes(car, frames, *(Model **)(car + 0x330));
-            XformVec(car + 0x10, (Vector4 *)(car + 0x520), &pos);
-            TEST_AnimTraverseHeirarchyToMatricesWorld((Vector4 *)(car + 0x50), &pos, frames, *skel, matrices, 1.0f);
+            s32 *skel = ((CarModel *)car->motionState.model)->skel;
+            CarA_Extract_Keyframes(car, frames, car->motionState.model);
+            XformVec(&car->worldMatrix, &car->bodyOffset, &pos);
+            TEST_AnimTraverseHeirarchyToMatricesWorld(&car->animRefPos, &pos, frames, *skel, matrices, 1.0f);
         }
-        Create_Plane3(&plane, (Vector4 *)(car + 0x20), &pos);
-        h = -Distance_Plane(&plane, &matrices[(*(CarTrailBone **)(*(u8 **)(car + 0x3BC) + 0xD4))->bone].v[3]);
-        offset += 2.0f * h + 2.0f * (*(CarTrailBone **)(*(u8 **)(car + 0x3BC) + 0xD4))->offset;
+        Create_Plane3(&plane, &car->worldMatrix.v[1], &pos);
+        h = -Distance_Plane(&plane, &matrices[car->vehicleIface->wheels->bone].v[3]);
+        offset += 2.0f * h + 2.0f * car->vehicleIface->wheels->offset;
         {
             u32 i;
-            for (i = 0; i < (*(Model **)(car + 0x330))->numParts; i++) {
-                ModelPart *e = &(*(Model **)(car + 0x330))->parts[i];
+            for (i = 0; i < ((CarModel *)car->motionState.model)->numParts; i++) {
+                ModelPart *e = &((CarModel *)car->motionState.model)->parts[i];
                 Gfx_DrawGeometry(e->geom, &matrices[e->mtxIndex]);
             }
         }
         {
             u32 j;
-            CarPartList *list = *(CarPartList **)(*(u8 **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x78) + 0x10) + 0x38);
+            CarPartList *list = car->vehicleIface->modelRef->data->parts;
             CarPart *part;
             u32 bit;
             void *geom;
@@ -690,7 +668,7 @@ void CarA_DrawReflection(void *thing) {
                 for (j = 0; j < list->count; j++) {
                     part = &list->parts[j];
                     geom = part->geom;
-                    bit = *(u32 *)(car + 0x374) & (1 << j);
+                    bit = car->partVisMask & (1 << j);
                     if (bit && !(part->flags & 1)) {
                         continue;
                     }
@@ -707,12 +685,12 @@ void CarA_DrawReflection(void *thing) {
                 }
             }
         }
-        MotionState_DrawSlaves(car + 0x330, 0);
-        mtx = *(Matrix4 *)(car + 0x10);
+        MotionState_DrawSlaves(&car->motionState, 0);
+        mtx = car->worldMatrix;
         {
             u32 i;
-            s32 *skel = (*(Model **)(car + 0x330))->skel;
-            CarA_Extract_Keyframes(car, frames2, *(Model **)(car + 0x330));
+            s32 *skel = ((CarModel *)car->motionState.model)->skel;
+            CarA_Extract_Keyframes(car, frames2, car->motionState.model);
             Gfx_AnimTraverseHeirarchyToMatrices(frames2, *skel, matrices);
             mtx.v[1].x *= -1.0f;
             mtx.v[1].y *= -1.0f;
@@ -720,7 +698,7 @@ void CarA_DrawReflection(void *thing) {
             mtx.v[0].x *= -1.0f;
             mtx.v[0].y *= -1.0f;
             mtx.v[0].z *= -1.0f;
-            XformVec(car + 0x10, (Vector4 *)(car + 0x520), &mtx.v[3]);
+            XformVec(&car->worldMatrix, &car->bodyOffset, &mtx.v[3]);
             mtx.v[3].x += mtx.v[1].x * offset;
             mtx.v[3].y += mtx.v[1].y * offset;
             mtx.v[3].z += mtx.v[1].z * offset;
@@ -731,14 +709,14 @@ void CarA_DrawReflection(void *thing) {
         }
         {
             u32 i;
-            for (i = 0; i < (*(Model **)(car + 0x330))->numParts; i++) {
-                ModelPart *e = &(*(Model **)(car + 0x330))->parts[i];
+            for (i = 0; i < ((CarModel *)car->motionState.model)->numParts; i++) {
+                ModelPart *e = &((CarModel *)car->motionState.model)->parts[i];
                 Gfx_DrawGeometry(e->geom, &matrices[e->mtxIndex]);
             }
         }
         {
             u32 j;
-            CarPartList *list = *(CarPartList **)(*(u8 **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x78) + 0x10) + 0x38);
+            CarPartList *list = car->vehicleIface->modelRef->data->parts;
             CarPart *part;
             u32 bit;
             void *geom;
@@ -746,7 +724,7 @@ void CarA_DrawReflection(void *thing) {
                 for (j = 0; j < list->count; j++) {
                     part = &list->parts[j];
                     geom = part->geom;
-                    bit = *(u32 *)(car + 0x374) & (1 << j);
+                    bit = car->partVisMask & (1 << j);
                     if (bit && !(part->flags & 1)) {
                         continue;
                     }
@@ -763,8 +741,8 @@ void CarA_DrawReflection(void *thing) {
                 }
             }
         }
-        MotionState_DrawSlavesAttachCoronaOnly(car + 0x330, 0);
-        *(Matrix4 **)(car + 0x340) = oldMatrices;
+        MotionState_DrawSlavesAttachCoronaOnly(&car->motionState, 0);
+        car->motionState.animMatrices = oldMatrices;
     }
 }
 
