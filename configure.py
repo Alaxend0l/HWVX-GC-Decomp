@@ -565,7 +565,7 @@ config.libs = [
             Object(NonMatching, "__init_cpp_exceptions.cpp", mw_version="GC/1.3"),
             Object(NonMatching, "Gecko_ExceptionPPC.cp"),
             Object(Matching, "GCN_mem_alloc.c", mw_version="GC/1.3"),
-            Object(NonMatching, "abort_exit.c", mw_version="GC/1.3"),
+            Object(Matching, "abort_exit.c", mw_version="GC/1.3"),
             Object(NonMatching, "alloc.c"),
             Object(NonMatching, "errno.c"),
             Object(Matching, "ansi_files.c", mw_version="GC/1.3"),
