@@ -211,6 +211,40 @@ BOOL EXISelect(s32 chan, u32 dev, u32 freq) {
     return TRUE;
 }
 
+#pragma use_lmw_stmw off
+#pragma peephole on
+BOOL EXIDeselect(s32 chan) {
+    EXIControl *exi = &Ecb[chan];
+    u32 cpr;
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    if (!(exi->state & 4)) {
+        OSRestoreInterrupts(enabled);
+        return FALSE;
+    }
+    exi->state &= ~4;
+    cpr = __EXIRegs[chan * 5];
+    __EXIRegs[chan * 5] = cpr & 0x405;
+
+    if (exi->state & 8) {
+        switch (chan) {
+        case 0:
+            __OSUnmaskInterrupts(0x100000);
+            break;
+        case 1:
+            __OSUnmaskInterrupts(0x20000);
+            break;
+        }
+    }
+
+    OSRestoreInterrupts(enabled);
+
+    if (chan != 2 && (cpr & 0x80)) {
+        return __EXIProbe(chan) ? TRUE : FALSE;
+    }
+    return TRUE;
+}
 u32 EXIGetState(s32 chan) {
     EXIControl *exi = &Ecb[chan];
     return exi->state;
