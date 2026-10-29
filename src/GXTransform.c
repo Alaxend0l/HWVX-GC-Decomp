@@ -56,6 +56,11 @@ void GXProject(f32 x, f32 y, f32 z, f32 mtx[3][4], f32 *pm, f32 *vp, f32 *sx, f3
     *sz = vp[5] + (wc * (zc * (vp[5] - vp[4])));
 }
 
+void GXSetViewportJitter(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz, u32 field);
+#pragma peephole off
+void GXSetViewport(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz) {
+    GXSetViewportJitter(left, top, wd, ht, nearz, farz, 1);
+}
 void GXGetViewportv(void *arg0) {
     extern void *gx;
     M2C_FIELD(arg0, f32 *, 0) = (f32) M2C_FIELD(gx, f32 *, 0x43C);
