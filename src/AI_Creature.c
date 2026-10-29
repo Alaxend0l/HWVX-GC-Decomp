@@ -230,6 +230,7 @@ void AI_Creature_Heartbeat(void) {
 void AI_Creature_VolumeState(u8 *creature) {
     int rand(void);
     f32 ArcTan(f32 y, f32 x);
+    s8 IsPointWithinVolume(Vector4 *point, void *volume, f32 *distSq);
     u8 *thing;
     u8 *target;
     f32 dist;
