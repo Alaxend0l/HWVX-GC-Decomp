@@ -10,10 +10,8 @@ s32 CARDSetStatus(s32 chan, s32 fileNo, u8 *stat)
     s32 result;
 
     result = CARDSetStatusAsync(chan, fileNo, stat, __CARDSyncCallback);
-    if (result >= 0) {
-        result = __CARDSync(chan);
-    } else {
+    if (result < 0) {
         return result;
     }
-    return result;
+    return __CARDSync(chan);
 }
