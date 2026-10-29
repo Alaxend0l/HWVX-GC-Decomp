@@ -33,6 +33,25 @@ void PSMTXIdentity(f32 m[3][4]);
 void GXLoadPosMtxImm(f32 m[3][4], u32 id);
 void GXSetCurrentMtx(u32 id);
 
+void MatrixToMtxTranspose(f32 dst[3][4], f32 src[4][4]);
+void Gfx_SetWorldMatrix(f32 (*matrix)[4]) {
+    if (matrix == NULL) {
+        if (g_state.unk93) {
+            return;
+        }
+        g_state.unk93 = 1;
+        matrix = g_identity;
+    } else {
+        g_state.unk93 = 0;
+    }
+    memcpy(GetRenderWindow()->unk0, matrix, 0x40);
+    MultiplyMatrix4x4(GetRenderWindow()->unk0, GetRenderWindow()->unk40, GetRenderWindow()->unk80);
+    MultiplyMatrix4x4(GetRenderWindow()->unk80, GetRenderWindow()->unkC0, GetRenderWindow()->unk100);
+    MatrixToMtxTranspose(GXCameraSpace, GetRenderWindow()->unk80);
+    GXLoadPosMtxImm(GXCameraSpace, 0);
+    GXSetCurrentMtx(0);
+}
+
 f32 Gfx_GetProjectionMatrix(void) {
     return GetRenderWindow()->fov;
 }
