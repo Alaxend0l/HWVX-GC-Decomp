@@ -62,3 +62,20 @@ u8 *getTiming(u32 mode) {
     return NULL;
 }
 
+void VIWaitForRetrace(void) {
+    extern u32 retraceCount;
+    extern u8 retraceQueue[8];
+    s32 OSDisableInterrupts(void);
+    void OSRestoreInterrupts(s32 level);
+    void OSSleepThread(void *queue);
+    s32 enabled;
+    u32 count;
+
+    enabled = OSDisableInterrupts();
+    count = retraceCount;
+    do {
+        OSSleepThread(retraceQueue);
+    } while (count == retraceCount);
+    OSRestoreInterrupts(enabled);
+}
+
