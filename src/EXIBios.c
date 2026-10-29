@@ -248,6 +248,19 @@ static BOOL __EXIProbe(s32 chan) {
     return rc;
 }
 
+s32 EXIGetID(s32 chan, u32 dev, u32 *id);
+BOOL EXIProbe(s32 chan) {
+    EXIControl *exi = &Ecb[chan];
+    BOOL rc;
+    u32 id;
+
+    rc = __EXIProbe(chan);
+    if (rc && exi->idTime == 0) {
+        rc = EXIGetID(chan, 0, &id) ? TRUE : FALSE;
+    }
+    return rc;
+}
+
 u32 __OSMaskInterrupts(u32 mask);
 BOOL EXISelect(s32 chan, u32 dev, u32 freq) {
     EXIControl *exi = &Ecb[chan];
