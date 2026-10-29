@@ -2378,14 +2378,14 @@ void InterfaceManager_Render(void) {
     extern u8 g_interface[][0x170];
     extern u32 g_interfaceRenderOrder[0x12];
     extern s32 g_numInterfacesToRender;
-    void InterfaceManager_RenderInterface();
+    void InterfaceManager_RenderInterface(RenderInterface *iface);
     u32 i;
     u8 *iface;
 
     for (i = 0; i < g_numInterfacesToRender; i++) {
         iface = g_interface[g_interfaceRenderOrder[i]];
         if (*(void **)iface != NULL && (*(u32 *)(iface + 4) != 1 || *(u32 *)(iface + 0x10) != 0) && iface[0x7F] == 0) {
-            InterfaceManager_RenderInterface(iface);
+            InterfaceManager_RenderInterface((RenderInterface *)iface);
         }
     }
 }
