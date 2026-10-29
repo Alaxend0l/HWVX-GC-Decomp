@@ -436,12 +436,13 @@ void Thing_DynamicGridMove(void *thing, f32 expand) {
 
 void Thing_StaticGridMove(void *thing) {
     void Grid_MoveObject(s32 obj, Vector4 *min, Vector4 *max);
-    Vector4 min;
-    Vector4 max;
+    void Thing_GetDynamicMinMax(void *thing, Vector4 *min, Vector4 *max, f32 expand);
+    Vector4 min __attribute__((aligned(16)));
+    Vector4 max __attribute__((aligned(16)));
 
-    if (M2C_FIELD(thing, u32 *, 0x84) != 0) {
+    if (*(u32 *)((u8 *)thing + 0x84) != 0) {
         Thing_GetDynamicMinMax(thing, &min, &max, 0.0f);
-        Grid_MoveObject(M2C_FIELD(thing, s32 *, 0x84), &min, &max);
+        Grid_MoveObject(*(s32 *)((u8 *)thing + 0x84), &min, &max);
     }
 }
 
