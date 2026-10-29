@@ -184,13 +184,13 @@ static inline f32 RayBoxTestLocal(Vector4 *start, Vector4 *dir, Vector4 *box, f3
     if (res != NULL) {
         d0 = Distance_Plane(res, start);
         d1 = Distance_Plane(res, &end);
-        dist *= d0 / (d0 - d1);
-        hit[0].x = dir->x * dist + start->x;
-        hit[0].y = dir->y * dist + start->y;
-        hit[0].z = dir->z * dist + start->z;
+        t *= d0 / (d0 - d1);
+        hit[0].x = dir->x * t + start->x;
+        hit[0].y = dir->y * t + start->y;
+        hit[0].z = dir->z * t + start->z;
         hit[1] = *res;
     }
-    return dist;
+    return t;
 }
 
 f32 PhysicalProperties_CollideWithRay(u8 *props, void *mtx, Vector4 *start, Vector4 *dir, f32 t, u8 *hit) {
