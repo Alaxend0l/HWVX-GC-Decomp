@@ -50,6 +50,33 @@ void __DVDFSInit(void) {
         FstStringStart = (char *)FstStart + MaxEntryNum * 12;
     }
 }
+
+s32 DVDConvertPathToEntrynum(char *pathPtr);
+BOOL DVDGetCurrentDir(char *path, u32 maxlen);
+void OSReport(const char *msg, ...);
+#pragma push
+#pragma scheduling on
+BOOL DVDOpen(char *fileName, DVDFileInfo *fileInfo) {
+    s32 entry;
+    char currentDir[128];
+
+    entry = DVDConvertPathToEntrynum(fileName);
+    if (0 > entry) {
+        DVDGetCurrentDir(currentDir, 128);
+        OSReport("Warning: DVDOpen(): file '%s' was not found under %s.\n", fileName, currentDir);
+        return FALSE;
+    }
+    if (((FstStart[entry * 3] & 0xff000000) == 0) ? FALSE : TRUE) {
+        return FALSE;
+    }
+    fileInfo->startAddr = FstStart[entry * 3 + 1];
+    fileInfo->length = FstStart[entry * 3 + 2];
+    fileInfo->callback = (DVDCallback)NULL;
+    fileInfo->cb.state = 0;
+    return TRUE;
+}
+#pragma pop
+
 #pragma pop
 
 BOOL DVDClose(void *fileInfo) {
@@ -58,6 +85,35 @@ BOOL DVDClose(void *fileInfo) {
     DVDCancel(fileInfo);
     return 1;
 }
+
+static u32 entryToPath(u32 entry, char *path, u32 maxlen);
+#pragma push
+#pragma scheduling on
+#pragma peephole on
+BOOL DVDGetCurrentDir(char *path, u32 maxlen) {
+    u32 loc;
+    u32 entry;
+    BOOL result;
+
+    entry = currentDirectory;
+    loc = entryToPath(entry, path, maxlen);
+    result = FALSE;
+    if (loc == maxlen) {
+        path[maxlen - 1] = '\0';
+    } else {
+        if (((FstStart[entry * 3] & 0xff000000) == 0) ? FALSE : TRUE) {
+            if (loc == maxlen - 1) {
+                path[loc] = '\0';
+                return result;
+            }
+            path[loc++] = '/';
+        }
+        path[loc] = '\0';
+        result = TRUE;
+    }
+    return result;
+}
+#pragma pop
 
 void OSPanic(const char *file, int line, const char *msg, ...);
 BOOL DVDReadAbsAsyncPrio(DVDCommandBlock *block, void *addr, s32 length, s32 offset, DVDCBCallback callback, s32 prio);
