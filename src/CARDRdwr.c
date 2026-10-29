@@ -21,4 +21,4 @@ typedef struct CARDControl {
 extern CARDControl __CARDBlock[2];
 
 s32 __CARDReadSegment(s32 chan, CARDCallback callback);
-static void BlockReadCallback(s32 chan, s32 result);
+void BlockReadCallback(s32 chan, s32 result);
