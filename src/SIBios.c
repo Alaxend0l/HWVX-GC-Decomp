@@ -24,6 +24,7 @@ static BOOL InputBufferValid[4];
 static u32 InputBuffer[4][2];
 static volatile u32 InputBufferVcount[4];
 
+u32 SIGetType(s32 chan);
 BOOL __SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback);
 
 BOOL SIBusy(void) {
