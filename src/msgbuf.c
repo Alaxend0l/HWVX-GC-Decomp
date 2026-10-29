@@ -1,0 +1,359 @@
+#include "common.h"
+
+#pragma use_lmw_stmw on
+
+typedef struct TRKBuffer {
+    u32 mutex;
+    s32 isInUse;
+    u32 length;
+    u32 position;
+    u8 data[0x880];
+} TRKBuffer;
+
+void *TRK_memset(void *dst, s32 val, u32 n);
+s32 TRKAcquireMutex(void *mutex);
+s32 TRKReleaseMutex(void *mutex);
+
+extern TRKBuffer gTRKMsgBufs[3];
+__declspec(section ".data") extern s32 gTRKBigEndian;
+
+void *TRK_memcpy(void *dst, const void *src, u32 n);
+s32 TRKAppendBuffer(TRKBuffer *b, const void *data, u32 length);
+
+static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
+    if (b->position >= 0x880) {
+        return 0x301;
+    }
+    b->data[b->position++] = data;
+    b->length++;
+    return 0;
+}
+
+static inline s32 TRKAppendBuffer1_ui32_inline(TRKBuffer *b, u32 data) {
+    u8 *bigEndianData;
+    u8 *byteData;
+    u8 swapBuffer[sizeof(data)];
+
+    if (gTRKBigEndian) {
+        bigEndianData = (u8 *)&data;
+    } else {
+        byteData = (u8 *)&data;
+        bigEndianData = swapBuffer;
+        bigEndianData[0] = byteData[3];
+        bigEndianData[1] = byteData[2];
+        bigEndianData[2] = byteData[1];
+        bigEndianData[3] = byteData[0];
+    }
+    return TRKAppendBuffer(b, bigEndianData, sizeof(data));
+}
+
+static inline s32 TRKReadBuffer_inline(TRKBuffer *b, void *data, unsigned long length) {
+    s32 error = 0;
+    unsigned int bytesLeft;
+
+    if (length == 0) {
+        return 0;
+    }
+    bytesLeft = b->length - b->position;
+    if (length > bytesLeft) {
+        error = 0x302;
+        length = bytesLeft;
+    }
+    TRK_memcpy(data, b->data + b->position, length);
+    b->position += length;
+    return error;
+}
+
+static inline s32 TRKReadBuffer1_ui32_inline(TRKBuffer *b, u32 *data) {
+    s32 err;
+    u8 *bigEndianData;
+    u8 *byteData;
+    u8 swapBuffer[sizeof(data)];
+
+    if (gTRKBigEndian) {
+        bigEndianData = (u8 *)data;
+    } else {
+        bigEndianData = swapBuffer;
+    }
+    err = TRKReadBuffer_inline(b, bigEndianData, sizeof(*data));
+    if (!gTRKBigEndian && err == 0) {
+        byteData = (u8 *)data;
+        byteData[0] = bigEndianData[3];
+        byteData[1] = bigEndianData[2];
+        byteData[2] = bigEndianData[1];
+        byteData[3] = bigEndianData[0];
+    }
+    return err;
+}
+
+s32 TRKReadBuffer_ui32(TRKBuffer *b, u32 *data, s32 count) {
+    s32 err;
+    s32 i;
+
+    for (i = 0, err = 0; err == 0 && i < count; i++) {
+        err = TRKReadBuffer1_ui32_inline(b, &data[i]);
+    }
+    return err;
+}
+
+s32 TRKReadBuffer_ui8(TRKBuffer *b, u8 *data, s32 count) {
+    s32 err;
+    s32 i;
+
+    for (i = 0, err = 0; err == 0 && i < count; i++) {
+        err = TRKReadBuffer_inline(b, &data[i], 1);
+    }
+    return err;
+}
+
+s32 TRKReadBuffer1_ui64(TRKBuffer *b, u64 *data) {
+    s32 err;
+    u8 *bigEndianData;
+    u8 *byteData;
+    u8 swapBuffer[sizeof(*data)];
+
+    if (gTRKBigEndian) {
+        bigEndianData = (u8 *)data;
+    } else {
+        bigEndianData = swapBuffer;
+    }
+    err = TRKReadBuffer_inline(b, bigEndianData, sizeof(*data));
+    if (!gTRKBigEndian && err == 0) {
+        byteData = (u8 *)data;
+        byteData[0] = bigEndianData[7];
+        byteData[1] = bigEndianData[6];
+        byteData[2] = bigEndianData[5];
+        byteData[3] = bigEndianData[4];
+        byteData[4] = bigEndianData[3];
+        byteData[5] = bigEndianData[2];
+        byteData[6] = bigEndianData[1];
+        byteData[7] = bigEndianData[0];
+    }
+    return err;
+}
+
+s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data) {
+    s32 err;
+    u8 *bigEndianData;
+    u8 *byteData;
+    u8 swapBuffer[sizeof(data)];
+
+    if (gTRKBigEndian) {
+        bigEndianData = (u8 *)data;
+    } else {
+        bigEndianData = swapBuffer;
+    }
+    err = TRKReadBuffer_inline(b, bigEndianData, sizeof(*data));
+    if (!gTRKBigEndian && err == 0) {
+        byteData = (u8 *)data;
+        byteData[0] = bigEndianData[3];
+        byteData[1] = bigEndianData[2];
+        byteData[2] = bigEndianData[1];
+        byteData[3] = bigEndianData[0];
+    }
+    return err;
+}
+
+s32 TRKReadBuffer1_ui8(TRKBuffer *b, u8 *data) {
+    return TRKReadBuffer_inline(b, data, 1);
+}
+
+s32 TRKAppendBuffer_ui32(TRKBuffer *b, const u32 *data, s32 count) {
+    s32 err;
+    s32 i;
+
+    for (i = 0, err = 0; err == 0 && i < count; i++) {
+        err = TRKAppendBuffer1_ui32_inline(b, data[i]);
+    }
+    return err;
+}
+
+s32 TRKAppendBuffer_ui8(TRKBuffer *b, const u8 *data, s32 count) {
+    s32 err;
+    s32 i;
+
+    for (i = 0, err = 0; err == 0 && i < count; i++) {
+        err = TRKAppendBuffer1_ui8(b, data[i]);
+    }
+    return err;
+}
+
+s32 TRKAppendBuffer1_ui64(TRKBuffer *b, u64 data) {
+    u8 *bigEndianData;
+    u8 *byteData;
+    u8 swapBuffer[sizeof(data)];
+
+    if (gTRKBigEndian) {
+        bigEndianData = (u8 *)&data;
+    } else {
+        byteData = (u8 *)&data;
+        bigEndianData = swapBuffer;
+        bigEndianData[0] = byteData[7];
+        bigEndianData[1] = byteData[6];
+        bigEndianData[2] = byteData[5];
+        bigEndianData[3] = byteData[4];
+        bigEndianData[4] = byteData[3];
+        bigEndianData[5] = byteData[2];
+        bigEndianData[6] = byteData[1];
+        bigEndianData[7] = byteData[0];
+    }
+    return TRKAppendBuffer(b, bigEndianData, sizeof(data));
+}
+
+s32 TRKAppendBuffer1_ui32(TRKBuffer *b, u32 data) {
+    u8 *bigEndianData;
+    u8 *byteData;
+    u8 swapBuffer[sizeof(data)];
+
+    if (gTRKBigEndian) {
+        bigEndianData = (u8 *)&data;
+    } else {
+        byteData = (u8 *)&data;
+        bigEndianData = swapBuffer;
+        bigEndianData[0] = byteData[3];
+        bigEndianData[1] = byteData[2];
+        bigEndianData[2] = byteData[1];
+        bigEndianData[3] = byteData[0];
+    }
+    return TRKAppendBuffer(b, bigEndianData, sizeof(data));
+}
+
+s32 TRKAppendBuffer1_ui16(TRKBuffer *b, u16 data) {
+    u8 *bigEndianData;
+    u8 *byteData;
+    u8 swapBuffer[sizeof(data)];
+
+    if (gTRKBigEndian) {
+        bigEndianData = (u8 *)&data;
+    } else {
+        byteData = (u8 *)&data;
+        bigEndianData = swapBuffer;
+        bigEndianData[0] = byteData[1];
+        bigEndianData[1] = byteData[0];
+    }
+    return TRKAppendBuffer(b, bigEndianData, sizeof(data));
+}
+
+s32 TRKReadBuffer(TRKBuffer *b, void *data, u32 length) {
+    s32 error = 0;
+    u32 bytesLeft;
+
+    if (length == 0) {
+        return 0;
+    }
+    bytesLeft = b->length - b->position;
+    if (length > bytesLeft) {
+        error = 0x302;
+        length = bytesLeft;
+    }
+    TRK_memcpy(data, b->data + b->position, length);
+    b->position += length;
+    return error;
+}
+
+s32 TRKAppendBuffer(TRKBuffer *b, const void *data, u32 length) {
+    s32 error = 0;
+    u32 bytesLeft;
+
+    if (length == 0) {
+        return 0;
+    }
+    bytesLeft = 0x880 - b->position;
+    if (bytesLeft < length) {
+        error = 0x301;
+        length = bytesLeft;
+    }
+    if (length == 1) {
+        b->data[b->position] = *(const u8 *)data;
+    } else {
+        TRK_memcpy(b->data + b->position, data, length);
+    }
+    b->position += length;
+    b->length = b->position;
+    return error;
+}
+
+s32 TRKSetBufferPosition(TRKBuffer *b, u32 position) {
+    s32 err = 0;
+
+    if (position > 0x880) {
+        err = 0x301;
+    } else {
+        b->position = position;
+        if (position > b->length) {
+            b->length = position;
+        }
+    }
+    return err;
+}
+
+void TRKResetBuffer(TRKBuffer *b, u8 keepData) {
+    b->length = 0;
+    b->position = 0;
+    if (!keepData) {
+        TRK_memset(b->data, 0, 0x880);
+    }
+}
+
+void TRKReleaseBuffer(s32 idx) {
+    TRKBuffer *b;
+
+    if (idx == -1) {
+        return;
+    }
+    if (idx >= 0 && idx < 3) {
+        b = &gTRKMsgBufs[idx];
+        TRKAcquireMutex(b);
+        b->isInUse = 0;
+        TRKReleaseMutex(b);
+    }
+}
+
+TRKBuffer *TRKGetBuffer(s32 idx) {
+    TRKBuffer *buf = NULL;
+
+    if (idx >= 0 && idx < 3) {
+        buf = &gTRKMsgBufs[idx];
+    }
+    return buf;
+}
+
+void usr_puts_serial(const char *msg);
+s32 TRKGetFreeBuffer(s32 *msgID, TRKBuffer **outMsg) {
+    TRKBuffer *buf;
+    s32 err = 0x300;
+    s32 i;
+
+    *outMsg = NULL;
+    for (i = 0; i < 3; i++) {
+        buf = TRKGetBuffer(i);
+        TRKAcquireMutex(buf);
+        if (!buf->isInUse) {
+            TRKResetBuffer(buf, 1);
+            buf->isInUse = 1;
+            err = 0;
+            *outMsg = buf;
+            *msgID = i;
+            i = 3;
+        }
+        TRKReleaseMutex(buf);
+    }
+    if (err == 0x300) {
+        usr_puts_serial("ERROR : No buffer available\n");
+    }
+    return err;
+}
+
+s32 TRKInitializeMutex(void *mutex);
+s32 TRKInitializeMessageBuffers(void) {
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        TRKInitializeMutex(&gTRKMsgBufs[i]);
+        TRKAcquireMutex(&gTRKMsgBufs[i]);
+        gTRKMsgBufs[i].isInUse = 0;
+        TRKReleaseMutex(&gTRKMsgBufs[i]);
+    }
+    return 0;
+}
+

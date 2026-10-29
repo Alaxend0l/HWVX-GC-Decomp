@@ -9,6 +9,8 @@ typedef struct Vector {
 extern s32 __float_nan[];
 extern s32 __float_huge[];
 
+f32 PSVECMag(Vector *v);
+
 f32 MagnitudeVector(Vector *v) {
     f32 zero = 0.0f;
 
@@ -18,7 +20,7 @@ f32 MagnitudeVector(Vector *v) {
     return zero;
 }
 
-void CopyVector(Vector *dst, Vector *src) {
+void CopyVector(Vector4 *dst, Vector4 *src) {
     *dst = *src;
 }
 
@@ -62,6 +64,11 @@ void SinCosRad(f32 *s, f32 *c, f32 rad)
     r = 0.017453292f * angle;
     *s = sin(r);
     *c = cos(r);
+}
+
+double atan2(double x);
+float ArcTan(float x) {
+    return (float)atan2(x);
 }
 
 f32 Sqrt(f64 x)
@@ -118,11 +125,11 @@ void DistanceXYZ(Vector *a, Vector *b, f32 *dist)
 
 s32 CompareDistances(Vector *a, Vector *b, f32 dist)
 {
-    f32 dy = a->y - b->y;
     f32 dx = a->x - b->x;
+    f32 dy = a->y - b->y;
     f32 dz = a->z - b->z;
     f32 sq = dist * dist;
-    f32 len = dy * dy + dx * dx + dz * dz;
+    f32 len = dx * dx + dy * dy + dz * dz;
 
     if (len > sq) {
         return 1;
@@ -161,9 +168,9 @@ void InverseXformVec(Matrix4 *m, Vector *v, Vector *out)
     f32 dy = v->y - m->v[3].y;
     f32 dz = v->z - m->v[3].z;
 
-    f32 tx = m->v[0].x * dx + m->v[1].x * dy + m->v[2].x * dz;
-    f32 ty = m->v[0].y * dx + m->v[1].y * dy + m->v[2].y * dz;
-    f32 tz = m->v[0].z * dx + m->v[1].z * dy + m->v[2].z * dz;
+    f32 tx = m->v[0].x * dx + m->v[0].y * dy + m->v[0].z * dz;
+    f32 ty = m->v[1].x * dx + m->v[1].y * dy + m->v[1].z * dz;
+    f32 tz = m->v[2].x * dx + m->v[2].y * dy + m->v[2].z * dz;
 
     out->x = tx;
     out->y = ty;
@@ -190,6 +197,107 @@ void InverseXformVecOrientation(Matrix4 *m, Vector *v, Vector *out)
     out->x = tx;
     out->y = ty;
     out->z = tz;
+}
+
+void MultiplySubMatrix(f32 a[4][4], f32 b[4][4], f32 out[4][4]) {
+    f32 tmp[4][4];
+
+    tmp[0][0] = b[0][0] * a[0][0] + b[1][0] * a[0][1] + b[2][0] * a[0][2];
+    tmp[0][1] = b[0][1] * a[0][0] + b[1][1] * a[0][1] + b[2][1] * a[0][2];
+    tmp[0][2] = b[0][2] * a[0][0] + b[1][2] * a[0][1] + b[2][2] * a[0][2];
+    tmp[0][3] = b[0][3] * a[0][0] + b[1][3] * a[0][1] + b[2][3] * a[0][2];
+    tmp[1][0] = b[0][0] * a[1][0] + b[1][0] * a[1][1] + b[2][0] * a[1][2];
+    tmp[1][1] = b[0][1] * a[1][0] + b[1][1] * a[1][1] + b[2][1] * a[1][2];
+    tmp[1][2] = b[0][2] * a[1][0] + b[1][2] * a[1][1] + b[2][2] * a[1][2];
+    tmp[1][3] = b[0][3] * a[1][0] + b[1][3] * a[1][1] + b[2][3] * a[1][2];
+    tmp[2][0] = b[0][0] * a[2][0] + b[1][0] * a[2][1] + b[2][0] * a[2][2];
+    tmp[2][1] = b[0][1] * a[2][0] + b[1][1] * a[2][1] + b[2][1] * a[2][2];
+    tmp[2][2] = b[0][2] * a[2][0] + b[1][2] * a[2][1] + b[2][2] * a[2][2];
+    tmp[2][3] = b[0][3] * a[2][0] + b[1][3] * a[2][1] + b[2][3] * a[2][2];
+    memcpy(out, tmp, sizeof(tmp));
+}
+
+void MultiplyMatrix(Matrix4 *a, Matrix4 *b, Matrix4 *out)
+{
+    out->v[0].x = b->v[2].x * a->v[0].z + (b->v[0].x * a->v[0].x + b->v[1].x * a->v[0].y);
+    out->v[0].y = b->v[2].y * a->v[0].z + (b->v[0].y * a->v[0].x + b->v[1].y * a->v[0].y);
+    out->v[0].z = b->v[2].z * a->v[0].z + (b->v[0].z * a->v[0].x + b->v[1].z * a->v[0].y);
+    out->v[0].w = 0.0f;
+    out->v[1].x = b->v[2].x * a->v[1].z + (b->v[0].x * a->v[1].x + b->v[1].x * a->v[1].y);
+    out->v[1].y = b->v[2].y * a->v[1].z + (b->v[0].y * a->v[1].x + b->v[1].y * a->v[1].y);
+    out->v[1].z = b->v[2].z * a->v[1].z + (b->v[0].z * a->v[1].x + b->v[1].z * a->v[1].y);
+    out->v[1].w = 0.0f;
+    out->v[2].x = b->v[2].x * a->v[2].z + (b->v[0].x * a->v[2].x + b->v[1].x * a->v[2].y);
+    out->v[2].y = b->v[2].y * a->v[2].z + (b->v[0].y * a->v[2].x + b->v[1].y * a->v[2].y);
+    out->v[2].z = b->v[2].z * a->v[2].z + (b->v[0].z * a->v[2].x + b->v[1].z * a->v[2].y);
+    out->v[2].w = 0.0f;
+    out->v[3].x = b->v[3].x + (b->v[2].x * a->v[3].z + (b->v[0].x * a->v[3].x + b->v[1].x * a->v[3].y));
+    out->v[3].y = b->v[3].y + (b->v[2].y * a->v[3].z + (b->v[0].y * a->v[3].x + b->v[1].y * a->v[3].y));
+    out->v[3].z = b->v[3].z + (b->v[2].z * a->v[3].z + (b->v[0].z * a->v[3].x + b->v[1].z * a->v[3].y));
+    out->v[3].w = 1.0f;
+}
+
+void SetOrientation(Matrix4 *m, f32 x, f32 y, f32 z)
+{
+    f64 sin(f32);
+    f64 cos(f32);
+    f32 c;
+    f32 s;
+    f32 t;
+
+    m->v[2].y = 0.0f;
+    m->v[2].x = 0.0f;
+    m->v[1].z = 0.0f;
+    m->v[1].x = 0.0f;
+    m->v[0].z = 0.0f;
+    m->v[0].y = 0.0f;
+    m->v[2].z = 1.0f;
+    m->v[1].y = 1.0f;
+    m->v[0].x = 1.0f;
+    m->v[2].w = 0.0f;
+    m->v[1].w = 0.0f;
+    m->v[0].w = 0.0f;
+    m->v[3].w = 1.0f;
+
+    if (z != 0.0f) {
+        c = cos(z);
+        s = sin(z);
+        t = m->v[0].x;
+        m->v[0].x = c * t - s * m->v[0].y;
+        m->v[0].y = c * m->v[0].y + s * t;
+        t = m->v[1].x;
+        m->v[1].x = c * t - s * m->v[1].y;
+        m->v[1].y = c * m->v[1].y + s * t;
+        t = m->v[2].x;
+        m->v[2].x = c * t - s * m->v[2].y;
+        m->v[2].y = c * m->v[2].y + s * t;
+    }
+    if (y != 0.0f) {
+        c = cos(y);
+        s = sin(y);
+        t = m->v[0].y;
+        m->v[0].y = c * t - s * m->v[0].z;
+        m->v[0].z = c * m->v[0].z + s * t;
+        t = m->v[1].y;
+        m->v[1].y = c * t - s * m->v[1].z;
+        m->v[1].z = c * m->v[1].z + s * t;
+        t = m->v[2].y;
+        m->v[2].y = c * t - s * m->v[2].z;
+        m->v[2].z = c * m->v[2].z + s * t;
+    }
+    if (x != 0.0f) {
+        c = cos(x);
+        s = sin(x);
+        t = m->v[0].x;
+        m->v[0].x = c * t + s * m->v[0].z;
+        m->v[0].z = -s * t + c * m->v[0].z;
+        t = m->v[1].x;
+        m->v[1].x = c * t + s * m->v[1].z;
+        m->v[1].z = -s * t + c * m->v[1].z;
+        t = m->v[2].x;
+        m->v[2].x = c * t + s * m->v[2].z;
+        m->v[2].z = -s * t + c * m->v[2].z;
+    }
 }
 
 void TransposeSubMatrix(Matrix4 *m)
@@ -220,6 +328,99 @@ s32 FloatsEqual(f32 a, f32 b, f32 c)
     return diff < c;
 }
 
+void GenerateQuaternion(Vector4 *axis, Quaternion *q, f32 angle)
+{
+    f64 sin(f32);
+    f64 cos(f32);
+    f32 s;
+
+    if (angle) {
+        angle *= 0.5f;
+        q->w = cos(angle);
+        s = sin(angle);
+        q->x = axis->x * s;
+        q->y = axis->y * s;
+        q->z = axis->z * s;
+    } else {
+        q->w = 1.0f;
+        q->x = q->y = q->z = 0.0f;
+    }
+}
+
+void GenerateSpinAngleFromQuaternion(Quaternion *q, Vector4 *axis, f32 *angle)
+{
+    f64 acos(f32);
+    f64 sin(f32);
+    f32 s;
+
+    *angle = acos(q->w);
+    s = sin(*angle);
+    if (0.0f == s) {
+        axis->x = 1.0f;
+        axis->y = 0.0f;
+        axis->z = 0.0f;
+    } else {
+        axis->x = q->x / s;
+        axis->y = q->y / s;
+        axis->z = q->z / s;
+        *angle *= 2.0f;
+    }
+}
+
+void QuaternionMult(Quaternion *a, Quaternion *b, Quaternion *out)
+{
+    out->w = a->w * b->w - a->x * b->x - a->y * b->y - a->z * b->z;
+    out->x = a->y * b->z - a->z * b->y + a->w * b->x + a->x * b->w;
+    out->y = a->z * b->x - a->x * b->z + a->w * b->y + a->y * b->w;
+    out->z = a->x * b->y - a->y * b->x + a->w * b->z + a->z * b->w;
+}
+
+void QuaternionToSubMatrix(Quaternion *q, Matrix4 *m)
+{
+    f32 s;
+    f32 ww, yy, zz, xx;
+
+    xx = q->x * q->x;
+    yy = q->y * q->y;
+    zz = q->z * q->z;
+    ww = q->w * q->w;
+    s = 1.0f / (xx + yy + zz + ww);
+    m->v[0].x = s * (ww + xx - yy - zz);
+    m->v[1].y = s * (ww - xx + yy - zz);
+    m->v[2].z = s * (ww - xx - yy + zz);
+    s *= 2.0f;
+    m->v[0].y = s * (q->x * q->y + q->w * q->z);
+    m->v[0].z = s * (q->x * q->z - q->w * q->y);
+    m->v[1].x = s * (q->x * q->y - q->w * q->z);
+    m->v[1].z = s * (q->y * q->z + q->w * q->x);
+    m->v[2].x = s * (q->x * q->z + q->w * q->y);
+    m->v[2].y = s * (q->y * q->z - q->w * q->x);
+    m->v[2].w = 0.0f;
+    m->v[1].w = 0.0f;
+    m->v[0].w = 0.0f;
+    m->v[3].w = 1.0f;
+}
+
+void SubMatrixToQuaternion(Matrix4 *m, Quaternion *q)
+{
+    f32 c;
+    f32 s;
+
+    c = 0.5f * (m->v[0].x + m->v[1].y + m->v[2].z - 1.0f);
+    if (c <= -0.99999f) {
+        q->w = 1e-13f;
+        q->x = m->v[1].z - m->v[2].y;
+        q->y = m->v[2].x - m->v[0].z;
+        q->z = m->v[0].y - m->v[1].x;
+        return;
+    }
+    q->w = Sqrt(0.5f * (1.0f + c));
+    s = 1.0f / (4.0f * q->w);
+    q->x = s * (m->v[1].z - m->v[2].y);
+    q->y = s * (m->v[2].x - m->v[0].z);
+    q->z = s * (m->v[0].y - m->v[1].x);
+}
+
 void GetComponentOfVector(void *arg0, void *arg1) {
     f32 PSVECDotProduct();
     f32 temp_f1;
@@ -238,5 +439,77 @@ void ProjectVectorToNormal(Vector *n, Vector *v) {
     v->x = scale * n->x + v->x;
     v->y = scale * n->y + v->y;
     v->z = scale * n->z + v->z;
+}
+
+f32 LinearPointTest(Vector *point, Vector *start, Vector *end)
+{
+    void PSVECSubtract(Vector *a, Vector *b, Vector *out);
+    f32 PSVECDotProduct(Vector *a, Vector *b);
+    Vector4 toPoint __attribute__((aligned(16)));
+    Vector4 toEnd __attribute__((aligned(16)));
+    f32 dot;
+
+    PSVECSubtract(point, start, (Vector *)&toPoint);
+    PSVECSubtract(end, start, (Vector *)&toEnd);
+    dot = PSVECDotProduct((Vector *)&toPoint, (Vector *)&toEnd);
+    return dot / (MagnitudeVector((Vector *)&toPoint) * MagnitudeVector((Vector *)&toEnd));
+}
+
+void MinMaxVec(Vector4 *min, Vector4 *max, Vector4 *v)
+{
+    if (min->x > v->x) {
+        min->x = v->x;
+    }
+    if (min->y > v->y) {
+        min->y = v->y;
+    }
+    if (min->z > v->z) {
+        min->z = v->z;
+    }
+    if (min->w > v->w) {
+        min->w = v->w;
+    }
+    if (max->x < v->x) {
+        max->x = v->x;
+    }
+    if (max->y < v->y) {
+        max->y = v->y;
+    }
+    if (max->z < v->z) {
+        max->z = v->z;
+    }
+    if (max->w < v->w) {
+        max->w = v->w;
+    }
+}
+
+void Distance_Plane_4(Vector4 *planes, Vector4 *point, f32 *out)
+{
+    int Distance_Plane();
+
+    out[0] = Distance_Plane(&planes[0], point);
+    out[1] = Distance_Plane(&planes[1], point);
+    out[2] = Distance_Plane(&planes[2], point);
+    out[3] = Distance_Plane(&planes[3], point);
+}
+
+void ScaleMatrix(Matrix4 *m, Vector4 *s)
+{
+    m->v[0].x *= s->x;
+    m->v[0].y *= s->x;
+    m->v[0].z *= s->x;
+    m->v[0].w *= s->x;
+    m->v[1].x *= s->y;
+    m->v[1].y *= s->y;
+    m->v[1].z *= s->y;
+    m->v[1].w *= s->y;
+    m->v[2].x *= s->z;
+    m->v[2].y *= s->z;
+    m->v[2].z *= s->z;
+    m->v[2].w *= s->z;
+    m->v[3].x *= s->w;
+    m->v[3].y *= s->w;
+    m->v[3].z *= s->w;
+    m->v[3].w *= s->w;
 }
 

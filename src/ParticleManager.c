@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 
 void ParticleManager_Init(void) {
     typedef struct {
@@ -362,9 +364,9 @@ void ParticleGX_MicroStep(void *arg0) {
         u8 unkCC[0xF0 - 0xCC];
         Vector4 vel;
     } *particle = arg0;
-    Vector4 pos;
-    Vector4 rot;
-    Vector4 out;
+    Vector4 pos __attribute__((aligned(16)));
+    Vector4 rot __attribute__((aligned(16)));
+    Vector4 out __attribute__((aligned(16)));
 
     AccumulateVector(&particle->vel, &particle->pos, &pos, g_fDeltaTimeMS);
     particle->pos = pos;
@@ -425,10 +427,10 @@ void ParticleGX_MacroStep(struct ParticleGX_MacroStep_t {
         Vector4 normal;
         u8 pad20[0x30];
     } RayHit;
-    FxParams params;
-    RayHit hit;
-    FxParams params2;
-    Vector4 newPos;
+    FxParams params __attribute__((aligned(16)));
+    RayHit hit __attribute__((aligned(16)));
+    FxParams params2 __attribute__((aligned(16)));
+    Vector4 newPos __attribute__((aligned(16)));
     f32 t;
     f32 dt;
     f32 d;
@@ -566,7 +568,7 @@ void ParticleSprite_Move(u8 *sprite) {
         f32 unk48;
         f32 unk4C;
     } FxParams;
-    FxParams params;
+    FxParams params __attribute__((aligned(16)));
     f32 dt;
     u8 *anim;
     s32 idx;
@@ -617,37 +619,37 @@ void ParticleSprite_Move(u8 *sprite) {
     }
 }
 
-void ParticleGX_Render(void *particle) {
+void ParticleGX_Render(u8 *particle) {
     u32 color;
-    Vector4 scale;
+    Vector4 scale __attribute__((aligned(16)));
 
-    M2C_FIELD(particle, void **, 0xC0) = M2C_FIELD(M2C_FIELD(M2C_FIELD(particle, void **, 0xBC), void **, 4), void ***, 0x24)[M2C_FIELD(particle, u8 *, 0xB7)];
-    if (M2C_FIELD(particle, u8 *, 0xB6) != 0) {
-        color = M2C_FIELD(particle, u32 *, 0x74);
+    *(void **)(particle + 0xC0) = (*(void ***)(*(u8 **)(*(u8 **)(particle + 0xBC) + 0x4) + 0x24))[particle[0xB7]];
+    if (particle[0xB6] != 0) {
+        color = *(u32 *)(particle + 0x74);
         Gfx_SetBaseColor(&color);
         Gfx_EnableState(0x10);
     }
-    M2C_FIELD(particle, f32 *, 0xC) = 1.0f;
-    scale.x = M2C_FIELD(particle, f32 *, 0xD8) * (M2C_FIELD(particle, f32 *, 0x80) * M2C_FIELD(particle, f32 *, 0xC4));
-    scale.y = M2C_FIELD(particle, f32 *, 0xD8) * (M2C_FIELD(particle, f32 *, 0x84) * M2C_FIELD(particle, f32 *, 0xC4));
-    scale.z = M2C_FIELD(particle, f32 *, 0xD8) * (M2C_FIELD(particle, f32 *, 0x88) * M2C_FIELD(particle, f32 *, 0xC4));
+    *(f32 *)(particle + 0xC) = 1.0f;
+    scale.x = *(f32 *)(particle + 0xD8) * (*(f32 *)(particle + 0x80) * *(f32 *)(particle + 0xC4));
+    scale.y = *(f32 *)(particle + 0xD8) * (*(f32 *)(particle + 0x84) * *(f32 *)(particle + 0xC4));
+    scale.z = *(f32 *)(particle + 0xD8) * (*(f32 *)(particle + 0x88) * *(f32 *)(particle + 0xC4));
     scale.w = 1.0f;
-    Gfx_DrawGeometry_QuaternionScalePos(M2C_FIELD(particle, void **, 0xC0), (u8 *)particle + 0x30, &scale, particle);
-    if (M2C_FIELD(particle, u8 *, 0xB6) != 0) {
+    Gfx_DrawGeometry_QuaternionScalePos(*(void **)(particle + 0xC0), particle + 0x30, &scale, particle);
+    if (particle[0xB6] != 0) {
         Gfx_DisableState(0x10);
     }
 }
 
-void ParticleSprite_Render(void *sprite) {
-    void *Gfx_AddBillBoardSprite(u16);
-    void *bb;
+void ParticleSprite_Render(u8 *sprite) {
+    u8 *Gfx_AddBillBoardSprite(u16);
+    u8 *bb;
 
-    bb = Gfx_AddBillBoardSprite(M2C_FIELD(M2C_FIELD(M2C_FIELD(sprite, void **, 0x90), void **, 4), u32 **, 0x24)[M2C_FIELD(sprite, u8 *, 0x97)]);
-    M2C_FIELD(bb, u8 *, 0x2A) = M2C_FIELD(sprite, u8 *, 0x95);
-    M2C_FIELD(bb, s32 *, 0x24) = M2C_FIELD(sprite, s32 *, 0x54);
-    M2C_FIELD(bb, f32 *, 0x1C) = 1.0f - M2C_FIELD(sprite, f32 *, 0x80);
-    M2C_FIELD(bb, f32 *, 0xC) = M2C_FIELD(sprite, f32 *, 0x60) * M2C_FIELD(sprite, f32 *, 0x8C);
-    M2C_FIELD(bb, f32 *, 0) = M2C_FIELD(sprite, f32 *, 0);
-    M2C_FIELD(bb, f32 *, 4) = M2C_FIELD(sprite, f32 *, 4);
-    M2C_FIELD(bb, f32 *, 8) = M2C_FIELD(sprite, f32 *, 8);
+    bb = Gfx_AddBillBoardSprite((*(u32 **)(*(u8 **)(*(u8 **)(sprite + 0x90) + 0x4) + 0x24))[sprite[0x97]]);
+    bb[0x2A] = sprite[0x95];
+    *(s32 *)(bb + 0x24) = *(s32 *)(sprite + 0x54);
+    *(f32 *)(bb + 0x1C) = 360.0f - *(f32 *)(sprite + 0x80);
+    *(f32 *)(bb + 0xC) = *(f32 *)(sprite + 0x60) * *(f32 *)(sprite + 0x8C);
+    *(f32 *)(bb + 0x0) = *(f32 *)(sprite + 0x0);
+    *(f32 *)(bb + 0x4) = *(f32 *)(sprite + 0x4);
+    *(f32 *)(bb + 0x8) = *(f32 *)(sprite + 0x8);
 }

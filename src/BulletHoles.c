@@ -1,48 +1,48 @@
 #include "common.h"
 
+BulletHole g_bulletData[512];
+u32 g_nextBullet;
 
 void BulletHole_Init(void) {
-    extern u8 g_bulletData[512][0x60];
-    extern s32 g_nextBullet;
     s32 i;
 
     for (i = 0; i < 512; i++) {
-        *(s32 *)(g_bulletData[i] + 0x50) = 0;
+        g_bulletData[i].life = 0;
     }
     g_nextBullet = 1;
 }
 
 void BulletHole_Heartbeat(void) {
-    extern u8 g_bulletData[512][0x60];
     extern s32 g_iDeltaTimeMS;
-    u8 *bullet;
+    BulletHole *bullet;
     u32 alpha;
     s32 i;
     s32 delta;
 
     delta = g_iDeltaTimeMS;
     for (i = 0; i < 512; i++) {
-        bullet = g_bulletData[i];
-        if (*(s32 *)(bullet + 0x50) > 0) {
-            *(s32 *)(bullet + 0x50) -= delta;
-            if (*(s32 *)(bullet + 0x50) <= 0) {
-                *(s32 *)(bullet + 0x50) = 0;
-            } else if (*(s32 *)(bullet + 0x50) < 2000) {
-                alpha = (*(s32 *)(bullet + 0x50) << 7) / 2000;
-                if (alpha < *(u32 *)(bullet + 0xC)) {
-                    *(u32 *)(bullet + 0xC) = alpha;
+        bullet = &g_bulletData[i];
+        if (bullet->life > 0) {
+            bullet->life -= delta;
+            if (bullet->life <= 0) {
+                bullet->life = 0;
+            } else if (bullet->life < 2000) {
+                alpha = (bullet->life << 7) / 2000;
+                if (alpha < bullet->a) {
+                    bullet->a = alpha;
                 }
             }
         }
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 void BulletHole_Render(void) {
-    extern u8 g_bulletData[512][0x60];
     void *Gfx_Begin_GroupQuadFlat(u16 texture, s32 arg1, s32 arg2);
     void Gfx_End_GroupTri(u32 count);
     void MemCpy32(void *dst, void *src, u32 size);
-    u8 *bullet;
+    BulletHole *bullet;
     u32 i;
     u16 texture;
     u32 count;
@@ -52,15 +52,15 @@ void BulletHole_Render(void) {
     texture = 0xFFFF;
     dst = NULL;
     for (i = 0; i < 512; i++) {
-        bullet = g_bulletData[i];
-        if (*(s32 *)(bullet + 0x50) > 0) {
-            if (texture != *(u16 *)(bullet + 0x5C)) {
+        bullet = &g_bulletData[i];
+        if (bullet->life > 0) {
+            if (texture != bullet->texture) {
                 if (count != 0) {
                     Gfx_End_GroupTri(count);
                     count = 0;
                 }
-                dst = Gfx_Begin_GroupQuadFlat(*(u16 *)(bullet + 0x5C), 7, 0);
-                texture = *(u16 *)(bullet + 0x5C);
+                dst = Gfx_Begin_GroupQuadFlat(bullet->texture, 7, 0);
+                texture = bullet->texture;
             }
             MemCpy32(dst, bullet, 0x50);
             dst += 0x50;
@@ -71,21 +71,9 @@ void BulletHole_Render(void) {
         Gfx_End_GroupTri(count);
     }
 }
+#pragma pop
 
-void BulletHole_AddSegment(Matrix4 *mtx, s16 texture, GXColor color, s32 life, f32 size) {
-    typedef struct BulletHole {
-        u32 r;
-        u32 g;
-        u32 b;
-        u32 a;
-        f32 v[16];
-        s32 life;
-        u8 unk54[0x5C - 0x54];
-        s16 texture;
-        u8 unk5E[0x60 - 0x5E];
-    } BulletHole;
-    extern BulletHole g_bulletData[512];
-    extern u32 g_nextBullet;
+void BulletHole_AddSegment(Matrix4 *mtx, u16 texture, GXColor color, s32 life, f32 size) {
     s32 i;
 
     i = 512;

@@ -1,5 +1,25 @@
 #include "common.h"
 
+typedef struct VertexColorLight {
+    u8 unk0[0x4];
+    void *keys;
+    u8 unk8[0x8];
+} VertexColorLight;
+
+typedef struct VertexColorTile {
+    VertexColorLight *light;
+    u8 key[0x24];
+    u32 color;
+    u8 unk2C[0x4];
+    u8 active;
+    u8 unk31[3];
+} VertexColorTile;
+
+VertexColorTile g_VertexColorTiles[64];
+void *g_pVertexColorSeqList[64];
+s32 g_iTotalVertexColorTiles;
+s32 g_iTotalVertexColorSeq;
+
 
 s32 ActionVertexColorSeqChangeMode(s32 *data) {
     u32 count = data[1];
@@ -37,11 +57,50 @@ void VertexColorSeqManager_Destroy(void) {
     g_iTotalVertexColorTiles = 0;
 }
 
+void VertexColorSeqManager_AddVertices(void *vertices);
+void VertexColorSeqManager_Init(void) {
+    typedef struct VCSZone {
+        u8 unk0[0x14];
+        void *vertices;
+        u8 unk18[0x4];
+        u32 unk1C;
+        u8 unk20[0x30];
+    } VCSZone;
+    typedef struct VCSWorld {
+        u8 unk0[0x20];
+        u32 numZones;
+        VCSZone *zones;
+        u8 unk28[0x38];
+        u32 numLights;
+        VertexColorLight *lights;
+    } VCSWorld;
+    extern VertexColorTile g_VertexColorTiles[64];
+    extern s32 g_iTotalVertexColorSeq;
+    extern s32 g_iTotalVertexColorTiles;
+    VCSWorld *world;
+    u32 i;
+
+    g_iTotalVertexColorSeq = 0;
+    g_iTotalVertexColorTiles = 0;
+    world = g_worldData.world;
+    if (world != NULL) {
+        for (i = 0; i < world->numLights; i++) {
+            g_VertexColorTiles[i].light = &world->lights[i];
+            g_VertexColorTiles[i].active = 1;
+            g_iTotalVertexColorTiles++;
+        }
+        for (i = 0; i < ((VCSWorld *)g_worldData.world)->numZones; i++) {
+            if (((VCSWorld *)g_worldData.world)->zones[i].unk1C == 0) {
+                if (((VCSWorld *)g_worldData.world)->zones[i].vertices != NULL) {
+                    VertexColorSeqManager_AddVertices(((VCSWorld *)g_worldData.world)->zones[i].vertices);
+                }
+                break;
+            }
+        }
+    }
+}
+
 void VertexColorSeqManager_Heartbeat(void) {
-    typedef struct VertexColorTile {
-        u8 *light;
-        u8 key[0x30];
-    } VertexColorTile;
     extern VertexColorTile g_VertexColorTiles[64];
     extern s32 g_iTotalVertexColorTiles;
     extern f32 g_fDeltaTimeMS;
@@ -50,7 +109,7 @@ void VertexColorSeqManager_Heartbeat(void) {
 
     dt = g_fDeltaTimeMS;
     for (i = 0; i < g_iTotalVertexColorTiles; i++) {
-        ExtractColorKey(M2C_FIELD(g_VertexColorTiles[i].light, void **, 0x4), g_VertexColorTiles[i].key, dt);
+        ExtractColorKey(g_VertexColorTiles[i].light->keys, g_VertexColorTiles[i].key, dt);
     }
 }
 
@@ -77,10 +136,6 @@ void VertexColorSeqManager_RemoveVertices(void *vertices) {
 }
 
 s32 VertexColorSeqManager_GetLightIndex(void *light) {
-    typedef struct VertexColorTile {
-        u8 *light;
-        u8 key[0x30];
-    } VertexColorTile;
     extern VertexColorTile g_VertexColorTiles[64];
     extern s32 g_iTotalVertexColorTiles;
     u32 i;
@@ -94,12 +149,6 @@ s32 VertexColorSeqManager_GetLightIndex(void *light) {
 }
 
 void VertexColorSeqManager_GetLightColor(u32 index, u32 *color) {
-    typedef struct VertexColorTile {
-        u8 *light;
-        u8 key[0x24];
-        u32 color;
-        u8 unk2C[0x8];
-    } VertexColorTile;
     extern VertexColorTile g_VertexColorTiles[64];
     extern s32 g_iTotalVertexColorTiles;
 

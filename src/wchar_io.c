@@ -1,0 +1,33 @@
+#include "msl_file.h"
+
+enum __file_kinds { __closed_file, __disk_file, __console_file, __unavailable_file };
+enum __file_orientation { __unoriented, __char_oriented, __wide_oriented };
+
+int fwide(FILE *stream, int mode) {
+    int orientation;
+    int result;
+
+    if ((stream == NULL) || (stream->mode.file_kind == __closed_file)) {
+        return 0;
+    }
+
+    orientation = stream->mode.file_orientation;
+    switch (orientation) {
+    case __unoriented:
+        if (mode > 0) {
+            stream->mode.file_orientation = __wide_oriented;
+        } else if (mode < 0) {
+            stream->mode.file_orientation = __char_oriented;
+        }
+        result = mode;
+        break;
+    case __wide_oriented:
+        result = 1;
+        break;
+    case __char_oriented:
+        result = -1;
+        break;
+    }
+
+    return result;
+}

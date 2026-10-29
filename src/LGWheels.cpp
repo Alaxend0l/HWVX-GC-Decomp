@@ -4,6 +4,17 @@
 extern "C" void *memcpy(void *dst, const void *src, u32 n);
 extern "C" void LGInit(void);
 extern "C" void OSReport(const char *msg, ...);
+LGWheels::LGWheels()
+{
+	savedGain = 0xFF;
+	unk13CD = 0;
+	InitLGLibrary();
+	airborne[0] = 0;
+	airborne[1] = 0;
+	airborne[2] = 0;
+	airborne[3] = 0;
+}
+
 void LGWheels::InitLGLibrary(void)
 {
 	LGInit();
@@ -18,8 +29,7 @@ void LGWheels::ReadAll()
 	memcpy(this, &limbo, 0x28);
 	if (chan != -1)
 	{
-		i = 0;
-		while (i < 8)
+		for (i = 0; i < 8; i++)
 		{
 			condition.ids[chan][i] = -1;
 			condition.playing[chan][i] = 0;
@@ -29,7 +39,6 @@ void LGWheels::ReadAll()
 			periodicForce.playing[chan][i] = 0;
 			rampForce.ids[chan][i] = -1;
 			rampForce.playing[chan][i] = 0;
-			++i;
 		}
 	}
 }
@@ -148,6 +157,15 @@ void LGWheels::PlayConstantForce(s32 chan, s16 magnitude, u16 direction)
 	}
 }
 
+u8 LGWheels::SameConstantForceParams(s32 chan, s16 magnitude, u16 direction)
+{
+	if (constantParams[chan].force == magnitude && constantParams[chan].direction == direction)
+	{
+		return 1;
+	}
+	return 0;
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void LGWheels::PlayDamperForce(s32 chan, u8 coefficient, s16 offset)
@@ -201,6 +219,15 @@ void LGWheels::PlayDamperForce(s32 chan, u8 coefficient, s16 offset)
 	}
 }
 
+u8 LGWheels::SameDamperForceParams(s32 chan, u8 coefficient, s16 offset)
+{
+	if (limper[chan].offet == coefficient && limper[chan].efficiency == offset)
+	{
+		return 1;
+	}
+	return 0;
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void LGWheels::PlayFrontalCollisionForce(s32 chan, u8 force)
@@ -251,6 +278,12 @@ void LGWheels::PlayFrontalCollisionForce(s32 chan, u8 force)
 	 OSReport("ERROR: trying to play a force on port %d but no wheel opened.\n", chan);
 	}
 }
+
+u8 LGWheels::SameFrontalCollisionForceParams(s32 chan, s16 force)
+{
+	return limbi[chan] == force;
+}
+
 #pragma pop
 
 #pragma pop

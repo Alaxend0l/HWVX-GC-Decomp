@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 extern f32 g_zeroVector[4];
 extern u8 g_destructibleVTable[];
 void BuildOOB(void *oob, void *pos, void *out);
@@ -81,14 +83,99 @@ void Destructible_Release(Destructible *destructible) {
     Thing_Release(destructible);
 }
 
+s32 Destructible_Move(Destructible *destructible) {
+    typedef struct {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        Vector4 angVel;
+        u32 id;
+        u32 unk44;
+        f32 unk48;
+        f32 unk4C;
+    } __attribute__((aligned(16))) DebrisParams;
+    extern f32 g_fDeltaTimeSec;
+    extern s32 g_iDeltaTimeMS;
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void GenerateQuaternionXYZ(Vector4 *euler, Vector4 *quat);
+    void GenerateSpinAngleFromQuaternion(Vector4 *quat, Vector4 *axis, f32 *angle);
+    void GenerateQuaternion(Vector4 *axis, Vector4 *q, f32 angle);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    void Timer_Interrupt300(void);
+    DebrisParams params;
+    Vector4 rot __attribute__((aligned(16)));
+    Vector4 quat __attribute__((aligned(16)));
+    Vector4 axis __attribute__((aligned(16)));
+    f32 angle;
+    u8 *slave;
+    u32 id;
+    s8 spin;
+    DestructibleInfo *info;
+
+    if (destructible->flags & 0x200000) {
+        return 0;
+    }
+    if (destructible->player != NULL &&
+        (slave = ThingManagerList_GetByType(&destructible->slaves, 8)) != NULL &&
+        *(u8 **)(slave + 0x94) != NULL &&
+        (spin = -**(u8 **)(slave + 0x94)) != 0) {
+        axis.x = 0.0f;
+        axis.y = 0.017453292f;
+        axis.z = 0.0f;
+        GenerateQuaternionXYZ(&axis, &quat);
+        GenerateSpinAngleFromQuaternion(&quat, &axis, &angle);
+        GenerateQuaternion(&axis, &rot, spin * (angle * g_fDeltaTimeSec));
+        QuaternionMult((Vector4 *)(slave + 0x50), &rot, &quat);
+        *(Vector4 *)(slave + 0x50) = quat;
+        QuaternionToSubMatrix(slave + 0x50, slave + 0x10);
+    }
+    if (!(destructible->flags & 0x10000000)) {
+        if (destructible->deathTimer < 0) {
+            id = 0;
+            info = destructible->record->info;
+            if (info != NULL && info->numDebris != 0) {
+                id = info->debris[RandomAdd_s32(0, info->numDebris)];
+            }
+            if (id != 0) {
+                params.id = id;
+                params.pos = destructible->offsetPos;
+                params.quat = *(Vector4 *)destructible->pad50;
+                params.vel = destructible->pos;
+                params.unk44 = 0;
+                params.unk48 = 0.0f;
+                params.unk4C = 0.0f;
+                params.angVel = *(Vector4 *)g_zeroVector;
+                ThingManager_DARYL_CreateThing(1, &params);
+            }
+            Destructible_Release(destructible);
+        }
+        destructible->deathTimer -= g_iDeltaTimeMS;
+    }
+    Timer_Interrupt300();
+    slave = ThingManagerList_GetByType(&destructible->slaves, 0x11);
+    if (slave != NULL) {
+        if (destructible->record->info->maxHealth != 0) {
+            *(f32 *)(slave + 0xB8) = (f32)destructible->health / (f32)destructible->record->info->maxHealth;
+        } else {
+            *(f32 *)(slave + 0xB8) = 0.0f;
+        }
+        if (*(f32 *)(slave + 0xB8) > 1.0f) {
+            *(f32 *)(slave + 0xB8) = 1.0f;
+        }
+    }
+    return 1;
+}
+
 f32 Destructible_GetMass(Destructible *destructible) {
     return destructible->record->info->mass;
 }
 
 void Destructible_DynamicCollideImpact(u8 *destructible, u8 *collision, s32 damage, f32 force) {
-    typedef struct OBox {
+    typedef struct ABox {
         Vector4 v[3];
-    } OBox;
+    } __attribute__((aligned(16))) ABox;
     typedef struct DestructibleInfo {
         f32 inertia[3];
         u8 pad0C[0x10 - 0xC];
@@ -99,7 +186,7 @@ void Destructible_DynamicCollideImpact(u8 *destructible, u8 *collision, s32 dama
         u8 pad1C[0x20 - 0x1C];
         f32 mass;
         u8 pad24[0x44 - 0x24];
-        OBox *box;
+        ABox *box;
     } DestructibleInfo;
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
     void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
@@ -109,13 +196,13 @@ void Destructible_DynamicCollideImpact(u8 *destructible, u8 *collision, s32 dama
     u8 *CollisionInfo_GetOther(void *collision, void *thing);
     s8 Player_IsHuman(void *player);
     DestructibleInfo *info;
-    OBox box;
-    Vector4 angVel;
-    Vector4 torque;
-    Vector4 impulse;
-    Vector4 r;
-    Vector4 local;
-    Vector4 scaled;
+    ABox box;
+    Vector4 angVel __attribute__((aligned(16)));
+    Vector4 torque __attribute__((aligned(16)));
+    Vector4 impulse __attribute__((aligned(16)));
+    Vector4 r __attribute__((aligned(16)));
+    Vector4 local __attribute__((aligned(16)));
+    Vector4 scaled __attribute__((aligned(16)));
     f32 scale;
     f32 invX;
     f32 invY;
@@ -154,7 +241,7 @@ void Destructible_DynamicCollideImpact(u8 *destructible, u8 *collision, s32 dama
     case 1:
         break;
     case 7:
-        inertia = 0.4f * info->mass * *(f32 *)(destructible + 0x70) * *(f32 *)(destructible + 0x70);
+        inertia = 2.0f * info->mass * *(f32 *)(destructible + 0x70) * *(f32 *)(destructible + 0x70);
         invX = 1.0f / (info->inertia[0] * inertia);
         invY = 1.0f / (info->inertia[1] * inertia);
         invZ = 1.0f / (info->inertia[2] * inertia);
@@ -175,7 +262,7 @@ void Destructible_DynamicCollideImpact(u8 *destructible, u8 *collision, s32 dama
     if (other != NULL && *(void **)(other + 0x94) != NULL && Player_IsHuman(*(void **)(other + 0x94))) {
         *(u32 *)(destructible + 0x74) |= 0x20;
     }
-    Destructible_Release_inline(destructible);
+    Destructible_Release((Destructible *)destructible);
     if (*(u8 **)(destructible + 0x90) != NULL) {
         *(u32 *)(*(u8 **)(destructible + 0x90) + 0x30) = 3;
     }
@@ -199,37 +286,37 @@ s32 ActionDestructibleChangeMode(u32 *action) {
     u32 count;
     u32 i;
     u8 *thing;
-    u8 *destructible;
+    Destructible *destructible;
 
     mode = action[0];
     count = action[1];
     for (i = 0; i < count; i++) {
         thing = (u8 *)action[i + 2];
-        destructible = *(u8 **)(thing + 0x2C);
+        destructible = *(Destructible **)(thing + 0x2C);
         if (destructible != NULL) {
             switch (mode) {
             case 3:
-                Thing_ProcessEndEvent(destructible, *(u8 **)(*(u8 **)(destructible + 0xC0) + 0x10), NULL, NULL);
-                Destructible_Release_inline(destructible);
+                Thing_ProcessEndEvent((u8 *)destructible, (u8 *)destructible->record->info, NULL, NULL);
+                Destructible_Release(destructible);
                 break;
             case 0:
-                ThingManagerList_ReleaseSlavesBySlaveType((void **)(destructible + 0x88), 0xFF);
-                *(u32 *)(destructible + 0x74) |= 0x200;
-                *(u32 *)(destructible + 0x74) |= 0x2;
+                ThingManagerList_ReleaseSlavesBySlaveType(&destructible->slaves, 0xFF);
+                destructible->flags |= 0x200;
+                destructible->flags |= 0x2;
                 break;
             case 1:
-                Thing_InitAllSlavesNow(destructible, *(u8 **)(destructible + 0xC0) + 0x18, 0xFF);
-                *(u32 *)(destructible + 0x74) &= ~0x200;
-                *(u32 *)(destructible + 0x74) &= ~0x2;
+                Thing_InitAllSlavesNow(destructible, (u8 *)destructible->record + 0x18, 0xFF);
+                destructible->flags &= ~0x200;
+                destructible->flags &= ~0x2;
                 break;
             case 25:
-                Destructible_Release_inline(destructible);
+                Destructible_Release(destructible);
                 break;
             case 26:
-                ThingManagerList_ReleaseSlavesBySlaveType((void **)(destructible + 0x88), 0xFF);
-                Thing_ProcessEndEvent(destructible, *(u8 **)(*(u8 **)(destructible + 0xC0) + 0x10), NULL, NULL);
-                *(u32 *)(destructible + 0x74) |= 0x200;
-                *(u32 *)(destructible + 0x74) |= 0x2;
+                ThingManagerList_ReleaseSlavesBySlaveType(&destructible->slaves, 0xFF);
+                Thing_ProcessEndEvent((u8 *)destructible, (u8 *)destructible->record->info, NULL, NULL);
+                destructible->flags |= 0x200;
+                destructible->flags |= 0x2;
                 break;
             }
         }

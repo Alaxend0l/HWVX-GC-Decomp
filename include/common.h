@@ -26,9 +26,10 @@ typedef struct Quaternion {
   f32 z;
   f32 w;
 } Quaternion;
-typedef struct Matrix4 {
+typedef union Matrix4 {
   Vector4 v[4];
-} Matrix4;
+  f64 d[8];                 /* the game copies matrices as doubles */
+} Matrix4 __attribute__((aligned(16)));
 #define TRUE 1
 #define FALSE 0
 #ifndef NULL
@@ -53,11 +54,38 @@ typedef struct WorldData {
 
 extern WorldData g_worldData;
 
+typedef struct CameraListener {
+  u8 pad0[0x40];
+  Vector4 pos;              /* 0x40 */
+} CameraListener;
+
 typedef struct Camera {
-  u8 pad0[0xB4];
-  u32 *mode;
-  f32 modeTime;
-  u8 pad1[0x190 - 0xBC];
+  struct Player *player;    /* 0x00 */
+  u8 pad4[0xC];
+  Matrix4 mtx;              /* 0x10 v[3] = position */
+  u8 pad50[0x10];
+  Vector4 pos;              /* 0x60 */
+  Vector4 vel;              /* 0x70 */
+  Vector4 dir;              /* 0x80 */
+  Vector4 up;               /* 0x90 */
+  Vector4 right;            /* 0xA0 */
+  u8 padB0[4];
+  u32 *mode;                /* 0xB4 */
+  f32 modeTime;             /* 0xB8 */
+  f32 trim;                 /* 0xBC */
+  u8 padC0[0x20];
+  Vector4 lookDir;          /* 0xE0 */
+  u8 padF0[0x20];
+  Vector4 springPos;        /* 0x110 */
+  Vector4 springVel;        /* 0x120 */
+  Vector4 rollUp;           /* 0x130 */
+  Vector4 rollUpVel;        /* 0x140 */
+  Vector4 tiltUp;           /* 0x150 */
+  Vector4 tiltUpVel;        /* 0x160 */
+  u8 pad170[0xC];
+  s32 flipTimer;            /* 0x17C */
+  CameraListener *listener; /* 0x180 */
+  u8 pad184[0x190 - 0x184];
 } Camera;
 
 typedef struct GXColor {
@@ -173,13 +201,16 @@ typedef struct DestructibleInfo {
   u8 pad0C[4];       /* 0x0C */
   u8 type;           /* 0x10 */
   u8 takesDamage;    /* 0x11 */
-  u8 pad12[6];       /* 0x12 */
+  u8 pad12[2];       /* 0x12 */
+  s32 maxHealth;     /* 0x14 */
   s32 armour;        /* 0x18 */
   u8 pad1C[4];       /* 0x1C */
   f32 mass;          /* 0x20 */
   u8 pad24[0x0C];    /* 0x24 */
   s32 surfaceScript; /* 0x30 */
-  u8 pad34[0x10];    /* 0x34 */
+  u8 pad34[8];       /* 0x34 */
+  u32 numDebris;     /* 0x3C */
+  u32 *debris;       /* 0x40 thing ids spawned when destroyed */
   OBox *box;         /* 0x44 */
   ConvexHull *hull;  /* 0x48 */
 } DestructibleInfo;
@@ -195,9 +226,16 @@ typedef struct Destructible {
   Vector4 offsetPos;   /* 0x40 */
   u8 pad50[0x24];      /* 0x50 */
   u32 flags;           /* 0x74 */
-  u8 pad78[0x48];      /* 0x78 */
+  s32 health;          /* 0x78 */
+  u8 pad7C[0xC];       /* 0x7C */
+  void *slaves;        /* 0x88 slave things list */
+  void *vtable;        /* 0x8C */
+  u8 *trigger;         /* 0x90 */
+  void *player;        /* 0x94 */
+  u8 pad98[0x28];      /* 0x98 */
   ThingRecord *record; /* 0xC0 */
-  u8 padC4[8];         /* 0xC4 */
+  u8 padC4[4];         /* 0xC4 */
+  s32 deathTimer;      /* 0xC8 ms until a dead destructible is released */
   ConvexHull *hull;    /* 0xCC */
   OBox *orientedBox;   /* 0xD0 */
 } Destructible;
@@ -210,7 +248,8 @@ typedef struct OConvexHull {
 } OConvexHull;
 
 typedef struct CollisionPair {
-  u8 pad00[0x20]; /* 0x00 */
+  Vector4 pos;    /* 0x00 */
+  Vector4 normal; /* 0x10 */
   u32 objectA;    /* 0x20 */
   u32 objectB;    /* 0x24 */
   s32 time;       /* 0x28 */
@@ -360,7 +399,9 @@ typedef struct CarPart {
   u8 pad6[2];
   void *geom;
   Vector4 *offset;
-  u8 pad10[0xC];
+  Vector4 *slavePos;        /* 0x10 NULL: g_zeroVector */
+  u32 debris;               /* 0x14 thing spawned when the part breaks off */
+  void *slaveInfo;          /* 0x18 */
 } CarPart;
 typedef struct CarPartList {
   u32 count;
@@ -370,10 +411,22 @@ typedef struct CarTrailBone {
   f32 offset;
   f32 width0;
   f32 width1;
-  u8 padC[0x3F - 0xC];
+  f32 restLength;           /* 0x0C */
+  f32 springRate;           /* 0x10 */
+  f32 unk14;
+  f32 friction;             /* 0x18 */
+  f32 damping;              /* 0x1C */
+  f32 maxFriction;          /* 0x20 */
+  f32 handbrakeGrip;        /* 0x24 */
+  u8 pad28[0x38 - 0x28];
+  f32 maxDamping;           /* 0x38 */
+  u8 driven;                /* 0x3C */
+  u8 pad3D;
+  u8 skids;                 /* 0x3E */
   u8 parent;
   u16 bone;
-  u8 pad42[0x50 - 0x42];
+  u8 dusts;                 /* 0x42 */
+  u8 pad43[0x50 - 0x43];
 } CarTrailBone;
 
 typedef struct CarNavPath {
@@ -407,27 +460,27 @@ typedef struct CodeVariables {
   s32 unk34[4];
   s32 unk44[4];
   s32 unk54[4];
-  u8 unk64[4];
+  s8 unk64[4];
   f32 unk68[30];
   s32 unkE0;
-  u8 unkE4;
+  s8 unkE4;
   s32 unkE8;
   s32 unkEC;
   s32 unkF0;
   s32 unkF4;
   s32 unkF8;
-  u8 unkFC;
+  s8 unkFC;
   s32 unk100;
   s32 unk104;
-  u8 unk108;
-  u8 unk109[0x111 - 0x109];
-  u8 unk111;
+  s8 unk108;
+  s8 unk109[0x111 - 0x109];
+  s8 unk111;
   u8 unk112[0x114 - 0x112];
   char *device;
   s32 fileIndex;
-  u8 unk11C[3];
+  s8 unk11C[3];
   s8 bOverwritingFile;
-  u8 unk120[0x124 - 0x120];
+  s8 unk120[0x124 - 0x120];
   s32 unk124;
   u8 unk128[0x134 - 0x128];
 } CodeVariables;
@@ -462,10 +515,17 @@ typedef struct SIPacketBss {
 } SIPacketBss;
 
 typedef struct HotWheelsGameData {
-  u8 unk0;
-  u8 unk1;
-  u8 unk2;
-  u8 unk3[0xF1];
+  s8 cars[0x21];      /* 0x00 code variable 0x64 */
+  s8 tracks[0x39];    /* 0x21 code variable 0x65 */
+  u8 pad5A[0x39];     /* 0x5A */
+  s8 unk93[0xC];      /* 0x93 code variable 0x66 */
+  s8 unk9F[0xA];      /* 0x9F code variable 0x6A */
+  s8 unkA9;           /* 0xA9 */
+  s8 unkAA[5];        /* 0xAA code variable 0x68 */
+  u8 padAF;           /* 0xAF */
+  u16 unkB0[0x1E];    /* 0xB0 code variable 0xCA */
+  s32 unkEC;          /* 0xEC */
+  u8 padF0[4];        /* 0xF0 */
 } HotWheelsGameData;
 
 typedef struct TRKEvent {
@@ -489,16 +549,22 @@ typedef struct GXObject {
 } GXObject;
 
 typedef struct QuadPack {
-  u8 pad00[0x10];
+  u8 pad00[0xC];
+  u32 enabled;    /* 0x0C */
   void *data;     /* 0x10 */
   void *vertices; /* 0x14 */
   u8 pad18[0x10];
-  GXObject *gxObject; /* 0x28 */
+  union {
+    GXObject *gxObject;            /* 0x28 */
+    struct QuadPackHeader *header; /* 0x28 */
+  };
   s32 gxBase;         /* 0x2C */
   u8 pad30[0x4];
   u8 flag34; /* 0x34 */
-  u8 pad35[0xC];
-  void *alloc; /* 0x44 */
+  u8 pad35[0x7];
+  s32 fileOffset; /* 0x3C */
+  u32 size;       /* 0x40 */
+  void *alloc;    /* 0x44 */
 } QuadPack;
 
 typedef struct DataPackShader {
@@ -739,17 +805,31 @@ typedef struct CreateCarParams {
   u8 unk44[0x4C - 0x44];
   void *player;
 } CreateCarParams;
+typedef struct FlashDef {
+  u8 unk0;
+  u8 enabled;
+  u8 unk2[0xC - 0x2];
+  s32 duration;
+  u8 unk10[0x20 - 0x10];
+  u8 *colorKey;
+  u8 unk24[0x2C - 0x24];
+  u8 pointKey[4];
+} FlashDef;
+
 typedef struct Flash {
   Vector4 pos;
-  u8 unk10[0x3C - 0x10];
+  u8 colorOut[0x34 - 0x10];
+  GXColor color;
+  u8 unk38[0x3C - 0x38];
   u8 active;
-  u8 unk3D[0x58 - 0x3D];
+  u8 unk3D[0x40 - 0x3D];
+  u8 pointOut[0x58 - 0x40];
   u8 visible;
   u8 unk59[0x5C - 0x59];
-  void *flash;
+  FlashDef *flash;
   s32 unk60;
   u8 unk64[0x68 - 0x64];
-  s32 unk68;
+  u32 remaining;
   u8 unk6C[0x74 - 0x6C];
   f32 time;
   u8 unk78[0x80 - 0x78];
@@ -763,7 +843,7 @@ typedef struct BulletHole {
   f32 v[16];
   s32 life;
   u8 unk54[0x5C - 0x54];
-  s16 texture;
+  u16 texture;
   u8 unk5E[0x60 - 0x5E];
 } BulletHole;
 
@@ -775,33 +855,41 @@ typedef struct QuadPackRef {
 
 /* The quad pack's header carries its pack references inline, at 0x2C. */
 typedef struct QuadPackHeader {
-  u32 pad00[2];        /* 0x00 */
+  u32 valid;           /* 0x00 */
+  u32 numPointers;     /* 0x04 */
   u32 numRelocs;       /* 0x08 */
   s32 *relocs;         /* 0x0C */
   u32 pad10[3];        /* 0x10 */
   u32 numShaders;      /* 0x1C */
   s32 *shaderList;     /* 0x20 */
-  u32 pad24[2];        /* 0x24 */
+  u32 dataSize;        /* 0x24 */
+  u32 numTexRelocs;    /* 0x28 */
   QuadPackRef refs[2]; /* 0x2C */
 } QuadPackHeader;
 
 typedef struct Light {
-  u8 unk0[0x10];
-  u8 r;
+  u8 unk0[0x10];            /* 0x00 direction (directional lights) */
+  u8 r;                     /* 0x10 */
   u8 g;
   u8 b;
   u8 unk13;
-  s32 index;
-  u8 type;
+  s32 index;                /* 0x14 */
+  u8 type;                  /* 0x18 1: directional, 2: ambient, 3: sequenced */
+  s8 subtract;              /* 0x19 */
 } Light;
 typedef struct Volume {
-  u8 unk0[0xC];
-  u32 type;
-  u8 unp10[0x1C];
-  Light *light;
+  u8 unk0[0x8];
+  u32 falloff;              /* 0x08 */
+  u32 type;                 /* 0x0C */
+  u8 unp10[0x10];
+  f32 innerDist;            /* 0x20 */
+  f32 outerDist;            /* 0x24 */
+  u8 unk28[4];
+  Light *light;             /* 0x2C */
 } Volume;
 typedef struct LightWorld {
-  u8 unk0[0x64];
+  u32 unk0;
+  u8 unk4[0x60];
   u8 *lights;
   u32 numVolumes;
   u8 *volumes;
@@ -990,7 +1078,8 @@ typedef struct {
   u8 hasDist;
   u8 visible;
   f32 dist;
-  u8 padC[0xC];
+  u8 padC[0x8];
+  u32 *numBones;            /* 0x14 bone count, the key frames an animation extracts */
   u32 slaves[2];
 } Model;
 typedef struct {

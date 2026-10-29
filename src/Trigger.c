@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 
 s8 TriggerSoundSeqQueueEnd(void) {
     s32 SoundSequence_GetTotalElementsInQueue();
@@ -269,6 +271,37 @@ s8 TriggerCheckConditions(u8 mode, s32 count, s32 conds) {
     return 0;
 }
 
+/* Returns 1 from the calling trigger check when `a op b` holds
+   (op: 21 >, 20 <, 22 ==, 47 >=, 48 <=). */
+#define TRIGGER_COMPARE_RETURN(op, a, b) \
+    switch (op) {                        \
+    case 21:                             \
+        if ((a) > (b)) {                 \
+            return 1;                    \
+        }                                \
+        break;                           \
+    case 20:                             \
+        if ((a) < (b)) {                 \
+            return 1;                    \
+        }                                \
+        break;                           \
+    case 22:                             \
+        if ((a) == (b)) {                \
+            return 1;                    \
+        }                                \
+        break;                           \
+    case 47:                             \
+        if ((a) >= (b)) {                \
+            return 1;                    \
+        }                                \
+        break;                           \
+    case 48:                             \
+        if ((a) <= (b)) {                \
+            return 1;                    \
+        }                                \
+        break;                           \
+    }
+
 s32 TriggerLevelStart(void) {
     return 1;
 }
@@ -377,7 +410,7 @@ void SetCodeVariable(s32 var, u8 *obj, f32 value) {
 s32 TriggerCodeVariableValueCheck(u32 *data) {
     f32 value;
     f32 operand;
-    u32 i;
+    s32 i;
 
     if (data[1] < 100) {
         for (i = 0; i < data[2]; i++) {
@@ -719,6 +752,8 @@ void Trigger_CreatureDroppedOff(void *vehicle, void *creature) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 void Trigger_GameRoundsComplete(void) {
     extern u32 TriggerStats_800D3C58[][3];
     extern u32 **m_Triggers_802C1890[];
@@ -744,7 +779,7 @@ void Trigger_GameRoundsComplete(void) {
         }
     }
 }
-
+#pragma pop
 void Trigger_GameRoundXComplete(void) {
     extern u32 TriggerStats_800D3C58[][3];
     extern u32 **m_Triggers_802C1890[];

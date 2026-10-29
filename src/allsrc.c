@@ -137,6 +137,29 @@ s16 g_iQuarterSineTable[0x40];
 s16 g_iRampUpTable[0x40];
 s32 g_bWaveTablesInitialized;
 
+static inline s32 Effect_MulDiv(s32 a, s32 b, s32 c) {
+    s32 half = c / 2;
+
+    if (a < 0) {
+        half = -half;
+    }
+    a *= b;
+    a += half;
+    return a / c;
+}
+
+static inline s32 Effect_WaveLookup(s16 *table, u32 a) {
+    if (a < 0x40) {
+        return table[a];
+    } else if (a < 0x80) {
+        return table[0x7F - a];
+    } else if (a < 0xC0) {
+        return -table[a - 0x80];
+    } else {
+        return -table[0xFF - a];
+    }
+}
+
 void SimThread_Init(VDevice *dev, VDevice *owner);
 void VDevice_RecalcGammaTable(void);
 s32 VDevice_Shutdown(VDevice *dev);
@@ -827,6 +850,96 @@ void Effect_Init(Effect *effect)
     }
 }
 
+s32 Effect_UpdateEffect(Effect *effect, u8 *desc)
+{
+Effect *src = (Effect *)desc;
+s32 value;
+s32 ret = 0;
+u16 period;
+u8 sat;
+effect->type = src->type;
+effect->duration = src->duration;
+effect->startDelay = src->startDelay;
+switch (src->type)
+{
+case 0:
+effect->flags |= 0x14;
+value = src->params.constant.magnitude;
+value = (value < -0xff) ? -0xff : value;
+value = (value > 0xff) ? 0xff : value;
+effect->params.constant.magnitude = value;
+effect->params.constant.angle = (src->params.constant.angle % 360) * 0x100 / 360;
+effect->params.constant.envelope.attackTime = src->params.constant.envelope.attackTime;
+effect->params.constant.envelope.fadeTime = src->params.constant.envelope.fadeTime;
+value = src->params.constant.envelope.attackLevel;
+value = (value > 0xff) ? 0xff : value;
+effect->params.constant.envelope.attackLevel = value;
+value = src->params.constant.envelope.fadeLevel;
+value = (value > 0xff) ? 0xff : value;
+effect->params.constant.envelope.fadeLevel = value;
+break;
+case 1:
+effect->flags |= 0x24;
+value = src->params.ramp.start;
+value = (value < -0xff) ? -0xff : value;
+value = (value > 0xff) ? 0xff : value;
+effect->params.ramp.start = value;
+value = src->params.ramp.end;
+value = (value < -0xff) ? -0xff : value;
+value = (value > 0xff) ? 0xff : value;
+effect->params.ramp.end = value;
+effect->params.ramp.angle = (src->params.ramp.angle % 360) * 0x100 / 360;
+break;
+case 2: case 3: case 4: case 5: case 6:
+effect->flags |= 0x44;
+value = src->params.periodic.magnitude;
+value = (value > 0xff) ? 0xff : value;
+effect->params.periodic.magnitude = value;
+effect->params.periodic.angle = (src->params.periodic.angle % 360) * 0x100 / 360;
+period = src->params.periodic.period;
+period = (period < 2) ? 2 : period;
+effect->params.periodic.period = period;
+effect->params.periodic.phase = (src->params.periodic.phase % 360) * 0x100 / 360;
+value = src->params.periodic.offset;
+value = (value < -0xff) ? -0xff : value;
+value = (value > 0xff) ? 0xff : value;
+effect->params.periodic.offset = value;
+effect->params.periodic.envelope.attackTime = src->params.periodic.envelope.attackTime;
+effect->params.periodic.envelope.fadeTime = src->params.periodic.envelope.fadeTime;
+value = src->params.periodic.envelope.attackLevel;
+value = (value > 0xff) ? 0xff : value;
+effect->params.periodic.envelope.attackLevel = value;
+value = src->params.periodic.envelope.fadeLevel;
+value = (value > 0xff) ? 0xff : value;
+effect->params.periodic.envelope.fadeLevel = value;
+if (effect->params.periodic.period < 4) { effect->params.periodic.phase = 0x40; }
+break;
+case 7: case 8:
+effect->flags |= 0x80;
+effect->params.condition.unk0[0] = src->params.condition.unk0[0];
+effect->params.condition.unk0[1] = src->params.condition.unk0[1];
+value = src->params.condition.posCoefficient;
+value = (value < -0xff) ? -0xff : value;
+value = (value > 0xff) ? 0xff : value;
+effect->params.condition.posCoefficient = value;
+value = src->params.condition.negCoefficient;
+value = (value < -0xff) ? -0xff : value;
+value = (value > 0xff) ? 0xff : value;
+effect->params.condition.negCoefficient = value;
+sat = src->params.condition.negSaturation;
+effect->params.condition.negSaturation = (sat >> 1) & 0xff;
+sat = src->params.condition.posSaturation;
+effect->params.condition.posSaturation = (sat >> 1) & 0xff;
+effect->deadbandLow = ((s8)effect->params.condition.unk0[0] - ((u32)effect->params.condition.unk0[1] >> 1)) << 12;
+effect->deadbandHigh = ((s8)effect->params.condition.unk0[0] + ((u32)effect->params.condition.unk0[1] >> 1)) << 12;
+break;
+default:
+ret = -2;
+break;
+}
+return ret;
+}
+
 #pragma pop
 s32 Effect_StartEffect(Effect *effect)
 {
@@ -839,6 +952,107 @@ s32 Effect_StartEffect(Effect *effect)
         effect->phase = effect->params.periodic.phase << 16;
     }
     return 0;
+}
+
+s32 Effect_PerformEnvelope(Effect *effect, EffectEnvelope *env, s32 magnitude);
+void Effect_PolarToRect(s32 magnitude, s32 angle, s32 *out);
+s32 Effect_UpdateSpring(Effect *effect, EffectCondition *cond);
+s32 Effect_UpdateDamper(Effect *effect, EffectCondition *cond);
+s32 Effect_Update(Effect *effect, u32 dt) {
+    s32 active;
+    s16 magnitude;
+    s32 wave;
+    s32 round;
+    s32 level;
+    u32 a;
+    EffectCondition *cond;
+
+    if (effect->flags & 1) {
+        if (effect->delay != 0) {
+            effect->delay -= dt;
+            if ((s32)effect->delay < 0) {
+                effect->delay = 0;
+            }
+        } else {
+            effect->elapsed += dt;
+            if (effect->duration != 0xFFFFFFFF && effect->duration < effect->elapsed && (effect->flags & 2)) {
+                effect->flags &= ~1;
+            }
+        }
+    }
+    effect->flags |= 2;
+
+    active = 0;
+    if ((effect->flags & 1) && effect->delay == 0) {
+        active = 1;
+    }
+    if (active) {
+        if (effect->flags & 0x10) {
+            Effect_PolarToRect(Effect_PerformEnvelope(effect, &effect->params.constant.envelope, effect->params.constant.magnitude), effect->params.constant.angle, &effect->force);
+        } else if (effect->flags & 0x20) {
+            Effect_PolarToRect(effect->params.ramp.start + Effect_MulDiv(effect->params.ramp.end - effect->params.ramp.start, effect->elapsed, effect->duration), effect->params.ramp.angle, &effect->force);
+        } else if (effect->flags & 0x40) {
+            dt = (dt << 24) / effect->params.periodic.period;
+            effect->phase += dt;
+            if (effect->phase >= 0x1000000) {
+                effect->phase -= effect->phase & 0xFF000000;
+            }
+            magnitude = Effect_PerformEnvelope(effect, &effect->params.periodic.envelope, effect->params.periodic.magnitude);
+            switch (effect->type) {
+            case 2:
+                wave = Effect_WaveLookup(g_iQuarterSineTable, (effect->phase >> 16) & 0xFF);
+                break;
+            case 3:
+                wave = -0x400;
+                if ((effect->phase >> 16) < 0x80) {
+                    wave = 0x400;
+                }
+                break;
+            case 4:
+                wave = Effect_WaveLookup(g_iRampUpTable, (effect->phase >> 16) & 0xFF);
+                break;
+            case 5:
+                a = (effect->phase >> 16) & 0xFF;
+                wave = g_iRampUpTable[a >> 2];
+                break;
+            case 6:
+                a = (effect->phase >> 16) & 0xFF;
+                wave = g_iRampUpTable[(0xFF - a) >> 2];
+                break;
+            default:
+                wave = 0;
+                break;
+            }
+            round = 0x200;
+            if (wave < 0) {
+                round = -0x200;
+            }
+            level = wave * magnitude;
+            level += round;
+            Effect_PolarToRect(level / 0x400 + effect->params.periodic.offset, effect->params.periodic.angle, &effect->force);
+        } else if (effect->flags & 0x80) {
+            cond = &effect->params.condition;
+            switch (effect->type) {
+            case 7:
+                effect->force = Effect_UpdateSpring(effect, cond);
+                break;
+            case 8:
+                effect->force = Effect_UpdateDamper(effect, cond);
+                if (effect->force == 0) {
+                    effect->force++;
+                }
+                break;
+            default:
+                effect->force = 0;
+                break;
+            }
+        } else {
+            return 0;
+        }
+    } else {
+        effect->force = 0;
+    }
+    return 1;
 }
 
 #pragma push
@@ -889,9 +1103,9 @@ s32 Effect_UpdateSpring(Effect *effect, EffectCondition *cond)
 s32 Effect_UpdateDamper(Effect *effect, EffectCondition *cond)
 {
     s32 velocity = effect->state->velocity;
-    s32 force;
     s32 coefficient;
     s32 saturation;
+    s32 force;
 
     if (velocity < 0)
     {
@@ -903,12 +1117,13 @@ s32 Effect_UpdateDamper(Effect *effect, EffectCondition *cond)
         coefficient = -cond->posCoefficient;
         saturation = cond->posSaturation;
     }
-    force = velocity * coefficient * 20 / 0xFF000;
+    velocity *= coefficient;
+    force = (velocity * 20) / 0xFF000;
     if (-saturation > force)
     {
         force = -saturation;
     }
-    if (force < saturation)
+    if (saturation < force)
     {
         force = saturation;
     }

@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 extern s8 g_bRoundEnd;
 extern u32 g_playerNumThatWon;
 

@@ -7,13 +7,25 @@ typedef struct THPAudioBuffer {
     s32 frameNumber;
 } THPAudioBuffer;
 
+typedef struct THPVideoInfo {
+    u32 xSize;
+    u32 ySize;
+} THPVideoInfo;
+
+typedef struct THPTextureSet {
+    u8 *ytexture;
+    u8 *utexture;
+    u8 *vtexture;
+    s32 frameNumber;
+} THPTextureSet;
+
 typedef struct THPPlayer {
     u8 fileInfo[0x3C];
     u8 tag[4];
     u32 version;
     u32 unk44;
     u32 unk48;
-    u32 unk4C;
+    f32 frameRate;
     u32 numFrames;      /* 0x50: compared with the frame Prepare wants */
     u32 unk54;
     u32 unk58;
@@ -23,7 +35,7 @@ typedef struct THPPlayer {
     u32 unk68;
     u32 numComponents;
     u8 components[0x80 - 0x70];
-    u8 videoInfo[8];
+    THPVideoInfo videoInfo;
     u8 audioInfo[0xC];
     u8 pad94[4];
     BOOL open;
@@ -31,23 +43,28 @@ typedef struct THPPlayer {
     u8 unk9D;
     u8 playFlag;
     u8 audioExist;
-    u8 padA0[5];
+    s32 dvdError;
+    s32 videoError;
     s32 onMemory;
-    u8 padAC[0x14];
+    u8 padAC[0xC];
+    s32 initReadFrame;
+    u8 padBC[4];
     u32 unkC0;
     u32 unkC4;
-    u32 unkC8;
-    u32 unkCC;
-    u32 unkD0;
-    u8 padD4[4];
+    s32 unkC8; /* prevCount */
+    s32 unkCC; /* curCount */
+    s32 videoDecodeCount;
+    s32 curVideoNumber;
     s32 audioFrameNumber;
-    u8 padDC[4];
+    THPTextureSet *dispTextureSet;
     THPAudioBuffer *audioBuffer;
+    u8 padE4[0x198 - 0xE4];
 } THPPlayer;
 
-extern THPPlayer ActivePlayer;
+THPPlayer ActivePlayer;
+static u8 UsedTextureSetQueue_8036EC78[0x20];
+static void *UsedTextureSetMessage[3];
 extern u8 WorkBuffer[0x40];
-extern u8 UsedTextureSetQueue_8036EC78[];
 static s32 Initialized;
 static s32 m_cd_drive_status;
 static s32 m_reset;
@@ -80,14 +97,12 @@ void PushFreeAudioBuffer(void *arg0);
 s32 THPPlayerInit(void)
 {
     void LCEnable(void);
-    void OSInitMessageQueue(u8 *, u8 *, s32);
+    void OSInitMessageQueue(void *, void *, s32);
     s32 THPInit(void);
-    u8 *player;
 
-    player = (u8 *)&ActivePlayer;
-    memset(player, 0, 0x198);
+    memset(&ActivePlayer, 0, sizeof(ActivePlayer));
     LCEnable();
-    OSInitMessageQueue(player + 0x198, player + 0x1B8, 3);
+    OSInitMessageQueue(UsedTextureSetQueue_8036EC78, UsedTextureSetMessage, 3);
     if (THPInit())
     {
         Initialized = 1;
@@ -227,7 +242,7 @@ s32 THPPlayerCalcNeedMemory(void)
         {
             need = ((ActivePlayer.unk44 + 0x1F) & ~0x1F) * 10;
         }
-        pixels = *(u32 *)&ActivePlayer.videoInfo[0] * *(u32 *)&ActivePlayer.videoInfo[4];
+        pixels = ActivePlayer.videoInfo.xSize * ActivePlayer.videoInfo.ySize;
         need += ((pixels + 0x1F) & ~0x1F) * 3;
         need += (((pixels >> 2) + 0x1F) & ~0x1F) * 3;
         need += (((pixels >> 2) + 0x1F) & ~0x1F) * 3;
@@ -287,6 +302,87 @@ void THPPlayerStop(void) {
     }
 }
 
+void PlayControl(u32 retraceCount) {
+    s32 ProperTimingForStart(void);
+    s32 ProperTimingForGettingNextFrame(void);
+    void PushUsedTextureSet(void *buffer);
+    void *PopDecodedTextureSet(s32 flag);
+    extern void (*OldVIPostCallback)(u32);
+    s32 diff;
+    s32 frameNumber;
+    THPTextureSet *textureSet;
+
+    if (OldVIPostCallback) {
+        OldVIPostCallback(retraceCount);
+    }
+    textureSet = (THPTextureSet *)-1;
+    if (ActivePlayer.open && ActivePlayer.state == 2) {
+        if (ActivePlayer.dvdError || ActivePlayer.videoError) {
+            ActivePlayer.state = ActivePlayer.unk9D = 5;
+            return;
+        }
+        if (*(s64 *)&ActivePlayer.unkC0 == 0 && ActivePlayer.unk9D == 0) {
+            ActivePlayer.unk9D = 2;
+        }
+        (*(s64 *)&ActivePlayer.unkC0)++;
+        if (ActivePlayer.unk9D == 0 || ActivePlayer.unk9D == 4) {
+            if (ProperTimingForStart()) {
+                if (ActivePlayer.audioExist) {
+                    diff = ActivePlayer.curVideoNumber - ActivePlayer.audioFrameNumber;
+                    if (diff <= 1) {
+                        textureSet = PopDecodedTextureSet(0);
+                        if (ActivePlayer.videoDecodeCount > diff) {
+                            ActivePlayer.videoDecodeCount--;
+                        }
+                    } else {
+                        ActivePlayer.unk9D = 2;
+                    }
+                } else {
+                    textureSet = PopDecodedTextureSet(0);
+                    ActivePlayer.unk9D = 2;
+                }
+            } else {
+                *(s64 *)&ActivePlayer.unkC0 = -1;
+            }
+        } else if (ProperTimingForGettingNextFrame()) {
+            if (ActivePlayer.audioExist) {
+                diff = ActivePlayer.curVideoNumber - ActivePlayer.audioFrameNumber;
+                if (diff <= 1) {
+                    textureSet = PopDecodedTextureSet(0);
+                    if (ActivePlayer.videoDecodeCount > diff) {
+                        ActivePlayer.videoDecodeCount--;
+                    }
+                }
+            } else {
+                textureSet = PopDecodedTextureSet(0);
+            }
+        }
+        if (textureSet && textureSet != (THPTextureSet *)-1) {
+            ActivePlayer.curVideoNumber = textureSet->frameNumber;
+            if (ActivePlayer.dispTextureSet) {
+                PushUsedTextureSet(ActivePlayer.dispTextureSet);
+            }
+            ActivePlayer.dispTextureSet = textureSet;
+        }
+        if (!(ActivePlayer.playFlag & 1)) {
+            if (ActivePlayer.audioExist) {
+                frameNumber = (ActivePlayer.audioFrameNumber + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+                if (frameNumber == ActivePlayer.numFrames - 1 && ActivePlayer.audioBuffer == NULL) {
+                    frameNumber = (ActivePlayer.curVideoNumber + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+                    if (frameNumber == ActivePlayer.numFrames - 1 && textureSet == NULL) {
+                        ActivePlayer.state = ActivePlayer.unk9D = 3;
+                    }
+                }
+            } else {
+                frameNumber = (ActivePlayer.curVideoNumber + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+                if (frameNumber == ActivePlayer.numFrames - 1 && textureSet == NULL) {
+                    ActivePlayer.state = ActivePlayer.unk9D = 3;
+                }
+            }
+        }
+    }
+}
+
 s32 ProperTimingForStart(void)
 {
     u32 VIGetNextField();
@@ -311,6 +407,58 @@ s32 ProperTimingForStart(void)
 
 returnFalse:
     return FALSE;
+}
+
+s32 ProperTimingForGettingNextFrame(void)
+{
+    u32 VIGetNextField();
+    s32 frameRate;
+
+    if (ActivePlayer.playFlag & 2)
+    {
+        if (VIGetNextField() == 0)
+        {
+            return TRUE;
+        }
+    }
+    else if (ActivePlayer.playFlag & 4)
+    {
+        if (VIGetNextField() == 1)
+        {
+            return TRUE;
+        }
+    }
+    else
+    {
+        frameRate = ActivePlayer.frameRate * 100.0f;
+        ActivePlayer.unkCC = (*(s64 *)&ActivePlayer.unkC0 * frameRate) / 5994;
+        if (ActivePlayer.unkC8 != ActivePlayer.unkCC)
+        {
+            ActivePlayer.unkC8 = ActivePlayer.unkCC;
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+s32 THPPlayerDrawCurrentFrame(void *rmode, u32 x, u32 y, u32 polygonW, u32 polygonH)
+{
+    void THPGXYuv2RgbSetup(void *rmode);
+    void THPGXYuv2RgbDraw(u8 *y_data, u8 *u_data, u8 *v_data, s16 x, s16 y, s16 textureWidth, s16 textureHeight, s16 polygonWidth, s16 polygonHeight);
+    void THPGXRestore(void);
+    s32 currFrame;
+
+    if (ActivePlayer.open && ActivePlayer.state != 0 && ActivePlayer.dispTextureSet != NULL)
+    {
+        THPGXYuv2RgbSetup(rmode);
+        THPGXYuv2RgbDraw(ActivePlayer.dispTextureSet->ytexture, ActivePlayer.dispTextureSet->utexture,
+                         ActivePlayer.dispTextureSet->vtexture, x, y,
+                         ActivePlayer.videoInfo.xSize, ActivePlayer.videoInfo.ySize, polygonW, polygonH);
+        THPGXRestore();
+        currFrame = (ActivePlayer.dispTextureSet->frameNumber + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+        return currFrame;
+    }
+    return -1;
 }
 
 s32 THPPlayerAudioOutput(s16 *destination, u32 sample, s32 volume)
@@ -415,7 +563,6 @@ u8 THPPlayerGetState(void) {
 
 void PushUsedTextureSet(void *arg0)
 {
-    extern u8 UsedTextureSetQueue_8036EC78[];
     OSSendMessage(UsedTextureSetQueue_8036EC78, arg0, 0);
 }
 

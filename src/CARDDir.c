@@ -42,6 +42,72 @@ typedef struct CARDControl {
 
 extern CARDControl __CARDBlock[2];
 
+void *memcpy(void *dst, const void *src, u32 n);
+s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, CARDCallback callback);
+s32 __CARDPutControlBlock(CARDControl *card, s32 result);
+
 u8 *__CARDGetDirBlock(CARDControl *card) {
     return card->currentDir;
 }
+
+static void WriteCallback(s32 chan, s32 result) {
+    CARDControl *card;
+    CARDCallback callback;
+    u8 *dir0;
+    u8 *dir1;
+
+    card = &__CARDBlock[chan];
+    if (result >= 0) {
+        dir0 = (u8 *)card->workArea + 0x2000;
+        dir1 = (u8 *)card->workArea + 0x4000;
+        if (card->currentDir == dir0) {
+            card->currentDir = dir1;
+            memcpy(dir1, dir0, 0x2000);
+        } else {
+            card->currentDir = dir0;
+            memcpy(dir0, dir1, 0x2000);
+        }
+    }
+    if (card->apiCallback == NULL) {
+        __CARDPutControlBlock(card, result);
+    }
+    callback = card->eraseCallback;
+    if (callback) {
+        card->eraseCallback = NULL;
+        callback(chan, result);
+    }
+}
+
+void WriteCallback(s32 chan, s32 result);
+s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, CARDCallback callback);
+s32 __CARDPutControlBlock(CARDControl *card, s32 result);
+void *memcpy(void *dst, const void *src, u32 n);
+static void EraseCallback(s32 chan, s32 result) {
+    CARDControl *card;
+    CARDCallback callback;
+    u8 *dir;
+    u32 addr;
+
+    card = &__CARDBlock[chan];
+    if (result < 0) {
+        goto error;
+    }
+    dir = __CARDGetDirBlock(card);
+    addr = ((u32)dir - (u32)card->workArea) / 0x2000 * card->sectorSize;
+    result = __CARDWrite(chan, addr, 0x2000, dir, WriteCallback);
+    if (result < 0) {
+        goto error;
+    }
+    return;
+
+error:
+    if (card->apiCallback == NULL) {
+        __CARDPutControlBlock(card, result);
+    }
+    callback = card->eraseCallback;
+    if (callback) {
+        card->eraseCallback = NULL;
+        callback(chan, result);
+    }
+}
+

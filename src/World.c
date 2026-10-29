@@ -1,5 +1,8 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
+void World_Unload(void);
 
 s32 World_Create(void) {
     extern s32 m_VertIn;
@@ -19,6 +22,66 @@ void World_Destroy(void) {
 void World_Init(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
+}
+
+void World_Refresh(void) {
+    typedef struct WorldGameData {
+        u8 unk0[0xC];
+        f32 envmapX;
+        f32 envmapY;
+        f32 fogStart;
+        f32 fogEnd;
+        u8 unk1C[0x4];
+        f32 farPlane;
+        u8 unk24[0x8C - 0x24];
+        u32 envmapA;
+        u32 envmapB;
+        u8 unk94[0xC0 - 0x94];
+        GXColor *fogColor;
+    } WorldGameData;
+    void *World_GetGameData(void);
+    void Gfx_SetEnvmap(u16 a, u16 b, s8 flag, f32 x, f32 y);
+    void Gfx_SetFog(GXColor *color, u8 type, f32 start, f32 end);
+    void Gfx_SetFarClippingPlane(f32 farPlane);
+    void SongManager_PlaySong(void);
+    WorldGameData *gameData = World_GetGameData();
+    GXColor color;
+
+    if (gameData != NULL) {
+        Gfx_SetEnvmap(gameData->envmapA, gameData->envmapB, 1, gameData->envmapX, gameData->envmapY);
+        color = *gameData->fogColor;
+        Gfx_SetFog(&color, 0, gameData->fogStart, gameData->fogEnd);
+        SongManager_PlaySong();
+        Gfx_SetFarClippingPlane(gameData->farPlane);
+    } else {
+        Gfx_SetFarClippingPlane(0.0f);
+    }
+}
+
+void World_Unload(void) {
+    void FileStreaming_ReleaseQuadPacks(void);
+    void FileStreaming_ReleaseAllDataPacks(s32 type, s32 flag);
+    void VolumeManager_Release(void);
+    void Gfx_SetFog(GXColor *color, u8 type, f32 start, f32 end);
+    u32 color[2];
+
+    FileStreaming_ReleaseQuadPacks();
+    FileStreaming_ReleaseAllDataPacks(4, 1);
+    FileStreaming_ReleaseAllDataPacks(5, 1);
+    FileStreaming_ReleaseAllDataPacks(6, 1);
+    FileStreaming_ReleaseAllDataPacks(0, 1);
+    FileStreaming_ReleaseAllDataPacks(2, 1);
+    FileStreaming_ReleaseAllDataPacks(8, 1);
+    FileStreaming_ReleaseAllDataPacks(1, 1);
+    FileStreaming_ReleaseAllDataPacks(9, 1);
+    g_worldData.world = NULL;
+    g_worldData.unk8[0] = 0;
+    g_worldData.unk8[1] = 0;
+    g_worldData.unk8[2] = 0;
+    VolumeManager_Release();
+    color[1] = 0;
+    color[0] = 0;
+    Gfx_SetFog((GXColor *)color, 0, 1.0f, 0.0f);
 }
 
 void World_Render(void) {
@@ -56,7 +119,7 @@ void World_Render(void) {
     Quad *quad;
     Quad *load[20];
     Quad *active[20];
-    Vector4 positions[5];
+    Vector4 positions[5] __attribute__((aligned(16)));
 
     if (g_worldData.world == NULL) {
         return;
@@ -233,6 +296,47 @@ void World_NextSweep(void) {
     }
 }
 
+void SubMatrixToQuaternion(void *m, Vector4 *q);
+void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+void World_InitTeleporters(void) {
+    typedef struct Teleporter {
+        Matrix4 mtx;
+        u8 unk40[0x8];
+        u32 model;
+        u8 unk4C[0x14];
+        void *thing;
+        u8 unk64[0xC];
+    } Teleporter;
+    typedef struct TeleporterWorld {
+        u8 unk0[0x30];
+        u32 numTeleporters;
+        Teleporter *teleporters;
+    } TeleporterWorld;
+    struct {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        u32 model;
+        s32 unk34;
+        f32 unk38;
+    } params __attribute__((aligned(16)));
+    u32 i;
+    Teleporter *teleporter;
+
+    for (i = 0; i < ((TeleporterWorld *)g_worldData.world)->numTeleporters; i++) {
+        teleporter = &((TeleporterWorld *)g_worldData.world)->teleporters[i];
+        if (teleporter->model != 0) {
+            params.model = teleporter->model;
+            params.unk38 = 0.0f;
+            params.pos = teleporter->mtx.v[3];
+            params.vel.x = params.vel.y = params.vel.z = 0.0f;
+            SubMatrixToQuaternion(teleporter, &params.quat);
+            params.unk34 = 0;
+            teleporter->thing = ThingManager_DARYL_CreateThing(2, &params);
+        }
+    }
+}
+
 s32 ActionItemChangeMode(u32 *action) {
     u32 i;
     u8 *item;
@@ -288,7 +392,7 @@ void RenderQuadrant(u8 *quadrant) {
     Model *model;
     DrawThing *t;
     f32 distSq;
-    DrawThing thing;
+    DrawThing thing __attribute__((aligned(16)));
 
     if (quadrant == NULL || *(s8 *)(quadrant + 0x34) == 0 || *(StaticGeom **)(quadrant + 0x10) == NULL) {
         return;
@@ -441,6 +545,7 @@ s32 TriggerVariableValueCheck(u32 *data) {
 }
 
 s32 ActionVariableChangeValue(u32 *action) {
+    f32 GetCodeVariable(s32 var, u8 *thing);
     u32 i;
     f32 value;
     u8 **var;
@@ -495,6 +600,7 @@ s32 ActionVariableChangeMode(u32 *action) {
 }
 
 s32 ActionTimerChangeValue(u32 *action) {
+    f32 GetCodeVariable(s32 var, u8 *thing);
     u32 i;
     f32 value;
     u8 **timer;

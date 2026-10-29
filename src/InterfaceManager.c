@@ -1,5 +1,81 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
+/* The target arrow points at the override target, else the main one. */
+static inline Vector4 TargetArrow_GetTargetPos(void) {
+    extern s32 g_TargetArrow[7];
+
+    if ((Vector4 *)g_TargetArrow[1] != NULL) {
+        return *(Vector4 *)g_TargetArrow[1];
+    }
+    return *(Vector4 *)g_TargetArrow[0];
+}
+
+/* Analog stick "virtual key" state, one per pad and direction. */
+typedef struct InterfaceDirState {
+    s8 active;
+    s8 held;
+    s16 timer;
+} InterfaceDirState;
+
+typedef struct InterfaceKeyState {
+    u8 pad0[0x116];
+    InterfaceDirState dir[4][4];
+    u8 pad156[0x160 - 0x156];
+    s8 disabled;
+    u8 pad161[0x168 - 0x161];
+    s8 locked;
+} InterfaceKeyState;
+
+s8 Input_GetAnalog(u32 chan, s16 *x, s16 *y, s16 *cx, s16 *cy);
+
+/* Message passed to an interface's callback (InterfaceState.callback). */
+typedef struct InterfaceEventMsg {
+    u32 index;
+    u16 type;
+    u16 id;
+    u16 arg;
+    u16 objState;
+    u8 padC[0x20 - 0xC];
+    u32 result;
+    u32 value;
+    u8 handled;
+    u8 pad29[0x30 - 0x29];
+    u32 data[3];
+    u32 *values;
+    u16 slotId;
+} InterfaceEventMsg;
+
+/* One g_interface[] entry (0x170 bytes). */
+typedef struct InterfaceState {
+    u8 pad0[4];
+    u32 state;
+    u8 pad8[4];
+    u8 *parentObj;
+    u32 unk10;
+    u8 pad14[0x20 - 0x14];
+    u16 *header;
+    u16 *targets[0x16];
+    u8 flags;
+    u8 id;
+    u8 pad7E;
+    u8 isChild;
+    u8 curTarget;
+    u8 unk81;
+    u8 pad82[0x90 - 0x82];
+    void (*callback)(InterfaceEventMsg *msg);
+    u8 pad94[4];
+    s32 values[0x1E];
+    u32 numValues;
+    u8 player;
+    u8 pad115[0x15C - 0x115];
+    u32 parent;
+    u8 unk160;
+    u8 unk161;
+    u8 pad162[0x170 - 0x162];
+} InterfaceState;
+
 
 void InterfaceManager_Init(void) {
     extern u8 g_interface[][0x170];
@@ -69,6 +145,45 @@ void InterfaceManager_SetInput(s32 index, s32 input) {
             break;
         }
     }
+}
+
+static inline void InterfaceManager_ReleaseInterfaceObjects(u8 *objs) {
+    typedef struct ObjectAllocation {
+        u32 start;
+        u32 count;
+        s8 free;
+    } ObjectAllocation;
+    extern ObjectAllocation g_objectAllocations[28];
+    extern u32 g_numInterfaceObjectAllocations;
+    extern u32 g_numInterfaceObjectsAllocated;
+    void *memset(void *dst, int c, u32 n);
+    s32 i;
+
+    if (objs == NULL) {
+        return;
+    }
+    for (i = g_numInterfaceObjectAllocations - 1; i >= 0; i--) {
+        if (*(u32 *)(objs + 0x2FC) == g_objectAllocations[i].start) {
+            break;
+        }
+    }
+    if (i == -1) {
+        return;
+    }
+    if (g_numInterfaceObjectsAllocated == g_objectAllocations[i].start + g_objectAllocations[i].count) {
+        g_numInterfaceObjectsAllocated -= g_objectAllocations[i].count;
+        g_numInterfaceObjectAllocations--;
+        while (g_numInterfaceObjectAllocations != 0 &&
+               (g_objectAllocations[g_numInterfaceObjectAllocations - 1].free ||
+                g_objectAllocations[g_numInterfaceObjectAllocations - 1].count == 0)) {
+            g_numInterfaceObjectsAllocated -= g_objectAllocations[g_numInterfaceObjectAllocations - 1].count;
+            memset(&g_objectAllocations[g_numInterfaceObjectAllocations - 1], 0, sizeof(ObjectAllocation));
+            g_numInterfaceObjectAllocations--;
+        }
+    } else {
+        g_objectAllocations[i].free = 1;
+    }
+    *(u32 *)(objs + 0x2FC) = -1;
 }
 
 void InterfaceManager_ReleaseInterface(u32 index) {
@@ -181,8 +296,8 @@ void InterfaceManager_ReleaseAllInterfaces(void) {
             InterfaceManager_ReleaseInterface(i);
         }
     }
-    g_TargetArrow[0] = 0;
     g_pInterfaceToEnd = NULL;
+    g_TargetArrow[0] = 0;
     g_TargetArrow[1] = 0;
     g_TargetArrow[3] = 0;
     g_TargetArrow[4] = -1;
@@ -950,6 +1065,9 @@ void InterfaceManager_Heartbeat(void) {
     }
 }
 
+void InterfaceManager_MoveInterface(void *iface, f32 dt) {
+}
+
 void InterfaceManager_SetObjectReactive(u8 *iface, u32 onId, u32 offId) {
     u32 i;
     u32 j;
@@ -977,6 +1095,738 @@ void InterfaceManager_SetObjectReactive(u8 *iface, u32 onId, u32 offId) {
     }
 }
 
+u32 InterfaceManager_KeyPress(InterfaceKeyState *im, s32 pad, u8 key) {
+    extern s32 g_iDeltaTimeMS;
+    s8 Input_KeyPress(s32 chan, u8 key);
+    u32 result = 0;
+
+    if (pad == -2 || im->disabled) {
+        return 0;
+    }
+    switch (pad) {
+    case -1: {
+        s16 x, y, cx, cy;
+        u32 i;
+        for (i = 0; i < 4; i++) {
+            if (Input_KeyPress(i, key)) {
+                result |= 1 << i;
+            }
+        }
+        if (result == 0) {
+            if (key == 3) {
+                for (i = 0; i < 4; i++) {
+                    if (Input_GetAnalog(i, &x, &y, &cx, &cy)) {
+                        if (x > 100 && !im->dir[i][2].active && !im->locked) {
+                            im->dir[i][2].active = 1;
+                            result |= 1 << i;
+                            im->dir[i][2].held = 1;
+                            im->dir[i][2].timer = 250;
+                        } else if (im->dir[i][2].held) {
+                            result |= 1 << i;
+                        } else {
+                            im->dir[i][2].timer -= (s16)g_iDeltaTimeMS;
+                            if (im->dir[i][2].timer <= 0) {
+                                im->dir[i][2].timer = 0;
+                                im->dir[i][2].active = 0;
+                            }
+                        }
+                    }
+                }
+            } else if (key == 2) {
+                for (i = 0; i < 4; i++) {
+                    if (Input_GetAnalog(i, &x, &y, &cx, &cy)) {
+                        if (x < -100 && !im->dir[i][3].active && !im->locked) {
+                            im->dir[i][3].active = 1;
+                            result |= 1 << i;
+                            im->dir[i][3].held = 1;
+                            im->dir[i][3].timer = 250;
+                        } else if (im->dir[i][3].held) {
+                            result |= 1 << i;
+                        } else {
+                            im->dir[i][3].timer -= (s16)g_iDeltaTimeMS;
+                            if (im->dir[i][3].timer <= 0) {
+                                im->dir[i][3].timer = 0;
+                                im->dir[i][3].active = 0;
+                            }
+                        }
+                    }
+                }
+            } else if (key == 4) {
+                for (i = 0; i < 4; i++) {
+                    if (Input_GetAnalog(i, &x, &y, &cx, &cy)) {
+                        if (y > 100 && !im->dir[i][0].active && !im->locked) {
+                            im->dir[i][0].active = 1;
+                            result |= 1 << i;
+                            im->dir[i][0].held = 1;
+                            im->dir[i][0].timer = 250;
+                        } else if (im->dir[i][0].held) {
+                            result |= 1 << i;
+                        } else {
+                            im->dir[i][0].timer -= (s16)g_iDeltaTimeMS;
+                            if (im->dir[i][0].timer <= 0) {
+                                im->dir[i][0].timer = 0;
+                                im->dir[i][0].active = 0;
+                            }
+                        }
+                    }
+                }
+            } else if (key == 5) {
+                for (i = 0; i < 4; i++) {
+                    if (Input_GetAnalog(i, &x, &y, &cx, &cy)) {
+                        if (y < -100 && !im->dir[i][1].active && !im->locked) {
+                            im->dir[i][1].active = 1;
+                            result |= 1 << i;
+                            im->dir[i][1].held = 1;
+                            im->dir[i][1].timer = 250;
+                        } else if (im->dir[i][1].held) {
+                            result |= 1 << i;
+                        } else {
+                            im->dir[i][1].timer -= (s16)g_iDeltaTimeMS;
+                            if (im->dir[i][1].timer <= 0) {
+                                im->dir[i][1].timer = 0;
+                                im->dir[i][1].active = 0;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        break;
+    }
+    default: {
+        s16 x, y, cx, cy;
+        if (Input_KeyPress(pad, key)) {
+            result |= 1 << pad;
+        }
+        if (result == 0) {
+            if (key == 3) {
+                if (Input_GetAnalog(pad, &x, &y, &cx, &cy)) {
+                    if (x > 100 && !im->dir[pad][2].active && !im->locked) {
+                        im->dir[pad][2].active = 1;
+                        result |= 1 << pad;
+                        im->dir[pad][2].held = 1;
+                        im->dir[pad][2].timer = 250;
+                    } else if (im->dir[pad][2].held) {
+                        result |= 1 << pad;
+                    } else {
+                        im->dir[pad][2].timer -= (s16)g_iDeltaTimeMS;
+                        if (im->dir[pad][2].timer <= 0) {
+                            im->dir[pad][2].timer = 0;
+                            im->dir[pad][2].active = 0;
+                        }
+                    }
+                }
+            } else if (key == 2) {
+                if (Input_GetAnalog(pad, &x, &y, &cx, &cy)) {
+                    if (x < -100 && !im->dir[pad][3].active && !im->locked) {
+                        im->dir[pad][3].active = 1;
+                        result |= 1 << pad;
+                        im->dir[pad][3].held = 1;
+                        im->dir[pad][3].timer = 250;
+                    } else if (im->dir[pad][3].held) {
+                        result |= 1 << pad;
+                    } else {
+                        im->dir[pad][3].timer -= (s16)g_iDeltaTimeMS;
+                        if (im->dir[pad][3].timer <= 0) {
+                            im->dir[pad][3].timer = 0;
+                            im->dir[pad][3].active = 0;
+                        }
+                    }
+                }
+            } else if (key == 4) {
+                if (Input_GetAnalog(pad, &x, &y, &cx, &cy)) {
+                    if (y > 100 && !im->dir[pad][0].active && !im->locked) {
+                        im->dir[pad][0].active = 1;
+                        result |= 1 << pad;
+                        im->dir[pad][0].held = 1;
+                        im->dir[pad][0].timer = 250;
+                    } else if (im->dir[pad][0].held) {
+                        result |= 1 << pad;
+                    } else {
+                        im->dir[pad][0].timer -= (s16)g_iDeltaTimeMS;
+                        if (im->dir[pad][0].timer <= 0) {
+                            im->dir[pad][0].timer = 0;
+                            im->dir[pad][0].active = 0;
+                        }
+                    }
+                }
+            } else if (key == 5) {
+                if (Input_GetAnalog(pad, &x, &y, &cx, &cy)) {
+                    if (y < -100 && !im->dir[pad][1].active && !im->locked) {
+                        im->dir[pad][1].active = 1;
+                        result |= 1 << pad;
+                        im->dir[pad][1].held = 1;
+                        im->dir[pad][1].timer = 250;
+                    } else if (im->dir[pad][1].held) {
+                        result |= 1 << pad;
+                    } else {
+                        im->dir[pad][1].timer -= (s16)g_iDeltaTimeMS;
+                        if (im->dir[pad][1].timer <= 0) {
+                            im->dir[pad][1].timer = 0;
+                            im->dir[pad][1].active = 0;
+                        }
+                    }
+                }
+            }
+        }
+        break;
+    }
+    }
+    return result;
+}
+
+#pragma use_lmw_stmw on
+s32 InterfaceManager_PlayEvent(InterfaceState *iface, u8 *obj, u8 *event, u16 arg) {
+    typedef struct {
+        s8 isVar;
+        u8 pad1;
+        u16 value;
+    } EventArg;
+    typedef struct {
+        u8 slot;
+        u8 pad1[3];
+        s32 delta;
+    } EventMod;
+    typedef struct {
+        u16 *target;
+        u8 flags;
+        u8 type;
+        u16 id;
+        void *args;
+        u32 movie;
+        u8 pad10[4];
+        u32 sound;
+        u8 *bytes;
+        u32 numMods;
+        EventMod *mods;
+        s32 delta;
+    } EventDef;
+    typedef struct {
+        u8 pad0[8];
+        EventDef *def;
+    } Event;
+    typedef struct {
+        u8 pad0[4];
+        s32 min;
+        s32 max;
+        u8 padC[0x34 - 0xC];
+    } ValueDef;
+    typedef struct {
+        u32 type;
+        u32 id;
+    } EndLevelAction;
+    extern InterfaceState g_interface[];
+    extern s8 g_bMemoryCardHWHack;
+    void InterfaceManager_SetObjectState(InterfaceState *iface, u8 *obj, s32 state, s32 arg);
+    void SoundSequence_Play(u32 seq, s32 arg);
+    void InterfaceManager_SetLoadState(InterfaceState *iface, s32 state);
+    void InterfaceManager_MoveInterface(InterfaceState *iface, f32 speed);
+    u32 GameSettings_GetCodeVariable(s32 var, u32 arg);
+    void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
+    s32 StateManager_CurrState(void);
+    void StateManager_QueueChange(s32 state);
+    void InterfaceManager_Backup_Key(InterfaceState *iface, u8 *event, u8 flags);
+    void ActionEndLevel(void *action);
+    void GameSettings_GetLoadedProgression(u32 *a, u32 *b);
+    void StateProgressionManager_SetProgressionID(u32 a, u32 b);
+    void InterfaceManager_ReleaseInterface(u32 index);
+    void StateProgressionManager_RestartCurrentLevel(void);
+    void InterfaceManager_ExecuteActions(InterfaceState *iface, u16 *actions);
+    void StateMovie_SetMovieToPlay(u32 movie);
+    void GameSettings_SaveGame(void);
+    void GameSettings_LoadGame(void);
+    void GameSettings_SetSaveGameName(s32 *name);
+    void GameSettings_SaveGeneralGameData(void);
+    void ForceIPLReset(void);
+    void GameSettings_ResetControllerConfig(s32 player);
+    s32 GameSettings_FormatMemoryCard(void);
+    void TitleScreen_RunDemoLoop(void);
+    void InterfaceManager_Create(u16 *def, s32 a, s32 b);
+    void GameSettings_DeleteGameFile(void);
+    void InterfaceManager_CheckConditions(InterfaceState *iface, u8 *obj);
+    u8 stateSet;
+    u32 i;
+    u32 a;
+    u32 b;
+    s32 v;
+    EventMod *mod;
+    ValueDef *vdefs;
+    u8 slot;
+
+    stateSet = 0;
+    if (obj != NULL && (*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44))[5] == 0 && (*(u8 **)(obj + 0x25C))[6] != 0) {
+        InterfaceManager_SetObjectState(iface, obj, 3, 0);
+        stateSet = 1;
+    }
+    if (((Event *)event)->def->sound != 0) {
+        SoundSequence_Play(((Event *)event)->def->sound, 0);
+    }
+    iface->unk81 = 0;
+    switch (((Event *)event)->def->type) {
+    case 1:
+    case 0x20:
+        if (iface->isChild != 0) {
+            if (((Event *)event)->def->type == 0x20) {
+                iface = &g_interface[iface->parent];
+            } else {
+                return;
+            }
+        }
+        {
+            InterfaceEventMsg msg;
+
+            msg.index = iface->id;
+            msg.type = 0xF;
+            msg.id = ((Event *)event)->def->id;
+            msg.arg = arg;
+            msg.value = 0;
+            msg.objState = 0;
+            msg.handled = 0;
+            msg.result = 0;
+            if (((Event *)event)->def->target != NULL) {
+                msg.slotId = *((Event *)event)->def->target;
+            }
+            if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+                msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+            }
+            msg.values = (u32 *)iface->values;
+            if (iface->callback != NULL) {
+                iface->callback(&msg);
+            }
+            if (msg.result == 0xB) {
+                break;
+            }
+        }
+        if (((Event *)event)->def->sound != 0) {
+            SoundSequence_Play(((Event *)event)->def->sound, 0);
+        }
+        iface->flags = ((Event *)event)->def->flags;
+        iface->targets[0] = ((Event *)event)->def->target;
+        if (!stateSet && iface->targets[0] != NULL) {
+            InterfaceManager_SetLoadState(iface, 1);
+            if (iface->flags & 1) {
+                iface->unk10 = 0;
+                return 0;
+            }
+        }
+        if (iface->targets[0] != NULL) {
+            return 0;
+        }
+        break;
+    case 3:
+        if (*iface->header == 2) {
+            if (GameSettings_GetCodeVariable(0xC9, iface->player) != 3) {
+                return 0;
+            }
+        } else if (*iface->header == 3) {
+            if (GameSettings_GetCodeVariable(0xC9, iface->player) != 3) {
+                return 0;
+            }
+        }
+        if (iface->isChild != 0) {
+            return 0;
+        }
+        {
+            InterfaceEventMsg msg;
+
+            msg.index = iface->id;
+            msg.type = 0x10;
+            msg.id = ((Event *)event)->def->id;
+            msg.arg = arg;
+            msg.value = 0;
+            msg.objState = 0;
+            msg.handled = 0;
+            msg.slotId = 0xFFFF;
+            msg.result = 0;
+            if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+                msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+            }
+            msg.values = (u32 *)iface->values;
+            if (iface->callback != NULL) {
+                iface->callback(&msg);
+            }
+            if (msg.result == 0xB) {
+                break;
+            }
+        }
+        if (StateManager_CurrState() == 2) {
+            StateManager_QueueChange(0xB);
+        }
+        InterfaceManager_SetLoadState(iface, 1);
+        if (iface->flags & 1) {
+            iface->unk10 = 0;
+            return 0;
+        }
+    case 4: {
+        InterfaceEventMsg msg;
+
+        msg.index = iface->id;
+        msg.type = 0;
+        msg.id = ((Event *)event)->def->id;
+        msg.arg = arg;
+        msg.value = 0;
+        msg.objState = 0;
+        msg.handled = 0;
+        msg.result = 0;
+        if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+            msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+        }
+        if (iface->callback != NULL) {
+            iface->callback(&msg);
+        }
+        if (msg.value != 0xFFFFFFFF && ((Event *)event)->def->sound != 0 && msg.handled == 0) {
+            SoundSequence_Play(((Event *)event)->def->sound, 0);
+        }
+        if (msg.result == 4) {
+            InterfaceManager_SetLoadState(iface, 1);
+            InterfaceManager_MoveInterface(iface, 0.0f);
+            return 1;
+        }
+        if (msg.value == 0) {
+            return 1;
+        }
+        if (msg.value != 0xFFFFFFFF) {
+            iface->flags = ((Event *)event)->def->flags;
+            iface->targets[0] = (u16 *)msg.value;
+            if (!stateSet && iface->targets[0] != NULL) {
+                InterfaceManager_SetLoadState(iface, 1);
+                if (iface->flags & 1) {
+                    iface->unk10 = 0;
+                    return 0;
+                }
+            }
+            return 0;
+        }
+    }
+    case 2: {
+        InterfaceEventMsg msg;
+        u32 cur = iface->curTarget;
+
+        msg.index = iface->id;
+        msg.type = 0xF;
+        msg.id = ((Event *)event)->def->id;
+        msg.arg = arg;
+        msg.value = 0;
+        msg.objState = 0;
+        msg.handled = 0;
+        msg.result = 0;
+        if (cur != 0) {
+            msg.slotId = *iface->targets[cur];
+        } else {
+            msg.slotId = 0xFFFF;
+        }
+        if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+            msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+        }
+        msg.values = (u32 *)iface->values;
+        if (iface->callback != NULL) {
+            iface->callback(&msg);
+        }
+        if (msg.result == 0xB) {
+            return 1;
+        }
+        InterfaceManager_Backup_Key(iface, event, ((Event *)event)->def->flags);
+        return 0;
+    }
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 0x1E: {
+        InterfaceEventMsg msg;
+
+        msg.index = iface->id;
+        if (((Event *)event)->def->type == 7) {
+            EndLevelAction action;
+
+            action.type = 4;
+            action.id = ((Event *)event)->def->id;
+            ActionEndLevel(&action);
+            return 1;
+        }
+        if (((Event *)event)->def->type == 8) {
+            EndLevelAction action;
+
+            action.type = 5;
+            action.id = ((Event *)event)->def->id;
+            ActionEndLevel(&action);
+            return 1;
+        }
+        if (((Event *)event)->def->type == 6 || ((Event *)event)->def->type == 0x1E) {
+            u32 progA;
+            u32 progB;
+
+            if (((Event *)event)->def->type == 6) {
+                EventArg **args = ((Event *)event)->def->args;
+
+                if (args[0]->isVar) {
+                    progA = iface->values[args[0]->value];
+                } else {
+                    progA = args[0]->value;
+                }
+                if (args[1]->isVar) {
+                    progB = iface->values[args[1]->value];
+                } else {
+                    progB = args[1]->value;
+                }
+            } else {
+                GameSettings_GetLoadedProgression(&progA, &progB);
+            }
+            StateProgressionManager_SetProgressionID(progA, progB);
+            msg.type = 6;
+            StateManager_QueueChange(0xB);
+            msg.result = 4;
+        } else if (((Event *)event)->def->type == 9) {
+            msg.type = 9;
+            msg.id = ((Event *)event)->def->id;
+            InterfaceManager_ReleaseInterface(iface->id);
+            StateManager_QueueChange(2);
+            return;
+        } else if (((Event *)event)->def->type == 10) {
+            msg.type = 10;
+            msg.id = ((Event *)event)->def->id;
+            StateProgressionManager_RestartCurrentLevel();
+        }
+        msg.arg = arg;
+        msg.value = 0;
+        msg.objState = 0;
+        msg.handled = 0;
+        msg.result = 0;
+        if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+            msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+        }
+        if (iface->callback != NULL) {
+            iface->callback(&msg);
+        }
+        if (msg.value != 0xFFFFFFFF && ((Event *)event)->def->sound != 0 && msg.handled == 0) {
+            SoundSequence_Play(((Event *)event)->def->sound, 0);
+        }
+        if (msg.result == 4) {
+            InterfaceManager_SetLoadState(iface, 1);
+            InterfaceManager_MoveInterface(iface, 0.0f);
+            return 1;
+        }
+        if (msg.value == 0) {
+            return 1;
+        }
+        if (msg.value == 0xFFFFFFFF) {
+            break;
+        }
+        iface->flags = ((Event *)event)->def->flags;
+        iface->targets[0] = (u16 *)msg.value;
+        if (!stateSet && iface->targets[0] != NULL) {
+            InterfaceManager_SetLoadState(iface, 1);
+            if (iface->flags & 1) {
+                iface->unk10 = 0;
+                return 0;
+            }
+        }
+        return 0;
+    }
+    case 0xD: {
+        InterfaceEventMsg msg;
+
+        msg.index = iface->id;
+        msg.type = 0xD;
+        msg.id = ((Event *)event)->def->id;
+        msg.arg = arg;
+        msg.value = 0;
+        msg.objState = 0;
+        msg.handled = 0;
+        if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+            msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+        }
+        msg.data[0] = ((Event *)event)->def->bytes[0];
+        msg.data[1] = ((Event *)event)->def->bytes[1];
+        msg.data[2] = ((Event *)event)->def->bytes[2];
+        msg.values = (u32 *)iface->values;
+        if (iface->callback != NULL) {
+            iface->callback(&msg);
+        }
+        break;
+    }
+    case 0xE: {
+        InterfaceEventMsg msg;
+
+        msg.index = iface->id;
+        msg.type = 0xE;
+        msg.id = ((Event *)event)->def->id;
+        msg.arg = arg;
+        msg.value = 0;
+        msg.objState = 0;
+        msg.handled = 0;
+        if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+            msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+        }
+        msg.data[0] = ((Event *)event)->def->bytes[0];
+        msg.values = (u32 *)iface->values;
+        if (iface->callback != NULL) {
+            iface->callback(&msg);
+        }
+        break;
+    }
+    case 0xB:
+        InterfaceManager_ExecuteActions(iface, ((Event *)event)->def->target);
+        break;
+    case 0xF:
+        if (((EventArg **)((Event *)event)->def->args)[0]->isVar) {
+            a = iface->values[((EventArg **)((Event *)event)->def->args)[0]->value];
+        } else {
+            a = ((EventArg **)((Event *)event)->def->args)[0]->value;
+        }
+        if (((EventArg **)((Event *)event)->def->args)[1]->isVar) {
+            b = iface->values[((EventArg **)((Event *)event)->def->args)[1]->value];
+        } else {
+            b = ((EventArg **)((Event *)event)->def->args)[1]->value;
+        }
+        StateProgressionManager_SetProgressionID(a, b);
+        break;
+    case 0x10: {
+        InterfaceEventMsg msg;
+
+        msg.index = iface->id;
+        msg.type = 0x11;
+        msg.id = ((Event *)event)->def->id;
+        msg.arg = arg;
+        msg.value = (u32)iface->header;
+        msg.objState = 0;
+        msg.handled = 0;
+        if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+            msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+        }
+        if (iface->callback != NULL) {
+            iface->callback(&msg);
+        }
+        if (msg.result == 4) {
+            InterfaceManager_ReleaseInterface(iface->id);
+            StateMovie_SetMovieToPlay(((Event *)event)->def->movie);
+            StateManager_QueueChange(3);
+        }
+        break;
+    }
+    case 0x11: {
+        InterfaceEventMsg msg;
+
+        if (((EventArg *)((Event *)event)->def->args)->isVar) {
+            a = iface->values[((EventArg *)((Event *)event)->def->args)->value];
+        } else {
+            a = ((EventArg *)((Event *)event)->def->args)->value;
+        }
+        msg.index = iface->id;
+        msg.type = 0xF;
+        msg.id = ((Event *)event)->def->id;
+        msg.arg = arg;
+        msg.value = 0;
+        msg.objState = 0;
+        msg.handled = 0;
+        msg.slotId = 0xFFFF;
+        msg.result = 0;
+        if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+            msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+        }
+        msg.values = (u32 *)iface->values;
+        if (iface->callback != NULL) {
+            iface->callback(&msg);
+        }
+        if (msg.result == 0xB) {
+            break;
+        }
+        switch (*iface->header) {
+        case 2:
+            if (GameSettings_GetCodeVariable(100, a)) {
+                GameSettings_SetCodeVariable(0xCB, iface->player, a);
+                GameSettings_SetCodeVariable(0xC9, iface->player, 3);
+            }
+            break;
+        case 3:
+            if (GameSettings_GetCodeVariable(0x66, a)) {
+                GameSettings_SetCodeVariable(0xCC, iface->player, a);
+                GameSettings_SetCodeVariable(0xC9, iface->player, 3);
+            }
+            break;
+        }
+        break;
+    }
+    case 0x12:
+        GameSettings_SetCodeVariable(0x1F7, 0, ((Event *)event)->def->id);
+        break;
+    case 0x13:
+        GameSettings_SaveGame();
+        break;
+    case 0x14:
+        GameSettings_LoadGame();
+        break;
+    case 0x15:
+        GameSettings_SetSaveGameName(&iface->values[((Event *)event)->def->id]);
+        g_bMemoryCardHWHack = 1;
+        break;
+    case 0x16:
+        v = GameSettings_GetCodeVariable(0xCF, 0);
+        v += ((Event *)event)->def->delta;
+        if (v > 100) {
+            v = 100;
+        } else if (v < 0) {
+            v = 0;
+        }
+        GameSettings_SetCodeVariable(0xCF, 0, v);
+        break;
+    case 0x17:
+        v = GameSettings_GetCodeVariable(0xD0, 0);
+        v += ((Event *)event)->def->delta;
+        if (v > 100) {
+            v = 100;
+        } else if (v < 0) {
+            v = 0;
+        }
+        GameSettings_SetCodeVariable(0xD0, 0, v);
+        break;
+    case 0x18:
+        GameSettings_SaveGeneralGameData();
+        break;
+    case 0x19:
+        ForceIPLReset();
+        break;
+    case 0x1A:
+        GameSettings_ResetControllerConfig(1);
+        break;
+    case 0x1B:
+        iface->unk160 = 1;
+        iface->unk161 = 0;
+        break;
+    case 0x1C:
+        GameSettings_FormatMemoryCard();
+        break;
+    case 0x1D:
+        if (iface->state == 2) {
+            TitleScreen_RunDemoLoop();
+            InterfaceManager_SetLoadState(iface, 1);
+        }
+        break;
+    case 0x1F:
+        InterfaceManager_Create(((Event *)event)->def->target, 0, 0);
+        break;
+    case 0x21:
+        GameSettings_DeleteGameFile();
+        break;
+    }
+
+    for (i = 0; i < ((Event *)event)->def->numMods; i++) {
+        mod = ((Event *)event)->def->mods;
+        slot = mod->slot;
+        if (slot < iface->numValues) {
+            iface->values[slot] += mod->delta;
+            vdefs = *(ValueDef **)(*(u8 **)((u8 *)iface->header + 0x1C) + 4);
+            if (iface->values[slot] > vdefs[slot].max) {
+                iface->values[slot] = __abs(iface->values[slot] - vdefs[slot].max) + vdefs[slot].min - 1;
+            } else if (iface->values[slot] < vdefs[slot].min) {
+                iface->values[slot] = vdefs[slot].max - (__abs(iface->values[slot] - vdefs[slot].min) - 1);
+            }
+            InterfaceManager_CheckConditions(iface, obj);
+        }
+    }
+    return 1;
+}
 void InterfaceManager_Backup_Key(u8 *iface, u8 *key, u8 flags) {
     extern u8 g_interface[][0x170];
     void InterfaceManager_SetLoadState(void *iface, s32 state);
@@ -1250,6 +2100,14 @@ void InterfaceManager_MoveDialogSystem(u8 *iface, u8 *obj, f32 dt) {
             }
             *(u16 *)(obj + 0x24A) = ((TextureKeyState *)(obj + 0x2E8))->texture;
         }
+    }
+}
+
+void InterfaceManager_MoveObject(void *iface, void *obj, void *data, f32 dt) {
+    void InterfaceManager_MoveDialogSystem(void *iface, void *obj, f32 dt);
+
+    if (*(void **)((u8 *)iface + 0x158) != NULL) {
+        InterfaceManager_MoveDialogSystem(iface, obj, dt);
     }
 }
 
@@ -1564,9 +2422,9 @@ void InterfaceManager_DrawLine(u8 *obj) {
     f32 PSVECSquareMag(Vector4 *v);
     void PSVECNormalize(Vector4 *a, Vector4 *out);
     u32 *line = *(u32 **)(obj + 0x258);
-    Vector4 p0 = {0.0f, 0.0f, 0.0f, 0.0f};
-    Vector4 p1 = {0.0f, 0.0f, 0.0f, 0.0f};
-    Vector4 dir;
+    Vector4 p0 __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 0.0f};
+    Vector4 p1 __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 0.0f};
+    Vector4 dir __attribute__((aligned(16)));
     f32 pos;
     f32 x;
     f32 y;
@@ -1705,88 +2563,92 @@ void InterfaceManager_DrawLine(u8 *obj) {
     }
 }
 
+typedef struct RenderFontData {
+    u8 pad0[0x9];
+    u8 spacing;
+    u8 padA[0x1C - 0xA];
+    f32 *width;
+} RenderFontData;
+
+typedef struct RenderFontInfo {
+    u8 pad0[0x4];
+    RenderFontData *data;
+    u8 pad8[0xF - 0x8];
+    u8 useScale;
+    u8 hidden;
+} RenderFontInfo;
+
+typedef struct RenderObject {
+    u8 unk0;
+    u8 type;
+    u8 pad2[0x14 - 0x2];
+    RenderFontInfo *font;
+    u8 pad18[0x30 - 0x18];
+    f32 align;
+} RenderObject;
+
+typedef struct RenderSlot {
+    u8 pad0[0x60];
+    Vector4 pos;
+    u8 pad70[0x180 - 0x70];
+    f32 scale;
+    u8 pad184[0x1A4 - 0x184];
+    char *textPtr;
+    u8 pad1A8[0x1C0 - 0x1A8];
+    char text[0x80];
+    u8 hidden;
+    u8 pad241[0x243 - 0x241];
+    u8 type;
+    u8 pad244;
+    u8 kind;
+    u8 pad246[0x25C - 0x246];
+    RenderObject *object;
+    u8 pad260[0x300 - 0x260];
+} RenderSlot;
+
+typedef struct RenderInterface {
+    u32 count;
+    u8 pad4[0xC - 0x4];
+    RenderSlot *parent;
+    u8 pad10[0x60 - 0x10];
+    Vector4 offset;
+    u8 pad70[0x7F - 0x70];
+    u8 active;
+    u8 pad80[0x82 - 0x80];
+    u8 hasOffset;
+    u8 paused;
+    u8 pad84[0x88 - 0x84];
+    RenderSlot *slots;
+} RenderInterface;
+
 void InterfaceManager_Render(void) {
     extern u8 g_interface[][0x170];
     extern u32 g_interfaceRenderOrder[0x12];
     extern s32 g_numInterfacesToRender;
-    void InterfaceManager_RenderInterface(u8 *iface);
+    void InterfaceManager_RenderInterface(RenderInterface *iface);
     u32 i;
     u8 *iface;
 
     for (i = 0; i < g_numInterfacesToRender; i++) {
         iface = g_interface[g_interfaceRenderOrder[i]];
         if (*(void **)iface != NULL && (*(u32 *)(iface + 4) != 1 || *(u32 *)(iface + 0x10) != 0) && iface[0x7F] == 0) {
-            InterfaceManager_RenderInterface(iface);
+            InterfaceManager_RenderInterface((RenderInterface *)iface);
         }
     }
 }
 
-void InterfaceManager_RenderInterface(void *data) {
-    typedef struct FontData {
-        u8 pad0[0x9];
-        u8 spacing;
-        u8 padA[0x1C - 0xA];
-        f32 *width;
-    } FontData;
-    typedef struct FontInfo {
-        u8 pad0[0x4];
-        FontData *data;
-        u8 pad8[0xF - 0x8];
-        u8 useScale;
-        u8 hidden;
-    } FontInfo;
-    typedef struct InterfaceObject {
-        u8 unk0;
-        u8 type;
-        u8 pad2[0x14 - 0x2];
-        FontInfo *font;
-        u8 pad18[0x30 - 0x18];
-        f32 align;
-    } InterfaceObject;
-    typedef struct InterfaceSlot {
-        u8 pad0[0x60];
-        Vector4 pos;
-        u8 pad70[0x180 - 0x70];
-        f32 scale;
-        u8 pad184[0x1A4 - 0x184];
-        char *textPtr;
-        u8 pad1A8[0x1C0 - 0x1A8];
-        char text[0x80];
-        u8 hidden;
-        u8 pad241[0x243 - 0x241];
-        u8 type;
-        u8 pad244;
-        u8 kind;
-        u8 pad246[0x25C - 0x246];
-        InterfaceObject *object;
-        u8 pad260[0x300 - 0x260];
-    } InterfaceSlot;
-    typedef struct Interface {
-        u32 count;
-        u8 pad4[0xC - 0x4];
-        InterfaceSlot *parent;
-        u8 pad10[0x60 - 0x10];
-        Vector4 offset;
-        u8 pad70[0x7F - 0x70];
-        u8 active;
-        u8 pad80[0x82 - 0x80];
-        u8 hasOffset;
-        u8 paused;
-        u8 pad84[0x88 - 0x84];
-        InterfaceSlot *slots;
-    } Interface;
+void InterfaceManager_RenderInterface(RenderInterface *iface) {
     void InterfaceManager_RenderObject(void *iface, u32 index);
     u32 strlen(const char *s);
     u32 i;
-    Vector4 saved;
-    Vector4 parentSaved;
-    FontInfo *font;
-    FontData *fontData;
+    Vector4 saved __attribute__((aligned(16)));
+    Vector4 parentSaved __attribute__((aligned(16)));
+    RenderFontInfo *font;
+    RenderFontData *fontData;
     u32 len;
     s32 width;
     f32 scale;
-    InterfaceSlot *slot;
-    Interface *iface = data;
+    RenderSlot *slot;
 
     if (iface->active && iface->paused) {
         return;
@@ -1840,6 +2702,172 @@ void InterfaceManager_RenderInterface(void *data) {
             slot->pos = saved;
         }
     }
+}
+
+void InterfaceManager_RenderObject(u8 *iface, s32 index) {
+}
+
+void InterfaceManager_DrawObject_Standard_Geometry(u8 *object, u8 *iface) {
+    typedef struct InterfaceObject {
+        u8 pad0[0x30];
+        Vector4 scale;          /* 0x30 */
+        u8 pad40[0x20];
+        Vector4 pos;            /* 0x60 */
+        u8 pad70[0x20];
+        Vector4 rot;            /* 0x90 degrees */
+        u8 padA0[0x245 - 0xA0];
+        u8 type;                /* 0x245 */
+        u8 pad246[0x268 - 0x246];
+        void *geom;             /* 0x268 */
+        u8 pad26C[0x300 - 0x26C];
+    } InterfaceObject;
+    extern s32 g_TargetArrow[7];
+    extern Matrix4 g_identity;
+    f32 Gfx_GetProjectionMatrix(void);
+    double sin(double x);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void Gfx_GetCameraPosition(Vector4 *pos);
+    void Gfx_GetCameraVector(Vector4 *at, Vector4 *up, Vector4 *right);
+    f32 Sqrt(f32 x);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *axb);
+    void *memcpy(void *dst, const void *src, u32 n);
+    void SetOrientation(void *m, f32 x, f32 y, f32 z);
+    void Gfx_DrawGeometry(void *geom, Matrix4 *mtx);
+    void MultiplyMatrix(Matrix4 *a, Matrix4 *b, Matrix4 *out);
+    InterfaceObject *obj = (InterfaceObject *)object;
+    Matrix4 mtx;
+    Matrix4 rot;
+    Matrix4 out;
+    Matrix4 view;
+    Matrix4 tmp;
+    Vector4 camPos;
+    Vector4 at;
+    Vector4 up;
+    Vector4 right;
+    Vector4 toTarget;
+    Vector4 target;
+    InterfaceObject *parent;
+    u32 i;
+    f32 a;
+    f32 b;
+    f32 c;
+    f32 t;
+    f32 scale;
+    f32 cosA;
+    f32 sinA;
+    f32 s;
+
+    if (obj->geom == NULL) {
+        return;
+    }
+    if (obj->type == 0x1F) {
+        s = (f32)sin(0.5f * (0.017453292f * Gfx_GetProjectionMatrix()));
+        if ((Vector4 *)g_TargetArrow[0] == NULL || GameSettings_GetCodeVariable(0x198, 0)) {
+            return;
+        }
+        scale = 0.1f;
+        Gfx_GetCameraPosition(&camPos);
+        Gfx_GetCameraVector(&at, &up, &right);
+        a = -obj->pos.x * scale;
+        b = scale * (1.1f * -s * obj->pos.z);
+        c = scale * Sqrt(225.0f - s * (s * (obj->pos.z * obj->pos.z)));
+        mtx.v[0].x = -right.x;
+        mtx.v[0].y = -right.y;
+        mtx.v[0].z = -right.z;
+        mtx.v[1].x = up.x;
+        mtx.v[1].y = up.y;
+        mtx.v[1].z = up.z;
+        mtx.v[2].x = -at.x;
+        mtx.v[2].y = -at.y;
+        mtx.v[2].z = -at.z;
+        mtx.v[3].x = camPos.x - (mtx.v[0].x * a + mtx.v[1].x * b + mtx.v[2].x * c);
+        mtx.v[3].y = camPos.y - (mtx.v[0].y * a + mtx.v[1].y * b + mtx.v[2].y * c);
+        mtx.v[3].z = camPos.z - (mtx.v[0].z * a + mtx.v[1].z * b + mtx.v[2].z * c);
+        mtx.v[0].w = mtx.v[1].w = mtx.v[2].w = 0.0f;
+        mtx.v[3].w = 1.0f;
+        target = TargetArrow_GetTargetPos();
+        if ((Vector4 *)g_TargetArrow[2] != NULL && (u32)g_TargetArrow[6] < 19) {
+            t = (u32)++g_TargetArrow[6] / 20.0f;
+            target.x = t * (target.x - ((Vector4 *)g_TargetArrow[2])->x) + ((Vector4 *)g_TargetArrow[2])->x;
+            target.y = t * (target.y - ((Vector4 *)g_TargetArrow[2])->y) + ((Vector4 *)g_TargetArrow[2])->y;
+            target.z = t * (target.z - ((Vector4 *)g_TargetArrow[2])->z) + ((Vector4 *)g_TargetArrow[2])->z;
+        }
+        toTarget.x = target.x - mtx.v[3].x;
+        toTarget.y = target.y - mtx.v[3].y;
+        toTarget.z = target.z - mtx.v[3].z;
+        toTarget.y = at.y = right.y = 0.0f;
+        if (PSVECSquareMag(&toTarget)) {
+            PSVECNormalize(&toTarget, &toTarget);
+        }
+        if (PSVECSquareMag(&at)) {
+            PSVECNormalize(&at, &at);
+        }
+        if (PSVECSquareMag(&right)) {
+            PSVECNormalize(&right, &right);
+        }
+        cosA = -PSVECDotProduct(&at, &toTarget);
+        sinA = -PSVECDotProduct(&right, &toTarget);
+        memcpy(&rot, &g_identity, sizeof(Matrix4));
+        rot.v[0].x = cosA * scale;
+        rot.v[0].z = -sinA * scale;
+        rot.v[1].x = 0.0f;
+        rot.v[1].y = scale;
+        rot.v[1].z = 0.0f;
+        rot.v[2].x = sinA * scale;
+        rot.v[2].z = cosA * scale;
+        MultiplyMatrix(&rot, &mtx, &out);
+        Gfx_DrawGeometry(obj->geom, &out);
+        return;
+    }
+    parent = NULL;
+    for (i = 0; i < *(u32 *)iface; i++) {
+        if ((*(InterfaceObject **)(iface + 0x88))[i].type == 4) {
+            parent = &(*(InterfaceObject **)(iface + 0x88))[i];
+            break;
+        }
+    }
+    Gfx_GetCameraPosition(&camPos);
+    Gfx_GetCameraVector(&at, &up, &right);
+    if (right.x == 0.0f && right.y == 0.0f && right.z == 0.0f) {
+        PSVECCrossProduct(&up, &at, &right);
+    }
+    view.v[0].x = right.x;
+    view.v[0].y = right.y;
+    view.v[0].z = right.z;
+    view.v[1].x = up.x;
+    view.v[1].y = up.y;
+    view.v[1].z = up.z;
+    view.v[2].x = at.x;
+    view.v[2].y = at.y;
+    view.v[2].z = at.z;
+    view.v[0].w = view.v[1].w = view.v[2].w = 0.0f;
+    view.v[3].w = 1.0f;
+    if (parent != NULL) {
+        view.v[3].x = view.v[0].x * (camPos.x - parent->pos.x) + view.v[1].x * (camPos.y - parent->pos.y) + view.v[2].x * (camPos.z - parent->pos.z);
+        view.v[3].y = view.v[0].y * (camPos.x - parent->pos.x) + view.v[1].y * (camPos.y - parent->pos.y) + view.v[2].y * (camPos.z - parent->pos.z);
+        view.v[3].z = view.v[0].z * (camPos.x - parent->pos.x) + view.v[1].z * (camPos.y - parent->pos.y) + view.v[2].z * (camPos.z - parent->pos.z);
+        SetOrientation(&rot, 0.017453292f * (obj->rot.y + parent->rot.y),
+                       0.017453292f * (obj->rot.x + parent->rot.x),
+                       0.017453292f * (obj->rot.z + parent->rot.z));
+    } else {
+        view.v[3].x = view.v[0].x * camPos.x + view.v[1].x * camPos.y + view.v[2].x * camPos.z;
+        view.v[3].y = view.v[0].y * camPos.x + view.v[1].y * camPos.y + view.v[2].y * camPos.z;
+        view.v[3].z = view.v[0].z * camPos.x + view.v[1].z * camPos.y + view.v[2].z * camPos.z;
+        SetOrientation(&rot, 0.017453292f * obj->rot.y, 0.017453292f * obj->rot.x, 0.017453292f * obj->rot.z);
+    }
+    rot.v[3].x = obj->pos.x;
+    rot.v[3].y = obj->pos.y;
+    rot.v[3].z = obj->pos.z;
+    memcpy(&mtx, &g_identity, sizeof(Matrix4));
+    mtx.v[0].x = obj->scale.x;
+    mtx.v[1].y = obj->scale.y;
+    mtx.v[2].z = obj->scale.z;
+    MultiplyMatrix(&mtx, &rot, &tmp);
+    MultiplyMatrix(&tmp, &view, &out);
+    Gfx_DrawGeometry(obj->geom, &out);
 }
 
 void InterfaceManager_DrawObject_Standard_Image(u8 *obj) {
@@ -2136,7 +3164,7 @@ void InterfaceManager_DrawMap(u8 *obj, u8 *iface) {
     x = offsetX + x / scaleX;
     z = offsetZ + -z / scaleZ;
     player = *(u8 **)(*(u8 **)(iface + 8) + 0x2C);
-    SinCosRad(&s, &c, 1.5707964f + ArcTan(*(f32 *)(player + 0x38), *(f32 *)(player + 0x30)));
+    SinCosRad(&s, &c, 2.3561945f + ArcTan(*(f32 *)(player + 0x38), *(f32 *)(player + 0x30)));
     rect->v[0].s = x - halfW * c;
     rect->v[0].t = halfH * s + z;
     rect->v[1].s = halfW * s + x;
@@ -2180,20 +3208,15 @@ void InterfaceManager_DrawMap(u8 *obj, u8 *iface) {
 #pragma use_lmw_stmw on
 s32 InterfaceManager_GetTargetArrowNearestNavPoint(void)
 {
-    typedef struct TargetArrow
-    {
-        s32 pad[4];
-        s32 nearest;
-        s32 timer;
-        s32 flag;
-    } TargetArrow;
-    extern TargetArrow g_TargetArrow;
+    extern s32 g_TargetArrow[7];
     s32 NavHolder_FindIndexOfNearestNavPoint(void *pos, s32 hint);
 
-    if (g_TargetArrow.nearest != -1 && g_TargetArrow.timer <= 0)
-        g_TargetArrow.nearest = NavHolder_FindIndexOfNearestNavPoint((void *)g_TargetArrow.pad[0], g_TargetArrow.nearest), g_TargetArrow.timer = 300;
-
-    return g_TargetArrow.nearest;
+    if (g_TargetArrow[4] == -1 || g_TargetArrow[5] <= 0)
+    {
+        g_TargetArrow[4] = NavHolder_FindIndexOfNearestNavPoint((void *)g_TargetArrow[0], g_TargetArrow[4]);
+        g_TargetArrow[5] = 300;
+    }
+    return g_TargetArrow[4];
 }
 #pragma pop
 s32 DropShip_IsChildInterfaceReady(s32 index) {

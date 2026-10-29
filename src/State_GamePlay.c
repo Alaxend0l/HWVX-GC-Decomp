@@ -1,4 +1,112 @@
 #include "common.h"
+#include "CarA.h"
+
+#pragma use_lmw_stmw on
+
+typedef struct GPAIScripts {
+    u8 pad0[0x90];
+    u32 scripts[4];         /* 0x90 one per difficulty */
+} GPAIScripts;
+
+typedef struct GPItem {
+    u8 pad0[0x30];
+    struct {
+        u8 pad0[0x20];
+        s32 count;          /* 0x20 */
+    } *info;                /* 0x30 */
+} GPItem;
+
+/* A car placed in the world (World_GetTileCar), 0x60 bytes. */
+typedef struct GPTileCar {
+    Vector4 pos;            /* 0x00 */
+    f32 rotX;               /* 0x10 */
+    f32 rotY;               /* 0x14 */
+    f32 rotZ;               /* 0x18 */
+    u8 pad1C[8];
+    GPAIScripts *aiScripts; /* 0x24 */
+    CarA *creature;         /* 0x28 */
+    u32 mode;               /* 0x2C */
+    u8 pad30[4];
+    u8 unk34;               /* 0x34 */
+    u8 port;                /* 0x35 1-4: human player slot */
+    u8 pad36[2];
+    f32 nearDist;           /* 0x38 */
+    f32 farDist;            /* 0x3C */
+    u32 scripts[4];         /* 0x40 one per difficulty */
+    u8 pad50[4];
+    GPItem *item;           /* 0x54 */
+    u8 pad58[7];
+    u8 unk5F;               /* 0x5F */
+} GPTileCar;
+
+typedef struct GPWorldInfo {
+    u8 pad0[0x7C];
+    u32 radarBlip;          /* 0x7C */
+    u8 pad80[8];
+    u32 lightTexture;       /* 0x88 */
+    u8 pad8C[0x18];
+    void *packList;         /* 0xA4 */
+} GPWorldInfo;
+
+typedef struct GPWorld {
+    u8 *grid;               /* 0x00 */
+    u8 pad4[4];
+    u32 numTileCars;        /* 0x08 */
+    GPTileCar *tileCars;    /* 0x0C */
+    u8 pad10[0x68];
+    void *nav;              /* 0x78 */
+    u8 pad7C[0x20];
+    GPWorldInfo *info;      /* 0x9C */
+} GPWorld;
+
+typedef struct GPCreatureParams {
+    Vector4 pos;            /* 0x00 */
+    Vector4 quat;           /* 0x10 */
+    Vector4 vel;            /* 0x20 */
+    GPAIScripts *aiScripts; /* 0x30 */
+    u8 pad34[8];
+    void *player;           /* 0x3C */
+} GPCreatureParams;
+
+typedef struct GPAIPlayerDesc {
+    u32 script;
+    f32 nearSq;
+    f32 farSq;
+    u8 unkC;
+    u8 unkD;
+} GPAIPlayerDesc;
+
+typedef struct GPSpeakerSound {
+    u8 type;                /* 0x00 */
+    u8 pad1[7];
+    u8 unk8[4];             /* 0x08 */
+    u8 unkC[8];             /* 0x0C */
+    s32 unk14;              /* 0x14 */
+    u8 *unk18;              /* 0x18 */
+} GPSpeakerSound;
+
+typedef struct GPTileSpeaker {
+    Vector4 pos;            /* 0x00 */
+    u8 pad10[4];
+    GPSpeakerSound *sound;  /* 0x14 */
+    u8 pad18[4];
+    u32 mode;               /* 0x1C */
+    u8 pad20[0xC];
+    u32 emitter;            /* 0x2C */
+} GPTileSpeaker;
+
+typedef struct GPTilePath {
+    u8 pad0[4];
+    u32 unk4;               /* 0x04 */
+    f32 unk8;               /* 0x08 */
+    u32 unkC;               /* 0x0C */
+    CarA *thing;            /* 0x10 */
+    u32 unk14;              /* 0x14 */
+    u8 pad18;
+    u8 hasSpeed;            /* 0x19 */
+    u8 pad1A[2];
+    f32 speed;              /* 0x1C */
+} GPTilePath;
 
 
 void ExitStateGamePlay(s32 arg0) {
@@ -7,6 +115,561 @@ void ExitStateGamePlay(s32 arg0) {
     g_targetGameState = arg0;
     g_bExitStateGamePlay = 1;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+#pragma readonly_strings on
+s32 StateGamePlay_Init(void) {
+    extern s32 g_gamePlayCallback;
+    extern u32 g_DemoModeCurrentPlayer;
+    extern s8 g_bExitStateGamePlay;
+    extern u32 g_pauseState;
+    extern u32 g_DemoModeCounter;
+    extern s32 g_DemoModeSwitchCameraTime;
+    extern s32 g_DemoModeSwitchVehicleTime;
+    extern Vector4 g_zeroVector;
+    void TimeHandler_Heartbeat(void);
+    void ForceFeedback_Init(void);
+    void ForceFeedback_Heartbeat(void);
+    void Input_Init(void);
+    void Input_Heartbeat(void);
+    void PlayerManager_Init(void);
+    void PlayerManager_Heartbeat(void);
+    void PlayerManager_Render_DEBUG(void);
+    void InterfaceManager_Init(void);
+    void InterfaceManager_Heartbeat(void);
+    void InterfaceManager_Render(void);
+    void ThingManager_DARYL_Init(void);
+    void ThingManager_DARYL_Heartbeat(void);
+    void ThingManager_DARYL_Render(void);
+    void FileStreaming_HeartBeatItems(void);
+    void World_Render(void);
+    void ParticleManager_Init(void);
+    void ParticleManager_Heartbeat(void);
+    void ParticleManager_Render(void);
+    void Trail_Init(void);
+    void Trail_Heartbeat(void);
+    void Trail_Render(void);
+    void LightHolder_Init(void);
+    void LightHolder_Heartbeat(void);
+    void LightHolder_Render(void);
+    void FlashHolder_Init(void);
+    void FlashHolder_Heartbeat(void);
+    void FlashHolder_Render(void);
+    void CoronaHolder_Init(void);
+    void CoronaHolder_Heartbeat(void);
+    void CoronaHolder_Render(void);
+    void ShaderHolder_Heartbeat(void);
+    void LineManager_Init(void);
+    void LineManager_Heartbeat(void);
+    void LineManager_Render(void);
+    void SoundManager_Heartbeat(void);
+    void LensFlare_Init(void);
+    void LensFlare_Render(void);
+    void GameRules_Init(void);
+    void GameRules_HeartBeat(void);
+    void Trigger_Heartbeat(void);
+    void Action_Heartbeat(void);
+    void TimerManager_Heartbeat(void);
+    void VertexColorSeqManager_Heartbeat(void);
+    void BulletHole_Init(void);
+    void BulletHole_Heartbeat(void);
+    void BulletHole_Render(void);
+    void Timer_Heartbeat(void);
+    void LidHandler_Init(void);
+    void LidHandler_Heartbeat(void);
+    void ProcessManager_Add(char *name, void (*init)(void), void (*update)(void), void (*render)(void), u32 flags);
+    void Geometry_Init(s32 arg);
+    void PlayerManager_Create(void);
+    void Gfx_SetEnviroMapMode(s32 mode);
+    void ViewManager_Init(void);
+    void ShowStats_Init(void);
+    void ProcessManager_Init(void);
+    void Gfx_StateTextureBlendMode(s32 mode);
+    void Gfx_SetProjectionMatrix(f32 fov);
+    void Gfx_SetCameraMatrix(Vector4 *pos, void *a, void *b, void *c);
+    void VertexColorSeqManager_Init(void);
+    void VolumeManager_Initialize(void);
+    void LightManager_Initialize(void);
+    void Grid_Init(void *a, void *b, s32 x, s32 y);
+    void NavHolder_Init(void *nav);
+    void LightHolder_SetTexture(u16 tex);
+    void InterfaceManager_SetRadarBlip(u16 tex);
+    void GameSettings_RestoreGameData(void);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    GPTileCar *World_GetTileCar(u32 index);
+    GPTileSpeaker *World_GetTileSpeaker(u32 index);
+    u8 *World_GetTileLight(u32 index);
+    GPTilePath *World_GetTilePath(u32 index);
+    u8 *World_GetVolume(u32 index);
+    u8 *World_GetNavHolder(void);
+    void World_InitTeleporters(void);
+    void SetOrientation(void *m, f32 x, f32 y, f32 z);
+    void SubMatrixToQuaternion(void *m, Vector4 *q);
+    u32 GameSettings_GetCodeVariable(s32 var, s32 index);
+    s32 GameSettings_GetGameType(void);
+    s8 GameSettings_IsCheatEnabled(s32 cheat);
+    s32 GameSettings_GetDifficulty(void);
+    void *GameSettings_GetMCP(void);
+    void GameSettings_RestorePlayerStats(void);
+    Player *PlayerManager_NewHumanPlayer(void);
+    Player *PlayerManager_NewAIPlayer(GPAIPlayerDesc *desc);
+    u8 PlayerManager_PlayerHumanCount(void);
+    Player *PlayerManager_GetHumanPlayerByIndex(u8 index);
+    void Player_SetName(Player *player, s32 port, const char *name);
+    void Player_SetThing(Player *player, CarA *thing);
+    void Player_RefreshInterface(Player *player);
+    void *FileStreaming_LoadDataPack(void *list, s32 a, u32 id, s32 b);
+    void *FileStreaming_InitializeDataPack(void *pack, s32 a, s32 b);
+    GPItem *DataPack_GetScript(void *pack, u32 id);
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    void WildCardRack_JettisonAll(void *rack);
+    void WildCardRack_Add(void *rack, GPItem *item, s32 count);
+    s32 ActionVehicleChangeMode(u32 *action);
+    s32 ActionSpeakerChangeMode(u32 *action);
+    s32 ActionAirboxChangeMode(u32 *action);
+    s32 ActionNavPointChangeMode(u32 *action);
+    s32 SoundManager_CreateSource(s32 type);
+    void SoundSource_Set(s32 source, s32 what, void *value);
+    void SoundSource_Play(s32 source);
+    void LightHolder_Add(void *light, void *tile, s32 arg);
+    void **CameraManager_GetNewCamera(void);
+    void Camera_SetPlayer(void **camera, void *player);
+    void ViewManager_SetTwoPlayerHorizontal(void);
+    void ViewManager_SetThreePlayer(void);
+    void ViewManager_SetFourPlayer(void);
+    void ViewManager_SetCamera(void **camera, s32 view);
+    void ViewManager_EnableView(s32 view, s32 enable);
+    void SetPlayerControls(void);
+    int sprintf(char *buf, const char *fmt, ...);
+    static s32 countAI;
+    struct {
+        Vector4 pos;
+        Vector4 vel;
+        Vector4 angVel;
+        f32 scale[3];
+        f32 unk3C;
+        u32 unk40;
+        u8 pad44[4];
+        f32 speed;
+        u32 unk4C;
+        u32 unk50;
+        f32 unk54;
+        u8 pad58[4];
+        u32 unk5C;
+    } pathParams;
+    GPCreatureParams params;
+    Matrix4 mtx;
+    struct {
+        Vector4 pos;
+        u32 emitter;
+        u8 unk14;
+    } speakerParams __attribute__((aligned(16)));
+    u32 action[3];
+    GPAIPlayerDesc desc;
+    u32 speakerAction[3];
+    u32 airAction[3];
+    s32 viewOf[4];
+    u32 viewIdx[4];
+    Player *players[4];
+    char name[8];
+    s8 humanUsed[4] = {0, 0, 0, 0};
+    s32 soundId;
+    Player *aiPlayer;
+    u32 i;
+
+    g_gamePlayCallback = 0;
+    g_DemoModeCurrentPlayer = 0;
+    g_bExitStateGamePlay = 0;
+    Geometry_Init(1);
+    PlayerManager_Create();
+    Gfx_SetEnviroMapMode(1);
+    CameraManager_Init();
+    ViewManager_Init();
+    ShowStats_Init();
+    ProcessManager_Init();
+    ProcessManager_Add("TimeHandler", NULL, TimeHandler_Heartbeat, NULL, 1);
+    ProcessManager_Add("ForceFeedback", ForceFeedback_Init, ForceFeedback_Heartbeat, NULL, 1);
+    ProcessManager_Add("Input", Input_Init, Input_Heartbeat, NULL, 1);
+    ProcessManager_Add("Player", PlayerManager_Init, PlayerManager_Heartbeat, PlayerManager_Render_DEBUG, 0);
+    ProcessManager_Add("Interface", InterfaceManager_Init, InterfaceManager_Heartbeat, InterfaceManager_Render, 1);
+    ProcessManager_Add("ThingManager", ThingManager_DARYL_Init, ThingManager_DARYL_Heartbeat, ThingManager_DARYL_Render, 1);
+    ProcessManager_Add("World", NULL, FileStreaming_HeartBeatItems, World_Render, 0);
+    ProcessManager_Add("Particle", ParticleManager_Init, ParticleManager_Heartbeat, ParticleManager_Render, 0);
+    ProcessManager_Add("Trail", Trail_Init, Trail_Heartbeat, Trail_Render, 0);
+    ProcessManager_Add("Light", LightHolder_Init, LightHolder_Heartbeat, LightHolder_Render, 0);
+    ProcessManager_Add("Flash", FlashHolder_Init, FlashHolder_Heartbeat, FlashHolder_Render, 0);
+    ProcessManager_Add("Corona", CoronaHolder_Init, CoronaHolder_Heartbeat, CoronaHolder_Render, 0);
+    ProcessManager_Add("Shader", NULL, ShaderHolder_Heartbeat, NULL, 0);
+    ProcessManager_Add("Line", LineManager_Init, LineManager_Heartbeat, LineManager_Render, 0);
+    ProcessManager_Add("SoundManager", NULL, SoundManager_Heartbeat, NULL, 1);
+    ProcessManager_Add("LensFlare", LensFlare_Init, NULL, LensFlare_Render, 0);
+    ProcessManager_Add("Game Rules", GameRules_Init, GameRules_HeartBeat, NULL, 0);
+    ProcessManager_Add("Triggers", NULL, Trigger_Heartbeat, NULL, 1);
+    ProcessManager_Add("Actions", NULL, Action_Heartbeat, NULL, 0);
+    ProcessManager_Add("Timers", NULL, TimerManager_Heartbeat, NULL, 0);
+    ProcessManager_Add("VertexColorSeq", NULL, VertexColorSeqManager_Heartbeat, NULL, 0);
+    ProcessManager_Add("BulletHoles", BulletHole_Init, BulletHole_Heartbeat, BulletHole_Render, 0);
+    ProcessManager_Add("Timer", NULL, Timer_Heartbeat, NULL, 0);
+    ProcessManager_Add("Lid Handler", LidHandler_Init, LidHandler_Heartbeat, NULL, 1);
+    Gfx_StateTextureBlendMode(2);
+    Gfx_SetProjectionMatrix(90.0f);
+    Gfx_SetCameraMatrix(NULL, NULL, NULL, NULL);
+    g_pauseState = 0;
+    VertexColorSeqManager_Init();
+    VolumeManager_Initialize();
+    LightManager_Initialize();
+    Grid_Init(((GPWorld *)g_worldData.world)->grid, ((GPWorld *)g_worldData.world)->grid + 0x10, 0x10, 0x10);
+    NavHolder_Init(((GPWorld *)g_worldData.world)->nav);
+    LightHolder_SetTexture(((GPWorld *)g_worldData.world)->info->lightTexture);
+    InterfaceManager_SetRadarBlip(((GPWorld *)g_worldData.world)->info->radarBlip);
+    GameSettings_RestoreGameData();
+    ThingManager_DARYL_CreateThing(0xB, NULL);
+    {
+        GPTileCar *car;
+        Player *player;
+
+        i = 0;
+        while ((car = World_GetTileCar(i)) != NULL) {
+            if (car->aiScripts != NULL && (car->port <= 4 || car->unk34 == 0 || car->unk5F != 0)) {
+                params.pos = car->pos;
+                params.pos.y += 10.0f;
+                params.player = NULL;
+                params.aiScripts = car->aiScripts;
+                params.vel = g_zeroVector;
+                if (car->port <= 4) {
+                    car->unk34 = 0;
+                }
+                SetOrientation(&mtx, car->rotY, car->rotX, car->rotZ);
+                SubMatrixToQuaternion(&mtx, &params.quat);
+                if (car->port <= 4 && GameSettings_GetCodeVariable(0x198, 0) == 0) {
+                    u32 script;
+
+                    script = GameSettings_GetCodeVariable(0xCC, car->port);
+                    if (car->port - 1 < 4) {
+                        player = PlayerManager_NewHumanPlayer();
+                        if (car->port == 1) {
+                            Player_SetName(player, 1, "Player 1");
+                        } else if (car->port == 2) {
+                            Player_SetName(player, 2, "Player 2");
+                        } else if (car->port == 3) {
+                            Player_SetName(player, 3, "Player 3");
+                        } else if (car->port == 4) {
+                            Player_SetName(player, 4, "Player 4");
+                        }
+                        humanUsed[car->port - 1] = 1;
+                        car->creature = ThingManager_DARYL_CreateThing(9, &params);
+                        Player_SetThing(player, car->creature);
+                        car->creature->tileData = car;
+                        player->tileCar = car;
+                        if (GameSettings_GetGameType() == 0 && script == 3 && GameSettings_IsCheatEnabled(8)) {
+                            script = 0x4D;
+                        }
+                        if (script != 0xFFFFFFFF) {
+                            GPItem *item;
+
+                            item = DataPack_GetScript(
+                                FileStreaming_InitializeDataPack(
+                                    FileStreaming_LoadDataPack(((GPWorld *)g_worldData.world)->info->packList, 2, script, 0), 2, 1),
+                                script);
+                            if (item != NULL) {
+                                void *rack = ThingManagerList_GetByType((u8 *)car->creature + 0x344, 8);
+
+                                WildCardRack_JettisonAll(rack);
+                                WildCardRack_Add(rack, item, item->info->count);
+                            }
+                        }
+                    }
+                } else {
+                    s32 difficulty;
+                    u32 script;
+
+                    difficulty = GameSettings_GetDifficulty();
+                    script = 0;
+                    if (difficulty == 0) {
+                        if (car->scripts[0] != 0) {
+                            script = car->scripts[0];
+                        } else if (params.aiScripts->scripts[0] != 0) {
+                            script = params.aiScripts->scripts[0];
+                        }
+                    } else if (difficulty == 1) {
+                        if (car->scripts[1] != 0) {
+                            script = car->scripts[1];
+                        } else if (params.aiScripts->scripts[0] != 0) {
+                            script = params.aiScripts->scripts[1];
+                        }
+                    } else if (difficulty == 2) {
+                        if (car->scripts[2] != 0) {
+                            script = car->scripts[2];
+                        } else if (params.aiScripts->scripts[0] != 0) {
+                            script = params.aiScripts->scripts[2];
+                        }
+                    } else if (difficulty == 3) {
+                        if (car->scripts[3] != 0) {
+                            script = car->scripts[3];
+                        } else if (params.aiScripts->scripts[0] != 0) {
+                            script = params.aiScripts->scripts[3];
+                        }
+                    }
+                    if (script == 0) {
+                        if (params.aiScripts->scripts[0] != 0) {
+                            script = params.aiScripts->scripts[0];
+                        } else if (params.aiScripts->scripts[1] != 0) {
+                            script = params.aiScripts->scripts[1];
+                        } else if (params.aiScripts->scripts[2] != 0) {
+                            script = params.aiScripts->scripts[2];
+                        } else {
+                            script = params.aiScripts->scripts[3];
+                        }
+                    }
+                    desc.script = script;
+                    desc.unkD = 0;
+                    desc.unkC = car->unk34;
+                    desc.nearSq = car->nearDist * car->nearDist;
+                    desc.farSq = car->farDist * car->farDist;
+                    aiPlayer = PlayerManager_NewAIPlayer(&desc);
+                    if (aiPlayer == NULL) {
+                        i++;
+                        continue;
+                    }
+                    aiPlayer->aiScripts = params.aiScripts;
+                    sprintf(name, "AI %d", countAI++);
+                    Player_SetName(aiPlayer, -1, name);
+                    car->creature = ThingManager_DARYL_CreateThing(9, &params);
+                    Player_SetThing(aiPlayer, car->creature);
+                    car->creature->tileData = car;
+                    aiPlayer->tileCar = car;
+                    if (car->item != NULL) {
+                        void *rack = ThingManagerList_GetByType((u8 *)car->creature + 0x344, 8);
+
+                        WildCardRack_JettisonAll(rack);
+                        WildCardRack_Add(rack, car->item, car->item->info->count);
+                    }
+                }
+                action[0] = car->mode;
+                action[1] = 1;
+                action[2] = (u32)car;
+                ActionVehicleChangeMode(action);
+            }
+            i++;
+        }
+    }
+    {
+        u32 j;
+        GPTileSpeaker *speaker;
+        s32 source;
+
+        j = 0;
+        while ((speaker = World_GetTileSpeaker(j)) != NULL) {
+            source = SoundManager_CreateSource(1);
+            soundId = speaker->sound->unk14;
+            SoundSource_Set(source, 8, &soundId);
+            SoundSource_Set(source, 5, speaker);
+            switch (speaker->sound->type) {
+            case 0:
+                SoundSource_Set(source, 2, speaker->sound->unk18);
+                SoundSource_Set(source, 3, speaker->sound->unk18 + 4);
+                SoundSource_Set(source, 0, speaker->sound->unk8);
+                break;
+            }
+            SoundSource_Set(source, 1, speaker->sound->unkC);
+            SoundSource_Play(source);
+            speakerAction[0] = speaker->mode;
+            speakerAction[1] = 1;
+            speakerAction[2] = (u32)speaker;
+            ActionSpeakerChangeMode(speakerAction);
+            if (speaker->emitter != 0) {
+                speakerParams.unk14 = 0;
+                speakerParams.pos = speaker->pos;
+                speakerParams.emitter = speaker->emitter;
+                ThingManager_DARYL_CreateThing(0x10, &speakerParams);
+            }
+            j++;
+        }
+    }
+    {
+        u8 *light;
+
+        i = 0;
+        while ((light = World_GetTileLight(i)) != NULL) {
+            LightHolder_Add(*(void **)(light + 0x10), light, 0);
+            i++;
+        }
+    }
+    {
+        GPTilePath *path;
+
+        i = 0;
+        while ((path = World_GetTilePath(i)) != NULL) {
+            if (path->unk14 == 0) {
+                i++;
+                continue;
+            }
+            pathParams.unk4C = 0;
+            pathParams.unk50 = 1;
+            pathParams.pos.x = 0.0f;
+            pathParams.pos.y = 0.0f;
+            pathParams.pos.z = 0.0f;
+            pathParams.unk40 = path->unkC;
+            pathParams.speed = path->hasSpeed ? path->speed : 0.0f;
+            pathParams.unk3C = 1.0f;
+            pathParams.scale[0] = 0.0f;
+            pathParams.scale[1] = 0.0f;
+            pathParams.scale[2] = 0.0f;
+            pathParams.angVel = g_zeroVector;
+            pathParams.vel = g_zeroVector;
+            pathParams.unk5C = path->unk4;
+            pathParams.unk54 = path->unk8;
+            path->thing = ThingManager_DARYL_CreateThing(0xA, &pathParams);
+            path->thing->tileData = path;
+            i++;
+        }
+    }
+    {
+        u8 *volume;
+
+        i = 0;
+        while ((volume = World_GetVolume(i)) != NULL) {
+            airAction[0] = *(u32 *)(volume + 4);
+            airAction[1] = 1;
+            airAction[2] = (u32)volume;
+            ActionAirboxChangeMode(airAction);
+            i++;
+        }
+    }
+    {
+        u8 *nav = World_GetNavHolder();
+
+        for (i = 0; i < *(u32 *)(nav + 4); i += 2) {
+            airAction[0] = (*(u8 **)nav)[i * 0x60 + 0x50];
+            airAction[1] = 1;
+            airAction[2] = (u32)(*(u8 **)nav + i * 0x60);
+            ActionNavPointChangeMode(airAction);
+        }
+    }
+    if (GameSettings_GetCodeVariable(0x198, 0) == 0) {
+        u32 count;
+        u32 k;
+        s32 view;
+        Player *player;
+        void **camera;
+
+        count = PlayerManager_PlayerHumanCount();
+        view = 1;
+        if (humanUsed[0]) {
+            viewOf[0] = view++;
+        }
+        if (humanUsed[1]) {
+            viewOf[1] = view++;
+        }
+        if (humanUsed[2]) {
+            viewOf[2] = view++;
+        }
+        if (humanUsed[3]) {
+            viewOf[3] = view++;
+        }
+        switch (count) {
+        case 1:
+            break;
+        case 2:
+            ViewManager_SetTwoPlayerHorizontal();
+            break;
+        case 3:
+            ViewManager_SetThreePlayer();
+            break;
+        case 4:
+            ViewManager_SetFourPlayer();
+            break;
+        }
+        for (k = 0; k < count; k++) {
+            player = PlayerManager_GetHumanPlayerByIndex(k);
+            camera = CameraManager_GetNewCamera();
+            player->view = viewOf[player->port - 1];
+            Camera_SetPlayer(camera, player);
+            if (player->view == 1) {
+                if (count > 1) {
+                    ViewManager_SetCamera(camera, 1);
+                    ViewManager_EnableView(1, 1);
+                }
+            } else if (player->view == 2) {
+                ViewManager_SetCamera(camera, 2);
+                ViewManager_EnableView(2, 1);
+            } else if (player->view == 3) {
+                ViewManager_SetCamera(camera, 3);
+                ViewManager_EnableView(3, 1);
+            } else if (player->view == 4) {
+                ViewManager_SetCamera(camera, 4);
+                ViewManager_EnableView(4, 1);
+            }
+        }
+    } else {
+        u32 n;
+        void *mcp;
+        Player *player;
+        void **camera;
+
+        n = 0;
+        mcp = GameSettings_GetMCP();
+        for (i = 0; i < ((GPWorld *)g_worldData.world)->numTileCars; i++) {
+            if (((GPWorld *)g_worldData.world)->tileCars[i].aiScripts != NULL &&
+                ((GPWorld *)g_worldData.world)->tileCars[i].port <= 4 &&
+                ((GPWorld *)g_worldData.world)->tileCars[i].creature != NULL) {
+                viewIdx[n] = n;
+                players[n] = ((GPWorld *)g_worldData.world)->tileCars[i].creature->player;
+                n++;
+            }
+        }
+        switch (n) {
+        case 1:
+            break;
+        case 2:
+            ViewManager_SetTwoPlayerHorizontal();
+            break;
+        case 3:
+            ViewManager_SetThreePlayer();
+            break;
+        case 4:
+            ViewManager_SetFourPlayer();
+            break;
+        }
+        for (i = 0; i < n; i++) {
+            player = players[i];
+            camera = CameraManager_GetNewCamera();
+            player->view = viewIdx[i] + 1;
+            Camera_SetPlayer(camera, player);
+            if (player->view == 1) {
+                if (n > 1) {
+                    ViewManager_SetCamera(camera, 1);
+                    ViewManager_EnableView(1, 1);
+                }
+            } else if (player->view == 2) {
+                ViewManager_SetCamera(camera, 2);
+                ViewManager_EnableView(2, 1);
+            } else if (player->view == 3) {
+                ViewManager_SetCamera(camera, 3);
+                ViewManager_EnableView(3, 1);
+            } else if (player->view == 4) {
+                ViewManager_SetCamera(camera, 4);
+                ViewManager_EnableView(4, 1);
+            }
+        }
+        for (i = 0; i < n; i++) {
+            Player_RefreshInterface(players[i]);
+        }
+        if (mcp != NULL) {
+            g_DemoModeCounter = *(u32 *)(*(u8 **)((u8 *)mcp + 0x24) + 4);
+        } else {
+            g_DemoModeCounter = 60;
+        }
+        g_DemoModeSwitchCameraTime = g_DemoModeCounter - 10000;
+        g_DemoModeSwitchVehicleTime = g_DemoModeCounter - 8000;
+    }
+    World_InitTeleporters();
+    SetPlayerControls();
+    GameSettings_RestorePlayerStats();
+    return 1;
+}
+#pragma pop
 
 s32 StateGamePlay_Heartbeat(void) {
     extern Vector4 g_lastCamPos;
@@ -215,6 +878,7 @@ s32 StateGamePlay_Heartbeat(void) {
 
 void StateGamePlay_Pause(s32 pause) {
     extern u8 g_bFreezeWorld;
+    void CameraManager_Pause(s8 pause);
     void SoundManager_Pause(u8 pause);
     void Input_ForceFeedbackPause(u8 pause);
     void InterfaceManager_PauseAllInterface(u8 pause);
@@ -384,6 +1048,60 @@ void GamePlay_PauseOptions_HandleInput(void *msg) {
     }
 }
 
+s32 ActionPauseGame(u32 *action) {
+    extern s32 g_pauseState;
+    extern s32 g_gamePlayCallback;
+    extern u8 g_bFreezeWorld;
+    void SoundManager_Pause(u8 pause);
+    void Input_ForceFeedbackPause(u8 pause);
+    void InterfaceManager_PauseAllInterface(u8 pause);
+    u8 *GameSettings_GetMCP(void);
+    ControllerSettings *GameSettings_GetControllerSettings(s32 player);
+    u8 PlayerManager_PlayerHumanCount(void);
+    void *PlayerManager_GetHumanPlayerByIndex(u8 index);
+    void PlayerHuman_SetControlBinding(void *player, s32 binding);
+    void PlayerHuman_SetDefaultControls(void *player, s32 arg);
+    void Input_SetForceFeedbackActive(s32 chan, u8 active);
+    ControllerSettings *settings;
+    u8 *mcp;
+    u8 *player;
+    u32 count;
+    u32 i;
+
+    if (*action == 7) {
+        g_pauseState = 1;
+        CameraManager_Pause(1);
+        SoundManager_Pause(1);
+        Input_ForceFeedbackPause(1);
+        InterfaceManager_PauseAllInterface(1);
+        g_bFreezeWorld = 1;
+    } else if (*action == 8) {
+        g_gamePlayCallback = 0;
+        g_pauseState = 0;
+        CameraManager_Pause(0);
+        SoundManager_Pause(0);
+        Input_ForceFeedbackPause(0);
+        InterfaceManager_PauseAllInterface(0);
+        g_bFreezeWorld = 1;
+        mcp = GameSettings_GetMCP();
+        count = PlayerManager_PlayerHumanCount();
+        for (i = 0; i < count; i++) {
+            player = PlayerManager_GetHumanPlayerByIndex(i);
+            settings = GameSettings_GetControllerSettings(*(s32 *)(player + 0x60));
+            if (mcp != NULL && *(u32 *)(mcp + 0x3C) != 0) {
+                if (settings->data[1] >= *(u32 *)(mcp + 0x3C)) {
+                    settings->data[1] = 0;
+                }
+                PlayerHuman_SetControlBinding(player, *(s32 *)(*(u8 **)(*(u8 ***)(mcp + 0x40))[settings->data[1]] + 0x8));
+            } else {
+                PlayerHuman_SetDefaultControls(player, settings->data[1]);
+            }
+            Input_SetForceFeedbackActive(*(s32 *)(player + 0xC8), settings->data[0]);
+        }
+    }
+    return 1;
+}
+
 s32 ActionPlayInterfacePack(u32 *pack) {
     void *FileStreaming_InitializeDataPack(void *, s32, s32);
     u8 *DataPack_GetScript(void *, s32);
@@ -479,6 +1197,33 @@ void InterfaceDataPackRouter(void *arg0) {
     }
 }
 
+f32 InterfaceInputAnimator_GetLRCounter(void);
+f32 InterfaceInputAnimator_GetUDCounter(void);
+void ArmageddonDropShipInfo(void *info) {
+    typedef struct DropShipInfo {
+        u8 pad0[0x24];
+        f32 lr;
+        f32 ud;
+    } DropShipInfo;
+    DropShipInfo *ship = info;
+
+    ship->lr = InterfaceInputAnimator_GetLRCounter();
+    ship->ud = InterfaceInputAnimator_GetUDCounter();
+}
+
+void InterfaceInputAnimator_HeartBeat(void);
+void InterfaceInputAnimator_Initialize(void) {
+    extern f32 g_LR_Counter;
+    extern f32 g_UD_Counter;
+    extern f32 g_LR_Max_Min;
+    extern f32 g_UD_Max_Min;
+    g_LR_Counter = 0.0f;
+    g_UD_Counter = 0.0f;
+    g_LR_Max_Min = 0.0f;
+    g_UD_Max_Min = 0.0f;
+    ProcessManager_Add("InterfaceInput", NULL, InterfaceInputAnimator_HeartBeat, NULL, 1);
+}
+
 void InterfaceInputAnimator_Release(void) {
     static const char name[] = "InterfaceInput";
     ProcessManager_Release((char *)name);
@@ -522,5 +1267,52 @@ f32 InterfaceInputAnimator_GetLRCounter(void) {
 f32 InterfaceInputAnimator_GetUDCounter(void) {
     extern f32 g_LR_Counter;
     return g_LR_Counter;
+}
+
+void InterfaceInputAnimator_SetCallBack(void *callBack, InterfaceCallBackData *data) {
+    extern void *g_pCallBack;
+
+    g_pCallBack = callBack;
+    if (callBack != NULL) {
+        g_CallBackData = *data;
+    }
+}
+
+void InterfaceInputAnimator_HeartBeat(void) {
+    extern f32 g_fDeltaTimeMS;
+    extern s32 g_LR_Direction;
+    extern s32 g_UD_Direction;
+    extern f32 g_LR_Counter;
+    extern f32 g_UD_Counter;
+    extern f32 g_LR_Max_Min;
+    extern f32 g_UD_Max_Min;
+    extern void *g_pCallBack;
+    f32 dt = g_fDeltaTimeMS;
+
+    if (g_LR_Direction == 0) {
+        g_LR_Counter += dt;
+        if (g_LR_Counter > g_LR_Max_Min) {
+            g_LR_Counter = g_LR_Max_Min;
+        }
+    } else {
+        g_LR_Counter -= dt;
+        if (g_LR_Counter < g_LR_Max_Min) {
+            g_LR_Counter = g_LR_Max_Min;
+        }
+    }
+    if (g_UD_Direction == 0) {
+        g_UD_Counter += dt;
+        if (g_UD_Counter > g_UD_Max_Min) {
+            g_UD_Counter = g_UD_Max_Min;
+        }
+    } else {
+        g_UD_Counter -= dt;
+        if (g_UD_Counter < g_UD_Max_Min) {
+            g_UD_Counter = g_UD_Max_Min;
+        }
+    }
+    if (g_pCallBack != NULL) {
+        ((void (*)(InterfaceCallBackData *))g_pCallBack)(&g_CallBackData);
+    }
 }
 

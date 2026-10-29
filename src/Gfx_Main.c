@@ -39,6 +39,52 @@ typedef struct GfxState {
 
 extern GfxState g_state;
 
+typedef struct GfxWindow {
+    u8 unk0[0x180];
+    Vector cameraPos;
+    u8 unk190[0x270 - 0x190];
+    f32 fov;
+    u8 unk274[0x2D0 - 0x274];
+} GfxWindow;
+
+f32 PSVECSquareMag(Vector *v);
+void PSVECNormalize(Vector *src, Vector *dst);
+
+
+s32 Gfx_Create(void) {
+    void Init_Math3D(void);
+    void RenderState_Init(void);
+    void Render_Create(void);
+    void TimeHandler_Init(void);
+    void FontManager_Create(void);
+    s32 Gfx_TextureHandler_Create(void);
+    s32 Gfx_DisplayList_Create(void);
+    extern GXColor g_textcolor;
+    extern s8 g_screenTextY;
+    extern s8 g_screenTextX;
+    extern u8 g_CurrentViews;
+    extern u8 g_screenText[0xA00];
+
+    Init_Math3D();
+    RenderState_Init();
+    Render_Create();
+    TimeHandler_Init();
+    FontManager_Create();
+    g_textcolor.a = 0xFF;
+    g_textcolor.b = 0xFF;
+    g_textcolor.g = 0xFF;
+    g_textcolor.r = 0xFF;
+    g_screenTextY = 0;
+    g_screenTextX = 0;
+    g_CurrentViews = 1;
+    memset(g_screenText, 0, sizeof(g_screenText));
+    if (Gfx_TextureHandler_Create() == 0) {
+        return 0;
+    } else if (Gfx_DisplayList_Create() == 0) {
+        return 0;
+    }
+    return 1;
+}
 
 void Gfx_Destroy(void) {
     M2C_UNK Gfx_DisplayList_Destroy();
@@ -54,6 +100,55 @@ void Gfx_Destroy(void) {
 void Gfx_CreateView(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
+}
+
+GfxWindow *GetRenderWindow(void);
+void Gfx_BeginScene(void) {
+    void Render_BeginScene(void);
+    void Render_InitDisplayList(void);
+    void Gfx_SetProjectionMatrix(f32 fov);
+    void Gfx_SetWorldMatrix(void *matrix);
+    void *memset(void *dst, int c, u32 n);
+    extern u8 g_renderStats[0x100];
+
+    g_state.unk7C = 0;
+    Render_BeginScene();
+    Render_InitDisplayList();
+    memset(g_renderStats, 0, sizeof(g_renderStats));
+    Gfx_SetProjectionMatrix(GetRenderWindow()->fov);
+    Gfx_SetWorldMatrix(NULL);
+}
+
+void Gfx_EndScene(void) {
+    void Render_EndScene(void);
+    extern s8 g_screenTextX;
+    extern s8 g_screenTextY;
+
+    Render_EndScene();
+    g_screenTextY = 0;
+    g_screenTextX = 0;
+}
+
+void Gfx_FlipBuffers(void) {
+    void Render_FlipBuffers(void);
+    void *memset(void *dst, int c, u32 n);
+    extern u8 g_screenText[0xA00];
+
+    Render_FlipBuffers();
+    memset(g_screenText, 0, sizeof(g_screenText));
+}
+
+void RenderState_Init(void) {
+    g_state.unk7C = 1;
+    g_state.numPointLights = 0;
+    g_state.unk80 = 64.0f;
+    g_state.unk91 = 0xFF;
+    g_state.lightChanged = 1;
+    g_state.unk8F = 1;
+    g_state.unk92 = 0xFF;
+    g_state.enviroMapMode = 0;
+    g_state.unk88 = 0;
+    g_state.farClippingPlane = 0.0f;
 }
 
 void Gfx_EnableState(s32 arg0) {
@@ -79,6 +174,30 @@ void Gfx_RemovePointLights(void) {
     }
 }
 
+void Gfx_AddPointLight(GXColor *color, Vector *pos, f32 radius) {
+    if (g_state.numPointLights < 3) {
+        g_state.pointLights[g_state.numPointLights].color = *color;
+        g_state.pointLights[g_state.numPointLights].position = *pos;
+        g_state.pointLights[g_state.numPointLights].radius = radius;
+        g_state.lightChanged = 1;
+        g_state.numPointLights++;
+    }
+}
+
+void Gfx_SetParallelLight(GXColor *color, Vector *dir) {
+    Vector *lightDir;
+
+    g_state.lightColor = *color;
+    if (dir != NULL) {
+        lightDir = &g_state.lightDir;
+        *lightDir = *dir;
+        if (PSVECSquareMag(lightDir)) {
+            PSVECNormalize(lightDir, lightDir);
+        }
+    }
+    g_state.lightChanged = 1;
+}
+
 void Gfx_SetAmbientColor(GXColor *color) {
     g_state.ambientColor = *color;
 }
@@ -89,16 +208,59 @@ void Gfx_SetBaseColor(GXColor *color) {
 
 void Gfx_SetRenderWindow(s32 window) {
     extern s32 g_currentWindow;
-    extern void *g_pWindow;
-    extern u8 g_window[][0x2D0];
+    extern GfxWindow *g_pWindow;
+    extern GfxWindow g_window[];
 
     g_currentWindow = window;
-    g_pWindow = g_window[window];
+    g_pWindow = &g_window[window];
 }
 
 s32 Gfx_GetRenderWindowIndex(void) {
     extern s32 g_currentWindow;
     return g_currentWindow;
+}
+
+GfxWindow *GetRenderWindow(void) {
+    extern s32 g_currentWindow;
+    extern GfxWindow g_window[];
+    return &g_window[g_currentWindow];
+}
+
+s32 Gfx_GetCameraPositions(Vector *out) {
+    extern u8 g_CurrentViews;
+    extern GfxWindow g_window[];
+    u32 i;
+    s32 count = 0;
+
+    for (i = 0; i < 5; i++) {
+        if (g_CurrentViews & (1 << i)) {
+            out[count++] = g_window[i].cameraPos;
+        }
+    }
+    return count;
+}
+
+f32 Gfx_GetMinCameraDistSquared(Vector *pos) {
+    extern u8 g_CurrentViews;
+    extern GfxWindow g_window[];
+    f32 PSVECSquareDistance(Vector *a, Vector *b);
+    f32 minDist;
+    f32 dist;
+    u32 i;
+
+    if (g_CurrentViews != 1) {
+        minDist = 99999.9f;
+        for (i = 1; i < 5; i++) {
+            if (g_CurrentViews & (1 << i)) {
+                dist = PSVECSquareDistance(pos, &g_window[i].cameraPos);
+                if (minDist > dist) {
+                    minDist = dist;
+                }
+            }
+        }
+        return minDist;
+    }
+    return PSVECSquareDistance(pos, &g_window[0].cameraPos);
 }
 
 void Gfx_ClearScreen(void)

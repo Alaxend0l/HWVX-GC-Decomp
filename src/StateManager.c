@@ -1,9 +1,91 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+#pragma readonly_strings on
+
+typedef struct GameState {
+    void (*interrupt)(void);
+    void (*heartbeat)(void);
+    s8 (*enter)(s32 prev);
+    s8 (*exit)(s32 next);
+} GameState;
+
+typedef struct StateManager {
+    GameState states[13];
+    s32 current;
+    s32 next;
+} StateManager;
+
+StateManager *g_pStateManager;
+
+void StateManager_Create(void) {
+    void *Allocate(u32 size, s32 type, const char *name);
+    void StateMovie_Heartbeat(void);
+    s8 StateMovie_Init(s32 prev);
+    s8 StateMovie_Shutdown(s32 next);
+    void StateGamePlay_Heartbeat(void);
+    s8 StateGamePlay_Init(s32 prev);
+    s8 StateGamePlay_Shutdown(s32 next);
+    void StateRenderTest_Heartbeat(void);
+    s8 StateRenderTest_Init(s32 prev);
+    s8 StateRenderTest_Shutdown(s32 next);
+    void StateShutdown_Heartbeat(void);
+    s8 StateShutdown_Init(s32 prev);
+    s8 StateShutdown_Shutdown(s32 next);
+    void StateTitleScreen_Heartbeat(void);
+    s8 StateTitleScreen_Init(s32 prev);
+    s8 StateTitleScreen_Shutdown(s32 next);
+    void StateProgressionManager_Heartbeat(void);
+    s8 StateProgressionManager_Init(s32 prev);
+    s8 StateProgressionManager_Shutdown(s32 next);
+    void StateGameManager_Heartbeat(void);
+    s8 StateGameManager_Init(s32 prev);
+    s8 StateGameManager_Shutdown(s32 next);
+    extern StateManager *g_pStateManager;
+    s32 i;
+
+    g_pStateManager = Allocate(sizeof(StateManager), 0, "");
+    for (i = 0; i < 13; i++) {
+        g_pStateManager->states[i].interrupt = NULL;
+        g_pStateManager->states[i].heartbeat = NULL;
+        g_pStateManager->states[i].enter = NULL;
+        g_pStateManager->states[i].exit = NULL;
+    }
+    g_pStateManager->states[3].interrupt = NULL;
+    g_pStateManager->states[3].heartbeat = StateMovie_Heartbeat;
+    g_pStateManager->states[3].enter = StateMovie_Init;
+    g_pStateManager->states[3].exit = StateMovie_Shutdown;
+    g_pStateManager->states[5].interrupt = NULL;
+    g_pStateManager->states[5].heartbeat = StateGamePlay_Heartbeat;
+    g_pStateManager->states[5].enter = StateGamePlay_Init;
+    g_pStateManager->states[5].exit = StateGamePlay_Shutdown;
+    g_pStateManager->states[6].interrupt = NULL;
+    g_pStateManager->states[6].heartbeat = StateRenderTest_Heartbeat;
+    g_pStateManager->states[6].enter = StateRenderTest_Init;
+    g_pStateManager->states[6].exit = StateRenderTest_Shutdown;
+    g_pStateManager->states[8].interrupt = NULL;
+    g_pStateManager->states[8].heartbeat = StateShutdown_Heartbeat;
+    g_pStateManager->states[8].enter = StateShutdown_Init;
+    g_pStateManager->states[8].exit = StateShutdown_Shutdown;
+    g_pStateManager->states[2].interrupt = NULL;
+    g_pStateManager->states[2].heartbeat = StateTitleScreen_Heartbeat;
+    g_pStateManager->states[2].enter = StateTitleScreen_Init;
+    g_pStateManager->states[2].exit = StateTitleScreen_Shutdown;
+    g_pStateManager->states[11].interrupt = NULL;
+    g_pStateManager->states[11].heartbeat = StateProgressionManager_Heartbeat;
+    g_pStateManager->states[11].enter = StateProgressionManager_Init;
+    g_pStateManager->states[11].exit = StateProgressionManager_Shutdown;
+    g_pStateManager->states[12].interrupt = NULL;
+    g_pStateManager->states[12].heartbeat = StateGameManager_Heartbeat;
+    g_pStateManager->states[12].enter = StateGameManager_Init;
+    g_pStateManager->states[12].exit = StateGameManager_Shutdown;
+    g_pStateManager->current = -1;
+    g_pStateManager->next = -1;
+}
 
 void StateManager_Destroy(void) {
-    M2C_UNK Deallocate(void *);
-    extern void *g_pStateManager;
+    void Deallocate(void *alloc);
+    extern StateManager *g_pStateManager;
     if (g_pStateManager != NULL) {
         Deallocate(g_pStateManager);
         g_pStateManager = NULL;
@@ -11,16 +93,6 @@ void StateManager_Destroy(void) {
 }
 
 s32 StateManager_GotoState(s32 state) {
-    typedef struct GameState {
-        void (*interrupt)(void);
-        void (*heartbeat)(void);
-        s8 (*enter)(s32 prev);
-        s8 (*exit)(s32 next);
-    } GameState;
-    typedef struct StateManager {
-        GameState states[13];
-        s32 current;
-    } StateManager;
     extern StateManager *g_pStateManager;
     extern void (*Interrupt_Process)(void);
     extern void (*Heartbeat_Process)(void);
@@ -48,28 +120,28 @@ s32 StateManager_GotoState(s32 state) {
 }
 
 s32 StateManager_CurrState(void) {
-    extern void *g_pStateManager;
-    return M2C_FIELD(g_pStateManager, s32 *, 0xD0);
+    extern StateManager *g_pStateManager;
+    return g_pStateManager->current;
 }
 
 s32 StateManager_QueuedState(void) {
-    extern void *g_pStateManager;
+    extern StateManager *g_pStateManager;
     s32 state;
 
-    state = M2C_FIELD(g_pStateManager, s32 *, 0xD4);
-    M2C_FIELD(g_pStateManager, s32 *, 0xD4) = -1;
+    state = g_pStateManager->next;
+    g_pStateManager->next = -1;
     return state;
 }
 
 s32 StateManager_QueueChange(s32 state) {
-    extern void *g_pStateManager;
+    extern StateManager *g_pStateManager;
     u32 FileManager_GetDeviceStatus(s32);
-    if (M2C_FIELD(g_pStateManager, s32 *, 0xD4) == -1) {
+    if (g_pStateManager->next == -1) {
         if (state == 8 || FileManager_GetDeviceStatus(0) == 1) {
-            M2C_FIELD(g_pStateManager, s32 *, 0xD4) = state;
+            g_pStateManager->next = state;
         }
     }
-    return M2C_FIELD(g_pStateManager, s32 *, 0xD4);
+    return g_pStateManager->next;
 }
 
 void State_GetGameStateStr(s32 state, char *str) {
@@ -79,19 +151,19 @@ void State_GetGameStateStr(s32 state, char *str) {
         strcpy(str, "STATE_NONE");
         break;
     case 4:
-        strcpy(str, "STATE_XXXXXXXXXXX");
+        strcpy(str, "STATE_START_MENU");
         break;
     case 5:
-        strcpy(str, "STATE_XXXXXXXA");
+        strcpy(str, "STATE_GAME_PLAY");
         break;
     case 8:
-        strcpy(str, "STATE_XXXXXXXB");
+        strcpy(str, "STATE_SHUTDOWN");
         break;
     case 11:
-        strcpy(str, "STATE_XXXXXXXXXXXXXXXXXXXX");
+        strcpy(str, "STATE_PROGRESSION_MANAGER");
         break;
     case 12:
-        strcpy(str, "STATE_XXXX");
+        strcpy(str, "STATE_GAME_MANAGER");
         break;
     case -1:
     default:

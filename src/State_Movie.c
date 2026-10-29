@@ -1,9 +1,11 @@
 #include "common.h"
 
+#pragma readonly_strings on
+
 /* the movie list to play back, and how far into it the next name starts */
-u32 g_curMovieIndex;
-u32 g_moviePlaybackName;
 u8 g_buttonUpCnt;
+u32 g_moviePlaybackName;
+u32 g_curMovieIndex;
 s32 g_returnState = 4;
 
 static char *StateMovie_GetNextMovieName(void) {
@@ -73,3 +75,45 @@ s32 StateMovie_Shutdown(void) {
     StateGameManager_RefreshMCPTextures();
     return 1;
 }
+
+s32 StateMovie_Heartbeat(void) {
+	M2C_UNK ProcessManager_Heartbeat();
+	M2C_UNK Input_KeyPress();
+	M2C_UNK Mpeg_Heartbeat();
+	M2C_UNK Mpeg_StopMovie();
+	M2C_UNK Mpeg_Destroy();
+	M2C_UNK Mpeg_Create();
+	M2C_UNK Mpeg_StartMovie();
+	M2C_UNK Mpeg_Render();
+	M2C_UNK StateManager_QueueChange();
+	AudioSettings *GameSettings_GetAudioSettings();
+	s8 skip;
+
+	ProcessManager_Heartbeat(0);
+	skip = (s8)Input_KeyPress(0, 9) || (s8)Input_KeyPress(0, 0);
+	if (!(s8)Mpeg_Heartbeat() || (skip && g_buttonUpCnt > 10)) {
+		char *name = StateMovie_GetNextMovieName();
+
+		Mpeg_StopMovie();
+		if (name != NULL) {
+			AudioSettings *audio = GameSettings_GetAudioSettings();
+
+			Mpeg_Destroy();
+			Mpeg_Create();
+			Mpeg_StartMovie(name, audio->sfxVolume, audio->sfxVolume / 100.0f);
+			g_buttonUpCnt = 0;
+		} else {
+			g_moviePlaybackName = 0;
+			Mpeg_Destroy();
+			StateManager_QueueChange(g_returnState);
+			return 1;
+		}
+	} else if (!skip) {
+		g_buttonUpCnt++;
+	} else {
+		g_buttonUpCnt = 0;
+	}
+	Mpeg_Render();
+	return 1;
+}
+

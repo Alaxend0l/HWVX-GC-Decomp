@@ -5,6 +5,10 @@ typedef struct SoundSequence {
     u32 flags;    /* 0x74 */
     u8 pad78[0x38];
     u8 *params;   /* 0xB0 */
+    u8 padB4[0xC8 - 0xB4];
+    struct SoundSequence *queued; /* 0xC8 */
+    u8 padCC[0xD0 - 0xCC];
+    s32 sources[4]; /* 0xD0 */
 } SoundSequence;
 
 u32 ThingManager_GetActiveSoundSequences(u8 **list, u32 max);
@@ -63,6 +67,37 @@ s32 SoundSeq_Init(u8 *seq, u8 *data) {
     return 1;
 }
 
+static void SoundSeq_RemoveFromQueue(SoundSequence *seq) {
+    void Trigger_SoundSequenceQueueEmptied(void);
+    SoundSequence *next;
+
+    next = seq->queued;
+    if (next != NULL) {
+        next->flags &= ~0x80000000;
+        seq->queued = NULL;
+    } else {
+        Trigger_SoundSequenceQueueEmptied();
+    }
+}
+
+void SoundSeq_Release(SoundSequence *seq) {
+    s8 SoundSource_IsLooping(s32 index);
+    void SoundSource_Stop(s32 index);
+    void Thing_Release(void *thing);
+    u32 i;
+
+    if (seq->flags & 0x40000000) {
+        SoundSeq_RemoveFromQueue(seq);
+    }
+    for (i = 0; i < 4; i++) {
+        if (seq->sources[i] >= 0 && SoundSource_IsLooping(seq->sources[i])) {
+            SoundSource_Stop(seq->sources[i]);
+        }
+        seq->sources[i] = -1;
+    }
+    Thing_Release(seq);
+}
+
 s32 SoundSeq_Invalidate(SoundSequence *seq, u32 start, u32 end)
 {
     if ((u32)seq->params >= start && (u32)seq->params < end) {
@@ -77,7 +112,7 @@ s32 SoundSequence_Play(s8 *seq, Vector4 *pos) {
     extern Vector4 g_zeroVector;
     extern s8 g_bFreezeWorld;
     Vector4 p;
-    struct { Vector4 pos; s8 *seq; u8 flag; } params;
+    struct { Vector4 pos; s8 *seq; u8 flag; } params __attribute__((aligned(16)));
     u8 *thing;
 
     if (!seq[4] && PlayerManager_PlayerHumanCount() > 1) {
@@ -103,12 +138,39 @@ s32 SoundSequence_Play(s8 *seq, Vector4 *pos) {
 
 s32 SoundSequence_PlayQueued(s8 *seq, Vector4 *pos) {
     u32 ThingManager_GetActiveSoundSequences(u8 **list, u32 max);
+    u8 PlayerManager_PlayerHumanCount(void);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    extern Vector4 g_zeroVector;
+    extern s8 g_bFreezeWorld;
+    Vector4 p;
     u8 *list[0x80];
-    s32 thing;
+    struct { Vector4 pos; s8 *seq; u8 flag; } params __attribute__((aligned(16)));
+    u8 *created;
+    u8 *thing;
     s8 found;
     u32 n;
 
-    thing = SoundSequence_Play(seq, pos);
+    if (!seq[4] && PlayerManager_PlayerHumanCount() > 1) {
+        thing = (u8 *)-1;
+    } else {
+        if (pos != NULL) {
+            p = *pos;
+        } else {
+            p = g_zeroVector;
+        }
+        params.pos = p;
+        params.seq = seq;
+        params.flag = 0;
+        created = ThingManager_DARYL_CreateThing(0x10, &params);
+        if (created != NULL) {
+            if (g_bFreezeWorld) {
+                *(u32 *)(created + 0x74) |= 0x100000;
+            }
+            thing = created;
+        } else {
+            thing = (u8 *)-1;
+        }
+    }
     if ((u32)thing != 0xFFFFFFFF) {
         found = 0;
         n = ThingManager_GetActiveSoundSequences(list, 0x80);
@@ -120,31 +182,32 @@ s32 SoundSequence_PlayQueued(s8 *seq, Vector4 *pos) {
             }
         }
         if (found) {
-            *(s32 *)(list[n] + 0xc8) = thing;
-            *(u32 *)((u8 *)thing + 0x74) |= 0x80000000;
+            *(u8 **)(list[n] + 0xc8) = thing;
+            *(u32 *)(thing + 0x74) |= 0x80000000;
         }
-        *(u32 *)((u8 *)thing + 0x74) |= 0x40000000;
-        *(u8 **)((u8 *)thing + 0xc8) = NULL;
+        *(u32 *)(thing + 0x74) |= 0x40000000;
+        *(u8 **)(thing + 0xc8) = NULL;
     }
-    return thing;
+    return (s32)thing;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 void SoundSequence_ClearQueue(void) {
-    u32 ThingManager_GetActiveSoundSequences(u8 **list, u32 max);
-    u8 *list[128];
+    SoundSequence *list[128];
     u32 count;
 
-    count = ThingManager_GetActiveSoundSequences(list, 128);
+    count = ThingManager_GetActiveSoundSequences((u8 **)list, 128);
     while (count != 0) {
         count--;
-        if (M2C_FIELD(list[count], u32 *, 0x74) & 0x40000000) {
-            M2C_FIELD(list[count], u32 *, 0x74) &= ~0x40000000;
-            M2C_FIELD(list[count], u8 **, 0xC8) = NULL;
+        if (list[count]->flags & 0x40000000) {
+            list[count]->flags &= ~0x40000000;
+            list[count]->queued = NULL;
             SoundSeq_Release(list[count]);
         }
     }
 }
-
+#pragma pop
 s32 SoundSequence_GetTotalElementsInQueue(void)
 {
     u8 *list[128];

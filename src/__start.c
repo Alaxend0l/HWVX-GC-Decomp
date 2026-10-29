@@ -22,6 +22,21 @@ void * memset(void *dest, s32 value, u32 count);
 void __flush_cache(void *address, u32 size);
 void OSResetSystem(s32 reset, u32 resetCode, s32 forceMenu);
 
+static void __copy_rom_section(void *target, void *source, u32 size)
+{
+    if (size && (target != source)) {
+        memcpy(target, source, size);
+        __flush_cache(target, size);
+    }
+}
+
+static void __init_bss_section(void *target, u32 size)
+{
+    if (size) {
+        memset(target, 0, size);
+    }
+}
+
 void __check_pad3(void)
 {
     if ((*((u16 *)0x800030e4) & 0xeef) == 0xeef) {
@@ -31,7 +46,7 @@ void __check_pad3(void)
 
 void __check_pad3(void);
 void __init_registers(void);
-void __init_data(void);
+static void __init_data(void);
 void __init_hardware(void);
 void __init_user(void);
 void DBInit(void);
@@ -125,29 +140,28 @@ void __init_registers(void)
 {
 }
 
-void __init_data(void)
+#pragma scheduling off
+#pragma peephole off
+__declspec(section ".init") static void __init_data(void)
 {
     rom_copy_info * info;
     bss_init_info * bss;
 
     info = _rom_copy_info;
-    while (info->size != 0)
-    {
-        if ((info->source != NULL) && (info->source != info->target))
-        {
-            memcpy(info->target, info->source, info->size);
-            __flush_cache(info->target, info->size);
+    while (1) {
+        if (info->size == 0) {
+            break;
         }
+        __copy_rom_section(info->target, info->source, info->size);
         info++;
     }
 
     bss = _bss_init_info;
-    while (bss->size != 0)
-    {
-        if (bss->target != NULL)
-        {
-            memset(bss->target, 0, bss->size);
+    while (1) {
+        if (bss->size == 0) {
+            break;
         }
+        __init_bss_section(bss->target, bss->size);
         bss++;
     }
 }

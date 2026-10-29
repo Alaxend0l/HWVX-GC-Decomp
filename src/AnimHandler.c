@@ -1,5 +1,6 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
 
 void MotionState_Init(void *arg0, s8 reset) {
     typedef struct {
@@ -105,6 +106,37 @@ done:
     MotionState_ReleaseSlavesByType((s32)motion, 0xFF);
 }
 
+void MotionState_ReleaseSlavesByType(s32 state, u8 type) {
+    void ThingManagerList_Remove(void **list, void *thing);
+    void ThingManagerList_Append(void **list, void *thing);
+    typedef struct SlaveThing {
+        u8 pad0[0x74];
+        u32 flags;
+        u8 pad78[0x83 - 0x78];
+        u8 type;
+        u8 pad84[0x8C - 0x84];
+        void (**vtbl)(struct SlaveThing *);
+        u8 pad90[0xA4 - 0x90];
+        struct SlaveThing *next;
+        s32 pool;
+    } SlaveThing;
+    SlaveThing *thing;
+    SlaveThing *next;
+
+    thing = *(SlaveThing **)(state + 0x14);
+    while (thing != NULL) {
+        next = thing->next;
+        if (thing->type == type) {
+            thing->vtbl[1](thing);
+            ThingManagerList_Remove((void **)(state + 0x14), thing);
+            thing->flags &= ~0x200000;
+            thing->flags |= 0x1000;
+            ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->pool], thing);
+        }
+        thing = next;
+    }
+}
+
 void MotionState_Release(s32 state) {
     M2C_UNK ThingManagerList_EmancipateSlaves(s32, s32);
     M2C_UNK ThingManagerList_ReleaseAll(s32);
@@ -152,42 +184,61 @@ void MotionState_Draw(void *state) {
 }
 
 void MotionState_Draw2(void *state, s32 mtx, u8 *matrices) {
+    typedef struct GeomEntry {
+        void *geom;
+        u16 matrix;
+        u16 pad6;
+    } GeomEntry;
+    typedef struct AnimData {
+        u32 numAux;
+        void **aux;
+        u32 numGeom;
+        GeomEntry *geom;
+        u8 pad10[4];
+        s32 *skel;
+    } AnimData;
+    typedef struct DrawState {
+        AnimData *anim;
+        u8 pad4[0xC];
+        u8 *cached;
+    } DrawState;
     void MotionState_ExtractBlendedKeyFrame(u8 *state, void *keyFrame);
     void Gfx_DrawAnimGeometryAux(void *geom, void *mtx, s32 skel, s32 arg3);
     void Gfx_DrawGeometry(void *geom, void *mtx);
     void MotionState_DrawSlaves(void *state, s32 arg1);
     void TEST_AnimTraverseHeirarchyToMatricesWorld(Vector4 *quat, void *pos, void *frames, s32 skel, void *matrices, f32 time);
+    DrawState *ds = state;
     s32 *skel;
     u8 *cached;
     u32 i;
-    u8 *e;
+    GeomEntry *e;
     Vector4 quat;
     Matrix4 out;
     u8 frames[0x800];
 
-    skel = M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), s32 **, 0x14);
-    if (M2C_FIELD(state, u8 **, 0x10) == NULL) {
+    skel = ds->anim->skel;
+    if (ds->cached == NULL) {
         MotionState_ExtractBlendedKeyFrame(state, frames);
         SubMatrixToQuaternion((void *)mtx, &quat);
         TEST_AnimTraverseHeirarchyToMatricesWorld(&quat, (void *)(mtx + 0x30), frames, *skel, matrices, 1.0f);
-        for (i = 0; i < M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u32 *, 0x0); i++) {
-            Gfx_DrawAnimGeometryAux(M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), void ***, 0x4)[i], matrices, *skel, 0);
+        for (i = 0; i < ds->anim->numAux; i++) {
+            Gfx_DrawAnimGeometryAux(ds->anim->aux[i], matrices, *skel, 0);
         }
-        for (i = 0; i < M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u32 *, 0x8); i++) {
-            e = M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u8 **, 0xC) + i * 8;
-            Gfx_DrawGeometry(M2C_FIELD(e, void **, 0x0), matrices + (M2C_FIELD(e, u16 *, 0x4) << 6));
+        for (i = 0; i < ds->anim->numGeom; i++) {
+            e = &ds->anim->geom[i];
+            Gfx_DrawGeometry(e->geom, matrices + (e->matrix << 6));
         }
         MotionState_DrawSlaves(state, 0);
     } else {
-        cached = M2C_FIELD(state, u8 **, 0x10);
-        for (i = 0; i < M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u32 *, 0x0); i++) {
-            Gfx_DrawAnimGeometryAux(M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), void ***, 0x4)[i], cached, *skel, mtx);
+        cached = ds->cached;
+        for (i = 0; i < ds->anim->numAux; i++) {
+            Gfx_DrawAnimGeometryAux(ds->anim->aux[i], cached, *skel, mtx);
         }
-        for (i = 0; i < M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u32 *, 0x8); i++) {
+        for (i = 0; i < ds->anim->numGeom; i++) {
             void *geom;
-            e = M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u8 **, 0xC) + i * 8;
-            geom = M2C_FIELD(e, void **, 0x0);
-            MultiplyMatrix((Matrix4 *)(cached + (M2C_FIELD(e, u16 *, 0x4) << 6)), (void *)mtx, &out);
+            e = &ds->anim->geom[i];
+            geom = e->geom;
+            MultiplyMatrix((Matrix4 *)(cached + (e->matrix << 6)), (void *)mtx, &out);
             Gfx_DrawGeometry(geom, &out);
         }
         MotionState_DrawSlaves(state, mtx);
@@ -375,6 +426,129 @@ void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps) {
     }
 }
 
+void MotionState_DrawSlaves(void *state, s32 arg1) {
+    extern Matrix4 g_identity;
+    void Thing_DrawSlaves(void *thing);
+    void CopyVector(Vector4 *dst, Vector4 *src);
+    void CopyMatrix(void *dst, void *src);
+    void MultiplyMatrix(Matrix4 *a, void *b, Matrix4 *out);
+    typedef struct SlaveThing {
+        u8 pad0[0x10];
+        Matrix4 mtx;
+        Vector4 quat;
+        u8 pad60[0x74 - 0x60];
+        u32 flags;
+        u8 pad78[0x82 - 0x78];
+        u8 bone;
+        u8 pad83[0x8C - 0x83];
+        void (**vtbl)();
+        u8 pad90[0xA4 - 0x90];
+        struct SlaveThing *next;
+    } SlaveThing;
+    typedef struct {
+        u8 pad0[0x10];
+        Matrix4 *matrices;
+        SlaveThing *slaves;
+    } State;
+    Matrix4 *matrix = (Matrix4 *)arg1;
+    SlaveThing *slave;
+    Vector4 quat __attribute__((aligned(16)));
+    Matrix4 mtx __attribute__((aligned(16)));
+    Matrix4 out __attribute__((aligned(16)));
+
+    slave = ((State *)state)->slaves;
+    if (matrix != NULL && matrix != &g_identity) {
+        for (; slave != NULL; slave = slave->next) {
+            if (slave->flags & 0x200200) {
+                continue;
+            }
+            CopyVector(&quat, &slave->quat);
+            CopyMatrix(&mtx, &slave->mtx);
+            MultiplyMatrix(&((State *)state)->matrices[slave->bone], matrix, &out);
+            slave->vtbl[9](slave, &out);
+            slave->vtbl[4](slave);
+            Thing_DrawSlaves(slave);
+            CopyVector(&slave->quat, &quat);
+            CopyMatrix(&slave->mtx, &mtx);
+        }
+    } else {
+        for (; slave != NULL; slave = slave->next) {
+            if (slave->flags & 0x200200) {
+                continue;
+            }
+            CopyVector(&quat, &slave->quat);
+            CopyMatrix(&mtx, &slave->mtx);
+            slave->vtbl[9](slave, &((State *)state)->matrices[slave->bone]);
+            slave->vtbl[4](slave);
+            Thing_DrawSlaves(slave);
+            CopyVector(&slave->quat, &quat);
+            CopyMatrix(&slave->mtx, &mtx);
+        }
+    }
+}
+
+void MotionState_DrawSlavesAttachCoronaOnly(void *state, s32 arg1) {
+    extern Matrix4 g_identity;
+    extern u8 g_attachVTable[];
+    void Thing_DrawSlaves(void *thing);
+    void CopyVector(Vector4 *dst, Vector4 *src);
+    void CopyMatrix(void *dst, void *src);
+    void MultiplyMatrix(Matrix4 *a, void *b, Matrix4 *out);
+    typedef struct SlaveThing {
+        u8 pad0[0x10];
+        Matrix4 mtx;
+        Vector4 quat;
+        u8 pad60[0x74 - 0x60];
+        u32 flags;
+        u8 pad78[0x82 - 0x78];
+        u8 bone;
+        u8 pad83[0x8C - 0x83];
+        void (**vtbl)();
+        u8 pad90[0xA4 - 0x90];
+        struct SlaveThing *next;
+    } SlaveThing;
+    typedef struct {
+        u8 pad0[0x10];
+        Matrix4 *matrices;
+        SlaveThing *slaves;
+    } State;
+    Matrix4 *matrix = (Matrix4 *)arg1;
+    SlaveThing *slave;
+    Vector4 quat __attribute__((aligned(16)));
+    Matrix4 mtx __attribute__((aligned(16)));
+    Matrix4 out __attribute__((aligned(16)));
+
+    slave = ((State *)state)->slaves;
+    if (matrix != NULL && matrix != &g_identity) {
+        for (; slave != NULL; slave = slave->next) {
+            if (!(slave->flags & 0x200200) && slave->vtbl == (void *)g_attachVTable) {
+                CopyVector(&quat, &slave->quat);
+                CopyMatrix(&mtx, &slave->mtx);
+                MultiplyMatrix(&((State *)state)->matrices[slave->bone], matrix, &out);
+                slave->vtbl[9](slave, &out);
+                slave->vtbl[4](slave);
+                Thing_DrawSlaves(slave);
+                CopyVector(&slave->quat, &quat);
+                CopyMatrix(&slave->mtx, &mtx);
+            }
+        }
+    } else {
+        for (; slave != NULL; slave = slave->next) {
+            if (!(slave->flags & 0x200200) && slave->vtbl == (void *)g_attachVTable) {
+                CopyVector(&quat, &slave->quat);
+                CopyMatrix(&mtx, &slave->mtx);
+                slave->vtbl[9](slave, &((State *)state)->matrices[slave->bone]);
+                slave->vtbl[4](slave);
+                Thing_DrawSlaves(slave);
+                CopyVector(&slave->quat, &quat);
+                CopyMatrix(&slave->mtx, &mtx);
+            }
+        }
+    }
+}
+
+#pragma push
+#pragma dont_inline on
 void MotionState_BuildMatricesWorld(void *arg0, void *arg1, void *motionState, f32 time) {
     u8 frames[0x800];
     void *anim;
@@ -387,7 +561,10 @@ void MotionState_BuildMatricesWorld(void *arg0, void *arg1, void *motionState, f
         TEST_AnimTraverseHeirarchyToMatricesWorld(arg0, arg1, frames, *skel, M2C_FIELD(motionState, u32 *, 0x10), time);
     }
 }
+#pragma pop
 
+#pragma push
+#pragma use_lmw_stmw on
 s32 AnimNodes_BlowBranch(u8 *node) {
     s32 count = 1;
     u32 i;
@@ -403,4 +580,5 @@ s32 AnimNodes_BlowBranch(u8 *node) {
     }
     return count;
 }
+#pragma pop
 

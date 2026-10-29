@@ -1,12 +1,5 @@
 #include "common.h"
 
-struct TracerEntry {
-    u8 pad0[0x4CE];
-    s16 active;
-    u8 pad4D0[0x4E0 - 0x4D0];
-};
-extern struct TracerEntry tracers[32];
-
 struct Thing {
     u8 pad0[0xB0];
     s32 tracer;
@@ -33,7 +26,18 @@ typedef struct Tracer {
     u8 unk4D6[0xA];
 } Tracer;
 
-extern Tracer tracers_802CD600[];
+Tracer tracers[32];
+
+static inline u32 Tracer_FindFree(void) {
+    u32 i;
+
+    for (i = 0; i < 32; i++) {
+        if (tracers[i].active == 0) {
+            break;
+        }
+    }
+    return i;
+}
 
 s32 Tracer_Init(u8 *thing, u8 *data) {
     s32 Thing_Init(void *thing, s32 arg1);
@@ -45,18 +49,18 @@ s32 Tracer_Init(u8 *thing, u8 *data) {
     *(Vector4 *)(thing + 0x40) = *(Vector4 *)data;
     *(u32 *)(thing + 0xB4) = Tracer_FindFree();
     Tracer_ClearTracer(*(u32 *)(thing + 0xB4));
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].active = 1;
+    tracers[*(u32 *)(thing + 0xB4)].active = 1;
     params = *(u8 **)(thing + 0xB0);
     if (*(u32 *)(params + 0x54) != 0) {
-        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D0 = **(u32 **)(params + 0x58);
+        tracers[*(u32 *)(thing + 0xB4)].unk4D0 = **(u32 **)(params + 0x58);
     } else {
-        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D0 = 0xFFFF;
+        tracers[*(u32 *)(thing + 0xB4)].unk4D0 = 0xFFFF;
     }
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D2 = *(u8 *)(*(u8 **)(thing + 0xB0) + 0x20);
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4BC = -1.0f * *(f32 *)(*(u8 **)(thing + 0xB0) + 0x40) / 14.0f;
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C4 = 0;
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C8 = 0;
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C0 = 0.0f;
+    tracers[*(u32 *)(thing + 0xB4)].unk4D2 = *(u8 *)(*(u8 **)(thing + 0xB0) + 0x20);
+    tracers[*(u32 *)(thing + 0xB4)].unk4BC = -1.0f * *(f32 *)(*(u8 **)(thing + 0xB0) + 0x40) / 14.0f;
+    tracers[*(u32 *)(thing + 0xB4)].unk4C4 = 0;
+    tracers[*(u32 *)(thing + 0xB4)].unk4C8 = 0;
+    tracers[*(u32 *)(thing + 0xB4)].unk4C0 = 0.0f;
     return 1;
 }
 
@@ -80,8 +84,8 @@ s32 Tracer_Move(u8 *thing) {
     s32 i;
     TracerPoint *p;
 
-    p = tracers_802CD600[*(u32 *)(thing + 0xB4)].head;
-    for (i = 0; i < tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4CC; i++) {
+    p = tracers[*(u32 *)(thing + 0xB4)].head;
+    for (i = 0; i < tracers[*(u32 *)(thing + 0xB4)].unk4CC; i++) {
         s32 c;
         p->pos[0] += p->unk20[0];
         p->pos[1] += p->unk20[1];
@@ -89,29 +93,29 @@ s32 Tracer_Move(u8 *thing) {
         p->vel[0] += p->unk30[0];
         p->vel[1] += p->unk30[1];
         p->vel[2] += p->unk30[2];
-        p->unk40 += tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4BC;
-        c = p->color[0] + tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[0];
+        p->unk40 += tracers[*(u32 *)(thing + 0xB4)].unk4BC;
+        c = p->color[0] + tracers[*(u32 *)(thing + 0xB4)].unk4B8[0];
         if (c < 0) {
             c = 0;
         } else if (c > 255) {
             c = 255;
         }
         p->color[0] = c;
-        c = p->color[1] + tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[1];
+        c = p->color[1] + tracers[*(u32 *)(thing + 0xB4)].unk4B8[1];
         if (c < 0) {
             c = 0;
         } else if (c > 255) {
             c = 255;
         }
         p->color[1] = c;
-        c = p->color[2] + tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[2];
+        c = p->color[2] + tracers[*(u32 *)(thing + 0xB4)].unk4B8[2];
         if (c < 0) {
             c = 0;
         } else if (c > 255) {
             c = 255;
         }
         p->color[2] = c;
-        c = p->color[3] + tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[3];
+        c = p->color[3] + tracers[*(u32 *)(thing + 0xB4)].unk4B8[3];
         if (c < 0) {
             c = 0;
         } else if (c > 255) {
@@ -122,54 +126,54 @@ s32 Tracer_Move(u8 *thing) {
     }
     switch (*(u8 *)(*(u8 **)(thing + 0xB0) + 0x21)) {
     case 0:
-        AccumulateVector(thing + 0x10, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->pos, *(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
-        AccumulateVector(thing + 0x10, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->vel, -*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
-        PSVECScale(thing + 0x10, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk20, -(*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
-        PSVECScale(thing + 0x10, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk30, (*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        AccumulateVector(thing + 0x10, thing + 0x40, tracers[*(u32 *)(thing + 0xB4)].tail->pos, *(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        AccumulateVector(thing + 0x10, thing + 0x40, tracers[*(u32 *)(thing + 0xB4)].tail->vel, -*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        PSVECScale(thing + 0x10, tracers[*(u32 *)(thing + 0xB4)].tail->unk20, -(*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        PSVECScale(thing + 0x10, tracers[*(u32 *)(thing + 0xB4)].tail->unk30, (*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
         break;
     case 1:
-        AccumulateVector(thing + 0x20, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->pos, *(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
-        AccumulateVector(thing + 0x20, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->vel, -*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
-        PSVECScale(thing + 0x20, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk20, -(*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
-        PSVECScale(thing + 0x20, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk30, (*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        AccumulateVector(thing + 0x20, thing + 0x40, tracers[*(u32 *)(thing + 0xB4)].tail->pos, *(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        AccumulateVector(thing + 0x20, thing + 0x40, tracers[*(u32 *)(thing + 0xB4)].tail->vel, -*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        PSVECScale(thing + 0x20, tracers[*(u32 *)(thing + 0xB4)].tail->unk20, -(*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        PSVECScale(thing + 0x20, tracers[*(u32 *)(thing + 0xB4)].tail->unk30, (*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
         break;
     case 2:
-        AccumulateVector(thing + 0x30, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->pos, *(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
-        AccumulateVector(thing + 0x30, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->vel, -*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
-        PSVECScale(thing + 0x30, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk20, -(*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
-        PSVECScale(thing + 0x30, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk30, (*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        AccumulateVector(thing + 0x30, thing + 0x40, tracers[*(u32 *)(thing + 0xB4)].tail->pos, *(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        AccumulateVector(thing + 0x30, thing + 0x40, tracers[*(u32 *)(thing + 0xB4)].tail->vel, -*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        PSVECScale(thing + 0x30, tracers[*(u32 *)(thing + 0xB4)].tail->unk20, -(*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        PSVECScale(thing + 0x30, tracers[*(u32 *)(thing + 0xB4)].tail->unk30, (*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
         break;
     }
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk40 = tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C0;
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C0 += g_fDeltaTimeSec * *(f32 *)(*(u8 **)(thing + 0xB0) + 0x38);
+    tracers[*(u32 *)(thing + 0xB4)].tail->unk40 = tracers[*(u32 *)(thing + 0xB4)].unk4C0;
+    tracers[*(u32 *)(thing + 0xB4)].unk4C0 += g_fDeltaTimeSec * *(f32 *)(*(u8 **)(thing + 0xB0) + 0x38);
     colour.reset = 1;
     colour2.reset = 1;
-    ExtractColorKey(*(u8 **)(thing + 0xB0) + 0x44, &colour, tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C4);
-    ExtractColorKey(*(u8 **)(thing + 0xB0) + 0x4C, &colour2, tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C4);
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C4 += g_iDeltaTimeMS;
-    if (tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D0 != 0xFFFF) {
-        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C8 += g_iDeltaTimeMS;
-        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D4 = tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C8 >> 4;
-        if (tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D4 >= *(u32 *)(*(u8 **)(thing + 0xB0) + 0x54)) {
-            tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C8 = 0;
-            tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D4 = 0;
+    ExtractColorKey(*(u8 **)(thing + 0xB0) + 0x44, &colour, tracers[*(u32 *)(thing + 0xB4)].unk4C4);
+    ExtractColorKey(*(u8 **)(thing + 0xB0) + 0x4C, &colour2, tracers[*(u32 *)(thing + 0xB4)].unk4C4);
+    tracers[*(u32 *)(thing + 0xB4)].unk4C4 += g_iDeltaTimeMS;
+    if (tracers[*(u32 *)(thing + 0xB4)].unk4D0 != 0xFFFF) {
+        tracers[*(u32 *)(thing + 0xB4)].unk4C8 += g_iDeltaTimeMS;
+        tracers[*(u32 *)(thing + 0xB4)].unk4D4 = tracers[*(u32 *)(thing + 0xB4)].unk4C8 >> 4;
+        if (tracers[*(u32 *)(thing + 0xB4)].unk4D4 >= *(u32 *)(*(u8 **)(thing + 0xB0) + 0x54)) {
+            tracers[*(u32 *)(thing + 0xB4)].unk4C8 = 0;
+            tracers[*(u32 *)(thing + 0xB4)].unk4D4 = 0;
         }
-        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D0 = (*(u32 **)(*(u8 **)(thing + 0xB0) + 0x58))[tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D4];
+        tracers[*(u32 *)(thing + 0xB4)].unk4D0 = (*(u32 **)(*(u8 **)(thing + 0xB0) + 0x58))[tracers[*(u32 *)(thing + 0xB4)].unk4D4];
     }
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->color[0] = colour.c[0];
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->color[1] = colour.c[1];
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->color[2] = colour.c[2];
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->color[3] = colour.c[3];
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[0] = -(colour.c[0] - colour2.c[0]) / 15;
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[1] = -(colour.c[1] - colour2.c[1]) / 15;
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[2] = -(colour.c[2] - colour2.c[2]) / 15;
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[3] = -(colour.c[3] - colour2.c[3]) / 15;
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail = tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->next;
-    if (tracers_802CD600[*(u32 *)(thing + 0xB4)].tail == tracers_802CD600[*(u32 *)(thing + 0xB4)].head) {
-        tracers_802CD600[*(u32 *)(thing + 0xB4)].head = tracers_802CD600[*(u32 *)(thing + 0xB4)].head->next;
+    tracers[*(u32 *)(thing + 0xB4)].tail->color[0] = colour.c[0];
+    tracers[*(u32 *)(thing + 0xB4)].tail->color[1] = colour.c[1];
+    tracers[*(u32 *)(thing + 0xB4)].tail->color[2] = colour.c[2];
+    tracers[*(u32 *)(thing + 0xB4)].tail->color[3] = colour.c[3];
+    tracers[*(u32 *)(thing + 0xB4)].unk4B8[0] = -(colour.c[0] - colour2.c[0]) / 15;
+    tracers[*(u32 *)(thing + 0xB4)].unk4B8[1] = -(colour.c[1] - colour2.c[1]) / 15;
+    tracers[*(u32 *)(thing + 0xB4)].unk4B8[2] = -(colour.c[2] - colour2.c[2]) / 15;
+    tracers[*(u32 *)(thing + 0xB4)].unk4B8[3] = -(colour.c[3] - colour2.c[3]) / 15;
+    tracers[*(u32 *)(thing + 0xB4)].tail = tracers[*(u32 *)(thing + 0xB4)].tail->next;
+    if (tracers[*(u32 *)(thing + 0xB4)].tail == tracers[*(u32 *)(thing + 0xB4)].head) {
+        tracers[*(u32 *)(thing + 0xB4)].head = tracers[*(u32 *)(thing + 0xB4)].head->next;
     }
-    if (tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4CC < 15) {
-        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4CC++;
+    if (tracers[*(u32 *)(thing + 0xB4)].unk4CC < 15) {
+        tracers[*(u32 *)(thing + 0xB4)].unk4CC++;
     }
     return 1;
 }
@@ -183,7 +187,7 @@ void Tracer_Release(struct Thing *thing) {
 }
 
 void Tracer_ClearTracer(s32 index) {
-    Tracer *tracer = &tracers_802CD600[index];
+    Tracer *tracer = &tracers[index];
     u32 i;
 
     tracer->head = tracer->points;
@@ -197,7 +201,7 @@ void Tracer_ClearTracer(s32 index) {
         tracer->points[i].vel[3] = 1.0f;
         tracer->points[i].unk40 = 1.0f;
     }
-    tracers_802CD600[index].unk4A8 = tracer->points;
+    tracers[index].unk4A8 = tracer->points;
 }
 
 void Tracer_Render(u8 *thing) {
@@ -215,11 +219,11 @@ void Tracer_Render(u8 *thing) {
     s32 n;
 
     idx = *(u32 *)(thing + 0xB4);
-    if (tracers_802CD600[idx].active != 0 && tracers_802CD600[idx].unk4CC > 1) {
-        p = tracers_802CD600[idx].head;
+    if (tracers[idx].active != 0 && tracers[idx].unk4CC > 1) {
+        p = tracers[idx].head;
         n = 0;
-        tri = Gfx_Begin_GroupTriShaded(tracers_802CD600[idx].unk4D0, tracers_802CD600[idx].unk4D2, 0);
-        for (i = 0; i < (tracers_802CD600[idx].unk4CC == 15 ? tracers_802CD600[idx].unk4CC - 2 : tracers_802CD600[idx].unk4CC - 1); i++) {
+        tri = Gfx_Begin_GroupTriShaded(tracers[idx].unk4D0, tracers[idx].unk4D2, 0);
+        for (i = 0; i < (tracers[idx].unk4CC == 15 ? tracers[idx].unk4CC - 2 : tracers[idx].unk4CC - 1); i++) {
             tri[0].color[0][0] = p->color[0];
             tri[0].color[0][1] = p->color[1];
             tri[0].color[0][2] = p->color[2];
@@ -292,3 +296,37 @@ s32 Tracer_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     }
     return 0;
 }
+
+void Thing_PreMove();
+void Thing_GetMass();
+void Thing_DynamicCollideImpact();
+void Thing_GetCameraOrientationInfo();
+void Thing_GetInterfaceInfo();
+void Thing_SlaveTransform();
+void Thing_GetSurfaceScript();
+void Thing_GetNearestNavPoint();
+void Thing_GetInverseLocalInertiaTensor();
+void Thing_DynamicRotation();
+void Thing_CollideWithRay();
+void Thing_GetTargetPos();
+void Thing_GetOrientedCollision();
+
+void *g_tracerVTable[] = {
+    Tracer_Init,
+    Tracer_Release,
+    Thing_PreMove,
+    Tracer_Move,
+    Tracer_Render,
+    Thing_GetMass,
+    Thing_DynamicCollideImpact,
+    Thing_GetCameraOrientationInfo,
+    Thing_GetInterfaceInfo,
+    Thing_SlaveTransform,
+    Thing_GetSurfaceScript,
+    Thing_GetNearestNavPoint,
+    Thing_GetInverseLocalInertiaTensor,
+    Thing_DynamicRotation,
+    Thing_CollideWithRay,
+    Thing_GetTargetPos,
+    Thing_GetOrientedCollision,
+};

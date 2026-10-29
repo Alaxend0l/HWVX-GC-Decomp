@@ -1,0 +1,142 @@
+#include "common.h"
+
+typedef struct TRKBuffer {
+    u32 mutex;
+    s32 isInUse;
+    u32 length;
+    u32 position;
+    u8 data[0x880];
+} TRKBuffer;
+
+s32 TRKGetFreeBuffer(s32 *msgID, TRKBuffer **outMsg);
+void TRKReleaseBuffer(s32 idx);
+TRKBuffer *TRKGetBuffer(s32 idx);
+s32 TRKSetBufferPosition(TRKBuffer *b, u32 pos);
+s32 TRKRequestSend(TRKBuffer *msgBuf, s32 *bufferId, u32 p1, u32 p2, s32 p3);
+s32 TRKAppendBuffer1_ui32(TRKBuffer *b, u32 data);
+s32 TRKReadBuffer1_ui8(TRKBuffer *b, u8 *data);
+s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data);
+s32 TRKAppendBuffer1_ui16(TRKBuffer *b, u16 data);
+s32 TRKAppendBuffer_ui8(TRKBuffer *b, const u8 *data, s32 count);
+unsigned long strlen(const char *s);
+
+static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
+    if (b->position >= 0x880) {
+        return 0x301;
+    }
+    b->data[b->position++] = data;
+    b->length++;
+    return 0;
+}
+
+#pragma use_lmw_stmw on
+s32 HandlePositionFileSupportRequest(u32 fileHandle, u32 *position, u8 mode, u8 *ioResult) {
+    s32 error;
+    s32 replyBufferId;
+    TRKBuffer *replyBuffer;
+    s32 bufferId;
+    TRKBuffer *buffer;
+
+    error = TRKGetFreeBuffer(&bufferId, &buffer);
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui8(buffer, 0xD4);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui32(buffer, fileHandle);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui32(buffer, *position);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui8(buffer, mode);
+    }
+    if (error == 0) {
+        *ioResult = 0;
+        error = TRKRequestSend(buffer, &replyBufferId, 3, 3, 0);
+        if (error == 0) {
+            replyBuffer = TRKGetBuffer(replyBufferId);
+            TRKSetBufferPosition(replyBuffer, 2);
+        }
+        if (error == 0) {
+            error = TRKReadBuffer1_ui8(replyBuffer, ioResult);
+        }
+        if (error == 0) {
+            error = TRKReadBuffer1_ui32(replyBuffer, position);
+        } else {
+            *position = -1;
+        }
+        TRKReleaseBuffer(replyBufferId);
+    }
+    TRKReleaseBuffer(bufferId);
+    return error;
+}
+s32 HandleCloseFileSupportRequest(u32 fileHandle, u8 *ioResult) {
+    s32 error;
+    s32 replyBufferId;
+    TRKBuffer *replyBuffer;
+    s32 bufferId;
+    TRKBuffer *buffer;
+
+    error = TRKGetFreeBuffer(&bufferId, &buffer);
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui8(buffer, 0xD3);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui32(buffer, fileHandle);
+    }
+    if (error == 0) {
+        *ioResult = 0;
+        error = TRKRequestSend(buffer, &replyBufferId, 3, 3, 0);
+        if (error == 0) {
+            replyBuffer = TRKGetBuffer(replyBufferId);
+            TRKSetBufferPosition(replyBuffer, 2);
+        }
+        if (error == 0) {
+            error = TRKReadBuffer1_ui8(replyBuffer, ioResult);
+        }
+        TRKReleaseBuffer(replyBufferId);
+    }
+    TRKReleaseBuffer(bufferId);
+    return error;
+}
+
+s32 HandleOpenFileSupportRequest(const char *path, u8 replyError, u32 *param, u8 *ioResult) {
+    s32 error;
+    s32 replyBufferId;
+    TRKBuffer *replyBuffer;
+    s32 bufferId;
+    TRKBuffer *buffer;
+
+    *param = 0;
+    error = TRKGetFreeBuffer(&bufferId, &buffer);
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui8(buffer, 0xD2);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui8(buffer, replyError);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui16(buffer, strlen(path) + 1);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer_ui8(buffer, (const u8 *)path, strlen(path) + 1);
+    }
+    if (error == 0) {
+        *ioResult = 0;
+        error = TRKRequestSend(buffer, &replyBufferId, 7, 3, 0);
+        if (error == 0) {
+            replyBuffer = TRKGetBuffer(replyBufferId);
+            TRKSetBufferPosition(replyBuffer, 2);
+        }
+        if (error == 0) {
+            error = TRKReadBuffer1_ui8(replyBuffer, ioResult);
+        }
+        if (error == 0) {
+            error = TRKReadBuffer1_ui32(replyBuffer, param);
+        }
+        TRKReleaseBuffer(replyBufferId);
+    }
+    TRKReleaseBuffer(bufferId);
+    return error;
+}
+

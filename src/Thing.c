@@ -1,5 +1,52 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
+s8 IsPointWithinVolume();
+
+/* The transform every Thing starts with. */
+typedef struct Thing {
+    Vector4 unk0;      /* 0x00 */
+    Matrix4 mtx;       /* 0x10 */
+    Quaternion quat;   /* 0x50 */
+    Vector4 unk60;     /* 0x60 */
+    f32 unk70;         /* 0x70 */
+    u32 flags;         /* 0x74 */
+    u8 pad78[8];
+    s16 unk80;         /* 0x80 */
+    u8 unk82;          /* 0x82 */
+    u8 unk83;          /* 0x83 */
+    s32 unk84;         /* 0x84 */
+    s32 unk88;         /* 0x88 */
+    void **vtable;     /* 0x8C */
+    u8 pad90[4];
+    s32 unk94;         /* 0x94 */
+} Thing;
+
+s32 Thing_Init(Thing *thing, s32 arg1) {
+    extern Matrix4 g_identity;
+
+    thing->unk0.z = 0.0f;
+    thing->unk0.y = 0.0f;
+    thing->unk0.x = 0.0f;
+    thing->unk60.z = 0.0f;
+    thing->unk60.y = 0.0f;
+    thing->unk60.x = 0.0f;
+    thing->unk70 = 0.0f;
+    thing->quat.w = 1.0f;
+    thing->quat.x = 0.0f;
+    thing->quat.y = 0.0f;
+    thing->quat.z = 0.0f;
+    thing->flags = 0;
+    thing->unk80 = 0;
+    thing->mtx = g_identity;
+    thing->unk94 = 0;
+    thing->unk82 = 0xFF;
+    thing->unk83 = 0xFF;
+    thing->unk88 = 0;
+    thing->unk84 = 0;
+    return 1;
+}
 
 void Thing_Release(s32 thing) {
     M2C_UNK Grid_FreeObject(void *);
@@ -21,6 +68,38 @@ void Thing_Release(s32 thing) {
     player = M2C_FIELD(thing, void **, 0x94);
     if (player != NULL && M2C_FIELD(player, void **, 0x2C) == (void *)thing) {
         Player_DetachThingDeath(player);
+    }
+}
+
+s32 Thing_GetLocalCollision(u8 *thing) {
+    extern u8 g_destructibleVTable[];
+    extern u8 g_moverVTable[];
+    extern u8 g_physicalObjectVTable[];
+    extern u8 g_itemVTable[];
+    extern u8 g_droneVTable[];
+    u8 *vtable = M2C_FIELD(thing, u8 **, 0x8C);
+    u8 *physics;
+
+    if (vtable == g_carAVTable) {
+        physics = M2C_FIELD(M2C_FIELD(thing, u8 **, 0x3BC), u8 **, 0xA0);
+    } else if (vtable == g_destructibleVTable || vtable == g_moverVTable || vtable == g_physicalObjectVTable) {
+        physics = M2C_FIELD(M2C_FIELD(thing, u8 **, 0xC0), u8 **, 0x10);
+    } else if (vtable == g_itemVTable) {
+        physics = NULL;
+    } else if (vtable == g_droneVTable) {
+        physics = M2C_FIELD(M2C_FIELD(thing, u8 **, 0xC0), u8 **, 0x10);
+    } else {
+        physics = NULL;
+    }
+    switch (physics[0x10]) {
+    case 0:
+        return M2C_FIELD(physics, s32 *, 0x44);
+    case 1:
+        return M2C_FIELD(physics, s32 *, 0x48);
+    case 7:
+        return M2C_FIELD(physics, s32 *, 0x44);
+    default:
+        return 0;
     }
 }
 
@@ -61,80 +140,67 @@ s32 Thing_GetSource(void *arg0) {
     return 0;
 }
 
-s32 TriggerAirboxEntered(u32 *arg0) {
-    M2C_UNK sp8;
-    s32 temp_r30;
-    u32 *var_r31;
-    u32 temp_r27;
-    u32 temp_r3;
-    u32 var_r26;
-    u32 var_r28;
-    void *temp_r29;
+s8 Thing_HasThing(Thing *thing, void *target) {
+    s8 ThingManagerList_Get(void *list, void *target);
+    u8 *vtable = (u8 *)thing->vtable;
+    s8 found;
 
-    var_r28 = 0U;
-    var_r31 = arg0;
-    temp_r27 = *arg0;
-    temp_r30 = (temp_r27 * 4) + 4;
-loop_9:
-    if (var_r28 >= temp_r27) {
-        return 0;
-    }
-    temp_r29 = M2C_FIELD(var_r31, void **, 4);
-    if ((u32) M2C_FIELD(temp_r29, u32 *, 4) == 1U) {
-        var_r26 = 0U;
-loop_7:
-        if (var_r26 >= (u32) *(arg0 + temp_r30)) {
-            goto block_8;
+    if (vtable == g_carAVTable) {
+        if ((found = ThingManagerList_Get((u8 *)thing + 0x344, target)) != 0) {
+            return found;
         }
-        temp_r3 = M2C_FIELD(*(arg0 + ((temp_r27 + var_r26 + 2) * 4)), u32 *, 0x28);
-        if ((temp_r3 != 0U) && (IsPointWithinVolume(temp_r3 + 0x40, temp_r29, &sp8) != 0)) {
-            return 1;
+    } else if (vtable == g_creatureVTable) {
+        if ((found = ThingManagerList_Get((u8 *)thing + 0xE0, target)) != 0) {
+            return found;
         }
-        var_r26 += 1;
-        goto loop_7;
     }
-block_8:
-    var_r31 += 4;
-    var_r28 += 1;
-    goto loop_9;
+    return ThingManagerList_Get(&thing->unk88, target);
 }
 
-s32 TriggerCreatureVolumeEntered(u32 *arg0) {
-    M2C_UNK sp8;
-    s32 temp_r30;
-    u32 *var_r31;
-    u32 temp_r27;
-    u32 temp_r3;
-    u32 var_r26;
-    u32 var_r28;
-    void *temp_r29;
+s32 TriggerAirboxEntered(u32 *trigger) {
+    f32 dist;
+    u8 *volume;
+    u8 *thing;
+    u32 i;
+    u32 numThings;
+    u32 j;
 
-    var_r28 = 0U;
-    var_r31 = arg0;
-    temp_r27 = *arg0;
-    temp_r30 = (temp_r27 * 4) + 4;
-loop_9:
-    if (var_r28 >= temp_r27) {
-        return 0;
-    }
-    temp_r29 = M2C_FIELD(var_r31, void **, 4);
-    if ((u32) M2C_FIELD(temp_r29, u32 *, 4) == 1U) {
-        var_r26 = 0U;
-loop_7:
-        if (var_r26 >= (u32) *(arg0 + temp_r30)) {
-            goto block_8;
+    numThings = trigger[0];
+    for (i = 0; i < numThings; i++) {
+        thing = (u8 *)trigger[i + 1];
+        if (M2C_FIELD(thing, u32 *, 4) == 1) {
+            for (j = 0; j < trigger[numThings + 1]; j++) {
+                volume = M2C_FIELD(trigger[numThings + 2 + j], u8 **, 0x28);
+                if (volume != NULL && IsPointWithinVolume((Vector4 *)(volume + 0x40), thing, &dist)) {
+                    return 1;
+                }
+            }
         }
-        temp_r3 = M2C_FIELD(*(arg0 + ((temp_r27 + var_r26 + 2) * 4)), u32 *, 0x1C);
-        if ((temp_r3 != 0U) && (IsPointWithinVolume(temp_r3 + 0x40, temp_r29, &sp8) != 0)) {
-            return 1;
-        }
-        var_r26 += 1;
-        goto loop_7;
     }
-block_8:
-    var_r31 += 4;
-    var_r28 += 1;
-    goto loop_9;
+    return 0;
+}
+
+s32 TriggerCreatureVolumeEntered(u32 *trigger) {
+    f32 dist;
+    u8 *volume;
+    u8 *thing;
+    u32 i;
+    u32 numThings;
+    u32 j;
+
+    numThings = trigger[0];
+    for (i = 0; i < numThings; i++) {
+        thing = (u8 *)trigger[i + 1];
+        if (M2C_FIELD(thing, u32 *, 4) == 1) {
+            for (j = 0; j < trigger[numThings + 1]; j++) {
+                volume = M2C_FIELD(trigger[numThings + 2 + j], u8 **, 0x1C);
+                if (volume != NULL && IsPointWithinVolume((Vector4 *)(volume + 0x40), thing, &dist)) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
 }
 
 s32 TriggerItemVolumeEntered(u32 *trigger) {
@@ -206,36 +272,25 @@ s32 TriggerAirboxStopIn(u32 *trigger) {
     return 0;
 }
 
-s32 TriggerAirboxExited(u32 *arg0) {
-    M2C_UNK sp8;
-    s32 temp_r30;
-    u32 *var_r31;
-    u32 temp_r27;
-    u32 var_r26;
-    u32 var_r28;
-    void *temp_r29;
+s32 TriggerAirboxExited(u32 *trigger) {
+    f32 dist;
+    u8 *volume;
+    u8 *thing;
+    u32 i;
+    u32 numThings;
+    u32 j;
 
-    var_r28 = 0U;
-    var_r31 = arg0;
-    temp_r27 = *arg0;
-    temp_r30 = (temp_r27 * 4) + 4;
-loop_8:
-    if (var_r28 >= temp_r27) {
-        return 1;
+    numThings = trigger[0];
+    for (i = 0; i < numThings; i++) {
+        thing = (u8 *)trigger[i + 1];
+        for (j = 0; j < trigger[numThings + 1]; j++) {
+            volume = M2C_FIELD(trigger[numThings + 2 + j], u8 **, 0x28);
+            if (M2C_FIELD(thing, u32 *, 4) == 1 && IsPointWithinVolume((Vector4 *)(volume + 0x40), thing, &dist)) {
+                return 0;
+            }
+        }
     }
-    temp_r29 = M2C_FIELD(var_r31, void **, 4);
-    var_r26 = 0U;
-loop_6:
-    if (var_r26 >= (u32) *(arg0 + temp_r30)) {
-        var_r31 += 4;
-        var_r28 += 1;
-        goto loop_8;
-    }
-    if (((u32) M2C_FIELD(temp_r29, u32 *, 4) == 1U) && (IsPointWithinVolume(M2C_FIELD(*(arg0 + ((temp_r27 + var_r26 + 2) * 4)), s32 *, 0x28) + 0x40, temp_r29, &sp8) != 0)) {
-        return 0;
-    }
-    var_r26 += 1;
-    goto loop_6;
+    return 1;
 }
 
 s32 ActionAirboxChangeMode(s32 *data) {
@@ -263,6 +318,112 @@ s32 ActionAirboxChangeMode(s32 *data) {
         }
     }
     return 1;
+}
+
+void Thing_CollideWithForceBoxes(u8 *thing) {
+    typedef struct ForceBox {
+        Vector4 force;
+        s8 oneShot;
+        s8 carOnly;
+        u16 type;
+    } ForceBox;
+    extern u8 g_carAVTable[];
+    u8 *IsPointWithinForceBox(Vector4 *point);
+    f32 MagnitudeVector(void *v);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    Vector4 *vel = (Vector4 *)thing;
+    ForceBox *box;
+    u8 *volume;
+    u32 wasInside;
+    f32 mag;
+    f32 dot;
+    Vector4 dir __attribute__((aligned(16)));
+    Vector4 velDir __attribute__((aligned(16)));
+    Vector4 forceDir __attribute__((aligned(16)));
+    Vector4 dir2 __attribute__((aligned(16)));
+    Vector4 velDir2 __attribute__((aligned(16)));
+    Vector4 forceDir2 __attribute__((aligned(16)));
+
+    wasInside = *(u32 *)(thing + 0x74) & 0x400;
+    volume = IsPointWithinForceBox((Vector4 *)(thing + 0x40));
+    *(u32 *)(thing + 0x74) &= ~0x400;
+    if (volume == NULL) {
+        return;
+    }
+    box = *(ForceBox **)(volume + 0x2C);
+    if (box->carOnly && *(u8 **)(thing + 0x8C) == g_carAVTable && *(s32 *)(thing + 0x460) != 0) {
+        return;
+    }
+    if (box->oneShot) {
+        if (!wasInside) {
+            switch (box->type) {
+            case 0:
+                dir = *vel;
+                mag = MagnitudeVector(box);
+                if (PSVECSquareMag(&dir)) {
+                    PSVECNormalize(&dir, &dir);
+                }
+                vel->x += dir.x * mag;
+                vel->y += dir.y * mag;
+                vel->z += dir.z * mag;
+                break;
+            case 1:
+                vel->x += box->force.x;
+                vel->y += box->force.y;
+                vel->z += box->force.z;
+                break;
+            case 2:
+                velDir = *vel;
+                forceDir = box->force;
+                if (PSVECSquareMag(&velDir)) {
+                    PSVECNormalize(&velDir, &velDir);
+                }
+                if (PSVECSquareMag(&forceDir)) {
+                    PSVECNormalize(&forceDir, &forceDir);
+                }
+                dot = PSVECDotProduct(&velDir, &forceDir);
+                if (dot > 0.0f) {
+                    vel->x += box->force.x * dot;
+                    vel->y += box->force.y * dot;
+                    vel->z += box->force.z * dot;
+                }
+                break;
+            }
+        }
+        *(u32 *)(thing + 0x74) |= 0x400;
+        return;
+    }
+    switch (box->type) {
+    case 0:
+        dir2 = *vel;
+        vel->x += dir2.x;
+        vel->y += dir2.y;
+        vel->z += dir2.z;
+        break;
+    case 1:
+        vel->x += box->force.x;
+        vel->y += box->force.y;
+        vel->z += box->force.z;
+        break;
+    case 2:
+        velDir2 = *vel;
+        forceDir2 = box->force;
+        if (PSVECSquareMag(&velDir2)) {
+            PSVECNormalize(&velDir2, &velDir2);
+        }
+        if (PSVECSquareMag(&forceDir2)) {
+            PSVECNormalize(&forceDir2, &forceDir2);
+        }
+        dot = PSVECDotProduct(&velDir2, &forceDir2);
+        if (dot > 0.0f) {
+            vel->x += box->force.x * dot;
+            vel->y += box->force.y * dot;
+            vel->z += box->force.z * dot;
+        }
+        break;
+    }
 }
 
 s32 TriggerP2PActivated(u32 *data) {
@@ -320,8 +481,8 @@ s32 ActionVehicleTeleport(u32 *action) {
     TeleportData *data;
     u32 i;
     Car *car;
-    Vector4 local;
-    FxParams params;
+    Vector4 local __attribute__((aligned(16)));
+    FxParams params __attribute__((aligned(16)));
 
     data = (TeleportData *)action[1];
     for (i = 0; i < action[2]; i++) {
@@ -357,11 +518,22 @@ s32 ActionVehicleTeleport(u32 *action) {
     return 1;
 }
 
+f32 MagnitudeVector(void *v);
 void Thing_GetInterfaceInfo(void *thing, void *info) {
-    M2C_FIELD(info, s32 *, 0x10) = M2C_FIELD(thing, s32 *, 0x78);
-    M2C_FIELD(info, u32 *, 0x14) = 0.681818f * MagnitudeVector(thing);
-    M2C_FIELD(info, s32 *, 0x18) = 0;
-    M2C_FIELD(info, s32 *, 0x4) = 0;
+    typedef struct InterfaceInfo {
+        s32 unk0;
+        s32 unk4;
+        s32 unk8[2];
+        s32 unk10;
+        u32 speed;
+        s32 unk18;
+    } InterfaceInfo;
+    InterfaceInfo *ii = info;
+
+    ii->unk10 = *(s32 *)((u8 *)thing + 0x78);
+    ii->speed = 0.681818f * MagnitudeVector(thing);
+    ii->unk18 = 0;
+    ii->unk4 = 0;
 }
 
 void Thing_SetSlavePlayers(void *thing) {
@@ -372,9 +544,76 @@ void Thing_SetSlavePlayers(void *thing) {
     }
 }
 
+void Thing_DrawSlaves(Thing *thing) {
+    Thing *slave;
+    Quaternion quat __attribute__((aligned(16)));
+    Vector4 pos __attribute__((aligned(16)));
+
+    for (slave = (Thing *)thing->unk88; slave != NULL; slave = *(Thing **)((u8 *)slave + 0xA4)) {
+        if (!(slave->flags & 0x200200)) {
+            quat = slave->quat;
+            pos = slave->mtx.v[3];
+            QuaternionMult(&thing->quat, &quat, &slave->quat);
+            XformVec(&thing->mtx, &pos, &slave->mtx.v[3]);
+            (*(void (***)(Thing *))((u8 *)slave + 0x8C))[4](slave);
+            slave->quat = quat;
+            slave->mtx.v[3] = pos;
+        }
+    }
+}
+
+void Thing_MoveSlaves(Thing *thing) {
+    Thing *slave;
+    Thing *next;
+    Quaternion quat __attribute__((aligned(16)));
+    Vector4 trans __attribute__((aligned(16)));
+    Vector4 pos __attribute__((aligned(16)));
+
+    for (slave = (Thing *)thing->unk88; slave != NULL && !(thing->flags & 0x201000); slave = next) {
+        next = *(Thing **)((u8 *)slave + 0xA4);
+        if (!(slave->flags & 0x201000)) {
+            if (!(slave->flags & 0x400000)) {
+                CopyVector(&quat, &slave->quat);
+                CopyVector(&trans, &slave->mtx.v[3]);
+                CopyVector(&pos, &slave->unk0);
+                QuaternionMult(&thing->quat, &quat, &slave->quat);
+                XformVec(&thing->mtx, &trans, &slave->mtx.v[3]);
+                slave->unk0 = thing->unk0;
+                (*(void (***)(Thing *))((u8 *)slave + 0x8C))[3](slave);
+                CopyVector(&slave->quat, &quat);
+                CopyVector(&slave->mtx.v[3], &trans);
+                CopyVector(&slave->unk0, &pos);
+            } else {
+                (*(void (***)(Thing *))((u8 *)slave + 0x8C))[3](slave);
+            }
+        }
+    }
+    ThingManagerList_RemoveReleasedThings(&thing->unk88);
+}
+
 void Thing_InitAllSlavesNow(s32 arg0) {
     M2C_UNK ThingManagerList_InitAllSlavesNow(s32);
     ThingManagerList_InitAllSlavesNow(arg0 + 0x88);
+}
+
+void Thing_SlaveTransform(Thing *thing, Matrix4 *mtx) {
+    Matrix4 local;
+
+    local = thing->mtx;
+    MultiplyMatrix(&local, mtx, &thing->mtx);
+    SubMatrixToQuaternion(&thing->mtx, &thing->quat);
+}
+
+void Thing_SlaveTransformQuaternionOnly(Thing *thing, Matrix4 *mtx) {
+    Quaternion rot __attribute__((aligned(16)));
+    Quaternion quat __attribute__((aligned(16)));
+    Vector4 pos __attribute__((aligned(16)));
+
+    quat = thing->quat;
+    pos = thing->mtx.v[3];
+    XformVec(mtx, &pos, &thing->mtx.v[3]);
+    SubMatrixToQuaternion(mtx, &rot);
+    QuaternionMult(&rot, &quat, &thing->quat);
 }
 
 void *Thing_GetSurfaceScript(void) {
@@ -393,12 +632,98 @@ s32 Thing_GetNearestNavPoint(void) {
 }
 
 s32 Thing_AddToGrid(void *thing, s32 type) {
-    Vector4 min;
-    Vector4 max;
+    void Thing_GetDynamicMinMax(void *thing, Vector4 *min, Vector4 *max, f32 expand);
+    s32 Grid_AddObject(s32 type, void *thing, Vector4 *min, Vector4 *max);
+    Vector4 min __attribute__((aligned(16)));
+    Vector4 max __attribute__((aligned(16)));
 
     Thing_GetDynamicMinMax(thing, &min, &max, 0.0f);
-    M2C_FIELD(thing, s32 *, 0x84) = Grid_AddObject(type, thing, &min, &max);
-    return M2C_FIELD(thing, s32 *, 0x84);
+    *(s32 *)((u8 *)thing + 0x84) = Grid_AddObject(type, thing, &min, &max);
+    return *(s32 *)((u8 *)thing + 0x84);
+}
+
+void Thing_GetDynamicMinMax(Thing *thing, Vector4 *min, Vector4 *max, f32 expand) {
+    typedef struct Box {
+        u8 pad[0x10];
+        Vector4 corners[8];
+    } Box;
+    void CopyVector(Vector4 *dst, Vector4 *src);
+    void MinMaxVec(Vector4 *min, Vector4 *max, Vector4 *v);
+    Box *box;
+    u32 i;
+    Vector4 p3 __attribute__((aligned(16)));
+    Vector4 p2 __attribute__((aligned(16)));
+    Vector4 p1 __attribute__((aligned(16)));
+
+    min->x = min->y = min->z = min->w = 99999.9f;
+    max->x = max->y = max->z = max->w = -99999.9f;
+    switch (thing->unk80) {
+    case 0:
+        *max = thing->mtx.v[3];
+        *min = *max;
+        break;
+    case 3:
+        CopyVector(&p3, &thing->mtx.v[3]);
+        CopyVector(min, &thing->mtx.v[3]);
+        CopyVector(max, &thing->mtx.v[3]);
+        p3.x += thing->unk0.x * expand;
+        p3.y += thing->unk0.y * expand;
+        p3.z += thing->unk0.z * expand;
+        MinMaxVec(min, max, &p3);
+        break;
+    case 2:
+    case 4:
+    case 5:
+    case 6:
+        CopyVector(&p2, &thing->mtx.v[3]);
+        CopyVector(min, &thing->mtx.v[3]);
+        CopyVector(max, &thing->mtx.v[3]);
+        p2.x += thing->unk0.x * expand;
+        p2.y += thing->unk0.y * expand;
+        p2.z += thing->unk0.z * expand;
+        if (p2.x < min->x) {
+            min->x = p2.x;
+        }
+        if (p2.y < min->y) {
+            min->y = p2.y;
+        }
+        if (p2.z < min->z) {
+            min->z = p2.z;
+        }
+        if (p2.x > max->x) {
+            max->x = p2.x;
+        }
+        if (p2.y > max->y) {
+            max->y = p2.y;
+        }
+        if (p2.z > max->z) {
+            max->z = p2.z;
+        }
+        min->x -= thing->unk70;
+        min->y -= thing->unk70;
+        min->z -= thing->unk70;
+        max->x += thing->unk70;
+        max->y += thing->unk70;
+        max->z += thing->unk70;
+        break;
+    case 1:
+        if (thing->flags & 8) {
+            thing = ((Thing *(*)(Thing *))thing->vtable[0x10])(thing);
+            CopyVector(min, (Vector4 *)((u8 *)thing + 0xD0));
+            CopyVector(max, (Vector4 *)((u8 *)thing + 0xE0));
+        } else {
+            box = ((Box *(*)(Thing *))thing->vtable[0x10])(thing);
+            for (i = 0; i < 8; i++) {
+                p1 = box->corners[i];
+                MinMaxVec(min, max, &p1);
+                p1.x += thing->unk0.x * expand;
+                p1.y += thing->unk0.y * expand;
+                p1.z += thing->unk0.z * expand;
+                MinMaxVec(min, max, &p1);
+            }
+        }
+        break;
+    }
 }
 
 void Thing_GetStaticRotationalMinMax(void *thing, Vector4 *min, Vector4 *max) {
@@ -414,30 +739,31 @@ void Thing_GetStaticRotationalMinMax(void *thing, Vector4 *min, Vector4 *max) {
 
 void Thing_DynamicGridMove(void *thing, f32 expand) {
     void Grid_MoveObject(s32 obj, Vector4 *min, Vector4 *max);
-    Vector4 min;
-    Vector4 max;
+    Vector4 min __attribute__((aligned(16)));
+    Vector4 max __attribute__((aligned(16)));
 
-    if (M2C_FIELD(thing, u32 *, 0x84) != 0) {
+    if (*(u32 *)((u8 *)thing + 0x84) != 0) {
         Thing_GetDynamicMinMax(thing, &min, &max, expand);
-        Grid_MoveObject(M2C_FIELD(thing, s32 *, 0x84), &min, &max);
+        Grid_MoveObject(*(s32 *)((u8 *)thing + 0x84), &min, &max);
     }
 }
 
 void Thing_StaticGridMove(void *thing) {
     void Grid_MoveObject(s32 obj, Vector4 *min, Vector4 *max);
-    Vector4 min;
-    Vector4 max;
+    void Thing_GetDynamicMinMax(void *thing, Vector4 *min, Vector4 *max, f32 expand);
+    Vector4 min __attribute__((aligned(16)));
+    Vector4 max __attribute__((aligned(16)));
 
-    if (M2C_FIELD(thing, u32 *, 0x84) != 0) {
+    if (*(u32 *)((u8 *)thing + 0x84) != 0) {
         Thing_GetDynamicMinMax(thing, &min, &max, 0.0f);
-        Grid_MoveObject(M2C_FIELD(thing, s32 *, 0x84), &min, &max);
+        Grid_MoveObject(*(s32 *)((u8 *)thing + 0x84), &min, &max);
     }
 }
 
 void Thing_RotationalGridMove(void *thing) {
     void Grid_MoveObject(s32 obj, Vector4 *min, Vector4 *max);
-    Vector4 min;
-    Vector4 max;
+    Vector4 min __attribute__((aligned(16)));
+    Vector4 max __attribute__((aligned(16)));
 
     if (M2C_FIELD(thing, u32 *, 0x84) != 0) {
         Thing_GetStaticRotationalMinMax(thing, &min, &max);
@@ -458,7 +784,7 @@ void Thing_ProcessEndEvent(u8 *thing, u8 *event, u8 *collision, Vector4 *vel) {
         s32 owner;
         f32 a;
         f32 b;
-    } params;
+    } params __attribute__((aligned(16)));
     void *data;
     u8 *other;
 

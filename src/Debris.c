@@ -74,9 +74,9 @@ void Debris_MacroStep(void *debris, f32 dt) {
     void RandomNumberGenerator_GetRandomVector(void *v);
     Debris *deb = debris;
     f32 savedDt = g_fDeltaTimeSec;
+    DebrisHit hit __attribute__((aligned(16)));
+    Vector4 newPos __attribute__((aligned(16)));
     f32 t;
-    Vector4 newPos;
-    DebrisHit hit;
     u8 bounced;
     f32 d;
     f32 spin;
@@ -197,3 +197,35 @@ void Debris_Draw(Debris *debris) {
 f32 Debris_GetMass(Debris *debris) {
     return debris->mass;
 }
+void Thing_PreMove();
+void Thing_DynamicCollideImpact();
+void Thing_GetCameraOrientationInfo();
+void Thing_GetInterfaceInfo();
+void Thing_SlaveTransform();
+void Thing_GetSurfaceScript();
+void Thing_GetNearestNavPoint();
+void Thing_GetInverseLocalInertiaTensor();
+void Thing_DynamicRotation();
+void Thing_CollideWithRay();
+void Thing_GetTargetPos();
+void Thing_GetOrientedCollision();
+
+void *g_debrisVTable[] = {
+    Debris_Init,
+    Thing_Release,
+    Thing_PreMove,
+    Debris_Move,
+    Debris_Draw,
+    Debris_GetMass,
+    Thing_DynamicCollideImpact,
+    Thing_GetCameraOrientationInfo,
+    Thing_GetInterfaceInfo,
+    Thing_SlaveTransform,
+    Thing_GetSurfaceScript,
+    Thing_GetNearestNavPoint,
+    Thing_GetInverseLocalInertiaTensor,
+    Thing_DynamicRotation,
+    Thing_CollideWithRay,
+    Thing_GetTargetPos,
+    Thing_GetOrientedCollision,
+};

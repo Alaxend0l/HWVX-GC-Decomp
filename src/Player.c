@@ -11,7 +11,28 @@ s8 Player_IsHuman(void *player) {
     return isHuman;
 }
 
-void Player_Init(void *player) {
+void Player_Init(void *player, s32 arg1);
+void PlayerHuman_Init(void *player) {
+    typedef struct PlayerHuman {
+        u8 pad0[0x6C];
+        u32 flags;
+        u8 pad70[0xC8 - 0x70];
+        s32 wheelChannel;
+        u8 padCC[0x114 - 0xCC];
+        void *bindings;
+        u8 bindingData[4];
+    } PlayerHuman;
+    void PlayerHuman_SetDefaultControls(void *player, s32 arg);
+    PlayerHuman *human = player;
+
+    Player_Init(player, 0);
+    human->wheelChannel = 0;
+    PlayerHuman_SetDefaultControls(player, 0);
+    human->flags = 0;
+    human->bindings = human->bindingData;
+}
+
+void Player_Init(void *player, s32 arg1) {
     s32 i;
 
     Control_ClearControl(player);
@@ -43,9 +64,23 @@ void Player_SetName(void *player, s32 port, const char *name) {
     }
 }
 
-void Player_RefreshInterface(void *player) {
-    u32 InterfaceManager_Create();
+void Player_RefreshInterface(void *arg0) {
+    s32 InterfaceManager_Create(u8 *script, void *player, s32 arg2);
     void InterfaceManager_ReleaseInterface(u32 index);
+    void InterfaceManager_SetOffset(s32 index, f32 x, f32 y);
+    typedef struct Thing {
+        u8 pad0[0x8C];
+        void (**vtable)();
+    } Thing;
+    typedef struct Player {
+        u8 pad0[0x2C];
+        Thing *thing;
+        u8 pad30[0x68 - 0x30];
+        u32 interfaceIndex;
+        u32 flags;
+        u8 pad70;
+        u8 nameDirty;
+    } Player;
     struct {
         u32 unk0;
         u8 *script;
@@ -53,23 +88,24 @@ void Player_RefreshInterface(void *player) {
         u32 y;
         u8 unk10[0xC0];
     } info;
-    void *thing;
+    Player *player = arg0;
+    Thing *thing;
 
-    if (M2C_FIELD(player, void **, 0x2C) != NULL && (M2C_FIELD(player, u32 *, 0x6C) & 0x10)) {
+    if (player->thing != NULL && (player->flags & 0x10)) {
         memset(&info, 0, sizeof(info));
-        M2C_FIELD(player, u32 *, 0x6C) |= 0x200;
-        thing = M2C_FIELD(player, void **, 0x2C);
-        M2C_FIELD(M2C_FIELD(thing, void **, 0x8C), void (**)(void *, void *), 0x20)(thing, &info);
-        if (M2C_FIELD(player, u32 *, 0x68) < 0xFFFFFFFF) {
-            InterfaceManager_ReleaseInterface(M2C_FIELD(player, u32 *, 0x68));
-            M2C_FIELD(player, u32 *, 0x68) = 0xFFFFFFFF;
+        player->flags |= 0x200;
+        thing = player->thing;
+        ((void (*)(Thing *, void *))thing->vtable[8])(thing, &info);
+        if (player->interfaceIndex < 0xFFFFFFFF) {
+            InterfaceManager_ReleaseInterface(player->interfaceIndex);
+            player->interfaceIndex = 0xFFFFFFFF;
         }
         if (info.script != NULL) {
-            M2C_FIELD(player, u32 *, 0x68) = InterfaceManager_Create(info.script, player, 0);
-            InterfaceManager_SetOffset(M2C_FIELD(player, u32 *, 0x68), info.x, info.y);
-            M2C_FIELD(player, u8 *, 0x71) = 1;
+            player->interfaceIndex = InterfaceManager_Create(info.script, player, 0);
+            InterfaceManager_SetOffset(player->interfaceIndex, info.x, info.y);
+            player->nameDirty = 1;
         }
-        M2C_FIELD(player, u32 *, 0x6C) &= ~0x200;
+        player->flags &= ~0x200;
     }
 }
 
@@ -82,28 +118,76 @@ void Player_ReleaseInterface(void *player) {
     }
 }
 
+extern u8 g_carAVTable[];
+extern u8 g_creatureVTable[];
+void CarA_SetSlavePlayers(void *car);
+void Thing_SetSlavePlayers(void *thing);
+void AI_Car_Reset(void *player);
+void Player_SetThing(void *player, void *thing) {
+    s32 isCreature;
+
+    *(void **)((u8 *)player + 0x2C) = thing;
+    if (thing != NULL) {
+        *(void **)(*(u8 **)((u8 *)player + 0x2C) + 0x94) = player;
+        *(u32 *)((u8 *)player + 0x38) = *(u32 *)((u8 *)thing + 0xA8);
+        if (*(void **)((u8 *)thing + 0x8C) == g_carAVTable) {
+            *(u32 *)((u8 *)player + 0x3C) = *(u32 *)((u8 *)thing + 0x3BC);
+            CarA_SetSlavePlayers(thing);
+            if (!Player_IsHuman(player)) {
+                AI_Car_Reset(player);
+            }
+        } else if (*(void **)((u8 *)thing + 0x8C) == g_creatureVTable) {
+            *(u32 *)((u8 *)player + 0x3C) = *(u32 *)((u8 *)thing + 0xB8);
+            Thing_SetSlavePlayers(thing);
+        }
+        if (*(void **)((u8 *)player + 0x2C) == thing) {
+            Player_RefreshInterface(player);
+        }
+    }
+}
+
 s32 Player_InputHeartbeat(void *arg0) {
     return M2C_FIELD(arg0, s8 (**)(), 0x20)() != 0;
 }
 
-void Player_GetInterfaceInfo(void *player, void *info) {
+void Player_GetInterfaceInfo(void *arg0, void *arg1) {
     int sprintf(char *buf, const char *fmt, ...);
-    void *thing;
+    typedef struct Thing {
+        u8 pad0[0x8C];
+        void (**vtable)();
+    } Thing;
+    typedef struct Player {
+        u8 pad0[0x2C];
+        Thing *thing;
+        u8 attached;
+        u8 pad31[0x71 - 0x31];
+        u8 nameDirty;
+        u8 pad72[0x7C - 0x72];
+        s32 score;
+    } Player;
+    typedef struct InterfaceInfo {
+        u8 pad0[0x74];
+        char text[0xC];
+        u8 state;
+    } InterfaceInfo;
+    Player *player = arg0;
+    InterfaceInfo *info = arg1;
+    Thing *thing;
 
-    if (M2C_FIELD(player, void **, 0x2C) != NULL) {
-        M2C_FIELD(info, u8 *, 0x80) = 0;
-        thing = M2C_FIELD(player, void **, 0x2C);
-        M2C_FIELD(M2C_FIELD(thing, void **, 0x8C), void (**)(void *, void *), 0x20)(thing, info);
+    if (player->thing != NULL) {
+        info->state = 0;
+        thing = player->thing;
+        ((void (*)(Thing *, InterfaceInfo *))thing->vtable[8])(thing, info);
     } else {
-        M2C_FIELD(info, u8 *, 0x80) = 2;
-        if (M2C_FIELD(player, u8 *, 0x30) != 0) {
-            M2C_FIELD(info, u8 *, 0x80) = 1;
-            M2C_FIELD(player, u8 *, 0x30) = 0;
+        info->state = 2;
+        if (player->attached != 0) {
+            info->state = 1;
+            player->attached = 0;
         }
     }
-    if (M2C_FIELD(player, u8 *, 0x71) != 0) {
-        sprintf((char *)info + 0x74, "%s", M2C_FIELD(player, char **, 0x7C));
-        M2C_FIELD(player, u8 *, 0x71) = 0;
+    if (player->nameDirty != 0) {
+        sprintf(info->text, "%d", player->score);
+        player->nameDirty = 0;
     }
 }
 

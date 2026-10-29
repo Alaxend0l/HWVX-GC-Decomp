@@ -29,6 +29,7 @@ typedef struct Wheels
 		/* 0x880 */
 
 		/* The wheel's own methods, in main/Wheels. */
+		Wheels();
 		u8		IsConnected(s32 chan);
 		/* 0x880 */
 		u8		IsOpened(s32 chan);
@@ -51,6 +52,7 @@ typedef struct Force
 {
 	u8		unk0[0xA0];
 
+		Force();
 		/* The gain one of these effects plays at, in main/Force. */
 		void		SetOverallForceGain(u32 &effectId, s32 gain);
 		/* Start playing one of the class's effects on a channel, in main/Force. */
@@ -74,6 +76,7 @@ typedef struct Condition
 	/* The condition class's methods, in main/Condition: damper effect 1 is the
 	 * slot LGWheels' PlayDamperForce plays. */
 	/* 0x0 */
+	Condition();
 	long DownloadForce(long chan, long effect, unsigned long &device, unsigned char type, unsigned long duration, unsigned long startDelay, signed char offset, unsigned char deadband, unsigned char saturationPos, unsigned char saturationNeg, short coefficientPos, short coefficientNeg);
 	/* 0x0 */
 	long UpdateForce(long chan, long effect, unsigned char type, unsigned long duration, unsigned long startDelay, signed char offset, unsigned char deadband, unsigned char saturationPos, unsigned char saturationNeg, short coefficientPos, short coefficientNeg);
@@ -88,6 +91,7 @@ typedef struct Constant
 	/* 0x0A0 */
 
 		/* The effect classes' methods, in main/Constant. */
+		Constant();
 		long		DownloadForce(long chan, long effect, unsigned long &device, unsigned long duration, unsigned long startDelay, short magnitude, unsigned short direction, unsigned long attackTime, unsigned long fadeTime, unsigned char attackLevel, unsigned char fadeLevel);
 		/* 0x0A0 */
 		long		UpdateForce(long chan, long effect, unsigned long duration, unsigned long startDelay, short magnitude, unsigned short direction, unsigned long attackTime, unsigned long fadeTime, unsigned char attackLevel, unsigned char fadeLevel);
@@ -104,6 +108,7 @@ typedef struct Periodic
 		/* The effect classes' methods, in main/Periodic: periodic effect 1 is the
 		 * slot PlayFrontalCollisionForce plays. */
 		/* 0x0 */
+		Periodic();
 		long DownloadForce(long chan, long effect, unsigned long &device, unsigned char type, unsigned long duration, unsigned long startDelay, unsigned char saturation, unsigned short offset, unsigned short coefficient, unsigned short end, short decay, unsigned long rate, unsigned long repeatTime, unsigned char a, unsigned char b);
 		/* 0x0A0 */
 		long UpdateForce(long chan, long effect, unsigned char type, unsigned long duration, unsigned long startDelay, unsigned char saturation, unsigned short offset, unsigned short coefficient, unsigned short end, short decay, unsigned long rate, unsigned long repeatTime, unsigned char a, unsigned char b);
@@ -116,6 +121,7 @@ typedef struct Ramp
 	/* 0x020 */
 	u32		ids[4][8];		/* 0x020 effect ids, -1 once the slot is free */
 	/* 0x0A0 */
+	Ramp();
 } Ramp;
 
 typedef struct LGWheels
@@ -167,6 +173,7 @@ typedef struct LGWheels
 		/* 0x1416 */
 		void		GenerateNonLinValues(s32 chan, u8 coefficient);
 		/* 0x1416 */
+		LGWheels();
 		void		InitLGLibrary(void);
 		/* 0x1416 */
 		u8		SameSpringForceParams(s32 chan, s8 offset, u8 saturation, s16 coefficient);

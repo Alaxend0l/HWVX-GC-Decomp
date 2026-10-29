@@ -15,16 +15,31 @@ extern u8 gTRKInterruptVectorTable[];
 void *TRK_memcpy(void *dst, const void *src, u32 n);
 void TRK_flush_cache(u32 start, u32 length);
 
+static inline void TRK_copy_vector(u32 offset)
+{
+    u32 dest;
+
+    if ((offset >= lc_base[0]) && (offset < (lc_base[0] + 0x4000)) && (*(u32 *)(gTRKCPUState + 0x238) & 3))
+    {
+        dest = offset;
+    }
+    else
+    {
+        dest = (offset & 0x3FFFFFFF) | 0x80000000;
+    }
+    TRK_memcpy((void *)dest, gTRKInterruptVectorTable + offset, 0x100);
+    TRK_flush_cache(dest, 0x100);
+}
+
 #pragma push
 #pragma use_lmw_stmw on
-void __TRK_reset(void)
+__declspec(section ".init") void __TRK_reset(void)
 {
     u32 *src;
-    u32 *offsets;
     u32 mask;
     u32 offset;
-    u32 dest;
     s32 i;
+    u32 dest;
 
     if ((lc_base[0] <= 0x44) && ((lc_base[0] + 0x4000) > 0x44) && (*(u32 *)(gTRKCPUState + 0x238) & 3))
     {
@@ -35,18 +50,18 @@ void __TRK_reset(void)
         src = (u32 *)0x80000044;
     }
     mask = *src;
-    for (offsets = TRK_ISR_OFFSETS, i = 0; i <= 0xE; i++, offsets++)
+    for (i = 0; i <= 0xE; i++)
     {
         if (mask & (1 << i))
         {
-            offset = *offsets;
+            offset = TRK_ISR_OFFSETS[i];
             if ((offset >= lc_base[0]) && (offset < (lc_base[0] + 0x4000)) && (*(u32 *)(gTRKCPUState + 0x238) & 3))
             {
                 dest = offset;
             }
             else
             {
-                dest = (offset & ~3) | 0x8000;
+                dest = (offset & 0x3FFFFFFF) | 0x80000000;
             }
             TRK_memcpy((void *)dest, gTRKInterruptVectorTable + offset, 0x100);
             TRK_flush_cache(dest, 0x100);

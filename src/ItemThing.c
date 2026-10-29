@@ -7,8 +7,8 @@ s32 Item_Init(u8 *item, u8 *data) {
     void GenerateQuaternionXYZ(Vector4 *euler, Vector4 *quat);
     void GenerateSpinAngleFromQuaternion(Vector4 *quat, void *axis, f32 *angle);
     s32 NavHolder_FindIndexOfNearestNavPoint(void *pos, s32 hint);
-    Vector4 euler;
-    Vector4 quat;
+    Vector4 euler __attribute__((aligned(16)));
+    Vector4 quat __attribute__((aligned(16)));
     u8 *info;
 
     Thing_Init(item, (s32)data);
@@ -26,7 +26,7 @@ s32 Item_Init(u8 *item, u8 *data) {
     M2C_FIELD(item, f32 *, 0xC8) = M2C_FIELD(data, f32 *, 0x34);
     M2C_FIELD(item, u8 *, 0xE0) = M2C_FIELD(data, u8 *, 0x38);
     if (M2C_FIELD(item, f32 *, 0xC8) == 0.0f) {
-        M2C_FIELD(item, f32 *, 0xC8) = 50.0f;
+        M2C_FIELD(item, f32 *, 0xC8) = 500.0f;
     }
     M2C_FIELD(item, s32 *, 0xD8) = 0;
     M2C_FIELD(item, u32 *, 0x74) |= 0x1000000;
@@ -36,7 +36,7 @@ s32 Item_Init(u8 *item, u8 *data) {
         M2C_FIELD(item, s16 *, 0xCE) = M2C_FIELD(info, s32 *, 0x20);
     }
     euler.x = 0.0f;
-    euler.y = 6.2831855f * RandomAdd(M2C_FIELD(M2C_FIELD(data, u8 **, 0x30), f32 *, 0x18), M2C_FIELD(M2C_FIELD(data, u8 **, 0x30), f32 *, 0x1C));
+    euler.y = 0.017453292f * RandomAdd(M2C_FIELD(M2C_FIELD(data, u8 **, 0x30), f32 *, 0x18), M2C_FIELD(M2C_FIELD(data, u8 **, 0x30), f32 *, 0x1C));
     euler.z = 0.0f;
     GenerateQuaternionXYZ(&euler, &quat);
     GenerateSpinAngleFromQuaternion(&quat, item + 0xB0, (f32 *)(item + 0xC4));
@@ -88,7 +88,7 @@ s8 Item_Move(u8 *item) {
     void AccumulateVector(void *vel, void *pos, void *out, f32 t);
     void GenerateQuaternion(void *axis, ItemQuat *q, f32 angle);
     void QuaternionMult(void *a, ItemQuat *b, ItemQuat *out);
-    ItemHit hit;
+    ItemHit hit __attribute__((aligned(16)));
     ItemQuat q;
     ItemQuat rot;
     f32 dt;

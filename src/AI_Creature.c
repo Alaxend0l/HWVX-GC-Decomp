@@ -1,5 +1,11 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
+SpawnVolume gs_aSpawnVolumes[256];
+u8 *gs_pCurrentAICreature;
+u32 g_volumeTotal;
+u32 gs_currentVolume;
 
 s32 AI_Creature_Deactivate(u8 *creature) {
     extern u8 g_cameraManager[];
@@ -14,7 +20,7 @@ s32 AI_Creature_Deactivate(u8 *creature) {
     u8 *pos;
     f32 dist;
     f32 minDist;
-    Vector4 p;
+    Vector4 p __attribute__((aligned(16)));
 
     thing = *(u8 **)(creature + 0x2C);
     if (thing != NULL && !(*(u32 *)(thing + 0x74) & 0x1000)) {
@@ -70,7 +76,7 @@ s8 AI_Creature_Spawn(u8 *creature, u8 *spawner, u32 index) {
     void Player_SetThing(u8 *player, u8 *thing);
     void AI_Reset(void *arg0);
     int rand(void);
-    CreatureParams params;
+    CreatureParams params __attribute__((aligned(16)));
     u8 *info;
     u8 *list;
     u8 *thing;
@@ -154,21 +160,10 @@ s8 AI_Creature_Spawn(u8 *creature, u8 *spawner, u32 index) {
 }
 
 void AI_Creature_PopulateVolumes(void) {
-    typedef struct SpawnVolume {
-        u8 *volume;
-        u32 unk4;
-        u32 index;
-        u32 counts[32];
-    } SpawnVolume;
-    extern u8 *gs_pCurrentAICreature_803C7150;
-    extern SpawnVolume gs_aSpawnVolumes_802C4860[256];
-    extern u32 gs_currentVolume_803C7160;
-    extern u32 g_volumeTotal;
     extern u8 g_cameraManager[];
     void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
     void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *out);
     f32 PSVECSquareDistance(void *a, void *b);
-    s8 AI_Creature_Spawn(u8 *creature, SpawnVolume *vol, u32 index);
     u32 v;
     u32 idx;
     u8 *info;
@@ -177,34 +172,34 @@ void AI_Creature_PopulateVolumes(void) {
     u32 i;
     f32 dist;
     f32 minDist;
-    Vector4 p;
+    Vector4 p __attribute__((aligned(16)));
 
-    creature = gs_pCurrentAICreature_803C7150;
+    creature = gs_pCurrentAICreature;
     do {
         if (creature[0xCD] == 0) {
             break;
         }
         creature = *(u8 **)(creature + 0xD4);
-    } while (creature != gs_pCurrentAICreature_803C7150);
+    } while (creature != gs_pCurrentAICreature);
     if (creature[0xCD] != 0) {
         return;
     }
-    v = gs_currentVolume_803C7160;
+    v = gs_currentVolume;
     do {
         if (++v == g_volumeTotal) {
             v = 0;
         }
-        info = *(u8 **)(gs_aSpawnVolumes_802C4860[v].volume + 0x2C);
-        if (*(u32 *)(gs_aSpawnVolumes_802C4860[v].volume + 4) == 0 || *(u32 *)(info + 4) == gs_aSpawnVolumes_802C4860[v].unk4 || *(u32 *)(info + 0xC) == 0 || info[0] != 0) {
+        info = *(u8 **)(gs_aSpawnVolumes[v].volume + 0x2C);
+        if (*(u32 *)(gs_aSpawnVolumes[v].volume + 4) == 0 || *(u32 *)(info + 4) == gs_aSpawnVolumes[v].unk4 || *(u32 *)(info + 0xC) == 0 || info[0] != 0) {
             continue;
         }
-        idx = gs_aSpawnVolumes_802C4860[v].index;
+        idx = gs_aSpawnVolumes[v].index;
         do {
             if (++idx == *(u32 *)(info + 0xC)) {
                 idx = 0;
             }
             spawner = (*(u8 ***)(info + 0x10))[idx];
-            if (*(u32 *)(spawner + 0x14) == 0 || (f32)gs_aSpawnVolumes_802C4860[v].counts[idx] >= 1.0f + (f32)(*(u32 *)(info + 4) / *(u32 *)(info + 0xC))) {
+            if (*(u32 *)(spawner + 0x14) == 0 || (f32)gs_aSpawnVolumes[v].counts[idx] >= 1.0f + (f32)(*(u32 *)(info + 4) / *(u32 *)(info + 0xC))) {
                 continue;
             }
             minDist = 360000.0f;
@@ -217,16 +212,185 @@ void AI_Creature_PopulateVolumes(void) {
                 }
             }
             if (minDist > 160000.0f && minDist < 360000.0f) {
-                gs_currentVolume_803C7160 = v;
-                gs_aSpawnVolumes_802C4860[v].index = idx;
-                if (AI_Creature_Spawn(creature, &gs_aSpawnVolumes_802C4860[v], idx)) {
+                gs_currentVolume = v;
+                gs_aSpawnVolumes[v].index = idx;
+                if (AI_Creature_Spawn(creature, (u8 *)&gs_aSpawnVolumes[v], idx)) {
                     (*(s32 *)(*(u8 **)(creature + 0xD8) + 4))++;
                     ((s32 *)(*(u8 **)(creature + 0xD8) + 0xC))[idx]++;
                 }
                 return;
             }
-        } while (idx != gs_aSpawnVolumes_802C4860[v].index);
-    } while (v != gs_currentVolume_803C7160);
+        } while (idx != gs_aSpawnVolumes[v].index);
+    } while (v != gs_currentVolume);
+}
+
+static inline void AI_Creature_InitSpawnVolumes(void) {
+    void *VolumeManager_GetVolumeTypeByIndex(u32 type, u32 index);
+    void MemClr32(void *dst, u32 size);
+    u32 i;
+
+    gs_currentVolume = 0;
+    MemClr32(gs_aSpawnVolumes, g_volumeTotal * sizeof(SpawnVolume));
+    for (i = 0; i < g_volumeTotal; i++) {
+        gs_aSpawnVolumes[i].volume = VolumeManager_GetVolumeTypeByIndex(5, i);
+    }
+}
+
+static inline void AI_Creature_UpdateNearestCars(void) {
+    extern NearestCar gs_aNearestCars[8];
+    void PSVECScale(void *src, void *dst, f32 scale);
+    void PSVECAdd(void *a, void *b, void *out);
+    f32 PSVECSquareMag(void *v);
+    s32 ThingManager_GetActiveCars();
+    static u32 s_currentCar;
+    u8 *cars[8];
+    u32 count;
+    u32 i;
+
+    count = ThingManager_GetActiveCars(cars, 9);
+    if (count != 0) {
+        for (i = 0; i < count; i++) {
+            gs_aNearestCars[i].car = cars[i];
+            PSVECScale(cars[i], &gs_aNearestCars[i].pos, 0.18f);
+            PSVECAdd(cars[i] + 0x40, &gs_aNearestCars[i].pos, &gs_aNearestCars[i].pos);
+        }
+        if (i < 8) {
+            gs_aNearestCars[i].car = NULL;
+        }
+        if (s_currentCar >= count) {
+            s_currentCar = 0;
+        }
+        gs_aNearestCars[s_currentCar].speed = PSVECSquareMag(gs_aNearestCars[s_currentCar].car);
+        if (gs_aNearestCars[s_currentCar].speed > 1.0f) {
+            gs_aNearestCars[s_currentCar].range = 400.0f * (1.0f - gs_aNearestCars[s_currentCar].speed / 100000.0f);
+        } else {
+            gs_aNearestCars[s_currentCar].range = 400.0f;
+        }
+        s_currentCar++;
+    }
+}
+
+static inline void AI_Creature_FindNearestCar(u8 *creature) {
+    extern NearestCar gs_aNearestCars[8];
+    f32 PSVECSquareDistance(void *a, void *b);
+    int rand(void);
+    f32 best;
+    f32 dist;
+    u32 i;
+
+    best = *(f32 *)(*(u8 **)(creature + 0xD0) + 0x18);
+    for (i = 0; i < 8; i++) {
+        if (gs_aNearestCars[i].car == NULL) {
+            break;
+        }
+        dist = PSVECSquareDistance(*(u8 **)(creature + 0x2C) + 0x40, &gs_aNearestCars[i].pos);
+        if (best > dist) {
+            if (*(NearestCar **)(creature + 0xE4) != &gs_aNearestCars[i]) {
+                *(NearestCar **)(creature + 0xE4) = &gs_aNearestCars[i];
+                *(f32 *)(creature + 0xF0) = (f32)(rand() % 501 + 750) / 1000.0f;
+                creature[0xEC] = 0;
+                *(s32 *)(creature + 0xC8) = 1;
+            }
+            *(f32 *)(creature + 0xE8) = best;
+            best = dist;
+        }
+    }
+}
+
+void AI_Creature_AsyncProcess(void) {
+    extern NearestCar gs_aNearestCars[8];
+    extern u8 g_cameraManager[];
+    void PSVECScale(void *src, void *dst, f32 scale);
+    void PSVECAdd(void *a, void *b, void *out);
+    f32 PSVECSquareDistance(void *a, void *b);
+    s32 VolumeManager_GetNumVolumesOfType(u32 type);
+    void MemClr32(void *dst, u32 size);
+    u32 World_GetTotalTiles_Creature(void);
+    void *World_GetTileCreature(u32 index);
+    void *PlayerManager_NewAIPlayer(u8 *desc);
+    s32 AI_Creature_Deactivate(u8 *creature);
+    s8 AI_Creature_Spawn(u8 *creature, u8 *spawner, u32 index);
+    void AI_Creature_PopulateVolumes(void);
+    static u32 gs_creatureTile;
+    u8 *creature;
+    u8 *tile;
+    u32 j;
+    u32 i;
+    u32 n;
+    u8 *cam;
+    u8 *player;
+    AIPlayerDesc desc;
+    Vec p;
+
+    if (g_volumeTotal == -1) {
+        gs_pCurrentAICreature = NULL;
+        g_volumeTotal = VolumeManager_GetNumVolumesOfType(5);
+        if (g_volumeTotal != 0) {
+            AI_Creature_InitSpawnVolumes();
+        } else if (World_GetTotalTiles_Creature() == 0) {
+            goto update;
+        }
+        MemClr32(gs_aNearestCars, sizeof(gs_aNearestCars));
+        for (i = 0; i < 1; i++) {
+            desc.unk0 = 0;
+            desc.unkD = 1;
+            player = PlayerManager_NewAIPlayer((u8 *)&desc);
+            if (gs_pCurrentAICreature == NULL) {
+                gs_pCurrentAICreature = player;
+                *(u8 **)(player + 0xD4) = player;
+            } else {
+                *(u8 **)(player + 0xD4) = *(u8 **)(gs_pCurrentAICreature + 0xD4);
+                *(u8 **)(gs_pCurrentAICreature + 0xD4) = player;
+            }
+            player[0xCD] = 0;
+        }
+    }
+update:
+    if (gs_pCurrentAICreature == NULL) {
+        return;
+    }
+    AI_Creature_UpdateNearestCars();
+    for (n = 0; n < 10; n++) {
+        if (gs_pCurrentAICreature[0xCD] != 0 && *(u32 *)(gs_pCurrentAICreature + 0xF8) == 0 &&
+            !(s8)AI_Creature_Deactivate(gs_pCurrentAICreature)) {
+            AI_Creature_FindNearestCar(gs_pCurrentAICreature);
+        }
+        gs_pCurrentAICreature = *(u8 **)(gs_pCurrentAICreature + 0xD4);
+    }
+    if (World_GetTotalTiles_Creature() != 0) {
+        creature = gs_pCurrentAICreature;
+        do {
+            if (creature[0xCD] == 0) {
+                break;
+            }
+            creature = *(u8 **)(creature + 0xD4);
+        } while (creature != gs_pCurrentAICreature);
+        if (creature[0xCD] == 0) {
+            gs_creatureTile++;
+            if (gs_creatureTile >= World_GetTotalTiles_Creature()) {
+                gs_creatureTile = 0;
+            }
+            tile = World_GetTileCreature(gs_creatureTile);
+            if (*(u32 *)(tile + 0x20) != 0 && *(u8 **)(tile + 0x1C) == NULL) {
+                cam = g_cameraManager;
+                for (j = 0; j < g_cameraManager[0x640]; cam += 0x190, j++) {
+                    PSVECScale(cam + 0x80, &p, 150.0f);
+                    PSVECAdd(cam + 0x60, &p, &p);
+                    if (360000.0f > PSVECSquareDistance(&p, tile)) {
+                        if (AI_Creature_Spawn(creature, tile, -1)) {
+                            *(u8 **)(*(u8 **)(creature + 0x2C) + 0x90) = tile;
+                            *(u8 **)(tile + 0x1C) = *(u8 **)(creature + 0x2C);
+                            *(u32 *)(tile + 0x20) = 0;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    if (g_volumeTotal != 0) {
+        AI_Creature_PopulateVolumes();
+    }
 }
 
 void AI_Creature_Heartbeat(void) {
@@ -235,6 +399,7 @@ void AI_Creature_Heartbeat(void) {
 void AI_Creature_VolumeState(u8 *creature) {
     int rand(void);
     f32 ArcTan(f32 y, f32 x);
+    s8 IsPointWithinVolume(Vector4 *point, void *volume, f32 *distSq);
     u8 *thing;
     u8 *target;
     f32 dist;

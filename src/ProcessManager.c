@@ -23,6 +23,7 @@ ProcessManager g_processManager;
 char *strcpy(char *dst, const char *src);
 
 #pragma push
+#pragma readonly_strings on
 #pragma use_lmw_stmw on
 #pragma auto_inline off
 
@@ -40,7 +41,7 @@ void ProcessManager_Add(char *name, void (*init)(void), void (*update)(void), s3
         strcpy(g_processManager.processes[index].name, name);
     }
     else {
-        strcpy(g_processManager.processes[index].name, "");
+        strcpy(g_processManager.processes[index].name, "...");
     }
     if (init != NULL) {
         init();

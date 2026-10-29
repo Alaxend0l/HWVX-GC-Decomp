@@ -18,6 +18,51 @@ typedef struct AnimTable
     AnimEntry *entries;
 } AnimTable;
 
+/* damage parts: pieces a creature can lose when gibbed */
+typedef struct DamagePart
+{
+    u8 spawned;
+    u8 useOffset;
+    u16 unk2;
+    u16 bone;
+    u16 unk6;
+    void *geom;
+    Vector4 *offset;
+    Vector4 *slavePos;
+    u32 debris;
+    void *slaveInfo;
+} DamagePart;
+typedef struct DamagePartList
+{
+    u32 count;
+    DamagePart *parts;
+} DamagePartList;
+
+static inline u32 Creature_FindDamagePart(DamagePartList *list, u32 bone)
+{
+    u32 i;
+
+    for (i = 0; i < list->count; i++)
+    {
+        if (bone == list->parts[i].bone)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static inline Vector4 Vector4_OrZero(Vector4 *v)
+{
+    extern Vector4 g_zeroVector;
+
+    if (v != NULL)
+    {
+        return *v;
+    }
+    return g_zeroVector;
+}
+
 /* parameter 2 of Creature_Init: the spawn description it copies out of */
 typedef struct CreatureInit
 {
@@ -213,6 +258,158 @@ void Creature_Release(Creature *creature) {
     Thing_Release(creature);
 }
 
+#pragma use_lmw_stmw on
+void Creature_PartialGibb(Creature *creature, u32 count) {
+    typedef struct DebrisParams {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        Vector4 angVel;
+        u32 id;
+        void *player;
+        f32 unk48;
+        f32 unk4C;
+    } DebrisParams;
+    typedef struct PartParams {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 axis;
+        Vector4 vel;
+        f32 gravity;
+        void *geom;
+        s32 life;
+        u32 unk4C;
+        s32 unk50;
+        u8 pad54[0xC];
+    } PartParams;
+    typedef struct SlaveParams {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        void *info;
+        u32 unk34;
+        f32 unk38;
+        u8 pad3C[4];
+    } SlaveParams;
+    typedef struct AnimNode {
+        u8 pad0[0x1F];
+        u8 flags;
+    } AnimNode;
+    typedef struct AnimNodeList {
+        u32 count;
+        u8 pad4[0xC];
+        AnimNode *nodes;
+    } AnimNodeList;
+    extern Vector4 g_zeroVector;
+    void *memcpy(void *dst, const void *src, u32 n);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    s32 AnimNodes_BlowBranch(AnimNode *node);
+    void XformVec(void *mtx, void *in, Vector4 *out);
+    f32 RandomNumberGenerator_GetRandomFloat(f32 min, f32 max);
+    void RandomNumberGenerator_GetRandomVector(Vector4 *v);
+    void SubMatrixToQuaternion(void *mtx, Vector4 *quat);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    u8 *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
+    void ThingManagerList_Append(void *list, void *thing);
+    AnimNode nodes[64];
+    PartParams partParams;
+    DebrisParams debrisParams;
+    SlaveParams slaveParams;
+    Vector4 pos __attribute__((aligned(16)));
+    Vector4 vel __attribute__((aligned(16)));
+    Vector4 dir __attribute__((aligned(16)));
+    Vector4 quat __attribute__((aligned(16)));
+    u32 i;
+    u32 j;
+    u32 blown;
+    AnimNodeList *anim;
+    DamagePartList *list;
+    f32 scale;
+    u8 *thing;
+    u8 *slave;
+    u32 debris;
+
+    blown = 0;
+    anim = *(AnimNodeList **)(*(u8 **)creature->motion + 0x14);
+    list = *(DamagePartList **)(creature->anims + 0x70);
+    if (list == NULL) {
+        return;
+    }
+    memcpy(nodes, anim->nodes, anim->count << 5);
+    for (i = 0; i < anim->count; i++) {
+        nodes[i].flags = 0;
+        if (creature->unk1C8 & (1 << i)) {
+            nodes[i].flags |= 1;
+        }
+        blown++;
+    }
+    do {
+        i = RandomAdd_s32(2, anim->count - 2);
+        blown += AnimNodes_BlowBranch(&nodes[i]);
+    } while (blown < count);
+    for (i = 0; i < anim->count; i++) {
+        if (!(nodes[i].flags & 2)) {
+            continue;
+        }
+        j = Creature_FindDamagePart(list, i);
+        if (j == -1) {
+            continue;
+        }
+        if (list->parts[j].useOffset) {
+            XformVec(*(u8 **)(creature->motion + 0x10) + (i << 6), list->parts[j].offset, &pos);
+        } else {
+            pos = *(Vector4 *)(*(u8 **)(creature->motion + 0x10) + (i << 6) + 0x30);
+        }
+        if (list->parts[j].spawned == 0) {
+            scale = RandomNumberGenerator_GetRandomFloat(3.0f, 20.0f);
+            RandomNumberGenerator_GetRandomVector(&dir);
+            vel = *(Vector4 *)creature;
+            vel.x = dir.x * scale + vel.x;
+            vel.y = dir.y * scale + vel.y;
+            vel.z = dir.z * scale + vel.z;
+            SubMatrixToQuaternion(*(u8 **)(creature->motion + 0x10) + (i << 6), &quat);
+            creature->unk1C8 |= 1 << i;
+            debris = list->parts[j].debris;
+            partParams.life = 3000;
+            partParams.gravity = -50.0f;
+            partParams.vel = vel;
+            partParams.pos = pos;
+            partParams.geom = list->parts[j].geom;
+            partParams.quat = quat;
+            partParams.unk50 = 1;
+            if (debris != 0) {
+                debrisParams.id = debris;
+                debrisParams.pos = pos;
+                debrisParams.quat = quat;
+                debrisParams.vel = vel;
+                debrisParams.player = NULL;
+                debrisParams.unk48 = 0.0f;
+                debrisParams.unk4C = 0.0f;
+                debrisParams.angVel = g_zeroVector;
+                ThingManager_DARYL_CreateThing(1, &debrisParams);
+            }
+            RandomNumberGenerator_GetRandomVector(&partParams.axis);
+            partParams.axis.w = 0.017453292f * RandomAdd(100.0f, 1260.0f);
+            thing = ThingManager_DARYL_CreateThing(6, &partParams);
+            if (thing != NULL && list->parts[j].slaveInfo != NULL) {
+                slaveParams.unk38 = 0.0f;
+                slaveParams.quat.w = 1.0f;
+                slaveParams.quat.x = 0.0f;
+                slaveParams.quat.y = 0.0f;
+                slaveParams.quat.z = 0.0f;
+                slaveParams.pos = Vector4_OrZero(list->parts[j].slavePos);
+                slaveParams.info = list->parts[j].slaveInfo;
+                slaveParams.unk34 = 0;
+                slaveParams.vel = g_zeroVector;
+                slave = ThingManager_DARYL_CreateSlave(2, &slaveParams, 0xFF);
+                if (slave != NULL) {
+                    slave[0x83] = 0xFF;
+                    ThingManagerList_Append(thing + 0x88, slave);
+                }
+            }
+        }
+    }
+}
 void Creature_InterpretControls(void *arg0) {
     void Creature_MotionStateInit(void *creature, s32 state, u8 reset, u8 keepTime);
     void Creature_PartialGibb(void *creature, s32 arg1, s32 arg2);
@@ -378,7 +575,7 @@ void Creature_MicroStep(void *arg0, f32 dt) {
         u8 unkE0[0x1A0 - 0xE0];
         Vector4 vel;
     } *creature = arg0;
-    Vector4 pos;
+    Vector4 pos __attribute__((aligned(16)));
     u32 i;
     u32 *numBones;
 

@@ -1,0 +1,181 @@
+#include "common.h"
+
+typedef void (*EXICallback)(s32 chan, void *context);
+
+typedef struct EXIControl {
+    EXICallback exiCallback;
+    EXICallback tcCallback;
+    EXICallback extCallback;
+    volatile u32 state;
+    s32 immLen;
+    u8 *immBuf;
+    u32 dev;
+    u32 id;
+    s32 idTime;
+    s32 items;
+    struct {
+        u32 dev;
+        EXICallback callback;
+    } queue[3];
+} EXIControl;
+
+static EXIControl Ecb[3];
+
+volatile u32 __EXIRegs[16] : 0xCC006800;
+s32 __EXIProbeStartTime[2] : 0x800030C0;
+
+s32 OSDisableInterrupts(void);
+s32 OSRestoreInterrupts(s32 level);
+s64 OSGetTime(void);
+
+static inline u32 __EXIClearInterrupts(s32 chan, BOOL exi, BOOL tc, BOOL ext) {
+    u32 cpr;
+    u32 prev;
+
+    prev = cpr = __EXIRegs[chan * 5];
+    cpr &= 0x7F5;
+    if (exi) {
+        cpr |= 2;
+    }
+    if (tc) {
+        cpr |= 8;
+    }
+    if (ext) {
+        cpr |= 0x800;
+    }
+    __EXIRegs[chan * 5] = cpr;
+    return prev;
+}
+
+u32 __OSGetDIConfig(void);
+
+static inline void CompleteTransfer(s32 chan) {
+    EXIControl *exi = &Ecb[chan];
+    u8 *buf;
+    u32 data;
+    int i;
+    int len;
+
+    if (exi->state & 3) {
+        if ((exi->state & 2) && (len = exi->immLen)) {
+            buf = exi->immBuf;
+            data = __EXIRegs[chan * 5 + 4];
+            for (i = 0; i < len; i++) {
+                *buf++ = (u8)((data >> ((3 - i) * 8)) & 0xFF);
+            }
+        }
+        exi->state &= ~3;
+    }
+}
+
+#pragma use_lmw_stmw on
+#pragma use_lmw_stmw on
+#pragma use_lmw_stmw on
+u32 EXIClearInterrupts(s32 chan, BOOL exi, BOOL tc, BOOL ext);
+u32 __OSUnmaskInterrupts(u32 mask);
+#pragma use_lmw_stmw on
+BOOL EXIImm(s32 chan, void *buf, s32 len, u32 type, EXICallback callback) {
+    EXIControl *exi = &Ecb[chan];
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    if ((exi->state & 3) || !(exi->state & 4)) {
+        OSRestoreInterrupts(enabled);
+        return FALSE;
+    }
+
+    exi->tcCallback = callback;
+    if (exi->tcCallback) {
+        EXIClearInterrupts(chan, FALSE, TRUE, FALSE);
+        __OSUnmaskInterrupts(0x200000u >> (3 * chan));
+    }
+
+    exi->state |= 2;
+
+    if (type != 0) {
+        u32 data;
+        int i;
+
+        data = 0;
+        for (i = 0; i < len; i++) {
+            data |= ((u8 *)buf)[i] << ((3 - i) * 8);
+        }
+        __EXIRegs[chan * 5 + 4] = data;
+    }
+
+    exi->immBuf = buf;
+    exi->immLen = (type != 1) ? len : 0;
+    __EXIRegs[chan * 5 + 3] = (type << 2) | 1 | ((len - 1) << 4);
+
+    OSRestoreInterrupts(enabled);
+    return TRUE;
+}
+BOOL EXISync(s32 chan) {
+    EXIControl *exi = &Ecb[chan];
+    BOOL rc = FALSE;
+    BOOL enabled;
+
+    while (exi->state & 4) {
+        if (!(__EXIRegs[chan * 5 + 3] & 1)) {
+            enabled = OSDisableInterrupts();
+            if (exi->state & 4) {
+                CompleteTransfer(chan);
+                if (__OSGetDIConfig() != 0xFF || exi->immLen != 4 || (__EXIRegs[chan * 5] & 0x70) ||
+                    (__EXIRegs[chan * 5 + 4] != 0x01010000 && __EXIRegs[chan * 5 + 4] != 0x05070000 &&
+                     __EXIRegs[chan * 5 + 4] != 0x04220001) ||
+                    *(u16 *)0x800030E6 == 0x8200) {
+                    rc = TRUE;
+                }
+            }
+            OSRestoreInterrupts(enabled);
+            break;
+        }
+    }
+    return rc;
+}
+
+static BOOL __EXIProbe(s32 chan) {
+    EXIControl *exi = &Ecb[chan];
+    BOOL enabled;
+    BOOL rc;
+    u32 cpr;
+    s32 t;
+
+    if (chan == 2) {
+        return TRUE;
+    }
+
+    rc = TRUE;
+    enabled = OSDisableInterrupts();
+    cpr = __EXIRegs[chan * 5];
+    if (!(exi->state & 8)) {
+        if (cpr & 0x800) {
+            __EXIClearInterrupts(chan, FALSE, FALSE, TRUE);
+            exi->idTime = 0;
+            __EXIProbeStartTime[chan] = 0;
+        }
+        if (cpr & 0x1000) {
+            t = (s32)(OSGetTime() / (*(u32 *)0x800000F8 / 4 / 1000) / 100) + 1;
+            if (__EXIProbeStartTime[chan] == 0) {
+                __EXIProbeStartTime[chan] = t;
+            }
+            if (t - __EXIProbeStartTime[chan] < 300 / 100) {
+                rc = FALSE;
+            }
+        } else {
+            exi->idTime = 0;
+            __EXIProbeStartTime[chan] = 0;
+            rc = FALSE;
+        }
+    } else if (!(cpr & 0x1000) || (cpr & 0x800)) {
+        exi->idTime = 0;
+        __EXIProbeStartTime[chan] = 0;
+        rc = FALSE;
+    }
+    OSRestoreInterrupts(enabled);
+    return rc;
+}
+u32 EXIGetState(s32 chan) {
+    EXIControl *exi = &Ecb[chan];
+    return exi->state;
+}

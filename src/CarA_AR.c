@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 
 s32 Pod_Init(u8 *pod, u8 *init) {
     u8 *motion;
@@ -45,7 +47,7 @@ s32 Pod_Move(u8 *pod) {
     void Trigger_CreatureDroppedOff(void *vehicle, void *creature);
     u8 *creature;
     u8 *next;
-    Vector4 pos;
+    Vector4 pos __attribute__((aligned(16)));
 
     XformVec(pod + 0x10, (Vector4 *)(*(u8 **)(pod + 0x110) + 0x10), (Vector4 *)(pod + 0xF0));
     XformVec(pod + 0x10, *(Vector4 **)(pod + 0x110), (Vector4 *)(pod + 0x100));
@@ -66,7 +68,7 @@ s32 Pod_Move(u8 *pod) {
         for (creature = *(u8 **)(pod + 0x88); creature != NULL; creature = next) {
             next = *(u8 **)(creature + 0xA4);
             if (*(u8 **)(creature + 0x8C) == g_creatureVTable && *(u32 *)(*(u8 **)(creature + 0x94) + 0xD8) != 0) {
-                Vector4 dir;
+                Vector4 dir __attribute__((aligned(16)));
                 u8 type;
 
                 *(f32 *)(creature + 0x1C0) = 1.0f;

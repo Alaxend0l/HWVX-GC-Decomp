@@ -1,21 +1,22 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
 
-f32 RayHitsPoly(Vector4 *start, Vector4 *dir, Vector4 *poly, f32 t) {
-    typedef struct Poly {
-        Vector4 plane;
-        Vector4 *verts;
-        u32 numVerts;
-    } Poly;
+typedef struct Poly {
+    Vector4 plane;   /* 0x00 */
+    Vector4 *verts;  /* 0x10: w holds the index of the opposite vertex */
+    u32 numVerts;    /* 0x14 */
+} Poly;
+
+f32 RayHitsPoly(Vector4 *start, Vector4 *dir, Poly *p, f32 t) {
     f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
     void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
     f32 Distance_Plane(void *plane, void *point);
-    Vector4 edge;
-    Vector4 normal;
+    Vector4 edge __attribute__((aligned(16)));
+    Vector4 normal __attribute__((aligned(16)));
     u32 i;
     u32 prev;
-    Poly *p = (Poly *)poly;
     f32 denom;
     f32 d0;
     f32 d1;

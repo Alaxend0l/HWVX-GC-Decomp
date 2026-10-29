@@ -60,6 +60,51 @@ void SoundSource_Set(u32 index, u32 type, void *data) {
     }
 }
 
+s32 SoundManager_CreateSource(u32 owner) {
+    typedef struct SoundSource {
+        Vector4 pos;
+        Vector4 vel;
+        f32 unk20;
+        f32 unk24;
+        s32 unk28;
+        s32 voice;
+        u32 looping;
+        f32 unk34;
+        f32 unk38;
+        f32 unk3C;
+        f32 unk40;
+        u32 unk44;
+        s8 paused;
+        s8 playing;
+        u8 unk4A[0x50 - 0x4A];
+    } SoundSource;
+    extern SoundSource *g_sources;
+    extern u32 g_nextSource;
+    extern Vector4 g_zeroVector;
+    u32 start;
+
+    start = g_nextSource;
+    while (g_nextSource >= 100 || g_sources[g_nextSource].looping != 0) {
+        if (++g_nextSource >= 100) {
+            g_nextSource = 0;
+        }
+        if (g_nextSource == start) {
+            return -1;
+        }
+    }
+    g_sources[g_nextSource].looping = owner;
+    g_sources[g_nextSource].pos = g_sources[g_nextSource].vel = g_zeroVector;
+    g_sources[g_nextSource].voice = -1;
+    g_sources[g_nextSource].unk28 = -1;
+    g_sources[g_nextSource].unk20 = 1.0f;
+    g_sources[g_nextSource].unk24 = 0.0f;
+    g_sources[g_nextSource].unk34 = 100.0f;
+    g_sources[g_nextSource].unk38 = 500.0f;
+    g_sources[g_nextSource].paused = 0;
+    g_sources[g_nextSource].playing = 0;
+    return ++g_nextSource - 1;
+}
+
 void SoundManager_Heartbeat(void) {
     M2C_UNK MusicHearbeat();
     s32 OSDisableInterrupts();
@@ -179,15 +224,56 @@ void SoundListener_SetTotalListeners(u32 arg0) {
 }
 
 void SoundSource_Play(s32 index) {
+    typedef struct SoundSource {
+        u8 pad0[0x49];
+        s8 playing;
+        u8 pad4A[0x50 - 0x4A];
+    } SoundSource;
+    extern SoundSource *g_sources;
+
+    g_sources[index].playing = 1;
 }
 
-void SoundSource_Stop(s32 index) {
+void SoundSource_Stop(u32 index) {
+    typedef struct SoundSource {
+        u8 pad0[0x24];
+        f32 unk24;
+        u8 pad28[0x2C - 0x28];
+        s32 voice;
+        s32 looping;
+        u8 pad34[0x50 - 0x34];
+    } SoundSource;
+    extern SoundSource *g_sources;
+    void ReleaseVoice(s32 voice);
+
+    if (g_sources[index].voice > 0) {
+        ReleaseVoice(g_sources[index].voice);
+        g_sources[index].voice = -1;
+        g_sources[index].unk24 = 0.0f;
+        g_sources[index].looping = 0;
+    }
 }
 
 s8 SoundSource_IsActive(s32 index) {
+    typedef struct SoundSource {
+        u8 pad0[0x2C];
+        s32 voice;
+        u8 pad30[0x50 - 0x30];
+    } SoundSource;
+    extern SoundSource *g_sources;
+
+    return g_sources[index].voice != -1;
 }
 
 s8 SoundSource_IsLooping(s32 index) {
+    typedef struct SoundSource {
+        u8 pad0[0x30];
+        s32 looping;
+        u8 pad34[0x50 - 0x34];
+    } SoundSource;
+    extern SoundSource *g_sources;
+
+    return g_sources[index].looping;
 }
 
 void *SoundAudioSample_Play(void *sample) {
@@ -222,6 +308,44 @@ void SoundAudioSample_Set(void *voice, s32 type, s32 value) {
 
 void SongManager_StopBKSong(void) {
 
+}
+
+void SoundManager_Pause(s32 paused) {
+    typedef struct SoundSource {
+        Vector4 pos;
+        Vector4 vel;
+        f32 unk20;
+        f32 unk24;
+        s32 unk28;
+        s32 voice;
+        u32 looping;
+        f32 unk34;
+        f32 unk38;
+        f32 unk3C;
+        f32 unk40;
+        u32 unk44;
+        s8 paused;
+        s8 playing;
+        u8 unk4A[0x50 - 0x4A];
+    } SoundSource;
+    extern s8 g_paused;
+    extern SoundSource *g_sources;
+    extern void (*SetMusicState)(s32);
+    void SetSFXState(s32 state);
+    u32 i;
+
+    g_paused = paused;
+    if (paused) {
+        SetSFXState(2);
+        SetMusicState(2);
+    } else {
+        SetSFXState(1);
+        SetMusicState(1);
+    }
+    SetSFXState(1);
+    for (i = 0; i < 100; i++) {
+        g_sources[i].paused = paused;
+    }
 }
 
 void SongManager_LoadSong(void) {

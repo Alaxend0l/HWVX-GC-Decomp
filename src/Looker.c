@@ -5,7 +5,7 @@ s32 Looker_Init(u8 *looker, u8 *init) {
     typedef struct { f32 x, y, z, w; } Vec4;
     void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
     void ThingManagerList_Append(void **arg0, void *arg1);
-    Vector4 params;
+    Vector4 params __attribute__((aligned(16)));
     u8 *slave;
     void *world;
 
@@ -79,7 +79,7 @@ s32 Looker_PreMove(u8 *thing) {
     u32 i;
     s32 x;
 
-    speed = 10.0f * g_fDeltaTimeSec;
+    speed = 11000.0f * g_fDeltaTimeSec;
     if (looker->player == NULL) {
         return 0;
     }
@@ -87,7 +87,7 @@ s32 Looker_PreMove(u8 *thing) {
         return 0;
     }
     if (looker->player->fast) {
-        speed *= 4.0f;
+        speed *= 0.1f;
     }
     switch (looker->player->pressed) {
     case 7:
@@ -107,27 +107,27 @@ s32 Looker_PreMove(u8 *thing) {
     looker->vel.z = 0.0f;
     x = looker->player->moveX;
     if (x > 32 || x < -32) {
-        f = 0.25f * (f32)-x * g_fDeltaTimeSec;
+        f = 120.0f * (f32)-x * g_fDeltaTimeSec;
         looker->vel.x += f * looker->right.x;
         looker->vel.y += f * looker->right.y;
         looker->vel.z += f * looker->right.z;
     }
     if (looker->player->moveY > 32 || looker->player->moveY < -32) {
-        f = 0.25f * (f32)looker->player->moveY * g_fDeltaTimeSec;
+        f = 120.0f * (f32)looker->player->moveY * g_fDeltaTimeSec;
         looker->vel.x += f * looker->forward.x;
         looker->vel.y += f * looker->forward.y;
         looker->vel.z += f * looker->forward.z;
     }
     if (looker->player->lookX > 32 || looker->player->lookX < -32) {
-        looker->yaw -= 0.02f * (f32)looker->player->lookX * g_fDeltaTimeSec;
+        looker->yaw -= 0.015f * (f32)looker->player->lookX * g_fDeltaTimeSec;
     }
     if (looker->player->lookY > 32 || looker->player->lookY < -32) {
-        looker->pitch -= 0.02f * (f32)looker->player->lookY * g_fDeltaTimeSec;
-        if (looker->pitch > 1.5f) {
-            looker->pitch = 1.5f;
+        looker->pitch -= 0.015f * (f32)looker->player->lookY * g_fDeltaTimeSec;
+        if (looker->pitch > 80.0f) {
+            looker->pitch = 80.0f;
         }
-        if (looker->pitch < -1.5f) {
-            looker->pitch = -1.5f;
+        if (looker->pitch < -80.0f) {
+            looker->pitch = -80.0f;
         }
     }
     SetOrientation(&looker->right, looker->yaw, looker->pitch, 0.0f);
@@ -214,4 +214,38 @@ void Looker_GetCameraOrientationInfo(u8 *looker, void *arg1, u8 *info) {
     o->eye = l->orient.v[3];
     o->target = l->orient.v[3];
 }
+
+void Thing_Release();
+void Thing_Move();
+void Thing_GetMass();
+void Thing_DynamicCollideImpact();
+void Thing_GetInterfaceInfo();
+void Thing_SlaveTransform();
+void Thing_GetSurfaceScript();
+void Thing_GetNearestNavPoint();
+void Thing_GetInverseLocalInertiaTensor();
+void Thing_DynamicRotation();
+void Thing_CollideWithRay();
+void Thing_GetTargetPos();
+void Thing_GetOrientedCollision();
+
+void *g_lookerVTable[] = {
+    Looker_Init,
+    Thing_Release,
+    Looker_PreMove,
+    Thing_Move,
+    Looker_Draw,
+    Thing_GetMass,
+    Thing_DynamicCollideImpact,
+    Looker_GetCameraOrientationInfo,
+    Thing_GetInterfaceInfo,
+    Thing_SlaveTransform,
+    Thing_GetSurfaceScript,
+    Thing_GetNearestNavPoint,
+    Thing_GetInverseLocalInertiaTensor,
+    Thing_DynamicRotation,
+    Thing_CollideWithRay,
+    Thing_GetTargetPos,
+    Thing_GetOrientedCollision,
+};
 

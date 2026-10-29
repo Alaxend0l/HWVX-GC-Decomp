@@ -618,6 +618,8 @@ void ExtractTextureKey(TextureKeyAnim *anim, TextureKeyState *state, f32 dt) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 s32 ExtractSoundKey(u8 *track, u8 *state, void *pos, f32 dt) {
     s32 RandomAdd_s32(s32 base, s32 range);
     f32 RandomAdd(f32 base, f32 range);
@@ -739,3 +741,4 @@ s32 ExtractSoundKey(u8 *track, u8 *state, void *pos, f32 dt) {
     }
     return ret;
 }
+#pragma pop
