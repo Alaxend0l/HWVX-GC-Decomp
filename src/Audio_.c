@@ -166,7 +166,6 @@ u32 MAllocA_(s32 size) {
 #pragma push
 #pragma optimization_level 1
 s32 FreeA_(u32 addr) {
-    extern MemBlk g_memblk[];
     extern s32 g_last;
     extern u32 g_heap;
     extern u32 g_free;
