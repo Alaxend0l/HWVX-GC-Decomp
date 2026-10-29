@@ -68,6 +68,19 @@ static void ClampU8(u8 *var, u8 org)
 
 void OSSetWirelessID(s32 chan, u16 id);
 
+typedef struct PADStatus {
+    u16 button;
+    s8 stickX;
+    s8 stickY;
+    s8 substickX;
+    s8 substickY;
+    u8 triggerLeft;
+    u8 triggerRight;
+    u8 analogA;
+    u8 analogB;
+    s8 err;
+} PADStatus;
+
 static inline void PADDisable(s32 chan)
 {
     BOOL enabled;
