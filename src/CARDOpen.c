@@ -19,6 +19,16 @@ typedef struct CARDDir {
 } CARDDir;
 
 
+s32 __CARDIsPublic(CARDDir *ent) {
+    if (ent->gameName[0] == 0xFF) {
+        return -4;
+    }
+    if (ent->permission & 4) {
+        return 0;
+    }
+    return -10;
+}
+
 s32 __CARDIsOpened(void) {
     return 0;
 }
