@@ -29,8 +29,7 @@ void LGWheels::ReadAll()
 	memcpy(this, &limbo, 0x28);
 	if (chan != -1)
 	{
-		i = 0;
-		while (i < 8)
+		for (i = 0; i < 8; i++)
 		{
 			condition.ids[chan][i] = -1;
 			condition.playing[chan][i] = 0;
@@ -40,7 +39,6 @@ void LGWheels::ReadAll()
 			periodicForce.playing[chan][i] = 0;
 			rampForce.ids[chan][i] = -1;
 			rampForce.playing[chan][i] = 0;
-			++i;
 		}
 	}
 }
