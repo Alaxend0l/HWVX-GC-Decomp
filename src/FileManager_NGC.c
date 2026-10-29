@@ -324,7 +324,7 @@ u32 FileManager_GetDeviceStatus(u32 device) {
 }
 
 s32 MemCard_Open__FUlPCScUlPl(u32 device, const char *fileName, u32 flags, s32 *unused) {
-    s32 chan;
+    u32 chan;
     CARDFileInfo *fileInfo;
     s32 *blockSize;
 
@@ -332,9 +332,7 @@ s32 MemCard_Open__FUlPCScUlPl(u32 device, const char *fileName, u32 flags, s32 *
     if (FileManager_GetDeviceStatus(device) == 3) {
         return 0;
     }
-    m_memcardstatus_803C7970[chan] = CARDMount(chan, &CardWorkArea, NULL);
-    OSReport("CARDMount\n");
-    if (m_memcardstatus_803C7970[chan] < 0) {
+    if ((m_memcardstatus_803C7970[chan] = CARDMount(chan, CardWorkArea, 0)), OSReport("CARDMount\n"), m_memcardstatus_803C7970[chan] < 0) {
         OSReport("failed. (%d)\n", m_memcardstatus_803C7970[chan]);
         return 0;
     }
@@ -399,6 +397,7 @@ s32 MemCard_Write__FUllPv(u32 id, s32 size, void *data) {
     s32 CARDWrite(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset);
     s32 CARDGetStatus(s32 chan, s32 fileNo, CARDStat *stat);
     s32 CARDSetStatus(s32 chan, s32 fileNo, CARDStat *stat);
+    s32 sprintf(char *s, const char *format, ...);
     extern u8 rawData_800DB404[0x800];
     CARDStat stat;
     u8 buffer[0x2000] __attribute__((aligned(32)));
@@ -415,7 +414,7 @@ s32 MemCard_Write__FUllPv(u32 id, s32 size, void *data) {
             CARDDelete(chan, g_appInfo[3]);
         }
         m_memcardstatus_803C7970[chan] = CARDUnmount(chan);
-        OSReport("CARD error %d\n", m_memcardstatus_803C7970[chan]);
+        OSReport("failed. (%d)\n", m_memcardstatus_803C7970[chan]);
         return 0;
     }
     OSReport("CARDWrite\n");
