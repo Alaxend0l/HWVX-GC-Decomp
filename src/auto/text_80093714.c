@@ -337,8 +337,52 @@ s32 TRKTargetAccessDefault(u32 firstRegister, u32 lastRegister, void *b, u32 *re
     return error;
 }
 
+s32 TRKValidMemory32(const void *addr, u32 length, s32 readWriteable);
+#pragma use_lmw_stmw on
+s32 TRKTargetAccessMemory(void *data, u32 start, u32 *length, s32 space, s32 read)
+{
+    u32 TRKTargetTranslate(u32 addr);
+    u32 __TRK_get_MSR(void);
+    void TRK_ppc_memcpy(void *dest, const void *src, u32 n, u32 fromMSR, u32 toMSR);
+    void TRK_flush_cache(u32 start, u32 length);
+    s32 error;
+    u32 trans;
+    u32 oldMSR;
+    u32 newMSR;
+    TRKExceptionStatus savedException;
+
+    savedException = gTRKExceptionStatus_800DA0A4;
+    gTRKExceptionStatus_800DA0A4.exceptionDetected = 0;
+
+    trans = TRKTargetTranslate(start);
+    error = TRKValidMemory32((void *)trans, *length, read == 0);
+    if (error != 0) {
+        *length = 0;
+    } else {
+        oldMSR = __TRK_get_MSR();
+        newMSR = oldMSR | (gTRKCPUState.stepMode & 0x10);
+        if (read) {
+            TRK_ppc_memcpy(data, (void *)trans, *length, oldMSR, newMSR);
+        } else {
+            TRK_ppc_memcpy((void *)trans, data, *length, newMSR, oldMSR);
+            TRK_flush_cache(trans, *length);
+            if (start != trans) {
+                TRK_flush_cache(start, *length);
+            }
+        }
+    }
+
+    if (gTRKExceptionStatus_800DA0A4.exceptionDetected) {
+        *length = 0;
+        error = 0x702;
+    }
+    gTRKExceptionStatus_800DA0A4 = savedException;
+    return error;
+}
+#pragma use_lmw_stmw off
+
 #pragma dont_inline on
-s32 TRKValidMemory32(const void *addr, u32 length, u8 readWriteable) {
+s32 TRKValidMemory32(const void *addr, u32 length, s32 readWriteable) {
     s32 err = 0x700;
     const u8 *start;
     const u8 *end;
@@ -353,8 +397,8 @@ s32 TRKValidMemory32(const void *addr, u32 length, u8 readWriteable) {
 
     for (i = 0; i < (s32)(sizeof(gTRKMemMap) / sizeof(memRange)); i++) {
         if (start <= gTRKMemMap[i].end && end >= gTRKMemMap[i].start) {
-            if ((readWriteable == 0 && !gTRKMemMap[i].readable) ||
-                (readWriteable == 1 && !gTRKMemMap[i].writeable)) {
+            if (((u8)readWriteable == 0 && !gTRKMemMap[i].readable) ||
+                ((u8)readWriteable == 1 && !gTRKMemMap[i].writeable)) {
                 err = 0x700;
             } else {
                 err = 0;
