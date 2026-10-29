@@ -38,6 +38,52 @@ static inline void *get_malloc_pool(void) {
     return protopool;
 }
 
+void deallocate_from_fixed_pools(void *pool, void *ptr, u32 size);
+void Block_link(Block *ths, SubBlock *sb);
+void __sys_free(void *ptr);
+void free(void *ptr) {
+    void *pool;
+    u32 size;
+    Block *bp;
+    Block *n;
+    SubBlock *sb;
+    s32 empty;
+
+    pool = get_malloc_pool();
+    if (ptr == NULL) {
+        return;
+    }
+    size = !(*(u32 *)((u8 *)ptr - 4) & 1) ? (*(FixBlock **)((u8 *)ptr - 4))->client_size_
+                                          : (*(u32 *)((u8 *)ptr - 8) & ~7) - 8;
+    if (size <= 0x44) {
+        deallocate_from_fixed_pools(pool, ptr, size);
+        return;
+    }
+    sb = (SubBlock *)((u8 *)ptr - 8);
+    bp = (Block *)((u32)sb->bp_ & ~1);
+    Block_link(bp, sb);
+    sb = (SubBlock *)((u8 *)bp + 16);
+    empty = 0;
+    if (!(sb->size_ & 2) && (sb->size_ & ~7) == (bp->size_ & ~7) - 24) {
+        empty = 1;
+    }
+    if (empty) {
+        n = bp->next_;
+        if (n == bp) {
+            n = NULL;
+        }
+        if (*(Block **)pool == bp) {
+            *(Block **)pool = n;
+        }
+        if (n != NULL) {
+            n->prev_ = bp->prev_;
+            n->prev_->next_ = n;
+        }
+        bp->prev_ = bp->next_ = NULL;
+        __sys_free(bp);
+    }
+}
+
 void *malloc(u32 size) {
     void *pool;
 
