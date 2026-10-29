@@ -314,6 +314,48 @@ s32 ActionSwapAIScript(u32 *action) {
     return 1;
 }
 
+#pragma use_lmw_stmw on
+s32 ActionVehicleRemoveItem(u32 *action) {
+    typedef struct ItemThing {
+        u8 unk0[0x74];
+        u32 flags;
+        u8 unk78[0x8C - 0x78];
+        void (**vtable)(struct ItemThing *);
+    } ItemThing;
+    typedef struct Vehicle {
+        u8 unk0[0x28];
+        u8 *creature;
+    } Vehicle;
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    void WildCardRack_JettisonAll(ItemThing *rack);
+    void *list;
+    u32 i;
+    ItemThing *rack;
+    ItemThing *item;
+    u8 *creature;
+
+    for (i = 0; i < action[1]; i++) {
+        creature = ((Vehicle *)action[i + 2])->creature;
+        if (creature != NULL) {
+            list = creature + 0x344;
+            rack = ThingManagerList_GetByType(list, 8);
+            switch (action[0]) {
+            case 0:
+                WildCardRack_JettisonAll(rack);
+                break;
+            case 1:
+                item = ThingManagerList_GetByType(list, 4);
+                if (item != NULL) {
+                    item->vtable[1](item);
+                }
+                break;
+            }
+            rack->flags &= ~0x400200;
+        }
+    }
+    return 1;
+}
+#pragma use_lmw_stmw off
 s32 ActionPlaySoundSequence(void *arg0) {
     void SoundSequence_ClearQueue();
     void SoundSequence_Play(u32, s32);
