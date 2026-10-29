@@ -414,14 +414,15 @@ void Camera_UpdatePosition_Default(Camera *cam, f32 *mode) {
     s32 VolumeManager_GetVolumeCellIndex(Vector4 *point);
     s32 VolumeManager_GetNumVolumesOfTypeByCell(s32 type, s32 cell);
     void *VolumeManager_GetVolumeTypeByIndexByCell(s32 type, s32 index, s32 cell);
+    s8 IsPointWithinVolume(Vector4 *point, void *volume, f32 *dist);
     CameraInfo info __attribute__((aligned(16)));
     Matrix4 sub1;
     Matrix4 sub2;
     Matrix4 mtx;
-    Vector4 target __attribute__((aligned(16)));
     Vector4 lookPt __attribute__((aligned(16)));
-    Vector4 up2 __attribute__((aligned(16)));
-    Vector4 up1 __attribute__((aligned(16)));
+    Vector4 target;
+    Vector4 up2;
+    Vector4 up1;
     Vector4 dir __attribute__((aligned(16)));
     CarA *car;
     void *volume;
@@ -431,6 +432,7 @@ void Camera_UpdatePosition_Default(Camera *cam, f32 *mode) {
     f32 speed;
     f32 inv;
     f32 s;
+    f32 strength;
     f32 damp;
     f32 kx;
     f32 ky;
@@ -517,14 +519,15 @@ void Camera_UpdatePosition_Default(Camera *cam, f32 *mode) {
             cross.x *= inv;
             cross.y *= inv;
             cross.z *= inv;
-            if (PSVECDotProduct(&cam->rollUp, &info.mtx.v[1]) < 0.0f || PSVECDotProduct(&cam->rollUp, &up2) < 0.0f || mag > 0.314159f) {
-                force.x = cross.x * 13.978342f;
-                force.y = cross.y * 13.978342f;
-                force.z = cross.z * 13.978342f;
+            strength = 13.978342f;
+            if (PSVECDotProduct(&cam->rollUp, &info.mtx.v[1]) < 0.0f || PSVECDotProduct(&cam->rollUp, &up2) < 0.0f || mag > 0.31415927f) {
+                force.x = cross.x * strength;
+                force.y = cross.y * strength;
+                force.z = cross.z * strength;
             } else {
-                force.x = 0.01f * (cross.x * 13.978342f);
-                force.y = 0.01f * (cross.y * 13.978342f);
-                force.z = 0.01f * (cross.z * 13.978342f);
+                force.x = 0.01f * (cross.x * strength);
+                force.y = 0.01f * (cross.y * strength);
+                force.z = 0.01f * (cross.z * strength);
             }
             force.x -= 5.5f * cam->rollUpVel.x;
             force.y -= 5.5f * cam->rollUpVel.y;
@@ -569,14 +572,15 @@ void Camera_UpdatePosition_Default(Camera *cam, f32 *mode) {
             cross.x *= inv;
             cross.y *= inv;
             cross.z *= inv;
-            if (PSVECDotProduct(&cam->tiltUp, &up1) < 0.0f || mag > 0.314159f) {
-                force.x = cross.x * 13.978342f;
-                force.y = cross.y * 13.978342f;
-                force.z = cross.z * 13.978342f;
+            strength = 13.978342f;
+            if (PSVECDotProduct(&cam->tiltUp, &up1) < 0.0f || mag > 0.31415927f) {
+                force.x = cross.x * strength;
+                force.y = cross.y * strength;
+                force.z = cross.z * strength;
             } else {
-                force.x = 0.01f * (cross.x * 13.978342f);
-                force.y = 0.01f * (cross.y * 13.978342f);
-                force.z = 0.01f * (cross.z * 13.978342f);
+                force.x = 0.01f * (cross.x * strength);
+                force.y = 0.01f * (cross.y * strength);
+                force.z = 0.01f * (cross.z * strength);
             }
             force.x -= 4.5f * cam->tiltUpVel.x;
             force.y -= 4.5f * cam->tiltUpVel.y;
@@ -655,8 +659,11 @@ void Camera_UpdatePosition_Default(Camera *cam, f32 *mode) {
     if ((u8 *)car->vtable == g_carAVTable) {
         Vector4 toTarget __attribute__((aligned(16)));
         Vector4 blend __attribute__((aligned(16)));
+        s32 bone;
         mtx = car->worldMatrix;
+        bone = *(s32 *)((u8 *)car->vehicleIface->collider + 0x44);
         XformVec(&car->worldMatrix, &car->bodyOffset, &mtx.v[3]);
+        GetTrimmedCameraPos2(&info.from, &cam->pos, &cam->trim, bone, &mtx);
         PSVECSubtract(&target, &cam->pos, &toTarget);
         if (PSVECSquareMag(&toTarget)) {
             PSVECNormalize(&toTarget, &toTarget);
