@@ -68,3 +68,9 @@ void __GXFifoLink(u8 en) {
     __cpReg[1] = gx->cpEnable;
 }
 
+void __GXWriteFifoIntEnable(u8 hiWatermarkEn, u8 loWatermarkEn) {
+    gx->cpEnable = (gx->cpEnable & ~4) | ((u32)hiWatermarkEn << 2);
+    gx->cpEnable = (gx->cpEnable & ~8) | ((u32)loWatermarkEn << 3);
+    __cpReg[1] = gx->cpEnable;
+}
+
