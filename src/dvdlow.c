@@ -41,6 +41,15 @@ void AlarmHandler(void)
     }
 }
 
+s32 DVDLowWaitCoverClose(DVDLowCallback callback)
+{
+    Callback = callback;
+    WaitingCoverClose = 1;
+    StopAtNextInt = 0;
+    __DIRegs[1] = 2;
+    return 1;
+}
+
 s32 DVDLowBreak(void)
 {
     StopAtNextInt = 1;
