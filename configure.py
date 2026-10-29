@@ -340,7 +340,7 @@ config.libs = [
             Object(NonMatching, "Projectile.c"),
             Object(NonMatching, "ShaderHolder.c"),
             Object(NonMatching, "ShowStats.c"),
-            Object(NonMatching, "SmartProjectiles.c"),
+            Object(Matching, "SmartProjectiles.c"),
             Object(NonMatching, "SoundSequence.c"),
             Object(NonMatching, "State_GamePlay.c"),
             Object(NonMatching, "State_Movie.c"),
