@@ -44,8 +44,8 @@ typedef struct CARDControl {
     u8 *diskID;
 } CARDControl;
 
-static u8 __CARDDiskNone[32];
 CARDControl __CARDBlock[2];
+u8 __CARDDiskNone[32];
 
 void OSWakeupThread(OSThreadQueue *queue);
 
