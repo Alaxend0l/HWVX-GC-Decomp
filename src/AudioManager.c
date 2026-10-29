@@ -185,6 +185,14 @@ void SoundSource_Stop(s32 index) {
 }
 
 s8 SoundSource_IsActive(s32 index) {
+    typedef struct SoundSource {
+        u8 pad0[0x2C];
+        s32 voice;
+        u8 pad30[0x50 - 0x30];
+    } SoundSource;
+    extern SoundSource *g_sources;
+
+    return g_sources[index].voice != -1;
 }
 
 s8 SoundSource_IsLooping(s32 index) {
