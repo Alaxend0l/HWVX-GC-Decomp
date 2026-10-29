@@ -62,6 +62,13 @@ typedef struct GDLLODEntry {
     u32 matrix;
 } GDLLODEntry;
 
+typedef struct GDLEnvmapState {
+    f32 unk0;
+    f32 unk4;
+    u16 unk8;
+    u16 unkA;
+} GDLEnvmapState;
+
 typedef struct GDL {
     u8 unk0[0x2C];
     u32 numSpheres;
