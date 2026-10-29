@@ -1,5 +1,8 @@
 #include "common.h"
 
+static inline void Mover_SetRotation(u8 *mover, Quaternion quat) {
+    *(Quaternion *)(mover + 0xE0) = quat;
+}
 
 void Mover_GetTrackPos(void *mover, f32 *pos, f32 time) {
     void Gfx_AnimExtractKeyFrame(void *anim, f32 time, void *keyFrame, u32 count);
