@@ -1078,7 +1078,8 @@ typedef struct {
   u8 hasDist;
   u8 visible;
   f32 dist;
-  u8 padC[0xC];
+  u8 padC[0x8];
+  u32 *numBones;            /* 0x14 bone count, the key frames an animation extracts */
   u32 slaves[2];
 } Model;
 typedef struct {
