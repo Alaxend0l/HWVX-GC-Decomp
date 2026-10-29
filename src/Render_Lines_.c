@@ -8,7 +8,7 @@ typedef union {
     f32 f32;
 } PPCWGPipe;
 
-#define GXWGFifo (*(volatile PPCWGPipe *)0xCC008000)
+volatile PPCWGPipe GXWGFifo : 0xCC008000;
 
 typedef struct Line2D {
     f32 x0, y0, z0, w0; /* 0x00 */
@@ -39,16 +39,10 @@ void Set2DLineVtxDesc(void);
 void Render_DrawLine2D(Line2D *line) {
     Set2DLineVtxDesc();
     GXBegin(0xA8, 0, 2);
-    GXWGFifo.f32 = line->x0;
-    GXWGFifo.f32 = line->y0;
-    GXWGFifo.u8 = line->r;
-    GXWGFifo.u8 = line->g;
-    GXWGFifo.u8 = line->b;
-    GXWGFifo.f32 = line->x1;
-    GXWGFifo.f32 = line->y1;
-    GXWGFifo.u8 = line->r;
-    GXWGFifo.u8 = line->g;
-    GXWGFifo.u8 = line->b;
+    GXPosition2f32(line->x0, line->y0);
+    GXColor3u8(line->r, line->g, line->b);
+    GXPosition2f32(line->x1, line->y1);
+    GXColor3u8(line->r, line->g, line->b);
 }
 
 void Set2DLineVtxDesc(void) {
