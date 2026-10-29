@@ -334,7 +334,7 @@ config.libs = [
             Object(NonMatching, "NavHolder.c"),
             Object(NonMatching, "ParticleManager.c"),
             Object(NonMatching, "PhysicalObject.c"),
-            Object(NonMatching, "Playback.c"),
+            Object(Matching, "Playback.c"),
             Object(NonMatching, "Player.c"),
             Object(Matching, "ProcessManager.c"),
             Object(NonMatching, "Projectile.c"),
