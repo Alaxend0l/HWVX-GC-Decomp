@@ -53,9 +53,9 @@ static inline void CarA_UpdateDamageSlaves(CarA *car) {
     void MotionState_ReleaseSlavesByType(MotionState *state, u8 type);
     void ThingManagerList_TriggerSlaves(void *list, void *key, void *slave, Vector4 *color, Vector4 *vel, s32 type);
     MotionState *ms;
+    u32 i;
     DamageSlaves *slaves;
     f32 frac;
-    u32 i;
 
     if (car->vehicleIface->numSlaves >= 2) {
         ms = &car->motionState;
@@ -1161,16 +1161,6 @@ void CarA_DynamicCollideImpact(void *thing, void *collision, s32 damage, f32 imp
         CarA *thingB;
         CollideSurface *surface;
     } CollideInfo;
-    typedef struct DamageSlave {
-        u8 pad00[0x14];
-        f32 threshold;
-        u8 pad18[8];
-    } DamageSlave;
-    typedef struct DamageSlaves {
-        u8 pad00[0x1C];
-        u32 count;
-        DamageSlave *slaves;
-    } DamageSlaves;
     typedef struct DropItem {
         Vector4 velocity;
         Matrix4 mtx;
@@ -1239,7 +1229,6 @@ void CarA_DynamicCollideImpact(void *thing, void *collision, s32 damage, f32 imp
     s8 GameSettings_IsCheatEnabled(s32 cheat);
     s8 Player_IsHuman(void *player);
     void MotionState_ReleaseSlavesByType(MotionState *state, u8 type);
-    void ThingManagerList_TriggerSlaves(void *list, void *key, DamageSlave *slave, Vector4 *color, Vector4 *vel, s32 type);
     void *ThingManagerList_GetByType(void *list, s32 type);
     void ThingManagerList_Remove(void *list, void *thing);
     void ThingManagerList_Append(void *list, void *thing);
@@ -1253,8 +1242,8 @@ void CarA_DynamicCollideImpact(void *thing, void *collision, s32 damage, f32 imp
     void Thing_ProcessEndEvent(CarA *car, void *collider, CollideInfo *coll, Vector4 *axis);
     void Wheel_StopCarAirborne(s32 chan);
     void Wheel_PlayFrontalCollisionForce(s32 chan, s32 force);
-    CarA *car = thing;
     CollideInfo *coll = collision;
+    CarA *car = thing;
     SpawnParams sp;
     SpawnParams snd;
     SpawnParams ex;
@@ -1279,7 +1268,6 @@ void CarA_DynamicCollideImpact(void *thing, void *collision, s32 damage, f32 imp
     f32 d;
     f32 d2;
     f32 dist;
-    f32 frac;
     f32 dv;
     f32 adv;
     f32 mag;
@@ -1300,16 +1288,12 @@ void CarA_DynamicCollideImpact(void *thing, void *collision, s32 damage, f32 imp
     f32 mag2;
     f32 scale;
     f32 fb;
-    CollideSurface *surf;
-    DamageSlaves *slaves;
-    MotionState *ms;
     DropItem *item;
     DropItem *rack;
     DeathInfo *death;
     CarA *other;
     void *spawned;
     Player *player;
-    u32 i;
     u32 id;
     s32 idx;
 
@@ -1382,19 +1366,7 @@ void CarA_DynamicCollideImpact(void *thing, void *collision, s32 damage, f32 imp
             if (GameSettings_IsCheatEnabled(6) && car->player != NULL && Player_IsHuman(car->player)) {
                 car->speed = car->vehicleIface->collider->maxHealth;
             }
-            if (car->vehicleIface->numSlaves >= 2) {
-                ms = &car->motionState;
-                slaves = (DamageSlaves *)car->vehicleIface->slaves;
-                frac = 100.0f * (f32)car->speed / (f32)car->vehicleIface->collider->maxHealth;
-                MotionState_ReleaseSlavesByType(ms, 2);
-                for (i = 0; i < slaves->count; i++) {
-                    Vector4 color = {0.0f, 0.0f, 0.0f, 0.0f};
-
-                    if (&slaves->slaves[i] != NULL && frac < slaves->slaves[i].threshold) {
-                        ThingManagerList_TriggerSlaves(&ms->slaves, &slaves->slaves[i], &slaves->slaves[i], &color, &g_zeroVector, 2);
-                    }
-                }
-            }
+            CarA_UpdateDamageSlaves(car);
         }
     }
     if (coll->thingB != NULL && (u8 *)coll->thingA->vtable == g_carAVTable && (u8 *)coll->thingB->vtable == g_carAVTable &&
@@ -1484,22 +1456,20 @@ void CarA_DynamicCollideImpact(void *thing, void *collision, s32 damage, f32 imp
             cosA = PSVECDotProduct(&coll->normal, &refUp);
             PSVECSubtract(&coll->pos, &car->worldMatrix.v[3], &rel);
             if (PSVECDotProduct(&car->worldMatrix.v[1], &rel) < 0.0f) {
-                surf = coll->surface;
-                idx = (f32)surf->numSoundsA * ((dv - surf->minImpactA) / (surf->maxImpactA - surf->minImpactA)) - 1.0f;
-                if (idx >= (s32)surf->numSoundsA) {
-                    idx = surf->numSoundsA - 1;
+                idx = (f32)coll->surface->numSoundsA * ((dv - coll->surface->minImpactA) / (coll->surface->maxImpactA - coll->surface->minImpactA)) - 1.0f;
+                if (idx >= (s32)coll->surface->numSoundsA) {
+                    idx = coll->surface->numSoundsA - 1;
                 }
-                if (idx >= 0 && surf->numSoundsA != 0) {
-                    id = surf->soundsA[idx];
+                if (idx >= 0 && coll->surface->numSoundsA != 0) {
+                    id = coll->surface->soundsA[idx];
                 }
             } else {
-                surf = coll->surface;
-                idx = (f32)surf->numSoundsB * ((dv - surf->minImpactB) / (surf->maxImpactB - surf->minImpactB)) - 1.0f;
-                if (idx >= (s32)surf->numSoundsB) {
-                    idx = surf->numSoundsB - 1;
+                idx = (f32)coll->surface->numSoundsB * ((dv - coll->surface->minImpactB) / (coll->surface->maxImpactB - coll->surface->minImpactB)) - 1.0f;
+                if (idx >= (s32)coll->surface->numSoundsB) {
+                    idx = coll->surface->numSoundsB - 1;
                 }
-                if (idx >= 0 && surf->numSoundsB != 0) {
-                    id = surf->soundsB[idx];
+                if (idx >= 0 && coll->surface->numSoundsB != 0) {
+                    id = coll->surface->soundsB[idx];
                 }
             }
             if (id != 0) {
@@ -1507,9 +1477,9 @@ void CarA_DynamicCollideImpact(void *thing, void *collision, s32 damage, f32 imp
                     GenerateQuaternion(&axis, &sp.quat, 3.1415927f);
                 } else if (cosA > 0.99f) {
                     sp.quat.x = 0.0f;
-                    sp.quat.w = 1.0f;
                     sp.quat.y = 0.0f;
                     sp.quat.z = 0.0f;
+                    sp.quat.w = 1.0f;
                 } else {
                     a = acos(cosA);
                     PSVECCrossProduct(&refUp, &coll->normal, &axis);
