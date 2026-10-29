@@ -745,3 +745,21 @@ void *CameraManager_GetCameraFromPlayer(void *player) {
     }
     return NULL;
 }
+
+void CameraManager_ReleaseAllEmitters(void) {
+    extern u8 g_cameraManager[];
+    void ThingManagerList_RemoveReleasedThings(void *list);
+    Camera *cam;
+    u32 i;
+
+    cam = (Camera *)g_cameraManager;
+    for (i = 0; i < g_cameraManager[0x640]; i++) {
+        if (cam->listener != NULL) {
+            (*(void (***)(void *))((u8 *)cam->listener + 0x8C))[1](cam->listener);
+            cam->listener = NULL;
+        }
+        cam++;
+    }
+    ThingManagerList_RemoveReleasedThings(&g_thingManager_DARYL.activeList);
+}
+
