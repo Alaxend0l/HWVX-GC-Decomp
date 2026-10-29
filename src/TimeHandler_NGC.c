@@ -43,7 +43,7 @@ void TimeHandler_Heartbeat(void) {
     extern f32 g_fDeltaTime60th;
     extern f32 g_fDeltaTimeSec;
     extern f32 g_fDeltaTimeSec_inv;
-    u32 now = (OSGetTick() * 8) / ((*(u32 *)0x800000F8 / 4) / 125000);
+    u32 now = TimeHandler_GetTimeUs();
 
     if (max_time < now) {
         max_time = now;
@@ -53,17 +53,17 @@ void TimeHandler_Heartbeat(void) {
     } else {
         m_iDeltaTimeUs = now - m_iLastTimeUs;
     }
-    if ((u32)m_iDeltaTimeUs >= 34000) {
+    if (m_iDeltaTimeUs >= 34000) {
         m_iDeltaTimeUs = 34000;
     }
-    if ((u32)m_iDeltaTimeUs < 1000) {
+    if (m_iDeltaTimeUs < 1000) {
         m_iDeltaTimeUs = 1000;
     }
     m_iLastTimeUs = now;
     g_iLastDeltaTimeMS = g_iDeltaTimeMS;
-    g_fDeltaTimeMS = (f32)(u32)m_iDeltaTimeUs / 1000.0f;
-    g_iDeltaTimeMS = (u32)m_iDeltaTimeUs / 1000;
-    g_iLastTimeMS = now / 1000;
+    g_iDeltaTimeMS = m_iDeltaTimeUs / 1000;
+    g_fDeltaTimeMS = (f32)m_iDeltaTimeUs / 1000.0f;
+    g_iLastTimeMS = m_iLastTimeUs / 1000;
     g_fDeltaTime60th = g_fDeltaTimeMS / (1000.0f / 60.0f);
     g_fDeltaTimeSec = g_fDeltaTimeMS / 1000.0f;
     g_iDeltaTime60th = g_fDeltaTime60th;
