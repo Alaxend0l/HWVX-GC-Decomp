@@ -1,11 +1,19 @@
 #include "common.h"
 
 
-extern s32 g_timer300;
-extern s32 g_timer163;
-extern s32 g_timer78;
-extern s32 g_iDeltaTimeMS;
-extern u8 g_iTimeShift;
+u8 g_iTimeShift;
+f32 g_fDeltaTimeSec_inv;
+f32 g_fDeltaTimeSec;
+s32 g_iLastTimeMS;
+f32 g_fDeltaTime60th;
+f32 g_fDeltaTimeMS;
+s32 g_iDeltaTime60th;
+s32 g_iLastDeltaTimeMS;
+s32 g_iDeltaTimeMS;
+
+s32 g_timer300 = 300;
+s32 g_timer163 = 163;
+s32 g_timer78 = 78;
 void TimeHandler_SetSlowMotion(void) {
     if (g_iTimeShift) {
         g_iTimeShift = 0;
