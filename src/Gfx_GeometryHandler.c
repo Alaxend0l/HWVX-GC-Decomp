@@ -140,6 +140,7 @@ s32 Gfx_FrustrumCullSphereTest(Vector *center, f32 radius) {
     return result;
 }
 
+#pragma use_lmw_stmw on
 u32 Gfx_GetCullLODGX(Geometry *geometry, Vector *matrix, u8 *lod, u8 flag) {
     Vector diff __attribute__((aligned(16)));
     Vector center __attribute__((aligned(16)));
