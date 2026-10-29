@@ -1799,6 +1799,61 @@ s32 CarA_GetSurfaceScript(u8 *car)
     return *(s32 *)(coll + 0x30);
 }
 
+void CarA_GetCameraOrientationInfo(CarA *car, u32 index, void *out) {
+    void Thing_GetCameraOrientationInfo(void *thing, u32 index, void *out);
+    u32 ViewManager_GetViewFormat(void);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *in, Vector4 *out);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void XformVec(void *mtx, void *in, Vector4 *out);
+    typedef struct CameraOrientationInfo {
+        u8 pad00[0x30];
+        Vector4 up;
+        u8 pad40[0x60 - 0x40];
+        Vector4 pos;
+        Vector4 target;
+        u8 pad80[0x84 - 0x80];
+        u8 *camera;
+        u32 numCameras;
+        f32 unk8C;
+    } CameraOrientationInfo;
+    typedef struct CarCameras {
+        u32 count;
+        u8 *list;
+    } CarCameras;
+    CameraOrientationInfo *info = out;
+    CarCameras *cams;
+    Vector4 offset __attribute__((aligned(16)));
+
+    cams = (CarCameras *)((u8 *)car->vehicleIface->engine + 0x80);
+    if (ViewManager_GetViewFormat() > 1) {
+        cams = (CarCameras *)((u8 *)car->vehicleIface->engine + 0x88);
+    }
+    info->numCameras = cams->count;
+    if (cams->count == 0) {
+        Thing_GetCameraOrientationInfo(car, index, info);
+    } else {
+        info->camera = cams->list + (index % cams->count) * 0xC;
+        info->unk8C = *(f32 *)&car->pad504[4];
+        info->up = car->groundNormal;
+        if (info->up.x && info->up.y && info->up.z && PSVECSquareMag(&info->up)) {
+            PSVECNormalize(&info->up, &info->up);
+        }
+    }
+    if (car->slaveWeaponRpm[0] < 10000) {
+        info->unk8C = 0.0f;
+    }
+    PSVECSubtract(&car->bodyOffset, (Vector4 *)car->vehicleIface->engine, &offset);
+    XformVec(&car->worldMatrix, &offset, &info->pos);
+    switch (car->vehicleIface->collider->pad00[0x10]) {
+    case 0:
+        info->target = *(Vector4 *)CarA_GetOrientedCollision((u8 *)car);
+        break;
+    case 1:
+        break;
+    }
+}
+
 void CarA_CollideWithRay(CarA *car, void *start, void *end, struct RayHit { u8 pad0[0x30]; Vector4 normal; } *hit, f32 maxDist) {
     void XformVec(void *mtx, void *in, Vector4 *out);
     f32 PhysicalProperties_CollideWithRay(void *props, void *pos, void *start, void *end, void *hit, f32 maxDist);
