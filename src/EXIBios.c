@@ -178,6 +178,31 @@ BOOL EXIImmEx(s32 chan, void *buf, s32 len, u32 mode) {
     return TRUE;
 }
 
+BOOL EXIDma(s32 chan, void *buf, s32 len, u32 type, EXICallback callback) {
+    EXIControl *exi = &Ecb[chan];
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    if ((exi->state & 3) || !(exi->state & 4)) {
+        OSRestoreInterrupts(enabled);
+        return FALSE;
+    }
+
+    exi->tcCallback = callback;
+    if (exi->tcCallback) {
+        EXIClearInterrupts(chan, FALSE, TRUE, FALSE);
+        __OSUnmaskInterrupts(0x200000u >> (3 * chan));
+    }
+
+    exi->state |= 1;
+    __EXIRegs[chan * 5 + 1] = (u32)buf & 0x3FFFFE0;
+    __EXIRegs[chan * 5 + 2] = (u32)len;
+    __EXIRegs[chan * 5 + 3] = (type << 2) | 3;
+
+    OSRestoreInterrupts(enabled);
+    return TRUE;
+}
+
 BOOL EXISync(s32 chan) {
     EXIControl *exi = &Ecb[chan];
     BOOL rc = FALSE;
