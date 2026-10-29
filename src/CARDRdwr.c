@@ -78,6 +78,40 @@ s32 __CARDRead(s32 chan, u32 addr, s32 length, void *dst, CARDCallback callback)
     return __CARDReadSegment(chan, BlockReadCallback);
 }
 
+void BlockWriteCallback(s32 chan, s32 result)
+{
+    CARDControl *card;
+    CARDCallback callback;
+
+    card = &__CARDBlock[chan];
+    if (result < 0) {
+        goto error;
+    }
+
+    card->xferred += 128;
+    card->addr = (u8 *)card->addr + 128;
+    card->offset += 128;
+    if (--card->repeat <= 0) {
+        goto error;
+    }
+
+    result = __CARDWritePage(chan, BlockWriteCallback);
+    if (result < 0) {
+        goto error;
+    }
+    return;
+
+error:
+    if (card->apiCallback == 0) {
+        __CARDPutControlBlock(card, result);
+    }
+    callback = card->xferCallback;
+    if (callback) {
+        card->xferCallback = 0;
+        callback(chan, result);
+    }
+}
+
 s32 __CARDWritePage(s32 chan, CARDCallback callback);
 void BlockWriteCallback(s32 chan, s32 result);
 s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, CARDCallback callback)
