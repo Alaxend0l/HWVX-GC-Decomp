@@ -157,19 +157,19 @@ void State_GetGameStateStr(s32 state, char *str) {
         strcpy(str, "STATE_NONE");
         break;
     case 4:
-        strcpy(str, "STATE_XXXXXXXXXXX");
+        strcpy(str, "STATE_START_MENU");
         break;
     case 5:
-        strcpy(str, "STATE_XXXXXXXA");
+        strcpy(str, "STATE_GAME_PLAY");
         break;
     case 8:
-        strcpy(str, "STATE_XXXXXXXB");
+        strcpy(str, "STATE_SHUTDOWN");
         break;
     case 11:
-        strcpy(str, "STATE_XXXXXXXXXXXXXXXXXXXX");
+        strcpy(str, "STATE_PROGRESSION_MANAGER");
         break;
     case 12:
-        strcpy(str, "STATE_XXXX");
+        strcpy(str, "STATE_GAME_MANAGER");
         break;
     case -1:
     default:
