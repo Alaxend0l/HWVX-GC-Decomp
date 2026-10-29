@@ -271,6 +271,37 @@ void stateGoToRetry(void)
     DVDLowStopMotor(cbForStateGoToRetry);
 }
 
+void stateCheckID(void) {
+    int memcmp(const void *a, const void *b, u32 n);
+    void *memcpy(void *dst, const void *src, u32 n);
+    void DVDLowStopMotor(void (*cb)(u32));
+    void cbForStateCheckID1(u32 intType);
+    void stateCheckID2(DVDCommandBlock *block);
+    void stateCheckID3(DVDCommandBlock *block);
+
+    switch (CurrCommand) {
+    case 3:
+        if (memcmp(tmpBuffer, (void *)executing->unk24, 0x1C)) {
+            DVDLowStopMotor(cbForStateCheckID1);
+            return;
+        }
+        memcpy((void *)currID, tmpBuffer, 0x20);
+        executing->state = 1;
+        DCInvalidateRange(tmpBuffer, 0x20);
+        LastState = (u32)stateCheckID2;
+        stateCheckID2(executing);
+        break;
+    default:
+        if (memcmp(tmpBuffer, (void *)currID, 0x20)) {
+            DVDLowStopMotor(cbForStateCheckID1);
+            return;
+        }
+        LastState = (u32)stateCheckID3;
+        stateCheckID3(executing);
+        break;
+    }
+}
+
 void cbForStateCheckID3(u32 intType);
 void stateCheckID3(DVDCommandBlock *block) {
     DVDLowAudioBufferConfig(((u8 *)currID)[8], 10, cbForStateCheckID3);
