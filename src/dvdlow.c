@@ -56,6 +56,26 @@ void AlarmHandler(void)
     }
 }
 
+void __OSMaskInterrupts(u32 mask);
+void OSClearContext(void *context);
+void OSSetCurrentContext(void *context);
+void AlarmHandlerForTimeout(void *alarm, void *context)
+{
+    u8 tmpContext[0x2C8];
+    DVDLowCallback callback;
+
+    __OSMaskInterrupts(0x400);
+    OSClearContext(tmpContext);
+    OSSetCurrentContext(tmpContext);
+    callback = Callback;
+    Callback = NULL;
+    if (callback) {
+        callback(0x10);
+    }
+    OSClearContext(tmpContext);
+    OSSetCurrentContext(context);
+}
+
 s32 DVDLowWaitCoverClose(DVDLowCallback callback)
 {
     Callback = callback;
