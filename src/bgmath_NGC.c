@@ -11,6 +11,12 @@ extern s32 __float_huge[];
 
 f32 PSVECMag(Vector *v);
 
+Matrix4 g_identity;
+Vector4 g_zeroVector;
+Vector4 g_iBasis;
+Vector4 g_jBasis;
+Vector4 g_kBasis;
+
 f32 MagnitudeVector(Vector *v) {
     f32 zero = 0.0f;
 
@@ -110,6 +116,17 @@ void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0) {
     M2C_FIELD(arg2, f32 *, 0) = (f32) ((M2C_FIELD(arg0, f32 *, 0) * farg0) + M2C_FIELD(arg1, f32 *, 0));
     M2C_FIELD(arg2, f32 *, 4) = (f32) ((M2C_FIELD(arg0, f32 *, 4) * farg0) + M2C_FIELD(arg1, f32 *, 4));
     M2C_FIELD(arg2, f32 *, 8) = (f32) ((M2C_FIELD(arg0, f32 *, 8) * farg0) + M2C_FIELD(arg1, f32 *, 8));
+}
+
+void ProjectVectorTangential(Vector *v, Vector *n, Vector *out) {
+    f32 PSVECDotProduct();
+    f32 scale;
+
+    scale = PSVECDotProduct(v, n);
+    scale = -scale;
+    out->x = scale * n->x + v->x;
+    out->y = scale * n->y + v->y;
+    out->z = scale * n->z + v->z;
 }
 
 void DistanceXYZ(Vector *a, Vector *b, f32 *dist)
