@@ -104,16 +104,10 @@ void VIWaitForRetrace(void) {
 
 static u32 getCurrentFieldEvenOdd(void) {
     extern VITiming *CurrTiming;
-    u32 vcount;
-    u32 vcount0;
-    u32 hcount;
+    u32 hct;
+    u32 vct;
 
-    vcount = __VIRegs[22] & 0x7FF;
-    do {
-        vcount0 = vcount;
-        hcount = __VIRegs[23] & 0x7FF;
-        vcount = __VIRegs[22] & 0x7FF;
-    } while (vcount0 != vcount);
-    return ((((vcount - 1) << 1) + ((hcount - 1) / CurrTiming->hlw)) < CurrTiming->nhlines) ? 1 : 0;
+    GetCurrentDisplayPosition(&hct, &vct);
+    return ((((vct - 1) << 1) + ((hct - 1) / CurrTiming->hlw)) < CurrTiming->nhlines) ? 1 : 0;
 }
 
