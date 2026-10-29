@@ -569,7 +569,7 @@ config.libs = [
             Object(NonMatching, "alloc.c"),
             Object(NonMatching, "errno.c"),
             Object(Matching, "ansi_files.c", mw_version="GC/1.3"),
-            Object(NonMatching, "ansi_fp.c"),
+            Object(NonMatching, "ansi_fp.c", mw_version="GC/1.3"),
             Object(NonMatching, "buffer_io.c"),
             Object(Matching, "ctype.c", mw_version="GC/1.3"),
             Object(NonMatching, "direct_io.c", mw_version="GC/1.3"),
