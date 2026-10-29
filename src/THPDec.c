@@ -53,6 +53,19 @@ static void __THPSetupBuffers(void) {
     }
 }
 
+static void __THPHuffGenerateSizeTable(void) {
+    s32 p, l, i;
+
+    p = 0;
+    for (l = 1; l <= 16; l++) {
+        i = (s32)__THPHuffmanBits[l - 1];
+        while (i--) {
+            __THPHuffmanSizeTab[p++] = (u8)l;
+        }
+    }
+    __THPHuffmanSizeTab[p] = 0;
+}
+
 static void __THPHuffGenerateCodeTable(void) {
     u8 *sizeTab;
     u16 *codeTab;
