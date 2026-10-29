@@ -50,9 +50,9 @@ BOOL DVDReadAbsAsyncForBS(DVDCommandBlock *block, void *addr, s32 length, s32 of
 BOOL DVDReadDiskID(DVDCommandBlock *block, DVDDiskID *diskID, DVDCBCallback callback);
 void DVDReset(void);
 
-static s32 status;
-static DVDBB2 *bb2;
-static DVDDiskID *idTmp;
+static s32 status = 0;
+static DVDBB2 *bb2 = NULL;
+static DVDDiskID *idTmp = NULL;
 static u8 bb2Buf[sizeof(DVDBB2) + 31];
 
 static void cb(s32 result, DVDCommandBlock *block) {
