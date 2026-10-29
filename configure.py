@@ -620,7 +620,7 @@ config.libs = [
             Object(NonMatching, "Conditon.cpp", mw_version="GC/1.3"),
             Object(NonMatching, "GBA.c"),
             Object(NonMatching, "GBAGetProcessStatus.c"),
-            Object(NonMatching, "GBAJoyBoot.c"),
+            Object(NonMatching, "GBAJoyBoot.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "GBARead.c"),
             Object(NonMatching, "GBAWrite.c"),
             Object(NonMatching, "GBAXfer.c"),
