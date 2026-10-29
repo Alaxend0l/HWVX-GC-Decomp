@@ -110,6 +110,12 @@ s32 Gfx_GetRenderWindowIndex(void) {
     return g_currentWindow;
 }
 
+GfxWindow *GetRenderWindow(void) {
+    extern s32 g_currentWindow;
+    extern GfxWindow g_window[];
+    return &g_window[g_currentWindow];
+}
+
 void Gfx_ClearScreen(void)
 {
     Render_ClearScreen();
