@@ -640,16 +640,16 @@ void ParticleGX_Render(void *particle) {
     }
 }
 
-void ParticleSprite_Render(void *sprite) {
-    void *Gfx_AddBillBoardSprite(u16);
-    void *bb;
+void ParticleSprite_Render(u8 *sprite) {
+    u8 *Gfx_AddBillBoardSprite(u16);
+    u8 *bb;
 
-    bb = Gfx_AddBillBoardSprite(M2C_FIELD(M2C_FIELD(M2C_FIELD(sprite, void **, 0x90), void **, 4), u32 **, 0x24)[M2C_FIELD(sprite, u8 *, 0x97)]);
-    M2C_FIELD(bb, u8 *, 0x2A) = M2C_FIELD(sprite, u8 *, 0x95);
-    M2C_FIELD(bb, s32 *, 0x24) = M2C_FIELD(sprite, s32 *, 0x54);
-    M2C_FIELD(bb, f32 *, 0x1C) = 1.0f - M2C_FIELD(sprite, f32 *, 0x80);
-    M2C_FIELD(bb, f32 *, 0xC) = M2C_FIELD(sprite, f32 *, 0x60) * M2C_FIELD(sprite, f32 *, 0x8C);
-    M2C_FIELD(bb, f32 *, 0) = M2C_FIELD(sprite, f32 *, 0);
-    M2C_FIELD(bb, f32 *, 4) = M2C_FIELD(sprite, f32 *, 4);
-    M2C_FIELD(bb, f32 *, 8) = M2C_FIELD(sprite, f32 *, 8);
+    bb = Gfx_AddBillBoardSprite((*(u32 **)(*(u8 **)(*(u8 **)(sprite + 0x90) + 0x4) + 0x24))[sprite[0x97]]);
+    bb[0x2A] = sprite[0x95];
+    *(s32 *)(bb + 0x24) = *(s32 *)(sprite + 0x54);
+    *(f32 *)(bb + 0x1C) = 360.0f - *(f32 *)(sprite + 0x80);
+    *(f32 *)(bb + 0xC) = *(f32 *)(sprite + 0x60) * *(f32 *)(sprite + 0x8C);
+    *(f32 *)(bb + 0x0) = *(f32 *)(sprite + 0x0);
+    *(f32 *)(bb + 0x4) = *(f32 *)(sprite + 0x4);
+    *(f32 *)(bb + 0x8) = *(f32 *)(sprite + 0x8);
 }
