@@ -68,6 +68,21 @@ void GXInitTlutRegion(GXTlutRegion *region, u32 tmem_addr, u32 tlut_size) {
     t->loadTlut1 = (t->loadTlut1 & ~0xFF000000) | (0x65 << 24);
 }
 
+void __GXFlushTextureState(void);
+void GXInvalidateTexAll(void) {
+    u32 reg0;
+    u32 reg1;
+
+    reg0 = 0x66001000;
+    reg1 = 0x66001100;
+    __GXFlushTextureState();
+    *(volatile u8 *)0xCC008000 = 0x61;
+    *(volatile u32 *)0xCC008000 = reg0;
+    *(volatile u8 *)0xCC008000 = 0x61;
+    *(volatile u32 *)0xCC008000 = reg1;
+    __GXFlushTextureState();
+}
+
 void *GXSetTexRegionCallback(void *f) {
     void *oldcb = gx->texRegionCallback;
 
