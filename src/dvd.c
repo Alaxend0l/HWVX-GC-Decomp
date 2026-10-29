@@ -39,7 +39,7 @@ s32 AutoFinishing;
 s32 FatalErrorFlag;
 volatile u32 CurrCommand;
 u32 Canceling;
-u32 CancelCallback;
+void (*CancelCallback)(s32 result, DVDCommandBlock *block);
 volatile u32 ResumeFromHere;
 u32 CancelLastError;
 u32 LastError;
@@ -96,6 +96,29 @@ void cbForStateReadingFST(u32 intType) {
     } else {
         stateGettingError();
     }
+}
+
+void stateTimeout(void) {
+    void __DVDStoreErrorCode(u32 code);
+    DVDCommandBlock *finished;
+    void (*callback)(s32 result, DVDCommandBlock *block);
+
+    __DVDStoreErrorCode(0x1234568);
+    DVDReset();
+    finished = executing;
+    executing = &DummyCommandBlock;
+    FatalErrorFlag = 1;
+    if (finished->callback) {
+        (*finished->callback)(-1, finished);
+    }
+    if (Canceling) {
+        callback = (void (*)(s32, DVDCommandBlock *))CancelCallback;
+        Canceling = 0;
+        if (callback) {
+            (*callback)(0, finished);
+        }
+    }
+    stateReady();
 }
 
 void stateGettingError(void)
