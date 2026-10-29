@@ -591,7 +591,7 @@ config.libs = [
             Object(NonMatching, "e_atan2.c"),
             Object(NonMatching, "e_pow.c"),
             Object(NonMatching, "e_rem_pio2.c"),
-            Object(NonMatching, "k_cos.c"),
+            Object(NonMatching, "k_cos.c", mw_version="GC/1.3"),
             Object(NonMatching, "k_rem_pio2.c"),
             Object(Matching, "k_sin.c", mw_version="GC/1.3"),
             Object(NonMatching, "k_tan.c"),
