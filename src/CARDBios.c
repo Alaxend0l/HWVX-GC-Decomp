@@ -96,6 +96,20 @@ s32 __CARDPutControlBlock(CARDControl *card, s32 result) {
     return result;
 }
 
+s32 CARDGetEncoding(s32 chan, u16 *encode) {
+    CARDControl *card;
+    CARDID *id;
+    s32 result;
+
+    result = __CARDGetControlBlock(chan, &card);
+    if (result < 0) {
+        return result;
+    }
+    id = card->workArea;
+    *encode = id->encode;
+    return __CARDPutControlBlock(card, 0);
+}
+
 s32 CARDGetSectorSize(s32 chan, u32 *size) {
     CARDControl *card;
     s32 result;
