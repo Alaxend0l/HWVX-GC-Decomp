@@ -111,6 +111,15 @@ void GXGetVtxDesc(s32 attr, s32 *type) {
     *type = cpType;
 }
 
+void GXClearVtxDesc(void) {
+    gx->vcdLo = 0;
+    gx->vcdLo = ((u32)gx->vcdLo & ~0x600) | ((u32)1 << 9);
+    gx->vcdHi = 0;
+    gx->hasNrms = 0;
+    gx->hasBiNrms = 0;
+    gx->dirtyState |= 8;
+}
+
 void GXInvalidateVtxCache(void) {
     *(volatile u8 *)0xCC008000 = 0x48;
 }
