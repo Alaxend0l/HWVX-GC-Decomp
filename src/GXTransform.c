@@ -69,6 +69,17 @@ void GXLoadPosMtxImm(f32 mtx[3][4], u32 id) {
     WriteMTXPS4x3(mtx, (volatile f32 *)0xCC008000);
 }
 
+void __GXSetMatrixIndex(u32 index);
+#pragma peephole off
+void GXSetCurrentMtx(u32 id) {
+    extern GXData *gx;
+    u32 *reg;
+
+    reg = &gx->matIdxA;
+    *reg = (*reg & ~0x3F) | id;
+    __GXSetMatrixIndex(0);
+}
+
 void GXSetViewportJitter(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz, u32 field);
 #pragma peephole off
 void GXSetViewport(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz) {
