@@ -163,3 +163,29 @@ static u32 getCurrentFieldEvenOdd(void) {
     return ((((vct - 1) << 1) + ((hct - 1) / CurrTiming->hlw)) < CurrTiming->nhlines) ? 1 : 0;
 }
 
+u32 VIGetTvFormat(void) {
+    extern u32 CurrTvMode;
+    s32 OSDisableInterrupts(void);
+    void OSRestoreInterrupts(s32 level);
+    u32 format;
+    s32 enabled;
+
+    enabled = OSDisableInterrupts();
+    switch (CurrTvMode) {
+    case 0:
+    case 3:
+        format = 0;
+        break;
+    case 1:
+    case 4:
+        format = 1;
+        break;
+    case 5:
+    case 2:
+        format = CurrTvMode;
+        break;
+    }
+    OSRestoreInterrupts(enabled);
+    return format;
+}
+
