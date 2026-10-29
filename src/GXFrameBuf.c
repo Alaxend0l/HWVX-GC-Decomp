@@ -43,6 +43,28 @@ typedef struct GXData {
 
 extern GXData *gx;
 
+static u32 __GXGetNumXfbLines(u32 efbHt, u32 iScale) {
+    u32 count;
+    u32 realHt;
+    u32 iScaleD;
+
+    count = (efbHt - 1) * 0x100;
+    realHt = (count / iScale) + 1;
+    iScaleD = iScale;
+    if (iScaleD > 0x80 && iScaleD < 0x100) {
+        while (iScaleD % 2 == 0) {
+            iScaleD /= 2;
+        }
+        if (efbHt % iScaleD == 0) {
+            realHt++;
+        }
+    }
+    if (realHt > 0x400) {
+        realHt = 0x400;
+    }
+    return realHt;
+}
+
 void GXAdjustForOverscan(GXRenderModeObj *rmin, GXRenderModeObj *rmout, u16 hor, u16 ver) {
     u16 hor2 = (u16)(hor * 2);
     u16 ver2 = (u16)(ver * 2);
