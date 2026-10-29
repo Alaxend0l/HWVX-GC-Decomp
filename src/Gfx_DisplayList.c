@@ -145,3 +145,13 @@ u32 Gfx_AddWorldMatrixState_NonCached(void *matrix) {
     return g_pGDL->numMatrices++;
 }
 
+void *Gfx_GetWorldMatrixState(u32 index) {
+    if (index == 0xFFFE) {
+        return &g_identity;
+    }
+    if (index == 0xFFFF) {
+        return (u8 *)GetRenderWindow() + 0x140;
+    }
+    return g_pGDL->matrices[index];
+}
+
