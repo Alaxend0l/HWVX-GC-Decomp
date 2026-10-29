@@ -355,6 +355,37 @@ found:
     return (u8 *)ptr + 8;
 }
 
+void *allocate_from_var_pools(Block **pool_obj, u32 size) {
+    Block *bp;
+    void *ptr;
+
+    size = (size + 8 + 7) & ~7;
+    if (size < 0x50) {
+        size = 0x50;
+    }
+    bp = *pool_obj != NULL ? *pool_obj : link_new_block(pool_obj, size);
+    if (bp == NULL) {
+        return NULL;
+    }
+    do {
+        if (size <= bp->max_size_) {
+            ptr = Block_subBlock(bp, size);
+            if (ptr != NULL) {
+                *pool_obj = bp;
+                goto found;
+            }
+        }
+        bp = bp->next_;
+    } while (bp != *pool_obj);
+    bp = link_new_block(pool_obj, size);
+    if (bp == NULL) {
+        return NULL;
+    }
+    ptr = Block_subBlock(bp, size);
+found:
+    return (u8 *)ptr + 8;
+}
+
 void *Block_subBlock(Block *ths, u32 size) {
     SubBlock *st;
     SubBlock *sb;
