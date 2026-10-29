@@ -36,6 +36,8 @@ extern u8 __ArenaLo[];
 extern u8 __ArenaHi[];
 extern u8 _stack_addr[];
 
+volatile u32 __PIRegs[12] : 0xCC003000;
+
 
 void ClearArena(void)
 {
