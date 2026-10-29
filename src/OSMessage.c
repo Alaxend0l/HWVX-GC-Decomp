@@ -53,3 +53,25 @@ BOOL OSSendMessage(OSMessageQueue *mq, OSMessage msg, s32 flags) {
     return 1;
 }
 
+BOOL OSReceiveMessage(OSMessageQueue *mq, OSMessage *msg, s32 flags) {
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    while (mq->usedCount == 0) {
+        if (!(flags & OS_MESSAGE_BLOCK)) {
+            OSRestoreInterrupts(enabled);
+            return 0;
+        } else {
+            OSSleepThread(&mq->queueReceive);
+        }
+    }
+    if (msg != 0) {
+        *msg = mq->msgArray[mq->firstIndex];
+    }
+    mq->firstIndex = (mq->firstIndex + 1) % mq->msgCount;
+    mq->usedCount--;
+    OSWakeupThread(&mq->queueSend);
+    OSRestoreInterrupts(enabled);
+    return 1;
+}
+
