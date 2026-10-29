@@ -31,6 +31,19 @@ static inline PMPlayer *PlayerManager_PopActive(PlayerManager *mgr) {
     return player;
 }
 
+static inline void PlayerManager_UnlinkActive(PlayerManager *mgr, PMPlayer *player) {
+    if (player->prev == NULL) {
+        mgr->active = player->next;
+    } else {
+        player->prev->next = player->next;
+    }
+    if (player->next != NULL) {
+        player->next->prev = player->prev;
+        player->next = NULL;
+    }
+    player->prev = NULL;
+}
+
 static inline void PlayerManager_PushFree(PlayerManager *mgr, PMPlayer *player) {
     player->next = mgr->free;
     player->prev = NULL;
