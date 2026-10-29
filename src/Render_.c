@@ -26,6 +26,10 @@ extern u8 m_firstFrame;
 extern s32 m_srcBlend;
 extern s32 m_dstBlend;
 
+void DisplayList_Init(void) {
+    memset(g_pDL, 0, 0x18);
+}
+
 void Render_ClearScreen(void) {
 
 }
