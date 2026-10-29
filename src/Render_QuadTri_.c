@@ -64,6 +64,27 @@ extern u8 g_screenText[0xA00];
 u32 FontManager_Print(char *str, f32 x, f32 y, s32 id);
 
 extern GXColor g_textcolor;
+
+typedef struct GfxWindow {
+    u8 unk0[0x2B0];
+    u32 unk2B0;
+    u8 unk2B4[0x2B8 - 0x2B4];
+    u32 unk2B8;
+    u8 unk2BC[0x2C0 - 0x2BC];
+    GXColor overlayColor;
+    u32 overlayMode;
+    u8 unk2C8[0x2CC - 0x2C8];
+    f32 unk2CC;
+} GfxWindow;
+
+GfxWindow *GetRenderWindow(void);
+void Render_StateZWriteEnable(s32 enable);
+void Set2DRectFlatVtxDesc(void);
+
+static inline void GXPosition2f32(f32 x, f32 y) {
+    GXWGFifo.f32 = x;
+    GXWGFifo.f32 = y;
+}
 #pragma push
 #pragma use_lmw_stmw on
 void Render_Print(void) {
