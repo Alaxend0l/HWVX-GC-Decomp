@@ -76,7 +76,7 @@ s8 AI_Creature_Spawn(u8 *creature, u8 *spawner, u32 index) {
     void Player_SetThing(u8 *player, u8 *thing);
     void AI_Reset(void *arg0);
     int rand(void);
-    CreatureParams params;
+    CreatureParams params __attribute__((aligned(16)));
     u8 *info;
     u8 *list;
     u8 *thing;
