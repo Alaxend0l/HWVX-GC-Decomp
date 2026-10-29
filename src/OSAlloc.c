@@ -20,6 +20,16 @@ extern s32 __OSCurrHeap;
 
 Cell *DLInsert(Cell *list, Cell *cell);
 
+static inline Cell *DLAddFront(Cell *list, Cell *cell)
+{
+    cell->next = list;
+    cell->prev = NULL;
+    if (list) {
+        list->prev = cell;
+    }
+    return cell;
+}
+
 static inline Cell *DLExtract(Cell *list, Cell *cell)
 {
     if (cell->next) {
