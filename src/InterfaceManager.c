@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 /* Message passed to an interface's callback (InterfaceState.callback). */
 typedef struct InterfaceEventMsg {
     u32 index;
