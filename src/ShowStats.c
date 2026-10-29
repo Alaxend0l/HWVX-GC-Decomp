@@ -81,6 +81,7 @@ void ShowStats_EndScene(void) {
     Performance_End();
 }
 
+#pragma opt_propagation off
 void Render_TimeBars(void *bar) {
     TimeBarRect *Gfx_Add2DRectangle(void);
     void *memcpy(void *dst, const void *src, u32 n);
@@ -225,4 +226,3 @@ void Render_TimeBars(void *bar) {
         rect->tex = 0;
     }
 }
-
