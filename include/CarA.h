@@ -230,7 +230,7 @@ typedef struct CarA {
   f32 forwardAccel;         /* 0x50C velocity += forward * this * dt */
   u8 pad510[0x10];          /* 0x510 */
   Vector4 bodyOffset;       /* 0x520 XformVec(worldMatrix, this) -> camera/reflection pos */
-  u8 pad530[0x10];          /* 0x530 */
+  Vector4 groundNormal;     /* 0x530 */
   f32 tiltX;                /* 0x540 */
   f32 tiltY;                /* 0x544 */
   u8 pad548[8];             /* 0x548 */
