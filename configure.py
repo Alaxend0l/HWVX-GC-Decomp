@@ -543,7 +543,7 @@ config.libs = [
             Object(NonMatching, "msghndlr.c", mw_version="GC/2.0"),
             Object(NonMatching, "support.c"),
             Object(Matching, "mutex_TRK.c"),
-            Object(NonMatching, "notify.c"),
+            Object(NonMatching, "notify.c", mw_version="GC/1.3"),
             Object(NonMatching, "flush_cache.c"),
             Object(Matching, "mem_TRK.c", mw_version="GC/1.3"),
             Object(NonMatching, "targimpl.c"),
