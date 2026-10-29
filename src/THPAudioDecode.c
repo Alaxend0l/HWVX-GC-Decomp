@@ -45,6 +45,16 @@ void AudioDecodeThreadCancel(void) {
     }
 }
 
+static void AudioDecoder(void) {
+    void *buf;
+
+    while (TRUE) {
+        buf = PopReadedBuffer();
+        AudioDecode(buf);
+        PushReadedBuffer2(buf);
+    }
+}
+
 void *PopFreeAudioBuffer(void) {
     extern u8 FreeAudioBufferQueue[];
     void *msg;
