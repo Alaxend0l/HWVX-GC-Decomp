@@ -15,6 +15,11 @@ typedef struct VertexColorTile {
     u8 unk31[3];
 } VertexColorTile;
 
+VertexColorTile g_VertexColorTiles[64];
+void *g_pVertexColorSeqList[64];
+s32 g_iTotalVertexColorTiles;
+s32 g_iTotalVertexColorSeq;
+
 
 s32 ActionVertexColorSeqChangeMode(s32 *data) {
     u32 count = data[1];
