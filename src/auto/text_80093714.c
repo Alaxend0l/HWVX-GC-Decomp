@@ -2,26 +2,54 @@
 // split_file divides it into the game's real files (file_status shows its range).
 #include "common.h"
 
+typedef struct TRKCPURegs {
+    u32 gpr[32];
+    u32 pc;
+} TRKCPURegs;
+
+typedef struct TRKCPUState {
+    TRKCPURegs regs;
+    u8 pad_84[0x1F8 - 0x84];
+    u32 stepMode; /* 0x1F8: MSR, 0x400 = single-step trace */
+    u8 pad_1FC[0x2F8 - 0x1FC];
+    u32 field_2F8;
+} TRKCPUState;
+
+typedef struct TRKState {
+    u8 pad_0[0x98];
+    s32 field_98;
+    s32 field_9C;
+} TRKState;
+
+typedef struct TRKStepStatus {
+    u32 type;       /* 0: count, 1: out of range, 0x10: over */
+    u8 enabled;
+    u8 pad_5[3];
+    u32 count;
+    u32 rangeStart;
+    u32 rangeEnd;
+} TRKStepStatus;
+
+typedef struct TRKExceptionStatus {
+    u32 field_0;
+    u8 pad_4[4];
+    u16 field_8;
+    u8 pad_A[6];
+} TRKExceptionStatus;
+
+extern TRKCPUState gTRKCPUState;
+extern TRKState gTRKState;
+extern TRKStepStatus gTRKStepStatus_800DA0B4;
+extern TRKExceptionStatus gTRKExceptionStatus_800DA0A4;
+
+s32 TRKTargetAccessMemory(void *data, u32 start, u32 *length, s32 space, s32 read);
+s32 TRKAppendBuffer1_ui32(void *buffer, u32 data);
+s32 TRKAppendBuffer1_ui16(void *buffer, u16 data);
+
 void TRKPostInterruptEvent(void)
 {
-    typedef struct TRKCPURegs {
-        u32 gpr[32];
-        u32 pc;
-    } TRKCPURegs;
-    typedef struct TRKCPUState {
-        TRKCPURegs regs;
-        u8 pad_84[0x2F8 - 0x84];
-        u32 field_2F8;
-    } TRKCPUState;
-    typedef struct TRKState {
-        u8 pad_0[0x9C];
-        s32 field_9C;
-    } TRKState;
-    extern TRKCPUState gTRKCPUState;
-    extern TRKState gTRKState;
     void TRKConstructEvent(void *event, s32 eventType);
     s32 TRKPostEvent(void *event);
-    s32 TRKTargetAccessMemory(void *data, u32 start, u32 *length, s32 space, s32 read);
     s32 eventType;
     u32 inst;
     u32 size;
