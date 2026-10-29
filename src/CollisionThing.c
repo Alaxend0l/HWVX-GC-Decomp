@@ -180,7 +180,8 @@ static inline f32 RayBoxTestLocal(Vector4 *start, Vector4 *dir, Vector4 *box, f3
     end.x = t * dir->x + start->x;
     end.y = t * dir->y + start->y;
     end.z = t * dir->z + start->z;
-    res = BSPN0_CollideWithSegment(planes, NULL, start, &end);
+    seg = end;
+    res = BSPN0_CollideWithSegment(planes, NULL, start, &seg);
     if (res != NULL) {
         d0 = Distance_Plane(res, start);
         d1 = Distance_Plane(res, &end);
