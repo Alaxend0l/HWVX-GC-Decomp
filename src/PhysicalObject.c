@@ -454,6 +454,13 @@ void PhysicalObject_DynamicCollideImpact(u8 *obj, u8 *collision, f32 force) {
     extern Vector4 g_zeroVector;
     f32 PSVECSquareMag(void *v);
     f32 _fabs(f32 x);
+    f32 Sqrt(f32 x);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
+    void ProjectVectorToNormal(void *normal, void *v);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
     void Create_Plane(Vector4 *plane, Vector4 *normal, Vector4 *point);
     f32 Distance_Plane(void *plane, void *point);
     void *ThingManager_DARYL_CreateThing(s32 type, void *params);
@@ -462,33 +469,44 @@ void PhysicalObject_DynamicCollideImpact(u8 *obj, u8 *collision, f32 force) {
         Vector4 center;
         Vector4 corners[8];
     } OBox;
-    struct { Vector4 pos; Vector4 vel; Vector4 spin; Vector4 quat; void *info; u32 unk44; u32 unk48; u32 unk4C; u32 unk50; } params;
-    Quaternion normal;
-    Quaternion pos;
+    struct { Vector4 pos; Vector4 vel; Vector4 spin; Vector4 quat; void *info; u32 unk44; u32 unk48; u32 unk4C; u32 unk50; } params __attribute__((aligned(16)));
+    Vector4 normal __attribute__((aligned(16)));
+    Vector4 pos __attribute__((aligned(16)));
+    Vector4 center __attribute__((aligned(16)));
+    Vector4 plane __attribute__((aligned(16)));
+    Vector4 impulse __attribute__((aligned(16)));
+    Vector4 torque __attribute__((aligned(16)));
+    Vector4 r __attribute__((aligned(16)));
+    Vector4 local2 __attribute__((aligned(16)));
+    Vector4 angVel __attribute__((aligned(16)));
+    Vector4 scaled1 __attribute__((aligned(16)));
+    Vector4 local1 __attribute__((aligned(16)));
+    Vector4 scaled3 __attribute__((aligned(16)));
+    Vector4 local3 __attribute__((aligned(16)));
     f32 scale;
     u8 *other;
+    u32 i;
+    u8 *hull;
+    f32 weight;
+    f32 d;
+    f32 w;
+    f32 inv;
+    f32 mag;
 
-    normal = *(Quaternion *)(collision + 0x10);
-    pos = *(Quaternion *)collision;
+    normal = *(Vector4 *)(collision + 0x10);
+    pos = *(Vector4 *)collision;
     scale = force / *(f32 *)(*(u8 **)(*(u8 **)(obj + 0xC0) + 0x10) + 0x20);
     if (*(u32 *)(obj + 0x74) & 0x200000) {
         return;
     }
     if ((*(u32 *)(obj + 0x74) & 0x100000) && normal.y > 0.9f && _fabs(scale) < 2.0f &&
         ((other = *(u8 **)(collision + 0x24)) == NULL || (*(u32 *)(other + 0x74) & 8))) {
-        Vector4 center = {0.0f, 0.0f, 0.0f, 0.0f};
-        Vector4 plane;
-        u32 i;
-        u8 *info;
-        u8 *hull;
-        f32 weight;
-        f32 d;
-        f32 w;
+        Vector4 zero = {0.0f, 0.0f, 0.0f, 0.0f};
 
         weight = 0.0f;
-        Create_Plane(&plane, (Vector4 *)&normal, (Vector4 *)collision);
-        info = *(u8 **)(*(u8 **)(obj + 0xC0) + 0x10);
-        switch (info[0x10]) {
+        center = zero;
+        Create_Plane(&plane, &normal, (Vector4 *)collision);
+        switch ((*(u8 **)(*(u8 **)(obj + 0xC0) + 0x10))[0x10]) {
         case 0:
             for (i = 0; i < 8; i++) {
                 d = Distance_Plane(&plane, &(*(OBox **)(obj + 0xD0))->corners[i]);
@@ -503,21 +521,26 @@ void PhysicalObject_DynamicCollideImpact(u8 *obj, u8 *collision, f32 force) {
             break;
         case 1:
         case 6:
-            hull = *(u8 **)(info + 0x48);
+            hull = *(u8 **)(*(u8 **)(*(u8 **)(obj + 0xC0) + 0x10) + 0x48);
             for (i = 0; i < *(u32 *)(hull + 0xC); i++) {
                 d = Distance_Plane(&plane, &(*(Vector4 **)(obj + 0xCC))[i]);
                 if (d < 0.15f) {
                     w = (0.15f - d) / 0.15f;
-                    center.x += (*(Vector4 **)(obj + 0xCC))[i].x * w;
-                    center.y += (*(Vector4 **)(obj + 0xCC))[i].y * w;
-                    center.z += (*(Vector4 **)(obj + 0xCC))[i].z * w;
+                    center.x += w * (*(Vector4 **)(obj + 0xCC))[i].x;
+                    center.y += w * (*(Vector4 **)(obj + 0xCC))[i].y;
+                    center.z += w * (*(Vector4 **)(obj + 0xCC))[i].z;
                     weight += w;
                 }
             }
             break;
         }
         if (weight >= 3.0f) {
-            PhysicalObject_ProjectSpin(obj, (Vector4 *)(collision + 0x10));
+            ProjectVectorToNormal(collision + 0x10, obj + 0x110);
+            InverseXformVecOrientation(obj + 0x10, (Vector4 *)(obj + 0x110), &local1);
+            scaled1.x = ((Vector4 *)(obj + 0x120))->x * local1.x;
+            scaled1.y = ((Vector4 *)(obj + 0x120))->y * local1.y;
+            scaled1.z = ((Vector4 *)(obj + 0x120))->z * local1.z;
+            XformVecOrientation(obj + 0x10, &scaled1, (Vector4 *)(obj + 0x130));
             if (PSVECSquareMag(obj + 0x130) < 1.0f && PSVECSquareMag(obj) < 25.0f) {
                 params.pos = *(Vector4 *)(obj + 0x40);
                 params.unk50 = 0;
@@ -534,7 +557,32 @@ void PhysicalObject_DynamicCollideImpact(u8 *obj, u8 *collision, f32 force) {
     ((Vector4 *)obj)->x += normal.x * scale;
     ((Vector4 *)obj)->y += normal.y * scale;
     ((Vector4 *)obj)->z += normal.z * scale;
-    PhysicalObject_ApplyAngularImpulse(obj, (Vector4 *)&pos, (Vector4 *)&normal, force);
+    PSVECSubtract(&pos, (Vector4 *)(obj + 0x40), &r);
+    PSVECScale(&normal, &impulse, force);
+    PSVECCrossProduct(&r, &impulse, &torque);
+    ((Vector4 *)(obj + 0x110))->x += torque.x;
+    ((Vector4 *)(obj + 0x110))->y += torque.y;
+    ((Vector4 *)(obj + 0x110))->z += torque.z;
+    InverseXformVecOrientation(obj + 0x10, (Vector4 *)(obj + 0x110), &local2);
+    angVel.x = ((Vector4 *)(obj + 0x120))->x * local2.x;
+    angVel.y = ((Vector4 *)(obj + 0x120))->y * local2.y;
+    angVel.z = ((Vector4 *)(obj + 0x120))->z * local2.z;
+    mag = PSVECSquareMag(&angVel);
+    if (mag > 10000.0f) {
+        inv = 100.0f / Sqrt(mag);
+        angVel.x *= inv;
+        angVel.y *= inv;
+        angVel.z *= inv;
+        local2.x = angVel.x / ((Vector4 *)(obj + 0x120))->x;
+        local2.y = angVel.y / ((Vector4 *)(obj + 0x120))->y;
+        local2.z = angVel.z / ((Vector4 *)(obj + 0x120))->z;
+        XformVecOrientation(obj + 0x10, &local2, (Vector4 *)(obj + 0x110));
+    }
+    InverseXformVecOrientation(obj + 0x10, (Vector4 *)(obj + 0x110), &local3);
+    scaled3.x = ((Vector4 *)(obj + 0x120))->x * local3.x;
+    scaled3.y = ((Vector4 *)(obj + 0x120))->y * local3.y;
+    scaled3.z = ((Vector4 *)(obj + 0x120))->z * local3.z;
+    XformVecOrientation(obj + 0x10, &scaled3, (Vector4 *)(obj + 0x130));
 }
 
 void PhysicalObject_GetInverseLocalInertiaTensor(void *obj, Quaternion *out) {
