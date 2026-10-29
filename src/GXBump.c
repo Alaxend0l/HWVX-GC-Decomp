@@ -19,3 +19,9 @@ typedef struct GXData {
 } GXData;
 
 extern GXData *gx;
+
+void __GXFlushTextureState(void) {
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->bpMask;
+    gx->bpSentNot = 0;
+}
