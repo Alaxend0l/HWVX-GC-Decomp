@@ -46,7 +46,7 @@ u32 LastError;
 s32 NumInternalRetry;
 u32 ResetRequired;
 u32 FirstTimeInBootrom;
-u32 DVDInitialized;
+s32 DVDInitialized;
 u32 LastState;
 
 typedef struct DVDDIRegs {
@@ -102,6 +102,51 @@ void cbForUnrecoveredErrorRetry(u32 intType);
 
 
 void cbForStateReadingFST(u32 intType);
+void DVDInit(void) {
+    void __DVDInterruptHandler(s16 interrupt, void *context);
+    void *__OSSetInterruptHandler(s16 interrupt, void *handler);
+    u32 __OSUnmaskInterrupts(u32 mask);
+    void OSInitThreadQueue(void *queue);
+    void OSInitAlarm(void);
+    void __DVDFSInit(void);
+    void __DVDClearWaitingQueue(void);
+    void __DVDInitWA(void);
+    void __fstLoad(void);
+    void OSReport(const char *msg, ...);
+
+    if (DVDInitialized) {
+        return;
+    }
+
+    OSInitAlarm();
+    DVDInitialized = TRUE;
+    __DVDFSInit();
+    __DVDClearWaitingQueue();
+    __DVDInitWA();
+
+    bootInfo = 0x80000000;
+    currID = 0x80000000;
+
+    __OSSetInterruptHandler(21, __DVDInterruptHandler);
+    __OSUnmaskInterrupts(0x400);
+
+    OSInitThreadQueue(__DVDThreadQueue);
+
+    __DIRegs[0] = 0x2A;
+    __DIRegs[1] = 0;
+
+    if (*(u32 *)(bootInfo + 0x20) == 0xE5207C22) {
+        OSReport("app booted via JTAG\n");
+        OSReport("load fst\n");
+        __fstLoad();
+    } else if (*(u32 *)(bootInfo + 0x20) == 0x0D15EA5E) {
+        OSReport("app booted from bootrom\n");
+    } else {
+        FirstTimeInBootrom = TRUE;
+        OSReport("bootrom\n");
+    }
+}
+
 void stateReadingFST(void) {
     LastState = (u32)stateReadingFST;
     DVDLowRead(*(void **)(bootInfo + 0x38), (((u32 *)tmpBuffer)[2] + 31) & ~31, ((u32 *)tmpBuffer)[1], cbForStateReadingFST);
