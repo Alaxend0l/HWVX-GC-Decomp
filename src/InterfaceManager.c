@@ -268,8 +268,8 @@ void InterfaceManager_ReleaseAllInterfaces(void) {
             InterfaceManager_ReleaseInterface(i);
         }
     }
-    g_TargetArrow[0] = 0;
     g_pInterfaceToEnd = NULL;
+    g_TargetArrow[0] = 0;
     g_TargetArrow[1] = 0;
     g_TargetArrow[3] = 0;
     g_TargetArrow[4] = -1;
