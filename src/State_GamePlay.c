@@ -1143,6 +1143,20 @@ void InterfaceDataPackRouter(void *arg0) {
     }
 }
 
+f32 InterfaceInputAnimator_GetLRCounter(void);
+f32 InterfaceInputAnimator_GetUDCounter(void);
+void ArmageddonDropShipInfo(void *info) {
+    typedef struct DropShipInfo {
+        u8 pad0[0x24];
+        f32 lr;
+        f32 ud;
+    } DropShipInfo;
+    DropShipInfo *ship = info;
+
+    ship->lr = InterfaceInputAnimator_GetLRCounter();
+    ship->ud = InterfaceInputAnimator_GetUDCounter();
+}
+
 void InterfaceInputAnimator_Release(void) {
     static const char name[] = "InterfaceInput";
     ProcessManager_Release((char *)name);
