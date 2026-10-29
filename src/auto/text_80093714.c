@@ -11,9 +11,12 @@ typedef struct TRKCPUState {
     TRKCPURegs regs;
     u8 pad_84[0x98 - 0x84];
     u64 fpr[32];
-    u8 pad_198[0x1F8 - 0x198];
+    u8 pad_198[0x1A8 - 0x198];
+    u32 extended1[0x14]; /* 0x1A8 */
     u32 stepMode; /* 0x1F8: MSR, 0x400 = single-step trace */
-    u8 pad_1FC[0x2F8 - 0x1FC];
+    u8 pad_1FC[0x278 - 0x1FC];
+    u32 field_278;
+    u8 pad_27C[0x2F8 - 0x27C];
     u32 field_2F8;
 } TRKCPUState;
 
