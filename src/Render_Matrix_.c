@@ -33,7 +33,11 @@ typedef struct GfxState {
 
 extern GfxState g_state;
 extern f32 g_identity[4][4];
-extern f32 GXCameraSpace[3][4];
+static f32 GXCameraSpace[3][4];
+Vector4 g_cameraPos_Backup;
+Vector4 g_cameraFacing_BackUp;
+Vector4 g_cameraUp_BackUp;
+Vector4 g_cameraRight_BackUp;
 
 GfxWindow *GetRenderWindow(void);
 void *memcpy(void *dst, const void *src, u32 n);
