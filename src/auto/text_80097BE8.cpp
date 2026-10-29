@@ -3,6 +3,8 @@
 #include "common.h"
 #include "exception.h"
 
+#pragma readonly_strings on
+
 typedef struct FragmentInfo {
     void *eti_init_info;
     char *TOC;
