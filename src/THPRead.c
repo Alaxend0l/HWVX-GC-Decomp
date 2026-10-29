@@ -32,6 +32,21 @@ static void *ReadedBufferMessage[10];
 static u8 ReadedBufferQueue2[0x20];
 static void *ReadedBufferMessage2[10];
 
+s32 CreateReadThread(s32 priority) {
+    s32 OSCreateThread(void *thread, void *func, void *param, void *stack, u32 stackSize, s32 priority, u16 attr);
+    void OSInitMessageQueue(void *queue, void *msgArray, s32 msgCount);
+    void Reader(void);
+
+    if (OSCreateThread(ReadThread, Reader, NULL, ReadThreadStack + 0x1000, 0x1000, priority, 1) == 0) {
+        return 0;
+    }
+    OSInitMessageQueue(FreeReadBufferQueue, FreeReadBufferMessage, 10);
+    OSInitMessageQueue(ReadedBufferQueue, ReadedBufferMessage, 10);
+    OSInitMessageQueue(ReadedBufferQueue2, ReadedBufferMessage2, 10);
+    ReadThreadCreated = 1;
+    return 1;
+}
+
 void ReadThreadStart(void) {
     if (ReadThreadCreated) {
         OSResumeThread(ReadThread);
