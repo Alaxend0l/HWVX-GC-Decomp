@@ -134,3 +134,14 @@ s32 Gfx_GetEnvmapState(void) {
     return g_pGDL->numEnvmapStates - 1;
 }
 
+u32 Gfx_AddWorldMatrixState_NonCached(void *matrix) {
+    if (matrix == NULL) {
+        return 0xFFFE;
+    }
+    if (g_pGDL->numMatrices >= 0x578) {
+        g_pGDL->numMatrices = 0;
+    }
+    g_pGDL->matrices[g_pGDL->numMatrices] = matrix;
+    return g_pGDL->numMatrices++;
+}
+
