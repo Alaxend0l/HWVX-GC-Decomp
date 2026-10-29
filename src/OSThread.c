@@ -169,3 +169,44 @@ void OSExitThread(void *val) {
     OSRestoreInterrupts(enabled);
 }
 
+void OSSleepThread(OSThreadQueue *queue) {
+    BOOL enabled;
+    OSThread *currentThread;
+
+    enabled = OSDisableInterrupts();
+    currentThread = __OSCurrentThread;
+    currentThread->state = 4;
+    currentThread->queue = queue;
+    {
+        OSThread *next;
+        OSThread *prev;
+
+        for (next = queue->head; next && next->priority <= currentThread->priority; next = next->link.next)
+            ;
+        if (next == NULL) {
+            prev = queue->tail;
+            if (prev == NULL) {
+                queue->head = currentThread;
+            } else {
+                prev->link.next = currentThread;
+            }
+            currentThread->link.prev = prev;
+            currentThread->link.next = NULL;
+            queue->tail = currentThread;
+        } else {
+            currentThread->link.next = next;
+            prev = next->link.prev;
+            next->link.prev = currentThread;
+            currentThread->link.prev = prev;
+            if (prev == NULL) {
+                queue->head = currentThread;
+            } else {
+                prev->link.next = currentThread;
+            }
+        }
+    }
+    RunQueueHint = TRUE;
+    __OSReschedule();
+    OSRestoreInterrupts(enabled);
+}
+
