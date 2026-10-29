@@ -24,6 +24,19 @@ void *memset(void *dst, int c, u32 n);
 void Render_CreateTextureSlot(u32 id, s32 arg1, Texture *texture);
 void Render_DestroyTextureSlot(u32 id);
 
+void Gfx_TextureHandler_Destroy(void) {
+    u32 i;
+
+    for (i = 1; i < m_totalTextures; i++) {
+        Render_DestroyTextureSlot(i);
+        if (m_texture[i].data != NULL && m_texture[i].unk3A == 0) {
+            Deallocate(m_texture[i].data);
+        }
+    }
+    Deallocate(m_texture);
+    m_texture = NULL;
+}
+
 void Gfx_SetTextureWrapMode(u16 id, u16 mode) {
     Texture *tex = &m_texture[id];
 
