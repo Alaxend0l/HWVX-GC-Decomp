@@ -11,7 +11,7 @@ s8 Player_IsHuman(void *player) {
     return isHuman;
 }
 
-void Player_Init(void *player) {
+void Player_Init(void *player, s32 arg1) {
     s32 i;
 
     Control_ClearControl(player);
