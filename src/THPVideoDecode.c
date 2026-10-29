@@ -1,6 +1,16 @@
 #include "common.h"
 
 
+void VideoDecodeThreadCancel(void) {
+    extern s32 VideoDecodeThreadCreated;
+    extern u8 VideoDecodeThread[];
+
+    if (VideoDecodeThreadCreated) {
+        OSCancelThread(VideoDecodeThread);
+        VideoDecodeThreadCreated = 0;
+    }
+}
+
 void *PopFreeTextureSet(void) {
     extern u8 FreeTextureSetQueue[];
     void *msg;
