@@ -183,6 +183,57 @@ s32 TRKDoSupportMask(TRKBuffer *b) {
     return err;
 }
 
+s32 TRKDoVersions(TRKBuffer *b) {
+    s32 err;
+    s32 ackTries;
+    DSVersions versions;
+
+    if (b->length != 1) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 2);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return err;
+    }
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, 0);
+    err = TRKTargetVersions(&versions);
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, versions.kernelMajor);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, versions.kernelMinor);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, versions.protocolMajor);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, versions.protocolMinor);
+    }
+    if (err != 0) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 3);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return err;
+    }
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+    return err;
+}
+
 s32 TRKDoReset(TRKBuffer *b) {
     s32 err;
     s32 ackTries;
