@@ -406,6 +406,96 @@ void EnvMap(Geometry *geometry, u32 group, void *matrix, s32 mode) {
         Render_StateAlphaBlendEnable(0);
     }
 }
+
+void Render_UpdateLightState(s32 index);
+void Render_UseLighting(u8 enable);
+void SetTriVtxDescIdx(void);
+void SetTriNormVtxDescIdx(void);
+void Render_DrawOpaqueGroup(Geometry *geometry, u32 group, void *matrix) {
+    GeometryGroup *grp;
+    f32 *vb;
+    void *dl;
+    UVScroll *scroll;
+    f32 mtx[3][4];
+
+    grp = &geometry->groups[group];
+    vb = geometry->lodDistances;
+    dl = grp->displayList;
+    if (grp->unk18 == 0) {
+        Render_SetTextureHandle(grp->unk1A);
+    } else {
+        Render_SetTextureHandle(grp->unk18);
+    }
+    g_debugTriCount += grp->dlSize;
+    if ((g_state.flags & 0x10) || (g_state.flags & 0x40000)) {
+        g_state.constColor.a = 0xFF;
+        Render_SetConstColor(&g_state.constColor);
+        SetTriVtxDescIdx();
+        SetVertexBuffer((u32 *)vb, grp->flags, geometry->unk4);
+        DCFlushRange(dl, grp->dlSize);
+        GXCallDisplayList(dl, grp->dlSize);
+        Render_SetConstColor(NULL);
+    } else if (grp->flags & 4) {
+        Render_UpdateLightState(m_curLightState);
+        Render_UseLighting(1);
+        if (grp->uvScroll != NULL) {
+            mtx[0][0] = 1.0f;
+            mtx[0][1] = 0.0f;
+            mtx[0][2] = 0.0f;
+            mtx[0][3] = grp->uvScroll->u;
+            mtx[1][0] = 0.0f;
+            mtx[1][1] = 1.0f;
+            mtx[1][2] = 0.0f;
+            mtx[1][3] = grp->uvScroll->v;
+            GXLoadTexMtxImm(mtx, 30, 1);
+            GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
+        }
+        SetTriNormVtxDescIdx();
+        if (g_IsAnim) {
+            GXSetVtxDesc(0, 1);
+            m_VtxDescFlag = 0;
+        }
+        SetVertexBuffer((u32 *)vb, grp->flags, geometry->unk4);
+        DCFlushRange(dl, grp->dlSize);
+        GXCallDisplayList(dl, grp->dlSize);
+        if (grp->uvScroll != NULL) {
+            GXSetTexCoordGen2(0, 1, 4, 60, 0, 125);
+        }
+        Render_UseLighting(0);
+    } else {
+        scroll = grp->uvScroll;
+        if (scroll != NULL) {
+            f32 mtx2[3][4];
+            mtx2[0][0] = 1.0f;
+            mtx2[0][1] = 0.0f;
+            mtx2[0][2] = 0.0f;
+            mtx2[0][3] = scroll->u;
+            mtx2[1][0] = 0.0f;
+            mtx2[1][1] = 1.0f;
+            mtx2[1][2] = 0.0f;
+            mtx2[1][3] = scroll->v;
+            GXLoadTexMtxImm(mtx2, 30, 1);
+            GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
+            if (scroll->flags & 2) {
+                Render_SetConstColor(&scroll->color);
+            }
+            SetTriVtxDescIdx();
+            SetVertexBuffer((u32 *)vb, grp->flags, geometry->unk4);
+            DCFlushRange(dl, grp->dlSize);
+            GXCallDisplayList(dl, grp->dlSize);
+            if (scroll->flags & 2) {
+                Render_SetConstColor(NULL);
+            }
+            GXSetTexCoordGen2(0, 1, 4, 60, 0, 125);
+        } else {
+            SetTriVtxDescIdx();
+            SetVertexBuffer((u32 *)vb, grp->flags, geometry->unk4);
+            DCFlushRange(dl, grp->dlSize);
+            GXCallDisplayList(dl, grp->dlSize);
+        }
+    }
+}
+
 #pragma use_lmw_stmw reset
 void Render_UseLighting(u8 enable) {
     if (enable) {
