@@ -3,6 +3,18 @@
 #pragma use_lmw_stmw on
 #pragma readonly_strings on
 
+typedef struct GameState {
+    void (*interrupt)(void);
+    void (*heartbeat)(void);
+    s8 (*enter)(s32 prev);
+    s8 (*exit)(s32 next);
+} GameState;
+
+typedef struct StateManager {
+    GameState states[13];
+    s32 current;
+    s32 next;
+} StateManager;
 
 void StateManager_Create(void) {
     typedef struct GameState {
