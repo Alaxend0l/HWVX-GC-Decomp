@@ -15,7 +15,7 @@ volatile u32 __SIRegs[64] : 0xCC006400;
 static SIControl Si = {-1, 0, 0, NULL, NULL};
 static SIPacket Packet[4];
 static OSAlarm Alarm[4];
-static u32 Type[4];
+static u32 Type[4] = {8, 8, 8, 8};
 static s64 TypeTime[4];
 static s64 XferTime[4];
 static void *TypeCallback[4][4];
@@ -32,6 +32,29 @@ BOOL SIBusy(void) {
 
 BOOL SIIsChanBusy(s32 chan) {
     return Packet[chan].chan != -1 || Si.chan == chan;
+}
+
+BOOL SIEnablePollingInterrupt(BOOL enable) {
+    BOOL enabled;
+    BOOL rc;
+    u32 reg;
+    int i;
+
+    enabled = OSDisableInterrupts();
+    reg = __SIRegs[13];
+    rc = (reg & 0x08000000) ? TRUE : FALSE;
+    if (enable) {
+        reg |= 0x08000000;
+        for (i = 0; i < 4; i++) {
+            InputBufferVcount[i] = 0;
+        }
+    } else {
+        reg &= ~0x08000000;
+    }
+    reg &= ~0x80000001;
+    __SIRegs[13] = reg;
+    OSRestoreInterrupts(enabled);
+    return rc;
 }
 
 u32 SIGetStatus(s32 chan) {
