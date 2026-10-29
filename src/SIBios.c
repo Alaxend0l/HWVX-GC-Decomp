@@ -21,6 +21,12 @@ void SISetCommand(s32 chan, u32 command) {
     __SIRegs[3 * chan] = command;
 }
 
+#pragma peephole off
+void SITransferCommands(void) {
+    *(volatile u32 *)0xCC006438 = 0x80000000;
+}
+#pragma peephole reset
+
 static void AlarmHandler(OSAlarm *alarm, void *context) {
     s32 chan;
     SIPacket *packet;

@@ -45,3 +45,14 @@ static void __THPRestartDefinition(void) {
     __THPInfo->c += 2;
     __THPInfo->currMCU = __THPInfo->nMCU;
 }
+
+void LCQueueWait(u32 len);
+void __THPHuffDecodeDCTCompY(THPFileInfo *info, s16 *block);
+void __THPDecompressiMCURow512x448(u8 *lumY, u8 *chromaU, u8 *chromaV, THPFileInfo *info) {
+    u8 cl_num;
+    LCQueueWait(3);
+    for (cl_num = 0; cl_num < info->MCUsPerRow; cl_num++) {
+        __THPHuffDecodeDCTCompY(info, (s16 *)lumY);
+    }
+}
+

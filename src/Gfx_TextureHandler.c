@@ -80,6 +80,179 @@ void Gfx_TextureManager_Init(void) {
 
 #pragma push
 #pragma use_lmw_stmw on
+s32 LoadBTF(const char *name, u32 id) {
+    BTFHeader header;
+    char path[64];
+    u8 palette[0x400];
+    s32 size;
+    s32 handle;
+    s32 n;
+    s32 i;
+    s16 width;
+    s16 levels;
+    s16 height;
+    s16 mips;
+    s16 idx;
+    u8 *dst;
+    u8 *src;
+    u8 *buf;
+    u8 *p;
+
+    sprintf(path, "%s.btf", name);
+    handle = File_Open(0, path, 0, 0);
+    if (handle < 0) {
+        return 0;
+    }
+    File_Read(handle, 1, &header);
+    File_Seek(handle, -1, 1);
+    if (header.version == 1) {
+        File_Read(handle, 12, &header);
+        header.unk1 = 0;
+        header.unkC = 0;
+    } else if (header.version == 2) {
+        File_Read(handle, 12, &header);
+        header.unkC = 0;
+    } else if (header.version == 3) {
+        File_Read(handle, 16, &header);
+    }
+    width = header.width;
+    mips = header.numMips;
+    if (width > 0x400 || header.height > 0x400) {
+        return 0;
+    }
+    if (width == 0 || header.height == 0) {
+        return 0;
+    }
+    size = 0;
+    levels = 1;
+    m_texture[id].width = width;
+    height = header.height;
+    m_texture[id].unk30 = height;
+    while (height != 1 && width != 1) {
+        if (mips-- == 0) {
+            break;
+        }
+        size += width * height;
+        height >>= 1;
+        if (height == 0) {
+            height = 1;
+        }
+        width >>= 1;
+        if (width == 0) {
+            width = 1;
+        }
+        levels++;
+    }
+    if (levels == 1) {
+        size = width * height;
+    }
+    buf = NULL;
+    m_texture[id].height = levels;
+    switch (header.bpp) {
+    case 12:
+        size /= 2;
+        p = Allocate(size, 0, "");
+        m_texture[id].data = p;
+        buf = Allocate(size, 0, "");
+        m_texture[id].unk38 = 4;
+        File_Read(handle, size, p);
+        break;
+    case 32:
+        n = size * 4;
+        dst = Allocate(n, 0, "");
+        m_texture[id].data = dst;
+        src = buf = Allocate(n, 0, "");
+        m_texture[id].unk38 = 1;
+        File_Read(handle, n, src);
+        for (i = 0; i < size; i++) {
+            dst[0] = src[2];
+            dst[1] = src[1];
+            dst[2] = src[0];
+            dst[3] = src[3];
+            src += 4;
+            dst += 4;
+        }
+        break;
+    case 24:
+        n = size * 3;
+        dst = Allocate(n, 0, "");
+        m_texture[id].data = dst;
+        src = buf = Allocate(n, 0, "");
+        m_texture[id].unk38 = 0;
+        File_Read(handle, n, src);
+        for (i = 0; i < size; i++) {
+            dst[0] = src[2];
+            dst[1] = src[1];
+            dst[2] = src[0];
+            src += 3;
+            dst += 3;
+        }
+        break;
+    case 9:
+        dst = Allocate(size * 4, 0, "");
+        m_texture[id].data = dst;
+        src = buf = Allocate(size, 0, "");
+        m_texture[id].unk38 = 1;
+        memset(palette, 0, 0x400);
+        if (header.numColors > 0) {
+            File_Read(handle, header.numColors * 4, palette);
+        } else {
+            for (n = 0; n < 0xFF; n++) {
+                p = palette;
+                p += n;
+                p[2] = n;
+                p[1] = n;
+                p[0] = n;
+            }
+        }
+        File_Read(handle, size, src);
+        for (i = 0; i < size; i++) {
+            idx = (u8)*src << 2;
+            dst[0] = palette[idx + 2];
+            dst[1] = palette[idx + 1];
+            dst[2] = palette[idx];
+            dst[3] = palette[idx + 3];
+            src++;
+            dst += 4;
+        }
+        break;
+    case 8:
+        dst = Allocate(size * 3, 0, "");
+        m_texture[id].data = dst;
+        src = buf = Allocate(size, 0, "");
+        m_texture[id].unk38 = 0;
+        memset(palette, 0, 0x300);
+        if (header.numColors > 0) {
+            File_Read(handle, header.numColors * 3, palette);
+        } else {
+            for (n = 0; n < 0xFF; n++) {
+                p = palette;
+                p += n;
+                p[2] = n;
+                p[1] = n;
+                p[0] = n;
+            }
+        }
+        File_Read(handle, size, src);
+        for (i = 0; i < size; i++) {
+            idx = *src * 3;
+            dst[0] = palette[idx + 2];
+            dst[1] = palette[idx + 1];
+            dst[2] = palette[idx];
+            src++;
+            dst += 3;
+        }
+        break;
+    }
+    Deallocate(buf);
+    File_Close(handle);
+    Render_CreateTextureSlot(id, header.numMips > 0);
+    return 1;
+}
+#pragma pop
+
+#pragma push
+#pragma use_lmw_stmw on
 s32 LoadTGA(const char *name, u32 id) {
     u8 header[18];
     char path[56];

@@ -177,6 +177,130 @@ u32 Gfx_FontManager_Print(char *str, u32 id, u8 blendMode, f32 x, f32 y, f32 spa
     return g_fontManager.fonts[id].height;
 }
 
+u32 Gfx_FontManager_Print(char *str, u32 id, u8 blendMode, f32 x, f32 y, f32 spacing);
+void Gfx_FontManager_PrintScale(char *str, s32 id, f32 *scale, u8 blendMode, f32 x, f32 y, f32 spacing);
+void Gfx_FontManager_PrintParagraph(char *str, u32 maxChars, s32 id, u8 blendMode, s32 align, f32 *scale, f32 x, f32 y, f32 spacing, f32 width, f32 height, f32 lineSpacing)
+{
+  extern FontManager g_fontManager;
+  u32 strlen(const char *);
+  u32 Gfx_FontManager_Print(char *str, u32 id, u8 blendMode, f32 x, f32 y, f32 spacing);
+  void Gfx_FontManager_PrintScale(char *str, s32 id, f32 *scale, u8 blendMode, f32 x, f32 y, f32 spacing);
+  Font *font = &g_fontManager.fonts[id];
+  f32 center;
+  f32 right;
+  f32 lineY = 0.0f;
+  u32 pos = 0;
+  s8 more;
+  u32 len = strlen(str);
+  f32 sx = (scale) ? (scale[0]) : (1.0f);
+  f32 sy = (scale) ? (scale[1]) : (1.0f);
+  char buf[256];
+  if (maxChars)
+  {
+    right = x + width;
+    center = x + (0.5f * width);
+    while (more)
+    {
+      f32 lastW = 0.0f;
+      f32 lineW = lastW;
+      u32 lastSpace = -1;
+      u32 n = 0;
+      s8 c;
+      while ((str[pos] == ' ') && (pos < len))
+      {
+        pos++;
+      }
+
+      for (;;)
+      {
+        c = str[pos + n];
+        if ((font->caseMode == 1) || (font->caseMode == 3))
+        {
+          if ((c >= 'a') && (c <= 'z'))
+          {
+            c -= 0x20;
+          }
+        }
+        if (c == '|')
+        {
+          pos++;
+          break;
+        }
+        if (c == ' ')
+        {
+          lastSpace = n;
+          lastW = lineW;
+        }
+        if (lineW > width)
+        {
+          if (lastSpace < ((u32) (-1)))
+          {
+            lineW = lastW;
+            n = lastSpace;
+          }
+          break;
+        }
+        if ((pos + n) >= len)
+        {
+          break;
+        }
+        buf[n++] = c;
+        lineW += sx * (((u8) font->chars[c].spacingX) + spacing);
+      }
+
+      while ((n != 0) && (buf[n - 1] == ' '))
+      {
+        n--;
+        lineW -= sx * (((u8) font->chars[buf[n]].spacingX) + spacing);
+      }
+
+      if ((pos + n) > maxChars)
+      {
+        more = 0;
+        while (((pos + n) > maxChars) && (n != 0))
+        {
+          n--;
+          c = buf[n];
+          buf[n] = 0;
+          lineW -= sx * (((u8) font->chars[c].spacingX) + spacing);
+        }
+
+      }
+      lineW -= (-spacing) * sx;
+      more = 1;
+      buf[n] = 0;
+      pos += n;
+      switch (align)
+      {
+        case 1:
+          x = center - (0.5f * lineW);
+          break;
+
+        case 2:
+          x = right - lineW;
+          break;
+
+      }
+
+      if (scale)
+      {
+        Gfx_FontManager_PrintScale(buf, id, scale, blendMode, x, y, spacing);
+      }
+      else
+      {
+        Gfx_FontManager_Print(buf, id, blendMode, x, y, spacing);
+      }
+      lineY += sy * (font->height + lineSpacing);
+      y += sy * (font->height + lineSpacing);
+      if (((lineY + font->height) + lineSpacing) > height)
+      {
+        more = 0;
+      }
+    }
+
+  }
+}
+
 void Gfx_FontManager_PrintScale(char *str, s32 id, f32 *scale, u8 blendMode, f32 x, f32 y, f32 spacing) {
     extern GXColor g_textcolor;
     GDLRect *Gfx_Add2DRectangle(void);

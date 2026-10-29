@@ -37,9 +37,7 @@ __declspec(section ".init") void __TRK_reset(void)
 {
     u32 *src;
     u32 mask;
-    u32 offset;
     s32 i;
-    u32 dest;
 
     if ((lc_base[0] <= 0x44) && ((lc_base[0] + 0x4000) > 0x44) && (*(u32 *)(gTRKCPUState + 0x238) & 3))
     {
@@ -54,7 +52,9 @@ __declspec(section ".init") void __TRK_reset(void)
     {
         if (mask & (1 << i))
         {
-            offset = TRK_ISR_OFFSETS[i];
+            u32 offset = TRK_ISR_OFFSETS[i];
+            u32 dest;
+
             if ((offset >= lc_base[0]) && (offset < (lc_base[0] + 0x4000)) && (*(u32 *)(gTRKCPUState + 0x238) & 3))
             {
                 dest = offset;
