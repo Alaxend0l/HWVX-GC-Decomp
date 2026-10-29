@@ -304,7 +304,6 @@ void AI_Creature_AsyncProcess(void) {
     void PSVECAdd(void *a, void *b, void *out);
     f32 PSVECSquareDistance(void *a, void *b);
     s32 VolumeManager_GetNumVolumesOfType(u32 type);
-    void *VolumeManager_GetVolumeTypeByIndex(u32 type, u32 index);
     void MemClr32(void *dst, u32 size);
     u32 World_GetTotalTiles_Creature(void);
     void *World_GetTileCreature(u32 index);
@@ -316,9 +315,9 @@ void AI_Creature_AsyncProcess(void) {
     u8 *creature;
     u8 *tile;
     u32 j;
+    u32 i;
     u32 n;
     u8 *cam;
-    u32 i;
     u8 *player;
     AIPlayerDesc desc;
     Vec p;
@@ -327,17 +326,13 @@ void AI_Creature_AsyncProcess(void) {
         gs_pCurrentAICreature = NULL;
         g_volumeTotal = VolumeManager_GetNumVolumesOfType(5);
         if (g_volumeTotal != 0) {
-            gs_currentVolume = 0;
-            MemClr32(gs_aSpawnVolumes, g_volumeTotal * sizeof(SpawnVolume));
-            for (i = 0; i < g_volumeTotal; i++) {
-                gs_aSpawnVolumes[i].volume = VolumeManager_GetVolumeTypeByIndex(5, i);
-            }
+            AI_Creature_InitSpawnVolumes();
         } else if (World_GetTotalTiles_Creature() == 0) {
             goto update;
         }
         MemClr32(gs_aNearestCars, sizeof(gs_aNearestCars));
         for (i = 0; i < 1; i++) {
-            desc.unk0 = i;
+            desc.unk0 = 0;
             desc.unkD = 1;
             player = PlayerManager_NewAIPlayer((u8 *)&desc);
             if (gs_pCurrentAICreature == NULL) {
