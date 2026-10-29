@@ -148,6 +148,15 @@ void LGWheels::PlayConstantForce(s32 chan, s16 magnitude, u16 direction)
 	}
 }
 
+u8 LGWheels::SameConstantForceParams(s32 chan, s16 magnitude, u16 direction)
+{
+	if (constantParams[chan].force == magnitude && constantParams[chan].direction == direction)
+	{
+		return 1;
+	}
+	return 0;
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void LGWheels::PlayDamperForce(s32 chan, u8 coefficient, s16 offset)
