@@ -16,6 +16,19 @@ s32 ARRegisterDMACallback(s32 cb) {
     return old;
 }
 
+void OSRestoreInterrupts(s32 level);
+void ARStartDMA(u32 type, u32 mainmem_addr, u32 aram_addr, u32 length) {
+    s32 enabled = OSDisableInterrupts();
+    __DSPRegs[16] = (u16)((__DSPRegs[16] & ~0x3ff) | (mainmem_addr >> 16));
+    __DSPRegs[17] = (u16)((__DSPRegs[17] & ~0xffe0) | (0xffff & mainmem_addr));
+    __DSPRegs[18] = (u16)((__DSPRegs[18] & ~0x3ff) | (aram_addr >> 16));
+    __DSPRegs[19] = (u16)((__DSPRegs[19] & ~0xffe0) | (0xffff & aram_addr));
+    __DSPRegs[20] = (u16)((__DSPRegs[20] & ~0x8000) | (type << 15));
+    __DSPRegs[20] = (u16)((__DSPRegs[20] & ~0x3ff) | (length >> 16));
+    __DSPRegs[21] = (u16)((__DSPRegs[21] & ~0xffe0) | (0xffff & length));
+    OSRestoreInterrupts(enabled);
+}
+
 void ARReset(void) {
     extern s32 __AR_init_flag;
     __AR_init_flag = 0;
