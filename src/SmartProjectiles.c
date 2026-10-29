@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 extern f32 g_fDeltaTimeSec;
 extern s32 g_iDeltaTimeMS;
 extern Vector4 g_zeroVector;
@@ -109,6 +111,54 @@ typedef struct SmartProjectile {
   u16 hits15C;
   s16 timer;
 } SmartProjectile;
+
+void SmartProjectileA_AquireTarget(SmartProjectile *proj) {
+    s32 GetAllTargets(SmartTarget **targets);
+    SmartTarget *Thing_GetSource(SmartProjectile *thing);
+    s8 RayHitsTerrain(Vector4 *start, Vector4 *end, f32 *t, void *arg3);
+    double atan2(double y, double x);
+    f32 t;
+    Vector4 local __attribute__((aligned(16)));
+    SmartTarget *targets[32];
+    SmartTarget *source;
+    u32 count;
+    u32 i;
+    u32 bestIdx;
+    Vector4 *pos;
+    f32 best;
+    f32 dist;
+    f32 angle;
+
+    count = GetAllTargets(targets);
+    source = Thing_GetSource(proj);
+    best = 180.0f;
+    bestIdx = count;
+    for (i = 0; i < count; i++) {
+        dist = PSVECSquareDistance(&proj->pos, &targets[i]->pos);
+        pos = ((Vector4 *(*)(SmartTarget *))targets[i]->vtable[0x40 / 4])(targets[i]);
+        t = 1.0f;
+        if (targets[i] != (SmartTarget *)proj && targets[i] != source &&
+            !(dist < proj->info->params->minRange * proj->info->params->minRange) &&
+            !RayHitsTerrain(&proj->pos, pos, &t, NULL)) {
+            InverseXformVec(proj->mtx, pos, &local);
+            if (proj->info->params->invertZ) {
+                local.z *= -1.0f;
+            }
+            if (!(local.z < 1.0f)) {
+                angle = atan2(Sqrt(local.x * local.x + local.y * local.y), local.z);
+                if (!(angle > 0.5f * (0.017453292f * proj->info->params->fov)) && angle < best) {
+                    best = angle;
+                    bestIdx = i;
+                }
+            }
+        }
+    }
+    if (bestIdx < count) {
+        proj->target = targets[bestIdx];
+    } else {
+        proj->target = NULL;
+    }
+}
 
 s32 SmartProjectileA_PreMove(SmartProjectile *proj) {
   CreateSlaveParams p;
