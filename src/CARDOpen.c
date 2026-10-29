@@ -1,5 +1,23 @@
 #include "common.h"
 
+typedef struct CARDDir {
+    u8 gameName[4];   // 0x00
+    u8 company[2];    // 0x04
+    u8 _padding0;     // 0x06
+    u8 bannerFormat;  // 0x07
+    u8 fileName[32];  // 0x08
+    u32 time;         // 0x28
+    u32 iconAddr;     // 0x2C
+    u16 iconFormat;   // 0x30
+    u16 iconSpeed;    // 0x32
+    u8 permission;    // 0x34
+    u8 copyTimes;     // 0x35
+    u16 startBlock;   // 0x36
+    u16 length;       // 0x38
+    u8 _padding1[2];  // 0x3A
+    u32 commentAddr;  // 0x3C
+} CARDDir;
+
 
 s32 __CARDIsOpened(void) {
     return 0;
