@@ -54,6 +54,25 @@ void Render_StateAlphaBlendEnable(s32 enable);
 void SetTriVtxDesc(void);
 
 extern GXColor g_textcolor;
+void Render_DrawPointSprites(void) {
+    u32 i;
+    u32 color;
+
+    SetTriVtxDesc();
+    Render_StateAlphaBlendEnable(1);
+    for (i = 0; i < g_pGDL->numPointSprites; i++) {
+        Render_SetTextureHandle(g_pGDL->pointSprites[i].tex);
+        Render_StateBlendMode(g_pGDL->pointSprites[i].blendMode);
+        GXSetPointSize(255.0f * g_pGDL->pointSprites[i].size, 5);
+        GXBegin(0xB8, 0, 1);
+        GXPosition3f32(g_pGDL->pointSprites[i].x, g_pGDL->pointSprites[i].y, g_pGDL->pointSprites[i].z);
+        color = g_pGDL->pointSprites[i].color;
+        GXColor4u8(color >> 24, color >> 16, color >> 8, color);
+        GXTexCoord2f32(0.0f, 0.0f);
+    }
+    Render_StateAlphaBlendEnable(0);
+}
+
 void Gfx_SetTextColor(u8 r, u8 g, u8 b, u8 a) {
     g_textcolor.r = r;
     g_textcolor.g = g;
