@@ -21,7 +21,7 @@ static inline void GXPosition2f32(f32 x, f32 y) {
     GXWGFifo.f32 = y;
 }
 
-static inline void GXColor3u8(s32 r, s32 g, s32 b) {
+static inline void GXColor3u8(u8 r, u8 g, u8 b) {
     GXWGFifo.u8 = r;
     GXWGFifo.u8 = g;
     GXWGFifo.u8 = b;
