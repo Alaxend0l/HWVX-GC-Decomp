@@ -251,6 +251,12 @@ void LGWheels::PlayFrontalCollisionForce(s32 chan, u8 force)
 	 OSReport("ERROR: trying to play a force on port %d but no wheel opened.\n", chan);
 	}
 }
+
+u8 LGWheels::SameFrontalCollisionForceParams(s32 chan, s16 force)
+{
+	return limbi[chan] == force;
+}
+
 #pragma pop
 
 #pragma pop
