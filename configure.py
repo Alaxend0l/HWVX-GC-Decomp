@@ -444,7 +444,7 @@ config.libs = [
             Object(Matching, "OSAlloc.c"),
             Object(Matching, "OSArena.c"),
             Object(Matching, "OSAudioSystem.c", mw_version="GC/1.2.5n"),
-            Object(NonMatching, "OSCache.c"),
+            Object(NonMatching, "OSCache.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "OSContext.c"),
             Object(NonMatching, "OSError.c"),
             Object(NonMatching, "OSFont.c", mw_version="GC/1.2.5n"),
