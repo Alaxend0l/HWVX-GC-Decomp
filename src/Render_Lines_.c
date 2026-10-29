@@ -35,3 +35,15 @@ void Set2DLineVtxDesc(void) {
         GXSetVtxAttrFmt(0, 0xB, 0, 1, 0);
     }
 }
+
+void Set3DLineVtxDesc(void) {
+    if (m_VtxDescFlag != 4) {
+        m_VtxDescFlag = 4;
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 1);
+        GXSetVtxDesc(0xB, 1);
+        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+        GXSetVtxAttrFmt(0, 0xB, 0, 1, 0);
+    }
+}
+
