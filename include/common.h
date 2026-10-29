@@ -795,7 +795,8 @@ typedef struct InterfaceMsg {
   u16 sub;
   u8 unk8[0x20 - 0x8];
   u32 result;
-  u8 unk24[0x30 - 0x24];
+  u32 value;
+  u8 unk28[0x30 - 0x28];
   u32 selection;
   u32 objects[2];
   u32 *list;
