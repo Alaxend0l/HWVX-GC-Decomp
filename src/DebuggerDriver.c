@@ -16,6 +16,19 @@ void DBOpen(void) {
 
 }
 
+unsigned long __OSMaskInterrupts(unsigned long mask);
+unsigned long __OSUnmaskInterrupts(unsigned long mask);
+void *__OSSetInterruptHandler(short interrupt, void *handler);
+void MWCallback(void);
+void DBGHandler(int interrupt, void *context);
+void DBInitInterrupts(void) {
+    __OSMaskInterrupts(0x18000);
+    __OSMaskInterrupts(0x40);
+    DBGCallback = (DBGCallbackType)MWCallback;
+    __OSSetInterruptHandler(0x19, DBGHandler);
+    __OSUnmaskInterrupts(0x40);
+}
+
 extern void (*DBGCallback)(short, void *);
 volatile unsigned long __PIRegs[12] : 0xCC003000;
 void DBGHandler(int interrupt, void *context) {
