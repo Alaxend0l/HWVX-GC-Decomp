@@ -8,7 +8,10 @@ typedef struct SFX {
 } SFX;
 
 typedef struct Voice {
-    u32 id;
+    union {
+        u32 id;
+        u8 kind;
+    };
     u8 unk4[0x11];
     u8 state;
     u8 unk16[0x1E];
