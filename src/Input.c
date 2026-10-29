@@ -1,5 +1,7 @@
 #include "Input.h"
 
+#pragma use_lmw_stmw on
+
 s32 Input_GetPlayerDevice(s32 player) {
     s16 i;
 
