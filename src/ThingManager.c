@@ -1,5 +1,6 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
 
 void ThingManagerList_Append(void **arg0, void *arg1) {
     void *temp_r5;
@@ -171,6 +172,44 @@ void ThingManagerList_ReleaseAll(void **list) {
         next = M2C_FIELD(thing, void **, 0xA4);
         M2C_FIELD(M2C_FIELD(thing, void **, 0x8C), void (**)(void *), 4)(thing);
         thing = next;
+    }
+}
+
+void Thing_DrawSharedSlaves(u8 *thing, u32 *triggers) {
+    typedef struct { u8 pad[0x10]; u8 type; u8 pad2[7]; u8 *shared; u8 pad3[4]; } Trigger;
+    typedef struct SlaveThing {
+        u8 pad0[0x10];
+        Matrix4 mtx;
+        Quaternion quat;
+        u8 pad60[0x2C];
+        void (**vtbl)(struct SlaveThing *);
+        u8 pad90[0x14];
+        struct SlaveThing *next;
+    } SlaveThing;
+    extern u8 g_aSharedSlaveHolder[0x200];
+    u32 i;
+    SlaveThing *slave;
+    u8 *shared;
+    Quaternion quat __attribute__((aligned(16)));
+    Vector4 pos __attribute__((aligned(16)));
+
+    for (i = 0; i < triggers[0]; i++) {
+        Trigger *trigger = &((Trigger *)triggers[1])[i];
+        if (trigger->type == 10) {
+            shared = trigger->shared;
+            slave = *(SlaveThing **)(g_aSharedSlaveHolder + (*(*(u8 **)(shared + 8) + 0x1D)) * 8 + 4);
+            if (*(u32 *)shared != 0) {
+                for (; slave != NULL; slave = slave->next) {
+                    quat = slave->quat;
+                    pos = slave->mtx.v[3];
+                    QuaternionMult((Quaternion *)(thing + 0x50), &quat, &slave->quat);
+                    XformVec((Matrix4 *)(thing + 0x10), &pos, &slave->mtx.v[3]);
+                    slave->vtbl[4](slave);
+                    slave->quat = quat;
+                    slave->mtx.v[3] = pos;
+                }
+            }
+        }
     }
 }
 
