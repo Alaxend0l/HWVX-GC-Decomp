@@ -47,6 +47,59 @@ static inline s8 LightManager_AddThing(CarA *thing, u32 numSteps) {
 
 #pragma push
 #pragma use_lmw_stmw on
+#pragma push
+#pragma use_lmw_stmw on
+void LightManager_Initialize(void) {
+    s32 VertexColorSeqManager_GetLightIndex(u8 *light);
+    void *memset(void *dst, s32 c, u32 n);
+    u32 i;
+    u32 r;
+    u32 g;
+    u32 b;
+    Volume *volume;
+    Light *light;
+
+    r = 0;
+    g = 0;
+    b = 0;
+    g_numDirectionalLights = 0;
+    g_numThingsToLight = 0;
+    g_bLightVolumesExist = 0;
+    memset(g_ThingLightingData, 0, sizeof(g_ThingLightingData));
+    for (i = 0; i < ((LightWorld *)g_worldData.world)->numVolumes; i++) {
+        volume = (Volume *)(((LightWorld *)g_worldData.world)->volumes + i * 0x30);
+        if (volume->type == 6) {
+            light = volume->light;
+            g_bLightVolumesExist = 1;
+            if (light->type == 1) {
+                g_directionalLights[g_numDirectionalLights++] = light;
+            } else if (light->type == 2) {
+                r += light->r;
+                g += light->g;
+                b += light->b;
+            } else if (light->type == 3) {
+                light->index = VertexColorSeqManager_GetLightIndex(((LightWorld *)g_worldData.world)->lights + light->index * 0x10);
+            }
+        }
+    }
+    if (r > 0xFF) {
+        g_ambientColor.r = 0xFF;
+    } else {
+        g_ambientColor.r = r;
+    }
+    if (g > 0xFF) {
+        g_ambientColor.g = 0xFF;
+    } else {
+        g_ambientColor.g = g;
+    }
+    if (b > 0xFF) {
+        g_ambientColor.b = 0xFF;
+    } else {
+        g_ambientColor.b = b;
+    }
+}
+#pragma pop
+
 void LightManager_LightThing(CarA *thing) {
     void Gfx_SetAmbientColor(GXColor color);
     void Gfx_SetParallelLight(GXColor color, s32 unk);
