@@ -45,6 +45,31 @@ void OSRestoreInterrupts(s32 level);
 void AXSetVoicePriority(AXVPB *axv, u32 priority);
 
 
+void SetVoicePriority_(VoiceHW *voice) {
+    s32 level;
+
+    level = OSDisableInterrupts();
+    AXSetVoicePriority(voice->axv, voice->priority);
+    OSRestoreInterrupts(level);
+}
+
+void DestroyVoice_(AXVPB *axv) {
+    VoiceHW *voice;
+    s32 level;
+
+    level = OSDisableInterrupts();
+    voice = axv->userContext;
+    if (voice->kind == 0) {
+        DestroySongVoice(voice);
+    }
+    voice->state = 0;
+    voice->id = 0xFD;
+    voice->axv = NULL;
+    voice->next = g_pFree;
+    g_pFree = voice;
+    OSRestoreInterrupts(level);
+}
+
 void SetVoiceVol_(u8 *v, u32 vol) {
     extern s32 g_speakers_803C789C;
     extern const u16 g_panTab[128];
@@ -136,3 +161,27 @@ void SetVoiceVol_(u8 *v, u32 vol) {
         *(u16 *)(axv + 0x144) &= ~0x40;
     }
 }
+
+s8 SetVoiceRate_(VoiceHW *voice) {
+    u32 rate = (1.0f / 48000.0f) * ((f32)voice->rate * (f32)voice->pitch);
+
+    if (rate <= 0x2EE00 && rate >= 0x60) {
+        *(u32 *)&voice->axv->ratioHi = rate;
+        voice->axv->sync |= 0x80000;
+        return 1;
+    }
+    return 0;
+}
+
+s32 SetVoiceOffset_(VoiceHW *voice, u32 offset) {
+    AXVPB *axv;
+
+    if (offset < voice->length) {
+        axv = voice->axv;
+        *(u32 *)&axv->currentAddressHi = voice->addr + offset;
+        axv->sync |= 0x1000;
+        return 1;
+    }
+    return 0;
+}
+
