@@ -109,6 +109,11 @@ void Render_StateZEnable(s32 enable) {
     m_zstate = enable;
 }
 
+void Render_StateZWriteEnable(s32 enable) {
+    GXSetZMode(m_zstate, m_zmode, enable);
+    m_zwrite = enable;
+}
+
 void Render_ClearScreen(void) {
 
 }
