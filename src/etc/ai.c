@@ -3,6 +3,15 @@
 volatile u16 __DSPRegs[32] : 0xCC005000;
 volatile u32 __AIRegs[8] : 0xCC006C00;
 
+void AISetStreamPlayState(u32 state);
+s32 AIGetStreamPlayState(void);
+void __AI_SRC_INIT(void);
+s32 AIGetStreamSampleRate(void);
+u8 AIGetStreamVolLeft(void);
+u8 AIGetStreamVolRight(void);
+void AISetStreamVolLeft(u8 vol);
+void AISetStreamVolRight(u8 vol);
+
 
 s32 AIRegisterDMACallback(s32 cb) {
     extern s32 __AID_Callback;
