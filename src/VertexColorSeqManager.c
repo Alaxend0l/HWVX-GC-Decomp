@@ -96,10 +96,6 @@ void VertexColorSeqManager_Init(void) {
 }
 
 void VertexColorSeqManager_Heartbeat(void) {
-    typedef struct VertexColorTile {
-        u8 *light;
-        u8 key[0x30];
-    } VertexColorTile;
     extern VertexColorTile g_VertexColorTiles[64];
     extern s32 g_iTotalVertexColorTiles;
     extern f32 g_fDeltaTimeMS;
@@ -108,7 +104,7 @@ void VertexColorSeqManager_Heartbeat(void) {
 
     dt = g_fDeltaTimeMS;
     for (i = 0; i < g_iTotalVertexColorTiles; i++) {
-        ExtractColorKey(M2C_FIELD(g_VertexColorTiles[i].light, void **, 0x4), g_VertexColorTiles[i].key, dt);
+        ExtractColorKey(g_VertexColorTiles[i].light->keys, g_VertexColorTiles[i].key, dt);
     }
 }
 
