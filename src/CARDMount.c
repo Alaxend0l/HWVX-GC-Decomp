@@ -62,6 +62,38 @@ int EXIDetach(s32 chan);
 
 
 typedef void (*CARDCallback)(s32 chan, s32 result);
+static BOOL IsCard(u32 id) {
+    u32 size;
+    s32 sectorSize;
+
+    if ((id & 0xFFFF0000) && (id != 0x80000004 || __CARDVendorID == 0xFFFF)) {
+        return FALSE;
+    }
+    if ((id & 3) != 0) {
+        return FALSE;
+    }
+    size = id & 0xFC;
+    switch (size) {
+    case 4:
+    case 8:
+    case 16:
+    case 32:
+    case 64:
+    case 128:
+        break;
+    default:
+        return FALSE;
+    }
+    sectorSize = SectorSizeTable[(id & 0x00003800) >> 11];
+    if (sectorSize == 0) {
+        return FALSE;
+    }
+    if ((size * 1024 * 1024 / 8) / sectorSize < 8) {
+        return FALSE;
+    }
+    return TRUE;
+}
+
 s32 CARDMount(s32 chan, s32 fileNo, u8 *stat)
 {
     s32 CARDMountAsync(s32 chan, s32 fileNo, u8 *stat, CARDCallback callback);
