@@ -186,6 +186,14 @@ void Gfx_End_GroupTri(s32 n) {
     }
 }
 
+GDLRect *Gfx_Add2DRectangleRenderWindow(void) {
+    if (g_pGDL->numRects >= 0x20) {
+        g_pGDL->numRects = 0;
+    }
+    g_pGDL->rects[g_pGDL->numRects].window = g_currentWindow;
+    return &g_pGDL->rects[g_pGDL->numRects++];
+}
+
 GDLRect *Gfx_Add2DRectangle(void) {
     if (g_pGDL->numRects2D >= 0x400) {
         g_pGDL->numRects2D = 0;
