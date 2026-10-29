@@ -847,6 +847,14 @@ u32 GetEnvRate(u16 arg0)
     return -1U;
 }
 
+extern s32 g_musicVol;
+void SetGVol(MIDI_CHN *chn)
+{
+    u32 vol = chn->field_B * chn->field_A;
+    vol = (vol * vol) / 3970;
+    chn->vol = Mul16_(vol, g_musicVol);
+}
+
 #pragma push
 #pragma optimization_level 1
 void ReleaseMIDIVoice(void *voice)
