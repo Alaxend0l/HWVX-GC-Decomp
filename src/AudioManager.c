@@ -241,6 +241,14 @@ s8 SoundSource_IsActive(s32 index) {
 }
 
 s8 SoundSource_IsLooping(s32 index) {
+    typedef struct SoundSource {
+        u8 pad0[0x30];
+        s32 looping;
+        u8 pad34[0x50 - 0x34];
+    } SoundSource;
+    extern SoundSource *g_sources;
+
+    return g_sources[index].looping;
 }
 
 void *SoundAudioSample_Play(void *sample) {
