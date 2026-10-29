@@ -120,7 +120,6 @@ void AudioDecode(THPReadBuffer *readBuffer) {
 }
 
 void *PopFreeAudioBuffer(void) {
-    extern u8 FreeAudioBufferQueue[];
     void *msg;
 
     OSReceiveMessage(FreeAudioBufferQueue, &msg, 1);
