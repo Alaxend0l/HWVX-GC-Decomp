@@ -528,6 +528,35 @@ s32 DVDSetAutoInvalidation(s32 arg0) {
     return temp_r0;
 }
 
+s32 DVDCancel(volatile DVDCommandBlock *block) {
+    BOOL result;
+    s32 state;
+    u32 command;
+    BOOL enabled;
+
+    result = DVDCancelAsync((DVDCommandBlock *)block, (void (*)(s32, DVDCommandBlock *))cbForCancelSync);
+    if (result == FALSE) {
+        return -1;
+    }
+
+    enabled = OSDisableInterrupts();
+    for (;;) {
+        state = block->state;
+        if ((state == 0) || (state == -1) || (state == 10)) {
+            break;
+        }
+        if (state == 3) {
+            command = block->command;
+            if ((command == 4) || (command == 5) || (command == 13) || (command == 15)) {
+                break;
+            }
+        }
+        OSSleepThread(__DVDThreadQueue);
+    }
+    OSRestoreInterrupts(enabled);
+    return 0;
+}
+
 void cbForCancelSync(void) {
     void OSWakeupThread(void *queue);
     extern u32 __DVDThreadQueue[2];
