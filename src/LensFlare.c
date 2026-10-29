@@ -47,13 +47,13 @@ static inline Vector4 LensFlare_GetPos(u8 *thing, Vector4 *pos) {
 }
 
 void LensFlare_Init(void) {
-    extern u8 g_pFlare[64][0x30];
-    extern s32 g_activeFlares;
-    extern s32 g_LensFlareRayTest;
+    extern Flare g_pFlare[64];
+    extern u32 g_activeFlares;
+    extern u32 g_LensFlareRayTest;
     s32 i;
 
     for (i = 0; i < 64; i++) {
-        *(s32 *)g_pFlare[i] = 0;
+        g_pFlare[i].flare = NULL;
     }
     g_activeFlares = 0;
     g_LensFlareRayTest = 1;
