@@ -127,6 +127,17 @@ void Gfx_Add2DRectangleBack(void)
     Render_DrawRectangle();
 }
 
+void DrawAlphaTable(void) {
+    u16 i;
+    u16 idx;
+
+    for (i = 0; i < 0x100; i++) {
+        for (idx = g_pGDL->alphaTable[i]; idx != 0; idx = g_pGDL->alphaEntries[idx].next) {
+            g_pGDL->alphaEntries[idx].func(g_pGDL->alphaEntries[idx].arg);
+        }
+    }
+}
+
 s32 Gfx_GetEnvmapState(void) {
     if (g_state.unk8F) {
         return 0;
