@@ -78,6 +78,10 @@ void RandomNumberGenerator_GetRandomSubMatrix(Vector4 *m) {
     }
 }
 
+void RandomNumberGenerator_GetRandomVector(Vector4 *v) {
+    *v = g_randomNumberGenerator.vectors[RandomAdd_s32(0, 0x300)];
+}
+
 s32 RandomNumberGenerator_GetRandomInteger(s32 min, s32 max) {
     return RandomAdd_s32(min, max - min);
 }
