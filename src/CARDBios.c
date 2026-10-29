@@ -56,6 +56,17 @@ u8 __CARDDiskNone[32];
 
 void OSWakeupThread(OSThreadQueue *queue);
 s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard);
+void OSSleepThread(OSThreadQueue *queue);
+
+static inline s32 GetResultCode(s32 chan) {
+    CARDControl *card;
+
+    if (chan < 0 || chan >= 2) {
+        return -128;
+    }
+    card = &__CARDBlock[chan];
+    return card->result;
+}
 
 void __CARDDefaultApiCallback(void)
 {
@@ -120,6 +131,21 @@ s32 CARDGetSectorSize(s32 chan, u32 *size) {
     }
     *size = card->sectorSize;
     return __CARDPutControlBlock(card, 0);
+}
+
+void OSSleepThread(OSThreadQueue *queue);
+s32 __CARDSync(s32 chan) {
+    CARDControl *block;
+    s32 result;
+    s32 enabled;
+
+    block = &__CARDBlock[chan];
+    enabled = OSDisableInterrupts();
+    while ((result = (chan < 0 || chan >= 2) ? -128 : block->result) == -1) {
+        OSSleepThread(&block->threadQueue);
+    }
+    OSRestoreInterrupts(enabled);
+    return result;
 }
 
 extern int CARDUnmount(int);
