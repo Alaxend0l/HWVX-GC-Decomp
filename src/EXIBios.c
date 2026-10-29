@@ -134,6 +134,25 @@ BOOL EXISync(s32 chan) {
     return rc;
 }
 
+u32 EXIClearInterrupts(s32 chan, BOOL exi, BOOL tc, BOOL ext) {
+    u32 cpr;
+    u32 prev;
+
+    prev = cpr = __EXIRegs[chan * 5];
+    cpr &= 0x7F5;
+    if (exi) {
+        cpr |= 2;
+    }
+    if (tc) {
+        cpr |= 8;
+    }
+    if (ext) {
+        cpr |= 0x800;
+    }
+    __EXIRegs[chan * 5] = cpr;
+    return prev;
+}
+
 static BOOL __EXIProbe(s32 chan) {
     EXIControl *exi = &Ecb[chan];
     BOOL enabled;
