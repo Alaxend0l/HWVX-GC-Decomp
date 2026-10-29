@@ -184,6 +184,10 @@ void EventSeq_Advanced_GetOffset(u8 *seq, void *arg1, Vector4 *out) {
     }
 }
 
+s32 EventSeq_Move(void *thing) {
+    return 0;
+}
+
 s32 EventSeq_InCameraRange(u8 *seq, f32 range)
 {
     Vector4 positions[5] __attribute__((aligned(16)));

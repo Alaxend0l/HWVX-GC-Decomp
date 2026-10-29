@@ -18,10 +18,36 @@ void __OSInterruptInit(void)
 {
 	InterruptHandlerTable = (__OSInterruptHandler *)((u32)0x3040 + 0x80000000);
 	memset(InterruptHandlerTable, 0, 32 * sizeof(__OSInterruptHandler));
-	*(volatile u32 *)((u32)0x00C4 + 0x80000000) = 0;
-	*(volatile u32 *)((u32)0x00C8 + 0x80000000) = 0;
+	*(u32 *)((u32)0x00C4 + 0x80000000) = 0;
+	*(u32 *)((u32)0x00C8 + 0x80000000) = 0;
 	__PIRegs[1] = 0xF0;
 	__OSMaskInterrupts(0xFFFFFFE0);
 	__OSSetExceptionHandler(4, ExternalInterruptHandler);
+}
+
+BOOL OSDisableInterrupts(void);
+BOOL OSRestoreInterrupts(BOOL level);
+u32 SetInterruptMask(u32 mask, u32 current);
+u32 __OSMaskInterrupts(u32 global)
+{
+	u32 mask;
+	u32 local;
+	u32 prev;
+	BOOL enabled;
+
+	enabled = OSDisableInterrupts();
+	prev = *(u32 *)((u32)0x00C4 + 0x80000000);
+	local = *(u32 *)((u32)0x00C8 + 0x80000000);
+	mask = ~(prev | local) & global;
+	global |= prev;
+	*(u32 *)((u32)0x00C4 + 0x80000000) = global;
+	global |= local;
+	goto check;
+	do {
+		mask = SetInterruptMask(mask, global);
+check:;
+	} while (mask);
+	OSRestoreInterrupts(enabled);
+	return prev;
 }
 

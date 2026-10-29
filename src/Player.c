@@ -97,6 +97,34 @@ void Player_ReleaseInterface(void *player) {
     }
 }
 
+extern u8 g_carAVTable[];
+extern u8 g_creatureVTable[];
+void CarA_SetSlavePlayers(void *car);
+void Thing_SetSlavePlayers(void *thing);
+void AI_Car_Reset(void *player);
+void Player_SetThing(void *player, void *thing) {
+    s32 isCreature;
+
+    *(void **)((u8 *)player + 0x2C) = thing;
+    if (thing != NULL) {
+        *(void **)(*(u8 **)((u8 *)player + 0x2C) + 0x94) = player;
+        *(u32 *)((u8 *)player + 0x38) = *(u32 *)((u8 *)thing + 0xA8);
+        if (*(void **)((u8 *)thing + 0x8C) == g_carAVTable) {
+            *(u32 *)((u8 *)player + 0x3C) = *(u32 *)((u8 *)thing + 0x3BC);
+            CarA_SetSlavePlayers(thing);
+            if (!Player_IsHuman(player)) {
+                AI_Car_Reset(player);
+            }
+        } else if (*(void **)((u8 *)thing + 0x8C) == g_creatureVTable) {
+            *(u32 *)((u8 *)player + 0x3C) = *(u32 *)((u8 *)thing + 0xB8);
+            Thing_SetSlavePlayers(thing);
+        }
+        if (*(void **)((u8 *)player + 0x2C) == thing) {
+            Player_RefreshInterface(player);
+        }
+    }
+}
+
 s32 Player_InputHeartbeat(void *arg0) {
     return M2C_FIELD(arg0, s8 (**)(), 0x20)() != 0;
 }

@@ -240,9 +240,9 @@ u32 GameSettings_GetCodeVariable(s32 var, u32 arg) {
     extern s8 g_bGameSettingsInitialized;
     static s8 bFirstTime = 1;
     static u8 *pMCP;
+    s32 type;
     u8 *mcp;
     void *pack;
-    s32 type;
     u32 i;
     u8 count;
     u8 *player;
@@ -376,9 +376,11 @@ done:
         break;
     case 0xCB:
         if (StateManager_CurrState() == 5) {
-            count = PlayerManager_PlayerCount();
-            for (i = 0; i < count; i++) {
-                player = PlayerManager_GetPlayerByIndex(i);
+            u8 numPlayers = PlayerManager_PlayerCount();
+            u32 index;
+
+            for (index = 0; index < numPlayers; index++) {
+                player = PlayerManager_GetPlayerByIndex(index);
                 if (*(u32 *)(player + 0x60) == arg && *(u8 **)(player + 0xA8) != NULL) {
                     return *(u32 *)(*(u8 **)(player + 0xA8) + 0x30);
                 }

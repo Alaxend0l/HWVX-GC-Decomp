@@ -13,3 +13,8 @@ void PPCDisableSpeculation(void) {
     M2C_UNK PPCMthid0(s32);
     PPCMthid0(PPCMfhid0() | 0x200);
 }
+
+void PPCSetFpNonIEEEMode(void) {
+    M2C_ERROR(/* unknown instruction: mtfsb1 cr7gt */);
+}
+

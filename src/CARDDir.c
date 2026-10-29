@@ -99,6 +99,7 @@ static void EraseCallback(s32 chan, s32 result) {
         goto error;
     }
     return;
+
 error:
     if (card->apiCallback == NULL) {
         __CARDPutControlBlock(card, result);

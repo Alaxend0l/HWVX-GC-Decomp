@@ -50,29 +50,25 @@ void CoronaHolder_Init(void) {
     g_totalCoronas = 0;
 }
 
-s32 CoronaHolder_Add(void *corona, Vector4 *pos)
+s32 CoronaHolder_Add(CoronaData *corona, Vector4 *pos)
 {
-    u32 n;
-    Corona *c;
-    void *lens;
-
-    n = g_totalCoronas;
-    if (n >= 64) {
+    if (g_totalCoronas >= 64) {
         return -1;
     }
     if (corona == NULL) {
         return -1;
     }
-    g_aCorona[n].track = corona;
-    c = g_aCorona + n;
-    c->pos = *pos;
-    c->flare = -1;
-    c->playing = 0;
-    c->time = 0;
-    c->active = 1;
-    lens = ((CoronaData *)corona)->lens;
-    if (lens != NULL) {
-        c->flare = LensFlare_Add(lens, 0, pos);
+    g_aCorona[g_totalCoronas].track = corona;
+    {
+        Corona *c = &g_aCorona[g_totalCoronas];
+        c->pos = *pos;
+        c->flare = -1;
+        c->playing = 0;
+        c->time = 0;
+        c->active = 1;
+        if (corona->lens != NULL) {
+            c->flare = LensFlare_Add(corona->lens, 0, pos);
+        }
     }
     return g_totalCoronas++;
 }

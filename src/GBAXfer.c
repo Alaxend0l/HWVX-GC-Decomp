@@ -27,6 +27,59 @@ extern s32 __GBAReset;
 
 void __GBAHandler(s32 chan, u32 error, void *context);
 
+void *OSGetCurrentContext(void);
+void OSClearContext(void *context);
+void OSSetCurrentContext(void *context);
+void __OSReschedule(void);
+s32 SITransfer(s32 chan, void *output, s32 outputBytes, void *input, s32 inputBytes, void *callback, s64 delay);
+static void TypeAndStatusCallback(s32 chan, u32 type)
+{
+	GBAControl *gba;
+	void *context;
+	GBACallback callback;
+	GBAProc proc;
+	u8 exceptionContext[0x2C8];
+
+	gba = &__GBA[chan];
+	if (__GBAReset != 0)
+	{
+		return;
+	}
+
+	if ((type & 0xFF) != 0 || (type & 0xFFFF0000) != 0x40000)
+	{
+		gba->ret = 1;
+	}
+	else
+	{
+		if (SITransfer(chan, gba->output, gba->outputBytes, gba->input, gba->inputBytes, __GBAHandler, gba->delay))
+		{
+			return;
+		}
+		gba->ret = 2;
+	}
+
+	if (gba->proc)
+	{
+		proc = gba->proc;
+		gba->proc = NULL;
+		proc(chan);
+	}
+
+	if (gba->callback)
+	{
+		context = OSGetCurrentContext();
+		OSClearContext(exceptionContext);
+		OSSetCurrentContext(exceptionContext);
+		callback = gba->callback;
+		gba->callback = NULL;
+		callback(chan, gba->ret);
+		OSClearContext(exceptionContext);
+		OSSetCurrentContext(context);
+		__OSReschedule();
+	}
+}
+
 s64 __GBASetDelay(s32 chan, s64 delay)
 {
 	GBAControl *gba = &__GBA[chan];
