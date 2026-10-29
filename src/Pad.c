@@ -3,6 +3,7 @@
 void OSClearContext(void *);
 void OSSetCurrentContext(void *);
 
+static BOOL Initialized;
 u32 EnabledBits;
 u32 ResettingBits;
 static u32 RecalibrateBits;
