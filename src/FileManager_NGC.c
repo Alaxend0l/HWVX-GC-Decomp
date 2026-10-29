@@ -78,6 +78,11 @@ s8 FileManager_IsDeviceFormatted(s32 device) {
     return m_memcardstatus_803C7970[device - 11] == 0;
 }
 
+s8 FileManager_FormatDevice(s32 device) {
+    m_memcardstatus_803C7970[device - 11] = CARDFormat(device - 11);
+    return m_memcardstatus_803C7970[device - 11] == 0 ? 1 : 0;
+}
+
 s32 File_Open(u32 dev, const char *name, u32 flags, s32 *size) {
     extern struct { s32 fileInfo; char name[0x100]; } g_filedata_PC[4];
     s32 DVDOpen(const char *name, void *fileInfo);
@@ -374,8 +379,12 @@ u32 FileManager_GetDeviceStatus(u32 device) {
     return device == 1;
 }
 
+static inline s32 MemCard_Mount(s32 chan) {
+    return CARDMount(chan, CardWorkArea, 0);
+}
+
 s32 MemCard_Open__FUlPCScUlPl(u32 device, const char *fileName, u32 flags, s32 *unused) {
-    u32 chan;
+    s32 chan;
     CARDFileInfo *fileInfo;
     s32 *blockSize;
 
@@ -383,7 +392,9 @@ s32 MemCard_Open__FUlPCScUlPl(u32 device, const char *fileName, u32 flags, s32 *
     if (FileManager_GetDeviceStatus(device) == 3) {
         return 0;
     }
-    if ((m_memcardstatus_803C7970[chan] = CARDMount(chan, CardWorkArea, 0)), OSReport("CARDMount\n"), m_memcardstatus_803C7970[chan] < 0) {
+    m_memcardstatus_803C7970[chan] = CARDMount(chan, &CardWorkArea[0], NULL);
+    OSReport("CARDMount\n");
+    if (m_memcardstatus_803C7970[chan] < 0) {
         OSReport("failed. (%d)\n", m_memcardstatus_803C7970[chan]);
         return 0;
     }
@@ -487,7 +498,7 @@ void LidHandler_Init(void) {
     extern u32 m_curtime_803C7988;
     extern u8 m_fileInfo_803867E0[0x3C];
 
-    if (m_isopen_803C7984 == 0) {
+    if (!m_isopen_803C7984) {
         DVDOpen("bsfile", m_fileInfo_803867E0);
         m_isopen_803C7984 = 1;
         m_curtime_803C7988 = 0;
