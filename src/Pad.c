@@ -18,6 +18,7 @@ void OSRestoreInterrupts(s32);
 void SIDisablePolling(u32);
 s32 SIGetTypeAsync(s32, void (*)(void));
 void PADTypeAndStatusCallback(void);
+void PADReceiveCheckCallback(void);
 BOOL SIBusy(void);
 void *memset(void *, int, u32);
 void *PADSetSamplingCallback(void (*callback)(void));
