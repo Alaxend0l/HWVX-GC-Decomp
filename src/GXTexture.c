@@ -178,6 +178,30 @@ void *GXSetTlutRegionCallback(void *f) {
     return oldcb;
 }
 
+#pragma push
+#pragma dont_inline on
+void __SetSURegs(u32 tmap, u32 tcoord) {
+    u32 w;
+    u32 h;
+    u8 s_bias;
+    u8 t_bias;
+
+    w = (u32)gx->tImage0[tmap] & 0x3FF;
+    h = ((u32)gx->tImage0[tmap] >> 10) & 0x3FF;
+    gx->suTs0[tcoord] = ((u32)gx->suTs0[tcoord] & ~0xFFFF) | ((u32)w);
+    gx->suTs1[tcoord] = ((u32)gx->suTs1[tcoord] & ~0xFFFF) | ((u32)h);
+    s_bias = ((u32)gx->tMode0[tmap] & 3) == 1;
+    t_bias = (((u32)gx->tMode0[tmap] >> 2) & 3) == 1;
+    gx->suTs0[tcoord] = ((u32)gx->suTs0[tcoord] & ~0x10000) | ((u32)s_bias << 16);
+    gx->suTs1[tcoord] = ((u32)gx->suTs1[tcoord] & ~0x10000) | ((u32)t_bias << 16);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->suTs0[tcoord];
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->suTs1[tcoord];
+    gx->bpSentNot = 0;
+}
+#pragma pop
+
 void __GXSetSUTexRegs(void) {
     u32 nStages;
     u32 nIndStages;
