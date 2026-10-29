@@ -16,6 +16,8 @@ typedef struct StateManager {
     s32 next;
 } StateManager;
 
+StateManager *g_pStateManager;
+
 void StateManager_Create(void) {
     void *Allocate(u32 size, s32 type, const char *name);
     void StateMovie_Heartbeat(void);
