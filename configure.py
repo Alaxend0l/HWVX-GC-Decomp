@@ -493,7 +493,7 @@ config.libs = [
             Object(NonMatching, "axfx.c"),
             Object(NonMatching, "dsp.c", mw_version="GC/1.2.5n"),
             Object(Matching, "dsp_debug.c"),
-            Object(NonMatching, "dsp_task.c"),
+            Object(NonMatching, "dsp_task.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "CARDBios.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "CARDUnlock.c"),
             Object(NonMatching, "CARDNet.c"),
