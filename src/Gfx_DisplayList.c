@@ -144,6 +144,7 @@ typedef struct GDL {
 } GDL;
 
 extern GDL *g_pGDL;
+void CopyMatrix(f32 (*dst)[4], f32 (*src)[4]);
 extern DisplayList *g_pDL;
 
 void Gfx_DisplayList_Destroy(void) {
