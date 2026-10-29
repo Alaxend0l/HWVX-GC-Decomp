@@ -53,11 +53,28 @@ typedef struct WorldData {
 
 extern WorldData g_worldData;
 
+typedef struct CameraListener {
+  u8 pad0[0x40];
+  Vector4 pos;              /* 0x40 */
+} CameraListener;
+
 typedef struct Camera {
-  u8 pad0[0xB4];
-  u32 *mode;
-  f32 modeTime;
-  u8 pad1[0x190 - 0xBC];
+  struct Player *player;    /* 0x00 */
+  u8 pad4[0xC];
+  Matrix4 mtx;              /* 0x10 v[3] = position */
+  u8 pad50[0x10];
+  Vector4 pos;              /* 0x60 */
+  Vector4 vel;              /* 0x70 */
+  Vector4 dir;              /* 0x80 */
+  Vector4 up;               /* 0x90 */
+  Vector4 right;            /* 0xA0 */
+  u8 padB0[4];
+  u32 *mode;                /* 0xB4 */
+  f32 modeTime;             /* 0xB8 */
+  f32 trim;                 /* 0xBC */
+  u8 padC0[0xC0];
+  CameraListener *listener; /* 0x180 */
+  u8 pad184[0x190 - 0x184];
 } Camera;
 
 typedef struct GXColor {
