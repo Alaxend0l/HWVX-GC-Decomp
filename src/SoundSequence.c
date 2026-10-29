@@ -67,6 +67,37 @@ s32 SoundSeq_Init(u8 *seq, u8 *data) {
     return 1;
 }
 
+static void SoundSeq_RemoveFromQueue(SoundSequence *seq) {
+    void Trigger_SoundSequenceQueueEmptied(void);
+    SoundSequence *next;
+
+    next = seq->queued;
+    if (next != NULL) {
+        next->flags &= ~0x80000000;
+        seq->queued = NULL;
+    } else {
+        Trigger_SoundSequenceQueueEmptied();
+    }
+}
+
+void SoundSeq_Release(SoundSequence *seq) {
+    s8 SoundSource_IsLooping(s32 index);
+    void SoundSource_Stop(s32 index);
+    void Thing_Release(void *thing);
+    u32 i;
+
+    if (seq->flags & 0x40000000) {
+        SoundSeq_RemoveFromQueue(seq);
+    }
+    for (i = 0; i < 4; i++) {
+        if (seq->sources[i] >= 0 && SoundSource_IsLooping(seq->sources[i])) {
+            SoundSource_Stop(seq->sources[i]);
+        }
+        seq->sources[i] = -1;
+    }
+    Thing_Release(seq);
+}
+
 s32 SoundSeq_Invalidate(SoundSequence *seq, u32 start, u32 end)
 {
     if ((u32)seq->params >= start && (u32)seq->params < end) {
@@ -134,17 +165,39 @@ s32 SoundSequence_PlayQueued(s8 *seq, Vector4 *pos) {
 }
 
 void SoundSequence_ClearQueue(void) {
-    u32 ThingManager_GetActiveSoundSequences(u8 **list, u32 max);
-    u8 *list[128];
+    void Trigger_SoundSequenceQueueEmptied(void);
+    s8 SoundSource_IsLooping(s32 index);
+    void SoundSource_Stop(s32 index);
+    void Thing_Release(void *thing);
+    SoundSequence *list[128];
+    SoundSequence *seq;
+    SoundSequence *next;
     u32 count;
+    u32 i;
 
-    count = ThingManager_GetActiveSoundSequences(list, 128);
+    count = ThingManager_GetActiveSoundSequences((u8 **)list, 128);
     while (count != 0) {
         count--;
-        if (M2C_FIELD(list[count], u32 *, 0x74) & 0x40000000) {
-            M2C_FIELD(list[count], u32 *, 0x74) &= ~0x40000000;
-            M2C_FIELD(list[count], u8 **, 0xC8) = NULL;
-            SoundSeq_Release(list[count]);
+        if (list[count]->flags & 0x40000000) {
+            list[count]->flags &= ~0x40000000;
+            list[count]->queued = NULL;
+            seq = list[count];
+            if (seq->flags & 0x40000000) {
+                next = seq->queued;
+                if (next != NULL) {
+                    next->flags &= ~0x80000000;
+                    seq->queued = NULL;
+                } else {
+                    Trigger_SoundSequenceQueueEmptied();
+                }
+            }
+            for (i = 0; i < 4; i++) {
+                if (seq->sources[i] >= 0 && SoundSource_IsLooping(seq->sources[i])) {
+                    SoundSource_Stop(seq->sources[i]);
+                }
+                seq->sources[i] = -1;
+            }
+            Thing_Release(seq);
         }
     }
 }
