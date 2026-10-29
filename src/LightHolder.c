@@ -1,5 +1,37 @@
 #include "common.h"
 
+typedef struct LightHolderDef {
+    u8 enabled;
+    u8 pointLight;
+    u8 unk2;
+    u8 overlayMode;
+    u32 lifeMin;
+    u32 lifeRange;
+    u8 radiusKeys[8];
+    u8 colorKeys[8];
+} LightHolderDef;
+
+typedef struct LightHolderLight {
+    Vector4 pos;
+    u8 unk10[0x24];
+    GXColor color;
+    u8 unk38[4];
+    u8 unk3C;
+    u8 unk3D[3];
+    f32 radius;
+    u8 unk44[0xC];
+    u8 unk50;
+    u8 unk51[0xF];
+    LightHolderDef *def;
+    u8 *thing;
+    u32 unk68;
+    u32 life;
+    u32 unk70;
+    u32 unk74;
+    f32 rate;
+    u32 unk7C;
+} LightHolderLight;
+
 
 void LightHolder_Init(void) {
     extern u8 g_pLight[16][0x80];
