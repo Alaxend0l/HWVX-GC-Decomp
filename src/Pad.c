@@ -231,6 +231,34 @@ BOOL PADReset(u32 mask)
     return TRUE;
 }
 
+static inline BOOL PADRecalibrate(u32 mask)
+{
+    BOOL enabled;
+    u32 disableBits;
+
+    enabled = OSDisableInterrupts();
+    mask |= PendingBits;
+    PendingBits = 0;
+    mask &= ~(WaitingBits | CheckingBits);
+    ResettingBits |= mask;
+    disableBits = ResettingBits & EnabledBits;
+    EnabledBits &= ~mask;
+    if (!(*(u8 *)0x800030E3 & 0x40)) {
+        RecalibrateBits |= mask;
+    }
+    SIDisablePolling(disableBits);
+    if (ResettingChan == 32) {
+        DoReset();
+    }
+    OSRestoreInterrupts(enabled);
+    return TRUE;
+}
+
+static inline BOOL PADSync(void)
+{
+    return ResettingBits == 0 && ResettingChan == 32 && !SIBusy();
+}
+
 void PADSetSpec(s32 spec);
 u16 __OSWirelessPadFixMode : 0x800030E0;
 BOOL PADInit(void)
