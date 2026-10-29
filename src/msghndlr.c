@@ -128,6 +128,127 @@ s32 TRKDoStop(TRKBuffer *b) {
     return err;
 }
 
+s32 TRKDoStep(TRKBuffer *b) {
+    u32 rangeStart;
+    u32 rangeEnd;
+    u8 c;
+    u8 stepCommand;
+    u8 count;
+    s32 err;
+    s32 ackTries;
+    u32 pc;
+
+    if (b->length < 3) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 2);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return err;
+    }
+    TRKSetBufferPosition(b, 0);
+    err = TRKReadBuffer1_ui8(b, &c);
+    if (err == 0) {
+        err = TRKReadBuffer1_ui8(b, &stepCommand);
+    }
+    switch (stepCommand) {
+    case 0:
+    case 0x10:
+        if (err == 0) {
+            err = TRKReadBuffer1_ui8(b, &count);
+        }
+        if (count < 1) {
+            TRKResetBuffer(b, 1);
+            TRKAppendBuffer1_ui8(b, 0x80);
+            TRKAppendBuffer1_ui8(b, 0x11);
+            ackTries = 3;
+            do {
+                err = TRKMessageSend(b);
+                ackTries--;
+            } while (err != 0 && ackTries > 0);
+            return err;
+        }
+        break;
+    case 1:
+    case 0x11:
+        if (b->length != 10) {
+            TRKResetBuffer(b, 1);
+            TRKAppendBuffer1_ui8(b, 0x80);
+            TRKAppendBuffer1_ui8(b, 2);
+            ackTries = 3;
+            do {
+                err = TRKMessageSend(b);
+                ackTries--;
+            } while (err != 0 && ackTries > 0);
+            return err;
+        }
+        if (err == 0) {
+            err = TRKReadBuffer1_ui32(b, &rangeStart);
+        }
+        if (err == 0) {
+            err = TRKReadBuffer1_ui32(b, &rangeEnd);
+        }
+        pc = TRKTargetGetPC();
+        if (pc < rangeStart || pc > rangeEnd) {
+            TRKResetBuffer(b, 1);
+            TRKAppendBuffer1_ui8(b, 0x80);
+            TRKAppendBuffer1_ui8(b, 0x11);
+            ackTries = 3;
+            do {
+                err = TRKMessageSend(b);
+                ackTries--;
+            } while (err != 0 && ackTries > 0);
+            return err;
+        }
+        break;
+    default:
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 0x12);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return err;
+    }
+    if (!TRKTargetStopped()) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 0x16);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return err;
+    }
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, 0);
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+    if (err == 0) {
+        switch (stepCommand) {
+        case 0:
+        case 0x10:
+            err = TRKTargetSingleStep(count, stepCommand == 0x10);
+            break;
+        case 1:
+        case 0x11:
+            err = TRKTargetStepOutOfRange(rangeStart, rangeEnd, stepCommand == 0x11);
+            break;
+        }
+    }
+    return err;
+}
+
 s32 TRKDoContinue(TRKBuffer *b) {
     s32 err;
     s32 ackTries;
