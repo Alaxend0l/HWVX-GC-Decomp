@@ -211,11 +211,6 @@ static inline s8 PointInsideBSP(void *bsp, void *point) {
 }
 
 s8 OBoxHitsBSPZeroTime(void *obox, void *bsp, void *arg2) {
-    typedef struct {
-        u8 pad[0x10];
-        Vector4 corners[8];
-    } OBoxCorners;
-    s8 OBoxHitsSegmentZeroTime(void *obox, void *edge, void *arg2);
     u8 *edge;
     u32 i;
 
