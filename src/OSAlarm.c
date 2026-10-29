@@ -139,11 +139,8 @@ void OSSetAlarm(OSAlarm *alarm, s64 tick, void *(*handler)(void *, void *))
 }
 
 void OSCancelAlarm(OSAlarm *alarm) {
-    void PPCMtdec(u32 newDec);
-    s64 __OSGetSystemTime(void);
-    BOOL enabled;
     OSAlarm *next;
-    s64 delta;
+    BOOL enabled;
 
     enabled = OSDisableInterrupts();
     if (alarm->handler == NULL) {
@@ -161,14 +158,7 @@ void OSCancelAlarm(OSAlarm *alarm) {
     } else {
         AlarmQueue.head = next;
         if (next) {
-            delta = next->fire - __OSGetSystemTime();
-            if (delta < 0) {
-                PPCMtdec(0);
-            } else if (delta < 0x80000000) {
-                PPCMtdec((u32)delta);
-            } else {
-                PPCMtdec(0x7fffffff);
-            }
+            SetTimer(next);
         }
     }
     alarm->handler = NULL;
