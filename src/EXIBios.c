@@ -175,6 +175,42 @@ static BOOL __EXIProbe(s32 chan) {
     OSRestoreInterrupts(enabled);
     return rc;
 }
+
+u32 __OSMaskInterrupts(u32 mask);
+BOOL EXISelect(s32 chan, u32 dev, u32 freq) {
+    EXIControl *exi = &Ecb[chan];
+    u32 cpr;
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    if ((exi->state & 4) ||
+        chan != 2 && (dev == 0 && !(exi->state & 8) && !__EXIProbe(chan) ||
+                      !(exi->state & 0x10) || exi->dev != dev)) {
+        OSRestoreInterrupts(enabled);
+        return FALSE;
+    }
+
+    exi->state |= 4;
+    cpr = __EXIRegs[chan * 5];
+    cpr &= 0x405;
+    cpr |= ((1 << dev) << 7) | (freq << 4);
+    __EXIRegs[chan * 5] = cpr;
+
+    if (exi->state & 8) {
+        switch (chan) {
+        case 0:
+            __OSMaskInterrupts(0x100000);
+            break;
+        case 1:
+            __OSMaskInterrupts(0x20000);
+            break;
+        }
+    }
+
+    OSRestoreInterrupts(enabled);
+    return TRUE;
+}
+
 u32 EXIGetState(s32 chan) {
     EXIControl *exi = &Ecb[chan];
     return exi->state;
