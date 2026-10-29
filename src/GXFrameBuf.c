@@ -65,6 +65,17 @@ void GXAdjustForOverscan(GXRenderModeObj *rmin, GXRenderModeObj *rmout, u16 hor,
     rmout->viYOrigin = (u16)(rmin->viYOrigin + ver);
 }
 
+void GXSetDispCopySrc(u16 left, u16 top, u16 wd, u16 ht) {
+    gx->cpDispSrc = 0;
+    gx->cpDispSrc = ((u32)gx->cpDispSrc & ~0x3FF) | ((u32)left);
+    gx->cpDispSrc = ((u32)gx->cpDispSrc & ~0xFFC00) | ((u32)top << 10);
+    gx->cpDispSrc = ((u32)gx->cpDispSrc & ~0xFF000000) | ((u32)0x49 << 24);
+    gx->cpDispSize = 0;
+    gx->cpDispSize = ((u32)gx->cpDispSize & ~0x3FF) | ((u32)(wd - 1));
+    gx->cpDispSize = ((u32)gx->cpDispSize & ~0xFFC00) | ((u32)(ht - 1) << 10);
+    gx->cpDispSize = ((u32)gx->cpDispSize & ~0xFF000000) | ((u32)0x4A << 24);
+}
+
 void GXSetDispCopyDst(u16 wd, u16 ht) {
     u16 stride;
 
