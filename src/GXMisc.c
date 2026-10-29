@@ -17,6 +17,14 @@ void GXPokeAlphaRead(s32 mode) {
     __peReg[4] = reg;
 }
 
+void GXPokeAlphaUpdate(u8 update_enable) {
+    u32 reg;
+
+    reg = __peReg[1];
+    reg = (reg & ~0x10) | (update_enable << 4);
+    __peReg[1] = reg;
+}
+
 void GXPokeDstAlpha(u8 enable, u8 alpha) {
     u32 reg;
 
