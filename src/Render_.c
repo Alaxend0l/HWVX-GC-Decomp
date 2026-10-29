@@ -463,3 +463,35 @@ void CreateSilhouette(SilhouetteEdge *edges, u32 count, f32 *dir) {
     }
 }
 
+void DrawVolume(f32 (*verts)[3], SilhouetteEdge *edges, u32 numEdges, f32 dx, f32 dy, f32 dz) {
+    SilhouetteEdge *e;
+    u32 i;
+
+    e = edges;
+    for (i = 0; i < numEdges; i++) {
+        if (e->type & 2) {
+            GXBegin(0x80, 0, 4);
+            GXPosition3f32(verts[e->v0][0], verts[e->v0][1], verts[e->v0][2]);
+            GXColor1u32(0xFF0004);
+            GXPosition3f32(verts[e->v1][0], verts[e->v1][1], verts[e->v1][2]);
+            GXColor1u32(0xFF0004);
+            GXPosition3f32(dx + verts[e->v1][0], dy + verts[e->v1][1], dz + verts[e->v1][2]);
+            GXColor1u32(0xFF0004);
+            GXPosition3f32(dx + verts[e->v0][0], dy + verts[e->v0][1], dz + verts[e->v0][2]);
+            GXColor1u32(0xFF0004);
+        }
+        if (e->type & 1) {
+            GXBegin(0x80, 0, 4);
+            GXPosition3f32(verts[e->v1][0], verts[e->v1][1], verts[e->v1][2]);
+            GXColor1u32(0xFF0004);
+            GXPosition3f32(verts[e->v0][0], verts[e->v0][1], verts[e->v0][2]);
+            GXColor1u32(0xFF0004);
+            GXPosition3f32(dx + verts[e->v0][0], dy + verts[e->v0][1], dz + verts[e->v0][2]);
+            GXColor1u32(0xFF0004);
+            GXPosition3f32(dx + verts[e->v1][0], dy + verts[e->v1][1], dz + verts[e->v1][2]);
+            GXColor1u32(0xFF0004);
+        }
+        e++;
+    }
+}
+
