@@ -130,12 +130,25 @@ typedef struct CarASoundSet {
   f32 pitchScale;           /* 0x0C */
 } CarASoundSet;
 
+/* The car's model data (CarAInfo.modelRef->data): its breakable parts. */
+typedef struct CarAModelData {
+  u8 pad00[0x38];           /* 0x00 */
+  CarPartList *parts;       /* 0x38 */
+} CarAModelData;
+
+typedef struct CarAModelRef {
+  u8 pad00[0x10];           /* 0x00 */
+  CarAModelData *data;      /* 0x10 */
+} CarAModelRef;
+
 typedef struct CarAInfo {
-  u8 pad00[0x11];           /* 0x00 */
+  u8 pad00[0x10];           /* 0x00 */
+  u8 damagePercent;         /* 0x10 health % below which parts break off */
   u8 driveMode;             /* 0x11 1: human-controlled */
   u8 pad12[2];              /* 0x12 */
   u16 skidTexture;          /* 0x14 */
-  u8 pad16[6];              /* 0x16 */
+  u8 pad16[2];              /* 0x16 */
+  s32 damageLevel;          /* 0x18 hits above it break parts off */
   f32 unk1C;                /* 0x1C */
   f32 unk20;                /* 0x20 */
   f32 unk24;                /* 0x24 */
