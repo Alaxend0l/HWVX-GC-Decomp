@@ -140,6 +140,68 @@ s32 Gfx_FrustrumCullSphereTest(Vector *center, f32 radius) {
     return result;
 }
 
+u32 Gfx_GetCullLODGX(Geometry *geometry, Vector *matrix, u8 *lod, u8 flag) {
+    Vector diff __attribute__((aligned(16)));
+    Vector center __attribute__((aligned(16)));
+    Vector pos __attribute__((aligned(16)));
+    f32 dist;
+    f32 radius;
+    f32 a;
+    f32 b;
+    void *window;
+    u16 i;
+
+    window = GetRenderWindow();
+    pos.x = geometry->center[0];
+    pos.y = geometry->center[1];
+    pos.z = geometry->center[2];
+    pos.w = 1.0f;
+    if (matrix == NULL) {
+        center = pos;
+        radius = geometry->bboxMax[3];
+    } else {
+        XformVec(matrix, &pos, &center);
+        a = PSVECSquareMag(&matrix[0]) >= PSVECSquareMag(&matrix[1]) ? PSVECSquareMag(&matrix[0]) : PSVECSquareMag(&matrix[1]);
+        b = a >= PSVECSquareMag(&matrix[2])
+                ? (PSVECSquareMag(&matrix[0]) >= PSVECSquareMag(&matrix[1]) ? PSVECSquareMag(&matrix[0]) : PSVECSquareMag(&matrix[1]))
+                : PSVECSquareMag(&matrix[2]);
+        radius = geometry->bboxMax[3] * Sqrt(b);
+    }
+    PSVECSubtract(&center, (Vector *)((u8 *)window + 0x180), &diff);
+    dist = PSVECDotProduct(&diff, (Vector *)((u8 *)window + 0x190));
+    dist *= ((f32 *)window)[0x9D];
+    if (!(((Geometry *)geometry->groups)->groups->flags & 0x8000) && g_state.farClippingPlane > 0.0f &&
+        dist >= g_state.farClippingPlane) {
+        return 0;
+    }
+    switch (Gfx_FrustrumCullSphereTest(&center, radius)) {
+    case 1:
+        *lod = 1;
+        break;
+    case 2:
+        *lod = 0;
+        break;
+    default:
+        return 0;
+    }
+    for (i = 0; i < geometry->numGroups; i++) {
+        if (dist < geometry->lodDistances[i]) {
+            break;
+        }
+    }
+    if (geometry->numGroups == 1 && geometry->lodDistances[0] == 0.0f) {
+        i = 0;
+    }
+    if (i < geometry->numGroups) {
+        if (g_CurrentViews != 1 && i + 1 < geometry->numGroups) {
+            return (u32)geometry->groups + (i + 1) * 0x18;
+        }
+        return (u32)geometry->groups + i * 0x18;
+    }
+    Gfx_EnableState(0x20000);
+    return 0;
+}
+
 void Gfx_DrawGeometry(s32 geometry, s32 matrix) {
     g_pGDL->drawEntries[g_pGDL->numDrawEntries].geometry = geometry;
     g_pGDL->drawEntries[g_pGDL->numDrawEntries].matrix = Gfx_AddWorldMatrixState_CacheMatrix(matrix);
@@ -171,5 +233,36 @@ void Gfx_DrawGeometry_QuaternionScalePos(s32 geometry, s32 quat, s32 scale, s32 
     g_pGDL->drawEntries[g_pGDL->numDrawEntries].envmapState = Gfx_GetEnvmapState();
     g_pGDL->drawEntries[g_pGDL->numDrawEntries].unk11 = 0;
     g_pGDL->numDrawEntries++;
+}
+
+s32 Gfx_CalcGeometryLOD(Geometry *geometry, f32 *matrix) {
+    Vector min __attribute__((aligned(16)));
+    Vector max __attribute__((aligned(16)));
+    Vector center __attribute__((aligned(16)));
+    f32 dist;
+    u16 i;
+
+    if (geometry->numGroups == 1) {
+        return 0;
+    }
+    PSVECAdd((Vector *)&matrix[12], (Vector *)geometry->bboxMin, &min);
+    PSVECAdd((Vector *)&matrix[12], (Vector *)geometry->bboxMax, &max);
+    PSVECAdd(&min, &max, &center);
+    PSVECScale(&center, &center, 0.5f);
+    PSVECSubtract(&center, (Vector *)((u8 *)GetRenderWindow() + 0x180), &min);
+    dist = PSVECDotProduct(&min, (Vector *)((u8 *)GetRenderWindow() + 0x190));
+    dist *= ((f32 *)GetRenderWindow())[0x9D];
+    for (i = 0; i < geometry->numGroups; i++) {
+        if (dist < geometry->lodDistances[i]) {
+            break;
+        }
+    }
+    if (i < geometry->numGroups) {
+        if (g_CurrentViews != 1 && i + 1 < geometry->numGroups) {
+            return i + 1;
+        }
+        return i;
+    }
+    return -1;
 }
 
