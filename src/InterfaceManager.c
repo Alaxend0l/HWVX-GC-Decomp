@@ -1,5 +1,51 @@
 #include "common.h"
 
+/* Message passed to an interface's callback (InterfaceState.callback). */
+typedef struct InterfaceEventMsg {
+    u32 index;
+    u16 type;
+    u16 id;
+    u16 arg;
+    u16 objState;
+    u8 padC[0x20 - 0xC];
+    u32 result;
+    u32 value;
+    u8 handled;
+    u8 pad29[0x30 - 0x29];
+    u32 data[3];
+    u32 *values;
+    u16 slotId;
+} InterfaceEventMsg;
+
+/* One g_interface[] entry (0x170 bytes). */
+typedef struct InterfaceState {
+    u8 pad0[4];
+    u32 state;
+    u8 pad8[4];
+    u8 *parentObj;
+    u32 unk10;
+    u8 pad14[0x20 - 0x14];
+    u16 *header;
+    u16 *targets[0x16];
+    u8 flags;
+    u8 id;
+    u8 pad7E;
+    u8 isChild;
+    u8 curTarget;
+    u8 unk81;
+    u8 pad82[0x90 - 0x82];
+    void (*callback)(InterfaceEventMsg *msg);
+    u8 pad94[4];
+    s32 values[0x1E];
+    u32 numValues;
+    u8 player;
+    u8 pad115[0x15C - 0x115];
+    u32 parent;
+    u8 unk160;
+    u8 unk161;
+    u8 pad162[0x170 - 0x162];
+} InterfaceState;
+
 
 void InterfaceManager_Init(void) {
     extern u8 g_interface[][0x170];
@@ -977,6 +1023,593 @@ void InterfaceManager_SetObjectReactive(u8 *iface, u32 onId, u32 offId) {
     }
 }
 
+#pragma use_lmw_stmw on
+s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
+    typedef struct {
+        u32 index;
+        u16 type;
+        u16 id;
+        u16 arg;
+        u16 objState;
+        u8 padC[0x20 - 0xC];
+        u32 result;
+        u32 value;
+        u8 handled;
+        u8 pad29[0x30 - 0x29];
+        u32 data[3];
+        u32 *values;
+        u16 slotId;
+    } InterfaceMessage;
+    typedef struct {
+        u8 pad0[4];
+        u32 state;
+        u8 pad8[4];
+        u8 *parentObj;
+        u32 unk10;
+        u8 pad14[0x20 - 0x14];
+        u16 *header;
+        u16 *targets[0x16];
+        u8 flags;
+        u8 id;
+        u8 pad7E;
+        u8 isChild;
+        u8 curTarget;
+        u8 unk81;
+        u8 pad82[0x90 - 0x82];
+        void (*callback)(InterfaceMessage *);
+        u8 pad94[4];
+        s32 values[0x1E];
+        u32 numValues;
+        u8 player;
+        u8 pad115[0x15C - 0x115];
+        u32 parent;
+        u8 unk160;
+        u8 unk161;
+    } Iface;
+    typedef struct {
+        s8 isVar;
+        u8 pad1;
+        u16 value;
+    } EventArg;
+    typedef struct {
+        u8 slot;
+        u8 pad1[3];
+        s32 delta;
+    } EventMod;
+    typedef struct {
+        u16 *target;
+        u8 flags;
+        u8 type;
+        u16 id;
+        void *args;
+        u32 movie;
+        u8 pad10[4];
+        u32 sound;
+        u8 *bytes;
+        u32 numMods;
+        EventMod *mods;
+        s32 delta;
+    } EventDef;
+    typedef struct {
+        u8 pad0[8];
+        EventDef *def;
+    } Event;
+    typedef struct {
+        u8 pad0[4];
+        s32 min;
+        s32 max;
+        u8 padC[0x34 - 0xC];
+    } ValueDef;
+    typedef struct {
+        u32 type;
+        u32 id;
+    } EndLevelAction;
+    extern u8 g_interface[][0x170];
+    extern s8 g_bMemoryCardHWHack;
+    void InterfaceManager_SetObjectState(u8 *iface, u8 *obj, s32 state, s32 arg);
+    void SoundSequence_Play(u32 seq, s32 arg);
+    void InterfaceManager_SetLoadState(u8 *iface, s32 state);
+    void InterfaceManager_MoveInterface(u8 *iface, f32 speed);
+    u32 GameSettings_GetCodeVariable(s32 var, u32 arg);
+    void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
+    s32 StateManager_CurrState(void);
+    void StateManager_QueueChange(s32 state);
+    void InterfaceManager_Backup_Key(u8 *iface, u8 *event, u8 flags);
+    void ActionEndLevel(void *action);
+    void GameSettings_GetLoadedProgression(u32 *a, u32 *b);
+    void StateProgressionManager_SetProgressionID(u32 a, u32 b);
+    void InterfaceManager_ReleaseInterface(u32 index);
+    void StateProgressionManager_RestartCurrentLevel(void);
+    void InterfaceManager_ExecuteActions(u8 *iface, u16 *actions);
+    void StateMovie_SetMovieToPlay(u32 movie);
+    void GameSettings_SaveGame(void);
+    void GameSettings_LoadGame(void);
+    void GameSettings_SetSaveGameName(s32 *name);
+    void GameSettings_SaveGeneralGameData(void);
+    void ForceIPLReset(void);
+    void GameSettings_ResetControllerConfig(s32 player);
+    s32 GameSettings_FormatMemoryCard(void);
+    void TitleScreen_RunDemoLoop(void);
+    void InterfaceManager_Create(u16 *def, s32 a, s32 b);
+    void GameSettings_DeleteGameFile(void);
+    void InterfaceManager_CheckConditions(u8 *iface, u8 *obj);
+    Iface *iface = (Iface *)ifaceData;
+    u8 stateSet;
+    u32 i;
+    u32 a;
+    u32 b;
+    s32 v;
+    EventMod *mod;
+    ValueDef *vdefs;
+
+    stateSet = 0;
+    if (obj != NULL && (*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44))[5] == 0 && (*(u8 **)(obj + 0x25C))[6] != 0) {
+        InterfaceManager_SetObjectState((u8 *)iface, obj, 3, 0);
+        stateSet = 1;
+    }
+    if (((Event *)event)->def->sound != 0) {
+        SoundSequence_Play(((Event *)event)->def->sound, 0);
+    }
+    iface->unk81 = 0;
+    switch (((Event *)event)->def->type) {
+    case 1:
+    case 0x20:
+        if (iface->isChild != 0) {
+            if (((Event *)event)->def->type == 0x20) {
+                iface = (Iface *)g_interface[iface->parent];
+            } else {
+                return;
+            }
+        }
+        {
+            InterfaceMessage msg;
+
+            msg.index = iface->id;
+            msg.type = 0xF;
+            msg.id = ((Event *)event)->def->id;
+            msg.arg = arg;
+            msg.value = 0;
+            msg.objState = 0;
+            msg.handled = 0;
+            msg.result = 0;
+            if (((Event *)event)->def->target != NULL) {
+                msg.slotId = *((Event *)event)->def->target;
+            }
+            if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+                msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+            }
+            msg.values = (u32 *)iface->values;
+            if (iface->callback != NULL) {
+                iface->callback(&msg);
+            }
+            if (msg.result == 0xB) {
+                break;
+            }
+        }
+        if (((Event *)event)->def->sound != 0) {
+            SoundSequence_Play(((Event *)event)->def->sound, 0);
+        }
+        iface->flags = ((Event *)event)->def->flags;
+        iface->targets[0] = ((Event *)event)->def->target;
+        if (!stateSet && iface->targets[0] != NULL) {
+            InterfaceManager_SetLoadState((u8 *)iface, 1);
+            if (iface->flags & 1) {
+                iface->unk10 = 0;
+                return 0;
+            }
+        }
+        if (iface->targets[0] != NULL) {
+            return 0;
+        }
+        break;
+    case 3:
+        if (*iface->header == 2) {
+            if (GameSettings_GetCodeVariable(0xC9, iface->player) != 3) {
+                return 0;
+            }
+        } else if (*iface->header == 3) {
+            if (GameSettings_GetCodeVariable(0xC9, iface->player) != 3) {
+                return 0;
+            }
+        }
+        if (iface->isChild != 0) {
+            return 0;
+        }
+        {
+            InterfaceMessage msg;
+
+            msg.index = iface->id;
+            msg.type = 0x10;
+            msg.id = ((Event *)event)->def->id;
+            msg.arg = arg;
+            msg.value = 0;
+            msg.objState = 0;
+            msg.handled = 0;
+            msg.slotId = 0xFFFF;
+            msg.result = 0;
+            if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+                msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+            }
+            msg.values = (u32 *)iface->values;
+            if (iface->callback != NULL) {
+                iface->callback(&msg);
+            }
+            if (msg.result == 0xB) {
+                break;
+            }
+        }
+        if (StateManager_CurrState() == 2) {
+            StateManager_QueueChange(0xB);
+        }
+        InterfaceManager_SetLoadState((u8 *)iface, 1);
+        if (iface->flags & 1) {
+            iface->unk10 = 0;
+            return 0;
+        }
+    case 4: {
+        InterfaceMessage msg;
+
+        msg.index = iface->id;
+        msg.type = 0;
+        msg.id = ((Event *)event)->def->id;
+        msg.arg = arg;
+        msg.value = 0;
+        msg.objState = 0;
+        msg.handled = 0;
+        msg.result = 0;
+        if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+            msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+        }
+        if (iface->callback != NULL) {
+            iface->callback(&msg);
+        }
+        if (msg.value != 0xFFFFFFFF && ((Event *)event)->def->sound != 0 && msg.handled == 0) {
+            SoundSequence_Play(((Event *)event)->def->sound, 0);
+        }
+        if (msg.result == 4) {
+            InterfaceManager_SetLoadState((u8 *)iface, 1);
+            InterfaceManager_MoveInterface((u8 *)iface, 0.0f);
+            return 1;
+        }
+        if (msg.value == 0) {
+            return 1;
+        }
+        if (msg.value != 0xFFFFFFFF) {
+            iface->flags = ((Event *)event)->def->flags;
+            iface->targets[0] = (u16 *)msg.value;
+            if (!stateSet && iface->targets[0] != NULL) {
+                InterfaceManager_SetLoadState((u8 *)iface, 1);
+                if (iface->flags & 1) {
+                    iface->unk10 = 0;
+                    return 0;
+                }
+            }
+            return 0;
+        }
+    }
+    case 2: {
+        InterfaceMessage msg;
+
+        msg.index = iface->id;
+        msg.type = 0xF;
+        msg.id = ((Event *)event)->def->id;
+        msg.arg = arg;
+        msg.value = 0;
+        msg.objState = 0;
+        msg.handled = 0;
+        msg.result = 0;
+        msg.slotId = iface->curTarget ? *iface->targets[iface->curTarget] : 0xFFFF;
+        if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+            msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+        }
+        msg.values = (u32 *)iface->values;
+        if (iface->callback != NULL) {
+            iface->callback(&msg);
+        }
+        if (msg.result == 0xB) {
+            return 1;
+        }
+        InterfaceManager_Backup_Key((u8 *)iface, event, ((Event *)event)->def->flags);
+        return 0;
+    }
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 0x1E: {
+        InterfaceMessage msg;
+
+        msg.index = iface->id;
+        if (((Event *)event)->def->type == 7) {
+            EndLevelAction action;
+
+            action.type = 4;
+            action.id = ((Event *)event)->def->id;
+            ActionEndLevel(&action);
+            return 1;
+        }
+        if (((Event *)event)->def->type == 8) {
+            EndLevelAction action;
+
+            action.type = 5;
+            action.id = ((Event *)event)->def->id;
+            ActionEndLevel(&action);
+            return 1;
+        }
+        if (((Event *)event)->def->type == 6 || ((Event *)event)->def->type == 0x1E) {
+            u32 progA;
+            u32 progB;
+
+            if (((Event *)event)->def->type == 6) {
+                EventArg **args = ((Event *)event)->def->args;
+
+                if (args[0]->isVar) {
+                    progA = iface->values[args[0]->value];
+                } else {
+                    progA = args[0]->value;
+                }
+                if (args[1]->isVar) {
+                    progB = iface->values[args[1]->value];
+                } else {
+                    progB = args[1]->value;
+                }
+            } else {
+                GameSettings_GetLoadedProgression(&progA, &progB);
+            }
+            StateProgressionManager_SetProgressionID(progA, progB);
+            msg.type = 6;
+            StateManager_QueueChange(0xB);
+            msg.result = 4;
+        } else if (((Event *)event)->def->type == 9) {
+            msg.type = 9;
+            msg.id = ((Event *)event)->def->id;
+            InterfaceManager_ReleaseInterface(iface->id);
+            StateManager_QueueChange(2);
+            return;
+        } else if (((Event *)event)->def->type == 10) {
+            msg.type = 10;
+            msg.id = ((Event *)event)->def->id;
+            StateProgressionManager_RestartCurrentLevel();
+        }
+        msg.arg = arg;
+        msg.value = 0;
+        msg.objState = 0;
+        msg.handled = 0;
+        msg.result = 0;
+        if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+            msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+        }
+        if (iface->callback != NULL) {
+            iface->callback(&msg);
+        }
+        if (msg.value != 0xFFFFFFFF && ((Event *)event)->def->sound != 0 && msg.handled == 0) {
+            SoundSequence_Play(((Event *)event)->def->sound, 0);
+        }
+        if (msg.result == 4) {
+            InterfaceManager_SetLoadState((u8 *)iface, 1);
+            InterfaceManager_MoveInterface((u8 *)iface, 0.0f);
+            return 1;
+        }
+        if (msg.value == 0) {
+            return 1;
+        }
+        if (msg.value == 0xFFFFFFFF) {
+            break;
+        }
+        iface->flags = ((Event *)event)->def->flags;
+        iface->targets[0] = (u16 *)msg.value;
+        if (!stateSet && iface->targets[0] != NULL) {
+            InterfaceManager_SetLoadState((u8 *)iface, 1);
+            if (iface->flags & 1) {
+                iface->unk10 = 0;
+                return 0;
+            }
+        }
+        return 0;
+    }
+    case 0xD: {
+        InterfaceMessage msg;
+
+        msg.index = iface->id;
+        msg.type = 0xD;
+        msg.id = ((Event *)event)->def->id;
+        msg.arg = arg;
+        msg.value = 0;
+        msg.objState = 0;
+        msg.handled = 0;
+        if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+            msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+        }
+        msg.data[0] = ((Event *)event)->def->bytes[0];
+        msg.data[1] = ((Event *)event)->def->bytes[1];
+        msg.data[2] = ((Event *)event)->def->bytes[2];
+        msg.values = (u32 *)iface->values;
+        if (iface->callback != NULL) {
+            iface->callback(&msg);
+        }
+        break;
+    }
+    case 0xE: {
+        InterfaceMessage msg;
+
+        msg.index = iface->id;
+        msg.type = 0xE;
+        msg.id = ((Event *)event)->def->id;
+        msg.arg = arg;
+        msg.value = 0;
+        msg.objState = 0;
+        msg.handled = 0;
+        if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+            msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+        }
+        msg.data[0] = ((Event *)event)->def->bytes[0];
+        msg.values = (u32 *)iface->values;
+        if (iface->callback != NULL) {
+            iface->callback(&msg);
+        }
+        break;
+    }
+    case 0xB:
+        InterfaceManager_ExecuteActions((u8 *)iface, ((Event *)event)->def->target);
+        break;
+    case 0xF:
+        if (((EventArg **)((Event *)event)->def->args)[0]->isVar) {
+            a = iface->values[((EventArg **)((Event *)event)->def->args)[0]->value];
+        } else {
+            a = ((EventArg **)((Event *)event)->def->args)[0]->value;
+        }
+        if (((EventArg **)((Event *)event)->def->args)[1]->isVar) {
+            b = iface->values[((EventArg **)((Event *)event)->def->args)[1]->value];
+        } else {
+            b = ((EventArg **)((Event *)event)->def->args)[1]->value;
+        }
+        StateProgressionManager_SetProgressionID(a, b);
+        break;
+    case 0x10: {
+        InterfaceMessage msg;
+
+        msg.index = iface->id;
+        msg.type = 0x11;
+        msg.id = ((Event *)event)->def->id;
+        msg.arg = arg;
+        msg.value = (u32)iface->header;
+        msg.objState = 0;
+        msg.handled = 0;
+        if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+            msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+        }
+        if (iface->callback != NULL) {
+            iface->callback(&msg);
+        }
+        if (msg.result == 4) {
+            InterfaceManager_ReleaseInterface(iface->id);
+            StateMovie_SetMovieToPlay(((Event *)event)->def->movie);
+            StateManager_QueueChange(3);
+        }
+        break;
+    }
+    case 0x11: {
+        InterfaceMessage msg;
+
+        if (((EventArg *)((Event *)event)->def->args)->isVar) {
+            a = iface->values[((EventArg *)((Event *)event)->def->args)->value];
+        } else {
+            a = ((EventArg *)((Event *)event)->def->args)->value;
+        }
+        msg.index = iface->id;
+        msg.type = 0xF;
+        msg.id = ((Event *)event)->def->id;
+        msg.arg = arg;
+        msg.value = 0;
+        msg.objState = 0;
+        msg.handled = 0;
+        msg.slotId = 0xFFFF;
+        msg.result = 0;
+        if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
+            msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
+        }
+        msg.values = (u32 *)iface->values;
+        if (iface->callback != NULL) {
+            iface->callback(&msg);
+        }
+        if (msg.result == 0xB) {
+            break;
+        }
+        switch (*iface->header) {
+        case 2:
+            if (GameSettings_GetCodeVariable(100, a)) {
+                GameSettings_SetCodeVariable(0xCB, iface->player, a);
+                GameSettings_SetCodeVariable(0xC9, iface->player, 3);
+            }
+            break;
+        case 3:
+            if (GameSettings_GetCodeVariable(0x66, a)) {
+                GameSettings_SetCodeVariable(0xCC, iface->player, a);
+                GameSettings_SetCodeVariable(0xC9, iface->player, 3);
+            }
+            break;
+        }
+        break;
+    }
+    case 0x12:
+        GameSettings_SetCodeVariable(0x1F7, 0, ((Event *)event)->def->id);
+        break;
+    case 0x13:
+        GameSettings_SaveGame();
+        break;
+    case 0x14:
+        GameSettings_LoadGame();
+        break;
+    case 0x15:
+        GameSettings_SetSaveGameName(&iface->values[((Event *)event)->def->id]);
+        g_bMemoryCardHWHack = 1;
+        break;
+    case 0x16:
+        v = GameSettings_GetCodeVariable(0xCF, 0);
+        v += ((Event *)event)->def->delta;
+        if (v > 100) {
+            v = 100;
+        } else if (v < 0) {
+            v = 0;
+        }
+        GameSettings_SetCodeVariable(0xCF, 0, v);
+        break;
+    case 0x17:
+        v = GameSettings_GetCodeVariable(0xD0, 0);
+        v += ((Event *)event)->def->delta;
+        if (v > 100) {
+            v = 100;
+        } else if (v < 0) {
+            v = 0;
+        }
+        GameSettings_SetCodeVariable(0xD0, 0, v);
+        break;
+    case 0x18:
+        GameSettings_SaveGeneralGameData();
+        break;
+    case 0x19:
+        ForceIPLReset();
+        break;
+    case 0x1A:
+        GameSettings_ResetControllerConfig(1);
+        break;
+    case 0x1B:
+        iface->unk160 = 1;
+        iface->unk161 = 0;
+        break;
+    case 0x1C:
+        GameSettings_FormatMemoryCard();
+        break;
+    case 0x1D:
+        if (iface->state == 2) {
+            TitleScreen_RunDemoLoop();
+            InterfaceManager_SetLoadState((u8 *)iface, 1);
+        }
+        break;
+    case 0x1F:
+        InterfaceManager_Create(((Event *)event)->def->target, 0, 0);
+        break;
+    case 0x21:
+        GameSettings_DeleteGameFile();
+        break;
+    }
+
+    for (i = 0; i < ((Event *)event)->def->numMods; i++) {
+        mod = ((Event *)event)->def->mods;
+        if (mod->slot < iface->numValues) {
+            iface->values[mod->slot] += mod->delta;
+            vdefs = *(ValueDef **)(*(u8 **)((u8 *)iface->header + 0x1C) + 4);
+            if (iface->values[mod->slot] > vdefs[mod->slot].max) {
+                iface->values[mod->slot] = __abs(iface->values[mod->slot] - vdefs[mod->slot].max) + vdefs[mod->slot].min - 1;
+            } else if (iface->values[mod->slot] < vdefs[mod->slot].min) {
+                iface->values[mod->slot] = vdefs[mod->slot].max - (__abs(iface->values[mod->slot] - vdefs[mod->slot].min) - 1);
+            }
+            InterfaceManager_CheckConditions((u8 *)iface, obj);
+        }
+    }
+    return 1;
+}
 void InterfaceManager_Backup_Key(u8 *iface, u8 *key, u8 flags) {
     extern u8 g_interface[][0x170];
     void InterfaceManager_SetLoadState(void *iface, s32 state);
