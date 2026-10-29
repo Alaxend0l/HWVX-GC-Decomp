@@ -320,6 +320,74 @@ void Gfx_DrawGeometryLOD_Immediate(Geometry *geometry, f32 (*matrix)[4]) {
     }
 }
 
+extern u32 g_IsAnim;
+void Render_StateAlphaBlendEnable(s32 enable);
+void Render_StateBlendMode(s32 mode);
+void Render_SetConstColor(GXColor *color);
+void SetTriEnvVtxDescIdx(void);
+void SetVertexBuffer(u32 *vb, u16 flags, u16 unk);
+void MatrixToMtxTranspose(f32 (*dst)[4], void *src);
+void GXLoadTexMtxImm(f32 (*mtx)[4], u32 id, s32 type);
+void GXSetTexCoordGen2(s32 dst, s32 func, s32 src, u32 mtx, u8 normalize, u32 pt);
+void GXCallDisplayList(void *list, u32 nbytes);
+#pragma use_lmw_stmw on
+void EnvMap(Geometry *geometry, u32 group, void *matrix, s32 mode) {
+    u32 opaque;
+    GeometryGroup *grp;
+    void *dl;
+    GXColor color;
+    f32 mtx[3][4];
+    s32 blend;
+
+    opaque = mode & 1;
+    grp = &geometry->groups[group];
+    dl = grp->displayList;
+    color.r = grp->color.r;
+    color.g = grp->color.g;
+    color.b = grp->color.b;
+    color.a = grp->color.a;
+    if (!opaque) {
+        Render_SetTextureHandle(g_pGDL->envmapStates[m_curEnvmapState].unk8);
+        blend = 5;
+        if (mode & 2) {
+            blend = 2;
+        }
+        Render_StateAlphaBlendEnable(1);
+        Render_StateBlendMode(blend);
+        MatrixToMtxTranspose(mtx, (u8 *)GetRenderWindow() + 0x80);
+        color.r = grp->color.r >> 2;
+        color.g = grp->color.g >> 2;
+        color.b = grp->color.b >> 2;
+    } else {
+        Render_SetTextureHandle(g_pGDL->envmapStates[m_curEnvmapState].unkA);
+        MatrixToMtxTranspose(mtx, (u8 *)GetRenderWindow() + 0x80);
+    }
+    mtx[0][0] *= 0.5f;
+    mtx[0][1] *= 0.5f;
+    mtx[0][2] *= 0.5f;
+    mtx[0][3] = 0.5f;
+    mtx[1][0] *= 0.5f;
+    mtx[1][1] *= 0.5f;
+    mtx[1][2] *= 0.5f;
+    mtx[1][3] = 0.5f;
+    GXLoadTexMtxImm(mtx, 30, 1);
+    GXSetTexCoordGen2(0, 1, 1, 30, 0, 125);
+    Render_SetConstColor(&color);
+    SetTriEnvVtxDescIdx();
+    if (g_IsAnim) {
+        GXSetVtxDesc(0, 1);
+        m_VtxDescFlag = 0;
+    }
+    SetVertexBuffer((u32 *)geometry->lodDistances, grp->flags, geometry->unk4);
+    DCFlushRange(dl, grp->dlSize);
+    GXCallDisplayList(dl, grp->dlSize);
+    Render_SetConstColor(NULL);
+    GXSetTexCoordGen2(0, 1, 4, 60, 0, 125);
+    if (!opaque) {
+        Render_StateAlphaBlendEnable(0);
+    }
+}
+#pragma use_lmw_stmw reset
 void Render_UseLighting(u8 enable) {
     if (enable) {
         GXSetChanCtrl(4, 1, 0, 0, m_pointLightMask | 1, 2, 2);
