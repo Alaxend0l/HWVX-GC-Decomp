@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 typedef struct TimeBarVtx {
     f32 x;
     f32 y;
@@ -77,5 +79,150 @@ void ShowStats_EndScene(void) {
     Gfx_FlipBuffers();
     ShowStats();
     Performance_End();
+}
+
+void Render_TimeBars(void *bar) {
+    TimeBarRect *Gfx_Add2DRectangle(void);
+    void *memcpy(void *dst, const void *src, u32 n);
+    u32 *times = bar;
+    TimeBarVtx v[4];
+    TimeBarRect *rect;
+    f32 x;
+    u32 i;
+
+    {
+        f32 left = 50.0f;
+        f32 top;
+
+        v[0].x = v[3].x = left;
+        x = left + (f32)(times[0] / 60);
+        top = 23.0f;
+        v[0].y = v[1].y = top;
+        v[2].y = v[3].y = 15.0f + top;
+        v[1].x = v[2].x = x;
+    }
+    v[0].z = v[1].z = v[2].z = v[3].z = 0.0f;
+    v[0].w = v[1].w = v[2].w = v[3].w = 1.0f;
+    v[0].s = v[0].t = 0.0f;
+    v[1].s = v[3].t = 1.0f;
+    v[2].s = v[2].t = 1.0f;
+    v[3].s = v[1].t = 0.0f;
+    v[0].color.r = 0;
+    v[0].color.b = 0;
+    v[0].color.g = 0xFF;
+    v[1].color.r = 0;
+    v[1].color.b = 0;
+    v[1].color.g = 0xFF;
+    v[2].color.r = 0;
+    v[2].color.b = 0;
+    v[2].color.g = 0;
+    v[3].color.r = 0;
+    v[3].color.b = 0;
+    v[3].color.g = 0;
+    v[0].color.a = v[1].color.a = v[2].color.a = v[3].color.a = 0xFF;
+    rect = Gfx_Add2DRectangle();
+    memcpy(rect, v, sizeof(v));
+    rect->blendMode = 0;
+    rect->tex = 0;
+
+    v[0].x = v[3].x = x;
+    x += (f32)(times[1] / 60);
+    v[1].x = v[2].x = x;
+    v[0].color.r = 0xFF;
+    v[0].color.b = 0;
+    v[0].color.g = 0x80;
+    v[1].color.r = 0xFF;
+    v[1].color.b = 0;
+    v[1].color.g = 0x80;
+    v[2].color.r = 0;
+    v[2].color.b = 0;
+    v[2].color.g = 0;
+    v[3].color.r = 0;
+    v[3].color.b = 0;
+    v[3].color.g = 0;
+    rect = Gfx_Add2DRectangle();
+    memcpy(rect, v, sizeof(v));
+    rect->blendMode = 0;
+    rect->tex = 0;
+
+    v[0].x = v[3].x = x;
+    v[1].x = v[2].x = x + (f32)(times[2] / 60);
+    v[0].color.r = 0;
+    v[0].color.b = 0xFF;
+    v[0].color.g = 0;
+    v[1].color.r = 0;
+    v[1].color.b = 0xFF;
+    v[1].color.g = 0;
+    v[2].color.r = 0;
+    v[2].color.b = 0;
+    v[2].color.g = 0;
+    v[3].color.r = 0;
+    v[3].color.b = 0;
+    v[3].color.g = 0;
+    rect = Gfx_Add2DRectangle();
+    memcpy(rect, v, sizeof(v));
+    rect->blendMode = 0;
+    rect->tex = 0;
+
+    {
+        f32 top = 40.0f;
+        f32 left = 50.0f;
+
+        v[0].x = v[3].x = left;
+        v[0].y = v[1].y = top;
+        v[2].y = v[3].y = 15.0f + top;
+        v[1].x = v[2].x = left + (f32)(times[3] / 60);
+    }
+    v[0].color.r = 0;
+    v[0].color.g = 0xFF;
+    v[0].color.b = 0xFF;
+    v[1].color.r = 0;
+    v[1].color.g = 0xFF;
+    v[1].color.b = 0xFF;
+    v[2].color.r = 0;
+    v[2].color.g = 0;
+    v[2].color.b = 0;
+    v[3].color.r = 0;
+    v[3].color.g = 0;
+    v[3].color.b = 0;
+    rect = Gfx_Add2DRectangle();
+    memcpy(rect, v, sizeof(v));
+    rect->blendMode = 0;
+    rect->tex = 0;
+
+    {
+        f32 left = 50.0f;
+
+        v[0].x = v[3].x = left;
+        v[0].y = v[1].y = 23.0f;
+        v[2].y = v[3].y = 55.0f;
+        v[1].x = v[2].x = 1.0f + left;
+    }
+    v[0].color.r = 0xFF;
+    v[0].color.g = 0xFF;
+    v[0].color.b = 0xFF;
+    v[1].color.r = 0xFF;
+    v[1].color.g = 0xFF;
+    v[1].color.b = 0xFF;
+    v[2].color.r = 0xFF;
+    v[2].color.g = 0xFF;
+    v[2].color.b = 0xFF;
+    v[3].color.r = 0xFF;
+    v[3].color.g = 0xFF;
+    v[3].color.b = 0xFF;
+    rect = Gfx_Add2DRectangle();
+    memcpy(rect, v, sizeof(v));
+    rect->blendMode = 0;
+    rect->tex = 0;
+
+    for (i = 0; i < 4; i++) {
+        x = 50.0f + 16666.666f / (f32)(0xF0 >> i);
+        v[0].x = v[3].x = x;
+        v[1].x = v[2].x = 2.0f + x;
+        rect = Gfx_Add2DRectangle();
+        memcpy(rect, v, sizeof(v));
+        rect->blendMode = 0;
+        rect->tex = 0;
+    }
 }
 
