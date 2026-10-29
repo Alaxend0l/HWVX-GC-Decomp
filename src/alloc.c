@@ -40,6 +40,38 @@ typedef struct mem_pool_obj {
 extern const u32 fix_pool_sizes[6];
 
 void *Block_subBlock(Block *ths, u32 size);
+
+static inline void SubBlock_construct(SubBlock *ths, u32 size, Block *bp, int prev_alloc, int this_alloc) {
+    ths->bp_ = (Block *)((u32)bp | 1);
+    ths->size_ = size;
+    if (prev_alloc) {
+        ths->size_ |= 4;
+    }
+    if (this_alloc) {
+        ths->size_ |= 2;
+        *(u32 *)((u8 *)ths + size) |= 4;
+    } else {
+        *(u32 *)((u8 *)ths + size - sizeof(u32)) = size;
+    }
+}
+
+static inline SubBlock *SubBlock_split(SubBlock *ths, u32 sz) {
+    u32 origsize = ths->size_ & ~7;
+    int is_free = !(ths->size_ & 2);
+    int prev_alloc = ths->size_ & 4;
+    SubBlock *np = (SubBlock *)((u8 *)ths + sz);
+    Block *bp = (Block *)((u32)ths->bp_ & ~1);
+
+    SubBlock_construct(ths, sz, bp, prev_alloc, !is_free);
+    SubBlock_construct(np, origsize - sz, bp, !is_free, !is_free);
+    if (is_free) {
+        np->next_ = ths->next_;
+        np->next_->prev_ = np;
+        np->prev_ = ths;
+        ths->next_ = np;
+    }
+    return np;
+}
 void FixBlock_construct(FixBlock *ths, FixBlock *prev, FixBlock *next, s32 index, FixSubBlock *chunk, u32 chunk_size);
 void *soft_allocate_from_var_pools(Block **pool_obj, u32 size, u32 *max_size);
 
