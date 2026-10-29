@@ -47,7 +47,7 @@ static inline void GXPosition2f32(f32 x, f32 y) {
     GXWGFifo.f32 = y;
 }
 
-static inline void GXColor3u8(u8 r, u8 g, u8 b) {
+static inline void GXColor3u8(const u8 r, const u8 g, const u8 b) {
     GXWGFifo.u8 = r;
     GXWGFifo.u8 = g;
     GXWGFifo.u8 = b;
@@ -61,6 +61,26 @@ void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
 extern u32 m_VtxDescFlag;
 
 void Set2DLineVtxDesc(void);
+
+void Set3DLineVtxDesc(void);
+void Render_Draw3DLines(void) {
+    void Gfx_SetWorldMatrix(void *matrix);
+    void Render_SetTextureHandle(s32 handle);
+    void Render_StateAlphaBlendEnable(s32 enable);
+    s32 i;
+
+    Gfx_SetWorldMatrix(NULL);
+    Render_SetTextureHandle(0xFFFF);
+    Render_StateAlphaBlendEnable(0);
+    Set3DLineVtxDesc();
+    GXBegin(0xA8, 0, g_pGDL->num3DLines * 2);
+    for (i = 0; i < g_pGDL->num3DLines; i++) {
+        GXPosition3f32(g_pGDL->lines3D[i].p0.x, g_pGDL->lines3D[i].p0.y, g_pGDL->lines3D[i].p0.z);
+        GXColor3u8(g_pGDL->lines3D[i].r, g_pGDL->lines3D[i].g, g_pGDL->lines3D[i].b);
+        GXPosition3f32(g_pGDL->lines3D[i].p1.x, g_pGDL->lines3D[i].p1.y, g_pGDL->lines3D[i].p1.z);
+        GXColor3u8(g_pGDL->lines3D[i].r, g_pGDL->lines3D[i].g, g_pGDL->lines3D[i].b);
+    }
+}
 
 void Render_DrawLine2D(Line2D *line) {
     Set2DLineVtxDesc();
