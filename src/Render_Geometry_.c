@@ -38,8 +38,41 @@ typedef struct GfxState {
     GXColor constColor;
     u8 unk78[0x7C - 0x78];
     u32 flags;
-    u8 unk80[0xA0 - 0x80];
+    u8 unk80[0x93 - 0x80];
+    u8 unk93;
+    u8 unk94[0xA0 - 0x94];
 } GfxState;
+
+typedef struct Texture {
+    u8 unk0[0x24];
+    void *data;
+    u32 unk28;
+    f32 unk2C;
+    u16 unk30;
+    u16 width;
+    u16 height;
+    s16 refCount;
+    u16 unk38;
+    u16 unk3A;
+    u16 view;
+    u16 wrapMode;
+} Texture;
+
+extern Texture *m_texture;
+extern s32 m_curTexture;
+extern u32 g_onebitflag;
+extern u32 g_currentWindow;
+
+typedef struct GDLAlphaGroup {
+    f32 matrix[4][4];
+    struct Geometry *geometry;
+    s32 group;
+    u8 unk48[0x4C - 0x48];
+    GXColor color;
+    u8 unk50;
+    u8 window;
+    u16 next;
+} GDLAlphaGroup;
 
 extern GfxState g_state;
 extern s32 g_debugTriCount;
