@@ -107,3 +107,15 @@ void SetTriVtxDesc(void) {
     }
 }
 
+void Render_SetConstColor(GXColor *color) {
+    if (color != NULL) {
+        GXSetChanMatColor(4, *color);
+        GXSetChanAmbColor(4, white);
+        GXSetChanCtrl(4, 1, 0, 0, 1, 2, 2);
+    } else {
+        GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+        GXSetChanAmbColor(4, black);
+        GXSetChanMatColor(4, white);
+    }
+}
+
