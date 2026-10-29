@@ -10,7 +10,19 @@ typedef struct AXVPB {
     AXVoiceCallback callback;
     u32 userContext;
     u32 index;
+    u32 sync;
+    u32 depop;
+    u32 updateMS;
+    u32 updateCounter;
+    u32 updateTotal;
+    u16 *updateWrite;
+    u16 updateData[128];
+    void *itdBuffer;
+    u8 pb_unk138[0xE];
+    u16 state;
 } AXVPB;
+
+void __AXSetPBDefault(AXVPB *p);
 
 extern void * __AXCallbackStack;
 extern void * __AXStackHead[32];
