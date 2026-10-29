@@ -43,11 +43,12 @@ void ProcessVoice(void)
     ProcessVoice_();
 }
 
+#pragma optimization_level 1
 u32 CreateSFX(void *desc) {
     u32 idx;
     SFX *sfx;
 
-    if (g_freeSound == 0xFFFF) {
+    if (g_freeSound == 0xFFFFFFFF) {
         return 0;
     }
     sfx = &g_sound[g_freeSound];
@@ -60,4 +61,3 @@ u32 CreateSFX(void *desc) {
     g_soundLst[idx++] = 0xFF;
     return idx;
 }
-
