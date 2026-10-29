@@ -49,3 +49,32 @@ s32 __CARDGetFatBlock(void * arg0)
 {
     return ((s32 *)arg0)[0x22];
 }
+
+static void WriteCallback(s32 chan, s32 result) {
+    CARDControl *card;
+    CARDCallback callback;
+    u16 *fat0;
+    u16 *fat1;
+
+    card = &__CARDBlock[chan];
+    if (result >= 0) {
+        fat0 = (u16 *)((u8 *)card->workArea + 0x6000);
+        fat1 = (u16 *)((u8 *)card->workArea + 0x8000);
+        if (card->currentFat == fat0) {
+            card->currentFat = fat1;
+            memcpy(fat1, fat0, 0x2000);
+        } else {
+            card->currentFat = fat0;
+            memcpy(fat0, fat1, 0x2000);
+        }
+    }
+    if (card->apiCallback == NULL) {
+        __CARDPutControlBlock(card, result);
+    }
+    callback = card->eraseCallback;
+    if (callback) {
+        card->eraseCallback = NULL;
+        callback(chan, result);
+    }
+}
+
