@@ -127,7 +127,9 @@ typedef struct GDL {
     u8 unk30[0x54 - 0x30];
     u32 numDrawEntries;
     u32 numLODEntries;
-    u8 unk5C[0xBC800 - 0x5C];
+    u8 unk5C[0x69A00 - 0x5C];
+    GDLAlphaGroup alphaGroups[0x400];
+    u8 unk7EA00[0xBC800 - 0x7EA00];
     GDLSphere spheres[200];
     u8 unkBE100[0xDFCC0 - 0xBE100];
     GDLDrawEntry drawEntries[0x800];
