@@ -213,7 +213,9 @@ typedef struct CarAInfo {
   CarAGear *gears;          /* 0xDC torque curve table */
   u32 numSlaves;            /* 0xE0 */
   u8 *slaves;               /* 0xE4 */
-  u8 padE8[0x28];           /* 0xE8 */
+  u32 numSlaveWeapons;      /* 0xE8 */
+  u8 *slaveWeapons;         /* 0xEC 12-byte entries, slave list at +4 */
+  u8 padF0[0x20];           /* 0xF0 */
   u32 numShiftSounds;       /* 0x110 */
   u32 *shiftSounds;         /* 0x114 */
   u32 numSoundSets;         /* 0x118 */
