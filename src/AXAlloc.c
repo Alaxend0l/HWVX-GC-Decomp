@@ -1,5 +1,17 @@
 #include "common.h"
 
+typedef void (*AXVoiceCallback)(void *);
+
+typedef struct AXVPB {
+    void *next;
+    void *prev;
+    void *next1;
+    u32 priority;
+    AXVoiceCallback callback;
+    u32 userContext;
+    u32 index;
+} AXVPB;
+
 extern void * __AXCallbackStack;
 extern void * __AXStackHead[32];
 extern void * __AXStackTail[32];
