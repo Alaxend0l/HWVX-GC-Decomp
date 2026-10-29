@@ -6,7 +6,14 @@ typedef struct DSPTaskInfo {
     volatile u32 state;
     volatile u32 priority;
     volatile u32 flags;
-    u8 unkC[0x28 - 0xC];
+    u8 *iram_mmem_addr;
+    u32 iram_length;
+    u32 iram_addr;
+    u8 *dram_mmem_addr;
+    u32 dram_length;
+    u32 dram_addr;
+    u16 dsp_init_vector;
+    u16 dsp_resume_vector;
     void (*init_cb)(void *task);
     void (*res_cb)(void *task);
     void (*done_cb)(void *task);
