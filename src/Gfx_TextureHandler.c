@@ -21,7 +21,11 @@ extern u32 m_totalTextures;
 void *Allocate(u32 size, s32 flags, const char *name);
 void Deallocate(void *p);
 void *memset(void *dst, int c, u32 n);
-void Render_CreateTextureSlot(u32 id, s32 arg1, Texture *texture);
+void Render_CreateTextureSlot();
+int sprintf(char *s, const char *format, ...);
+s32 File_Open(u32 dev, const char *name, u32 flags, s32 *size);
+s32 File_Read(s32 handle, s32 size, void *data);
+void File_Close(s32 handle);
 void Render_DestroyTextureSlot(u32 id);
 
 s32 Gfx_TextureHandler_Create(void) {
