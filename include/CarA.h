@@ -72,10 +72,13 @@ typedef struct ThingVTable {
 
 typedef struct CarAEngine {
   f32 bodyOffset[3];        /* 0x00 rest value of CarA.bodyOffset */
-  u8 pad0C[8];              /* 0x0C */
+  u8 pad0C[4];              /* 0x0C */
+  s32 selfRightDelay;       /* 0x10 ms airborne before the self-righting torque */
   f32 unk14;                /* 0x14 */
   u32 unk18;                /* 0x18 */
-  u8 pad1C[0x18];           /* 0x1C */
+  u8 pad1C[4];              /* 0x1C */
+  f32 selfRightArm;         /* 0x20 */
+  u8 pad24[0x10];           /* 0x24 */
   f32 animSpeed;            /* 0x34 scales the steering animation time */
   u8 pad38[4];              /* 0x38 */
   f32 maxAngularVel;        /* 0x3C */
