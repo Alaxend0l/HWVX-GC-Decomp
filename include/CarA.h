@@ -109,7 +109,9 @@ typedef struct CarASoundSet {
 typedef struct CarAInfo {
   u8 pad00[0x11];           /* 0x00 */
   u8 driveMode;             /* 0x11 1: human-controlled */
-  u8 pad12[0xA];            /* 0x12 */
+  u8 pad12[2];              /* 0x12 */
+  u16 skidTexture;          /* 0x14 */
+  u8 pad16[6];              /* 0x16 */
   f32 unk1C;                /* 0x1C */
   f32 unk20;                /* 0x20 */
   f32 unk24;                /* 0x24 */
