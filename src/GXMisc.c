@@ -26,6 +26,21 @@ extern GXData *gx;
 
 
 extern volatile u16 *__peReg;
+void GXFlush(void) {
+    if (gx->dirtyState) {
+        __GXSetDirtyState();
+    }
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u32 = 0;
+    PPCSync();
+}
+
 void GXPixModeSync(void) {
     GXWGFifo.u8 = 0x61;
     GXWGFifo.u32 = gx->peCtrl;
