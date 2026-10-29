@@ -316,7 +316,7 @@ void GetTrimmedCameraPos(u8 *camera, Vector4 *from, Vector4 *dir, f32 *trim, f32
     }
     *(Vector4 *)(camera + 0x60) = pos;
 }
-void GetTrimmedCameraPos2(Vector4 *from, Vector4 *to, f32 *trim) {
+void GetTrimmedCameraPos2(Vector4 *from, Vector4 *to, f32 *trim, s32 bone, Matrix4 *mtx) {
     extern f32 g_fDeltaTimeSec;
     f32 PSVECDotProduct(void *a, void *b);
     f32 PSVECSquareDistance(void *a, void *b);
