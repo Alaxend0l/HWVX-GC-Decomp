@@ -39,6 +39,15 @@ extern u8 _stack_addr[];
 volatile u32 __PIRegs[12] : 0xCC003000;
 
 
+u32 OSGetConsoleType(void)
+{
+    if (BootInfo == NULL || BootInfo->field_2C == 0)
+    {
+        return 0x10000002;
+    }
+    return BootInfo->field_2C;
+}
+
 void ClearArena(void)
 {
   extern u32 __OSSavedRegionStart;
