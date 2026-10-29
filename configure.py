@@ -541,7 +541,7 @@ config.libs = [
             Object(NonMatching, "usr_put.c"),
             Object(Matching, "dispatch.c", mw_version="GC/1.3"),
             Object(NonMatching, "msghndlr.c", mw_version="GC/2.0"),
-            Object(NonMatching, "support.c"),
+            Object(NonMatching, "support.c", mw_version="GC/1.3"),
             Object(Matching, "mutex_TRK.c"),
             Object(Matching, "notify.c", mw_version="GC/1.3"),
             Object(NonMatching, "flush_cache.c"),
