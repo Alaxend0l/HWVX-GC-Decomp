@@ -267,3 +267,8 @@ void *__OSGetExceptionHandler(u8 exception) {
     return OSExceptionTable[exception];
 }
 
+extern volatile u32 __DIRegs[16] : 0xCC006000;
+u8 __OSGetDIConfig(void) {
+    return (u8)(__DIRegs[9] & 0xFF);
+}
+
