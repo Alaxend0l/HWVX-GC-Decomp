@@ -24,6 +24,8 @@ void *GXGetTexObjData(GXTexObj *to) {
     return (void *)((t->image3 & 0x1FFFFF) << 5);
 }
 
-s32 GXGetTexObjFmt(void *arg0) {
-    return M2C_FIELD(arg0, s32 *, 0x14);
+s32 GXGetTexObjFmt(GXTexObj *to) {
+    __GXTexObjInt *t = (__GXTexObjInt *)to;
+
+    return t->fmt;
 }
