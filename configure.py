@@ -602,7 +602,7 @@ config.libs = [
             Object(Matching, "s_frexp.c", mw_version="GC/1.3"),
             Object(NonMatching, "s_ldexp.c"),
             Object(NonMatching, "s_modf.c"),
-            Object(NonMatching, "s_sin.c"),
+            Object(NonMatching, "s_sin.c", mw_version="GC/1.3"),
             Object(Matching, "s_tan.c", mw_version="GC/1.3"),
             Object(Matching, "w_acos.c", mw_version="GC/1.3"),
             Object(Matching, "w_atan2.c", mw_version="GC/1.3"),
