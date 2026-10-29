@@ -194,6 +194,22 @@ typedef struct GDLAlphaGroup {
     u8 unk52[0x54 - 0x52];
 } GDLAlphaGroup;
 
+typedef struct GDLDrawEntry {
+    void *geometry;
+    GXColor color;
+    u32 matrix;
+    s32 lightState;
+    u8 unk10;
+    u8 unk11;
+    u8 envmapState;
+    u8 unk13;
+} GDLDrawEntry;
+
+typedef struct GDLLODEntry {
+    void *geometry;
+    u32 matrix;
+} GDLLODEntry;
+
 typedef struct GDL {
     u32 numAlphaEntries;
     u32 num2DSprites;
