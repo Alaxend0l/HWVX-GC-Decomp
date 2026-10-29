@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 s8 IsPointWithinVolume();
 
 /* The transform every Thing starts with. */
