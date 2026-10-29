@@ -45,6 +45,28 @@ extern CARDControl __CARDBlock[2];
 
 s32 __CARDPutControlBlock(CARDControl *card, s32 result);
 s32 __CARDFreeBlock(s32 chan, u16 nBlock, CARDCallback callback);
+static void DeleteCallback(s32 chan, s32 result)
+{
+    CARDControl *card;
+    CARDCallback callback;
+
+    card = &__CARDBlock[chan];
+    callback = card->apiCallback;
+    card->apiCallback = NULL;
+    if (result < 0) {
+        goto error;
+    }
+    result = __CARDFreeBlock(chan, card->startBlock, callback);
+    if (result >= 0) {
+        return;
+    }
+error:
+    __CARDPutControlBlock(card, result);
+    if (callback) {
+        callback(chan, result);
+    }
+}
+
 s32 CARDDelete(s32 chan, const char *fileName)
 {
     s32 CARDDeleteAsync(s32 chan, const char *fileName, CARDCallback callback);
