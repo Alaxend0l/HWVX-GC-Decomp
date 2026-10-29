@@ -56,6 +56,13 @@ void *GXSetTexRegionCallback(void *f) {
     return oldcb;
 }
 
+void *GXSetTlutRegionCallback(void *f) {
+    void *oldcb = gx->tlutRegionCallback;
+
+    gx->tlutRegionCallback = f;
+    return oldcb;
+}
+
 void __GXSetSUTexRegs(void) {
     u32 nStages;
     u32 nIndStages;
