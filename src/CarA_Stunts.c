@@ -294,7 +294,7 @@ void Drone_ComputeSuspensionForces(Drone *obj) {
 }
 #pragma pop
 
-typedef struct DroneWheelHit {
+typedef struct DroneWheelHit_unused {
     Vector4 pos;
     Vector4 normal;
     u8 pad20[8];
