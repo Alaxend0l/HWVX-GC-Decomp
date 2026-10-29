@@ -345,6 +345,30 @@ s32 Gfx_GetLightState(void) {
     return idx;
 }
 
+void Gfx_SetEnvmap(u16 a, u16 b, s8 flag, f32 x, f32 y) {
+    u32 i;
+
+    if (flag == 0) {
+        for (i = 1; i < g_pGDL->numEnvmapStates; i++) {
+            if (g_pGDL->envmapStates[i].unk0 == x && g_pGDL->envmapStates[i].unk4 == y &&
+                g_pGDL->envmapStates[i].unkA == b && g_pGDL->envmapStates[i].unk8 == a) {
+                return;
+            }
+        }
+        g_pGDL->envmapStates[g_pGDL->numEnvmapStates].unk0 = x;
+        g_pGDL->envmapStates[g_pGDL->numEnvmapStates].unk4 = y;
+        g_pGDL->envmapStates[g_pGDL->numEnvmapStates].unkA = b;
+        g_pGDL->envmapStates[g_pGDL->numEnvmapStates].unk8 = a;
+        g_pGDL->numEnvmapStates++;
+    } else {
+        g_pGDL->envmapStates[0].unk0 = x;
+        g_pGDL->envmapStates[0].unk4 = y;
+        g_pGDL->envmapStates[0].unkA = b;
+        g_pGDL->envmapStates[0].unk8 = a;
+    }
+    g_state.unk8F = flag;
+}
+
 s32 Gfx_GetEnvmapState(void) {
     if (g_state.unk8F) {
         return 0;
