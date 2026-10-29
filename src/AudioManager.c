@@ -224,6 +224,14 @@ void SoundListener_SetTotalListeners(u32 arg0) {
 }
 
 void SoundSource_Play(s32 index) {
+    typedef struct SoundSource {
+        u8 pad0[0x49];
+        s8 playing;
+        u8 pad4A[0x50 - 0x4A];
+    } SoundSource;
+    extern SoundSource *g_sources;
+
+    g_sources[index].playing = 1;
 }
 
 void SoundSource_Stop(u32 index) {
