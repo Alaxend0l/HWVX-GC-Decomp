@@ -20,7 +20,10 @@ typedef struct THPPlayer {
     u8 audioExist;
     u8 padA0[0xA4 - 0xA0];
     s32 videoError;
-    u8 padA8[0xB8 - 0xA8];
+    u8 padA8[0xAC - 0xA8];
+    u8 *movieData;
+    u8 padB0[0xB4 - 0xB0];
+    s32 initReadSize;
     s32 initReadFrame;
     u8 padBC[0xD0 - 0xBC];
     s32 videoDecodeCount;
