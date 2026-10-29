@@ -20,6 +20,39 @@ void ReserveEXI2Port(void) {
     gDBCommTable[5]();
 }
 
+s32 TRKReadUARTPoll(u8 *c) {
+    typedef struct {
+        s32 writePos;
+        s32 readPos;
+        s32 readCount;
+        s32 unkC;
+        u8 readBuf[0x110A];
+    } TRKUARTBuffer;
+    extern s32 gWritePos[];
+    extern void (*gDBCommTable[7])(void);
+    TRKUARTBuffer *buf = (TRKUARTBuffer *)gWritePos;
+    s32 readErr = 4;
+
+    if (buf->readPos >= buf->readCount) {
+        buf->readPos = 0;
+        buf->readCount = ((s32 (*)(void))gDBCommTable[2])();
+        if (buf->readCount > 0) {
+            if (buf->readCount > 0x110A) {
+                buf->readCount = 0x110A;
+            }
+            readErr = ((s32 (*)(u8 *, s32))gDBCommTable[3])(buf->readBuf, buf->readCount) == 0 ? 0 : -1;
+            if (readErr) {
+                buf->readCount = 0;
+            }
+        }
+    }
+    if (buf->readPos < buf->readCount) {
+        *c = buf->readBuf[buf->readPos++];
+        readErr = 0;
+    }
+    return readErr;
+}
+
 s32 WriteUART1(u8 c) {
     extern u8 gWriteBuf[];
     extern s32 gWritePos[];
