@@ -213,7 +213,11 @@ typedef struct Destructible {
   Vector4 offsetPos;   /* 0x40 */
   u8 pad50[0x24];      /* 0x50 */
   u32 flags;           /* 0x74 */
-  u8 pad78[0x48];      /* 0x78 */
+  u8 pad78[0x10];      /* 0x78 */
+  void *slaves;        /* 0x88 slave things list */
+  void *vtable;        /* 0x8C */
+  u8 *trigger;         /* 0x90 */
+  u8 pad94[0x2C];      /* 0x94 */
   ThingRecord *record; /* 0xC0 */
   u8 padC4[8];         /* 0xC4 */
   ConvexHull *hull;    /* 0xCC */
