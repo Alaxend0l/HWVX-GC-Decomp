@@ -20,7 +20,7 @@ f32 MagnitudeVector(Vector *v) {
     return zero;
 }
 
-void CopyVector(Vector *dst, Vector *src) {
+void CopyVector(Vector4 *dst, Vector4 *src) {
     *dst = *src;
 }
 
