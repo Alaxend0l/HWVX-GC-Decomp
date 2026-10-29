@@ -158,14 +158,14 @@ void OSInit(void)
         {
             BI2DebugFlag = (u32 *)((u8 *)bi2 + 0xC);
             __PADSpec = *(u32 *)((u8 *)bi2 + 0x24);
-            BootInfo->field_30E8 = (u8)*BI2DebugFlag;
-            BootInfo->field_30E9 = (u8)__PADSpec;
+            *(u8 *)0x800030E8 = (u8)*BI2DebugFlag;
+            *(u8 *)0x800030E9 = (u8)__PADSpec;
         }
         else if (BootInfo->field_34 != 0)
         {
-            BI2DebugFlagHolder = BootInfo->field_30E8;
+            BI2DebugFlagHolder = *(u8 *)0x800030E8;
             BI2DebugFlag = &BI2DebugFlagHolder;
-            __PADSpec = BootInfo->field_30E9;
+            __PADSpec = *(u8 *)0x800030E9;
         }
         __DVDLongFileNameFlag = 1;
 
@@ -199,7 +199,7 @@ void OSInit(void)
         {
             BootInfo->field_2C = 1;
         }
-        BootInfo->field_2C += (((volatile u32 *)0xCC003000)[11] & 0xF0000000) >> 28;
+        BootInfo->field_2C += (__PIRegs[11] & 0xF0000000) >> 28;
 
         if (__OSInIPL == FALSE)
         {
@@ -210,10 +210,7 @@ void OSInit(void)
         OSReport("Kernel built : %s %s\n", "Jun  5 2002", "02:09:12");
         OSReport("Console Type : ");
 
-        if (BootInfo == NULL || (consoleType = BootInfo->field_2C) == 0)
-        {
-            consoleType = 0x10000002;
-        }
+        consoleType = OSGetConsoleType();
         if ((consoleType & 0x10000000) == 0)
         {
             OSReport("Retail %d\n", consoleType);
