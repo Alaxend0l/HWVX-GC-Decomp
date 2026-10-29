@@ -223,6 +223,34 @@ void Gfx_DisplayList_Destroy(void) {
     Deallocate(g_pDL);
 }
 
+void *memset(void *dst, s32 c, u32 n);
+void Gfx_SetRenderWindow(s32 window);
+extern u32 g_DLBufferOn;
+void Render_InitDisplayList(void) {
+    memset(g_pGDL, 0, 0x80);
+    memset(g_pGDL->spriteHeads, 0xFF, 0x3FE);
+    memset(g_pDL->unk11DE0, 0xFF, 0x3FE);
+    memset(g_pDL->unk121DE, 0xFF, 0x3FE);
+    if (g_DLBufferOn) {
+        g_pGDL->unk24CDEC = g_pGDL->unk1DF7E0[0];
+        g_pGDL->unk24CDE0 = g_pGDL->unkF51E0[0];
+        g_pGDL->unk24CDE8 = g_pGDL->unk1915E0[0];
+    } else {
+        g_pGDL->unk24CDEC = g_pGDL->unk1DF7E0[1];
+        g_pGDL->unk24CDE0 = g_pGDL->unkF51E0[1];
+        g_pGDL->unk24CDE8 = g_pGDL->unk1915E0[1];
+    }
+    g_pGDL->groupTris = (GDLGroupTri *)g_pGDL->unkC3040;
+    g_pGDL->unk24CDF0 = g_pGDL->unkEDCC0;
+    g_DLBufferOn = !g_DLBufferOn;
+    Gfx_SetRenderWindow(0);
+    GetRenderWindow()->overlayMode = 0;
+    g_state.numPointLights = 0;
+    g_state.lightChanged = 1;
+    g_state.unk8F = 1;
+    g_pGDL->numEnvmapStates = 1;
+}
+
 GDLLine *Gfx_Add3DLineFX(void) {
     if (g_pGDL->numLines >= 0x100) {
         g_pGDL->numLines = 0;
