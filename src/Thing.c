@@ -259,7 +259,7 @@ s32 TriggerAirboxExited(u32 *trigger) {
     }
     return 1;
 }
-#pragma pop
+
 s32 ActionAirboxChangeMode(s32 *data) {
     u32 count = data[1];
     s32 mode = data[0];
