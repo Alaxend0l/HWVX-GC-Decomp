@@ -1,5 +1,22 @@
 #include "common.h"
 
+typedef struct DemoSettings {
+    u8 bRandom;
+    u8 pad1[7];
+    u32 *demoList;
+} DemoSettings;
+
+typedef struct MCPSettings {
+    u8 pad0[0x24];
+    DemoSettings *demos;
+} MCPSettings;
+
+MCPSettings *GameSettings_GetMCP(void);
+void GameSettings_SetCodeVariable(s32 code, s32 arg, s32 value);
+s32 GameSettings_GetDifficulty(void);
+u32 RandomNumberGenerator_GetRandomInteger(u32 min, u32 max);
+void StateProgressionManager_SetProgressionID(s32 id, s32 subID);
+extern s32 g_gameDifficulty;
 
 void StateTitleScreen_SetMenuFile(s32 arg0, s32 arg1) {
     extern s32 g_mainMenuFile;
