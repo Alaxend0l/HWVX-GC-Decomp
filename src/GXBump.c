@@ -16,7 +16,9 @@ typedef struct GXData {
     u8 pad4[0x120 - 0x4];
     u32 iref;
     u32 bpMask;
-    u8 pad128[0x204 - 0x128];
+    u32 IndTexScale0;
+    u32 IndTexScale1;
+    u8 pad130[0x204 - 0x130];
     u32 genMode;
 } GXData;
 
