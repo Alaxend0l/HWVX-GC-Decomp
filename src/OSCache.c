@@ -92,6 +92,39 @@ void L2GlobalInvalidate(void) {
     }
 }
 
+u32 PPCMfhid2(void);
+void PPCMthid2(u32 val);
+void OSReport(const char *msg, ...);
+void OSDumpContext(OSContext *context);
+void PPCHalt(void);
+void DMAErrorHandler(u16 error, OSContext *context, ...) {
+    u32 hid2;
+
+    hid2 = PPCMfhid2();
+    OSReport("Machine check received\n");
+    OSReport("HID2 = 0x%x   SRR1 = 0x%x\n", hid2, context->srr1);
+    if (!(hid2 & 0x00F00000) || !(context->srr1 & 0x00200000)) {
+        OSReport("Machine check was not DMA/locked cache related\n");
+        OSDumpContext(context);
+        PPCHalt();
+    }
+    OSReport("DMAErrorHandler(): An error occurred while processing DMA.\n");
+    OSReport("The following errors have been detected and cleared :\n");
+    if (hid2 & 0x00800000) {
+        OSReport("\t- Requested a locked cache tag that was already in the cache\n");
+    }
+    if (hid2 & 0x00400000) {
+        OSReport("\t- DMA attempted to access normal cache\n");
+    }
+    if (hid2 & 0x00200000) {
+        OSReport("\t- DMA missed in data cache\n");
+    }
+    if (hid2 & 0x00100000) {
+        OSReport("\t- DMA queue overflowed\n");
+    }
+    PPCMthid2(hid2);
+}
+
 #pragma dont_inline on
 u32 PPCMfhid0(void);
 u32 PPCMfmsr(void);
