@@ -54,6 +54,11 @@ typedef struct GDL {
 extern GDL *g_pGDL;
 extern void *g_pDL;
 
+void Gfx_DisplayList_Destroy(void) {
+    Deallocate(g_pGDL);
+    Deallocate(g_pDL);
+}
+
 void Gfx_Add2DRectangleBack(void)
 {
     Render_DrawRectangle();
