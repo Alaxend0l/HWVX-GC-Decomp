@@ -24,7 +24,7 @@ s32 TRKSetBufferPosition(void *buffer, u32 pos);
 s32 TRKReadBuffer1_ui8(void *buffer, u8 *data);
 s32 TRKReleaseBuffer(s32 idx);
 
-void *gTRKInputPendingPtr;
+__declspec(section ".data") void *gTRKInputPendingPtr;
 TRKFramingState gTRKFramingState;
 
 s32 TRKReadUARTPoll(u8 *c);
