@@ -18,8 +18,8 @@ typedef struct SISteeringControl {
 } SISteeringControl;
 
 extern SISteeringControl __SISteering[4];
-extern u32 __SISteeringEnableBits;
 static void (*SamplingCallback)(void);
+u32 __SISteeringEnableBits;
 
 BOOL OSDisableInterrupts(void);
 BOOL OSRestoreInterrupts(BOOL level);
