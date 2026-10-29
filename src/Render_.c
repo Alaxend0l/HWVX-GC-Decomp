@@ -47,18 +47,54 @@ typedef struct GfxWindow {
     f32 unk80[4][4];
     f32 unkC0[4][4];
     f32 unk100[4][4];
-    u8 unk140[0x270 - 0x140];
+    f32 unk140[4][4];
+    u8 unk180[0x270 - 0x180];
     f32 fov;
-    u8 unk274[0x280 - 0x274];
+    u8 unk274[0x278 - 0x274];
+    f32 unk278;
+    f32 unk27C;
     u32 width;
     u32 height;
-    u8 unk288[0x2B0 - 0x288];
+    u32 halfWidth;
+    u32 halfHeight;
+    f32 unk290;
+    f32 unk294;
+    f32 unk298;
+    f32 unk29C;
+    f32 unk2A0;
+    f32 unk2A4;
+    f32 unk2A8;
+    f32 unk2AC;
     u32 unk2B0;
     u32 unk2B4;
     u32 unk2B8;
     u32 unk2BC;
-    u8 unk2C0[0x2D0 - 0x2C0];
+    u8 unk2C0[4];
+    u32 unk2C4;
+    u8 unk2C8[0x2D0 - 0x2C8];
 } GfxWindow;
+
+typedef struct GXRenderModeObj {
+    u32 viTVmode;
+    u16 fbWidth;
+    u16 efbHeight;
+    u16 xfbHeight;
+    u16 viXOrigin;
+    u16 viYOrigin;
+    u16 viWidth;
+    u16 viHeight;
+    u32 xFBmode;
+    u8 field_rendering;
+    u8 aa;
+    u8 sample_pattern[12][2];
+    u8 vfilter[7];
+} GXRenderModeObj;
+
+extern GXRenderModeObj *rmode;
+extern void *m_defaultFifo;
+extern void *m_defaultFifoObj;
+extern u8 ShadowTexture[];
+extern u8 pShadowImage[];
 
 typedef struct GfxState {
     u8 unk0[0x60];
