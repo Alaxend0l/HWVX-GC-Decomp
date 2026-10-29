@@ -10,3 +10,9 @@ typedef struct CatchInfo {
     s32 pointercopy;
     void *stacktop;
 } CatchInfo;
+
+void __end__catch(CatchInfo *catchinfo) {
+    if (catchinfo->location && catchinfo->dtor) {
+        ((void (*)(void *, s16))catchinfo->dtor)(catchinfo->location, -1);
+    }
+}
