@@ -2,7 +2,7 @@
 
 
 void TRK_fill_mem(void *dst, int val, u32 count);
-void *TRK_memset(void *dst, int val, u32 count)
+__declspec(section ".init") void *TRK_memset(void *dst, int val, u32 count)
 {
     TRK_fill_mem(dst, val, count);
     return dst;
