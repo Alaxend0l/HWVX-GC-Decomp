@@ -336,7 +336,7 @@ config.libs = [
             Object(NonMatching, "PhysicalObject.c"),
             Object(NonMatching, "Playback.c"),
             Object(NonMatching, "Player.c"),
-            Object(NonMatching, "ProcessManager.c"),
+            Object(Matching, "ProcessManager.c"),
             Object(NonMatching, "Projectile.c"),
             Object(NonMatching, "ShaderHolder.c"),
             Object(NonMatching, "ShowStats.c"),
