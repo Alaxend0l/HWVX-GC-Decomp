@@ -47,6 +47,11 @@ s32 TRKTargetAccessMemory(void *data, u32 start, u32 *length, s32 space, s32 rea
 s32 TRKAppendBuffer1_ui32(void *buffer, u32 data);
 s32 TRKAppendBuffer1_ui16(void *buffer, u16 data);
 
+s32 TRKTargetStop(void) {
+    gTRKState.field_98 = 1;
+    return 0;
+}
+
 void TRKTargetSetStopped(s32 stopped) {
     gTRKState.field_98 = stopped;
 }
