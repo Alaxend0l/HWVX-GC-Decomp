@@ -80,6 +80,8 @@ s32 EXIImm(s32 chan, void *buf, s32 len, u32 type, void *callback);
 s32 EXISync(s32 chan);
 void EXISetExiCallback(s32 chan, void *callback);
 void OSCancelAlarm(void *alarm);
+s32 EXIImmEx(s32 chan, void *buf, s32 len, u32 mode);
+s32 __CARDStart(s32 chan, CARDCallback txCallback, CARDCallback exiCallback);
 s32 OSDisableInterrupts(void);
 s32 OSRestoreInterrupts(s32 level);
 
