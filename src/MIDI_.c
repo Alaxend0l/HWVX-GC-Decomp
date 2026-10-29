@@ -29,6 +29,34 @@ void OSFreeToHeap(s32 heap, void *ptr);
 extern s32 __OSCurrHeap;
 extern u32 g_aheap;
 
+#pragma push
+#pragma optimization_level 1
+s32 CreateMIDI_(MIDIHeader_ *hdr) {
+    s32 size;
+    u32 i;
+    MIDISample_ *smp;
+
+    size = hdr->size - ((u8 *)&hdr->samples[hdr->numSamples] - (u8 *)hdr - 8);
+    g_aheap = HAllocA_(size);
+    if (g_aheap == 0) {
+        return 0;
+    }
+    DCFlushRange(&hdr->samples[hdr->numSamples], size);
+    MemCpyA_(g_aheap, hdr->sampleData, size);
+    smp = hdr->samples;
+    for (i = 0; i < hdr->numSamples; i++) {
+        smp->addr += g_aheap;
+        if (smp->bits == 0x10) {
+            smp->addr >>= 1;
+            smp->loop >>= 1;
+            smp->end >>= 1;
+        }
+        smp++;
+    }
+    return 1;
+}
+#pragma pop
+
 void DestroyMIDI_(void *data) {
     OSFreeToHeap(__OSCurrHeap, data);
     FreeA_(g_aheap);
