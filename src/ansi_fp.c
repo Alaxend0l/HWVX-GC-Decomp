@@ -31,6 +31,47 @@ static inline void __dorounddecup(decimal *d, int digits) {
     }
 }
 
+typedef struct decform {
+    char style;
+    char unk1;
+    s16 digits;
+} decform;
+
+void __num2dec_internal(decimal *d, double x);
+
+static inline int __must_round(const decimal *d, int digits) {
+    const u8 *i = d->sig.text + digits;
+
+    if (*i > 5) {
+        return 1;
+    }
+    if (*i < 5) {
+        return -1;
+    }
+    {
+        const u8 *e = d->sig.text + d->sig.length;
+        for (i++; i < e; i++) {
+            if (*i != 0) {
+                return 1;
+            }
+        }
+    }
+    if (d->sig.text[digits - 1] & 1) {
+        return 1;
+    }
+    return -1;
+}
+
+static inline void __rounddec(decimal *d, int digits) {
+    if (digits > 0 && digits < d->sig.length) {
+        int round = __must_round(d, digits);
+        d->sig.length = digits;
+        if (round >= 0) {
+            __dorounddecup(d, digits);
+        }
+    }
+}
+
 static void __str2dec(decimal *d, const signed char *s, short exp) {
     int i;
 
