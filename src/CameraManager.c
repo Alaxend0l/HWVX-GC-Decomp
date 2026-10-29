@@ -550,8 +550,8 @@ s32 Camera_TriggerActionGetLocation(u8 *cam, u32 *data, Vector4 *out) {
     extern u8 *g_pNoRayCollideThing;
     extern s32 g_triggerAction_params_default;
     void XformVec(void *mtx, Vector4 *in, Vector4 *out);
-    Vector4 offset;
-    Vector4 local;
+    Vector4 offset __attribute__((aligned(16)));
+    Vector4 local __attribute__((aligned(16)));
     u8 *thing;
     s32 i = 0;
 
