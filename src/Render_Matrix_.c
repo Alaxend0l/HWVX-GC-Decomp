@@ -19,3 +19,32 @@ void GXSetCurrentMtx(u32 id);
 f32 Gfx_GetProjectionMatrix(void) {
     return GetRenderWindow()->fov;
 }
+
+void Gfx_SetOrthoMatrix(void) {
+    f32 proj[3][4];
+    f32 mtx[3][4];
+    f32 width;
+
+    width = GetRenderWindow()->width;
+    C_MTXOrtho(proj, 0.0f, GetRenderWindow()->height, 0.0f, width, 1.0f, -1.0f);
+    GXSetProjection(proj, 1);
+    PSMTXIdentity(mtx);
+    GXLoadPosMtxImm(mtx, 0);
+    GXSetCurrentMtx(0);
+}
+
+void MatrixToMtxTranspose(f32 dst[3][4], f32 src[4][4]) {
+    dst[0][0] = src[0][0];
+    dst[0][1] = src[1][0];
+    dst[0][2] = src[2][0];
+    dst[0][3] = src[3][0];
+    dst[1][0] = src[0][1];
+    dst[1][1] = src[1][1];
+    dst[1][2] = src[2][1];
+    dst[1][3] = src[3][1];
+    dst[2][0] = src[0][2];
+    dst[2][1] = src[1][2];
+    dst[2][2] = src[2][2];
+    dst[2][3] = src[3][2];
+}
+
