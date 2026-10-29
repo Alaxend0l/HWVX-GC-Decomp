@@ -208,6 +208,7 @@ BOOL PADReset(u32 mask)
 }
 
 void PADSetSpec(s32 spec);
+u16 __OSWirelessPadFixMode : 0x800030E0;
 BOOL PADInit(void)
 {
     s64 OSGetTime(void);
@@ -223,11 +224,11 @@ BOOL PADInit(void)
     Initialized = TRUE;
     if (__PADFixBits != 0) {
         s64 time = OSGetTime();
-        *(u16 *)0x800030E0 = (u16)((((time) & 0xffff) + ((time >> 16) & 0xffff) + ((time >> 32) & 0xffff) + ((time >> 48) & 0xffff)) & 0x3fff);
+        __OSWirelessPadFixMode = (u16)((((time) & 0xffff) + ((time >> 16) & 0xffff) + ((time >> 32) & 0xffff) + ((time >> 48) & 0xffff)) & 0x3fff);
         RecalibrateBits = 0xF0000000;
     }
     for (chan = 0; chan < 4; ++chan) {
-        CmdProbeDevice[chan] = (0x4D << 24) | (chan << 22) | ((*(u16 *)0x800030E0 & 0x3fff) << 8);
+        CmdProbeDevice[chan] = (0x4D << 24) | (chan << 22) | ((__OSWirelessPadFixMode & 0x3fff) << 8);
     }
     SIRefreshSamplingRate();
     OSRegisterResetFunction(&ResetFunctionInfo);
