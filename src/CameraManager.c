@@ -119,6 +119,73 @@ void CameraManager_Pause(s8 arg0) {
     g_cameraManagerPause = arg0;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s8 RayHitsObjects_CameraSpecial(Vector4 *start, Vector4 *dir, f32 *t, void *info) {
+    extern u8 g_destructibleVTable[];
+    u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults);
+    s8 SegmentVsSphere(void *center, Vector4 *start, Vector4 *end, f32 radius);
+    Vector4 min __attribute__((aligned(16)));
+    Vector4 max __attribute__((aligned(16)));
+    Vector4 end __attribute__((aligned(16)));
+    GridResult results[256];
+    u32 count;
+    u32 i;
+    Destructible *other;
+    OBox *box;
+    f32 best;
+    f32 hit;
+
+    best = *t;
+    max = *start;
+    end.x = dir->x * best + start->x;
+    end.y = dir->y * best + start->y;
+    end.z = dir->z * best + start->z;
+    min = end;
+    if (start->x < min.x) {
+        min.x = start->x;
+    }
+    if (start->y < min.y) {
+        min.y = start->y;
+    }
+    if (start->z < min.z) {
+        min.z = start->z;
+    }
+    if (end.x > max.x) {
+        max.x = end.x;
+    }
+    if (end.y > max.y) {
+        max.y = end.y;
+    }
+    if (end.z > max.z) {
+        max.z = end.z;
+    }
+    count = Grid_GetObjects(&min, &max, 4, results, 0x100);
+    for (i = 0; i < count; i++) {
+        other = (Destructible *)results[i].id;
+        if (other->flags & 2) {
+            continue;
+        }
+        if ((u8 *)other->vtable == g_destructibleVTable && other->record->info->type == 0) {
+            box = other->record->info->box;
+            if ((box->v[1].x - box->v[0].x) * (box->v[1].z - box->v[0].z) < 100.0f) {
+                continue;
+            }
+        }
+        if (SegmentVsSphere(&other->offsetPos, start, &end, *(f32 *)((u8 *)other + 0x70))) {
+            hit = (*(f32 (**)(void *, Vector4 *, Vector4 *, void *, f32))((u8 *)other->vtable + 0x38))(other, start, dir, info, best);
+            if (hit < *t) {
+                best = hit;
+            }
+        }
+    }
+    if (best < *t) {
+        *t = best;
+        return 1;
+    }
+    return 0;
+}
+
 void GetTrimmedCameraPos(u8 *camera, Vector4 *from, Vector4 *dir, f32 *trim, f32 dist) {
     extern f32 g_fDeltaTimeSec;
     f32 PSVECDotProduct(void *a, void *b);
