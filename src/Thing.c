@@ -431,6 +431,18 @@ void Thing_SlaveTransform(Thing *thing, Matrix4 *mtx) {
     SubMatrixToQuaternion(&thing->mtx, &thing->quat);
 }
 
+void Thing_SlaveTransformQuaternionOnly(Thing *thing, Matrix4 *mtx) {
+    Quaternion rot __attribute__((aligned(16)));
+    Quaternion quat __attribute__((aligned(16)));
+    Vector4 pos __attribute__((aligned(16)));
+
+    quat = thing->quat;
+    pos = thing->mtx.v[3];
+    XformVec(mtx, &pos, &thing->mtx.v[3]);
+    SubMatrixToQuaternion(mtx, &rot);
+    QuaternionMult(&rot, &quat, &thing->quat);
+}
+
 void *Thing_GetSurfaceScript(void) {
     extern u8 g_defaultSurfaceScript[];
     return g_defaultSurfaceScript;
