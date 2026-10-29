@@ -20,3 +20,9 @@ typedef struct GXData {
 } GXData;
 
 extern GXData *gx;
+
+void __GXSetGenMode(void) {
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->genMode;
+    gx->bpSentNot = 0;
+}
