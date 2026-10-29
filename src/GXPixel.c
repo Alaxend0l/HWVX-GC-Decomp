@@ -23,3 +23,14 @@ typedef struct GXData {
 } GXData;
 
 extern GXData *gx;
+
+void GXSetFieldMask(u8 odd_mask, u8 even_mask) {
+    u32 reg;
+
+    reg = even_mask;
+    reg = (reg & ~2) | (odd_mask << 1);
+    reg = (reg & 0xFFFFFF) | 0x44000000;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    gx->bpSentNot = 0;
+}
