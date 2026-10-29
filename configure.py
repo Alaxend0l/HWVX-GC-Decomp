@@ -458,7 +458,7 @@ config.libs = [
             Object(NonMatching, "OSResetSW.c"),
             Object(NonMatching, "OSRtc.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "OSSync.c"),
-            Object(NonMatching, "OSThread.c"),
+            Object(NonMatching, "OSThread.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "OSTime.c"),
             Object(Matching, "time.dolphin.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "__start.c"),
