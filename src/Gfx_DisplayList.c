@@ -140,7 +140,9 @@ typedef struct GDL {
     u8 unk38C90[0x7EA00 - 0x38C90];
     GDLRect rects2D[0x400];
     GDLRect rects[0x20];
-    u8 unkA0A80[0xC0040 - 0xA0A80];
+    u8 unkA0A80[0xBA280 - 0xA0A80];
+    GDLFXLine2D fxLines2D[200];
+    u8 unkBC800[0xC0040 - 0xBC800];
     GDLLine lines[0x100];
     u8 unkC3040[0xC9EC0 - 0xC3040];
     f32 cachedMatrices[0x578][4][4];
