@@ -69,6 +69,31 @@ static inline void CompleteTransfer(s32 chan) {
 }
 
 #pragma use_lmw_stmw on
+#pragma use_lmw_stmw on
+BOOL EXISync(s32 chan) {
+    EXIControl *exi = &Ecb[chan];
+    BOOL rc = FALSE;
+    BOOL enabled;
+
+    while (exi->state & 4) {
+        if (!(__EXIRegs[chan * 5 + 3] & 1)) {
+            enabled = OSDisableInterrupts();
+            if (exi->state & 4) {
+                CompleteTransfer(chan);
+                if (__OSGetDIConfig() != 0xFF || exi->immLen != 4 || (__EXIRegs[chan * 5] & 0x70) ||
+                    (__EXIRegs[chan * 5 + 4] != 0x01010000 && __EXIRegs[chan * 5 + 4] != 0x05070000 &&
+                     __EXIRegs[chan * 5 + 4] != 0x04220001) ||
+                    *(u16 *)0x800030E6 == 0x8200) {
+                    rc = TRUE;
+                }
+            }
+            OSRestoreInterrupts(enabled);
+            break;
+        }
+    }
+    return rc;
+}
+
 static BOOL __EXIProbe(s32 chan) {
     EXIControl *exi = &Ecb[chan];
     BOOL enabled;
