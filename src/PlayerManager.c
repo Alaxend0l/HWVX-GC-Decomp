@@ -2,12 +2,85 @@
 extern u8 g_playerManager[0x20E0];
 s8 Player_IsHuman(void *player);
 
+typedef struct PMPlayer {
+    u8 pad0[0xB0];
+    struct PMPlayer *next;
+    struct PMPlayer *prev;
+} PMPlayer;
+
+typedef struct PlayerManager {
+    u8 pad0[0x20D8];
+    PMPlayer *active;
+    PMPlayer *free;
+} PlayerManager;
+
+static inline PMPlayer *PlayerManager_PopActive(PlayerManager *mgr) {
+    PMPlayer *player = mgr->active;
+    if (player == NULL) {
+        return NULL;
+    }
+    mgr->active = player->next;
+    if (player->next != NULL) {
+        player->next->prev = NULL;
+    }
+    player->next = NULL;
+    return player;
+}
+
+static inline void PlayerManager_PushFree(PlayerManager *mgr, PMPlayer *player) {
+    player->next = mgr->free;
+    player->prev = NULL;
+    if (player->next != NULL) {
+        player->next->prev = player;
+    }
+    mgr->free = player;
+}
+
 void PlayerManager_Create(void) {
 
 }
 
 void PlayerManager_Destroy(void) {
 
+}
+
+void PlayerManager_Release(void) {
+    typedef struct PMPlayer {
+        u8 pad0[0xB0];
+        struct PMPlayer *next;
+        struct PMPlayer *prev;
+    } PMPlayer;
+    typedef struct PlayerManager {
+        u8 pad0[0x20D8];
+        PMPlayer *active;
+        PMPlayer *free;
+    } PlayerManager;
+    void Player_ReleaseInterface(void *player);
+    PlayerManager *mgr = (PlayerManager *)g_playerManager;
+    PMPlayer *player;
+
+    while (1) {
+        player = mgr->active;
+        if (player == NULL) {
+            player = NULL;
+        } else {
+            mgr->active = player->next;
+            if (mgr->active != NULL) {
+                mgr->active->prev = NULL;
+            }
+            player->next = NULL;
+        }
+        if (player == NULL) {
+            break;
+        }
+        Player_ReleaseInterface(player);
+        player->next = mgr->free;
+        player->prev = NULL;
+        if (player->next != NULL) {
+            player->next->prev = player;
+        }
+        mgr->free = player;
+    }
 }
 
 void *PlayerManager_NewHumanPlayer(void) {
