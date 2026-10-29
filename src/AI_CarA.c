@@ -1100,7 +1100,7 @@ s8 AI_Car_EnterState(u8 *ai, u8 *branch, s32 slot) {
     s8 AI_Car_DetermineTarget(u8 *ai, u8 *branch, s32 slot);
     void *ThingManager_DARYL_CreateThing(s32 type, void *params);
     s32 RandomAdd_s32(s32 base, s32 range);
-    struct { Vector4 a; Vector4 b; Vector4 c; Vector4 zero; u32 id; u8 *player; f32 f0; f32 f1; } p;
+    struct { Vector4 a; Vector4 b; Vector4 c; Vector4 zero; u32 id; u8 *player; f32 f0; f32 f1; } p __attribute__((aligned(16)));
     u32 id;
     u8 *car;
     u8 i;
@@ -1115,8 +1115,7 @@ s8 AI_Car_EnterState(u8 *ai, u8 *branch, s32 slot) {
             done = 1;
         } else if (!(s8)AI_Car_CheckLocalStats(ai, ((AIBranch *)branch)->info)) {
             done = 1;
-        }
- else if (!AI_Car_DetermineTarget(ai, branch, slot)) {
+        } else if (!AI_Car_DetermineTarget(ai, branch, slot)) {
             done = 1;
         }
         if (done) {
@@ -1146,7 +1145,7 @@ s8 AI_Car_EnterState(u8 *ai, u8 *branch, s32 slot) {
             p.b = *(Vector4 *)(car + 0x50);
             p.c = *(Vector4 *)(car + 0x0);
             p.player = ai;
-            p.f0 = 1.0f;
+            p.f0 = 0.0f;
             p.zero = g_zeroVector;
             ThingManager_DARYL_CreateThing(1, &p);
         }
