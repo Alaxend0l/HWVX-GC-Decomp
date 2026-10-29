@@ -198,6 +198,52 @@ void AttachGeometry_Draw(void *thing) {
     Gfx_DisableState(0x10);
 }
 
+void AttachThing_SlaveTransform(u8 *attach, Matrix4 *mtx) {
+    typedef struct AttachThing {
+        u8 pad0[0x10];
+        Matrix4 mtx;
+        u8 pad50[0x74 - 0x50];
+        u32 flags;
+        u8 pad78[0xB0 - 0x78];
+        f32 minDot;
+        u8 *data;
+        u8 padB8[4];
+        f32 fade;
+    } AttachThing;
+    void Gfx_GetCameraPosition(Vector4 *pos);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    void XformVecOrientation(Matrix4 *mtx, void *in, Vector4 *out);
+    AttachThing *thing = (AttachThing *)attach;
+    Vector4 pos __attribute__((aligned(16)));
+    Vector4 camera __attribute__((aligned(16)));
+    Vector4 toCamera __attribute__((aligned(16)));
+    Vector4 dir __attribute__((aligned(16)));
+    f32 dot;
+    f32 minDot;
+
+    pos = thing->mtx.v[3];
+    XformVec(mtx, &pos, &thing->mtx.v[3]);
+    if (thing->data[2] == 1) {
+        thing->flags &= ~0x10;
+        Gfx_GetCameraPosition(&camera);
+        PSVECSubtract(&thing->mtx.v[3], &camera, &toCamera);
+        if (PSVECSquareMag(&toCamera)) {
+            PSVECNormalize(&toCamera, &toCamera);
+        }
+        XformVecOrientation(mtx, *(void **)(thing->data + 0x28), &dir);
+        dot = -PSVECDotProduct(&dir, &toCamera);
+        minDot = thing->minDot;
+        if (dot < minDot) {
+            thing->flags |= 0x10;
+        } else {
+            thing->fade = (dot - minDot) / (1.0f - minDot);
+        }
+    }
+}
+
 s32 AttachThing_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
