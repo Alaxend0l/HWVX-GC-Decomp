@@ -443,7 +443,7 @@ config.libs = [
             Object(NonMatching, "OSAlarm.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "OSAlloc.c"),
             Object(Matching, "OSArena.c"),
-            Object(NonMatching, "OSAudioSystem.c"),
+            Object(NonMatching, "OSAudioSystem.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "OSCache.c"),
             Object(NonMatching, "OSContext.c"),
             Object(NonMatching, "OSError.c"),
