@@ -157,9 +157,9 @@ done:
     }
     switch (state) {
     case 0:
-        g_HotWheelsGameData.unk0 = 1;
-        g_HotWheelsGameData.unk1 = 1;
-        g_HotWheelsGameData.unk2 = 1;
+        ((u8 *)&g_HotWheelsGameData)[0] = 1;
+        ((u8 *)&g_HotWheelsGameData)[1] = 1;
+        ((u8 *)&g_HotWheelsGameData)[2] = 1;
         break;
     case 1:
         break;
