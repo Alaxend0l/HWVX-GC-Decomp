@@ -164,6 +164,18 @@ s32 DVDLowRequestError(DVDLowCallback callback)
     return 1;
 }
 
+s32 DVDLowAudioStream(u32 subcmd, u32 length, u32 offset, DVDLowCallback callback)
+{
+    Callback = callback;
+    StopAtNextInt = 0;
+    __DIRegs[2] = subcmd | 0xE1000000;
+    __DIRegs[3] = offset >> 2;
+    __DIRegs[4] = length;
+    __DIRegs[7] = 1;
+    SetTimeoutAlarm((OSAlarmHandler)AlarmHandlerForTimeout, (__OSBusClock / 4) * 10);
+    return 1;
+}
+
 s32 DVDLowRequestAudioStatus(u32 subcmd, DVDLowCallback callback)
 {
     Callback = callback;
