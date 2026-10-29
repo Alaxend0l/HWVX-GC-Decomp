@@ -2,6 +2,42 @@
 
 #pragma use_lmw_stmw on
 
+typedef struct FlareOverlay {
+    GXColor color;
+    u8 mode;
+    u8 pad5[3];
+    f32 scale;
+} FlareOverlay;
+
+typedef struct FlareElement {
+    GXColor color;
+    f32 size;
+    f32 pos;
+    u32 texture;
+    u8 flag;
+    u8 pad11[3];
+} FlareElement;
+
+typedef struct FlareData {
+    u32 count;
+    FlareElement *elements;
+    u8 rayTest;
+    u8 overlay;
+    u8 padA[2];
+    f32 fadeStart;
+    f32 fadeEnd;
+    FlareOverlay *ov;
+} FlareData;
+
+typedef struct Flare {
+    FlareData *flare;
+    u8 *thing;
+    u8 unk8[0x10 - 0x8];
+    Vector4 pos;
+    s8 visible;
+    u8 unk21[0x30 - 0x21];
+} Flare;
+
 /* a flare follows its thing when it has one, else sits at its own position */
 static inline Vector4 LensFlare_GetPos(u8 *thing, Vector4 *pos) {
     if (thing != NULL) {
