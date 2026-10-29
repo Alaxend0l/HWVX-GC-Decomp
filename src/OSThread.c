@@ -24,6 +24,16 @@ s32 OSDisableScheduler(void) {
     return count;
 }
 
+s32 OSEnableScheduler(void) {
+    s32 enabled;
+    s32 count;
+
+    enabled = OSDisableInterrupts();
+    count = Reschedule--;
+    OSRestoreInterrupts(enabled);
+    return count;
+}
+
 void UnsetRun(void ** arg0)
 {
     extern s32 RunQueueBits;
