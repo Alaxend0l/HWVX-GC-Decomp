@@ -128,6 +128,72 @@ void Render_GeometryList(void) {
     }
 }
 
+void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *ab);
+void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
+void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *a_b);
+f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+f32 _fabs(f32 x);
+s32 Gfx_FrustrumCullSphereTest(Vector4 *center, f32 radius);
+void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+void *GetRenderWindow(void);
+void Render_Geometry(Geometry *geom, f32 *m) {
+    Vector4 *bmin = (Vector4 *)geom->bboxMin;
+    Vector4 *bmax = (Vector4 *)geom->bboxMax;
+    Vector4 min __attribute__((aligned(16)));
+    Vector4 max __attribute__((aligned(16)));
+    Vector4 center __attribute__((aligned(16)));
+    Vector4 scale __attribute__((aligned(16)));
+    Vector4 out __attribute__((aligned(16)));
+    f32 radius;
+    u16 i;
+
+    if (geom->unk4 == 0) {
+        PSVECAdd((Vector4 *)&m[12], bmin, &min);
+        PSVECAdd((Vector4 *)&m[12], bmax, &max);
+        PSVECAdd(&min, &max, &center);
+        PSVECScale(&center, &center, 0.5f);
+        scale.x = geom->bboxMin[3];
+        scale.y = geom->bboxMin[3];
+        scale.z = geom->bboxMin[3];
+        scale.w = 0.0f;
+        XformVecOrientation(m, &scale, &out);
+        radius = _fabs(out.x);
+        out.y = _fabs(out.y);
+        out.z = _fabs(out.z);
+        if (out.y > radius) {
+            radius = out.y;
+        }
+        if (out.z > radius) {
+            radius = out.z;
+        }
+        switch (Gfx_FrustrumCullSphereTest(&center, radius)) {
+        case 1:
+            Gfx_EnableState(0x20000);
+            break;
+        case 2:
+            Gfx_DisableState(0x20000);
+            break;
+        default:
+            return;
+        }
+        PSVECSubtract(&center, (Vector4 *)((u8 *)GetRenderWindow() + 0x180), &min);
+        radius = PSVECDotProduct(&min, (Vector4 *)((u8 *)GetRenderWindow() + 0x190));
+        radius *= ((f32 *)GetRenderWindow())[0x9D];
+        for (i = 0; i < geom->numGroups; i++) {
+            if (radius < geom->lodDistances[i]) {
+                break;
+            }
+        }
+        if (geom->numGroups == 1 && 0.0f == geom->lodDistances[0]) {
+            i = 0;
+        }
+        if (i < geom->numGroups) {
+            Gfx_DrawGeometryLOD_Immediate((Geometry *)((u8 *)geom->groups + i * 0x18), (f32 (*)[4])m);
+        }
+        Gfx_EnableState(0x20000);
+    }
+}
+
 void Gfx_DrawGeometryLOD_Immediate(Geometry *geometry, f32 (*matrix)[4]) {
     u16 i;
 
