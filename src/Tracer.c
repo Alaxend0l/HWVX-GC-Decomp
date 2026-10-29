@@ -26,8 +26,7 @@ typedef struct Tracer {
     u8 unk4D6[0xA];
 } Tracer;
 
-extern Tracer tracers_802CD600[];
-extern Tracer tracers[32];
+Tracer tracers[32];
 
 static inline u32 Tracer_FindFree(void) {
     u32 i;
