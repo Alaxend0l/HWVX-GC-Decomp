@@ -15,7 +15,10 @@ void ThingManagerList_Append(void **arg0, void *arg1) {
 
 /* The fields every pooled Thing shares. */
 typedef struct ThingHeader {
-    u8 pad0[0x74];
+    u8 pad0[0x40];
+    f32 unk40[4];               /* 0x40 bounding sphere centre */
+    u8 pad50[0x20];
+    f32 unk70;                  /* 0x70 bounding sphere radius */
     u32 flags;                  /* 0x74 */
     u8 pad78[0x10];
     u32 unk88;                  /* 0x88 */
