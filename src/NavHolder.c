@@ -224,6 +224,79 @@ void NavHolder_UseMainRouteOnly(void) {
     gs_useMainRouteOnly_803C7000 = 1;
 }
 
+s8 NavHolder_CreatePath(u8 *goal, u8 *start) {
+    u8 *NavHolder_GetNavPoint(s32 index);
+    f32 PSVECSquareDistance(f32 *a, f32 *b);
+    PathNode *cur;
+    PathNode *n;
+    u8 i;
+    PathNode *end = (PathNode *)goal;
+    PathNode *node = (PathNode *)start;
+    PathNode *p;
+    f32 g;
+
+    node->g = 0.0f;
+    node->h = sqrt(PSVECSquareDistance(end->pos, node->pos));
+    node->f = node->g + node->h;
+    node->next = gs_pOpenListHead_803C7008;
+    gs_pOpenListHead_803C7008 = node;
+    node->flags |= 2;
+    while (1) {
+        cur = NavHolder_PopLowestOpen();
+        if (cur == end) {
+            return 1;
+        }
+        if (cur == NULL) {
+            return 0;
+        }
+        for (i = 0; i < cur->numLinks; i++) {
+            n = (PathNode *)NavHolder_GetNavPoint(cur->links[i]);
+            if (n != end && !(s8)(n->flags & 1)) {
+                if (!(s8)(n->flags & 4)) {
+                    n->next = gs_pClosedListHead_803C7004;
+                    gs_pClosedListHead_803C7004 = n;
+                    n->flags |= 4;
+                }
+            } else {
+                g = cur->g + cur->costs[i];
+                if (!(n->flags & 6)) {
+                    n->g = g;
+                    n->h = sqrt(PSVECSquareDistance(end->pos, n->pos));
+                    n->f = g + n->h;
+                    n->parent = cur;
+                    n->next = gs_pOpenListHead_803C7008;
+                    gs_pOpenListHead_803C7008 = n;
+                    n->flags |= 2;
+                } else if (n->g > g) {
+                    n->g = g;
+                    n->f = g + n->h;
+                    n->parent = cur;
+                    if ((s8)(n->flags & 4)) {
+                        p = gs_pClosedListHead_803C7004;
+                        if (n == p) {
+                            gs_pClosedListHead_803C7004 = p->next;
+                        } else {
+                            for (; p->parent != NULL; p = p->parent) {
+                                if (p->parent == n) {
+                                    p->parent = n->parent;
+                                    break;
+                                }
+                            }
+                        }
+                        n->flags &= ~4;
+                        n->next = gs_pOpenListHead_803C7008;
+                        gs_pOpenListHead_803C7008 = n;
+                        n->flags |= 2;
+                    }
+                }
+            }
+        }
+        cur->next = gs_pClosedListHead_803C7004;
+        gs_pClosedListHead_803C7004 = cur;
+        cur->flags |= 4;
+    }
+}
+
 u8 *NavHolder_GetNavPoint(s32 index) {
     u8 *point = NULL;
     if (gs_NavHolder_803C6CD8.data != NULL && index < (s32)gs_NavHolder_803C6CD8.data->numNodes) {
