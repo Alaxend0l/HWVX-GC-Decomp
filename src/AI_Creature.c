@@ -224,45 +224,34 @@ void AI_Creature_PopulateVolumes(void) {
     } while (v != gs_currentVolume);
 }
 
-static inline void AI_Creature_NewCreature(s32 type) {
-    void *PlayerManager_NewAIPlayer(u8 *desc);
-    AIPlayerDesc desc;
-    u8 *player;
+static inline void AI_Creature_FindNearestCar(u8 *creature) {
+    extern NearestCar gs_aNearestCars[8];
+    f32 PSVECSquareDistance(void *a, void *b);
+    int rand(void);
+    f32 best;
+    f32 dist;
+    u32 i;
 
-    desc.unk0 = type;
-    desc.unkD = 1;
-    player = PlayerManager_NewAIPlayer((u8 *)&desc);
-    if (gs_pCurrentAICreature == NULL) {
-        gs_pCurrentAICreature = player;
-        *(u8 **)(player + 0xD4) = player;
-    } else {
-        *(u8 **)(player + 0xD4) = *(u8 **)(gs_pCurrentAICreature + 0xD4);
-        *(u8 **)(gs_pCurrentAICreature + 0xD4) = player;
+    best = *(f32 *)(*(u8 **)(creature + 0xD0) + 0x18);
+    for (i = 0; i < 8; i++) {
+        if (gs_aNearestCars[i].car == NULL) {
+            break;
+        }
+        dist = PSVECSquareDistance(*(u8 **)(creature + 0x2C) + 0x40, &gs_aNearestCars[i].pos);
+        if (best > dist) {
+            if (*(NearestCar **)(creature + 0xE4) != &gs_aNearestCars[i]) {
+                *(NearestCar **)(creature + 0xE4) = &gs_aNearestCars[i];
+                *(f32 *)(creature + 0xF0) = (f32)(rand() % 501 + 750) / 1000.0f;
+                creature[0xEC] = 0;
+                *(s32 *)(creature + 0xC8) = 1;
+            }
+            *(f32 *)(creature + 0xE8) = best;
+            best = dist;
+        }
     }
-    player[0xCD] = type;
 }
 
 void AI_Creature_AsyncProcess(void) {
-    typedef struct Vec {
-        f32 x;
-        f32 y;
-        f32 z;
-        f32 w;
-    } Vec;
-    typedef struct NearestCar {
-        u8 *car;
-        u8 pad4[0x10 - 0x4];
-        Vec pos;
-        f32 speed;
-        f32 range;
-        u8 pad28[0x30 - 0x28];
-    } NearestCar;
-    typedef struct {
-        s32 unk0;
-        u8 pad4[0xD - 0x4];
-        u8 unkD;
-        u8 padE[0x10 - 0xE];
-    } AIPlayerDesc;
     extern NearestCar gs_aNearestCars[8];
     extern u8 g_cameraManager[];
     void PSVECScale(void *src, void *dst, f32 scale);
@@ -284,10 +273,10 @@ void AI_Creature_AsyncProcess(void) {
     static u32 s_currentCar;
     f32 dist;
     f32 best;
-    u32 j;
-    NearestCar *nearest;
-    u8 *tile;
     u8 *creature;
+    u8 *tile;
+    u8 *cam;
+    u32 j;
     u32 i;
     u32 n;
     u32 count;
@@ -309,17 +298,19 @@ void AI_Creature_AsyncProcess(void) {
             goto update;
         }
         MemClr32(gs_aNearestCars, sizeof(gs_aNearestCars));
-        desc.unk0 = 0;
-        desc.unkD = 1;
-        player = PlayerManager_NewAIPlayer((u8 *)&desc);
-        if (gs_pCurrentAICreature == NULL) {
-            gs_pCurrentAICreature = player;
-            *(u8 **)(player + 0xD4) = player;
-        } else {
-            *(u8 **)(player + 0xD4) = *(u8 **)(gs_pCurrentAICreature + 0xD4);
-            *(u8 **)(gs_pCurrentAICreature + 0xD4) = player;
+        for (i = 0; i < 1; i++) {
+            desc.unk0 = i;
+            desc.unkD = 1;
+            player = PlayerManager_NewAIPlayer((u8 *)&desc);
+            if (gs_pCurrentAICreature == NULL) {
+                gs_pCurrentAICreature = player;
+                *(u8 **)(player + 0xD4) = player;
+            } else {
+                *(u8 **)(player + 0xD4) = *(u8 **)(gs_pCurrentAICreature + 0xD4);
+                *(u8 **)(gs_pCurrentAICreature + 0xD4) = player;
+            }
+            player[0xCD] = 0;
         }
-        player[0xCD] = desc.unk0;
     }
 update:
     if (gs_pCurrentAICreature == NULL) {
@@ -327,13 +318,13 @@ update:
     }
     count = ThingManager_GetActiveCars(cars, 9);
     if (count != 0) {
-        for (i = 0; i < count; i++) {
-            gs_aNearestCars[i].car = cars[i];
-            PSVECScale(cars[i], &gs_aNearestCars[i].pos, 0.18f);
-            PSVECAdd(cars[i] + 0x40, &gs_aNearestCars[i].pos, &gs_aNearestCars[i].pos);
+        for (j = 0; j < count; j++) {
+            gs_aNearestCars[j].car = cars[j];
+            PSVECScale(cars[j], &gs_aNearestCars[j].pos, 0.18f);
+            PSVECAdd(cars[j] + 0x40, &gs_aNearestCars[j].pos, &gs_aNearestCars[j].pos);
         }
-        if (i < 8) {
-            gs_aNearestCars[i].car = NULL;
+        if (j < 8) {
+            gs_aNearestCars[j].car = NULL;
         }
         if (s_currentCar >= count) {
             s_currentCar = 0;
@@ -350,16 +341,15 @@ update:
         if (gs_pCurrentAICreature[0xCD] != 0 && *(u32 *)(gs_pCurrentAICreature + 0xF8) == 0 &&
             !(s8)AI_Creature_Deactivate(gs_pCurrentAICreature)) {
             creature = gs_pCurrentAICreature;
-            nearest = gs_aNearestCars;
             best = *(f32 *)(*(u8 **)(creature + 0xD0) + 0x18);
-            for (j = 0; j < 8; j++, nearest++) {
-                if (nearest->car == NULL) {
+            for (j = 0; j < 8; j++) {
+                if (gs_aNearestCars[j].car == NULL) {
                     break;
                 }
-                dist = PSVECSquareDistance(*(u8 **)(creature + 0x2C) + 0x40, &nearest->pos);
+                dist = PSVECSquareDistance(*(u8 **)(creature + 0x2C) + 0x40, &gs_aNearestCars[j].pos);
                 if (best > dist) {
-                    if (*(NearestCar **)(creature + 0xE4) != nearest) {
-                        *(NearestCar **)(creature + 0xE4) = nearest;
+                    if (*(NearestCar **)(creature + 0xE4) != &gs_aNearestCars[j]) {
+                        *(NearestCar **)(creature + 0xE4) = &gs_aNearestCars[j];
                         *(f32 *)(creature + 0xF0) = (f32)(rand() % 501 + 750) / 1000.0f;
                         creature[0xEC] = 0;
                         *(s32 *)(creature + 0xC8) = 1;
@@ -386,9 +376,10 @@ update:
             }
             tile = World_GetTileCreature(gs_creatureTile);
             if (*(u32 *)(tile + 0x20) != 0 && *(u8 **)(tile + 0x1C) == NULL) {
-                for (j = 0; j < g_cameraManager[0x640]; j++) {
-                    PSVECScale(g_cameraManager + j * 0x190 + 0x80, &p, 150.0f);
-                    PSVECAdd(g_cameraManager + j * 0x190 + 0x60, &p, &p);
+                cam = g_cameraManager;
+                for (i = 0; i < g_cameraManager[0x640]; cam += 0x190, i++) {
+                    PSVECScale(cam + 0x80, &p, 150.0f);
+                    PSVECAdd(cam + 0x60, &p, &p);
                     if (360000.0f > PSVECSquareDistance(&p, tile)) {
                         if (AI_Creature_Spawn(creature, tile, -1)) {
                             *(u8 **)(*(u8 **)(creature + 0x2C) + 0x90) = tile;
