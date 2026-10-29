@@ -1,5 +1,6 @@
 #include "common.h"
 
+void OSReport(const char *fmt, ...);
 
 s32 stricmp(const char *s1, const char *s2) {
     char c1, c2;
