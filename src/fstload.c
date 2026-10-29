@@ -53,6 +53,7 @@ void DVDReset(void);
 static s32 status;
 static DVDBB2 *bb2;
 static DVDDiskID *idTmp;
+static u8 bb2Buf[sizeof(DVDBB2) + 31];
 
 static void cb(s32 result, DVDCommandBlock *block) {
     if (result > 0) {
