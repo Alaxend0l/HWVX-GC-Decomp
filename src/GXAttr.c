@@ -15,7 +15,9 @@ typedef struct GXData {
     u8 unk208[0x41C - 0x208];
     u8 hasNrms;
     u8 hasBiNrms;
-    u8 unk41E[0x4F4 - 0x41E];
+    u8 unk41E[0x4F2 - 0x41E];
+    u8 dirtyVAT;
+    u8 unk4F3;
     u32 dirtyState;
 } GXData;
 
