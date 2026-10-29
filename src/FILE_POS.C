@@ -1,12 +1,6 @@
 #include "msl_file.h"
 
 
-int _fseek(FILE *file, u32 offset, int file_mode);
-int fseek(FILE *file, long offset, int file_mode)
-{
-    return _fseek(file, offset, file_mode);
-}
-
 long ftell(FILE *file)
 {
     int charsInUndoBuffer;
@@ -26,5 +20,11 @@ long ftell(FILE *file)
         position -= charsInUndoBuffer;
     }
     return position;
+}
+
+int _fseek(FILE *file, u32 offset, int file_mode);
+int fseek(FILE *file, long offset, int file_mode)
+{
+    return _fseek(file, offset, file_mode);
 }
 
