@@ -34,7 +34,7 @@ DVDCommandBlock *executing;
 u32 currID;
 u32 bootInfo;
 s32 PauseFlag;
-u32 PausingFlag;
+s32 PausingFlag;
 s32 AutoFinishing;
 s32 FatalErrorFlag;
 volatile u32 CurrCommand;
@@ -486,6 +486,30 @@ s32 DVDGetCommandBlockStatus(const DVDCommandBlock *block) {
     } else {
         retVal = block->state;
     }
+    OSRestoreInterrupts(enabled);
+    return retVal;
+}
+
+s32 DVDGetDriveStatus(void) {
+    BOOL enabled;
+    s32 retVal;
+
+    enabled = OSDisableInterrupts();
+
+    if (FatalErrorFlag) {
+        retVal = -1;
+    } else if (PausingFlag) {
+        retVal = 8;
+    } else {
+        if (executing == (DVDCommandBlock *)NULL) {
+            retVal = 0;
+        } else if (executing == &DummyCommandBlock) {
+            retVal = 0;
+        } else {
+            retVal = DVDGetCommandBlockStatus(executing);
+        }
+    }
+
     OSRestoreInterrupts(enabled);
     return retVal;
 }
