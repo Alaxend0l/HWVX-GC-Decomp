@@ -140,6 +140,20 @@ void VIWaitForRetrace(void) {
     OSRestoreInterrupts(enabled);
 }
 
+static void setFbbRegs(VIPositionInfo *hv, u32 *tfbb, u32 *bfbb, u32 *rtfbb, u32 *rbfbb);
+void VISetNextFrameBuffer(void *fb) {
+    extern s32 FBSet;
+    s32 OSDisableInterrupts(void);
+    void OSRestoreInterrupts(s32 level);
+    s32 enabled;
+
+    enabled = OSDisableInterrupts();
+    HorVer.bufAddr = (u32)fb;
+    FBSet = 1;
+    setFbbRegs(&HorVer, &HorVer.tfbb, &HorVer.bfbb, &HorVer.rtfbb, &HorVer.rbfbb);
+    OSRestoreInterrupts(enabled);
+}
+
 static u32 getCurrentFieldEvenOdd(void) {
     extern VITiming *CurrTiming;
     u32 hct;
