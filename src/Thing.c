@@ -357,11 +357,22 @@ s32 ActionVehicleTeleport(u32 *action) {
     return 1;
 }
 
+f32 MagnitudeVector(void *v);
 void Thing_GetInterfaceInfo(void *thing, void *info) {
-    M2C_FIELD(info, s32 *, 0x10) = M2C_FIELD(thing, s32 *, 0x78);
-    M2C_FIELD(info, u32 *, 0x14) = 0.681818f * MagnitudeVector(thing);
-    M2C_FIELD(info, s32 *, 0x18) = 0;
-    M2C_FIELD(info, s32 *, 0x4) = 0;
+    typedef struct InterfaceInfo {
+        s32 unk0;
+        s32 unk4;
+        s32 unk8[2];
+        s32 unk10;
+        u32 speed;
+        s32 unk18;
+    } InterfaceInfo;
+    InterfaceInfo *ii = info;
+
+    ii->unk10 = *(s32 *)((u8 *)thing + 0x78);
+    ii->speed = 0.681818f * MagnitudeVector(thing);
+    ii->unk18 = 0;
+    ii->unk4 = 0;
 }
 
 void Thing_SetSlavePlayers(void *thing) {
