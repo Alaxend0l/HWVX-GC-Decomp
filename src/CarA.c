@@ -1799,6 +1799,20 @@ s32 CarA_GetSurfaceScript(u8 *car)
     return *(s32 *)(coll + 0x30);
 }
 
+void CarA_CollideWithRay(CarA *car, void *start, void *end, struct RayHit { u8 pad0[0x30]; Vector4 normal; } *hit, f32 maxDist) {
+    void XformVec(void *mtx, void *in, Vector4 *out);
+    f32 PhysicalProperties_CollideWithRay(void *props, void *pos, void *start, void *end, void *hit, f32 maxDist);
+    Matrix4 local;
+    f32 dist;
+
+    local = car->worldMatrix;
+    XformVec(&car->worldMatrix, &car->bodyOffset, &local.v[3]);
+    dist = PhysicalProperties_CollideWithRay(car->vehicleIface->collider, &local, start, end, hit, maxDist);
+    if (hit != NULL && dist < maxDist) {
+        hit->normal = car->velocity;
+    }
+}
+
 s32 CarA_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
