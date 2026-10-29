@@ -352,7 +352,7 @@ config.libs = [
             Object(NonMatching, "ThingManager.c"),
             Object(NonMatching, "Trail.c"),
             Object(NonMatching, "Trigger.c"),
-            Object(NonMatching, "VertexColorSeqManager.c"),
+            Object(Matching, "VertexColorSeqManager.c"),
             Object(NonMatching, "VolumeManager.c"),
             Object(NonMatching, "WildCard.c"),
             Object(NonMatching, "World.c"),
