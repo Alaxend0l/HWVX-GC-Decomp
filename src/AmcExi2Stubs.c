@@ -8,6 +8,10 @@ void EXI2_EnableInterrupts(void) {
 
 }
 
+int EXI2_Poll(void) {
+    return 0;
+}
+
 void EXI2_Reserve(void) {
 
 }
