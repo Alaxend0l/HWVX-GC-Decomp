@@ -68,3 +68,19 @@ s32 SIReadSteering(s32 chan, SISteeringStatus *status) {
     OSRestoreInterrupts(enabled);
     return ret;
 }
+
+void OSClearContext(void *context);
+void OSSetCurrentContext(void *context);
+static void SamplingHandler(s16 interrupt, void *context)
+{
+    u32 exceptionContext[0x2C8 / 4];
+
+    if (SamplingCallback) {
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(exceptionContext);
+        SamplingCallback();
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(context);
+    }
+}
+
