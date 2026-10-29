@@ -160,6 +160,20 @@ void VISetNextFrameBuffer(void *fb) {
     OSRestoreInterrupts(enabled);
 }
 
+static void setVerticalRegs(u16 dispPosY, u16 dispSizeY, u8 equ, u16 acv, u16 prbOdd, u16 prbEven, u16 psbOdd, u16 psbEven, s32 black);
+void VISetBlack(s32 black) {
+    s32 OSDisableInterrupts(void);
+    void OSRestoreInterrupts(s32 level);
+    s32 enabled;
+    VITiming *tm;
+
+    enabled = OSDisableInterrupts();
+    HorVer.black = black;
+    tm = HorVer.timing;
+    setVerticalRegs(HorVer.AdjustedDispPosY, HorVer.DispSizeY, tm->equ, tm->acv, tm->prbOdd, tm->prbEven, tm->psbOdd, tm->psbEven, HorVer.black);
+    OSRestoreInterrupts(enabled);
+}
+
 static u32 getCurrentFieldEvenOdd(void) {
     extern VITiming *CurrTiming;
     u32 hct;
