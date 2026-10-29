@@ -124,9 +124,6 @@ void __CARDUnlockedHandler(s32 chan, void *context) {
     }
 }
 
-s32 EXISelect(s32 chan, u32 dev, u32 freq);
-s32 EXIImm(s32 chan, void *buf, s32 len, u32 type, void *callback);
-s32 EXISync(s32 chan);
 s32 __CARDClearStatus(s32 chan) {
     BOOL err;
     u32 cmd;
