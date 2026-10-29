@@ -353,6 +353,22 @@ void Gfx_End_GroupTri(s32 n) {
     }
 }
 
+void Gfx_AddCorona(Vector4 *pos, u16 tex, GXColor *color, u8 flag, f32 a, f32 b) {
+    if (g_pGDL->num2DSprites == 2000) {
+        return;
+    }
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].x = pos->x;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].y = pos->y;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].z = pos->z;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].unkC = a * GetRenderWindow()->unk2CC;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].unk1C = b;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].color = *color;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].tex = tex;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].flag = flag;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].window = g_currentWindow;
+    g_pGDL->num2DSprites++;
+}
+
 GDLRect *Gfx_Add2DRectangleRenderWindow(void) {
     if (g_pGDL->numRects >= 0x20) {
         g_pGDL->numRects = 0;
