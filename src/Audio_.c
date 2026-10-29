@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 
 s32 Audio_Create_(void) {
     void Audio_Update_(void);
@@ -17,6 +19,68 @@ s32 Audio_Create_(void) {
     AXRegisterCallback(Audio_Update_);
     return 1;
 }
+
+u32 MemCpyA_(u32 dst, u32 src, u32 len);
+#pragma push
+#pragma optimization_level 1
+s32 Audio_Init_(void) {
+    typedef struct MemBlk {
+        u32 addr;
+        s32 size;
+        u32 prev;
+        u32 next;
+    } MemBlk;
+    extern MemBlk g_memblk[];
+    extern s32 g_last;
+    extern u32 g_heap;
+    extern s32 g_size;
+    extern u32 g_silence;
+    extern u32 g_free;
+    extern s32 __OSCurrHeap;
+    void ARQFlushQueue(void);
+    u32 ARGetBaseAddress(void);
+    u32 ARGetSize(void);
+    void *OSAllocFromHeap(s32 heap, u32 size);
+    void OSFreeToHeap(s32 heap, void *ptr);
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32 level);
+    void *memset(void *dst, int c, u32 n);
+    int printf();
+    u32 i;
+    s32 level;
+    void *buf;
+
+    ARQFlushQueue();
+    g_silence = ARGetBaseAddress();
+    g_heap = g_silence + 0x800;
+    g_size = ARGetSize() - g_heap;
+    g_memblk[0].addr = g_heap;
+    g_memblk[0].size = g_size;
+    g_memblk[0].prev = -1;
+    g_memblk[0].next = -1;
+    g_last = 0;
+    g_memblk[1].size = 0;
+    g_memblk[1].prev = -1;
+    g_memblk[1].next = 2;
+    g_free = 1;
+    for (i = 2; i < 0xFF; i++) {
+        g_memblk[i].size = 0;
+        g_memblk[i].prev = i - 1;
+        g_memblk[i].next = i + 1;
+    }
+    g_memblk[0xFE].next = -1;
+    level = OSDisableInterrupts();
+    buf = OSAllocFromHeap(__OSCurrHeap, 0x800);
+    OSRestoreInterrupts(level);
+    memset(buf, 0, 0x800);
+    MemCpyA_(g_silence, (u32)buf, 0x800);
+    level = OSDisableInterrupts();
+    OSFreeToHeap(__OSCurrHeap, buf);
+    OSRestoreInterrupts(level);
+    printf("Audio :: Initialized (%ik available RAM)\n", g_size >> 10);
+    return 1;
+}
+#pragma pop
 
 void Audio_Destroy_(void) {
     M2C_UNK AIReset();
