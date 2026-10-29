@@ -367,6 +367,42 @@ void CreateParticleSprite(Vector4 *pos, Vector4 *vel, Vector4 *accel, void *owne
     }
 }
 
+void ParticleGX_Move(struct ParticleGX_Move_t {
+        Vector4 pos;
+        u8 unk10[0xDC - 0x10];
+        s32 timer;
+        Vector4 targetPos;
+    } *particle) {
+    extern s32 g_iDeltaTimeMS;
+    f32 Gfx_GetMinCameraDistSquared(void *pos);
+    f32 Sqrt(f32 x);
+    void ParticleGX_MacroStep(void *particle);
+    void ParticleGX_MicroStep(void *particle);
+    f32 distSq;
+
+    if (particle->timer <= 0) {
+        particle->pos = particle->targetPos;
+        distSq = Gfx_GetMinCameraDistSquared(particle);
+        if ((u32)ViewManager_GetViewFormat() > 1) {
+            distSq *= 4.0f;
+        }
+        if (distSq > 1000000.0f) {
+            particle->timer = 700;
+        } else {
+            distSq = Sqrt(distSq) - 1.0f;
+            distSq /= 999.0f;
+            distSq *= 700.0f;
+            particle->timer = (u32)distSq;
+        }
+        if (particle->timer < g_iDeltaTimeMS) {
+            particle->timer = g_iDeltaTimeMS;
+        }
+        ParticleGX_MacroStep(particle);
+    }
+    ParticleGX_MicroStep(particle);
+    particle->timer -= g_iDeltaTimeMS;
+}
+
 void ParticleGX_MicroStep(void *arg0) {
     extern f32 g_fDeltaTimeMS;
     void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0);
