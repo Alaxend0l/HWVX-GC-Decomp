@@ -902,12 +902,12 @@ void CarA_DynamicRotation(u8 *car, f32 dt) {
     OBox obox;
     RayHit hit;
     Matrix4 mtx;
-    Quaternion q;
-    Quaternion newQ;
-    Vector4 axis;
-    Vector4 dir;
-    Vector4 r;
-    Vector4 v;
+    Quaternion q __attribute__((aligned(16)));
+    Quaternion newQ __attribute__((aligned(16)));
+    Vector4 axis __attribute__((aligned(16)));
+    Vector4 dir __attribute__((aligned(16)));
+    Vector4 r __attribute__((aligned(16)));
+    Vector4 v __attribute__((aligned(16)));
     f32 t;
     f32 mag;
     u32 i;
