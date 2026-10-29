@@ -376,7 +376,7 @@ config.libs = [
             Object(NonMatching, "bgmath_NGC.c"),
             Object(Matching, "Debug_NGC.c"),
             Object(NonMatching, "Main_NGC.c"),
-            Object(NonMatching, "MemoryManager.c"),
+            Object(Matching, "MemoryManager.c"),
             Object(NonMatching, "Plane.c"),
             Object(NonMatching, "Random.c"),
             Object(NonMatching, "TimeHandler_NGC.c"),
