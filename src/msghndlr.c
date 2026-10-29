@@ -22,6 +22,23 @@ static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
 }
 
 __declspec(section ".data") extern s32 IsTRKConnected;
+void __TRK_reset(void);
+s32 TRKDoReset(TRKBuffer *b) {
+    s32 err;
+    s32 ackTries;
+
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, 0);
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+    __TRK_reset();
+    return 0;
+}
+
 s32 TRKDoConnect(TRKBuffer *b) {
     s32 err;
     s32 ackTries;
