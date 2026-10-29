@@ -246,3 +246,26 @@ s32 SmartProjectileA_PreMove(SmartProjectile *proj) {
   proj->vel.z = proj->dir.z * ns;
   return 1;
 }
+
+void Projectile_MoveBase(SmartProjectile *proj);
+void Thing_CollideWithForceBoxes(SmartProjectile *thing);
+s32 SmartProjectileA_Move(SmartProjectile *proj) {
+  Quaternion qy;
+  Quaternion qz;
+  Quaternion qx;
+  Quaternion t1;
+  Quaternion t2;
+  Projectile_MoveBase(proj);
+  GenerateQuaternion((Vector4 *)&proj->mtx[0x10], &qx, proj->turnX * g_fDeltaTimeSec);
+  GenerateQuaternion((Vector4 *)&proj->mtx[0], &qy, proj->turnY * g_fDeltaTimeSec);
+  GenerateQuaternion(&proj->dir, &qz, proj->turnZ * g_fDeltaTimeSec);
+  QuaternionMult(&proj->quat, &qx, &t1);
+  QuaternionMult(&qy, &t1, &t2);
+  QuaternionMult(&qz, &t2, &proj->quat);
+  QuaternionToSubMatrix(&proj->quat, &proj->mtx[0]);
+  proj->flags |= 0x80;
+  proj->flags |= 0x100;
+  Thing_CollideWithForceBoxes(proj);
+  return 1;
+}
+
