@@ -478,4 +478,77 @@ void RadarBlip_Draw(RadarBlip *blip) {
         }
     }
 }
+void Thing_Release();
+void Thing_PreMove();
+void Thing_GetMass();
+void Thing_DynamicCollideImpact();
+void Thing_GetCameraOrientationInfo();
+void Thing_GetInterfaceInfo();
+void Thing_SlaveTransformQuaternionOnly();
+void Thing_GetSurfaceScript();
+void Thing_GetNearestNavPoint();
+void Thing_GetInverseLocalInertiaTensor();
+void Thing_DynamicRotation();
+void Thing_CollideWithRay();
+void Thing_GetTargetPos();
+void Thing_GetOrientedCollision();
 
+void *g_attachVTable[] = {
+    AttachThing_Init,
+    Thing_Release,
+    Thing_PreMove,
+    AttachThing_Move,
+    AttachThing_Draw,
+    Thing_GetMass,
+    Thing_DynamicCollideImpact,
+    Thing_GetCameraOrientationInfo,
+    Thing_GetInterfaceInfo,
+    AttachThing_SlaveTransform,
+    Thing_GetSurfaceScript,
+    Thing_GetNearestNavPoint,
+    Thing_GetInverseLocalInertiaTensor,
+    Thing_DynamicRotation,
+    Thing_CollideWithRay,
+    Thing_GetTargetPos,
+    Thing_GetOrientedCollision,
+};
+
+void *g_attachGeometryVTable[] = {
+    AttachThing_Init,
+    Thing_Release,
+    Thing_PreMove,
+    AttachGeometry_Move,
+    AttachGeometry_Draw,
+    Thing_GetMass,
+    Thing_DynamicCollideImpact,
+    Thing_GetCameraOrientationInfo,
+    Thing_GetInterfaceInfo,
+    Thing_SlaveTransformQuaternionOnly,
+    Thing_GetSurfaceScript,
+    Thing_GetNearestNavPoint,
+    Thing_GetInverseLocalInertiaTensor,
+    Thing_DynamicRotation,
+    Thing_CollideWithRay,
+    Thing_GetTargetPos,
+    Thing_GetOrientedCollision,
+};
+
+void *g_radarBlipVTable[] = {
+    RadarBlip_Init,
+    Thing_Release,
+    Thing_PreMove,
+    RadarBlip_Move,
+    RadarBlip_Draw,
+    Thing_GetMass,
+    Thing_DynamicCollideImpact,
+    Thing_GetCameraOrientationInfo,
+    Thing_GetInterfaceInfo,
+    Thing_SlaveTransformQuaternionOnly,
+    Thing_GetSurfaceScript,
+    Thing_GetNearestNavPoint,
+    Thing_GetInverseLocalInertiaTensor,
+    Thing_DynamicRotation,
+    Thing_CollideWithRay,
+    Thing_GetTargetPos,
+    Thing_GetOrientedCollision,
+};
