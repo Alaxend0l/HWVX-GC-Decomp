@@ -228,6 +228,15 @@ void PADOriginUpdateCallback(s32 chan, u32 error, void *context)
     }
 }
 
+void PADProbeCallback(s32 chan, u32 error, void *context)
+{
+    if (!(error & 0xF)) {
+        PADEnable(ResettingChan);
+        WaitingBits |= 0x80000000 >> ResettingChan;
+    }
+    DoReset();
+}
+
 void PADReceiveCheckCallback(s32 chan, u32 type)
 {
     BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback, s64 delay);
