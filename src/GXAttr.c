@@ -127,6 +127,16 @@ void GXGetVtxDesc(s32 attr, s32 *type) {
     *type = cpType;
 }
 
+void GXGetVtxDescv(GXVtxDescList *vcd) {
+    enum { GX_VA_PNMTXIDX, GX_VA_MAX_ATTR = 26, GX_VA_NULL = 0xFF } attr;
+
+    for (attr = GX_VA_PNMTXIDX; attr < GX_VA_MAX_ATTR; attr++) {
+        vcd[attr].attr = attr;
+        GXGetVtxDesc(attr, &vcd[attr].type);
+    }
+    vcd[attr].attr = GX_VA_NULL;
+}
+
 void GXClearVtxDesc(void) {
     gx->vcdLo = 0;
     gx->vcdLo = ((u32)gx->vcdLo & ~0x600) | ((u32)1 << 9);
