@@ -10,3 +10,11 @@ void DCFlushRange(void *addr, u32 nBytes);
 extern u32 m_VtxDescFlag;
 extern u32 *m_vertexBuffer;
 extern u32 m_pointLightMask;
+
+void Render_UseLighting(u8 enable) {
+    if (enable) {
+        GXSetChanCtrl(4, 1, 0, 0, m_pointLightMask | 1, 2, 2);
+    } else {
+        GXSetChanCtrl(4, 0, 1, 1, 0, 0, 2);
+    }
+}
