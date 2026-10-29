@@ -86,3 +86,38 @@ s32 OSRestoreInterrupts(s32 level);
 s64 OSGetTime(void);
 
 u32 __OSBusClock : 0x800000F8;
+
+s32 GBAGetProcessStatus(s32 chan, u8 *percentp) {
+    GBAControl *gba;
+    GBABootInfo *bootInfo;
+    BOOL enabled;
+    s32 ret;
+    u8 percent;
+    s64 t;
+
+    gba = &__GBA[chan];
+    bootInfo = &gba->bootInfo;
+    enabled = OSDisableInterrupts();
+    if (bootInfo->callback != NULL) {
+        ret = 2;
+        percent = (bootInfo->curOffset * 100) / bootInfo->realLength;
+        if (bootInfo->begin != 0) {
+            t = OSGetTime() - bootInfo->begin;
+            if (t / ((__OSBusClock / 4) / 1000) < 5500) {
+                percent = (percent * t) / (5500LL * ((__OSBusClock / 4) / 1000));
+            }
+            if (percent >= 100) {
+                percent = 100;
+            }
+        }
+        if (percentp != NULL) {
+            *percentp = percent;
+        }
+    } else if (gba->callback != NULL) {
+        ret = 2;
+    } else {
+        ret = 0;
+    }
+    OSRestoreInterrupts(enabled);
+    return ret;
+}
