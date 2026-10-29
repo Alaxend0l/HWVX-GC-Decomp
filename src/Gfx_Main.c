@@ -51,6 +51,41 @@ f32 PSVECSquareMag(Vector *v);
 void PSVECNormalize(Vector *src, Vector *dst);
 
 
+s32 Gfx_Create(void) {
+    void Init_Math3D(void);
+    void RenderState_Init(void);
+    void Render_Create(void);
+    void TimeHandler_Init(void);
+    void FontManager_Create(void);
+    s32 Gfx_TextureHandler_Create(void);
+    s32 Gfx_DisplayList_Create(void);
+    extern GXColor g_textcolor;
+    extern s8 g_screenTextY;
+    extern s8 g_screenTextX;
+    extern u8 g_CurrentViews;
+    extern u8 g_screenText[0xA00];
+
+    Init_Math3D();
+    RenderState_Init();
+    Render_Create();
+    TimeHandler_Init();
+    FontManager_Create();
+    g_textcolor.a = 0xFF;
+    g_textcolor.b = 0xFF;
+    g_textcolor.g = 0xFF;
+    g_textcolor.r = 0xFF;
+    g_screenTextY = 0;
+    g_screenTextX = 0;
+    g_CurrentViews = 1;
+    memset(g_screenText, 0, sizeof(g_screenText));
+    if (Gfx_TextureHandler_Create() == 0) {
+        return 0;
+    } else if (Gfx_DisplayList_Create() == 0) {
+        return 0;
+    }
+    return 1;
+}
+
 void Gfx_Destroy(void) {
     M2C_UNK Gfx_DisplayList_Destroy();
     M2C_UNK Gfx_TextureHandler_Destroy();
