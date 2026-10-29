@@ -12,6 +12,8 @@ typedef struct DVDCommand
 
 static DVDCommand CommandList[3];
 static volatile s32 NextCommandNumber;
+static volatile s32 StopAtNextInt;
+static volatile s32 Breaking;
 
 extern s32 Read(s32, s32, s32, s32);
 extern s32 DVDLowSeek(s32, s32);
