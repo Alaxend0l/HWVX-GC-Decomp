@@ -132,7 +132,7 @@ void stateReady(void)
         executing = &DummyCommandBlock;
         if (finished->callback)
         {
-            ((void (*)(s32, DVDCommandBlock *))finished->callback)(-1, finished);
+            (*finished->callback)(-1, finished);
         }
         stateReady();
         return;
@@ -175,7 +175,7 @@ void stateReady(void)
                 executing = &DummyCommandBlock;
                 if (finished->callback)
                 {
-                    ((void (*)(s32, DVDCommandBlock *))finished->callback)(-4, finished);
+                    (*finished->callback)(-4, finished);
                 }
                 stateReady();
                 break;
