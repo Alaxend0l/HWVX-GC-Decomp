@@ -187,6 +187,19 @@ s8 RayHitsObjects_CameraSpecial(Vector4 *start, Vector4 *dir, f32 *t, void *info
 }
 #pragma pop
 
+s8 RayHitsTerrain_Aux3(void *, void *, void *, void *);
+f32 MagnitudeVector(void *v);
+
+static inline s8 RayHitsTerrainAndObjects_Camera(Vector4 *start, Vector4 *dir, f32 *t, void *info) {
+    s8 hit;
+
+    hit = RayHitsTerrain_Aux3(start, dir, t, info);
+    if (RayHitsObjects_CameraSpecial(start, dir, t, info)) {
+        hit = 1;
+    }
+    return hit;
+}
+
 void GetTrimmedCameraPos(u8 *camera, Vector4 *from, Vector4 *dir, f32 *trim, f32 dist) {
     extern f32 g_fDeltaTimeSec;
     f32 PSVECDotProduct(void *a, void *b);
