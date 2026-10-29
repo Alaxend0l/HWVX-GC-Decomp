@@ -180,6 +180,34 @@ static void F29(s32 chan, s32 ret) {
     gba->ret = ret;
 }
 
+static void F37(s32 chan, s32 ret) {
+    GBAControl *gba;
+    GBABootInfo *bootInfo;
+    GBACallback callback;
+
+    gba = &__GBA[chan];
+    bootInfo = &gba->bootInfo;
+    if (ret == 0) {
+        if (((bootInfo->readbuf[3] ^ (bootInfo->initialCode >> 24)) |
+             (bootInfo->readbuf[2] ^ (bootInfo->initialCode >> 16)) |
+             (bootInfo->readbuf[1] ^ (bootInfo->initialCode >> 8)) |
+             (bootInfo->readbuf[0] ^ bootInfo->initialCode)) << 24) {
+            ret = 3;
+        } else {
+            ret = GBAWriteAsync(chan, bootInfo->readbuf, bootInfo->status, F39);
+        }
+    }
+    if (ret != 0) {
+        bootInfo->begin = 0;
+        if (bootInfo->callback) {
+            callback = bootInfo->callback;
+            bootInfo->callback = NULL;
+            callback(chan, ret);
+        }
+    }
+    gba->ret = ret;
+}
+
 static void F39(s32 chan, s32 ret) {
     GBAControl *gba;
     GBABootInfo *bootInfo;
