@@ -297,6 +297,10 @@ s8 NavHolder_CreatePath(u8 *goal, u8 *start) {
     }
 }
 
+u32 NavHolder_GetTotalNavPoints(void) {
+    return gs_NavHolder_803C6CD8.data->numNodes;
+}
+
 u8 *NavHolder_GetNavPoint(s32 index) {
     u8 *point = NULL;
     if (gs_NavHolder_803C6CD8.data != NULL && index < (s32)gs_NavHolder_803C6CD8.data->numNodes) {
