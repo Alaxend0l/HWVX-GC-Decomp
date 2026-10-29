@@ -117,7 +117,11 @@ typedef struct CarAInfo {
   f32 unk24;                /* 0x24 */
   u8 pad28[8];              /* 0x28 */
   f32 unk30;                /* 0x30 */
-  u8 pad34[0x4C];           /* 0x34 */
+  u8 pad34[0x1C];           /* 0x34 */
+  u32 skidsEnabled;         /* 0x50 */
+  u8 pad54[0x18];           /* 0x54 */
+  GXColor *skidColor;       /* 0x6C */
+  u8 pad70[0x10];           /* 0x70 */
   CarAEngine *engine;       /* 0x80 */
   u8 pad84[4];              /* 0x84 */
   CarAAccel *accel;         /* 0x88 */
