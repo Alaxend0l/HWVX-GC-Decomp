@@ -84,3 +84,16 @@ static void DoUnmount(s32 chan, s32 result) {
     OSRestoreInterrupts(enabled);
 }
 
+s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard);
+s32 CARDUnmount(s32 chan) {
+    CARDControl *card;
+    s32 result;
+
+    result = __CARDGetControlBlock(chan, &card);
+    if (result < 0) {
+        return result;
+    }
+    DoUnmount(chan, -3);
+    return 0;
+}
+
