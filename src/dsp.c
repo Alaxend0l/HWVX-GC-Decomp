@@ -20,6 +20,17 @@ extern DSPTaskInfo *__DSP_first_task;
 void __DSP_insert_task(DSPTaskInfo *task);
 void __DSP_boot_task(DSPTaskInfo *task);
 
+static inline void DSPAssertInt(void) {
+    BOOL old;
+    u16 tmp;
+
+    old = OSDisableInterrupts();
+    tmp = __DSPRegs[5];
+    tmp = (u16)((tmp & ~(0x80 | 0x20 | 0x08)) | 0x02);
+    __DSPRegs[5] = tmp;
+    OSRestoreInterrupts(old);
+}
+
 
 s32 DSPCheckMailToDSP(void)
 {
@@ -120,3 +131,36 @@ DSPTaskInfo *DSPAddTask(DSPTaskInfo *task) {
     return task;
 }
 
+#pragma peephole on
+#pragma scheduling on
+DSPTaskInfo *DSPAssertTask(DSPTaskInfo *task) {
+    extern DSPTaskInfo *__DSP_curr_task;
+    extern DSPTaskInfo *__DSP_rude_task;
+    extern s32 __DSP_rude_task_pending;
+    BOOL old;
+
+    old = OSDisableInterrupts();
+    if (__DSP_curr_task == task) {
+        __DSP_rude_task = task;
+        __DSP_rude_task_pending = 1;
+        OSRestoreInterrupts(old);
+        return task;
+    }
+    if (task->priority < __DSP_curr_task->priority) {
+        __DSP_rude_task = task;
+        __DSP_rude_task_pending = 1;
+        if (__DSP_curr_task->state == 1) {
+            BOOL old2;
+            u16 tmp;
+            old2 = OSDisableInterrupts();
+            tmp = __DSPRegs[5];
+            tmp = (u16)((tmp & ~0xA8) | 0x02);
+            __DSPRegs[5] = tmp;
+            OSRestoreInterrupts(old2);
+        }
+        OSRestoreInterrupts(old);
+        return task;
+    }
+    OSRestoreInterrupts(old);
+    return NULL;
+}
