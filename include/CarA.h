@@ -235,7 +235,8 @@ typedef struct CarA {
   u8 pad4E9[7];             /* 0x4E9 */
   s32 soundIds[3];          /* 0x4F0 SoundSource ids, -1 == none; stopped + reset in Release */
   f32 unk4FC;               /* 0x4FC */
-  u8 pad500[0xC];           /* 0x500 */
+  s32 damageAccum;          /* 0x500 */
+  u8 pad504[8];             /* 0x504 */
   f32 forwardAccel;         /* 0x50C velocity += forward * this * dt */
   u8 pad510[0x10];          /* 0x510 */
   Vector4 bodyOffset;       /* 0x520 XformVec(worldMatrix, this) -> camera/reflection pos */
