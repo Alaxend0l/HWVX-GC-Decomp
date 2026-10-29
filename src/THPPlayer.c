@@ -36,8 +36,8 @@ typedef struct THPPlayer {
     u8 padAC[0x14];
     u32 unkC0;
     u32 unkC4;
-    u32 unkC8;
-    u32 unkCC;
+    s32 unkC8; /* prevCount */
+    s32 unkCC; /* curCount */
     u32 unkD0;
     u8 padD4[4];
     s32 audioFrameNumber;
