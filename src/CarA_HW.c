@@ -71,6 +71,59 @@ void CarA_StuntImpulse(CarA *car, Vector4 *linImpulse, Vector4 *angImpulse) {
     }
 }
 
+int sprintf(char *buf, const char *fmt, ...);
+void CarA_StuntFail(CarA *car) {
+    CarAStuntInfo *stunt;
+    u32 count;
+    u32 secs;
+    u32 idx;
+    f32 minTime;
+    f32 maxTime;
+    CarAShiftSoundParams params __attribute__((aligned(16)));
+
+    stunt = car->vehicleIface->stunt;
+    minTime = stunt->minFailTime;
+    if (car->stuntTime > minTime) {
+        count = stunt->numFailThings;
+        maxTime = stunt->maxFailTime;
+        secs = car->stuntTime;
+        if (stunt->failMessage != NULL) {
+            car->stuntMessage = stunt->failMessage;
+        } else {
+            sprintf(stunt_msg_buffer, "Stunt Failed");
+            car->stuntMessage = &g_stuntLossString;
+        }
+        if (car->vehicleIface->numSlaves > 10) {
+            MotionState_InitAllSlavesNow(&car->motionState, car->vehicleIface->slaves + 0x7C, 10);
+        }
+        if (count != 0 && (f32)secs > minTime) {
+            idx = 0;
+            if (count > 1) {
+                idx = (f32)count * (((f32)secs - minTime) / (maxTime - minTime)) + 0.5f;
+                if (idx >= count) {
+                    idx = count - 1;
+                }
+            }
+            params.id = stunt->failThings[idx];
+            if (params.id != 0) {
+                params.pos = car->worldMatrix.v[3];
+                params.animRefPos = car->animRefPos;
+                params.vel.x = car->velocity.x;
+                params.vel.y = 0.0f;
+                params.vel.z = car->velocity.z;
+                params.player = NULL;
+                params.unk48 = 0.0f;
+                params.unk4C = 0.0f;
+                params.angVel = g_zeroVector;
+                ThingManager_DARYL_CreateThing(1, &params);
+            }
+        }
+    }
+    car->stuntTime = 0.0f;
+    car->stuntSpin = g_zeroVector;
+    car->transmissionFlags |= 0x40000;
+}
+
 void CarA_SlaveWeaponStop(CarA *car, s32 weapon) {
     void MotionState_ReleaseSlavesByType(MotionState *state, u8 type);
     void ThingManagerList_RemoveReleasedThings(void *list);
