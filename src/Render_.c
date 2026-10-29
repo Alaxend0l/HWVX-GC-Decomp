@@ -112,6 +112,28 @@ typedef struct SilhouetteEdge {
 
 f32 PSVECDotProduct(const f32 *a, const f32 *b);
 
+typedef union {
+    u8 u8;
+    u16 u16;
+    u32 u32;
+    s32 s32;
+    f32 f32;
+} PPCWGPipe;
+
+volatile PPCWGPipe GXWGFifo : 0xCC008000;
+
+static inline void GXPosition3f32(f32 x, f32 y, f32 z) {
+    GXWGFifo.f32 = x;
+    GXWGFifo.f32 = y;
+    GXWGFifo.f32 = z;
+}
+
+static inline void GXColor1u32(u32 clr) {
+    GXWGFifo.u32 = clr;
+}
+
+void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+
 extern GDL *g_pGDL;
 extern RenderStats g_renderStats;
 extern s32 g_debugTriCount;
