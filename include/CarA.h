@@ -172,7 +172,8 @@ typedef struct CarA {
   u8 tiltState;             /* 0x490 0: rest, 1/2: tilted by the stick, 3 */
   u8 pad491[0x2F];          /* 0x491 */
   f32 torquePolyCoeffs[4];  /* 0x4C0 Horner polynomial in rpm */
-  u8 pad4D0[0x14];          /* 0x4D0 */
+  u8 pad4D0[0x10];          /* 0x4D0 */
+  f32 unk4E0;               /* 0x4E0 */
   f32 rpm;                  /* 0x4E4 */
   u8 curveTableIdx;         /* 0x4E8 index into the interface's curve table */
   u8 pad4E9[7];             /* 0x4E9 */
