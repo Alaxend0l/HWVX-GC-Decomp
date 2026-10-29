@@ -10,6 +10,17 @@ void Render_ClearScreen(void) {
 
 }
 
+void Set2DRectFlatVtxDesc(void) {
+    if (m_VtxDescFlag != 0x80) {
+        m_VtxDescFlag = 0x80;
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 1);
+        GXSetVtxDesc(0xB, 1);
+        GXSetVtxAttrFmt(0, 9, 0, 4, 0);
+        GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+    }
+}
+
 void Set3DRectVtxDesc(void) {
     if (m_VtxDescFlag != 0x40) {
         m_VtxDescFlag = 0x40;
