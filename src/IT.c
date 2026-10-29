@@ -70,6 +70,9 @@ void StopActive(IT_TRACK *trk);
 void StartVoice_(void *voice);
 void *GetVoice_(u8 type, u32 priority);
 u32 GetNoteRate_(u32 rate, u8 note);
+s32 PlayNote(IT_TRACK *trk);
+void SetTrackVol(IT_TRACK *trk);
+void SetTrackPan(IT_TRACK *trk);
 
 void AudioIT_Destroy(void) {
 
