@@ -243,7 +243,6 @@ u32 PADRead(PADStatus *status)
     u32 SIGetType(s32 chan);
     BOOL SIGetResponse(s32 chan, void *data);
     BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback, s64 delay);
-    void PADReceiveCheckCallback(void);
     void PADOriginUpdateCallback(s32 chan, u32 error, void *context);
     BOOL enabled;
     s32 chan;
