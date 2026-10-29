@@ -12,7 +12,7 @@ s32 TRKInitializeIntDrivenUART(u32 param1, u32 param2, u32 param3, volatile u8 *
 extern u8 *gTRKInputPendingPtr[];
 __declspec(section ".data") s32 gTRKBigEndian;
 
-static BOOL TRK_InitializeEndian(void) {
+BOOL TRK_InitializeEndian(void) {
     u8 bendian[4];
     BOOL result = FALSE;
 
