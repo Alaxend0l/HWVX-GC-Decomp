@@ -18,6 +18,70 @@ typedef struct MotionState {
   u8 *slaves;              /* 0x14 linked list, next node at +0xA4 */
 } MotionState;
 
+/* The player object a car is driven by (CarA.player): its controller state
+ * sits at the start, read by CarA_PreMove_Control_HW. */
+typedef struct Player {
+  s8 stickX;                /* 0x00 */
+  s8 stickY;                /* 0x01 */
+  u8 pad02[0xE];            /* 0x02 */
+  u8 button10;              /* 0x10 */
+  u8 pad11;                 /* 0x11 */
+  u8 throttle;              /* 0x12 */
+  u8 brake;                 /* 0x13 */
+  u8 pad14;                 /* 0x14 */
+  u8 button15;              /* 0x15 */
+  u8 pad16[4];              /* 0x16 */
+  u8 button1A;              /* 0x1A */
+} Player;
+
+typedef struct CarAEngine {
+  u8 pad00[0x14];           /* 0x00 */
+  f32 unk14;                /* 0x14 */
+  u32 unk18;                /* 0x18 */
+  u8 pad1C[0x28];           /* 0x1C */
+  f32 unk44;                /* 0x44 */
+} CarAEngine;
+
+typedef struct CarAAccel {
+  u8 pad00[0x18];           /* 0x00 */
+  f32 unk18;                /* 0x18 */
+  f32 unk1C;                /* 0x1C */
+  f32 unk20;                /* 0x20 */
+} CarAAccel;
+
+typedef struct CarAStuntInfo {
+  u8 pad00[0x28];           /* 0x00 */
+  s32 unk28;                /* 0x28 */
+} CarAStuntInfo;
+
+typedef struct CarAGear {
+  f32 ratio;                /* 0x00 */
+  f32 unk4;                 /* 0x04 */
+} CarAGear;
+
+/* The car's config/vehicle-interface container (CarA.vehicleIface). */
+typedef struct CarAInfo {
+  u8 pad00[0x1C];           /* 0x00 */
+  f32 unk1C;                /* 0x1C */
+  f32 unk20;                /* 0x20 */
+  f32 unk24;                /* 0x24 */
+  u8 pad28[8];              /* 0x28 */
+  f32 unk30;                /* 0x30 */
+  u8 pad34[0x4C];           /* 0x34 */
+  CarAEngine *engine;       /* 0x80 */
+  u8 pad84[4];              /* 0x84 */
+  CarAAccel *accel;         /* 0x88 */
+  CarAStuntInfo *stunt;     /* 0x8C */
+  u8 pad90[0x48];           /* 0x90 */
+  u32 numGears;             /* 0xD8 */
+  CarAGear *gears;          /* 0xDC torque curve table */
+  u32 numSlaves;            /* 0xE0 */
+  u8 *slaves;               /* 0xE4 */
+  u8 padE8[0x28];           /* 0xE8 */
+  u32 numShiftSounds;       /* 0x110 */
+  u32 *shiftSounds;         /* 0x114 */
+} CarAInfo;
+
 typedef struct CarA {
   Vector4 velocity;         /* 0x00 carVel = *(Vector4 *)car; read as u32 at 0x8 (scale) */
   Matrix4 worldMatrix;      /* 0x10 mtx = *(Matrix4 *)(car + 0x10);
