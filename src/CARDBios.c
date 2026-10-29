@@ -51,6 +51,10 @@ void __CARDDefaultApiCallback(void)
 {
 }
 
+void __CARDSyncCallback(s32 chan, s32 result) {
+    OSWakeupThread(&__CARDBlock[chan].threadQueue);
+}
+
 extern int CARDUnmount(int);
 s32 OnReset(s32 arg0)
 {
