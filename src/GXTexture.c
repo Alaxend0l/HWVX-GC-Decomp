@@ -17,6 +17,22 @@ typedef struct GXTexObj {
     u32 dummy[8];
 } GXTexObj;
 
+typedef struct GXDataSUTex {
+    u8 unk0[0x100];
+    u32 tref[8];
+    u32 iref;
+    u8 unk124[0x204 - 0x124];
+    u32 genMode;
+    u8 unk208[0x49C - 0x208];
+    u32 texmapId[16];
+    u32 tcsManEnab;
+    u32 tevTcEnab;
+} GXDataSUTex;
+
+extern GXDataSUTex *gx;
+
+void __SetSURegs(u32 tmap, u32 tcoord);
+
 
 void *GXGetTexObjData(GXTexObj *to) {
     __GXTexObjInt *t = (__GXTexObjInt *)to;
