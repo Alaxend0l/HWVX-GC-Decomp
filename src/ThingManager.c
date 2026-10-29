@@ -71,12 +71,7 @@ static inline void ThingManager_InitFreeThing(ThingHeader *thing, void *vtable, 
     thing->prev = NULL;
     thing->next = NULL;
     thing->type = type;
-    thing->next = g_thingManager_DARYL.freeList[thing->type];
-    thing->prev = NULL;
-    if (thing->next != NULL) {
-        thing->next->prev = thing;
-    }
-    g_thingManager_DARYL.freeList[thing->type] = thing;
+    ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
 }
 
 static inline void ThingManager_InitPool(void *pool, u32 count, u32 size, void *vtable, u32 type) {
