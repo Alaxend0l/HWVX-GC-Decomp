@@ -754,7 +754,7 @@ typedef struct GeometryGroup {
 typedef struct GeometryVertex {
     Vector4 pos;
     u8 unk10[0x1C - 0x10];
-    u32 color;
+    GXColor color;
     u8 unk20[0x30 - 0x20];
 } GeometryVertex;
 
@@ -767,10 +767,10 @@ typedef struct Geometry {
     GeometryVertex *verts;
 } Geometry;
 
-static inline void Gfx_Add3DLine(Vector4 *p0, Vector4 *p1, u32 *color) {
+static inline void Gfx_Add3DLine(Vector4 *p0, Vector4 *p1, GXColor *color) {
     g_pGDL->lines3D[g_pGDL->num3DLines].p0 = *p0;
     g_pGDL->lines3D[g_pGDL->num3DLines].p1 = *p1;
-    *(u32 *)&g_pGDL->lines3D[g_pGDL->num3DLines].color = *color;
+    g_pGDL->lines3D[g_pGDL->num3DLines].color = *color;
     g_pGDL->num3DLines++;
 }
 
