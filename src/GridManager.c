@@ -98,6 +98,58 @@ void Grid_Init(Vector4 *min, Vector4 *max, u32 numX, u32 numZ) {
     }
 }
 
+static inline void Grid_RemoveNodes(GridObject *obj) {
+    GridNode *node;
+    GridNode *next;
+
+    for (node = obj->nodes; node != NULL; node = next) {
+        next = node->objNext;
+        if (node->next != NULL) {
+            node->next->prev = node->prev;
+        }
+        if (node->prev != NULL) {
+            node->prev->next = node->next;
+        } else {
+            node->cell->head = node->next;
+        }
+        node->cell->count--;
+        node->next = gGridManager.freeNodes;
+        gGridManager.freeNodes = node;
+    }
+}
+
+static inline void Grid_InsertNodes(GridObject *obj) {
+    GridNode *node;
+    GridNode *newNode;
+    GridNode *prev;
+    u32 x;
+    u32 z;
+
+    prev = NULL;
+    for (x = obj->x0; x <= obj->x1; x++) {
+        for (z = obj->z0; z <= obj->z1; z++) {
+            node = gGridManager.freeNodes;
+            newNode = NULL;
+            if (node != NULL) {
+                gGridManager.freeNodes = node->next;
+                newNode = node;
+                *(GridResult *)node = *(GridResult *)obj;
+                node->objNext = prev;
+                node->cell = &gGridManager.cells[node->data][x * gGridManager.numZ + z];
+                node->prev = NULL;
+                node->next = gGridManager.cells[node->data][x * gGridManager.numZ + z].head;
+                if (node->next != NULL) {
+                    node->next->prev = node;
+                }
+                gGridManager.cells[node->data][x * gGridManager.numZ + z].head = node;
+                gGridManager.cells[node->data][x * gGridManager.numZ + z].count++;
+            }
+            prev = newNode;
+        }
+    }
+    obj->nodes = prev;
+}
+
 void Grid_Release(void) {
 
 }
@@ -146,6 +198,69 @@ GridObject *Grid_AddObject(u32 data, u32 id, void *min, void *max) {
         result = obj;
     }
     return result;
+}
+
+void Grid_MoveObject(GridObject *obj, Vector4 *min, Vector4 *max) {
+    u32 z;
+    u32 x;
+    GridNode *prev;
+    GridNode *newNode;
+    GridNode *node;
+    GridNode *next;
+    GridNode *cur;
+    u32 x0;
+    u32 z0;
+    u32 x1;
+    u32 z1;
+
+    if (obj != NULL) {
+        Grid_GetCell(min, (s32 *)&x0, (s32 *)&z0);
+        Grid_GetCell(max, (s32 *)&x1, (s32 *)&z1);
+        if (x0 != obj->x0 || z0 != obj->z0 || x1 != obj->x1 || z1 != obj->z1) {
+            for (cur = obj->nodes; cur != NULL; cur = next) {
+                next = cur->objNext;
+                if (cur->next != NULL) {
+                    cur->next->prev = cur->prev;
+                }
+                if (cur->prev != NULL) {
+                    cur->prev->next = cur->next;
+                } else {
+                    cur->cell->head = cur->next;
+                }
+                cur->cell->count--;
+                cur->next = gGridManager.freeNodes;
+                gGridManager.freeNodes = cur;
+            }
+            obj->x0 = x0;
+            obj->z0 = z0;
+            obj->x1 = x1;
+            obj->z1 = z1;
+            prev = NULL;
+            for (x = obj->x0; x <= obj->x1; x++) {
+                for (z = obj->z0; z <= obj->z1; z++) {
+                    node = gGridManager.freeNodes;
+                    newNode = NULL;
+                    if (node != NULL) {
+                        gGridManager.freeNodes = node->next;
+                        newNode = node;
+                        *(GridResult *)node = *(GridResult *)obj;
+                        node->objNext = prev;
+                        node->cell = &gGridManager.cells[node->data][x * gGridManager.numZ + z];
+                        node->prev = NULL;
+                        node->next = gGridManager.cells[node->data][x * gGridManager.numZ + z].head;
+                        if (node->next != NULL) {
+                            node->next->prev = node;
+                        }
+                        gGridManager.cells[node->data][x * gGridManager.numZ + z].head = node;
+                        gGridManager.cells[node->data][x * gGridManager.numZ + z].count++;
+                    }
+                    prev = newNode;
+                }
+            }
+            obj->nodes = prev;
+            obj->next = NULL;
+        }
+    }
 }
 
 void Dprintf(const char *fmt, ...);
