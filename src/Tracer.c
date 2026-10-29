@@ -1,12 +1,5 @@
 #include "common.h"
 
-struct TracerEntry {
-    u8 pad0[0x4CE];
-    s16 active;
-    u8 pad4D0[0x4E0 - 0x4D0];
-};
-extern struct TracerEntry tracers[32];
-
 struct Thing {
     u8 pad0[0xB0];
     s32 tracer;
