@@ -86,3 +86,14 @@ void GXSetFieldMask(u8 odd_mask, u8 even_mask) {
     GXWGFifo.u32 = reg;
     gx->bpSentNot = 0;
 }
+
+#pragma peephole on
+void GXSetFieldMode(u8 field_mode, u8 half_aspect_ratio) {
+    gx->lpSize = (gx->lpSize & ~0x400000) | (half_aspect_ratio << 22);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->lpSize;
+    __GXFlushTextureState();
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = field_mode | 0x68000000;
+    __GXFlushTextureState();
+}
