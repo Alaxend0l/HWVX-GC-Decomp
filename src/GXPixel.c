@@ -55,6 +55,14 @@ void GXSetDither(u8 dither) {
     gx->bpSentNot = 0;
 }
 
+void GXSetDstAlpha(u8 enable, u8 alpha) {
+    gx->cmode1 = (gx->cmode1 & ~0xFF) | alpha;
+    gx->cmode1 = (gx->cmode1 & ~0x100) | (enable << 8);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->cmode1;
+    gx->bpSentNot = 0;
+}
+
 void GXSetFieldMask(u8 odd_mask, u8 even_mask) {
     u32 reg;
 
