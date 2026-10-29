@@ -117,45 +117,6 @@ void LineManager_Add(void *arg, Vector4 *start, Vector4 *dir, Vector4 *accel) {
 }
 
 void LineManager_Heartbeat(void) {
-    typedef struct LineDef {
-        u8 unk0;
-        u8 unk1;
-        u8 unk2;
-        u8 pad3;
-        f32 base;
-        f32 range;
-        u8 keys[8];
-        u8 colourKeys[4];
-    } LineDef;
-    typedef struct LineInfo {
-        u8 pad0[4];
-        LineDef *data;
-        s32 life;
-        s32 lifeRange;
-        u8 pad10[4];
-        u8 colourKeys[8];
-        u32 numFx;
-        u32 *fx;
-    } LineInfo;
-    typedef struct Line {
-        Vector4 start;
-        Vector4 end;
-        Vector4 vel;
-        Vector4 dir;
-        Vector4 accel;
-        LineInfo *info;
-        u8 colour[0x84 - 0x54];
-        u8 colour2[0xB4 - 0x84];
-        f32 length;
-        u8 unkB8[0xD4 - 0xB8];
-        f32 life;
-        f32 scale;
-        f32 rate;
-        u8 unkE0;
-        u8 unkE1;
-        u8 unkE2;
-        u8 unkE3[0xF0 - 0xE3];
-    } Line;
     typedef struct {
         Vector4 pos;
         Vector4 quat;
@@ -219,8 +180,8 @@ void LineManager_Heartbeat(void) {
             PSVECScale(&g_lineManager[i].vel, &delta, dt);
             AccumulateVector(&g_lineManager[i].accel, &g_lineManager[i].vel, &g_lineManager[i].vel, dt);
             PSVECAdd(&delta, &g_lineManager[i].start, &g_lineManager[i].start);
-            ExtractColorKey(g_lineManager[i].info->colourKeys, g_lineManager[i].colour, dt * g_lineManager[i].rate);
-            ExtractColorKey(data->colourKeys, g_lineManager[i].colour2, dt * g_lineManager[i].rate);
+            ExtractColorKey(g_lineManager[i].info->colourKeys, g_lineManager[i].colourKey, dt * g_lineManager[i].rate);
+            ExtractColorKey(data->colourKeys, g_lineManager[i].colour2Key, dt * g_lineManager[i].rate);
             if (g_lineManager[i].unkE2) {
                 if (data->unk1) {
                     g_lineManager[i].dir = g_lineManager[i].vel;
