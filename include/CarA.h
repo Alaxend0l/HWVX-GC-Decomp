@@ -136,12 +136,16 @@ typedef struct CarA {
                                v[2] = forward   @ 0x30 (read as Quaternion by AI cars),
                                v[3] = position  @ 0x40 */
   Vector4 animRefPos;       /* 0x50 fed to TEST_AnimTraverseHeirarchyToMatricesWorld */
-  u8 pad60[0x14];           /* 0x60 */
+  u8 pad60[0x10];           /* 0x60 */
+  f32 unk70;                /* 0x70 camera zoom */
   u32 collDirtyFlags;       /* 0x74 &= ~0x180 when the oriented box is rebuilt */
   s32 speed;                /* 0x78 scaled by AI speedScale */
-  u8 pad7C[0x18];           /* 0x7C */
+  u8 pad7C[0x10];           /* 0x7C */
+  ThingVTable *vtable;      /* 0x8C */
+  u8 pad90[4];              /* 0x90 */
   Player *player;           /* 0x94 NULL-checked, copied to slave players */
-  u8 pad98[0x28];           /* 0x98 */
+  u8 pad98[0x24];           /* 0x98 */
+  struct CarA *unkBC;       /* 0xBC a looker's target */
   OBox orientedBox;         /* 0xC0 BuildOOBOffset writes it; GetOrientedCollision
                                returns car + 0xC0; GetTargetPos reads its v[0] */
   u8 padF0[0xC0];           /* 0xF0 */
