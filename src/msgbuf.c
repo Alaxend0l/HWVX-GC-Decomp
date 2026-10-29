@@ -260,6 +260,32 @@ TRKBuffer *TRKGetBuffer(s32 idx) {
     return buf;
 }
 
+void usr_puts_serial(const char *msg);
+s32 TRKGetFreeBuffer(s32 *msgID, TRKBuffer **outMsg) {
+    TRKBuffer *buf;
+    s32 err = 0x300;
+    s32 i;
+
+    *outMsg = NULL;
+    for (i = 0; i < 3; i++) {
+        buf = TRKGetBuffer(i);
+        TRKAcquireMutex(buf);
+        if (!buf->isInUse) {
+            TRKResetBuffer(buf, 1);
+            buf->isInUse = 1;
+            err = 0;
+            *outMsg = buf;
+            *msgID = i;
+            i = 3;
+        }
+        TRKReleaseMutex(buf);
+    }
+    if (err == 0x300) {
+        usr_puts_serial("ERROR : No buffer available\n");
+    }
+    return err;
+}
+
 s32 TRKInitializeMutex(void *mutex);
 s32 TRKInitializeMessageBuffers(void) {
     s32 i;
