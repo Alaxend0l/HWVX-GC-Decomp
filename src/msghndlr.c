@@ -127,6 +127,53 @@ s32 TRKDoContinue(TRKBuffer *b) {
     return err;
 }
 
+s32 TRKTargetSupportMask(u8 *mask);
+s32 TRKAppendBuffer(TRKBuffer *b, const void *data, u32 length);
+s32 TRKDoSupportMask(TRKBuffer *b) {
+    s32 err;
+    s32 ackTries;
+    u8 mask[32];
+
+    if (b->length != 1) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 2);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return err;
+    }
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, 0);
+    err = TRKTargetSupportMask(mask);
+    if (err == 0) {
+        err = TRKAppendBuffer(b, mask, 32);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, 2);
+    }
+    if (err != 0) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 3);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return err;
+    }
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+    return err;
+}
+
 s32 TRKDoReset(TRKBuffer *b) {
     s32 err;
     s32 ackTries;
