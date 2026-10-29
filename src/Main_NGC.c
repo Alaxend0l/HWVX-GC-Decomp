@@ -48,4 +48,4 @@ s8 isInThread(void) {
 void TextureManager_ReleaseCache(void) {
 
 }
-
+#pragma use_lmw_stmw on
