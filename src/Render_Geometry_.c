@@ -12,6 +12,33 @@ void GXSetChanAmbColor(s32 chan, GXColor amb_color);
 extern GXColor white;
 extern GXColor black;
 
+typedef union {
+    u8 u8;
+    u16 u16;
+    u32 u32;
+    s32 s32;
+    f32 f32;
+} PPCWGPipe;
+
+volatile PPCWGPipe GXWGFifo : 0xCC008000;
+
+static inline void GXPosition3f32(f32 x, f32 y, f32 z) {
+    GXWGFifo.f32 = x;
+    GXWGFifo.f32 = y;
+    GXWGFifo.f32 = z;
+}
+
+static inline void GXColor4u8(const u8 r, const u8 g, const u8 b, const u8 a) {
+    GXWGFifo.u8 = r;
+    GXWGFifo.u8 = g;
+    GXWGFifo.u8 = b;
+    GXWGFifo.u8 = a;
+}
+
+void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+void SetTriFlatVtxDesc(void);
+extern s32 m_triCount;
+
 typedef struct GeometryGroup {
     u16 unk0;
     u16 flags;
