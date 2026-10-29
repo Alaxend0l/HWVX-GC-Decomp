@@ -1,6 +1,14 @@
 #include "common.h"
 
 
+void *PopFreeTextureSet(void) {
+    extern u8 FreeTextureSetQueue[];
+    void *msg;
+
+    OSReceiveMessage(FreeTextureSetQueue, &msg, 1);
+    return msg;
+}
+
 void PushFreeTextureSet(void *arg0)
 {
     extern u8 UsedTextureSetQueue_8036EC78[];
