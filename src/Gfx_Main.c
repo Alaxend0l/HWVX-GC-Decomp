@@ -105,11 +105,11 @@ void Gfx_SetParallelLight(GXColor *color, Vector *dir) {
     if (dir != NULL) {
         lightDir = &g_state.lightDir;
         *lightDir = *dir;
-        if (PSVECSquareMag(lightDir) != 0.0f) {
+        if (PSVECSquareMag(lightDir)) {
             PSVECNormalize(lightDir, lightDir);
-            g_state.lightChanged = 1;
         }
     }
+    g_state.lightChanged = 1;
 }
 
 void Gfx_SetAmbientColor(GXColor *color) {
