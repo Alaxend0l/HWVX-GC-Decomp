@@ -19,8 +19,12 @@ void OSTicksToCalendarTime(s64 ticks, OSCalendarTime *td);
 
 OSCalendarTime g_todaysDate;
 u32 max_time;
-s32 m_iDeltaTimeUs;
+u32 m_iDeltaTimeUs;
 u32 m_iLastTimeUs;
+
+static inline u32 TimeHandler_GetTimeUs(void) {
+    return (OSGetTick() * 8) / ((*(u32 *)0x800000F8 / 4) / 125000);
+}
 
 void TimeHandler_Init(void) {
     u32 now = (OSGetTick() * 8) / ((*(u32 *)0x800000F8 / 4) / 125000);
@@ -28,6 +32,58 @@ void TimeHandler_Init(void) {
     m_iDeltaTimeUs = 1;
     m_iLastTimeUs = now;
     OSTicksToCalendarTime(OSGetTime(), &g_todaysDate);
+}
+
+void TimeHandler_Heartbeat(void) {
+    extern u32 g_iDeltaTimeMS;
+    extern u32 g_iLastDeltaTimeMS;
+    extern u32 g_iLastTimeMS;
+    extern u32 g_iDeltaTime60th;
+    extern f32 g_fDeltaTimeMS;
+    extern f32 g_fDeltaTime60th;
+    extern f32 g_fDeltaTimeSec;
+    extern f32 g_fDeltaTimeSec_inv;
+    u32 now = (OSGetTick() * 8) / ((*(u32 *)0x800000F8 / 4) / 125000);
+
+    if (max_time < now) {
+        max_time = now;
+    }
+    if (m_iLastTimeUs > now) {
+        m_iDeltaTimeUs = now + max_time - m_iLastTimeUs;
+    } else {
+        m_iDeltaTimeUs = now - m_iLastTimeUs;
+    }
+    if ((u32)m_iDeltaTimeUs >= 34000) {
+        m_iDeltaTimeUs = 34000;
+    }
+    if ((u32)m_iDeltaTimeUs < 1000) {
+        m_iDeltaTimeUs = 1000;
+    }
+    m_iLastTimeUs = now;
+    g_iLastDeltaTimeMS = g_iDeltaTimeMS;
+    g_fDeltaTimeMS = (f32)(u32)m_iDeltaTimeUs / 1000.0f;
+    g_iDeltaTimeMS = (u32)m_iDeltaTimeUs / 1000;
+    g_iLastTimeMS = now / 1000;
+    g_fDeltaTime60th = g_fDeltaTimeMS / (1000.0f / 60.0f);
+    g_fDeltaTimeSec = g_fDeltaTimeMS / 1000.0f;
+    g_iDeltaTime60th = g_fDeltaTime60th;
+    g_fDeltaTimeSec_inv = 1.0f / g_fDeltaTimeSec;
+}
+
+void TimeHandler_SetTimeElapsedSec_f32(f32 sec) {
+    extern f32 g_fDeltaTime60th;
+    extern f32 g_fDeltaTimeSec;
+    extern f32 g_fDeltaTimeSec_inv;
+    extern u32 g_iDeltaTimeMS;
+    u32 ms;
+    f32 inv;
+
+    ms = 1000.0f * sec;
+    inv = 1.0f / sec;
+    g_iDeltaTimeMS = ms;
+    g_fDeltaTimeSec = sec;
+    g_fDeltaTimeSec_inv = inv;
+    g_fDeltaTime60th = ms / (1000.0f / 60.0f);
 }
 
 void Performance_Start(void) {
