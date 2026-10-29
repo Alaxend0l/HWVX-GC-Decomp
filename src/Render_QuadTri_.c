@@ -71,7 +71,7 @@ void SetTriVtxDesc(void);
 
 typedef struct GfxState {
     u8 unk0[0x84];
-    u32 unk84;
+    s32 unk84;
     u8 unk88[0x8C - 0x88];
     u16 debugFont;
     u8 unk8E[0xA0 - 0x8E];
@@ -167,6 +167,38 @@ void Render_ScreenFlash(void) {
                    GetRenderWindow()->overlayColor.b, GetRenderWindow()->overlayColor.a);
         Render_StateZWriteEnable(1);
         Render_StateAlphaBlendEnable(0);
+    }
+}
+
+extern s32 g_debugTriCount;
+void Gfx_SetCameraMatrix(void *a, void *b, void *c, void *d);
+void SetTriFlatVtxDesc(void);
+void Render_DrawAlphaTriangle(u16 index) {
+    g_debugTriCount++;
+    Render_StateBlendMode(g_pGDL->tris[index].blendMode);
+    Render_SetTextureHandle(g_pGDL->tris[index].tex);
+    Gfx_SetCameraMatrix(NULL, NULL, NULL, NULL);
+    if (g_state.unk84 == 0xFFFF) {
+        SetTriFlatVtxDesc();
+        GXBegin(0x90, 0, 3);
+        GXPosition3f32(g_pGDL->tris[index].v[0].x, g_pGDL->tris[index].v[0].y, g_pGDL->tris[index].v[0].z);
+        GXColor4u8(g_pGDL->tris[index].v[0].color.r, g_pGDL->tris[index].v[0].color.g, g_pGDL->tris[index].v[0].color.b, g_pGDL->tris[index].v[0].color.a);
+        GXPosition3f32(g_pGDL->tris[index].v[1].x, g_pGDL->tris[index].v[1].y, g_pGDL->tris[index].v[1].z);
+        GXColor4u8(g_pGDL->tris[index].v[1].color.r, g_pGDL->tris[index].v[1].color.g, g_pGDL->tris[index].v[1].color.b, g_pGDL->tris[index].v[1].color.a);
+        GXPosition3f32(g_pGDL->tris[index].v[2].x, g_pGDL->tris[index].v[2].y, g_pGDL->tris[index].v[2].z);
+        GXColor4u8(g_pGDL->tris[index].v[2].color.r, g_pGDL->tris[index].v[2].color.g, g_pGDL->tris[index].v[2].color.b, g_pGDL->tris[index].v[2].color.a);
+    } else {
+        SetTriVtxDesc();
+        GXBegin(0x90, 0, 3);
+        GXPosition3f32(g_pGDL->tris[index].v[0].x, g_pGDL->tris[index].v[0].y, g_pGDL->tris[index].v[0].z);
+        GXColor4u8(g_pGDL->tris[index].v[0].color.r, g_pGDL->tris[index].v[0].color.g, g_pGDL->tris[index].v[0].color.b, g_pGDL->tris[index].v[0].color.a);
+        GXTexCoord2f32(g_pGDL->tris[index].v[0].s, g_pGDL->tris[index].v[0].t);
+        GXPosition3f32(g_pGDL->tris[index].v[1].x, g_pGDL->tris[index].v[1].y, g_pGDL->tris[index].v[1].z);
+        GXColor4u8(g_pGDL->tris[index].v[1].color.r, g_pGDL->tris[index].v[1].color.g, g_pGDL->tris[index].v[1].color.b, g_pGDL->tris[index].v[1].color.a);
+        GXTexCoord2f32(g_pGDL->tris[index].v[1].s, g_pGDL->tris[index].v[1].t);
+        GXPosition3f32(g_pGDL->tris[index].v[2].x, g_pGDL->tris[index].v[2].y, g_pGDL->tris[index].v[2].z);
+        GXColor4u8(g_pGDL->tris[index].v[2].color.r, g_pGDL->tris[index].v[2].color.g, g_pGDL->tris[index].v[2].color.b, g_pGDL->tris[index].v[2].color.a);
+        GXTexCoord2f32(g_pGDL->tris[index].v[2].s, g_pGDL->tris[index].v[2].t);
     }
 }
 
