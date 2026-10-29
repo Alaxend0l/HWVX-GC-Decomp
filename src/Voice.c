@@ -81,9 +81,6 @@ u32 CreateSFX(void *desc) {
     return idx;
 }
 
-void SetVoiceState_(Voice *voice, s32 state);
-void SetVoiceVol_(Voice *voice, s32 vol);
-s8 SetVoiceRate_(Voice *voice);
 void ReleaseVoice(u32 id) {
     if (id == g_voice[(u8)id].id) {
         SetVoiceState_(&g_voice[(u8)id], 3);
