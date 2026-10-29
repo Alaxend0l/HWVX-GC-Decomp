@@ -1,5 +1,53 @@
 #include "common.h"
 
+typedef struct DroneProps {
+    u8 pad00[0x20];
+    f32 mass;               /* 0x20 */
+    f32 gravity;            /* 0x24 */
+} DroneProps;
+
+typedef struct DroneInfo {
+    u8 pad00[0x10];
+    DroneProps *props;      /* 0x10 */
+} DroneInfo;
+
+typedef struct DroneAnim {
+    u8 pad00[8];
+    f32 start;              /* 0x08 */
+    f32 end;                /* 0x0C */
+} DroneAnim;
+
+/* The flying drone Thing; its animation drives it in state 2. */
+typedef struct Drone {
+    Vector4 velocity;       /* 0x00 */
+    Matrix4 mtx;            /* 0x10 v[3] = position */
+    u8 pad50[0x24];         /* 0x50 */
+    u32 flags;              /* 0x74 */
+    u8 pad78[0x48];         /* 0x78 */
+    DroneInfo *info;        /* 0xC0 */
+    u8 padC4[0x10];         /* 0xC4 */
+    DroneAnim *anim;        /* 0xD4 */
+    u8 padD8[8];            /* 0xD8 */
+    Quaternion rot;         /* 0xE0 */
+    Vector4 force;          /* 0xF0 */
+    Vector4 baseForce;      /* 0x100 */
+    u8 pad110[0x20];        /* 0x110 */
+    Vector4 angVel;         /* 0x130 */
+    u8 pad140[0x9C];        /* 0x140 */
+    u8 state;               /* 0x1DC */
+    u8 pad1DD[7];           /* 0x1DD */
+    f32 animTime;           /* 0x1E4 */
+} Drone;
+
+typedef struct DroneKeyFrame {
+    Quaternion rot;
+    Vector4 pos;
+} DroneKeyFrame;
+
+static inline void Mover_SetRotation(Drone *mover, Quaternion quat) {
+    mover->rot = quat;
+}
+
 
 void Drone_GetCameraOrientationInfo(void *drone, void *camera, void *info) {
     M2C_FIELD(info, s32 *, 0x88) = 1;
