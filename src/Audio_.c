@@ -154,16 +154,11 @@ u32 MAllocA_(s32 size) {
     printf("Audio :: MAllocA_ - Insufficient ARAM  size: %i\n", size);
     return 0;
 }
+#pragma pop
 
 #pragma push
 #pragma optimization_level 1
 s32 FreeA_(u32 addr) {
-    typedef struct MemBlk {
-        u32 addr;
-        s32 size;
-        u32 prev;
-        u32 next;
-    } MemBlk;
     extern MemBlk g_memblk[];
     extern s32 g_last;
     extern u32 g_heap;
