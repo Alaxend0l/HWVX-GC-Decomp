@@ -38,12 +38,47 @@ void AIStopDMA(void) {
 
 s32 AIGetStreamPlayState(void)
 {
-    return *(s32 *)0xCC006C00 & 1;
+    return __AIRegs[0] & 1;
 }
 
 s32 AIGetDSPSampleRate(void)
 {
     return (((u32) *(u32 *)0xCC006C00 >> 6U) & 1) ^ 1;
+}
+
+void AISetStreamPlayState(u32 state);
+void __AI_SRC_INIT(void);
+s32 AIGetStreamSampleRate(void);
+u8 AIGetStreamVolLeft(void);
+u8 AIGetStreamVolRight(void);
+void AISetStreamVolLeft(u8 vol);
+void AISetStreamVolRight(u8 vol);
+s32 AIGetStreamPlayState(void);
+void __AI_set_stream_sample_rate(u32 rate) {
+    s32 old;
+    s32 state;
+    u8 left;
+    u8 right;
+    u32 temp_r26;
+
+    if (rate != AIGetStreamSampleRate()) {
+        state = AIGetStreamPlayState();
+        left = AIGetStreamVolLeft();
+        right = AIGetStreamVolRight();
+        AISetStreamVolRight(0);
+        AISetStreamVolLeft(0);
+        temp_r26 = __AIRegs[0] & 0x40;
+        __AIRegs[0] &= ~0x40;
+        old = OSDisableInterrupts();
+        __AI_SRC_INIT();
+        __AIRegs[0] |= temp_r26;
+        __AIRegs[0] = (__AIRegs[0] & ~0x20) | 0x20;
+        __AIRegs[0] = (__AIRegs[0] & ~2) | (rate << 1);
+        OSRestoreInterrupts(old);
+        AISetStreamPlayState(state);
+        AISetStreamVolLeft(left);
+        AISetStreamVolRight(right);
+    }
 }
 
 s32 AIGetStreamSampleRate(void)
