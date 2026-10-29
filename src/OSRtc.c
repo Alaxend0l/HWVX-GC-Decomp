@@ -57,6 +57,29 @@ static void WriteSramCallback(s32 chan, void *context) {
     }
 }
 
+static void WriteSramCallback(s32 chan, void *context);
+s32 WriteSram(void *buffer, u32 offset, u32 size) {
+    s32 err;
+    u32 cmd;
+
+    if (!EXILock(0, 1, WriteSramCallback)) {
+        return 0;
+    }
+    if (!EXISelect(0, 1, 3)) {
+        EXIUnlock(0);
+        return 0;
+    }
+    offset <<= 6;
+    cmd = 0xA0000000 | 0x100 + offset;
+    err = 0;
+    err |= !EXIImm(0, &cmd, 4, 1, 0);
+    err |= !EXISync(0);
+    err |= !EXIImmEx(0, buffer, (s32)size, 1);
+    err |= !EXIDeselect(0);
+    EXIUnlock(0);
+    return !err;
+}
+
 void *__OSLockSram(void) {
     return LockSram(0);
 }
