@@ -15,6 +15,24 @@ typedef struct SISteeringControl {
     SISteeringResetCallback resetCallback;
 } SISteeringControl;
 
+typedef struct OSContext {
+    u32 gpr[32];
+    u32 cr;
+    u32 lr;
+    u32 ctr;
+    u32 xer;
+    f64 fpr[32];
+    u32 fpscr_pad;
+    u32 fpscr;
+    u32 srr0;
+    u32 srr1;
+    u16 mode;
+    u16 state;
+    u32 gqr[8];
+    u32 psf_pad;
+    f64 psf[32];
+} OSContext;
+
 extern SISteeringControl __SISteering[4];
 extern s32 __SIResetSteering;
 
@@ -24,6 +42,39 @@ void *OSGetCurrentContext(void);
 void OSClearContext(void *context);
 void OSSetCurrentContext(void *context);
 void __OSReschedule(void);
+
+void __SISteeringHandler(s32 chan, u32 status, void *context) {
+    SISteeringControl *steering = &__SISteering[chan];
+    SISteeringResetCallback resetCallback;
+    SISteeringCallback callback;
+    u8 exceptionContext[0x2C8];
+
+    if (__SIResetSteering != 0) {
+        return;
+    }
+    if (status & 8) {
+        steering->ret = -1;
+    } else if (status & 7) {
+        steering->ret = -3;
+    } else {
+        steering->ret = 0;
+    }
+    if (steering->resetCallback != NULL) {
+        resetCallback = steering->resetCallback;
+        steering->resetCallback = NULL;
+        resetCallback(chan);
+    }
+    if (steering->callback == NULL) {
+        return;
+    }
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(exceptionContext);
+    callback = steering->callback;
+    steering->callback = NULL;
+    callback(chan, steering->ret);
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(context);
+}
 
 static void TypeAndStatusCallback(s32 chan, u32 type) {
     SISteeringControl *steering = &__SISteering[chan];
