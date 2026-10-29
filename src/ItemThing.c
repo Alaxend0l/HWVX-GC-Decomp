@@ -88,7 +88,7 @@ s8 Item_Move(u8 *item) {
     void AccumulateVector(void *vel, void *pos, void *out, f32 t);
     void GenerateQuaternion(void *axis, ItemQuat *q, f32 angle);
     void QuaternionMult(void *a, ItemQuat *b, ItemQuat *out);
-    ItemHit hit;
+    ItemHit hit __attribute__((aligned(16)));
     ItemQuat q;
     ItemQuat rot;
     f32 dt;
