@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 extern f32 g_zeroVector[4];
 extern u8 g_destructibleVTable[];
 void BuildOOB(void *oob, void *pos, void *out);
