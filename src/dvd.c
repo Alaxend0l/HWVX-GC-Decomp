@@ -37,7 +37,7 @@ s32 PauseFlag;
 u32 PausingFlag;
 s32 AutoFinishing;
 s32 FatalErrorFlag;
-u32 CurrCommand;
+volatile u32 CurrCommand;
 u32 Canceling;
 u32 CancelCallback;
 volatile u32 ResumeFromHere;
