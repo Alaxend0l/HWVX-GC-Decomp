@@ -3,7 +3,11 @@ extern u8 g_playerManager[0x20E0];
 s8 Player_IsHuman(void *player);
 
 typedef struct PMPlayer {
-    u8 pad0[0xB0];
+    u8 pad0[0x20];
+    void (*controlReader)();
+    void (*init)();
+    void (*heartbeat)();
+    u8 pad2C[0xB0 - 0x2C];
     struct PMPlayer *next;
     struct PMPlayer *prev;
 } PMPlayer;
