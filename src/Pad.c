@@ -191,20 +191,8 @@ BOOL PADReset(u32 mask)
     return TRUE;
 }
 
-u32 PADRead(void *arg0)
+u32 PADRead(PADStatus *status)
 {
-    typedef struct {
-        u16 button;
-        s8 stickX;
-        s8 stickY;
-        s8 substickX;
-        s8 substickY;
-        u8 triggerLeft;
-        u8 triggerRight;
-        u8 analogA;
-        u8 analogB;
-        s8 err;
-    } PADStatus_;
     BOOL SIIsChanBusy(s32 chan);
     u32 SIGetStatus(s32 chan);
     u32 SIGetType(s32 chan);
@@ -212,7 +200,6 @@ u32 PADRead(void *arg0)
     BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback, s64 delay);
     void PADReceiveCheckCallback(void);
     void PADOriginUpdateCallback(s32 chan, u32 error, void *context);
-    PADStatus_ *status = arg0;
     BOOL enabled;
     s32 chan;
     u32 data[2];
