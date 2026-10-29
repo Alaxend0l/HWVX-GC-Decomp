@@ -12,11 +12,11 @@ typedef struct HeapDesc {
     Cell *allocated;
 } HeapDesc;
 
-extern HeapDesc *HeapArray;
-extern s32 NumHeaps;
-extern void *ArenaStart;
-extern void *ArenaEnd;
-extern s32 __OSCurrHeap;
+static HeapDesc *HeapArray;
+static s32 NumHeaps;
+static void *ArenaStart;
+static void *ArenaEnd;
+s32 __OSCurrHeap = -1;
 
 Cell *DLInsert(Cell *list, Cell *cell);
 
