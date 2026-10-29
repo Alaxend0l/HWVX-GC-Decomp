@@ -139,11 +139,7 @@ s32 DVDLowStopMotor(DVDLowCallback callback)
     StopAtNextInt = 0;
     __DIRegs[2] = 0xE3000000;
     __DIRegs[7] = 1;
-    {
-        s64 timeout = (__OSBusClock / 4) * 10;
-        OSCreateAlarm(&AlarmForTimeout);
-        OSSetAlarm(&AlarmForTimeout, timeout, (OSAlarmHandler)AlarmHandlerForTimeout);
-    }
+    SetTimeoutAlarm((OSAlarmHandler)AlarmHandlerForTimeout, (__OSBusClock / 4) * 10);
     return 1;
 }
 
