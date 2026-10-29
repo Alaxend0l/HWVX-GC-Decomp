@@ -19,3 +19,19 @@ u16 OSGetFontEncode(void) {
     }
     return fontEncode;
 }
+
+s32 __OSReadROM(void *buffer, s32 length, s32 offset);
+static void ReadROM(void *buf, int length, int offset) {
+    int len;
+
+    while (length > 0) {
+        len = (length <= 256) ? length : 256;
+        length -= len;
+        while (!__OSReadROM(buf, len, offset)) {
+            ;
+        }
+        offset += len;
+        (u8 *)buf += len;
+    }
+}
+
