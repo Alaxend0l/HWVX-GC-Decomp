@@ -118,6 +118,157 @@ void SoundManager_Heartbeat(void) {
     OSRestoreInterrupts(temp_r31);
 }
 
+void SFX_ProcessSource(u32 index) {
+    typedef struct SoundSource {
+        Vector4 pos;
+        Vector4 vel;
+        f32 unk20;
+        f32 unk24;
+        s32 unk28;
+        s32 voice;
+        u32 looping;
+        f32 unk34;
+        f32 unk38;
+        f32 unk3C;
+        f32 unk40;
+        u32 unk44;
+        s8 paused;
+        s8 playing;
+        u8 unk4A[0x50 - 0x4A];
+    } SoundSource;
+    typedef struct SoundListener {
+        Vector4 pos;
+        Vector4 vel;
+        u8 unk20[0x30];
+        u8 mtx[0x40];
+    } SoundListener;
+    extern s8 g_paused;
+    extern SoundSource *g_sources;
+    extern SoundListener g_listener[4];
+    extern s32 g_numListeners;
+    extern s32 g_sscount;
+    extern Vector4 g_zeroVector;
+    void DistanceXYZ(void *a, void *b, f32 *dist);
+    u8 FloatsEqual(f32 a, f32 b, f32 eps);
+    void PSVECSubtract(void *a, void *b, Vector4 *out);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    SoundSource *src;
+    s32 pan;
+    u32 i;
+    SoundListener *listener;
+    f32 minDist;
+    f32 vol;
+    f32 pitch;
+    f32 dot;
+    Vector4 local __attribute__((aligned(16)));
+    Vector4 diff __attribute__((aligned(16)));
+    f32 dist;
+    s32 p;
+
+    src = &g_sources[index];
+    if (g_paused && src->paused && src->unk24 > 0.0f) {
+        if (src->voice > 0) {
+            SetVoiceVol(src->voice, 0);
+        }
+        src->unk40 = 0.0f;
+        return;
+    }
+    if (src->unk24 > 0.0f) {
+        minDist = 99999.9f;
+        for (i = 0; i <= g_numListeners; i++) {
+            DistanceXYZ(&g_listener[i], src, &dist);
+            if (minDist > dist) {
+                minDist = dist;
+            }
+        }
+        if (minDist < src->unk38) {
+            if (src->voice == -1) {
+                if (src->looping || src->playing) {
+                    src->playing = 0;
+                    src->voice = GetVoice(src->unk28, 5);
+                    if (src->voice) {
+                        SetVoiceState(src->voice, 1);
+                        src->unk44 = 0;
+                        src->unk3C = 1.0f;
+                        src->unk40 = 1.0f;
+                    } else {
+                        src->voice = -1;
+                        return;
+                    }
+                } else {
+                    return;
+                }
+            }
+            if (minDist < src->unk34) {
+                vol = 32767.0f * src->unk24;
+            } else {
+                vol = 32767.0f * src->unk24 * ((src->unk38 - src->unk34) - (minDist - src->unk34)) / (src->unk38 - src->unk34);
+            }
+            if (!FloatsEqual(src->unk40, vol, 0.0002f)) {
+                if (!(s8)SetVoiceVol(src->voice, (u32)vol)) {
+                    goto fail;
+                }
+                src->unk40 = vol;
+            }
+            if (g_numListeners != 0) {
+                g_sscount++;
+                if (!(s8)SetVoicePitch(src->voice, (s32)(65536.0f * src->unk20))) {
+                    goto fail;
+                }
+                if (!(s8)SetVoicePos(src->voice, 0, -0x7FFF)) {
+                    goto fail;
+                }
+                return;
+            }
+            if (src->unk20 != 0.0f) {
+                PSVECSubtract(&g_listener[0].pos, &src->pos, &diff);
+                XformVecOrientation(g_listener[0].mtx, &diff, &local);
+                dot = PSVECDotProduct(&g_zeroVector, &local);
+                if (minDist) {
+                    pitch = (343.0f * src->unk20) / (0.1f * (dot / minDist) + 343.0f);
+                } else {
+                    pitch = (343.0f * src->unk20) / (0.1f * dot + 343.0f);
+                }
+                if (pitch < 0.0f) {
+                    pitch = 1e-7f;
+                }
+                if (!FloatsEqual(pitch, src->unk3C, 0.0001f)) {
+                    if (!(s8)SetVoicePitch(src->voice, (u32)(65536.0f * pitch))) {
+                        goto fail;
+                    }
+                    src->unk3C = pitch;
+                }
+            } else {
+                if (!(s8)SetVoicePitch(src->voice, 0x10000)) {
+                    goto fail;
+                }
+                src->unk3C = 1.0f;
+            }
+            if (local.x && local.y && local.z && PSVECSquareMag(&local)) {
+                PSVECNormalize(&local, &local);
+            }
+            p = 26213.6f * local.x;
+            pan = (s16)p;
+            if (src->unk44 != pan) {
+                if (!(s8)SetVoicePos(src->voice, p, -0x7FFF)) {
+                    goto fail;
+                }
+                src->unk44 = pan;
+            }
+            return;
+        }
+    }
+    if (src->voice != -1) {
+        ReleaseVoice(src->voice);
+    fail:
+        src->voice = -1;
+        src->unk24 = 0.0f;
+    }
+}
+
 void SFX_Heartbeat(void) {
     M2C_UNK SFX_ProcessSource(u32);
     extern s32 g_sscount;
