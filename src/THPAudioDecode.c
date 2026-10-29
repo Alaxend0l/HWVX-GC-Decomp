@@ -1,5 +1,30 @@
 #include "common.h"
 
+typedef struct THPAudioBuffer {
+    s16 *buffer;
+    s16 *curPtr;
+    u32 validSample;
+    s32 frameNumber;
+} THPAudioBuffer;
+
+typedef struct THPReadBuffer {
+    u8 *ptr;
+    s32 frameNumber;
+} THPReadBuffer;
+
+typedef struct THPPlayer {
+    u8 pad0[0x6C];
+    u32 numComponents;
+    u8 components[0x10];
+} THPPlayer;
+
+extern THPPlayer ActivePlayer;
+
+void *PopReadedBuffer(void);
+void PushReadedBuffer2(void *arg0);
+u32 THPAudioDecode(s16 *buffer, u8 *audioFrame, s32 flag);
+void AudioDecode(THPReadBuffer *readBuffer);
+
 
 void AudioDecodeThreadStart(void) {
     extern s32 AudioDecodeThreadCreated;
