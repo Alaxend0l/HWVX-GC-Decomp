@@ -1,5 +1,14 @@
 #include "common.h"
 
+typedef struct Block {
+    struct Block *prev_;
+    struct Block *next_;
+    u32 max_size_;
+    u32 size_;
+} Block;
+
+void *Block_subBlock(Block *ths, u32 size);
+
 
 void *memset(void *dst, int c, u32 n);
 void *allocate_from_fixed_pools(void *pool, u32 size);
