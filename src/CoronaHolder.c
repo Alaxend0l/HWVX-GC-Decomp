@@ -3,13 +3,30 @@
 s32 g_coronaRayTest;
 u32 g_totalCoronas;          /* compared unsigned: cmplwi r0, 0x40 */
 
+/* A corona's description (from the level data). */
+typedef struct CoronaData {
+    u8 type;            /* 0x00 */
+    u8 rotate;          /* 0x01 */
+    u16 fadeTime;       /* 0x02 */
+    u8 distCheck;       /* 0x04 */
+    u8 pad05[0x03];     /* 0x05 */
+    f32 maxDist;        /* 0x08 */
+    f32 size;           /* 0x0C */
+    s32 spin;           /* 0x10 */
+    u32 texture;        /* 0x14 */
+    u8 colorTrack[8];   /* 0x18 */
+    void *lens;         /* 0x20 */
+} CoronaData;
+
 /* An emitter's corona: its colour track and the interpolation state. */
 typedef struct Corona {
-    u8 *track;          /* 0x00 */
+    CoronaData *track;  /* 0x00 */
     u8 pad04[0x0C];     /* 0x04 */
     Vector4 pos;        /* 0x10 */
     f32 color[4];       /* 0x20 */
-    u8 pad30[0x1C];     /* 0x30 */
+    u8 pad30[0x14];     /* 0x30 */
+    GXColor rgba;       /* 0x44 */
+    u8 pad48[0x04];     /* 0x48 */
     u8 active;          /* 0x4C */
     u8 pad4D[0x03];     /* 0x4D */
     s32 flare;          /* 0x50 */
@@ -21,6 +38,12 @@ typedef struct Corona {
 Corona g_aCorona[64];
 extern u32 g_iDeltaTimeMS;
 void ExtractColorKey(void *track, f32 *color, f64 time);
+void Gfx_TransformVector(Vector4 *in, Vector4 *out);
+void Gfx_GetCameraPosition(Vector4 *pos);
+s8 RayHitsTerrainAndObjects(void *start, void *dir, void *dist, void *hit);
+void DistanceXYZ(void *a, void *b, f32 *dist);
+u8 GameSettings_GetNumOfPlayers(void);
+void Gfx_Add2DSprite(Vector4 *pos, u16 tex, GXColor color, f32 size, u8 flag, f32 rot);
 
 void CoronaHolder_Init(void) {
     g_coronaRayTest = 0;
@@ -40,14 +63,14 @@ s32 CoronaHolder_Add(void *corona, Vector4 *pos)
     if (corona == NULL) {
         return -1;
     }
-    g_aCorona[n].track = (u8 *)corona;
+    g_aCorona[n].track = (CoronaData *)corona;
     c = &g_aCorona[n];
     c->pos = *pos;
     c->flare = -1;
     c->playing = 0;
     c->time = 0;
     c->active = 1;
-    lens = *(void **)((u8 *)corona + 0x20);
+    lens = ((CoronaData *)corona)->lens;
     if (lens != NULL) {
         c->flare = LensFlare_Add(lens, 0, pos);
     }
@@ -65,18 +88,18 @@ void CoronaHolder_Heartbeat(void) {
     for (i = 0; i < g_totalCoronas; i++) {
         corona = &g_aCorona[i];
         if (corona->playing) {
-            if (corona->time < *(u16 *)(corona->track + 0x02)) {
+            if (corona->time < corona->track->fadeTime) {
                 corona->active = 1;
                 corona->time += delta;
                 t = corona->time;
-                ExtractColorKey(corona->track + 0x18, corona->color, t);
+                ExtractColorKey(corona->track->colorTrack, corona->color, t);
             }
         } else if (corona->time != 0) {
             corona->active = 1;
             if (delta < corona->time) {
                 corona->time -= delta;
                 t = corona->time;
-                ExtractColorKey(corona->track + 0x18, corona->color, t);
+                ExtractColorKey(corona->track->colorTrack, corona->color, t);
             } else {
                 corona->time = 0;
             }
