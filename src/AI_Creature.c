@@ -160,21 +160,10 @@ s8 AI_Creature_Spawn(u8 *creature, u8 *spawner, u32 index) {
 }
 
 void AI_Creature_PopulateVolumes(void) {
-    typedef struct SpawnVolume {
-        u8 *volume;
-        u32 unk4;
-        u32 index;
-        u32 counts[32];
-    } SpawnVolume;
-    extern u8 *gs_pCurrentAICreature_803C7150;
-    extern SpawnVolume gs_aSpawnVolumes_802C4860[256];
-    extern u32 gs_currentVolume_803C7160;
-    extern u32 g_volumeTotal;
     extern u8 g_cameraManager[];
     void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
     void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *out);
     f32 PSVECSquareDistance(void *a, void *b);
-    s8 AI_Creature_Spawn(u8 *creature, SpawnVolume *vol, u32 index);
     u32 v;
     u32 idx;
     u8 *info;
@@ -183,34 +172,34 @@ void AI_Creature_PopulateVolumes(void) {
     u32 i;
     f32 dist;
     f32 minDist;
-    Vector4 p;
+    Vector4 p __attribute__((aligned(16)));
 
-    creature = gs_pCurrentAICreature_803C7150;
+    creature = gs_pCurrentAICreature;
     do {
         if (creature[0xCD] == 0) {
             break;
         }
         creature = *(u8 **)(creature + 0xD4);
-    } while (creature != gs_pCurrentAICreature_803C7150);
+    } while (creature != gs_pCurrentAICreature);
     if (creature[0xCD] != 0) {
         return;
     }
-    v = gs_currentVolume_803C7160;
+    v = gs_currentVolume;
     do {
         if (++v == g_volumeTotal) {
             v = 0;
         }
-        info = *(u8 **)(gs_aSpawnVolumes_802C4860[v].volume + 0x2C);
-        if (*(u32 *)(gs_aSpawnVolumes_802C4860[v].volume + 4) == 0 || *(u32 *)(info + 4) == gs_aSpawnVolumes_802C4860[v].unk4 || *(u32 *)(info + 0xC) == 0 || info[0] != 0) {
+        info = *(u8 **)(gs_aSpawnVolumes[v].volume + 0x2C);
+        if (*(u32 *)(gs_aSpawnVolumes[v].volume + 4) == 0 || *(u32 *)(info + 4) == gs_aSpawnVolumes[v].unk4 || *(u32 *)(info + 0xC) == 0 || info[0] != 0) {
             continue;
         }
-        idx = gs_aSpawnVolumes_802C4860[v].index;
+        idx = gs_aSpawnVolumes[v].index;
         do {
             if (++idx == *(u32 *)(info + 0xC)) {
                 idx = 0;
             }
             spawner = (*(u8 ***)(info + 0x10))[idx];
-            if (*(u32 *)(spawner + 0x14) == 0 || (f32)gs_aSpawnVolumes_802C4860[v].counts[idx] >= 1.0f + (f32)(*(u32 *)(info + 4) / *(u32 *)(info + 0xC))) {
+            if (*(u32 *)(spawner + 0x14) == 0 || (f32)gs_aSpawnVolumes[v].counts[idx] >= 1.0f + (f32)(*(u32 *)(info + 4) / *(u32 *)(info + 0xC))) {
                 continue;
             }
             minDist = 360000.0f;
@@ -223,16 +212,16 @@ void AI_Creature_PopulateVolumes(void) {
                 }
             }
             if (minDist > 160000.0f && minDist < 360000.0f) {
-                gs_currentVolume_803C7160 = v;
-                gs_aSpawnVolumes_802C4860[v].index = idx;
-                if (AI_Creature_Spawn(creature, &gs_aSpawnVolumes_802C4860[v], idx)) {
+                gs_currentVolume = v;
+                gs_aSpawnVolumes[v].index = idx;
+                if (AI_Creature_Spawn(creature, (u8 *)&gs_aSpawnVolumes[v], idx)) {
                     (*(s32 *)(*(u8 **)(creature + 0xD8) + 4))++;
                     ((s32 *)(*(u8 **)(creature + 0xD8) + 0xC))[idx]++;
                 }
                 return;
             }
-        } while (idx != gs_aSpawnVolumes_802C4860[v].index);
-    } while (v != gs_currentVolume_803C7160);
+        } while (idx != gs_aSpawnVolumes[v].index);
+    } while (v != gs_currentVolume);
 }
 
 void AI_Creature_Heartbeat(void) {
