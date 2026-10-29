@@ -75,17 +75,7 @@ s32 TRKReadBuffer_ui8(TRKBuffer *b, u8 *data, s32 count) {
 }
 
 s32 TRKReadBuffer1_ui8(TRKBuffer *b, u8 *data) {
-    s32 error = 0;
-    u32 length = 1;
-    u32 bytesLeft = b->length - b->position;
-
-    if (bytesLeft < length) {
-        error = 0x302;
-        length = bytesLeft;
-    }
-    TRK_memcpy(data, b->data + b->position, length);
-    b->position += length;
-    return error;
+    return TRKReadBuffer_inline(b, data, 1);
 }
 
 s32 TRKAppendBuffer_ui32(TRKBuffer *b, const u32 *data, s32 count) {
