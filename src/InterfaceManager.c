@@ -2,6 +2,16 @@
 
 #pragma use_lmw_stmw on
 
+/* The target arrow points at the override target, else the main one. */
+static inline Vector4 TargetArrow_GetTargetPos(void) {
+    extern s32 g_TargetArrow[7];
+
+    if ((Vector4 *)g_TargetArrow[1] != NULL) {
+        return *(Vector4 *)g_TargetArrow[1];
+    }
+    return *(Vector4 *)g_TargetArrow[0];
+}
+
 /* Analog stick "virtual key" state, one per pad and direction. */
 typedef struct InterfaceDirState {
     s8 active;
