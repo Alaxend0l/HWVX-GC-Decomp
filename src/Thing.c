@@ -394,6 +394,14 @@ void Thing_InitAllSlavesNow(s32 arg0) {
     ThingManagerList_InitAllSlavesNow(arg0 + 0x88);
 }
 
+void Thing_SlaveTransform(Thing *thing, Matrix4 *mtx) {
+    Matrix4 local;
+
+    local = thing->mtx;
+    MultiplyMatrix(&local, mtx, &thing->mtx);
+    SubMatrixToQuaternion(&thing->mtx, &thing->quat);
+}
+
 void *Thing_GetSurfaceScript(void) {
     extern u8 g_defaultSurfaceScript[];
     return g_defaultSurfaceScript;
