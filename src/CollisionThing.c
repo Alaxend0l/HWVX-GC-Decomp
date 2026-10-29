@@ -9,6 +9,31 @@ typedef struct OBoxHolder {
     u8 pad9E[0xF0 - 0x9E];        /* 0x9E */
 } OBoxHolder;
 
+/* an oriented box as the segment tests see it: corners, half extents,
+   axes and the box's projections onto its own axes */
+typedef struct CollisionOBox {
+    Vector4 center;               /* 0x00 */
+    Vector4 corners[8];           /* 0x10 */
+    f32 extent[3];                /* 0x90 */
+    u8 pad9C[4];                  /* 0x9C */
+    Vector4 *axis[3];             /* 0xA0 */
+    u8 padAC[4];                  /* 0xAC */
+    f32 centerProj[3];            /* 0xB0 */
+    u8 padBC[4];                  /* 0xBC */
+    f32 velProj[3];               /* 0xC0 */
+    u32 unkCC;                    /* 0xCC */
+} CollisionOBox;
+
+typedef struct CollisionInfo {
+    Vector4 pos;
+    Vector4 normal;
+    s32 unk20;
+    s32 unk24;
+    u32 material;
+    u8 pad2C[0x40 - 0x2C];
+    u8 type;
+} CollisionInfo;
+
 extern OBoxHolder g_aOBox[0x200];
 extern OConvexHull g_aOConvexHull[8];
 extern CollisionPair g_aCollisionPairCache[4];
