@@ -34,6 +34,11 @@ void OSInitThreadQueue(OSThreadQueue *queue);
 void GXTokenInterruptHandler(s16 interrupt, void *context);
 void GXFinishInterruptHandler(s16 interrupt, void *context);
 
+s32 OSDisableInterrupts(void);
+s32 OSRestoreInterrupts(s32 level);
+void OSSleepThread(OSThreadQueue *queue);
+
+static u8 DrawDone;
 static OSThreadQueue FinishQueue;
 
 extern GXData *gx;
