@@ -18,3 +18,22 @@ void Render_UseLighting(u8 enable) {
         GXSetChanCtrl(4, 0, 1, 1, 0, 0, 2);
     }
 }
+
+void SetVertexBuffer(u32 *vb) {
+    u8 *data;
+
+    if (vb != m_vertexBuffer) {
+        data = (u8 *)(vb + 4);
+        m_vertexBuffer = vb;
+        GXSetArray(9, data, 0xC);
+        GXSetArray(0xD, data + vb[0], 8);
+        if (vb[1] != 0) {
+            GXSetArray(0xB, data + vb[1], 4);
+        }
+        if (vb[2] != 0) {
+            GXSetArray(0xA, data + vb[2], 0xC);
+        }
+        DCFlushRange(vb, vb[3]);
+    }
+}
+
