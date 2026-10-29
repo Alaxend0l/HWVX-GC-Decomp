@@ -90,3 +90,28 @@ void __AISHandler(s16 interrupt, void *context) {
     OSSetCurrentContext(context);
 }
 
+void __AIDHandler(s16 interrupt, void *context) {
+    void OSClearContext(void *);
+    void OSSetCurrentContext(void *);
+    void __AICallbackStackSwitch(void *cb);
+    extern void (*__AID_Callback)(void);
+    extern u8 *__CallbackStack;
+    u8 exceptionContext[0x2C8];
+    u16 tmp;
+
+    tmp = __DSPRegs[5];
+    tmp = (u16)((tmp & ~0xA0) | 8);
+    __DSPRegs[5] = tmp;
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(exceptionContext);
+    if (__AID_Callback) {
+        if (__CallbackStack) {
+            __AICallbackStackSwitch(__AID_Callback);
+        } else {
+            __AID_Callback();
+        }
+    }
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(context);
+}
+
