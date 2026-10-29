@@ -38,3 +38,19 @@ u32 m_curTexture;
 void Render_DestroyTextureSlot(u32 id) {
     GXInitTexObj(&m_gxTexObjArray[id], NULL, 0x20, 0x20, 6, 0, 0, 0);
 }
+
+void Render_SetTextureHandle(u16 id) {
+    if (id == 0xFFFF) {
+        GXSetNumTexGens(0);
+        GXSetTevOp(0, 4);
+        GXSetTevOrder(0, 0xFF, 0xFF, 4);
+        m_curTexture = 0xFFFF;
+    } else if (m_curTexture != id) {
+        GXSetNumTexGens(1);
+        GXSetTevOp(0, 0);
+        GXSetTevOrder(0, 0, 0, 4);
+        GXLoadTexObj(&m_gxTexObjArray[id], 0);
+        m_curTexture = id;
+    }
+}
+
