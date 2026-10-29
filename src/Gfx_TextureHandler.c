@@ -29,10 +29,6 @@ void File_Close(s32 handle);
 void Render_DestroyTextureSlot(u32 id);
 s32 File_Seek(s32 handle, s32 offset, s8 mode);
 
-static inline u16 SwapU16(s32 v) {
-    return ((v & 0xFF00) >> 8) | (v << 8);
-}
-
 typedef struct BTFHeader {
     u8 version;
     u8 unk1;
