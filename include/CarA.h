@@ -149,7 +149,7 @@ typedef struct CarA {
   s32 speed;                /* 0x78 scaled by AI speedScale */
   u8 pad7C[0x10];           /* 0x7C */
   ThingVTable *vtable;      /* 0x8C */
-  u8 pad90[4];              /* 0x90 */
+  void *tileData;           /* 0x90 the world tile (car, path) it was created from */
   Player *player;           /* 0x94 NULL-checked, copied to slave players */
   u32 lightIndex;           /* 0x98 index into g_ThingLightingData, -1: none */
   u8 pad9C[0x20];           /* 0x9C */
