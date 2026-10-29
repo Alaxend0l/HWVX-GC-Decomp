@@ -84,3 +84,16 @@ void ReleaseVoice(u32 id) {
     }
 }
 
+s32 SetVoiceVol(u32 id, s32 vol) {
+    Voice *voice = &g_voice[(u8)id];
+
+    if (voice->id == id) {
+        voice->vol = vol;
+        if (voice->state == 1) {
+            SetVoiceVol_(voice, g_sfxvol);
+        }
+        return 1;
+    }
+    return 0;
+}
+
