@@ -12,6 +12,10 @@ int EXI2_Poll(void) {
     return 0;
 }
 
+int EXI2_ReadN(void) {
+    return 0;
+}
+
 int EXI2_WriteN(void) {
     return 0;
 }
