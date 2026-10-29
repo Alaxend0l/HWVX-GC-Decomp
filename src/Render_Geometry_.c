@@ -80,6 +80,8 @@ typedef struct GDL {
     u8 unkBE100[0xDFCC0 - 0xBE100];
     GDLDrawEntry drawEntries[0x800];
     GDLLODEntry lodEntries[0x400];
+    u8 unkEBCC0[0xF3A80 - 0xEBCC0];
+    GDLEnvmapState envmapStates[0x20];
 } GDL;
 
 typedef struct GDLMatrix {
