@@ -18,7 +18,8 @@ typedef struct Thing {
     u8 unk83;          /* 0x83 */
     s32 unk84;         /* 0x84 */
     s32 unk88;         /* 0x88 */
-    u8 pad8C[8];
+    void **vtable;     /* 0x8C */
+    u8 pad90[4];
     s32 unk94;         /* 0x94 */
 } Thing;
 
