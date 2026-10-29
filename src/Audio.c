@@ -2,7 +2,7 @@
 
 /* The sound system's update hooks, installed by the create calls below. */
 void (*volatile SongUpdate)(void);
-void (*volatile VoiceUpdate)(void);
+void (*volatile VoiceUpdate)();
 
 /* Set once Audio_Create() has brought everything up; it makes later calls no-ops. */
 s8 g_init;
@@ -23,8 +23,8 @@ s8 Audio_Create(void)
 {
 	if (!g_init)
 	{
-		VoiceUpdate = NULL;
-		SongUpdate = NULL;
+		VoiceUpdate = (void (*)(void))0;
+		SongUpdate = (void (*)(void))NULL;
 
 		if (AudioMusic_Create() && AudioIT_Create() && AudioMIDI_Create() && AudioVoice_Create() && Audio_Create_())
 		{
