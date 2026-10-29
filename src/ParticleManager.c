@@ -71,6 +71,25 @@ s8 ParticleManager_CanCreatureParticle(void *creature) {
     return 0;
 }
 
+void CreateParticleGX(Vector4 *pos, Vector4 *vel, Vector4 *accel, Vector4 *quat, u8 *info, f32 speed, f32 age);
+void CreateParticleSprite(Vector4 *pos, Vector4 *vel, Vector4 *accel, void *owner, u8 *info, f32 speed, f32 age);
+void LineManager_Add(void *arg, Vector4 *start, Vector4 *dir, Vector4 *accel);
+void CreateParticle(Vector4 *pos, Vector4 *vel, Vector4 *accel, Vector4 *quat, u8 *info, f32 speed, f32 age) {
+    switch (*info) {
+    case 3:
+        break;
+    case 0:
+        CreateParticleGX(pos, vel, accel, quat, info, speed, age);
+        break;
+    case 1:
+        CreateParticleSprite(pos, vel, accel, quat, info, speed, age);
+        break;
+    case 2:
+        LineManager_Add(info, pos, vel, accel);
+        break;
+    }
+}
+
 void CreateParticleGX(Vector4 *pos, Vector4 *vel, Vector4 *accel, Vector4 *quat, u8 *info, f32 speed, f32 age) {
     extern Vector4 g_zeroVector;
     extern s32 g_iDeltaTimeMS;
