@@ -205,6 +205,29 @@ s32 Gfx_GetCameraPositions(Vector *out) {
     return count;
 }
 
+f32 Gfx_GetMinCameraDistSquared(Vector *pos) {
+    extern u8 g_CurrentViews;
+    extern GfxWindow g_window[];
+    f32 PSVECSquareDistance(Vector *a, Vector *b);
+    f32 minDist;
+    f32 dist;
+    u32 i;
+
+    if (g_CurrentViews != 1) {
+        minDist = 99999.9f;
+        for (i = 1; i < 5; i++) {
+            if (g_CurrentViews & (1 << i)) {
+                dist = PSVECSquareDistance(pos, &g_window[i].cameraPos);
+                if (minDist > dist) {
+                    minDist = dist;
+                }
+            }
+        }
+        return minDist;
+    }
+    return PSVECSquareDistance(pos, &g_window[0].cameraPos);
+}
+
 void Gfx_ClearScreen(void)
 {
     Render_ClearScreen();
