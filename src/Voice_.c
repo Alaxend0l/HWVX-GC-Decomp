@@ -64,11 +64,15 @@ typedef struct VoiceHW {
     u8 unk57;
     u8 unk58[2];
     s16 unk5A;
-    u8 unk5C[8];
+    u8 unk5C[4];
+    s16 unk60;
+    s16 unk62;
     s16 unk64;
-    u8 unk66[6];
+    s16 unk66;
+    s16 unk68;
+    s16 unk6A;
     s16 unk6C;
-    u8 unk6E[2];
+    s16 unk6E;
 } VoiceHW;
 
 extern void (*DestroySongVoice)(VoiceHW *voice);
