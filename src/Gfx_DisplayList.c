@@ -23,6 +23,19 @@ typedef struct GDL2DSprite {
     u8 unk2C[0x30 - 0x2C];
 } GDL2DSprite;
 
+typedef struct GDLTriVtx {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 w;
+    u8 unk10[0x20 - 0x10];
+} GDLTriVtx;
+
+typedef struct GDLTri {
+    u8 unk0[0x4];
+    GDLTriVtx v[3];
+} GDLTri;
+
 typedef struct GDLLine {
     u8 unk0[0x30];
 } GDLLine;
