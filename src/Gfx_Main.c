@@ -67,6 +67,23 @@ void Gfx_CreateView(void) {
     fn_800957D4();
 }
 
+GfxWindow *GetRenderWindow(void);
+void Gfx_BeginScene(void) {
+    void Render_BeginScene(void);
+    void Render_InitDisplayList(void);
+    void Gfx_SetProjectionMatrix(f32 fov);
+    void Gfx_SetWorldMatrix(void *matrix);
+    void *memset(void *dst, int c, u32 n);
+    extern u8 g_renderStats[0x100];
+
+    g_state.unk7C = 0;
+    Render_BeginScene();
+    Render_InitDisplayList();
+    memset(g_renderStats, 0, sizeof(g_renderStats));
+    Gfx_SetProjectionMatrix(GetRenderWindow()->fov);
+    Gfx_SetWorldMatrix(NULL);
+}
+
 void Gfx_EndScene(void) {
     void Render_EndScene(void);
     extern s8 g_screenTextX;
@@ -84,6 +101,19 @@ void Gfx_FlipBuffers(void) {
 
     Render_FlipBuffers();
     memset(g_screenText, 0, sizeof(g_screenText));
+}
+
+void RenderState_Init(void) {
+    g_state.unk7C = 1;
+    g_state.numPointLights = 0;
+    g_state.unk80 = 1.0f;
+    g_state.unk91 = 0xFF;
+    g_state.lightChanged = 1;
+    g_state.unk8F = 1;
+    g_state.unk92 = 0xFF;
+    g_state.enviroMapMode = 0;
+    g_state.unk88 = 0;
+    g_state.farClippingPlane = 0.0f;
 }
 
 void Gfx_EnableState(s32 arg0) {
