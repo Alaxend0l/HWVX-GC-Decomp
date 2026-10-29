@@ -26,3 +26,44 @@ BOOL SIIsChanBusy(s32 chan);
 u32 SIGetStatus(s32 chan);
 BOOL SIGetResponse(s32 chan, void *data);
 void SIDisablePolling(u32 poll);
+
+s32 SIReadSteering(s32 chan, SISteeringStatus *status) {
+    BOOL enabled;
+    SISteeringControl *sc;
+    u32 chanBit;
+    s32 ret;
+    u32 data[2];
+
+    enabled = OSDisableInterrupts();
+    sc = &__SISteering[chan];
+    chanBit = 0x80000000 >> chan;
+    if (SIIsChanBusy(chan)) {
+        sc->ret = -2;
+    } else if (!(__SISteeringEnableBits & chanBit)) {
+        sc->ret = -1;
+    } else if (SIGetStatus(chan) & 8) {
+        SIGetResponse(chan, data);
+        SIDisablePolling(chanBit);
+        __SISteeringEnableBits &= ~chanBit;
+        sc->ret = -1;
+    } else if (!SIGetResponse(chan, data) || (data[0] & 0x80000000)) {
+        sc->ret = -3;
+    } else {
+        sc->ret = 0;
+        if (status) {
+            status->button = data[0] >> 16;
+            status->misc = data[0] >> 8;
+            status->steering = (u8)data[0] - 128;
+            status->gas = data[1] >> 24;
+            status->brake = data[1] >> 16;
+            status->left = data[1] >> 8;
+            status->right = data[1];
+        }
+    }
+    if (status) {
+        status->err = (s8)sc->ret;
+    }
+    ret = sc->ret;
+    OSRestoreInterrupts(enabled);
+    return ret;
+}
