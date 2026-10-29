@@ -178,6 +178,60 @@ void ThingManagerList_ReleaseAll(void **list) {
     }
 }
 
+void ThingManagerList_EmancipateSlaves(void *mtx, void **list) {
+    typedef struct SlaveThing {
+        u8 pad0[0x10];
+        Matrix4 mtx;
+        u8 pad50[0x24];
+        u32 flags;
+        u8 pad78[8];
+        s16 gridCell;
+        u8 slaveId;
+        u8 slavePlayer;
+        u8 pad84[8];
+        void *vtable;
+        u8 pad90[0x10];
+        struct SlaveThing *prev;
+        struct SlaveThing *next;
+    } SlaveThing;
+    extern u8 g_itemVTable[];
+    void MultiplyMatrix(void *a, void *b, Matrix4 *out);
+    void Thing_AddToGrid(void *thing, s32 type);
+    Matrix4 out;
+    SlaveThing *thing;
+    SlaveThing *next;
+
+    thing = *list;
+    while (thing != NULL) {
+        next = thing->next;
+        if (thing->slavePlayer == 0xEF) {
+            if (thing->prev == NULL) {
+                *list = thing->next;
+            } else {
+                thing->prev->next = thing->next;
+            }
+            if (thing->next != NULL) {
+                thing->next->prev = thing->prev;
+                thing->next = NULL;
+            }
+            thing->prev = NULL;
+            MultiplyMatrix(&thing->mtx, mtx, &out);
+            thing->mtx = out;
+            thing->next = g_thingManager_DARYL.activeList;
+            thing->prev = NULL;
+            if (thing->next != NULL) {
+                thing->next->prev = thing;
+            }
+            g_thingManager_DARYL.activeList = thing;
+            if (thing->gridCell != 0 && (u8 *)thing->vtable == g_itemVTable) {
+                Thing_AddToGrid(thing, 3);
+                thing->flags &= ~8;
+            }
+        }
+        thing = next;
+    }
+}
+
 s32 SharedSlaveHolder_Get(void *shared) {
     extern u8 g_aSharedSlaveHolder[0x200];
     void ThingManagerList_InitAllSlavesNow(void *list, void *slaves, u8 player);
