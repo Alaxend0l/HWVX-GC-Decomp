@@ -2,6 +2,8 @@
 
 #pragma use_lmw_stmw on
 
+void World_Unload(void);
+
 s32 World_Create(void) {
     extern s32 m_VertIn;
     extern s32 g_drawShadowsFlag;
