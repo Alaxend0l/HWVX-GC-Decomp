@@ -46,3 +46,42 @@ void THPGXRestore(void) {
     GXSetTevSwapModeTable(2, 1, 1, 1, 3);
     GXSetTevSwapModeTable(3, 2, 2, 2, 3);
 }
+
+#pragma use_lmw_stmw on
+void THPGXYuv2RgbDraw(u32 *yImage, u32 *uImage, u32 *vImage, s16 x, s16 y, s16 textureWidth, s16 textureHeight, s16 polygonWidth, s16 polygonHeight) {
+    GXTexObj tobj0;
+    GXTexObj tobj1;
+    GXTexObj tobj2;
+
+    GXInitTexObj(&tobj0, yImage, (u16)textureWidth, (u16)textureHeight, 1, 0, 0, 0);
+    GXInitTexObjLOD(&tobj0, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+    GXLoadTexObj(&tobj0, 0);
+    GXInitTexObj(&tobj1, uImage, (u16)(textureWidth >> 1), (u16)(textureHeight >> 1), 1, 0, 0, 0);
+    GXInitTexObjLOD(&tobj1, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+    GXLoadTexObj(&tobj1, 1);
+    GXInitTexObj(&tobj2, vImage, (u16)(textureWidth >> 1), (u16)(textureHeight >> 1), 1, 0, 0, 0);
+    GXInitTexObjLOD(&tobj2, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+    GXLoadTexObj(&tobj2, 2);
+    GXBegin(0x80, 7, 4);
+    GXWGFifo.s16 = x;
+    GXWGFifo.s16 = y;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.u16 = 0;
+    GXWGFifo.u16 = 0;
+    GXWGFifo.s16 = x + polygonWidth;
+    GXWGFifo.s16 = y;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.u16 = 1;
+    GXWGFifo.u16 = 0;
+    GXWGFifo.s16 = x + polygonWidth;
+    GXWGFifo.s16 = y + polygonHeight;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.u16 = 1;
+    GXWGFifo.u16 = 1;
+    GXWGFifo.s16 = x;
+    GXWGFifo.s16 = y + polygonHeight;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.u16 = 0;
+    GXWGFifo.u16 = 1;
+}
+#pragma use_lmw_stmw off
