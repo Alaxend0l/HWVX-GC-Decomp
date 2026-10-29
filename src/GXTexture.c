@@ -34,7 +34,7 @@ typedef struct GXDataSUTex {
     u8 unk124[0x204 - 0x124];
     u32 genMode;
     u8 unk208[0x410 - 0x208];
-    void *texRegionCallback;
+    void *(*texRegionCallback)(GXTexObj *obj, u32 id);
     void *tlutRegionCallback;
     u8 unk418[0x49C - 0x418];
     u32 texmapId[16];
@@ -57,6 +57,14 @@ s32 GXGetTexObjFmt(GXTexObj *to) {
     __GXTexObjInt *t = (__GXTexObjInt *)to;
 
     return t->fmt;
+}
+
+void GXLoadTexObjPreLoaded(GXTexObj *obj, void *region, u32 id);
+void GXLoadTexObj(GXTexObj *obj, u32 id) {
+    void *r;
+
+    r = ((void *(*)(GXTexObj *, u32))gx->texRegionCallback)(obj, id);
+    GXLoadTexObjPreLoaded(obj, r, id);
 }
 
 void GXInitTlutRegion(GXTlutRegion *region, u32 tmem_addr, u32 tlut_size) {
