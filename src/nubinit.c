@@ -26,7 +26,7 @@ static BOOL TRK_InitializeEndian(void) {
     } else if (*(u32 *)bendian == 0x78563412) {
         gTRKBigEndian = FALSE;
     } else {
-        return TRUE;
+        result = TRUE;
     }
     return result;
 }
