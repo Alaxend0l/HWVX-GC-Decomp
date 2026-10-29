@@ -54,6 +54,8 @@ typedef struct Line {
     u8 padE3[0xD];          /* 0xE3 */
 } Line;
 
+Line g_lineManager[128];
+
 void LineManager_Init(void) {
     extern Line g_lineManager[128];
     u32 i;
