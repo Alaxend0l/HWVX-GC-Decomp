@@ -1,5 +1,46 @@
 #include "common.h"
 
+typedef struct OSThread OSThread;
+
+typedef struct OSThreadQueue {
+    OSThread *head;
+    OSThread *tail;
+} OSThreadQueue;
+
+typedef struct OSThreadLink {
+    OSThread *next;
+    OSThread *prev;
+} OSThreadLink;
+
+typedef struct OSMutexQueue {
+    struct OSMutex *head;
+    struct OSMutex *tail;
+} OSMutexQueue;
+
+struct OSThread {
+    u8 context[0x2C8];
+    u16 state;
+    u16 attr;
+    s32 suspend;
+    s32 priority;
+    s32 base;
+    void *val;
+    OSThreadQueue *queue;
+    OSThreadLink link;
+    OSThreadQueue queueJoin;
+    struct OSMutex *mutex;
+    OSMutexQueue queueMutex;
+    OSThreadLink linkActive;
+    u8 *stackBase;
+    u32 *stackEnd;
+};
+
+#define OS_THREAD_ATTR_DETACH 1
+#define OS_THREAD_STATE_MORIBUND 8
+
+OSThread *__OSCurrentThread : 0x800000E4;
+OSThreadQueue __OSActiveThreadQueue : 0x800000DC;
+
 void OSInitThreadQueue(void * arg0)
 {
     ((s32 *)arg0)[1] = 0;
