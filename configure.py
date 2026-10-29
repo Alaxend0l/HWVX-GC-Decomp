@@ -582,7 +582,7 @@ config.libs = [
             Object(NonMatching, "printf.c", mw_version="GC/1.3"),
             Object(NonMatching, "rand.c"),
             Object(NonMatching, "float.c"),
-            Object(NonMatching, "signal.c", mw_version="GC/1.3"),
+            Object(Matching, "signal.c", mw_version="GC/1.3"),
             Object(NonMatching, "string.c", mw_version="GC/1.3"),
             Object(Matching, "time.c", mw_version="GC/1.3"),
             Object(NonMatching, "uart_console_io.c"),
