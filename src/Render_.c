@@ -45,6 +45,16 @@ void Render_FlipBuffers(void) {
     }
 }
 
+void DisplayList_Init(void);
+s32 DisplayList_Create(void) {
+    g_pDL = Allocate(0x125DC, 0, "");
+    if (g_pDL != NULL) {
+        DisplayList_Init();
+        return 1;
+    }
+    return 0;
+}
+
 void DisplayList_Init(void) {
     memset(g_pDL, 0, 0x18);
 }
