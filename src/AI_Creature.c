@@ -1,5 +1,6 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
 
 s32 AI_Creature_Deactivate(u8 *creature) {
     extern u8 g_cameraManager[];
