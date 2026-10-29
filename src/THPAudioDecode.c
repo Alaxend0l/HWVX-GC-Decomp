@@ -10,6 +10,14 @@ void AudioDecodeThreadStart(void) {
     }
 }
 
+void *PopFreeAudioBuffer(void) {
+    extern u8 FreeAudioBufferQueue[];
+    void *msg;
+
+    OSReceiveMessage(FreeAudioBufferQueue, &msg, 1);
+    return msg;
+}
+
 void PushFreeAudioBuffer(void *arg0)
 {
     extern u8 UsedTextureSetQueue_8036EC78[];
