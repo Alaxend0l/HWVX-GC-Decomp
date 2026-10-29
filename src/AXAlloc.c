@@ -133,6 +133,8 @@ void AXFreeVoice(AXVPB *p)
         p->depop = 1;
     }
     __AXSetPBDefault(p);
-    __AXPushFreeStack(p);
+    p->next = __AXStackHead[0];
+    __AXStackHead[0] = p;
+    p->priority = 0;
     OSRestoreInterrupts(old);
 }
