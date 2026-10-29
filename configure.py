@@ -624,7 +624,7 @@ config.libs = [
             Object(Matching, "GBARead.c"),
             Object(NonMatching, "GBAWrite.c"),
             Object(Matching, "GBAXfer.c", mw_version="GC/1.2.5n"),
-            Object(NonMatching, "GBAKey.c")
+            Object(NonMatching, "GBAKey.c", mw_version="GC/1.2.5n")
         ],
     },
 ]
