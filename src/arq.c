@@ -198,12 +198,12 @@ void ARQPostRequest(ARQRequest *request, u32 owner, u32 type, u32 priority, u32 
 
 void ARQFlushQueue(void)
 {
-    extern void *__ARQCallbackLo;
-    extern void *__ARQRequestPendingLo;
-    extern void *__ARQRequestQueueHi;
-    extern void *__ARQRequestQueueLo;
-    extern void *__ARQRequestTailHi;
-    extern void *__ARQRequestTailLo;
+    extern ARQRequest *__ARQRequestPendingLo;
+    extern ARQRequest *__ARQRequestQueueHi;
+    extern ARQRequest *__ARQRequestQueueLo;
+    extern ARQRequest *__ARQRequestTailHi;
+    extern ARQRequest *__ARQRequestTailLo;
+    extern void (*__ARQCallbackLo)(u32);
     s32 OSDisableInterrupts(void);
     s32 OSRestoreInterrupts(s32);
     s32 level;
