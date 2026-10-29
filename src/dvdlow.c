@@ -24,6 +24,16 @@ volatile u32 __DIRegs[16] : 0xCC006000;
 extern s32 Read(s32, s32, s32, s32);
 extern s32 DVDLowSeek(s32, s32);
 
+void __DVDLowSetWAType(u32 type, u32 location);
+void OSInitAlarm(void);
+void __DVDInitWA(void)
+{
+    NextCommandNumber = 0;
+    CommandList[0].command = -1;
+    __DVDLowSetWAType(0, 0);
+    OSInitAlarm();
+}
+
 void AlarmHandler(void)
 {
     s32 n;
