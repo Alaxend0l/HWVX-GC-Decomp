@@ -375,6 +375,8 @@ void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps) {
     }
 }
 
+#pragma push
+#pragma dont_inline on
 void MotionState_BuildMatricesWorld(void *arg0, void *arg1, void *motionState, f32 time) {
     u8 frames[0x800];
     void *anim;
@@ -387,7 +389,7 @@ void MotionState_BuildMatricesWorld(void *arg0, void *arg1, void *motionState, f
         TEST_AnimTraverseHeirarchyToMatricesWorld(arg0, arg1, frames, *skel, M2C_FIELD(motionState, u32 *, 0x10), time);
     }
 }
-
+#pragma pop
 s32 AnimNodes_BlowBranch(u8 *node) {
     s32 count = 1;
     u32 i;
