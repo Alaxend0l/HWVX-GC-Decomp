@@ -48,6 +48,25 @@ void ShowStats_Create(void) {
     fn_800957D4();
 }
 
+void ShowStats_Init(void) {
+    void *World_GetGameData(void);
+    void *memset(void *dst, s32 c, u32 n);
+    s32 Gfx_FontManager_AddFont(u16, u8, f32, f32, f32);
+    void Gfx_SetDebugFont(s32 font);
+    DebugFontInfo *font;
+
+    if (World_GetGameData() != NULL) {
+        font = ((GameDataFonts *)World_GetGameData())->debugFont;
+        g_debugDataFlag = 1;
+        memset(g_timeBar, 0, sizeof(g_timeBar));
+        g_timeBarOn = 0;
+        if (font != NULL) {
+            debugFont = Gfx_FontManager_AddFont(font->texture, font->caseMode, font->width, font->height, font->spacing);
+            Gfx_SetDebugFont(debugFont);
+        }
+    }
+}
+
 void ShowStats_Release(void) {
     M2C_UNK Gfx_FontManager_ReleaseFont(s32);
     extern s32 debugFont;
