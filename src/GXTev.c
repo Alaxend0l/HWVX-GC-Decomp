@@ -31,6 +31,20 @@ typedef struct GXData {
 
 extern GXData *gx;
 
+void GXSetAlphaCompare(s32 comp0, u8 ref0, s32 op, s32 comp1, u8 ref1) {
+    u32 reg = 0;
+
+    reg = ((u32)reg & ~0xFF) | (u32)ref0;
+    reg = ((u32)reg & ~0xFF00) | ((u32)ref1 << 8);
+    reg = ((u32)reg & ~0x70000) | ((u32)comp0 << 16);
+    reg = ((u32)reg & ~0x380000) | ((u32)comp1 << 19);
+    reg = ((u32)reg & ~0xC00000) | ((u32)op << 22);
+    reg = ((u32)reg & ~0xFF000000) | ((u32)0xF3 << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    gx->bpSentNot = 0;
+}
+
 void GXSetTevOrder(s32 stage, s32 coord, s32 map, s32 color) {
     static s32 c2r[] = { 0, 1, 0, 1, 0, 1, 7, 5, 6 };
     u32 *ptref;
