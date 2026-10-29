@@ -788,8 +788,16 @@ typedef struct GeometryGroup {
     u16 unk14;
     u8 unk16[0x18 - 0x16];
     u16 unk18;
-    u8 unk1A[0x20 - 0x1A];
+    u8 unk1A[0x1C - 0x1A];
+    u16 *indices;
 } GeometryGroup;
+
+typedef struct GeometryVertex {
+    Vector4 pos;
+    u8 unk10[0x1C - 0x10];
+    u32 color;
+    u8 unk20[0x30 - 0x20];
+} GeometryVertex;
 
 typedef struct Geometry {
     u16 unk0;
@@ -797,6 +805,7 @@ typedef struct Geometry {
     u16 unk4;
     u16 unk6;
     GeometryGroup *groups;
+    GeometryVertex *verts;
 } Geometry;
 
 static inline DLGroup *DisplayList_AddGroup_Opaque(u16 key) {
