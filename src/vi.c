@@ -67,6 +67,15 @@ static inline void GetCurrentDisplayPosition(u32 *hct, u32 *vct) {
     *vct = vcount;
 }
 
+static inline u32 getCurrentHalfLine(void) {
+    extern VITiming *CurrTiming;
+    u32 hcount;
+    u32 vcount;
+
+    GetCurrentDisplayPosition(&hcount, &vcount);
+    return ((vcount - 1) << 1) + ((hcount - 1) / CurrTiming->hlw);
+}
+
 static u8 timing[0x130] = {
     0x06, 0x00, 0x00, 0xF0, 0x00, 0x18, 0x00, 0x19, 0x00, 0x03, 0x00, 0x02, 0x0C, 0x0D, 0x0C, 0x0D, 0x02, 0x08, 0x02, 0x07,
     0x02, 0x08, 0x02, 0x07, 0x02, 0x0D, 0x01, 0xAD, 0x40, 0x47, 0x69, 0xA2, 0x01, 0x75, 0x7A, 0x00, 0x01, 0x9C,
@@ -181,6 +190,27 @@ static u32 getCurrentFieldEvenOdd(void) {
 
     GetCurrentDisplayPosition(&hct, &vct);
     return ((((vct - 1) << 1) + ((hct - 1) / CurrTiming->hlw)) < CurrTiming->nhlines) ? 1 : 0;
+}
+
+u32 VIGetCurrentLine(void) {
+    extern VITiming *CurrTiming;
+    s32 OSDisableInterrupts(void);
+    void OSRestoreInterrupts(s32 level);
+    u32 halfLine;
+    VITiming *tm;
+    s32 enabled;
+    u32 hct;
+    u32 vct;
+
+    tm = CurrTiming;
+    enabled = OSDisableInterrupts();
+    GetCurrentDisplayPosition(&hct, &vct);
+    halfLine = ((vct - 1) << 1) + ((hct - 1) / CurrTiming->hlw);
+    OSRestoreInterrupts(enabled);
+    if (halfLine >= tm->nhlines) {
+        halfLine -= tm->nhlines;
+    }
+    return halfLine >> 1;
 }
 
 u32 VIGetTvFormat(void) {
