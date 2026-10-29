@@ -2,6 +2,8 @@
 
 #pragma use_lmw_stmw on
 
+void ShowStats(void);
+
 typedef struct DebugFontInfo {
     u32 texture;
     u8 unk4[5];
