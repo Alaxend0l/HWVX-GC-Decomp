@@ -210,6 +210,15 @@ void LGWheels::PlayDamperForce(s32 chan, u8 coefficient, s16 offset)
 	}
 }
 
+u8 LGWheels::SameDamperForceParams(s32 chan, u8 coefficient, s16 offset)
+{
+	if (limper[chan].offet == coefficient && limper[chan].efficiency == offset)
+	{
+		return 1;
+	}
+	return 0;
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void LGWheels::PlayFrontalCollisionForce(s32 chan, u8 force)
