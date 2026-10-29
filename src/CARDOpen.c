@@ -18,6 +18,14 @@ typedef struct CARDDir {
     u32 commentAddr;  // 0x3C
 } CARDDir;
 
+typedef struct CARDControl {
+    u8 unk0[0x10C];
+    u8 *diskID; // 0x10C
+} CARDControl;
+
+extern u8 __CARDDiskNone[32];
+int memcmp(const void *a, const void *b, u32 n);
+
 
 BOOL __CARDCompareFileName(CARDDir *ent, const char *fileName) {
     char *entName;
