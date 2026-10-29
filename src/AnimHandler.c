@@ -375,6 +375,67 @@ void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps) {
     }
 }
 
+void MotionState_DrawSlaves(void *state, s32 arg1) {
+    extern Matrix4 g_identity;
+    void Thing_DrawSlaves(void *thing);
+    void CopyVector(Vector4 *dst, Vector4 *src);
+    void CopyMatrix(void *dst, void *src);
+    void MultiplyMatrix(Matrix4 *a, void *b, Matrix4 *out);
+    typedef struct SlaveThing {
+        u8 pad0[0x10];
+        Matrix4 mtx;
+        Vector4 quat;
+        u8 pad60[0x74 - 0x60];
+        u32 flags;
+        u8 pad78[0x82 - 0x78];
+        u8 bone;
+        u8 pad83[0x8C - 0x83];
+        void (**vtbl)();
+        u8 pad90[0xA4 - 0x90];
+        struct SlaveThing *next;
+    } SlaveThing;
+    typedef struct {
+        u8 pad0[0x10];
+        Matrix4 *matrices;
+        SlaveThing *slaves;
+    } State;
+    Matrix4 *matrix = (Matrix4 *)arg1;
+    SlaveThing *slave;
+    Vector4 quat __attribute__((aligned(16)));
+    Matrix4 mtx __attribute__((aligned(16)));
+    Matrix4 out __attribute__((aligned(16)));
+
+    slave = ((State *)state)->slaves;
+    if (matrix != NULL && matrix != &g_identity) {
+        for (; slave != NULL; slave = slave->next) {
+            if (slave->flags & 0x200200) {
+                continue;
+            }
+            CopyVector(&quat, &slave->quat);
+            CopyMatrix(&mtx, &slave->mtx);
+            MultiplyMatrix(&((State *)state)->matrices[slave->bone], matrix, &out);
+            slave->vtbl[9](slave, &out);
+            slave->vtbl[4](slave);
+            Thing_DrawSlaves(slave);
+            CopyVector(&slave->quat, &quat);
+            CopyMatrix(&slave->mtx, &mtx);
+        }
+    } else {
+        for (; slave != NULL; slave = slave->next) {
+            if (slave->flags & 0x200200) {
+                continue;
+            }
+            CopyVector(&quat, &slave->quat);
+            CopyMatrix(&mtx, &slave->mtx);
+            slave->vtbl[9](slave, &((State *)state)->matrices[slave->bone]);
+            slave->vtbl[4](slave);
+            Thing_DrawSlaves(slave);
+            CopyVector(&slave->quat, &quat);
+            CopyMatrix(&slave->mtx, &mtx);
+        }
+    }
+}
+
 void MotionState_DrawSlavesAttachCoronaOnly(void *state, s32 arg1) {
     extern Matrix4 g_identity;
     extern u8 g_attachVTable[];
