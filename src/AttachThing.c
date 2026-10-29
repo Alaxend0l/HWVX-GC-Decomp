@@ -1,5 +1,48 @@
 #include "common.h"
 
+typedef struct GDLRectVtx {
+    f32 x;
+    f32 y;
+    f32 z;
+    u8 unkC[0x10 - 0xC];
+    f32 s;
+    f32 t;
+    GXColor color;
+    u8 unk1C[0x20 - 0x1C];
+} GDLRectVtx;
+
+typedef struct GDLRect {
+    GDLRectVtx v[4];
+    u16 tex;
+    u8 blendMode;
+    u8 window;
+} GDLRect;
+
+GDLRect *Gfx_Add2DRectangleRenderWindow(void);
+
+typedef struct RadarBlipData {
+    u8 unk0[2];
+    u8 showBar;
+    u8 showSprite;
+    f32 size;
+    f32 height;
+    u8 unkC[0x18 - 0xC];
+    u32 texture;
+    u8 unk1C[0x20 - 0x1C];
+    GXColor *color;
+} RadarBlipData;
+
+typedef struct RadarBlip {
+    u8 unk0[0x40];
+    Vector4 pos;
+    u8 unk50[0x94 - 0x50];
+    void *player;
+    u8 unk98[0xB0 - 0x98];
+    RadarBlipData *data;
+    s32 unkB4;
+    f32 health;
+} RadarBlip;
+
 
 s32 AttachThing_Init(void *attach, void *data)
 {
