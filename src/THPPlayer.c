@@ -563,7 +563,6 @@ u8 THPPlayerGetState(void) {
 
 void PushUsedTextureSet(void *arg0)
 {
-    extern u8 UsedTextureSetQueue_8036EC78[];
     OSSendMessage(UsedTextureSetQueue_8036EC78, arg0, 0);
 }
 
