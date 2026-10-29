@@ -279,6 +279,26 @@ void Gfx_GetCameraVector(Vector4 *right, Vector4 *up, Vector4 *at) {
     *at = GetRenderWindow()->cameraAt;
 }
 
+void Gfx_ScreenOverlay(GXColor *color, u32 mode) {
+    if (mode != GetRenderWindow()->overlayMode) {
+        GetRenderWindow()->overlayColor = *color;
+        GetRenderWindow()->overlayMode = mode;
+        return;
+    }
+    if (color->r > GetRenderWindow()->overlayColor.r) {
+        GetRenderWindow()->overlayColor.r = color->r;
+    }
+    if (color->g > GetRenderWindow()->overlayColor.g) {
+        GetRenderWindow()->overlayColor.g = color->g;
+    }
+    if (color->b > GetRenderWindow()->overlayColor.b) {
+        GetRenderWindow()->overlayColor.b = color->b;
+    }
+    if (color->a > GetRenderWindow()->overlayColor.a) {
+        GetRenderWindow()->overlayColor.a = color->a;
+    }
+}
+
 DLSkinGroup *DisplayList_AddGroup_Skin(void) {
     DisplayList *dl = g_pDL;
 
