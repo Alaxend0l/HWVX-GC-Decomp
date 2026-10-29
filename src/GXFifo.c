@@ -17,6 +17,17 @@ typedef struct GXFifoObj {
     u8 pad[128];
 } GXFifoObj;
 
+typedef struct GXData {
+    u16 vNumNot;
+    u16 bpSentNot;
+    u16 vNum;
+    u16 vLim;
+    u32 cpEnable;
+} GXData;
+
+extern GXData *gx;
+extern volatile u16 *__cpReg;
+
 void GXInitFifoLimits(GXFifoObj *fifo, u32 hiWatermark, u32 loWatermark) {
     __GXFifoObj *realFifo = (__GXFifoObj *)fifo;
 
