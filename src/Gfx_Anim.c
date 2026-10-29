@@ -61,7 +61,7 @@ void Gfx_DrawAnimGeometryAux(Geometry *geometry, f32 *matrices, u32 count, f32 *
     void MultiplyMatrix(f32 *a, f32 *b, f32 *out);
     void Gfx_SetRenderWindow(u32 view);
     s32 Gfx_GetLightState(void);
-    s32 Gfx_AddWorldMatrixState_CacheMatrix(u32 matrix);
+    s32 Gfx_AddWorldMatrixState_CacheMatrix(f32 *matrix);
     DLSkinGroup *DisplayList_AddGroup_Skin(void);
     f32 world[16] __attribute__((aligned(16)));
     DLSkinGroup *group;
@@ -72,8 +72,7 @@ void Gfx_DrawAnimGeometryAux(Geometry *geometry, f32 *matrices, u32 count, f32 *
     u32 i;
 
     if (g_CurrentViews != 1) {
-        i = 1;
-        do {
+        for (i = 1; i < 5; i++) {
             if (g_CurrentViews & (1 << i)) {
                 Gfx_SetRenderWindow(i);
             }
@@ -84,7 +83,7 @@ void Gfx_DrawAnimGeometryAux(Geometry *geometry, f32 *matrices, u32 count, f32 *
                 level = Gfx_CalcGeometryLOD(geometry, world);
             }
             if (level != 0xFFFFFFFF) {
-                matrixState = Gfx_AddWorldMatrixState_CacheMatrix((u32)matrix);
+                matrixState = Gfx_AddWorldMatrixState_CacheMatrix(matrix);
                 lod = (Geometry *)((u8 *)geometry->groups + level * 0x18);
                 for (j = 0; j < lod->numGroups; j++) {
                     group = DisplayList_AddGroup_Skin();
@@ -97,8 +96,7 @@ void Gfx_DrawAnimGeometryAux(Geometry *geometry, f32 *matrices, u32 count, f32 *
                     group->count = count;
                 }
             }
-            i++;
-        } while (i < 5);
+        }
         return;
     }
     Gfx_DrawAnimGeometryAux_(geometry, matrices, count, matrix);
