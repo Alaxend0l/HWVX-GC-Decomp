@@ -684,6 +684,20 @@ void Thing_PassiveTargeting(void *thing);
 void *memset(void *dst, s32 c, u32 n);
 void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, f32 fps);
 
+static inline f32 CreatureMS_GetBlendFPS(struct CreatureMS *c) {
+    f32 a = 0.0f;
+    f32 b = a;
+    f32 w = c->weight / (c->weight + c->unk110);
+
+    if (c->anim != NULL) {
+        a = c->anim->fps;
+    }
+    if (c->anim2 != NULL) {
+        b = c->anim2->fps;
+    }
+    return b + w * (a - b);
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void Creature_MacroStep(void *arg0, f32 dt) {
@@ -790,9 +804,6 @@ void Creature_MacroStep(void *arg0, f32 dt) {
     f32 dot;
     f32 diff;
     f32 step;
-    f32 a;
-    f32 b;
-    f32 w;
     f32 inv;
     f32 c2;
     f32 s2;
@@ -925,20 +936,24 @@ void Creature_MacroStep(void *arg0, f32 dt) {
         if (creature->weight > 1.0f) {
             creature->weight = 1.0f;
         }
-        a = 0.0f;
-        b = a;
-        w = creature->weight / (creature->weight + creature->unk110);
-        if (creature->anim != NULL) {
-            a = creature->anim->fps;
+        {
+            f32 w = creature->weight;
+            f32 fps1 = 0.0f;
+            f32 fps2 = fps1;
+            f32 blend = w / (w + creature->unk110);
+
+            if (creature->anim != NULL) {
+                fps1 = creature->anim->fps;
+            }
+            if (creature->anim2 != NULL) {
+                fps2 = creature->anim2->fps;
+            }
+            fps2 += blend * (fps1 - fps2);
+            if (creature->controls != NULL && (creature->controls->flags & 0x100)) {
+                fps2 *= creature->controls->speed;
+            }
+            Motion_BlendHeartbeat_FPS(&creature->anim, 2, fps2);
         }
-        if (creature->anim2 != NULL) {
-            b = creature->anim2->fps;
-        }
-        b += w * (a - b);
-        if (creature->controls != NULL && (creature->controls->flags & 0x100)) {
-            b *= creature->controls->speed;
-        }
-        Motion_BlendHeartbeat_FPS(&creature->anim, 2, b);
         if (creature->unkFC != 0) {
             creature->flags &= ~0x10;
         }
