@@ -13,3 +13,17 @@ s32 TRKAcquireMutex(void *mutex);
 s32 TRKReleaseMutex(void *mutex);
 
 extern TRKBuffer gTRKMsgBufs[3];
+
+s32 TRKSetBufferPosition(TRKBuffer *b, u32 position) {
+    s32 err = 0;
+
+    if (position > 0x880) {
+        err = 0x301;
+    } else {
+        b->position = position;
+        if (position > b->length) {
+            b->length = position;
+        }
+    }
+    return err;
+}
