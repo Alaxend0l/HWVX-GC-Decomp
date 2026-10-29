@@ -779,7 +779,9 @@ typedef struct CreateCarParams {
 typedef struct FlashDef {
   u8 unk0;
   u8 enabled;
-  u8 unk2[0x20 - 0x2];
+  u8 unk2[0xC - 0x2];
+  s32 duration;
+  u8 unk10[0x20 - 0x10];
   u8 *colorKey;
   u8 unk24[0x2C - 0x24];
   u8 pointKey[4];
