@@ -72,6 +72,9 @@ typedef struct OSResetFunctionInfo {
 void OSRegisterResetFunction(OSResetFunctionInfo *info);
 s32 OnReset(s32 final);
 void __CARDSetDiskID(u8 *id);
+s32 EXIProbe(s32 chan);
+s32 EXIDeselect(s32 chan);
+s32 EXIUnlock(s32 chan);
 
 static OSResetFunctionInfo ResetFunctionInfo = { OnReset, 127, NULL, NULL };
 
