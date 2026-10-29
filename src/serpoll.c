@@ -22,3 +22,38 @@ TRKFramingState gTRKFramingState;
 s32 TRKTerminateSerialHandler(void) {
     return 0;
 }
+
+s32 TRKInitializeSerialHandler(void) {
+    gTRKFramingState.msgBufID = -1;
+    gTRKFramingState.receiveState = 0;
+    gTRKFramingState.isEscape = 0;
+    return 0;
+}
+
+void TRKProcessInput(s32 bufferIdx) {
+    TRKEvent event;
+
+    TRKConstructEvent(&event, 2);
+    gTRKFramingState.msgBufID = -1;
+    event.msgBufID = bufferIdx;
+    TRKPostEvent(&event);
+}
+
+void TRKGetInput(void) {
+    s32 id;
+    void *buf;
+    u8 command;
+
+    id = TRKTestForPacket();
+    if (id != -1) {
+        buf = TRKGetBuffer(id);
+        TRKSetBufferPosition(buf, 0);
+        TRKReadBuffer1_ui8(buf, &command);
+        if (command < 0x80) {
+            TRKProcessInput(id);
+        } else {
+            TRKReleaseBuffer(id);
+        }
+    }
+}
+
