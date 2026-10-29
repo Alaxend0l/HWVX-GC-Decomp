@@ -29,6 +29,37 @@ void GXSetTevOrder(int, int, int, int);
 void GXSetTevOp(int, int);
 void GXSetTevSwapMode(int, int, int);
 void GXSetTevSwapModeTable(int, int, int, int, int);
+
+typedef struct GXRenderModeObj {
+    u32 viTVmode;
+    u16 fbWidth;
+    u16 efbHeight;
+} GXRenderModeObj;
+
+void GXSetPixelFmt(int, int);
+void C_MTXOrtho(f32 m[4][4], f32 t, f32 b, f32 l, f32 r, f32 n, f32 f);
+void GXSetProjection(f32 mtx[4][4], int type);
+void GXSetViewport(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz);
+void GXSetScissor(u32 left, u32 top, u32 wd, u32 ht);
+void PSMTXIdentity(f32 m[3][4]);
+void GXLoadPosMtxImm(f32 mtx[3][4], u32 id);
+void GXSetCurrentMtx(u32 id);
+void GXSetColorUpdate(int);
+void GXSetAlphaUpdate(int);
+void GXSetDispCopyGamma(int);
+void GXSetTexCoordGen2(int, int, int, u32, int, u32);
+void GXInvalidateTexAll(void);
+void GXClearVtxDesc(void);
+void GXSetVtxDesc(int, int);
+void GXSetVtxAttrFmt(int, int, int, int, int);
+void GXSetTevColorIn(int, int, int, int, int);
+void GXSetTevColorOp(int, int, int, int, int, int);
+void GXSetTevAlphaIn(int, int, int, int, int);
+void GXSetTevAlphaOp(int, int, int, int, int, int);
+void GXSetTevKColorSel(int, int);
+void GXSetTevKAlphaSel(int, int);
+void GXSetTevColorS10(int, GXColorS10);
+void GXSetTevKColor(int, GXColor);
 void THPGXRestore(void) {
     GXSetZMode(1, 7, 0);
     GXSetBlendMode(0, 1, 0, 0xF);
