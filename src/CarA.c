@@ -38,6 +38,15 @@ static inline void CarA_UpdateAngularVelocity(CarA *car) {
     XformVecOrientation(&car->worldMatrix, &scaled, &car->localAxis);
 }
 
+static inline Vector4 Vector4_OrZero(Vector4 *v) {
+    extern Vector4 g_zeroVector;
+
+    if (v != NULL) {
+        return *v;
+    }
+    return g_zeroVector;
+}
+
 /* Releases the damage-state slaves and re-triggers the ones whose health
    threshold the car has dropped below. */
 static inline void CarA_UpdateDamageSlaves(CarA *car) {
@@ -965,6 +974,141 @@ void CarA_DynamicRotation(u8 *car, f32 dt) {
         break;
     case 1:
         break;
+    }
+}
+
+void CarA_ProcessDamageSystem(CarA *car, Vector4 *hitPos, s32 level, f32 impulse) {
+    typedef struct DebrisParams {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        Vector4 angVel;
+        u32 id;
+        void *player;
+        f32 unk48;
+        f32 unk4C;
+    } DebrisParams;
+    typedef struct PartParams {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 axis;
+        Vector4 vel;
+        f32 gravity;
+        void *geom;
+        s32 life;
+        u32 unk4C;
+        s32 unk50;
+        u8 pad54[0xC];
+    } PartParams;
+    typedef struct SlaveParams {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        void *info;
+        u32 unk34;
+        f32 unk38;
+        u8 pad3C[4];
+    } SlaveParams;
+    extern Vector4 g_zeroVector;
+    void XformVec(void *mtx, void *in, Vector4 *out);
+    f32 _fabs(f32 x);
+    f32 PSVECSquareDistance(void *a, void *b);
+    f32 RandomNumberGenerator_GetRandomFloat(f32 min, f32 max);
+    void RandomNumberGenerator_GetRandomVector(Vector4 *v);
+    f32 RandomAdd(f32 a, f32 b);
+    void SubMatrixToQuaternion(void *mtx, Vector4 *quat);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    u8 *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
+    void ThingManagerList_Append(void *list, void *thing);
+    PartParams partParams;
+    DebrisParams debrisParams;
+    SlaveParams slaveParams;
+    Vector4 pos __attribute__((aligned(16)));
+    Vector4 vel __attribute__((aligned(16)));
+    Vector4 dir __attribute__((aligned(16)));
+    Vector4 quat __attribute__((aligned(16)));
+    u32 bit;
+    u32 i;
+    CarPartList *list;
+    f32 scale;
+    u8 *thing;
+    u8 *slave;
+    f32 absImpulse;
+    u32 debris;
+
+    absImpulse = _fabs(impulse);
+    if (hitPos == NULL) {
+        return;
+    }
+    if (car->vehicleIface->damageLevel > level && !(absImpulse > 70.0f)) {
+        return;
+    }
+    if (!(100.0f * (f32)car->speed / (f32)car->vehicleIface->collider->maxHealth <= car->vehicleIface->damagePercent)) {
+        return;
+    }
+    list = car->vehicleIface->modelRef->data->parts;
+    if (list == NULL) {
+        return;
+    }
+    for (i = 0; i < list->count; i++) {
+        if (car->partVisMask & (bit = 1 << i)) {
+            continue;
+        }
+        if (list->parts[i].xform) {
+            XformVec(&car->motionState.animMatrices[list->parts[i].mtxIndex], list->parts[i].offset, &pos);
+        } else {
+            pos = car->motionState.animMatrices[list->parts[i].mtxIndex].v[3];
+        }
+        if (PSVECSquareDistance(&pos, hitPos) < 25.0f) {
+            if (list->parts[i].flags == 0) {
+                scale = RandomNumberGenerator_GetRandomFloat(40.0f, 80.0f);
+                RandomNumberGenerator_GetRandomVector(&dir);
+                vel = car->velocity;
+                vel.x = dir.x * scale + vel.x;
+                vel.y = dir.y * scale + vel.y;
+                vel.z = dir.z * scale + vel.z;
+                SubMatrixToQuaternion(&car->motionState.animMatrices[list->parts[i].mtxIndex], &quat);
+                debris = list->parts[i].debris;
+                partParams.life = 3000;
+                partParams.gravity = -50.0f;
+                partParams.vel = vel;
+                partParams.pos = pos;
+                partParams.geom = list->parts[i].geom;
+                partParams.quat = quat;
+                partParams.unk50 = 1;
+                if (debris != 0) {
+                    debrisParams.id = debris;
+                    debrisParams.pos = pos;
+                    debrisParams.quat = quat;
+                    debrisParams.vel = vel;
+                    debrisParams.player = NULL;
+                    debrisParams.unk48 = 0.0f;
+                    debrisParams.unk4C = 0.0f;
+                    debrisParams.angVel = g_zeroVector;
+                    ThingManager_DARYL_CreateThing(1, &debrisParams);
+                }
+                RandomNumberGenerator_GetRandomVector(&partParams.axis);
+                partParams.axis.w = 0.017453292f * RandomAdd(100.0f, 1260.0f);
+                thing = ThingManager_DARYL_CreateThing(6, &partParams);
+                if (thing != NULL && list->parts[i].slaveInfo != NULL) {
+                    slaveParams.unk38 = 0.0f;
+                    slaveParams.quat.w = 1.0f;
+                    slaveParams.quat.x = 0.0f;
+                    slaveParams.quat.y = 0.0f;
+                    slaveParams.quat.z = 0.0f;
+                    slaveParams.pos = list->parts[i].slavePos != NULL ? *list->parts[i].slavePos : g_zeroVector;
+                    slaveParams.info = list->parts[i].slaveInfo;
+                    slaveParams.unk34 = 0;
+                    slaveParams.vel = g_zeroVector;
+                    slave = ThingManager_DARYL_CreateSlave(2, &slaveParams, 0xFF);
+                    if (slave != NULL) {
+                        slave[0x83] = 0xFF;
+                        ThingManagerList_Append(thing + 0x88, slave);
+                    }
+                }
+            }
+            car->partVisMask |= bit;
+        }
     }
 }
 
