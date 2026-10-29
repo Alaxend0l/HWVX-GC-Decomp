@@ -33,20 +33,21 @@ typedef struct MIDI_VOICE
 typedef struct MIDI_CHN
 {
     struct MIDI_VOICE *voice;
-    u8 field_4;
+    s8 field_4;
     u8 field_5;
     u8 prog;
     u8 field_7;
     u16 field_8;
-    u16 field_A;
-    u32 field_C;
-    u32 field_10;
+    u8 field_A;
+    u8 field_B;
+    s32 field_C;
+    s32 field_10;
     u32 vol;
     u32 pitch;
     u8 count;
     u8 note;
     u8 field_1E;
-    u8 field_1F;
+    s8 field_1F;
 } MIDI_CHN;
 
 static u8 g_song[0x24];
