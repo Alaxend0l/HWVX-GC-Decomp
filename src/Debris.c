@@ -74,9 +74,9 @@ void Debris_MacroStep(void *debris, f32 dt) {
     void RandomNumberGenerator_GetRandomVector(void *v);
     Debris *deb = debris;
     f32 savedDt = g_fDeltaTimeSec;
+    DebrisHit hit __attribute__((aligned(16)));
+    Vector4 newPos __attribute__((aligned(16)));
     f32 t;
-    Vector4 newPos;
-    DebrisHit hit;
     u8 bounced;
     f32 d;
     f32 spin;
