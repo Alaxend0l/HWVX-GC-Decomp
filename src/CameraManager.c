@@ -364,6 +364,69 @@ static inline void Camera_Orbit(Camera *cam, Vector4 *center, Vector4 *target, f
     Gfx_SetProjectionMatrix(fov);
 }
 
+static inline void Camera_LookAt(Camera *cam, Vector4 *pos, Vector4 *target) {
+    f32 PSVECSquareMag(void *v);
+    void PSVECNormalize(void *src, void *dst);
+    void PSVECSubtract(void *a, void *b, void *out);
+    void PSVECCrossProduct(void *a, void *b, void *out);
+    Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
+
+    cam->pos = *pos;
+    PSVECSubtract(target, &cam->pos, &cam->dir);
+    if (PSVECSquareMag(&cam->dir)) {
+        PSVECNormalize(&cam->dir, &cam->dir);
+    }
+    PSVECCrossProduct(&up, &cam->dir, &cam->right);
+    PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
+    if (PSVECSquareMag(&cam->right)) {
+        PSVECNormalize(&cam->right, &cam->right);
+    }
+    if (PSVECSquareMag(&cam->up)) {
+        PSVECNormalize(&cam->up, &cam->up);
+    }
+}
+
+static inline void Camera_ZoomOnVehicle(Camera *cam, u8 *params) {
+    s8 RayHitsTerrainAndObjects(Vector4 *from, Vector4 *dir, f32 *t, void *info);
+    s32 NavHolder_FindIndexOfNearestNavPoint(Vector4 *pos, s32 hint);
+    Vector4 *NavHolder_GetNavPoint(s32 index);
+    void PSVECSubtract(void *a, void *b, void *out);
+    Vector4 target;
+    Vector4 delta;
+    f32 t;
+    Vector4 *nav;
+
+    ((CarA *)cam->player->vehicle)->vtable->getTargetPos(cam->player->vehicle, &target);
+    PSVECSubtract(&target, &cam->pos, &delta);
+    t = 1.0f;
+    if (RayHitsTerrainAndObjects(&cam->pos, &delta, &t, NULL)) {
+        nav = NavHolder_GetNavPoint(NavHolder_FindIndexOfNearestNavPoint(&target, -1));
+        if (nav != NULL) {
+            cam->pos = *nav;
+        }
+    }
+    Camera_UpdatePosition_Zoom_Generic((u8 *)cam, params, &cam->pos, &target, ((CarA *)cam->player->vehicle)->unk70, 0.0f);
+}
+
+static inline void Camera_OrbitVehicle(Camera *cam, CameraOrbitParams *params) {
+    extern f32 g_fDeltaTimeSec;
+    void SinCosRad(f32 *s, f32 *c, f32 angle);
+    Vector4 targetPos;
+    Vector4 *center;
+    f32 c;
+    f32 s;
+
+    cam->modeTime += params->speed * g_fDeltaTimeSec;
+    SinCosRad(&s, &c, cam->modeTime);
+    if (cam->player->vehicle != NULL) {
+        ((CarA *)cam->player->vehicle)->vtable->getTargetPos(cam->player->vehicle, &targetPos);
+        center = &targetPos;
+    } else {
+        center = &cam->mtx.v[3];
+    }
+    Camera_Orbit(cam, center, center, params->radius, params->height, params->speed, params->fov);
+}
+
 s32 Camera_TriggerActionGetLocation(u8 *cam, u32 *data, Vector4 *out) {
     extern u8 *g_pNoRayCollideThing;
     extern s32 g_triggerAction_params_default;
