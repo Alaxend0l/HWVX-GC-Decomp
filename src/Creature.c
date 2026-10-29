@@ -684,10 +684,6 @@ void Thing_PassiveTargeting(void *thing);
 void *memset(void *dst, s32 c, u32 n);
 void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, f32 fps);
 
-static inline f32 CreatureMS_Blend(f32 a, f32 b, f32 t) {
-    return b + t * (a - b);
-}
-
 #pragma push
 #pragma use_lmw_stmw on
 void Creature_MacroStep(void *arg0, f32 dt) {
