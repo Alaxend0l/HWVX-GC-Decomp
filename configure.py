@@ -529,7 +529,7 @@ config.libs = [
             Object(NonMatching, "SISamplingRate.c"),
             Object(NonMatching, "SISteering.c"),
             Object(NonMatching, "SISteeringXfer.c", mw_version="GC/1.2.5n"),
-            Object(NonMatching, "SISteeringAuto.c"),
+            Object(NonMatching, "SISteeringAuto.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "EXIBios.c"),
             Object(NonMatching, "EXIUart.c"),
             Object(Matching, "mainloop.c", mw_version="GC/1.3"),
