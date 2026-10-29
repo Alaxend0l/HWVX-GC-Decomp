@@ -4,6 +4,32 @@
 void __ARQCallbackHack(void) {
 }
 
+void ARQInit(void)
+{
+    extern s32 __ARQ_init_flag;
+    extern void *__ARQRequestQueueHi;
+    extern void *__ARQRequestQueueLo;
+    extern u32 __ARQChunkSize;
+    extern void *__ARQRequestPendingHi;
+    extern void *__ARQRequestPendingLo;
+    extern void *__ARQCallbackHi;
+    extern void *__ARQCallbackLo;
+    void __ARQInterruptServiceRoutine(void);
+    void *ARRegisterDMACallback(void *callback);
+
+    if (__ARQ_init_flag == 1) {
+        return;
+    }
+    __ARQRequestQueueHi = __ARQRequestQueueLo = NULL;
+    __ARQChunkSize = 0x1000;
+    ARRegisterDMACallback(__ARQInterruptServiceRoutine);
+    __ARQRequestPendingHi = NULL;
+    __ARQRequestPendingLo = NULL;
+    __ARQCallbackHi = NULL;
+    __ARQCallbackLo = NULL;
+    __ARQ_init_flag = 1;
+}
+
 void ARQReset(void) {
     extern s32 __ARQ_init_flag;
     __ARQ_init_flag = 0;
