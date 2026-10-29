@@ -241,3 +241,50 @@ found:
     return (u8 *)ptr + 8;
 }
 
+void *Block_subBlock(Block *ths, u32 size) {
+    SubBlock *st;
+    SubBlock *sb;
+    u32 sb_size;
+    u32 max_found;
+
+    st = *(SubBlock **)((u8 *)ths + (ths->size_ & ~7) - sizeof(SubBlock *));
+    if (st == NULL) {
+        return NULL;
+    }
+    sb = st;
+    sb_size = sb->size_ & ~7;
+    max_found = sb_size;
+    while (sb_size < size) {
+        sb = sb->next_;
+        sb_size = sb->size_ & ~7;
+        if (max_found < sb_size) {
+            max_found = sb_size;
+        }
+        if (sb == st) {
+            ths->max_size_ = max_found;
+            return NULL;
+        }
+    }
+    if (sb_size - size >= 0x50) {
+        SubBlock_split(sb, size);
+    }
+    *(SubBlock **)((u8 *)ths + (ths->size_ & ~7) - sizeof(SubBlock *)) = sb->next_;
+    sb_size = sb->size_ & ~7;
+    sb->size_ |= 2;
+    *(u32 *)((u8 *)sb + sb_size) |= 4;
+    {
+        SubBlock **start = (SubBlock **)((u8 *)ths + (ths->size_ & ~7) - sizeof(SubBlock *));
+        if (*start == sb) {
+            *start = sb->next_;
+        }
+        if (*start == sb) {
+            *start = NULL;
+            ths->max_size_ = 0;
+        } else {
+            sb->next_->prev_ = sb->prev_;
+            sb->prev_->next_ = sb->next_;
+        }
+    }
+    return sb;
+}
+
