@@ -59,6 +59,15 @@ s32 GXGetTexObjFmt(GXTexObj *to) {
     return t->fmt;
 }
 
+void GXInitTlutRegion(GXTlutRegion *region, u32 tmem_addr, u32 tlut_size) {
+    __GXTlutRegionInt *t = (__GXTlutRegionInt *)region;
+
+    t->loadTlut1 = 0;
+    t->loadTlut1 = (t->loadTlut1 & ~0x3FF) | ((tmem_addr - 0x80000) >> 9);
+    t->loadTlut1 = (t->loadTlut1 & ~0x1FFC00) | (tlut_size << 10);
+    t->loadTlut1 = (t->loadTlut1 & ~0xFF000000) | (0x65 << 24);
+}
+
 void *GXSetTexRegionCallback(void *f) {
     void *oldcb = gx->texRegionCallback;
 
