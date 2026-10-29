@@ -35,6 +35,24 @@ void GXInitFifoLimits(GXFifoObj *fifo, u32 hiWatermark, u32 loWatermark) {
     realFifo->loWatermark = loWatermark;
 }
 
+#pragma peephole on
+void __OSSetInterruptHandler(s16 interrupt, void *handler);
+u32 __OSUnmaskInterrupts(u32 mask);
+void *OSGetCurrentThread(void);
+void GXCPInterruptHandler(s16 interrupt, void *context);
+extern void *__GXCurrentThread;
+extern s32 GXOverflowSuspendInProgress;
+extern void *CPUFifo;
+extern void *GPFifo;
+void __GXFifoInit(void) {
+    __OSSetInterruptHandler(0x11, GXCPInterruptHandler);
+    __OSUnmaskInterrupts(0x4000);
+    __GXCurrentThread = OSGetCurrentThread();
+    GXOverflowSuspendInProgress = 0;
+    CPUFifo = 0;
+    GPFifo = 0;
+}
+
 void __GXFifoReadEnable(void) {
     gx->cpEnable = (gx->cpEnable & ~1) | 1;
     __cpReg[1] = gx->cpEnable;
