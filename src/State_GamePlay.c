@@ -96,7 +96,7 @@ typedef struct GPTileSpeaker {
 typedef struct GPTilePath {
     u8 pad0[4];
     u32 unk4;               /* 0x04 */
-    u32 unk8;               /* 0x08 */
+    f32 unk8;               /* 0x08 */
     u32 unkC;               /* 0x0C */
     CarA *thing;            /* 0x10 */
     u32 unk14;              /* 0x14 */
