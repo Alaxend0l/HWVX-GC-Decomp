@@ -113,8 +113,7 @@ static inline void Grid_RemoveNodes(GridObject *obj) {
             node->cell->head = node->next;
         }
         node->cell->count--;
-        node->next = gGridManager.freeNodes;
-        gGridManager.freeNodes = node;
+        Grid_PushFreeNode(node);
     }
 }
 
