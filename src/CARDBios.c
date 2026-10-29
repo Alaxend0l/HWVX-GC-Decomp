@@ -106,6 +106,29 @@ void __CARDUnlockedHandler(s32 chan, void *context) {
     }
 }
 
+void EXISetExiCallback(s32 chan, void *callback);
+static void TimeoutHandler(void *alarm, void *context) {
+    s32 chan;
+    CARDControl *card;
+    CARDCallback callback;
+
+    for (chan = 0; chan < 2; ++chan) {
+        card = &__CARDBlock[chan];
+        if (alarm == &card->alarm) {
+            break;
+        }
+    }
+    if (!card->attached) {
+        return;
+    }
+    EXISetExiCallback(chan, NULL);
+    callback = card->exiCallback;
+    if (callback) {
+        card->exiCallback = NULL;
+        callback(chan, -5);
+    }
+}
+
 void CARDInit(void) {
     int chan;
 
