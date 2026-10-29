@@ -39,6 +39,29 @@ typedef struct THPFileInfo {
 static THPFileInfo *__THPInfo;
 static u8 *__THPHuffmanSizeTab;
 static u16 *__THPHuffmanCodeTab;
+static s16 *__THPMCUBuffer[6];
+static u8 *__THPWorkArea;
+
+static void __THPHuffGenerateCodeTable(void) {
+    u8 *sizeTab;
+    u16 *codeTab;
+    u8 si;
+    u16 p;
+    u16 code;
+
+    sizeTab = __THPHuffmanSizeTab;
+    codeTab = __THPHuffmanCodeTab;
+    p = 0;
+    code = 0;
+    si = sizeTab[0];
+    while (sizeTab[p]) {
+        while (sizeTab[p] == si) {
+            codeTab[p++] = code++;
+        }
+        code = (u16)(code << 1);
+        si++;
+    }
+}
 
 static void __THPRestartDefinition(void) {
     __THPInfo->RST = TRUE;
