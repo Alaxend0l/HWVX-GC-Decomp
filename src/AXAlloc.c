@@ -207,3 +207,22 @@ AXVPB *AXAcquireVoice(u32 priority, AXVoiceCallback callback, u32 userContext)
     return pvpb;
 }
 
+void AXSetVoicePriority(AXVPB *p, u32 priority)
+{
+    BOOL old;
+
+    old = OSDisableInterrupts();
+    __AXRemoveFromStack(p);
+    p->next = __AXStackHead[priority];
+    p->prev = NULL;
+    if (p->next != NULL) {
+        __AXStackHead[priority]->prev = p;
+        __AXStackHead[priority] = p;
+    } else {
+        __AXStackTail[priority] = p;
+        __AXStackHead[priority] = p;
+    }
+    p->priority = priority;
+    OSRestoreInterrupts(old);
+}
+
