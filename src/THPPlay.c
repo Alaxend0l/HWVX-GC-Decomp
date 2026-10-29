@@ -15,7 +15,7 @@ void Mpeg_Init(void) {
     void GXSetCullMode(s32 mode);
     s32 THPPlayerInit(void);
     void AudioInit(void);
-    extern s32 m_rendermode_803C7754;
+    extern s32 m_rendermode;
     extern s32 rmode;
     GXColor black;
 
@@ -29,7 +29,7 @@ void Mpeg_Init(void) {
     GXSetCullMode(0);
     THPPlayerInit();
     AudioInit();
-    m_rendermode_803C7754 = rmode;
+    m_rendermode = rmode;
 }
 
 u32 Mpeg_Heartbeat(void) {
