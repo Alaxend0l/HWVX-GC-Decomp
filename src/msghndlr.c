@@ -22,6 +22,52 @@ static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
 }
 
 __declspec(section ".data") extern s32 IsTRKConnected;
+s32 TRKDoConnect(TRKBuffer *b) {
+    s32 err;
+    s32 ackTries;
+
+    IsTRKConnected = 1;
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, 0);
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+    return err;
+}
+
+s32 TRKDoUnsupported(TRKBuffer *b) {
+    s32 err;
+    s32 ackTries;
+
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, 0x10);
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+    return err;
+}
+
+s32 TRKStandardACK(TRKBuffer *b, u8 commandID, u8 replyError) {
+    s32 err;
+    s32 ackTries;
+
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, commandID);
+    TRKAppendBuffer1_ui8(b, replyError);
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+    return err;
+}
+
 void SetTRKConnected(s32 connected) {
     IsTRKConnected = connected;
 }
