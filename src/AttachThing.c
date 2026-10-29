@@ -241,6 +241,39 @@ void AttachGeometry_Draw(void *thing) {
     Gfx_DisableState(0x10);
 }
 
+s32 AttachGeometry_Move(void *arg0) {
+    extern f32 g_fDeltaTimeMS;
+    extern f32 g_fDeltaTimeSec;
+    void GenerateQuaternion(Vector4 *axis, Quaternion *q, f32 angle);
+    void QuaternionMult(Quaternion *a, Quaternion *b, Quaternion *out);
+    struct AttachGeomData {
+        u8 pad0[0x14];
+        u8 scale[0x1C - 0x14];
+        u8 color[0x2C - 0x1C];
+        Vector4 *axis;
+    };
+    struct AttachGeom {
+        u8 pad0[0x50];
+        Quaternion rot;
+        u8 pad60[0xB4 - 0x60];
+        struct AttachGeomData *data;
+        u8 padB8[0xC0 - 0xB8];
+        f32 spin;
+        u8 padC4[0xD0 - 0xC4];
+        u8 scale[0x130 - 0xD0];
+        u8 color[4];
+    } *thing = arg0;
+    Quaternion rot;
+    Quaternion out;
+
+    ExtractColorKey(thing->data->color, thing->color, g_fDeltaTimeMS);
+    ExtractScaleKey(thing->data->scale, thing->scale, g_fDeltaTimeMS);
+    GenerateQuaternion(thing->data->axis, &rot, 0.01745329238474369f * thing->spin * g_fDeltaTimeSec);
+    QuaternionMult(&rot, &thing->rot, &out);
+    thing->rot = out;
+    return 1;
+}
+
 void AttachThing_SlaveTransform(u8 *attach, Matrix4 *mtx) {
     typedef struct AttachThing {
         u8 pad0[0x10];
