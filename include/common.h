@@ -191,13 +191,16 @@ typedef struct DestructibleInfo {
   u8 pad0C[4];       /* 0x0C */
   u8 type;           /* 0x10 */
   u8 takesDamage;    /* 0x11 */
-  u8 pad12[6];       /* 0x12 */
+  u8 pad12[2];       /* 0x12 */
+  s32 maxHealth;     /* 0x14 */
   s32 armour;        /* 0x18 */
   u8 pad1C[4];       /* 0x1C */
   f32 mass;          /* 0x20 */
   u8 pad24[0x0C];    /* 0x24 */
   s32 surfaceScript; /* 0x30 */
-  u8 pad34[0x10];    /* 0x34 */
+  u8 pad34[8];       /* 0x34 */
+  u32 numDebris;     /* 0x3C */
+  u32 *debris;       /* 0x40 thing ids spawned when destroyed */
   OBox *box;         /* 0x44 */
   ConvexHull *hull;  /* 0x48 */
 } DestructibleInfo;
