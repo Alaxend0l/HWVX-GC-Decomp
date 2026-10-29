@@ -142,7 +142,8 @@ typedef struct CarA {
   u8 curveTableIdx;         /* 0x4E8 index into the interface's curve table */
   u8 pad4E9[7];             /* 0x4E9 */
   s32 soundIds[3];          /* 0x4F0 SoundSource ids, -1 == none; stopped + reset in Release */
-  u8 pad4FC[0x24];          /* 0x4FC */
+  f32 unk4FC;               /* 0x4FC */
+  u8 pad500[0x20];          /* 0x500 */
   Vector4 bodyOffset;       /* 0x520 XformVec(worldMatrix, this) -> camera/reflection pos */
   u8 pad530[0x30];          /* 0x530 */
 } CarA;
