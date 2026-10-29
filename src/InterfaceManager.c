@@ -2390,122 +2390,69 @@ void InterfaceManager_Render(void) {
     }
 }
 
-void InterfaceManager_RenderInterface(void *data) {
-    typedef struct FontData {
-        u8 pad0[0x9];
-        u8 spacing;
-        u8 padA[0x1C - 0xA];
-        f32 *width;
-    } FontData;
-    typedef struct FontInfo {
-        u8 pad0[0x4];
-        FontData *data;
-        u8 pad8[0xF - 0x8];
-        u8 useScale;
-        u8 hidden;
-    } FontInfo;
-    typedef struct InterfaceObject {
-        u8 unk0;
-        u8 type;
-        u8 pad2[0x14 - 0x2];
-        FontInfo *font;
-        u8 pad18[0x30 - 0x18];
-        f32 align;
-    } InterfaceObject;
-    typedef struct InterfaceSlot {
-        u8 pad0[0x60];
-        Vector4 pos;
-        u8 pad70[0x180 - 0x70];
-        f32 scale;
-        u8 pad184[0x1A4 - 0x184];
-        char *textPtr;
-        u8 pad1A8[0x1C0 - 0x1A8];
-        char text[0x80];
-        u8 hidden;
-        u8 pad241[0x243 - 0x241];
-        u8 type;
-        u8 pad244;
-        u8 kind;
-        u8 pad246[0x25C - 0x246];
-        InterfaceObject *object;
-        u8 pad260[0x300 - 0x260];
-    } InterfaceSlot;
-    typedef struct Interface {
-        u32 count;
-        u8 pad4[0xC - 0x4];
-        InterfaceSlot *parent;
-        u8 pad10[0x60 - 0x10];
-        Vector4 offset;
-        u8 pad70[0x7F - 0x70];
-        u8 active;
-        u8 pad80[0x82 - 0x80];
-        u8 hasOffset;
-        u8 paused;
-        u8 pad84[0x88 - 0x84];
-        InterfaceSlot *slots;
-    } Interface;
+void InterfaceManager_RenderInterface(RenderInterface *iface) {
     void InterfaceManager_RenderObject(void *iface, u32 index);
     u32 strlen(const char *s);
     u32 i;
     Vector4 saved __attribute__((aligned(16)));
     Vector4 parentSaved __attribute__((aligned(16)));
-    FontInfo *font;
-    FontData *fontData;
+    RenderFontInfo *font;
+    RenderFontData *fontData;
     u32 len;
     s32 width;
     f32 scale;
-    InterfaceSlot *slot;
-    Interface *iface = data;
+    RenderSlot *slot;
 
-    if (!iface->active || !iface->paused) {
-        for (i = 0; i < iface->count; i++) {
-            slot = &iface->slots[i];
-            if (iface->hasOffset) {
-                saved = slot->pos;
-                slot->pos.x += iface->offset.x;
-                slot->pos.y += iface->offset.y;
-                slot->pos.z += iface->offset.z;
+    if (iface->active && iface->paused) {
+        return;
+    }
+    for (i = 0; i < iface->count; i++) {
+        slot = &iface->slots[i];
+        if (iface->hasOffset) {
+            saved = slot->pos;
+            slot->pos.x += iface->offset.x;
+            slot->pos.y += iface->offset.y;
+            slot->pos.z += iface->offset.z;
+        }
+        if (slot->kind == 3) {
+            if (iface->parent != NULL && iface->parent->hidden) {
+                continue;
             }
-            if (slot->kind == 3) {
-                if (iface->parent != NULL && iface->parent->hidden) {
-                    continue;
-                }
-                if (slot->type == 6) {
-                    InterfaceManager_RenderObject(iface, i);
-                } else if (iface->parent != NULL) {
-                    parentSaved = slot->pos;
-                    slot->pos.x += iface->parent->pos.x;
-                    slot->pos.y += iface->parent->pos.y;
-                    slot->pos.z += iface->parent->pos.z;
-                    if (iface->parent->object->type == 1 && slot->object->align) {
-                        font = iface->parent->object->font;
-                        if (font != NULL && !font->hidden) {
-                            scale = 1.0f;
-                            if (iface->parent->textPtr != NULL) {
-                                len = strlen(iface->parent->textPtr);
-                            } else {
-                                len = strlen(iface->parent->text);
-                            }
-                            fontData = font->data;
-                            width = *fontData->width;
-                            if (font->useScale) {
-                                scale = iface->parent->scale;
-                            }
-                            slot->pos.x = scale * (f32)(len * (fontData->spacing + width)) *
-                                              (slot->object->align <= 0.0f ? -(0.5f * iface->parent->object->align + 0.5f)
-                                                                           : -(0.5f * iface->parent->object->align - 0.5f)) +
-                                          slot->pos.x;
-                        }
-                    }
-                    InterfaceManager_RenderObject(iface, i);
-                    slot->pos = parentSaved;
-                }
-            } else {
+            if (slot->type == 6) {
                 InterfaceManager_RenderObject(iface, i);
+            } else if (iface->parent != NULL) {
+                parentSaved = slot->pos;
+                slot->pos.x += iface->parent->pos.x;
+                slot->pos.y += iface->parent->pos.y;
+                slot->pos.z += iface->parent->pos.z;
+                if (iface->parent->object->type == 1 && slot->object->align) {
+                    font = iface->parent->object->font;
+                    if (font != NULL && !font->hidden) {
+                        scale = 1.0f;
+                        if (iface->parent->textPtr != NULL) {
+                            len = strlen(iface->parent->textPtr);
+                        } else {
+                            len = strlen(iface->parent->text);
+                        }
+                        fontData = font->data;
+                        width = *fontData->width;
+                        if (font->useScale) {
+                            scale = iface->parent->scale;
+                        }
+                        slot->pos.x = scale * (f32)(len * (fontData->spacing + width)) *
+                                          (slot->object->align <= 0.0f ? -(0.5f * iface->parent->object->align + 0.5f)
+                                                                       : -(0.5f * iface->parent->object->align - 0.5f)) +
+                                      slot->pos.x;
+                    }
+                }
+                InterfaceManager_RenderObject(iface, i);
+                slot->pos = parentSaved;
             }
-            if (iface->hasOffset) {
-                slot->pos = saved;
-            }
+        } else {
+            InterfaceManager_RenderObject(iface, i);
+        }
+        if (iface->hasOffset) {
+            slot->pos = saved;
         }
     }
 }
