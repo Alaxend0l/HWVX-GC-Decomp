@@ -2,6 +2,24 @@
 
 typedef void (*EXICallback)(s32 chan, void *context);
 
+typedef struct OSContext {
+    u32 gpr[32];
+    u32 cr;
+    u32 lr;
+    u32 ctr;
+    u32 xer;
+    f64 fpr[32];
+    u32 fpscr_pad;
+    u32 fpscr;
+    u32 srr0;
+    u32 srr1;
+    u16 mode;
+    u16 state;
+    u32 gqr[8];
+    u32 psf_pad;
+    f64 psf[32];
+} OSContext;
+
 typedef struct EXIControl {
     EXICallback exiCallback;
     EXICallback tcCallback;
@@ -377,6 +395,29 @@ BOOL EXIDeselect(s32 chan) {
     }
     return TRUE;
 }
+
+void OSClearContext(void *context);
+void OSSetCurrentContext(void *context);
+void EXIIntrruptHandler(s16 interrupt, void *context) {
+    s32 chan;
+    EXIControl *exi;
+    EXICallback callback;
+
+    chan = (interrupt - 9) / 3;
+    exi = &Ecb[chan];
+    __EXIClearInterrupts(chan, TRUE, FALSE, FALSE);
+    callback = exi->exiCallback;
+    if (callback) {
+        u8 exceptionContext[0x2C8];
+
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(exceptionContext);
+        callback(chan, context);
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(context);
+    }
+}
+
 u32 EXIGetState(s32 chan) {
     EXIControl *exi = &Ecb[chan];
     return exi->state;
