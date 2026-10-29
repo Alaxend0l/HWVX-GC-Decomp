@@ -15,7 +15,7 @@ typedef struct GDLLine {
 typedef struct GDLGroupTri {
     u8 type;
     u8 unk1[0xC - 0x1];
-    s32 count;
+    u32 count;
     u8 unk10[0x20 - 0x10];
 } GDLGroupTri;
 
@@ -76,6 +76,26 @@ GDLSprite *Gfx_AddBillBoardSprite(u16 tex) {
     sprite->next = g_pGDL->spriteHeads[tex];
     g_pGDL->spriteHeads[tex] = g_pGDL->numSprites++;
     return sprite;
+}
+
+void Gfx_End_GroupTri(s32 n) {
+    g_pGDL->groupTris[g_pGDL->numGroupTris].count += n;
+    if (g_pGDL->groupTris[g_pGDL->numGroupTris].count != 0) {
+        switch (g_pGDL->groupTris[g_pGDL->numGroupTris].type) {
+        case 0:
+            g_pGDL->unk38 += n;
+            break;
+        case 1:
+            g_pGDL->unk3C += n;
+            break;
+        case 2:
+            break;
+        case 4:
+            g_pGDL->unk40 += n;
+            break;
+        }
+        g_pGDL->numGroupTris++;
+    }
 }
 
 void Gfx_Add2DRectangleBack(void)
