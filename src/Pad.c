@@ -231,6 +231,8 @@ BOOL PADReset(u32 mask)
     return TRUE;
 }
 
+u8 __gUnknown800030E3 : 0x800030E3;
+
 static inline BOOL PADRecalibrate(u32 mask)
 {
     BOOL enabled;
@@ -501,41 +503,14 @@ BOOL OnReset(BOOL final)
 {
     static BOOL recalibrated = FALSE;
     BOOL sync;
-    BOOL enabled;
-    u32 mask;
-    u32 disableBits;
 
     if (SamplingCallback) {
         PADSetSamplingCallback(NULL);
     }
     if (!final) {
-        sync = FALSE;
-        if (ResettingBits == 0 && ResettingChan == 32 && !SIBusy()) {
-            sync = TRUE;
-        }
+        sync = PADSync();
         if (!recalibrated && sync) {
-            mask = 0xF0000000;
-            enabled = OSDisableInterrupts();
-            mask |= PendingBits;
-            PendingBits = 0;
-            mask &= ~(WaitingBits | CheckingBits);
-            ResettingBits |= mask;
-            disableBits = ResettingBits & EnabledBits;
-            EnabledBits &= ~mask;
-            if (!(*(u8 *)0x800030E3 & 0x40)) {
-                RecalibrateBits |= mask;
-            }
-            SIDisablePolling(disableBits);
-            if (ResettingChan == 32) {
-                ResettingChan = __cntlzw(ResettingBits);
-                if (ResettingChan != 32) {
-                    ResettingBits &= ~(0x80000000U >> ResettingChan);
-                    memset(Origin[ResettingChan], 0, 12);
-                    SIGetTypeAsync(ResettingChan, PADTypeAndStatusCallback);
-                }
-            }
-            OSRestoreInterrupts(enabled);
-            recalibrated = TRUE;
+            recalibrated = PADRecalibrate(0xF0000000);
             return FALSE;
         }
         return sync;
