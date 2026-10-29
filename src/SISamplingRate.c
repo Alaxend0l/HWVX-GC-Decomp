@@ -22,3 +22,33 @@ s32 OSRestoreInterrupts(s32 level);
 u32 VIGetTvFormat(void);
 void OSReport(const char *msg, ...);
 void SISetXY(u32 x, u32 y);
+
+void SISetSamplingRate(u32 msec) {
+    XY *xy;
+    s32 enabled;
+    int factor;
+
+    if (msec > 11) {
+        msec = 11;
+    }
+    enabled = OSDisableInterrupts();
+    SamplingRate = msec;
+    switch (VIGetTvFormat()) {
+    case 0:
+    case 2:
+    case 5:
+        xy = XYNTSC;
+        break;
+    case 1:
+        xy = XYPAL;
+        break;
+    default:
+        OSReport("SISetSamplingRate: unknown TV format. Use default.");
+        msec = 0;
+        xy = XYNTSC;
+        break;
+    }
+    factor = (*(volatile u16 *)0xCC00206C & 1) ? 2 : 1;
+    SISetXY(factor * xy[msec].line, xy[msec].count);
+    OSRestoreInterrupts(enabled);
+}
