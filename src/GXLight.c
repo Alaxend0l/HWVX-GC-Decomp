@@ -75,10 +75,10 @@ void GXInitLightColor(GXLightObjInt *lt_obj, GXColor color) {
 }
 
 void GXSetNumChans(u8 nChans) {
-    gx->genMode = (gx->genMode & ~0x70) | (nChans << 4);
+    gx->genMode = ((u32)gx->genMode & ~(((1 << 3) - 1) << 4)) | ((u32)nChans << 4);
     GXWGFifo.u8 = 0x10;
-    GXWGFifo.u32 = 0x1009;
-    GXWGFifo.u32 = nChans;
+    GXWGFifo.u32 = 0x1000 + 9;
+    GXWGFifo.u32 = (u32)nChans;
     gx->dirtyState |= 4;
 }
 
