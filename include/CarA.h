@@ -128,6 +128,12 @@ typedef struct CarAAccel {
   f32 unk18;                /* 0x18 */
   f32 unk1C;                /* 0x1C */
   f32 unk20;                /* 0x20 */
+  f32 airDownforceBase;     /* 0x24 */
+  f32 airDownforceRate;     /* 0x28 */
+  f32 airDownforceMax;      /* 0x2C */
+  s32 airDownforceDelay;    /* 0x30 ms */
+  f32 spinImpulse;          /* 0x34 */
+  f32 spinDecay;            /* 0x38 */
 } CarAAccel;
 
 typedef struct CarAStuntInfo {
