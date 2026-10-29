@@ -91,7 +91,7 @@ typedef struct ItemThingParams {
     u32 unk3C;
     ItemInfo *info;
     f32 value;
-    u8 subtype;
+    s8 subtype;
 } ItemThingParams;
 
 /* ThingManager_DARYL_CreateThing(1, ...) parameters. */
@@ -235,6 +235,75 @@ void FileStreaming_InitializeAllQuads(void)
     }
 }
 
+#pragma use_lmw_stmw on
+void FileStreaming_HeartBeatItems(void)
+{
+    EffectThingParams p __attribute__((aligned(16)));
+    ItemThingParams params __attribute__((aligned(16)));
+    u32 i;
+    u32 j;
+    QuadItem *item;
+    ItemThing *thing;
+
+    g_LoadedQuadrants[g_numQuadPacksInMemory] = g_pWorldQuadrant;
+    g_itemTimer += g_iDeltaTimeMS;
+    if (g_itemTimer > 1500) {
+        g_itemTimer -= 1500;
+        for (i = 0; i < g_numQuadPacksInMemory + 1; i++) {
+            for (j = 0; j < (*(QuadItemList **)(g_LoadedQuadrants[i] + 0x30))->count; j++) {
+                item = &(*(QuadItemList **)(g_LoadedQuadrants[i] + 0x30))->items[j];
+                if ((item->timer != 0 || !item->spawned) && item->info != NULL && item->thing == NULL && item->type == 1) {
+                    item->timer -= 1500;
+                    if (item->timer <= 0) {
+                        item->timer = 0;
+                        params.pos = item->pos;
+                        params.pos.y += item->info->height;
+                        params.unk30 = 0.0f;
+                        params.unk34 = 0.0f;
+                        params.unk38 = 0.0f;
+                        params.info = item->info;
+                        params.rot.w = 1.0f;
+                        params.rot.x = 0.0f;
+                        params.rot.y = 0.0f;
+                        params.rot.z = 0.0f;
+                        if (item->hasValue) {
+                            params.value = item->value;
+                        }
+                        params.subtype = item->subtype;
+                        thing = ThingManager_DARYL_CreateThing(4, &params);
+                        if (thing == NULL) {
+                            continue;
+                        }
+                        item->spawned = 1;
+                        if (GameSettings_GetCodeVariable(0x12D, 0) != 0 && GameSettings_GetCodeVariable(0x136, 0) == 0) {
+                            item->respawn = 0;
+                        }
+                        item->thing = thing;
+                        thing->respawnItem = item;
+                        thing->owner = item;
+                        thing->flags |= 1;
+                        if (item->respawn != 0) {
+                            thing->respawnItem = item;
+                        }
+                        if (item->info->effect != 0) {
+                            p.id = item->info->effect;
+                            p.pos = item->pos;
+                            p.animRefPos = *(Vector4 *)&params.rot;
+                            p.vel.z = 0.0f;
+                            p.vel.y = 0.0f;
+                            p.vel.x = 0.0f;
+                            p.player = NULL;
+                            p.unk48 = 0.0f;
+                            p.unk4C = 0.0f;
+                            p.angVel = g_zeroVector;
+                            ThingManager_DARYL_CreateThing(1, &p);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 void FileStreaming_LoadQuadPacks(void **quads, u32 count, s8 threaded)
 {
     u32 i;
