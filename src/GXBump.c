@@ -79,6 +79,11 @@ void GXSetIndTexCoordScale(s32 ind_state, s32 scale_s, s32 scale_t) {
     gx->bpSentNot = 0;
 }
 
+void GXSetNumIndStages(u8 nIndStages) {
+    gx->genMode = (gx->genMode & ~0x70000) | (nIndStages << 16);
+    gx->dirtyState |= 6;
+}
+
 void __GXUpdateBPMask(void) {
     u32 nIndStages;
     u32 i;
