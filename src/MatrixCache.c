@@ -1,6 +1,7 @@
 #include "common.h"
 
 #pragma use_lmw_stmw on
+#pragma readonly_strings on
 
 void *Allocate(u32 size, u32 flags, const char *name);
 void Deallocate(void *p);
