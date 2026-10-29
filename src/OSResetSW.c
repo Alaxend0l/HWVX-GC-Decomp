@@ -17,11 +17,9 @@ static s64 HoldDown;
 void __OSResetSWInterruptHandler(s16 exception, void *context)
 {
     OSResetCallback callback;
-    u32 timeout;
 
     HoldDown = __OSGetSystemTime();
-    timeout = (100 * ((*(u32 *)0x800000F8 / 4) / 125000)) / 8;
-    while (__OSGetSystemTime() - HoldDown < timeout &&
+    while (__OSGetSystemTime() - HoldDown < ((100 * ((__OSBusClock / 4) / 125000)) / 8) &&
            !(__PIRegs[0] & 0x00010000)) {
         ;
     }
