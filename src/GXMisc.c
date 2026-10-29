@@ -15,7 +15,12 @@ typedef struct GXData {
     u16 bpSentNot;
     u8 pad4[0x1DC - 0x4];
     u32 peCtrl;
+    u8 pad1E0[0x4F4 - 0x1E0];
+    u32 dirtyState;
 } GXData;
+
+void __GXSetDirtyState(void);
+void PPCSync(void);
 
 extern GXData *gx;
 
