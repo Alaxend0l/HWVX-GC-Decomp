@@ -177,10 +177,9 @@ static inline f32 RayBoxTestLocal(Vector4 *start, Vector4 *dir, Vector4 *box, f3
     planes[3].plane.w = box[0].x;
     planes[4].plane.w = box[0].y;
     planes[5].plane.w = box[0].z;
-    end.x = t * dir->x + start->x;
-    end.y = t * dir->y + start->y;
-    end.z = t * dir->z + start->z;
-    seg = end;
+    seg.x = end.x = t * dir->x + start->x;
+    seg.y = end.y = t * dir->y + start->y;
+    seg.z = end.z = t * dir->z + start->z;
     res = BSPN0_CollideWithSegment(planes, NULL, start, &seg);
     if (res != NULL) {
         d0 = Distance_Plane(res, start);
@@ -209,15 +208,14 @@ f32 PhysicalProperties_CollideWithRay(u8 *props, void *mtx, Vector4 *start, Vect
     switch (props[0x10]) {
     case 0: {
         Vector4 *box = *(Vector4 **)(props + 0x44);
-        Vector4 localDir;
-        Vector4 localStart;
-        RayHit localHit;
-        f32 d;
+        Vector4 localDir __attribute__((aligned(16)));
+        Vector4 localStart __attribute__((aligned(16)));
+        RayHit localHit __attribute__((aligned(16)));
 
         InverseXformVec(mtx, start, &localStart);
         InverseXformVecOrientation(mtx, dir, &localDir);
-        result = d = RayBoxTestLocal(&localStart, &localDir, box, t, &localHit.pos);
-        if (hit != NULL && d < t) {
+        result = RayBoxTestLocal(&localStart, &localDir, box, t, &localHit.pos);
+        if (hit != NULL && result < t) {
             XformVec(mtx, &localHit.pos, (Vector4 *)hit);
             XformVecOrientation(mtx, &localHit.normal, (Vector4 *)(hit + 0x10));
             *(s32 *)(hit + 0x28) = *(s32 *)(props + 0x30);
@@ -225,9 +223,9 @@ f32 PhysicalProperties_CollideWithRay(u8 *props, void *mtx, Vector4 *start, Vect
         break;
     }
     case 1: {
-        Vector4 localDir;
-        Vector4 localStart;
-        RayHit localHit;
+        Vector4 localDir __attribute__((aligned(16)));
+        Vector4 localStart __attribute__((aligned(16)));
+        RayHit localHit __attribute__((aligned(16)));
         f32 d = t;
 
         InverseXformVec(mtx, start, &localStart);
@@ -242,7 +240,7 @@ f32 PhysicalProperties_CollideWithRay(u8 *props, void *mtx, Vector4 *start, Vect
     case 7: {
         u32 *list = *(u32 **)(props + 0x44);
         u32 i;
-        Vector4 center;
+        Vector4 center __attribute__((aligned(16)));
         f32 d;
 
         for (i = 0; i < list[0]; i++) {
