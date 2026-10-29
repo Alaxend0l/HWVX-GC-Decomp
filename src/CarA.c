@@ -1892,7 +1892,7 @@ void CarA_GetCameraOrientationInfo(CarA *car, u32 index, void *out) {
         Thing_GetCameraOrientationInfo(car, index, info);
     } else {
         info->camera = cams->list + (index % cams->count) * 0xC;
-        info->unk8C = *(f32 *)&car->pad504[4];
+        info->unk8C = *(f32 *)((u8 *)car + 0x508);
         info->up = car->groundNormal;
         if (info->up.x && info->up.y && info->up.z && PSVECSquareMag(&info->up)) {
             PSVECNormalize(&info->up, &info->up);
