@@ -35,3 +35,25 @@ static void ResetProc(s32 chan) {
     }
 }
 
+s32 SIResetSteeringAsync(s32 chan, SISteeringCallback callback) {
+    SISteeringControl *steering = &__SISteering[chan];
+    SISteeringCallback cb;
+    s32 enabled;
+    s32 ret;
+
+    cb = callback ? callback : (SISteeringCallback)DefaultCallback;
+    enabled = OSDisableInterrupts();
+    if (steering->callback) {
+        ret = -2;
+    } else {
+        steering->callback = cb;
+        ret = 0;
+    }
+    OSRestoreInterrupts(enabled);
+    if (ret != 0) {
+        return ret;
+    }
+    steering->output[0] = 0xFF;
+    return __SISteeringTransfer(chan, 1, 3, ResetProc);
+}
+
