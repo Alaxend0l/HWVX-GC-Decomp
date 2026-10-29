@@ -65,3 +65,23 @@ void GXGetViewportv(void *arg0) {
     M2C_FIELD(arg0, f32 *, 0x10) = (f32) M2C_FIELD(gx, f32 *, 0x44C);
     M2C_FIELD(arg0, f32 *, 0x14) = (f32) M2C_FIELD(gx, f32 *, 0x450);
 }
+
+#pragma peephole off
+void GXSetScissor(u32 left, u32 top, u32 wd, u32 ht) {
+    extern GXData *gx;
+    u32 tp, lf, bm, rt;
+
+    tp = top + 342;
+    lf = left + 342;
+    bm = tp + ht - 1;
+    rt = lf + wd - 1;
+    gx->suScis0 = (gx->suScis0 & ~0x7FF) | tp;
+    gx->suScis0 = (gx->suScis0 & ~0x7FF000) | (lf << 12);
+    gx->suScis1 = (gx->suScis1 & ~0x7FF) | bm;
+    gx->suScis1 = (gx->suScis1 & ~0x7FF000) | (rt << 12);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->suScis0;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->suScis1;
+    gx->bpSentNot = 0;
+}
