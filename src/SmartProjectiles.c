@@ -359,4 +359,36 @@ void SmartProjectileA_DynamicCollideImpact(u8 *proj, u8 *other, void *arg2, f32 
     }
     Projectile_DynamicCollideImpact(proj, other, arg2, arg3);
 }
+void Projectile_Init();
+void Projectile_Draw();
+void Projectile_GetMass();
+void Thing_GetCameraOrientationInfo();
+void Thing_GetInterfaceInfo();
+void Thing_SlaveTransform();
+void Thing_GetSurfaceScript();
+void Thing_GetNearestNavPoint();
+void Thing_GetInverseLocalInertiaTensor();
+void Thing_DynamicRotation();
+void Thing_CollideWithRay();
+void Thing_GetTargetPos();
+void Thing_GetOrientedCollision();
 
+void *g_smartProjectileAVTable[] = {
+    Projectile_Init,
+    Projectile_Release,
+    SmartProjectileA_PreMove,
+    SmartProjectileA_Move,
+    Projectile_Draw,
+    Projectile_GetMass,
+    SmartProjectileA_DynamicCollideImpact,
+    Thing_GetCameraOrientationInfo,
+    Thing_GetInterfaceInfo,
+    Thing_SlaveTransform,
+    Thing_GetSurfaceScript,
+    Thing_GetNearestNavPoint,
+    Thing_GetInverseLocalInertiaTensor,
+    Thing_DynamicRotation,
+    Thing_CollideWithRay,
+    Thing_GetTargetPos,
+    Thing_GetOrientedCollision,
+};
