@@ -50,3 +50,23 @@ void MatrixToMtxTranspose(f32 dst[3][4], f32 src[4][4]) {
     dst[2][3] = src[3][2];
 }
 
+void Render_StateSetScissor(void);
+void GXGetViewportv(f32 *vp);
+void GXGetProjectionv(f32 *pm);
+void GXProject(f32 x, f32 y, f32 z, f32 mtx[3][4], f32 *pm, f32 *vp, f32 *sx, f32 *sy, f32 *sz);
+extern f32 GXCameraSpace[3][4];
+void Gfx_TransformVector(f32 *in, f32 *out) {
+    f32 pm[7];
+    f32 vp[6];
+
+    Render_StateSetScissor();
+    GXGetViewportv(vp);
+    GXGetProjectionv(pm);
+    vp[3] *= 1.0714f;
+    GXProject(in[0], in[1], in[2], GXCameraSpace, pm, vp, &out[0], &out[1], &out[2]);
+    out[3] = -(GetRenderWindow()->unk100[3][3] +
+               (in[2] * GetRenderWindow()->unk100[2][3] +
+                (in[0] * GetRenderWindow()->unk100[0][3] +
+                 in[1] * GetRenderWindow()->unk100[1][3])));
+}
+
