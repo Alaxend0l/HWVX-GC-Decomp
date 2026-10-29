@@ -88,9 +88,9 @@ f32 Destructible_GetMass(Destructible *destructible) {
 }
 
 void Destructible_DynamicCollideImpact(u8 *destructible, u8 *collision, s32 damage, f32 force) {
-    typedef struct OBox {
+    typedef struct ABox {
         Vector4 v[3];
-    } OBox;
+    } __attribute__((aligned(16))) ABox;
     typedef struct DestructibleInfo {
         f32 inertia[3];
         u8 pad0C[0x10 - 0xC];
@@ -101,7 +101,7 @@ void Destructible_DynamicCollideImpact(u8 *destructible, u8 *collision, s32 dama
         u8 pad1C[0x20 - 0x1C];
         f32 mass;
         u8 pad24[0x44 - 0x24];
-        OBox *box;
+        ABox *box;
     } DestructibleInfo;
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
     void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
@@ -111,13 +111,13 @@ void Destructible_DynamicCollideImpact(u8 *destructible, u8 *collision, s32 dama
     u8 *CollisionInfo_GetOther(void *collision, void *thing);
     s8 Player_IsHuman(void *player);
     DestructibleInfo *info;
-    OBox box;
-    Vector4 angVel;
-    Vector4 torque;
-    Vector4 impulse;
-    Vector4 r;
-    Vector4 local;
-    Vector4 scaled;
+    ABox box;
+    Vector4 angVel __attribute__((aligned(16)));
+    Vector4 torque __attribute__((aligned(16)));
+    Vector4 impulse __attribute__((aligned(16)));
+    Vector4 r __attribute__((aligned(16)));
+    Vector4 local __attribute__((aligned(16)));
+    Vector4 scaled __attribute__((aligned(16)));
     f32 scale;
     f32 invX;
     f32 invY;
@@ -156,7 +156,7 @@ void Destructible_DynamicCollideImpact(u8 *destructible, u8 *collision, s32 dama
     case 1:
         break;
     case 7:
-        inertia = 0.4f * info->mass * *(f32 *)(destructible + 0x70) * *(f32 *)(destructible + 0x70);
+        inertia = 2.0f * info->mass * *(f32 *)(destructible + 0x70) * *(f32 *)(destructible + 0x70);
         invX = 1.0f / (info->inertia[0] * inertia);
         invY = 1.0f / (info->inertia[1] * inertia);
         invZ = 1.0f / (info->inertia[2] * inertia);
@@ -177,7 +177,7 @@ void Destructible_DynamicCollideImpact(u8 *destructible, u8 *collision, s32 dama
     if (other != NULL && *(void **)(other + 0x94) != NULL && Player_IsHuman(*(void **)(other + 0x94))) {
         *(u32 *)(destructible + 0x74) |= 0x20;
     }
-    Destructible_Release_inline(destructible);
+    Destructible_Release((Destructible *)destructible);
     if (*(u8 **)(destructible + 0x90) != NULL) {
         *(u32 *)(*(u8 **)(destructible + 0x90) + 0x30) = 3;
     }
