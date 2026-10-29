@@ -190,6 +190,28 @@ void stateCheckID2(DVDCommandBlock *block) {
     DVDLowRead(tmpBuffer, 0x20, 0x420, cbForStateCheckID2);
 }
 
+void cbForStateCheckID2(u32 intType) {
+    void __DVDStoreErrorCode(u32 code);
+    void cbForStateError(u32 code);
+    void cbForStateGettingError(u32 code);
+    void DVDLowRequestError(void (*cb)(u32));
+
+    if (intType == 16) {
+        executing->state = -1;
+        __DVDStoreErrorCode(0x1234568);
+        DVDReset();
+        cbForStateError(0);
+        return;
+    }
+
+    if (intType & 1) {
+        NumInternalRetry = 0;
+        stateReadingFST();
+    } else {
+        DVDLowRequestError(cbForStateGettingError);
+    }
+}
+
 void DCInvalidateRange(void *addr, u32 nBytes);
 void stateCoverClosed_CMD(DVDCommandBlock *block);
 void AlarmHandler(void *alarm, void *context)
