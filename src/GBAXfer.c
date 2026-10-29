@@ -32,6 +32,14 @@ void OSClearContext(void *context);
 void OSSetCurrentContext(void *context);
 void __OSReschedule(void);
 s32 SITransfer(s32 chan, void *output, s32 outputBytes, void *input, s32 inputBytes, void *callback, s64 delay);
+#pragma peephole on
+void __GBASyncCallback(s32 chan, s32 ret)
+{
+	void OSWakeupThread(void *queue);
+
+	OSWakeupThread(__GBA[chan].threadQueue);
+}
+
 static void TypeAndStatusCallback(s32 chan, u32 type)
 {
 	GBAControl *gba;
