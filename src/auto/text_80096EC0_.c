@@ -55,3 +55,25 @@ static inline int __is_exception_spec(ExSpec *spec, const char *type)
     }
     return 0;
 }
+
+#pragma use_lmw_stmw on
+extern "C" void __unexpected(CatchInfo *catchinfo)
+{
+    ExSpec *unexp = (ExSpec *)catchinfo->stacktop;
+
+#pragma exception_magic
+    try {
+        std::unexpected();
+    } catch (...) {
+        if (__is_exception_spec(unexp, (const char *)((CatchInfo *)&__exception_magic)->typeinfo)) {
+            throw;
+        }
+        if (__is_exception_spec(unexp, "!bad_exception!!")) {
+            throw std::bad_exception();
+        }
+        if (__is_exception_spec(unexp, "!std::bad_exception!!")) {
+            throw std::bad_exception();
+        }
+    }
+    std::terminate();
+}
