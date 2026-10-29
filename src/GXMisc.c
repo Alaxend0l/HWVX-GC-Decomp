@@ -41,6 +41,21 @@ void OSSleepThread(OSThreadQueue *queue);
 static u8 DrawDone;
 static OSThreadQueue FinishQueue;
 
+void GXFlush(void);
+
+static inline void GXSetDrawDone(void) {
+    u32 reg;
+    s32 enabled;
+
+    enabled = OSDisableInterrupts();
+    reg = 0x45000002;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    GXFlush();
+    DrawDone = 0;
+    OSRestoreInterrupts(enabled);
+}
+
 extern GXData *gx;
 
 
@@ -78,6 +93,26 @@ void GXFlush(void) {
     GXWGFifo.u32 = 0;
     PPCSync();
 }
+
+#pragma dont_inline on
+void GXDrawDone(void) {
+    s32 enabled;
+    s32 enabled2;
+
+    enabled = OSDisableInterrupts();
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = 0x45000002;
+    GXFlush();
+    DrawDone = 0;
+    OSRestoreInterrupts(enabled);
+
+    enabled2 = OSDisableInterrupts();
+    while (!DrawDone) {
+        OSSleepThread(&FinishQueue);
+    }
+    OSRestoreInterrupts(enabled2);
+}
+#pragma dont_inline off
 
 void GXPixModeSync(void) {
     GXWGFifo.u8 = 0x61;
