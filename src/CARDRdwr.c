@@ -9,7 +9,8 @@ typedef struct CARDControl {
     u32 repeat;                // 0xAC
     void *addr;                // 0xB0
     s32 offset;                // 0xB4
-    u8 unkB8[0xD0 - 0xB8];
+    s32 xferred;               // 0xB8
+    u8 unkBC[0xD0 - 0xBC];
     CARDCallback apiCallback;    // 0xD0
     CARDCallback xferCallback;   // 0xD4
     CARDCallback eraseCallback;  // 0xD8
