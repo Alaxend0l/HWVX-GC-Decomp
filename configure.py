@@ -474,7 +474,7 @@ config.libs = [
             Object(Matching, "dvderror.c"),
             Object(Matching, "fstload.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "vi.c", mw_version="GC/1.2.5n"),
-            Object(NonMatching, "Padclamp.c", mw_version="GC/1.2.5n"),
+            Object(Matching, "Padclamp.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "Pad.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "etc/ai.c", mw_version="GC/1.2.5n"),
             Object(Matching, "ar.c", mw_version="GC/1.2.5n"),
