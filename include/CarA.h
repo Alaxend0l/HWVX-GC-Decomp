@@ -190,7 +190,7 @@ typedef struct CarA {
   Vector4 torqueAccum;      /* 0x3A0 += torque in CarA_ProcessForce */
   s32 navPointIndex;        /* 0x3B0 stored as s16 pairs into the player */
   s32 navUpdateTimer;       /* 0x3B4 ms until the nearest nav point is searched again */
-  u8 pad3B8[4];             /* 0x3B8 */
+  u32 numWheelsGrounded;    /* 0x3B8 */
   CarAInfo *vehicleIface;   /* 0x3BC config/vehicle-interface container: read as u32
                                by CarA_Invalidate, dereferenced for +0x11 (AI drive
                                mode), +0x54 (reflection geom), +0xA0 (collider),
