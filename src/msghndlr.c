@@ -57,6 +57,35 @@ s32 TRKDoStop(TRKBuffer *b) {
     return err;
 }
 
+s32 TRKDoContinue(TRKBuffer *b) {
+    s32 err;
+    s32 ackTries;
+
+    if (!TRKTargetStopped()) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 0x16);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return err;
+    }
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, 0);
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+    if (err == 0) {
+        err = TRKTargetContinue();
+    }
+    return err;
+}
+
 s32 TRKDoReset(TRKBuffer *b) {
     s32 err;
     s32 ackTries;
