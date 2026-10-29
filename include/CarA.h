@@ -137,11 +137,17 @@ typedef struct CarAAccel {
 } CarAAccel;
 
 typedef struct CarAStuntInfo {
-  u8 pad00[0x28];           /* 0x00 */
+  u8 pad00[0x14];           /* 0x00 */
+  f32 turboPerPoint;        /* 0x14 */
+  u8 pad18[0x10];           /* 0x18 */
   s32 unk28;                /* 0x28 */
-  f32 minFailTime;          /* 0x2C */
+  f32 minFailTime;          /* 0x2C also the stunt-time range landed stunts score in */
   f32 maxFailTime;          /* 0x30 */
-  u8 pad34[0x14];           /* 0x34 */
+  u32 numRewardThings;      /* 0x34 */
+  u32 *rewardThings;        /* 0x38 picked by score */
+  u32 numMessages;          /* 0x3C */
+  char ***messages;         /* 0x40 picked by score */
+  u8 pad44[4];              /* 0x44 */
   char **failMessage;       /* 0x48 NULL: g_stuntLossString */
   u32 numFailThings;        /* 0x4C */
   u32 *failThings;          /* 0x50 thing ids, picked by fail time */
