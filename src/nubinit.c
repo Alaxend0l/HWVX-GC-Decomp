@@ -14,8 +14,9 @@ __declspec(section ".data") s32 gTRKBigEndian;
 
 static BOOL TRK_InitializeEndian(void) {
     u8 bendian[4];
-    BOOL result = FALSE;
+    BOOL result;
 
+    result = FALSE;
     gTRKBigEndian = TRUE;
     bendian[0] = 0x12;
     bendian[1] = 0x34;
