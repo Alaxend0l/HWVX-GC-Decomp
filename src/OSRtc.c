@@ -29,6 +29,9 @@ static inline void *LockSram(u32 offset) {
 
 s32 UnlockSram(s32 commit, u32 offset);
 #pragma peephole on
+void *__OSLockSram(void) {
+    return LockSram(0);
+}
 s32 __OSUnlockSram(s32 commit) {
     return UnlockSram(commit, 0);
 }
