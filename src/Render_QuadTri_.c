@@ -70,7 +70,9 @@ void Render_StateAlphaBlendEnable(s32 enable);
 void SetTriVtxDesc(void);
 
 typedef struct GfxState {
-    u8 unk0[0x8C];
+    u8 unk0[0x84];
+    u32 unk84;
+    u8 unk88[0x8C - 0x88];
     u16 debugFont;
     u8 unk8E[0xA0 - 0x8E];
 } GfxState;
