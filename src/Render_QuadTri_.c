@@ -124,6 +124,9 @@ void Render_DrawPointSprites(void) {
 }
 
 void Render_ScreenFlash(void) {
+    f32 w;
+    f32 zero = 0.0f;
+
     if (GetRenderWindow()->overlayMode != 0) {
         Render_StateZWriteEnable(0);
         Render_StateAlphaBlendEnable(1);
@@ -131,16 +134,17 @@ void Render_ScreenFlash(void) {
         Render_SetTextureHandle(0xFFFF);
         Set2DRectFlatVtxDesc();
         GXBegin(0x80, 0, 4);
-        GXPosition2f32(0.0f, 0.0f);
+        GXPosition2f32(zero, zero);
         GXColor4u8(GetRenderWindow()->overlayColor.r, GetRenderWindow()->overlayColor.g,
                    GetRenderWindow()->overlayColor.b, GetRenderWindow()->overlayColor.a);
-        GXPosition2f32(0.0f, GetRenderWindow()->unk2B8);
+        GXPosition2f32(zero, GetRenderWindow()->unk2B8);
         GXColor4u8(GetRenderWindow()->overlayColor.r, GetRenderWindow()->overlayColor.g,
                    GetRenderWindow()->overlayColor.b, GetRenderWindow()->overlayColor.a);
-        GXPosition2f32(GetRenderWindow()->unk2B0, GetRenderWindow()->unk2B8);
+        w = GetRenderWindow()->unk2B0;
+        GXPosition2f32(w, GetRenderWindow()->unk2B8);
         GXColor4u8(GetRenderWindow()->overlayColor.r, GetRenderWindow()->overlayColor.g,
                    GetRenderWindow()->overlayColor.b, GetRenderWindow()->overlayColor.a);
-        GXPosition2f32(GetRenderWindow()->unk2B0, 0.0f);
+        GXPosition2f32(GetRenderWindow()->unk2B0, zero);
         GXColor4u8(GetRenderWindow()->overlayColor.r, GetRenderWindow()->overlayColor.g,
                    GetRenderWindow()->overlayColor.b, GetRenderWindow()->overlayColor.a);
         Render_StateZWriteEnable(1);
