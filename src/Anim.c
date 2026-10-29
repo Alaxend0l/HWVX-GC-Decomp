@@ -159,6 +159,76 @@ void AnimExtractKeyFrame_Compound(Anim *anim, AnimBone *outp, f32 time) {
         out++;
     }
 }
+
+void CopyVector(Vector4 *dst, Vector4 *src);
+void Distance_Plane_4(Vector4 *planes, Vector4 *point, void *out);
+#pragma use_lmw_stmw on
+void AnimExtractKeyFrame_CompoundHybrid(Anim *anim, AnimBone *outp, f32 time) {
+    Vector4 tv __attribute__((aligned(16)));
+    u32 i;
+    u32 *mask;
+    AnimBone *out;
+    u8 *data;
+    u32 bit;
+    u32 save;
+    s32 idx;
+
+    out = outp;
+    idx = 0;
+    mask = anim->mask;
+    if (time < anim->minTime) {
+        time = anim->minTime;
+    }
+    if (time > anim->maxTime) {
+        time = anim->maxTime;
+    }
+    for (i = 1; i < anim->numFrames; i++) {
+        if (time <= anim->times[i]) {
+            idx = i - 1;
+            break;
+        }
+    }
+    data = (u8 *)anim->data + ((anim->numKeysPerFrame - anim->numCompound) * sizeof(AnimBone) + anim->numCompound * 2 * sizeof(AnimBone)) * idx;
+    tv.y = time * time;
+    tv.x = time * tv.y;
+    tv.z = time;
+    tv.w = 1.0f;
+    for (i = 0, bit = 0; i < anim->numBones; i++) {
+        if (anim->flags[i] & 7) {
+            if (*mask & (1 << bit++)) {
+                save = out->info;
+                Distance_Plane_4((Vector4 *)data, &tv, out->pos);
+                out->info = save;
+                data += 0x40;
+            } else {
+                out->pos[0] = ((AnimBone *)data)->pos[0];
+                out->pos[1] = ((AnimBone *)data)->pos[1];
+                out->pos[2] = ((AnimBone *)data)->pos[2];
+                data += 0x20;
+            }
+            if (bit == 32) {
+                bit = 0;
+                mask++;
+            }
+        }
+        if (anim->flags[i] & 0x78) {
+            if (*mask & (1 << bit++)) {
+                Distance_Plane_4((Vector4 *)data, &tv, &out->rot);
+                data += 0x40;
+            } else {
+                CopyVector((Vector4 *)&out->rot, (Vector4 *)(data + 0x10));
+                data += 0x20;
+            }
+            if (bit == 32) {
+                bit = 0;
+                mask++;
+            }
+        }
+        out++;
+    }
+}
+#pragma use_lmw_stmw off
+
 #pragma use_lmw_stmw off
 void AnimExtractKeyFrame(void *anim, s32 frame) {
     void AnimExtractKeyFrame_Compound(void *anim, s32 frame);
