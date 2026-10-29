@@ -359,6 +359,26 @@ s32 ProperTimingForGettingNextFrame(void)
     return FALSE;
 }
 
+s32 THPPlayerDrawCurrentFrame(void *rmode, u32 x, u32 y, u32 polygonW, u32 polygonH)
+{
+    void THPGXYuv2RgbSetup(void *rmode);
+    void THPGXYuv2RgbDraw(u8 *y_data, u8 *u_data, u8 *v_data, s16 x, s16 y, s16 textureWidth, s16 textureHeight, s16 polygonWidth, s16 polygonHeight);
+    void THPGXRestore(void);
+    s32 currFrame;
+
+    if (ActivePlayer.open && ActivePlayer.state != 0 && ActivePlayer.dispTextureSet != NULL)
+    {
+        THPGXYuv2RgbSetup(rmode);
+        THPGXYuv2RgbDraw(ActivePlayer.dispTextureSet->ytexture, ActivePlayer.dispTextureSet->utexture,
+                         ActivePlayer.dispTextureSet->vtexture, x, y,
+                         ActivePlayer.videoInfo.xSize, ActivePlayer.videoInfo.ySize, polygonW, polygonH);
+        THPGXRestore();
+        currFrame = (ActivePlayer.dispTextureSet->frameNumber + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+        return currFrame;
+    }
+    return -1;
+}
+
 s32 THPPlayerAudioOutput(s16 *destination, u32 sample, s32 volume)
 {
     s32 ret;
