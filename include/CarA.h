@@ -75,7 +75,10 @@ typedef struct CarAEngine {
 } CarAEngine;
 
 typedef struct CarACollider {
-  u8 pad00[0x20];           /* 0x00 */
+  u8 pad00[0x14];           /* 0x00 */
+  s32 maxHealth;            /* 0x14 */
+  s32 damageThreshold;      /* 0x18 impacts above it hurt */
+  u8 pad1C[4];              /* 0x1C */
   f32 mass;                 /* 0x20 */
 } CarACollider;
 
