@@ -684,18 +684,8 @@ void Thing_PassiveTargeting(void *thing);
 void *memset(void *dst, s32 c, u32 n);
 void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, f32 fps);
 
-static inline f32 CreatureMS_GetBlendFPS(struct CreatureMS *c) {
-    f32 a = 0.0f;
-    f32 b = a;
-    f32 w = c->weight / (c->weight + c->unk110);
-
-    if (c->anim != NULL) {
-        a = c->anim->fps;
-    }
-    if (c->anim2 != NULL) {
-        b = c->anim2->fps;
-    }
-    return b + w * (a - b);
+static inline f32 CreatureMS_Lerp(f32 from, f32 to, f32 t) {
+    return from + t * (to - from);
 }
 
 #pragma push
