@@ -623,7 +623,7 @@ config.libs = [
             Object(NonMatching, "GBAJoyBoot.c", mw_version="GC/1.2.5n"),
             Object(Matching, "GBARead.c"),
             Object(NonMatching, "GBAWrite.c"),
-            Object(NonMatching, "GBAXfer.c", mw_version="GC/1.2.5n"),
+            Object(Matching, "GBAXfer.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "GBAKey.c")
         ],
     },
