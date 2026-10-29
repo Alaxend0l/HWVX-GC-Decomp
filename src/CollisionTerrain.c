@@ -72,6 +72,44 @@ s8 OBoxHitsCellZeroTimeEdgesOnly(void *obox, void *cell, void *arg2)
     return hit;
 }
 
+static inline s8 OBoxHitsCellZeroTime(void *obox, void *cell, void *arg2)
+{
+    s8 OBoxHitsBSPZeroTime(void *, void *, void *);
+    s8 OBoxHitsPolyZeroTime(void *, void *, void *);
+    s8 hit = 0;
+    u32 i;
+    u8 *poly;
+
+    *(f32 *)((char *)obox + 0xb0) = 0.0f;
+    *(f32 *)((char *)obox + 0xb4) = 0.0f;
+    *(f32 *)((char *)obox + 0xb8) = 0.0f;
+    *(f32 *)((char *)obox + 0xc0) = 0.0f;
+    *(f32 *)((char *)obox + 0xc4) = 0.0f;
+    *(f32 *)((char *)obox + 0xc8) = 0.0f;
+    if (*(u32 *)((char *)(*(u32 **)g_worldData.world) + 0x58) == 1)
+    {
+        hit = OBoxHitsBSPZeroTime(obox, cell, arg2);
+    }
+    else
+    {
+        for (i = 0; i < *(u32 *)((char *)cell + 0x3c); i++)
+        {
+            poly = (u8 *)(*(u32 *)((char *)(*(u32 **)g_worldData.world) + 0x4c) +
+                          (*(u32 **)((char *)cell + 0x38))[i] * 0x20);
+            if (*(u32 *)(poly + 0x18) != g_worldData.unk4)
+            {
+                *(u32 *)(poly + 0x18) = g_worldData.unk4;
+                hit = OBoxHitsPolyZeroTime(obox, poly, arg2);
+                if (hit)
+                {
+                    return 1;
+                }
+            }
+        }
+    }
+    return hit;
+}
+
 s8 OBoxHitsCell(void *obox, Vector4 *vel, void *cell, f32 *time, void *arg4) {
     s8 OBoxHitsBSP(void *obox, Vector4 *vel, void *bsp, f32 *time, void *arg4);
     f32 OOBHitsPoly(void *obox, void *poly, Vector4 *vel, void *arg4, f32 t);
