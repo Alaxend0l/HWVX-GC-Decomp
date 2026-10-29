@@ -496,6 +496,7 @@ s32 ActionVariableChangeMode(u32 *action) {
 }
 
 s32 ActionTimerChangeValue(u32 *action) {
+    f32 GetCodeVariable(s32 var, u8 *thing);
     u32 i;
     f32 value;
     u8 **timer;
