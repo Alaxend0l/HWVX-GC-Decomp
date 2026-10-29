@@ -41,6 +41,15 @@ void GXSetAlphaUpdate(u8 update_enable) {
     gx->bpSentNot = 0;
 }
 
+void GXSetZMode(u8 compare_enable, s32 func, u8 update_enable) {
+    gx->zmode = (gx->zmode & ~1) | compare_enable;
+    gx->zmode = (gx->zmode & ~0xE) | (func << 1);
+    gx->zmode = (gx->zmode & ~0x10) | (update_enable << 4);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->zmode;
+    gx->bpSentNot = 0;
+}
+
 void GXSetZCompLoc(u8 before_tex) {
     gx->peCtrl = (gx->peCtrl & ~0x40) | (before_tex << 6);
     GXWGFifo.u8 = 0x61;
