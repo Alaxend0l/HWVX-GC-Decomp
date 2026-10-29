@@ -173,6 +173,7 @@ static inline void SimThread_SetWeights(SimThread *t, const s32 *weights) {
     t->historyIdx = 0;
 }
 void VDevice_RecalcGammaTable(void);
+double pow(double x, double y);
 s32 VDevice_Shutdown(VDevice *dev);
 s32 VDevice_StartEffect(VDevice *dev, u32 handle);
 u32 VDevice_GetFreeEffect(VDevice *dev);
