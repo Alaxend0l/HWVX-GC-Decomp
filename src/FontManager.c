@@ -99,6 +99,57 @@ s32 Gfx_FontManager_ReleaseFont(s32 id) {
     return ret;
 }
 
+void Gfx_FontManager_PrintScale(char *str, s32 id, f32 *scale, u8 blendMode, f32 x, f32 y, f32 spacing) {
+    extern GXColor g_textcolor;
+    GDLRect *Gfx_Add2DRectangle(void);
+    u32 i;
+    Font *font = &g_fontManager.fonts[id];
+    GXColor color = g_textcolor;
+    u8 c;
+    GDLRect *rect;
+
+    for (i = 0; i < strlen(str); i++) {
+        c = str[i];
+        if (font->caseMode == 1 || font->caseMode == 3) {
+            if (c >= 'a' && c <= 'z') {
+                c -= 0x20;
+            }
+        }
+        if (c != ' ') {
+            f32 x1 = (u8)font->chars[c].spacingX * scale[0] + x;
+            f32 y1 = font->height * scale[1] + y;
+            rect = Gfx_Add2DRectangle();
+            rect->blendMode = blendMode;
+            rect->tex = font->texture;
+            *(GXColor *)&rect->v[0].r = color;
+            *(GXColor *)&rect->v[1].r = color;
+            *(GXColor *)&rect->v[2].r = color;
+            *(GXColor *)&rect->v[3].r = color;
+            rect->v[0].s = font->chars[c].unk0;
+            rect->v[0].t = font->chars[c].unk4;
+            rect->v[1].s = font->chars[c].unk0;
+            rect->v[1].t = font->chars[c].unkC;
+            rect->v[2].s = font->chars[c].unk8;
+            rect->v[2].t = font->chars[c].unkC;
+            rect->v[3].s = font->chars[c].unk8;
+            rect->v[3].t = font->chars[c].unk4;
+            rect->v[0].x = x;
+            rect->v[0].y = y;
+            rect->v[1].x = x;
+            rect->v[1].y = y1;
+            rect->v[2].x = x1;
+            rect->v[2].y = y1;
+            rect->v[3].x = x1;
+            rect->v[3].y = y;
+            rect->v[0].z = 0.0f;
+            rect->v[1].z = 0.0f;
+            rect->v[2].z = 0.0f;
+            rect->v[3].z = 0.0f;
+        }
+        x += scale[0] * ((u8)font->chars[c].spacingX + spacing);
+    }
+}
+
 unsigned long strlen(const char *s);
 void Gfx_FontManager_GetPrintRect(char *str, s32 id, f32 *width, f32 *height, f32 spacing) {
     Font *font = &g_fontManager.fonts[id];
