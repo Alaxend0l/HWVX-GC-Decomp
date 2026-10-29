@@ -5,8 +5,8 @@
    position so the body stays where it is in the world. */
 static inline void CarA_SetBodyOffset(CarA *car, f32 x, f32 y, f32 z) {
     void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
-    Vector4 delta __attribute__((aligned(16)));
     Vector4 world __attribute__((aligned(16)));
+    Vector4 delta __attribute__((aligned(16)));
 
     delta.x = x - car->bodyOffset.x;
     delta.y = y - car->bodyOffset.y;
@@ -270,6 +270,277 @@ void CarA_ProcessImpulse(u8 *car, Vector4 *normal, Vector4 *pos, Vector4 *pointV
     scaled.y = *(f32 *)(car + 0x3D4) * local.y;
     scaled.z = *(f32 *)(car + 0x3E8) * local.z;
     XformVecOrientation(car + 0x10, &scaled, (Vector4 *)(car + 0x410));
+}
+
+s32 CarA_PreMove(CarA *car) {
+    typedef struct EffectVtbl {
+        u8 pad0[0x18];
+        void (*spawn)(void *thing, void *params, s32 arg, f32 scale);
+    } EffectVtbl;
+    typedef struct EffectThing {
+        u8 pad0[0x8C];
+        EffectVtbl *vtbl;
+    } EffectThing;
+    typedef struct TurboFx {
+        Vector4 pos;
+        Vector4 dir;
+        void *owner;
+        s32 unk24;
+        s32 unk28;
+        u8 pad2C[4];
+        Vector4 vel;
+        u8 unk40;
+    } TurboFx;
+    extern f32 g_fDeltaTimeSec;
+    extern s32 g_iDeltaTimeMS;
+    extern void *g_pSourcePlayer;
+    extern Vector4 g_zeroVector;
+    s8 Timer_Interrupt300(void);
+    s32 CarA_PreMove_Control_HW(void *thing);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *in, Vector4 *out);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    void MotionState_InitAllSlavesNow(void *motionState, void *slaves, s32 arg2);
+    void MotionState_ReleaseSlavesByType(MotionState *state, u8 type);
+    s8 GameSettings_IsCheatEnabled(u32 cheat);
+    s8 Player_IsHuman(void *player);
+    void CarA_ComputeForces(CarA *car);
+    void CarA_SlaveWeaponHeartbeat(CarA *car);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void Thing_CollideWithForceBoxes(void *thing);
+    s32 NavHolder_FindIndexOfNearestNavPoint(Vector4 *pos, s32 index);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    f32 _fabs(f32 x);
+    void SoundSource_Set(s32 id, s32 param, void *value);
+    void CarA_ExecuteCombo(CarA *car);
+    void Thing_PassiveTargeting(void *thing);
+    TurboFx fx __attribute__((aligned(16)));
+    Vector4 local __attribute__((aligned(16)));
+    Vector4 scaled __attribute__((aligned(16)));
+    f32 pitch;
+    f32 volume;
+    f32 maxRpm;
+    f32 invMass;
+    f32 speed;
+    f32 spin;
+    CarTrailBone *wheel;
+    u32 i;
+
+    car->prevVelocity = car->velocity;
+    car->unk4FC += g_fDeltaTimeSec;
+    if (car->unk4FC >= 1.0f) {
+        car->unk4FC = 1.0f;
+    }
+    car->transmissionFlags &= ~0x20000;
+    if (Timer_Interrupt300()) {
+        car->transmissionFlags &= ~0x10000;
+    }
+
+    if (car->player != NULL) {
+        switch (car->vehicleIface->driveMode) {
+        case 1:
+            CarA_PreMove_Control_HW(car);
+            break;
+        }
+
+        if (car->turboCooldown >= 0) {
+            if (!(car->transmissionFlags & 0x1000) && (car->player->buttonsHeld & 4) && car->turboTime > 0) {
+                car->transmissionFlags |= 0x1000;
+                if (car->unk460 == 0) {
+                    fx.owner = car->player->vehicle;
+                    fx.unk24 = 0;
+                    fx.pos.x = car->worldMatrix.v[3].x - 8.0f * car->worldMatrix.v[2].x - 3.0f * car->worldMatrix.v[1].x;
+                    fx.pos.y = car->worldMatrix.v[3].y - 8.0f * car->worldMatrix.v[2].y - 3.0f * car->worldMatrix.v[1].y;
+                    fx.pos.z = car->worldMatrix.v[3].z - 8.0f * car->worldMatrix.v[2].z - 3.0f * car->worldMatrix.v[1].z;
+                    fx.dir.x = car->worldMatrix.v[2].x - 0.2f * car->worldMatrix.v[1].x;
+                    fx.dir.y = car->worldMatrix.v[2].y - 0.2f * car->worldMatrix.v[1].y;
+                    fx.dir.z = car->worldMatrix.v[2].z - 0.2f * car->worldMatrix.v[1].z;
+                    if (PSVECSquareMag(&fx.dir) != 0.0f) {
+                        PSVECNormalize(&fx.dir, &fx.dir);
+                    }
+                    fx.unk28 = 0;
+                    fx.vel = g_zeroVector;
+                    fx.unk40 = 0;
+                    ((EffectThing *)car->player->vehicle)->vtbl->spawn(car->player->vehicle, &fx, 0, 280.0f);
+                }
+                if (car->vehicleIface->numSlaves > 1) {
+                    MotionState_InitAllSlavesNow(&car->motionState, car->vehicleIface->slaves + 0x10, 1);
+                }
+            }
+            car->turboCooldown -= g_iDeltaTimeMS;
+        } else if (car->player->buttonsHeld & 4) {
+            car->turboCooldown = 700;
+        }
+
+        if (car->transmissionFlags & 0x1000) {
+            if (car->player->throttle && !car->player->brake) {
+                car->turboTime -= g_iDeltaTimeMS;
+                if (GameSettings_IsCheatEnabled(5) && car->player != NULL && Player_IsHuman(car->player)) {
+                    car->turboTime = 30000;
+                }
+                if (car->turboTime <= 0) {
+                    car->transmissionFlags &= ~0x1000;
+                    MotionState_ReleaseSlavesByType(&car->motionState, 1);
+                }
+            } else {
+                car->transmissionFlags &= ~0x1000;
+                MotionState_ReleaseSlavesByType(&car->motionState, 1);
+            }
+        }
+
+        if (car->tiltState != 0) {
+            if (car->tiltState != 3 && car->player->stickX < 0x40 && car->player->stickX > -0x40) {
+                CarA_SetBodyOffset(car, car->vehicleIface->engine->bodyOffset[0],
+                                   car->vehicleIface->engine->bodyOffset[1],
+                                   car->vehicleIface->engine->bodyOffset[2]);
+                car->tiltState = 0;
+            }
+            if (car->worldMatrix.v[1].y > 0.35f) {
+                CarA_SetBodyOffset(car, car->vehicleIface->engine->bodyOffset[0],
+                                   car->vehicleIface->engine->bodyOffset[1],
+                                   car->vehicleIface->engine->bodyOffset[2]);
+                car->tiltState = 0;
+                car->stuckCounter = 0;
+                car->unk45C = 0;
+            }
+        }
+        if (car->stuckCounter > 600) {
+            if (car->player->stickX > 0x40) {
+                if (car->tiltState != 1) {
+                    CarA_SetBodyOffset(car, car->tiltX - 1.0f, 1.0f - car->tiltY, 0.0f);
+                    car->tiltState = 1;
+                }
+            } else if (car->player->stickX < -0x40) {
+                if (car->tiltState != 2) {
+                    CarA_SetBodyOffset(car, 1.0f - car->tiltX, 1.0f - car->tiltY, 0.0f);
+                    car->tiltState = 2;
+                }
+            } else if (car->tiltState != 0) {
+                CarA_SetBodyOffset(car, car->vehicleIface->engine->bodyOffset[0],
+                                   car->vehicleIface->engine->bodyOffset[1],
+                                   car->vehicleIface->engine->bodyOffset[2]);
+                car->tiltState = 0;
+            }
+        }
+    } else {
+        car->gradeOrReverse = 0.0f;
+        car->rpm = 0.0f;
+        car->curveTableIdx = 1;
+    }
+
+    if (car->unk4FC >= 1.0f) {
+        if (car->transmissionFlags & 0x4000) {
+            MotionState_ReleaseSlavesByType(&car->motionState, 9);
+            car->transmissionFlags &= ~0x4000;
+        }
+    } else if (!(car->transmissionFlags & 0x4000)) {
+        if (car->vehicleIface->numSlaves > 9) {
+            MotionState_InitAllSlavesNow(&car->motionState, car->vehicleIface->slaves + 0x70, 9);
+            car->transmissionFlags |= 0x4000;
+        }
+    }
+
+    CarA_ComputeForces(car);
+    car->velocity.x += g_fDeltaTimeSec * (car->forwardAccel * car->worldMatrix.v[0].x);
+    car->velocity.y += g_fDeltaTimeSec * (car->forwardAccel * car->worldMatrix.v[0].y);
+    car->velocity.z += g_fDeltaTimeSec * (car->forwardAccel * car->worldMatrix.v[0].z);
+    g_pSourcePlayer = car->player;
+    CarA_SlaveWeaponHeartbeat(car);
+    g_pSourcePlayer = NULL;
+
+    invMass = g_fDeltaTimeSec / car->vehicleIface->collider->mass;
+    if (car->collDirtyFlags & 0x10000) {
+        car->torqueAccum = g_zeroVector;
+        car->forceAccum = car->torqueAccum;
+    } else {
+        car->velocity.x += invMass * car->forceAccum.x;
+        car->velocity.y += invMass * car->forceAccum.y;
+        car->velocity.z += invMass * car->forceAccum.z;
+        car->angularMomentum.x += g_fDeltaTimeSec * car->torqueAccum.x;
+        car->angularMomentum.y += g_fDeltaTimeSec * car->torqueAccum.y;
+        car->angularMomentum.z += g_fDeltaTimeSec * car->torqueAccum.z;
+        InverseXformVecOrientation(&car->worldMatrix, &car->angularMomentum, &local);
+        scaled.x = car->inverseBodyInertia.v[0].x * local.x;
+        scaled.y = car->inverseBodyInertia.v[1].y * local.y;
+        scaled.z = car->inverseBodyInertia.v[2].z * local.z;
+        XformVecOrientation(&car->worldMatrix, &scaled, &car->localAxis);
+        car->torqueAccum = g_zeroVector;
+        car->forceAccum = car->torqueAccum;
+    }
+
+    Thing_CollideWithForceBoxes(car);
+    car->navUpdateTimer -= g_iDeltaTimeMS;
+    if (car->navUpdateTimer < 0) {
+        car->navPointIndex = NavHolder_FindIndexOfNearestNavPoint(&car->worldMatrix.v[3], car->navPointIndex);
+        car->navUpdateTimer = RandomAdd_s32(300, 100);
+    }
+    car->lowSpeedFlag += g_iDeltaTimeMS;
+    if (car->unk45C > 0) {
+        car->unk45C -= g_iDeltaTimeMS;
+        car->stuckCounter += g_iDeltaTimeMS;
+    }
+
+    if (car->soundIds[1] != -1) {
+        maxRpm = car->vehicleIface->engine->unk68;
+        if (_fabs(car->unk4E0) < maxRpm) {
+            volume = (maxRpm - _fabs(car->rpm)) / maxRpm;
+            pitch = car->vehicleIface->engine->unk64 + _fabs(car->rpm) / car->vehicleIface->unk1C;
+            if (volume < 0.0f) {
+                volume = 0.0f;
+            }
+            if (volume > 1.0f) {
+                volume = 1.0f;
+            }
+            if (car->vehicleIface->numSoundSets != 0) {
+                pitch *= car->vehicleIface->soundSets[1]->pitchScale;
+            }
+            SoundSource_Set(car->soundIds[1], 5, &car->worldMatrix.v[3]);
+            SoundSource_Set(car->soundIds[1], 6, &car->velocity);
+            SoundSource_Set(car->soundIds[1], 1, &pitch);
+            SoundSource_Set(car->soundIds[1], 0, &volume);
+        }
+    }
+    if (car->soundIds[0] != -1) {
+        volume = 1.0f - _fabs(car->gradeOrReverse) / 300.0f;
+        pitch = 3.0f * (car->rpm / car->vehicleIface->unk1C);
+        if (pitch < 0.0f) {
+            pitch *= -1.0f;
+        }
+        pitch += 0.5f;
+        if (pitch > 5.0f) {
+            pitch = 5.0f;
+        }
+        if (volume < 0.0f) {
+            volume = 0.0f;
+        }
+        if (volume > 1.0f) {
+            volume = 1.0f;
+        }
+        SoundSource_Set(car->soundIds[0], 0, &volume);
+        SoundSource_Set(car->soundIds[0], 5, &car->worldMatrix.v[3]);
+        SoundSource_Set(car->soundIds[0], 6, &car->velocity);
+        SoundSource_Set(car->soundIds[0], 1, &pitch);
+    }
+
+    speed = g_fDeltaTimeSec * PSVECDotProduct(&car->velocity, &car->worldMatrix.v[2]);
+    spin = car->gradeOrReverse * g_fDeltaTimeSec;
+    if (car->player != NULL && car->player->brake == 0) {
+        for (i = 0; i < car->vehicleIface->numWheels; i++) {
+            wheel = &car->vehicleIface->wheels[i];
+            car->wheelStates[i].rotation += (wheel->unk14 * spin + (1.0f - wheel->unk14) * speed) / wheel->offset;
+        }
+    } else {
+        for (i = 0; i < car->vehicleIface->numWheels; i++) {
+            wheel = &car->vehicleIface->wheels[i];
+            car->wheelStates[i].rotation += (wheel->unk14 * spin + (1.0f - wheel->unk14) * speed) / wheel->offset;
+        }
+    }
+    if (car->player != NULL) {
+        CarA_ExecuteCombo(car);
+    }
+    Thing_PassiveTargeting(car);
+    return 1;
 }
 
 void CarA_SetSlavePlayers(u8 *car)
