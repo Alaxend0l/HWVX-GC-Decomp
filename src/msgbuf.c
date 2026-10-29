@@ -14,7 +14,7 @@ void *TRK_memset(void *dst, s32 val, u32 n);
 s32 TRKAcquireMutex(void *mutex);
 s32 TRKReleaseMutex(void *mutex);
 
-extern TRKBuffer gTRKMsgBufs[3];
+TRKBuffer gTRKMsgBufs[3];
 __declspec(section ".data") extern s32 gTRKBigEndian;
 
 void *TRK_memcpy(void *dst, const void *src, u32 n);
