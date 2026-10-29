@@ -545,7 +545,7 @@ config.libs = [
             Object(Matching, "mutex_TRK.c"),
             Object(NonMatching, "notify.c"),
             Object(NonMatching, "flush_cache.c"),
-            Object(NonMatching, "mem_TRK.c"),
+            Object(NonMatching, "mem_TRK.c", mw_version="GC/1.3"),
             Object(NonMatching, "targimpl.c"),
             Object(NonMatching, "targsupp.s"),
             Object(NonMatching, "__exception.s"),
