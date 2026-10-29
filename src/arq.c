@@ -131,74 +131,63 @@ void ARQReset(void) {
     __ARQ_init_flag = 0;
 }
 
-void ARQPostRequest(void *request, u32 owner, u32 type, u32 priority, u32 source, u32 dest, u32 length, void (*callback)(u32)) {
-    typedef struct ARQRequest {
-        struct ARQRequest *next;
-        u32 owner;
-        u32 type;
-        u32 priority;
-        u32 source;
-        u32 dest;
-        u32 length;
-        void (*callback)(u32);
-    } ARQRequest;
-    extern void *__ARQRequestQueueHi;
-    extern void *__ARQRequestTailHi;
-    extern void *__ARQRequestQueueLo;
-    extern void *__ARQRequestTailLo;
-    extern void *__ARQRequestPendingHi;
-    extern void *__ARQRequestPendingLo;
-    extern void *__ARQCallbackHi;
+void ARQPostRequest(ARQRequest *request, u32 owner, u32 type, u32 priority, u32 source, u32 dest, u32 length, void (*callback)(u32)) {
+    extern ARQRequest *__ARQRequestQueueHi;
+    extern ARQRequest *__ARQRequestTailHi;
+    extern ARQRequest *__ARQRequestQueueLo;
+    extern ARQRequest *__ARQRequestTailLo;
+    extern ARQRequest *__ARQRequestPendingHi;
+    extern ARQRequest *__ARQRequestPendingLo;
+    extern void (*__ARQCallbackHi)(u32);
     s32 OSDisableInterrupts(void);
     s32 OSRestoreInterrupts(s32);
     void ARStartDMA(u32 type, u32 mainmem, u32 aram, u32 length);
     void __ARQServiceQueueLo(void);
     void __ARQCallbackHack(void);
-    ARQRequest *req = request;
     s32 level;
 
-    req->next = NULL;
-    req->owner = owner;
-    req->type = type;
-    req->source = source;
-    req->dest = dest;
-    req->length = length;
+    request->next = NULL;
+    request->owner = owner;
+    request->type = type;
+    request->source = source;
+    request->dest = dest;
+    request->length = length;
     if (callback) {
-        req->callback = callback;
+        request->callback = callback;
     } else {
-        req->callback = (void (*)(u32))__ARQCallbackHack;
+        request->callback = (void (*)(u32))__ARQCallbackHack;
     }
     level = OSDisableInterrupts();
     switch (priority) {
     case 0:
         if (__ARQRequestQueueLo) {
-            ((ARQRequest *)__ARQRequestTailLo)->next = req;
+            __ARQRequestTailLo->next = request;
         } else {
-            __ARQRequestQueueLo = req;
+            __ARQRequestQueueLo = request;
         }
-        __ARQRequestTailLo = req;
+        __ARQRequestTailLo = request;
         break;
     case 1:
         if (__ARQRequestQueueHi) {
-            ((ARQRequest *)__ARQRequestTailHi)->next = req;
+            __ARQRequestTailHi->next = request;
         } else {
-            __ARQRequestQueueHi = req;
+            __ARQRequestQueueHi = request;
         }
-        __ARQRequestTailHi = req;
+        __ARQRequestTailHi = request;
         break;
     }
     if (__ARQRequestPendingHi == NULL && __ARQRequestPendingLo == NULL) {
         if (__ARQRequestQueueHi) {
-            if (((ARQRequest *)__ARQRequestQueueHi)->type == 0) {
-                ARStartDMA(((ARQRequest *)__ARQRequestQueueHi)->type, ((ARQRequest *)__ARQRequestQueueHi)->source,
-                           ((ARQRequest *)__ARQRequestQueueHi)->dest, ((ARQRequest *)__ARQRequestQueueHi)->length);
+            if (__ARQRequestQueueHi->type == 0) {
+                ARStartDMA(__ARQRequestQueueHi->type, __ARQRequestQueueHi->source, __ARQRequestQueueHi->dest,
+                           __ARQRequestQueueHi->length);
             } else {
-                ARStartDMA(((ARQRequest *)__ARQRequestQueueHi)->type, ((ARQRequest *)__ARQRequestQueueHi)->dest,
-                           ((ARQRequest *)__ARQRequestQueueHi)->source, ((ARQRequest *)__ARQRequestQueueHi)->length);
+                ARStartDMA(__ARQRequestQueueHi->type, __ARQRequestQueueHi->dest, __ARQRequestQueueHi->source,
+                           __ARQRequestQueueHi->length);
             }
-            __ARQCallbackHi = ((ARQRequest *)__ARQRequestQueueHi)->callback;
+            __ARQCallbackHi = __ARQRequestQueueHi->callback;
             __ARQRequestPendingHi = __ARQRequestQueueHi;
-            __ARQRequestQueueHi = ((ARQRequest *)__ARQRequestQueueHi)->next;
+            __ARQRequestQueueHi = __ARQRequestQueueHi->next;
         }
         if (__ARQRequestPendingHi == NULL) {
             __ARQServiceQueueLo();
