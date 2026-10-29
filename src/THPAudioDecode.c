@@ -45,9 +45,6 @@ void PushDecodedAudioBuffer(void *arg0);
 
 
 void AudioDecodeThreadStart(void) {
-    extern s32 AudioDecodeThreadCreated;
-    extern u8 AudioDecodeThread[];
-
     if (AudioDecodeThreadCreated) {
         OSResumeThread(AudioDecodeThread);
     }
