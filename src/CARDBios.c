@@ -106,6 +106,25 @@ void __CARDUnlockedHandler(s32 chan, void *context) {
     }
 }
 
+void CARDInit(void) {
+    int chan;
+
+    if (__CARDBlock[0].diskID && __CARDBlock[1].diskID) {
+        return;
+    }
+    DSPInit();
+    OSInitAlarm();
+    for (chan = 0; chan < 2; ++chan) {
+        CARDControl *card = &__CARDBlock[chan];
+
+        card->result = -3;
+        OSInitThreadQueue(&card->threadQueue);
+        OSCreateAlarm(&card->alarm);
+    }
+    __CARDSetDiskID((u8 *)0x80000000);
+    OSRegisterResetFunction(&ResetFunctionInfo);
+}
+
 void __CARDSetDiskID(u8 *id) {
     __CARDBlock[0].diskID = id ? id : __CARDDiskNone;
     __CARDBlock[1].diskID = id ? id : __CARDDiskNone;
