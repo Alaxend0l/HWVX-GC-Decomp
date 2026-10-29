@@ -619,23 +619,23 @@ void ParticleSprite_Move(u8 *sprite) {
     }
 }
 
-void ParticleGX_Render(void *particle) {
+void ParticleGX_Render(u8 *particle) {
     u32 color;
-    Vector4 scale;
+    Vector4 scale __attribute__((aligned(16)));
 
-    M2C_FIELD(particle, void **, 0xC0) = M2C_FIELD(M2C_FIELD(M2C_FIELD(particle, void **, 0xBC), void **, 4), void ***, 0x24)[M2C_FIELD(particle, u8 *, 0xB7)];
-    if (M2C_FIELD(particle, u8 *, 0xB6) != 0) {
-        color = M2C_FIELD(particle, u32 *, 0x74);
+    *(void **)(particle + 0xC0) = (*(void ***)(*(u8 **)(*(u8 **)(particle + 0xBC) + 0x4) + 0x24))[particle[0xB7]];
+    if (particle[0xB6] != 0) {
+        color = *(u32 *)(particle + 0x74);
         Gfx_SetBaseColor(&color);
         Gfx_EnableState(0x10);
     }
-    M2C_FIELD(particle, f32 *, 0xC) = 1.0f;
-    scale.x = M2C_FIELD(particle, f32 *, 0xD8) * (M2C_FIELD(particle, f32 *, 0x80) * M2C_FIELD(particle, f32 *, 0xC4));
-    scale.y = M2C_FIELD(particle, f32 *, 0xD8) * (M2C_FIELD(particle, f32 *, 0x84) * M2C_FIELD(particle, f32 *, 0xC4));
-    scale.z = M2C_FIELD(particle, f32 *, 0xD8) * (M2C_FIELD(particle, f32 *, 0x88) * M2C_FIELD(particle, f32 *, 0xC4));
+    *(f32 *)(particle + 0xC) = 1.0f;
+    scale.x = *(f32 *)(particle + 0xD8) * (*(f32 *)(particle + 0x80) * *(f32 *)(particle + 0xC4));
+    scale.y = *(f32 *)(particle + 0xD8) * (*(f32 *)(particle + 0x84) * *(f32 *)(particle + 0xC4));
+    scale.z = *(f32 *)(particle + 0xD8) * (*(f32 *)(particle + 0x88) * *(f32 *)(particle + 0xC4));
     scale.w = 1.0f;
-    Gfx_DrawGeometry_QuaternionScalePos(M2C_FIELD(particle, void **, 0xC0), (u8 *)particle + 0x30, &scale, particle);
-    if (M2C_FIELD(particle, u8 *, 0xB6) != 0) {
+    Gfx_DrawGeometry_QuaternionScalePos(*(void **)(particle + 0xC0), particle + 0x30, &scale, particle);
+    if (particle[0xB6] != 0) {
         Gfx_DisableState(0x10);
     }
 }
