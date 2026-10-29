@@ -2707,6 +2707,169 @@ void InterfaceManager_RenderInterface(RenderInterface *iface) {
 void InterfaceManager_RenderObject(u8 *iface, s32 index) {
 }
 
+void InterfaceManager_DrawObject_Standard_Geometry(u8 *object, u8 *iface) {
+    typedef struct InterfaceObject {
+        u8 pad0[0x30];
+        Vector4 scale;          /* 0x30 */
+        u8 pad40[0x20];
+        Vector4 pos;            /* 0x60 */
+        u8 pad70[0x20];
+        Vector4 rot;            /* 0x90 degrees */
+        u8 padA0[0x245 - 0xA0];
+        u8 type;                /* 0x245 */
+        u8 pad246[0x268 - 0x246];
+        void *geom;             /* 0x268 */
+        u8 pad26C[0x300 - 0x26C];
+    } InterfaceObject;
+    extern s32 g_TargetArrow[7];
+    extern Matrix4 g_identity;
+    f32 Gfx_GetProjectionMatrix(void);
+    double sin(double x);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void Gfx_GetCameraPosition(Vector4 *pos);
+    void Gfx_GetCameraVector(Vector4 *at, Vector4 *up, Vector4 *right);
+    f32 Sqrt(f32 x);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *axb);
+    void *memcpy(void *dst, const void *src, u32 n);
+    void SetOrientation(void *m, f32 x, f32 y, f32 z);
+    void Gfx_DrawGeometry(void *geom, Matrix4 *mtx);
+    void MultiplyMatrix(Matrix4 *a, Matrix4 *b, Matrix4 *out);
+    InterfaceObject *obj = (InterfaceObject *)object;
+    Matrix4 mtx;
+    Matrix4 rot;
+    Matrix4 out;
+    Matrix4 view;
+    Matrix4 tmp;
+    Vector4 camPos;
+    Vector4 at;
+    Vector4 up;
+    Vector4 right;
+    Vector4 toTarget;
+    Vector4 target;
+    InterfaceObject *parent;
+    u32 i;
+    f32 a;
+    f32 b;
+    f32 c;
+    f32 t;
+    f32 scale;
+    f32 cosA;
+    f32 sinA;
+    f32 s;
+
+    if (obj->geom == NULL) {
+        return;
+    }
+    if (obj->type == 0x1F) {
+        s = (f32)sin(0.5f * (0.017453292f * Gfx_GetProjectionMatrix()));
+        if ((Vector4 *)g_TargetArrow[0] == NULL || GameSettings_GetCodeVariable(0x198, 0)) {
+            return;
+        }
+        scale = 0.1f;
+        Gfx_GetCameraPosition(&camPos);
+        Gfx_GetCameraVector(&at, &up, &right);
+        a = -obj->pos.x * scale;
+        b = scale * (1.1f * -s * obj->pos.z);
+        c = scale * Sqrt(225.0f - s * (s * (obj->pos.z * obj->pos.z)));
+        mtx.v[0].x = -right.x;
+        mtx.v[0].y = -right.y;
+        mtx.v[0].z = -right.z;
+        mtx.v[1].x = up.x;
+        mtx.v[1].y = up.y;
+        mtx.v[1].z = up.z;
+        mtx.v[2].x = -at.x;
+        mtx.v[2].y = -at.y;
+        mtx.v[2].z = -at.z;
+        mtx.v[3].x = camPos.x - (mtx.v[0].x * a + mtx.v[1].x * b + mtx.v[2].x * c);
+        mtx.v[3].y = camPos.y - (mtx.v[0].y * a + mtx.v[1].y * b + mtx.v[2].y * c);
+        mtx.v[3].z = camPos.z - (mtx.v[0].z * a + mtx.v[1].z * b + mtx.v[2].z * c);
+        mtx.v[0].w = mtx.v[1].w = mtx.v[2].w = 0.0f;
+        mtx.v[3].w = 1.0f;
+        target = TargetArrow_GetTargetPos();
+        if ((Vector4 *)g_TargetArrow[2] != NULL && (u32)g_TargetArrow[6] < 19) {
+            t = (u32)++g_TargetArrow[6] / 20.0f;
+            target.x = t * (target.x - ((Vector4 *)g_TargetArrow[2])->x) + ((Vector4 *)g_TargetArrow[2])->x;
+            target.y = t * (target.y - ((Vector4 *)g_TargetArrow[2])->y) + ((Vector4 *)g_TargetArrow[2])->y;
+            target.z = t * (target.z - ((Vector4 *)g_TargetArrow[2])->z) + ((Vector4 *)g_TargetArrow[2])->z;
+        }
+        toTarget.x = target.x - mtx.v[3].x;
+        toTarget.y = target.y - mtx.v[3].y;
+        toTarget.z = target.z - mtx.v[3].z;
+        toTarget.y = at.y = right.y = 0.0f;
+        if (PSVECSquareMag(&toTarget)) {
+            PSVECNormalize(&toTarget, &toTarget);
+        }
+        if (PSVECSquareMag(&at)) {
+            PSVECNormalize(&at, &at);
+        }
+        if (PSVECSquareMag(&right)) {
+            PSVECNormalize(&right, &right);
+        }
+        cosA = -PSVECDotProduct(&at, &toTarget);
+        sinA = -PSVECDotProduct(&right, &toTarget);
+        memcpy(&rot, &g_identity, sizeof(Matrix4));
+        rot.v[0].x = cosA * scale;
+        rot.v[0].z = -sinA * scale;
+        rot.v[1].x = 0.0f;
+        rot.v[1].y = scale;
+        rot.v[1].z = 0.0f;
+        rot.v[2].x = sinA * scale;
+        rot.v[2].z = cosA * scale;
+        MultiplyMatrix(&rot, &mtx, &out);
+        Gfx_DrawGeometry(obj->geom, &out);
+        return;
+    }
+    parent = NULL;
+    for (i = 0; i < *(u32 *)iface; i++) {
+        if ((*(InterfaceObject **)(iface + 0x88))[i].type == 4) {
+            parent = &(*(InterfaceObject **)(iface + 0x88))[i];
+            break;
+        }
+    }
+    Gfx_GetCameraPosition(&camPos);
+    Gfx_GetCameraVector(&at, &up, &right);
+    if (right.x == 0.0f && right.y == 0.0f && right.z == 0.0f) {
+        PSVECCrossProduct(&up, &at, &right);
+    }
+    view.v[0].x = right.x;
+    view.v[0].y = right.y;
+    view.v[0].z = right.z;
+    view.v[1].x = up.x;
+    view.v[1].y = up.y;
+    view.v[1].z = up.z;
+    view.v[2].x = at.x;
+    view.v[2].y = at.y;
+    view.v[2].z = at.z;
+    view.v[0].w = view.v[1].w = view.v[2].w = 0.0f;
+    view.v[3].w = 1.0f;
+    if (parent != NULL) {
+        view.v[3].x = view.v[0].x * (camPos.x - parent->pos.x) + view.v[1].x * (camPos.y - parent->pos.y) + view.v[2].x * (camPos.z - parent->pos.z);
+        view.v[3].y = view.v[0].y * (camPos.x - parent->pos.x) + view.v[1].y * (camPos.y - parent->pos.y) + view.v[2].y * (camPos.z - parent->pos.z);
+        view.v[3].z = view.v[0].z * (camPos.x - parent->pos.x) + view.v[1].z * (camPos.y - parent->pos.y) + view.v[2].z * (camPos.z - parent->pos.z);
+        SetOrientation(&rot, 0.017453292f * (obj->rot.y + parent->rot.y),
+                       0.017453292f * (obj->rot.x + parent->rot.x),
+                       0.017453292f * (obj->rot.z + parent->rot.z));
+    } else {
+        view.v[3].x = view.v[0].x * camPos.x + view.v[1].x * camPos.y + view.v[2].x * camPos.z;
+        view.v[3].y = view.v[0].y * camPos.x + view.v[1].y * camPos.y + view.v[2].y * camPos.z;
+        view.v[3].z = view.v[0].z * camPos.x + view.v[1].z * camPos.y + view.v[2].z * camPos.z;
+        SetOrientation(&rot, 0.017453292f * obj->rot.y, 0.017453292f * obj->rot.x, 0.017453292f * obj->rot.z);
+    }
+    rot.v[3].x = obj->pos.x;
+    rot.v[3].y = obj->pos.y;
+    rot.v[3].z = obj->pos.z;
+    memcpy(&mtx, &g_identity, sizeof(Matrix4));
+    mtx.v[0].x = obj->scale.x;
+    mtx.v[1].y = obj->scale.y;
+    mtx.v[2].z = obj->scale.z;
+    MultiplyMatrix(&mtx, &rot, &tmp);
+    MultiplyMatrix(&tmp, &view, &out);
+    Gfx_DrawGeometry(obj->geom, &out);
+}
+
 void InterfaceManager_DrawObject_Standard_Image(u8 *obj) {
     typedef struct RectVtx {
         f32 x;
