@@ -227,6 +227,66 @@ s32 TRKDoFlushCache(TRKBuffer *b) {
     return err;
 }
 
+s32 TRKDoCPUType(TRKBuffer *b) {
+    s32 err;
+    s32 ackTries;
+    DSCPUType cpuType;
+
+    if (b->length != 1) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 2);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return err;
+    }
+    TRKResetBuffer(b, 1);
+    TRKAppendBuffer1_ui8(b, 0x80);
+    TRKAppendBuffer1_ui8(b, 0);
+    err = TRKTargetCPUType(&cpuType);
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, cpuType.cpuMajor);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, cpuType.cpuMinor);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, cpuType.bigEndian);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, cpuType.defaultTypeSize);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, cpuType.fpTypeSize);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, cpuType.extended1TypeSize);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui8(b, cpuType.extended2TypeSize);
+    }
+    if (err != 0) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 3);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return err;
+    }
+    ackTries = 3;
+    do {
+        err = TRKMessageSend(b);
+        ackTries--;
+    } while (err != 0 && ackTries > 0);
+    return err;
+}
+
 s32 TRKTargetSupportMask(u8 *mask);
 s32 TRKAppendBuffer(TRKBuffer *b, const void *data, u32 length);
 s32 TRKDoSupportMask(TRKBuffer *b) {
