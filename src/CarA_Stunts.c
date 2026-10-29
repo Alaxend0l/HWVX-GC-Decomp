@@ -33,9 +33,16 @@ typedef struct Drone {
     Quaternion rot;         /* 0xE0 */
     Vector4 force;          /* 0xF0 */
     Vector4 baseForce;      /* 0x100 */
-    u8 pad110[0x20];        /* 0x110 */
+    Vector4 angMomentum;    /* 0x110 */
+    Vector4 invInertia;     /* 0x120 */
     Vector4 angVel;         /* 0x130 */
-    u8 pad140[0x9C];        /* 0x140 */
+    f32 suspension[4];      /* 0x140 */
+    u32 numContacts;        /* 0x150 */
+    u8 pad154[0x2C];        /* 0x154 */
+    f32 speed;              /* 0x180 */
+    u8 pad184[0xC];         /* 0x184 */
+    Vector4 wheels[4];      /* 0x190 */
+    u8 pad1D0[0xC];         /* 0x1D0 */
     u8 state;               /* 0x1DC */
     u8 pad1DD[7];           /* 0x1DD */
     f32 animTime;           /* 0x1E4 */
