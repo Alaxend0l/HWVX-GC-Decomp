@@ -62,6 +62,85 @@ s32 NavHolder_IsNavLinkNearer(f32 *pos, NavLink *link, f32 *nearest, u8 depth) {
     return result;
 }
 
+s32 NavHolder_FindIndexOfNearestNavPoint(f32 *pos, s32 hint) {
+    extern s32 gs_aLinksDepth3[64];
+    s32 NavHolder_FindIndexOfNearestNavLink(f32 *pos, NavLink *link, f32 *nearest, u8 depth);
+    s32 NavHolder_GetTotalNavPoints(void);
+    u8 *NavHolder_GetNavPoint(s32 index);
+    f32 PSVECSquareDistance(f32 *a, f32 *b);
+    void PSVECAdd(f32 *a, Vector4 *b, Vector4 *out);
+    u32 Grid_GetNearestObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults, void *filter, s32 filterArg);
+    typedef struct NavPoint {
+        f32 pos[3];
+        u8 pad0C[0x10 - 0xC];
+        u32 numPrev;
+        u8 pad14[0x1C - 0x14];
+        u32 numNext;
+        u8 pad20[0x28 - 0x20];
+        s32 index;
+        u8 pad2C[0x50 - 0x2C];
+        u8 enabled;
+    } NavPoint;
+    GridResult results[64];
+    Vector4 min __attribute__((aligned(16)));
+    Vector4 max __attribute__((aligned(16)));
+    f32 nearest;
+    NavPoint *p;
+    u32 j;
+    u32 count;
+    GridResult *result;
+    u32 i;
+    NavPoint *point;
+    s32 found;
+
+    found = -1;
+    nearest = 250000.0f;
+    if (hint != -1) {
+        nearest = PSVECSquareDistance(pos, (f32 *)NavHolder_GetNavPoint(hint));
+    }
+    if (nearest < 250000.0f) {
+        gs_aLinksDepth3[0] = hint;
+        gs_aLinksDepth3[1] = -0x8000;
+        found = NavHolder_FindIndexOfNearestNavLink(pos, (NavLink *)NavHolder_GetNavPoint(hint), &nearest, 1);
+        if (found == -1) {
+            found = hint;
+        }
+    } else {
+        min.x = min.y = min.z = -50.0f;
+        max.x = max.y = max.z = 50.0f;
+        PSVECAdd(pos, &min, &min);
+        PSVECAdd(pos, &max, &max);
+        count = Grid_GetNearestObjects(&min, &max, 0x20, results, 0x40, NULL, 0);
+        if (count == 0) {
+            return -1;
+        }
+        nearest = 1e10f;
+        for (i = 0, result = results; i < count; result++, i++) {
+            point = (NavPoint *)NavHolder_GetNavPoint(result->id);
+            if (point->enabled && (point->numPrev != 0 || point->numNext != 0)) {
+                f32 dist = PSVECSquareDistance(pos, point->pos);
+                if (nearest > dist) {
+                    nearest = dist;
+                    found = point->index;
+                }
+            }
+        }
+        if (1e10f == nearest) {
+            for (j = 0; j < NavHolder_GetTotalNavPoints(); j++) {
+                p = (NavPoint *)NavHolder_GetNavPoint(j);
+                if (p->enabled && (p->numPrev != 0 || p->numNext != 0)) {
+                    f32 dist = PSVECSquareDistance(pos, p->pos);
+                    if (nearest > dist) {
+                        nearest = dist;
+                        found = p->index;
+                    }
+                }
+            }
+        }
+    }
+    return found;
+}
+
 s32 NavHolder_IsLinked(s32 from, s32 to) {
     u8 i;
 
