@@ -44,6 +44,19 @@ void GXSetTevColorIn(s32 stage, s32 a, s32 b, s32 c, s32 d) {
     gx->bpSentNot = 0;
 }
 
+void GXSetTevAlphaIn(s32 stage, s32 a, s32 b, s32 c, s32 d) {
+    u32 *pTevReg;
+
+    pTevReg = &gx->teva[stage];
+    *pTevReg = ((u32)*pTevReg & ~0xE000) | ((u32)a << 13);
+    *pTevReg = ((u32)*pTevReg & ~0x1C00) | ((u32)b << 10);
+    *pTevReg = ((u32)*pTevReg & ~0x380) | ((u32)c << 7);
+    *pTevReg = ((u32)*pTevReg & ~0x70) | ((u32)d << 4);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *pTevReg;
+    gx->bpSentNot = 0;
+}
+
 void GXSetTevColor(s32 id, GXColor color) {
     u32 regRA;
     u32 regBG;
