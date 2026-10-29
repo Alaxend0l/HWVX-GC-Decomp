@@ -5,6 +5,15 @@ extern s32 g_timer300;
 extern s32 g_timer163;
 extern s32 g_timer78;
 extern s32 g_iDeltaTimeMS;
+extern u8 g_iTimeShift;
+void TimeHandler_SetSlowMotion(void) {
+    if (g_iTimeShift) {
+        g_iTimeShift = 0;
+    } else {
+        g_iTimeShift = 1;
+    }
+}
+
 void Timer_Heartbeat(void) {
     if (g_timer300 < 0) {
         g_timer300 += 300;
