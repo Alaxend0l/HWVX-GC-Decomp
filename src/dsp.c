@@ -15,11 +15,7 @@ s32 DSPCheckMailFromDSP(void)
 
 u32 DSPReadMailFromDSP(void)
 {
-    u16 hi;
-    u16 lo;
-    hi = ((volatile u16 *)0xCC005000)[2];
-    lo = ((volatile u16 *)0xCC005000)[3];
-    return (hi << 16) | lo;
+    return (__DSPRegs[2] << 16) | __DSPRegs[3];
 }
 
 #pragma scheduling off
