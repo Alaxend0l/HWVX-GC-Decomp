@@ -979,9 +979,9 @@ s32 Effect_UpdateSpring(Effect *effect, EffectCondition *cond)
 s32 Effect_UpdateDamper(Effect *effect, EffectCondition *cond)
 {
     s32 velocity = effect->state->velocity;
-    s32 force;
     s32 coefficient;
     s32 saturation;
+    s32 force;
 
     if (velocity < 0)
     {
@@ -993,12 +993,13 @@ s32 Effect_UpdateDamper(Effect *effect, EffectCondition *cond)
         coefficient = -cond->posCoefficient;
         saturation = cond->posSaturation;
     }
-    force = velocity * coefficient * 20 / 0xFF000;
+    velocity *= coefficient;
+    force = (velocity * 20) / 0xFF000;
     if (-saturation > force)
     {
         force = -saturation;
     }
-    if (force < saturation)
+    if (saturation < force)
     {
         force = saturation;
     }
