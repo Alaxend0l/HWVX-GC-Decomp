@@ -24,6 +24,13 @@ void *memset(void *dst, int c, u32 n);
 void Render_CreateTextureSlot(u32 id, s32 arg1, Texture *texture);
 void Render_DestroyTextureSlot(u32 id);
 
+s32 Gfx_TextureHandler_Create(void) {
+    m_totalTextures = 0x1FF;
+    m_texture = Allocate(0x7FC0, 0, "");
+    memset(m_texture, 0, m_totalTextures * sizeof(Texture));
+    return 1;
+}
+
 void Gfx_TextureHandler_Destroy(void) {
     u32 i;
 
