@@ -78,6 +78,56 @@ s8 FileManager_IsDeviceFormatted(s32 device) {
     return m_memcardstatus_803C7970[device - 11] == 0;
 }
 
+s32 File_Open(u32 dev, const char *name, u32 flags, s32 *size) {
+    extern struct { s32 fileInfo; char name[0x100]; } g_filedata_PC[4];
+    s32 DVDOpen(const char *name, void *fileInfo);
+    s32 MemCard_Open__FUlPCScUlPl(u32 device, const char *fileName, u32 flags, s32 *unused);
+    char *p;
+    s32 i;
+    s8 ok;
+    char c;
+
+    p = (char *)name;
+    strrchr(name, '.');
+    while ((c = *p) != 0) {
+        *p = tolower((u8)c);
+        if (*p == '\\') {
+            *p = '/';
+        }
+        p++;
+    }
+    for (i = 0; i < 4; i++) {
+        if (g_files[i].slot == -1) {
+            break;
+        }
+    }
+    if (i == 4) {
+        return 0;
+    }
+    if (dev >= 11) {
+        ok = MemCard_Open__FUlPCScUlPl(dev, name, flags, size);
+    } else {
+        g_filedata_PC[i].fileInfo = (s32)Allocate(0x3C, 0, "");
+        ok = DVDOpen(name, (void *)g_filedata_PC[i].fileInfo);
+    }
+    if (!ok) {
+        return -1;
+    }
+    g_files[i].slot = 1;
+    g_files[i].position = 0;
+    if (dev < 11) {
+        g_files[i].size = *(s32 *)(g_filedata_PC[i].fileInfo + 0x34);
+    }
+    strcpy(g_filedata_PC[i].name, name);
+    if (size != NULL) {
+        *size = g_files[i].size;
+    }
+    if (dev >= 11) {
+        return (dev << 16) | (g_files[i].slot << 8) | i;
+    }
+    return (g_files[i].slot << 8) | i;
+}
+
 void File_Close(s32 handle) {
     extern struct { s32 fileInfo; u8 pad[0x100]; } g_filedata_PC[4];
     s32 DVDClose(void *fileInfo);
