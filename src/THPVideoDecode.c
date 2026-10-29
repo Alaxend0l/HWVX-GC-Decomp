@@ -50,6 +50,7 @@ s32 OSCreateThread(void *thread, void *func, void *param, void *stack, u32 stack
 void OSInitMessageQueue(void *queue, void *msgArray, s32 msgCount);
 void *VideoDecoder(void *param);
 void VideoDecoderForOnMemory(void *bufAddr);
+void VideoDecode(THPReadBuffer *readBuffer);
 
 BOOL CreateVideoDecodeThread(s32 priority, void *param) {
     if (param) {
