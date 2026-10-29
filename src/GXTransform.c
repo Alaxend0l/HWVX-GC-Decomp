@@ -12,6 +12,11 @@ typedef union PPCWGPipe {
 
 volatile PPCWGPipe GXWGFifo : 0xCC008000;
 
+typedef enum _GXProjectionType {
+    GX_PERSPECTIVE,
+    GX_ORTHOGRAPHIC
+} GXProjectionType;
+
 typedef struct GXData {
     u16 vNumNot;
     u16 bpSentNot;
@@ -61,6 +66,17 @@ void GXProject(f32 x, f32 y, f32 z, f32 mtx[3][4], f32 *pm, f32 *vp, f32 *sx, f3
     *sz = vp[5] + (wc * (zc * (vp[5] - vp[4])));
 }
 
+#pragma peephole off
+void GXGetProjectionv(f32 *p) {
+    extern GXData *gx;
+    p[0] = (u32)gx->projType;
+    p[1] = gx->projMtx[0];
+    p[2] = gx->projMtx[1];
+    p[3] = gx->projMtx[2];
+    p[4] = gx->projMtx[3];
+    p[5] = gx->projMtx[4];
+    p[6] = gx->projMtx[5];
+}
 void WriteMTXPS4x3(f32 mtx[3][4], volatile f32 *wgpipe);
 #pragma peephole off
 void GXLoadPosMtxImm(f32 mtx[3][4], u32 id) {
