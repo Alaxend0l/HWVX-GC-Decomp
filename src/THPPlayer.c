@@ -7,6 +7,18 @@ typedef struct THPAudioBuffer {
     s32 frameNumber;
 } THPAudioBuffer;
 
+typedef struct THPVideoInfo {
+    u32 xSize;
+    u32 ySize;
+} THPVideoInfo;
+
+typedef struct THPTextureSet {
+    u8 *ytexture;
+    u8 *utexture;
+    u8 *vtexture;
+    s32 frameNumber;
+} THPTextureSet;
+
 typedef struct THPPlayer {
     u8 fileInfo[0x3C];
     u8 tag[4];
