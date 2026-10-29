@@ -2793,7 +2793,7 @@ void InterfaceManager_DrawMap(u8 *obj, u8 *iface) {
     x = offsetX + x / scaleX;
     z = offsetZ + -z / scaleZ;
     player = *(u8 **)(*(u8 **)(iface + 8) + 0x2C);
-    SinCosRad(&s, &c, 1.5707964f + ArcTan(*(f32 *)(player + 0x38), *(f32 *)(player + 0x30)));
+    SinCosRad(&s, &c, 2.3561945f + ArcTan(*(f32 *)(player + 0x38), *(f32 *)(player + 0x30)));
     rect->v[0].s = x - halfW * c;
     rect->v[0].t = halfH * s + z;
     rect->v[1].s = halfW * s + x;
