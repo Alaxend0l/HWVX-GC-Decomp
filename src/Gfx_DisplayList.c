@@ -739,16 +739,6 @@ u32 Gfx_AddWorldMatrixState_CacheMatrixQuaternionScalePos(void *quat, void *scal
     return g_pGDL->numMatrices++;
 }
 
-void *Gfx_GetWorldMatrixState(u32 index) {
-    if (index == 0xFFFE) {
-        return &g_identity;
-    }
-    if (index == 0xFFFF) {
-        return &GetRenderWindow()->viewMatrix;
-    }
-    return g_pGDL->matrices[index];
-}
-
 typedef struct GeometryGroup {
     u16 unk0;
     u16 flags;
@@ -776,6 +766,16 @@ typedef struct Geometry {
     GeometryGroup *groups;
     GeometryVertex *verts;
 } Geometry;
+
+void *Gfx_GetWorldMatrixState(u32 index) {
+    if (index == 0xFFFE) {
+        return &g_identity;
+    }
+    if (index == 0xFFFF) {
+        return &GetRenderWindow()->viewMatrix;
+    }
+    return g_pGDL->matrices[index];
+}
 
 void Gfx_GetCameraPosition(Vector4 *pos) {
     *pos = GetRenderWindow()->cameraPos;
