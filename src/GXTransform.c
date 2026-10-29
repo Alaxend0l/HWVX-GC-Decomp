@@ -67,6 +67,34 @@ void GXProject(f32 x, f32 y, f32 z, f32 mtx[3][4], f32 *pm, f32 *vp, f32 *sx, f3
 }
 
 #pragma peephole off
+void GXSetProjection(f32 mtx[4][4], s32 type) {
+    extern GXData *gx;
+
+    gx->projType = type;
+    gx->projMtx[0] = mtx[0][0];
+    gx->projMtx[2] = mtx[1][1];
+    gx->projMtx[4] = mtx[2][2];
+    gx->projMtx[5] = mtx[2][3];
+    if (type == GX_ORTHOGRAPHIC) {
+        gx->projMtx[1] = mtx[0][3];
+        gx->projMtx[3] = mtx[1][3];
+    } else {
+        gx->projMtx[1] = mtx[0][2];
+        gx->projMtx[3] = mtx[1][2];
+    }
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = 0x61020;
+    GXWGFifo.f32 = gx->projMtx[0];
+    GXWGFifo.f32 = gx->projMtx[1];
+    GXWGFifo.f32 = gx->projMtx[2];
+    GXWGFifo.f32 = gx->projMtx[3];
+    GXWGFifo.f32 = gx->projMtx[4];
+    GXWGFifo.f32 = gx->projMtx[5];
+    GXWGFifo.u32 = gx->projType;
+    gx->bpSentNot = 1;
+}
+
+#pragma peephole off
 void GXGetProjectionv(f32 *p) {
     extern GXData *gx;
     p[0] = (f32)gx->projType;
