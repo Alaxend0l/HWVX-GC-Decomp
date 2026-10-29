@@ -41,6 +41,32 @@ void __AXServiceCallbackStack(void)
     }
 }
 
+void __AXRemoveFromStack(AXVPB *p)
+{
+    u32 i = p->priority;
+    AXVPB *head = __AXStackHead[i];
+    AXVPB *tail = __AXStackTail[i];
+
+    if (head == tail) {
+        __AXStackHead[i] = __AXStackTail[i] = NULL;
+        return;
+    }
+    if (p == head) {
+        __AXStackHead[i] = p->next;
+        ((AXVPB *)__AXStackHead[i])->prev = NULL;
+        return;
+    }
+    if (p == tail) {
+        __AXStackTail[i] = p->prev;
+        ((AXVPB *)__AXStackTail[i])->next = NULL;
+        return;
+    }
+    head = p->prev;
+    tail = p->next;
+    head->next = tail;
+    tail->prev = head;
+}
+
 void __AXAllocInit(void)
 {
     u32 i;
