@@ -78,6 +78,11 @@ void stateGoToRetry(void)
     DVDLowStopMotor(cbForStateGoToRetry);
 }
 
+void cbForStateCheckID3(u32 intType);
+void stateCheckID3(DVDCommandBlock *block) {
+    DVDLowAudioBufferConfig(((u8 *)currID)[8], 10, cbForStateCheckID3);
+}
+
 void DCInvalidateRange(void *addr, u32 nBytes);
 void stateCoverClosed_CMD(DVDCommandBlock *block);
 void AlarmHandler(void *alarm, void *context)
