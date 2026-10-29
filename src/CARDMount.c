@@ -66,3 +66,21 @@ s32 CARDMount(s32 chan, s32 fileNo, u8 *stat)
     }
     return __CARDSync(chan);
 }
+
+static void DoUnmount(s32 chan, s32 result) {
+    CARDControl *card;
+    int enabled;
+
+    card = &__CARDBlock[chan];
+    enabled = OSDisableInterrupts();
+    if (card->attached) {
+        EXISetExiCallback(chan, 0);
+        EXIDetach(chan);
+        OSCancelAlarm(&card->alarm);
+        card->attached = 0;
+        card->result = result;
+        card->mountStep = 0;
+    }
+    OSRestoreInterrupts(enabled);
+}
+
