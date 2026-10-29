@@ -357,8 +357,8 @@ s32 ActionVehicleTeleport(u32 *action) {
     TeleportData *data;
     u32 i;
     Car *car;
-    Vector4 local;
-    FxParams params;
+    Vector4 local __attribute__((aligned(16)));
+    FxParams params __attribute__((aligned(16)));
 
     data = (TeleportData *)action[1];
     for (i = 0; i < action[2]; i++) {
