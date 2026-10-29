@@ -114,6 +114,42 @@ VoiceHW *GetVoice_(u8 kind, u32 priority) {
     OSRestoreInterrupts(level);
     return voice;
 }
+
+void AXFreeVoice(AXVPB *axv);
+void SetVoiceState_(VoiceHW *voice, s32 state) {
+    s32 level;
+    s32 level2;
+
+    switch (state) {
+    case 3:
+        level = OSDisableInterrupts();
+        voice->state = 0;
+        voice->id = 0xFE;
+        if (voice->axv != NULL) {
+            level2 = OSDisableInterrupts();
+            if (voice->axv->priority != 0) {
+                AXFreeVoice(voice->axv);
+            }
+            voice->axv = NULL;
+            OSRestoreInterrupts(level2);
+        }
+        voice->next = g_pFree;
+        g_pFree = voice;
+        OSRestoreInterrupts(level);
+        break;
+    case 2:
+        voice->state = 2;
+        voice->axv->state = 0;
+        voice->axv->sync |= 4;
+        break;
+    case 1:
+        voice->state = 1;
+        voice->axv->state = 1;
+        voice->axv->sync |= 4;
+        break;
+    }
+}
+
 void SetVoicePriority_(VoiceHW *voice) {
     s32 level;
 
