@@ -164,8 +164,8 @@ static inline f32 RayBoxTestLocal(Vector4 *start, Vector4 *dir, Vector4 *box, f3
         { { 0.0f, -1.0f, 0.0f, 0.0f }, 2, 0, 1 },
         { { 0.0f, 0.0f, -1.0f, 0.0f }, 0, 0, 0 },
     };
-    Vector4 seg __attribute__((aligned(16)));
     Vector4 end __attribute__((aligned(16)));
+    Vector4 seg __attribute__((aligned(16)));
     Vector4 *res;
     f32 d0;
     f32 d1;
@@ -177,9 +177,9 @@ static inline f32 RayBoxTestLocal(Vector4 *start, Vector4 *dir, Vector4 *box, f3
     planes[3].plane.w = box[0].x;
     planes[4].plane.w = box[0].y;
     planes[5].plane.w = box[0].z;
-    seg.x = end.x = t * dir->x + start->x;
-    seg.y = end.y = t * dir->y + start->y;
-    seg.z = end.z = t * dir->z + start->z;
+    end.x = seg.x = t * dir->x + start->x;
+    end.y = seg.y = t * dir->y + start->y;
+    end.z = seg.z = t * dir->z + start->z;
     res = BSPN0_CollideWithSegment(planes, NULL, start, &seg);
     if (res != NULL) {
         d0 = Distance_Plane(res, start);
