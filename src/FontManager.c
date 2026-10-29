@@ -60,6 +60,23 @@ typedef struct GfxState {
 extern FontManager g_fontManager;
 extern GfxState g_state;
 
+typedef struct Texture {
+    u8 unk0[0x24];
+    void *data;
+    u32 unk28;
+    f32 unk2C;
+    u16 unk30;
+    u16 width;
+    u16 height;
+    s16 refCount;
+    u16 unk38;
+    u16 unk3A;
+    u16 view;
+    u16 wrapMode;
+} Texture;
+
+extern Texture *m_texture;
+
 unsigned long strlen(const char *s);
 
 void FontManager_Create(void) {
