@@ -2214,9 +2214,9 @@ void InterfaceManager_DrawLine(u8 *obj) {
     f32 PSVECSquareMag(Vector4 *v);
     void PSVECNormalize(Vector4 *a, Vector4 *out);
     u32 *line = *(u32 **)(obj + 0x258);
-    Vector4 p0 = {0.0f, 0.0f, 0.0f, 0.0f};
-    Vector4 p1 = {0.0f, 0.0f, 0.0f, 0.0f};
-    Vector4 dir;
+    Vector4 p0 __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 0.0f};
+    Vector4 p1 __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 0.0f};
+    Vector4 dir __attribute__((aligned(16)));
     f32 pos;
     f32 x;
     f32 y;
