@@ -139,6 +139,13 @@ void *Gfx_GetWorldMatrixState(u32 index);
 void Gfx_SetWorldMatrix(void *matrix);
 void *memcpy(void *dst, const void *src, u32 n);
 
+typedef struct GDLEnvmapState {
+    f32 unk0;
+    f32 unk4;
+    u16 unk8;
+    u16 unkA;
+} GDLEnvmapState;
+
 typedef struct GDLAlphaGroup {
     f32 matrix[4][4];
     s32 unk40;
