@@ -267,7 +267,8 @@ typedef struct GDL {
     GDLAlphaGroup alphaGroups[0x400];
     GDLRect rects2D[0x400];
     GDLRect rects[0x20];
-    u8 unkA0A80[0xBA280 - 0xA0A80];
+    u8 unkA0A80[0xA2B80 - 0xA0A80];
+    GDL3DLine lines3D[2000];
     GDLFXLine2D fxLines2D[200];
     u8 unkBC800[0xC0040 - 0xBC800];
     GDLLine lines[0x100];
