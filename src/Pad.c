@@ -185,6 +185,29 @@ void UpdateOrigin(s32 chan)
     }
 }
 
+void PADReceiveCheckCallback(s32 chan, u32 type)
+{
+    BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback, s64 delay);
+    void PADOriginUpdateCallback(s32 chan, u32 error, void *context);
+    u32 error;
+    u32 chanBit;
+
+    chanBit = 0x80000000 >> chan;
+    if (!(EnabledBits & chanBit)) {
+        return;
+    }
+    error = type & 0xFF;
+    type &= ~0xFF;
+    WaitingBits &= ~chanBit;
+    CheckingBits &= ~chanBit;
+    if (!(error & 0xF) && (type & 0x80000000) && (type & 0x00100000) && (type & 0x40000000)
+        && !(type & 0x04000000) && !(type & 0x00080000) && !(type & 0x00040000)) {
+        SITransfer(chan, &CmdReadOrigin, 1, Origin[chan], 10, PADOriginUpdateCallback, 0);
+    } else {
+        PADDisable(chan);
+    }
+}
+
 BOOL PADReset(u32 mask)
 {
     BOOL enabled;
