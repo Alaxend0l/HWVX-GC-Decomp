@@ -45,6 +45,15 @@ s8 isInThread(void) {
     return (s8)(Thread == OSGetCurrentThread());
 }
 
+void EndThread(void) {
+    void OSExitThread(void *val);
+    extern s8 NGC_Thread_On;
+    s32 val;
+
+    OSExitThread(&val);
+    NGC_Thread_On = 0;
+}
+
 void TextureManager_ReleaseCache(void) {
 
 }
