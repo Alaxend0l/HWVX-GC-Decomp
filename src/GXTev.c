@@ -28,3 +28,37 @@ typedef struct GXData {
 } GXData;
 
 extern GXData *gx;
+
+void GXSetTevOrder(s32 stage, s32 coord, s32 map, s32 color) {
+    static s32 c2r[] = { 0, 1, 0, 1, 0, 1, 7, 5, 6 };
+    u32 *ptref;
+    u32 tmap;
+    u32 tcoord;
+
+    ptref = &gx->tref[stage / 2];
+    gx->texmapId[stage] = map;
+    tmap = map & ~0x100;
+    tmap = (tmap >= 8) ? 0 : tmap;
+    if (coord >= 8) {
+        tcoord = 0;
+        gx->tevTcEnab = gx->tevTcEnab & ~(1 << stage);
+    } else {
+        tcoord = coord;
+        gx->tevTcEnab = gx->tevTcEnab | (1 << stage);
+    }
+    if (stage & 1) {
+        *ptref = (*ptref & ~0x7000) | (tmap << 12);
+        *ptref = (*ptref & ~0x38000) | (tcoord << 15);
+        *ptref = (*ptref & ~0x380000) | (((color == 0xFF) ? 7 : c2r[color]) << 19);
+        *ptref = (*ptref & ~0x40000) | ((map != 0xFF && !(map & 0x100)) << 18);
+    } else {
+        *ptref = (*ptref & ~0x7) | tmap;
+        *ptref = (*ptref & ~0x38) | (tcoord << 3);
+        *ptref = (*ptref & ~0x380) | (((color == 0xFF) ? 7 : c2r[color]) << 7);
+        *ptref = (*ptref & ~0x40) | ((map != 0xFF && !(map & 0x100)) << 6);
+    }
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *ptref;
+    gx->bpSentNot = 0;
+    gx->dirtyState |= 1;
+}
