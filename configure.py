@@ -449,7 +449,7 @@ config.libs = [
             Object(NonMatching, "OSError.c"),
             Object(NonMatching, "OSFont.c"),
             Object(NonMatching, "OSInterrupt.c"),
-            Object(NonMatching, "OSLink.c"),
+            Object(Matching, "OSLink.c"),
             Object(NonMatching, "OSMessage.c"),
             Object(NonMatching, "OSMemory.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "OSMutex.c"),
