@@ -16,14 +16,33 @@ typedef struct GeometryGroup {
     u16 unk0;
     u16 flags;
     GXColor color;
-    u8 unk8[0x10 - 0x8];
+    u8 unk8[0xC - 0x8];
+    struct UVScroll *uvScroll;
     u32 dlSize;
     u16 unk14;
     u8 unk16[0x18 - 0x16];
     u16 unk18;
-    u8 unk1A[0x1C - 0x1A];
+    u16 unk1A;
     void *displayList;
 } GeometryGroup;
+
+typedef struct UVScroll {
+    f32 u;
+    f32 v;
+    GXColor color;
+    u32 flags;
+} UVScroll;
+
+typedef struct GfxState {
+    u8 unk0[0x74];
+    GXColor constColor;
+    u8 unk78[0x7C - 0x78];
+    u32 flags;
+    u8 unk80[0xA0 - 0x80];
+} GfxState;
+
+extern GfxState g_state;
+extern s32 g_debugTriCount;
 
 typedef struct Geometry {
     u16 unk0;
