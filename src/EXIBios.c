@@ -47,6 +47,27 @@ static inline u32 __EXIClearInterrupts(s32 chan, BOOL exi, BOOL tc, BOOL ext) {
     return prev;
 }
 
+u32 __OSGetDIConfig(void);
+
+static inline void CompleteTransfer(s32 chan) {
+    EXIControl *exi = &Ecb[chan];
+    u8 *buf;
+    u32 data;
+    int i;
+    int len;
+
+    if (exi->state & 3) {
+        if ((exi->state & 2) && (len = exi->immLen)) {
+            buf = exi->immBuf;
+            data = __EXIRegs[chan * 5 + 4];
+            for (i = 0; i < len; i++) {
+                *buf++ = (u8)((data >> ((3 - i) * 8)) & 0xFF);
+            }
+        }
+        exi->state &= ~3;
+    }
+}
+
 #pragma use_lmw_stmw on
 static BOOL __EXIProbe(s32 chan) {
     EXIControl *exi = &Ecb[chan];
