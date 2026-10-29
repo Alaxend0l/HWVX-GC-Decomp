@@ -48,3 +48,12 @@ void GXPokeDither(u8 dither) {
     __peReg[1] = reg;
 }
 
+void GXPokeZMode(u8 compare_enable, s32 func, u8 update_enable) {
+    u32 reg;
+
+    reg = compare_enable;
+    reg = (reg & ~0xE) | (func << 1);
+    reg = (reg & ~0x10) | (update_enable << 4);
+    __peReg[0] = reg;
+}
+
