@@ -42,7 +42,7 @@ void Gfx_TransformVector(Vector4 *in, Vector4 *out);
 void Gfx_GetCameraPosition(Vector4 *pos);
 s8 RayHitsTerrainAndObjects(void *start, void *dir, void *dist, void *hit);
 void DistanceXYZ(void *a, void *b, f32 *dist);
-u8 GameSettings_GetNumOfPlayers(void);
+u32 GameSettings_GetNumOfPlayers(void);
 void Gfx_Add2DSprite(Vector4 *pos, u16 tex, GXColor color, f32 size, u8 flag, f32 rot);
 
 void CoronaHolder_Init(void) {
@@ -75,6 +75,58 @@ s32 CoronaHolder_Add(void *corona, Vector4 *pos)
         c->flare = LensFlare_Add(lens, 0, pos);
     }
     return g_totalCoronas++;
+}
+
+void CoronaHolder_Render(void) {
+    Vector4 camera;
+    Vector4 screen;
+    Vector4 dir;
+    f32 len;
+    f32 dist;
+    GXColor color;
+    Corona *c;
+    u32 i;
+    f32 rot;
+
+    Gfx_GetCameraPosition(&camera);
+    if (++g_coronaRayTest > g_totalCoronas) {
+        g_coronaRayTest = 0;
+    }
+    for (i = 0; i < g_totalCoronas; i++) {
+        c = &g_aCorona[i];
+        Gfx_TransformVector(&c->pos, &screen);
+        if (screen.z <= 0.0f) {
+            c->time = 0;
+            continue;
+        }
+        if (screen.x < -50.0f || screen.y < -50.0f || screen.x > 690.0f || screen.y > 530.0f) {
+            c->time = 0;
+            continue;
+        }
+        if (c->track->distCheck && GameSettings_GetNumOfPlayers() == 1) {
+            DistanceXYZ(&c->pos, &camera, &dist);
+            if (dist > c->track->maxDist) {
+                continue;
+            }
+        }
+        if (i == g_coronaRayTest) {
+            PSVECSubtract(&c->pos, &camera, &dir);
+            len = 1.0f;
+            if (RayHitsTerrainAndObjects(&camera, &dir, &len, NULL)) {
+                c->playing = 0;
+            } else {
+                c->playing = 1;
+            }
+        }
+        if (c->time && c->playing) {
+            rot = 0.0f;
+            if (c->track->rotate) {
+                rot = (screen.x - 320.0f) * (0.0174533f * (0.25f * -(f32)c->track->spin));
+            }
+            color = c->rgba;
+            Gfx_Add2DSprite(&screen, c->track->texture, color, c->track->size, c->track->type, rot);
+        }
+    }
 }
 
 #pragma peepblock off
