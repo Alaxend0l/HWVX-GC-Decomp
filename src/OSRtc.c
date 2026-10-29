@@ -79,6 +79,20 @@ u32 OSGetSoundMode(void) {
     return mode;
 }
 
+void OSSetSoundMode(u32 mode) {
+    u8 *sram;
+
+    mode = (mode & 1) << 2;
+    sram = __OSLockSram();
+    if (mode == (sram[0x13] & 4)) {
+        __OSUnlockSram(0);
+        return;
+    }
+    sram[0x13] &= ~4;
+    sram[0x13] |= mode;
+    __OSUnlockSram(1);
+}
+
 u16 OSGetWirelessID(s32 chan) {
     OSSramEx *sram;
     u16 id;
