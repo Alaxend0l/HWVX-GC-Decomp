@@ -1,5 +1,6 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
 
 void LineManager_Init(void) {
     extern u8 g_lineManager[128][0xF0];
