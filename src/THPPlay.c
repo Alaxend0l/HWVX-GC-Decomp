@@ -8,6 +8,30 @@ void Mpeg_Create(void)
     Mpeg_Init();
 }
 
+void Mpeg_Init(void) {
+    void GXSetDispCopyGamma(s32 gamma);
+    void GXSetCopyFilter(u8 aa, void *pattern, u8 vf, void *vfilter);
+    void GXSetCopyClear(GXColor color, u32 z);
+    void GXSetCullMode(s32 mode);
+    s32 THPPlayerInit(void);
+    void AudioInit(void);
+    extern s32 m_rendermode_803C7754;
+    extern s32 rmode;
+    GXColor black;
+
+    black.r = 0;
+    black.g = 0;
+    black.b = 0;
+    black.a = 0xFF;
+    GXSetDispCopyGamma(0);
+    GXSetCopyFilter(0, 0, 0, 0);
+    GXSetCopyClear(black, 0xFFFFFF);
+    GXSetCullMode(0);
+    THPPlayerInit();
+    AudioInit();
+    m_rendermode_803C7754 = rmode;
+}
+
 u32 Mpeg_Heartbeat(void) {
     typedef struct THPVideoInfo {
         u32 xSize;
