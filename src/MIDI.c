@@ -369,7 +369,6 @@ void SetMIDITrackVol(void)
 }
 
 #pragma push
-#pragma optimization_level 1
 #pragma use_lmw_stmw on
 void ProcessMIDI(s32 time) {
  extern u16 g_envelope[0x100];
