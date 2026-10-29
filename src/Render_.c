@@ -55,6 +55,14 @@ typedef struct RenderStats {
     u8 unk8[0x100 - 0x8];
 } RenderStats;
 
+typedef struct SilhouetteEdge {
+    f32 normal0[4];
+    f32 normal1[3];
+    s32 type;
+} SilhouetteEdge;
+
+f32 PSVECDotProduct(const f32 *a, const f32 *b);
+
 extern GDL *g_pGDL;
 extern RenderStats g_renderStats;
 extern s32 g_debugTriCount;
