@@ -101,7 +101,7 @@ void PushReadedBuffer(void *arg0) {
 }
 
 void *PopFreeReadBuffer(void) {
-    extern u8 FreeReadBufferQueue[];
+    extern u8 FreeReadBufferQueue[0x20];
     void *msg;
 
     OSReceiveMessage(FreeReadBufferQueue, &msg, 1);
