@@ -354,6 +354,73 @@ u8 PhysicalObject_Move(u8 *obj) {
     return Destructible_Move(obj);
 }
 
+s32 Mover_PreMove(u8 *mover) {
+    extern Vector4 g_zeroVector;
+    extern f32 g_fDeltaTimeSec;
+    void Gfx_AnimExtractKeyFrame(void *anim, f32 time, void *keyFrame, u32 count);
+    void QuaternionToSubMatrix(Quaternion *quat, void *mtx);
+    void TransposeSubMatrix(Matrix4 *mtx);
+    void MultiplySubMatrix(Matrix4 *a, Matrix4 *b, Matrix4 *out);
+    void SubMatrixToQuaternion(Matrix4 *mtx, Quaternion *quat);
+    void GenerateSpinAngleFromQuaternion(Quaternion *quat, Vector4 *axis, f32 *angle);
+    typedef struct {
+        Quaternion rot;
+        Vector4 pos;
+    } KeyFrame;
+    Matrix4 inv;
+    Matrix4 rel;
+    Matrix4 rot;
+    KeyFrame start __attribute__((aligned(16)));
+    KeyFrame key __attribute__((aligned(16)));
+    Vector4 pos __attribute__((aligned(16)));
+    Quaternion quat;
+    Quaternion delta;
+    f32 angle;
+
+    if (!(*(u32 *)(mover + 0x74) & 0x4000)) {
+        *(f32 *)(mover + 0xDC) += *(f32 *)(mover + 0xD8) * g_fDeltaTimeSec;
+        if (*(f32 *)(mover + 0xDC) > *(f32 *)(*(u8 **)(mover + 0xD4) + 0xC)) {
+            *(f32 *)(mover + 0xDC) -= *(f32 *)(*(u8 **)(mover + 0xD4) + 0xC) - *(f32 *)(*(u8 **)(mover + 0xD4) + 0x8);
+            Gfx_AnimExtractKeyFrame(*(void **)(mover + 0xD4), *(f32 *)(*(u8 **)(mover + 0xD4) + 0x8), &start, 1);
+            ((Matrix4 *)(mover + 0x10))->v[3].x = start.pos.x;
+            ((Matrix4 *)(mover + 0x10))->v[3].y = start.pos.y;
+            ((Matrix4 *)(mover + 0x10))->v[3].z = start.pos.z;
+        }
+        Gfx_AnimExtractKeyFrame(*(void **)(mover + 0xD4), *(f32 *)(mover + 0xDC), &key, 1);
+        quat = key.rot;
+        pos.x = key.pos.x;
+        pos.y = key.pos.y;
+        pos.z = key.pos.z;
+        if (*(u32 *)(mover + 0x74) & 4) {
+            ((Vector4 *)mover)->x = (pos.x - ((Matrix4 *)(mover + 0x10))->v[3].x) / g_fDeltaTimeSec;
+            ((Vector4 *)mover)->y = (pos.y - ((Matrix4 *)(mover + 0x10))->v[3].y) / g_fDeltaTimeSec;
+            ((Vector4 *)mover)->z = (pos.z - ((Matrix4 *)(mover + 0x10))->v[3].z) / g_fDeltaTimeSec;
+            inv = *(Matrix4 *)(mover + 0x10);
+            Mover_SetRotation(mover, quat);
+            QuaternionToSubMatrix(&quat, &rot);
+            TransposeSubMatrix(&inv);
+            MultiplySubMatrix(&inv, &rot, &rel);
+            SubMatrixToQuaternion(&rel, &delta);
+            GenerateSpinAngleFromQuaternion(&delta, (Vector4 *)(mover + 0x130), &angle);
+            angle /= g_fDeltaTimeSec;
+            *(f32 *)(mover + 0x130) *= angle;
+            *(f32 *)(mover + 0x134) *= angle;
+            *(f32 *)(mover + 0x138) *= angle;
+        } else {
+            QuaternionToSubMatrix(&quat, mover + 0x10);
+            ((Matrix4 *)(mover + 0x10))->v[3] = pos;
+            *(Quaternion *)(mover + 0x50) = quat;
+            Mover_SetRotation(mover, quat);
+        }
+        *(u32 *)(mover + 0x74) &= ~0x10;
+    } else {
+        *(Vector4 *)mover = g_zeroVector;
+        Mover_SetRotation(mover, *(Quaternion *)(mover + 0x50));
+        *(Vector4 *)(mover + 0x130) = g_zeroVector;
+    }
+    return 1;
+}
+
 void Mover_DynamicRotation(u8 *mover) {
     typedef struct Mover {
         u8 pad0[0x10];
