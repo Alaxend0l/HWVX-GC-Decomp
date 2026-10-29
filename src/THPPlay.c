@@ -61,7 +61,7 @@ u32 Mpeg_Heartbeat(void) {
         badMojo_803C7734 = 1;
         return 0;
     }
-    return THPPlayerGetState() == 3;
+    return THPPlayerGetState() != 3;
 }
 
 void Mpeg_Render(void)
