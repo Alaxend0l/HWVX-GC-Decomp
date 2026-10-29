@@ -296,3 +296,37 @@ s32 Tracer_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     }
     return 0;
 }
+
+void Thing_PreMove();
+void Thing_GetMass();
+void Thing_DynamicCollideImpact();
+void Thing_GetCameraOrientationInfo();
+void Thing_GetInterfaceInfo();
+void Thing_SlaveTransform();
+void Thing_GetSurfaceScript();
+void Thing_GetNearestNavPoint();
+void Thing_GetInverseLocalInertiaTensor();
+void Thing_DynamicRotation();
+void Thing_CollideWithRay();
+void Thing_GetTargetPos();
+void Thing_GetOrientedCollision();
+
+void *g_tracerVTable[] = {
+    Tracer_Init,
+    Tracer_Release,
+    Thing_PreMove,
+    Tracer_Move,
+    Tracer_Render,
+    Thing_GetMass,
+    Thing_DynamicCollideImpact,
+    Thing_GetCameraOrientationInfo,
+    Thing_GetInterfaceInfo,
+    Thing_SlaveTransform,
+    Thing_GetSurfaceScript,
+    Thing_GetNearestNavPoint,
+    Thing_GetInverseLocalInertiaTensor,
+    Thing_DynamicRotation,
+    Thing_CollideWithRay,
+    Thing_GetTargetPos,
+    Thing_GetOrientedCollision,
+};
