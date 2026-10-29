@@ -57,14 +57,28 @@ extern void (*DestroySongVoice)(VoiceHW *voice);
 extern VoiceHW *g_pFree;
 
 typedef struct AXFX_DELAY {
-    u8 data[0x60];
+    s32 *left;
+    s32 *right;
+    s32 *sur;
+    u32 currentSize[3];
+    u32 currentPos[3];
+    u32 currentFeedback[3];
+    u32 currentOutput[3];
+    u32 delay[3];
+    u32 feedback[3];
+    u32 output[3];
 } AXFX_DELAY;
 
 extern AXFX_DELAY g_reverb[2];
+extern VoiceHW g_voice[0x20];
+extern u32 m_InitOnce;
+extern s32 g_active;
 
 void AXRegisterAuxACallback(void *callback, void *context);
 void AXRegisterAuxBCallback(void *callback, void *context);
+s32 AXFXDelayInit(AXFX_DELAY *delay);
 s32 AXFXDelayShutdown(AXFX_DELAY *delay);
+void AXFXDelayCallback(void *data, void *context);
 
 s32 OSDisableInterrupts(void);
 void OSRestoreInterrupts(s32 level);
