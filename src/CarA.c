@@ -83,61 +83,59 @@ static inline void CarA_UpdateDamageSlaves(CarA *car) {
     }
 }
 
-void CarA_InitInverseBodyInertiaTensor(u8 *car) {
+void CarA_InitInverseBodyInertiaTensor(CarA *car) {
     extern Matrix4 g_identity;
     void PSVECAdd(void *a, void *b, Vector4 *out);
-    Vector4 ext[4];
-    Vector4 bounds[2];
-    u8 *coll;
-    u8 *hull;
+    Vector4 ext[4] __attribute__((aligned(16)));
+    Vector4 bounds[2] __attribute__((aligned(16)));
+    CarACollider *coll;
+    Vector4 *box;
+    CarAHull *hull;
     u32 i;
 
-    *(Matrix4 *)(car + 0x3C0) = g_identity;
-    coll = *(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0);
-    switch (coll[0x10]) {
+    car->inverseBodyInertia = g_identity;
+    coll = car->vehicleIface->collider;
+    switch (coll->type) {
     case 0:
-        hull = *(u8 **)(coll + 0x44);
-        PSVECAdd(hull + 0x10, car + 0x520, &ext[2]);
-        PSVECAdd(hull, car + 0x520, &ext[1]);
+        box = coll->box;
+        PSVECAdd(&box[1], &car->bodyOffset, &ext[2]);
+        PSVECAdd(&box[0], &car->bodyOffset, &ext[1]);
         break;
     case 1:
-        hull = *(u8 **)(coll + 0x48);
-        bounds[0].x = 1000000.0f;
-        bounds[0].y = 1000000.0f;
-        bounds[0].z = 1000000.0f;
-        bounds[1].x = -1000000.0f;
-        bounds[1].y = -1000000.0f;
-        bounds[1].z = -1000000.0f;
-        for (i = 0; i < *(u32 *)(hull + 0xC); i++) {
-            if (bounds[0].x > (*(Vector4 **)(hull + 0x1C))[i].x) {
-                bounds[0].x = (*(Vector4 **)(hull + 0x1C))[i].x;
+        hull = coll->hull;
+        bounds[0].x = 9999.9f;
+        bounds[0].y = 9999.9f;
+        bounds[0].z = 9999.9f;
+        bounds[1].x = -9999.9f;
+        bounds[1].y = -9999.9f;
+        bounds[1].z = -9999.9f;
+        for (i = 0; i < hull->numVerts; i++) {
+            if (bounds[0].x > hull->verts[i].x) {
+                bounds[0].x = hull->verts[i].x;
             }
-            if (bounds[0].y > (*(Vector4 **)(hull + 0x1C))[i].y) {
-                bounds[0].y = (*(Vector4 **)(hull + 0x1C))[i].y;
+            if (bounds[0].y > hull->verts[i].y) {
+                bounds[0].y = hull->verts[i].y;
             }
-            if (bounds[0].z > (*(Vector4 **)(hull + 0x1C))[i].z) {
-                bounds[0].z = (*(Vector4 **)(hull + 0x1C))[i].z;
+            if (bounds[0].z > hull->verts[i].z) {
+                bounds[0].z = hull->verts[i].z;
             }
-            if (bounds[1].x < (*(Vector4 **)(hull + 0x1C))[i].x) {
-                bounds[1].x = (*(Vector4 **)(hull + 0x1C))[i].x;
+            if (bounds[1].x < hull->verts[i].x) {
+                bounds[1].x = hull->verts[i].x;
             }
-            if (bounds[1].y < (*(Vector4 **)(hull + 0x1C))[i].y) {
-                bounds[1].y = (*(Vector4 **)(hull + 0x1C))[i].y;
+            if (bounds[1].y < hull->verts[i].y) {
+                bounds[1].y = hull->verts[i].y;
             }
-            if (bounds[1].z < (*(Vector4 **)(hull + 0x1C))[i].z) {
-                bounds[1].z = (*(Vector4 **)(hull + 0x1C))[i].z;
+            if (bounds[1].z < hull->verts[i].z) {
+                bounds[1].z = hull->verts[i].z;
             }
         }
-        PSVECAdd(&bounds[1], car + 0x520, &ext[2]);
-        PSVECAdd(&bounds[0], car + 0x520, &ext[1]);
+        PSVECAdd(&bounds[1], &car->bodyOffset, &ext[2]);
+        PSVECAdd(&bounds[0], &car->bodyOffset, &ext[1]);
         break;
     }
-    coll = *(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0);
-    *(f32 *)(car + 0x3C0) = 1.0f / (*(f32 *)(coll + 0x0) * *(f32 *)(coll + 0x20) * (ext[2].y * ext[2].y + ext[2].z * ext[2].z));
-    coll = *(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0);
-    *(f32 *)(car + 0x3D4) = 1.0f / (*(f32 *)(coll + 0x4) * *(f32 *)(coll + 0x20) * (ext[2].x * ext[2].x + ext[2].z * ext[2].z));
-    coll = *(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0);
-    *(f32 *)(car + 0x3E8) = 1.0f / (*(f32 *)(coll + 0x8) * *(f32 *)(coll + 0x20) * (ext[2].x * ext[2].x + ext[2].y * ext[2].y));
+    car->inverseBodyInertia.v[0].x = 1.0f / (car->vehicleIface->collider->inertiaScale[0] * car->vehicleIface->collider->mass * (ext[2].y * ext[2].y + ext[2].z * ext[2].z));
+    car->inverseBodyInertia.v[1].y = 1.0f / (car->vehicleIface->collider->inertiaScale[1] * car->vehicleIface->collider->mass * (ext[2].x * ext[2].x + ext[2].z * ext[2].z));
+    car->inverseBodyInertia.v[2].z = 1.0f / (car->vehicleIface->collider->inertiaScale[2] * car->vehicleIface->collider->mass * (ext[2].x * ext[2].x + ext[2].y * ext[2].y));
 }
 
 void CarA_GetAngularVelocity(void *car, Vector4 *vel) {
