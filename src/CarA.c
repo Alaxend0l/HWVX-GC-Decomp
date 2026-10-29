@@ -1096,7 +1096,7 @@ void CarA_ProcessDamageSystem(CarA *car, Vector4 *hitPos, s32 level, f32 impulse
                     slaveParams.quat.x = 0.0f;
                     slaveParams.quat.y = 0.0f;
                     slaveParams.quat.z = 0.0f;
-                    slaveParams.pos = list->parts[i].slavePos != NULL ? *list->parts[i].slavePos : g_zeroVector;
+                    slaveParams.pos = Vector4_OrZero(list->parts[i].slavePos);
                     slaveParams.info = list->parts[i].slaveInfo;
                     slaveParams.unk34 = 0;
                     slaveParams.vel = g_zeroVector;
