@@ -57,4 +57,23 @@ void EndThread(void) {
 void TextureManager_ReleaseCache(void) {
 
 }
+
+void InitVI(void) {
+    void VIFlush(void);
+    void VISetNextFrameBuffer(void *fb);
+    void VIWaitForRetrace(void);
+    extern void *g_currentBuffer;
+    extern void *g_frameBuffer1;
+    extern void *g_frameBuffer2;
+    extern u32 *rmode;
+
+    VISetNextFrameBuffer(g_frameBuffer1);
+    g_currentBuffer = g_frameBuffer2;
+    VIFlush();
+    VIWaitForRetrace();
+    if (*rmode & 1) {
+        VIWaitForRetrace();
+    }
+}
+
 #pragma use_lmw_stmw on
