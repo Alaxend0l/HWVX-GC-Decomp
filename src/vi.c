@@ -1,5 +1,13 @@
 #include "common.h"
 
+volatile u16 __VIRegs[59] : 0xCC002000;
+
+typedef struct VITiming {
+    u8 unk0[0x18];
+    u16 nhlines;
+    u16 hlw;
+} VITiming;
+
 static u8 timing[0x130] = {
     0x06, 0x00, 0x00, 0xF0, 0x00, 0x18, 0x00, 0x19, 0x00, 0x03, 0x00, 0x02, 0x0C, 0x0D, 0x0C, 0x0D, 0x02, 0x08, 0x02, 0x07,
     0x02, 0x08, 0x02, 0x07, 0x02, 0x0D, 0x01, 0xAD, 0x40, 0x47, 0x69, 0xA2, 0x01, 0x75, 0x7A, 0x00, 0x01, 0x9C,
@@ -77,5 +85,25 @@ void VIWaitForRetrace(void) {
         OSSleepThread(retraceQueue);
     } while (count == retraceCount);
     OSRestoreInterrupts(enabled);
+}
+
+static u32 getCurrentFieldEvenOdd(void) {
+    typedef struct VITiming {
+        u8 unk0[0x18];
+        u16 nhlines;
+        u16 hlw;
+    } VITiming;
+    extern VITiming *CurrTiming;
+    u32 hcount;
+    u32 vcount0;
+    u32 vcount;
+
+    vcount = ((volatile u16 *)0xCC002000)[22] & 0x7FF;
+    do {
+        vcount0 = vcount;
+        hcount = ((volatile u16 *)0xCC002000)[23] & 0x7FF;
+        vcount = ((volatile u16 *)0xCC002000)[22] & 0x7FF;
+    } while (vcount0 != vcount);
+    return ((((vcount - 1) << 1) + ((hcount - 1) / CurrTiming->hlw)) < CurrTiming->nhlines) ? 1 : 0;
 }
 
