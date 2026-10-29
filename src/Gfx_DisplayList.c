@@ -788,6 +788,7 @@ void DisplayList_RenderGXList(void) {
     }
 }
 #pragma use_lmw_stmw reset
+
 typedef struct GeometryGroup {
     u16 unk0;
     u16 flags;
