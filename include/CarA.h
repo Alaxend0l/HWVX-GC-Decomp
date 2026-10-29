@@ -260,7 +260,8 @@ typedef struct CarA {
   s32 lowSpeedFlag;         /* 0x404 compared < 500 by AI cars */
   u8 pad408[8];             /* 0x408 */
   Vector4 localAxis;        /* 0x410 cross-product operand in CarA_ProcessForce */
-  u8 pad420[0x20];          /* 0x420 */
+  f32 animTimes[3];         /* 0x420 times of vehicleIface->modelRef->anims */
+  u8 pad42C[0x14];          /* 0x42C */
   Vector4 prevVelocity;     /* 0x440 velocity at the start of PreMove */
   u32 reverseTimer;         /* 0x450 ms the brake is held at standstill */
   void *rollSurface;        /* 0x454 surface whose rolling sound plays */
