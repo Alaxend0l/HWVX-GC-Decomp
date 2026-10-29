@@ -9,6 +9,14 @@ typedef struct __OutStrCtrl {
 
 extern FILE __files[];
 
+typedef struct __va_list_struct {
+    char gpr;
+    char fpr;
+    char reserved[2];
+    char *input_arg_area;
+    char *reg_save_area;
+} va_list[1];
+
 void *memcpy(void *dst, const void *src, u32 n);
 u32 fwrite(const void *ptr, u32 memb_size, u32 num_memb, FILE *file);
 int fwide(FILE *stream, int mode);
