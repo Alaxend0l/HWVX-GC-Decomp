@@ -32,6 +32,8 @@ typedef struct Player {
   u8 button15;              /* 0x15 */
   u8 pad16[4];              /* 0x16 */
   u8 button1A;              /* 0x1A */
+  u8 pad1B[0x11];           /* 0x1B */
+  void *vehicle;            /* 0x2C the Thing the player drives */
 } Player;
 
 typedef struct CarAEngine {
