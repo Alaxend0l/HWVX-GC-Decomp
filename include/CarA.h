@@ -260,7 +260,8 @@ typedef struct CarA {
   f32 tiltY;                /* 0x544 */
   u8 pad548[8];             /* 0x548 */
   s32 turboCooldown;        /* 0x550 ms */
-  u8 pad554[0xC];           /* 0x554 */
+  f32 stuntTime;            /* 0x554 */
+  u8 pad558[8];             /* 0x558 */
 } CarA;
 
 /* Compile-time proof that sizeof(CarA) == 0x560 exactly: the first typedef is
