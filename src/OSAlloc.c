@@ -79,6 +79,46 @@ Cell *DLInsert(Cell *list, Cell *cell) {
     }
 }
 
+void *OSAllocFromHeap(s32 heap, u32 size)
+{
+    HeapDesc *hd;
+    Cell *cell;
+    Cell *newCell;
+    u32 leftoverSize;
+
+    hd = &HeapArray[heap];
+    size += 0x20;
+    size = (size + 0x1F) & ~0x1F;
+    for (cell = hd->free; cell != NULL; cell = cell->next) {
+        if ((s32)size <= cell->size) {
+            break;
+        }
+    }
+    if (cell == NULL) {
+        return NULL;
+    }
+    leftoverSize = cell->size - size;
+    if (leftoverSize < 0x40) {
+        hd->free = DLExtract(hd->free, cell);
+    } else {
+        cell->size = size;
+        newCell = (Cell *)((u8 *)cell + size);
+        newCell->size = leftoverSize;
+        newCell->prev = cell->prev;
+        newCell->next = cell->next;
+        if (newCell->next != NULL) {
+            newCell->next->prev = newCell;
+        }
+        if (newCell->prev != NULL) {
+            newCell->prev->next = newCell;
+        } else {
+            hd->free = newCell;
+        }
+    }
+    hd->allocated = DLAddFront(hd->allocated, cell);
+    return (u8 *)cell + 0x20;
+}
+
 void OSFreeToHeap(s32 heap, void *ptr)
 {
     HeapDesc *hd;
