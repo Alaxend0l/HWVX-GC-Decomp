@@ -397,6 +397,288 @@ void GetTrimmedCameraPos2(Vector4 *from, Vector4 *to, f32 *trim) {
     }
 }
 
+void Camera_UpdatePosition_Default(Camera *cam, f32 *mode) {
+    extern f32 g_fDeltaTimeSec;
+    extern s32 g_iDeltaTimeMS;
+    f32 PSVECSquareMag(void *v);
+    f32 PSVECDotProduct(void *a, void *b);
+    void PSVECNormalize(void *src, void *dst);
+    void PSVECCrossProduct(void *a, void *b, void *out);
+    void PSVECSubtract(void *a, void *b, void *out);
+    f32 Sqrt(f32 x);
+    void Gfx_SetProjectionMatrix(f32 fov);
+    void GenerateQuaternion(void *axis, void *q, f32 angle);
+    void QuaternionToSubMatrix(void *q, void *m);
+    void XformVecOrientation(void *m, void *in, void *out);
+    void XformVec(void *mtx, Vector4 *in, Vector4 *out);
+    s32 VolumeManager_GetVolumeCellIndex(Vector4 *point);
+    s32 VolumeManager_GetNumVolumesOfTypeByCell(s32 type, s32 cell);
+    void *VolumeManager_GetVolumeTypeByIndexByCell(s32 type, s32 index, s32 cell);
+    CameraInfo info __attribute__((aligned(16)));
+    Matrix4 sub1;
+    Matrix4 sub2;
+    Matrix4 mtx;
+    Vector4 target __attribute__((aligned(16)));
+    Vector4 lookPt __attribute__((aligned(16)));
+    Vector4 up2 __attribute__((aligned(16)));
+    Vector4 up1 __attribute__((aligned(16)));
+    Vector4 dir __attribute__((aligned(16)));
+    CarA *car;
+    void *volume;
+    f32 scale;
+    f32 k;
+    f32 mag;
+    f32 speed;
+    f32 inv;
+    f32 s;
+    f32 damp;
+    f32 kx;
+    f32 ky;
+    f32 t;
+    f32 sx;
+    f32 sy;
+    f32 sz;
+    f32 dx;
+    f32 dy;
+    f32 dz;
+    f32 step;
+    u32 i;
+    s32 cell;
+    u32 count;
+    s8 inVolume;
+
+    car = cam->player->vehicle;
+    scale = 1.0f;
+    car->vtable->getCameraInfo(car, cam->player->cameraIndex, &info);
+    target = info.target;
+    if (info.lookAhead != 0.0f) {
+        car = cam->player->vehicle;
+        if (car->worldMatrix.v[2].y < -0.4f && car->worldMatrix.v[1].y < 0.6f) {
+            cam->flipTimer = 700;
+        }
+        up1 = info.mtx.v[1];
+    } else {
+        up1.x = 0.0f;
+        up1.y = 1.0f;
+        up1.z = 0.0f;
+    }
+    if (cam->flipTimer > 0) {
+        cam->flipTimer -= g_iDeltaTimeMS;
+        scale = 0.0f;
+    }
+    car = cam->player->vehicle;
+    k = 350.0f * scale * info.lookAhead + 0.1f;
+    lookPt.x = car->worldMatrix.v[2].x * k + car->velocity.x;
+    lookPt.y = car->worldMatrix.v[2].y * k + car->velocity.y;
+    lookPt.z = car->worldMatrix.v[2].z * k + car->velocity.z;
+    Gfx_SetProjectionMatrix(mode[0]);
+    mag = PSVECSquareMag(&lookPt);
+    if (mag > 80.0f) {
+        inv = 1.0f / Sqrt(mag);
+        dir = lookPt;
+        dir.x *= inv;
+        dir.y *= inv;
+        dir.z *= inv;
+        cam->lookDir = dir;
+    }
+    inVolume = 0;
+    cell = VolumeManager_GetVolumeCellIndex(&((CarA *)cam->player->vehicle)->worldMatrix.v[3]);
+    count = VolumeManager_GetNumVolumesOfTypeByCell(3, cell);
+    car = cam->player->vehicle;
+    if ((u8 *)car->vtable != g_carAVTable || car->unk460 == 0) {
+        for (i = 0; i < count; i++) {
+            f32 dist = 0.0f;
+            volume = VolumeManager_GetVolumeTypeByIndexByCell(3, i, cell);
+            if (IsPointWithinVolume(&((CarA *)cam->player->vehicle)->worldMatrix.v[3], volume, &dist)) {
+                inVolume = 1;
+            }
+        }
+    }
+    if (inVolume) {
+        if (info.lookAhead != 0.0f) {
+            up2 = info.mtx.v[1];
+        }
+    } else {
+        up2.x = 0.0f;
+        up2.y = 1.0f;
+        up2.z = 0.0f;
+    }
+
+    {
+        Vector4 cross __attribute__((aligned(16)));
+        PSVECCrossProduct(&cam->rollUp, &up2, &cross);
+        mag = MagnitudeVector(&cross);
+        if (mag > 1e-7f) {
+            Vector4 quat __attribute__((aligned(16)));
+            Vector4 force __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 0.0f};
+            Vector4 axis __attribute__((aligned(16)));
+            Vector4 xf __attribute__((aligned(16)));
+            inv = 1.0f / mag;
+            cross.x *= inv;
+            cross.y *= inv;
+            cross.z *= inv;
+            if (PSVECDotProduct(&cam->rollUp, &info.mtx.v[1]) < 0.0f || PSVECDotProduct(&cam->rollUp, &up2) < 0.0f || mag > 0.314159f) {
+                force.x = cross.x * 13.978342f;
+                force.y = cross.y * 13.978342f;
+                force.z = cross.z * 13.978342f;
+            } else {
+                force.x = 0.01f * (cross.x * 13.978342f);
+                force.y = 0.01f * (cross.y * 13.978342f);
+                force.z = 0.01f * (cross.z * 13.978342f);
+            }
+            force.x -= 5.5f * cam->rollUpVel.x;
+            force.y -= 5.5f * cam->rollUpVel.y;
+            force.z -= 5.5f * cam->rollUpVel.z;
+            cam->rollUpVel.x += force.x * g_fDeltaTimeSec;
+            cam->rollUpVel.y += force.y * g_fDeltaTimeSec;
+            cam->rollUpVel.z += force.z * g_fDeltaTimeSec;
+            speed = MagnitudeVector(&cam->rollUpVel);
+            inv = 1.0f / speed;
+            if (speed > 1e-6f) {
+                if (speed > 3.0f) {
+                    s = 3.0f * inv;
+                    cam->rollUpVel.x *= s;
+                    cam->rollUpVel.y *= s;
+                    cam->rollUpVel.z *= s;
+                }
+                axis = cam->rollUpVel;
+                axis.x = cam->rollUpVel.x * inv;
+                axis.y = cam->rollUpVel.y * inv;
+                axis.z = cam->rollUpVel.z * inv;
+                if (mag < 0.2f) {
+                    speed *= mag / 0.2f;
+                }
+                GenerateQuaternion(&axis, &quat, speed * g_fDeltaTimeSec);
+                QuaternionToSubMatrix(&quat, &sub1);
+                XformVecOrientation(&sub1, &cam->rollUp, &xf);
+                cam->rollUp = xf;
+            }
+        }
+    }
+
+    {
+        Vector4 cross __attribute__((aligned(16)));
+        PSVECCrossProduct(&cam->tiltUp, &up1, &cross);
+        mag = MagnitudeVector(&cross);
+        if (mag > 1e-7f) {
+            Vector4 quat __attribute__((aligned(16)));
+            Vector4 force __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 0.0f};
+            Vector4 axis __attribute__((aligned(16)));
+            Vector4 xf __attribute__((aligned(16)));
+            inv = 1.0f / mag;
+            cross.x *= inv;
+            cross.y *= inv;
+            cross.z *= inv;
+            if (PSVECDotProduct(&cam->tiltUp, &up1) < 0.0f || mag > 0.314159f) {
+                force.x = cross.x * 13.978342f;
+                force.y = cross.y * 13.978342f;
+                force.z = cross.z * 13.978342f;
+            } else {
+                force.x = 0.01f * (cross.x * 13.978342f);
+                force.y = 0.01f * (cross.y * 13.978342f);
+                force.z = 0.01f * (cross.z * 13.978342f);
+            }
+            force.x -= 4.5f * cam->tiltUpVel.x;
+            force.y -= 4.5f * cam->tiltUpVel.y;
+            force.z -= 4.5f * cam->tiltUpVel.z;
+            cam->tiltUpVel.x += force.x * g_fDeltaTimeSec;
+            cam->tiltUpVel.y += force.y * g_fDeltaTimeSec;
+            cam->tiltUpVel.z += force.z * g_fDeltaTimeSec;
+            speed = MagnitudeVector(&cam->tiltUpVel);
+            inv = 1.0f / speed;
+            if (speed > 1e-6f) {
+                if (speed > 5.0f) {
+                    s = 5.0f * inv;
+                    cam->tiltUpVel.x *= s;
+                    cam->tiltUpVel.y *= s;
+                    cam->tiltUpVel.z *= s;
+                }
+                axis = cam->tiltUpVel;
+                axis.x = cam->tiltUpVel.x * inv;
+                axis.y = cam->tiltUpVel.y * inv;
+                axis.z = cam->tiltUpVel.z * inv;
+                if (mag < 0.2f) {
+                    speed *= mag / 0.2f;
+                }
+                GenerateQuaternion(&axis, &quat, speed * g_fDeltaTimeSec);
+                QuaternionToSubMatrix(&quat, &sub2);
+                XformVecOrientation(&sub2, &cam->tiltUp, &xf);
+                cam->tiltUp = xf;
+            }
+        }
+    }
+
+    kx = 2.0f * mode[3];
+    damp = -mode[4];
+    step = 0.017f;
+    t = g_fDeltaTimeSec;
+    ky = kx * mode[6];
+    while (t > step) {
+        sx = kx * (cam->lookDir.x - cam->springPos.x);
+        sy = ky * (cam->lookDir.y - cam->springPos.y);
+        sz = kx * (cam->lookDir.z - cam->springPos.z);
+        dx = damp * cam->springVel.x;
+        dy = damp * cam->springVel.y;
+        dz = damp * cam->springVel.z;
+        cam->springPos.x += cam->springVel.x * step;
+        cam->springPos.y += cam->springVel.y * step;
+        cam->springPos.z += cam->springVel.z * step;
+        cam->springVel.x += step * (sx + dx);
+        cam->springVel.y += step * (sy + dy);
+        cam->springVel.z += step * (sz + dz);
+        t -= step;
+    }
+    sx = kx * (cam->lookDir.x - cam->springPos.x);
+    sy = ky * (cam->lookDir.y - cam->springPos.y);
+    sz = kx * (cam->lookDir.z - cam->springPos.z);
+    dx = damp * cam->springVel.x;
+    dy = damp * cam->springVel.y;
+    dz = damp * cam->springVel.z;
+    cam->springPos.x += cam->springVel.x * t;
+    cam->springPos.y += cam->springVel.y * t;
+    cam->springPos.z += cam->springVel.z * t;
+    cam->springVel.x += t * (sx + dx);
+    cam->springVel.y += t * (sy + dy);
+    cam->springVel.z += t * (sz + dz);
+
+    cam->dir = cam->springPos;
+    cam->dir.x -= cam->tiltUp.x * mode[5];
+    cam->dir.y -= cam->tiltUp.y * mode[5];
+    cam->dir.z -= cam->tiltUp.z * mode[5];
+    if (PSVECSquareMag(&cam->dir)) {
+        PSVECNormalize(&cam->dir, &cam->dir);
+    }
+    cam->pos.x = cam->tiltUp.x * mode[2] + (target.x - mode[1] * cam->dir.x);
+    cam->pos.y = cam->tiltUp.y * mode[2] + (target.y - mode[1] * cam->dir.y);
+    cam->pos.z = cam->tiltUp.z * mode[2] + (target.z - mode[1] * cam->dir.z);
+    car = cam->player->vehicle;
+    if ((u8 *)car->vtable == g_carAVTable) {
+        Vector4 toTarget __attribute__((aligned(16)));
+        Vector4 blend __attribute__((aligned(16)));
+        mtx = car->worldMatrix;
+        XformVec(&car->worldMatrix, &car->bodyOffset, &mtx.v[3]);
+        PSVECSubtract(&target, &cam->pos, &toTarget);
+        if (PSVECSquareMag(&toTarget)) {
+            PSVECNormalize(&toTarget, &toTarget);
+        }
+        blend.x = toTarget.x * cam->trim + cam->dir.x * (1.0f - cam->trim);
+        blend.y = toTarget.y * cam->trim + cam->dir.y * (1.0f - cam->trim);
+        blend.z = toTarget.z * cam->trim + cam->dir.z * (1.0f - cam->trim);
+        cam->dir = blend;
+        if (PSVECSquareMag(&cam->dir)) {
+            PSVECNormalize(&cam->dir, &cam->dir);
+        }
+    }
+    PSVECCrossProduct(&cam->rollUp, &cam->dir, &cam->right);
+    PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
+    if (PSVECSquareMag(&cam->right)) {
+        PSVECNormalize(&cam->right, &cam->right);
+    }
+    if (PSVECSquareMag(&cam->up)) {
+        PSVECNormalize(&cam->up, &cam->up);
+    }
+}
+
 void Camera_UpdatePosition_Zoom_Generic(u8 *cam, u8 *mode, Vector4 *target, Vector4 *eye, f32 zoom, f32 shake) {
     extern f32 g_fDeltaTimeSec;
     double sin(double x);
