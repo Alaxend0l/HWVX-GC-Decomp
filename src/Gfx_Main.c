@@ -140,6 +140,20 @@ GfxWindow *GetRenderWindow(void) {
     return &g_window[g_currentWindow];
 }
 
+s32 Gfx_GetCameraPositions(Vector *out) {
+    extern u8 g_CurrentViews;
+    extern GfxWindow g_window[];
+    u32 i;
+    s32 count = 0;
+
+    for (i = 0; i < 5; i++) {
+        if (g_CurrentViews & (1 << i)) {
+            out[count++] = g_window[i].cameraPos;
+        }
+    }
+    return count;
+}
+
 void Gfx_ClearScreen(void)
 {
     Render_ClearScreen();
