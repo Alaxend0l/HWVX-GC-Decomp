@@ -21,6 +21,21 @@ static inline void CarA_SetBodyOffset(CarA *car, f32 x, f32 y, f32 z) {
     car->collDirtyFlags |= 0x100;
 }
 
+/* Angular velocity (CarA.localAxis) from angular momentum and the inverse
+   body inertia tensor. */
+static inline void CarA_UpdateAngularVelocity(CarA *car) {
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    Vector4 local __attribute__((aligned(16)));
+    Vector4 scaled __attribute__((aligned(16)));
+
+    InverseXformVecOrientation(&car->worldMatrix, &car->angularMomentum, &local);
+    scaled.x = car->inverseBodyInertia.v[0].x * local.x;
+    scaled.y = car->inverseBodyInertia.v[1].y * local.y;
+    scaled.z = car->inverseBodyInertia.v[2].z * local.z;
+    XformVecOrientation(&car->worldMatrix, &scaled, &car->localAxis);
+}
+
 
 void CarA_InitInverseBodyInertiaTensor(u8 *car) {
     extern Matrix4 g_identity;
@@ -316,10 +331,10 @@ s32 CarA_PreMove(CarA *car) {
     void CarA_ExecuteCombo(CarA *car);
     void Thing_PassiveTargeting(void *thing);
     TurboFx fx __attribute__((aligned(16)));
-    Vector4 local __attribute__((aligned(16)));
-    Vector4 scaled __attribute__((aligned(16)));
-    f32 pitch;
-    f32 volume;
+    f32 engineVolume;
+    f32 enginePitch;
+    f32 windVolume;
+    f32 windPitch;
     f32 maxRpm;
     f32 invMass;
     f32 speed;
@@ -342,6 +357,8 @@ s32 CarA_PreMove(CarA *car) {
         case 1:
             CarA_PreMove_Control_HW(car);
             break;
+        case 2:
+            break;
         }
 
         if (car->turboCooldown >= 0) {
@@ -356,7 +373,7 @@ s32 CarA_PreMove(CarA *car) {
                     fx.dir.x = car->worldMatrix.v[2].x - 0.2f * car->worldMatrix.v[1].x;
                     fx.dir.y = car->worldMatrix.v[2].y - 0.2f * car->worldMatrix.v[1].y;
                     fx.dir.z = car->worldMatrix.v[2].z - 0.2f * car->worldMatrix.v[1].z;
-                    if (PSVECSquareMag(&fx.dir) != 0.0f) {
+                    if (0.0f != PSVECSquareMag(&fx.dir)) {
                         PSVECNormalize(&fx.dir, &fx.dir);
                     }
                     fx.unk28 = 0;
@@ -454,6 +471,9 @@ s32 CarA_PreMove(CarA *car) {
         car->torqueAccum = g_zeroVector;
         car->forceAccum = car->torqueAccum;
     } else {
+        Vector4 scaled __attribute__((aligned(16)));
+        Vector4 local __attribute__((aligned(16)));
+
         car->velocity.x += invMass * car->forceAccum.x;
         car->velocity.y += invMass * car->forceAccum.y;
         car->velocity.z += invMass * car->forceAccum.z;
@@ -481,46 +501,46 @@ s32 CarA_PreMove(CarA *car) {
         car->stuckCounter += g_iDeltaTimeMS;
     }
 
-    if (car->soundIds[1] != -1) {
+    if ((u32)car->soundIds[1] != 0xFFFFFFFF) {
         maxRpm = car->vehicleIface->engine->unk68;
         if (_fabs(car->unk4E0) < maxRpm) {
-            volume = (maxRpm - _fabs(car->rpm)) / maxRpm;
-            pitch = car->vehicleIface->engine->unk64 + _fabs(car->rpm) / car->vehicleIface->unk1C;
-            if (volume < 0.0f) {
-                volume = 0.0f;
+            engineVolume = (maxRpm - _fabs(car->rpm)) / maxRpm;
+            enginePitch = car->vehicleIface->engine->unk64 + _fabs(car->rpm) / car->vehicleIface->unk1C;
+            if (engineVolume < 0.0f) {
+                engineVolume = 0.0f;
             }
-            if (volume > 1.0f) {
-                volume = 1.0f;
+            if (engineVolume > 1.0f) {
+                engineVolume = 1.0f;
             }
             if (car->vehicleIface->numSoundSets != 0) {
-                pitch *= car->vehicleIface->soundSets[1]->pitchScale;
+                enginePitch *= car->vehicleIface->soundSets[1]->pitchScale;
             }
             SoundSource_Set(car->soundIds[1], 5, &car->worldMatrix.v[3]);
             SoundSource_Set(car->soundIds[1], 6, &car->velocity);
-            SoundSource_Set(car->soundIds[1], 1, &pitch);
-            SoundSource_Set(car->soundIds[1], 0, &volume);
+            SoundSource_Set(car->soundIds[1], 1, &enginePitch);
+            SoundSource_Set(car->soundIds[1], 0, &engineVolume);
         }
     }
-    if (car->soundIds[0] != -1) {
-        volume = 1.0f - _fabs(car->gradeOrReverse) / 300.0f;
-        pitch = 3.0f * (car->rpm / car->vehicleIface->unk1C);
-        if (pitch < 0.0f) {
-            pitch *= -1.0f;
+    if ((u32)car->soundIds[0] != 0xFFFFFFFF) {
+        windVolume = 1.0f - _fabs(car->gradeOrReverse) / 300.0f;
+        windPitch = 3.0f * (car->rpm / car->vehicleIface->unk1C);
+        if (windPitch < 0.0f) {
+            windPitch *= -1.0f;
         }
-        pitch += 0.5f;
-        if (pitch > 5.0f) {
-            pitch = 5.0f;
+        windPitch += 0.5f;
+        if (windPitch > 5.0f) {
+            windPitch = 5.0f;
         }
-        if (volume < 0.0f) {
-            volume = 0.0f;
+        if (windVolume < 0.0f) {
+            windVolume = 0.0f;
         }
-        if (volume > 1.0f) {
-            volume = 1.0f;
+        if (windVolume > 1.0f) {
+            windVolume = 1.0f;
         }
-        SoundSource_Set(car->soundIds[0], 0, &volume);
+        SoundSource_Set(car->soundIds[0], 0, &windVolume);
         SoundSource_Set(car->soundIds[0], 5, &car->worldMatrix.v[3]);
         SoundSource_Set(car->soundIds[0], 6, &car->velocity);
-        SoundSource_Set(car->soundIds[0], 1, &pitch);
+        SoundSource_Set(car->soundIds[0], 1, &windPitch);
     }
 
     speed = g_fDeltaTimeSec * PSVECDotProduct(&car->velocity, &car->worldMatrix.v[2]);
