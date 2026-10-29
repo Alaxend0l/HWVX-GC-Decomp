@@ -448,7 +448,7 @@ config.libs = [
             Object(NonMatching, "OSContext.c"),
             Object(NonMatching, "OSError.c"),
             Object(NonMatching, "OSFont.c"),
-            Object(NonMatching, "OSInterrupt.c"),
+            Object(NonMatching, "OSInterrupt.c", mw_version="GC/1.2.5n"),
             Object(Matching, "OSLink.c"),
             Object(Matching, "OSMessage.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "OSMemory.c", mw_version="GC/1.2.5n"),
