@@ -169,7 +169,7 @@ s32 TriggerCreatureVolumeEntered(u32 *trigger) {
     }
     return 0;
 }
-#pragma pop
+
 s32 TriggerItemVolumeEntered(u32 *trigger) {
     f32 dist;
     u8 *thing;
