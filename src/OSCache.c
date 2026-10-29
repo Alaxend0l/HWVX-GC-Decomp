@@ -98,7 +98,7 @@ u32 PPCMfmsr(void);
 void PPCMtmsr(u32 val);
 void ICEnable(void);
 void DCEnable(void);
-void DMAErrorHandler(u16 error, void *context, ...);
+void DMAErrorHandler(u16 error, OSContext *context, ...);
 void *OSSetErrorHandler(u16 error, void *handler);
 void __OSCacheInit(void) {
     u32 oldMSR;
