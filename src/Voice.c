@@ -61,6 +61,13 @@ void SetVoiceVol_(Voice *voice, s32 vol);
 void StartVoice_(Voice *voice);
 s8 SetVoiceRate_(Voice *voice);
 
+void ProcessVoice(void);
+
+static inline s32 StartVoiceUpdate(void) {
+    VoiceUpdate = ProcessVoice;
+    return 1;
+}
+
 void AudioVoice_Create(void) {
     memset(g_voice, 0, sizeof(g_voice));
     g_sfxvol = 0x7FFF;
