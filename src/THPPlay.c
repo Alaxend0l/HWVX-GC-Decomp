@@ -32,6 +32,52 @@ void Mpeg_Init(void) {
     m_rendermode = rmode;
 }
 
+void Mpeg_StopMovie(void) {
+    void *AIRegisterDMACallback(void *callback);
+    void GXSetDispCopyGamma(s32 gamma);
+    void GXSetCopyFilter(u8 aa, void *pattern, u8 vf, void *vfilter);
+    void OSFreeToHeap(s32 heap, void *ptr);
+    void THPPlayerStop(void);
+    void THPPlayerClose(void);
+    void THPPlayerQuit(void);
+    extern u8 badMojo;
+    extern s32 m_rendermode;
+    extern void *audio_restore_cb;
+    extern void *m_movie_buffer;
+    extern s32 __OSCurrHeap;
+    u8 *rmode;
+
+    if (badMojo == 0) {
+        THPPlayerStop();
+        THPPlayerClose();
+        GXSetNumChans(1);
+        GXSetNumTexGens(1);
+        GXSetNumTevStages(1);
+        GXSetTevOrder(0, 0, 0, 4);
+        GXSetTevOp(0, 0);
+        GXSetDispCopyGamma(1);
+        rmode = (u8 *)m_rendermode;
+        GXSetCopyFilter(rmode[0x19], rmode + 0x1A, 1, rmode + 0x32);
+        AIRegisterDMACallback(audio_restore_cb);
+        THPPlayerQuit();
+        VIWaitForRetrace();
+        Render_FlipBuffers();
+        GXSetPixelFmt(1, 0);
+        OSFreeToHeap(__OSCurrHeap, m_movie_buffer);
+        VIWaitForRetrace();
+        VIWaitForRetrace();
+        VIWaitForRetrace();
+        VIWaitForRetrace();
+        Gfx_BeginScene();
+        Gfx_EndScene();
+        Render_FlipBuffers();
+        VIWaitForRetrace();
+        VIWaitForRetrace();
+        VIWaitForRetrace();
+        VIWaitForRetrace();
+    }
+}
+
 u32 Mpeg_Heartbeat(void) {
     typedef struct THPVideoInfo {
         u32 xSize;
