@@ -94,25 +94,17 @@ void GXFlush(void) {
     PPCSync();
 }
 
-#pragma dont_inline on
+#pragma dont_inline off
 void GXDrawDone(void) {
     s32 enabled;
-    s32 enabled2;
 
+    GXSetDrawDone();
     enabled = OSDisableInterrupts();
-    GXWGFifo.u8 = 0x61;
-    GXWGFifo.u32 = 0x45000002;
-    GXFlush();
-    DrawDone = 0;
-    OSRestoreInterrupts(enabled);
-
-    enabled2 = OSDisableInterrupts();
     while (!DrawDone) {
         OSSleepThread(&FinishQueue);
     }
-    OSRestoreInterrupts(enabled2);
+    OSRestoreInterrupts(enabled);
 }
-#pragma dont_inline off
 
 void GXPixModeSync(void) {
     GXWGFifo.u8 = 0x61;
