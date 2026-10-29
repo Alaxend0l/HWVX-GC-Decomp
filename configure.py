@@ -391,7 +391,7 @@ config.libs = [
             Object(Matching, "Render_Texture_.c"),
             Object(NonMatching, "Render_.c"),
             Object(NonMatching, "Render_Geometry_.c"),
-            Object(NonMatching, "Render_Lines_.c"),
+            Object(Matching, "Render_Lines_.c"),
             Object(NonMatching, "Render_Matrix_.c"),
             Object(NonMatching, "Render_QuadTri_.c"),
             Object(NonMatching, "THPVideoDecode.c"),
