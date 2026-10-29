@@ -47,7 +47,7 @@ void __SISteeringHandler(s32 chan, u32 status, void *context) {
     SISteeringControl *steering = &__SISteering[chan];
     SISteeringResetCallback resetCallback;
     SISteeringCallback callback;
-    u8 exceptionContext[0x2C8];
+    OSContext exceptionContext;
 
     if (__SIResetSteering != 0) {
         return;
@@ -67,12 +67,12 @@ void __SISteeringHandler(s32 chan, u32 status, void *context) {
     if (steering->callback == NULL) {
         return;
     }
-    OSClearContext(exceptionContext);
-    OSSetCurrentContext(exceptionContext);
+    OSClearContext(&exceptionContext);
+    OSSetCurrentContext(&exceptionContext);
     callback = steering->callback;
     steering->callback = NULL;
     callback(chan, steering->ret);
-    OSClearContext(exceptionContext);
+    OSClearContext(&exceptionContext);
     OSSetCurrentContext(context);
 }
 
