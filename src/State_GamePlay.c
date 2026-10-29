@@ -1157,6 +1157,19 @@ void ArmageddonDropShipInfo(void *info) {
     ship->ud = InterfaceInputAnimator_GetUDCounter();
 }
 
+void InterfaceInputAnimator_HeartBeat(void);
+void InterfaceInputAnimator_Initialize(void) {
+    extern f32 g_LR_Counter;
+    extern f32 g_UD_Counter;
+    extern f32 g_LR_Max_Min;
+    extern f32 g_UD_Max_Min;
+    g_LR_Counter = 0.0f;
+    g_UD_Counter = 0.0f;
+    g_LR_Max_Min = 0.0f;
+    g_UD_Max_Min = 0.0f;
+    ProcessManager_Add("InterfaceInput", NULL, InterfaceInputAnimator_HeartBeat, NULL, 1);
+}
+
 void InterfaceInputAnimator_Release(void) {
     static const char name[] = "InterfaceInput";
     ProcessManager_Release((char *)name);
