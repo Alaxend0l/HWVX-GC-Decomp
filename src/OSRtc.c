@@ -69,6 +69,37 @@ s32 __OSSyncSram(void)
     return Scb.sync;
 }
 
+void DCInvalidateRange(void *addr, u32 nBytes);
+s32 EXILock(s32 chan, u32 dev, void *unlockedCallback);
+s32 EXIUnlock(s32 chan);
+s32 EXISelect(s32 chan, u32 dev, u32 freq);
+s32 EXIDeselect(s32 chan);
+s32 EXIImm(s32 chan, void *buf, s32 len, u32 type, void *callback);
+s32 EXIDma(s32 chan, void *buf, s32 len, u32 type, void *callback);
+s32 EXISync(s32 chan);
+s32 __OSReadROM(void *buffer, s32 length, s32 offset) {
+    s32 err;
+    u32 cmd;
+
+    DCInvalidateRange(buffer, (u32)length);
+    if (!EXILock(0, 1, 0)) {
+        return 0;
+    }
+    if (!EXISelect(0, 1, 3)) {
+        EXIUnlock(0);
+        return 0;
+    }
+    cmd = (u32)(offset << 6);
+    err = 0;
+    err |= !EXIImm(0, &cmd, 4, 1, 0);
+    err |= !EXISync(0);
+    err |= !EXIDma(0, buffer, length, 0, 0);
+    err |= !EXISync(0);
+    err |= !EXIDeselect(0);
+    EXIUnlock(0);
+    return !err;
+}
+
 u32 OSGetSoundMode(void) {
     u8 *sram;
     u32 mode;
