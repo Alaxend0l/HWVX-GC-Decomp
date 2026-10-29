@@ -42,6 +42,51 @@ void ReadThreadCancel(void) {
     }
 }
 
+void *PopFreeReadBuffer(void);
+void PushReadedBuffer(void *arg0);
+#pragma use_lmw_stmw on
+void Reader(void) {
+    s32 DVDReadPrio(void *fileInfo, void *addr, s32 length, s32 offset, s32 prio);
+    s32 OSSuspendThread(void *thread);
+    void PrepareReady(s32 flag);
+    extern u8 ReadThread[];
+    THPReadBuffer *readBuffer;
+    s32 offset;
+    s32 size;
+    s32 readFrame;
+    s32 result;
+    s32 frameNumber;
+
+    readFrame = 0;
+    offset = ActivePlayer.initOffset;
+    size = ActivePlayer.initReadSize;
+    while (1) {
+        readBuffer = PopFreeReadBuffer();
+        result = DVDReadPrio(&ActivePlayer, readBuffer->ptr, size, offset, 2);
+        if (result != size) {
+            if (result == -1) {
+                ActivePlayer.dvdError = -1;
+            }
+            if (readFrame == 0) {
+                PrepareReady(0);
+            }
+            OSSuspendThread(ReadThread);
+        }
+        readBuffer->frameNumber = readFrame;
+        PushReadedBuffer(readBuffer);
+        offset += size;
+        size = *(s32 *)readBuffer->ptr;
+        frameNumber = (readFrame + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+        if (frameNumber == ActivePlayer.numFrames - 1) {
+            if (ActivePlayer.playFlag & 1) {
+                offset = ActivePlayer.movieDataOffsets;
+            } else {
+                OSSuspendThread(ReadThread);
+            }
+        }
+        readFrame++;
+    }
+}
 void *PopReadedBuffer(void) {
     extern u8 ReadedBufferQueue[];
     void *msg;
