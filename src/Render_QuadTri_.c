@@ -19,10 +19,26 @@ typedef struct GDLPointSprite {
     u8 unk17;
 } GDLPointSprite;
 
+typedef struct GDLTriVtx {
+    f32 x, y, z; /* 0x00 */
+    f32 w;       /* 0x0C */
+    f32 s, t;    /* 0x10 */
+    GXColor color; /* 0x18 */
+    u8 unk1C[0x20 - 0x1C];
+} GDLTriVtx;
+
+typedef struct GDLTri {
+    GDLTriVtx v[3]; /* 0x00 */
+    u16 tex;        /* 0x60 */
+    s16 blendMode;  /* 0x62 */
+} GDLTri;
+
 typedef struct GDL {
     u8 unk0[0x68];
     u32 numPointSprites;
-    u8 unk6C[0xEDCC0 - 0x6C];
+    u8 unk6C[0x38CC0 - 0x6C];
+    GDLTri tris[2000];
+    u8 unk69A00[0xEDCC0 - 0x69A00];
     GDLPointSprite pointSprites[1];
 } GDL;
 
