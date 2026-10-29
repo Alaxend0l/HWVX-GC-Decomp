@@ -24,6 +24,8 @@ void *PopReadedBuffer(void);
 void PushReadedBuffer2(void *arg0);
 u32 THPAudioDecode(s16 *buffer, u8 *audioFrame, s32 flag);
 void AudioDecode(THPReadBuffer *readBuffer);
+void *PopFreeAudioBuffer(void);
+void PushDecodedAudioBuffer(void *arg0);
 
 
 void AudioDecodeThreadStart(void) {
