@@ -42,7 +42,7 @@ u32 HAllocA_(s32 size) {
         u32 unkC;
     } MemBlk;
     extern MemBlk g_memblk[];
-    extern s32 g_last;
+    extern volatile s32 g_last;
     extern u32 g_heap;
 
     size = (size + 0x1F) & ~0x1F;
@@ -58,3 +58,22 @@ void MemCpyDone(void) {
     extern s32 g_arqWait;
     g_arqWait = 0;
 }
+
+u32 MemCpyA_(u32 dst, u32 src, u32 len) {
+    extern u32 g_arqWait;
+    void ARQPostRequest(void *req, u32 owner, u32 type, u32 prio, u32 src, u32 dst, u32 len, void (*cb)(void));
+    void PPCSync(void);
+    u8 req[0x20];
+
+    g_arqWait = 1;
+    if (src & 0x80000000) {
+        ARQPostRequest(req, 0, 0, 1, src, dst, len, MemCpyDone);
+    } else {
+        ARQPostRequest(req, 0, 1, 1, src, dst, len, MemCpyDone);
+    }
+    while (g_arqWait != 0) {
+        PPCSync();
+    }
+    return dst + len;
+}
+
