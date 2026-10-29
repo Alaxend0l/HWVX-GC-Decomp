@@ -38,3 +38,20 @@ void LCEnable(void) {
     OSRestoreInterrupts(enabled);
 }
 
+#pragma peephole off
+u32 PPCMfl2cr(void);
+void PPCMtl2cr(u32 val);
+void DBPrintf(const char *fmt, ...);
+void L2GlobalInvalidate(void) {
+    __sync();
+    PPCMtl2cr(PPCMfl2cr() & ~0x80000000);
+    __sync();
+    PPCMtl2cr(PPCMfl2cr() | 0x00200000);
+    while (PPCMfl2cr() & 0x00000001) {
+    }
+    PPCMtl2cr(PPCMfl2cr() & ~0x00200000);
+    while (PPCMfl2cr() & 0x00000001) {
+        DBPrintf(">>> L2 INVALIDATE : SHOULD NEVER HAPPEN\n");
+    }
+}
+
