@@ -80,13 +80,14 @@ static void SoundSeq_RemoveFromQueue(SoundSequence *seq) {
     }
 }
 
-void SoundSeq_Release(SoundSequence *seq) {
+void SoundSeq_Release(void *thing) {
     s8 SoundSource_IsLooping(s32 index);
     void SoundSource_Stop(s32 index);
     void Thing_Release(void *thing);
+    SoundSequence *seq = thing;
     u32 i;
 
-    if (seq->flags & 0x40000000) {
+    if (((SoundSequence *)thing)->flags & 0x40000000) {
         SoundSeq_RemoveFromQueue(seq);
     }
     for (i = 0; i < 4; i++) {
@@ -95,7 +96,7 @@ void SoundSeq_Release(SoundSequence *seq) {
         }
         seq->sources[i] = -1;
     }
-    Thing_Release(seq);
+    Thing_Release(thing);
 }
 
 s32 SoundSeq_Invalidate(SoundSequence *seq, u32 start, u32 end)
