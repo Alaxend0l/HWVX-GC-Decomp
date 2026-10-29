@@ -150,13 +150,7 @@ DSPTaskInfo *DSPAssertTask(DSPTaskInfo *task) {
         __DSP_rude_task = task;
         __DSP_rude_task_pending = 1;
         if (__DSP_curr_task->state == 1) {
-            BOOL old2;
-            u16 tmp;
-            old2 = OSDisableInterrupts();
-            tmp = __DSPRegs[5];
-            tmp = (u16)((tmp & ~0xA8) | 0x02);
-            __DSPRegs[5] = tmp;
-            OSRestoreInterrupts(old2);
+            DSPAssertInt();
         }
         OSRestoreInterrupts(old);
         return task;
