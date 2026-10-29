@@ -23,6 +23,24 @@ extern GXData *gx;
 
 #pragma push
 #pragma peephole on
+void GXSetCullMode(s32 mode) {
+    s32 hwMode;
+
+    switch (mode) {
+    case 1:
+        hwMode = 2;
+        break;
+    case 2:
+        hwMode = 1;
+        break;
+    default:
+        hwMode = mode;
+        break;
+    }
+    gx->genMode = (gx->genMode & ~0xC000) | (hwMode << 14);
+    gx->dirtyState |= 4;
+}
+
 void GXSetCoPlanar(u8 enable) {
     gx->genMode = (gx->genMode & ~0x80000) | ((u32)enable << 19);
     GXWGFifo.u8 = 0x61;
