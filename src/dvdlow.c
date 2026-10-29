@@ -44,6 +44,12 @@ static OSAlarm AlarmForTimeout;
 void OSCreateAlarm(OSAlarm *alarm);
 void OSSetAlarm(OSAlarm *alarm, s64 tick, OSAlarmHandler handler);
 
+static inline void SetTimeoutAlarm(OSAlarmHandler handler, s64 timeout)
+{
+    OSCreateAlarm(&AlarmForTimeout);
+    OSSetAlarm(&AlarmForTimeout, timeout, handler);
+}
+
 extern s32 Read(s32, s32, s32, s32);
 extern s32 DVDLowSeek(s32, s32);
 
@@ -124,6 +130,20 @@ s32 DVDLowWaitCoverClose(DVDLowCallback callback)
     WaitingCoverClose = 1;
     StopAtNextInt = 0;
     __DIRegs[1] = 2;
+    return 1;
+}
+
+s32 DVDLowStopMotor(DVDLowCallback callback)
+{
+    Callback = callback;
+    StopAtNextInt = 0;
+    __DIRegs[2] = 0xE3000000;
+    __DIRegs[7] = 1;
+    {
+        s64 timeout = (__OSBusClock / 4) * 10;
+        OSCreateAlarm(&AlarmForTimeout);
+        OSSetAlarm(&AlarmForTimeout, timeout, (OSAlarmHandler)AlarmHandlerForTimeout);
+    }
     return 1;
 }
 
