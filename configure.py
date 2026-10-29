@@ -359,7 +359,7 @@ config.libs = [
             Object(NonMatching, "PlayerManager.c"),
             Object(NonMatching, "AI_Creature.c"),
             Object(NonMatching, "ViewManager.c"),
-            Object(NonMatching, "Tracer.c"),
+            Object(Matching, "Tracer.c"),
             Object(Matching, "LightManager.c"),
             Object(NonMatching, "State_GameManager.c"),
             Object(NonMatching, "State_ProgressionManager.c"),
