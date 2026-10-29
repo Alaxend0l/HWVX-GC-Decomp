@@ -4,6 +4,13 @@ void OSFreeToHeap(int heap, void *ptr);
 void Dprintf(const char *fmt, ...);
 extern int __OSCurrHeap;
 
+void Deallocate(void *ptr)
+{
+    if (ptr != 0) {
+        OSFreeToHeap(__OSCurrHeap, ptr);
+    }
+}
+
 void MemCpy32(void)
 {
     memcpy();
