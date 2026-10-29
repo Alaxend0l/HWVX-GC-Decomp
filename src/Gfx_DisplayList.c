@@ -19,6 +19,22 @@ typedef struct GDLGroupTri {
     u8 unk10[0x20 - 0x10];
 } GDLGroupTri;
 
+typedef struct GDLAlphaEntry {
+    void (*func)(u16);
+    u16 arg;
+    u16 next;
+} GDLAlphaEntry;
+
+typedef struct GfxState {
+    u8 unk0[0x8F];
+    s8 unk8F;
+    u8 unk90[0xA0 - 0x90];
+} GfxState;
+
+extern GfxState g_state;
+extern Matrix4 g_identity;
+void *GetRenderWindow(void);
+
 typedef struct GDL {
     u32 numAlphaEntries;
     u32 num2DSprites;
