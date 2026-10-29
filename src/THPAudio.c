@@ -44,7 +44,7 @@ u32 THPAudioDecode(s16 *buffer, u8 *audioFrame, s32 flag) {
     }
     header = (THPAudioRecordHeader *)audioFrame;
     left = audioFrame + sizeof(THPAudioRecordHeader);
-    right = audioFrame + header->offsetNextChannel + sizeof(THPAudioRecordHeader);
+    right = left + header->offsetNextChannel;
     if (flag == 1) {
         decRightPtr = buffer;
         decLeftPtr = buffer + header->sampleSize;
@@ -76,11 +76,11 @@ u32 THPAudioDecode(s16 *buffer, u8 *audioFrame, s32 flag) {
                 yn = -0x80000000LL;
             }
             *decLeftPtr = (s16)(yn >> 16);
+            decLeftPtr += increment;
+            *decRightPtr = (s16)(yn >> 16);
+            decRightPtr += increment;
             yn2 = yn1;
             yn1 = (s16)(yn >> 16);
-            *decRightPtr = (s16)(yn >> 16);
-            decLeftPtr += increment;
-            decRightPtr += increment;
         }
     } else {
         __THPAudioInitialize(&decInfo, left);
@@ -104,9 +104,9 @@ u32 THPAudioDecode(s16 *buffer, u8 *audioFrame, s32 flag) {
                 yn = -0x80000000LL;
             }
             *decLeftPtr = (s16)(yn >> 16);
+            decLeftPtr += increment;
             yn2 = yn1;
             yn1 = (s16)(yn >> 16);
-            decLeftPtr += increment;
         }
         __THPAudioInitialize(&decInfo, right);
         yn1 = header->rYn1;
@@ -129,9 +129,9 @@ u32 THPAudioDecode(s16 *buffer, u8 *audioFrame, s32 flag) {
                 yn = -0x80000000LL;
             }
             *decRightPtr = (s16)(yn >> 16);
+            decRightPtr += increment;
             yn2 = yn1;
             yn1 = (s16)(yn >> 16);
-            decRightPtr += increment;
         }
     }
     return header->sampleSize;
