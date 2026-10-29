@@ -462,10 +462,17 @@ typedef struct SIPacketBss {
 } SIPacketBss;
 
 typedef struct HotWheelsGameData {
-  u8 unk0;
-  u8 unk1;
-  u8 unk2;
-  u8 unk3[0xF1];
+  s8 cars[0x21];      /* 0x00 code variable 0x64 */
+  s8 tracks[0x39];    /* 0x21 code variable 0x65 */
+  u8 pad5A[0x39];     /* 0x5A */
+  s8 unk93[0xC];      /* 0x93 code variable 0x66 */
+  s8 unk9F[0xA];      /* 0x9F code variable 0x6A */
+  s8 unkA9;           /* 0xA9 */
+  s8 unkAA[5];        /* 0xAA code variable 0x68 */
+  u8 padAF;           /* 0xAF */
+  u16 unkB0[0x1E];    /* 0xB0 code variable 0xCA */
+  s32 unkEC;          /* 0xEC */
+  u8 padF0[4];        /* 0xF0 */
 } HotWheelsGameData;
 
 typedef struct TRKEvent {
