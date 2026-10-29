@@ -575,7 +575,7 @@ config.libs = [
             Object(NonMatching, "direct_io.c", mw_version="GC/1.3"),
             Object(NonMatching, "file_io.c"),
             Object(NonMatching, "FILE_POS.C", mw_version="GC/1.3"),
-            Object(NonMatching, "mbstring.c"),
+            Object(NonMatching, "mbstring.c", mw_version="GC/1.3"),
             Object(Matching, "mem.c", mw_version="GC/1.3"),
             Object(NonMatching, "mem_funcs.c"),
             Object(Matching, "misc_io.c"),
