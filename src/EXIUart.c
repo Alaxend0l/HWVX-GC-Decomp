@@ -28,7 +28,7 @@ s32 InitializeUART(u32 baudRate) {
     return 0;
 }
 
-static s32 QueueLength(void) {
+static int QueueLength(void) {
     u32 cmd;
 
     if (!EXISelect(Chan, Dev, 3)) {
@@ -45,8 +45,8 @@ static s32 QueueLength(void) {
 
 s32 WriteUARTN(const void *buf, u32 len) {
     u32 cmd;
-    s32 qLen;
     s32 xLen;
+    s32 qLen;
     char *ptr;
     BOOL locked;
     s32 error;
@@ -66,20 +66,7 @@ s32 WriteUARTN(const void *buf, u32 len) {
     error = 0;
     cmd = 0xA0010000;
     while (len) {
-        {
-            u32 qcmd;
-            if (!EXISelect(Chan, Dev, 3)) {
-                qLen = -1;
-            } else {
-                qcmd = 0x20010000;
-                EXIImm(Chan, &qcmd, 4, 1, 0);
-                EXISync(Chan);
-                EXIImm(Chan, &qcmd, 1, 0, 0);
-                EXISync(Chan);
-                EXIDeselect(Chan);
-                qLen = 16 - (qcmd >> 24);
-            }
-        }
+        qLen = QueueLength();
         if (qLen < 0) {
             error = 3;
             break;
