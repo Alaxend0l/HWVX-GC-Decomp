@@ -37,3 +37,11 @@ typedef struct THPFileInfo {
 } THPFileInfo;
 
 static THPFileInfo *__THPInfo;
+
+static void __THPRestartDefinition(void) {
+    __THPInfo->RST = TRUE;
+    __THPInfo->c += 2;
+    __THPInfo->nMCU = (u16)((__THPInfo->c[0] << 8) | __THPInfo->c[1]);
+    __THPInfo->c += 2;
+    __THPInfo->currMCU = __THPInfo->nMCU;
+}
