@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma readonly_strings on
+
 extern s32 __OSCurrHeap;
 void OSReport(const char *msg, ...);
 void *OSGetArenaLo(void);
