@@ -67,6 +67,16 @@ void Gfx_CreateView(void) {
     fn_800957D4();
 }
 
+void Gfx_EndScene(void) {
+    void Render_EndScene(void);
+    extern s8 g_screenTextX;
+    extern s8 g_screenTextY;
+
+    Render_EndScene();
+    g_screenTextY = 0;
+    g_screenTextX = 0;
+}
+
 void Gfx_EnableState(s32 arg0) {
     M2C_FIELD(&g_state, s32 *, 0x7C) = (s32) (M2C_FIELD(&g_state, s32 *, 0x7C) | arg0);
 }
