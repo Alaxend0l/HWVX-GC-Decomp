@@ -166,8 +166,8 @@ void LineManager_Heartbeat(void) {
     void PSVECNormalize(Vector4 *src, Vector4 *dst);
     void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
     void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *dst);
-    FxParams params;
-    Vector4 delta;
+    FxParams params __attribute__((aligned(16)));
+    Vector4 delta __attribute__((aligned(16)));
     u32 i;
     f32 dt;
     LineDef *data;
