@@ -119,7 +119,7 @@ void World_Render(void) {
     Quad *quad;
     Quad *load[20];
     Quad *active[20];
-    Vector4 positions[5];
+    Vector4 positions[5] __attribute__((aligned(16)));
 
     if (g_worldData.world == NULL) {
         return;
