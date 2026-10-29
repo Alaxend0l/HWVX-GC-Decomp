@@ -229,11 +229,8 @@ s32 FreeA_(u32 addr) {
 }
 #pragma pop
 
-#pragma pop
-
-#pragma pop
 void MemCpyDone(void) {
-    extern s32 g_arqWait;
+    extern u32 g_arqWait;
     g_arqWait = 0;
 }
 
