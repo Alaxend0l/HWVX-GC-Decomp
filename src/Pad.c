@@ -11,7 +11,7 @@ static u32 WaitingBits;
 static u32 CheckingBits;
 static u32 PendingBits;
 void (*SamplingCallback)(void);
-s32 __PADSpec;
+u32 __PADSpec;
 
 s32 OSDisableInterrupts(void);
 void OSRestoreInterrupts(s32);
@@ -205,6 +205,33 @@ BOOL PADReset(u32 mask)
     }
     OSRestoreInterrupts(enabled);
     return TRUE;
+}
+
+void PADSetSpec(s32 spec);
+BOOL PADInit(void)
+{
+    s64 OSGetTime(void);
+    void SIRefreshSamplingRate(void);
+    s32 chan;
+
+    if (Initialized) {
+        return TRUE;
+    }
+    if (__PADSpec) {
+        PADSetSpec(__PADSpec);
+    }
+    Initialized = TRUE;
+    if (__PADFixBits != 0) {
+        s64 time = OSGetTime();
+        *(u16 *)0x800030E0 = (u16)((((time) & 0xffff) + ((time >> 16) & 0xffff) + ((time >> 32) & 0xffff) + ((time >> 48) & 0xffff)) & 0x3fff);
+        RecalibrateBits = 0xF0000000;
+    }
+    for (chan = 0; chan < 4; ++chan) {
+        CmdProbeDevice[chan] = (0x4D << 24) | (chan << 22) | ((*(u16 *)0x800030E0 & 0x3fff) << 8);
+    }
+    SIRefreshSamplingRate();
+    OSRegisterResetFunction(&ResetFunctionInfo);
+    return PADReset(0xF0000000);
 }
 
 u32 PADRead(PADStatus *status)
