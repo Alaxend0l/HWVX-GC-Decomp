@@ -115,6 +115,12 @@ s32 WriteSram(void *buffer, u32 offset, u32 size) {
     return !err;
 }
 
+void __OSInitSram(void) {
+    Scb.locked = Scb.enabled = 0;
+    Scb.sync = ReadSram(Scb.sram);
+    Scb.offset = 64;
+}
+
 void *__OSLockSram(void) {
     return LockSram(0);
 }
