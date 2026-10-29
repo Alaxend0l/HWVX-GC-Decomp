@@ -69,6 +69,28 @@ s32 TRKReadBuffer(TRKBuffer *b, void *data, u32 length) {
     return error;
 }
 
+s32 TRKAppendBuffer(TRKBuffer *b, const void *data, u32 length) {
+    s32 error = 0;
+    u32 bytesLeft;
+
+    if (length == 0) {
+        return 0;
+    }
+    bytesLeft = 0x880 - b->position;
+    if (bytesLeft < length) {
+        error = 0x301;
+        length = bytesLeft;
+    }
+    if (length == 1) {
+        b->data[b->position] = *(const u8 *)data;
+    } else {
+        TRK_memcpy(b->data + b->position, data, length);
+    }
+    b->position += length;
+    b->length = b->position;
+    return error;
+}
+
 s32 TRKSetBufferPosition(TRKBuffer *b, u32 position) {
     s32 err = 0;
 
