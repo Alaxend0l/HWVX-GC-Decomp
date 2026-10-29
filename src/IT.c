@@ -365,6 +365,26 @@ void SetITTrackOff(u32 mask, s8 deferred)
 
 #pragma push
 #pragma optimization_level 1
+#pragma dont_inline on
+void SetITTrackVol(u32 track, s32 vol)
+{
+    u16 GetITGVol_(s32 *song, IT_TRACK *trk);
+    IT_VOICE *voice;
+    s32 gvol;
+
+    voice = g_trk[track].head;
+    g_trk[track].vol = vol;
+    gvol = GetITGVol_(g_song, &g_trk[track]);
+    g_trk[track].gvol = gvol;
+    for (; voice != NULL; voice = voice->next)
+    {
+        SetVoiceVol_(voice, gvol);
+    }
+}
+#pragma pop
+
+#pragma push
+#pragma optimization_level 1
 void ProcessIT(u32 ticks)
 {
     extern u8 *g_pOrder;
