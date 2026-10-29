@@ -131,7 +131,8 @@ void CreateIT(u8 *data, u32 arg1)
     data = g_pHdr;
     *(s32 *)(g_pHdr + 0x3C) = 1;
     g_pOrder = data + 0xC0;
-    insOff = (u32 *)(&data[*(u16 *)(g_pHdr + 0x20)] + 0xC0);
+    insOff = (u32 *)(data + *(u16 *)(g_pHdr + 0x20));
+    insOff += 0x30;
     smpOff = insOff + *(u16 *)(g_pHdr + 0x22);
     patOff = smpOff + *(u16 *)(g_pHdr + 0x24);
     for (i = 0; i < *(u16 *)(g_pHdr + 0x22); i++)
@@ -149,8 +150,8 @@ void CreateIT(u8 *data, u32 arg1)
     *(u32 *)(g_pSmp[0] + 0x48) = arg1;
     CreateIT_(g_pHdr, g_pSmp);
     memcpy(g_musicTitle, g_pHdr + 4, 0x1A);
-    DestroySongVoice = DestroyITVoice;
     g_musicTitle[0x1A] = 0;
+    DestroySongVoice = DestroyITVoice;
 }
 #pragma pop
 
