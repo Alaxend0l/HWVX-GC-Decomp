@@ -138,12 +138,39 @@ s32 SoundSequence_Play(s8 *seq, Vector4 *pos) {
 
 s32 SoundSequence_PlayQueued(s8 *seq, Vector4 *pos) {
     u32 ThingManager_GetActiveSoundSequences(u8 **list, u32 max);
+    u8 PlayerManager_PlayerHumanCount(void);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    extern Vector4 g_zeroVector;
+    extern s8 g_bFreezeWorld;
+    Vector4 p;
     u8 *list[0x80];
-    s32 thing;
+    struct { Vector4 pos; s8 *seq; u8 flag; } params __attribute__((aligned(16)));
+    u8 *created;
+    u8 *thing;
     s8 found;
     u32 n;
 
-    thing = SoundSequence_Play(seq, pos);
+    if (!seq[4] && PlayerManager_PlayerHumanCount() > 1) {
+        thing = (u8 *)-1;
+    } else {
+        if (pos != NULL) {
+            p = *pos;
+        } else {
+            p = g_zeroVector;
+        }
+        params.pos = p;
+        params.seq = seq;
+        params.flag = 0;
+        created = ThingManager_DARYL_CreateThing(0x10, &params);
+        if (created != NULL) {
+            if (g_bFreezeWorld) {
+                *(u32 *)(created + 0x74) |= 0x100000;
+            }
+            thing = created;
+        } else {
+            thing = (u8 *)-1;
+        }
+    }
     if ((u32)thing != 0xFFFFFFFF) {
         found = 0;
         n = ThingManager_GetActiveSoundSequences(list, 0x80);
@@ -155,13 +182,13 @@ s32 SoundSequence_PlayQueued(s8 *seq, Vector4 *pos) {
             }
         }
         if (found) {
-            *(s32 *)(list[n] + 0xc8) = thing;
-            *(u32 *)((u8 *)thing + 0x74) |= 0x80000000;
+            *(u8 **)(list[n] + 0xc8) = thing;
+            *(u32 *)(thing + 0x74) |= 0x80000000;
         }
-        *(u32 *)((u8 *)thing + 0x74) |= 0x40000000;
-        *(u8 **)((u8 *)thing + 0xc8) = NULL;
+        *(u32 *)(thing + 0x74) |= 0x40000000;
+        *(u8 **)(thing + 0xc8) = NULL;
     }
-    return thing;
+    return (s32)thing;
 }
 
 #pragma push
