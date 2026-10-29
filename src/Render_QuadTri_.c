@@ -72,13 +72,13 @@ void Render_Print(void) {
     s32 j;
     char buf[88];
 
-    y = 10.0f;
+    y = 0.0f;
     for (i = 0; i < 32; i++) {
         for (j = 0; j < 80; j++) {
             buf[j] = g_screenText[i * 80 + j];
         }
         buf[j] = 0;
-        y += FontManager_Print(buf, g_state.debugFont, 10.0f, y);
+        y += FontManager_Print(buf, 0.0f, y, g_state.debugFont);
     }
 }
 #pragma pop
