@@ -622,7 +622,7 @@ config.libs = [
             Object(NonMatching, "GBAGetProcessStatus.c"),
             Object(NonMatching, "GBAJoyBoot.c", mw_version="GC/1.2.5n"),
             Object(Matching, "GBARead.c"),
-            Object(NonMatching, "GBAWrite.c"),
+            Object(NonMatching, "GBAWrite.c", mw_version="GC/1.2.5n"),
             Object(Matching, "GBAXfer.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "GBAKey.c", mw_version="GC/1.2.5n")
         ],
