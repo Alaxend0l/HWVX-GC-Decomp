@@ -160,6 +160,22 @@ s8 Item_Move(u8 *item) {
     return 1;
 }
 
+void Item_Draw(u8 *item) {
+    f32 Gfx_GetMinCameraDistSquared(void *pos);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void Thing_DrawSharedSlaves(void *thing, void *slaves);
+
+    if (*(f32 *)(item + 0xC8)) {
+        if (Gfx_GetMinCameraDistSquared(item + 0x40) > *(f32 *)(item + 0xC8) * *(f32 *)(item + 0xC8)) {
+            return;
+        }
+    }
+    if (*(u32 *)(item + 0x74) & 8) {
+        QuaternionToSubMatrix(item + 0x50, item + 0x10);
+    }
+    Thing_DrawSharedSlaves(item, *(u8 **)(item + 0xC0) + 0x38);
+}
+
 s32 Item_GetNearestNavPoint(void *arg0) {
     return M2C_FIELD(arg0, s32 *, 0xD4);
 }
