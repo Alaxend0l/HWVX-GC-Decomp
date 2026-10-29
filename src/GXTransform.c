@@ -2,6 +2,31 @@
 
 #pragma fp_contract off
 
+typedef union PPCWGPipe {
+    u8 u8;
+    u16 u16;
+    u32 u32;
+    s32 s32;
+    f32 f32;
+} PPCWGPipe;
+
+volatile PPCWGPipe GXWGFifo : 0xCC008000;
+
+typedef struct GXData {
+    u16 vNumNot;
+    u16 bpSentNot;
+    u8 pad4[0xF8 - 0x4];
+    u32 suScis0;
+    u32 suScis1;
+    u8 pad100[0x43C - 0x100];
+    f32 vpLeft;
+    f32 vpTop;
+    f32 vpWd;
+    f32 vpHt;
+    f32 vpNearz;
+    f32 vpFarz;
+} GXData;
+
 
 void GXProject(f32 x, f32 y, f32 z, f32 mtx[3][4], f32 *pm, f32 *vp, f32 *sx, f32 *sy, f32 *sz) {
     f32 peye_x;
