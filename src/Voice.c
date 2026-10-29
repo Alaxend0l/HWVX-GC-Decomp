@@ -22,6 +22,13 @@ u32 CreateSFX_(SFX *sfx);
 void AudioVoice_Create_(void *voices);
 void AudioVoice_Destroy_(void);
 
+void AudioVoice_Create(void) {
+    memset(g_voice, 0, sizeof(g_voice));
+    g_sfxvol = 0x7FFF;
+    g_speakers = 1;
+    AudioVoice_Create_(g_voice);
+}
+
 void AudioVoice_Destroy(void) {
     VoiceUpdate = 0;
     AudioVoice_Destroy_();
@@ -35,3 +42,22 @@ void ProcessVoice(void)
 {
     ProcessVoice_();
 }
+
+u32 CreateSFX(void *desc) {
+    u32 idx;
+    SFX *sfx;
+
+    if (g_freeSound == 0xFFFF) {
+        return 0;
+    }
+    sfx = &g_sound[g_freeSound];
+    memcpy(sfx, desc, sizeof(SFX));
+    if (CreateSFX_(sfx) == 0) {
+        return 0;
+    }
+    idx = g_freeSound;
+    g_freeSound = g_soundLst[g_freeSound];
+    g_soundLst[idx++] = 0xFF;
+    return idx;
+}
+
