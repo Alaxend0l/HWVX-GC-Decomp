@@ -48,6 +48,32 @@ double ldexp(double x, int exp);
 double modf(double x, double *iptr);
 void __two_exp(decimal *result, short exp);
 void __timesdec(decimal *result, const decimal *x, const decimal *y);
+static void __str2dec(decimal *d, const signed char *s, short exp);
+
+static inline int __equals_dec(const decimal *x, const decimal *y) {
+    int i;
+    if (x->sig.text[0] == 0) {
+        return y->sig.text[0] == 0;
+    }
+    if (y->sig.text[0] == 0) {
+        return 0;
+    }
+    if (x->exp != y->exp || x->sig.length != y->sig.length) {
+        return 0;
+    }
+    for (i = 0; i < x->sig.length; i++) {
+        if (x->sig.text[i] != y->sig.text[i]) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int __dec_is_max(const decimal *d) {
+    decimal max;
+    __str2dec(&max, (const signed char *)"179769313486231580793729011405303420", 308);
+    return __equals_dec(&max, d);
+}
 
 static inline int __fpclassifyd(double x) {
     switch ((*(int *)&x) & 0x7FF00000) {
