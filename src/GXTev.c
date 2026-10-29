@@ -31,6 +31,19 @@ typedef struct GXData {
 
 extern GXData *gx;
 
+void GXSetTevColorIn(s32 stage, s32 a, s32 b, s32 c, s32 d) {
+    u32 *pTevReg;
+
+    pTevReg = &gx->tevc[stage];
+    *pTevReg = ((u32)*pTevReg & ~0xF000) | ((u32)a << 12);
+    *pTevReg = ((u32)*pTevReg & ~0xF00) | ((u32)b << 8);
+    *pTevReg = ((u32)*pTevReg & ~0xF0) | ((u32)c << 4);
+    *pTevReg = ((u32)*pTevReg & ~0xF) | (u32)d;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *pTevReg;
+    gx->bpSentNot = 0;
+}
+
 void GXSetTevColor(s32 id, GXColor color) {
     u32 regRA;
     u32 regBG;
