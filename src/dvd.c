@@ -72,6 +72,32 @@ void stateReadingFST(void) {
     DVDLowRead(*(void **)(bootInfo + 0x38), (((u32 *)tmpBuffer)[2] + 31) & ~31, ((u32 *)tmpBuffer)[1], cbForStateReadingFST);
 }
 
+void stateTimeout(void);
+void stateReady(void);
+void stateGettingError(void);
+void cbForStateReadingFST(u32 intType) {
+    DVDCommandBlock *finished;
+
+    if (intType == 16) {
+        executing->state = -1;
+        stateTimeout();
+        return;
+    }
+
+    if (intType & 1) {
+        NumInternalRetry = 0;
+        finished = executing;
+        executing = &DummyCommandBlock;
+        finished->state = 0;
+        if (finished->callback) {
+            (finished->callback)(0, finished);
+        }
+        stateReady();
+    } else {
+        stateGettingError();
+    }
+}
+
 void stateGettingError(void)
 {
     void DVDLowRequestError(void (*cb)(u32));
