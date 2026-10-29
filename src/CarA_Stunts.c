@@ -39,6 +39,9 @@ typedef struct Drone {
     f32 animTime;           /* 0x1E4 */
 } Drone;
 
+extern Vector4 g_zeroVector;
+extern f32 g_fDeltaTimeSec;
+
 typedef struct DroneKeyFrame {
     Quaternion rot;
     Vector4 pos;
