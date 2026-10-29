@@ -68,6 +68,28 @@ BOOL OSRestoreInterrupts(BOOL level);
 BOOL __DVDPushWaitingQueue(s32 prio, DVDCommandBlock *block);
 void stateReady(void);
 
+static inline BOOL CheckCancel(u32 resume) {
+    DVDCommandBlock *finished;
+
+    if (Canceling) {
+        ResumeFromHere = resume;
+        Canceling = FALSE;
+        finished = executing;
+        executing = &DummyCommandBlock;
+
+        finished->state = 10;
+        if (finished->callback) {
+            (*finished->callback)(-3, finished);
+        }
+        if (CancelCallback) {
+            (CancelCallback)(0, finished);
+        }
+        stateReady();
+        return TRUE;
+    }
+    return FALSE;
+}
+
 static inline BOOL issueCommand(s32 prio, DVDCommandBlock *block) {
     BOOL level;
     BOOL result;
@@ -374,6 +396,50 @@ void cbForStateCheckID2(u32 intType) {
     if (intType & 1) {
         NumInternalRetry = 0;
         stateReadingFST();
+    } else {
+        DVDLowRequestError(cbForStateGettingError);
+    }
+}
+
+void cbForStateCheckID3(u32 intType) {
+    void __DVDStoreErrorCode(u32 code);
+    void cbForStateError(u32 intType);
+    void cbForStateGettingError(u32 code);
+    void DVDLowRequestError(void (*cb)(u32));
+    void stateBusy(DVDCommandBlock *block);
+    DVDCommandBlock *finished;
+    BOOL canceled;
+
+    if (intType == 16) {
+        executing->state = -1;
+        __DVDStoreErrorCode(0x1234568);
+        DVDReset();
+        cbForStateError(0);
+        return;
+    }
+
+    if (intType & 1) {
+        NumInternalRetry = 0;
+        canceled = FALSE;
+        if (Canceling) {
+            ResumeFromHere = 0;
+            finished = executing;
+            Canceling = FALSE;
+            executing = &DummyCommandBlock;
+            finished->state = 10;
+            if (finished->callback) {
+                (*finished->callback)(-3, finished);
+            }
+            if (CancelCallback) {
+                (CancelCallback)(0, finished);
+            }
+            stateReady();
+            canceled = TRUE;
+        }
+        if (!canceled) {
+            executing->state = 1;
+            stateBusy(executing);
+        }
     } else {
         DVDLowRequestError(cbForStateGettingError);
     }
