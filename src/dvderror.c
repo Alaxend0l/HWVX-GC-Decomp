@@ -10,6 +10,25 @@ static u32 ErrorTable[] = {
 u8 ErrorCode2Num(u32);
 u8 *__OSLockSramEx(void);
 BOOL __OSUnlockSramEx(BOOL);
+#pragma push
+#pragma dont_inline on
+u8 ErrorCode2Num(u32 errorCode) {
+    u32 i;
+
+    for (i = 0; i < sizeof(ErrorTable) / sizeof(ErrorTable[0]); i++) {
+        if (ErrorTable[i] == errorCode) {
+            return (u8)i;
+        }
+    }
+
+    if ((errorCode >= 0x00100000) && (errorCode <= 0x00100008)) {
+        return 17;
+    }
+
+    return 29;
+}
+#pragma pop
+
 void __DVDStoreErrorCode(u32 error) {
     u8 *sram;
     u32 num;
