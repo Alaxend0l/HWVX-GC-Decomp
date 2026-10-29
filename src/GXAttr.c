@@ -4,12 +4,26 @@ typedef struct GXData {
     u8 unk0[0x14];
     u32 vcdLo;
     u32 vcdHi;
-    u8 unk1C[0x41C - 0x1C];
+    u8 unk1C[0x204 - 0x1C];
+    u32 genMode;
+    u8 unk208[0x41C - 0x208];
     u8 hasNrms;
     u8 hasBiNrms;
+    u8 unk41E[0x4F4 - 0x41E];
+    u32 dirtyState;
 } GXData;
 
 extern GXData *gx;
+
+typedef union PPCWGPipe {
+    u8 u8;
+    u16 u16;
+    u32 u32;
+    s32 s32;
+    f32 f32;
+} PPCWGPipe;
+
+volatile PPCWGPipe GXWGFifo : 0xCC008000;
 
 
 void GXGetVtxDesc(s32 attr, s32 *type) {
