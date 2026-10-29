@@ -29,6 +29,25 @@ extern GXData *gx;
 
 
 extern volatile u16 *__peReg;
+void GXSetMisc(s32 token, u32 val) {
+    switch (token) {
+    case 1:
+        gx->vNum = val;
+        gx->vNumNot = !gx->vNum;
+        gx->bpSentNot = 1;
+        if (gx->vNum) {
+            gx->dirtyState |= 8;
+        }
+        break;
+    case 2:
+        gx->dlSaveContext = (val > 0);
+        break;
+    case 0:
+    default:
+        break;
+    }
+}
+
 void GXFlush(void) {
     if (gx->dirtyState) {
         __GXSetDirtyState();
