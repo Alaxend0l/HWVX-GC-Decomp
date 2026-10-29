@@ -90,10 +90,10 @@ void Gfx_SetCameraMatrix(Vector4 *pos, Vector4 *right, Vector4 *up, Vector4 *at)
         defAt.y = 0.0f;
         defAt.z = 0.0f;
     }
-    *(Vector4 *)GetRenderWindow()->unk140 = *pos;
-    *(Vector4 *)(GetRenderWindow()->unk140 + 0x10) = *right;
-    *(Vector4 *)(GetRenderWindow()->unk140 + 0x20) = *up;
-    *(Vector4 *)(GetRenderWindow()->unk140 + 0x30) = *at;
+    GetRenderWindow()->cameraPos = *pos;
+    GetRenderWindow()->cameraRight = *right;
+    GetRenderWindow()->cameraUp = *up;
+    GetRenderWindow()->cameraAt = *at;
     m[0][0] = -at->x;
     m[1][0] = -at->y;
     m[2][0] = -at->z;
