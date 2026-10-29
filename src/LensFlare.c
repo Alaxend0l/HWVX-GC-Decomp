@@ -38,6 +38,10 @@ typedef struct Flare {
     u8 unk21[0x30 - 0x21];
 } Flare;
 
+Flare g_pFlare[64];
+u32 g_LensFlareRayTest;
+u32 g_activeFlares;
+
 /* a flare follows its thing when it has one, else sits at its own position */
 static inline Vector4 LensFlare_GetPos(u8 *thing, Vector4 *pos) {
     if (thing != NULL) {
