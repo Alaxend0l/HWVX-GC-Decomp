@@ -571,7 +571,7 @@ config.libs = [
             Object(NonMatching, "ansi_files.c"),
             Object(NonMatching, "ansi_fp.c"),
             Object(NonMatching, "buffer_io.c"),
-            Object(NonMatching, "ctype.c"),
+            Object(NonMatching, "ctype.c", mw_version="GC/1.3"),
             Object(NonMatching, "direct_io.c", mw_version="GC/1.3"),
             Object(NonMatching, "file_io.c"),
             Object(NonMatching, "FILE_POS.C", mw_version="GC/1.3"),
