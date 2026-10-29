@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 typedef struct GeometryEntry {
     void *geometry;
     char name[0x40];
