@@ -197,8 +197,6 @@ void __num2dec_internal(decimal *d, double x) {
 
 static void __str2dec(decimal *d, const signed char *s, short exp);
 void __two_exp(decimal *result, short exp) {
-    decimal temp;
-
     switch (exp) {
     case -64:
         __str2dec(result, (const signed char *)"542101086242752217003726400434970855712890625", -20);
@@ -272,7 +270,7 @@ void __two_exp(decimal *result, short exp) {
     }
 
     if (exp & 1) {
-        temp = *result;
+        decimal temp = *result;
         if (exp > 0) {
             decimal two;
             __str2dec(&two, (const signed char *)"2", 0);
