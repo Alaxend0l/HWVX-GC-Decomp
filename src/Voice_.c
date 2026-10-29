@@ -85,6 +85,41 @@ void OSRestoreInterrupts(s32 level);
 void AXSetVoicePriority(AXVPB *axv, u32 priority);
 
 
+void AudioVoice_Destroy_(void);
+void SetVoiceState_(VoiceHW *voice, s32 state);
+#pragma push
+#pragma optimization_level 1
+s32 AudioVoice_Init_(void) {
+    u32 i;
+
+    for (i = 0; i < 0x20; i++) {
+        SetVoiceState_(&g_voice[i], 3);
+        g_voice[i].next = &g_voice[i + 1];
+    }
+    g_voice[0x1F].next = NULL;
+    g_pFree = g_voice;
+    g_active = -1;
+    if (m_InitOnce == 0) {
+        AudioVoice_Destroy_();
+    }
+    m_InitOnce = 0;
+    for (i = 0; i < 2; i++) {
+        g_reverb[i].delay[0] = 10;
+        g_reverb[i].delay[1] = 10;
+        g_reverb[i].delay[2] = 10;
+        g_reverb[i].feedback[0] = 0;
+        g_reverb[i].feedback[1] = 0;
+        g_reverb[i].feedback[2] = 0;
+        g_reverb[i].output[0] = 0;
+        g_reverb[i].output[1] = 0;
+        g_reverb[i].output[2] = 0;
+        AXFXDelayInit(&g_reverb[i]);
+    }
+    AXRegisterAuxACallback(AXFXDelayCallback, &g_reverb[0]);
+    AXRegisterAuxBCallback(AXFXDelayCallback, &g_reverb[1]);
+    return 1;
+}
+#pragma pop
 void AudioVoice_Destroy_(void) {
     AXRegisterAuxBCallback(NULL, NULL);
     AXRegisterAuxACallback(NULL, NULL);
