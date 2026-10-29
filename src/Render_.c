@@ -41,6 +41,44 @@ extern s32 m_fogMode;
 extern s32 m_cullMode;
 extern s32 m_blendMode;
 
+typedef struct GfxWindow {
+    f32 unk0[4][4];
+    f32 unk40[4][4];
+    f32 unk80[4][4];
+    f32 unkC0[4][4];
+    f32 unk100[4][4];
+    u8 unk140[0x270 - 0x140];
+    f32 fov;
+    u8 unk274[0x2D0 - 0x274];
+} GfxWindow;
+
+typedef struct GfxState {
+    u8 unk0[0x60];
+    f32 lightDir[4];
+    GXColor lightColor;
+    GXColor unk74;
+    GXColor ambientColor;
+    u8 unk7C[0x93 - 0x7C];
+    u8 unk93;
+    u8 unk94[0xA0 - 0x94];
+} GfxState;
+
+extern GfxState g_state;
+extern f32 g_identity[4][4];
+extern GXColor g_textcolor;
+extern GXColor m_clearColor;
+extern s32 m_fillMode;
+extern s32 m_currentView;
+extern s32 m_curLightState;
+extern s32 m_curTexture;
+extern void *FontData;
+extern s32 __OSCurrHeap;
+
+GfxWindow *GetRenderWindow(void);
+void *memcpy(void *dst, const void *src, u32 n);
+void *OSAllocFromHeap(s32 heap, u32 size);
+BOOL OSInitFont(void *fontData);
+
 void GXSetTevOp(s32 id, s32 mode);
 void Render_StateFogEnable(s32 enable);
 
