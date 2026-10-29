@@ -19,6 +19,11 @@ s8 AudioMIDI_Create(void);
 s8 AudioVoice_Create(void);
 s8 Audio_Create_(void);
 
+static inline void Audio_ClearVoiceUpdate(void)
+{
+	VoiceUpdate = NULL;
+}
+
 s8 Audio_Create(void)
 {
 	if (!g_init)
@@ -37,15 +42,14 @@ s8 Audio_Create(void)
 
 s8 Audio_Init(void)
 {
-	VoiceUpdate = 0;
-	SongUpdate = NULL;
+	SongUpdate = VoiceUpdate = NULL;
 
 	if (AudioMusic_Init() && AudioIT_Init() && AudioMIDI_Init() && AudioVoice_Init() && Audio_Init_())
 	{
-	 return 1;
+		return 1;
 	}
 
- return 0;
+	return 0;
 }
 
 void Audio_Update(void)
