@@ -74,3 +74,15 @@ void GXSetDispCopyGamma(s32 gamma) {
     gx->cpDisp = (gx->cpDisp & ~0x180) | (gamma << 7);
 }
 
+void GXClearBoundingBox(void) {
+    u32 reg;
+
+    reg = 0x550003FF;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    reg = 0x560003FF;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    gx->bpSentNot = 0;
+}
+
