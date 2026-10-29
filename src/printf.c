@@ -55,6 +55,19 @@ int vprintf(const char *format, char *arg) {
     return retval;
 }
 
+int printf(const char *format, ...) {
+    int result;
+    FILE *stream = &__files[1];
+    va_list args;
+
+    if (fwide(stream, -1) >= 0) {
+        return -1;
+    }
+    __builtin_va_info(&args);
+    result = __pformatter(&__FileWrite, (void *)stream, format, (char *)args);
+    return result;
+}
+
 void *__StringWrite(void *osc, const char *Buffer, u32 NumChars) {
     u32 CharsToBeWritten;
     __OutStrCtrl *Oscp = (__OutStrCtrl *)osc;
