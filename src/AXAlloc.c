@@ -24,8 +24,8 @@ typedef struct AXVPB {
 
 void __AXSetPBDefault(AXVPB *p);
 
-static void * __AXStackHead[32];
-static void * __AXStackTail[32];
+static AXVPB * __AXStackHead[32];
+static AXVPB * __AXStackTail[32];
 static void * __AXCallbackStack;
 
 void *__AXPopCallbackStack(void);
