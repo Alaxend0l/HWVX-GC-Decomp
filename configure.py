@@ -498,7 +498,7 @@ config.libs = [
             Object(NonMatching, "CARDUnlock.c"),
             Object(NonMatching, "CARDNet.c"),
             Object(NonMatching, "CARDRdwr.c"),
-            Object(NonMatching, "CARDBlock.c"),
+            Object(NonMatching, "CARDBlock.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "CARDDir.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "CARDCheck.c"),
             Object(NonMatching, "CARDMount.c"),
