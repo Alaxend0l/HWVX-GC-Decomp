@@ -1048,6 +1048,60 @@ void GamePlay_PauseOptions_HandleInput(void *msg) {
     }
 }
 
+s32 ActionPauseGame(u32 *action) {
+    extern s32 g_pauseState;
+    extern s32 g_gamePlayCallback;
+    extern u8 g_bFreezeWorld;
+    void SoundManager_Pause(u8 pause);
+    void Input_ForceFeedbackPause(u8 pause);
+    void InterfaceManager_PauseAllInterface(u8 pause);
+    u8 *GameSettings_GetMCP(void);
+    ControllerSettings *GameSettings_GetControllerSettings(s32 player);
+    u8 PlayerManager_PlayerHumanCount(void);
+    void *PlayerManager_GetHumanPlayerByIndex(u8 index);
+    void PlayerHuman_SetControlBinding(void *player, s32 binding);
+    void PlayerHuman_SetDefaultControls(void *player, s32 arg);
+    void Input_SetForceFeedbackActive(s32 chan, u8 active);
+    ControllerSettings *settings;
+    u8 *mcp;
+    u8 *player;
+    u32 count;
+    u32 i;
+
+    if (*action == 7) {
+        g_pauseState = 1;
+        CameraManager_Pause(1);
+        SoundManager_Pause(1);
+        Input_ForceFeedbackPause(1);
+        InterfaceManager_PauseAllInterface(1);
+        g_bFreezeWorld = 1;
+    } else if (*action == 8) {
+        g_gamePlayCallback = 0;
+        g_pauseState = 0;
+        CameraManager_Pause(0);
+        SoundManager_Pause(0);
+        Input_ForceFeedbackPause(0);
+        InterfaceManager_PauseAllInterface(0);
+        g_bFreezeWorld = 1;
+        mcp = GameSettings_GetMCP();
+        count = PlayerManager_PlayerHumanCount();
+        for (i = 0; i < count; i++) {
+            player = PlayerManager_GetHumanPlayerByIndex(i);
+            settings = GameSettings_GetControllerSettings(*(s32 *)(player + 0x60));
+            if (mcp != NULL && *(u32 *)(mcp + 0x3C) != 0) {
+                if (settings->data[1] >= *(u32 *)(mcp + 0x3C)) {
+                    settings->data[1] = 0;
+                }
+                PlayerHuman_SetControlBinding(player, *(s32 *)(*(u8 **)(*(u8 ***)(mcp + 0x40))[settings->data[1]] + 0x8));
+            } else {
+                PlayerHuman_SetDefaultControls(player, settings->data[1]);
+            }
+            Input_SetForceFeedbackActive(*(s32 *)(player + 0xC8), settings->data[0]);
+        }
+    }
+    return 1;
+}
+
 s32 ActionPlayInterfacePack(u32 *pack) {
     void *FileStreaming_InitializeDataPack(void *, s32, s32);
     u8 *DataPack_GetScript(void *, s32);
