@@ -5,6 +5,34 @@ s32 File_Write(u32 id, s32 size, void *data);
 extern u32 g_fileIOHandle;
 extern s32 g_playbackCache[0x1000];
 extern u32 g_playbackPos;
+s32 File_Read(u32 id, s32 size, void *data);
+void File_Close(u32 id);
+extern s32 g_pauseState;
+extern u32 g_playbackFinish;
+extern s32 g_playbackStatus;
+s32 Playback_GetElement(void) {
+    s32 element;
+    u32 bytesRead;
+
+    if (g_playbackPos == g_playbackFinish) {
+        File_Close(g_fileIOHandle);
+        g_fileIOHandle = -1;
+        g_playbackStatus = 0;
+        g_pauseState = 1;
+        element = g_playbackCache[g_playbackPos];
+    } else {
+        element = g_playbackCache[g_playbackPos++];
+        if (g_playbackPos == 0x1000) {
+            bytesRead = File_Read(g_fileIOHandle, 0x4000, g_playbackCache);
+            g_playbackPos = 0;
+            if (bytesRead != 0x4000) {
+                g_playbackFinish = bytesRead - 1;
+            }
+        }
+    }
+    return element;
+}
+
 void Playback_PutElement(s32 element) {
     g_playbackCache[g_playbackPos++] = element;
     if (g_playbackPos == 0x1000) {
