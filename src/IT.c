@@ -192,6 +192,30 @@ void DestroyIT(void)
     g_pHdr = NULL;
     memset(g_musicTitle, 0, 0x20);
 }
+
+#pragma push
+#pragma dont_inline on
+void SetITVol(void)
+{
+    u16 GetITGVol_(s32 *song, IT_TRACK *trk);
+    IT_TRACK *trk;
+    IT_VOICE *voice;
+    s32 i;
+    s32 gvol;
+
+    for (trk = g_trk, i = 0x20; i != 0; trk++, i--)
+    {
+        voice = trk->head;
+        gvol = GetITGVol_(g_song, trk);
+        trk->gvol = gvol;
+        for (; voice != NULL; voice = voice->next)
+        {
+            SetVoiceVol_(voice, gvol);
+        }
+    }
+}
+#pragma pop
+
 #pragma pop
 
 #pragma push
