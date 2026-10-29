@@ -59,6 +59,13 @@ void Gfx_DisplayList_Destroy(void) {
     Deallocate(g_pDL);
 }
 
+GDLLine *Gfx_Add3DLineFX(void) {
+    if (g_pGDL->numLines >= 0x100) {
+        g_pGDL->numLines = 0;
+    }
+    return &g_pGDL->lines[g_pGDL->numLines++];
+}
+
 void Gfx_Add2DRectangleBack(void)
 {
     Render_DrawRectangle();
