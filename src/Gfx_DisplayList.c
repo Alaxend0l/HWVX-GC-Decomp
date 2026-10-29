@@ -770,7 +770,7 @@ typedef struct Geometry {
 static inline void Gfx_Add3DLine(Vector4 *p0, Vector4 *p1, u32 *color) {
     g_pGDL->lines3D[g_pGDL->num3DLines].p0 = *p0;
     g_pGDL->lines3D[g_pGDL->num3DLines].p1 = *p1;
-    g_pGDL->lines3D[g_pGDL->num3DLines].color = *color;
+    *(u32 *)&g_pGDL->lines3D[g_pGDL->num3DLines].color = *color;
     g_pGDL->num3DLines++;
 }
 
@@ -789,8 +789,8 @@ void XformVec(void *m, Vector4 *v, Vector4 *out);
 void DrawGroupWireframe(Geometry *geometry, u32 group, void *matrix) {
     Vector4 v[3] __attribute__((aligned(16)));
     GeometryGroup *grp;
-    u32 count;
     u32 i;
+    u32 count;
     s32 j;
 
     grp = &geometry->groups[group];
@@ -799,18 +799,9 @@ void DrawGroupWireframe(Geometry *geometry, u32 group, void *matrix) {
         for (j = 0; j < 3; j++) {
             XformVec(matrix, &geometry->verts[grp->tris[i][j]].pos, &v[j]);
         }
-        g_pGDL->lines3D[g_pGDL->num3DLines].p0 = v[0];
-        g_pGDL->lines3D[g_pGDL->num3DLines].p1 = v[1];
-        g_pGDL->lines3D[g_pGDL->num3DLines].color = geometry->verts[grp->tris[i][0]].color;
-        g_pGDL->num3DLines++;
-        g_pGDL->lines3D[g_pGDL->num3DLines].p0 = v[1];
-        g_pGDL->lines3D[g_pGDL->num3DLines].p1 = v[2];
-        g_pGDL->lines3D[g_pGDL->num3DLines].color = geometry->verts[grp->tris[i][1]].color;
-        g_pGDL->num3DLines++;
-        g_pGDL->lines3D[g_pGDL->num3DLines].p0 = v[2];
-        g_pGDL->lines3D[g_pGDL->num3DLines].p1 = v[0];
-        g_pGDL->lines3D[g_pGDL->num3DLines].color = geometry->verts[grp->tris[i][2]].color;
-        g_pGDL->num3DLines++;
+        Gfx_Add3DLine(&v[0], &v[1], &geometry->verts[grp->tris[i][0]].color);
+        Gfx_Add3DLine(&v[1], &v[2], &geometry->verts[grp->tris[i][1]].color);
+        Gfx_Add3DLine(&v[2], &v[0], &geometry->verts[grp->tris[i][2]].color);
     }
 }
 #pragma use_lmw_stmw off
