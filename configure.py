@@ -323,7 +323,7 @@ config.libs = [
             Object(Matching, "GeometryHandler.c"),
             Object(NonMatching, "GridManager.c"),
             Object(NonMatching, "InterfaceManager.c"),
-            Object(NonMatching, "ItemThing.c"),
+            Object(Matching, "ItemThing.c"),
             Object(Matching, "LensFlare.c"),
             Object(Matching, "LightHolder.c"),
             Object(Matching, "LineManager.c"),
