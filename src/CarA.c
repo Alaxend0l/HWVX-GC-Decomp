@@ -3,6 +3,29 @@
 
 #pragma use_lmw_stmw on
 
+typedef struct AnimKeyFrame {
+    Quaternion rot;
+    f32 pos[4];
+} AnimKeyFrame;
+
+void QuaternionMult(Vector4 *a, Vector4 *b, Vector4 *out);
+
+/* Stacks an additive animation's key frames onto dst. */
+static inline void Anim_AddKeyFrames(AnimKeyFrame *dst, AnimKeyFrame *src, u32 count) {
+    u32 i;
+    Quaternion q;
+
+    for (i = 0; i < count; i++) {
+        if (src[i].rot.w != 1.0f || src[i].rot.x != 0.0f || src[i].rot.y != 0.0f || src[i].rot.z != 0.0f) {
+            QuaternionMult((Vector4 *)&dst[i].rot, (Vector4 *)&src[i].rot, (Vector4 *)&q);
+            dst[i].rot = q;
+        }
+        dst[i].pos[0] += src[i].pos[0];
+        dst[i].pos[1] += src[i].pos[1];
+        dst[i].pos[2] += src[i].pos[2];
+    }
+}
+
 /* Moves the body offset (centre of mass) to (x, y, z), shifting the car's
    position so the body stays where it is in the world. */
 static inline void CarA_SetBodyOffset(CarA *car, f32 x, f32 y, f32 z) {
