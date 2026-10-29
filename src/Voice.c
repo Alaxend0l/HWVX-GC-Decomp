@@ -113,6 +113,61 @@ void SetSFXVol(s32 vol) {
     }
 }
 
+s32 SetSFXState(s32 state) {
+    u32 i;
+    Voice *voice;
+    s32 old;
+
+    if (state == 0 || state == g_sfxState) {
+        return g_sfxState;
+    }
+    if (state != 1) {
+        VoiceUpdate = NULL;
+    }
+    voice = g_voice;
+    switch (state) {
+    case 2:
+        for (i = 0x20; i != 0; voice++, i--) {
+            if (voice->kind == 1 && voice->state == 1) {
+                SetVoiceState_(voice, 2);
+            }
+        }
+        break;
+    case 3:
+        for (i = 0x20; i != 0; voice++, i--) {
+            if (voice->kind == 1 && voice->state != 0) {
+                SetVoiceState_(voice, 2);
+                voice->state = 3;
+            }
+        }
+        break;
+    case 4:
+        for (i = 0x20; i != 0; voice++, i--) {
+            if (voice->kind == 1) {
+                voice->state = 3;
+            }
+        }
+        voice = g_voice;
+    case 1:
+        for (i = 0x20; i != 0; voice++, i--) {
+            if (voice->kind == 1) {
+                if (voice->state == 2) {
+                    SetVoiceState_(voice, 1);
+                } else if (voice->state == 3) {
+                    StartVoice_(voice);
+                    SetVoiceVol_(voice, g_sfxvol);
+                }
+            }
+        }
+        state = 1;
+        VoiceUpdate = ProcessVoice;
+        break;
+    }
+    old = g_sfxState;
+    g_sfxState = state;
+    return old;
+}
+
 Voice *GetVoice_(s32 type, s32 priority);
 u32 GetVoice(u32 handle, u8 priority) {
     Voice *voice;
