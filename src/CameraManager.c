@@ -351,7 +351,7 @@ void Camera_UpdatePosition_Zoom_Generic(u8 *cam, u8 *mode, Vector4 *target, Vect
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
     void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
     void Gfx_SetProjectionMatrix(f32 fov);
-    Vector4 pos;
+    Vector4 pos __attribute__((aligned(16)));
 
     pos = *target;
     *(f32 *)(cam + 0xB8) += 0.2f * g_fDeltaTimeSec;
@@ -359,8 +359,8 @@ void Camera_UpdatePosition_Zoom_Generic(u8 *cam, u8 *mode, Vector4 *target, Vect
     pos.y = shake * (*(f32 *)(cam + 0xA4) * (f32)sin(*(f32 *)(cam + 0xB8))) + target->y;
     pos.z = shake * (*(f32 *)(cam + 0xA8) * (f32)sin(*(f32 *)(cam + 0xB8))) + target->z;
     {
-        Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
-        Vector4 dir;
+        Vector4 up __attribute__((aligned(16))) = {0.0f, 1.0f, 0.0f, 0.0f};
+        Vector4 dir __attribute__((aligned(16)));
         f32 mag;
         f32 inv;
         f32 fov;
