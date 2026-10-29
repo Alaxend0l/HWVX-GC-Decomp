@@ -468,4 +468,5 @@ s32 AnimNodes_BlowBranch(u8 *node) {
     }
     return count;
 }
+#pragma pop
 
