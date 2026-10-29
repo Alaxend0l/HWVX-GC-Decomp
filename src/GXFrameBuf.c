@@ -55,6 +55,11 @@ void GXAdjustForOverscan(GXRenderModeObj *rmin, GXRenderModeObj *rmout, u16 hor,
     rmout->viYOrigin = (u16)(rmin->viYOrigin + ver);
 }
 
+void GXSetDispCopyFrame2Field(s32 mode) {
+    gx->cpDisp = (gx->cpDisp & ~0x3000) | (mode << 12);
+    gx->cpTex = gx->cpTex & ~0x3000;
+}
+
 void GXSetDispCopyGamma(s32 gamma) {
     gx->cpDisp = (gx->cpDisp & ~0x180) | (gamma << 7);
 }
