@@ -158,6 +158,22 @@ void Render_Create(void) {
     OSInitFont(FontData);
 }
 
+void Gfx_SetProjectionMatrix(f32 fov);
+void GXSetViewport(f32 xOrig, f32 yOrig, f32 wd, f32 ht, f32 nearZ, f32 farZ);
+void GXSetScissor(u32 xOrig, u32 yOrig, u32 wd, u32 ht);
+void Render_StateSetScissor(void) {
+    f32 top;
+    f32 wd;
+    f32 ht;
+
+    Gfx_SetProjectionMatrix(GetRenderWindow()->fov);
+    ht = 0.93333334f * GetRenderWindow()->height;
+    wd = GetRenderWindow()->width;
+    top = 0.93333334f * GetRenderWindow()->unk2B8;
+    GXSetViewport(GetRenderWindow()->unk2B0, top, wd, ht, 0.0f, 1.0f);
+    GXSetScissor(GetRenderWindow()->unk2B0, 0.93333334f * GetRenderWindow()->unk2B8, (f32)GetRenderWindow()->width, 0.93333334f * GetRenderWindow()->height);
+}
+
 void Render_FlipBuffers(void) {
     PrintDVDMessage();
     GXSetColorUpdate(1);
