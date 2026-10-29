@@ -36,6 +36,24 @@ void SITransferCommands(void) {
 }
 #pragma peephole reset
 
+BOOL OSDisableInterrupts(void);
+BOOL OSRestoreInterrupts(BOOL level);
+u32 SISetXY(u32 x, u32 y) {
+    u32 poll;
+    BOOL enabled;
+
+    poll = x << 16;
+    poll |= y << 8;
+    enabled = OSDisableInterrupts();
+    Si.poll &= ~(0x03FF0000 | 0x0000FF00);
+    Si.poll |= poll;
+    poll = Si.poll;
+    *(volatile u32 *)0xCC006430 = poll;
+    OSRestoreInterrupts(enabled);
+    return poll;
+}
+#pragma peephole on
+
 static void AlarmHandler(OSAlarm *alarm, void *context) {
     s32 chan;
     SIPacket *packet;
