@@ -82,7 +82,6 @@ void ClearArena(void)
   memset((void *) __OSSavedRegionEnd, 0, OSGetArenaHi() - __OSSavedRegionEnd);
 }
 
-#pragma peephole off
 void InquiryCallback(s32 result, u32 *block)
 {
     switch (block[3])
