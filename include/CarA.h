@@ -35,7 +35,22 @@ typedef struct Player {
   u8 button1A;              /* 0x1A */
   u8 pad1B[0x11];           /* 0x1B */
   void *vehicle;            /* 0x2C the Thing the player drives */
+  u8 pad30;                 /* 0x30 */
+  u8 cameraIndex;           /* 0x31 passed to the vehicle's getCameraInfo */
+  u8 pad32[0x3A];           /* 0x32 */
+  u32 flags;                /* 0x6C & 0x80 cleared every camera update */
 } Player;
+
+struct CarA;
+struct CameraInfo;
+
+/* The Thing virtual table (Thing + 0x8C). */
+typedef struct ThingVTable {
+  u8 pad00[0x1C];
+  void (*getCameraInfo)(struct CarA *thing, u8 index, struct CameraInfo *info); /* 0x1C */
+  u8 pad20[0x1C];
+  void (*getTargetPos)(struct CarA *thing, Vector4 *out); /* 0x3C */
+} ThingVTable;
 
 typedef struct CarAEngine {
   f32 bodyOffset[3];        /* 0x00 rest value of CarA.bodyOffset */
