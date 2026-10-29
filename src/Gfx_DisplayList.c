@@ -274,6 +274,34 @@ void DrawAlphaTable(void) {
     }
 }
 
+s32 Gfx_GetLightState(void) {
+    u32 i;
+    GDLLightState *ls;
+    u32 idx;
+
+    if (!g_state.lightChanged) {
+        return g_pGDL->numLightStates - 1;
+    }
+    if (g_pGDL->numLightStates >= 0x80) {
+        g_pGDL->numLightStates = 0;
+    }
+    idx = g_pGDL->numLightStates++;
+    g_state.lightChanged = 0;
+    ls = &g_pGDL->lightStates[idx];
+    ls->lightColor = g_state.lightColor;
+    ls->ambientColor = g_state.ambientColor;
+    ls->lightDir = g_state.lightDir;
+    ls->numPointLights = g_state.numPointLights;
+    for (i = 0; i < ls->numPointLights; i++) {
+        ls->pointLights[i].x = g_state.pointLights[i].position.x;
+        ls->pointLights[i].y = g_state.pointLights[i].position.y;
+        ls->pointLights[i].z = g_state.pointLights[i].position.z;
+        ls->pointLights[i].w = g_state.pointLights[i].radius;
+        ls->pointColors[i] = g_state.pointLights[i].color;
+    }
+    return idx;
+}
+
 s32 Gfx_GetEnvmapState(void) {
     if (g_state.unk8F) {
         return 0;
