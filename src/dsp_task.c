@@ -55,3 +55,35 @@ void __DSP_insert_task(DSPTaskInfo *task)
         }
     }
 }
+
+void __DSP_remove_task(DSPTaskInfo *task)
+{
+    task->flags = 0;
+    task->state = 3;
+
+    if (__DSP_first_task == task)
+    {
+        if (task->next)
+        {
+            __DSP_first_task = task->next;
+            task->next->prev = NULL;
+        }
+        else
+        {
+            __DSP_first_task = __DSP_last_task = __DSP_curr_task = NULL;
+        }
+    }
+    else if (__DSP_last_task == task)
+    {
+        __DSP_last_task = task->prev;
+        task->prev->next = NULL;
+        __DSP_curr_task = __DSP_first_task;
+    }
+    else
+    {
+        __DSP_curr_task = task->next;
+        task->prev->next = task->next;
+        task->next->prev = task->prev;
+    }
+}
+
