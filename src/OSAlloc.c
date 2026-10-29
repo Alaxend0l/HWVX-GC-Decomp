@@ -14,6 +14,9 @@ typedef struct HeapDesc {
 
 extern HeapDesc *HeapArray;
 extern s32 NumHeaps;
+extern void *ArenaStart;
+extern void *ArenaEnd;
+extern s32 __OSCurrHeap;
 
 s32 OSSetCurrentHeap(s32 arg0) {
     extern s32 __OSCurrHeap;
