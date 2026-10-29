@@ -173,25 +173,10 @@ AXVPB *AXAcquireVoice(u32 priority, AXVoiceCallback callback, u32 userContext)
     u32 i;
 
     old = OSDisableInterrupts();
-    pvpb = __AXStackHead[0];
-    if (pvpb != NULL) {
-        __AXStackHead[0] = pvpb->next;
-    }
+    pvpb = __AXPopFreeStack();
     if (pvpb == NULL) {
         for (i = 1; i < priority; i++) {
-            AXVPB *p = NULL;
-
-            if (__AXStackHead[i] != NULL) {
-                if (__AXStackHead[i] == __AXStackTail[i]) {
-                    p = __AXStackHead[i];
-                    __AXStackHead[i] = __AXStackTail[i] = NULL;
-                } else if (__AXStackTail[i] != NULL) {
-                    p = __AXStackTail[i];
-                    __AXStackTail[i] = p->prev;
-                    __AXStackTail[i]->next = NULL;
-                }
-            }
-            pvpb = p;
+            pvpb = __AXPopStackFromBottom(i);
             if (pvpb != NULL) {
                 if (pvpb->state == 1) {
                     pvpb->depop = 1;
