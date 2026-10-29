@@ -664,6 +664,48 @@ s32 GetAllTargets(void **targets) {
     return ThingManager_GetActiveCars(targets);
 }
 
+static inline s32 ThingManager_GetActiveUnk6D100(void **things) {
+    s32 count;
+    s32 i;
+
+    count = 0;
+    for (i = 0; i < 1; i++) {
+        u8 *thing = g_thingManager_DARYL.unk0 + 0x6D100 + i * 0x5A0;
+        if (!(*(u32 *)(thing + 0x74) & 0x201000)) {
+            things[count++] = thing;
+        }
+    }
+    return count;
+}
+
+static inline s32 ThingManager_GetActiveUnk5B940(void **things) {
+    s32 count;
+    s32 i;
+
+    count = 0;
+    for (i = 0; i < 1; i++) {
+        u8 *thing = g_thingManager_DARYL.unk0 + 0x5B940 + i * 0x5A0;
+        if (!(*(u32 *)(thing + 0x74) & 0x201000)) {
+            things[count++] = thing;
+        }
+    }
+    return count;
+}
+
+static inline s32 ThingManager_GetActiveUnk20280(void **things) {
+    s32 count;
+    s32 i;
+
+    count = 0;
+    for (i = 0; i < 500; i++) {
+        u8 *thing = g_thingManager_DARYL.unk0 + 0x20280 + i * 0xF0;
+        if (!(*(u32 *)(thing + 0x74) & 0x201000)) {
+            things[count++] = thing;
+        }
+    }
+    return count;
+}
+
 void *FindHost(Vector4 *pos, Vector4 *dir) {
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
     f32 PSVECSquareMag(Vector4 *v);
