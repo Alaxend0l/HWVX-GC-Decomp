@@ -112,7 +112,6 @@ void stateReady(void)
     void cbForStateError(u32 code);
     void AlarmHandler(void *alarm, void *context);
     DVDCommandBlock *finished;
-    OSAlarm *alarm;
 
     if (!__DVDCheckWaitingQueue())
     {
@@ -130,10 +129,10 @@ void stateReady(void)
     {
         executing->state = -1;
         finished = executing;
-        executing = (DVDCommandBlock *)(tmpBuffer + 0x80);
+        executing = &DummyCommandBlock;
         if (finished->callback)
         {
-            (*finished->callback)(-1);
+            ((void (*)(s32, DVDCommandBlock *))finished->callback)(-1, finished);
         }
         stateReady();
         return;
@@ -173,18 +172,17 @@ void stateReady(void)
             case 15:
                 __DVDClearWaitingQueue();
                 finished = executing;
-                executing = (DVDCommandBlock *)(tmpBuffer + 0x80);
+                executing = &DummyCommandBlock;
                 if (finished->callback)
                 {
-                    (*finished->callback)(-4);
+                    ((void (*)(s32, DVDCommandBlock *))finished->callback)(-4, finished);
                 }
                 stateReady();
                 break;
             default:
                 DVDReset();
-                alarm = (OSAlarm *)(tmpBuffer + 0xb0);
-                OSCreateAlarm(alarm);
-                OSSetAlarm(alarm,
+                OSCreateAlarm(&ResetAlarm);
+                OSSetAlarm(&ResetAlarm,
                            (*(u32 *)(0x80000000 + 0xf8) / 4) / 1000 * 1150,
                            AlarmHandler);
                 break;
@@ -194,9 +192,9 @@ void stateReady(void)
             executing->state = -1;
             __DVDStoreErrorCode(CancelLastError);
             DVDLowStopMotor(cbForStateError);
-            ResumeFromHere = 0;
             break;
         }
+        ResumeFromHere = 0;
         return;
     }
     executing->state = 1;
