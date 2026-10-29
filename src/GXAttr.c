@@ -4,7 +4,10 @@ typedef struct GXData {
     u8 unk0[0x14];
     u32 vcdLo;
     u32 vcdHi;
-    u8 unk1C[0x204 - 0x1C];
+    u8 unk1C[0x88 - 0x1C];
+    u32 indexBase[4];
+    u32 indexStride[4];
+    u8 unkA8[0x204 - 0xA8];
     u32 genMode;
     u8 unk208[0x41C - 0x208];
     u8 hasNrms;
