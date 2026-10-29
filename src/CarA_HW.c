@@ -1,6 +1,27 @@
 #include "CarA.h"
 #include "common.h"
 
+typedef struct CarAShiftSoundParams {
+    Vector4 pos;
+    Vector4 animRefPos;
+    Vector4 vel;
+    Vector4 angVel;
+    u32 id;
+    void *player;
+    f32 unk48;
+    f32 unk4C;
+} CarAShiftSoundParams;
+
+extern f32 g_fDeltaTimeSec;
+extern u32 g_iDeltaTimeMS;
+extern void *g_pSourcePlayer;
+extern Vector4 g_zeroVector;
+
+s8 Player_IsHuman(void *player);
+s32 RandomAdd_s32(s32 base, s32 range);
+void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+f32 CarA_Transmission_GetTorqueAtWheels(CarA *car);
+
 
 s32 CarA_DoFreeStyleStunts(void *car) {
     s32 threshold;
