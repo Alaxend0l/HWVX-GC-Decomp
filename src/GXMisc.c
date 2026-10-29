@@ -25,6 +25,17 @@ typedef struct GXData {
 void __GXSetDirtyState(void);
 void PPCSync(void);
 
+typedef struct OSThread OSThread;
+typedef struct OSThreadQueue { OSThread *head; OSThread *tail; } OSThreadQueue;
+
+void *__OSSetInterruptHandler(s16 interrupt, void *handler);
+void __OSUnmaskInterrupts(u32 mask);
+void OSInitThreadQueue(OSThreadQueue *queue);
+void GXTokenInterruptHandler(s16 interrupt, void *context);
+void GXFinishInterruptHandler(s16 interrupt, void *context);
+
+static OSThreadQueue FinishQueue;
+
 extern GXData *gx;
 
 
