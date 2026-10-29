@@ -461,6 +461,81 @@ void FileStreaming_LoadingThread(void)
     EndThread();
 }
 
+static inline void FileStreaming_StartLoadingThread(void)
+{
+    if (!g_bLoadingThreadRunning)
+    {
+        g_bLoadDataPack = 1;
+        g_bLoadingThreadRunning = 1;
+        g_loadingThreadID = RunThread(FileStreaming_LoadingThread, 0x63);
+    }
+}
+
+s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded) {
+    typedef struct DataPack {
+        s8 used;
+        u8 unk1;
+        u8 unk2;
+        char *name;
+        u32 id;
+        u32 refs;
+        u8 unk10;
+        u8 pad11[0x4C - 0x11];
+        void *data;
+        u8 pad50[0xA8 - 0x50];
+    } DataPack;
+    u32 i;
+    u32 slot;
+
+    slot = -1;
+    if (type >= 11 || (g_bLoadingThreadRunning && threaded)) {
+        return -1;
+    }
+    if (((DataPack **)g_StreamingDataPacks)[type] == NULL) {
+        FileStreaming_Initialize();
+    }
+    for (i = 0; i < g_MaxStreamingDataPacks[type]; i++) {
+        if (((DataPack **)g_StreamingDataPacks)[type][i].used && id == ((DataPack **)g_StreamingDataPacks)[type][i].id
+            && strcmp(name, ((DataPack **)g_StreamingDataPacks)[type][i].name) == 0
+            && ((DataPack **)g_StreamingDataPacks)[type][i].refs != 0) {
+            if (((DataPack **)g_StreamingDataPacks)[type][i].data == NULL) {
+                ((DataPack **)g_StreamingDataPacks)[type][i].used = 0;
+                ((DataPack **)g_StreamingDataPacks)[type][i].refs = 0;
+                ((DataPack **)g_StreamingDataPacks)[type][i].unk1 = 0;
+                ((DataPack **)g_StreamingDataPacks)[type][i].unk2 = 0;
+            } else {
+                (((DataPack **)g_StreamingDataPacks)[type] + i)->refs++;
+                return i;
+            }
+        }
+        if (slot == -1 && !((DataPack **)g_StreamingDataPacks)[type][i].used) {
+            slot = i;
+        }
+    }
+    if (slot == -1) {
+        return -1;
+    }
+    ((DataPack **)g_StreamingDataPacks)[type][slot].used = 1;
+    (((DataPack **)g_StreamingDataPacks)[type] + slot)->unk1 = 0;
+    (((DataPack **)g_StreamingDataPacks)[type] + slot)->unk2 = 0;
+    (((DataPack **)g_StreamingDataPacks)[type] + slot)->name = name;
+    (((DataPack **)g_StreamingDataPacks)[type] + slot)->id = id;
+    (((DataPack **)g_StreamingDataPacks)[type] + slot)->refs = 1;
+    (((DataPack **)g_StreamingDataPacks)[type] + slot)->unk10 = 0;
+    g_dataPackToLoadType = type;
+    g_pDataPackToLoad = ((DataPack **)g_StreamingDataPacks)[type] + slot;
+    if (threaded) {
+        if (!g_bLoadingThreadRunning) {
+            g_bLoadDataPack = TRUE;
+            g_bLoadingThreadRunning = TRUE;
+            g_loadingThreadID = RunThread(FileStreaming_LoadingThread, 0x63);
+        }
+    } else {
+        LoadDataPack();
+    }
+    return slot;
+}
+
 s32 FileStreaming_GetPackID(char *name, s32 type, u32 id)
 {
     u8 *pack;
