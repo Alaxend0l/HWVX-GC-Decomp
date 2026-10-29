@@ -21,6 +21,18 @@ typedef struct DSVersions {
 
 s32 TRKTargetVersions(DSVersions *versions);
 
+typedef struct DSCPUType {
+    u8 cpuMajor;
+    u8 cpuMinor;
+    u8 bigEndian;
+    u8 defaultTypeSize;
+    u8 fpTypeSize;
+    u8 extended1TypeSize;
+    u8 extended2TypeSize;
+} DSCPUType;
+
+s32 TRKTargetCPUType(DSCPUType *cpuType);
+
 static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
     if (b->position >= 0x880) {
         return 0x301;
