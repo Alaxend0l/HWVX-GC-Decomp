@@ -15,6 +15,10 @@ s32 TRKSetBufferPosition(TRKBuffer *b, u32 pos);
 s32 TRKRequestSend(TRKBuffer *msgBuf, s32 *bufferId, u32 p1, u32 p2, s32 p3);
 s32 TRKAppendBuffer1_ui32(TRKBuffer *b, u32 data);
 s32 TRKReadBuffer1_ui8(TRKBuffer *b, u8 *data);
+s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data);
+s32 TRKAppendBuffer1_ui16(TRKBuffer *b, u16 data);
+s32 TRKAppendBuffer_ui8(TRKBuffer *b, const u8 *data, s32 count);
+unsigned long strlen(const char *s);
 
 static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
     if (b->position >= 0x880) {
