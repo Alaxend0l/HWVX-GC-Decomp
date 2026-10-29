@@ -45,3 +45,55 @@ s32 GXGetTexObjFmt(GXTexObj *to) {
 
     return t->fmt;
 }
+
+void __GXSetSUTexRegs(void) {
+    u32 nStages;
+    u32 nIndStages;
+    u32 i;
+    u32 map;
+    u32 tmap;
+    u32 coord;
+    u32 *ptref;
+
+    if (gx->tcsManEnab != 0xFF) {
+        nStages = ((gx->genMode >> 10) & 0xF) + 1;
+        nIndStages = (gx->genMode >> 16) & 7;
+        for (i = 0; i < nIndStages; i++) {
+            switch (i) {
+            case 0:
+                tmap = gx->iref & 7;
+                coord = (gx->iref >> 3) & 7;
+                break;
+            case 1:
+                tmap = (gx->iref >> 6) & 7;
+                coord = (gx->iref >> 9) & 7;
+                break;
+            case 2:
+                tmap = (gx->iref >> 12) & 7;
+                coord = (gx->iref >> 15) & 7;
+                break;
+            case 3:
+                tmap = (gx->iref >> 18) & 7;
+                coord = (gx->iref >> 21) & 7;
+                break;
+            }
+            if (!(gx->tcsManEnab & (1 << coord))) {
+                __SetSURegs(tmap, coord);
+            }
+        }
+        for (i = 0; i < nStages; i++) {
+            ptref = &gx->tref[i / 2];
+            map = gx->texmapId[i];
+            tmap = map & ~0x100;
+            if (i & 1) {
+                coord = (*ptref >> 15) & 7;
+            } else {
+                coord = (*ptref >> 3) & 7;
+            }
+            if (tmap != 0xFF && !(gx->tcsManEnab & (1 << coord)) && (gx->tevTcEnab & (1 << i))) {
+                __SetSURegs(tmap, coord);
+            }
+        }
+    }
+}
+
