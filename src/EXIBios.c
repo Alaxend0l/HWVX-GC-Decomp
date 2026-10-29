@@ -77,6 +77,35 @@ static inline void CompleteTransfer(s32 chan) {
 u32 EXIClearInterrupts(s32 chan, BOOL exi, BOOL tc, BOOL ext);
 u32 __OSUnmaskInterrupts(u32 mask);
 #pragma use_lmw_stmw on
+BOOL SetExiInterruptMask(s32 chan, EXIControl *exi) {
+    EXIControl *exi2;
+
+    exi2 = &Ecb[2];
+    switch (chan) {
+    case 0:
+        if ((exi->exiCallback == 0 && exi2->exiCallback == 0) || (exi->state & 0x10)) {
+            __OSMaskInterrupts(0x410000);
+        } else {
+            __OSUnmaskInterrupts(0x410000);
+        }
+        break;
+    case 1:
+        if (exi->exiCallback == 0 || (exi->state & 0x10)) {
+            __OSMaskInterrupts(0x80000);
+        } else {
+            __OSUnmaskInterrupts(0x80000);
+        }
+        break;
+    case 2:
+        if (__OSGetInterruptHandler(25) == 0 || (exi->state & 0x10)) {
+            __OSMaskInterrupts(0x40);
+        } else {
+            __OSUnmaskInterrupts(0x40);
+        }
+        break;
+    }
+}
+
 BOOL EXIImm(s32 chan, void *buf, s32 len, u32 type, EXICallback callback) {
     EXIControl *exi = &Ecb[chan];
     BOOL enabled;
