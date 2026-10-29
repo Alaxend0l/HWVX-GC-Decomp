@@ -14,3 +14,10 @@ void Render_Destroy(void) {
 
 }
 
+void Gfx_GetViewport(s32 *x, s32 *y, s32 *width, s32 *height) {
+    *x = 0;
+    *y = 0;
+    *width = 640;
+    *height = 480;
+}
+
