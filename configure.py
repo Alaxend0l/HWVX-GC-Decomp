@@ -553,7 +553,7 @@ config.libs = [
             Object(NonMatching, "mpc_7xx_603e.c"),
             Object(NonMatching, "main_TRK.c"),
             Object(NonMatching, "dolphin_trk_glue.c"),
-            Object(NonMatching, "targcont.c"),
+            Object(NonMatching, "targcont.c", mw_version="GC/1.3"),
             Object(NonMatching, "target_options.c"),
             Object(NonMatching, "mslsupp.c"),
             Object(NonMatching, "__va_arg.c"),
