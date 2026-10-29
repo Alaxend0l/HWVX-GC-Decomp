@@ -11,6 +11,18 @@ void DBInit(void) {
     DBVerbose = TRUE;
 }
 
+void OSReport(const char *, ...);
+void OSDumpContext(void *);
+void PPCHalt(void);
+void __DBExceptionDestinationAux(void) {
+    u32 *contextAddr = (u32 *)0xC0;
+    void *context = (void *)(*contextAddr + 0x80000000);
+
+    OSReport("DBExceptionDestination\n");
+    OSDumpContext(context);
+    PPCHalt();
+}
+
 void __DBExceptionDestination(void) {
     __mtmsr(__mfmsr() | 0x30);
     __DBExceptionDestinationAux();
