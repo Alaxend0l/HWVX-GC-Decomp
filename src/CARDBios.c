@@ -96,6 +96,21 @@ void __CARDSyncCallback(s32 chan, s32 result) {
     OSWakeupThread(&__CARDBlock[chan].threadQueue);
 }
 
+void __CARDTxHandler(s32 chan, void *context) {
+    CARDControl *card;
+    CARDCallback callback;
+    BOOL err;
+
+    card = &__CARDBlock[chan];
+    err = !EXIDeselect(chan);
+    EXIUnlock(chan);
+    callback = card->txCallback;
+    if (callback) {
+        card->txCallback = 0;
+        callback(chan, (!err && EXIProbe(chan)) ? 0 : -3);
+    }
+}
+
 s32 EXIProbe(s32 chan);
 void __CARDUnlockedHandler(s32 chan, void *context) {
     CARDControl *card;
