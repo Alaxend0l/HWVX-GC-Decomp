@@ -45,6 +45,31 @@ void AIStopDMA(void) {
     __DSPRegs[27] &= ~0x8000;
 }
 
+void AISetStreamPlayState(u32 state) {
+    s32 enabled;
+    u8 volRight;
+    u8 volLeft;
+
+    if (state == AIGetStreamPlayState()) {
+        return;
+    }
+    if ((u32)AIGetStreamSampleRate() == 0 && state == 1) {
+        volRight = AIGetStreamVolRight();
+        volLeft = AIGetStreamVolLeft();
+        AISetStreamVolRight(0);
+        AISetStreamVolLeft(0);
+        enabled = OSDisableInterrupts();
+        __AI_SRC_INIT();
+        __AIRegs[0] = (__AIRegs[0] & ~0x20) | 0x20;
+        __AIRegs[0] = (__AIRegs[0] & ~1) | 1;
+        OSRestoreInterrupts(enabled);
+        AISetStreamVolLeft(volRight);
+        AISetStreamVolRight(volLeft);
+    } else {
+        __AIRegs[0] = (__AIRegs[0] & ~1) | state;
+    }
+}
+
 s32 AIGetStreamPlayState(void)
 {
     return __AIRegs[0] & 1;
