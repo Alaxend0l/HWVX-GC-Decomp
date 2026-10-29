@@ -98,6 +98,26 @@ void PSVECSubtract(Vector *a, Vector *b, Vector *a_b);
 f32 PSVECDotProduct(Vector *a, Vector *b);
 f32 Sqrt(f32 x);
 
+s32 Gfx_FrustrumCullSphereTestAllWindows(Vector *center, f32 radius) {
+    s32 Gfx_FrustrumCullSphereTest(Vector *center, f32 radius);
+    u32 i;
+    s32 ret;
+
+    if (g_CurrentViews != 1) {
+        for (i = 1; i < 5; i++) {
+            if (g_CurrentViews & (1 << i)) {
+                Gfx_SetRenderWindow(i);
+                ret = Gfx_FrustrumCullSphereTest(center, radius);
+                if (ret) {
+                    return ret;
+                }
+            }
+        }
+        return ret;
+    }
+    return Gfx_FrustrumCullSphereTest(center, radius);
+}
+
 void Gfx_DrawGeometry(s32 geometry, s32 matrix) {
     g_pGDL->drawEntries[g_pGDL->numDrawEntries].geometry = geometry;
     g_pGDL->drawEntries[g_pGDL->numDrawEntries].matrix = Gfx_AddWorldMatrixState_CacheMatrix(matrix);
