@@ -64,3 +64,9 @@ void GXSetTevOrder(s32 stage, s32 coord, s32 map, s32 color) {
     gx->bpSentNot = 0;
     gx->dirtyState |= 1;
 }
+
+void GXSetNumTevStages(u8 nStages) {
+    gx->genMode = ((u32)gx->genMode & ~(((1 << 4) - 1) << 10)) | ((u32)(nStages - 1) << 10);
+    gx->dirtyState |= 4;
+}
+
