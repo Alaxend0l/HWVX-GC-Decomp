@@ -522,7 +522,7 @@ config.libs = [
             Object(NonMatching, "GXPixel.c"),
             Object(NonMatching, "GXDraw.c"),
             Object(Matching, "GXStubs.c"),
-            Object(NonMatching, "GXDisplayList.c"),
+            Object(NonMatching, "GXDisplayList.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "GXTransform.c"),
             Object(NonMatching, "GXPerf.c"),
             Object(NonMatching, "SIBios.c"),
