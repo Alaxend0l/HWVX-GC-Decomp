@@ -216,13 +216,16 @@ typedef struct Destructible {
   Vector4 offsetPos;   /* 0x40 */
   u8 pad50[0x24];      /* 0x50 */
   u32 flags;           /* 0x74 */
-  u8 pad78[0x10];      /* 0x78 */
+  s32 health;          /* 0x78 */
+  u8 pad7C[0xC];       /* 0x7C */
   void *slaves;        /* 0x88 slave things list */
   void *vtable;        /* 0x8C */
   u8 *trigger;         /* 0x90 */
-  u8 pad94[0x2C];      /* 0x94 */
+  void *player;        /* 0x94 */
+  u8 pad98[0x28];      /* 0x98 */
   ThingRecord *record; /* 0xC0 */
-  u8 padC4[8];         /* 0xC4 */
+  u8 padC4[4];         /* 0xC4 */
+  s32 deathTimer;      /* 0xC8 ms until a dead destructible is released */
   ConvexHull *hull;    /* 0xCC */
   OBox *orientedBox;   /* 0xD0 */
 } Destructible;
