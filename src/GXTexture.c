@@ -48,6 +48,13 @@ s32 GXGetTexObjFmt(GXTexObj *to) {
     return t->fmt;
 }
 
+void *GXSetTexRegionCallback(void *f) {
+    void *oldcb = gx->texRegionCallback;
+
+    gx->texRegionCallback = f;
+    return oldcb;
+}
+
 void __GXSetSUTexRegs(void) {
     u32 nStages;
     u32 nIndStages;
