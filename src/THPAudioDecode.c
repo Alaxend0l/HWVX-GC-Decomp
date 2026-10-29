@@ -10,6 +10,16 @@ void AudioDecodeThreadStart(void) {
     }
 }
 
+void AudioDecodeThreadCancel(void) {
+    extern s32 AudioDecodeThreadCreated;
+    extern u8 AudioDecodeThread[];
+
+    if (AudioDecodeThreadCreated) {
+        OSCancelThread(AudioDecodeThread);
+        AudioDecodeThreadCreated = 0;
+    }
+}
+
 void *PopFreeAudioBuffer(void) {
     extern u8 FreeAudioBufferQueue[];
     void *msg;
