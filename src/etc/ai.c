@@ -16,7 +16,6 @@ s32 AIRegisterDMACallback(s32 cb) {
     return old;
 }
 
-volatile u16 __DSPRegs[32] : 0xCC005000;
 void AIStartDMA(void) {
     __DSPRegs[27] |= 0x8000;
 }
