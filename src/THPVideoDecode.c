@@ -131,7 +131,6 @@ void VideoDecode(THPReadBuffer *readBuffer) {
 }
 
 void *PopFreeTextureSet(void) {
-    extern u8 FreeTextureSetQueue[];
     void *msg;
 
     OSReceiveMessage(FreeTextureSetQueue, &msg, 1);
