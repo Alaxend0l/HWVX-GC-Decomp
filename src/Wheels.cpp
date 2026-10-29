@@ -1,6 +1,8 @@
 #include "common.h"
 #include "LGWheels.h"
 
+#pragma readonly_strings on
+
 extern "C" u32 SIProbe(s32 chan);
 
 extern "C" s32 LGOpen(s32 chan, u32 *handle);
