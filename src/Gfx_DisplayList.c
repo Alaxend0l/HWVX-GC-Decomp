@@ -209,7 +209,8 @@ typedef struct GDL {
     u32 numMatrices;
     u8 unk78[0x80 - 0x78];
     u16 alphaTable[0x100];
-    GDLAlphaEntry alphaEntries[0x4268];
+    GDLAlphaEntry alphaEntries[0x1388];
+    GDL2DSprite sprites2D[2000];
     GDLSprite sprites[0x7CF];
     u8 unk38C90[0x69A00 - 0x38C90];
     GDLAlphaGroup alphaGroups[0x400];
