@@ -143,6 +143,53 @@ f32 RaySphereTest(Vector4 *start, Vector4 *dir, Vector4 *center, f32 radius, f32
     return dist;
 }
 
+typedef struct BoxPlane {
+    Vector4 plane;
+    u8 type;
+    u8 pad;
+    u16 next;
+    u8 pad14[0xC];
+} BoxPlane;
+
+static inline f32 RayBoxTestLocal(Vector4 *start, Vector4 *dir, Vector4 *box, f32 t, Vector4 *hit) {
+    Vector4 *BSPN0_CollideWithSegment(BoxPlane *node, Vector4 *hit, Vector4 *p0, Vector4 *p1);
+    f32 Distance_Plane(void *plane, void *point);
+    BoxPlane planes[6] = {
+        { { 1.0f, 0.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, 1.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, 0.0f, 1.0f, 0.0f }, 2, 0, 1 },
+        { { -1.0f, 0.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, -1.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, 0.0f, -1.0f, 0.0f }, 0, 0, 0 },
+    };
+    Vector4 end;
+    Vector4 *res;
+    f32 d0;
+    f32 d1;
+    f32 dist = t;
+
+    planes[0].plane.w = -box[1].x;
+    planes[1].plane.w = -box[1].y;
+    planes[2].plane.w = -box[1].z;
+    planes[3].plane.w = box[0].x;
+    planes[4].plane.w = box[0].y;
+    planes[5].plane.w = box[0].z;
+    end.x = t * dir->x + start->x;
+    end.y = t * dir->y + start->y;
+    end.z = t * dir->z + start->z;
+    res = BSPN0_CollideWithSegment(planes, NULL, start, &end);
+    if (res != NULL) {
+        d0 = Distance_Plane(res, start);
+        d1 = Distance_Plane(res, &end);
+        dist *= d0 / (d0 - d1);
+        hit[0].x = dir->x * dist + start->x;
+        hit[0].y = dir->y * dist + start->y;
+        hit[0].z = dir->z * dist + start->z;
+        hit[1] = *res;
+    }
+    return dist;
+}
+
 f32 PhysicalProperties_CollideWithRay(u8 *props, void *mtx, Vector4 *start, Vector4 *dir, f32 t, u8 *hit) {
     typedef struct RayHit {
         Vector4 pos;
