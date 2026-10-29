@@ -19,6 +19,7 @@ typedef struct TRKState {
     u8 pad_0[0x98];
     s32 field_98;
     s32 field_9C;
+    void *inputPendingPtr;
 } TRKState;
 
 typedef struct TRKStepStatus {
