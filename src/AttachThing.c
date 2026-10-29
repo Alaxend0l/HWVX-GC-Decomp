@@ -103,9 +103,9 @@ void AttachThing_DrawCorona(void *arg0) {
         u8 pad104[0x154 - 0x104];
         CoronaColor color;
     } *thing = arg0;
-    Vector4 screen;
-    Vector4 camera;
-    Vector4 dir;
+    Vector4 screen __attribute__((aligned(16)));
+    Vector4 camera __attribute__((aligned(16)));
+    Vector4 dir __attribute__((aligned(16)));
     f32 dist;
     CoronaColor scaled;
     CoronaColor color;
