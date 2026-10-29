@@ -207,15 +207,9 @@ void SISetCommand(s32 chan, u32 command);
 u32 SIEnablePolling(u32 poll);
 void PADOriginCallback(s32 chan, u32 error, void *context)
 {
-    u32 type;
-
     if (!(error & 0xF)) {
         UpdateOrigin(ResettingChan);
-        chan = ResettingChan;
-        EnabledBits |= 0x80000000 >> chan;
-        SIGetResponse(chan, &type);
-        SISetCommand(chan, AnalogMode | 0x400000);
-        SIEnablePolling(EnabledBits);
+        PADEnable(ResettingChan);
     }
     DoReset();
 }
