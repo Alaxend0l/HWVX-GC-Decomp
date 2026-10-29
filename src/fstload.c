@@ -14,7 +14,37 @@ typedef struct DVDBB2 {
     u32 padding0;
 } DVDBB2;
 
-typedef struct DVDDiskID DVDDiskID;
+typedef struct DVDDiskID {
+    char gameName[4];
+    char company[2];
+    u8 diskNumber;
+    u8 gameVersion;
+    u8 streaming;
+    u8 streamingBufSize;
+    u8 padding[22];
+} DVDDiskID;
+
+struct DVDCommandBlock {
+    u8 unk0[0x30];
+};
+
+typedef struct OSBootInfo {
+    DVDDiskID DVDDiskID;
+    u32 magic;
+    u32 version;
+    u32 memorySize;
+    u32 consoleType;
+    void *arenaLo;
+    void *arenaHi;
+    void *FSTLocation;
+    u32 FSTMaxLength;
+} OSBootInfo;
+
+void *OSGetArenaHi(void);
+void OSSetArenaHi(void *newHi);
+s32 DVDGetDriveStatus(void);
+void OSReport(const char *msg, ...);
+void *memcpy(void *dst, const void *src, u32 n);
 
 BOOL DVDReadAbsAsyncForBS(DVDCommandBlock *block, void *addr, s32 length, s32 offset, DVDCBCallback callback);
 BOOL DVDReadDiskID(DVDCommandBlock *block, DVDDiskID *diskID, DVDCBCallback callback);
