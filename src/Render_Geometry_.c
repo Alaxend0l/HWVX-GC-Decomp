@@ -95,6 +95,26 @@ void Render_UseLighting(u8 enable) {
     }
 }
 
+void Render_DrawSpheres(void) {
+    u32 i;
+    s32 cullMode;
+    GDLMatrix mtx;
+
+    cullMode = m_cullMode;
+    Render_SetTextureHandle(0xFFFF);
+    Render_StateCullMode(2);
+    mtx = *(GDLMatrix *)g_identity;
+    for (i = 0; i < g_pGDL->numSpheres; i++) {
+        mtx.m[12] = g_pGDL->spheres[i].x;
+        mtx.m[13] = g_pGDL->spheres[i].y;
+        mtx.m[14] = g_pGDL->spheres[i].z;
+        mtx.m[0] = mtx.m[5] = mtx.m[10] = g_pGDL->spheres[i].radius;
+        Gfx_SetWorldMatrix((f32 (*)[4])mtx.m);
+        GXDrawSphere(8, 16);
+    }
+    Render_StateCullMode(cullMode);
+}
+
 void SetVertexBuffer(u32 *vb) {
     u8 *data;
 
