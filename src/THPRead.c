@@ -10,6 +10,14 @@ void ReadThreadStart(void) {
     }
 }
 
+void *PopReadedBuffer(void) {
+    extern u8 ReadedBufferQueue[];
+    void *msg;
+
+    OSReceiveMessage(ReadedBufferQueue, &msg, 1);
+    return msg;
+}
+
 void PushReadedBuffer(void *arg0) {
     extern u8 PrepareReadyQueue_8036ED00[];
     OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
