@@ -500,7 +500,7 @@ config.libs = [
             Object(Matching, "CARDRdwr.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "CARDBlock.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "CARDDir.c", mw_version="GC/1.2.5n"),
-            Object(NonMatching, "CARDCheck.c"),
+            Object(NonMatching, "CARDCheck.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "CARDMount.c"),
             Object(Matching, "CARDFormat.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "CARDOpen.c", mw_version="GC/1.2.5n"),
