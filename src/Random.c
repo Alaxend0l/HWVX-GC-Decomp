@@ -26,3 +26,11 @@ f32 RandomNumberGenerator_GetRandomFloat(f32 min, f32 max) {
     return rng->floats[rng->index] * (max - min) + min;
 }
 
+f32 RandomAdd(f32 base, f32 range) {
+    RandomNumberGenerator *rng = &g_randomNumberGenerator;
+    if (++rng->index >= 0x400) {
+        rng->index = 0;
+    }
+    return rng->floats[rng->index] * range + base;
+}
+
