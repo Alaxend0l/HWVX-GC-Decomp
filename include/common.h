@@ -232,7 +232,8 @@ typedef struct OConvexHull {
 } OConvexHull;
 
 typedef struct CollisionPair {
-  u8 pad00[0x20]; /* 0x00 */
+  Vector4 pos;    /* 0x00 */
+  Vector4 normal; /* 0x10 */
   u32 objectA;    /* 0x20 */
   u32 objectB;    /* 0x24 */
   s32 time;       /* 0x28 */
