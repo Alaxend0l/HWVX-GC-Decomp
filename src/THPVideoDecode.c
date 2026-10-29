@@ -37,6 +37,9 @@ typedef struct THPTextureSet {
 
 extern s32 First;
 extern u8 VideoDecodeThread[];
+extern u8 FreeTextureSetQueue[];
+extern u8 DecodedTextureSetQueue[];
+extern s32 VideoDecodeThreadCreated;
 
 void VideoDecodeThreadStart(void) {
     extern s32 VideoDecodeThreadCreated;
