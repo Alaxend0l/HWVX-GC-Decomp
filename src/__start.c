@@ -31,7 +31,7 @@ void __check_pad3(void)
 
 void __check_pad3(void);
 void __init_registers(void);
-void __init_data(void);
+static void __init_data(void);
 void __init_hardware(void);
 void __init_user(void);
 void DBInit(void);
