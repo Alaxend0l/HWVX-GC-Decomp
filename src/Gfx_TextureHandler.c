@@ -44,6 +44,24 @@ void Gfx_TextureHandler_Destroy(void) {
     m_texture = NULL;
 }
 
+void Gfx_FontManager_Init(void);
+void Gfx_TextureManager_Init(void) {
+    u32 i;
+
+    for (i = 1; i < m_totalTextures; i++) {
+        Render_DestroyTextureSlot(i);
+        if (m_texture[i].data != NULL && m_texture[i].unk3A == 0) {
+            Deallocate(m_texture[i].data);
+        }
+        memset(&m_texture[i], 0, 0x20);
+        m_texture[i].refCount = 0;
+        m_texture[i].unk30 = 0;
+        m_texture[i].width = 0;
+        m_texture[i].data = NULL;
+    }
+    Gfx_FontManager_Init();
+}
+
 void Gfx_SetTextureWrapMode(u16 id, u16 mode) {
     Texture *tex = &m_texture[id];
 
