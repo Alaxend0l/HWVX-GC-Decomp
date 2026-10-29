@@ -73,6 +73,19 @@ void DBInitInterrupts(void) {
     __OSUnmaskInterrupts(0x40);
 }
 
+volatile unsigned long __EXIRegs[16] : 0xCC006800;
+void DBInitComm(unsigned char **inputFlagPtr, MTRCallbackType callback) {
+    int interrupts;
+
+    interrupts = OSDisableInterrupts();
+    pEXIInputFlag = &EXIInputFlag;
+    *inputFlagPtr = pEXIInputFlag;
+    MTRCallback = callback;
+    __OSMaskInterrupts(0x18000);
+    __EXIRegs[10] = 0;
+    OSRestoreInterrupts(interrupts);
+}
+
 extern void (*DBGCallback)(short, void *);
 volatile unsigned long __PIRegs[12] : 0xCC003000;
 void DBGHandler(int interrupt, void *context) {
