@@ -6,6 +6,38 @@ void Mpeg_Create(void)
     Mpeg_Init();
 }
 
+u32 Mpeg_Heartbeat(void) {
+    typedef struct THPVideoInfo {
+        u32 xSize;
+        u32 ySize;
+    } THPVideoInfo;
+    void GXInvalidateVtxCache(void);
+    void THPPlayerDrawCurrentFrame(s32 rmode, s32 x, s32 y, u32 polyW, u32 polyH);
+    void THPPlayerDrawDone(void);
+    s32 THPPlayerGetState(void);
+    void THPPlayerStop(void);
+    void THPPlayerClose(void);
+    extern u8 badMojo_803C7734;
+    extern s32 m_movie_x_803C7740;
+    extern s32 m_movie_y_803C773C;
+    extern s32 m_rendermode_803C7754;
+    extern THPVideoInfo m_videoInfo_803C7744;
+
+    if (badMojo_803C7734) {
+        return 0;
+    }
+    GXInvalidateVtxCache();
+    THPPlayerDrawCurrentFrame(m_rendermode_803C7754, m_movie_x_803C7740, m_movie_y_803C773C, m_videoInfo_803C7744.xSize, m_videoInfo_803C7744.ySize);
+    THPPlayerDrawDone();
+    if (THPPlayerGetState() == 5) {
+        THPPlayerStop();
+        THPPlayerClose();
+        badMojo_803C7734 = 1;
+        return 0;
+    }
+    return THPPlayerGetState() == 3;
+}
+
 void Mpeg_Render(void)
 {
     Render_FlipBuffers();
@@ -13,6 +45,21 @@ void Mpeg_Render(void)
 
 void Mpeg_Destroy(void) {
 
+}
+
+void AudioInit(void) {
+    void AudioCallback(void);
+    void *AIRegisterDMACallback(void *callback);
+    void AIStartDMA(void);
+    extern s32 SoundBufferNumber_803C7730;
+    extern u8 SoundBuffer_8036E360[][0x3C0];
+    extern void *audio_restore_cb;
+
+    audio_restore_cb = AIRegisterDMACallback(AudioCallback);
+    memset(SoundBuffer_8036E360[SoundBufferNumber_803C7730], 0, 0x3C0);
+    DCFlushRange(SoundBuffer_8036E360[SoundBufferNumber_803C7730], 0x3C0);
+    AIInitDMA(SoundBuffer_8036E360[SoundBufferNumber_803C7730], 0x3C0);
+    AIStartDMA();
 }
 
 void AudioCallback(void) {
