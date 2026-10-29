@@ -15,13 +15,13 @@ typedef struct InputUnk108 {
     u8 unkB;
 } InputUnk108;
 
-static RumbleStatus rumbleStatus[4];
-static s32 s_rumbleTime[4];
-static u8 s_unk30[0x40];
-static u8 s_unk70[0x40];
-static u16 s_keyMap[20];
-static PADStatus s_unkD8[4];
-static InputUnk108 s_unk108[4];
+static RumbleStatus rumbleStatus[4] = {0};
+static s32 s_rumbleTime[4] = {0};
+static u8 s_unk30[0x40] = {0};
+static u8 s_unk70[0x40] = {0};
+static u16 s_keyMap[20] = {0};
+static PADStatus s_unkD8[4] = {0};
+static InputUnk108 s_unk108[4] = {0};
 extern u16 g_pKeyToDI[20];
 extern u8 g_padUpPos[4];
 extern u8 g_padDownPos[4];
@@ -59,6 +59,29 @@ s32 Input_Create(void) {
     GBAConnectivityInit__Fv();
     return 1;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void Input_Init(void) {
+    u32 i;
+
+    memset(s_unk30, 0, 8);
+    memset(s_unk70, 0, 8);
+    for (i = 0; i < 4; i++) {
+        memset(&g_VirtualPad[i], 0, sizeof(VirtualPad));
+        g_VirtualPad[i].unk0[2] = 1;
+        g_VirtualPad[i].forceFeedbackActive = 1;
+        g_padUpPos[i] = 0;
+        g_padDownPos[i] = 0;
+        rumbleStatus[i].duration = -1;
+        rumbleStatus[i].active = 0;
+        s_unk108[i].unkA = 0;
+    }
+    s_rumbleTime[0] = 200;
+    s_rumbleTime[1] = 200;
+    g_StopInput = 0;
+}
+#pragma pop
 
 void Input_Destroy(void) {
     M2C_UNK PADControlMotor(M2C_UNK, M2C_UNK);
