@@ -1,4 +1,90 @@
 #include "common.h"
+#include "CarA.h"
+
+typedef struct GPAIScripts {
+    u8 pad0[0x90];
+    u32 scripts[4];         /* 0x90 one per difficulty */
+} GPAIScripts;
+
+typedef struct GPItem {
+    u8 pad0[0x30];
+    struct {
+        u8 pad0[0x20];
+        s32 count;          /* 0x20 */
+    } *info;                /* 0x30 */
+} GPItem;
+
+/* A car placed in the world (World_GetTileCar), 0x60 bytes. */
+typedef struct GPTileCar {
+    Vector4 pos;            /* 0x00 */
+    f32 rotX;               /* 0x10 */
+    f32 rotY;               /* 0x14 */
+    f32 rotZ;               /* 0x18 */
+    u8 pad1C[8];
+    GPAIScripts *aiScripts; /* 0x24 */
+    CarA *creature;         /* 0x28 */
+    u32 mode;               /* 0x2C */
+    u8 pad30[4];
+    u8 unk34;               /* 0x34 */
+    u8 port;                /* 0x35 1-4: human player slot */
+    u8 pad36[2];
+    f32 nearDist;           /* 0x38 */
+    f32 farDist;            /* 0x3C */
+    u32 scripts[4];         /* 0x40 one per difficulty */
+    u8 pad50[4];
+    GPItem *item;           /* 0x54 */
+    u8 pad58[7];
+    u8 unk5F;               /* 0x5F */
+} GPTileCar;
+
+typedef struct GPCreatureParams {
+    Vector4 pos;            /* 0x00 */
+    Vector4 quat;           /* 0x10 */
+    Vector4 vel;            /* 0x20 */
+    GPAIScripts *aiScripts; /* 0x30 */
+    u8 pad34[8];
+    void *player;           /* 0x3C */
+} GPCreatureParams;
+
+typedef struct GPAIPlayerDesc {
+    u32 script;
+    f32 nearSq;
+    f32 farSq;
+    u8 unkC;
+    u8 unkD;
+} GPAIPlayerDesc;
+
+typedef struct GPSpeakerSound {
+    u8 type;                /* 0x00 */
+    u8 pad1[7];
+    u8 unk8[4];             /* 0x08 */
+    u8 unkC[8];             /* 0x0C */
+    s32 unk14;              /* 0x14 */
+    u8 *unk18;              /* 0x18 */
+} GPSpeakerSound;
+
+typedef struct GPTileSpeaker {
+    Vector4 pos;            /* 0x00 */
+    u8 pad10[4];
+    GPSpeakerSound *sound;  /* 0x14 */
+    u8 pad18[4];
+    u32 mode;               /* 0x1C */
+    u8 pad20[0xC];
+    u32 emitter;            /* 0x2C */
+} GPTileSpeaker;
+
+typedef struct GPTilePath {
+    u8 pad0[4];
+    u32 unk4;               /* 0x04 */
+    u32 unk8;               /* 0x08 */
+    u32 unkC;               /* 0x0C */
+    CarA *thing;            /* 0x10 */
+    u32 unk14;              /* 0x14 */
+    u8 pad18;
+    u8 hasSpeed;            /* 0x19 */
+    u8 pad1A[2];
+    f32 speed;              /* 0x1C */
+} GPTilePath;
 
 
 void ExitStateGamePlay(s32 arg0) {
