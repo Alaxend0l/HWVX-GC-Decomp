@@ -103,7 +103,8 @@ typedef struct CarA {
   u8 pad348[0x28];          /* 0x348 */
   void *hull;               /* 0x370 OConvexHullHolder: Released + NULLed in CarA_Release */
   u32 partVisMask;          /* 0x374 bit per car part in the reflection loop */
-  u8 pad378[0x18];          /* 0x378 */
+  f32 unk378;               /* 0x378 */
+  u8 pad37C[0x14];          /* 0x37C */
   f32 forceAccum[3];        /* 0x390 += force in CarA_ProcessForce */
   u8 pad39C[4];             /* 0x39C */
   f32 torqueAccum[3];       /* 0x3A0 += torque in CarA_ProcessForce */
