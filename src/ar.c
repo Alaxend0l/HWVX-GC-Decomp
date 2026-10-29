@@ -29,6 +29,35 @@ void ARStartDMA(u32 type, u32 mainmem_addr, u32 aram_addr, u32 length) {
     OSRestoreInterrupts(enabled);
 }
 
+void *__OSSetInterruptHandler(s16 interrupt, void *handler);
+void __OSUnmaskInterrupts(u32 mask);
+void __ARChecksize(void);
+static void __ARHandler(s16 interrupt, void *context);
+u32 ARInit(u32 *stack_index_addr, u32 num_entries) {
+    extern s32 __AR_init_flag;
+    extern void *__AR_Callback;
+    extern u32 __AR_FreeBlocks;
+    extern u32 __AR_StackPointer;
+    extern u32 *__AR_BlockLength;
+    s32 old;
+
+    if (__AR_init_flag == 1) {
+        return 0x4000;
+    }
+    old = OSDisableInterrupts();
+    __AR_Callback = NULL;
+    __OSSetInterruptHandler(6, __ARHandler);
+    __OSUnmaskInterrupts(0x02000000);
+    __AR_FreeBlocks = num_entries;
+    __AR_StackPointer = 0x4000;
+    __AR_BlockLength = stack_index_addr;
+    __DSPRegs[13] = (u16)((__DSPRegs[13] & 0xFF) | (__DSPRegs[13] & ~0xFF));
+    __ARChecksize();
+    __AR_init_flag = 1;
+    OSRestoreInterrupts(old);
+    return __AR_StackPointer;
+}
+
 void ARReset(void) {
     extern s32 __AR_init_flag;
     __AR_init_flag = 0;
