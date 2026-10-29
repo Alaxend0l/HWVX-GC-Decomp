@@ -111,3 +111,16 @@ s32 SetVoicePos(u32 id, s16 x, s16 y) {
     return 0;
 }
 
+s32 SetVoicePitch(u32 id, s32 pitch) {
+    Voice *voice = &g_voice[(u8)id];
+
+    if (voice->id == id) {
+        voice->pitch = pitch;
+        if (SetVoiceRate_(voice)) {
+            return 1;
+        }
+        SetVoiceState_(voice, 3);
+    }
+    return 0;
+}
+
