@@ -137,6 +137,81 @@ error:
     callback(chan, result);
 }
 
+s32 __CARDFormatRegionAsync(s32 chan, u16 encode, CARDCallback callback)
+{
+    CARDControl *card;
+    CARDID *id;
+    u8 *dir;
+    CARDDirCheck *check;
+    u16 *fat;
+    s16 i;
+    s32 result;
+    OSSram *sram;
+    OSSramEx *sramEx;
+    u16 viDTVStatus;
+    s64 time;
+    s64 rand;
+
+    result = __CARDGetControlBlock(chan, &card);
+    if (result < 0) {
+        return result;
+    }
+
+    id = card->workArea;
+    memset(id, 0xFF, 0x2000);
+    viDTVStatus = *(volatile u16 *)0xCC00206E;
+
+    id->encode = encode;
+
+    sram = __OSLockSram();
+    *(u32 *)&id->serial[20] = sram->counterBias;
+    *(u32 *)&id->serial[24] = sram->language;
+    __OSUnlockSram(0);
+
+    rand = time = OSGetTime();
+
+    sramEx = __OSLockSramEx();
+    for (i = 0; i < 12; i++) {
+        rand = (rand * 1103515245 + 12345) >> 16;
+        id->serial[i] = (u8)(sramEx->flashID[chan][i] + rand);
+        rand = ((rand * 1103515245 + 12345) >> 16) & 0x7FFF;
+    }
+    __OSUnlockSramEx(0);
+
+    *(u32 *)&id->serial[28] = viDTVStatus;
+    *(s64 *)&id->serial[12] = time;
+
+    id->deviceID = 0;
+    id->size = card->size;
+    __CARDCheckSum(id, sizeof(CARDID) - sizeof(u32), &id->checkSum, &id->checkSumInv);
+
+    for (i = 0; i < 2; i++) {
+        dir = (u8 *)card->workArea + (1 + i) * 0x2000;
+        memset(dir, 0xFF, 0x2000);
+        check = __CARDGetDirCheck(dir);
+        check->checkCode = i;
+        __CARDCheckSum(dir, 0x2000 - sizeof(u32), &check->checkSum, &check->checkSumInv);
+    }
+    for (i = 0; i < 2; i++) {
+        fat = (u16 *)((u8 *)card->workArea + (3 + i) * 0x2000);
+        memset(fat, 0x00, 0x2000);
+        fat[2] = i;
+        fat[3] = card->cBlock - 5;
+        fat[4] = 4;
+        __CARDCheckSum(&fat[2], 0x2000 - sizeof(u32), &fat[0], &fat[1]);
+    }
+
+    card->apiCallback = callback ? callback : __CARDDefaultApiCallback;
+    DCStoreRange(card->workArea, 0xA000);
+
+    card->formatStep = 0;
+    result = __CARDEraseSector(chan, card->sectorSize * card->formatStep, FormatCallback);
+    if (result < 0) {
+        __CARDPutControlBlock(card, result);
+    }
+    return result;
+}
+
 s32 CARDFormat(s32 chan)
 {
     s32 __CARDFormatRegionAsync(s32 chan, u16 encode, CARDCallback callback);
