@@ -23,3 +23,23 @@ void DVDReset(void);
 static s32 status;
 static DVDBB2 *bb2;
 static DVDDiskID *idTmp;
+
+static void cb(s32 result, DVDCommandBlock *block) {
+    if (result > 0) {
+        switch (status) {
+        case 0:
+            status = 1;
+            DVDReadAbsAsyncForBS(block, bb2, 0x20, 0x420, cb);
+            break;
+        case 1:
+            status = 2;
+            DVDReadAbsAsyncForBS(block, bb2->FSTAddress, (bb2->FSTLength + 0x1F) & ~0x1F, bb2->FSTPosition, cb);
+            break;
+        }
+    } else if (result == -1) {
+    } else if (result == -4) {
+        status = 0;
+        DVDReset();
+        DVDReadDiskID(block, idTmp, cb);
+    }
+}
