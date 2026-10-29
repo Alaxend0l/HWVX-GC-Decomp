@@ -585,7 +585,7 @@ config.libs = [
             Object(Matching, "signal.c", mw_version="GC/1.3"),
             Object(NonMatching, "string.c", mw_version="GC/1.3"),
             Object(Matching, "time.c", mw_version="GC/1.3"),
-            Object(NonMatching, "uart_console_io.c", mw_version="GC/1.3"),
+            Object(Matching, "uart_console_io.c", mw_version="GC/1.3"),
             Object(Matching, "wchar_io.c"),
             Object(NonMatching, "e_acos.c"),
             Object(NonMatching, "e_atan2.c"),
