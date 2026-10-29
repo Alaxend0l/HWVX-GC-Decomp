@@ -13,6 +13,67 @@ void ThingManagerList_Append(void **arg0, void *arg1) {
     *arg0 = arg1;
 }
 
+/* The fields every pooled Thing shares. */
+typedef struct ThingHeader {
+    u8 pad0[0x74];
+    u32 flags;                  /* 0x74 */
+    u8 pad78[0x10];
+    u32 unk88;                  /* 0x88 */
+    void *vtable;               /* 0x8C */
+    u8 pad90[0x10];
+    struct ThingHeader *prev;   /* 0xA0 */
+    struct ThingHeader *next;   /* 0xA4 */
+    u32 type;                   /* 0xA8 index into the free lists */
+} ThingHeader;
+
+typedef struct ThingSlotProjectile { ThingHeader thing; u8 padAC[0x84]; s32 unk130; u8 pad134[0x2C]; } ThingSlotProjectile;
+typedef struct ThingSlotD0 { ThingHeader thing; u8 pad[0xD0 - sizeof(ThingHeader)]; } ThingSlotD0;
+typedef struct ThingSlotE0 { ThingHeader thing; u8 pad[0xE0 - sizeof(ThingHeader)]; } ThingSlotE0;
+typedef struct ThingSlotF0 { ThingHeader thing; u8 pad[0xF0 - sizeof(ThingHeader)]; } ThingSlotF0;
+typedef struct ThingSlot100 { ThingHeader thing; u8 pad[0x100 - sizeof(ThingHeader)]; } ThingSlot100;
+typedef struct ThingSlot110 { ThingHeader thing; u8 pad[0x110 - sizeof(ThingHeader)]; } ThingSlot110;
+typedef struct ThingSlot120 { ThingHeader thing; u8 pad[0x120 - sizeof(ThingHeader)]; } ThingSlot120;
+typedef struct ThingSlot140 { ThingHeader thing; u8 pad[0x140 - sizeof(ThingHeader)]; } ThingSlot140;
+typedef struct ThingSlot160 { ThingHeader thing; u8 pad[0x160 - sizeof(ThingHeader)]; } ThingSlot160;
+typedef struct ThingSlot1D0 { ThingHeader thing; u8 pad[0x1D0 - sizeof(ThingHeader)]; } ThingSlot1D0;
+typedef struct ThingSlot1F0 { ThingHeader thing; u8 pad[0x1F0 - sizeof(ThingHeader)]; } ThingSlot1F0;
+typedef struct ThingSlot480 { ThingHeader thing; u8 pad[0x480 - sizeof(ThingHeader)]; } ThingSlot480;
+typedef struct ThingSlot5A0 { ThingHeader thing; u8 pad[0x5A0 - sizeof(ThingHeader)]; } ThingSlot5A0;
+
+/* g_thingManager_DARYL's thing pools, one per free list type. */
+typedef struct ThingPools {
+    ThingSlotProjectile projectiles[140]; /* 0x00000 type 0 */
+    ThingSlot100 eventSeqs[192];        /* 0x0C080 type 1 */
+    ThingSlotD0 emitters[160];          /* 0x18080 type 2 */
+    ThingSlotF0 destructibles[500];     /* 0x20280 type 3 */
+    ThingSlotF0 items[96];              /* 0x3D740 type 4 */
+    ThingSlot160 attaches[192];         /* 0x43140 type 5 */
+    ThingSlot100 debris[128];           /* 0x53940 type 6 */
+    ThingSlot1D0 creature;              /* 0x5B940 type 7 */
+    ThingSlot480 wildCardRacks[16];     /* 0x5BB10 type 8 */
+    ThingSlot5A0 cars[8];               /* 0x60310 type 9 */
+    ThingSlot140 physicalObjects[100];  /* 0x63010 type 10 */
+    ThingSlotD0 looker;                 /* 0x6AD10 type 11 */
+    ThingSlot110 tracers[32];           /* 0x6ADE0 type 12 */
+    ThingSlot120 pod;                   /* 0x6CFE0 type 13 */
+    ThingSlot1F0 drone;                 /* 0x6D100 type 14 */
+    ThingSlotF0 motions[56];            /* 0x6D2F0 type 15 */
+    ThingSlotE0 soundSeqs[128];         /* 0x70770 type 16 */
+    ThingSlotD0 radarBlips[64];         /* 0x77770 type 17 */
+    void *activeList;                   /* 0x7AB70 */
+    void *freeList[19];                 /* 0x7AB74 */
+} ThingPools;
+
+static inline void ThingManager_InitFreeThing(ThingHeader *thing, void *vtable, u32 type) {
+    thing->vtable = vtable;
+    thing->unk88 = 0;
+    thing->flags |= 0x1000;
+    thing->prev = NULL;
+    thing->next = NULL;
+    thing->type = type;
+    ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
+}
+
 void ThingManagerList_Remove(void **arg0, void *arg1) {
     void *temp_r5;
     void *temp_r5_2;
