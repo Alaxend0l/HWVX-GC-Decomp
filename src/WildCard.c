@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 
 s32 WildCardRack_Init(void *thing, void *data) {
     typedef struct WildCardSlot {
@@ -207,6 +209,52 @@ void WildCardRack_Add(void *thing, u8 *item, s16 count) {
             rack->unk470 = slot;
         }
     }
+}
+
+s8 Thing_HasThing(u8 *thing, void *target);
+void *ThingManagerList_GetByType(void *list, s32 type);
+s32 TriggerItemPickup(u32 *trigger) {
+    typedef struct WildCardSlot {
+        u8 pad0[0x4C];
+        u8 *item;
+    } WildCardSlot;
+    typedef struct WildCardRack {
+        u8 pad0[0xB0];
+        WildCardSlot slots[12];
+    } WildCardRack;
+    u32 i;
+    u32 j;
+    u32 numItems;
+    u8 *item;
+    u32 found;
+    u8 *thing;
+    WildCardRack *rack;
+    u32 k;
+
+    numItems = trigger[0] + 1;
+    for (i = 0; i < trigger[0]; i++) {
+        item = (u8 *)trigger[i + 1];
+        for (j = 0; j < trigger[numItems]; j++) {
+            found = 0;
+            thing = *(u8 **)(trigger[j + numItems + 1] + 0x28);
+            if (thing != NULL) {
+                if (Thing_HasThing(thing, *(void **)(item + 0x24))) {
+                    return 1;
+                }
+                rack = ThingManagerList_GetByType(thing + 0x344, 8);
+                for (k = 0; rack != NULL && k < 12; k++) {
+                    if (rack->slots[k].item != NULL &&
+                        *(u32 *)(*(u8 **)(item + 0x1C) + 0x30) == *(u32 *)(rack->slots[k].item + 0x30)) {
+                        found = 1;
+                    }
+                }
+                if (found) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
 }
 
 s32 WildCardRack_Invalidate(u8 *rack, u32 start, u32 end) {
