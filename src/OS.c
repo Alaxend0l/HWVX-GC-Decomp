@@ -79,3 +79,19 @@ void ClearArena(void)
   }
   memset((void *) __OSSavedRegionEnd, 0, OSGetArenaHi() - __OSSavedRegionEnd);
 }
+
+#pragma peephole off
+void InquiryCallback(s32 result, u32 *block)
+{
+    switch (block[3])
+    {
+    case 0:
+        *(u16 *)0x800030E6 = (u16)(0x8000 | ((u16 *)DriveInfo)[1]);
+        break;
+    default:
+        *(u16 *)0x800030E6 = 1;
+        break;
+    }
+}
+#pragma peephole on
+
