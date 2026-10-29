@@ -53,6 +53,7 @@ void SetVoicePriority_(VoiceHW *voice) {
     OSRestoreInterrupts(level);
 }
 
+#pragma optimization_level 1
 void DestroyVoice_(AXVPB *axv) {
     VoiceHW *voice;
     s32 level;
@@ -62,14 +63,13 @@ void DestroyVoice_(AXVPB *axv) {
     if (voice->kind == 0) {
         DestroySongVoice(voice);
     }
-    voice->id = 0xFD;
     voice->state = 0;
+    voice->id = 0xFD;
     voice->axv = NULL;
     voice->next = g_pFree;
     g_pFree = voice;
     OSRestoreInterrupts(level);
 }
-
 void SetVoiceVol_(u8 *v, u32 vol) {
     extern s32 g_speakers_803C789C;
     extern const u16 g_panTab[128];
