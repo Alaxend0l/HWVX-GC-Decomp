@@ -108,12 +108,6 @@ void Audio_Update_(void) {
 #pragma push
 #pragma optimization_level 1
 u32 HAllocA_(s32 size) {
-    typedef struct MemBlk {
-        u32 addr;
-        s32 size;
-        u32 unk8;
-        u32 unkC;
-    } MemBlk;
     extern MemBlk g_memblk[];
     extern s32 g_last;
     extern u32 g_heap;
