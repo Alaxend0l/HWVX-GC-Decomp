@@ -262,6 +262,8 @@ s32 ActionNavPointChangeMode(u32 *action) {
     return 1;
 }
 
+void Trigger_PauseTACSystem(s8 paused);
+s8 Trigger_IsTACSystemPaused(void);
 s32 ActionPauseTACSystem(s32 *action) {
     switch (action[0]) {
     case 7:
@@ -271,7 +273,7 @@ s32 ActionPauseTACSystem(s32 *action) {
         Trigger_PauseTACSystem(0);
         break;
     case 2:
-        Trigger_PauseTACSystem(!(s8)Trigger_IsTACSystemPaused());
+        Trigger_PauseTACSystem(!Trigger_IsTACSystemPaused());
         break;
     }
     return 1;
