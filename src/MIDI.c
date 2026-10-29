@@ -49,7 +49,7 @@ typedef struct MIDI_CHN
     u8 field_1F;
 } MIDI_CHN;
 
-u8 g_song[0x24];
+static u8 g_song[0x24];
 
 typedef struct MIDI_INST
 {
