@@ -23,6 +23,87 @@ void *FileStreaming_InitializeDataPack(void *, s32, s32);
 u8 *DataPack_GetScript(void *, s32);
 s32 PlayerManager_PlayerHumanCount(void);
 
+void GameSetting_Init(void) {
+    typedef struct GameInfo {
+        const char *name;
+        const char *id;
+        const char *title;
+        const char *fileName;
+        const char *icon;
+        s32 unk14;
+        s32 unk18;
+    } GameInfo;
+    void GameSettings_SetDefaultControllerState(void);
+    void GameSettings_ResetPlayerVehicleItem(void);
+    void GameSettings_ResetGame(void);
+    void GameSettings_ResetControllerConfig(s32 player);
+    s32 GameSettings_GetGameType(void);
+    void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
+    u8 OSGetSoundMode(void);
+    void *memset(void *dst, s32 c, u32 n);
+    extern GameInfo g_gameInfo[];
+    extern s8 g_bGameSettingsInitialized;
+    extern u8 *g_pGameData;
+    extern u8 *g_pSavedGameData;
+    u32 i;
+
+    g_bGameSettingsInitialized = 1;
+    memset(&g_codeVariables, 0, sizeof(CodeVariables));
+    g_codeVariables.device = (char *)1;
+    GameSettings_SetDefaultControllerState();
+    GameSettings_ResetPlayerVehicleItem();
+    GameSettings_ResetGame();
+    memset(&g_generalGameSettings, 0, sizeof(GeneralGameSettings));
+    g_generalGameSettings.difficulty = 0;
+    g_generalGameSettings.audio.speakerMode = OSGetSoundMode();
+    g_generalGameSettings.audio.musicVolume = 100;
+    g_generalGameSettings.audio.sfxVolume = 100;
+    for (i = 1; i <= 4; i++) {
+        GameSettings_ResetControllerConfig(i);
+        g_generalGameSettings.controllers[i - 1].data[0] = 1;
+    }
+    switch (GameSettings_GetGameType()) {
+    case 0:
+        g_gameInfo[0].unk14 = 0x8F0;
+        g_gameInfo[0].unk18 = 0xF4;
+        g_pGameData = (u8 *)&g_HotWheelsGameData;
+        g_pSavedGameData = g_HWsavedGameData;
+        memset(&g_HotWheelsGameData, 0, sizeof(HotWheelsGameData));
+        g_HotWheelsGameData.cars[3] = 1;
+        g_HotWheelsGameData.cars[4] = 1;
+        g_HotWheelsGameData.cars[5] = 1;
+        g_HotWheelsGameData.unk93[0] = 1;
+        g_HotWheelsGameData.unk93[1] = 1;
+        g_HotWheelsGameData.unk93[2] = 1;
+        g_HotWheelsGameData.tracks[0] = 1;
+        g_HotWheelsGameData.tracks[5] = 1;
+        g_HotWheelsGameData.tracks[0x13] = 1;
+        g_HotWheelsGameData.tracks[0x14] = 1;
+        g_HotWheelsGameData.tracks[0x15] = 1;
+        g_HotWheelsGameData.tracks[0x16] = 1;
+        g_HotWheelsGameData.tracks[0x1D] = 1;
+        g_HotWheelsGameData.tracks[0x1E] = 1;
+        g_HotWheelsGameData.tracks[0x1F] = 1;
+        g_HotWheelsGameData.tracks[0x20] = 1;
+        g_HotWheelsGameData.tracks[0x27] = 1;
+        g_HotWheelsGameData.unkAA[0] = 1;
+        g_HotWheelsGameData.unkAA[1] = 1;
+        g_HotWheelsGameData.unkAA[4] = 1;
+        break;
+    case 1:
+        g_gameInfo[1].unk14 = 0xE830;
+        g_gameInfo[1].unk18 = 0x1CDC;
+        g_pGameData = (u8 *)g_DDRescueGameData;
+        g_pSavedGameData = g_DDRsavedGameData;
+        memset(g_DDRescueGameData, 0, sizeof(g_DDRescueGameData));
+        g_DDRescueGameData[0] = 1;
+        g_DDRescueGameData[0x14] = 1;
+        GameSettings_SetCodeVariable(0x6A, 0xA, 1);
+        GameSettings_SetCodeVariable(0x6B, 0xA, 1);
+        break;
+    }
+}
+
 void GameSettings_ResetGame(void)
 {
     s32 i;
@@ -154,20 +235,21 @@ u32 GameSettings_GetCodeVariable(s32 var, u32 arg) {
     u8 *PlayerManager_GetPlayerByIndex(u8 index);
     u8 *PlayerManager_GetHumanPlayerByIndex(u8 index);
     s8 Player_IsHuman(void *player);
-    s8 GameSettings_GetDefaultMemoryCardStatus(s32 *status, s32 arg1);
-    s8 GameSettings_GetMemoryCardStatus(u32 device, s32 arg1);
+    s32 GameSettings_GetDefaultMemoryCardStatus(s32 *device, s8 bForce);
+    s32 GameSettings_GetMemoryCardStatus(s32 device, s32 arg1);
     extern s8 g_bGameSettingsInitialized;
     static s8 bFirstTime = 1;
     static u8 *pMCP;
     u8 *mcp;
     void *pack;
-    u8 type;
-    u8 *player;
+    s32 type;
+    u32 i;
     u8 count;
-    u8 i;
+    u8 *player;
     s32 plugged;
     s32 port;
     s32 n;
+    s32 device;
     s32 status;
     World *world;
 
@@ -287,7 +369,7 @@ done:
             break;
         case 1:
             if (arg < 0x1E) {
-                return *(u16 *)&g_DDRescueGameData[0x2E + arg * 2];
+                return ((u16 *)g_DDRescueGameData)[0x17 + arg];
             }
             break;
         }
@@ -421,16 +503,17 @@ done:
         }
         break;
     case 0x195:
-        if (type != 0) {
-            break;
-        }
-        if (GameSettings_IsCheatEnabled(3)) {
-            return 0xD;
-        }
-        for (n = 0x12; n > 4; n--) {
-            if (g_HotWheelsGameData.tracks[n]) {
-                return n - 5;
+        switch (type) {
+        case 0:
+            if (GameSettings_IsCheatEnabled(3)) {
+                return 0xD;
             }
+            for (n = 0x12; n > 4; n--) {
+                if (g_HotWheelsGameData.tracks[n]) {
+                    return n - 5;
+                }
+            }
+            break;
         }
         break;
     case 0x199:
@@ -444,6 +527,8 @@ done:
                     return n - 0x27;
                 }
             }
+            break;
+        case 1:
             break;
         }
         break;
@@ -464,7 +549,7 @@ done:
     case 0x198:
         return g_codeVariables.unk109[1];
     case 0x1F4:
-        return GameSettings_GetDefaultMemoryCardStatus(&status, 0);
+        return GameSettings_GetDefaultMemoryCardStatus(&device, 0);
     case 0x1F5:
         GameSettings_GetDefaultMemoryCardStatus(&status, 0);
         return status;
