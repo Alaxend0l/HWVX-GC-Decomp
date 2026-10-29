@@ -19,6 +19,11 @@ typedef struct THPTextureSet {
     s32 frameNumber;
 } THPTextureSet;
 
+typedef struct THPReadBuffer {
+    u8 *ptr;
+    s32 frameNumber;
+} THPReadBuffer;
+
 typedef struct THPPlayer {
     u8 fileInfo[0x3C];
     u8 tag[4];
