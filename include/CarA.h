@@ -38,12 +38,28 @@ typedef struct Player {
 } Player;
 
 typedef struct CarAEngine {
-  u8 pad00[0x14];           /* 0x00 */
+  f32 bodyOffset[3];        /* 0x00 rest value of CarA.bodyOffset */
+  u8 pad0C[8];              /* 0x0C */
   f32 unk14;                /* 0x14 */
   u32 unk18;                /* 0x18 */
   u8 pad1C[0x28];           /* 0x1C */
   f32 unk44;                /* 0x44 */
+  u8 pad48[0x1C];           /* 0x48 */
+  f32 unk64;                /* 0x64 */
+  f32 unk68;                /* 0x68 */
 } CarAEngine;
+
+typedef struct CarACollider {
+  u8 pad00[0x20];           /* 0x00 */
+  f32 mass;                 /* 0x20 */
+} CarACollider;
+
+typedef struct CarAWheelInfo {
+  f32 radius;               /* 0x00 */
+  u8 pad04[0x10];           /* 0x04 */
+  f32 unk14;                /* 0x14 */
+  u8 pad18[0x38];           /* 0x18 */
+} CarAWheelInfo;
 
 typedef struct CarAAccel {
   u8 pad00[0x18];           /* 0x00 */
