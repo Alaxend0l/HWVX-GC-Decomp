@@ -27,6 +27,27 @@ s32 OSSetCurrentHeap(s32 arg0) {
     return temp_r0;
 }
 
+void *OSInitAlloc(void *arenaStart, void *arenaEnd, s32 maxHeaps)
+{
+    u32 arraySize;
+    s32 i;
+
+    arraySize = sizeof(HeapDesc) * maxHeaps;
+    HeapArray = arenaStart;
+    NumHeaps = maxHeaps;
+    for (i = 0; i < NumHeaps; i++) {
+        HeapDesc *hd = &HeapArray[i];
+        hd->size = -1;
+        hd->free = hd->allocated = NULL;
+    }
+    __OSCurrHeap = -1;
+    arenaStart = (void *)((u8 *)HeapArray + arraySize);
+    arenaStart = (void *)(((u32)arenaStart + 0x1F) & ~0x1F);
+    ArenaStart = arenaStart;
+    ArenaEnd = (void *)((u32)arenaEnd & ~0x1F);
+    return arenaStart;
+}
+
 s32 OSCreateHeap(void *start, void *end)
 {
     s32 heap;
