@@ -129,10 +129,12 @@ void *__FileWrite(void *File, const char *Buffer, u32 NumChars) {
     return (fwrite(Buffer, 1, NumChars, File) == NumChars ? File : 0);
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 int __pformatter(void *(*WriteProc)(void *, const char *, u32), void *WriteProcArg, const char *format_str, char *arg) {
     char buff[512];
     print_format format;
-    char fill_char;
+    s8 fill_char;
     s32 long_num;
     s64 long_long_num;
     double long_double_num;
@@ -149,7 +151,7 @@ int __pformatter(void *(*WriteProc)(void *, const char *, u32), void *WriteProcA
     format_ptr = format_str;
     chars_written = 0;
 
-    while (*format_ptr) {
+    while (*(s8 *)format_ptr) {
         if (!(curr_format = strchr(format_ptr, '%'))) {
             num_chars = strlen(format_ptr);
             chars_written += num_chars;
@@ -186,11 +188,11 @@ int __pformatter(void *(*WriteProc)(void *, const char *, u32), void *WriteProcA
             }
 
             if (format.argument_options == 4) {
-                if (!(buff_ptr = longlong2str(long_long_num, buff + 511, format))) {
+                if (!(buff_ptr = longlong2str(long_long_num, buff + 512, format))) {
                     goto conversion_error;
                 }
             } else {
-                if (!(buff_ptr = long2str(long_num, buff + 511, format))) {
+                if (!(buff_ptr = long2str(long_num, buff + 512, format))) {
                     goto conversion_error;
                 }
             }
@@ -217,11 +219,11 @@ int __pformatter(void *(*WriteProc)(void *, const char *, u32), void *WriteProcA
             }
 
             if (format.argument_options == 4) {
-                if (!(buff_ptr = longlong2str(long_long_num, buff + 511, format))) {
+                if (!(buff_ptr = longlong2str(long_long_num, buff + 512, format))) {
                     goto conversion_error;
                 }
             } else {
-                if (!(buff_ptr = long2str(long_num, buff + 511, format))) {
+                if (!(buff_ptr = long2str(long_num, buff + 512, format))) {
                     goto conversion_error;
                 }
             }
@@ -240,7 +242,7 @@ int __pformatter(void *(*WriteProc)(void *, const char *, u32), void *WriteProcA
                 long_double_num = *(double *)__va_arg(arg, 3);
             }
 
-            if (!(buff_ptr = float2str(long_double_num, buff + 511, format))) {
+            if (!(buff_ptr = float2str(long_double_num, buff + 512, format))) {
                 goto conversion_error;
             }
             num_chars = buff + 511 - buff_ptr;
@@ -254,7 +256,7 @@ int __pformatter(void *(*WriteProc)(void *, const char *, u32), void *WriteProcA
                 long_double_num = *(double *)__va_arg(arg, 3);
             }
 
-            if (!(buff_ptr = double2hex(long_double_num, buff + 511, format))) {
+            if (!(buff_ptr = double2hex(long_double_num, buff + 512, format))) {
                 goto conversion_error;
             }
             num_chars = buff + 511 - buff_ptr;
@@ -300,7 +302,7 @@ int __pformatter(void *(*WriteProc)(void *, const char *, u32), void *WriteProcA
                 *(int *)buff_ptr = chars_written;
                 break;
             case 2:
-                *(s16 *)buff_ptr = chars_written;
+                *(u16 *)buff_ptr = chars_written;
                 break;
             case 3:
                 *(s32 *)buff_ptr = chars_written;
@@ -313,7 +315,7 @@ int __pformatter(void *(*WriteProc)(void *, const char *, u32), void *WriteProcA
 
         case 'c':
             buff_ptr = buff;
-            *buff_ptr = *(int *)__va_arg(arg, 1);
+            *(u8 *)buff_ptr = *(int *)__va_arg(arg, 1);
             num_chars = 1;
             break;
 
@@ -338,7 +340,7 @@ int __pformatter(void *(*WriteProc)(void *, const char *, u32), void *WriteProcA
 
         if (format.justification_options != 0) {
             fill_char = (format.justification_options == 2) ? '0' : ' ';
-            if (((*buff_ptr == '+') || (*buff_ptr == '-') || (*buff_ptr == ' ')) && (fill_char == '0')) {
+            if (((*(s8 *)buff_ptr == '+') || (*(s8 *)buff_ptr == '-') || (*(s8 *)buff_ptr == ' ')) && (fill_char == '0')) {
                 if ((*WriteProc)(WriteProcArg, buff_ptr, 1) == 0) {
                     return -1;
                 }
@@ -347,7 +349,7 @@ int __pformatter(void *(*WriteProc)(void *, const char *, u32), void *WriteProcA
             }
 
             while (field_width < format.field_width) {
-                if ((*WriteProc)(WriteProcArg, &fill_char, 1) == 0) {
+                if ((*WriteProc)(WriteProcArg, (char *)&fill_char, 1) == 0) {
                     return -1;
                 }
                 ++field_width;
@@ -373,7 +375,7 @@ int __pformatter(void *(*WriteProc)(void *, const char *, u32), void *WriteProcA
 
     return chars_written;
 }
-
+#pragma pop
 char *float2str(double num, char *buff, print_format format) {
     decimal dec;
     decform form;
