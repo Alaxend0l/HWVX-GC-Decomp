@@ -2,6 +2,8 @@
 // split_file divides it into the game's real files (file_status shows its range).
 #include "common.h"
 
+#pragma exceptions on
+
 namespace std {
 
 class exception {
