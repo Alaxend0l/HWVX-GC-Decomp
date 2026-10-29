@@ -1,6 +1,7 @@
 #include "common.h"
 
 volatile u16 __DSPRegs[32] : 0xCC005000;
+volatile u32 __AIRegs[8] : 0xCC006C00;
 
 
 s32 AIRegisterDMACallback(s32 cb) {
