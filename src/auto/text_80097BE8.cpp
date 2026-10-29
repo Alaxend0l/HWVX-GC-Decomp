@@ -14,6 +14,17 @@ extern FragmentInfo fragmentinfo_8030DC08[1];
 extern "C" s32 __register_fragment(void *info, char *TOC);
 extern "C" void __unregister_fragment(s32 fragmentID);
 
+void __unregister_fragment(s32 fragmentID) {
+    FragmentInfo *f;
+
+    if (fragmentID >= 0 && fragmentID < 1) {
+        f = &fragmentinfo_8030DC08[fragmentID];
+        f->eti_init_info = 0;
+        f->TOC = 0;
+        f->active = 0;
+    }
+}
+
 s32 __register_fragment(void *info, char *TOC) {
     FragmentInfo *f;
     s32 i;
