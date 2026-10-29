@@ -71,7 +71,7 @@ void __ARChecksize(void);
 static void __ARHandler(s16 interrupt, void *context);
 u32 ARInit(u32 *stack_index_addr, u32 num_entries) {
     extern s32 __AR_init_flag;
-    extern void *__AR_Callback;
+    extern void (*__AR_Callback)(void);
     extern u32 __AR_FreeBlocks;
     extern u32 __AR_StackPointer;
     extern u32 *__AR_BlockLength;
