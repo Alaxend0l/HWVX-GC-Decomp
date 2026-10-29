@@ -267,3 +267,24 @@ void Gfx_GetViewport(s32 *x, s32 *y, s32 *width, s32 *height) {
     *height = 480;
 }
 
+void CreateSilhouette(SilhouetteEdge *edges, u32 count, f32 *dir) {
+    SilhouetteEdge *e;
+    u32 i;
+    f32 d0;
+    f32 d1;
+
+    e = edges;
+    for (i = 0; i < count; i++) {
+        d0 = PSVECDotProduct(e->normal0, dir);
+        d1 = PSVECDotProduct(e->normal1, dir);
+        if (d0 < 0.0f && d1 > 0.0f) {
+            e->type = 2;
+        } else if (d0 > 0.0f && d1 < 0.0f) {
+            e->type = 1;
+        } else {
+            e->type = 0;
+        }
+        e++;
+    }
+}
+
