@@ -435,13 +435,15 @@ static inline void Camera_OrbitVehicle(Camera *cam, CameraOrbitParams *params) {
         Vector4 eye;
         Vector4 dir;
         Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
+        f32 sinA;
+        f32 cosA;
 
         cam->modeTime += params->speed * g_fDeltaTimeSec;
-        s = sin(cam->modeTime);
-        c = cos(cam->modeTime);
-        eye.x = params->radius * s + center->x;
+        sinA = sin(cam->modeTime);
+        cosA = cos(cam->modeTime);
+        eye.x = params->radius * sinA + center->x;
         eye.y = center->y + params->height;
-        eye.z = params->radius * c + center->z;
+        eye.z = params->radius * cosA + center->z;
         PSVECSubtract(center, &eye, &dir);
         GetTrimmedCameraPos((u8 *)cam, center, &dir, &cam->trim, 1.0f);
         PSVECSubtract(center, &cam->pos, &cam->dir);
