@@ -41,7 +41,10 @@ typedef struct GfxWindow {
     Vector4 cameraRight;
     Vector4 cameraUp;
     Vector4 cameraAt;
-    u8 unk1C0[0x2D0 - 0x1C0];
+    u8 unk1C0[0x2C0 - 0x1C0];
+    GXColor overlayColor;
+    u32 overlayMode;
+    u8 unk2C8[0x2D0 - 0x2C8];
 } GfxWindow;
 
 GfxWindow *GetRenderWindow(void);
