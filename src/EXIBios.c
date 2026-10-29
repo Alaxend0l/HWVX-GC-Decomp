@@ -142,6 +142,24 @@ BOOL EXIImm(s32 chan, void *buf, s32 len, u32 type, EXICallback callback) {
     OSRestoreInterrupts(enabled);
     return TRUE;
 }
+
+BOOL EXIImmEx(s32 chan, void *buf, s32 len, u32 mode) {
+    s32 xLen;
+
+    while (len) {
+        xLen = (len < 4) ? len : 4;
+        if (!EXIImm(chan, buf, xLen, mode, NULL)) {
+            return FALSE;
+        }
+        if (!EXISync(chan)) {
+            return FALSE;
+        }
+        (u8 *)buf += xLen;
+        len -= xLen;
+    }
+    return TRUE;
+}
+
 BOOL EXISync(s32 chan) {
     EXIControl *exi = &Ecb[chan];
     BOOL rc = FALSE;
