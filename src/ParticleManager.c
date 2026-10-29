@@ -427,10 +427,10 @@ void ParticleGX_MacroStep(struct ParticleGX_MacroStep_t {
         Vector4 normal;
         u8 pad20[0x30];
     } RayHit;
-    FxParams params;
-    RayHit hit;
-    FxParams params2;
-    Vector4 newPos;
+    FxParams params __attribute__((aligned(16)));
+    RayHit hit __attribute__((aligned(16)));
+    FxParams params2 __attribute__((aligned(16)));
+    Vector4 newPos __attribute__((aligned(16)));
     f32 t;
     f32 dt;
     f32 d;
