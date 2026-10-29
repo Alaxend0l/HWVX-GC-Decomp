@@ -90,6 +90,61 @@ s32 TRKTargetFlushCache(u8 space, u32 start, u32 end) {
     return 0x700;
 }
 
+s32 HandleOpenFileSupportRequest(const char *path, u8 replyError, u32 *param, u8 *ioResult);
+s32 HandleCloseFileSupportRequest(u32 fileHandle, u8 *ioResult);
+s32 HandlePositionFileSupportRequest(u32 fileHandle, u32 *position, u8 mode, u8 *ioResult);
+s32 TRKSuppAccessFile(u8 file, u8 *data, u32 *count, u8 *ioResult, BOOL needReply, BOOL read);
+#pragma use_lmw_stmw on
+s32 TRKTargetSupportRequest(void) {
+    s32 err;
+    u32 position;
+    u8 ioResult;
+    u32 command;
+    u8 event[0x10];
+    u32 *length;
+
+    command = (u8)gTRKCPUState.regs.gpr[3];
+    if (command != 0xD1 && command != 0xD0 && command != 0xD2 && command != 0xD3 && command != 0xD4) {
+        TRKConstructEvent(event, 4);
+        TRKPostEvent(event);
+        return 0;
+    }
+    if (command == 0xD2) {
+        err = HandleOpenFileSupportRequest((const char *)gTRKCPUState.regs.gpr[4], gTRKCPUState.regs.gpr[5],
+                                           (u32 *)gTRKCPUState.regs.gpr[6], &ioResult);
+        if (ioResult == 0 && err != 0) {
+            ioResult = 1;
+        }
+        gTRKCPUState.regs.gpr[3] = ioResult;
+    } else if (command == 0xD3) {
+        err = HandleCloseFileSupportRequest(gTRKCPUState.regs.gpr[4], &ioResult);
+        if (ioResult == 0 && err != 0) {
+            ioResult = 1;
+        }
+        gTRKCPUState.regs.gpr[3] = ioResult;
+    } else if (command == 0xD4) {
+        position = *(u32 *)gTRKCPUState.regs.gpr[5];
+        err = HandlePositionFileSupportRequest(gTRKCPUState.regs.gpr[4], &position, gTRKCPUState.regs.gpr[6], &ioResult);
+        if (ioResult == 0 && err != 0) {
+            ioResult = 1;
+        }
+        gTRKCPUState.regs.gpr[3] = ioResult;
+        *(u32 *)gTRKCPUState.regs.gpr[5] = position;
+    } else {
+        err = TRKSuppAccessFile(gTRKCPUState.regs.gpr[4], (u8 *)gTRKCPUState.regs.gpr[6], length = (u32 *)gTRKCPUState.regs.gpr[5], &ioResult, 1, command == 0xD1);
+        if (ioResult == 0 && err != 0) {
+            ioResult = 1;
+        }
+        gTRKCPUState.regs.gpr[3] = ioResult;
+        if (command == 0xD1) {
+            TRK_flush_cache(gTRKCPUState.regs.gpr[6], *length);
+        }
+    }
+    gTRKCPUState.regs.pc += 4;
+    return err;
+}
+#pragma use_lmw_stmw off
+
 u32 TRKTargetGetPC(void) {
     return gTRKCPUState.regs.pc;
 }
