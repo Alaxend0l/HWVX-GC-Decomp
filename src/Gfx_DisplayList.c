@@ -126,3 +126,11 @@ void Gfx_Add2DRectangleBack(void)
 {
     Render_DrawRectangle();
 }
+
+s32 Gfx_GetEnvmapState(void) {
+    if (g_state.unk8F) {
+        return 0;
+    }
+    return g_pGDL->numEnvmapStates - 1;
+}
+
