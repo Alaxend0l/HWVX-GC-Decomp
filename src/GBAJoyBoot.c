@@ -84,3 +84,21 @@ extern GBAControl __GBA[4];
 s32 GBAResetAsync(s32 chan, u8 *status, GBACallback callback);
 
 static void F25(s32 chan, s32 ret);
+
+static void F23(s32 chan, s32 ret) {
+    GBAControl *gba;
+    GBABootInfo *bootInfo;
+    GBACallback callback;
+
+    gba = &__GBA[chan];
+    bootInfo = &gba->bootInfo;
+    if (ret != 0 || (ret = GBAResetAsync(chan, bootInfo->status, F25)) != 0) {
+        bootInfo->begin = 0;
+        if (bootInfo->callback) {
+            callback = bootInfo->callback;
+            bootInfo->callback = NULL;
+            callback(chan, ret);
+        }
+    }
+    gba->ret = ret;
+}
