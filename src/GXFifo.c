@@ -45,3 +45,8 @@ void __GXFifoReadDisable(void) {
     __cpReg[1] = gx->cpEnable;
 }
 
+void __GXFifoLink(u8 en) {
+    gx->cpEnable = (gx->cpEnable & ~0x10) | ((en ? 1 : 0) << 4);
+    __cpReg[1] = gx->cpEnable;
+}
+
