@@ -22,6 +22,14 @@ u32 max_time;
 s32 m_iDeltaTimeUs;
 u32 m_iLastTimeUs;
 
+void TimeHandler_Init(void) {
+    u32 now = (OSGetTick() * 8) / ((*(u32 *)0x800000F8 / 4) / 125000);
+
+    m_iDeltaTimeUs = 1;
+    m_iLastTimeUs = now;
+    OSTicksToCalendarTime(OSGetTime(), &g_todaysDate);
+}
+
 void Performance_Start(void) {
 
 }
