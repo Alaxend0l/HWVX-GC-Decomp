@@ -50,7 +50,7 @@ s32 Emitter_Init(u8 *emitter, u8 *data) {
     void QuaternionToSubMatrix(void *quat, void *mtx);
     void *ThingManager_DARYL_CreateThing(s32 type, void *params);
     s32 RandomAdd_s32(s32 base, s32 range);
-    struct { Vector4 pos; u32 seq; u8 flag; } params;
+    struct { Vector4 pos; u32 seq; u8 flag; } params __attribute__((aligned(16)));
     u8 *fx;
 
     Thing_Init(emitter, (s32)data);
