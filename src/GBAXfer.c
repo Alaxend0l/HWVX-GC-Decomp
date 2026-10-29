@@ -107,6 +107,26 @@ static void TypeAndStatusCallback(s32 chan, u32 type)
 	}
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s32 __GBATransfer(s32 chan, s32 outputBytes, s32 inputBytes, GBAProc proc)
+{
+	s32 OSDisableInterrupts(void);
+	s32 OSRestoreInterrupts(s32);
+	s32 SIGetTypeAsync(s32 chan, void (*callback)(s32, u32));
+	s32 enabled;
+	GBAControl *gba = &__GBA[chan];
+
+	enabled = OSDisableInterrupts();
+	gba->proc = proc;
+	gba->outputBytes = outputBytes;
+	gba->inputBytes = inputBytes;
+	SIGetTypeAsync(chan, TypeAndStatusCallback);
+	OSRestoreInterrupts(enabled);
+	return 0;
+}
+#pragma pop
+
 s64 __GBASetDelay(s32 chan, s64 delay)
 {
 	GBAControl *gba = &__GBA[chan];
