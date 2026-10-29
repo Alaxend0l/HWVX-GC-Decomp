@@ -469,7 +469,7 @@ config.libs = [
             Object(NonMatching, "vec.c"),
             Object(NonMatching, "dvdlow.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "dvdfs.c"),
-            Object(NonMatching, "dvd.c"),
+            Object(NonMatching, "dvd.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "dvdqueue.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "dvderror.c"),
             Object(NonMatching, "fstload.c"),
