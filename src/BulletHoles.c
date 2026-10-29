@@ -37,6 +37,8 @@ void BulletHole_Heartbeat(void) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 void BulletHole_Render(void) {
     extern u8 g_bulletData[512][0x60];
     void *Gfx_Begin_GroupQuadFlat(u16 texture, s32 arg1, s32 arg2);
@@ -71,7 +73,7 @@ void BulletHole_Render(void) {
         Gfx_End_GroupTri(count);
     }
 }
-
+#pragma pop
 void BulletHole_AddSegment(Matrix4 *mtx, s16 texture, GXColor color, s32 life, f32 size) {
     typedef struct BulletHole {
         u32 r;
