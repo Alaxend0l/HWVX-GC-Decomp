@@ -60,6 +60,37 @@ extern TRKStepStatus gTRKStepStatus_800DA0B4;
 extern TRKExceptionStatus gTRKExceptionStatus_800DA0A4;
 
 s32 TRKTargetAccessMemory(void *data, u32 start, u32 *length, s32 space, s32 read);
+
+typedef void (*TRKAccessFunc)(void *, void *);
+
+extern u8 TRKvalue128_temp[16];
+void TRK_flush_cache(u32 start, u32 length);
+
+static inline s32 TRKPPCAccessSpecialReg(void *value, u32 *access_func, s32 read) {
+    TRKAccessFunc asm_access;
+
+    access_func[9] = 0x4E800020;
+    asm_access = (TRKAccessFunc)access_func;
+    TRK_flush_cache((u32)access_func, sizeof(u32) * 10);
+    (*asm_access)(value, TRKvalue128_temp);
+    return 0;
+}
+
+static inline s32 TRKPPCAccessSPR(void *value, u32 spr_register_num, s32 read) {
+    u32 access_func[10] = {
+        0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
+        0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
+    };
+
+    if (read) {
+        access_func[0] = 0x7C8002A6 | ((spr_register_num & 0x1F) << 16) | ((spr_register_num & 0x3E0) << 6);
+        access_func[1] = 0x90830000;
+    } else {
+        access_func[0] = 0x80830000;
+        access_func[1] = 0x7C8003A6 | ((spr_register_num & 0x1F) << 16) | ((spr_register_num & 0x3E0) << 6);
+    }
+    return TRKPPCAccessSpecialReg(value, access_func, read);
+}
 s32 TRKAppendBuffer1_ui32(void *buffer, u32 data);
 s32 TRKAppendBuffer1_ui16(void *buffer, u16 data);
 
