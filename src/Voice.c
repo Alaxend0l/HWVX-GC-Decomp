@@ -119,6 +119,22 @@ u32 CreateSFX(void *desc) {
     return idx;
 }
 
+s32 FreeA_(u32 addr);
+s8 DestroySFX(u32 handle) {
+    u32 data;
+
+    handle--;
+    if (handle < 0xFE && g_sound[handle].data != NULL) {
+        SFX *sfx = &g_sound[handle];
+        g_soundLst[handle] = g_freeSound;
+        g_freeSound = handle;
+        data = (u32)sfx->data;
+        sfx->data = NULL;
+        return FreeA_(data);
+    }
+    return 0;
+}
+
 void SetSFXVol(s32 vol) {
     Voice *voice;
     u32 i;
