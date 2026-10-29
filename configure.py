@@ -577,7 +577,7 @@ config.libs = [
             Object(Matching, "FILE_POS.C", mw_version="GC/1.3"),
             Object(Matching, "mbstring.c", mw_version="GC/1.3"),
             Object(Matching, "mem.c", mw_version="GC/1.3"),
-            Object(NonMatching, "mem_funcs.c"),
+            Object(NonMatching, "mem_funcs.c", mw_version="GC/1.3"),
             Object(Matching, "misc_io.c"),
             Object(Matching, "printf.c", mw_version="GC/1.3"),
             Object(NonMatching, "rand.c"),
