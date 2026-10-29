@@ -58,6 +58,19 @@ void __GXSetDirtyState(void) {
     gx->dirtyState = 0;
 }
 
+void __GXSetDirtyState(void);
+void __GXSendFlushPrim(void);
+void GXBegin(s32 type, s32 vtxfmt, u16 nverts) {
+    if (gx->dirtyState) {
+        __GXSetDirtyState();
+    }
+    if (*(u32 *)&gx->vNumNot == 0) {
+        __GXSendFlushPrim();
+    }
+    GXWGFifo.u8 = vtxfmt | type;
+    GXWGFifo.u16 = nverts;
+}
+
 void __GXSendFlushPrim(void) {
     u32 i;
     u32 numD = gx->vNum * gx->vLim;
