@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 typedef struct THPAudioBuffer {
     s16 *buffer;
     s16 *curPtr;
@@ -54,6 +56,29 @@ static void AudioDecoder(void) {
         buf = PopReadedBuffer();
         AudioDecode(buf);
         PushReadedBuffer2(buf);
+    }
+}
+
+void AudioDecode(THPReadBuffer *readBuffer) {
+    THPAudioBuffer *audioBuf;
+    u32 i;
+    u32 *compSizePtr;
+    u8 *ptr;
+
+    ptr = readBuffer->ptr + ActivePlayer.numComponents * 4 + 8;
+    compSizePtr = (u32 *)(readBuffer->ptr + 8);
+    audioBuf = PopFreeAudioBuffer();
+    for (i = 0; i < ActivePlayer.numComponents; i++) {
+        switch (ActivePlayer.components[i]) {
+        case 1:
+            audioBuf->validSample = THPAudioDecode(audioBuf->buffer, ptr, 0);
+            audioBuf->curPtr = audioBuf->buffer;
+            audioBuf->frameNumber = readBuffer->frameNumber;
+            PushDecodedAudioBuffer(audioBuf);
+            break;
+        }
+        ptr += *compSizePtr;
+        compSizePtr++;
     }
 }
 
