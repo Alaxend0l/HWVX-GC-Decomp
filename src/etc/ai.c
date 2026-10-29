@@ -51,7 +51,6 @@ s32 AIGetStreamSampleRate(void)
     return ((u32) *(u32 *)0xCC006C00 >> 1U) & 1;
 }
 
-volatile u32 __AIRegs[8] : 0xCC006C00;
 void AISetStreamVolLeft(u8 vol) {
     __AIRegs[1] = (__AIRegs[1] & ~0xFF) | (vol & 0xFF);
 }
