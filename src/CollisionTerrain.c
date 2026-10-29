@@ -22,6 +22,35 @@ typedef struct CollisionInfo
 f32 OBoxHitsSegment(void *, Vector4 *, void *, f32, void *);
 u32 RayHitsBSP(Vector4 *, Vector4 *, void *, f32 *, void *);
 
+typedef struct TerrainGrid {
+    Vector4 origin;
+    u8 unk10[0x20 - 0x10];
+    u8 *cells;
+    u8 unk24[0x28 - 0x24];
+    f32 sizeX;
+    f32 sizeY;
+    f32 sizeZ;
+    s32 numX;
+    s32 numY;
+    s32 numZ;
+    s32 *cellIndex;
+} TerrainGrid;
+
+static inline u8 *TerrainGrid_GetCellXYZ(TerrainGrid *grid, s32 x, s32 y, s32 z) {
+    s32 index;
+
+    if (x < 0 || x >= grid->numX) {
+        index = -1;
+    } else if (y < 0 || y >= grid->numY) {
+        index = -1;
+    } else if (z < 0 || z >= grid->numZ) {
+        index = -1;
+    } else {
+        index = z * grid->numX + grid->numZ * (y * grid->numX) + x;
+    }
+    return index == -1 ? grid->cells : grid->cells + grid->cellIndex[index] * 0x50;
+}
+
 s8 RayHitsTerrain(Vector4 *start, Vector4 *end, void *arg2, void *arg3)
 {
     s8 RayHitsTerrain_Aux3(void *, void *, void *, void *);
