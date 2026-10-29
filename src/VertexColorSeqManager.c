@@ -1,5 +1,14 @@
 #include "common.h"
 
+typedef struct VertexColorTile {
+    u8 *light;
+    u8 key[0x24];
+    u32 color;
+    u8 unk2C[0x4];
+    u8 active;
+    u8 unk31[3];
+} VertexColorTile;
+
 
 s32 ActionVertexColorSeqChangeMode(s32 *data) {
     u32 count = data[1];
