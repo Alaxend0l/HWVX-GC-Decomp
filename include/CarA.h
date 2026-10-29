@@ -111,7 +111,7 @@ typedef struct CarA {
   u8 pad3AC[4];             /* 0x3AC */
   s32 navPointIndex;        /* 0x3B0 stored as s16 pairs into the player */
   u8 pad3B4[8];             /* 0x3B4 */
-  u8 *vehicleIface;         /* 0x3BC config/vehicle-interface container: read as u32
+  CarAInfo *vehicleIface;   /* 0x3BC config/vehicle-interface container: read as u32
                                by CarA_Invalidate, dereferenced for +0x11 (AI drive
                                mode), +0x54 (reflection geom), +0xA0 (collider),
                                +0xD4 (CarTrailBone), +0xDC (torque curve table) */
