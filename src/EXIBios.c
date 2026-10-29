@@ -398,7 +398,7 @@ BOOL EXIDeselect(s32 chan) {
 
 void OSClearContext(void *context);
 void OSSetCurrentContext(void *context);
-void EXIIntrruptHandler(s16 interrupt, void *context) {
+void EXIIntrruptHandler(s16 interrupt, OSContext *context) {
     s32 chan;
     EXIControl *exi;
     EXICallback callback;
@@ -408,12 +408,12 @@ void EXIIntrruptHandler(s16 interrupt, void *context) {
     __EXIClearInterrupts(chan, TRUE, FALSE, FALSE);
     callback = exi->exiCallback;
     if (callback) {
-        u8 exceptionContext[0x2C8];
+        OSContext exceptionContext;
 
-        OSClearContext(exceptionContext);
-        OSSetCurrentContext(exceptionContext);
+        OSClearContext(&exceptionContext);
+        OSSetCurrentContext(&exceptionContext);
         callback(chan, context);
-        OSClearContext(exceptionContext);
+        OSClearContext(&exceptionContext);
         OSSetCurrentContext(context);
     }
 }
