@@ -7,7 +7,20 @@ typedef struct SFX {
     u8 unk4[0x1C];
 } SFX;
 
-extern u8 g_voice[0x20][0x70];
+typedef struct Voice {
+    u32 id;
+    u8 unk4[0x11];
+    u8 state;
+    u8 unk16[0x1E];
+    s32 pitch;
+    s32 vol;
+    u8 unk3C[4];
+    s32 posX;
+    s32 posY;
+    u8 unk48[0x28];
+} Voice;
+
+extern Voice g_voice[0x20];
 extern SFX g_sound[0xFE];
 extern u8 g_soundLst[0xFE];
 extern u32 g_freeSound;
