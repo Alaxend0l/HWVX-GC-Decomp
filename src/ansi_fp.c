@@ -1,5 +1,35 @@
 #include "common.h"
 
+#define SIGDIGLEN 36
+
+typedef struct decimal {
+    char sign;
+    char unk1;
+    s16 exp;
+    struct {
+        u8 length;
+        u8 text[SIGDIGLEN];
+        u8 unk25;
+    } sig;
+} decimal;
+
+static inline void __dorounddecup(decimal *d, int digits) {
+    u8 *b = d->sig.text;
+    u8 *i = b + digits - 1;
+
+    while (1) {
+        if (*i < 9) {
+            (*i)++;
+            break;
+        }
+        if (i == b) {
+            *i = 1;
+            d->exp++;
+            break;
+        }
+        *i-- = 0;
+    }
+}
 
 s32 __count_trailing_zerol(u32 x) {
     s32 result = 0;
