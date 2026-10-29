@@ -342,6 +342,113 @@ s32 TRKDoWriteRegisters(TRKBuffer *b) {
     return err;
 }
 
+s32 TRKDoReadRegisters(TRKBuffer *b) {
+    u32 registersLength;
+    u16 firstRegister;
+    u16 lastRegister;
+    u8 c;
+    u8 options;
+    s32 err;
+    s32 ackTries;
+    u8 replyError;
+
+    if (b->length != 6) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 2);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return err;
+    }
+    TRKSetBufferPosition(b, 0);
+    err = TRKReadBuffer1_ui8(b, &c);
+    if (err == 0) {
+        err = TRKReadBuffer1_ui8(b, &options);
+    }
+    if (err == 0) {
+        err = TRKReadBuffer1_ui16(b, &firstRegister);
+    }
+    if (err == 0) {
+        err = TRKReadBuffer1_ui16(b, &lastRegister);
+    }
+    if (firstRegister > lastRegister) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 0x14);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+        return err;
+    }
+    if (err == 0) {
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, 0);
+    }
+    switch (options & 7) {
+    case 0:
+        err = TRKTargetAccessDefault(firstRegister, lastRegister, b, &registersLength, 1);
+        break;
+    case 1:
+        err = TRKTargetAccessFP(firstRegister, lastRegister, b, &registersLength, 1);
+        break;
+    case 2:
+        err = TRKTargetAccessExtended1(firstRegister, lastRegister, b, &registersLength, 1);
+        break;
+    case 3:
+        err = TRKTargetAccessExtended2(firstRegister, lastRegister, b, &registersLength, 1);
+        break;
+    default:
+        err = 0x703;
+        break;
+    }
+    if (err != 0) {
+        switch (err) {
+        case 0x703:
+            replyError = 0x12;
+            break;
+        case 0x701:
+            replyError = 0x14;
+            break;
+        case 0x702:
+            replyError = 0x15;
+            break;
+        case 0x704:
+            replyError = 0x21;
+            break;
+        case 0x705:
+            replyError = 0x22;
+            break;
+        case 0x706:
+            replyError = 0x20;
+            break;
+        default:
+            replyError = 3;
+            break;
+        }
+        TRKResetBuffer(b, 1);
+        TRKAppendBuffer1_ui8(b, 0x80);
+        TRKAppendBuffer1_ui8(b, replyError);
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+    } else {
+        ackTries = 3;
+        do {
+            err = TRKMessageSend(b);
+            ackTries--;
+        } while (err != 0 && ackTries > 0);
+    }
+    return err;
+}
+
 s32 TRKDoCPUType(TRKBuffer *b) {
     s32 err;
     s32 ackTries;
