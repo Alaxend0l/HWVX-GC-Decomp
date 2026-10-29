@@ -43,9 +43,23 @@ void Player_SetName(void *player, s32 port, const char *name) {
     }
 }
 
-void Player_RefreshInterface(void *player) {
-    u32 InterfaceManager_Create();
+void Player_RefreshInterface(void *arg0) {
+    s32 InterfaceManager_Create(u8 *script, void *player, s32 arg2);
     void InterfaceManager_ReleaseInterface(u32 index);
+    void InterfaceManager_SetOffset(s32 index, f32 x, f32 y);
+    typedef struct Thing {
+        u8 pad0[0x8C];
+        void (**vtable)();
+    } Thing;
+    typedef struct Player {
+        u8 pad0[0x2C];
+        Thing *thing;
+        u8 pad30[0x68 - 0x30];
+        u32 interfaceIndex;
+        u32 flags;
+        u8 pad70;
+        u8 nameDirty;
+    } Player;
     struct {
         u32 unk0;
         u8 *script;
@@ -53,23 +67,24 @@ void Player_RefreshInterface(void *player) {
         u32 y;
         u8 unk10[0xC0];
     } info;
-    void *thing;
+    Player *player = arg0;
+    Thing *thing;
 
-    if (M2C_FIELD(player, void **, 0x2C) != NULL && (M2C_FIELD(player, u32 *, 0x6C) & 0x10)) {
+    if (player->thing != NULL && (player->flags & 0x10)) {
         memset(&info, 0, sizeof(info));
-        M2C_FIELD(player, u32 *, 0x6C) |= 0x200;
-        thing = M2C_FIELD(player, void **, 0x2C);
-        M2C_FIELD(M2C_FIELD(thing, void **, 0x8C), void (**)(void *, void *), 0x20)(thing, &info);
-        if (M2C_FIELD(player, u32 *, 0x68) < 0xFFFFFFFF) {
-            InterfaceManager_ReleaseInterface(M2C_FIELD(player, u32 *, 0x68));
-            M2C_FIELD(player, u32 *, 0x68) = 0xFFFFFFFF;
+        player->flags |= 0x200;
+        thing = player->thing;
+        ((void (*)(Thing *, void *))thing->vtable[8])(thing, &info);
+        if (player->interfaceIndex < 0xFFFFFFFF) {
+            InterfaceManager_ReleaseInterface(player->interfaceIndex);
+            player->interfaceIndex = 0xFFFFFFFF;
         }
         if (info.script != NULL) {
-            M2C_FIELD(player, u32 *, 0x68) = InterfaceManager_Create(info.script, player, 0);
-            InterfaceManager_SetOffset(M2C_FIELD(player, u32 *, 0x68), info.x, info.y);
-            M2C_FIELD(player, u8 *, 0x71) = 1;
+            player->interfaceIndex = InterfaceManager_Create(info.script, player, 0);
+            InterfaceManager_SetOffset(player->interfaceIndex, info.x, info.y);
+            player->nameDirty = 1;
         }
-        M2C_FIELD(player, u32 *, 0x6C) &= ~0x200;
+        player->flags &= ~0x200;
     }
 }
 
