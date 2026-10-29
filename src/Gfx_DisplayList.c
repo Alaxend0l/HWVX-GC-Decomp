@@ -66,6 +66,18 @@ GDLLine *Gfx_Add3DLineFX(void) {
     return &g_pGDL->lines[g_pGDL->numLines++];
 }
 
+GDLSprite *Gfx_AddBillBoardSprite(u16 tex) {
+    GDLSprite *sprite;
+
+    if (g_pGDL->numSprites == 0x7CF) {
+        g_pGDL->numSprites = 0;
+    }
+    sprite = &g_pGDL->sprites[g_pGDL->numSprites];
+    sprite->next = g_pGDL->spriteHeads[tex];
+    g_pGDL->spriteHeads[tex] = g_pGDL->numSprites++;
+    return sprite;
+}
+
 void Gfx_Add2DRectangleBack(void)
 {
     Render_DrawRectangle();
