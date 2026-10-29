@@ -44,6 +44,26 @@ u32 wcstombs(char *s, const u16 *pwcs, u32 n);
 void *memchr(const void *src, s32 val, u32 n);
 
 void *__FileWrite(void *File, const char *Buffer, u32 NumChars);
+void *__StringWrite(void *osc, const char *Buffer, u32 NumChars);
+int __pformatter(void *(*WriteProc)(void *, const char *, u32), void *WriteProcArg, const char *format_str, char *arg);
+#pragma push
+#pragma use_lmw_stmw on
+int sprintf(char *s, const char *format, ...) {
+    va_list args;
+    int end;
+    __OutStrCtrl osc;
+
+    __builtin_va_info(&args);
+    osc.CharStr = s;
+    osc.MaxCharCount = 0xFFFFFFFF;
+    osc.CharsWritten = 0;
+    end = __pformatter(&__StringWrite, &osc, format, (char *)args);
+    if (s) {
+        s[(u32)end < 0xFFFFFFFF ? end : 0xFFFFFFFF - 1] = '\0';
+    }
+    return end;
+}
+#pragma pop
 int vprintf(const char *format, char *arg) {
     int retval;
     FILE *stream = &__files[1];
