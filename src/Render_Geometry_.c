@@ -531,6 +531,104 @@ void Render_DrawOpaqueGroup(Geometry *geometry, u32 group, void *matrix) {
     }
 }
 
+void SetTriVtxDescIdxAlpha(void);
+void Render_StateZWriteEnable(s32 enable);
+void GXSetAlphaCompare(s32 comp0, u8 ref0, s32 op, s32 comp1, u8 ref1);
+void GXSetZCompLoc(u8 before_tex);
+void GXLoadPosMtxImm(f32 (*mtx)[4], u32 id);
+void GXSetCurrentMtx(u32 id);
+#pragma use_lmw_stmw on
+void Render_DrawAlphaGroup(u16 index) {
+    GeometryGroup *grp;
+    f32 *vb;
+    GDLAlphaGroup *ag;
+    UVScroll *scroll;
+    void *dl;
+    f32 mtx[3][4];
+    f32 tmtx[3][4];
+
+    if (g_pGDL->alphaGroups[index].window != g_currentWindow) {
+        return;
+    }
+    ag = &g_pGDL->alphaGroups[index];
+    vb = ag->geometry->lodDistances;
+    grp = &ag->geometry->groups[g_pGDL->alphaGroups[index].group];
+    if (grp->unk18 == 0) {
+        Render_SetTextureHandle(grp->unk1A);
+    } else {
+        Render_SetTextureHandle(grp->unk18);
+    }
+    if (!g_onebitflag && m_texture[m_curTexture].unk38 == 4 && grp->unk14 == 5) {
+        Gfx_SetWorldMatrix(NULL);
+        return;
+    }
+    if (g_onebitflag) {
+        if (m_texture[m_curTexture].unk38 != 4 || grp->unk14 != 5) {
+            Gfx_SetWorldMatrix(NULL);
+            return;
+        }
+    } else if (m_texture[m_curTexture].unk38 == 4 && grp->unk14 == 5) {
+        Gfx_SetWorldMatrix(NULL);
+        return;
+    }
+    if (m_texture[m_curTexture].unk38 == 4 && grp->unk14 == 5) {
+        GXSetAlphaCompare(6, 0x80, 0, 6, 0);
+        GXSetZCompLoc(0);
+        Render_StateZWriteEnable(1);
+    }
+    Render_StateBlendMode(grp->unk14);
+    MatrixToMtxTranspose(mtx, ag->matrix);
+    GXLoadPosMtxImm(mtx, 0);
+    GXSetCurrentMtx(0);
+    g_state.unk93 = 0;
+    scroll = grp->uvScroll;
+    dl = grp->displayList;
+    if (scroll != NULL) {
+        tmtx[0][0] = 1.0f;
+        tmtx[0][1] = 0.0f;
+        tmtx[0][2] = 0.0f;
+        tmtx[0][3] = scroll->u;
+        tmtx[1][0] = 0.0f;
+        tmtx[1][1] = 1.0f;
+        tmtx[1][2] = 0.0f;
+        tmtx[1][3] = scroll->v;
+        GXLoadTexMtxImm(tmtx, 30, 1);
+        GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
+        if (scroll->flags & 2) {
+            Render_SetConstColor(&scroll->color);
+        } else if (ag->unk50) {
+            Render_SetConstColor(&ag->color);
+        }
+        SetVertexBuffer((u32 *)vb, ag->geometry->groups->flags, ag->geometry->unk4);
+        SetTriVtxDescIdxAlpha();
+        DCFlushRange(dl, grp->dlSize);
+        GXCallDisplayList(dl, grp->dlSize);
+        if ((scroll->flags & 2) || ag->unk50) {
+            Render_SetConstColor(NULL);
+        }
+        GXSetTexCoordGen2(0, 1, 4, 60, 0, 125);
+    } else if (ag->unk50) {
+        Render_SetConstColor(&ag->color);
+        SetVertexBuffer((u32 *)vb, ag->geometry->groups->flags, ag->geometry->unk4);
+        SetTriVtxDescIdxAlpha();
+        DCFlushRange(dl, grp->dlSize);
+        GXCallDisplayList(dl, grp->dlSize);
+        Render_SetConstColor(NULL);
+    } else {
+        SetVertexBuffer((u32 *)vb, ag->geometry->groups->flags, ag->geometry->unk4);
+        SetTriVtxDescIdxAlpha();
+        DCFlushRange(dl, grp->dlSize);
+        GXCallDisplayList(dl, grp->dlSize);
+    }
+    if (m_texture[m_curTexture].unk38 == 4 && grp->unk14 == 5) {
+        GXSetAlphaCompare(7, 0, 1, 7, 0);
+        GXSetZCompLoc(1);
+        Render_StateZWriteEnable(0);
+    }
+    Gfx_SetWorldMatrix(NULL);
+}
+#pragma use_lmw_stmw reset
+
 #pragma use_lmw_stmw reset
 void Render_UseLighting(u8 enable) {
     if (enable) {
