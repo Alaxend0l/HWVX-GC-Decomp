@@ -1,6 +1,26 @@
 #include "CarA.h"
 #include "common.h"
 
+/* Moves the body offset (centre of mass) to (x, y, z), shifting the car's
+   position so the body stays where it is in the world. */
+static inline void CarA_SetBodyOffset(CarA *car, f32 x, f32 y, f32 z) {
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    Vector4 delta __attribute__((aligned(16)));
+    Vector4 world __attribute__((aligned(16)));
+
+    delta.x = x - car->bodyOffset.x;
+    delta.y = y - car->bodyOffset.y;
+    delta.z = z - car->bodyOffset.z;
+    XformVecOrientation(&car->worldMatrix, &delta, &world);
+    car->worldMatrix.v[3].x -= world.x;
+    car->worldMatrix.v[3].y -= world.y;
+    car->worldMatrix.v[3].z -= world.z;
+    car->bodyOffset.x = x;
+    car->bodyOffset.y = y;
+    car->bodyOffset.z = z;
+    car->collDirtyFlags |= 0x100;
+}
+
 
 void CarA_InitInverseBodyInertiaTensor(u8 *car) {
     extern Matrix4 g_identity;
