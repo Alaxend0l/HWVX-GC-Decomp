@@ -32,6 +32,17 @@ static inline Cell *DLExtract(Cell *list, Cell *cell)
     return list;
 }
 
+void OSFreeToHeap(s32 heap, void *ptr)
+{
+    HeapDesc *hd;
+    Cell *cell;
+
+    cell = (Cell *)((u8 *)ptr - 0x20);
+    hd = &HeapArray[heap];
+    hd->allocated = DLExtract(hd->allocated, cell);
+    hd->free = DLInsert(hd->free, cell);
+}
+
 s32 OSSetCurrentHeap(s32 arg0) {
     extern s32 __OSCurrHeap;
     s32 temp_r0;
