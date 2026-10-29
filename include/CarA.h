@@ -179,9 +179,16 @@ typedef struct CarA {
   u8 pad4E9[7];             /* 0x4E9 */
   s32 soundIds[3];          /* 0x4F0 SoundSource ids, -1 == none; stopped + reset in Release */
   f32 unk4FC;               /* 0x4FC */
-  u8 pad500[0x20];          /* 0x500 */
+  u8 pad500[0xC];           /* 0x500 */
+  f32 forwardAccel;         /* 0x50C velocity += forward * this * dt */
+  u8 pad510[0x10];          /* 0x510 */
   Vector4 bodyOffset;       /* 0x520 XformVec(worldMatrix, this) -> camera/reflection pos */
-  u8 pad530[0x30];          /* 0x530 */
+  u8 pad530[0x10];          /* 0x530 */
+  f32 tiltX;                /* 0x540 */
+  f32 tiltY;                /* 0x544 */
+  u8 pad548[8];             /* 0x548 */
+  s32 turboCooldown;        /* 0x550 ms */
+  u8 pad554[0xC];           /* 0x554 */
 } CarA;
 
 /* Compile-time proof that sizeof(CarA) == 0x560 exactly: the first typedef is
