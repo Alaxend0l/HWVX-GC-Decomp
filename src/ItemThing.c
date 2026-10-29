@@ -49,7 +49,7 @@ s32 Item_Init(u8 *item, u8 *data) {
 }
 
 void Item_Release(void *item) {
-    extern u8 g_itemVTable[];
+    extern void *g_itemVTable[];
     void Thing_Release(s32 thing);
     void *slot;
 
