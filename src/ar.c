@@ -39,11 +39,11 @@ static inline void __ARReadDMA(u32 mmem_addr, u32 aram_addr, u32 length) {
 }
 
 
-s32 ARRegisterDMACallback(s32 cb) {
-    extern s32 __AR_Callback;
+void (*ARRegisterDMACallback(void (*cb)(void)))(void) {
+    extern void (*__AR_Callback)(void);
     s32 OSDisableInterrupts(void);
     void OSRestoreInterrupts(void);
-    s32 old;
+    void (*old)(void);
 
     old = __AR_Callback;
     OSDisableInterrupts();
