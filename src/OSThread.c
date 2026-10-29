@@ -11,6 +11,19 @@ s32 OSGetCurrentThread(void)
     return *(s32 *)0x800000e4;
 }
 
+s32 OSDisableInterrupts(void);
+s32 OSRestoreInterrupts(s32 level);
+extern s32 Reschedule;
+s32 OSDisableScheduler(void) {
+    s32 enabled;
+    s32 count;
+
+    enabled = OSDisableInterrupts();
+    count = Reschedule++;
+    OSRestoreInterrupts(enabled);
+    return count;
+}
+
 void UnsetRun(void ** arg0)
 {
     extern s32 RunQueueBits;
