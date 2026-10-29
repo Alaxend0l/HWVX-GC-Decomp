@@ -88,7 +88,7 @@ static int DBGEXIDeselect(void) {
     return 1;
 }
 
-static inline int DBGEXISync(void) {
+static int DBGEXISync(void) {
     while (__EXIRegs[13] & 1) {
     }
     return 1;
