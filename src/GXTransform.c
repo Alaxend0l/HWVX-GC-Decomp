@@ -97,7 +97,7 @@ void GXLoadNrmMtxImm(f32 mtx[3][4], u32 id) {
     WriteMTXPS3x3from3x4(mtx, (volatile f32 *)0xCC008000);
 }
 
-void __GXSetMatrixIndex(u32 index);
+void __GXSetMatrixIndex(s32 index);
 #pragma peephole off
 void GXSetCurrentMtx(u32 id) {
     extern GXData *gx;
