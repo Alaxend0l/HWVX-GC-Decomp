@@ -104,8 +104,8 @@ static inline void Grid_PushFreeNode(GridNode *node) {
 }
 
 static inline void Grid_RemoveNodes(GridObject *obj) {
-    GridNode *next;
     GridNode *node;
+    GridNode *next;
 
     for (node = obj->nodes; node != NULL; node = next) {
         next = node->objNext;
@@ -205,6 +205,8 @@ GridObject *Grid_AddObject(u32 data, u32 id, void *min, void *max) {
 }
 
 void Grid_MoveObject(GridObject *obj, Vector4 *min, Vector4 *max) {
+    GridNode *next;
+    GridNode *cur;
     u32 z;
     u32 x;
     GridNode *prev;
@@ -219,7 +221,19 @@ void Grid_MoveObject(GridObject *obj, Vector4 *min, Vector4 *max) {
         Grid_GetCell(min, (s32 *)&x0, (s32 *)&z0);
         Grid_GetCell(max, (s32 *)&x1, (s32 *)&z1);
         if (x0 != obj->x0 || z0 != obj->z0 || x1 != obj->x1 || z1 != obj->z1) {
-            Grid_RemoveNodes(obj);
+            for (cur = obj->nodes; cur != NULL; cur = next) {
+                next = cur->objNext;
+                if (cur->next != NULL) {
+                    cur->next->prev = cur->prev;
+                }
+                if (cur->prev != NULL) {
+                    cur->prev->next = cur->next;
+                } else {
+                    cur->cell->head = cur->next;
+                }
+                cur->cell->count--;
+                Grid_PushFreeNode(cur);
+            }
             obj->x0 = x0;
             obj->z0 = z0;
             obj->x1 = x1;
