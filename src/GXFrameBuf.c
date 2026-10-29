@@ -16,6 +16,19 @@ typedef struct GXRenderModeObj {
     u8 vfilter[7];
 } GXRenderModeObj;
 
+typedef struct GXData {
+    u16 vNumNot;
+    u16 bpSentNot;
+    u16 vNum;
+    u8 pad6[0x1E0 - 0x6];
+    u32 cpDispSrc;
+    u32 cpDispSize;
+    u32 cpDispStride;
+    u32 cpDisp;
+} GXData;
+
+extern GXData *gx;
+
 void GXAdjustForOverscan(GXRenderModeObj *rmin, GXRenderModeObj *rmout, u16 hor, u16 ver) {
     u16 hor2 = (u16)(hor * 2);
     u16 ver2 = (u16)(ver * 2);
