@@ -10,6 +10,14 @@ typedef struct MemBlk {
     u32 next;
 } MemBlk;
 
+u32 g_arqWait;
+s32 g_last;
+u32 g_free;
+u32 g_silence;
+s32 g_size;
+u32 g_heap;
+extern MemBlk g_memblk[];
+
 
 s32 Audio_Create_(void) {
     void Audio_Update_(void);
