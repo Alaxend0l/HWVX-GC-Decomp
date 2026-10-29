@@ -81,7 +81,8 @@ typedef struct GBAControl
 
 extern GBAControl __GBA[4];
 
-void __GBATransfer(s32 chan, s32 w1, s32 r1, void *proc);
+s32 __GBATransfer(s32 chan, s32 w1, s32 r1, void *proc);
+void *memcpy(void *dst, const void *src, u32 n);
 
 void WriteProc(s32 chan)
 {
