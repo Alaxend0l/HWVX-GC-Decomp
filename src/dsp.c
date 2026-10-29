@@ -41,7 +41,39 @@ void DSPSendMailToDSP(u16 arg0) {
     *(u16 *)0xCC005000 = (u16) (arg0 >> 0x10U);
     *(u16 *)0xCC005002 = arg0;
 }
-#pragma scheduling reset
+
+#pragma peephole on
+#pragma scheduling on
+void DSPInit(void) {
+    extern s32 __DSP_init_flag;
+    extern DSPTaskInfo *__DSP_tmp_task;
+    extern DSPTaskInfo *__DSP_curr_task;
+    extern DSPTaskInfo *__DSP_last_task;
+    extern void __DSPHandler(s16, void *);
+    void __DSP_debug_printf(const char *fmt, ...);
+    BOOL old;
+    u16 tmp;
+
+    __DSP_debug_printf("DSPInit(): Build Date: %s %s\n", "Apr  5 2004", "04:15:32");
+    if (__DSP_init_flag == 1) {
+        return;
+    }
+    old = OSDisableInterrupts();
+    __OSSetInterruptHandler(7, __DSPHandler);
+    __OSUnmaskInterrupts(0x01000000);
+    tmp = __DSPRegs[5];
+    tmp = (u16)((tmp & ~0xA8) | 0x800);
+    __DSPRegs[5] = tmp;
+    tmp = __DSPRegs[5];
+    tmp = (u16)(tmp & ~0xAC);
+    __DSPRegs[5] = tmp;
+    __DSP_tmp_task = NULL;
+    __DSP_curr_task = NULL;
+    __DSP_last_task = NULL;
+    __DSP_first_task = NULL;
+    __DSP_init_flag = 1;
+    OSRestoreInterrupts(old);
+}
 s32 DSPCheckInit(void) {
     extern s32 __DSP_init_flag;
     return __DSP_init_flag;
