@@ -133,6 +133,22 @@ typedef struct GDLRect {
 } GDLRect;
 
 extern s32 g_currentWindow;
+extern u8 g_CurrentViews;
+
+void *Gfx_GetWorldMatrixState(u32 index);
+void Gfx_SetWorldMatrix(void *matrix);
+void *memcpy(void *dst, const void *src, u32 n);
+
+typedef struct GDLAlphaGroup {
+    f32 matrix[4][4];
+    s32 unk40;
+    s32 unk44;
+    u8 unk48[0x4C - 0x48];
+    GXColor color;
+    u8 unk50;
+    u8 window;
+    u8 unk52[0x54 - 0x52];
+} GDLAlphaGroup;
 
 typedef struct GDL {
     u32 numAlphaEntries;
