@@ -34,11 +34,35 @@ typedef struct GDLAlphaEntry {
     u16 next;
 } GDLAlphaEntry;
 
+typedef struct GfxPointLight {
+    Vector4 position;
+    f32 radius;
+    GXColor color;
+    u8 unk18[0x20 - 0x18];
+} GfxPointLight;
+
 typedef struct GfxState {
-    u8 unk0[0x8F];
+    GfxPointLight pointLights[3];
+    Vector4 lightDir;
+    GXColor ambientColor;
+    u8 unk74[0x78 - 0x74];
+    GXColor lightColor;
+    u8 unk7C[0x8E - 0x7C];
+    s8 lightChanged;
     s8 unk8F;
-    u8 unk90[0xA0 - 0x90];
+    u8 numPointLights;
+    u8 unk91[0xA0 - 0x91];
 } GfxState;
+
+typedef struct GDLLightState {
+    Vector4 pointLights[3];
+    Vector4 lightDir;
+    u32 numPointLights;
+    GXColor pointColors[3];
+    GXColor ambientColor;
+    GXColor lightColor;
+    u8 unk58[0x60 - 0x58];
+} GDLLightState;
 
 extern GfxState g_state;
 extern Matrix4 g_identity;
