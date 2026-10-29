@@ -2,8 +2,7 @@
 
 typedef struct GeometryEntry {
     void *geometry;
-    u8 unk4;
-    u8 unk5[0x3F];
+    char name[0x40];
     s16 refCount;
     u8 unk46[2];
 } GeometryEntry;
