@@ -1163,6 +1163,7 @@ void ThingManager_Invalidate(u32 start, u32 end) {
     }
     ThingManagerList_RemoveReleasedThings(&g_thingManager_DARYL.activeList);
 }
+#pragma pop
 
 s8 TriggerVehicleDamage(u32 *params) {
     u32 i;
