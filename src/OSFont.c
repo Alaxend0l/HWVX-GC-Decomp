@@ -69,3 +69,21 @@ static void ReadROM(void *buf, int length, int offset) {
     }
 }
 
+BOOL OSInitFont(OSFontHeader *fontData) {
+    void *temp;
+
+    if (OSGetFontEncode() == 1) {
+        temp = (void *)((u8 *)fontData + 0xD3F00);
+    } else {
+        temp = (void *)((u8 *)fontData + 0x1D120);
+    }
+    temp = (void *)((u32)temp & ~31);
+    if (OSLoadFont(fontData, temp) == 0) {
+        return FALSE;
+    }
+    SheetImage = (u8 *)FontData + FontData->sheetImage;
+    SheetImage = (u8 *)(((u32)SheetImage + 31) & ~31);
+    ExpandFontSheet((u8 *)FontData + FontData->sheetImage, SheetImage);
+    return TRUE;
+}
+
