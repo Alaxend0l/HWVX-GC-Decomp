@@ -13,6 +13,9 @@ typedef struct AIEvent {
     s8 queued;
 } AIEvent;
 
+AIStats g_AI_Stats;
+s16 g_AI_FramesSinceAsyncEventProcessed;
+
 
 void AI_Create(void)
 {
