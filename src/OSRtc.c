@@ -29,6 +29,14 @@ static inline void *LockSram(u32 offset) {
 
 s32 UnlockSram(s32 commit, u32 offset);
 #pragma peephole on
+s32 WriteSram(void *buffer, u32 offset, u32 size);
+static void WriteSramCallback(s32 chan, void *context) {
+    Scb.sync = WriteSram(Scb.sram + Scb.offset, Scb.offset, 64 - Scb.offset);
+    if (Scb.sync) {
+        Scb.offset = 64;
+    }
+}
+
 void *__OSLockSram(void) {
     return LockSram(0);
 }
