@@ -1,5 +1,97 @@
 #include "common.h"
 
+typedef struct LWItem {
+    u8 pad0[0x1C];
+    void *script;   /* 0x1C */
+    u8 pad20[0x10];
+    u16 id;         /* 0x30 */
+    u8 pad32[4];
+    u8 lo;          /* 0x36 */
+    u8 hi;          /* 0x37 */
+    u8 pad38[8];
+} LWItem;
+
+typedef struct LWItemList {
+    u8 pad0[0x14];
+    u32 count;      /* 0x14 */
+    LWItem *items;  /* 0x18 */
+} LWItemList;
+
+typedef struct LWQuad {
+    u8 pad0[0x1C];
+    void *bsp;           /* 0x1C */
+    u32 numNeighbors;    /* 0x20 */
+    u32 *neighbors;      /* 0x24 */
+    u8 pad28[8];
+    LWItemList *items;   /* 0x30 */
+    u8 pad34[0x1C];
+} LWQuad;
+
+typedef struct LWCar {
+    u8 pad0[0x24];
+    void *script;   /* 0x24 */
+    u8 pad28[8];
+    u32 id;         /* 0x30 */
+    u8 pad34;
+    u8 type;        /* 0x35 */
+    u8 pad36;
+    u8 hi;          /* 0x37 */
+    u8 pad38[0x18];
+    void *script2;  /* 0x50 */
+    void *script3;  /* 0x54 */
+    u8 pad58[5];
+    u8 pack2;       /* 0x5D */
+    u8 pack3;       /* 0x5E */
+    u8 pad5F;
+} LWCar;
+
+typedef struct LWPacks {
+    u8 pad0[0xA0];
+    char *aiPack;   /* 0xA0 */
+    char *itemPack; /* 0xA4 */
+} LWPacks;
+
+typedef struct LWWorld {
+    void *unk0;
+    u32 pad4;
+    u32 numCars;     /* 0x08 */
+    LWCar *cars;     /* 0x0C */
+    u8 pad10[0x10];
+    u32 numQuads;    /* 0x20 */
+    LWQuad *quads;   /* 0x24 */
+    u8 pad28[0x54];
+    char *pack5Name; /* 0x7C */
+    s32 pack5ID;     /* 0x80 */
+    char *pack6Name; /* 0x84 */
+    s32 pack6ID;     /* 0x88 */
+    u8 pad8C[0x10];
+    LWPacks *packs;  /* 0x9C */
+} LWWorld;
+
+typedef struct LWMCP {
+    u8 flag;
+    u8 pad1[0xF];
+    char *name;      /* 0x10 */
+} LWMCP;
+
+s32 FileStreaming_LoadDataPack(char *name, s32 arg1, s32 id, s32 arg3);
+void *FileStreaming_InitializeDataPack(s32 pack, s32 arg1, s32 arg2);
+s32 FileStreaming_GetPackID(char *name, s32 arg1, s32 id);
+void FileStreaming_InitializeAllQuads(void);
+u32 FileStreaming_GetNumAvailableQuadPacks(void);
+void FileStreaming_LoadQuadPacks(LWQuad **quads, s32 count, s32 arg2);
+void *DataPack_GetScript(void *pack, s32 id);
+void DataPack_RefreshPtrs(void *pack);
+s8 IsLoadingThreadRunning(void);
+u8 *GameSettings_GetMCP(void);
+s32 GameSettings_GetGameType(void);
+s8 GameSettings_IsCheatEnabled(s32 cheat);
+s8 BSPN0_CollideWithVector(void *bsp, void *pos);
+u32 RandomNumberGenerator_GetRandomInteger(u32 lo, u32 hi);
+void ShaderHolder_Init(void);
+void World_Init(void);
+void World_Refresh(void);
+
 
 void StateProgressionManager_SetProgressionID(s32 id, s32 subID) {
     extern s32 g_GameProgressionID;
