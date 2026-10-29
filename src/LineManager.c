@@ -63,46 +63,7 @@ void LineManager_Init(void) {
     }
 }
 
-void LineManager_Add(void *arg, Vector4 *start, Vector4 *dir, Vector4 *colour) {
-    typedef struct LineDef {
-        u8 unk0;
-        u8 unk1;
-        u8 unk2;
-        u8 pad3;
-        f32 base;
-        f32 range;
-        u8 keys[4];
-    } LineDef;
-    typedef struct LineInfo {
-        u8 pad0[4];
-        LineDef *data;
-        s32 life;
-        s32 lifeRange;
-    } LineInfo;
-    typedef struct Line {
-        Vector4 start;
-        Vector4 end;
-        Vector4 origDir;
-        Vector4 dir;
-        Vector4 colour;
-        LineInfo *info;
-        u8 unk54[0x80 - 0x54];
-        u8 unk80;
-        u8 unk81[0xB0 - 0x81];
-        u8 unkB0;
-        u8 unkB1[3];
-        f32 length;
-        u8 unkB8[0xC4 - 0xB8];
-        u8 unkC4;
-        u8 unkC5[0xD4 - 0xC5];
-        f32 life;
-        f32 scale;
-        f32 rate;
-        u8 unkE0;
-        u8 unkE1;
-        u8 unkE2;
-        u8 unkE3[0xF0 - 0xE3];
-    } Line;
+void LineManager_Add(void *arg, Vector4 *start, Vector4 *dir, Vector4 *accel) {
     extern Line g_lineManager[128];
     s32 RandomAdd_s32(s32 base, s32 range);
     f32 RandomAdd(f32 base, f32 range);
@@ -124,12 +85,12 @@ void LineManager_Add(void *arg, Vector4 *start, Vector4 *dir, Vector4 *colour) {
                 g_lineManager[i].rate = 1.0f / (g_lineManager[i].life / info->life);
             }
             g_lineManager[i].start = *start;
-            g_lineManager[i].origDir = *dir;
+            g_lineManager[i].vel = *dir;
             g_lineManager[i].dir = *dir;
             if (PSVECSquareMag(&g_lineManager[i].dir)) {
                 PSVECNormalize(&g_lineManager[i].dir, &g_lineManager[i].dir);
             }
-            g_lineManager[i].colour = *colour;
+            g_lineManager[i].accel = *accel;
             g_lineManager[i].info = info;
             g_lineManager[i].unkE0 = data->unk0;
             g_lineManager[i].unk80 = 1;
