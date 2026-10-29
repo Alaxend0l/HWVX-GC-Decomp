@@ -185,6 +185,7 @@ s8 RayHitsObjects_CameraSpecial(Vector4 *start, Vector4 *dir, f32 *t, void *info
     }
     return 0;
 }
+#pragma pop
 
 void GetTrimmedCameraPos(u8 *camera, Vector4 *from, Vector4 *dir, f32 *trim, f32 dist) {
     extern f32 g_fDeltaTimeSec;
