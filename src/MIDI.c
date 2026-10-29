@@ -338,12 +338,14 @@ void SetMIDITrackOn(u32 mask, s8 deferred)
     }
 }
 
+#pragma push
+#pragma optimization_level 1
 void SetMIDITrackOff(u32 mask, s8 deferred)
 {
     extern u32 g_trkOn;
     extern u32 g_trkOff;
     void ChannelOff(void *chn);
-    u8 *chn;
+    MIDI_CHN *chn;
 
     if (deferred)
     {
@@ -351,17 +353,17 @@ void SetMIDITrackOff(u32 mask, s8 deferred)
         g_trkOff |= mask;
         return;
     }
-    for (chn = (u8 *)g_chn; mask != 0; chn += 0x20)
+    for (chn = g_chn; mask != 0; chn++)
     {
         if (mask & 1)
         {
-            chn[4] = 0;
+            chn->field_4 = 0;
             ChannelOff(chn);
         }
         mask >>= 1;
     }
 }
-
+#pragma pop
 void SetMIDITrackVol(void)
 {
 }
