@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 
 s8 TriggerSoundSeqQueueEnd(void) {
     s32 SoundSequence_GetTotalElementsInQueue();
