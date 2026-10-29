@@ -88,6 +88,19 @@ s32 __CARDPutControlBlock(CARDControl *card, s32 result) {
     return result;
 }
 
+s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard);
+s32 CARDGetSectorSize(s32 chan, u32 *size) {
+    CARDControl *card;
+    s32 result;
+
+    result = __CARDGetControlBlock(chan, &card);
+    if (result < 0) {
+        return result;
+    }
+    *size = card->sectorSize;
+    return __CARDPutControlBlock(card, 0);
+}
+
 extern int CARDUnmount(int);
 s32 OnReset(s32 arg0)
 {
