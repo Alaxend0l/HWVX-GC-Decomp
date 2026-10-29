@@ -19,6 +19,10 @@ void AIStartDMA(void) {
     __DSPRegs[27] |= 0x8000;
 }
 
+void AIStopDMA(void) {
+    __DSPRegs[27] &= ~0x8000;
+}
+
 s32 AIGetStreamPlayState(void)
 {
     return *(s32 *)0xCC006C00 & 1;
