@@ -153,42 +153,61 @@ void MotionState_Draw(void *state) {
 }
 
 void MotionState_Draw2(void *state, s32 mtx, u8 *matrices) {
+    typedef struct GeomEntry {
+        void *geom;
+        u16 matrix;
+        u16 pad6;
+    } GeomEntry;
+    typedef struct AnimData {
+        u32 numAux;
+        void **aux;
+        u32 numGeom;
+        GeomEntry *geom;
+        u8 pad10[4];
+        s32 *skel;
+    } AnimData;
+    typedef struct DrawState {
+        AnimData *anim;
+        u8 pad4[0xC];
+        u8 *cached;
+    } DrawState;
     void MotionState_ExtractBlendedKeyFrame(u8 *state, void *keyFrame);
     void Gfx_DrawAnimGeometryAux(void *geom, void *mtx, s32 skel, s32 arg3);
     void Gfx_DrawGeometry(void *geom, void *mtx);
     void MotionState_DrawSlaves(void *state, s32 arg1);
     void TEST_AnimTraverseHeirarchyToMatricesWorld(Vector4 *quat, void *pos, void *frames, s32 skel, void *matrices, f32 time);
+    DrawState *ds = state;
     s32 *skel;
     u8 *cached;
     u32 i;
-    u8 *e;
+    GeomEntry *e;
     Vector4 quat;
     Matrix4 out;
     u8 frames[0x800];
 
-    skel = M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), s32 **, 0x14);
-    if (M2C_FIELD(state, u8 **, 0x10) == NULL) {
+    skel = ds->anim->skel;
+    if (ds->cached == NULL) {
         MotionState_ExtractBlendedKeyFrame(state, frames);
         SubMatrixToQuaternion((void *)mtx, &quat);
         TEST_AnimTraverseHeirarchyToMatricesWorld(&quat, (void *)(mtx + 0x30), frames, *skel, matrices, 1.0f);
-        for (i = 0; i < M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u32 *, 0x0); i++) {
-            Gfx_DrawAnimGeometryAux(M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), void ***, 0x4)[i], matrices, *skel, 0);
+        for (i = 0; i < ds->anim->numAux; i++) {
+            Gfx_DrawAnimGeometryAux(ds->anim->aux[i], matrices, *skel, 0);
         }
-        for (i = 0; i < M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u32 *, 0x8); i++) {
-            e = M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u8 **, 0xC) + i * 8;
-            Gfx_DrawGeometry(M2C_FIELD(e, void **, 0x0), matrices + (M2C_FIELD(e, u16 *, 0x4) << 6));
+        for (i = 0; i < ds->anim->numGeom; i++) {
+            e = &ds->anim->geom[i];
+            Gfx_DrawGeometry(e->geom, matrices + (e->matrix << 6));
         }
         MotionState_DrawSlaves(state, 0);
     } else {
-        cached = M2C_FIELD(state, u8 **, 0x10);
-        for (i = 0; i < M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u32 *, 0x0); i++) {
-            Gfx_DrawAnimGeometryAux(M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), void ***, 0x4)[i], cached, *skel, mtx);
+        cached = ds->cached;
+        for (i = 0; i < ds->anim->numAux; i++) {
+            Gfx_DrawAnimGeometryAux(ds->anim->aux[i], cached, *skel, mtx);
         }
-        for (i = 0; i < M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u32 *, 0x8); i++) {
+        for (i = 0; i < ds->anim->numGeom; i++) {
             void *geom;
-            e = M2C_FIELD(M2C_FIELD(state, u8 **, 0x0), u8 **, 0xC) + i * 8;
-            geom = M2C_FIELD(e, void **, 0x0);
-            MultiplyMatrix((Matrix4 *)(cached + (M2C_FIELD(e, u16 *, 0x4) << 6)), (void *)mtx, &out);
+            e = &ds->anim->geom[i];
+            geom = e->geom;
+            MultiplyMatrix((Matrix4 *)(cached + (e->matrix << 6)), (void *)mtx, &out);
             Gfx_DrawGeometry(geom, &out);
         }
         MotionState_DrawSlaves(state, mtx);
