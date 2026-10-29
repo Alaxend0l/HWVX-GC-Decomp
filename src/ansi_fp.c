@@ -31,6 +31,37 @@ static inline void __dorounddecup(decimal *d, int digits) {
     }
 }
 
+static void __str2dec(decimal *d, const signed char *s, short exp) {
+    int i;
+
+    d->exp = exp;
+    d->sign = 0;
+
+    for (i = 0; i < SIGDIGLEN && *s;) {
+        d->sig.text[i++] = *s++ - '0';
+    }
+    d->sig.length = i;
+
+    if (*s != 0) {
+        if (*s < 5) {
+            return;
+        }
+        {
+            const signed char *p = s + 1;
+            for (; *p != 0; p++) {
+                if (*p != '0') {
+                    goto round_up;
+                }
+            }
+            if ((d->sig.text[i - 1] & 1) == 0) {
+                return;
+            }
+        }
+    round_up:
+        __dorounddecup(d, d->sig.length);
+    }
+}
+
 s32 __count_trailing_zerol(u32 x) {
     s32 result = 0;
     s32 bits_not_checked = sizeof(u32) * 8;
