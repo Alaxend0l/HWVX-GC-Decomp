@@ -44,7 +44,6 @@ typedef struct GBAKeyControl {
     u8 _pad0[0x40];
     GBABootInfo bootInfo;
     DSPTaskInfo task;
-    u8 _padF0[0xF8 - 0xF0];
     GBASecParam *param;
     u8 _padFC[4];
 } GBAKeyControl;
@@ -131,5 +130,36 @@ void F25(u32 arg0) {
 
     chan = idx;
     __GBAX01(chan, 0);
+}
+
+void __GBAX02(s32 chan, u8 *readbuf) {
+    extern GBAKeyControl __GBA[4];
+    GBAKeyControl *gba;
+    GBABootInfo *bootInfo;
+    GBASecParam *param;
+    DSPTaskInfo *task;
+
+    gba = &__GBA[chan];
+    bootInfo = &gba->bootInfo;
+    param = gba->param;
+    memcpy(param, readbuf, 4);
+    param->paletteColor = bootInfo->paletteColor;
+    param->paletteSpeed = bootInfo->paletteSpeed;
+    param->length = bootInfo->length;
+    param->out = &param->keyA;
+    DCInvalidateRange(&param->keyA, 32);
+    DCFlushRange(param, 32);
+
+    task = &gba->task;
+    task->priority = 255;
+    task->iram_mmem_addr = (void *)((u32)D35 - 0x80000000);
+    task->iram_length = sizeof(D35);
+    task->iram_addr = 0;
+    task->dsp_init_vector = 16;
+    task->init_cb = F23;
+    task->res_cb = NULL;
+    task->done_cb = F25;
+    task->req_cb = NULL;
+    DSPAddTask(task);
 }
 
