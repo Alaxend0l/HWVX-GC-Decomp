@@ -74,7 +74,7 @@ typedef struct LWMCP {
     char *name;      /* 0x10 */
 } LWMCP;
 
-s32 FileStreaming_LoadDataPack(char *name, s32 arg1, s32 id, s32 arg3);
+s32 FileStreaming_LoadDataPack(char *name, s32 arg1, s32 id, s8 threaded);
 void *FileStreaming_InitializeDataPack(s32 pack, s32 arg1, s32 arg2);
 s32 FileStreaming_GetPackID(char *name, s32 arg1, s32 id);
 void FileStreaming_InitializeAllQuads(void);
@@ -334,5 +334,429 @@ s32 StateProgressionManager_Shutdown(void) {
         } while (var_r31 < 0xBU);
     }
     return 1;
+}
+
+s32 LoadWorldProcess(char *world, u8 loaded)
+{
+    static s32 newLoadingState;
+    static s32 curLoadingState = 7;
+    static u32 packID;
+    static u32 iterationNum;
+    static u32 quadrantNum;
+    static LWCar *pPlayer1Car;
+    static u32 totalQuads;
+    static LWQuad *pQuadsToLoad[50];
+    static s8 bLoadingItems;
+    static s32 numAIToActivate;
+    static u32 randOffset;
+    extern u8 g_bLoadingDemoLand;
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    LWMCP *mcp;
+    char *name;
+    LWItem *item;
+    LWCar *car;
+    LWQuad *quad;
+    u32 i;
+    u32 j;
+    u32 id;
+    u32 cnt;
+    u32 max;
+    void *dp;
+
+    switch (newLoadingState)
+    {
+    case 0:
+        if (newLoadingState != curLoadingState)
+        {
+            ShaderHolder_Init();
+            *(u8 *)&g_worldData.unk8[3] = 1;
+            packID = FileStreaming_LoadDataPack(world, 4, 0, loaded);
+            curLoadingState = newLoadingState;
+        }
+        if (!IsLoadingThreadRunning())
+        {
+            if ((g_worldData.unk8[0] = (s32)FileStreaming_InitializeDataPack(packID, 4, 0)) == 0)
+            {
+                return 8;
+            }
+            if ((g_worldData.world = *(void **)g_worldData.unk8[0]) == NULL)
+            {
+                return 8;
+            }
+            newLoadingState = 1;
+        }
+        return newLoadingState;
+    case 1:
+        if (newLoadingState != curLoadingState)
+        {
+            packID = FileStreaming_LoadDataPack(((LWWorld *)g_worldData.world)->pack6Name, 6, ((LWWorld *)g_worldData.world)->pack6ID, loaded);
+            curLoadingState = newLoadingState;
+        }
+        if (!IsLoadingThreadRunning())
+        {
+            if ((g_worldData.unk8[2] = (s32)FileStreaming_InitializeDataPack(packID, 6, 0)) == 0)
+            {
+                return 8;
+            }
+            newLoadingState = 2;
+        }
+        return newLoadingState;
+    case 2:
+        if (newLoadingState != curLoadingState)
+        {
+            packID = FileStreaming_LoadDataPack(((LWWorld *)g_worldData.world)->pack5Name, 5, ((LWWorld *)g_worldData.world)->pack5ID, loaded);
+            curLoadingState = newLoadingState;
+        }
+        if (!IsLoadingThreadRunning())
+        {
+            if ((g_worldData.unk8[1] = (s32)FileStreaming_InitializeDataPack(packID, 5, 0)) == 0)
+            {
+                return 8;
+            }
+            if ((*(LWWorld **)g_worldData.unk8[1])->quads != (LWQuad *)0xD)
+            {
+                return 8;
+            }
+            FileStreaming_InitializeAllQuads();
+            newLoadingState = 4;
+        }
+        return newLoadingState;
+    case 3:
+        if (newLoadingState != curLoadingState)
+        {
+            curLoadingState = newLoadingState;
+            FileStreaming_InitializeAllQuads();
+            iterationNum = 0;
+            totalQuads = 0;
+            pPlayer1Car = NULL;
+            for (i = 0; i < ((LWWorld *)g_worldData.world)->numCars; i++)
+            {
+                if (((LWWorld *)g_worldData.world)->cars[i].type == 1)
+                {
+                    pPlayer1Car = &((LWWorld *)g_worldData.world)->cars[i];
+                    break;
+                }
+            }
+            if (FileStreaming_GetNumAvailableQuadPacks() >= ((LWWorld *)g_worldData.world)->numQuads)
+            {
+                for (i = 0; i < ((LWWorld *)g_worldData.world)->numQuads; i++)
+                {
+                    pQuadsToLoad[totalQuads++] = &((LWWorld *)g_worldData.world)->quads[i];
+                }
+            }
+            else
+            {
+                for (i = 0; i < ((LWWorld *)g_worldData.world)->numQuads; i++)
+                {
+                    if (((LWWorld *)g_worldData.world)->quads[i].bsp == NULL)
+                    {
+                        pQuadsToLoad[totalQuads++] = &((LWWorld *)g_worldData.world)->quads[i];
+                    }
+                    else if (pPlayer1Car != NULL && BSPN0_CollideWithVector(((LWWorld *)g_worldData.world)->quads[i].bsp, pPlayer1Car))
+                    {
+                        quad = &((LWWorld *)g_worldData.world)->quads[i];
+                        pQuadsToLoad[totalQuads++] = quad;
+                        for (j = 0; j < quad->numNeighbors; j++)
+                        {
+                            pQuadsToLoad[totalQuads++] = &((LWWorld *)g_worldData.world)->quads[quad->neighbors[j]];
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        if (!IsLoadingThreadRunning())
+        {
+            if (iterationNum < totalQuads)
+            {
+                FileStreaming_LoadQuadPacks(&pQuadsToLoad[iterationNum++], 1, 1);
+            }
+            else
+            {
+                newLoadingState = 4;
+            }
+        }
+        return newLoadingState;
+    case 4:
+        if (newLoadingState != curLoadingState)
+        {
+            curLoadingState = newLoadingState;
+            iterationNum = 0;
+            totalQuads = 0;
+            packID = -1;
+            if (((LWWorld *)g_worldData.world)->numCars == 0 || ((LWWorld *)g_worldData.world)->cars->script != NULL)
+            {
+                return newLoadingState = 5;
+            }
+        }
+        if (!IsLoadingThreadRunning())
+        {
+            name = NULL;
+            switch (iterationNum)
+            {
+            case 0:
+                mcp = (LWMCP *)GameSettings_GetMCP();
+                if (mcp != NULL)
+                {
+                    name = mcp->name;
+                }
+                break;
+            case 1:
+                return newLoadingState = 5;
+            }
+            if (name == NULL)
+            {
+                iterationNum++;
+            }
+            else if (packID == -1)
+            {
+                packID = FileStreaming_LoadDataPack(name, 8, 1, loaded);
+            }
+            else
+            {
+                FileStreaming_InitializeDataPack(packID, 8, 1);
+                packID = -1;
+                iterationNum++;
+            }
+        }
+        return newLoadingState;
+    case 5:
+        if (newLoadingState != curLoadingState)
+        {
+            mcp = (LWMCP *)GameSettings_GetMCP();
+            quadrantNum = 0;
+            iterationNum = 0;
+            bLoadingItems = 1;
+            curLoadingState = newLoadingState;
+            DataPack_RefreshPtrs((void *)g_worldData.unk8[0]);
+            DataPack_RefreshPtrs((void *)g_worldData.unk8[2]);
+            DataPack_RefreshPtrs((void *)g_worldData.unk8[1]);
+            if (mcp != NULL && ((LWWorld *)g_worldData.world)->packs->itemPack != NULL && mcp->flag == 0)
+            {
+                packID = FileStreaming_LoadDataPack(((LWWorld *)g_worldData.world)->packs->itemPack, 8, 3, 0);
+            }
+        }
+        if (!IsLoadingThreadRunning())
+        {
+            if (quadrantNum < ((LWWorld *)g_worldData.world)->numQuads)
+            {
+                if (iterationNum < ((LWWorld *)g_worldData.world)->quads[quadrantNum].items->count)
+                {
+                    if (bLoadingItems)
+                    {
+                        item = &((LWWorld *)g_worldData.world)->quads[quadrantNum].items->items[iterationNum++];
+                        if (item->script == NULL)
+                        {
+                            name = ((LWWorld *)g_worldData.world)->packs->itemPack;
+                            id = item->id;
+                            switch (GameSettings_GetCodeVariable(0x134, 0))
+                            {
+                            case 0:
+                                item->id = 0xFFFF;
+                                break;
+                            case 1:
+                                if (id == 0xFFFF)
+                                {
+                                    id = RandomNumberGenerator_GetRandomInteger(item->lo, item->hi + 1);
+                                }
+                                if (GameSettings_GetGameType() == 0 && id == 3 && GameSettings_IsCheatEnabled(8))
+                                {
+                                    id = 0x4D;
+                                }
+                                item->id = id;
+                                FileStreaming_LoadDataPack(name, 2, id, loaded);
+                                break;
+                            case 2:
+                                id = RandomNumberGenerator_GetRandomInteger(item->lo, item->hi + 1);
+                                if (GameSettings_GetGameType() == 0 && id == 3 && GameSettings_IsCheatEnabled(8))
+                                {
+                                    id = 0x4D;
+                                }
+                                item->id = id;
+                                FileStreaming_LoadDataPack(name, 2, id, loaded);
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        item = &((LWWorld *)g_worldData.world)->quads[quadrantNum].items->items[iterationNum++];
+                        if (item->script == NULL && item->id != 0xFFFF)
+                        {
+                            id = item->id;
+                            if ((dp = FileStreaming_InitializeDataPack(FileStreaming_GetPackID(((LWWorld *)g_worldData.world)->packs->itemPack, 2, id), 2, 1)) == NULL)
+                            {
+                                return 8;
+                            }
+                            item->script = DataPack_GetScript(dp, id);
+                        }
+                    }
+                }
+                else
+                {
+                    quadrantNum++;
+                    iterationNum = 0;
+                }
+            }
+            else if (bLoadingItems)
+            {
+                quadrantNum = 0;
+                iterationNum = 0;
+                bLoadingItems = 0;
+            }
+            else
+            {
+                for (i = 0; i < ((LWWorld *)g_worldData.world)->numCars; i++)
+                {
+                    car = &((LWWorld *)g_worldData.world)->cars[i];
+                    if (car->pack2 != 0xFF && car->script2 == NULL)
+                    {
+                        packID = FileStreaming_LoadDataPack(((LWWorld *)g_worldData.world)->packs->itemPack, 2, car->pack2, 0);
+                        if ((dp = FileStreaming_InitializeDataPack(packID, 2, 1)) == NULL)
+                        {
+                            return 8;
+                        }
+                        car->script2 = DataPack_GetScript(dp, car->pack2);
+                    }
+                    if (car->pack3 != 0xFF && car->script3 == NULL)
+                    {
+                        packID = FileStreaming_LoadDataPack(((LWWorld *)g_worldData.world)->packs->itemPack, 2, car->pack3, 0);
+                        if ((dp = FileStreaming_InitializeDataPack(packID, 2, 1)) == NULL)
+                        {
+                            return 8;
+                        }
+                        car->script3 = DataPack_GetScript(dp, car->pack3);
+                    }
+                    if (car->type <= 4)
+                    {
+                        id = GameSettings_GetCodeVariable(0xCC, car->type);
+                        if (id != -1)
+                        {
+                            if (GameSettings_GetGameType() == 0 && id == 3 && GameSettings_IsCheatEnabled(8))
+                            {
+                                id = 0x4D;
+                            }
+                            FileStreaming_InitializeDataPack(FileStreaming_LoadDataPack(((LWWorld *)g_worldData.world)->packs->itemPack, 2, id, 0), 2, 1);
+                        }
+                    }
+                }
+                newLoadingState = 6;
+            }
+        }
+        return newLoadingState;
+    case 6:
+        if (newLoadingState != curLoadingState)
+        {
+            mcp = (LWMCP *)GameSettings_GetMCP();
+            iterationNum = 0;
+            curLoadingState = newLoadingState;
+            if ((s32)GameSettings_GetCodeVariable(0x12D, 0) != 0)
+            {
+                cnt = 0;
+                if (GameSettings_GetCodeVariable(0x198, 0) != 0)
+                {
+                    j = 0;
+                    for (i = 0; i < ((LWWorld *)g_worldData.world)->numCars; i++)
+                    {
+                        if (((LWWorld *)g_worldData.world)->cars[i].type <= 4)
+                        {
+                            cnt++;
+                        }
+                    }
+                    cnt = 1;
+                    for (i = 0; i < ((LWWorld *)g_worldData.world)->numCars; i++)
+                    {
+                        if (((LWWorld *)g_worldData.world)->cars[i].type <= 4)
+                        {
+                            if (++j > 1)
+                            {
+                                ((LWWorld *)g_worldData.world)->cars[i].type = 6;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    for (i = 1; i <= 4; i++)
+                    {
+                        if (GameSettings_GetCodeVariable(0xCB, i) != -1)
+                        {
+                            cnt++;
+                        }
+                    }
+                }
+                max = GameSettings_GetCodeVariable(0x133, 0) + 1;
+                numAIToActivate = (cnt < max) ? max - cnt : 0;
+            }
+            else
+            {
+                numAIToActivate = 100000;
+            }
+            randOffset = RandomNumberGenerator_GetRandomInteger(0, 0x24);
+            if (mcp != NULL && ((LWWorld *)g_worldData.world)->packs->aiPack != NULL && mcp->flag == 0)
+            {
+                packID = FileStreaming_LoadDataPack(((LWWorld *)g_worldData.world)->packs->aiPack, 8, 2, 0);
+            }
+        }
+        if (!IsLoadingThreadRunning())
+        {
+            if (iterationNum < ((LWWorld *)g_worldData.world)->numCars)
+            {
+                car = &((LWWorld *)g_worldData.world)->cars[iterationNum++];
+                if (car->script == NULL)
+                {
+                    name = ((LWWorld *)g_worldData.world)->packs->aiPack;
+                    id = car->id;
+                    if (car->type <= 4 && GameSettings_GetCodeVariable(0x198, 0) == 0)
+                    {
+                        if (!(s8)g_bLoadingDemoLand)
+                        {
+                            id = GameSettings_GetCodeVariable(0xCB, car->type);
+                            if (id == -1)
+                            {
+                                return curLoadingState;
+                            }
+                        }
+                    }
+                    else if (id == -1 || GameSettings_GetCodeVariable(0x198, 0) != 0)
+                    {
+                        cnt = GameSettings_GetCodeVariable(0xCB, 1);
+                        id = (cnt + randOffset + iterationNum) % (car->hi + 1);
+                        if (id == cnt)
+                        {
+                            id = (cnt + iterationNum) % (car->hi + 1);
+                        }
+                    }
+                    if (car->type > 4)
+                    {
+                        if (--numAIToActivate < 0)
+                        {
+                            return curLoadingState;
+                        }
+                    }
+                    dp = FileStreaming_InitializeDataPack(FileStreaming_LoadDataPack(name, 0, id, 0), 0, 1);
+                    car->id = id;
+                    if (dp == NULL)
+                    {
+                        return 8;
+                    }
+                    car->script = DataPack_GetScript(dp, id);
+                }
+            }
+            else
+            {
+                newLoadingState = 7;
+            }
+        }
+        if (newLoadingState == 7)
+        {
+            ((LWWorld *)g_worldData.world)->unk0 = *(void **)g_worldData.unk8[1];
+            newLoadingState = 0;
+            curLoadingState = 7;
+            World_Init();
+            World_Refresh();
+        }
+        return curLoadingState;
+    }
 }
 
