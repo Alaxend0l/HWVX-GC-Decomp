@@ -7,6 +7,19 @@ extern "C" s32 LGOpen(s32 chan, u32 *handle);
 extern "C" s32 LGRead(void *status);
 extern "C" void OSReport(const char *msg, ...);
 extern "C" void memcpy(void *dest, void *src, unsigned long count);
+extern "C" void *memset(void *dest, int c, unsigned long count);
+Wheels::Wheels()
+{
+	s32 i;
+
+	for (i = 0; i < 4; i++)
+	{
+		overallGainId[i] = -1;
+		unk0[i].opensErr = -1;
+	}
+	memset(&unk848[0x10], 0, 0x28);
+}
+
 s16 Wheels::ReadAll(void)
 {
 	s32 i;
