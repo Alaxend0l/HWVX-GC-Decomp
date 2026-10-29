@@ -28,7 +28,7 @@ typedef struct Quaternion {
 } Quaternion;
 typedef struct Matrix4 {
   Vector4 v[4];
-} Matrix4;
+} Matrix4 __attribute__((aligned(16)));
 #define TRUE 1
 #define FALSE 0
 #ifndef NULL
