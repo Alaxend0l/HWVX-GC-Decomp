@@ -1,9 +1,11 @@
 #include "common.h"
 
+#pragma readonly_strings on
+
 /* the movie list to play back, and how far into it the next name starts */
-u32 g_curMovieIndex;
-u32 g_moviePlaybackName;
 u8 g_buttonUpCnt;
+u32 g_moviePlaybackName;
+u32 g_curMovieIndex;
 s32 g_returnState = 4;
 
 static char *StateMovie_GetNextMovieName(void) {
