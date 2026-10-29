@@ -81,6 +81,7 @@ s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, CARDCallback callback
 static void EraseCallback(s32 chan, s32 result) {
     CARDControl *card;
     CARDCallback callback;
+    u32 temp[2];
     u16 *fat;
     u32 addr;
 
@@ -88,7 +89,7 @@ static void EraseCallback(s32 chan, s32 result) {
     if (result < 0) {
         goto error;
     }
-    fat = (u16 *)__CARDGetFatBlock(card);
+    fat = __CARDGetFatBlock(card);
     addr = ((u32)fat - (u32)card->workArea) / 0x2000 * card->sectorSize;
     result = __CARDWrite(chan, addr, 0x2000, fat, WriteCallback);
     if (result < 0) {
