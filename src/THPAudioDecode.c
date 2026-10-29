@@ -70,6 +70,35 @@ static void AudioDecoder(void) {
     }
 }
 
+static void AudioDecoderForOnMemory(void *bufAddr) {
+    THPReadBuffer readBuffer;
+    s32 tmp;
+    s32 size;
+    s32 i;
+
+    i = 0;
+    size = ActivePlayer.initReadSize;
+    readBuffer.ptr = bufAddr;
+    while (1) {
+        readBuffer.frameNumber = i;
+        AudioDecode(&readBuffer);
+        tmp = (i + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+        if (tmp == ActivePlayer.numFrames - 1) {
+            if (ActivePlayer.playFlag & 1) {
+                size = *(s32 *)readBuffer.ptr;
+                readBuffer.ptr = ActivePlayer.movieData;
+            } else {
+                OSSuspendThread(AudioDecodeThread);
+            }
+        } else {
+            tmp = *(s32 *)readBuffer.ptr;
+            readBuffer.ptr += size;
+            size = tmp;
+        }
+        i++;
+    }
+}
+
 void AudioDecode(THPReadBuffer *readBuffer) {
     THPAudioBuffer *audioBuf;
     u32 i;
