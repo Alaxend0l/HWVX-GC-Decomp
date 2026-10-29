@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 typedef struct FontChar {
     f32 unk0;
     f32 unk4;
@@ -72,5 +74,27 @@ s32 Gfx_FontManager_ReleaseFont(s32 id) {
         ret = 1;
     }
     return ret;
+}
+
+unsigned long strlen(const char *s);
+void Gfx_FontManager_GetPrintRect(char *str, s32 id, f32 *width, f32 *height, f32 spacing) {
+    Font *font = &g_fontManager.fonts[id];
+    u32 w = 0;
+    u32 i = 0;
+    u32 len = strlen(str);
+    u8 c;
+
+    while (i < len) {
+        i++;
+        c = *str++;
+        if (font->caseMode == 1 || font->caseMode == 3) {
+            if (c >= 'a' && c <= 'z') {
+                c -= 0x20;
+            }
+        }
+        w = (u8)font->chars[c].spacingX + (w + spacing);
+    }
+    *width = (u32)(w - spacing);
+    *height = font->height;
 }
 
