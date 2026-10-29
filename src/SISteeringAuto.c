@@ -27,6 +27,9 @@ BOOL SIIsChanBusy(s32 chan);
 u32 SIGetStatus(s32 chan);
 BOOL SIGetResponse(s32 chan, void *data);
 void SIDisablePolling(u32 poll);
+BOOL SIEnablePolling(u32 poll);
+s32 SISetCommand(s32 chan, u32 command);
+s32 SITransferCommands(void);
 
 s32 SIReadSteering(s32 chan, SISteeringStatus *status) {
     BOOL enabled;
