@@ -3,7 +3,13 @@
 volatile u16 __VIRegs[59] : 0xCC002000;
 
 typedef struct VITiming {
-    u8 unk0[0x18];
+    u8 equ;
+    u16 acv;
+    u16 prbOdd;
+    u16 prbEven;
+    u16 psbOdd;
+    u16 psbEven;
+    u8 unkC[0xC];
     u16 nhlines;
     u16 hlw;
 } VITiming;
