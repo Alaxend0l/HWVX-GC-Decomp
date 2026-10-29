@@ -46,6 +46,28 @@ s32 TRKTargetAccessMemory(void *data, u32 start, u32 *length, s32 space, s32 rea
 s32 TRKAppendBuffer1_ui32(void *buffer, u32 data);
 s32 TRKAppendBuffer1_ui16(void *buffer, u16 data);
 
+s32 TRKTargetAddExceptionInfo(void *b) {
+    s32 err;
+    u32 inst;
+    u32 size;
+
+    err = TRKAppendBuffer1_ui32(b, gTRKExceptionStatus_800DA0A4.field_0);
+    if (err == 0) {
+        size = 4;
+        err = TRKTargetAccessMemory(&inst, gTRKExceptionStatus_800DA0A4.field_0, &size, 0, 1);
+        if (err == 0 && size != 4) {
+            err = 0x700;
+        }
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui32(b, inst);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui16(b, gTRKExceptionStatus_800DA0A4.field_8);
+    }
+    return err;
+}
+
 void TRKPostInterruptEvent(void)
 {
     void TRKConstructEvent(void *event, s32 eventType);
