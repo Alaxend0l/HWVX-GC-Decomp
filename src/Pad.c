@@ -66,6 +66,37 @@ static void ClampU8(u8 *var, u8 org)
     *var = v;
 }
 
+void OSSetWirelessID(s32 chan, u16 id);
+
+static inline void PADDisable(s32 chan)
+{
+    BOOL enabled;
+    u32 chanBit;
+
+    enabled = OSDisableInterrupts();
+    chanBit = 0x80000000 >> chan;
+    SIDisablePolling(chanBit);
+    EnabledBits &= ~chanBit;
+    WaitingBits &= ~chanBit;
+    CheckingBits &= ~chanBit;
+    PendingBits &= ~chanBit;
+    OSSetWirelessID(chan, 0);
+    OSRestoreInterrupts(enabled);
+}
+
+static inline void DoReset(void)
+{
+    u32 chanBit;
+
+    ResettingChan = __cntlzw(ResettingBits);
+    if (ResettingChan != 32) {
+        chanBit = 0x80000000 >> ResettingChan;
+        ResettingBits &= ~chanBit;
+        memset(Origin[ResettingChan], 0, 12);
+        SIGetTypeAsync(ResettingChan, PADTypeAndStatusCallback);
+    }
+}
+
 void UpdateOrigin(s32 chan)
 {
     typedef struct {
