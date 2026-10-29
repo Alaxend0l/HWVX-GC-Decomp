@@ -25,6 +25,10 @@ typedef struct GXData {
     u32 cpDispSize;
     u32 cpDispStride;
     u32 cpDisp;
+    u32 cpTexSrc;
+    u32 cpTexSize;
+    u32 cpTexStride;
+    u32 cpTex;
 } GXData;
 
 extern GXData *gx;
