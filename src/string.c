@@ -1,6 +1,20 @@
 #include "common.h"
 
 
+char *strchr(const char *str, int chr) {
+    const unsigned char *p = (unsigned char *)str - 1;
+    unsigned long c = (chr & 0xff);
+    unsigned long ch;
+
+    while (ch = *++p) {
+        if (ch == c) {
+            return (char *)p;
+        }
+    }
+
+    return c ? 0 : (char *)p;
+}
+
 char *strcat(char *dst, const char *src) {
     const unsigned char *p = (unsigned char *)src - 1;
     unsigned char *q = (unsigned char *)dst - 1;
