@@ -81,7 +81,10 @@ typedef struct CarACollider {
 
 
 typedef struct CarAAccel {
-  u8 pad00[0x18];           /* 0x00 */
+  u8 pad00[4];              /* 0x00 */
+  f32 unk4;                 /* 0x04 */
+  u8 pad08[0xC];            /* 0x08 */
+  f32 unk14;                /* 0x14 */
   f32 unk18;                /* 0x18 */
   f32 unk1C;                /* 0x1C */
   f32 unk20;                /* 0x20 */
