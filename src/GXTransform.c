@@ -69,6 +69,16 @@ void GXLoadPosMtxImm(f32 mtx[3][4], u32 id) {
     WriteMTXPS4x3(mtx, (volatile f32 *)0xCC008000);
 }
 
+void WriteMTXPS3x3from3x4(f32 mtx[3][4], volatile f32 *wgpipe);
+#pragma peephole off
+void GXLoadNrmMtxImm(f32 mtx[3][4], u32 id) {
+    u32 reg;
+    GXWGFifo.u8 = 0x10;
+    reg = (id * 3 + 0x400) | 0x80000;
+    GXWGFifo.u32 = reg;
+    WriteMTXPS3x3from3x4(mtx, (volatile f32 *)0xCC008000);
+}
+
 void __GXSetMatrixIndex(u32 index);
 #pragma peephole off
 void GXSetCurrentMtx(u32 id) {
