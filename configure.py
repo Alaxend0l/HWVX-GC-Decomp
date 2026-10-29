@@ -405,7 +405,7 @@ config.libs = [
             Object(NonMatching, "Voice_.c"),
             Object(NonMatching, "IT_.c"),
             Object(NonMatching, "MIDI_.c"),
-            Object(NonMatching, "Music_.c"),
+            Object(Matching, "Music_.c"),
             Object(NonMatching, "RIFF_.c"),
             Object(NonMatching, "Audio_.c"),
             Object(NonMatching, "Voice.c"),
