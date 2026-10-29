@@ -362,3 +362,10 @@ u32 EXIGetState(s32 chan) {
     EXIControl *exi = &Ecb[chan];
     return exi->state;
 }
+
+#pragma peephole on
+static void UnlockedHandler(s32 chan, void *context) {
+    u32 id;
+    EXIGetID(chan, 0, &id);
+}
+
