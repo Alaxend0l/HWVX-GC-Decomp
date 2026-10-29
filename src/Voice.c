@@ -111,6 +111,36 @@ void SetSFXVol(s32 vol) {
     }
 }
 
+Voice *GetVoice_(s32 type, s32 priority);
+u32 GetVoice(u32 handle, u8 priority) {
+    Voice *voice;
+    SFX *sfx;
+
+    handle--;
+    if (handle < 0xFE && g_sound[handle].data != NULL) {
+        sfx = &g_sound[handle];
+        voice = GetVoice_(1, priority * 2);
+        if (voice != NULL) {
+            voice->sfx = sfx;
+            voice->unk20 = (u32)sfx->data;
+            voice->unk28 = sfx->unk4;
+            voice->unk24 = sfx->unk8;
+            voice->unk30 = sfx->unkC;
+            voice->pitch = 0x10000;
+            voice->unk2C = sfx->unk11;
+            voice->vol = 0x7FFF;
+            voice->unk3C = sfx->unk12;
+            voice->unk48 = 0x7FFF;
+            voice->posX = 0;
+            voice->posY = -0x7FFF;
+            voice->sfxIndex = handle;
+            voice->serial++;
+            return voice->id;
+        }
+    }
+    return 0;
+}
+
 void ReleaseVoice(u32 id) {
     if (id == g_voice[(u8)id].id) {
         SetVoiceState_(&g_voice[(u8)id], 3);
