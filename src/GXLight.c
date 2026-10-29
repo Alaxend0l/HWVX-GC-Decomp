@@ -1,5 +1,23 @@
 #include "common.h"
 
+typedef union PPCWGPipe {
+    u8 u8;
+    u16 u16;
+    u32 u32;
+    s32 s32;
+    f32 f32;
+} PPCWGPipe;
+
+#define GXWGFifo (*(volatile PPCWGPipe *)0xCC008000)
+
+typedef struct GXData {
+    u8 pad0[0x204];
+    u32 genMode;
+    u8 pad208[0x4F4 - 0x208];
+    u32 dirtyState;
+} GXData;
+
+extern GXData *gx;
 
 void GXInitLightAttnK(GXLightObjInt *lt_obj, f32 k0, f32 k1, f32 k2) {
     lt_obj->k[0] = k0;
