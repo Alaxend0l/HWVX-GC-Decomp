@@ -289,7 +289,7 @@ void RenderQuadrant(u8 *quadrant) {
     Model *model;
     DrawThing *t;
     f32 distSq;
-    DrawThing thing;
+    DrawThing thing __attribute__((aligned(16)));
 
     if (quadrant == NULL || *(s8 *)(quadrant + 0x34) == 0 || *(StaticGeom **)(quadrant + 0x10) == NULL) {
         return;
