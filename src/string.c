@@ -1,6 +1,21 @@
 #include "common.h"
 
 
+char *strcat(char *dst, const char *src) {
+    const unsigned char *p = (unsigned char *)src - 1;
+    unsigned char *q = (unsigned char *)dst - 1;
+
+    while (*++q)
+        ;
+
+    q--;
+
+    while (*++q = *++p)
+        ;
+
+    return dst;
+}
+
 char *strncpy(char *dst, const char *src, u32 n) {
     const u8 *p = (const u8 *)src - 1;
     u8 *q = (u8 *)dst - 1;
