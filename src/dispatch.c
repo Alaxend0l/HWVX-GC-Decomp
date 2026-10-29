@@ -36,6 +36,20 @@ s32 (*gTRKDispatchTable[33])(TRKBuffer *) = {
 
 __declspec(section ".data") u32 gTRKDispatchTableSize;
 
+s32 TRKDispatchMessage(TRKBuffer *buffer) {
+    s32 error;
+    u8 command;
+
+    error = 0x500;
+    TRKSetBufferPosition(buffer, 0);
+    TRKReadBuffer1_ui8(buffer, &command);
+    command &= 0xFF;
+    if (command < gTRKDispatchTableSize) {
+        error = gTRKDispatchTable[command](buffer);
+    }
+    return error;
+}
+
 s32 TRKInitializeDispatcher(void) {
     gTRKDispatchTableSize = 32;
     return 0;
