@@ -8,7 +8,7 @@ typedef union PPCWGPipe {
     f32 f32;
 } PPCWGPipe;
 
-#define GXWGFifo (*(volatile PPCWGPipe *)0xCC008000)
+volatile PPCWGPipe GXWGFifo : 0xCC008000;
 
 typedef struct GXData {
     u8 pad0[0x204];
@@ -73,3 +73,12 @@ void GXInitLightPos(GXLightObjInt *lt_obj, f32 x, f32 y, f32 z) {
 void GXInitLightColor(GXLightObjInt *lt_obj, GXColor color) {
     lt_obj->Color = (color.r << 24) | (color.g << 16) | (color.b << 8) | color.a;
 }
+
+void GXSetNumChans(u8 nChans) {
+    gx->genMode = (gx->genMode & ~0x70) | (nChans << 4);
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = 0x1009;
+    GXWGFifo.u32 = nChans;
+    gx->dirtyState |= 4;
+}
+
