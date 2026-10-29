@@ -48,6 +48,11 @@ double ldexp(double x, int exp);
 double modf(double x, double *iptr);
 void __two_exp(decimal *result, short exp);
 void __timesdec(decimal *result, const decimal *x, const decimal *y);
+static void __str2dec(decimal *d, const signed char *s, short exp);
+
+static inline void __max_double_dec(decimal *d) {
+    __str2dec(d, (const signed char *)"179769313486231580793729011405303420", 308);
+}
 
 static inline int __fpclassifyd(double x) {
     switch ((*(int *)&x) & 0x7FF00000) {
@@ -239,8 +244,11 @@ void __two_exp(decimal *result, short exp) {
         return;
     }
 
-    __two_exp(result, exp / 2);
-    __timesdec(result, result, result);
+    {
+        decimal x2;
+        __two_exp(&x2, exp / 2);
+        __timesdec(result, &x2, &x2);
+    }
 
     if (exp & 1) {
         temp = *result;
