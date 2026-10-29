@@ -142,6 +142,13 @@ void Gfx_SetOrthoMatrix(void) {
     GXSetCurrentMtx(0);
 }
 
+void Render_SaveCamera(void) {
+    g_cameraPos_Backup = GetRenderWindow()->cameraPos;
+    g_cameraFacing_BackUp = GetRenderWindow()->cameraRight;
+    g_cameraUp_BackUp = GetRenderWindow()->cameraUp;
+    g_cameraRight_BackUp = GetRenderWindow()->cameraAt;
+}
+
 double sin(double x);
 double cos(double x);
 double atan(double x);
