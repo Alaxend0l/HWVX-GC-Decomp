@@ -12,6 +12,11 @@ void Audio_Destroy_(void) {
     ARReset();
 }
 
+void Audio_Update_(void) {
+    void Audio_Update(s32);
+    Audio_Update(0xD05);
+}
+
 void MemCpyDone(void) {
     extern s32 g_arqWait;
     g_arqWait = 0;
