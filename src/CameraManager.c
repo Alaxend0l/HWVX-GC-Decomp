@@ -349,15 +349,15 @@ static inline void Camera_Orbit(Camera *cam, Vector4 *center, Vector4 *target, f
     PSVECSubtract(target, &eye, &dir);
     GetTrimmedCameraPos((u8 *)cam, target, &dir, &cam->trim, 1.0f);
     PSVECSubtract(target, &cam->pos, &cam->dir);
-    if (PSVECSquareMag(&cam->dir) != 0.0f) {
+    if (PSVECSquareMag(&cam->dir)) {
         PSVECNormalize(&cam->dir, &cam->dir);
     }
     PSVECCrossProduct(&up, &cam->dir, &cam->right);
     PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
-    if (PSVECSquareMag(&cam->right) != 0.0f) {
+    if (PSVECSquareMag(&cam->right)) {
         PSVECNormalize(&cam->right, &cam->right);
     }
-    if (PSVECSquareMag(&cam->up) != 0.0f) {
+    if (PSVECSquareMag(&cam->up)) {
         PSVECNormalize(&cam->up, &cam->up);
     }
     Gfx_SetProjectionMatrix(fov);
@@ -448,10 +448,10 @@ void Camera_UpdatePosition(Camera *cam) {
     s32 NavHolder_FindIndexOfNearestNavPoint(Vector4 *pos, s32 hint);
     Vector4 *NavHolder_GetNavPoint(s32 index);
     void Camera_UpdatePosition_Default(Camera *cam, void *params);
-    u32 *mode;
     Vector4 oldPos __attribute__((aligned(16)));
     CameraInfo info;
     s32 i;
+    u32 *mode;
 
     oldPos = cam->pos;
     info.subMode = NULL;
@@ -536,9 +536,9 @@ void Camera_UpdatePosition(Camera *cam) {
                 center = &cam->mtx.v[3];
             }
             {
-                Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
-                Vector4 dir;
                 Vector4 eye;
+                Vector4 dir;
+                Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
                 f32 s;
                 f32 c;
 
@@ -551,15 +551,15 @@ void Camera_UpdatePosition(Camera *cam) {
                 PSVECSubtract(center, &eye, &dir);
                 GetTrimmedCameraPos((u8 *)cam, center, &dir, &cam->trim, 1.0f);
                 PSVECSubtract(center, &cam->pos, &cam->dir);
-                if (0.0f != PSVECSquareMag(&cam->dir)) {
+                if (PSVECSquareMag(&cam->dir) != 0.0f) {
                     PSVECNormalize(&cam->dir, &cam->dir);
                 }
                 PSVECCrossProduct(&up, &cam->dir, &cam->right);
                 PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
-                if (0.0f != PSVECSquareMag(&cam->right)) {
+                if (PSVECSquareMag(&cam->right) != 0.0f) {
                     PSVECNormalize(&cam->right, &cam->right);
                 }
-                if (0.0f != PSVECSquareMag(&cam->up)) {
+                if (PSVECSquareMag(&cam->up) != 0.0f) {
                     PSVECNormalize(&cam->up, &cam->up);
                 }
                 Gfx_SetProjectionMatrix(params->fov);
@@ -607,15 +607,15 @@ void Camera_UpdatePosition(Camera *cam) {
 
             cam->pos = pos;
             PSVECSubtract(&target, &cam->pos, &cam->dir);
-            if (PSVECSquareMag(&cam->dir) != 0.0f) {
+            if (PSVECSquareMag(&cam->dir)) {
                 PSVECNormalize(&cam->dir, &cam->dir);
             }
             PSVECCrossProduct(&up, &cam->dir, &cam->right);
             PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
-            if (PSVECSquareMag(&cam->right) != 0.0f) {
+            if (PSVECSquareMag(&cam->right)) {
                 PSVECNormalize(&cam->right, &cam->right);
             }
-            if (PSVECSquareMag(&cam->up) != 0.0f) {
+            if (PSVECSquareMag(&cam->up)) {
                 PSVECNormalize(&cam->up, &cam->up);
             }
         }
