@@ -91,8 +91,23 @@ static inline s32 TRKPPCAccessSPR(void *value, u32 spr_register_num, s32 read) {
     }
     return TRKPPCAccessSpecialReg(value, access_func, read);
 }
+
+static inline s32 TRKPPCAccessPairedSingleRegister(void *srcDestPtr, u32 psr, s32 read) {
+    u32 instructionData[10] = {
+        0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
+        0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
+    };
+
+    if (read) {
+        instructionData[0] = 0xF0030000 | (psr << 21);
+    } else {
+        instructionData[0] = 0xE0030000 | (psr << 21);
+    }
+    return TRKPPCAccessSpecialReg(srcDestPtr, instructionData, read);
+}
 s32 TRKAppendBuffer1_ui32(void *buffer, u32 data);
 s32 TRKAppendBuffer1_ui16(void *buffer, u16 data);
+s32 TRKReadBuffer1_ui64(void *buffer, u64 *data);
 
 void TRKTargetSetInputPendingPtr(void *ptr) {
     gTRKState.inputPendingPtr = ptr;
