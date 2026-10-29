@@ -55,11 +55,11 @@ typedef struct Line {
 } Line;
 
 void LineManager_Init(void) {
-    extern u8 g_lineManager[128][0xF0];
+    extern Line g_lineManager[128];
     u32 i;
 
     for (i = 0; i < 128; i++) {
-        *(s32 *)(g_lineManager[i] + 0x50) = 0;
+        g_lineManager[i].info = NULL;
     }
 }
 
