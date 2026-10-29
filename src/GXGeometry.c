@@ -30,6 +30,18 @@ extern GXData *gx;
 #pragma push
 #pragma peephole on
 #pragma peephole on
+void __GXSendFlushPrim(void) {
+    u32 i;
+    u32 numD = gx->vNum * gx->vLim;
+
+    GXWGFifo.u8 = 0x98;
+    GXWGFifo.u16 = gx->vNum;
+    for (i = 0; i < numD; i += 4) {
+        GXWGFifo.u32 = 0;
+    }
+    gx->bpSentNot = 1;
+}
+
 void GXSetLineWidth(u8 width, u32 texOffsets) {
     gx->lpSize = (gx->lpSize & ~0xFF) | width;
     gx->lpSize = (gx->lpSize & ~0x70000) | (texOffsets << 16);
