@@ -77,12 +77,12 @@ f32 RaySphereTest(Vector4 *start, Vector4 *dir, Vector4 *center, f32 radius, f32
     f32 PSVECSquareDistance(Vector4 *a, Vector4 *b);
     f32 MagnitudeVector(Vector4 *v);
     f32 Sqrt(f32 x);
-    Vector4 end;
-    Vector4 seg;
-    Vector4 toCenter;
-    Vector4 endToCenter;
-    Vector4 cross;
-    Vector4 unit;
+    Vector4 end __attribute__((aligned(16)));
+    Vector4 seg __attribute__((aligned(16)));
+    Vector4 toCenter __attribute__((aligned(16)));
+    Vector4 endToCenter __attribute__((aligned(16)));
+    Vector4 cross __attribute__((aligned(16)));
+    Vector4 unit __attribute__((aligned(16)));
     Vector4 *pEnd = &end;
     f32 radiusSq = radius * radius;
     f32 crossSq;
@@ -130,7 +130,7 @@ f32 RaySphereTest(Vector4 *start, Vector4 *dir, Vector4 *center, f32 radius, f32
     unit.y = seg.y * inv;
     unit.z = seg.z * inv;
     dist = inv * (t * (PSVECDotProduct(&unit, &toCenter) - h));
-    if (len < 0.0001f) {
+    if (len < 1e-9f) {
         return t;
     }
     if (hit != NULL) {
