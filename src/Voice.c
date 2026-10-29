@@ -34,10 +34,11 @@ typedef struct Voice {
     u32 unk30;
     s32 pitch;
     s32 vol;
-    u8 unk3C[4];
+    u32 unk3C;
     s32 posX;
     s32 posY;
-    u8 unk48[0x28];
+    s32 unk48;
+    u8 unk4C[0x24];
 } Voice;
 
 extern Voice g_voice[0x20];
