@@ -388,7 +388,7 @@ config.libs = [
             Object(NonMatching, "Gfx_Main.c"),
             Object(NonMatching, "Gfx_TextureHandler.c"),
             Object(Matching, "MovieManager.c"),
-            Object(NonMatching, "Render_Texture_.c"),
+            Object(Matching, "Render_Texture_.c"),
             Object(NonMatching, "Render_.c"),
             Object(NonMatching, "Render_Geometry_.c"),
             Object(NonMatching, "Render_Lines_.c"),
