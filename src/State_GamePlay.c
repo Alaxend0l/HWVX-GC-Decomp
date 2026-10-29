@@ -1,6 +1,8 @@
 #include "common.h"
 #include "CarA.h"
 
+#pragma use_lmw_stmw on
+
 typedef struct GPAIScripts {
     u8 pad0[0x90];
     u32 scripts[4];         /* 0x90 one per difficulty */
