@@ -40,7 +40,7 @@ static int QueueLength(void) {
     EXIImm(Chan, &cmd, 1, 0, 0);
     EXISync(Chan);
     EXIDeselect(Chan);
-    return 16 - (s32)((cmd >> 24) & 0xFF);
+    return 16 - (int)((cmd >> 24) & 0xFF);
 }
 
 s32 WriteUARTN(const void *buf, u32 len) {
