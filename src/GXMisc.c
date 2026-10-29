@@ -38,6 +38,12 @@ s32 OSDisableInterrupts(void);
 s32 OSRestoreInterrupts(s32 level);
 void OSSleepThread(OSThreadQueue *queue);
 
+typedef struct OSContext { u8 data[0x2C8]; } OSContext;
+void OSClearContext(OSContext *context);
+void OSSetCurrentContext(OSContext *context);
+void OSWakeupThread(OSThreadQueue *queue);
+
+static void (*DrawDoneCB)(void);
 static u8 DrawDone;
 static OSThreadQueue FinishQueue;
 
