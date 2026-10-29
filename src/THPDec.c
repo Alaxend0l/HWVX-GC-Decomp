@@ -37,6 +37,8 @@ typedef struct THPFileInfo {
 } THPFileInfo;
 
 static THPFileInfo *__THPInfo;
+static u8 *__THPHuffmanSizeTab;
+static u16 *__THPHuffmanCodeTab;
 
 static void __THPRestartDefinition(void) {
     __THPInfo->RST = TRUE;
