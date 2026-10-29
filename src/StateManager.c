@@ -132,14 +132,14 @@ s32 StateManager_QueuedState(void) {
 }
 
 s32 StateManager_QueueChange(s32 state) {
-    extern void *g_pStateManager;
+    extern StateManager *g_pStateManager;
     u32 FileManager_GetDeviceStatus(s32);
-    if (M2C_FIELD(g_pStateManager, s32 *, 0xD4) == -1) {
+    if (g_pStateManager->next == -1) {
         if (state == 8 || FileManager_GetDeviceStatus(0) == 1) {
-            M2C_FIELD(g_pStateManager, s32 *, 0xD4) = state;
+            g_pStateManager->next = state;
         }
     }
-    return M2C_FIELD(g_pStateManager, s32 *, 0xD4);
+    return g_pStateManager->next;
 }
 
 void State_GetGameStateStr(s32 state, char *str) {
