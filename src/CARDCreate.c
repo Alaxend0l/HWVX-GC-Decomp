@@ -40,6 +40,52 @@ s32 __CARDUpdateDir(s32 chan, CARDCallback callback);
 s32 __CARDPutControlBlock(CARDControl *card, s32 result);
 s64 OSGetTime(void);
 void *memcpy(void *dst, const void *src, u32 n);
+#pragma push
+#pragma use_lmw_stmw on
+void CreateCallbackFat(s32 chan, s32 result)
+{
+    CARDControl *card;
+    CARDDir *dir;
+    CARDDir *ent;
+    CARDCallback callback;
+
+    card = &__CARDBlock[chan];
+    callback = card->apiCallback;
+    card->apiCallback = 0;
+    if (result < 0) {
+        goto error;
+    }
+
+    dir = __CARDGetDirBlock(card);
+    ent = &dir[card->freeNo];
+    memcpy(ent->gameName, card->diskID, 4);
+    memcpy(ent->company, card->diskID + 4, 2);
+    ent->permission = 4;
+    ent->copyTimes = 0;
+    ent->startBlock = card->startBlock;
+    ent->bannerFormat = 0;
+    ent->iconAddr = 0xFFFFFFFF;
+    ent->iconFormat = 0;
+    ent->iconSpeed = 0;
+    ent->commentAddr = 0xFFFFFFFF;
+    ent->iconSpeed = (u16)((ent->iconSpeed & ~3) | 1);
+    card->fileInfo->offset = 0;
+    card->fileInfo->iBlock = ent->startBlock;
+    ent->time = (u32)(OSGetTime() / (*(u32 *)0x800000F8 / 4));
+    result = __CARDUpdateDir(chan, callback);
+    if (result < 0) {
+        goto error;
+    }
+    return;
+
+error:
+    __CARDPutControlBlock(card, result);
+    if (callback) {
+        callback(chan, result);
+    }
+}
+#pragma pop
+
 s32 CARDCreate(s32 chan, const char *fileName, u32 size, void *fileInfo)
 {
     s32 CARDCreateAsync(s32 chan, const char *fileName, u32 size, void *fileInfo, CARDCallback callback);
