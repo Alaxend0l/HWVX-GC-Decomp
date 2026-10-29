@@ -458,3 +458,33 @@ s32 SetVoiceOffset_(VoiceHW *voice, u32 offset) {
     return 0;
 }
 
+void SetReverb_(u32 idx, u32 output, u32 feedback, u32 delay) {
+    s32 AXFXDelaySettings(void *delay);
+    typedef struct {
+        u8 unk0[0x3C];
+        u32 delay[3];
+        u32 feedback[3];
+        u32 output[3];
+    } AXFX_DELAY;
+    extern AXFX_DELAY g_reverb_803715B0[2];
+
+    if (delay < 10) {
+        delay = 10;
+    }
+    g_reverb_803715B0[idx].delay[0] = delay;
+    g_reverb_803715B0[idx].delay[1] = delay;
+    feedback = (feedback * 100) >> 15;
+    g_reverb_803715B0[idx].feedback[0] = feedback;
+    g_reverb_803715B0[idx].feedback[1] = feedback;
+    if (idx == 1) {
+        output = (output * 100) >> 15;
+        g_reverb_803715B0[0].output[0] = output;
+        g_reverb_803715B0[0].output[1] = output;
+        AXFXDelaySettings(&g_reverb_803715B0[1]);
+    } else {
+        g_reverb_803715B0[1].output[0] = 100;
+        g_reverb_803715B0[1].output[1] = 100;
+        AXFXDelaySettings(&g_reverb_803715B0[0]);
+    }
+}
+
