@@ -162,7 +162,6 @@ s32 StateProgressionManager_Heartbeat(void) {
     void StateManager_GotoState(s32 state);
     void StateManager_QueueChange(s32 state);
     void StateMovie_SetMovieToPlay(void *movie);
-    s32 FileStreaming_LoadDataPack(char *name, s32 arg1, s32 id, s32 arg3);
     void *FileStreaming_InitializeDataPack(s32 pack, s32 arg1, s32 arg2);
     s32 FileStreaming_GetPackID(char *name, s32 arg1, s32 id);
     void FileStreaming_ReleaseDataPack(s32 pack, s32 arg1);
