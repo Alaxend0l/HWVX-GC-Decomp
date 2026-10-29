@@ -48,7 +48,23 @@ u32 SISetXY(u32 x, u32 y) {
     Si.poll &= ~(0x03FF0000 | 0x0000FF00);
     Si.poll |= poll;
     poll = Si.poll;
-    *(volatile u32 *)0xCC006430 = poll;
+    __SIRegs[12] = poll;
+    OSRestoreInterrupts(enabled);
+    return (u32)poll;
+}
+
+u32 SIDisablePolling(u32 poll) {
+    BOOL enabled;
+
+    if (poll == 0) {
+        return Si.poll;
+    }
+    enabled = OSDisableInterrupts();
+    poll >>= 24;
+    poll &= 0xF0;
+    poll = Si.poll & ~poll;
+    __SIRegs[12] = poll;
+    Si.poll = poll;
     OSRestoreInterrupts(enabled);
     return poll;
 }
