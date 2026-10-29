@@ -51,6 +51,22 @@ void *PopFreeAudioBuffer(void);
 void PushDecodedAudioBuffer(void *arg0);
 
 
+BOOL CreateAudioDecodeThread(s32 priority, void *param) {
+    if (param) {
+        if (OSCreateThread(AudioDecodeThread, AudioDecoderForOnMemory, param, AudioDecodeThreadStack + 0x1000, 0x1000, priority, 1) == 0) {
+            return FALSE;
+        }
+    } else {
+        if (OSCreateThread(AudioDecodeThread, AudioDecoder, NULL, AudioDecodeThreadStack + 0x1000, 0x1000, priority, 1) == 0) {
+            return FALSE;
+        }
+    }
+    OSInitMessageQueue(FreeAudioBufferQueue, FreeAudioBufferMessage, 3);
+    OSInitMessageQueue(DecodedAudioBufferQueue, DecodedAudioBufferMessage, 3);
+    AudioDecodeThreadCreated = TRUE;
+    return TRUE;
+}
+
 void AudioDecodeThreadStart(void) {
     if (AudioDecodeThreadCreated) {
         OSResumeThread(AudioDecodeThread);
