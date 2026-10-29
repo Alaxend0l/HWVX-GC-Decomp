@@ -221,7 +221,9 @@ typedef struct CarA {
                                 which writes 10001, just past the 10000 rpm test on the word
                                 that follows; only slot 0 is sized here */
   s32 engineRpmState;       /* 0x470 compared < 10000 in GetTorqueAtWheels */
-  u8 pad474[0x18];          /* 0x474 */
+  u8 pad474[4];             /* 0x474 */
+  s32 damageRpm;            /* 0x478 compared < 10000 before damage applies */
+  u8 pad47C[0x10];          /* 0x47C */
   u32 transmissionFlags;    /* 0x48C & 0x1000 selects 4WD torque split */
   u8 tiltState;             /* 0x490 0: rest, 1/2: tilted by the stick, 3 */
   u8 pad491[0x2F];          /* 0x491 */
