@@ -35,6 +35,17 @@ typedef struct Tracer {
 
 extern Tracer tracers_802CD600[];
 
+static inline u32 Tracer_FindFree(void) {
+    u32 i;
+
+    for (i = 0; i < 32; i++) {
+        if (tracers_802CD600[i].active == 0) {
+            break;
+        }
+    }
+    return i;
+}
+
 s32 Tracer_Init(u8 *thing, u8 *data) {
     s32 Thing_Init(void *thing, s32 arg1);
     void Tracer_ClearTracer(s32 index);
