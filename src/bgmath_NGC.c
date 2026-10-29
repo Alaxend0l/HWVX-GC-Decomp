@@ -237,6 +237,69 @@ void MultiplyMatrix(Matrix4 *a, Matrix4 *b, Matrix4 *out)
     out->v[3].w = 1.0f;
 }
 
+void SetOrientation(Matrix4 *m, f32 x, f32 y, f32 z)
+{
+    f64 sin(f32);
+    f64 cos(f32);
+    f32 c;
+    f32 s;
+    f32 t;
+
+    m->v[2].y = 0.0f;
+    m->v[2].x = 0.0f;
+    m->v[1].z = 0.0f;
+    m->v[1].x = 0.0f;
+    m->v[0].z = 0.0f;
+    m->v[0].y = 0.0f;
+    m->v[2].z = 1.0f;
+    m->v[1].y = 1.0f;
+    m->v[0].x = 1.0f;
+    m->v[2].w = 0.0f;
+    m->v[1].w = 0.0f;
+    m->v[0].w = 0.0f;
+    m->v[3].w = 1.0f;
+
+    if (z != 0.0f) {
+        c = cos(z);
+        s = sin(z);
+        t = m->v[0].x;
+        m->v[0].x = c * t - s * m->v[0].y;
+        m->v[0].y = c * m->v[0].y + s * t;
+        t = m->v[1].x;
+        m->v[1].x = c * t - s * m->v[1].y;
+        m->v[1].y = c * m->v[1].y + s * t;
+        t = m->v[2].x;
+        m->v[2].x = c * t - s * m->v[2].y;
+        m->v[2].y = c * m->v[2].y + s * t;
+    }
+    if (y != 0.0f) {
+        c = cos(y);
+        s = sin(y);
+        t = m->v[0].y;
+        m->v[0].y = c * t - s * m->v[0].z;
+        m->v[0].z = c * m->v[0].z + s * t;
+        t = m->v[1].y;
+        m->v[1].y = c * t - s * m->v[1].z;
+        m->v[1].z = c * m->v[1].z + s * t;
+        t = m->v[2].y;
+        m->v[2].y = c * t - s * m->v[2].z;
+        m->v[2].z = c * m->v[2].z + s * t;
+    }
+    if (x != 0.0f) {
+        c = cos(x);
+        s = sin(x);
+        t = m->v[0].x;
+        m->v[0].x = c * t + s * m->v[0].z;
+        m->v[0].z = -s * t + c * m->v[0].z;
+        t = m->v[1].x;
+        m->v[1].x = c * t + s * m->v[1].z;
+        m->v[1].z = -s * t + c * m->v[1].z;
+        t = m->v[2].x;
+        m->v[2].x = c * t + s * m->v[2].z;
+        m->v[2].z = -s * t + c * m->v[2].z;
+    }
+}
+
 void TransposeSubMatrix(Matrix4 *m)
 {
     f32 temp;
