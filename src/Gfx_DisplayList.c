@@ -180,7 +180,8 @@ typedef struct GDL {
     u16 alphaTable[0x100];
     GDLAlphaEntry alphaEntries[0x4268];
     GDLSprite sprites[0x7CF];
-    u8 unk38C90[0x7EA00 - 0x38C90];
+    u8 unk38C90[0x69A00 - 0x38C90];
+    GDLAlphaGroup alphaGroups[0x400];
     GDLRect rects2D[0x400];
     GDLRect rects[0x20];
     u8 unkA0A80[0xBA280 - 0xA0A80];
