@@ -510,7 +510,6 @@ s32 TRKDoCPUType(TRKBuffer *b) {
 }
 
 s32 TRKTargetSupportMask(u8 *mask);
-s32 TRKAppendBuffer(TRKBuffer *b, const void *data, u32 length);
 s32 TRKDoSupportMask(TRKBuffer *b) {
     s32 err;
     s32 ackTries;
