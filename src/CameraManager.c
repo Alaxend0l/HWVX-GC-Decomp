@@ -34,10 +34,12 @@ typedef struct CameraInfo {
     f32 fov;                /* 0x14 */
     u8 pad18[8];
     Matrix4 mtx;            /* 0x20 */
-    u8 pad60[0x24];
+    Vector4 target;         /* 0x60 */
+    Vector4 from;           /* 0x70 */
+    u8 pad80[4];
     CameraSubMode *subMode; /* 0x84 */
     u32 cameraCount;        /* 0x88 */
-    u8 pad8C[4];
+    f32 lookAhead;          /* 0x8C */
 } CameraInfo;
 
 typedef struct CameraWorldScale {
@@ -117,6 +119,45 @@ void CameraManager_ResetAllCameras(void) {
 void CameraManager_Pause(s8 arg0) {
     extern s8 g_cameraManagerPause;
     g_cameraManagerPause = arg0;
+}
+
+void Camera_PrepareForRender(Camera *camera) {
+    extern s8 g_cameraManagerPause;
+    s32 Gfx_GetRenderWindowIndex(void);
+    void Camera_UpdatePosition(Camera *camera);
+    void Gfx_SetCameraMatrix(Vector4 *pos, Vector4 *dir, Vector4 *up, Vector4 *right);
+    void SoundListener_Set(s32 listener, s32 param, void *value);
+    s32 window;
+    Matrix4 mtx;
+
+    window = Gfx_GetRenderWindowIndex();
+    if (window != 0) {
+        window--;
+    }
+    if (g_cameraManagerPause) {
+        return;
+    }
+    Camera_UpdatePosition(camera);
+    Gfx_SetCameraMatrix(&camera->pos, &camera->dir, &camera->up, &camera->right);
+    mtx.v[0].x = camera->right.x;
+    mtx.v[1].x = camera->right.y;
+    mtx.v[2].x = camera->right.z;
+    mtx.v[0].y = camera->up.x;
+    mtx.v[1].y = camera->up.y;
+    mtx.v[2].y = camera->up.z;
+    mtx.v[0].z = camera->dir.x;
+    mtx.v[1].z = camera->dir.y;
+    mtx.v[2].z = camera->dir.z;
+    mtx.v[3].x = -(mtx.v[0].x * camera->pos.x + mtx.v[1].x * camera->pos.y + mtx.v[2].x * camera->pos.z);
+    mtx.v[3].y = -(mtx.v[0].y * camera->pos.x + mtx.v[1].y * camera->pos.y + mtx.v[2].y * camera->pos.z);
+    mtx.v[3].z = -(mtx.v[0].z * camera->pos.x + mtx.v[1].z * camera->pos.y + mtx.v[2].z * camera->pos.z);
+    mtx.v[2].w = 0.0f;
+    mtx.v[1].w = 0.0f;
+    mtx.v[0].w = 0.0f;
+    mtx.v[3].w = 1.0f;
+    SoundListener_Set(window, 5, &camera->pos);
+    SoundListener_Set(window, 6, &camera->vel);
+    SoundListener_Set(window, 7, &mtx);
 }
 
 #pragma push
