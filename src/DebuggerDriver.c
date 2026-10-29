@@ -17,8 +17,9 @@ void DBOpen(void) {
 }
 
 extern void (*DBGCallback)(short, void *);
+volatile unsigned long __PIRegs[12] : 0xCC003000;
 void DBGHandler(int interrupt, void *context) {
-    *(volatile unsigned long *)0xCC003000 = 0x1000;
+    __PIRegs[0] = 0x1000;
     if (DBGCallback) {
         DBGCallback(interrupt, context);
     }
