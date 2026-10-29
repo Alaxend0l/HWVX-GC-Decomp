@@ -154,7 +154,8 @@ typedef struct CarA {
   s32 lowSpeedFlag;         /* 0x404 compared < 500 by AI cars */
   u8 pad408[8];             /* 0x408 */
   Vector4 localAxis;        /* 0x410 cross-product operand in CarA_ProcessForce */
-  u8 pad420[0x30];          /* 0x420 */
+  u8 pad420[0x20];          /* 0x420 */
+  Vector4 prevVelocity;     /* 0x440 velocity at the start of PreMove */
   u32 reverseTimer;         /* 0x450 ms the brake is held at standstill */
   u8 pad454[4];             /* 0x454 */
   f32 gradeOrReverse;       /* 0x458 < 0.0f gates AI braking */
