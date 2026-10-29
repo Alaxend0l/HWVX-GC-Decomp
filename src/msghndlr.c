@@ -13,6 +13,7 @@ void TRKResetBuffer(TRKBuffer *b, u8 keepData);
 s32 TRKMessageSend(TRKBuffer *b);
 s32 TRKAppendBuffer(TRKBuffer *b, const void *data, u32 length);
 s32 TRKAppendBuffer1_ui16(TRKBuffer *b, u16 data);
+s32 TRKReadBuffer(TRKBuffer *b, void *data, u32 length);
 s32 TRKTargetAccessMemory(void *data, u32 start, u32 *length, s32 memorySpace, s32 read);
 
 typedef struct DSVersions {
