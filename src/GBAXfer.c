@@ -40,6 +40,25 @@ void __GBASyncCallback(s32 chan, s32 ret)
 	OSWakeupThread(__GBA[chan].threadQueue);
 }
 
+#pragma peephole on
+s32 __GBASync(s32 chan)
+{
+	s32 OSDisableInterrupts(void);
+	s32 OSRestoreInterrupts(s32);
+	void OSSleepThread(void *queue);
+	GBAControl *gba = &__GBA[chan];
+	s32 enabled;
+	s32 ret;
+
+	enabled = OSDisableInterrupts();
+	while (gba->callback)
+	{
+		OSSleepThread(gba->threadQueue);
+	}
+	ret = gba->ret;
+	OSRestoreInterrupts(enabled);
+	return ret;
+}
 static void TypeAndStatusCallback(s32 chan, u32 type)
 {
 	GBAControl *gba;
