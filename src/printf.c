@@ -36,6 +36,17 @@ u32 wcstombs(char *s, const u16 *pwcs, u32 n);
 void *memchr(const void *src, s32 val, u32 n);
 
 void *__FileWrite(void *File, const char *Buffer, u32 NumChars);
+int vprintf(const char *format, char *arg) {
+    int retval;
+    FILE *stream = &__files[1];
+
+    if (fwide(stream, -1) >= 0) {
+        return -1;
+    }
+    retval = __pformatter(&__FileWrite, (void *)stream, format, arg);
+    return retval;
+}
+
 void *__StringWrite(void *osc, const char *Buffer, u32 NumChars) {
     u32 CharsToBeWritten;
     __OutStrCtrl *Oscp = (__OutStrCtrl *)osc;
