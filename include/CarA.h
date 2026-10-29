@@ -46,6 +46,8 @@ typedef struct Player {
   u32 flags;                /* 0x6C & 0x80 cleared every camera update */
   u8 pad70[0x38];           /* 0x70 */
   void *tileCar;            /* 0xA8 the world tile car it was spawned from */
+  u8 padAC[0x1C];           /* 0xAC */
+  s32 wheelChannel;         /* 0xC8 force-feedback wheel channel */
 } Player;
 
 struct CarA;
