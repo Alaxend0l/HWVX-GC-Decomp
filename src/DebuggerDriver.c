@@ -74,6 +74,26 @@ void DBInitInterrupts(void) {
 }
 
 volatile unsigned long __EXIRegs[16] : 0xCC006800;
+
+static inline int DBGEXISelect(unsigned long v) {
+    unsigned long regs = __EXIRegs[10];
+    regs &= 0x405;
+    regs |= 0x80 | (v << 4);
+    __EXIRegs[10] = regs;
+    return 1;
+}
+
+static inline int DBGEXIDeselect(void) {
+    __EXIRegs[10] &= 0x405;
+    return 1;
+}
+
+static inline int DBGEXISync(void) {
+    while (__EXIRegs[13] & 1) {
+    }
+    return 1;
+}
+
 void DBInitComm(unsigned char **inputFlagPtr, MTRCallbackType callback) {
     int interrupts;
 
@@ -104,4 +124,24 @@ void MWCallback(void) {
         MTRCallback(0);
     }
 }
+
+int DBGEXIImm(void *buffer, long bytecounter, unsigned long write);
+#pragma push
+#pragma use_lmw_stmw on
+int DBGReadStatus(unsigned long *status) {
+    int err;
+    unsigned long cmd;
+
+    __EXIRegs[10] = (__EXIRegs[10] & 0x405) | 0xC0;
+    cmd = 0x40000000;
+    err = !DBGEXIImm(&cmd, 2, 1);
+    while (__EXIRegs[13] & 1) {
+    }
+    err |= !DBGEXIImm(status, 4, 0);
+    while (__EXIRegs[13] & 1) {
+    }
+    __EXIRegs[10] &= 0x405;
+    return !err;
+}
+#pragma pop
 
