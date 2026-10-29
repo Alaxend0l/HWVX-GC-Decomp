@@ -21,7 +21,7 @@ typedef struct DVDCommandBlock {
     s32 currTransferSize;
     s32 transferredSize;
     s32 unk24;
-    void (*callback)(s32 result);
+    void (*callback)(s32 result, struct DVDCommandBlock *block);
     s32 unk2c;
 } DVDCommandBlock;
 
