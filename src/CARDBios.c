@@ -44,6 +44,13 @@ typedef struct CARDControl {
     u8 *diskID;
 } CARDControl;
 
+typedef struct CARDID {
+    u8 serial[32];
+    u16 deviceID;
+    u16 size;
+    u16 encode;
+} CARDID;
+
 CARDControl __CARDBlock[2];
 u8 __CARDDiskNone[32];
 
