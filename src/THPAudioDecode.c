@@ -34,6 +34,16 @@ void PushFreeAudioBuffer(void *arg0)
     OSSendMessage(UsedTextureSetQueue_8036EC78, arg0, 0);
 }
 
+void *PopDecodedAudioBuffer(s32 flags) {
+    extern u8 DecodedAudioBufferQueue[];
+    void *msg;
+
+    if (OSReceiveMessage(DecodedAudioBufferQueue, &msg, flags) == 1) {
+        return msg;
+    }
+    return NULL;
+}
+
 void PushDecodedAudioBuffer(void *arg0) {
     extern u8 PrepareReadyQueue_8036ED00[];
     OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
