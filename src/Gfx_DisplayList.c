@@ -226,6 +226,12 @@ void *Gfx_GetWorldMatrixState(u32 index) {
     return g_pGDL->matrices[index];
 }
 
+void Gfx_GetCameraVector(Vector4 *right, Vector4 *up, Vector4 *at) {
+    *right = GetRenderWindow()->cameraRight;
+    *up = GetRenderWindow()->cameraUp;
+    *at = GetRenderWindow()->cameraAt;
+}
+
 DLSkinGroup *DisplayList_AddGroup_Skin(void) {
     DisplayList *dl = g_pDL;
 
