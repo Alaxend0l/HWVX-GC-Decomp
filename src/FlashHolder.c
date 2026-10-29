@@ -82,7 +82,7 @@ void FlashHolder_Render(void) {
     extern u8 g_pFlash[16][0x80];
     void Gfx_GetCameraPosition(Vector4 *pos);
     void Gfx_ScreenOverlay(GXColor *color, u8 mode);
-    Vector4 camera;
+    Vector4 camera __attribute__((aligned(16)));
     GXColor color;
     u8 *flash;
     u8 *owner;
