@@ -37,6 +37,9 @@ void ProcessVoice_(void);
 u32 CreateSFX_(SFX *sfx);
 void AudioVoice_Create_(void *voices);
 void AudioVoice_Destroy_(void);
+void SetVoiceState_(Voice *voice, s32 state);
+void SetVoiceVol_(Voice *voice, s32 vol);
+s8 SetVoiceRate_(Voice *voice);
 
 void AudioVoice_Create(void) {
     memset(g_voice, 0, sizeof(g_voice));
