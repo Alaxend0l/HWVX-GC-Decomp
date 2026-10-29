@@ -21,7 +21,9 @@ typedef struct GXData {
     u8 pad88[0xF8 - 0x88];
     u32 suScis0;
     u32 suScis1;
-    u8 pad100[0x43C - 0x100];
+    u8 pad100[0x420 - 0x100];
+    u32 projType;
+    f32 projMtx[6];
     f32 vpLeft;
     f32 vpTop;
     f32 vpWd;
