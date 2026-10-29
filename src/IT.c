@@ -16,16 +16,48 @@ typedef struct IT_VOICE
 
 typedef struct IT_TRACK
 {
-    struct IT_VOICE *head;
-    struct IT_VOICE *active;
-    u8 pad_8_10[9];
-    u8 state;
-    u8 pad_12_19[8];
-    s16 gvol;
-    u8 pad_1C_27[0xC];
-    s32 vol;
-    s32 pan;
-    u8 pad_30_6F[0x40];
+    struct IT_VOICE *head;   /* 0x00 */
+    struct IT_VOICE *active; /* 0x04 */
+    u8 *smp;                 /* 0x08 */
+    u8 *ins;                 /* 0x0C */
+    u8 index;                /* 0x10 */
+    u8 state;                /* 0x11 */
+    u8 priority;             /* 0x12 */
+    u8 mask;                 /* 0x13 */
+    u8 note;                 /* 0x14 */
+    u8 insNum;               /* 0x15 */
+    u8 volCol;               /* 0x16 */
+    u8 cmd;                  /* 0x17 */
+    u8 param;                /* 0x18 */
+    u8 realNote;             /* 0x19 */
+    s16 gvol;                /* 0x1A */
+    s32 chVol;               /* 0x1C */
+    u8 pad_20_27[8];
+    s32 vol;                 /* 0x28 */
+    s32 pan;                 /* 0x2C */
+    u8 pad_30_37[8];
+    s32 panSep;              /* 0x38 */
+    u8 pad_3C_43[8];
+    s32 curVol;              /* 0x44 */
+    s32 volBase;             /* 0x48 */
+    s32 volSlide;            /* 0x4C */
+    s32 period;              /* 0x50 */
+    s32 slideSpeed;          /* 0x54 */
+    s32 targetPeriod;        /* 0x58 */
+    u8 memVolSlide;          /* 0x5C */
+    u8 memChVolSlide;        /* 0x5D */
+    u8 memPanSlide;          /* 0x5E */
+    u8 memPitchSlide;        /* 0x5F */
+    u8 memArp;               /* 0x60 */
+    u8 memVibrato;           /* 0x61 */
+    u8 pad_62;
+    u8 memTremor;            /* 0x63 */
+    u8 memOffset;            /* 0x64 */
+    u8 memTempo;             /* 0x65 */
+    u8 memSpecial;           /* 0x66 */
+    u8 pad_67;
+    u32 flags;               /* 0x68 */
+    u32 prevFlags;           /* 0x6C */
 } IT_TRACK;
 
 IT_TRACK g_trk[0x20];
@@ -132,7 +164,7 @@ void SetITTrackPriority(s32 track, s32 priority)
     void *next;
 
     priority *= 2;
-    g_trk[track].pad_12_19[0x00] = priority;
+    g_trk[track].priority = priority;
     voice = g_trk[track].active;
     if (voice != NULL)
     {
@@ -216,7 +248,7 @@ s32 PlayNote(IT_TRACK *trk)
     u8 *song;
 
     stolen = 0;
-    rate = GetNoteRate_(*(u32 *)(*(u8 **)trk->pad_8_10 + 0x3C), trk->pad_12_19[7]);
+    rate = GetNoteRate_(*(u32 *)(trk->smp + 0x3C), trk->realNote);
     if (rate > 0x2EE00 || rate < 0x60)
     {
         if (!stolen && trk->active != NULL)
@@ -227,26 +259,26 @@ s32 PlayNote(IT_TRACK *trk)
     }
     if (trk->active == NULL)
     {
-        trk->active = (IT_VOICE *)GetVoice_(0, trk->pad_12_19[0]);
+        trk->active = (IT_VOICE *)GetVoice_(0, trk->priority);
         if (trk->active == NULL)
         {
             return 0;
         }
-        trk->active->track = trk->pad_8_10[8];
-        trk->active->pad_2_3[0] = trk->pad_12_19[2];
+        trk->active->track = trk->index;
+        trk->active->pad_2_3[0] = trk->note;
         trk->active->next = trk->head;
         trk->head = trk->active;
     }
     voice = (u8 *)trk->active;
-    *(u32 *)(voice + 0x10) = *(u32 *)trk->pad_8_10;
-    song = *(u8 **)trk->pad_8_10;
+    *(u32 *)(voice + 0x10) = (u32)trk->smp;
+    song = trk->smp;
     *(u32 *)(voice + 0x20) = *(u32 *)(song + 0x48);
     *(s32 *)(voice + 0x24) = (song[0x12] & 0x10) ? *(s32 *)(song + 0x34) : -1;
     *(s32 *)(voice + 0x28) = (song[0x12] & 0x10) ? *(s32 *)(song + 0x38) : *(s32 *)(song + 0x30);
     voice[0x2C] = (song[0x12] & 2) ? 0x10 : 8;
     *(u32 *)(voice + 0x30) = rate;
     *(s32 *)(voice + 0x34) = g_song[7];
-    *(u32 *)(voice + 0x38) = *(u32 *)(trk->pad_30_6F + 0x14);
+    *(u32 *)(voice + 0x38) = trk->curVol;
     *(s32 *)(voice + 0x3C) = song[0x11] << 9;
     *(s32 *)(voice + 0x40) = trk->pan;
     *(s32 *)(voice + 0x44) = -0x7FFF;
