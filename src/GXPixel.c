@@ -29,6 +29,8 @@ typedef struct GXData {
 
 extern GXData *gx;
 
+void __GXFlushTextureState(void);
+
 void GXSetColorUpdate(u8 update_enable) {
     gx->cmode0 = (gx->cmode0 & ~8) | (update_enable << 3);
     GXWGFifo.u8 = 0x61;
