@@ -549,4 +549,21 @@ void *PADSetSamplingCallback(void (*callback)(void))
     return prev;
 }
 
+BOOL __PADDisableRecalibration(BOOL disable) {
+    BOOL enabled;
+    BOOL prev;
+
+    enabled = OSDisableInterrupts();
+    if (*(u8 *)0x800030E3 & 0x40) {
+        prev = TRUE;
+    } else {
+        prev = FALSE;
+    }
+    *(u8 *)0x800030E3 &= 0xBF;
+    if (disable) {
+        *(u8 *)0x800030E3 |= 0x40;
+    }
+    OSRestoreInterrupts(enabled);
+    return prev;
+}
 
