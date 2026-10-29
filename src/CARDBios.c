@@ -194,6 +194,33 @@ void __CARDSetDiskID(u8 *id) {
     __CARDBlock[1].diskID = id ? id : __CARDDiskNone;
 }
 
+s32 OSDisableInterrupts(void);
+s32 OSRestoreInterrupts(s32 level);
+s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard) {
+    BOOL enabled;
+    s32 result;
+    CARDControl *card;
+
+    card = &__CARDBlock[chan];
+    if (chan < 0 || chan >= 2 || card->diskID == NULL) {
+        return -128;
+    }
+
+    enabled = OSDisableInterrupts();
+    if (!card->attached) {
+        result = -3;
+    } else if (card->result == -1) {
+        result = -1;
+    } else {
+        card->result = -1;
+        result = 0;
+        card->apiCallback = NULL;
+        *pcard = card;
+    }
+    OSRestoreInterrupts(enabled);
+    return result;
+}
+
 s32 __CARDPutControlBlock(CARDControl *card, s32 result) {
     BOOL enabled;
 
