@@ -76,6 +76,7 @@ typedef struct Condition
 	/* The condition class's methods, in main/Condition: damper effect 1 is the
 	 * slot LGWheels' PlayDamperForce plays. */
 	/* 0x0 */
+	Condition();
 	long DownloadForce(long chan, long effect, unsigned long &device, unsigned char type, unsigned long duration, unsigned long startDelay, signed char offset, unsigned char deadband, unsigned char saturationPos, unsigned char saturationNeg, short coefficientPos, short coefficientNeg);
 	/* 0x0 */
 	long UpdateForce(long chan, long effect, unsigned char type, unsigned long duration, unsigned long startDelay, signed char offset, unsigned char deadband, unsigned char saturationPos, unsigned char saturationNeg, short coefficientPos, short coefficientNeg);
