@@ -5,7 +5,7 @@ s32 Looker_Init(u8 *looker, u8 *init) {
     typedef struct { f32 x, y, z, w; } Vec4;
     void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
     void ThingManagerList_Append(void **arg0, void *arg1);
-    Vector4 params;
+    Vector4 params __attribute__((aligned(16)));
     u8 *slave;
     void *world;
 
