@@ -224,6 +224,188 @@ void AI_Creature_PopulateVolumes(void) {
     } while (v != gs_currentVolume);
 }
 
+static inline void AI_Creature_NewCreature(s32 type) {
+    void *PlayerManager_NewAIPlayer(u8 *desc);
+    AIPlayerDesc desc;
+    u8 *player;
+
+    desc.unk0 = type;
+    desc.unkD = 1;
+    player = PlayerManager_NewAIPlayer((u8 *)&desc);
+    if (gs_pCurrentAICreature == NULL) {
+        gs_pCurrentAICreature = player;
+        *(u8 **)(player + 0xD4) = player;
+    } else {
+        *(u8 **)(player + 0xD4) = *(u8 **)(gs_pCurrentAICreature + 0xD4);
+        *(u8 **)(gs_pCurrentAICreature + 0xD4) = player;
+    }
+    player[0xCD] = type;
+}
+
+void AI_Creature_AsyncProcess(void) {
+    typedef struct Vec {
+        f32 x;
+        f32 y;
+        f32 z;
+        f32 w;
+    } Vec;
+    typedef struct NearestCar {
+        u8 *car;
+        u8 pad4[0x10 - 0x4];
+        Vec pos;
+        f32 speed;
+        f32 range;
+        u8 pad28[0x30 - 0x28];
+    } NearestCar;
+    typedef struct {
+        s32 unk0;
+        u8 pad4[0xD - 0x4];
+        u8 unkD;
+        u8 padE[0x10 - 0xE];
+    } AIPlayerDesc;
+    extern NearestCar gs_aNearestCars[8];
+    extern u8 g_cameraManager[];
+    void PSVECScale(void *src, void *dst, f32 scale);
+    void PSVECAdd(void *a, void *b, void *out);
+    f32 PSVECSquareDistance(void *a, void *b);
+    f32 PSVECSquareMag(void *v);
+    s32 VolumeManager_GetNumVolumesOfType(u32 type);
+    void *VolumeManager_GetVolumeTypeByIndex(u32 type, u32 index);
+    void MemClr32(void *dst, u32 size);
+    u32 World_GetTotalTiles_Creature(void);
+    void *World_GetTileCreature(u32 index);
+    void *PlayerManager_NewAIPlayer(u8 *desc);
+    s32 ThingManager_GetActiveCars();
+    s32 AI_Creature_Deactivate(u8 *creature);
+    s8 AI_Creature_Spawn(u8 *creature, u8 *spawner, u32 index);
+    void AI_Creature_PopulateVolumes(void);
+    int rand(void);
+    static u32 gs_creatureTile;
+    static u32 s_currentCar;
+    f32 dist;
+    f32 best;
+    u32 j;
+    NearestCar *nearest;
+    u8 *tile;
+    u8 *creature;
+    u32 i;
+    u32 n;
+    u32 count;
+    u8 *player;
+    u8 *cars[8];
+    AIPlayerDesc desc;
+    Vec p;
+
+    if (g_volumeTotal == -1) {
+        gs_pCurrentAICreature = NULL;
+        g_volumeTotal = VolumeManager_GetNumVolumesOfType(5);
+        if (g_volumeTotal != 0) {
+            gs_currentVolume = 0;
+            MemClr32(gs_aSpawnVolumes, g_volumeTotal * sizeof(SpawnVolume));
+            for (i = 0; i < g_volumeTotal; i++) {
+                gs_aSpawnVolumes[i].volume = VolumeManager_GetVolumeTypeByIndex(5, i);
+            }
+        } else if (World_GetTotalTiles_Creature() == 0) {
+            goto update;
+        }
+        MemClr32(gs_aNearestCars, sizeof(gs_aNearestCars));
+        desc.unk0 = 0;
+        desc.unkD = 1;
+        player = PlayerManager_NewAIPlayer((u8 *)&desc);
+        if (gs_pCurrentAICreature == NULL) {
+            gs_pCurrentAICreature = player;
+            *(u8 **)(player + 0xD4) = player;
+        } else {
+            *(u8 **)(player + 0xD4) = *(u8 **)(gs_pCurrentAICreature + 0xD4);
+            *(u8 **)(gs_pCurrentAICreature + 0xD4) = player;
+        }
+        player[0xCD] = desc.unk0;
+    }
+update:
+    if (gs_pCurrentAICreature == NULL) {
+        return;
+    }
+    count = ThingManager_GetActiveCars(cars, 9);
+    if (count != 0) {
+        for (i = 0; i < count; i++) {
+            gs_aNearestCars[i].car = cars[i];
+            PSVECScale(cars[i], &gs_aNearestCars[i].pos, 0.18f);
+            PSVECAdd(cars[i] + 0x40, &gs_aNearestCars[i].pos, &gs_aNearestCars[i].pos);
+        }
+        if (i < 8) {
+            gs_aNearestCars[i].car = NULL;
+        }
+        if (s_currentCar >= count) {
+            s_currentCar = 0;
+        }
+        gs_aNearestCars[s_currentCar].speed = PSVECSquareMag(gs_aNearestCars[s_currentCar].car);
+        if (gs_aNearestCars[s_currentCar].speed > 1.0f) {
+            gs_aNearestCars[s_currentCar].range = 400.0f * (1.0f - gs_aNearestCars[s_currentCar].speed / 100000.0f);
+        } else {
+            gs_aNearestCars[s_currentCar].range = 400.0f;
+        }
+        s_currentCar++;
+    }
+    for (n = 0; n < 10; n++) {
+        if (gs_pCurrentAICreature[0xCD] != 0 && *(u32 *)(gs_pCurrentAICreature + 0xF8) == 0 &&
+            !(s8)AI_Creature_Deactivate(gs_pCurrentAICreature)) {
+            creature = gs_pCurrentAICreature;
+            nearest = gs_aNearestCars;
+            best = *(f32 *)(*(u8 **)(creature + 0xD0) + 0x18);
+            for (j = 0; j < 8; j++, nearest++) {
+                if (nearest->car == NULL) {
+                    break;
+                }
+                dist = PSVECSquareDistance(*(u8 **)(creature + 0x2C) + 0x40, &nearest->pos);
+                if (best > dist) {
+                    if (*(NearestCar **)(creature + 0xE4) != nearest) {
+                        *(NearestCar **)(creature + 0xE4) = nearest;
+                        *(f32 *)(creature + 0xF0) = (f32)(rand() % 501 + 750) / 1000.0f;
+                        creature[0xEC] = 0;
+                        *(s32 *)(creature + 0xC8) = 1;
+                    }
+                    *(f32 *)(creature + 0xE8) = best;
+                    best = dist;
+                }
+            }
+        }
+        gs_pCurrentAICreature = *(u8 **)(gs_pCurrentAICreature + 0xD4);
+    }
+    if (World_GetTotalTiles_Creature() != 0) {
+        creature = gs_pCurrentAICreature;
+        do {
+            if (creature[0xCD] == 0) {
+                break;
+            }
+            creature = *(u8 **)(creature + 0xD4);
+        } while (creature != gs_pCurrentAICreature);
+        if (creature[0xCD] == 0) {
+            gs_creatureTile++;
+            if (gs_creatureTile >= World_GetTotalTiles_Creature()) {
+                gs_creatureTile = 0;
+            }
+            tile = World_GetTileCreature(gs_creatureTile);
+            if (*(u32 *)(tile + 0x20) != 0 && *(u8 **)(tile + 0x1C) == NULL) {
+                for (j = 0; j < g_cameraManager[0x640]; j++) {
+                    PSVECScale(g_cameraManager + j * 0x190 + 0x80, &p, 150.0f);
+                    PSVECAdd(g_cameraManager + j * 0x190 + 0x60, &p, &p);
+                    if (360000.0f > PSVECSquareDistance(&p, tile)) {
+                        if (AI_Creature_Spawn(creature, tile, -1)) {
+                            *(u8 **)(*(u8 **)(creature + 0x2C) + 0x90) = tile;
+                            *(u8 **)(tile + 0x1C) = *(u8 **)(creature + 0x2C);
+                            *(u32 *)(tile + 0x20) = 0;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    if (g_volumeTotal != 0) {
+        AI_Creature_PopulateVolumes();
+    }
+}
+
 void AI_Creature_Heartbeat(void) {
 }
 
