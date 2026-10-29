@@ -479,6 +479,30 @@ void Gfx_Add2DRectangleBack(void)
     Render_DrawRectangle();
 }
 
+void Render_DrawAlphaTriangle(u16 index);
+void Render_DrawAlphaGroup(u16 index);
+extern f32 g_alphaTestMin;
+extern f32 g_AlphaTestMax;
+extern f32 g_AlphaScale;
+
+static inline void Gfx_LinkAlphaEntry(u32 n, f32 z) {
+    u32 idx;
+
+    if (g_alphaTestMin > z) {
+        g_alphaTestMin = z;
+    }
+    if (g_AlphaTestMax < z) {
+        g_AlphaTestMax = z;
+    }
+    g_AlphaScale = 255.0f / (g_AlphaTestMax - g_alphaTestMin);
+    idx = g_AlphaScale * (z - g_alphaTestMin);
+    if (idx >= 0x100) {
+        idx = 0xFF;
+    }
+    g_pGDL->alphaEntries[n].next = g_pGDL->alphaTable[idx];
+    g_pGDL->alphaTable[idx] = n;
+}
+
 void DisplayList_AddAlphaGroup(s32 arg0, s32 arg1, u32 matrix, u8 arg3, GXColor *color) {
     if (g_pGDL->numAlphaGroups == 0x400) {
         return;
