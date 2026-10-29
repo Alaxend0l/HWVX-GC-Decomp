@@ -111,3 +111,34 @@ error:
     }
 }
 
+s32 __CARDUpdateDir(s32 chan, CARDCallback callback) {
+    typedef struct CARDDirCheck {
+        u8 padding0[0x3A];
+        s16 checkCode;
+        u16 checkSum;
+        u16 checkSumInv;
+    } CARDDirCheck;
+    void __CARDCheckSum(void *ptr, s32 length, u16 *checksum, u16 *checksumInv);
+    void DCStoreRange(void *addr, u32 nBytes);
+    s32 __CARDEraseSector(s32 chan, u32 addr, CARDCallback callback);
+    CARDControl *card;
+    CARDDirCheck *check;
+    u32 tmp;
+    u32 addr;
+    u8 *dir;
+
+    card = &__CARDBlock[chan];
+    if (!card->attached) {
+        return -3;
+    }
+    dir = __CARDGetDirBlock(card);
+    check = (CARDDirCheck *)(dir + 0x1FC0);
+    ++check->checkCode;
+    __CARDCheckSum(dir, 0x1FFC, &check->checkSum, &check->checkSumInv);
+    DCStoreRange(dir, 0x2000);
+    card->eraseCallback = callback;
+    tmp = ((u32)dir - (u32)card->workArea) / 0x2000;
+    addr = card->sectorSize * tmp;
+    return __CARDEraseSector(chan, addr, EraseCallback);
+}
+
