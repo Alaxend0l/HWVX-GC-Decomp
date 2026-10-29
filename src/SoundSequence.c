@@ -5,6 +5,10 @@ typedef struct SoundSequence {
     u32 flags;    /* 0x74 */
     u8 pad78[0x38];
     u8 *params;   /* 0xB0 */
+    u8 padB4[0xC8 - 0xB4];
+    struct SoundSequence *queued; /* 0xC8 */
+    u8 padCC[0xD0 - 0xCC];
+    s32 sources[4]; /* 0xD0 */
 } SoundSequence;
 
 u32 ThingManager_GetActiveSoundSequences(u8 **list, u32 max);
