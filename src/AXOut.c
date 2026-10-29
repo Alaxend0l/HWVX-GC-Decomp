@@ -62,7 +62,9 @@ void __AXOutNewFrame(u32 lessDspCycles)
     extern u32 __AXOutFrame;
     u32 cl;
     AXPROFILE *profile;
-    u32 i;
+    u8 *src;
+    u8 *dst;
+    int i;
 
     __AXLocalProfile.axFrameStart = OSGetTime();
     __AXSyncPBs(lessDspCycles);
@@ -91,8 +93,10 @@ void __AXOutNewFrame(u32 lessDspCycles)
     __AXLocalProfile.axNumVoices = __AXGetNumVoices();
     profile = __AXGetCurrentProfile();
     if (profile) {
+        src = (u8 *)&__AXLocalProfile;
+        dst = (u8 *)profile;
         for (i = 0; i < sizeof(AXPROFILE); i++) {
-            ((u8 *)profile)[i] = ((u8 *)&__AXLocalProfile)[i];
+            *dst++ = *src++;
         }
     }
 }
