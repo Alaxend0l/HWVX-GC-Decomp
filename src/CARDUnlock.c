@@ -11,3 +11,23 @@ extern CARDControl __CARDBlock[2];
 
 void DSPSendMailToDSP(u32 mail);
 u32 DSPCheckMailToDSP(void);
+
+static void InitCallback(void *task) {
+    s32 chan;
+    CARDControl *card;
+    void *data;
+
+    for (chan = 0; chan < 2; ++chan) {
+        card = &__CARDBlock[chan];
+        if ((void *)card->task == task) {
+            break;
+        }
+    }
+    data = card->workArea;
+    DSPSendMailToDSP(0xFF000000);
+    while (DSPCheckMailToDSP()) {
+    }
+    DSPSendMailToDSP((u32)data);
+    while (DSPCheckMailToDSP()) {
+    }
+}
