@@ -100,6 +100,42 @@ void InitMem(void) {
     OSSetArenaLo(arenaHi);
 }
 
+void InitRenderMode(void *mode) {
+    extern void *rmode;
+    extern u8 GXNtsc480IntDf[];
+    extern u8 GXPal528IntDf[];
+    extern u8 GXMpal480IntDf[];
+    extern u8 rmodeobj[];
+    void OSPanic(const char *file, s32 line, const char *msg, ...);
+    s32 VIGetTvFormat(void);
+    void GXAdjustForOverscan(void *rmin, void *rmout, u16 hor, u16 ver);
+    void VIConfigure(void *rm);
+    void InitVI(void);
+
+    if (mode != NULL) {
+        rmode = mode;
+    } else {
+        switch (VIGetTvFormat()) {
+        case 0:
+            rmode = GXNtsc480IntDf;
+            break;
+        case 1:
+            rmode = GXPal528IntDf;
+            break;
+        case 2:
+            rmode = GXMpal480IntDf;
+            break;
+        default:
+            OSPanic("Main_NGC.c", 366, "DEMOInit: invalid TV format\n");
+            break;
+        }
+        GXAdjustForOverscan(rmode, rmodeobj, 0, 16);
+        rmode = rmodeobj;
+    }
+    VIConfigure(rmode);
+    InitVI();
+}
+
 void InitVI(void) {
     void VIFlush(void);
     void VISetNextFrameBuffer(void *fb);
