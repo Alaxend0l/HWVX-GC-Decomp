@@ -22,20 +22,23 @@ typedef struct THPPlayer {
 
 extern THPPlayer ActivePlayer;
 
+static s32 ReadThreadCreated;
+static u8 ReadThread[0x310];
+static u8 ReadThreadStack[0x1000];
+static u8 FreeReadBufferQueue[0x20];
+static void *FreeReadBufferMessage[10];
+static u8 ReadedBufferQueue[0x20];
+static void *ReadedBufferMessage[10];
+static u8 ReadedBufferQueue2[0x20];
+static void *ReadedBufferMessage2[10];
 
 void ReadThreadStart(void) {
-    extern s32 ReadThreadCreated;
-    extern u8 ReadThread[];
-
     if (ReadThreadCreated) {
         OSResumeThread(ReadThread);
     }
 }
 
 void ReadThreadCancel(void) {
-    extern s32 ReadThreadCreated;
-    extern u8 ReadThread[];
-
     if (ReadThreadCreated) {
         OSCancelThread(ReadThread);
         ReadThreadCreated = 0;
@@ -49,7 +52,6 @@ void Reader(void) {
     s32 DVDReadPrio(void *fileInfo, void *addr, s32 length, s32 offset, s32 prio);
     s32 OSSuspendThread(void *thread);
     void PrepareReady(s32 flag);
-    extern u8 ReadThread[];
     THPReadBuffer *readBuffer;
     s32 offset;
     s32 size;
