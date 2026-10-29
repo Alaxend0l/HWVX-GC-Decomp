@@ -40,7 +40,7 @@ void ProcessManager_Add(char *name, void (*init)(void), void (*update)(void), s3
         strcpy(g_processManager.processes[index].name, name);
     }
     else {
-        strcpy(g_processManager.processes[index].name, "");
+        strcpy(g_processManager.processes[index].name, "...");
     }
     if (init != NULL) {
         init();
