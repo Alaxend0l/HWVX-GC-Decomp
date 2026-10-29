@@ -22,6 +22,40 @@ void World_Init(void) {
     fn_800957D4();
 }
 
+void World_Refresh(void) {
+    typedef struct WorldGameData {
+        u8 unk0[0xC];
+        f32 envmapX;
+        f32 envmapY;
+        f32 fogStart;
+        f32 fogEnd;
+        u8 unk1C[0x4];
+        f32 farPlane;
+        u8 unk24[0x8C - 0x24];
+        u32 envmapA;
+        u32 envmapB;
+        u8 unk94[0xC0 - 0x94];
+        GXColor *fogColor;
+    } WorldGameData;
+    void *World_GetGameData(void);
+    void Gfx_SetEnvmap(u16 a, u16 b, s8 flag, f32 x, f32 y);
+    void Gfx_SetFog(GXColor *color, u8 type, f32 start, f32 end);
+    void Gfx_SetFarClippingPlane(f32 farPlane);
+    void SongManager_PlaySong(void);
+    WorldGameData *gameData = World_GetGameData();
+    GXColor color;
+
+    if (gameData != NULL) {
+        Gfx_SetEnvmap(gameData->envmapA, gameData->envmapB, 1, gameData->envmapX, gameData->envmapY);
+        color = *gameData->fogColor;
+        Gfx_SetFog(&color, 0, gameData->fogStart, gameData->fogEnd);
+        SongManager_PlaySong();
+        Gfx_SetFarClippingPlane(gameData->farPlane);
+    } else {
+        Gfx_SetFarClippingPlane(0.0f);
+    }
+}
+
 void World_Render(void) {
     typedef struct Quad {
         u8 pad0[0x1C];
