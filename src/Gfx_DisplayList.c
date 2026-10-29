@@ -191,8 +191,19 @@ typedef struct GDLAlphaGroup {
     GXColor color;
     u8 unk50;
     u8 window;
-    u8 unk52[0x54 - 0x52];
+    u16 next;
 } GDLAlphaGroup;
+
+typedef struct GDLGeomGroup {
+    u8 unk0[0x18];
+    u16 sortKey;
+    u8 unk1A[0x20 - 0x1A];
+} GDLGeomGroup;
+
+typedef struct GDLGeom {
+    u8 unk0[0x8];
+    GDLGeomGroup *groups;
+} GDLGeom;
 
 typedef struct GDLDrawEntry {
     void *geometry;
