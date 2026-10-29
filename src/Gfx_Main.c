@@ -39,6 +39,15 @@ typedef struct GfxState {
 
 extern GfxState g_state;
 
+typedef struct GfxWindow {
+    u8 unk0[0x180];
+    Vector cameraPos;
+    u8 unk190[0x2D0 - 0x190];
+} GfxWindow;
+
+f32 PSVECSquareMag(Vector *v);
+void PSVECNormalize(Vector *src, Vector *dst);
+
 
 void Gfx_Destroy(void) {
     M2C_UNK Gfx_DisplayList_Destroy();
