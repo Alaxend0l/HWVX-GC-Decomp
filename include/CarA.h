@@ -88,14 +88,27 @@ typedef struct CarAMaterial {
 } CarAMaterial;
 
 typedef struct CarACollider {
-  u8 pad00[0x14];           /* 0x00 */
+  f32 inertiaScale[3];      /* 0x00 per-axis factor of the inverse inertia tensor */
+  u8 pad0C[4];              /* 0x0C */
+  u8 type;                  /* 0x10 0: oriented box, 1: convex hull */
+  u8 pad11[3];              /* 0x11 */
   s32 maxHealth;            /* 0x14 */
   s32 damageThreshold;      /* 0x18 impacts above it hurt */
   u8 pad1C[4];              /* 0x1C */
   f32 mass;                 /* 0x20 */
   u8 pad24[0xC];            /* 0x24 */
   CarAMaterial *material;   /* 0x30 */
+  u8 pad34[0x10];           /* 0x34 */
+  Vector4 *box;             /* 0x44 type 0: min/max corners */
+  struct CarAHull *hull;    /* 0x48 type 1 */
 } CarACollider;
+
+typedef struct CarAHull {
+  u8 pad00[0xC];            /* 0x00 */
+  u32 numVerts;             /* 0x0C */
+  u8 pad10[0xC];            /* 0x10 */
+  Vector4 *verts;           /* 0x1C */
+} CarAHull;
 
 
 typedef struct CarAAccel {
