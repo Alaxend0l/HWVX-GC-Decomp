@@ -24,6 +24,38 @@ static void CARDSrand(unsigned int seed) {
     next = seed;
 }
 
+static u32 DummyLen(void) {
+    u32 tick;
+    u32 wk;
+    int tmp;
+    u32 max;
+
+    wk = 1;
+    max = 0;
+    tick = OSGetTick();
+    CARDSrand(tick);
+    tmp = CARDRand();
+    tmp &= 0x1f;
+    tmp += 1;
+    while ((tmp < 4) && (max < 10)) {
+        tick = OSGetTick();
+        tick <<= wk;
+        wk++;
+        if (wk > 16) {
+            wk = 1;
+        }
+        CARDSrand(tick);
+        tmp = CARDRand();
+        tmp &= 0x1f;
+        tmp += 1;
+        max++;
+    }
+    if (tmp < 4) {
+        tmp = 4;
+    }
+    return tmp;
+}
+
 static void InitCallback(void *task) {
     s32 chan;
     CARDControl *card;
