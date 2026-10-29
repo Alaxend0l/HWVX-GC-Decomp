@@ -114,3 +114,12 @@ void GXGetVtxDesc(s32 attr, s32 *type) {
 void GXInvalidateVtxCache(void) {
     *(volatile u8 *)0xCC008000 = 0x48;
 }
+
+void GXSetNumTexGens(u8 nTexGens) {
+    gx->genMode = ((u32)gx->genMode & ~0xF) | (u32)nTexGens;
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = 0x1000 + 0x3F;
+    GXWGFifo.u32 = (u32)nTexGens;
+    gx->dirtyState |= 4;
+}
+
