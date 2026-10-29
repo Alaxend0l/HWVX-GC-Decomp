@@ -376,6 +376,35 @@ void stateMotorStopped(void)
     DVDLowWaitCoverClose(cbForStateMotorStopped);
 }
 
+void cbForStateMotorStopped(u32 intType) {
+    void __DVDClearWaitingQueue(void);
+    void OSCreateAlarm(OSAlarm *alarm);
+    void OSSetAlarm(OSAlarm *alarm, s64 time, void (*handler)(void *, void *));
+    DVDCommandBlock *finished;
+
+    __DIRegs[1] = 0;
+    executing->state = 3;
+    switch (CurrCommand) {
+    case 4:
+    case 5:
+    case 13:
+    case 15:
+        __DVDClearWaitingQueue();
+        finished = executing;
+        executing = &DummyCommandBlock;
+        if (finished->callback) {
+            (*finished->callback)(-4, finished);
+        }
+        stateReady();
+        break;
+    default:
+        DVDReset();
+        OSCreateAlarm(&ResetAlarm);
+        OSSetAlarm(&ResetAlarm, (*(u32 *)(0x80000000 + 0xf8) / 4) / 1000 * 1150, AlarmHandler);
+        break;
+    }
+}
+
 void stateReady(void)
 {
     s32 __DVDCheckWaitingQueue(void);
