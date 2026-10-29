@@ -98,6 +98,30 @@ void cbForStateReadingFST(u32 intType) {
     }
 }
 
+void cbForStateError(u32 intType) {
+    DVDCommandBlock *finished;
+
+    if (intType == 16) {
+        executing->state = -1;
+        stateTimeout();
+        return;
+    }
+
+    FatalErrorFlag = 1;
+    finished = executing;
+    executing = &DummyCommandBlock;
+    if (finished->callback) {
+        (*finished->callback)(-1, finished);
+    }
+    if (Canceling) {
+        Canceling = 0;
+        if (CancelCallback) {
+            (*CancelCallback)(0, finished);
+        }
+    }
+    stateReady();
+}
+
 void stateTimeout(void) {
     void __DVDStoreErrorCode(u32 code);
     DVDCommandBlock *finished;
