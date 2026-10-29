@@ -94,7 +94,7 @@ extern u32 m_pointLightMask;
 
 extern s32 m_curLightState;
 extern s32 m_curEnvmapState;
-void Render_Geometry(void *geometry, void *matrix);
+void Render_Geometry(Geometry *geom, f32 *m);
 void Gfx_EnableState(s32 state);
 void Gfx_DisableState(s32 state);
 void Gfx_SetBaseColor(GXColor *color);
