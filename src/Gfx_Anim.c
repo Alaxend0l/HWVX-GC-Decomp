@@ -103,6 +103,7 @@ void Gfx_DrawAnimGeometryAux(Geometry *geometry, f32 *matrices, u32 count, f32 *
     }
     Gfx_DrawAnimGeometryAux_(geometry, matrices, count, matrix);
 }
+#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
