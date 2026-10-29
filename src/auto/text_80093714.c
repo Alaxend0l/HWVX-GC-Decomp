@@ -9,7 +9,9 @@ typedef struct TRKCPURegs {
 
 typedef struct TRKCPUState {
     TRKCPURegs regs;
-    u8 pad_84[0x1F8 - 0x84];
+    u8 pad_84[0x98 - 0x84];
+    u64 fpr[32];
+    u8 pad_198[0x1F8 - 0x198];
     u32 stepMode; /* 0x1F8: MSR, 0x400 = single-step trace */
     u8 pad_1FC[0x2F8 - 0x1FC];
     u32 field_2F8;
