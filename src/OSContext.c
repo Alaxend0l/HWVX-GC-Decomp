@@ -33,3 +33,14 @@ void OSClearContext(OSContext *context)
     }
 }
 
+#pragma peephole on
+void OSSwitchFPUContext(void);
+void *__OSSetExceptionHandler(u8 exception, void *handler);
+void DBPrintf(const char *fmt, ...);
+#pragma peephole off
+void __OSContextInit(void)
+{
+    __OSSetExceptionHandler(7, OSSwitchFPUContext);
+    *(OSContext **)0x800000D8 = NULL;
+    DBPrintf("FPU-unavailable handler installed\n");
+}
