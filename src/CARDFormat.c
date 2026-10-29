@@ -46,6 +46,42 @@ s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, CARDCallback callback
 s32 __CARDPutControlBlock(CARDControl *card, s32 result);
 void *memcpy(void *dst, const void *src, unsigned long n);
 
+static void FormatCallback(s32 chan, s32 result)
+{
+    CARDControl *card;
+    CARDCallback callback;
+
+    card = &__CARDBlock[chan];
+    if (result < 0) {
+        goto error;
+    }
+
+    ++card->formatStep;
+    if (card->formatStep < 5) {
+        result = __CARDEraseSector(chan, (u32)card->sectorSize * card->formatStep, FormatCallback);
+        if (0 <= result) {
+            return;
+        }
+    } else if (card->formatStep < 10) {
+        int step = card->formatStep - 5;
+        result = __CARDWrite(chan, (u32)card->sectorSize * step, 0x2000, (u8 *)card->workArea + step * 0x2000, FormatCallback);
+        if (0 <= result) {
+            return;
+        }
+    } else {
+        card->currentDir = (u8 *)card->workArea + 0x2000;
+        memcpy(card->currentDir, (u8 *)card->workArea + 0x4000, 0x2000);
+        card->buffer = (u8 *)card->workArea + 0x6000;
+        memcpy(card->buffer, (u8 *)card->workArea + 0x8000, 0x2000);
+    }
+
+error:
+    callback = card->apiCallback;
+    card->apiCallback = NULL;
+    __CARDPutControlBlock(card, result);
+    callback(chan, result);
+}
+
 s32 CARDFormat(s32 chan)
 {
     s32 __CARDFormatRegionAsync(s32 chan, u16 encode, CARDCallback callback);
