@@ -33,13 +33,33 @@ typedef struct GDLTri {
     s16 blendMode;  /* 0x62 */
 } GDLTri;
 
+typedef struct GDLSprite {
+    Vector4 pos;
+    u8 unk10[0x1C - 0x10];
+    f32 rot;
+    u32 next;
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
+    u8 unk28[2];
+    u8 blendMode;
+    u8 unk2B[0x30 - 0x2B];
+} GDLSprite;
+
 typedef struct GDL {
-    u8 unk0[0x68];
+    u8 unk0[0x8];
+    u32 numSprites;
+    u8 unkC[0x68 - 0xC];
     u32 numPointSprites;
-    u8 unk6C[0x38CC0 - 0x6C];
+    u8 unk6C[0x215C0 - 0x6C];
+    GDLSprite sprites[0x7CF];
+    u8 unk38C90[0x38CC0 - 0x38C90];
     GDLTri tris[2000];
     u8 unk69A00[0xEDCC0 - 0x69A00];
-    GDLPointSprite pointSprites[1];
+    GDLPointSprite pointSprites[1000];
+    u8 unkF1B40[0x24CDF4 - 0xF1B40];
+    u16 spriteHeads[0x1FF];
 } GDL;
 
 extern GDL *g_pGDL;
