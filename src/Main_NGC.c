@@ -76,4 +76,15 @@ void InitVI(void) {
     }
 }
 
-#pragma use_lmw_stmw on
+void GetSystemDate(s32 *year, s32 *month, s32 *day, s32 *hour, s32 *minute) {
+    s64 OSGetTime(void);
+    void OSTicksToCalendarTime(s64 ticks, void *td);
+    s32 td[10];
+
+    OSTicksToCalendarTime(OSGetTime(), td);
+    *year = td[5];
+    *month = td[4] + 1;
+    *day = td[3];
+    *hour = td[2];
+    *minute = td[1];
+}
