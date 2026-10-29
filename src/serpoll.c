@@ -1,8 +1,16 @@
 #include "common.h"
 
+typedef struct TRKBuffer {
+    u32 mutex;
+    s32 isInUse;
+    u32 length;
+    u32 position;
+    u8 data[0x880];
+} TRKBuffer;
+
 typedef struct TRKFramingState {
     s32 msgBufID;
-    void *buffer;
+    TRKBuffer *buffer;
     u8 receiveState;
     s32 isEscape;
     u8 fcs;
