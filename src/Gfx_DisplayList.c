@@ -130,7 +130,9 @@ typedef struct GDL {
     GDLRect rects[0x20];
     u8 unkA0A80[0xC0040 - 0xA0A80];
     GDLLine lines[0x100];
-    u8 unkC3040[0xF3C00 - 0xC3040];
+    u8 unkC3040[0xC9EC0 - 0xC3040];
+    f32 cachedMatrices[0x578][4][4];
+    u8 unkDFCC0[0xF3C00 - 0xDFCC0];
     void *matrices[0x578];
     u8 unkF51E0[0x24CDE4 - 0xF51E0];
     GDLGroupTri *groupTris;
