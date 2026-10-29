@@ -2,6 +2,58 @@
 
 #pragma use_lmw_stmw on
 
+typedef struct LineDef {
+    u8 unk0;
+    u8 unk1;
+    u8 unk2;
+    u8 pad3;
+    f32 base;
+    f32 range;
+    u8 keys[8];
+    u8 colourKeys[4];
+} LineDef;
+
+typedef struct LineInfo {
+    u8 pad0[4];
+    LineDef *data;
+    s32 life;
+    s32 lifeRange;
+    u8 pad10[4];
+    u8 colourKeys[8];
+    u32 numFx;
+    u32 *fx;
+} LineInfo;
+
+typedef struct Line {
+    Vector4 start;          /* 0x00 */
+    Vector4 end;            /* 0x10 */
+    Vector4 vel;            /* 0x20 */
+    Vector4 dir;            /* 0x30 */
+    Vector4 accel;          /* 0x40 */
+    LineInfo *info;         /* 0x50 NULL: free slot */
+    u8 colourKey[0x24];     /* 0x54 ExtractColorKey state */
+    u32 colour;             /* 0x78 */
+    u8 pad7C[4];            /* 0x7C */
+    u8 unk80;               /* 0x80 */
+    u8 pad81[3];            /* 0x81 */
+    u8 colour2Key[0x24];    /* 0x84 */
+    u32 colour2;            /* 0xA8 */
+    u8 padAC[4];            /* 0xAC */
+    u8 unkB0;               /* 0xB0 */
+    u8 padB1[3];            /* 0xB1 */
+    f32 length;             /* 0xB4 ExtractF32Key output */
+    u8 padB8[0xC];          /* 0xB8 */
+    u8 unkC4;               /* 0xC4 */
+    u8 padC5[0xF];          /* 0xC5 */
+    f32 life;               /* 0xD4 ms left */
+    f32 scale;              /* 0xD8 */
+    f32 rate;               /* 0xDC */
+    u8 unkE0;               /* 0xE0 */
+    u8 unkE1;               /* 0xE1 length is keyed over time */
+    u8 unkE2;               /* 0xE2 end is recomputed every frame */
+    u8 padE3[0xD];          /* 0xE3 */
+} Line;
+
 void LineManager_Init(void) {
     extern u8 g_lineManager[128][0xF0];
     u32 i;
