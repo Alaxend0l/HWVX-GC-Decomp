@@ -30,6 +30,13 @@ typedef struct GXVtxDescList {
     s32 type;
 } GXVtxDescList;
 
+typedef struct GXVtxAttrFmtList {
+    s32 attr;
+    s32 cnt;
+    s32 type;
+    u8 frac;
+} GXVtxAttrFmtList;
+
 
 void __GXXfVtxSpecs(void);
 void __GXSetVCD(void) {
