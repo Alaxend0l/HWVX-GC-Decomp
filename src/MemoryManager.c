@@ -1,3 +1,5 @@
+#pragma readonly_strings on
+
 void *memset(void *dst, int val, unsigned long n);
 void *OSAllocFromHeap(int heap, unsigned long size);
 void OSFreeToHeap(int heap, void *ptr);
