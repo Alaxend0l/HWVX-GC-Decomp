@@ -344,3 +344,20 @@ void Gfx_SetTextureWrapMode(u16 id, u16 mode) {
 void Gfx_LoadPalettes_RAM(void) {
 
 }
+
+void Gfx_UnLoadTexture(u16 id) {
+    if (id < m_totalTextures && m_texture != NULL) {
+        if (--m_texture[id].refCount == 0) {
+            Render_DestroyTextureSlot(id);
+            if (m_texture[id].unk3A == 0) {
+                Deallocate(m_texture[id].data);
+            }
+            memset(&m_texture[id], 0, 0x20);
+            m_texture[id].refCount = 0;
+            m_texture[id].unk30 = 0;
+            m_texture[id].width = 0;
+            m_texture[id].data = NULL;
+        }
+    }
+}
+
