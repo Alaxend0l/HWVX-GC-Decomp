@@ -32,6 +32,24 @@ struct DVDFileInfo {
 #pragma push
 #pragma peephole on
 #pragma scheduling off
+#pragma push
+#pragma peephole on
+#pragma scheduling off
+void __DVDFSInit(void) {
+    extern u8 *BootInfo;
+    extern u32 *FstStart;
+    extern char *FstStringStart;
+    extern u32 MaxEntryNum;
+
+    BootInfo = (u8 *)0x80000000;
+    FstStart = *(u32 **)(BootInfo + 0x38);
+    if (FstStart) {
+        MaxEntryNum = FstStart[2];
+        FstStringStart = (char *)FstStart + MaxEntryNum * 12;
+    }
+}
+#pragma pop
+
 BOOL DVDClose(void *fileInfo) {
     s32 DVDCancel(void *block);
 
