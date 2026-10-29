@@ -568,7 +568,7 @@ config.libs = [
             Object(NonMatching, "abort_exit.c"),
             Object(NonMatching, "alloc.c"),
             Object(NonMatching, "errno.c"),
-            Object(NonMatching, "ansi_files.c"),
+            Object(NonMatching, "ansi_files.c", mw_version="GC/1.3"),
             Object(NonMatching, "ansi_fp.c"),
             Object(NonMatching, "buffer_io.c"),
             Object(Matching, "ctype.c", mw_version="GC/1.3"),
