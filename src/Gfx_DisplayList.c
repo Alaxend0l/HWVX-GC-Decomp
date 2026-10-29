@@ -403,6 +403,27 @@ u32 Gfx_AddWorldMatrixState_CacheMatrix(f32 (*matrix)[4]) {
     return g_pGDL->numMatrices++;
 }
 
+void QuaternionToSubMatrix(void *quat, void *mtx);
+void ScaleMatrix(void *mtx, void *scale);
+void CopyVector(Vector4 *dst, Vector4 *src);
+u32 Gfx_AddWorldMatrixState_CacheMatrixQuaternionScalePos(void *quat, void *scale, Vector4 *pos) {
+    pos->w = 1.0f;
+    if (g_pGDL->numMatrices >= 0x578) {
+        g_pGDL->numMatrices = 0;
+    }
+    if (g_pGDL->numCachedMatrices >= 0x578) {
+        g_pGDL->numCachedMatrices = 0;
+    }
+    QuaternionToSubMatrix(quat, g_pGDL->cachedMatrices[g_pGDL->numCachedMatrices]);
+    if (scale != NULL) {
+        ScaleMatrix(g_pGDL->cachedMatrices[g_pGDL->numCachedMatrices], scale);
+    }
+    CopyVector((Vector4 *)g_pGDL->cachedMatrices[g_pGDL->numCachedMatrices][3], pos);
+    g_pGDL->matrices[g_pGDL->numMatrices] = g_pGDL->cachedMatrices[g_pGDL->numCachedMatrices];
+    g_pGDL->numCachedMatrices++;
+    return g_pGDL->numMatrices++;
+}
+
 void *Gfx_GetWorldMatrixState(u32 index) {
     if (index == 0xFFFE) {
         return &g_identity;
