@@ -33,7 +33,65 @@ typedef struct GfxState {
 
 extern GfxState g_state;
 extern Matrix4 g_identity;
-void *GetRenderWindow(void);
+
+typedef struct GfxWindow {
+    u8 unk0[0x140];
+    Matrix4 viewMatrix;
+    Vector4 cameraPos;
+    Vector4 cameraRight;
+    Vector4 cameraUp;
+    Vector4 cameraAt;
+    u8 unk1C0[0x2D0 - 0x1C0];
+} GfxWindow;
+
+GfxWindow *GetRenderWindow(void);
+
+typedef struct DLSkinGroup {
+    void *lod;
+    s32 lightState;
+    f32 *matrices;
+    u32 count;
+    u16 matrix;
+    u8 group;
+    u8 window;
+} DLSkinGroup;
+
+typedef struct DLGroup {
+    void *geometry;
+    s32 lightState;
+    u16 matrix;
+    u16 unkA;
+    u8 group;
+    u8 unkD;
+    u8 unkE;
+    u8 window;
+} DLGroup;
+
+typedef struct DisplayList {
+    u16 numOpaqueGroups;
+    u16 numLitGroups;
+    u16 numShadowGroups;
+    u16 numAlphaGroups;
+    u8 unk8[0x10 - 0x8];
+    u16 numSkinGroups;
+    u8 unk12[0x14 - 0x12];
+    u16 numDecalGroups;
+    u16 numOverlayGroups;
+    u8 unk18[0x20 - 0x18];
+    DLGroup opaqueGroups[0x9C4];
+    DLGroup litGroups[0x258];
+    DLGroup shadowGroups[0x100];
+    DLGroup alphaGroups[0x100];
+    DLGroup decalGroups[0x200];
+    DLGroup overlayGroups[0x80];
+    DLSkinGroup skinGroups[0x100];
+    u16 unk11DE0[0x1FF];
+    u16 unk121DE[0x1FF];
+} DisplayList;
+
+typedef struct GDLRect {
+    u8 unk0[0x84];
+} GDLRect;
 
 typedef struct GDL {
     u32 numAlphaEntries;
