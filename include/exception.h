@@ -13,6 +13,11 @@ public:
     const char *what() const;
 };
 
+class bad_exception : public exception {
+public:
+    const char *what() const;
+};
+
 }
 
 #endif
