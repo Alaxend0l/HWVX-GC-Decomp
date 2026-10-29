@@ -114,8 +114,8 @@ void CarA_ComputeSuspensionForces_Aux1(CarA *car) {
         RackSlot slots[12];
     } Rack;
     SuspThingParams params;
-    Vector4 torque;
-    Vector4 arm;
+    Vector4 torque __attribute__((aligned(16)));
+    Vector4 arm __attribute__((aligned(16)));
     f32 dot;
     f32 force;
     f32 t;
