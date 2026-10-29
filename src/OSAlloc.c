@@ -23,3 +23,28 @@ s32 OSSetCurrentHeap(s32 arg0) {
     __OSCurrHeap = arg0;
     return temp_r0;
 }
+
+s32 OSCreateHeap(void *start, void *end)
+{
+    s32 heap;
+    HeapDesc *hd;
+    Cell *cell;
+
+    start = (void *)(((u32)start + 0x1F) & ~0x1F);
+    end = (void *)((u32)end & ~0x1F);
+    for (heap = 0; heap < NumHeaps; heap++) {
+        hd = &HeapArray[heap];
+        if (hd->size < 0) {
+            hd->size = (u8 *)end - (u8 *)start;
+            cell = (Cell *)start;
+            cell->prev = NULL;
+            cell->next = NULL;
+            cell->size = hd->size;
+            hd->free = cell;
+            hd->allocated = NULL;
+            return heap;
+        }
+    }
+    return -1;
+}
+
