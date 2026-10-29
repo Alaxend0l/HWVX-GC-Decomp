@@ -287,7 +287,7 @@ void CarA_ProcessImpulse(u8 *car, Vector4 *normal, Vector4 *pos, Vector4 *pointV
     XformVecOrientation(car + 0x10, &scaled, (Vector4 *)(car + 0x410));
 }
 
-s32 CarA_PreMove(CarA *car) {
+s32 CarA_PreMove(void *thing) {
     typedef struct EffectVtbl {
         u8 pad0[0x18];
         void (*spawn)(void *thing, void *params, s32 arg, f32 scale);
@@ -321,8 +321,6 @@ s32 CarA_PreMove(CarA *car) {
     s8 Player_IsHuman(void *player);
     void CarA_ComputeForces(CarA *car);
     void CarA_SlaveWeaponHeartbeat(CarA *car);
-    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
-    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
     void Thing_CollideWithForceBoxes(void *thing);
     s32 NavHolder_FindIndexOfNearestNavPoint(Vector4 *pos, s32 index);
     s32 RandomAdd_s32(s32 base, s32 range);
@@ -330,6 +328,7 @@ s32 CarA_PreMove(CarA *car) {
     void SoundSource_Set(s32 id, s32 param, void *value);
     void CarA_ExecuteCombo(CarA *car);
     void Thing_PassiveTargeting(void *thing);
+    CarA *car = thing;
     TurboFx fx __attribute__((aligned(16)));
     f32 engineVolume;
     f32 enginePitch;
@@ -354,10 +353,10 @@ s32 CarA_PreMove(CarA *car) {
 
     if (car->player != NULL) {
         switch (car->vehicleIface->driveMode) {
+        case 0:
+            break;
         case 1:
             CarA_PreMove_Control_HW(car);
-            break;
-        case 2:
             break;
         }
 
@@ -373,7 +372,7 @@ s32 CarA_PreMove(CarA *car) {
                     fx.dir.x = car->worldMatrix.v[2].x - 0.2f * car->worldMatrix.v[1].x;
                     fx.dir.y = car->worldMatrix.v[2].y - 0.2f * car->worldMatrix.v[1].y;
                     fx.dir.z = car->worldMatrix.v[2].z - 0.2f * car->worldMatrix.v[1].z;
-                    if (0.0f != PSVECSquareMag(&fx.dir)) {
+                    if (PSVECSquareMag(&fx.dir)) {
                         PSVECNormalize(&fx.dir, &fx.dir);
                     }
                     fx.unk28 = 0;
@@ -471,20 +470,13 @@ s32 CarA_PreMove(CarA *car) {
         car->torqueAccum = g_zeroVector;
         car->forceAccum = car->torqueAccum;
     } else {
-        Vector4 scaled __attribute__((aligned(16)));
-        Vector4 local __attribute__((aligned(16)));
-
         car->velocity.x += invMass * car->forceAccum.x;
         car->velocity.y += invMass * car->forceAccum.y;
         car->velocity.z += invMass * car->forceAccum.z;
         car->angularMomentum.x += g_fDeltaTimeSec * car->torqueAccum.x;
         car->angularMomentum.y += g_fDeltaTimeSec * car->torqueAccum.y;
         car->angularMomentum.z += g_fDeltaTimeSec * car->torqueAccum.z;
-        InverseXformVecOrientation(&car->worldMatrix, &car->angularMomentum, &local);
-        scaled.x = car->inverseBodyInertia.v[0].x * local.x;
-        scaled.y = car->inverseBodyInertia.v[1].y * local.y;
-        scaled.z = car->inverseBodyInertia.v[2].z * local.z;
-        XformVecOrientation(&car->worldMatrix, &scaled, &car->localAxis);
+        CarA_UpdateAngularVelocity(car);
         car->torqueAccum = g_zeroVector;
         car->forceAccum = car->torqueAccum;
     }
@@ -502,8 +494,7 @@ s32 CarA_PreMove(CarA *car) {
     }
 
     if ((u32)car->soundIds[1] != 0xFFFFFFFF) {
-        maxRpm = car->vehicleIface->engine->unk68;
-        if (_fabs(car->unk4E0) < maxRpm) {
+        if (_fabs(car->unk4E0) < (maxRpm = car->vehicleIface->engine->unk68)) {
             engineVolume = (maxRpm - _fabs(car->rpm)) / maxRpm;
             enginePitch = car->vehicleIface->engine->unk64 + _fabs(car->rpm) / car->vehicleIface->unk1C;
             if (engineVolume < 0.0f) {
