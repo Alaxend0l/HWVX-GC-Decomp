@@ -74,3 +74,37 @@ static void cb(s32 result, DVDCommandBlock *block) {
         DVDReadDiskID(block, idTmp, cb);
     }
 }
+
+void __fstLoad(void) {
+    OSBootInfo *bootInfo;
+    DVDDiskID *id;
+    u8 idTmpBuf[sizeof(DVDDiskID) + 31];
+    static DVDCommandBlock block;
+    void *arenaHi;
+
+    arenaHi = OSGetArenaHi();
+    bootInfo = (OSBootInfo *)0x80000000;
+
+    idTmp = (DVDDiskID *)(((u32)idTmpBuf + 31) & ~31);
+    bb2 = (DVDBB2 *)(((u32)bb2Buf + 31) & ~31);
+
+    DVDReset();
+    DVDReadDiskID(&block, idTmp, cb);
+    while (DVDGetDriveStatus() != 0) {
+    }
+
+    bootInfo->FSTLocation = bb2->FSTAddress;
+    bootInfo->FSTMaxLength = bb2->FSTMaxLength;
+
+    id = &bootInfo->DVDDiskID;
+    memcpy(id, idTmp, sizeof(DVDDiskID));
+    OSReport("\n");
+    OSReport("  Game Name ... %c%c%c%c\n", id->gameName[0], id->gameName[1], id->gameName[2], id->gameName[3]);
+    OSReport("  Company ..... %c%c\n", id->company[0], id->company[1]);
+    OSReport("  Disk # ...... %d\n", id->diskNumber);
+    OSReport("  Game ver .... %d\n", id->gameVersion);
+    OSReport("  Streaming ... %s\n", (id->streaming == 0) ? "OFF" : "ON");
+    OSReport("\n");
+    OSSetArenaHi(bb2->FSTAddress);
+}
+
