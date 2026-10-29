@@ -88,6 +88,11 @@ void AlarmHandler(void *alarm, void *context)
     stateCoverClosed_CMD(executing);
 }
 
+void cbForStateCoverClosed(u32 intType);
+void stateCoverClosed_CMD(DVDCommandBlock *block) {
+    DVDLowReadDiskID(tmpBuffer, cbForStateCoverClosed);
+}
+
 void stateMotorStopped(void)
 {
     void DVDLowWaitCoverClose(void (*cb)(u32));
