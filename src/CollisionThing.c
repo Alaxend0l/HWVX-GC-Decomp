@@ -164,8 +164,8 @@ static inline f32 RayBoxTestLocal(Vector4 *start, Vector4 *dir, Vector4 *box, f3
         { { 0.0f, -1.0f, 0.0f, 0.0f }, 2, 0, 1 },
         { { 0.0f, 0.0f, -1.0f, 0.0f }, 0, 0, 0 },
     };
-    Vector4 end __attribute__((aligned(16)));
     Vector4 seg __attribute__((aligned(16)));
+    Vector4 end __attribute__((aligned(16)));
     Vector4 *res;
     f32 d0;
     f32 d1;
