@@ -16,6 +16,32 @@ typedef struct Line2D {
     u8 r, g, b, a;      /* 0x20 */
 } Line2D;
 
+typedef struct GDLVec {
+    f32 x, y, z, w;
+} GDLVec;
+
+typedef struct GDL3DLine {
+    GDLVec p0;      /* 0x00 */
+    GDLVec p1;      /* 0x10 */
+    u8 r, g, b, a;  /* 0x20 */
+    u8 unk24[0x30 - 0x24];
+} GDL3DLine;
+
+typedef struct GDL {
+    u8 unk0[0x24];
+    u32 num3DLines;
+    u8 unk28[0xA2B80 - 0x28];
+    GDL3DLine lines3D[2000];
+} GDL;
+
+extern GDL *g_pGDL;
+
+static inline void GXPosition3f32(f32 x, f32 y, f32 z) {
+    GXWGFifo.f32 = x;
+    GXWGFifo.f32 = y;
+    GXWGFifo.f32 = z;
+}
+
 static inline void GXPosition2f32(f32 x, f32 y) {
     GXWGFifo.f32 = x;
     GXWGFifo.f32 = y;
