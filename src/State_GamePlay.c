@@ -37,6 +37,26 @@ typedef struct GPTileCar {
     u8 unk5F;               /* 0x5F */
 } GPTileCar;
 
+typedef struct GPWorldInfo {
+    u8 pad0[0x7C];
+    u32 radarBlip;          /* 0x7C */
+    u8 pad80[8];
+    u32 lightTexture;       /* 0x88 */
+    u8 pad8C[0x18];
+    void *packList;         /* 0xA4 */
+} GPWorldInfo;
+
+typedef struct GPWorld {
+    u8 *grid;               /* 0x00 */
+    u8 pad4[4];
+    u32 numTileCars;        /* 0x08 */
+    GPTileCar *tileCars;    /* 0x0C */
+    u8 pad10[0x68];
+    void *nav;              /* 0x78 */
+    u8 pad7C[0x20];
+    GPWorldInfo *info;      /* 0x9C */
+} GPWorld;
+
 typedef struct GPCreatureParams {
     Vector4 pos;            /* 0x00 */
     Vector4 quat;           /* 0x10 */
@@ -93,6 +113,530 @@ void ExitStateGamePlay(s32 arg0) {
     g_targetGameState = arg0;
     g_bExitStateGamePlay = 1;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+#pragma readonly_strings on
+s32 StateGamePlay_Init(void) {
+    extern s32 g_gamePlayCallback;
+    extern u32 g_DemoModeCurrentPlayer;
+    extern s8 g_bExitStateGamePlay;
+    extern u32 g_pauseState;
+    extern u32 g_DemoModeCounter;
+    extern s32 g_DemoModeSwitchCameraTime;
+    extern s32 g_DemoModeSwitchVehicleTime;
+    extern Vector4 g_zeroVector;
+    void TimeHandler_Heartbeat(void);
+    void ForceFeedback_Init(void);
+    void ForceFeedback_Heartbeat(void);
+    void Input_Init(void);
+    void Input_Heartbeat(void);
+    void PlayerManager_Init(void);
+    void PlayerManager_Heartbeat(void);
+    void PlayerManager_Render_DEBUG(void);
+    void InterfaceManager_Init(void);
+    void InterfaceManager_Heartbeat(void);
+    void InterfaceManager_Render(void);
+    void ThingManager_DARYL_Init(void);
+    void ThingManager_DARYL_Heartbeat(void);
+    void ThingManager_DARYL_Render(void);
+    void FileStreaming_HeartBeatItems(void);
+    void World_Render(void);
+    void ParticleManager_Init(void);
+    void ParticleManager_Heartbeat(void);
+    void ParticleManager_Render(void);
+    void Trail_Init(void);
+    void Trail_Heartbeat(void);
+    void Trail_Render(void);
+    void LightHolder_Init(void);
+    void LightHolder_Heartbeat(void);
+    void LightHolder_Render(void);
+    void FlashHolder_Init(void);
+    void FlashHolder_Heartbeat(void);
+    void FlashHolder_Render(void);
+    void CoronaHolder_Init(void);
+    void CoronaHolder_Heartbeat(void);
+    void CoronaHolder_Render(void);
+    void ShaderHolder_Heartbeat(void);
+    void LineManager_Init(void);
+    void LineManager_Heartbeat(void);
+    void LineManager_Render(void);
+    void SoundManager_Heartbeat(void);
+    void LensFlare_Init(void);
+    void LensFlare_Render(void);
+    void GameRules_Init(void);
+    void GameRules_HeartBeat(void);
+    void Trigger_Heartbeat(void);
+    void Action_Heartbeat(void);
+    void TimerManager_Heartbeat(void);
+    void VertexColorSeqManager_Heartbeat(void);
+    void BulletHole_Init(void);
+    void BulletHole_Heartbeat(void);
+    void BulletHole_Render(void);
+    void Timer_Heartbeat(void);
+    void LidHandler_Init(void);
+    void LidHandler_Heartbeat(void);
+    void ProcessManager_Add(char *name, void (*init)(void), void (*update)(void), void (*render)(void), u32 flags);
+    void Geometry_Init(s32 arg);
+    void PlayerManager_Create(void);
+    void Gfx_SetEnviroMapMode(s32 mode);
+    void ViewManager_Init(void);
+    void ShowStats_Init(void);
+    void ProcessManager_Init(void);
+    void Gfx_StateTextureBlendMode(s32 mode);
+    void Gfx_SetProjectionMatrix(f32 fov);
+    void Gfx_SetCameraMatrix(Vector4 *pos, void *a, void *b, void *c);
+    void VertexColorSeqManager_Init(void);
+    void VolumeManager_Initialize(void);
+    void LightManager_Initialize(void);
+    void Grid_Init(void *a, void *b, s32 x, s32 y);
+    void NavHolder_Init(void *nav);
+    void LightHolder_SetTexture(u16 tex);
+    void InterfaceManager_SetRadarBlip(u16 tex);
+    void GameSettings_RestoreGameData(void);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    GPTileCar *World_GetTileCar(u32 index);
+    GPTileSpeaker *World_GetTileSpeaker(u32 index);
+    u8 *World_GetTileLight(u32 index);
+    GPTilePath *World_GetTilePath(u32 index);
+    u8 *World_GetVolume(u32 index);
+    u8 *World_GetNavHolder(void);
+    void World_InitTeleporters(void);
+    void SetOrientation(void *m, f32 x, f32 y, f32 z);
+    void SubMatrixToQuaternion(void *m, Vector4 *q);
+    u32 GameSettings_GetCodeVariable(s32 var, s32 index);
+    s32 GameSettings_GetGameType(void);
+    s8 GameSettings_IsCheatEnabled(s32 cheat);
+    s32 GameSettings_GetDifficulty(void);
+    void *GameSettings_GetMCP(void);
+    void GameSettings_RestorePlayerStats(void);
+    Player *PlayerManager_NewHumanPlayer(void);
+    Player *PlayerManager_NewAIPlayer(GPAIPlayerDesc *desc);
+    u8 PlayerManager_PlayerHumanCount(void);
+    Player *PlayerManager_GetHumanPlayerByIndex(u8 index);
+    void Player_SetName(Player *player, s32 port, const char *name);
+    void Player_SetThing(Player *player, CarA *thing);
+    void Player_RefreshInterface(Player *player);
+    void *FileStreaming_LoadDataPack(void *list, s32 a, u32 id, s32 b);
+    void *FileStreaming_InitializeDataPack(void *pack, s32 a, s32 b);
+    GPItem *DataPack_GetScript(void *pack, u32 id);
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    void WildCardRack_JettisonAll(void *rack);
+    void WildCardRack_Add(void *rack, GPItem *item, s32 count);
+    s32 ActionVehicleChangeMode(u32 *action);
+    s32 ActionSpeakerChangeMode(u32 *action);
+    s32 ActionAirboxChangeMode(u32 *action);
+    s32 ActionNavPointChangeMode(u32 *action);
+    s32 SoundManager_CreateSource(s32 type);
+    void SoundSource_Set(s32 source, s32 what, void *value);
+    void SoundSource_Play(s32 source);
+    void LightHolder_Add(void *light, s32 arg);
+    void **CameraManager_GetNewCamera(void);
+    void Camera_SetPlayer(void **camera, void *player);
+    void ViewManager_SetTwoPlayerHorizontal(void);
+    void ViewManager_SetThreePlayer(void);
+    void ViewManager_SetFourPlayer(void);
+    void ViewManager_SetCamera(void **camera, s32 view);
+    void ViewManager_EnableView(s32 view, s32 enable);
+    void SetPlayerControls(void);
+    int sprintf(char *buf, const char *fmt, ...);
+    static s32 countAI;
+    struct {
+        Vector4 pos;
+        Vector4 vel;
+        Vector4 angVel;
+        f32 scale[3];
+        f32 unk3C;
+        u32 unk40;
+        u8 pad44[4];
+        f32 speed;
+        u32 unk4C;
+        u32 unk50;
+        u32 unk54;
+        u8 pad58[4];
+        u32 unk5C;
+    } pathParams;
+    GPCreatureParams params;
+    Matrix4 mtx;
+    struct {
+        Vector4 pos;
+        u32 emitter;
+        u32 unk14;
+    } speakerParams;
+    u32 action[3];
+    GPAIPlayerDesc desc;
+    u32 speakerAction[3];
+    u32 airAction[3];
+    s32 viewOf[4];
+    u32 viewIdx[4];
+    Player *players[4];
+    char name[8];
+    s8 humanUsed[4] = {0, 0, 0, 0};
+    s32 soundId;
+    GPTileCar *car;
+    Player *player;
+    u32 i;
+    u32 script;
+    void *rack;
+    GPItem *item;
+    GPTileSpeaker *speaker;
+    s32 source;
+    u8 *light;
+    GPTilePath *path;
+    u8 *volume;
+    u8 *nav;
+    u8 count;
+    s32 view;
+    void **camera;
+    void *mcp;
+    u32 n;
+
+    g_gamePlayCallback = 0;
+    g_DemoModeCurrentPlayer = 0;
+    g_bExitStateGamePlay = 0;
+    Geometry_Init(1);
+    PlayerManager_Create();
+    Gfx_SetEnviroMapMode(1);
+    CameraManager_Init();
+    ViewManager_Init();
+    ShowStats_Init();
+    ProcessManager_Init();
+    ProcessManager_Add("TimeHandler", NULL, TimeHandler_Heartbeat, NULL, 1);
+    ProcessManager_Add("ForceFeedback", ForceFeedback_Init, ForceFeedback_Heartbeat, NULL, 1);
+    ProcessManager_Add("Input", Input_Init, Input_Heartbeat, NULL, 1);
+    ProcessManager_Add("Player", PlayerManager_Init, PlayerManager_Heartbeat, PlayerManager_Render_DEBUG, 0);
+    ProcessManager_Add("Interface", InterfaceManager_Init, InterfaceManager_Heartbeat, InterfaceManager_Render, 1);
+    ProcessManager_Add("ThingManager", ThingManager_DARYL_Init, ThingManager_DARYL_Heartbeat, ThingManager_DARYL_Render, 1);
+    ProcessManager_Add("World", NULL, FileStreaming_HeartBeatItems, World_Render, 0);
+    ProcessManager_Add("Particle", ParticleManager_Init, ParticleManager_Heartbeat, ParticleManager_Render, 0);
+    ProcessManager_Add("Trail", Trail_Init, Trail_Heartbeat, Trail_Render, 0);
+    ProcessManager_Add("Light", LightHolder_Init, LightHolder_Heartbeat, LightHolder_Render, 0);
+    ProcessManager_Add("Flash", FlashHolder_Init, FlashHolder_Heartbeat, FlashHolder_Render, 0);
+    ProcessManager_Add("Corona", CoronaHolder_Init, CoronaHolder_Heartbeat, CoronaHolder_Render, 0);
+    ProcessManager_Add("Shader", NULL, ShaderHolder_Heartbeat, NULL, 0);
+    ProcessManager_Add("Line", LineManager_Init, LineManager_Heartbeat, LineManager_Render, 0);
+    ProcessManager_Add("SoundManager", NULL, SoundManager_Heartbeat, NULL, 1);
+    ProcessManager_Add("LensFlare", LensFlare_Init, NULL, LensFlare_Render, 0);
+    ProcessManager_Add("Game Rules", GameRules_Init, GameRules_HeartBeat, NULL, 0);
+    ProcessManager_Add("Triggers", NULL, Trigger_Heartbeat, NULL, 1);
+    ProcessManager_Add("Actions", NULL, Action_Heartbeat, NULL, 0);
+    ProcessManager_Add("Timers", NULL, TimerManager_Heartbeat, NULL, 0);
+    ProcessManager_Add("VertexColorSeq", NULL, VertexColorSeqManager_Heartbeat, NULL, 0);
+    ProcessManager_Add("BulletHoles", BulletHole_Init, BulletHole_Heartbeat, BulletHole_Render, 0);
+    ProcessManager_Add("Timer", NULL, Timer_Heartbeat, NULL, 0);
+    ProcessManager_Add("Lid Handler", LidHandler_Init, LidHandler_Heartbeat, NULL, 1);
+    Gfx_StateTextureBlendMode(2);
+    Gfx_SetProjectionMatrix(90.0f);
+    Gfx_SetCameraMatrix(NULL, NULL, NULL, NULL);
+    g_pauseState = 0;
+    VertexColorSeqManager_Init();
+    VolumeManager_Initialize();
+    LightManager_Initialize();
+    Grid_Init(*(u8 **)g_worldData.world, *(u8 **)g_worldData.world + 0x10, 0x10, 0x10);
+    NavHolder_Init(*(void **)((u8 *)g_worldData.world + 0x78));
+    LightHolder_SetTexture(*(u32 *)(*(u8 **)((u8 *)g_worldData.world + 0x9C) + 0x88));
+    InterfaceManager_SetRadarBlip(*(u32 *)(*(u8 **)((u8 *)g_worldData.world + 0x9C) + 0x7C));
+    GameSettings_RestoreGameData();
+    ThingManager_DARYL_CreateThing(0xB, NULL);
+    for (i = 0; (car = World_GetTileCar(i)) != NULL; i++) {
+        if (car->aiScripts == NULL) {
+            continue;
+        }
+        if (car->port > 4 && car->unk34 != 0 && car->unk5F == 0) {
+            continue;
+        }
+        params.pos = car->pos;
+        params.pos.y += 10.0f;
+        params.player = NULL;
+        params.aiScripts = car->aiScripts;
+        params.vel = g_zeroVector;
+        if (car->port <= 4) {
+            car->unk34 = 0;
+        }
+        SetOrientation(&mtx, car->rotY, car->rotX, car->rotZ);
+        SubMatrixToQuaternion(&mtx, &params.quat);
+        if (car->port <= 4 && GameSettings_GetCodeVariable(0x198, 0) == 0) {
+            script = GameSettings_GetCodeVariable(0xCC, car->port);
+            if (car->port - 1 < 4) {
+                player = PlayerManager_NewHumanPlayer();
+                if (car->port == 1) {
+                    Player_SetName(player, 1, "Player 1");
+                } else if (car->port == 2) {
+                    Player_SetName(player, 2, "Player 2");
+                } else if (car->port == 3) {
+                    Player_SetName(player, 3, "Player 3");
+                } else if (car->port == 4) {
+                    Player_SetName(player, 4, "Player 4");
+                }
+                humanUsed[car->port - 1] = 1;
+                car->creature = ThingManager_DARYL_CreateThing(9, &params);
+                Player_SetThing(player, car->creature);
+                car->creature->tileData = car;
+                player->tileCar = car;
+                if (GameSettings_GetGameType() == 0 && script == 3 && GameSettings_IsCheatEnabled(8)) {
+                    script = 0x4D;
+                }
+                if (script != 0xFFFFFFFF) {
+                    item = DataPack_GetScript(
+                        FileStreaming_InitializeDataPack(
+                            FileStreaming_LoadDataPack(*(void **)(*(u8 **)((u8 *)g_worldData.world + 0x9C) + 0xA4), 2, script, 0),
+                            2, 1),
+                        script);
+                    if (item != NULL) {
+                        rack = ThingManagerList_GetByType((u8 *)car->creature + 0x344, 8);
+                        WildCardRack_JettisonAll(rack);
+                        WildCardRack_Add(rack, item, item->info->count);
+                    }
+                }
+            }
+        } else {
+            s32 difficulty = GameSettings_GetDifficulty();
+
+            script = 0;
+            if (difficulty == 0) {
+                if (car->scripts[0] != 0) {
+                    script = car->scripts[0];
+                } else if (params.aiScripts->scripts[0] != 0) {
+                    script = params.aiScripts->scripts[0];
+                }
+            } else if (difficulty == 1) {
+                if (car->scripts[1] != 0) {
+                    script = car->scripts[1];
+                } else if (params.aiScripts->scripts[0] != 0) {
+                    script = params.aiScripts->scripts[1];
+                }
+            } else if (difficulty == 2) {
+                if (car->scripts[2] != 0) {
+                    script = car->scripts[2];
+                } else if (params.aiScripts->scripts[0] != 0) {
+                    script = params.aiScripts->scripts[2];
+                }
+            } else if (difficulty == 3) {
+                if (car->scripts[3] != 0) {
+                    script = car->scripts[3];
+                } else if (params.aiScripts->scripts[0] != 0) {
+                    script = params.aiScripts->scripts[3];
+                }
+            }
+            if (script == 0) {
+                if (params.aiScripts->scripts[0] != 0) {
+                    script = params.aiScripts->scripts[0];
+                } else if (params.aiScripts->scripts[1] != 0) {
+                    script = params.aiScripts->scripts[1];
+                } else if (params.aiScripts->scripts[2] != 0) {
+                    script = params.aiScripts->scripts[2];
+                } else {
+                    script = params.aiScripts->scripts[3];
+                }
+            }
+            desc.script = script;
+            desc.unkD = 0;
+            desc.unkC = car->unk34;
+            desc.nearSq = car->nearDist * car->nearDist;
+            desc.farSq = car->farDist * car->farDist;
+            player = PlayerManager_NewAIPlayer(&desc);
+            if (player == NULL) {
+                continue;
+            }
+            player->aiScripts = params.aiScripts;
+            sprintf(name, "AI %d", countAI++);
+            Player_SetName(player, -1, name);
+            car->creature = ThingManager_DARYL_CreateThing(9, &params);
+            Player_SetThing(player, car->creature);
+            car->creature->tileData = car;
+            player->tileCar = car;
+            if (car->item != NULL) {
+                rack = ThingManagerList_GetByType((u8 *)car->creature + 0x344, 8);
+                WildCardRack_JettisonAll(rack);
+                WildCardRack_Add(rack, car->item, car->item->info->count);
+            }
+        }
+        action[0] = car->mode;
+        action[1] = 1;
+        action[2] = (u32)car;
+        ActionVehicleChangeMode(action);
+    }
+    for (i = 0; (speaker = World_GetTileSpeaker(i)) != NULL; i++) {
+        source = SoundManager_CreateSource(1);
+        soundId = speaker->sound->unk14;
+        SoundSource_Set(source, 8, &soundId);
+        SoundSource_Set(source, 5, speaker);
+        if (speaker->sound->type == 0) {
+            SoundSource_Set(source, 2, speaker->sound->unk18);
+            SoundSource_Set(source, 3, speaker->sound->unk18 + 4);
+            SoundSource_Set(source, 0, speaker->sound->unk8);
+        }
+        SoundSource_Set(source, 1, speaker->sound->unkC);
+        SoundSource_Play(source);
+        speakerAction[0] = speaker->mode;
+        speakerAction[1] = 1;
+        speakerAction[2] = (u32)speaker;
+        ActionSpeakerChangeMode(speakerAction);
+        if (speaker->emitter != 0) {
+            speakerParams.unk14 = 0;
+            speakerParams.pos = speaker->pos;
+            speakerParams.emitter = speaker->emitter;
+            ThingManager_DARYL_CreateThing(0x10, &speakerParams);
+        }
+    }
+    for (i = 0; (light = World_GetTileLight(i)) != NULL; i++) {
+        LightHolder_Add(*(void **)(light + 0x10), 0);
+    }
+    for (i = 0; (path = World_GetTilePath(i)) != NULL; i++) {
+        if (path->unk14 == 0) {
+            continue;
+        }
+        pathParams.unk4C = 0;
+        pathParams.unk50 = 1;
+        pathParams.pos.x = 0.0f;
+        pathParams.pos.y = 0.0f;
+        pathParams.pos.z = 0.0f;
+        pathParams.unk40 = path->unkC;
+        pathParams.speed = path->hasSpeed ? path->speed : 0.0f;
+        pathParams.unk3C = 1.0f;
+        pathParams.scale[0] = 0.0f;
+        pathParams.scale[1] = 0.0f;
+        pathParams.scale[2] = 0.0f;
+        pathParams.angVel = g_zeroVector;
+        pathParams.vel = g_zeroVector;
+        pathParams.unk5C = path->unk4;
+        pathParams.unk54 = path->unk8;
+        path->thing = ThingManager_DARYL_CreateThing(0xA, &pathParams);
+        path->thing->tileData = path;
+    }
+    for (i = 0; (volume = World_GetVolume(i)) != NULL; i++) {
+        airAction[2] = (u32)volume;
+        airAction[0] = *(u32 *)(volume + 4);
+        airAction[1] = 1;
+        ActionAirboxChangeMode(airAction);
+    }
+    nav = World_GetNavHolder();
+    for (i = 0; i < *(u32 *)(nav + 4); i += 2) {
+        airAction[0] = (*(u8 **)nav)[i * 0x60 + 0x50];
+        airAction[1] = 1;
+        airAction[2] = (u32)(*(u8 **)nav + i * 0x60);
+        ActionNavPointChangeMode(airAction);
+    }
+    if (GameSettings_GetCodeVariable(0x198, 0) == 0) {
+        count = PlayerManager_PlayerHumanCount();
+        view = 1;
+        if (humanUsed[0]) {
+            viewOf[0] = view++;
+        }
+        if (humanUsed[1]) {
+            viewOf[1] = view++;
+        }
+        if (humanUsed[2]) {
+            viewOf[2] = view++;
+        }
+        if (humanUsed[3]) {
+            viewOf[3] = view++;
+        }
+        switch (count) {
+        case 1:
+            break;
+        case 2:
+            ViewManager_SetTwoPlayerHorizontal();
+            break;
+        case 3:
+            ViewManager_SetThreePlayer();
+            break;
+        case 4:
+            ViewManager_SetFourPlayer();
+            break;
+        }
+        for (i = 0; i < count; i++) {
+            player = PlayerManager_GetHumanPlayerByIndex(i);
+            camera = CameraManager_GetNewCamera();
+            player->view = viewOf[player->port - 1];
+            Camera_SetPlayer(camera, player);
+            switch (player->view) {
+            case 1:
+                if (count > 1) {
+                    ViewManager_SetCamera(camera, 1);
+                    ViewManager_EnableView(1, 1);
+                }
+                break;
+            case 2:
+                ViewManager_SetCamera(camera, 2);
+                ViewManager_EnableView(2, 1);
+                break;
+            case 3:
+                ViewManager_SetCamera(camera, 3);
+                ViewManager_EnableView(3, 1);
+                break;
+            case 4:
+                ViewManager_SetCamera(camera, 4);
+                ViewManager_EnableView(4, 1);
+                break;
+            }
+        }
+    } else {
+        n = 0;
+        mcp = GameSettings_GetMCP();
+        for (i = 0; i < g_worldData.unk8[0]; i++) {
+            car = &((GPTileCar *)g_worldData.unk8[1])[i];
+            if (car->aiScripts != NULL && car->port <= 4 && car->creature != NULL) {
+                viewIdx[n] = n;
+                players[n] = car->creature->player;
+                n++;
+            }
+        }
+        switch (n) {
+        case 1:
+            break;
+        case 2:
+            ViewManager_SetTwoPlayerHorizontal();
+            break;
+        case 3:
+            ViewManager_SetThreePlayer();
+            break;
+        case 4:
+            ViewManager_SetFourPlayer();
+            break;
+        }
+        for (i = 0; i < n; i++) {
+            camera = CameraManager_GetNewCamera();
+            players[i]->view = viewIdx[i] + 1;
+            Camera_SetPlayer(camera, players[i]);
+            switch (players[i]->view) {
+            case 1:
+                if (n > 1) {
+                    ViewManager_SetCamera(camera, 1);
+                    ViewManager_EnableView(1, 1);
+                }
+                break;
+            case 2:
+                ViewManager_SetCamera(camera, 2);
+                ViewManager_EnableView(2, 1);
+                break;
+            case 3:
+                ViewManager_SetCamera(camera, 3);
+                ViewManager_EnableView(3, 1);
+                break;
+            case 4:
+                ViewManager_SetCamera(camera, 4);
+                ViewManager_EnableView(4, 1);
+                break;
+            }
+        }
+        for (i = 0; i < n; i++) {
+            Player_RefreshInterface(players[i]);
+        }
+        if (mcp != NULL) {
+            g_DemoModeCounter = *(u32 *)(*(u8 **)((u8 *)mcp + 0x24) + 4);
+        } else {
+            g_DemoModeCounter = 60;
+        }
+        g_DemoModeSwitchCameraTime = g_DemoModeCounter - 10000;
+        g_DemoModeSwitchVehicleTime = g_DemoModeCounter - 8000;
+    }
+    World_InitTeleporters();
+    SetPlayerControls();
+    GameSettings_RestorePlayerStats();
+    return 1;
+}
+#pragma pop
 
 s32 StateGamePlay_Heartbeat(void) {
     extern Vector4 g_lastCamPos;
