@@ -97,3 +97,17 @@ s32 SetVoiceVol(u32 id, s32 vol) {
     return 0;
 }
 
+s32 SetVoicePos(u32 id, s16 x, s16 y) {
+    Voice *voice = &g_voice[(u8)id];
+
+    if (voice->id == id) {
+        voice->posX = x;
+        voice->posY = y;
+        if (voice->state == 1) {
+            SetVoiceVol_(voice, g_sfxvol);
+        }
+        return 1;
+    }
+    return 0;
+}
+
