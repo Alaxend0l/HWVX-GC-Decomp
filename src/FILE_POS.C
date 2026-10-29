@@ -22,7 +22,6 @@ long ftell(FILE *file)
     return position;
 }
 
-int _fseek(FILE *file, u32 offset, int file_mode);
 int fseek(FILE *file, long offset, int file_mode)
 {
     return _fseek(file, offset, file_mode);
