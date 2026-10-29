@@ -316,7 +316,7 @@ config.libs = [
             Object(NonMatching, "Destructible.c"),
             Object(NonMatching, "Emitter.c"),
             Object(NonMatching, "EventSequence.c"),
-            Object(NonMatching, "ExtractKeys.c"),
+            Object(Matching, "ExtractKeys.c"),
             Object(NonMatching, "FileStreaming.c"),
             Object(Matching, "ForceFeedback.c"),
             Object(NonMatching, "GameSettings.c"),
