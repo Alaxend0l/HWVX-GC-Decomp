@@ -266,6 +266,15 @@ void Grid_MoveObject(GridObject *obj, Vector4 *min, Vector4 *max) {
     }
 }
 
+void Grid_FreeObject(GridObject *obj) {
+    if (obj != NULL) {
+        Grid_RemoveNodes(obj);
+        obj->next = gGridManager.freeObjects;
+        gGridManager.freeObjects = obj;
+        gGridManager.numFreeObjects++;
+    }
+}
+
 void Dprintf(const char *fmt, ...);
 u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults) {
     u32 count;
