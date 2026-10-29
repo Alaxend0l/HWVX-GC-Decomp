@@ -215,3 +215,37 @@ void Looker_GetCameraOrientationInfo(u8 *looker, void *arg1, u8 *info) {
     o->target = l->orient.v[3];
 }
 
+void Thing_Release();
+void Thing_Move();
+void Thing_GetMass();
+void Thing_DynamicCollideImpact();
+void Thing_GetInterfaceInfo();
+void Thing_SlaveTransform();
+void Thing_GetSurfaceScript();
+void Thing_GetNearestNavPoint();
+void Thing_GetInverseLocalInertiaTensor();
+void Thing_DynamicRotation();
+void Thing_CollideWithRay();
+void Thing_GetTargetPos();
+void Thing_GetOrientedCollision();
+
+void *g_lookerVTable[] = {
+    Looker_Init,
+    Thing_Release,
+    Looker_PreMove,
+    Thing_Move,
+    Looker_Draw,
+    Thing_GetMass,
+    Thing_DynamicCollideImpact,
+    Looker_GetCameraOrientationInfo,
+    Thing_GetInterfaceInfo,
+    Thing_SlaveTransform,
+    Thing_GetSurfaceScript,
+    Thing_GetNearestNavPoint,
+    Thing_GetInverseLocalInertiaTensor,
+    Thing_DynamicRotation,
+    Thing_CollideWithRay,
+    Thing_GetTargetPos,
+    Thing_GetOrientedCollision,
+};
+
