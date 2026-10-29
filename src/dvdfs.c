@@ -38,6 +38,19 @@ BOOL DVDClose(void *fileInfo) {
     DVDCancel(fileInfo);
     return 1;
 }
+
+#pragma push
+#pragma peephole on
+#pragma scheduling off
+static void cbForReadAsync(s32 result, DVDCommandBlock *block) {
+    DVDFileInfo *fileInfo = (DVDFileInfo *)block;
+
+    if (fileInfo->callback) {
+        (fileInfo->callback)(result, fileInfo);
+    }
+}
+#pragma pop
+
 #pragma pop
 void cbForReadSync(void) {
     void OSWakeupThread(void *queue);
