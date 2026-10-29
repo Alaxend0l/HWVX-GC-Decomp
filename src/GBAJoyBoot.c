@@ -87,6 +87,9 @@ s32 GBAGetStatusAsync(s32 chan, u8 *status, GBACallback callback);
 
 static void F25(s32 chan, s32 ret);
 static void F27(s32 chan, s32 ret);
+static void F29(s32 chan, s32 ret);
+
+s32 GBAReadAsync(s32 chan, u8 *dst, u8 *status, GBACallback callback);
 
 static volatile u8 D54[] = {
 	0x18, 0xFC, 0xC0, 0x80, 0x7F, 0x40, 0x3F, 0x01, 0x00, 0x2F, 0x2F, 0x20, 0x43, 0x6F, 0x64, 0x65,
