@@ -7,6 +7,19 @@ extern u32 __AXOutDspReady;
 extern s64 __AXOsTime;
 extern u8 task[0x50];
 
+void __AXOutAiCallback(void) {
+    if (__AXOutDspReady == 0) {
+        __AXOsTime = OSGetTime();
+    }
+    if (__AXOutDspReady == 1) {
+        __AXOutDspReady = 0;
+        __AXOutNewFrame(0);
+    } else {
+        __AXOutDspReady = 2;
+        DSPAssertTask(task);
+    }
+}
+
 void __AXDSPInitCallback(void) {
     extern s32 __AXDSPInitFlag;
     __AXDSPInitFlag = 1;
