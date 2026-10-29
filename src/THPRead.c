@@ -23,6 +23,14 @@ void PushReadedBuffer(void *arg0) {
     OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
 }
 
+void *PopFreeReadBuffer(void) {
+    extern u8 FreeReadBufferQueue[];
+    void *msg;
+
+    OSReceiveMessage(FreeReadBufferQueue, &msg, 1);
+    return msg;
+}
+
 void PushFreeReadBuffer(void *arg0) {
     extern u8 PrepareReadyQueue_8036ED00[];
     OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
