@@ -22,7 +22,10 @@ typedef struct CARDControl {
 extern CARDControl __CARDBlock[2];
 
 s32 __CARDReadSegment(s32 chan, CARDCallback callback);
+s32 __CARDWritePage(s32 chan, CARDCallback callback);
+void __CARDPutControlBlock(CARDControl *card, s32 result);
 void BlockReadCallback(s32 chan, s32 result);
+void BlockWriteCallback(s32 chan, s32 result);
 
 #pragma peephole on
 void __CARDPutControlBlock(CARDControl *card, s32 result);
