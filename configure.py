@@ -354,7 +354,7 @@ config.libs = [
             Object(NonMatching, "Trigger.c"),
             Object(Matching, "VertexColorSeqManager.c"),
             Object(NonMatching, "VolumeManager.c"),
-            Object(NonMatching, "WildCard.c"),
+            Object(Matching, "WildCard.c"),
             Object(NonMatching, "World.c"),
             Object(NonMatching, "PlayerManager.c"),
             Object(NonMatching, "AI_Creature.c"),
