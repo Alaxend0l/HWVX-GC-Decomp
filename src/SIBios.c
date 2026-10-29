@@ -20,3 +20,17 @@ BOOL __SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inpu
 void SISetCommand(s32 chan, u32 command) {
     __SIRegs[3 * chan] = command;
 }
+
+static void AlarmHandler(OSAlarm *alarm, void *context) {
+    s32 chan;
+    SIPacket *packet;
+
+    chan = alarm - Alarm;
+    packet = &Packet[chan];
+    if (packet->chan != -1) {
+        if (__SITransfer(packet->chan, packet->output, packet->outputBytes, packet->input, packet->inputBytes, packet->callback)) {
+            packet->chan = -1;
+        }
+    }
+}
+
