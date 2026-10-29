@@ -37,8 +37,15 @@ typedef struct Player {
   void *vehicle;            /* 0x2C the Thing the player drives */
   u8 pad30;                 /* 0x30 */
   u8 cameraIndex;           /* 0x31 passed to the vehicle's getCameraInfo */
-  u8 pad32[0x3A];           /* 0x32 */
+  u8 pad32[0xA];            /* 0x32 */
+  void *aiScripts;          /* 0x3C AI players: the tile car's script table */
+  u8 pad40[0x20];           /* 0x40 */
+  u32 port;                 /* 0x60 human players: controller port, 1-based */
+  u32 view;                 /* 0x64 viewport, 1-based */
+  u8 pad68[4];              /* 0x68 */
   u32 flags;                /* 0x6C & 0x80 cleared every camera update */
+  u8 pad70[0x38];           /* 0x70 */
+  void *tileCar;            /* 0xA8 the world tile car it was spawned from */
 } Player;
 
 struct CarA;
