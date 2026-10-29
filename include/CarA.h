@@ -121,9 +121,12 @@ typedef struct CarA {
   s32 lowSpeedFlag;         /* 0x404 compared < 500 by AI cars */
   u8 pad408[8];             /* 0x408 */
   Vector4 localAxis;        /* 0x410 cross-product operand in CarA_ProcessForce */
-  u8 pad420[0x38];          /* 0x420 */
+  u8 pad420[0x30];          /* 0x420 */
+  u32 reverseTimer;         /* 0x450 ms the brake is held at standstill */
+  u8 pad454[4];             /* 0x454 */
   f32 gradeOrReverse;       /* 0x458 < 0.0f gates AI braking */
-  u8 pad45C[8];             /* 0x45C */
+  u8 pad45C[4];             /* 0x45C */
+  s32 unk460;               /* 0x460 */
   s32 stuckCounter;         /* 0x464 > 600 marks the AI car stuck */
   f32 gripScale;            /* 0x468 *= AI gripScale */
   s32 slaveWeaponRpm[1];      /* 0x46C indexed by weapon slot (0..2) in CarA_SlaveWeaponStop,
