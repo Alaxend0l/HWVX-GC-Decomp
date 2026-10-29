@@ -5,4 +5,4 @@ void TRKNubWelcome(void);
 void TRKNubMainLoop(void);
 s32 TRKTerminateNub(void);
 
-static s32 TRK_mainError;
+__declspec(section ".data") static s32 TRK_mainError;
