@@ -596,7 +596,7 @@ config.libs = [
             Object(Matching, "k_sin.c", mw_version="GC/1.3"),
             Object(NonMatching, "k_tan.c"),
             Object(NonMatching, "s_atan.c"),
-            Object(NonMatching, "s_copysign.c", mw_version="GC/1.3"),
+            Object(Matching, "s_copysign.c", mw_version="GC/1.3"),
             Object(Matching, "s_cos.c", mw_version="GC/1.3"),
             Object(Matching, "s_floor.c", mw_version="GC/1.3"),
             Object(Matching, "s_frexp.c", mw_version="GC/1.3"),
