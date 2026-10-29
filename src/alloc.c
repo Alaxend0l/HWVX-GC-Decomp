@@ -78,7 +78,47 @@ void *soft_allocate_from_var_pools(Block **pool_obj, u32 size, u32 *max_size);
 
 void *memset(void *dst, int c, u32 n);
 void *allocate_from_fixed_pools(void *pool, u32 size);
-void *allocate_from_var_pools(void *pool, u32 size);
+void *allocate_from_var_pools(Block **pool_obj, u32 size);
+void Block_link(Block *ths, SubBlock *sb);
+void *__sys_alloc(u32 size);
+
+static inline void Block_construct(Block *ths, u32 size) {
+    SubBlock *sb;
+
+    ths->size_ = size | 3;
+    *(u32 *)((u8 *)ths + size - 8) = ths->size_;
+    sb = (SubBlock *)((u8 *)ths + 16);
+    SubBlock_construct(sb, size - 24, ths, 0, 0);
+    ths->max_size_ = size - 24;
+    *(SubBlock **)((u8 *)ths + (ths->size_ & ~7) - sizeof(SubBlock *)) = NULL;
+    Block_link(ths, sb);
+}
+
+static inline Block *link_new_block(Block **pool_obj, u32 size) {
+    Block *bp;
+
+    size = (size + 24 + 7) & ~7;
+    if (size < 0x10000) {
+        size = 0x10000;
+    }
+    bp = __sys_alloc(size);
+    if (bp == NULL) {
+        return NULL;
+    }
+    Block_construct(bp, size);
+    if (*pool_obj != NULL) {
+        bp->prev_ = (*pool_obj)->prev_;
+        bp->prev_->next_ = bp;
+        bp->next_ = *pool_obj;
+        (*pool_obj)->prev_ = bp;
+        *pool_obj = bp;
+    } else {
+        *pool_obj = bp;
+        bp->prev_ = bp;
+        bp->next_ = bp;
+    }
+    return bp;
+}
 
 static inline void *get_malloc_pool(void) {
     static u8 protopool[0x34];
