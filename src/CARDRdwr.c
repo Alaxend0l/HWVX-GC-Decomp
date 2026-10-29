@@ -6,7 +6,7 @@ typedef struct CARDControl {
     s32 attached;              // 0x00
     s32 result;                // 0x04
     u8  unk8[0xAC - 0x8];
-    u32 repeat;                // 0xAC
+    s32 repeat;                // 0xAC
     void *addr;                // 0xB0
     s32 offset;                // 0xB4
     s32 xferred;               // 0xB8
@@ -25,6 +25,41 @@ s32 __CARDReadSegment(s32 chan, CARDCallback callback);
 void BlockReadCallback(s32 chan, s32 result);
 
 #pragma peephole on
+void __CARDPutControlBlock(CARDControl *card, s32 result);
+void BlockReadCallback(s32 chan, s32 result)
+{
+    CARDControl *card;
+    CARDCallback callback;
+
+    card = &__CARDBlock[chan];
+    if (result < 0) {
+        goto error;
+    }
+
+    card->xferred += 512;
+    card->addr = (u8 *)card->addr + 512;
+    card->offset += 512;
+    if (--card->repeat <= 0) {
+        goto error;
+    }
+
+    result = __CARDReadSegment(chan, BlockReadCallback);
+    if (result < 0) {
+        goto error;
+    }
+    return;
+
+error:
+    if (card->apiCallback == 0) {
+        __CARDPutControlBlock(card, result);
+    }
+    callback = card->xferCallback;
+    if (callback) {
+        card->xferCallback = 0;
+        callback(chan, result);
+    }
+}
+
 s32 __CARDRead(s32 chan, u32 addr, s32 length, void *dst, CARDCallback callback)
 {
     CARDControl *card;
