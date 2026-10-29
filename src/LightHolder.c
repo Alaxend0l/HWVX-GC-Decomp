@@ -79,33 +79,33 @@ void LightHolder_Delete(s32 index) {
 }
 
 void LightHolder_Render(void) {
-    extern u8 g_pLight[16][0x80];
+    extern LightHolderLight g_pLight[16];
     void Gfx_GetCameraPosition(Vector4 *pos);
     void Gfx_ScreenOverlay(GXColor *color, u8 mode);
     void DistanceXYZ(void *a, void *b, f32 *dist);
     Vector4 camera __attribute__((aligned(16)));
     f32 dist;
     GXColor color;
-    u8 *light;
+    LightHolderLight *light;
     u8 *pos;
-    u8 *owner;
+    LightHolderDef *def;
     u32 i;
 
     Gfx_GetCameraPosition(&camera);
     for (i = 0; i < 16; i++) {
-        light = g_pLight[i];
-        owner = *(u8 **)(light + 0x60);
-        if (owner != NULL) {
-            if (*(u8 **)(light + 0x64) != NULL) {
-                pos = *(u8 **)(light + 0x64) + 0x40;
+        light = &g_pLight[i];
+        def = light->def;
+        if (def != NULL) {
+            if (light->thing != NULL) {
+                pos = light->thing + 0x40;
             } else {
-                pos = light;
+                pos = (u8 *)light;
             }
-            if (owner[0] != 0) {
+            if (def->enabled != 0) {
                 DistanceXYZ(&camera, pos, &dist);
-                if (dist <= *(f32 *)(light + 0x40)) {
-                    color = *(GXColor *)(light + 0x34);
-                    Gfx_ScreenOverlay(&color, (*(u8 **)(light + 0x60))[3]);
+                if (dist <= light->radius) {
+                    color = light->color;
+                    Gfx_ScreenOverlay(&color, light->def->overlayMode);
                 }
             }
         }
