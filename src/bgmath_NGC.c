@@ -320,3 +320,13 @@ void MinMaxVec(Vector4 *min, Vector4 *max, Vector4 *v)
     }
 }
 
+void Distance_Plane_4(Vector4 *planes, Vector4 *point, f32 *out)
+{
+    int Distance_Plane();
+
+    out[0] = Distance_Plane(&planes[0], point);
+    out[1] = Distance_Plane(&planes[1], point);
+    out[2] = Distance_Plane(&planes[2], point);
+    out[3] = Distance_Plane(&planes[3], point);
+}
+
