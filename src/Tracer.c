@@ -27,12 +27,13 @@ typedef struct Tracer {
 } Tracer;
 
 extern Tracer tracers_802CD600[];
+extern Tracer tracers[32];
 
 static inline u32 Tracer_FindFree(void) {
     u32 i;
 
     for (i = 0; i < 32; i++) {
-        if (tracers_802CD600[i].active == 0) {
+        if (tracers[i].active == 0) {
             break;
         }
     }
