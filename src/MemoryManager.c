@@ -1,4 +1,8 @@
-
+void *memset(void *dst, int val, unsigned long n);
+void *OSAllocFromHeap(int heap, unsigned long size);
+void OSFreeToHeap(int heap, void *ptr);
+void Dprintf(const char *fmt, ...);
+extern int __OSCurrHeap;
 
 void MemCpy32(void)
 {
