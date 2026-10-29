@@ -141,6 +141,20 @@ void GXPokeAlphaUpdate(u8 update_enable) {
     __peReg[1] = reg;
 }
 
+void GXPokeBlendMode(s32 type, s32 src_factor, s32 dst_factor, s32 op) {
+    u32 reg;
+
+    reg = __peReg[1];
+    reg = (reg & ~1) | ((type == 1) || (type == 3));
+    reg = (reg & ~0x800) | ((u32)(type == 3) << 11);
+    reg = (reg & ~2) | ((u32)(type == 2) << 1);
+    reg = (reg & ~0xF000) | ((u32)op << 12);
+    reg = (reg & ~0x700) | ((u32)src_factor << 8);
+    reg = (reg & ~0xE0) | ((u32)dst_factor << 5);
+    reg = (reg & ~0xFF000000) | (0x41 << 24);
+    __peReg[1] = reg;
+}
+
 void GXPokeColorUpdate(u8 update_enable) {
     u32 reg;
 
