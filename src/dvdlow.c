@@ -124,6 +124,17 @@ void SeekTwiceBeforeRead(s32 addr, s32 length, s32 offset, s32 callback)
     DVDLowSeek(offsetToSeek, callback);
 }
 
+s32 DVDLowSeek(s32 offset, s32 callback)
+{
+    Callback = (DVDLowCallback)callback;
+    StopAtNextInt = 0;
+    __DIRegs[2] = 0xAB000000;
+    __DIRegs[3] = (u32)offset >> 2;
+    __DIRegs[7] = 1;
+    SetTimeoutAlarm((OSAlarmHandler)AlarmHandlerForTimeout, (__OSBusClock / 4) * 10);
+    return 1;
+}
+
 s32 DVDLowWaitCoverClose(DVDLowCallback callback)
 {
     Callback = callback;
