@@ -60,7 +60,7 @@ typedef struct IT_TRACK
     u32 prevFlags;           /* 0x6C */
 } IT_TRACK;
 
-s32 g_song[0xC];
+static s32 g_song[0xC];
 static IT_TRACK g_trk[0x20];
 static u8 *g_pIns[100];
 static u8 *g_pSmp[100];
