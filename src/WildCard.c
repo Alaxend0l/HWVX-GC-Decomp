@@ -62,6 +62,52 @@ void WildCardRack_Release(s32 arg0) {
     Thing_Release(arg0);
 }
 
+extern Matrix4 g_identity;
+void QuaternionToSubMatrix(void *quat, void *mtx);
+void MotionState_Draw(void *state);
+void MotionState_Draw2(void *state, void *arg1, void *matStack);
+void MultiplyMatrix(void *a, void *b, Matrix4 *out);
+void WildCardRack_Draw(u8 *rack) {
+    typedef struct {
+        void *motion;
+        u8 pad4[0x40];
+        f32 scale;
+        u8 pad48[0x8];
+    } RackState;
+    typedef struct {
+        u8 pad0[0xB0];
+        RackState states[1];
+    } Rack;
+    Matrix4 tmp;
+    Matrix4 scale;
+    Matrix4 trans;
+    Matrix4 out;
+    f32 s;
+
+    if (((RackState *)(rack + 0xB0))[rack[0x470]].motion != NULL) {
+        QuaternionToSubMatrix(rack + 0x50, rack + 0x10);
+        s = ((RackState *)(rack + 0xB0))[rack[0x470]].scale;
+        if (s < 1.0f) {
+            scale = g_identity;
+            trans = g_identity;
+            scale.v[2].z = s;
+            scale.v[1].y = s;
+            scale.v[0].x = s;
+            tmp = g_identity;
+            scale.v[3].x = *(f32 *)(rack + 0x40);
+            scale.v[3].y = *(f32 *)(rack + 0x44);
+            scale.v[3].z = *(f32 *)(rack + 0x48);
+            trans.v[3].x = -*(f32 *)(rack + 0x40);
+            trans.v[3].y = -*(f32 *)(rack + 0x44);
+            trans.v[3].z = -*(f32 *)(rack + 0x48);
+            MultiplyMatrix(&trans, &scale, &out);
+            MotionState_Draw2(&((Rack *)rack)->states[rack[0x470]], &out, NULL);
+        } else {
+            MotionState_Draw(&((Rack *)rack)->states[rack[0x470]]);
+        }
+    }
+}
+
 void WildCardRack_JettisonAll(void *rack) {
     void WildCardRack_Jettison(void *rack, u8 slot);
     u32 i;
