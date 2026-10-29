@@ -465,7 +465,7 @@ config.libs = [
             Object(NonMatching, "__ppc_eabi_init.cpp"),
             Object(NonMatching, "db.c"),
             Object(NonMatching, "mtx.c"),
-            Object(NonMatching, "mtx44.c"),
+            Object(Matching, "mtx44.c"),
             Object(NonMatching, "vec.c"),
             Object(NonMatching, "dvdlow.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "dvdfs.c"),
