@@ -140,6 +140,23 @@ s32 Thing_GetSource(void *arg0) {
     return 0;
 }
 
+s8 Thing_HasThing(Thing *thing, void *target) {
+    s8 ThingManagerList_Get(void *list, void *target);
+    u8 *vtable = (u8 *)thing->vtable;
+    s8 found;
+
+    if (vtable == g_carAVTable) {
+        if ((found = ThingManagerList_Get((u8 *)thing + 0x344, target)) != 0) {
+            return found;
+        }
+    } else if (vtable == g_creatureVTable) {
+        if ((found = ThingManagerList_Get((u8 *)thing + 0xE0, target)) != 0) {
+            return found;
+        }
+    }
+    return ThingManagerList_Get(&thing->unk88, target);
+}
+
 s32 TriggerAirboxEntered(u32 *trigger) {
     f32 dist;
     u8 *volume;
