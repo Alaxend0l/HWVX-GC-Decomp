@@ -480,7 +480,7 @@ config.libs = [
             Object(Matching, "ar.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "arq.c"),
             Object(Matching, "AX.c"),
-            Object(NonMatching, "AXAlloc.c"),
+            Object(NonMatching, "AXAlloc.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "AXAux.c"),
             Object(NonMatching, "AXCL.c"),
             Object(NonMatching, "AXOut.c"),
