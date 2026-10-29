@@ -26,6 +26,25 @@ extern u8 m_firstFrame;
 extern s32 m_srcBlend;
 extern s32 m_dstBlend;
 
+void Render_FlipBuffers(void) {
+    PrintDVDMessage();
+    GXSetColorUpdate(1);
+    GXCopyDisp(g_currentBuffer, 1);
+    GXDrawDone();
+    VISetNextFrameBuffer(g_currentBuffer);
+    if (m_firstFrame) {
+        VISetBlack(0);
+        m_firstFrame = 0;
+    }
+    VIFlush();
+    VIWaitForRetrace();
+    if (g_currentBuffer == g_frameBuffer1) {
+        g_currentBuffer = g_frameBuffer2;
+    } else {
+        g_currentBuffer = g_frameBuffer1;
+    }
+}
+
 void DisplayList_Init(void) {
     memset(g_pDL, 0, 0x18);
 }
