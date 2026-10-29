@@ -13,6 +13,10 @@ s32 TRKAcquireMutex(void *mutex);
 s32 TRKReleaseMutex(void *mutex);
 
 extern TRKBuffer gTRKMsgBufs[3];
+__declspec(section ".data") extern s32 gTRKBigEndian;
+
+void *TRK_memcpy(void *dst, const void *src, u32 n);
+s32 TRKAppendBuffer(TRKBuffer *b, const void *data, u32 length);
 
 s32 TRKSetBufferPosition(TRKBuffer *b, u32 position) {
     s32 err = 0;
