@@ -89,6 +89,8 @@ MIDI_SND *g_pSnd;
 void *g_pHdr;
 
 void SetVoiceState_(MIDI_VOICE *voice, s32 state);
+void ReleaseMIDIVoice(void *voice);
+void JumpToMarker(void);
 
 s32 AudioMIDI_Create(void)
 {
