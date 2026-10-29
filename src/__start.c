@@ -22,6 +22,21 @@ void * memset(void *dest, s32 value, u32 count);
 void __flush_cache(void *address, u32 size);
 void OSResetSystem(s32 reset, u32 resetCode, s32 forceMenu);
 
+static void __copy_rom_section(void *target, void *source, u32 size)
+{
+    if (size && (target != source)) {
+        memcpy(target, source, size);
+        __flush_cache(target, size);
+    }
+}
+
+static void __init_bss_section(void *target, u32 size)
+{
+    if (size) {
+        memset(target, 0, size);
+    }
+}
+
 void __check_pad3(void)
 {
     if ((*((u16 *)0x800030e4) & 0xeef) == 0xeef) {
