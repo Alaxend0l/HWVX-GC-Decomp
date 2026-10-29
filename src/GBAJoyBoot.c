@@ -88,6 +88,9 @@ s32 GBAGetStatusAsync(s32 chan, u8 *status, GBACallback callback);
 static void F25(s32 chan, s32 ret);
 static void F27(s32 chan, s32 ret);
 static void F29(s32 chan, s32 ret);
+static void F39(s32 chan, s32 ret);
+
+s32 GBAWriteAsync(s32 chan, u8 *src, u8 *status, GBACallback callback);
 
 s32 GBAReadAsync(s32 chan, u8 *dst, u8 *status, GBACallback callback);
 
