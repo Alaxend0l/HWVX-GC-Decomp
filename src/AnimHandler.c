@@ -106,6 +106,37 @@ done:
     MotionState_ReleaseSlavesByType((s32)motion, 0xFF);
 }
 
+void MotionState_ReleaseSlavesByType(s32 state, u8 type) {
+    void ThingManagerList_Remove(void **list, void *thing);
+    void ThingManagerList_Append(void **list, void *thing);
+    typedef struct SlaveThing {
+        u8 pad0[0x74];
+        u32 flags;
+        u8 pad78[0x83 - 0x78];
+        u8 type;
+        u8 pad84[0x8C - 0x84];
+        void (**vtbl)(struct SlaveThing *);
+        u8 pad90[0xA4 - 0x90];
+        struct SlaveThing *next;
+        s32 pool;
+    } SlaveThing;
+    SlaveThing *thing;
+    SlaveThing *next;
+
+    thing = *(SlaveThing **)(state + 0x14);
+    while (thing != NULL) {
+        next = thing->next;
+        if (thing->type == type) {
+            thing->vtbl[1](thing);
+            ThingManagerList_Remove((void **)(state + 0x14), thing);
+            thing->flags &= ~0x200000;
+            thing->flags |= 0x1000;
+            ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->pool], thing);
+        }
+        thing = next;
+    }
+}
+
 void MotionState_Release(s32 state) {
     M2C_UNK ThingManagerList_EmancipateSlaves(s32, s32);
     M2C_UNK ThingManagerList_ReleaseAll(s32);
