@@ -86,24 +86,44 @@ s32 Player_InputHeartbeat(void *arg0) {
     return M2C_FIELD(arg0, s8 (**)(), 0x20)() != 0;
 }
 
-void Player_GetInterfaceInfo(void *player, void *info) {
+void Player_GetInterfaceInfo(void *arg0, void *arg1) {
     int sprintf(char *buf, const char *fmt, ...);
-    void *thing;
+    typedef struct Thing {
+        u8 pad0[0x8C];
+        void (**vtable)();
+    } Thing;
+    typedef struct Player {
+        u8 pad0[0x2C];
+        Thing *thing;
+        u8 attached;
+        u8 pad31[0x71 - 0x31];
+        u8 nameDirty;
+        u8 pad72[0x7C - 0x72];
+        s32 score;
+    } Player;
+    typedef struct InterfaceInfo {
+        u8 pad0[0x74];
+        char text[0xC];
+        u8 state;
+    } InterfaceInfo;
+    Player *player = arg0;
+    InterfaceInfo *info = arg1;
+    Thing *thing;
 
-    if (M2C_FIELD(player, void **, 0x2C) != NULL) {
-        M2C_FIELD(info, u8 *, 0x80) = 0;
-        thing = M2C_FIELD(player, void **, 0x2C);
-        M2C_FIELD(M2C_FIELD(thing, void **, 0x8C), void (**)(void *, void *), 0x20)(thing, info);
+    if (player->thing != NULL) {
+        info->state = 0;
+        thing = player->thing;
+        ((void (*)(Thing *, InterfaceInfo *))thing->vtable[8])(thing, info);
     } else {
-        M2C_FIELD(info, u8 *, 0x80) = 2;
-        if (M2C_FIELD(player, u8 *, 0x30) != 0) {
-            M2C_FIELD(info, u8 *, 0x80) = 1;
-            M2C_FIELD(player, u8 *, 0x30) = 0;
+        info->state = 2;
+        if (player->attached != 0) {
+            info->state = 1;
+            player->attached = 0;
         }
     }
-    if (M2C_FIELD(player, u8 *, 0x71) != 0) {
-        sprintf((char *)info + 0x74, "%s", M2C_FIELD(player, char **, 0x7C));
-        M2C_FIELD(player, u8 *, 0x71) = 0;
+    if (player->nameDirty != 0) {
+        sprintf(info->text, "%d", player->score);
+        player->nameDirty = 0;
     }
 }
 
