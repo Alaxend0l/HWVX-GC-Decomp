@@ -32,9 +32,21 @@ typedef struct VoiceHW {
     u8 unk2C[4];
     u32 rate;
     u32 pitch;
-    u8 unk38[0x18];
+    u8 unk38[0x10];
+    s32 unk48;
+    u8 unk4C[4];
     AXVPB *axv;
-    u8 unk54[0x1C];
+    u8 unk54;
+    u8 unk55;
+    u8 unk56;
+    u8 unk57;
+    u8 unk58[2];
+    s16 unk5A;
+    u8 unk5C[8];
+    s16 unk64;
+    u8 unk66[6];
+    s16 unk6C;
+    u8 unk6E[2];
 } VoiceHW;
 
 extern void (*DestroySongVoice)(VoiceHW *voice);
