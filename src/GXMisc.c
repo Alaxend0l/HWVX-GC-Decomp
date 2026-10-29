@@ -40,3 +40,11 @@ void GXPokeDstAlpha(u8 enable, u8 alpha) {
     __peReg[2] = reg;
 }
 
+void GXPokeDither(u8 dither) {
+    u32 reg;
+
+    reg = __peReg[1];
+    reg = (reg & ~0x4) | (dither << 2);
+    __peReg[1] = reg;
+}
+
