@@ -1,4 +1,5 @@
 #include "common.h"
+#include "CarA.h"
 
 static inline s8 AI_Car_CanTarget(u8 *ai, u8 *def) {
     s8 ok = 1;
