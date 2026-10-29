@@ -54,12 +54,6 @@ void VertexColorSeqManager_Destroy(void) {
 
 void VertexColorSeqManager_AddVertices(void *vertices);
 void VertexColorSeqManager_Init(void) {
-    typedef struct VertexColorTile {
-        u8 *light;
-        u8 key[0x2C];
-        u8 active;
-        u8 unk31[3];
-    } VertexColorTile;
     typedef struct VCSZone {
         u8 unk0[0x14];
         void *vertices;
@@ -73,7 +67,7 @@ void VertexColorSeqManager_Init(void) {
         VCSZone *zones;
         u8 unk28[0x38];
         u32 numLights;
-        u8 *lights;
+        VertexColorLight *lights;
     } VCSWorld;
     extern VertexColorTile g_VertexColorTiles[64];
     extern s32 g_iTotalVertexColorSeq;
@@ -86,7 +80,7 @@ void VertexColorSeqManager_Init(void) {
     world = g_worldData.world;
     if (world != NULL) {
         for (i = 0; i < world->numLights; i++) {
-            g_VertexColorTiles[i].light = world->lights + i * 0x10;
+            g_VertexColorTiles[i].light = &world->lights[i];
             g_VertexColorTiles[i].active = 1;
             g_iTotalVertexColorTiles++;
         }
