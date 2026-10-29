@@ -68,7 +68,9 @@ extern GfxState g_state;
 extern Matrix4 g_identity;
 
 typedef struct GfxWindow {
-    u8 unk0[0x140];
+    u8 unk0[0x80];
+    Matrix4 unk80;
+    u8 unkC0[0x140 - 0xC0];
     Matrix4 viewMatrix;
     Vector4 cameraPos;
     Vector4 cameraRight;
