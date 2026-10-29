@@ -161,6 +161,16 @@ static inline s32 Effect_WaveLookup(s16 *table, u32 a) {
 }
 
 void SimThread_Init(VDevice *dev, VDevice *owner);
+
+static inline void SimThread_SetWeights(SimThread *t, const s32 *weights) {
+    s32 i;
+
+    for (i = 0; i < 10; i++) {
+        t->weights[i] = weights[i];
+        t->history[i] = 0;
+    }
+    t->historyIdx = 0;
+}
 void VDevice_RecalcGammaTable(void);
 s32 VDevice_Shutdown(VDevice *dev);
 s32 VDevice_StartEffect(VDevice *dev, u32 handle);
