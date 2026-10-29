@@ -507,7 +507,7 @@ config.libs = [
             Object(NonMatching, "CARDCreate.c"),
             Object(NonMatching, "CARDRead.c"),
             Object(NonMatching, "CARDWrite.c", mw_version="GC/1.2.5n"),
-            Object(NonMatching, "CARDDelete.c"),
+            Object(NonMatching, "CARDDelete.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "CARDStat.c"),
             Object(NonMatching, "GXInit.c"),
             Object(NonMatching, "GXFifo.c"),
