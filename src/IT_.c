@@ -18,6 +18,25 @@ typedef struct ITChannel {
     u32 gvol;
 } ITChannel;
 
+typedef struct ITHeader {
+    u8 pad0[0x24];
+    u16 smpNum;
+} ITHeader;
+
+typedef struct ITSample {
+    u8 pad0[0x12];
+    u8 flagPad : 6;
+    u8 is16Bit : 1;
+    u8 hasSample : 1;
+    u8 pad13[0x30 - 0x13];
+    u32 length;
+    u8 pad34[0x48 - 0x34];
+    u32 data;
+} ITSample;
+
+u32 HAllocA_(s32 size);
+void MemCpyA_(u32 dst, u32 src, s32 size);
+
 void DestroyIT_(void *data) {
     OSFreeToHeap(__OSCurrHeap, data);
     FreeA_(g_aheap);
