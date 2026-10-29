@@ -74,7 +74,7 @@ static inline void ThingManager_InitFreeThing(ThingHeader *thing, void *vtable, 
     thing->prev = NULL;
     thing->next = NULL;
     thing->type = type;
-    freeList = &g_thingManager_DARYL.freeList[thing->type];
+    freeList = g_thingManager_DARYL.freeList + thing->type;
     thing->next = *freeList;
     thing->prev = NULL;
     head = thing->next;
