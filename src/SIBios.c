@@ -16,3 +16,7 @@ static SIPacket Packet[4];
 static OSAlarm Alarm[4];
 
 BOOL __SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback);
+
+void SISetCommand(s32 chan, u32 command) {
+    __SIRegs[3 * chan] = command;
+}
