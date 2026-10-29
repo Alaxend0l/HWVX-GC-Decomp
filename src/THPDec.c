@@ -42,6 +42,16 @@ static u16 *__THPHuffmanCodeTab;
 static s16 *__THPMCUBuffer[6];
 static u8 *__THPWorkArea;
 
+static void __THPSetupBuffers(void) {
+    u8 i;
+    s16 *buffer;
+
+    buffer = (s16 *)(((u32)__THPWorkArea + 31) & ~31);
+    for (i = 0; i < 6; i++) {
+        __THPMCUBuffer[i] = &buffer[i * 64];
+    }
+}
+
 static void __THPHuffGenerateCodeTable(void) {
     u8 *sizeTab;
     u16 *codeTab;
