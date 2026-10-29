@@ -83,6 +83,91 @@ void Destructible_Release(Destructible *destructible) {
     Thing_Release(destructible);
 }
 
+s32 Destructible_Move(Destructible *destructible) {
+    typedef struct {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        Vector4 angVel;
+        u32 id;
+        u32 unk44;
+        f32 unk48;
+        f32 unk4C;
+    } __attribute__((aligned(16))) DebrisParams;
+    extern f32 g_fDeltaTimeSec;
+    extern s32 g_iDeltaTimeMS;
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void GenerateQuaternionXYZ(Vector4 *euler, Vector4 *quat);
+    void GenerateSpinAngleFromQuaternion(Vector4 *quat, Vector4 *axis, f32 *angle);
+    void GenerateQuaternion(Vector4 *axis, Vector4 *q, f32 angle);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    void Timer_Interrupt300(void);
+    DebrisParams params;
+    Vector4 rot __attribute__((aligned(16)));
+    Vector4 quat __attribute__((aligned(16)));
+    Vector4 axis __attribute__((aligned(16)));
+    f32 angle;
+    u8 *slave;
+    u32 id;
+    s8 spin;
+    DestructibleInfo *info;
+
+    if (destructible->flags & 0x200000) {
+        return 0;
+    }
+    if (destructible->player != NULL &&
+        (slave = ThingManagerList_GetByType(&destructible->slaves, 8)) != NULL &&
+        *(u8 **)(slave + 0x94) != NULL &&
+        (spin = -**(u8 **)(slave + 0x94)) != 0) {
+        axis.x = 0.0f;
+        axis.y = 0.017453292f;
+        axis.z = 0.0f;
+        GenerateQuaternionXYZ(&axis, &quat);
+        GenerateSpinAngleFromQuaternion(&quat, &axis, &angle);
+        GenerateQuaternion(&axis, &rot, spin * (angle * g_fDeltaTimeSec));
+        QuaternionMult((Vector4 *)(slave + 0x50), &rot, &quat);
+        *(Vector4 *)(slave + 0x50) = quat;
+        QuaternionToSubMatrix(slave + 0x50, slave + 0x10);
+    }
+    if (!(destructible->flags & 0x10000000)) {
+        if (destructible->deathTimer < 0) {
+            id = 0;
+            info = destructible->record->info;
+            if (info != NULL && info->numDebris != 0) {
+                id = info->debris[RandomAdd_s32(0, info->numDebris)];
+            }
+            if (id != 0) {
+                params.id = id;
+                params.pos = destructible->offsetPos;
+                params.quat = *(Vector4 *)destructible->pad50;
+                params.vel = destructible->pos;
+                params.unk44 = 0;
+                params.unk48 = 0.0f;
+                params.unk4C = 0.0f;
+                params.angVel = *(Vector4 *)g_zeroVector;
+                ThingManager_DARYL_CreateThing(1, &params);
+            }
+            Destructible_Release(destructible);
+        }
+        destructible->deathTimer -= g_iDeltaTimeMS;
+    }
+    Timer_Interrupt300();
+    slave = ThingManagerList_GetByType(&destructible->slaves, 0x11);
+    if (slave != NULL) {
+        if (destructible->record->info->maxHealth != 0) {
+            *(f32 *)(slave + 0xB8) = (f32)destructible->health / (f32)destructible->record->info->maxHealth;
+        } else {
+            *(f32 *)(slave + 0xB8) = 0.0f;
+        }
+        if (*(f32 *)(slave + 0xB8) > 1.0f) {
+            *(f32 *)(slave + 0xB8) = 1.0f;
+        }
+    }
+    return 1;
+}
+
 f32 Destructible_GetMass(Destructible *destructible) {
     return destructible->record->info->mass;
 }
