@@ -13,6 +13,190 @@ static inline s8 AI_Car_CanTarget(u8 *ai, u8 *def) {
 }
 
 
+#pragma use_lmw_stmw on
+void AI_Car_AsyncProcess(void) {
+    typedef struct AIScripts {
+        u8 pad0[0x90];
+        u32 scripts[4];
+    } AIScripts;
+    typedef struct ItemParams {
+        u8 pad0[0x20];
+        s32 count;
+    } ItemParams;
+    typedef struct TileItem {
+        u8 pad0[0x30];
+        ItemParams *params;
+    } TileItem;
+    typedef struct TileCar {
+        Vector4 pos;
+        f32 rotX;
+        f32 rotY;
+        f32 rotZ;
+        u8 pad1C[0x24 - 0x1C];
+        AIScripts *aiScripts;
+        CarA *creature;
+        u32 mode;
+        u8 pad30[0x34 - 0x30];
+        u8 unk34;
+        u8 unk35;
+        u8 pad36[0x38 - 0x36];
+        f32 nearDist;
+        f32 farDist;
+        u32 scripts[4];
+        u8 pad50[0x54 - 0x50];
+        TileItem *item;
+    } TileCar;
+    typedef struct CreatureParams {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        AIScripts *aiScripts;
+        u8 pad34[0x3C - 0x34];
+        void *player;
+    } CreatureParams;
+    typedef struct AIPlayerDesc {
+        u32 script;
+        f32 nearSq;
+        f32 farSq;
+        u8 unkC;
+        u8 unkD;
+    } AIPlayerDesc;
+    typedef struct AIPlayer {
+        u8 pad0[0x3C];
+        AIScripts *aiScripts;
+        u8 pad40[0xA8 - 0x40];
+        TileCar *tileCar;
+    } AIPlayer;
+    static u32 carTile;
+    extern u8 g_cameraManager[];
+    extern Vector4 g_zeroVector;
+    void *World_GetTileCar(u32 index);
+    AIPlayer *PlayerManager_NewAIPlayer(AIPlayerDesc *desc);
+    s32 PlayerManager_RemovePlayer(AIPlayer *player);
+    void Player_SetName(AIPlayer *player, s32 port, const char *name);
+    void Player_SetThing(AIPlayer *player, CarA *thing);
+    void SetOrientation(Matrix4 *m, f32 x, f32 y, f32 z);
+    void SubMatrixToQuaternion(Matrix4 *m, Vector4 *q);
+    s32 ActionVehicleChangeMode(u32 *action);
+    f32 PSVECSquareDistance(void *a, void *b);
+    s32 GameSettings_GetDifficulty(void);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    void WildCardRack_JettisonAll(void *rack);
+    void WildCardRack_Add(void *rack, TileItem *item, s32 count);
+    CreatureParams params;
+    Matrix4 mtx;
+    u32 action[3];
+    AIPlayerDesc desc;
+    TileCar *car;
+    u32 script;
+    s32 difficulty;
+    u8 *cam;
+    u32 i;
+    f32 farSq;
+    f32 nearSq;
+    f32 minDist;
+    void *rack;
+    AIPlayer *player;
+
+    car = World_GetTileCar(carTile);
+    if (car != NULL) {
+        if (car->aiScripts != NULL && car->creature == NULL && car->unk35 > 4 && car->unk34 != 0 && car->mode != 0) {
+            farSq = car->farDist * car->farDist;
+            nearSq = car->nearDist * car->nearDist;
+            minDist = farSq;
+            difficulty = GameSettings_GetDifficulty();
+            params.aiScripts = car->aiScripts;
+            script = 0;
+            for (i = 0; i < g_cameraManager[0x640]; i++) {
+                f32 dist = PSVECSquareDistance(g_cameraManager + i * 0x190 + 0x60, car);
+                if (dist < minDist) {
+                    minDist = dist;
+                }
+            }
+            if (minDist <= nearSq || minDist >= farSq) {
+                carTile++;
+                return;
+            }
+            if (difficulty == 0) {
+                if (car->scripts[0] != 0) {
+                    script = car->scripts[0];
+                } else if (params.aiScripts->scripts[0] != 0) {
+                    script = params.aiScripts->scripts[0];
+                }
+            } else if (difficulty == 1) {
+                if (car->scripts[1] != 0) {
+                    script = car->scripts[1];
+                } else if (params.aiScripts->scripts[0] != 0) {
+                    script = params.aiScripts->scripts[1];
+                }
+            } else if (difficulty == 2) {
+                if (car->scripts[2] != 0) {
+                    script = car->scripts[2];
+                } else if (params.aiScripts->scripts[0] != 0) {
+                    script = params.aiScripts->scripts[2];
+                }
+            } else if (difficulty == 3) {
+                if (car->scripts[3] != 0) {
+                    script = car->scripts[3];
+                } else if (params.aiScripts->scripts[0] != 0) {
+                    script = params.aiScripts->scripts[3];
+                }
+            }
+            if (script == 0) {
+                if (params.aiScripts->scripts[0] != 0) {
+                    script = params.aiScripts->scripts[0];
+                } else if (params.aiScripts->scripts[1] != 0) {
+                    script = params.aiScripts->scripts[1];
+                } else if (params.aiScripts->scripts[2] != 0) {
+                    script = params.aiScripts->scripts[2];
+                } else {
+                    script = params.aiScripts->scripts[3];
+                }
+            }
+            desc.script = script;
+            desc.unkD = 0;
+            desc.unkC = car->unk34;
+            desc.nearSq = car->nearDist * car->nearDist;
+            desc.farSq = car->farDist * car->farDist;
+            player = PlayerManager_NewAIPlayer(&desc);
+            if (player == NULL) {
+                carTile++;
+                return;
+            }
+            player->tileCar = car;
+            params.pos = car->pos;
+            params.pos.y += 10.0f;
+            params.player = player;
+            params.vel = g_zeroVector;
+            SetOrientation(&mtx, car->rotY, car->rotX, car->rotZ);
+            SubMatrixToQuaternion(&mtx, &params.quat);
+            if ((car->creature = ThingManager_DARYL_CreateThing(9, &params)) == NULL) {
+                PlayerManager_RemovePlayer(player);
+                carTile++;
+                return;
+            }
+            car->creature->tileData = car;
+            Player_SetName(player, -1, "Dynamic AI");
+            Player_SetThing(player, car->creature);
+            player->aiScripts = car->aiScripts;
+            player->tileCar = car;
+            if (car->item != NULL) {
+                rack = ThingManagerList_GetByType(&car->creature->motionState.slaves, 8);
+                WildCardRack_JettisonAll(rack);
+                WildCardRack_Add(rack, car->item, car->item->params->count);
+            }
+            action[0] = car->mode;
+            action[1] = 1;
+            action[2] = (u32)car;
+            ActionVehicleChangeMode(action);
+        }
+        carTile++;
+    } else {
+        carTile = 0;
+    }
+}
+#pragma use_lmw_stmw off
 s32 AI_Car_CheckIfStuck(u8 *ai) {
     f32 PSVECSquareDistance(void *a, void *b);
     f32 PSVECDotProduct(void *a, void *b);
