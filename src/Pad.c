@@ -245,7 +245,7 @@ static inline BOOL PADRecalibrate(u32 mask)
     ResettingBits |= mask;
     disableBits = ResettingBits & EnabledBits;
     EnabledBits &= ~mask;
-    if (!(*(u8 *)0x800030E3 & 0x40)) {
+    if (!(__gUnknown800030E3 & 0x40)) {
         RecalibrateBits |= mask;
     }
     SIDisablePolling(disableBits);
