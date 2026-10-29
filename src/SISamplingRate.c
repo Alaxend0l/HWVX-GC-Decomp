@@ -52,3 +52,8 @@ void SISetSamplingRate(u32 msec) {
     SISetXY(factor * xy[msec].line, xy[msec].count);
     OSRestoreInterrupts(enabled);
 }
+
+void SIRefreshSamplingRate(void) {
+    SISetSamplingRate(SamplingRate);
+}
+
