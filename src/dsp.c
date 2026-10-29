@@ -74,3 +74,17 @@ s32 DSPGetDMAStatus(void)
     return *(u16 *)0xCC00500A & 0x200;
 }
 
+DSPTaskInfo *DSPAddTask(DSPTaskInfo *task) {
+    BOOL old;
+
+    old = OSDisableInterrupts();
+    __DSP_insert_task(task);
+    task->state = 0;
+    task->flags = 1;
+    OSRestoreInterrupts(old);
+    if (task == __DSP_first_task) {
+        __DSP_boot_task(task);
+    }
+    return task;
+}
+
