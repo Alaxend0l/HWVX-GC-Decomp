@@ -62,8 +62,8 @@ void DestroyVoice_(AXVPB *axv) {
     if (voice->kind == 0) {
         DestroySongVoice(voice);
     }
-    voice->state = 0;
     voice->id = 0xFD;
+    voice->state = 0;
     voice->axv = NULL;
     voice->next = g_pFree;
     g_pFree = voice;
@@ -162,6 +162,7 @@ void SetVoiceVol_(u8 *v, u32 vol) {
     }
 }
 
+#pragma optimization_level 1
 s8 SetVoiceRate_(VoiceHW *voice) {
     u32 rate = (1.0f / 48000.0f) * ((f32)voice->rate * (f32)voice->pitch);
 
@@ -172,13 +173,12 @@ s8 SetVoiceRate_(VoiceHW *voice) {
     }
     return 0;
 }
-
 s32 SetVoiceOffset_(VoiceHW *voice, u32 offset) {
-    AXVPB *axv;
+    VoiceHW *v = voice;
 
-    if (offset < voice->length) {
-        axv = voice->axv;
-        *(u32 *)&axv->currentAddressHi = voice->addr + offset;
+    if (offset < v->length) {
+        AXVPB *axv = v->axv;
+        *(u32 *)&axv->currentAddressHi = v->addr + offset;
         axv->sync |= 0x1000;
         return 1;
     }
