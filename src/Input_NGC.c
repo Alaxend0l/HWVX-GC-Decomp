@@ -21,6 +21,7 @@ static u8 s_unk30[0x40];
 static u8 s_unk70[0x40];
 static u16 s_keyMap[20];
 static PADStatus s_unkD8[4];
+static InputUnk108 s_unk108[4];
 extern u16 g_pKeyToDI[20];
 extern void *wheels;
 u8 IsOpened__8LGWheelsFl(void *wheels, s32 chan);
