@@ -30,3 +30,22 @@ struct OSThread {
 };
 
 void OSWakeupThread(OSThreadQueue *queue);
+
+void __OSUnlockAllMutex(OSThread *thread) {
+    OSMutex *mutex;
+
+    while (thread->queueMutex.head) {
+        OSMutex *next;
+        mutex = thread->queueMutex.head;
+        next = mutex->link.next;
+        if (next == 0) {
+            thread->queueMutex.tail = 0;
+        } else {
+            next->link.prev = 0;
+        }
+        thread->queueMutex.head = next;
+        mutex->count = 0;
+        mutex->thread = 0;
+        OSWakeupThread(&mutex->queue);
+    }
+}
