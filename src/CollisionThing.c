@@ -68,6 +68,12 @@ OBoxHolder *OBoxHolder_Get(void) {
     return NULL;
 }
 
+void OBoxHolder_Release(OBoxHolder *obox) {
+    if (obox != NULL) {
+        obox->inUse = 0;
+    }
+}
+
 f32 RaySphereTest(Vector4 *start, Vector4 *dir, Vector4 *center, f32 radius, f32 t, u8 *hit) {
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
     f32 PSVECSquareMag(Vector4 *v);
