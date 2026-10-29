@@ -170,7 +170,9 @@ typedef struct CarAInfo {
   f32 unk24;                /* 0x24 */
   u8 pad28[8];              /* 0x28 */
   f32 unk30;                /* 0x30 */
-  u8 pad34[0x1C];           /* 0x34 */
+  u8 pad34[0x14];           /* 0x34 */
+  void *steerAnim;          /* 0x48 */
+  u8 pad4C[4];              /* 0x4C */
   u32 skidsEnabled;         /* 0x50 */
   u8 pad54[0x18];           /* 0x54 */
   GXColor *skidColor;       /* 0x6C */
