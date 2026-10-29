@@ -81,6 +81,30 @@ BOOL SIRegisterPollingHandler(void *handler) {
     return FALSE;
 }
 
+BOOL SIUnregisterPollingHandler(void *handler) {
+    BOOL enabled;
+    int i;
+
+    enabled = OSDisableInterrupts();
+    for (i = 0; i < 4; ++i) {
+        if (RDSTHandler[i] == handler) {
+            RDSTHandler[i] = 0;
+            for (i = 0; i < 4; ++i) {
+                if (RDSTHandler[i]) {
+                    break;
+                }
+            }
+            if (i == 4) {
+                SIEnablePollingInterrupt(FALSE);
+            }
+            OSRestoreInterrupts(enabled);
+            return TRUE;
+        }
+    }
+    OSRestoreInterrupts(enabled);
+    return FALSE;
+}
+
 void SISetSamplingRate(u32 msec);
 void *__OSSetInterruptHandler(s16 interrupt, void *handler);
 u32 __OSUnmaskInterrupts(u32 mask);
