@@ -16,6 +16,32 @@ void DBOpen(void) {
 
 }
 
+int OSDisableInterrupts(void);
+int OSRestoreInterrupts(int level);
+int DBGReadStatus(unsigned long *status);
+int DBGReadMailbox(unsigned long *mailbox);
+unsigned long DBQueryData(void) {
+    int interrupts;
+    unsigned long v;
+
+    EXIInputFlag = 0;
+    if (!RecvDataLeng) {
+        interrupts = OSDisableInterrupts();
+        DBGReadStatus(&v);
+        if (v & 1) {
+            DBGReadMailbox(&v);
+            v &= 0x1fffffff;
+            if ((v & 0x1f000000) == 0x1f000000) {
+                SendMailData = v;
+                RecvDataLeng = v & 0x7fff;
+                EXIInputFlag = 1;
+            }
+        }
+        OSRestoreInterrupts(interrupts);
+    }
+    return RecvDataLeng;
+}
+
 unsigned long __OSMaskInterrupts(unsigned long mask);
 unsigned long __OSUnmaskInterrupts(unsigned long mask);
 void *__OSSetInterruptHandler(short interrupt, void *handler);
