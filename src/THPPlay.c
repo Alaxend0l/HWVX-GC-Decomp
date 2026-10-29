@@ -1,5 +1,7 @@
 #include "common.h"
 
+void Mpeg_Init(void);
+
 
 void Mpeg_Create(void)
 {
