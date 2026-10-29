@@ -94,3 +94,17 @@ void ReadProc(s32 chan) {
         *gba->status = gba->input[4] & 0x3A;
     }
 }
+
+s32 GBAReadAsync(s32 chan, u8 *dst, u8 *status, GBACallback callback) {
+    GBAControl *gba = &__GBA[chan];
+
+    if (gba->callback != NULL) {
+        return 2;
+    }
+    gba->output[0] = 0x14;
+    gba->ptr = dst;
+    gba->status = status;
+    gba->callback = callback;
+    return __GBATransfer(chan, 1, 5, ReadProc);
+}
+
