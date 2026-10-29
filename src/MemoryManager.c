@@ -5,11 +5,6 @@ void MemCpy32(void)
     memcpy();
 }
 
-void *memset(void *dst, int val, unsigned long n);
-void *OSAllocFromHeap(int heap, unsigned long size);
-void OSFreeToHeap(int heap, void *ptr);
-void Dprintf(const char *fmt, ...);
-extern volatile int __OSCurrHeap;
 void MemClr32(void *dst, unsigned long size)
 {
     memset(dst, 0, size);
