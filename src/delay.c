@@ -16,3 +16,15 @@ typedef struct AXFX_DELAY {
 BOOL OSDisableInterrupts(void);
 BOOL OSRestoreInterrupts(BOOL level);
 BOOL AXFXDelaySettings(AXFX_DELAY *delay);
+
+BOOL AXFXDelayInit(AXFX_DELAY *delay)
+{
+    BOOL old;
+
+    old = OSDisableInterrupts();
+    delay->left = NULL;
+    delay->right = NULL;
+    delay->sur = NULL;
+    OSRestoreInterrupts(old);
+    return AXFXDelaySettings(delay);
+}
