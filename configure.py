@@ -578,7 +578,7 @@ config.libs = [
             Object(NonMatching, "mbstring.c"),
             Object(NonMatching, "mem.c"),
             Object(NonMatching, "mem_funcs.c"),
-            Object(NonMatching, "misc_io.c"),
+            Object(Matching, "misc_io.c"),
             Object(NonMatching, "printf.c"),
             Object(NonMatching, "rand.c"),
             Object(NonMatching, "float.c"),
