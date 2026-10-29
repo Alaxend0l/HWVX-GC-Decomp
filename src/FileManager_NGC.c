@@ -1,5 +1,8 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+#pragma readonly_strings on
+
 void OSReport(const char *fmt, ...);
 
 s32 stricmp(const char *s1, const char *s2) {
