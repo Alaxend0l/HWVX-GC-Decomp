@@ -417,7 +417,7 @@ config.libs = [
             Object(NonMatching, "DataChunk.c"),
             Object(NonMatching, "FileManager.c"),
             Object(NonMatching, "FileManager_NGC.c"),
-            Object(NonMatching, "Input.c"),
+            Object(Matching, "Input.c"),
             Object(NonMatching, "Input_NGC.c")
         ],
     },
