@@ -45,6 +45,15 @@ typedef struct decimal {
     } sig;
 } decimal;
 
+typedef struct decform {
+    char style;
+    char unk1;
+    s16 digits;
+} decform;
+
+void __num2dec(const decform *form, double x, decimal *d);
+char *strcpy(char *dst, const char *src);
+
 const char *parse_format(const char *format_string, char *arg, print_format *format);
 char *longlong2str(s64 num, char *buff, print_format format);
 char *long2str(s32 num, char *buff, print_format format);
