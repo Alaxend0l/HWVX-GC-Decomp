@@ -1,5 +1,6 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
 
 void MotionState_Init(void *arg0, s8 reset) {
     typedef struct {
