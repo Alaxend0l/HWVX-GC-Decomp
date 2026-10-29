@@ -740,3 +740,56 @@ void cbForCancelSync(void) {
 s32 DVDGetCurrentDiskID(void) {
     return 0x80000000;
 }
+
+BOOL DVDCheckDisk(void) {
+    BOOL enabled;
+    s32 retVal;
+    s32 state;
+    u32 coverReg;
+
+    enabled = OSDisableInterrupts();
+
+    if (FatalErrorFlag) {
+        state = -1;
+    } else if (PausingFlag) {
+        state = 8;
+    } else {
+        if (executing == (DVDCommandBlock *)NULL) {
+            state = 0;
+        } else if (executing == &DummyCommandBlock) {
+            state = 0;
+        } else {
+            state = executing->state;
+        }
+    }
+
+    switch (state) {
+    case 1:
+    case 9:
+    case 10:
+    case 2:
+        retVal = TRUE;
+        break;
+    case -1:
+    case 11:
+    case 7:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+        retVal = FALSE;
+        break;
+    case 0:
+    case 8:
+        coverReg = __DIRegs[1];
+        if (((coverReg >> 2) & 1) || (coverReg & 1)) {
+            retVal = FALSE;
+        } else {
+            retVal = TRUE;
+        }
+    }
+
+    OSRestoreInterrupts(enabled);
+    return retVal;
+}
+
