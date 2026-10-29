@@ -519,6 +519,90 @@ s32 Thing_AddToGrid(void *thing, s32 type) {
     return *(s32 *)((u8 *)thing + 0x84);
 }
 
+void Thing_GetDynamicMinMax(Thing *thing, Vector4 *min, Vector4 *max, f32 expand) {
+    typedef struct Box {
+        u8 pad[0x10];
+        Vector4 corners[8];
+    } Box;
+    void CopyVector(Vector4 *dst, Vector4 *src);
+    void MinMaxVec(Vector4 *min, Vector4 *max, Vector4 *v);
+    Box *box;
+    u32 i;
+    Vector4 p3 __attribute__((aligned(16)));
+    Vector4 p2 __attribute__((aligned(16)));
+    Vector4 p1 __attribute__((aligned(16)));
+
+    min->x = min->y = min->z = min->w = 99999.9f;
+    max->x = max->y = max->z = max->w = -99999.9f;
+    switch (thing->unk80) {
+    case 0:
+        *max = thing->mtx.v[3];
+        *min = *max;
+        break;
+    case 3:
+        CopyVector(&p3, &thing->mtx.v[3]);
+        CopyVector(min, &thing->mtx.v[3]);
+        CopyVector(max, &thing->mtx.v[3]);
+        p3.x += thing->unk0.x * expand;
+        p3.y += thing->unk0.y * expand;
+        p3.z += thing->unk0.z * expand;
+        MinMaxVec(min, max, &p3);
+        break;
+    case 2:
+    case 4:
+    case 5:
+    case 6:
+        CopyVector(&p2, &thing->mtx.v[3]);
+        CopyVector(min, &thing->mtx.v[3]);
+        CopyVector(max, &thing->mtx.v[3]);
+        p2.x += thing->unk0.x * expand;
+        p2.y += thing->unk0.y * expand;
+        p2.z += thing->unk0.z * expand;
+        if (p2.x < min->x) {
+            min->x = p2.x;
+        }
+        if (p2.y < min->y) {
+            min->y = p2.y;
+        }
+        if (p2.z < min->z) {
+            min->z = p2.z;
+        }
+        if (p2.x > max->x) {
+            max->x = p2.x;
+        }
+        if (p2.y > max->y) {
+            max->y = p2.y;
+        }
+        if (p2.z > max->z) {
+            max->z = p2.z;
+        }
+        min->x -= thing->unk70;
+        min->y -= thing->unk70;
+        min->z -= thing->unk70;
+        max->x += thing->unk70;
+        max->y += thing->unk70;
+        max->z += thing->unk70;
+        break;
+    case 1:
+        if (thing->flags & 8) {
+            thing = ((Thing *(*)(Thing *))thing->vtable[0x10])(thing);
+            CopyVector(min, (Vector4 *)((u8 *)thing + 0xD0));
+            CopyVector(max, (Vector4 *)((u8 *)thing + 0xE0));
+        } else {
+            box = ((Box *(*)(Thing *))thing->vtable[0x10])(thing);
+            for (i = 0; i < 8; i++) {
+                p1 = box->corners[i];
+                MinMaxVec(min, max, &p1);
+                p1.x += thing->unk0.x * expand;
+                p1.y += thing->unk0.y * expand;
+                p1.z += thing->unk0.z * expand;
+                MinMaxVec(min, max, &p1);
+            }
+        }
+        break;
+    }
+}
+
 void Thing_GetStaticRotationalMinMax(void *thing, Vector4 *min, Vector4 *max) {
     *max = *(Vector4 *)((u8 *)thing + 0x40);
     *min = *max;
