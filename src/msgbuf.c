@@ -74,6 +74,32 @@ s32 TRKReadBuffer_ui8(TRKBuffer *b, u8 *data, s32 count) {
     return err;
 }
 
+s32 TRKReadBuffer1_ui64(TRKBuffer *b, u64 *data) {
+    s32 err;
+    u8 *bigEndianData;
+    u8 *byteData;
+    u8 swapBuffer[sizeof(*data)];
+
+    if (gTRKBigEndian) {
+        bigEndianData = (u8 *)data;
+    } else {
+        bigEndianData = swapBuffer;
+    }
+    err = TRKReadBuffer_inline(b, bigEndianData, sizeof(*data));
+    if (!gTRKBigEndian && err == 0) {
+        byteData = (u8 *)data;
+        byteData[0] = bigEndianData[7];
+        byteData[1] = bigEndianData[6];
+        byteData[2] = bigEndianData[5];
+        byteData[3] = bigEndianData[4];
+        byteData[4] = bigEndianData[3];
+        byteData[5] = bigEndianData[2];
+        byteData[6] = bigEndianData[1];
+        byteData[7] = bigEndianData[0];
+    }
+    return err;
+}
+
 s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data) {
     s32 err;
     u8 *bigEndianData;
