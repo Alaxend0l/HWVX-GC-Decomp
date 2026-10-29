@@ -22,6 +22,10 @@ BOOL SIBusy(void) {
     return Si.chan != -1 ? TRUE : FALSE;
 }
 
+BOOL SIIsChanBusy(s32 chan) {
+    return Packet[chan].chan != -1 || Si.chan == chan;
+}
+
 void SISetCommand(s32 chan, u32 command) {
     __SIRegs[3 * chan] = command;
 }
