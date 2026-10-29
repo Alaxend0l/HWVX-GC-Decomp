@@ -46,6 +46,16 @@ s32 TRKTargetAccessMemory(void *data, u32 start, u32 *length, s32 space, s32 rea
 s32 TRKAppendBuffer1_ui32(void *buffer, u32 data);
 s32 TRKAppendBuffer1_ui16(void *buffer, u16 data);
 
+s32 TRKTargetFlushCache(u8 space, u32 start, u32 end) {
+    void TRK_flush_cache(u32 start, u32 length);
+
+    if (start < end) {
+        TRK_flush_cache(start, end - start);
+        return 0;
+    }
+    return 0x700;
+}
+
 u32 TRKTargetGetPC(void) {
     return gTRKCPUState.regs.pc;
 }
