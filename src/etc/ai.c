@@ -55,14 +55,6 @@ s32 AIGetDSPSampleRate(void)
     return (((u32) *(u32 *)0xCC006C00 >> 6U) & 1) ^ 1;
 }
 
-void AISetStreamPlayState(u32 state);
-void __AI_SRC_INIT(void);
-s32 AIGetStreamSampleRate(void);
-u8 AIGetStreamVolLeft(void);
-u8 AIGetStreamVolRight(void);
-void AISetStreamVolLeft(u8 vol);
-void AISetStreamVolRight(u8 vol);
-s32 AIGetStreamPlayState(void);
 void __AI_set_stream_sample_rate(u32 rate) {
     s32 old;
     s32 state;
