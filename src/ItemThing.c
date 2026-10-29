@@ -189,4 +189,35 @@ s32 Item_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     }
     return 0;
 }
+void Item_Draw(u8 *item);
+void Thing_GetMass();
+void Thing_DynamicCollideImpact();
+void Thing_GetCameraOrientationInfo();
+void Thing_GetInterfaceInfo();
+void Thing_SlaveTransform();
+void Thing_GetSurfaceScript();
+void Thing_GetInverseLocalInertiaTensor();
+void Thing_DynamicRotation();
+void Thing_CollideWithRay();
+void Thing_GetTargetPos();
+void Thing_GetOrientedCollision();
 
+void *g_itemVTable[] = {
+    Item_Init,
+    Item_Release,
+    Item_PreMove,
+    Item_Move,
+    Item_Draw,
+    Thing_GetMass,
+    Thing_DynamicCollideImpact,
+    Thing_GetCameraOrientationInfo,
+    Thing_GetInterfaceInfo,
+    Thing_SlaveTransform,
+    Thing_GetSurfaceScript,
+    Item_GetNearestNavPoint,
+    Thing_GetInverseLocalInertiaTensor,
+    Thing_DynamicRotation,
+    Thing_CollideWithRay,
+    Thing_GetTargetPos,
+    Thing_GetOrientedCollision,
+};
