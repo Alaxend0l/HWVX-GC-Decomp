@@ -437,7 +437,7 @@ char *double2hex(double num, char *buff, print_format format) {
     s32 exp;
     print_format exp_format;
     s32 hex_precision;
-    char c;
+    s8 c;
     decform form;
     decimal dec;
 
