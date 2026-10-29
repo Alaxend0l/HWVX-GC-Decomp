@@ -103,6 +103,31 @@ void __CARDSyncCallback(s32 chan, s32 result) {
     OSWakeupThread(&__CARDBlock[chan].threadQueue);
 }
 
+void __CARDExtHandler(s32 chan, void *context) {
+    CARDControl *card;
+    CARDCallback callback;
+
+    card = &__CARDBlock[chan];
+    if (card->attached) {
+        card->attached = FALSE;
+        EXISetExiCallback(chan, 0);
+        OSCancelAlarm(&card->alarm);
+        callback = card->exiCallback;
+        if (callback) {
+            card->exiCallback = 0;
+            callback(chan, -3);
+        }
+        if (card->result != -1) {
+            card->result = -3;
+        }
+        callback = card->extCallback;
+        if (callback && 7 <= card->mountStep) {
+            card->extCallback = 0;
+            callback(chan, -3);
+        }
+    }
+}
+
 void __CARDTxHandler(s32 chan, void *context) {
     CARDControl *card;
     CARDCallback callback;
