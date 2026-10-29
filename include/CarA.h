@@ -29,7 +29,7 @@ typedef struct Player {
   u8 pad11;                 /* 0x11 */
   u8 throttle;              /* 0x12 */
   u8 brake;                 /* 0x13 */
-  u8 pad14;                 /* 0x14 */
+  u8 button14;              /* 0x14 */
   u8 button15;              /* 0x15 */
   u8 pad16[4];              /* 0x16 */
   u8 button1A;              /* 0x1A */
