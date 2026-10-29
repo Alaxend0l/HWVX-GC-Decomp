@@ -113,8 +113,10 @@ s32 GBAReadAsync(s32 chan, u8 *dst, u8 *status, GBACallback callback) {
 }
 
 s32 GBARead(s32 chan, u8 *dst, u8 *status) {
+    GBAControl *gba;
     s32 ret;
 
+    gba = &__GBA[chan];
     ret = GBAReadAsync(chan, dst, status, __GBASyncCallback);
     if (ret != 0) {
         return ret;
