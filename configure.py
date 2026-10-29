@@ -511,7 +511,7 @@ config.libs = [
             Object(NonMatching, "CARDStat.c"),
             Object(NonMatching, "GXInit.c"),
             Object(NonMatching, "GXFifo.c", mw_version="GC/1.2.5n"),
-            Object(NonMatching, "GXAttr.c"),
+            Object(NonMatching, "GXAttr.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "GXMisc.c"),
             Object(NonMatching, "GXGeometry.c"),
             Object(NonMatching, "GXFrameBuf.c"),
