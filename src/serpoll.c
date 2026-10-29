@@ -27,6 +27,41 @@ s32 TRKReleaseBuffer(s32 idx);
 void *gTRKInputPendingPtr;
 TRKFramingState gTRKFramingState;
 
+s32 TRKReadUARTPoll(u8 *c);
+s32 TRKGetFreeBuffer(s32 *msgID, TRKBuffer **outMsg);
+s32 TRKStandardACK(TRKBuffer *b, u8 commandID, u8 replyError);
+
+static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
+    if (b->position >= 0x880) {
+        return 0x301;
+    }
+    b->data[b->position++] = data;
+    b->length++;
+    return 0;
+}
+
+static inline void TRKDiscardFrame(TRKFramingState *state) {
+    if (gTRKFramingState.msgBufID != -1) {
+        TRKReleaseBuffer(gTRKFramingState.msgBufID);
+        gTRKFramingState.msgBufID = -1;
+    }
+    state->buffer = NULL;
+    state->receiveState = 0;
+}
+
+static inline s32 TRKCheckFrame(TRKFramingState *state) {
+    TRKBuffer *b = state->buffer;
+
+    if (b->length < 2) {
+        TRKStandardACK(b, 0xFF, 2);
+        TRKDiscardFrame(state);
+        return 0;
+    }
+    b->position = 0;
+    b->length--;
+    return 1;
+}
+
 s32 TRKTerminateSerialHandler(void) {
     return 0;
 }
