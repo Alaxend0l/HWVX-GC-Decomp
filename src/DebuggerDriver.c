@@ -83,7 +83,7 @@ static int DBGEXISelect(unsigned long v) {
     return 1;
 }
 
-static inline int DBGEXIDeselect(void) {
+static int DBGEXIDeselect(void) {
     __EXIRegs[10] &= 0x405;
     return 1;
 }
