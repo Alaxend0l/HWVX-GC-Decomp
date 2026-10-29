@@ -12,6 +12,7 @@ typedef struct OSAlarm {
 
 volatile u32 __SIRegs[64] : 0xCC006400;
 
+static SIControl Si = {-1, 0, 0, NULL, NULL};
 static SIPacket Packet[4];
 static OSAlarm Alarm[4];
 
