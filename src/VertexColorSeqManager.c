@@ -1,7 +1,13 @@
 #include "common.h"
 
+typedef struct VertexColorLight {
+    u8 unk0[0x4];
+    void *keys;
+    u8 unk8[0x8];
+} VertexColorLight;
+
 typedef struct VertexColorTile {
-    u8 *light;
+    VertexColorLight *light;
     u8 key[0x24];
     u32 color;
     u8 unk2C[0x4];
