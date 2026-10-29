@@ -178,6 +178,26 @@ void ThingManagerList_ReleaseAll(void **list) {
     }
 }
 
+s32 SharedSlaveHolder_Get(void *shared) {
+    extern u8 g_aSharedSlaveHolder[0x200];
+    void ThingManagerList_InitAllSlavesNow(void *list, void *slaves, u8 player);
+    s32 i;
+
+    for (i = 0; i < 64; i++) {
+        if (((SharedSlaveHolder *)g_aSharedSlaveHolder)[i].key == shared) {
+            return i;
+        }
+    }
+    for (i = 0; i < 64; i++) {
+        if (((SharedSlaveHolder *)g_aSharedSlaveHolder)[i].key == NULL) {
+            ((SharedSlaveHolder *)g_aSharedSlaveHolder)[i].key = shared;
+            ThingManagerList_InitAllSlavesNow(&((SharedSlaveHolder *)g_aSharedSlaveHolder)[i].slaves, (u8 *)shared + 4, 0xFF);
+            return i;
+        }
+    }
+    return 64;
+}
+
 void Thing_DrawSharedSlaves(u8 *thing, u32 *triggers) {
     typedef struct { u8 pad[0x10]; u8 type; u8 pad2[7]; u8 *shared; u8 pad3[4]; } Trigger;
     typedef struct SlaveThing {
