@@ -50,18 +50,18 @@ s32 Tracer_Init(u8 *thing, u8 *data) {
     *(Vector4 *)(thing + 0x40) = *(Vector4 *)data;
     *(u32 *)(thing + 0xB4) = Tracer_FindFree();
     Tracer_ClearTracer(*(u32 *)(thing + 0xB4));
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].active = 1;
+    tracers[*(u32 *)(thing + 0xB4)].active = 1;
     params = *(u8 **)(thing + 0xB0);
     if (*(u32 *)(params + 0x54) != 0) {
-        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D0 = **(u32 **)(params + 0x58);
+        tracers[*(u32 *)(thing + 0xB4)].unk4D0 = **(u32 **)(params + 0x58);
     } else {
-        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D0 = 0xFFFF;
+        tracers[*(u32 *)(thing + 0xB4)].unk4D0 = 0xFFFF;
     }
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D2 = *(u8 *)(*(u8 **)(thing + 0xB0) + 0x20);
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4BC = -1.0f * *(f32 *)(*(u8 **)(thing + 0xB0) + 0x40) / 14.0f;
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C4 = 0;
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C8 = 0;
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C0 = 0.0f;
+    tracers[*(u32 *)(thing + 0xB4)].unk4D2 = *(u8 *)(*(u8 **)(thing + 0xB0) + 0x20);
+    tracers[*(u32 *)(thing + 0xB4)].unk4BC = -1.0f * *(f32 *)(*(u8 **)(thing + 0xB0) + 0x40) / 14.0f;
+    tracers[*(u32 *)(thing + 0xB4)].unk4C4 = 0;
+    tracers[*(u32 *)(thing + 0xB4)].unk4C8 = 0;
+    tracers[*(u32 *)(thing + 0xB4)].unk4C0 = 0.0f;
     return 1;
 }
 
