@@ -156,7 +156,7 @@ s32 StateProgressionManager_Heartbeat(void) {
     } ProgState;
     extern ProgState g_GameProgressionState;
     extern u32 g_GameProgressionEndState[2];
-    extern u8 g_bLoadingDemoLand;
+    extern s8 g_bLoadingDemoLand;
     static s32 loadingInterfaceID;
     u32 GameSettings_GetCodeVariable(s32, s32);
     void StateManager_GotoState(s32 state);
@@ -374,11 +374,12 @@ s32 LoadWorldProcess(char *world, u8 loaded)
         }
         if (!IsLoadingThreadRunning())
         {
-            if ((g_worldData.unk8[0] = (s32)FileStreaming_InitializeDataPack(packID, 4, 0)) == 0)
+            g_worldData.unk8[0] = (s32)(dp = FileStreaming_InitializeDataPack(packID, 4, 0));
+            if (dp == NULL)
             {
                 return 8;
             }
-            if ((g_worldData.world = *(void **)g_worldData.unk8[0]) == NULL)
+            if ((g_worldData.world = *(void **)dp) == NULL)
             {
                 return 8;
             }
@@ -393,7 +394,8 @@ s32 LoadWorldProcess(char *world, u8 loaded)
         }
         if (!IsLoadingThreadRunning())
         {
-            if ((g_worldData.unk8[2] = (s32)FileStreaming_InitializeDataPack(packID, 6, 0)) == 0)
+            g_worldData.unk8[2] = (s32)(dp = FileStreaming_InitializeDataPack(packID, 6, 0));
+            if (dp == NULL)
             {
                 return 8;
             }
@@ -408,11 +410,12 @@ s32 LoadWorldProcess(char *world, u8 loaded)
         }
         if (!IsLoadingThreadRunning())
         {
-            if ((g_worldData.unk8[1] = (s32)FileStreaming_InitializeDataPack(packID, 5, 0)) == 0)
+            g_worldData.unk8[1] = (s32)(dp = FileStreaming_InitializeDataPack(packID, 5, 0));
+            if (dp == NULL)
             {
                 return 8;
             }
-            if ((*(LWWorld **)g_worldData.unk8[1])->quads != (LWQuad *)0xD)
+            if ((*(LWWorld **)dp)->quads != (LWQuad *)0xD)
             {
                 return 8;
             }
@@ -430,9 +433,10 @@ s32 LoadWorldProcess(char *world, u8 loaded)
             pPlayer1Car = NULL;
             for (i = 0; i < ((LWWorld *)g_worldData.world)->numCars; i++)
             {
-                if (((LWWorld *)g_worldData.world)->cars[i].type == 1)
+                car = &((LWWorld *)g_worldData.world)->cars[i];
+                if (car->type == 1)
                 {
-                    pPlayer1Car = &((LWWorld *)g_worldData.world)->cars[i];
+                    pPlayer1Car = car;
                     break;
                 }
             }
