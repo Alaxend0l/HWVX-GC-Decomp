@@ -102,7 +102,8 @@ typedef struct GfxWindow {
     u8 unk1C0[0x2C0 - 0x1C0];
     GXColor overlayColor;
     u32 overlayMode;
-    u8 unk2C8[0x2D0 - 0x2C8];
+    u8 unk2C8[0x2CC - 0x2C8];
+    f32 unk2CC;
 } GfxWindow;
 
 GfxWindow *GetRenderWindow(void);
