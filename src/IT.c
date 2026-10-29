@@ -77,6 +77,29 @@ void DestroyIT(void);
 void SetTrackVol(IT_TRACK *trk);
 void SetTrackPan(IT_TRACK *trk);
 
+#pragma push
+#pragma optimization_level 1
+s32 AudioIT_Init(void)
+{
+    extern void *g_pHdr;
+    u32 i;
+    IT_TRACK *trk;
+
+    if (g_pHdr != NULL)
+    {
+        DestroyIT();
+    }
+    g_song[7] = 0x10000;
+    trk = g_trk;
+    for (i = 0x20; i != 0; i--)
+    {
+        trk->head = NULL;
+        trk->active = NULL;
+    }
+    return 1;
+}
+#pragma pop
+
 void AudioIT_Destroy(void) {
 
 }
