@@ -360,7 +360,7 @@ config.libs = [
             Object(NonMatching, "AI_Creature.c"),
             Object(NonMatching, "ViewManager.c"),
             Object(NonMatching, "Tracer.c"),
-            Object(NonMatching, "LightManager.c"),
+            Object(Matching, "LightManager.c"),
             Object(NonMatching, "State_GameManager.c"),
             Object(NonMatching, "State_ProgressionManager.c"),
             Object(NonMatching, "CarA_AR.c"),
