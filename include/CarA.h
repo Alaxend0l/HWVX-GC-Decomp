@@ -54,12 +54,6 @@ typedef struct CarACollider {
   f32 mass;                 /* 0x20 */
 } CarACollider;
 
-typedef struct CarAWheelInfo {
-  f32 radius;               /* 0x00 */
-  u8 pad04[0x10];           /* 0x04 */
-  f32 unk14;                /* 0x14 */
-  u8 pad18[0x38];           /* 0x18 */
-} CarAWheelInfo;
 
 typedef struct CarAAccel {
   u8 pad00[0x18];           /* 0x00 */
