@@ -36,7 +36,7 @@ s8 Audio_Create(void)
 
 s8 Audio_Init(void)
 {
-	VoiceUpdate = NULL;
+			VoiceUpdate = 0;
 	SongUpdate = NULL;
 
 	if (AudioMusic_Init() && AudioIT_Init() && AudioMIDI_Init() && AudioVoice_Init() && Audio_Init_())
