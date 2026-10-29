@@ -42,6 +42,75 @@ s32 RunThread(void *func, s32 priority);
 void DataPack_RefreshQuadPackPtrs(s32 pack, void *quad);
 void FileStreaming_LoadQuadPacks(void **quads, u32 count, s8 threaded);
 
+typedef struct ItemInfo {
+    u8 pad0[0x10];
+    f32 height;
+    u8 pad14[0x28 - 0x14];
+    u32 effect;
+} ItemInfo;
+
+typedef struct ItemThing {
+    u8 pad0[0x74];
+    u32 flags;
+    u8 pad78[0x90 - 0x78];
+    void *owner;
+    u8 pad94[0xD0 - 0x94];
+    void *respawnItem;
+} ItemThing;
+
+typedef struct QuadItem {
+    Vector4 pos;
+    u8 pad10[0x4];
+    s32 respawn;
+    s32 timer;
+    ItemInfo *info;
+    f32 value;
+    ItemThing *thing;
+    u32 type;
+    u8 pad2C[0x34 - 0x2C];
+    u8 hasValue;
+    u8 subtype;
+    u8 pad36[0x38 - 0x36];
+    s8 spawned;
+    u8 pad39[0x40 - 0x39];
+} QuadItem;
+
+typedef struct QuadItemList {
+    u8 pad0[0x14];
+    u32 count;
+    QuadItem *items;
+} QuadItemList;
+
+/* ThingManager_DARYL_CreateThing(4, ...) parameters. */
+typedef struct ItemThingParams {
+    Quaternion rot;
+    Vector4 pos;
+    f32 unk30;
+    f32 unk34;
+    f32 unk38;
+    u32 unk3C;
+    ItemInfo *info;
+    f32 value;
+    u8 subtype;
+} ItemThingParams;
+
+/* ThingManager_DARYL_CreateThing(1, ...) parameters. */
+typedef struct EffectThingParams {
+    Vector4 pos;
+    Vector4 animRefPos;
+    Vector4 vel;
+    Vector4 angVel;
+    u32 id;
+    void *player;
+    f32 unk48;
+    f32 unk4C;
+} EffectThingParams;
+
+extern s32 g_iDeltaTimeMS;
+extern Vector4 g_zeroVector __attribute__((aligned(16)));
+void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+u32 GameSettings_GetCodeVariable(s32 var, s32 arg);
+
 #pragma push
 #pragma use_lmw_stmw on
 
