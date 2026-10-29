@@ -173,6 +173,24 @@ void GXPokeZMode(u8 compare_enable, s32 func, u8 update_enable) {
     __peReg[0] = reg;
 }
 
+void GXFinishInterruptHandler(s16 interrupt, void *context) {
+    OSContext exceptionContext;
+    u32 reg;
+
+    reg = __peReg[5];
+    reg = (reg & ~8) | 8;
+    __peReg[5] = reg;
+    DrawDone = 1;
+    if (DrawDoneCB) {
+        OSClearContext(&exceptionContext);
+        OSSetCurrentContext(&exceptionContext);
+        DrawDoneCB();
+        OSClearContext(&exceptionContext);
+        OSSetCurrentContext(context);
+    }
+    OSWakeupThread(&FinishQueue);
+}
+
 void __GXPEInit(void) {
     u32 reg;
 
