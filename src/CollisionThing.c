@@ -237,3 +237,53 @@ void CollisionPairCache_Heartbeat(void)
         }
     }
 }
+
+void OBoxCache_Set(u32 box0, u32 box1, Vector4 *pos, Vector4 *normal)
+{
+    u32 i;
+    u32 maxTime;
+    u32 slot;
+
+    maxTime = 0;
+    slot = 0;
+    for (i = 0; i < 4; i++)
+    {
+        if (box0 == g_aCollisionPairCache[i].objectA && box1 == g_aCollisionPairCache[i].objectB)
+        {
+            g_aCollisionPairCache[i].time = 0;
+            g_aCollisionPairCache[i].normal = *normal;
+            g_aCollisionPairCache[i].pos = *pos;
+            return;
+        }
+        if (box1 == g_aCollisionPairCache[i].objectA && box0 == g_aCollisionPairCache[i].objectB)
+        {
+            g_aCollisionPairCache[i].time = 0;
+            g_aCollisionPairCache[i].normal.x = -normal->x;
+            g_aCollisionPairCache[i].normal.y = -normal->y;
+            g_aCollisionPairCache[i].normal.z = -normal->z;
+            g_aCollisionPairCache[i].pos = *pos;
+            return;
+        }
+    }
+
+    for (i = 0; i < 4; i++)
+    {
+        if (g_aCollisionPairCache[i].objectA == 0)
+        {
+            slot = i;
+            break;
+        }
+        if ((u32)g_aCollisionPairCache[i].time > maxTime)
+        {
+            maxTime = g_aCollisionPairCache[i].time;
+            slot = i;
+        }
+    }
+
+    g_aCollisionPairCache[slot].time = 0;
+    g_aCollisionPairCache[slot].normal = *normal;
+    g_aCollisionPairCache[slot].pos = *pos;
+    g_aCollisionPairCache[slot].objectA = box0;
+    g_aCollisionPairCache[slot].objectB = box1;
+}
+
