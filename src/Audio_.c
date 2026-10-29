@@ -1,6 +1,7 @@
 #include "common.h"
 
 #pragma use_lmw_stmw on
+#pragma readonly_strings on
 
 typedef struct MemBlk {
     u32 addr;
