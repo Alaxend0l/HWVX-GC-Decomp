@@ -813,22 +813,28 @@ typedef struct QuadPackHeader {
 } QuadPackHeader;
 
 typedef struct Light {
-  u8 unk0[0x10];
-  u8 r;
+  u8 unk0[0x10];            /* 0x00 direction (directional lights) */
+  u8 r;                     /* 0x10 */
   u8 g;
   u8 b;
   u8 unk13;
-  s32 index;
-  u8 type;
+  s32 index;                /* 0x14 */
+  u8 type;                  /* 0x18 1: directional, 2: ambient, 3: sequenced */
+  s8 subtract;              /* 0x19 */
 } Light;
 typedef struct Volume {
-  u8 unk0[0xC];
-  u32 type;
-  u8 unp10[0x1C];
-  Light *light;
+  u8 unk0[0x8];
+  u32 falloff;              /* 0x08 */
+  u32 type;                 /* 0x0C */
+  u8 unp10[0x10];
+  f32 innerDist;            /* 0x20 */
+  f32 outerDist;            /* 0x24 */
+  u8 unk28[4];
+  Light *light;             /* 0x2C */
 } Volume;
 typedef struct LightWorld {
-  u8 unk0[0x64];
+  u32 unk0;
+  u8 unk4[0x60];
   u8 *lights;
   u32 numVolumes;
   u8 *volumes;
