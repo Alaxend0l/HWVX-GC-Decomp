@@ -54,8 +54,8 @@ void Audio_Update(void)
 		SongUpdate();
 	}
 
-	if (VoiceUpdate != NULL)
+	if (VoiceUpdate != 0)
 	{
-		VoiceUpdate();
+		((void (*)(void))VoiceUpdate)();
 	}
 }
