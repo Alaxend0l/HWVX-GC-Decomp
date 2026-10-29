@@ -217,6 +217,26 @@ void MultiplySubMatrix(f32 a[4][4], f32 b[4][4], f32 out[4][4]) {
     memcpy(out, tmp, sizeof(tmp));
 }
 
+void MultiplyMatrix(Matrix4 *a, Matrix4 *b, Matrix4 *out)
+{
+    out->v[0].x = b->v[2].x * a->v[0].z + (b->v[0].x * a->v[0].x + b->v[1].x * a->v[0].y);
+    out->v[0].y = b->v[2].y * a->v[0].z + (b->v[0].y * a->v[0].x + b->v[1].y * a->v[0].y);
+    out->v[0].z = b->v[2].z * a->v[0].z + (b->v[0].z * a->v[0].x + b->v[1].z * a->v[0].y);
+    out->v[0].w = 0.0f;
+    out->v[1].x = b->v[2].x * a->v[1].z + (b->v[0].x * a->v[1].x + b->v[1].x * a->v[1].y);
+    out->v[1].y = b->v[2].y * a->v[1].z + (b->v[0].y * a->v[1].x + b->v[1].y * a->v[1].y);
+    out->v[1].z = b->v[2].z * a->v[1].z + (b->v[0].z * a->v[1].x + b->v[1].z * a->v[1].y);
+    out->v[1].w = 0.0f;
+    out->v[2].x = b->v[2].x * a->v[2].z + (b->v[0].x * a->v[2].x + b->v[1].x * a->v[2].y);
+    out->v[2].y = b->v[2].y * a->v[2].z + (b->v[0].y * a->v[2].x + b->v[1].y * a->v[2].y);
+    out->v[2].z = b->v[2].z * a->v[2].z + (b->v[0].z * a->v[2].x + b->v[1].z * a->v[2].y);
+    out->v[2].w = 0.0f;
+    out->v[3].x = b->v[3].x + (b->v[2].x * a->v[3].z + (b->v[0].x * a->v[3].x + b->v[1].x * a->v[3].y));
+    out->v[3].y = b->v[3].y + (b->v[2].y * a->v[3].z + (b->v[0].y * a->v[3].x + b->v[1].y * a->v[3].y));
+    out->v[3].z = b->v[3].z + (b->v[2].z * a->v[3].z + (b->v[0].z * a->v[3].x + b->v[1].z * a->v[3].y));
+    out->v[3].w = 1.0f;
+}
+
 void TransposeSubMatrix(Matrix4 *m)
 {
     f32 temp;
