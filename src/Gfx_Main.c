@@ -106,7 +106,7 @@ void Gfx_FlipBuffers(void) {
 void RenderState_Init(void) {
     g_state.unk7C = 1;
     g_state.numPointLights = 0;
-    g_state.unk80 = 1.0f;
+    g_state.unk80 = 64.0f;
     g_state.unk91 = 0xFF;
     g_state.lightChanged = 1;
     g_state.unk8F = 1;
