@@ -172,6 +172,22 @@ BOOL SIGetResponseRaw(s32 chan) {
     return FALSE;
 }
 
+BOOL SIGetResponse(s32 chan, void *data) {
+    BOOL rc;
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    SIGetResponseRaw(chan);
+    rc = InputBufferValid[chan];
+    InputBufferValid[chan] = FALSE;
+    if (rc) {
+        ((u32 *)data)[0] = InputBuffer[chan][0];
+        ((u32 *)data)[1] = InputBuffer[chan][1];
+    }
+    OSRestoreInterrupts(enabled);
+    return rc;
+}
+
 static void AlarmHandler(OSAlarm *alarm, void *context) {
     s32 chan;
     SIPacket *packet;
