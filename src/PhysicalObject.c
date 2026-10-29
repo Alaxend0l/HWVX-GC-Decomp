@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 static inline void Mover_SetRotation(u8 *mover, Quaternion quat) {
     *(Quaternion *)(mover + 0xE0) = quat;
 }
