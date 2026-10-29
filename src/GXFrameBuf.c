@@ -50,3 +50,8 @@ void GXAdjustForOverscan(GXRenderModeObj *rmin, GXRenderModeObj *rmout, u16 hor,
     rmout->viXOrigin = (u16)(rmin->viXOrigin + hor);
     rmout->viYOrigin = (u16)(rmin->viYOrigin + ver);
 }
+
+void GXSetDispCopyGamma(s32 gamma) {
+    gx->cpDisp = (gx->cpDisp & ~0x180) | (gamma << 7);
+}
+
