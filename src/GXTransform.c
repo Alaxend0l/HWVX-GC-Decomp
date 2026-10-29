@@ -90,3 +90,12 @@ void GXSetScissor(u32 left, u32 top, u32 wd, u32 ht) {
     GXWGFifo.u32 = gx->suScis1;
     gx->bpSentNot = 0;
 }
+
+void GXSetClipMode(u32 mode) {
+    extern GXData *gx;
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = 0x1005;
+    GXWGFifo.u32 = mode;
+    gx->bpSentNot = 1;
+}
+
