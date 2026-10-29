@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 typedef struct TRKBuffer {
     u32 mutex;
     s32 isInUse;
