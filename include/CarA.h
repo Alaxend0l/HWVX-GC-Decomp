@@ -150,7 +150,7 @@ typedef struct CarA {
                                +0xD4 (CarTrailBone), +0xDC (torque curve table) */
   Matrix4 inverseBodyInertia; /* 0x3C0 = g_identity, diagonal set at 0x3C0/0x3D4/0x3E8;
                                  read through (f64 *) casts in the decomp only */
-  u8 pad400[4];             /* 0x400 */
+  s32 turboTime;            /* 0x400 ms of turbo left */
   s32 lowSpeedFlag;         /* 0x404 compared < 500 by AI cars */
   u8 pad408[8];             /* 0x408 */
   Vector4 localAxis;        /* 0x410 cross-product operand in CarA_ProcessForce */
