@@ -31,3 +31,24 @@ s32 __DVDCheckWaitingQueue(void)
     return 0;
 }
 
+s32 __DVDDequeueWaitingQueue(DVDQueue *block)
+{
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32);
+    s32 enabled;
+    DVDQueue *prev;
+    DVDQueue *next;
+
+    enabled = OSDisableInterrupts();
+    prev = block->prev;
+    next = block->next;
+    if (prev == NULL || next == NULL) {
+        OSRestoreInterrupts(enabled);
+        return 0;
+    }
+    prev->next = next;
+    next->prev = prev;
+    OSRestoreInterrupts(enabled);
+    return 1;
+}
+
