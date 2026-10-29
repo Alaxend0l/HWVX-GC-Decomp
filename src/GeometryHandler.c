@@ -45,15 +45,14 @@ void Geometry_Destroy(void) {
 }
 
 void Geometry_Init(s8 clear) {
-    void Geometry_FreeGeometry(s32 geometry);
-    extern u8 *g_pGeometryHandler;
+    extern GeometryHandler *g_pGeometryHandler;
     u32 i;
 
-    for (i = 0; i < M2C_FIELD(g_pGeometryHandler, u32 *, 0x24004); i++) {
+    for (i = 0; i < g_pGeometryHandler->max; i++) {
         if (clear == 1) {
-            *(s16 *)(g_pGeometryHandler + i * 0x48 + 0x44) = 0;
+            g_pGeometryHandler->entries[i].refCount = 0;
         }
-        Geometry_FreeGeometry(*(s32 *)(g_pGeometryHandler + i * 0x48));
+        Geometry_FreeGeometry(g_pGeometryHandler->entries[i].geometry);
     }
 }
 
