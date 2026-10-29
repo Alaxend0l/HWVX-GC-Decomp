@@ -129,6 +129,26 @@ void __CARDUnlockedHandler(s32 chan, void *context) {
     }
 }
 
+s32 __CARDEnableInterrupt(s32 chan, BOOL enable) {
+    BOOL err;
+    u32 cmd;
+
+    if (!EXISelect(chan, 0, 4)) {
+        return -3;
+    }
+
+    cmd = enable ? 0x81010000 : 0x81000000;
+    err = FALSE;
+    err |= !EXIImm(chan, &cmd, 2, 1, 0);
+    err |= !EXISync(chan);
+    err |= !EXIDeselect(chan);
+
+    if (err) {
+        return -3;
+    }
+    return 0;
+}
+
 s32 __CARDClearStatus(s32 chan) {
     BOOL err;
     u32 cmd;
