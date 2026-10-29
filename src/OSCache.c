@@ -39,6 +39,25 @@ void LCEnable(void) {
 }
 
 #pragma peephole off
+void LCStoreBlocks(void *destTag, void *srcAddr, u32 numBlocks);
+#pragma peephole off
+u32 LCStoreData(void *destAddr, void *srcAddr, u32 nBytes) {
+    u32 numBlocks = (nBytes + 31) / 32;
+    u32 numTransactions = (numBlocks + 128 - 1) / 128;
+
+    while (numBlocks > 0) {
+        if (numBlocks < 128) {
+            LCStoreBlocks(destAddr, srcAddr, numBlocks);
+            numBlocks = 0;
+        } else {
+            LCStoreBlocks(destAddr, srcAddr, 0);
+            numBlocks -= 128;
+            destAddr = (void *)((u32)destAddr + 4096);
+            srcAddr = (void *)((u32)srcAddr + 4096);
+        }
+    }
+    return numTransactions;
+}
 u32 PPCMfl2cr(void);
 void PPCMtl2cr(u32 val);
 void DBPrintf(const char *fmt, ...);
