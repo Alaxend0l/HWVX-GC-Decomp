@@ -141,5 +141,23 @@ int DBGReadStatus(unsigned long *status) {
     total |= !DBGEXIDeselect();
     return !total;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+int DBGReadMailbox(unsigned long *mailbox) {
+    int total = 0;
+    unsigned long v;
+
+    DBGEXISelect(4);
+    v = 0x6 << 28;
+    total |= !DBGEXIImm(&v, 2, 1);
+    total |= !DBGEXISync();
+    total |= !DBGEXIImm(mailbox, 4, 0);
+    total |= !DBGEXISync();
+    total |= !DBGEXIDeselect();
+    return !total;
+}
+#pragma pop
+
 #pragma pop
 
