@@ -450,6 +450,9 @@ void MotionState_BuildMatricesWorld(void *arg0, void *arg1, void *motionState, f
     }
 }
 #pragma pop
+
+#pragma push
+#pragma use_lmw_stmw on
 s32 AnimNodes_BlowBranch(u8 *node) {
     s32 count = 1;
     u32 i;
