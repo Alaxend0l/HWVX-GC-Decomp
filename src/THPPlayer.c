@@ -13,7 +13,7 @@ typedef struct THPPlayer {
     u32 version;
     u32 unk44;
     u32 unk48;
-    u32 unk4C;
+    f32 frameRate;
     u32 numFrames;      /* 0x50: compared with the frame Prepare wants */
     u32 unk54;
     u32 unk58;
