@@ -16,3 +16,10 @@ typedef struct __GXFifoObj {
 typedef struct GXFifoObj {
     u8 pad[128];
 } GXFifoObj;
+
+void GXInitFifoLimits(GXFifoObj *fifo, u32 hiWatermark, u32 loWatermark) {
+    __GXFifoObj *realFifo = (__GXFifoObj *)fifo;
+
+    realFifo->hiWatermark = hiWatermark;
+    realFifo->loWatermark = loWatermark;
+}
