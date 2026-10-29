@@ -23,7 +23,9 @@ typedef struct Drone {
     Matrix4 mtx;            /* 0x10 v[3] = position */
     u8 pad50[0x24];         /* 0x50 */
     u32 flags;              /* 0x74 */
-    u8 pad78[0x48];         /* 0x78 */
+    u8 pad78[0x1C];         /* 0x78 */
+    s8 *input;              /* 0x94 */
+    u8 pad98[0x28];         /* 0x98 */
     DroneInfo *info;        /* 0xC0 */
     u8 padC4[0x10];         /* 0xC4 */
     DroneAnim *anim;        /* 0xD4 */
