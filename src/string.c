@@ -1,6 +1,32 @@
 #include "common.h"
 
 
+char *strstr(const char *str, const char *pat) {
+    const unsigned char *s1 = (const unsigned char *)str - 1;
+    const unsigned char *p1 = (const unsigned char *)pat - 1;
+    unsigned long firstc, c1, c2;
+
+    if ((pat == 0) || (!(firstc = *++p1))) {
+        return (char *)str;
+    }
+
+    while (c1 = *++s1) {
+        if (c1 == firstc) {
+            const unsigned char *s2 = s1 - 1;
+            const unsigned char *p2 = p1 - 1;
+
+            while ((c1 = *++s2) == (c2 = *++p2) && c1)
+                ;
+
+            if (!c2) {
+                return (char *)s1;
+            }
+        }
+    }
+
+    return 0;
+}
+
 char *strrchr(const char *str, int chr) {
     const unsigned char *p = (unsigned char *)str - 1;
     const unsigned char *q = 0;
