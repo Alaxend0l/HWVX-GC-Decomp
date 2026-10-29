@@ -188,7 +188,7 @@ void Tracer_Release(struct Thing *thing) {
 }
 
 void Tracer_ClearTracer(s32 index) {
-    Tracer *tracer = &tracers_802CD600[index];
+    Tracer *tracer = &tracers[index];
     u32 i;
 
     tracer->head = tracer->points;
@@ -202,7 +202,7 @@ void Tracer_ClearTracer(s32 index) {
         tracer->points[i].vel[3] = 1.0f;
         tracer->points[i].unk40 = 1.0f;
     }
-    tracers_802CD600[index].unk4A8 = tracer->points;
+    tracers[index].unk4A8 = tracer->points;
 }
 
 void Tracer_Render(u8 *thing) {
