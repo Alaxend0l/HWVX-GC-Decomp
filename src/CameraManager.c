@@ -390,6 +390,319 @@ s32 Camera_TriggerActionGetLocation(u8 *cam, u32 *data, Vector4 *out) {
     return i;
 }
 
+void Camera_UpdatePosition(Camera *cam) {
+    extern f32 g_fDeltaTimeSec;
+    extern CarA *g_pNoRayCollideThing;
+    extern Matrix4 g_identity;
+    extern Vector4 g_zeroVector;
+    extern u8 g_lookerVTable[];
+    extern u32 g_triggerAction_params_default;
+    double sin(double x);
+    double cos(double x);
+    f32 PSVECSquareMag(void *v);
+    void PSVECNormalize(void *src, void *dst);
+    void PSVECSubtract(void *a, void *b, void *out);
+    void PSVECCrossProduct(void *a, void *b, void *out);
+    void Gfx_SetProjectionMatrix(f32 fov);
+    void SinCosRad(f32 *s, f32 *c, f32 angle);
+    void XformVec(void *mtx, Vector4 *in, Vector4 *out);
+    s8 RayHitsTerrainAndObjects(Vector4 *from, Vector4 *dir, f32 *t, void *info);
+    s32 NavHolder_FindIndexOfNearestNavPoint(Vector4 *pos, s32 hint);
+    Vector4 *NavHolder_GetNavPoint(s32 index);
+    void Camera_UpdatePosition_Default(Camera *cam, void *params);
+    Vector4 oldPos;
+    CameraInfo info __attribute__((aligned(16)));
+    u32 *mode;
+    f32 s;
+    f32 c;
+
+    oldPos = cam->pos;
+    info.subMode = NULL;
+    info.fov = 60.0f;
+    info.mtx = g_identity;
+    if (cam->player != NULL) {
+        cam->player->flags &= ~0x80;
+    }
+    mode = cam->mode;
+    switch (mode[0]) {
+    case 30:
+        if (cam->player != NULL) {
+            if (cam->player->vehicle != NULL) {
+                g_pNoRayCollideThing = cam->player->vehicle;
+                if (!(((CarA *)cam->player->vehicle)->collDirtyFlags & 0x201000)) {
+                    ((CarA *)cam->player->vehicle)->vtable->getCameraInfo(cam->player->vehicle, cam->player->cameraIndex, &info);
+                    if (cam->player->cameraIndex > info.cameraCount) {
+                        cam->player->cameraIndex -= (u8)info.cameraCount;
+                    }
+                    cam->mtx = ((CarA *)cam->player->vehicle)->worldMatrix;
+                } else {
+                    info.mtx = cam->mtx;
+                }
+            } else {
+                Vector4 eye;
+                Vector4 dir;
+                Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
+
+                cam->modeTime += 0.3f * g_fDeltaTimeSec;
+                s = sin(cam->modeTime);
+                c = cos(cam->modeTime);
+                eye.x = 15.0f * s + cam->mtx.v[3].x;
+                eye.y = cam->mtx.v[3].y + 5.0f;
+                eye.z = 15.0f * c + cam->mtx.v[3].z;
+                PSVECSubtract(&cam->mtx.v[3], &eye, &dir);
+                GetTrimmedCameraPos((u8 *)cam, &cam->mtx.v[3], &dir, &cam->trim, 1.0f);
+                PSVECSubtract(&cam->mtx.v[3], &cam->pos, &cam->dir);
+                if (PSVECSquareMag(&cam->dir) != 0.0f) {
+                    PSVECNormalize(&cam->dir, &cam->dir);
+                }
+                PSVECCrossProduct(&up, &cam->dir, &cam->right);
+                PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
+                if (PSVECSquareMag(&cam->right) != 0.0f) {
+                    PSVECNormalize(&cam->right, &cam->right);
+                }
+                if (PSVECSquareMag(&cam->up) != 0.0f) {
+                    PSVECNormalize(&cam->up, &cam->up);
+                }
+                Gfx_SetProjectionMatrix(60.0f);
+                return;
+            }
+        }
+        if (info.subMode == NULL) {
+            g_pNoRayCollideThing = NULL;
+            cam->right = info.mtx.v[0];
+            cam->up = info.mtx.v[1];
+            cam->dir = info.mtx.v[2];
+            cam->pos = info.mtx.v[3];
+            Gfx_SetProjectionMatrix(info.fov);
+            if (cam->listener != NULL && cam->player != NULL && cam->player->vehicle != NULL) {
+                f32 scale = ((CameraWorld *)g_worldData.world)->unk9C->scale;
+                cam->listener->pos.x = ((CarA *)cam->player->vehicle)->velocity.x * scale + cam->pos.x;
+                cam->listener->pos.y = ((CarA *)cam->player->vehicle)->velocity.y * scale + cam->pos.y;
+                cam->listener->pos.z = ((CarA *)cam->player->vehicle)->velocity.z * scale + cam->pos.z;
+            }
+            return;
+        }
+        switch (info.subMode->type) {
+        case 0:
+            Camera_UpdatePosition_Default(cam, info.subMode->params);
+            cam->vel = ((CarA *)cam->player->vehicle)->velocity;
+            break;
+        case 2: {
+            u8 *params = info.subMode->params;
+            Vector4 target;
+            Vector4 delta;
+            f32 t;
+            Vector4 *nav;
+
+            ((CarA *)cam->player->vehicle)->vtable->getTargetPos(cam->player->vehicle, &target);
+            PSVECSubtract(&target, &cam->pos, &delta);
+            t = 1.0f;
+            if (RayHitsTerrainAndObjects(&cam->pos, &delta, &t, NULL)) {
+                nav = NavHolder_GetNavPoint(NavHolder_FindIndexOfNearestNavPoint(&target, -1));
+                if (nav != NULL) {
+                    cam->pos = *nav;
+                }
+            }
+            Camera_UpdatePosition_Zoom_Generic((u8 *)cam, params, &cam->pos, &target, ((CarA *)cam->player->vehicle)->unk70, 0.0f);
+            PSVECSubtract(&cam->pos, &oldPos, &cam->vel);
+            break;
+        }
+        case 3: {
+            CameraOrbitParams *params = info.subMode->params;
+            Vector4 targetPos;
+            Vector4 *center;
+            Vector4 eye;
+            Vector4 dir;
+            Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
+            f32 sv;
+            f32 cv;
+
+            cam->modeTime += params->speed * g_fDeltaTimeSec;
+            SinCosRad(&sv, &cv, cam->modeTime);
+            if (cam->player->vehicle != NULL) {
+                ((CarA *)cam->player->vehicle)->vtable->getTargetPos(cam->player->vehicle, &targetPos);
+                center = &targetPos;
+            } else {
+                center = &cam->mtx.v[3];
+            }
+            cam->modeTime += params->speed * g_fDeltaTimeSec;
+            s = sin(cam->modeTime);
+            c = cos(cam->modeTime);
+            eye.x = params->radius * s + center->x;
+            eye.y = center->y + params->height;
+            eye.z = params->radius * c + center->z;
+            PSVECSubtract(center, &eye, &dir);
+            GetTrimmedCameraPos((u8 *)cam, center, &dir, &cam->trim, 1.0f);
+            PSVECSubtract(center, &cam->pos, &cam->dir);
+            if (PSVECSquareMag(&cam->dir) != 0.0f) {
+                PSVECNormalize(&cam->dir, &cam->dir);
+            }
+            PSVECCrossProduct(&up, &cam->dir, &cam->right);
+            PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
+            if (PSVECSquareMag(&cam->right) != 0.0f) {
+                PSVECNormalize(&cam->right, &cam->right);
+            }
+            if (PSVECSquareMag(&cam->up) != 0.0f) {
+                PSVECNormalize(&cam->up, &cam->up);
+            }
+            Gfx_SetProjectionMatrix(params->fov);
+            cam->vel = g_zeroVector;
+            break;
+        }
+        case 4: {
+            CameraBoneParams *params = info.subMode->params;
+            CarA *car = cam->player->vehicle;
+
+            if ((u8 *)car->vtable == g_carAVTable) {
+                cam->right = car->motionState.animMatrices[params->bone].v[0];
+                cam->up = car->motionState.animMatrices[params->bone].v[1];
+                cam->dir = car->motionState.animMatrices[params->bone].v[2];
+                cam->pos = car->motionState.animMatrices[params->bone].v[3];
+                XformVec(&car->motionState.animMatrices[params->bone], &cam->pos, &cam->pos);
+            } else if ((u8 *)car->vtable == g_lookerVTable) {
+                car = car->unkBC;
+                if (car->motionState.animMatrices != NULL) {
+                    cam->right = car->motionState.animMatrices[params->bone].v[0];
+                    cam->up = car->motionState.animMatrices[params->bone].v[1];
+                    cam->dir = car->motionState.animMatrices[params->bone].v[2];
+                    cam->pos = car->motionState.animMatrices[params->bone].v[3];
+                    XformVec(&car->motionState.animMatrices[params->bone], &cam->pos, &cam->pos);
+                }
+            }
+            Gfx_SetProjectionMatrix(60.0f);
+            cam->vel = ((CarA *)cam->player->vehicle)->velocity;
+            break;
+        }
+        }
+        break;
+    case 27: {
+        Vector4 target = {0.0f, 0.0f, 0.0f, 0.0f};
+        Vector4 pos = {1.0f, 1.0f, 1.0f, 0.0f};
+        Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
+        f32 fov = *(f32 *)&mode[1];
+        s32 i;
+
+        i = Camera_TriggerActionGetLocation((u8 *)cam, mode + 2, &pos);
+        Camera_TriggerActionGetLocation((u8 *)cam, mode + 2 + i, &target);
+        cam->pos = pos;
+        PSVECSubtract(&target, &cam->pos, &cam->dir);
+        if (PSVECSquareMag(&cam->dir) != 0.0f) {
+            PSVECNormalize(&cam->dir, &cam->dir);
+        }
+        PSVECCrossProduct(&up, &cam->dir, &cam->right);
+        PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
+        if (PSVECSquareMag(&cam->right) != 0.0f) {
+            PSVECNormalize(&cam->right, &cam->right);
+        }
+        if (PSVECSquareMag(&cam->up) != 0.0f) {
+            PSVECNormalize(&cam->up, &cam->up);
+        }
+        Gfx_SetProjectionMatrix(fov);
+        break;
+    }
+    case 28: {
+        Vector4 target = {0.0f, 0.0f, 0.0f, 0.0f};
+        Vector4 center = {1.0f, 1.0f, 1.0f, 0.0f};
+        Vector4 eye;
+        Vector4 dir;
+        Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
+        f32 fov = *(f32 *)&mode[1];
+        f32 radius = *(f32 *)&mode[2];
+        f32 height = *(f32 *)&mode[3];
+        f32 speed = *(f32 *)&mode[4];
+        s32 i;
+        CarA *car;
+
+        i = Camera_TriggerActionGetLocation((u8 *)cam, mode + 5, &center);
+        Camera_TriggerActionGetLocation((u8 *)cam, mode + 5 + i, &target);
+        cam->modeTime += speed * g_fDeltaTimeSec;
+        s = sin(cam->modeTime);
+        c = cos(cam->modeTime);
+        eye.x = radius * s + center.x;
+        eye.y = center.y + height;
+        eye.z = radius * c + center.z;
+        PSVECSubtract(&target, &eye, &dir);
+        GetTrimmedCameraPos((u8 *)cam, &target, &dir, &cam->trim, 1.0f);
+        PSVECSubtract(&target, &cam->pos, &cam->dir);
+        if (PSVECSquareMag(&cam->dir) != 0.0f) {
+            PSVECNormalize(&cam->dir, &cam->dir);
+        }
+        PSVECCrossProduct(&up, &cam->dir, &cam->right);
+        PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
+        if (PSVECSquareMag(&cam->right) != 0.0f) {
+            PSVECNormalize(&cam->right, &cam->right);
+        }
+        if (PSVECSquareMag(&cam->up) != 0.0f) {
+            PSVECNormalize(&cam->up, &cam->up);
+        }
+        Gfx_SetProjectionMatrix(fov);
+        car = cam->player->vehicle;
+        if (car != NULL && (u8 *)car->vtable == g_carAVTable && (car->stuckCounter > 0 || car->unk460 <= 0) &&
+            car->worldMatrix.v[1].y < 0.5f) {
+            cam->mode = &g_triggerAction_params_default;
+        }
+        break;
+    }
+    case 29: {
+        Vector4 target = {0.0f, 0.0f, 0.0f, 0.0f};
+        Vector4 pos = {1.0f, 1.0f, 1.0f, 0.0f};
+        CameraZoomParams zoom;
+        s32 i;
+
+        zoom.zoom = 0.014f;
+        i = Camera_TriggerActionGetLocation((u8 *)cam, mode + 1, &pos);
+        Camera_TriggerActionGetLocation((u8 *)cam, mode + 1 + i, &target);
+        Camera_UpdatePosition_Zoom_Generic((u8 *)cam, (u8 *)&zoom, &pos, &target, 10.0f, 0.0f);
+        break;
+    }
+    }
+    g_pNoRayCollideThing = NULL;
+    if (cam->listener != NULL && cam->player != NULL && cam->player->vehicle != NULL) {
+        f32 scale = ((CameraWorld *)g_worldData.world)->unk9C->scale;
+        cam->listener->pos.x = ((CarA *)cam->player->vehicle)->velocity.x * scale + cam->pos.x;
+        cam->listener->pos.y = ((CarA *)cam->player->vehicle)->velocity.y * scale + cam->pos.y;
+        cam->listener->pos.z = ((CarA *)cam->player->vehicle)->velocity.z * scale + cam->pos.z;
+    }
+}
+
+static inline void Camera_Orbit(Camera *cam, Vector4 *center, Vector4 *target, f32 radius, f32 height, f32 speed, f32 fov) {
+    extern f32 g_fDeltaTimeSec;
+    double sin(double x);
+    double cos(double x);
+    f32 PSVECSquareMag(void *v);
+    void PSVECNormalize(void *src, void *dst);
+    void PSVECSubtract(void *a, void *b, void *out);
+    void PSVECCrossProduct(void *a, void *b, void *out);
+    void Gfx_SetProjectionMatrix(f32 fov);
+    Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
+    Vector4 dir;
+    Vector4 eye;
+    f32 s;
+    f32 c;
+
+    cam->modeTime += speed * g_fDeltaTimeSec;
+    s = sin(cam->modeTime);
+    c = cos(cam->modeTime);
+    eye.x = radius * s + center->x;
+    eye.y = center->y + height;
+    eye.z = radius * c + center->z;
+    PSVECSubtract(target, &eye, &dir);
+    GetTrimmedCameraPos((u8 *)cam, target, &dir, &cam->trim, 1.0f);
+    PSVECSubtract(target, &cam->pos, &cam->dir);
+    if (PSVECSquareMag(&cam->dir) != 0.0f) {
+        PSVECNormalize(&cam->dir, &cam->dir);
+    }
+    PSVECCrossProduct(&up, &cam->dir, &cam->right);
+    PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
+    if (PSVECSquareMag(&cam->right) != 0.0f) {
+        PSVECNormalize(&cam->right, &cam->right);
+    }
+    if (PSVECSquareMag(&cam->up) != 0.0f) {
+        PSVECNormalize(&cam->up, &cam->up);
+    }
+    Gfx_SetProjectionMatrix(fov);
+}
+
 void CameraManager_ReturnAllToPlayer(void) {
     extern u8 g_cameraManager[];
     extern u32 g_triggerAction_params_default;
