@@ -420,7 +420,7 @@ s32 RayHitsCell(Vector4 *start, Vector4 *dir, u8 *cell, f32 *time, u8 *out) {
     f32 t;
     f32 minT;
     u32 result;
-    Vector4 normal;
+    Vector4 normal __attribute__((aligned(16)));
 
     hitAny = 0;
     if (*(u32 *)(*(u8 **)g_worldData.world + 0x58) == 1) {
