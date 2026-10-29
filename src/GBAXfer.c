@@ -57,7 +57,7 @@ void __GBAHandler(s32 chan, u32 error, void *context)
 	GBAControl *gba;
 	GBACallback callback;
 	GBAProc proc;
-	u8 exceptionContext[0x2C8];
+	OSContext exceptionContext;
 
 	gba = &__GBA[chan];
 	if (__GBAReset != 0)
@@ -86,12 +86,12 @@ void __GBAHandler(s32 chan, u32 error, void *context)
 		return;
 	}
 
-	OSClearContext(exceptionContext);
-	OSSetCurrentContext(exceptionContext);
+	OSClearContext(&exceptionContext);
+	OSSetCurrentContext(&exceptionContext);
 	callback = gba->callback;
 	gba->callback = NULL;
 	callback(chan, gba->ret);
-	OSClearContext(exceptionContext);
+	OSClearContext(&exceptionContext);
 	OSSetCurrentContext(context);
 }
 
