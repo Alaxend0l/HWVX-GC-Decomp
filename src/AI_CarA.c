@@ -515,6 +515,96 @@ s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest) {
     return result;
 }
 
+#pragma use_lmw_stmw on
+void AI_Car_Cheat_80008A60(u8 *ai) {
+    typedef struct WeaponParams {
+        u8 pad0[0x28];
+        u32 maxAmmo;
+    } WeaponParams;
+    typedef struct WeaponDef {
+        u8 type;
+        u8 pad1[0x30 - 0x1];
+        WeaponParams *params;
+    } WeaponDef;
+    typedef struct WeaponSlot {
+        u8 pad0[0x40];
+        s16 ammo;
+        u8 pad42[0x4C - 0x42];
+        WeaponDef *def;
+    } WeaponSlot;
+    typedef struct WeaponHolder {
+        u8 pad0[0xB0];
+        WeaponSlot slots[12];
+    } WeaponHolder;
+    extern u8 g_cameraManager[];
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    f32 PSVECSquareDistance(void *a, void *b);
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    CarA *car;
+    u8 *nearest;
+    WeaponHolder *holder;
+    u8 *cam;
+    u8 **item;
+    Vector4 *pos;
+    u32 i;
+    u32 j;
+    f32 best;
+    f32 dist;
+    f32 cheat;
+
+    cheat = 0.0f;
+    car = *(CarA **)(ai + 0x2C);
+    nearest = NULL;
+    holder = ThingManagerList_GetByType(&car->motionState.slaves, 8);
+    for (i = 0; i < 12; i++) {
+        if (holder->slots[i].def != NULL && holder->slots[i].def->type == 3) {
+            holder->slots[i].ammo = holder->slots[i].def->params->maxAmmo;
+        }
+    }
+    best = 1e9f;
+    pos = &car->worldMatrix.v[3];
+    cam = g_cameraManager;
+    for (j = 0; j < g_cameraManager[0x640]; cam += 0x190, j++) {
+        nearest = *(u8 **)cam;
+        if (nearest != NULL && *(u8 **)(nearest + 0x2C) != NULL && *(u32 *)(nearest + 0x38) == 9) {
+            dist = PSVECSquareDistance(pos, cam + 0x60);
+            if (best > dist) {
+                best = dist;
+                nearest = *(u8 **)cam;
+            }
+        }
+    }
+    if (1e9f != best) {
+        for (i = 0; i < 4; i++) {
+            item = *(u8 ***)(ai + 0x3D4 + i * 4);
+            if (item == NULL || *item == NULL) {
+                break;
+            }
+            if (**item == 0xE) {
+                cheat = (*(f32 *)((u8 *)car + 0x564) - *(f32 *)(*(u8 **)(nearest + 0x2C) + 0x564)) / 750.0f;
+                break;
+            }
+        }
+    }
+    if (cheat > 1.0f) {
+        cheat = 1.0f;
+    } else if (cheat < -1.0f) {
+        cheat = -1.0f;
+    }
+    if (cheat > 0.0f) {
+        *(f32 *)(ai + 0x63C) = *(f32 *)(*(u8 **)(ai + 0xD0) + 0xC) * cheat + *(f32 *)(*(u8 **)(ai + 0xD0) + 0xC);
+        car->transmissionFlags |= 0x1000;
+        car->turboTime = 10000;
+    } else {
+        if (GameSettings_GetCodeVariable(0x12D, 0) >= 3) {
+            *(f32 *)(ai + 0x63C) = *(f32 *)(*(u8 **)(ai + 0xD0) + 0xC) - 0.2f * *(f32 *)(*(u8 **)(ai + 0xD0) + 0xC) * -cheat;
+        } else {
+            *(f32 *)(ai + 0x63C) = *(f32 *)(*(u8 **)(ai + 0xD0) + 0xC) - 0.333f * *(f32 *)(*(u8 **)(ai + 0xD0) + 0xC) * -cheat;
+        }
+        car->transmissionFlags &= ~0x1000;
+        car->turboTime = 0;
+    }
+}
 void AI_Car_AsyncScanDestructibles(u8 *car) {
     s32 RandomAdd_s32(s32 base, s32 range);
     void *RayHitsObjects_GetObject(void *pos, void *target, f32 *dist, s32 arg3, s32 arg4);
