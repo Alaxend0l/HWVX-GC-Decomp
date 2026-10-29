@@ -27,3 +27,35 @@ s32 TRKSetBufferPosition(TRKBuffer *b, u32 position) {
     }
     return err;
 }
+
+void TRKResetBuffer(TRKBuffer *b, u8 keepData) {
+    b->length = 0;
+    b->position = 0;
+    if (!keepData) {
+        TRK_memset(b->data, 0, 0x880);
+    }
+}
+
+void TRKReleaseBuffer(s32 idx) {
+    TRKBuffer *b;
+
+    if (idx == -1) {
+        return;
+    }
+    if (idx >= 0 && idx < 3) {
+        b = &gTRKMsgBufs[idx];
+        TRKAcquireMutex(b);
+        b->isInUse = 0;
+        TRKReleaseMutex(b);
+    }
+}
+
+TRKBuffer *TRKGetBuffer(s32 idx) {
+    TRKBuffer *buf = NULL;
+
+    if (idx >= 0 && idx < 3) {
+        buf = &gTRKMsgBufs[idx];
+    }
+    return buf;
+}
+
