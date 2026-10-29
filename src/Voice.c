@@ -22,6 +22,11 @@ u32 CreateSFX_(SFX *sfx);
 void AudioVoice_Create_(void *voices);
 void AudioVoice_Destroy_(void);
 
+void AudioVoice_Destroy(void) {
+    VoiceUpdate = 0;
+    AudioVoice_Destroy_();
+}
+
 void SetSpeakerMode(s8 mode) {
     g_speakers = mode;
 }
