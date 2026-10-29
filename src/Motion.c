@@ -3,6 +3,7 @@
 
 s32 Motion_Init(u8 *motion, u8 *init) {
     void MotionState_InitAllSlavesNow(void *motionState, void *slaves, s32 arg2);
+    void MotionState_BuildMatricesWorld(void *mtx, void *pos, void *state, f32 scale);
     u8 *state = motion + 0xB0;
 
     Thing_Init(motion, (s32)init);
