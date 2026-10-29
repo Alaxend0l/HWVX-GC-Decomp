@@ -16,7 +16,7 @@ void DBOpen(void) {
 
 }
 
-int DBGRead(unsigned long addr, void *data, unsigned long size);
+int DBGRead(unsigned long count, void *buffer, long size);
 int DBRead(void *data, unsigned long size) {
     int interrupts;
     unsigned long base;
