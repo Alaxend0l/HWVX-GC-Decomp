@@ -41,6 +41,13 @@ void GXSetAlphaUpdate(u8 update_enable) {
     gx->bpSentNot = 0;
 }
 
+void GXSetZCompLoc(u8 before_tex) {
+    gx->peCtrl = (gx->peCtrl & ~0x40) | (before_tex << 6);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->peCtrl;
+    gx->bpSentNot = 0;
+}
+
 void GXSetDither(u8 dither) {
     gx->cmode0 = (gx->cmode0 & ~4) | (dither << 2);
     GXWGFifo.u8 = 0x61;
