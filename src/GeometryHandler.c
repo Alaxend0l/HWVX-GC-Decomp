@@ -16,6 +16,23 @@ typedef struct GeometryHandler {
 
 void *Allocate(u32 size, s32 type, const char *name);
 
+s32 Geometry_Create(void) {
+    extern GeometryHandler *g_pGeometryHandler;
+    u32 i;
+
+    g_pGeometryHandler = Allocate(sizeof(GeometryHandler), 0, "");
+    if (g_pGeometryHandler == NULL) {
+        return 0;
+    }
+    g_pGeometryHandler->max = 0x800;
+    g_pGeometryHandler->count = 0;
+    for (i = 0; i < g_pGeometryHandler->max; i++) {
+        g_pGeometryHandler->entries[i].geometry = NULL;
+        g_pGeometryHandler->entries[i].refCount = 0;
+    }
+    return 1;
+}
+
 void Geometry_Destroy(void) {
     M2C_UNK Geometry_Init(M2C_UNK);
     extern s32 g_pGeometryHandler;
