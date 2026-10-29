@@ -27,6 +27,9 @@ s32 __EXIProbeStartTime[2] : 0x800030C0;
 s32 OSDisableInterrupts(void);
 s32 OSRestoreInterrupts(s32 level);
 s64 OSGetTime(void);
+u32 __OSMaskInterrupts(u32 mask);
+u32 __OSUnmaskInterrupts(u32 mask);
+void *__OSGetInterruptHandler(s16 interrupt);
 
 static inline u32 __EXIClearInterrupts(s32 chan, BOOL exi, BOOL tc, BOOL ext) {
     u32 cpr;
