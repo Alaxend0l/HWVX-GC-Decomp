@@ -108,6 +108,12 @@ typedef struct CarAInfo {
   CarASoundSet **soundSets; /* 0x11C */
 } CarAInfo;
 
+/* Per-wheel runtime state, 8 slots in CarA from 0x1B0. */
+typedef struct CarAWheelState {
+  f32 rotation;             /* 0x00 advanced by speed / radius every PreMove */
+  u8 pad04[0x2C];           /* 0x04 */
+} CarAWheelState;
+
 typedef struct CarA {
   Vector4 velocity;         /* 0x00 carVel = *(Vector4 *)car; read as u32 at 0x8 (scale) */
   Matrix4 worldMatrix;      /* 0x10 mtx = *(Matrix4 *)(car + 0x10);
