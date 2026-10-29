@@ -46,6 +46,21 @@ s32 TRKTargetAccessMemory(void *data, u32 start, u32 *length, s32 space, s32 rea
 s32 TRKAppendBuffer1_ui32(void *buffer, u32 data);
 s32 TRKAppendBuffer1_ui16(void *buffer, u16 data);
 
+s32 TRKTargetSingleStep(u32 count, s32 stepOver) {
+    if (stepOver != 0) {
+        return 0x703;
+    }
+    gTRKStepStatus_800DA0B4.type = 0;
+    gTRKStepStatus_800DA0B4.count = count;
+    gTRKStepStatus_800DA0B4.active = 1;
+    gTRKCPUState.stepMode |= 0x400;
+    if (gTRKStepStatus_800DA0B4.type == 0 || gTRKStepStatus_800DA0B4.type == 0x10) {
+        gTRKStepStatus_800DA0B4.count--;
+    }
+    gTRKState.field_98 = 0;
+    return 0;
+}
+
 s32 TRKTargetAddExceptionInfo(void *b) {
     s32 err;
     u32 inst;
