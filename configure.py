@@ -367,7 +367,7 @@ config.libs = [
             Object(NonMatching, "CarA_HW.c"),
             Object(NonMatching, "GameRules.c"),
             Object(NonMatching, "GameSpecificInterfaces.c"),
-            Object(NonMatching, "FlashHolder.c"),
+            Object(Matching, "FlashHolder.c"),
             Object(Matching, "BulletHoles.c"),
             Object(Matching, "Motion.c"),
             Object(NonMatching, "PPCArch.c", mw_version="GC/1.2.5n"),
