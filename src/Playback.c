@@ -2,14 +2,15 @@
 
 
 s32 File_Write(u32 id, s32 size, void *data);
-extern u32 g_fileIOHandle;
-extern s32 g_playbackCache[0x1000];
-extern u32 g_playbackPos;
 s32 File_Read(u32 id, s32 size, void *data);
 void File_Close(u32 id);
-extern s32 g_pauseState;
-extern u32 g_playbackFinish;
-extern s32 g_playbackStatus;
+
+s32 g_playbackCache[0x1000];
+u32 g_fileIOHandle = -1;
+u32 g_playbackPos;
+u32 g_playbackFinish;
+s32 g_playbackStatus;
+s32 g_pauseState;
 s32 Playback_GetElement(void) {
     s32 element;
     u32 bytesRead;
