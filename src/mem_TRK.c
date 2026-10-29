@@ -71,16 +71,13 @@ void TRK_fill_mem(void *dst, int val, u32 count)
     }
 }
 
-void *TRK_memcpy(void *dst, const void *src, u32 count)
+__declspec(section ".init") void *TRK_memcpy(void *dst, const void *src, u32 count)
 {
-    unsigned char *d;
-    const unsigned char *s;
-    u32 n;
+    const unsigned char *s = (const unsigned char *)src - 1;
+    unsigned char *d = (unsigned char *)dst - 1;
 
-    d = (unsigned char *)dst - 1;
-    s = (unsigned char *)src - 1;
-    n = count + 1;
-    while (--n) {
+    count++;
+    while (--count) {
         *++d = *++s;
     }
     return dst;
