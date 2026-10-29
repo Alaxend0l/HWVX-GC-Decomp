@@ -1,13 +1,13 @@
 #include "common.h"
 
-extern GeneralGameSettings g_generalGameSettings;
-
-
-extern HotWheelsGameData g_HotWheelsGameData;
-
-extern s8 g_DDRescueGameData[];
-
-extern CodeVariables g_codeVariables;
+CodeVariables g_codeVariables;
+GeneralGameSettings g_generalGameSettings;
+HotWheelsGameData g_HotWheelsGameData;
+u8 g_HWsavedGameData[0x8FC];
+s8 g_DDRescueGameData[0x1CDC];
+u8 g_DDRsavedGameData[0xE83C];
+char g_fileNames[8][41];
+char g_saveFileName[11];
 extern s8 g_bValidFileName[8];
 extern s8 g_bRefreshMC;
 extern s8 g_bRefreshMC_FileList;
