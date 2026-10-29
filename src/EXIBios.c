@@ -289,6 +289,25 @@ s32 EXIProbeEx(s32 chan) {
     }
 }
 
+BOOL EXIDetach(s32 chan) {
+    EXIControl *exi = &Ecb[chan];
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    if (!(exi->state & 8)) {
+        OSRestoreInterrupts(enabled);
+        return TRUE;
+    }
+    if ((exi->state & 0x10) && exi->dev == 0) {
+        OSRestoreInterrupts(enabled);
+        return FALSE;
+    }
+    exi->state &= ~8;
+    __OSMaskInterrupts(0x500000u >> (3 * chan));
+    OSRestoreInterrupts(enabled);
+    return TRUE;
+}
+
 u32 __OSMaskInterrupts(u32 mask);
 BOOL EXISelect(s32 chan, u32 dev, u32 freq) {
     EXIControl *exi = &Ecb[chan];
