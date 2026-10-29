@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 typedef struct OBoxHolder {
     Vector4 v[3];                 /* 0x00 */
     u8 pad30[0x9D - 0x30];        /* 0x30 */
