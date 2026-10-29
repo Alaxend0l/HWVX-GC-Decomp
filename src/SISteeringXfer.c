@@ -26,36 +26,36 @@ void OSSetCurrentContext(void *context);
 void __OSReschedule(void);
 
 static void TypeAndStatusCallback(s32 chan, u32 type) {
-    u8 *steering = (u8 *)&__SISteering[chan];
-    void *context;
-    void (*callback)(s32);
-    void (*cb)(s32, s32);
+    SISteeringControl *steering = &__SISteering[chan];
+    SISteeringResetCallback resetCallback;
+    SISteeringCallback callback;
     u8 exceptionContext[0x2C8];
+    void *context;
 
     if (__SIResetSteering != 0) {
         return;
     }
     if ((type & 0xFFFF0000) == 0x08000000) {
-        if (SITransfer(chan, steering, *(u32 *)(steering + 0xC), steering + 3, *(u32 *)(steering + 0x10),
+        if (SITransfer(chan, steering, steering->outputBytes, steering->input, steering->inputBytes,
                        __SISteeringHandler, 0) != 0) {
             return;
         }
-        *(s32 *)(steering + 0x18) = -2;
+        steering->ret = -2;
     } else {
-        *(s32 *)(steering + 0x18) = -1;
+        steering->ret = -1;
     }
-    callback = *(void (**)(s32))(steering + 0x24);
-    if (callback != NULL) {
-        *(void (**)(s32))(steering + 0x24) = NULL;
-        callback(chan);
+    if (steering->resetCallback != NULL) {
+        resetCallback = steering->resetCallback;
+        steering->resetCallback = NULL;
+        resetCallback(chan);
     }
-    if (*(void **)(steering + 0x14) != NULL) {
+    if (steering->callback != NULL) {
         context = OSGetCurrentContext();
         OSClearContext(exceptionContext);
         OSSetCurrentContext(exceptionContext);
-        cb = *(void (**)(s32, s32))(steering + 0x14);
-        *(void **)(steering + 0x14) = NULL;
-        cb(chan, *(s32 *)(steering + 0x18));
+        callback = steering->callback;
+        steering->callback = NULL;
+        callback(chan, steering->ret);
         OSClearContext(exceptionContext);
         OSSetCurrentContext(context);
         __OSReschedule();
