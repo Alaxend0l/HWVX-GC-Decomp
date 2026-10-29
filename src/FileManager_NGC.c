@@ -379,12 +379,8 @@ u32 FileManager_GetDeviceStatus(u32 device) {
     return device == 1;
 }
 
-static inline s32 MemCard_Mount(s32 chan) {
-    return CARDMount(chan, CardWorkArea, 0);
-}
-
 s32 MemCard_Open__FUlPCScUlPl(u32 device, const char *fileName, u32 flags, s32 *unused) {
-    s32 chan;
+    u32 chan;
     CARDFileInfo *fileInfo;
     s32 *blockSize;
 
@@ -392,7 +388,7 @@ s32 MemCard_Open__FUlPCScUlPl(u32 device, const char *fileName, u32 flags, s32 *
     if (FileManager_GetDeviceStatus(device) == 3) {
         return 0;
     }
-    m_memcardstatus_803C7970[chan] = CARDMount(chan, &CardWorkArea[0], NULL);
+    m_memcardstatus_803C7970[chan] = CARDMount(chan, (void *)((u32)CardWorkArea), 0);
     OSReport("CARDMount\n");
     if (m_memcardstatus_803C7970[chan] < 0) {
         OSReport("failed. (%d)\n", m_memcardstatus_803C7970[chan]);
