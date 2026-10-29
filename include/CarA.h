@@ -71,6 +71,7 @@ typedef struct CarAEngine {
   u8 pad48[0x1C];           /* 0x48 */
   f32 unk64;                /* 0x64 */
   f32 unk68;                /* 0x68 */
+  f32 unk6C;                /* 0x6C */
 } CarAEngine;
 
 typedef struct CarACollider {
