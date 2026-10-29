@@ -224,6 +224,40 @@ void AI_Creature_PopulateVolumes(void) {
     } while (v != gs_currentVolume);
 }
 
+static inline void AI_Creature_UpdateNearestCars(void) {
+    extern NearestCar gs_aNearestCars[8];
+    void PSVECScale(void *src, void *dst, f32 scale);
+    void PSVECAdd(void *a, void *b, void *out);
+    f32 PSVECSquareMag(void *v);
+    s32 ThingManager_GetActiveCars();
+    static u32 s_currentCar;
+    u8 *cars[8];
+    u32 count;
+    u32 i;
+
+    count = ThingManager_GetActiveCars(cars, 9);
+    if (count != 0) {
+        for (i = 0; i < count; i++) {
+            gs_aNearestCars[i].car = cars[i];
+            PSVECScale(cars[i], &gs_aNearestCars[i].pos, 0.18f);
+            PSVECAdd(cars[i] + 0x40, &gs_aNearestCars[i].pos, &gs_aNearestCars[i].pos);
+        }
+        if (i < 8) {
+            gs_aNearestCars[i].car = NULL;
+        }
+        if (s_currentCar >= count) {
+            s_currentCar = 0;
+        }
+        gs_aNearestCars[s_currentCar].speed = PSVECSquareMag(gs_aNearestCars[s_currentCar].car);
+        if (gs_aNearestCars[s_currentCar].speed > 1.0f) {
+            gs_aNearestCars[s_currentCar].range = 400.0f * (1.0f - gs_aNearestCars[s_currentCar].speed / 100000.0f);
+        } else {
+            gs_aNearestCars[s_currentCar].range = 400.0f;
+        }
+        s_currentCar++;
+    }
+}
+
 static inline void AI_Creature_FindNearestCar(u8 *creature) {
     extern NearestCar gs_aNearestCars[8];
     f32 PSVECSquareDistance(void *a, void *b);
@@ -268,11 +302,8 @@ void AI_Creature_AsyncProcess(void) {
     s32 AI_Creature_Deactivate(u8 *creature);
     s8 AI_Creature_Spawn(u8 *creature, u8 *spawner, u32 index);
     void AI_Creature_PopulateVolumes(void);
-    int rand(void);
     static u32 gs_creatureTile;
     static u32 s_currentCar;
-    f32 dist;
-    f32 best;
     u8 *creature;
     u8 *tile;
     u8 *cam;
@@ -340,24 +371,7 @@ update:
     for (n = 0; n < 10; n++) {
         if (gs_pCurrentAICreature[0xCD] != 0 && *(u32 *)(gs_pCurrentAICreature + 0xF8) == 0 &&
             !(s8)AI_Creature_Deactivate(gs_pCurrentAICreature)) {
-            creature = gs_pCurrentAICreature;
-            best = *(f32 *)(*(u8 **)(creature + 0xD0) + 0x18);
-            for (j = 0; j < 8; j++) {
-                if (gs_aNearestCars[j].car == NULL) {
-                    break;
-                }
-                dist = PSVECSquareDistance(*(u8 **)(creature + 0x2C) + 0x40, &gs_aNearestCars[j].pos);
-                if (best > dist) {
-                    if (*(NearestCar **)(creature + 0xE4) != &gs_aNearestCars[j]) {
-                        *(NearestCar **)(creature + 0xE4) = &gs_aNearestCars[j];
-                        *(f32 *)(creature + 0xF0) = (f32)(rand() % 501 + 750) / 1000.0f;
-                        creature[0xEC] = 0;
-                        *(s32 *)(creature + 0xC8) = 1;
-                    }
-                    *(f32 *)(creature + 0xE8) = best;
-                    best = dist;
-                }
-            }
+            AI_Creature_FindNearestCar(gs_pCurrentAICreature);
         }
         gs_pCurrentAICreature = *(u8 **)(gs_pCurrentAICreature + 0xD4);
     }
