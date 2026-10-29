@@ -105,6 +105,51 @@ extern GDL *g_pGDL;
 extern RenderStats g_renderStats;
 extern s32 g_debugTriCount;
 
+void Render_Create(void) {
+    m_fogMode = 0;
+    m_fillMode = 0;
+    m_currentView = 0;
+    GetRenderWindow()->fov = 90.0f;
+    memset(GetRenderWindow()->unkC0, 0, 0x40);
+    g_state.unk93 = 0;
+    memset(g_identity, 0, 0x40);
+    g_identity[3][3] = 1.0f;
+    g_identity[2][2] = 1.0f;
+    g_identity[1][1] = 1.0f;
+    g_identity[0][0] = 1.0f;
+    memcpy(GetRenderWindow()->unk0, g_identity, 0x40);
+    memcpy(GetRenderWindow()->unk40, g_identity, 0x40);
+    memcpy(GetRenderWindow()->unk80, g_identity, 0x40);
+    memcpy(GetRenderWindow()->unk100, g_identity, 0x40);
+    m_blendMode = 1;
+    g_textcolor.a = 0xFF;
+    g_textcolor.b = 0xFF;
+    g_textcolor.g = 0xFF;
+    g_textcolor.r = 0xFF;
+    m_clearColor.b = 0;
+    m_clearColor.g = 0;
+    m_clearColor.r = 0;
+    m_clearColor.a = 0;
+    g_state.ambientColor.r = 0x30;
+    g_state.ambientColor.g = 0x30;
+    g_state.ambientColor.b = 0x30;
+    g_state.ambientColor.a = 0xFF;
+    g_state.lightColor.r = 0xC8;
+    g_state.lightColor.g = 0xC8;
+    g_state.lightColor.b = 0xC8;
+    g_state.lightColor.a = 0xFF;
+    g_state.lightDir[0] = 0.5f;
+    g_state.lightDir[1] = 0.5f;
+    g_state.lightDir[2] = 0.0f;
+    m_curLightState = -1;
+    m_curTexture = 0;
+    m_zmode = 3;
+    m_zstate = 1;
+    m_zwrite = 1;
+    FontData = OSAllocFromHeap(__OSCurrHeap, 0x20120);
+    OSInitFont(FontData);
+}
+
 void Render_FlipBuffers(void) {
     PrintDVDMessage();
     GXSetColorUpdate(1);
