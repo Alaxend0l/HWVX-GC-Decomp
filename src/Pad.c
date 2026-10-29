@@ -30,8 +30,11 @@ void *MakeStatus = NULL;
 f32 CmdReadOrigin = 8.0f;
 f32 CmdCalibrate = 32.0f;
 
-u8 Origin[4][12];
-u32 CmdProbeDevice[4];
+static u32 Type[4];
+static u8 Origin[4][12];
+static u32 CmdProbeDevice[4];
+
+extern u32 __PADFixBits;
 
 void SPEC0_MakeStatus(s32, void *, u32 *);
 void SPEC1_MakeStatus(s32, void *, u32 *);
