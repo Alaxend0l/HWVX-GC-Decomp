@@ -35,11 +35,18 @@ typedef struct THPTextureSet {
     s32 frameNumber;
 } THPTextureSet;
 
-extern s32 First;
-extern u8 VideoDecodeThread[];
-extern u8 FreeTextureSetQueue[];
-extern u8 DecodedTextureSetQueue[];
-extern s32 VideoDecodeThreadCreated;
+static u8 VideoDecodeThread[0x310];
+u8 VideoDecodeThreadStack[0x1000];
+u8 FreeTextureSetQueue[0x20];
+void *FreeTextureSetMessage[3];
+u8 DecodedTextureSetQueue[0x20];
+void *DecodedTextureSetMessage[3];
+s32 VideoDecodeThreadCreated;
+s32 First;
+s32 OSCreateThread(void *thread, void *func, void *param, void *stack, u32 stackSize, s32 priority, u16 attr);
+void OSInitMessageQueue(void *queue, void *msgArray, s32 msgCount);
+void *VideoDecoder(void *param);
+void VideoDecoderForOnMemory(void *bufAddr);
 
 void VideoDecodeThreadStart(void) {
     if (VideoDecodeThreadCreated) {
