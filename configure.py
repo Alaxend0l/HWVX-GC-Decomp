@@ -525,7 +525,7 @@ config.libs = [
             Object(Matching, "GXDisplayList.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "GXTransform.c"),
             Object(NonMatching, "GXPerf.c"),
-            Object(NonMatching, "SIBios.c"),
+            Object(NonMatching, "SIBios.c", mw_version="GC/1.2.5n"),
             Object(Matching, "SISamplingRate.c", mw_version="GC/1.2.5n"),
             Object(Matching, "SISteering.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "SISteeringXfer.c", mw_version="GC/1.2.5n"),
