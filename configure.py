@@ -460,7 +460,7 @@ config.libs = [
             Object(NonMatching, "OSSync.c"),
             Object(NonMatching, "OSThread.c"),
             Object(NonMatching, "OSTime.c"),
-            Object(NonMatching, "time.dolphin.c", mw_version="GC/1.2.5n"),
+            Object(Matching, "time.dolphin.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "__start.c"),
             Object(NonMatching, "__ppc_eabi_init.cpp"),
             Object(NonMatching, "db.c"),
