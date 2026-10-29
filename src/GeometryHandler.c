@@ -75,3 +75,84 @@ void Geometry_FreeGeometry(void *geometry) {
     }
 }
 
+void *Geometry_Get(char *name) {
+    typedef struct {
+        u8 pad0[0x16];
+        u16 texIndex;
+        u16 texHandle;
+        u8 pad1a[6];
+    } GeoMaterial;
+    typedef struct {
+        u16 unk0;
+        u16 numMaterials;
+        u32 unk4;
+        GeoMaterial *materials;
+        u32 unkC;
+        u32 unk10;
+        u8 *textures;
+    } GeoMesh;
+    typedef struct {
+        u16 unk0;
+        u16 numMeshes;
+        u32 unk4;
+        GeoMesh *meshes;
+    } Geometry;
+    extern GeometryHandler *g_pGeometryHandler;
+    char *strcpy(char *dst, const char *src);
+    char *strcat(char *dst, const char *src);
+    char *strrchr(const char *s, int c);
+    u32 strlen(const char *s);
+    int stricmp(const char *a, const char *b);
+    void *LoadDataChunkFile(char *name);
+    u16 Gfx_LoadTexture(void *tex);
+    char path[256];
+    char *ext;
+    Geometry *geo;
+    u32 i;
+    u32 j;
+    u32 slot = -1;
+    GeoMesh *mesh;
+
+    if (name == NULL) {
+        return NULL;
+    }
+    strcpy(path, name);
+    ext = strrchr(path, '.');
+    if (ext != NULL && ext[1] == 'g') {
+        *ext = 0;
+    } else {
+        ext = path + strlen(path);
+    }
+    for (j = 0; j < g_pGeometryHandler->max; j++) {
+        if (g_pGeometryHandler->entries[j].geometry != NULL &&
+            stricmp(g_pGeometryHandler->entries[j].name, path) == 0) {
+            g_pGeometryHandler->entries[j].refCount++;
+            return g_pGeometryHandler->entries[j].geometry;
+        }
+        if (g_pGeometryHandler->entries[j].geometry == NULL && slot == -1) {
+            slot = j;
+        }
+    }
+    if (slot == -1) {
+        return NULL;
+    }
+    strcpy(g_pGeometryHandler->entries[slot].name, path);
+    strcat(path, ".gn");
+    geo = LoadDataChunkFile(path);
+    if (geo == NULL) {
+        return NULL;
+    }
+    g_pGeometryHandler->entries[slot].refCount++;
+    g_pGeometryHandler->entries[slot].geometry = geo;
+    g_pGeometryHandler->count++;
+    for (i = 0; i < geo->numMeshes; i++) {
+        mesh = &geo->meshes[i];
+        for (j = 0; j < mesh->numMaterials; j++) {
+            if (mesh->materials[j].texIndex != 0xFFFF) {
+                mesh->materials[j].texHandle = Gfx_LoadTexture(mesh->textures + mesh->materials[j].texIndex);
+            }
+        }
+    }
+    return geo;
+}
+
