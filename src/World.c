@@ -234,6 +234,47 @@ void World_NextSweep(void) {
     }
 }
 
+void SubMatrixToQuaternion(void *m, Vector4 *q);
+void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+void World_InitTeleporters(void) {
+    typedef struct Teleporter {
+        Matrix4 mtx;
+        u8 unk40[0x8];
+        u32 model;
+        u8 unk4C[0x14];
+        void *thing;
+        u8 unk64[0xC];
+    } Teleporter;
+    typedef struct TeleporterWorld {
+        u8 unk0[0x30];
+        u32 numTeleporters;
+        Teleporter *teleporters;
+    } TeleporterWorld;
+    struct {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        u32 model;
+        s32 unk34;
+        f32 unk38;
+    } params __attribute__((aligned(16)));
+    u32 i;
+    Teleporter *teleporter;
+
+    for (i = 0; i < ((TeleporterWorld *)g_worldData.world)->numTeleporters; i++) {
+        teleporter = &((TeleporterWorld *)g_worldData.world)->teleporters[i];
+        if (teleporter->model != 0) {
+            params.model = teleporter->model;
+            params.unk38 = 0.0f;
+            params.pos = teleporter->mtx.v[3];
+            params.vel.x = params.vel.y = params.vel.z = 0.0f;
+            SubMatrixToQuaternion(teleporter, &params.quat);
+            params.unk34 = 0;
+            teleporter->thing = ThingManager_DARYL_CreateThing(2, &params);
+        }
+    }
+}
+
 s32 ActionItemChangeMode(u32 *action) {
     u32 i;
     u8 *item;
