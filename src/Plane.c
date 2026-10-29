@@ -1,5 +1,21 @@
 #include "common.h"
 
+f32 Sqrt(f32 x);
+
+static inline void Normalize_Plane(Vector4 *plane) {
+    f32 len;
+    f32 inv;
+
+    len = Sqrt(plane->z * plane->z + (plane->x * plane->x + plane->y * plane->y));
+    if (len != 1.0f && len != 0.0f) {
+        inv = 1.0f / len;
+        plane->x *= inv;
+        plane->y *= inv;
+        plane->z *= inv;
+        plane->w *= inv;
+    }
+}
+
 void Create_Plane3(Vector4 *plane, Vector4 *normal, Vector4 *point) {
     plane->x = normal->x;
     plane->y = normal->y;
