@@ -228,7 +228,7 @@ void *Gfx_GetWorldMatrixState(u32 index) {
         return &g_identity;
     }
     if (index == 0xFFFF) {
-        return (u8 *)GetRenderWindow() + 0x140;
+        return &GetRenderWindow()->viewMatrix;
     }
     return g_pGDL->matrices[index];
 }
