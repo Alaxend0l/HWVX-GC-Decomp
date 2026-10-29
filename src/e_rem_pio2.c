@@ -5,7 +5,7 @@
 
 int __kernel_rem_pio2(double *x, double *y, int e0, int nx, int prec, const int *ipio2);
 
-const int two_over_pi[] = {
+static const int two_over_pi[] = {
     0xA2F983, 0x6E4E44, 0x1529FC, 0x2757D1, 0xF534DD, 0xC0DB62,
     0x95993C, 0x439041, 0xFE5163, 0xABDEBB, 0xC561B7, 0x246E3A,
     0x424DD2, 0xE00649, 0x2EEA09, 0xD1921C, 0xFE1DEB, 0x1CB129,
