@@ -47,6 +47,62 @@ extern GXDataSUTex *gx;
 void __SetSURegs(u32 tmap, u32 tcoord);
 
 
+void __GetImageTileCount(s32 fmt, u16 wd, u16 ht, u32 *rowTiles, u32 *colTiles, u32 *cmpTiles) {
+    u32 texRowShift;
+    u32 texColShift;
+
+    switch (fmt) {
+    case 0x0:
+    case 0x8:
+    case 0xE:
+    case 0x20:
+    case 0x30:
+        texRowShift = 3;
+        texColShift = 3;
+        break;
+    case 0x1:
+    case 0x2:
+    case 0x9:
+    case 0x11:
+    case 0x22:
+    case 0x27:
+    case 0x28:
+    case 0x29:
+    case 0x2A:
+    case 0x39:
+    case 0x3A:
+        texRowShift = 3;
+        texColShift = 2;
+        break;
+    case 0x3:
+    case 0x4:
+    case 0x5:
+    case 0x6:
+    case 0xA:
+    case 0x13:
+    case 0x16:
+    case 0x23:
+    case 0x2B:
+    case 0x2C:
+    case 0x3C:
+        texRowShift = 2;
+        texColShift = 2;
+        break;
+    default:
+        texRowShift = texColShift = 0;
+        break;
+    }
+    if (wd == 0) {
+        wd = 1;
+    }
+    if (ht == 0) {
+        ht = 1;
+    }
+    *rowTiles = (wd + (1 << texRowShift) - 1) >> texRowShift;
+    *colTiles = (ht + (1 << texColShift) - 1) >> texColShift;
+    *cmpTiles = (fmt == 0x6 || fmt == 0x16) ? 2 : 1;
+}
+
 void *GXGetTexObjData(GXTexObj *to) {
     __GXTexObjInt *t = (__GXTexObjInt *)to;
 
