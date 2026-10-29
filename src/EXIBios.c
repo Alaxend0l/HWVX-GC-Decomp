@@ -70,6 +70,46 @@ static inline void CompleteTransfer(s32 chan) {
 
 #pragma use_lmw_stmw on
 #pragma use_lmw_stmw on
+#pragma use_lmw_stmw on
+u32 EXIClearInterrupts(s32 chan, BOOL exi, BOOL tc, BOOL ext);
+u32 __OSUnmaskInterrupts(u32 mask);
+#pragma use_lmw_stmw on
+BOOL EXIImm(s32 chan, void *buf, s32 len, u32 type, EXICallback callback) {
+    EXIControl *exi = &Ecb[chan];
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    if ((exi->state & 3) || !(exi->state & 4)) {
+        OSRestoreInterrupts(enabled);
+        return FALSE;
+    }
+
+    exi->tcCallback = callback;
+    if (exi->tcCallback) {
+        EXIClearInterrupts(chan, FALSE, TRUE, FALSE);
+        __OSUnmaskInterrupts(0x200000u >> (3 * chan));
+    }
+
+    exi->state |= 2;
+
+    if (type != 0) {
+        u32 data;
+        int i;
+
+        data = 0;
+        for (i = 0; i < len; i++) {
+            data |= ((u8 *)buf)[i] << ((3 - i) * 8);
+        }
+        __EXIRegs[chan * 5 + 4] = data;
+    }
+
+    exi->immBuf = buf;
+    exi->immLen = (type != 1) ? len : 0;
+    __EXIRegs[chan * 5 + 3] = (type << 2) | 1 | ((len - 1) << 4);
+
+    OSRestoreInterrupts(enabled);
+    return TRUE;
+}
 BOOL EXISync(s32 chan) {
     EXIControl *exi = &Ecb[chan];
     BOOL rc = FALSE;
