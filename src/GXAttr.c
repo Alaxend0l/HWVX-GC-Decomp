@@ -168,6 +168,32 @@ void GXGetVtxAttrFmtv(s32 fmt, GXVtxAttrFmtList *list) {
     list->attr = 0xFF;
 }
 
+void GXSetArray(s32 attr, void *base_ptr, u8 stride) {
+    s32 cpAttr;
+    s32 idx;
+    u32 phyAddr;
+
+    if (attr == 0x19) {
+        attr = 10;
+    }
+    cpAttr = attr - 9;
+    phyAddr = (u32)base_ptr & 0x3FFFFFFF;
+    GXWGFifo.u8 = 8;
+    GXWGFifo.u8 = cpAttr | 0xA0;
+    GXWGFifo.u32 = phyAddr;
+    idx = cpAttr - 12;
+    if (idx >= 0 && idx < 4) {
+        gx->indexBase[idx] = phyAddr;
+    }
+    GXWGFifo.u8 = 8;
+    GXWGFifo.u8 = cpAttr | 0xB0;
+    GXWGFifo.u32 = stride;
+    idx = cpAttr - 12;
+    if (idx >= 0 && idx < 4) {
+        gx->indexStride[idx] = stride;
+    }
+}
+
 void GXInvalidateVtxCache(void) {
     *(volatile u8 *)0xCC008000 = 0x48;
 }
