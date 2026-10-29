@@ -34,3 +34,35 @@ void *malloc(u32 size) {
     }
     return allocate_from_var_pools(pool, size);
 }
+
+void *soft_allocate_from_var_pools(Block **pool_obj, u32 size, u32 *max_size) {
+    Block *bp;
+    void *ptr;
+
+    size = (size + 8 + 7) & ~7;
+    if (size < 0x50) {
+        size = 0x50;
+    }
+    *max_size = 0;
+    bp = *pool_obj;
+    if (bp == NULL) {
+        return NULL;
+    }
+    do {
+        if (size <= bp->max_size_) {
+            ptr = Block_subBlock(bp, size);
+            if (ptr != NULL) {
+                *pool_obj = bp;
+                goto found;
+            }
+        }
+        if (bp->max_size_ > 8 && *max_size < bp->max_size_ - 8) {
+            *max_size = bp->max_size_ - 8;
+        }
+        bp = bp->next_;
+    } while (bp != *pool_obj);
+    return NULL;
+found:
+    return (u8 *)ptr + 8;
+}
+
