@@ -89,6 +89,18 @@ void MatrixToMtxTranspose(f32 dst[3][4], f32 src[4][4]) {
     dst[2][3] = src[3][2];
 }
 
+s32 isInWindow(f32 *pos) {
+    if (GetRenderWindow()->unk2B0 > pos[0] || GetRenderWindow()->unk2B4 < pos[0]) {
+        return 0;
+    }
+    if (GetRenderWindow()->unk2B8 > pos[1] || GetRenderWindow()->unk2BC < pos[1]) {
+        return 0;
+    }
+    pos[0] -= GetRenderWindow()->unk2B0;
+    pos[1] -= GetRenderWindow()->unk2B8;
+    return 1;
+}
+
 void Render_StateSetScissor(void);
 void GXGetViewportv(f32 *vp);
 void GXGetProjectionv(f32 *pm);
