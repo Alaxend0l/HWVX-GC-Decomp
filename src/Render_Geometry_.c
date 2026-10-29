@@ -339,7 +339,7 @@ void Render_DrawSpheres(void) {
     Render_StateCullMode(cullMode);
 }
 
-void SetVertexBuffer(u32 *vb) {
+void SetVertexBuffer(u32 *vb, u16 flags, u16 unk) {
     u8 *data;
 
     if (vb != m_vertexBuffer) {
