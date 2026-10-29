@@ -16,6 +16,14 @@ static inline void Normalize_Plane(Vector4 *plane) {
     }
 }
 
+void Create_Plane(Vector4 *plane, Vector4 *normal, Vector4 *point) {
+    plane->x = normal->x;
+    plane->y = normal->y;
+    plane->z = normal->z;
+    plane->w = -1.0f * (normal->z * point->z + (normal->x * point->x + normal->y * point->y));
+    Normalize_Plane(plane);
+}
+
 void Create_Plane3(Vector4 *plane, Vector4 *normal, Vector4 *point) {
     plane->x = normal->x;
     plane->y = normal->y;
