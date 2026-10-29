@@ -30,25 +30,6 @@ s32 __DVDPushWaitingQueue(s32 prio, DVDQueue *block)
     return 1;
 }
 
-static DVDQueue *PopWaitingQueuePrio(s32 prio)
-{
-    s32 OSDisableInterrupts(void);
-    s32 OSRestoreInterrupts(s32);
-    DVDQueue *tmp;
-    s32 enabled;
-    DVDQueue *q;
-
-    enabled = OSDisableInterrupts();
-    q = &WaitingQueue[prio];
-    tmp = q->next;
-    q->next = tmp->next;
-    tmp->next->prev = q;
-    OSRestoreInterrupts(enabled);
-    tmp->next = NULL;
-    tmp->prev = NULL;
-    return tmp;
-}
-
 s32 __DVDCheckWaitingQueue(void)
 {
     s32 OSDisableInterrupts(void);
