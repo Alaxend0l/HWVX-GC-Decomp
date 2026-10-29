@@ -25,6 +25,47 @@ static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
     return 0;
 }
 
+#pragma use_lmw_stmw on
+s32 HandlePositionFileSupportRequest(u32 fileHandle, u32 *position, u8 mode, u8 *ioResult) {
+    s32 error;
+    s32 replyBufferId;
+    TRKBuffer *replyBuffer;
+    s32 bufferId;
+    TRKBuffer *buffer;
+
+    error = TRKGetFreeBuffer(&bufferId, &buffer);
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui8(buffer, 0xD4);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui32(buffer, fileHandle);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui32(buffer, *position);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui8(buffer, mode);
+    }
+    if (error == 0) {
+        *ioResult = 0;
+        error = TRKRequestSend(buffer, &replyBufferId, 3, 3, 0);
+        if (error == 0) {
+            replyBuffer = TRKGetBuffer(replyBufferId);
+            TRKSetBufferPosition(replyBuffer, 2);
+        }
+        if (error == 0) {
+            error = TRKReadBuffer1_ui8(replyBuffer, ioResult);
+        }
+        if (error == 0) {
+            error = TRKReadBuffer1_ui32(replyBuffer, position);
+        } else {
+            *position = -1;
+        }
+        TRKReleaseBuffer(replyBufferId);
+    }
+    TRKReleaseBuffer(bufferId);
+    return error;
+}
 s32 HandleCloseFileSupportRequest(u32 fileHandle, u8 *ioResult) {
     s32 error;
     s32 replyBufferId;
