@@ -179,35 +179,3 @@ s32 __count_trailing_zerol(u32 x) {
     }
     return result;
 }
-static inline int __fpclassifyd(double x) {
-    switch ((*(int *)&x) & 0x7FF00000) {
-    case 0x7FF00000:
-        if (((*(int *)&x) & 0x000FFFFF) || (*((int *)&x + 1) & 0xFFFFFFFF)) {
-            return 1;
-        } else {
-            return 2;
-        }
-    case 0:
-        if (((*(int *)&x) & 0x000FFFFF) || (*((int *)&x + 1) & 0xFFFFFFFF)) {
-            return 5;
-        } else {
-            return 3;
-        }
-    }
-    return 4;
-}
-
-static inline s32 __count_trailing_zero(double x) {
-    u32 *l = (u32 *)&x;
-
-    if (l[1] != 0) {
-        return __count_trailing_zerol(l[1]);
-    }
-    return 32 + __count_trailing_zerol(l[0] | 0x00100000);
-}
-
-double frexp(double x, int *eptr);
-double ldexp(double x, int exp);
-double modf(double x, double *iptr);
-void __two_exp(decimal *result, short exp);
-void __timesdec(decimal *result, const decimal *x, const decimal *y);
