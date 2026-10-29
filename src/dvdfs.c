@@ -28,6 +28,8 @@ struct DVDFileInfo {
     DVDCallback callback;
 };
 
+extern u32 *FstStart;
+extern u32 currentDirectory;
 
 #pragma push
 #pragma peephole on
