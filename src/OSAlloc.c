@@ -32,6 +32,43 @@ static inline Cell *DLExtract(Cell *list, Cell *cell)
     return list;
 }
 
+Cell *DLInsert(Cell *list, Cell *cell) {
+    Cell *prev;
+    Cell *next;
+
+    for (next = list, prev = NULL; next; prev = next, next = next->next) {
+        if (cell <= next) {
+            break;
+        }
+    }
+    cell->next = next;
+    cell->prev = prev;
+    if (next) {
+        next->prev = cell;
+        if ((u8 *)cell + cell->size == (u8 *)next) {
+            cell->size += next->size;
+            next = next->next;
+            cell->next = next;
+            if (next) {
+                next->prev = cell;
+            }
+        }
+    }
+    if (prev) {
+        prev->next = cell;
+        if ((u8 *)prev + prev->size == (u8 *)cell) {
+            prev->size += cell->size;
+            prev->next = next;
+            if (next) {
+                next->prev = prev;
+            }
+        }
+        return list;
+    } else {
+        return cell;
+    }
+}
+
 void OSFreeToHeap(s32 heap, void *ptr)
 {
     HeapDesc *hd;
