@@ -310,6 +310,50 @@ s32 TRKTargetVersions(u8 *targetVersions)
     return 0;
 }
 
+extern u8 gTRKRestoreFlags[9];
+s32 TRKTargetAccessExtended1(u32 firstRegister, u32 lastRegister, void *b, u32 *registersLengthPtr, s32 read)
+{
+    s32 TRKAppendBuffer_ui32(void *buffer, u32 *data, s32 count);
+    s32 TRKReadBuffer_ui32(void *buffer, u32 *data, s32 count);
+    s32 error;
+    s32 count;
+    u32 *data;
+    TRKExceptionStatus savedException;
+
+    if (lastRegister > 0x60) {
+        return 0x701;
+    }
+
+    savedException = gTRKExceptionStatus_800DA0A4;
+    gTRKExceptionStatus_800DA0A4.exceptionDetected = 0;
+    *registersLengthPtr = 0;
+
+    if (firstRegister <= lastRegister) {
+        data = (u32 *)&gTRKCPUState.extended1 + firstRegister;
+        count = (lastRegister - firstRegister) + 1;
+        *registersLengthPtr += count * sizeof(u32);
+
+        if (read) {
+            error = TRKAppendBuffer_ui32(b, data, count);
+        } else {
+            if (data <= &gTRKCPUState.extended1[17] && data + count - 1 >= &gTRKCPUState.extended1[16]) {
+                gTRKRestoreFlags[0] = 1;
+            }
+            if (data <= &gTRKCPUState.field_278 && data + count - 1 >= &gTRKCPUState.field_278) {
+                gTRKRestoreFlags[1] = 1;
+            }
+            error = TRKReadBuffer_ui32(b, data, count);
+        }
+    }
+
+    if (gTRKExceptionStatus_800DA0A4.exceptionDetected) {
+        *registersLengthPtr = 0;
+        error = 0x702;
+    }
+    gTRKExceptionStatus_800DA0A4 = savedException;
+    return error;
+}
+
 #pragma use_lmw_stmw on
 s32 TRKTargetAccessFP(u32 firstRegister, u32 lastRegister, void *b, u32 *registersLengthPtr, s32 read)
 {
