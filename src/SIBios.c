@@ -159,6 +159,19 @@ u32 SIDisablePolling(u32 poll) {
     return poll;
 }
 
+BOOL SIGetResponseRaw(s32 chan) {
+    u32 sr;
+
+    sr = SIGetStatus(chan);
+    if (sr & 0x20) {
+        InputBuffer[chan][0] = __SIRegs[3 * chan + 1];
+        InputBuffer[chan][1] = __SIRegs[3 * chan + 2];
+        InputBufferValid[chan] = TRUE;
+        return TRUE;
+    }
+    return FALSE;
+}
+
 static void AlarmHandler(OSAlarm *alarm, void *context) {
     s32 chan;
     SIPacket *packet;
