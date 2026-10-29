@@ -95,6 +95,14 @@ void SetSpeakerMode(s8 mode) {
     g_speakers = mode;
 }
 
+void SetReverb_();
+void SetReverb(s32 a, s32 b) {
+    s32 delay = 40;
+    s32 feedback = 0x666;
+
+    SetReverb_(a, b, feedback, delay);
+}
+
 void ProcessVoice(void)
 {
     ProcessVoice_();
