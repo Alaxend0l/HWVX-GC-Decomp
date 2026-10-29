@@ -117,6 +117,57 @@ void *VideoDecoder(void *param) {
     }
 }
 
+void VideoDecoderForOnMemory(void *bufAddr) {
+    THPReadBuffer readBuffer;
+    s32 tmp;
+    s32 size;
+    s32 readFrame;
+    s32 old;
+
+    size = ActivePlayer.initReadSize;
+    readBuffer.ptr = bufAddr;
+    readFrame = 0;
+    while (1) {
+        if (ActivePlayer.audioExist) {
+            while (ActivePlayer.videoDecodeCount < 0) {
+                old = OSDisableInterrupts();
+                ActivePlayer.videoDecodeCount++;
+                OSRestoreInterrupts(old);
+                tmp = (readFrame + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+                if (tmp == ActivePlayer.numFrames - 1) {
+                    if (ActivePlayer.playFlag & 1) {
+                        size = *(s32 *)readBuffer.ptr;
+                        readBuffer.ptr = ActivePlayer.movieData;
+                    } else {
+                        break;
+                    }
+                } else {
+                    tmp = *(s32 *)readBuffer.ptr;
+                    readBuffer.ptr += size;
+                    size = tmp;
+                }
+                readFrame++;
+            }
+        }
+        readBuffer.frameNumber = readFrame;
+        VideoDecode(&readBuffer);
+        tmp = (readFrame + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+        if (tmp == ActivePlayer.numFrames - 1) {
+            if (ActivePlayer.playFlag & 1) {
+                size = *(s32 *)readBuffer.ptr;
+                readBuffer.ptr = ActivePlayer.movieData;
+            } else {
+                OSSuspendThread(VideoDecodeThread);
+            }
+        } else {
+            tmp = *(s32 *)readBuffer.ptr;
+            readBuffer.ptr += size;
+            size = tmp;
+        }
+        readFrame++;
+    }
+}
+
 void *PopFreeTextureSet(void);
 void PushDecodedTextureSet(void *arg0);
 void PrepareReady(s32 arg0);
