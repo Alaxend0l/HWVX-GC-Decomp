@@ -120,19 +120,29 @@ s32 VolumeManager_GetVolumeTypeByIndexByCell(s32 type, s32 index, s32 cell) {
     return cells[cell].types[type].volumes[index];
 }
 
-s8 IsPointWithinVolume(Vector4 *point, u8 *volume, f32 *distSq) {
+s8 IsPointWithinVolume(Vector4 *point, void *volume, f32 *distSq) {
+    typedef struct Shape {
+        u8 pad0[0x8];
+        s32 type;
+        u8 padC[0x10 - 0xC];
+        Vector4 center;
+        f32 radius;
+        f32 radiusSq;
+        void *bsp;
+    } Shape;
     s8 BSPN0_CollideWithVector(void *bsp, Vector4 *point);
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
     f32 PSVECSquareMag(Vector4 *v);
-    Vector4 diff;
+    Shape *shape = volume;
+    Vector4 diff __attribute__((aligned(16)));
 
-    switch (M2C_FIELD(volume, s32 *, 0x8)) {
+    switch (shape->type) {
     case 0:
-        return BSPN0_CollideWithVector(M2C_FIELD(volume, void **, 0x28), point);
+        return BSPN0_CollideWithVector(shape->bsp, point);
     case 1:
-        PSVECSubtract(point, (Vector4 *)(volume + 0x10), &diff);
+        PSVECSubtract(point, &shape->center, &diff);
         *distSq = PSVECSquareMag(&diff);
-        return *distSq < M2C_FIELD(volume, f32 *, 0x24);
+        return *distSq < shape->radiusSq;
     }
     return 0;
 }
