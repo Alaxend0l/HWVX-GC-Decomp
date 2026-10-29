@@ -26,6 +26,17 @@ typedef union PPCWGPipe {
 volatile PPCWGPipe GXWGFifo : 0xCC008000;
 
 
+void __GXXfVtxSpecs(void);
+void __GXSetVCD(void) {
+    GXWGFifo.u8 = 8;
+    GXWGFifo.u8 = 0x50;
+    GXWGFifo.u32 = gx->vcdLo;
+    GXWGFifo.u8 = 8;
+    GXWGFifo.u8 = 0x60;
+    GXWGFifo.u32 = gx->vcdHi;
+    __GXXfVtxSpecs();
+}
+
 void GXGetVtxDesc(s32 attr, s32 *type) {
     s32 cpType;
 
