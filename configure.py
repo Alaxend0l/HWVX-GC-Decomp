@@ -312,7 +312,7 @@ config.libs = [
             Object(NonMatching, "CoronaHolder.c"),
             Object(NonMatching, "Creature.c"),
             Object(NonMatching, "DataGamePackLoad.c"),
-            Object(NonMatching, "Debris.c"),
+            Object(Matching, "Debris.c"),
             Object(NonMatching, "Destructible.c"),
             Object(NonMatching, "Emitter.c"),
             Object(NonMatching, "EventSequence.c"),
