@@ -7,22 +7,41 @@ typedef struct Block {
     u32 size_;
 } Block;
 
+typedef struct SubBlock {
+    u32 size_;
+    Block *bp_;
+    struct SubBlock *prev_;
+    struct SubBlock *next_;
+} SubBlock;
+
+typedef struct FixBlock {
+    struct FixBlock *prev_;
+    struct FixBlock *next_;
+    u32 client_size_;
+} FixBlock;
+
 void *Block_subBlock(Block *ths, u32 size);
 
 
 void *memset(void *dst, int c, u32 n);
 void *allocate_from_fixed_pools(void *pool, u32 size);
 void *allocate_from_var_pools(void *pool, u32 size);
-void *malloc(u32 size) {
+
+static inline void *get_malloc_pool(void) {
     static u8 protopool[0x34];
     static u8 init;
-    void *pool;
 
     if (!init) {
         memset(protopool, 0, sizeof(protopool));
         init = 1;
     }
-    pool = protopool;
+    return protopool;
+}
+
+void *malloc(u32 size) {
+    void *pool;
+
+    pool = get_malloc_pool();
     if (size == 0) {
         return NULL;
     }
