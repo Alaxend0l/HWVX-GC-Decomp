@@ -1224,3 +1224,41 @@ void InterfaceInputAnimator_SetCallBack(void *callBack, InterfaceCallBackData *d
     }
 }
 
+void InterfaceInputAnimator_HeartBeat(void) {
+    extern f32 g_fDeltaTimeMS;
+    extern s32 g_LR_Direction;
+    extern s32 g_UD_Direction;
+    extern f32 g_LR_Counter;
+    extern f32 g_UD_Counter;
+    extern f32 g_LR_Max_Min;
+    extern f32 g_UD_Max_Min;
+    extern void *g_pCallBack;
+    f32 dt = g_fDeltaTimeMS;
+
+    if (g_LR_Direction == 0) {
+        g_LR_Counter += dt;
+        if (g_LR_Counter > g_LR_Max_Min) {
+            g_LR_Counter = g_LR_Max_Min;
+        }
+    } else {
+        g_LR_Counter -= dt;
+        if (g_LR_Counter < g_LR_Max_Min) {
+            g_LR_Counter = g_LR_Max_Min;
+        }
+    }
+    if (g_UD_Direction == 0) {
+        g_UD_Counter += dt;
+        if (g_UD_Counter > g_UD_Max_Min) {
+            g_UD_Counter = g_UD_Max_Min;
+        }
+    } else {
+        g_UD_Counter -= dt;
+        if (g_UD_Counter < g_UD_Max_Min) {
+            g_UD_Counter = g_UD_Max_Min;
+        }
+    }
+    if (g_pCallBack != NULL) {
+        ((void (*)(InterfaceCallBackData *))g_pCallBack)(&g_CallBackData);
+    }
+}
+
