@@ -100,6 +100,35 @@ void *__OSLockSramEx(void) {
     return LockSram(0x14);
 }
 
+s32 UnlockSram(s32 commit, u32 offset) {
+    u16 *p;
+
+    if (commit) {
+        if (offset == 0) {
+            OSSram *sram = (OSSram *)Scb.sram;
+
+            if (2u < (sram->flags & 3)) {
+                sram->flags &= ~3;
+            }
+            sram->checkSum = sram->checkSumInv = 0;
+            for (p = (u16 *)&sram->counterBias; p < (u16 *)(Scb.sram + sizeof(OSSram)); p++) {
+                sram->checkSum += *p;
+                sram->checkSumInv += ~*p;
+            }
+        }
+        if (offset < Scb.offset) {
+            Scb.offset = offset;
+        }
+        Scb.sync = WriteSram(Scb.sram + Scb.offset, Scb.offset, 64 - Scb.offset);
+        if (Scb.sync) {
+            Scb.offset = 64;
+        }
+    }
+    Scb.locked = 0;
+    OSRestoreInterrupts(Scb.enabled);
+    return Scb.sync;
+}
+
 s32 __OSUnlockSram(s32 commit) {
     return UnlockSram(commit, 0);
 }
