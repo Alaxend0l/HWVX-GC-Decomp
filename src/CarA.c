@@ -846,36 +846,18 @@ void CarA_Draw(u8 *car)
     void MotionState_DrawSlaves(void *, s32);
     extern void *g_pNoRayCollideThing;
     Matrix4 mtx __attribute__((aligned(16)));
-    f64 b;
-    f64 a;
     u8 *p2;
 
     if (*(u8 **)(car + 0x94) != NULL && (*(u32 *)(*(u8 **)(car + 0x94) + 0x6C) & 0x10) &&
         !(*(u32 *)(*(u8 **)(car + 0x94) + 0x6C) & 0x80) && ViewManager_GetViewFormat() <= 1) {
         p2 = *(u8 **)(*(u8 **)(car + 0x3BC) + 0x80);
         if ((*((u8 **)(p2 + 0x84)))[((*(u8 **)(car + 0x94))[0x31] % *(u32 *)(p2 + 0x80)) * 0xC] == 4) {
-            goto skipscript;
+            return;
         }
     }
     CarA_DrawScript(car);
-skipscript:
     if (*(void **)(*(u8 **)(car + 0x3BC) + 0x54) != NULL && StateManager_CurrState() == 5) {
-        a = ((f64 *)(car + 0x10))[0];
-        b = ((f64 *)(car + 0x10))[1];
-        ((f64 *)&mtx)[0] = a;
-        ((f64 *)&mtx)[1] = b;
-        b = ((f64 *)(car + 0x10))[3];
-        a = ((f64 *)(car + 0x10))[2];
-        ((f64 *)&mtx)[2] = a;
-        ((f64 *)&mtx)[3] = b;
-        b = ((f64 *)(car + 0x10))[5];
-        a = ((f64 *)(car + 0x10))[4];
-        ((f64 *)&mtx)[4] = a;
-        ((f64 *)&mtx)[5] = b;
-        b = ((f64 *)(car + 0x10))[7];
-        a = ((f64 *)(car + 0x10))[6];
-        ((f64 *)&mtx)[6] = a;
-        ((f64 *)&mtx)[7] = b;
+        mtx = *(Matrix4 *)(car + 0x10);
         XformVec(car + 0x10, (Vector4 *)(car + 0x520), &mtx.v[3]);
         if (Player_IsHuman(*(void **)(car + 0x94))) {
             Gfx_DrawGeometry(*(void **)(*(u8 **)(car + 0x3BC) + 0x54), &mtx);
@@ -1270,8 +1252,8 @@ void CarA_DynamicCollideImpact(void *thing, void *collision, s32 damage, f32 imp
     f32 dist;
     f32 dv;
     f32 adv;
-    f32 mag;
     f32 dur;
+    f32 mag;
     f32 rem;
     f32 bounce;
     f32 bx;
@@ -1295,6 +1277,7 @@ void CarA_DynamicCollideImpact(void *thing, void *collision, s32 damage, f32 imp
     void *spawned;
     Player *player;
     u32 id;
+    u32 exId;
     s32 idx;
 
     n = coll->normal;
@@ -1349,9 +1332,10 @@ void CarA_DynamicCollideImpact(void *thing, void *collision, s32 damage, f32 imp
             n.x = n.x - d * car->worldMatrix.v[1].x;
             n.y = n.y - d * car->worldMatrix.v[1].y;
             n.z = n.z - d * car->worldMatrix.v[1].z;
-            p.x = p.x - car->worldMatrix.v[1].x * (dist * 0.5f);
-            p.y = p.y - car->worldMatrix.v[1].y * (dist * 0.5f);
-            p.z = p.z - car->worldMatrix.v[1].z * (dist * 0.5f);
+            dist *= 0.5f;
+            p.x = p.x - car->worldMatrix.v[1].x * dist;
+            p.y = p.y - car->worldMatrix.v[1].y * dist;
+            p.z = p.z - car->worldMatrix.v[1].z * dist;
         }
     }
     damage -= car->vehicleIface->collider->damageThreshold;
@@ -1411,8 +1395,8 @@ void CarA_DynamicCollideImpact(void *thing, void *collision, s32 damage, f32 imp
             Input_SetForceFeedback(player->wheelChannel, 0, 1.0f, 0.1f);
         }
         while (rem > 1.0f) {
-            dur += 0.2f;
             rem *= 0.5f;
+            dur += 0.2f;
             if (dur > 1.5f) {
                 dur = 1.5f;
                 break;
@@ -1456,7 +1440,7 @@ void CarA_DynamicCollideImpact(void *thing, void *collision, s32 damage, f32 imp
             cosA = PSVECDotProduct(&coll->normal, &refUp);
             PSVECSubtract(&coll->pos, &car->worldMatrix.v[3], &rel);
             if (PSVECDotProduct(&car->worldMatrix.v[1], &rel) < 0.0f) {
-                idx = (f32)coll->surface->numSoundsA * ((dv - coll->surface->minImpactA) / (coll->surface->maxImpactA - coll->surface->minImpactA)) - 1.0f;
+                idx = (s32)((f32)coll->surface->numSoundsA * ((dv - coll->surface->minImpactA) / (coll->surface->maxImpactA - coll->surface->minImpactA)) - 1.0f);
                 if (idx >= (s32)coll->surface->numSoundsA) {
                     idx = coll->surface->numSoundsA - 1;
                 }
@@ -1464,7 +1448,7 @@ void CarA_DynamicCollideImpact(void *thing, void *collision, s32 damage, f32 imp
                     id = coll->surface->soundsA[idx];
                 }
             } else {
-                idx = (f32)coll->surface->numSoundsB * ((dv - coll->surface->minImpactB) / (coll->surface->maxImpactB - coll->surface->minImpactB)) - 1.0f;
+                idx = (s32)((f32)coll->surface->numSoundsB * ((dv - coll->surface->minImpactB) / (coll->surface->maxImpactB - coll->surface->minImpactB)) - 1.0f);
                 if (idx >= (s32)coll->surface->numSoundsB) {
                     idx = coll->surface->numSoundsB - 1;
                 }
@@ -1476,9 +1460,7 @@ void CarA_DynamicCollideImpact(void *thing, void *collision, s32 damage, f32 imp
                 if (cosA < -0.99f) {
                     GenerateQuaternion(&axis, &sp.quat, 3.1415927f);
                 } else if (cosA > 0.99f) {
-                    sp.quat.x = 0.0f;
-                    sp.quat.y = 0.0f;
-                    sp.quat.z = 0.0f;
+                    sp.quat.x = sp.quat.y = sp.quat.z = 0.0f;
                     sp.quat.w = 1.0f;
                 } else {
                     a = acos(cosA);
@@ -1636,9 +1618,9 @@ void CarA_DynamicCollideImpact(void *thing, void *collision, s32 damage, f32 imp
             }
         }
         if (!Player_IsHuman(car->player)) {
-            id = car->vehicleIface->explosionThing;
-            if (id != 0) {
-                ex.id = id;
+            exId = car->vehicleIface->explosionThing;
+            if (exId != 0) {
+                ex.id = exId;
                 ex.pos = car->worldMatrix.v[3];
                 ex.quat = car->animRefPos;
                 ex.vel = g_zeroVector;
