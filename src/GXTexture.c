@@ -27,8 +27,23 @@ typedef struct GXTlutRegion {
     u32 dummy[4];
 } GXTlutRegion;
 
+typedef union PPCWGPipe {
+    u8 u8;
+    u16 u16;
+    u32 u32;
+    s32 s32;
+    f32 f32;
+} PPCWGPipe;
+
+volatile PPCWGPipe GXWGFifo : 0xCC008000;
+
 typedef struct GXDataSUTex {
-    u8 unk0[0x100];
+    u16 vNumNot;
+    u16 bpSentNot;
+    u8 unk4[0xB8 - 0x4];
+    u32 suTs0[8];
+    u32 suTs1[8];
+    u8 unkF8[0x100 - 0xF8];
     u32 tref[8];
     u32 iref;
     u8 unk124[0x204 - 0x124];
@@ -36,7 +51,9 @@ typedef struct GXDataSUTex {
     u8 unk208[0x410 - 0x208];
     void *(*texRegionCallback)(GXTexObj *obj, u32 id);
     void *tlutRegionCallback;
-    u8 unk418[0x49C - 0x418];
+    u8 unk418[0x45C - 0x418];
+    u32 tImage0[8];
+    u32 tMode0[8];
     u32 texmapId[16];
     u32 tcsManEnab;
     u32 tevTcEnab;
