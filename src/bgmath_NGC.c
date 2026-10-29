@@ -300,6 +300,26 @@ void QuaternionToSubMatrix(Quaternion *q, Matrix4 *m)
     m->v[3].w = 1.0f;
 }
 
+void SubMatrixToQuaternion(Matrix4 *m, Quaternion *q)
+{
+    f32 c;
+    f32 s;
+
+    c = 0.5f * (m->v[0].x + m->v[1].y + m->v[2].z - 1.0f);
+    if (c <= -0.99999f) {
+        q->w = 1e-13f;
+        q->x = m->v[1].z - m->v[2].y;
+        q->y = m->v[2].x - m->v[0].z;
+        q->z = m->v[0].y - m->v[1].x;
+        return;
+    }
+    q->w = Sqrt(0.5f * (1.0f + c));
+    s = 1.0f / (4.0f * q->w);
+    q->x = s * (m->v[1].z - m->v[2].y);
+    q->y = s * (m->v[2].x - m->v[0].z);
+    q->z = s * (m->v[0].y - m->v[1].x);
+}
+
 void GetComponentOfVector(void *arg0, void *arg1) {
     f32 PSVECDotProduct();
     f32 temp_f1;
