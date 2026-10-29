@@ -49,6 +49,10 @@ static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
 __declspec(section ".data") extern s32 IsTRKConnected;
 void __TRK_reset(void);
 s32 TRKTargetStop(void);
+s32 TRKTargetStopped(void);
+u32 TRKTargetGetPC(void);
+s32 TRKTargetSingleStep(u32 count, s32 stepOver);
+s32 TRKTargetStepOutOfRange(u32 rangeStart, u32 rangeEnd, s32 stepOver);
 s32 TRKDoSetOption(TRKBuffer *b) {
     s32 err;
     s32 ackTries;
