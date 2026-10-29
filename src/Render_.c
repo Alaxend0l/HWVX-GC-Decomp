@@ -123,6 +123,19 @@ void Render_StateBlendMode(u32 mode) {
     GXSetBlendMode(1, m_srcBlend, m_dstBlend, 5);
 }
 
+void Render_StateAlphaBlendEnable(s32 enable) {
+    s32 fogMode = m_fogMode;
+
+    if (enable == 1) {
+        GXSetBlendMode(1, m_srcBlend, m_srcBlend, 5);
+        GXSetFog(0, 1.0f, 10.0f, 1.0f, 10.0f, m_fogColor);
+    } else {
+        GXSetBlendMode(0, 4, 5, 5);
+        m_fogMode = !m_fogMode;
+        Render_StateFogEnable(fogMode);
+    }
+}
+
 void Render_StateCullMode(s32 mode) {
     switch (mode) {
     case 0:
