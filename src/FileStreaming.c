@@ -73,14 +73,54 @@ typedef struct QuadItem {
     u8 subtype;
     u8 pad36[0x38 - 0x36];
     s8 spawned;
-    u8 pad39[0x40 - 0x39];
+    u8 defType;
+    u8 pad3A[0x40 - 0x3A];
 } QuadItem;
 
+typedef struct QuadStatic {
+    u8 pad0[0x24];
+    u8 *info;
+    u8 pad28[0x2C - 0x28];
+    ItemThing *thing;
+    s32 active;
+    u8 pad34[0x36 - 0x34];
+    u8 defActive;
+    u8 pad37[0x40 - 0x37];
+} QuadStatic;
+
+typedef struct QuadDynamic {
+    u8 pad0[0x30];
+    ItemThing *thing;
+    s32 active;
+    u8 pad38[0x39 - 0x38];
+    u8 defActive;
+    u8 pad3A[0x40 - 0x3A];
+} QuadDynamic;
+
 typedef struct QuadItemList {
-    u8 pad0[0x14];
+    s8 dirty;
+    u32 numStatics;
+    QuadStatic *statics;
+    u32 numDynamics;
+    QuadDynamic *dynamics;
     u32 count;
     QuadItem *items;
 } QuadItemList;
+
+typedef struct QuadrantEntry {
+    u8 pad0[0x30];
+    QuadItemList *data;
+    u8 pad34[0x50 - 0x34];
+} QuadrantEntry;
+
+typedef struct QuadrantWorld {
+    u8 pad[0x20];
+    u32 numQuads;
+    QuadrantEntry *quads;
+} QuadrantWorld;
+
+s8 Trigger_IsTACSystemPaused(void);
+void Trigger_PauseTACSystem(s8 paused);
 
 /* ThingManager_DARYL_CreateThing(4, ...) parameters. */
 typedef struct ItemThingParams {
