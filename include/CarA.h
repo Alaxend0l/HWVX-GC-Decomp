@@ -93,6 +93,8 @@ typedef struct CarACollider {
   s32 damageThreshold;      /* 0x18 impacts above it hurt */
   u8 pad1C[4];              /* 0x1C */
   f32 mass;                 /* 0x20 */
+  u8 pad24[0xC];            /* 0x24 */
+  CarAMaterial *material;   /* 0x30 */
 } CarACollider;
 
 
