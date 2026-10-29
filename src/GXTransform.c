@@ -190,3 +190,25 @@ void GXSetClipMode(u32 mode) {
     gx->bpSentNot = 1;
 }
 
+#pragma peephole off
+void __GXSetMatrixIndex(s32 index) {
+    extern GXData *gx;
+
+    if (index < 5) {
+        GXWGFifo.u8 = 8;
+        GXWGFifo.u8 = 0x30;
+        GXWGFifo.u32 = gx->matIdxA;
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1018;
+        GXWGFifo.u32 = gx->matIdxA;
+    } else {
+        GXWGFifo.u8 = 8;
+        GXWGFifo.u8 = 0x40;
+        GXWGFifo.u32 = gx->matIdxB;
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1019;
+        GXWGFifo.u32 = gx->matIdxB;
+    }
+    gx->bpSentNot = 1;
+}
+
