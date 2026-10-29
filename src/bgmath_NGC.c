@@ -225,6 +225,25 @@ s32 FloatsEqual(f32 a, f32 b, f32 c)
     return diff < c;
 }
 
+void GenerateQuaternion(Vector4 *axis, Quaternion *q, f32 angle)
+{
+    f64 sin(f32);
+    f64 cos(f32);
+    f32 s;
+
+    if (angle) {
+        angle *= 0.5f;
+        q->w = cos(angle);
+        s = sin(angle);
+        q->x = axis->x * s;
+        q->y = axis->y * s;
+        q->z = axis->z * s;
+    } else {
+        q->w = 1.0f;
+        q->x = q->y = q->z = 0.0f;
+    }
+}
+
 void GenerateSpinAngleFromQuaternion(Quaternion *q, Vector4 *axis, f32 *angle)
 {
     f64 acos(f32);
