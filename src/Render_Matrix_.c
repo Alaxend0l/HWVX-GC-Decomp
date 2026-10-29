@@ -14,7 +14,18 @@ typedef struct GfxWindow {
     u8 unk288[0x2D0 - 0x288];
 } GfxWindow;
 
+typedef struct GfxState {
+    u8 unk0[0x93];
+    u8 unk93;
+    u8 unk94[0xA0 - 0x94];
+} GfxState;
+
+extern GfxState g_state;
+extern f32 g_identity[4][4];
+
 GfxWindow *GetRenderWindow(void);
+void *memcpy(void *dst, const void *src, u32 n);
+void MultiplyMatrix4x4(f32 a[4][4], f32 b[4][4], f32 out[4][4]);
 void C_MTXOrtho(f32 m[3][4], f32 t, f32 b, f32 l, f32 r, f32 n, f32 f);
 void GXSetProjection(f32 m[3][4], s32 type);
 void PSMTXIdentity(f32 m[3][4]);
