@@ -84,7 +84,7 @@ void EventSeq_Advanced_GetOffset(u8 *seq, void *arg1, Vector4 *out) {
         }
         case 1: {
             Vector4 *dir = adv->data;
-            Vector4 mul = {1.0f, 1.0f, 1.0f, 0.0f};
+            Vector4 mul __attribute__((aligned(16))) = {1.0f, 1.0f, 1.0f, 0.0f};
 
             RandomNumberGenerator_GetRandomVector(out);
             switch (((u8 *)dir)[0x10]) {
@@ -148,12 +148,12 @@ void EventSeq_Advanced_GetOffset(u8 *seq, void *arg1, Vector4 *out) {
             }
             if (circle->spin) {
                 if (circle->damped) {
-                    angle = t * (6.2831855f * circle->speed * circle->scale);
+                    angle = t * (360.0f * circle->speed * circle->scale);
                 } else {
-                    angle = t * (6.2831855f * circle->speed);
+                    angle = t * (360.0f * circle->speed);
                 }
             } else {
-                angle = RandomAdd(0.0f, 6.2831855f);
+                angle = RandomAdd(0.0f, 360.0f);
             }
             SinCos(&s, &c, angle);
             switch (circle->axis) {
