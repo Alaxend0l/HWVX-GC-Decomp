@@ -1,6 +1,8 @@
 #include "CarA.h"
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 /* Moves the body offset (centre of mass) to (x, y, z), shifting the car's
    position so the body stays where it is in the world. */
 static inline void CarA_SetBodyOffset(CarA *car, f32 x, f32 y, f32 z) {
