@@ -25,9 +25,7 @@ typedef struct ITHeader {
 
 typedef struct ITSample {
     u8 pad0[0x12];
-    u8 flagPad : 6;
-    u8 is16Bit : 1;
-    u8 hasSample : 1;
+    u8 flags;
     u8 pad13[0x30 - 0x13];
     u32 length;
     u8 pad34[0x48 - 0x34];
