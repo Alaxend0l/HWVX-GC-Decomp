@@ -76,6 +76,30 @@ void AlarmHandlerForTimeout(void *alarm, void *context)
     OSSetCurrentContext(context);
 }
 
+void SeekTwiceBeforeRead(s32 addr, s32 length, s32 offset, s32 callback)
+{
+    s32 offsetToSeek;
+    s32 tmp;
+
+    tmp = offset & ~0x7FFF;
+    if (tmp == 0) {
+        offsetToSeek = 0;
+    } else {
+        offsetToSeek = tmp + WorkAroundSeekLocation;
+    }
+    CommandList[0].command = 2;
+    CommandList[0].seekLba = offsetToSeek;
+    CommandList[0].seekSectors = callback;
+    CommandList[1].command = 1;
+    CommandList[1].readArg1 = addr;
+    CommandList[1].readArg2 = length;
+    CommandList[1].seekLba = offset;
+    CommandList[1].seekSectors = callback;
+    CommandList[2].command = -1;
+    NextCommandNumber = 0;
+    DVDLowSeek(offsetToSeek, callback);
+}
+
 s32 DVDLowWaitCoverClose(DVDLowCallback callback)
 {
     Callback = callback;
