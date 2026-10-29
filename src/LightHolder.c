@@ -32,6 +32,9 @@ typedef struct LightHolderLight {
     u32 unk7C;
 } LightHolderLight;
 
+LightHolderLight g_pLight[16];
+u16 g_lightTextureIndex;
+
 
 void LightHolder_Init(void) {
     extern LightHolderLight g_pLight[16];
