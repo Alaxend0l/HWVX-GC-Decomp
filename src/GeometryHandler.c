@@ -57,19 +57,18 @@ void Geometry_Init(s8 clear) {
 }
 
 void Geometry_FreeGeometry(void *geometry) {
-    void Deallocate(void *);
-    extern u8 *g_pGeometryHandler;
+    extern GeometryHandler *g_pGeometryHandler;
     u32 i;
 
     if (geometry != NULL) {
-        for (i = 0; i < M2C_FIELD(g_pGeometryHandler, u32 *, 0x24004); i++) {
-            if (*(void **)(g_pGeometryHandler + i * 0x48) == geometry) {
-                (*(s16 *)(g_pGeometryHandler + i * 0x48 + 0x44))--;
-                if (*(s16 *)(g_pGeometryHandler + i * 0x48 + 0x44) < 1) {
+        for (i = 0; i < g_pGeometryHandler->max; i++) {
+            if (g_pGeometryHandler->entries[i].geometry == geometry) {
+                g_pGeometryHandler->entries[i].refCount--;
+                if (g_pGeometryHandler->entries[i].refCount < 1) {
                     Deallocate(geometry);
-                    *(void **)(g_pGeometryHandler + i * 0x48) = NULL;
-                    *(u8 *)(g_pGeometryHandler + i * 0x48 + 4) = 0;
-                    M2C_FIELD(g_pGeometryHandler, s32 *, 0x24000)--;
+                    g_pGeometryHandler->entries[i].geometry = NULL;
+                    g_pGeometryHandler->entries[i].name[0] = 0;
+                    g_pGeometryHandler->count--;
                 }
             }
         }
