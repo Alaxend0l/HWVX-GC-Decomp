@@ -741,3 +741,4 @@ s32 ExtractSoundKey(u8 *track, u8 *state, void *pos, f32 dt) {
     }
     return ret;
 }
+#pragma pop
