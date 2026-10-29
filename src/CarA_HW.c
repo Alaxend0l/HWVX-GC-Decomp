@@ -23,21 +23,21 @@ void *ThingManager_DARYL_CreateThing(s32 type, void *params);
 f32 CarA_Transmission_GetTorqueAtWheels(CarA *car);
 
 
-s32 CarA_DoFreeStyleStunts(void *car) {
+s8 CarA_DoFreeStyleStunts(CarA *car) {
     s32 threshold;
-    s8 *pad;
+    Player *pad;
 
-    threshold = M2C_FIELD(M2C_FIELD(M2C_FIELD(car, void **, 0x3BC), void **, 0x8C), s32 *, 0x28);
-    if (M2C_FIELD(car, void **, 0x94) == NULL || !Player_IsHuman(M2C_FIELD(car, void **, 0x94))) {
+    threshold = car->vehicleIface->stunt->unk28;
+    if (car->player == NULL || !Player_IsHuman(car->player)) {
         return 0;
     }
-    pad = M2C_FIELD(car, s8 **, 0x94);
-    if (*(u8 *)(pad + 0x10) == 0 && *(u8 *)(pad + 0x1A) == 0 &&
-        pad[0] > -0x40 && pad[0] < 0x40 && pad[1] > -0x40 && pad[1] < 0x40) {
+    pad = car->player;
+    if (pad->button10 == 0 && pad->button1A == 0 &&
+        pad->stickX > -0x40 && pad->stickX < 0x40 && pad->stickY > -0x40 && pad->stickY < 0x40) {
         return 0;
     }
-    if (M2C_FIELD(car, s32 *, 0x460) > threshold && M2C_FIELD(car, s32 *, 0x404) > threshold &&
-        !(M2C_FIELD(car, s32 *, 0x48C) & 0x40002)) {
+    if (car->unk460 > threshold && car->lowSpeedFlag > threshold &&
+        !(car->transmissionFlags & 0x40002)) {
         return 1;
     }
     return 0;
