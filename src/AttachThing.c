@@ -320,3 +320,129 @@ s32 RadarBlip_Move(void *blip)
     return 1;
 }
 
+void RadarBlip_Draw(RadarBlip *blip) {
+    extern u8 g_CurrentViews;
+    extern u32 g_pauseState;
+    s8 Player_IsHuman(void *player);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    s32 StateManager_CurrState(void);
+    void Gfx_SetRenderWindow(u32 view);
+    void Gfx_SetWorldMatrix(void *mtx);
+    void Gfx_TransformVector(Vector4 *in, Vector4 *out);
+    s8 isInWindow(Vector4 *pos);
+    void Gfx_Add2DSprite(Vector4 *pos, u16 tex, GXColor color, f32 size, u8 flag, f32 rot);
+    Vector4 pos;
+    Vector4 screen __attribute__((aligned(16)));
+    Vector4 spritePos __attribute__((aligned(16)));
+    Vector4 barPos __attribute__((aligned(16)));
+    GXColor color;
+    GDLRect *rect;
+    u32 single;
+    u32 i;
+    f32 width;
+    f32 barWidth;
+
+    single = 0;
+    pos = blip->pos;
+    if (g_CurrentViews == 1) {
+        if (!((blip->player == NULL || (!Player_IsHuman(blip->player) && !GameSettings_GetCodeVariable(0x198, 0))) && StateManager_CurrState() == 5)) {
+            return;
+        }
+    }
+    if (g_CurrentViews == 1) {
+        single = 1;
+        pos.y += 6.0f;
+    } else {
+        pos.y += 3.0f;
+    }
+    for (i = 0; i < (single ? 1 : 5); i++) {
+        if (!(g_CurrentViews & (1 << i))) {
+            continue;
+        }
+        Gfx_SetRenderWindow(i);
+        Gfx_SetWorldMatrix(NULL);
+        Gfx_TransformVector(&pos, &screen);
+        if (screen.w > 10.0f) {
+            color = *blip->data->color;
+            if (!isInWindow(&screen)) {
+                continue;
+            }
+            if (screen.w < 250.0f) {
+                color.a = (screen.w - 50.0f) / 200.0f * color.a;
+            }
+            spritePos = screen;
+            spritePos.y -= blip->data->height;
+            if (blip->data->showSprite && screen.w > 50.0f) {
+                Gfx_Add2DSprite(&spritePos, blip->data->texture, color, blip->data->size, 5, 3.1415927f);
+            }
+            barPos = screen;
+            barPos.y -= 12.0f;
+            barPos.x -= 12.0f;
+            if (blip->data->showBar && !g_pauseState) {
+                barWidth = 24.0f;
+                width = barWidth * blip->health;
+                if (width > barWidth) {
+                    width = barWidth;
+                } else if (width < 1.0f) {
+                    width = 0.0f;
+                }
+                {
+                    GXColor green = {0x00, 0xFF, 0x00, 0x00};
+                    green.a = color.a;
+                    rect = Gfx_Add2DRectangleRenderWindow();
+                    rect->v[0].x = barPos.x + width;
+                    rect->v[0].y = barPos.y - 6.0f;
+                    rect->v[0].z = barPos.z;
+                    rect->v[1].x = barPos.x;
+                    rect->v[1].y = barPos.y - 6.0f;
+                    rect->v[1].z = barPos.z;
+                    rect->v[3].x = barPos.x + width;
+                    rect->v[3].y = barPos.y - 11.0f;
+                    rect->v[3].z = barPos.z;
+                    rect->v[2].x = barPos.x;
+                    rect->v[2].y = barPos.y - 11.0f;
+                    rect->v[2].z = barPos.z;
+                    rect->v[0].t = 0.0f;
+                    rect->v[0].s = 0.0f;
+                    rect->v[3].t = 1.0f;
+                    rect->v[1].s = 1.0f;
+                    rect->v[2].t = 1.0f;
+                    rect->v[2].s = 1.0f;
+                    rect->v[1].t = 0.0f;
+                    rect->v[3].s = 0.0f;
+                    rect->v[0].color = rect->v[1].color = rect->v[2].color = rect->v[3].color = green;
+                    rect->blendMode = 0;
+                    rect->tex = 0xFFFF;
+                }
+                {
+                    GXColor red = {0xFF, 0x00, 0x00, 0xFF};
+                    rect = Gfx_Add2DRectangleRenderWindow();
+                    rect->v[0].x = barPos.x + width;
+                    rect->v[0].y = barPos.y - 6.0f;
+                    rect->v[0].z = barPos.z;
+                    rect->v[1].x = barPos.x + barWidth;
+                    rect->v[1].y = barPos.y - 6.0f;
+                    rect->v[1].z = barPos.z;
+                    rect->v[3].x = barPos.x + width;
+                    rect->v[3].y = barPos.y - 11.0f;
+                    rect->v[3].z = barPos.z;
+                    rect->v[2].x = barPos.x + barWidth;
+                    rect->v[2].y = barPos.y - 11.0f;
+                    rect->v[2].z = barPos.z;
+                    rect->v[0].t = 0.0f;
+                    rect->v[0].s = 0.0f;
+                    rect->v[3].t = 1.0f;
+                    rect->v[1].s = 1.0f;
+                    rect->v[2].t = 1.0f;
+                    rect->v[2].s = 1.0f;
+                    rect->v[1].t = 0.0f;
+                    rect->v[3].s = 0.0f;
+                    rect->v[0].color = rect->v[1].color = rect->v[2].color = rect->v[3].color = red;
+                    rect->blendMode = 0;
+                    rect->tex = 0xFFFF;
+                }
+            }
+        }
+    }
+}
+
