@@ -2,7 +2,7 @@
 
 f32 Sqrt(f32 x);
 
-static inline void Normalize_Plane(Vector4 *plane) {
+static void Normalize_Plane(Vector4 *plane) {
     f32 len;
     f32 inv;
 
