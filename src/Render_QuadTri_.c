@@ -63,6 +63,11 @@ typedef struct GDL {
 } GDL;
 
 extern GDL *g_pGDL;
+extern s32 g_debugTriCount;
+void GXSetCurrentMtx(u32 id);
+void SinCos(f32 *s, f32 *c, f32 angle);
+void Set3DRectVtxDesc(void);
+void XformVec4x4(Matrix4 *m, Vector4 *v, Vector4 *out);
 
 static inline void GXPosition3f32(f32 x, f32 y, f32 z) {
     GXWGFifo.f32 = x;
