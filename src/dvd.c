@@ -573,6 +573,20 @@ BOOL DVDReadAbsAsyncForBS(DVDCommandBlock *block, void *addr, s32 length, s32 of
     return idle;
 }
 
+BOOL DVDReadDiskID(DVDCommandBlock *block, void *diskID, void (*callback)(s32, DVDCommandBlock *)) {
+    BOOL idle;
+
+    block->command = 5;
+    block->address = diskID;
+    block->length = 0x20;
+    block->offset = 0;
+    block->transferredSize = 0;
+    block->callback = callback;
+
+    idle = issueCommand(2, block);
+    return idle;
+}
+
 BOOL DVDInquiryAsync(DVDCommandBlock *block, void *addr, void (*callback)(s32, DVDCommandBlock *)) {
     BOOL idle;
 
