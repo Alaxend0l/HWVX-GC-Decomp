@@ -10,7 +10,7 @@ typedef struct DVDCommand
     s32 seekSectors;
 } DVDCommand;
 
-extern DVDCommand CommandList[3];
+static DVDCommand CommandList[3];
 s32 NextCommandNumber;
 
 extern s32 Read(s32, s32, s32, s32);
