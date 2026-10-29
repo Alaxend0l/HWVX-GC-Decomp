@@ -50,6 +50,22 @@ typedef struct MIDI_CHN
     s8 field_1F;
 } MIDI_CHN;
 
+typedef struct MIDI_SONG
+{
+    u32 field_0;
+    u32 field_4;
+    u32 field_8;
+    u32 field_C;
+    u32 field_10;
+    u8 *field_14;
+    u32 field_18;
+    u8 field_1C;
+    u8 field_1D;
+    u8 field_1E;
+    s8 field_1F;
+    u32 field_20;
+} MIDI_SONG;
+
 u8 g_song[0x24];
 
 typedef struct MIDI_INST
@@ -392,12 +408,12 @@ void ProcessMIDI(s32 time)
     u32 ReadVar_(u8 **pp);
     void ChannelOff(void *chn);
     s32 Mul16_(s32, s32);
-    u32 rate;
-    MIDI_VOICE *voice;
-    MIDI_INST *inst;
-    u32 i;
-    u32 mask;
     MIDI_CHN *chn;
+    u32 mask;
+    u32 i;
+    MIDI_INST *inst;
+    MIDI_VOICE *voice;
+    u32 rate;
     u8 *p;
 
     if ((s8)g_song[0x1F] != 0)
@@ -410,13 +426,13 @@ void ProcessMIDI(s32 time)
         voice = chn->voice;
         while (voice != NULL)
         {
-            if (voice->state == 3)
+            if (voice->state2 == 3)
             {
                 voice = voice->next;
                 continue;
             }
             voice->count += Mul16_(voice->rate, time);
-            switch (voice->state)
+            switch (voice->state2)
             {
             case 1:
                 if (voice->count < 0x10000)
@@ -430,7 +446,7 @@ void ProcessMIDI(s32 time)
                     voice->rate = rate;
                     voice->count = 0;
                     voice->field_38 = 0x7FFF;
-                    voice->state = 2;
+                    voice->state2 = 2;
                     break;
                 }
                 goto sustain;
@@ -447,7 +463,7 @@ void ProcessMIDI(s32 time)
             sustain:
                 if (voice->field_38 > 0)
                 {
-                    voice->state = 3;
+                    voice->state2 = 3;
                     break;
                 }
                 voice = DestroyVoice(voice);
@@ -569,7 +585,7 @@ restart:
                     }
                     else
                     {
-                        if (voice->state == 4)
+                        if (voice->state2 == 4)
                         {
                             voice->priority += 15;
                             SetVoicePriority_(voice);
@@ -591,7 +607,7 @@ restart:
                     rate = GetEnvRate(inst->field_18);
                     if (rate != -1U)
                     {
-                        voice->state = 1;
+                        voice->state2 = 1;
                         voice->field_38 = 0;
                     }
                     else
@@ -599,12 +615,12 @@ restart:
                         rate = GetEnvRate(inst->field_1A);
                         if (rate != -1U)
                         {
-                            voice->state = 2;
+                            voice->state2 = 2;
                             voice->field_38 = 0x7FFF;
                         }
                         else
                         {
-                            voice->state = 3;
+                            voice->state2 = 3;
                             rate = 0;
                             voice->field_38 = inst->field_1C;
                         }
