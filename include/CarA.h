@@ -145,7 +145,15 @@ typedef struct CarAInfo {
 /* Per-wheel runtime state, 8 slots in CarA from 0x1B0. */
 typedef struct CarAWheelState {
   f32 rotation;             /* 0x00 advanced by speed / radius every PreMove */
-  u8 pad04[0x2C];           /* 0x04 */
+  s16 dustTimer;            /* 0x04 ms */
+  s16 sparkTimer;           /* 0x06 ms */
+  u8 pad08[4];              /* 0x08 */
+  f32 compression;          /* 0x0C */
+  f32 lastCompression;      /* 0x10 */
+  GXColor skidColor;        /* 0x14 */
+  u32 skidTexture;          /* 0x18 */
+  u8 pad1C[4];              /* 0x1C */
+  Vector4 slipVel;          /* 0x20 */
 } CarAWheelState;
 
 typedef struct CarA {
