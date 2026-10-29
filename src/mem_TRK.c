@@ -1,6 +1,13 @@
 #include "common.h"
 
 
+void TRK_fill_mem(void *dst, int val, u32 count);
+void *TRK_memset(void *dst, int val, u32 count)
+{
+    TRK_fill_mem(dst, val, count);
+    return dst;
+}
+
 void TRK_fill_mem(void * dst, int val, u32 count)
 {
     u8 b;
