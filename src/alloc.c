@@ -386,6 +386,36 @@ found:
     return (u8 *)ptr + 8;
 }
 
+void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
+    u32 this_cur_size;
+    SubBlock *next_sub_block;
+    SubBlock *after;
+
+    next_sub_block = (SubBlock *)((u8 *)ths + (ths->size_ & 0xFFFFFFF8));
+    if (!(next_sub_block->size_ & 2)) {
+        this_cur_size = (ths->size_ & 0xFFFFFFF8) + (next_sub_block->size_ & 0xFFFFFFF8);
+        ths->size_ &= ~0xFFFFFFF8;
+        ths->size_ |= this_cur_size & 0xFFFFFFF8;
+        if (!(ths->size_ & 2)) {
+            *(u32 *)((u8 *)ths + this_cur_size - sizeof(u32)) = this_cur_size;
+        }
+        after = (SubBlock *)((u8 *)ths + this_cur_size);
+        if (!(ths->size_ & 2)) {
+            after->size_ &= ~4;
+        } else {
+            after->size_ |= 4;
+        }
+        if (*start == next_sub_block) {
+            *start = (*start)->next_;
+        }
+        if (*start == next_sub_block) {
+            *start = NULL;
+        }
+        next_sub_block->next_->prev_ = next_sub_block->prev_;
+        next_sub_block->prev_->next_ = next_sub_block->next_;
+    }
+}
+
 void *Block_subBlock(Block *ths, u32 size) {
     SubBlock *st;
     SubBlock *sb;
