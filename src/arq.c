@@ -4,6 +4,49 @@
 void __ARQCallbackHack(void) {
 }
 
+void __ARQInterruptServiceRoutine(void) {
+    typedef struct ARQRequest {
+        struct ARQRequest *next;
+        u32 owner;
+        u32 type;
+        u32 priority;
+        u32 source;
+        u32 dest;
+        u32 length;
+        void (*callback)(u32);
+    } ARQRequest;
+    extern void *__ARQRequestQueueHi;
+    extern void *__ARQRequestPendingHi;
+    extern void *__ARQRequestPendingLo;
+    extern void *__ARQCallbackHi;
+    extern void *__ARQCallbackLo;
+    void ARStartDMA(u32 type, u32 mainmem, u32 aram, u32 length);
+    void __ARQServiceQueueLo(void);
+
+    if (__ARQCallbackHi) {
+        ((void (*)(u32))__ARQCallbackHi)((u32)__ARQRequestPendingHi);
+        __ARQRequestPendingHi = NULL;
+        __ARQCallbackHi = NULL;
+    } else if (__ARQCallbackLo) {
+        ((void (*)(u32))__ARQCallbackLo)((u32)__ARQRequestPendingLo);
+        __ARQRequestPendingLo = NULL;
+        __ARQCallbackLo = NULL;
+    }
+    if (__ARQRequestQueueHi) {
+        if (((ARQRequest *)__ARQRequestQueueHi)->type == 0) {
+            ARStartDMA(((ARQRequest *)__ARQRequestQueueHi)->type, ((ARQRequest *)__ARQRequestQueueHi)->source, ((ARQRequest *)__ARQRequestQueueHi)->dest, ((ARQRequest *)__ARQRequestQueueHi)->length);
+        } else {
+            ARStartDMA(((ARQRequest *)__ARQRequestQueueHi)->type, ((ARQRequest *)__ARQRequestQueueHi)->dest, ((ARQRequest *)__ARQRequestQueueHi)->source, ((ARQRequest *)__ARQRequestQueueHi)->length);
+        }
+        __ARQCallbackHi = ((ARQRequest *)__ARQRequestQueueHi)->callback;
+        __ARQRequestPendingHi = __ARQRequestQueueHi;
+        __ARQRequestQueueHi = ((ARQRequest *)__ARQRequestQueueHi)->next;
+    }
+    if (__ARQRequestPendingHi == NULL) {
+        __ARQServiceQueueLo();
+    }
+}
+
 void ARQInit(void)
 {
     extern s32 __ARQ_init_flag;
