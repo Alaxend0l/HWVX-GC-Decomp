@@ -26,6 +26,77 @@ DSPTaskInfo *__DSP_first_task;
 DSPTaskInfo *__DSP_last_task;
 DSPTaskInfo *__DSP_curr_task;
 
+void DSPSendMailToDSP(u32 mail);
+u32 DSPCheckMailToDSP(void);
+void __DSP_exec_task(DSPTaskInfo *curr, DSPTaskInfo *next)
+{
+    if (curr != NULL)
+    {
+        DSPSendMailToDSP((u32)curr->dram_mmem_addr);
+        while (DSPCheckMailToDSP())
+            ;
+        DSPSendMailToDSP(curr->dram_length);
+        while (DSPCheckMailToDSP())
+            ;
+        DSPSendMailToDSP(curr->dram_addr);
+        while (DSPCheckMailToDSP())
+            ;
+    }
+    else
+    {
+        DSPSendMailToDSP(0);
+        while (DSPCheckMailToDSP())
+            ;
+        DSPSendMailToDSP(0);
+        while (DSPCheckMailToDSP())
+            ;
+        DSPSendMailToDSP(0);
+        while (DSPCheckMailToDSP())
+            ;
+    }
+
+    DSPSendMailToDSP((u32)next->iram_mmem_addr);
+    while (DSPCheckMailToDSP())
+        ;
+    DSPSendMailToDSP(next->iram_length);
+    while (DSPCheckMailToDSP())
+        ;
+    DSPSendMailToDSP(next->iram_addr);
+    while (DSPCheckMailToDSP())
+        ;
+
+    if (next->state == 0)
+    {
+        DSPSendMailToDSP((u32)next->dsp_init_vector);
+        while (DSPCheckMailToDSP())
+            ;
+        DSPSendMailToDSP(0);
+        while (DSPCheckMailToDSP())
+            ;
+        DSPSendMailToDSP(0);
+        while (DSPCheckMailToDSP())
+            ;
+        DSPSendMailToDSP(0);
+        while (DSPCheckMailToDSP())
+            ;
+    }
+    else
+    {
+        DSPSendMailToDSP((u32)next->dsp_resume_vector);
+        while (DSPCheckMailToDSP())
+            ;
+        DSPSendMailToDSP((u32)next->dram_mmem_addr);
+        while (DSPCheckMailToDSP())
+            ;
+        DSPSendMailToDSP(next->dram_length);
+        while (DSPCheckMailToDSP())
+            ;
+        DSPSendMailToDSP(next->dram_addr);
+        while (DSPCheckMailToDSP())
+            ;
+    }
+}
+
 void __DSP_insert_task(DSPTaskInfo *task)
 {
     DSPTaskInfo *temp;
