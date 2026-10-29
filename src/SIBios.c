@@ -58,6 +58,25 @@ BOOL SIEnablePollingInterrupt(BOOL enable) {
     return rc;
 }
 
+void SISetSamplingRate(u32 msec);
+void *__OSSetInterruptHandler(s16 interrupt, void *handler);
+u32 __OSUnmaskInterrupts(u32 mask);
+void SIInterruptHandler(s16 interrupt, void *context);
+void SIInit(void) {
+    Packet[0].chan = Packet[1].chan = Packet[2].chan = Packet[3].chan = -1;
+    Si.poll = 0;
+    SISetSamplingRate(0);
+    while (__SIRegs[13] & 1)
+        ;
+    __SIRegs[13] = 0x80000000;
+    __OSSetInterruptHandler(0x14, SIInterruptHandler);
+    __OSUnmaskInterrupts(0x800);
+    SIGetType(0);
+    SIGetType(1);
+    SIGetType(2);
+    SIGetType(3);
+}
+
 u32 SIGetStatus(s32 chan) {
     BOOL enabled;
     u32 sr;
