@@ -663,6 +663,104 @@ s8 AI_Car_IsTargetValid_800094EC(u8 *ai, u8 *target, f32 maxDist, f32 minDist, f
     return 0;
 }
 
+s32 AI_Car_CheckLocalStats(u8 *ai, u8 *node) {
+    typedef struct LocalStats {
+        u8 health;
+        u8 grip;
+        u8 weapons;
+        u8 pad3[3];
+        u16 weaponCount;
+        s32 healthValue;
+        f32 gripValue;
+    } LocalStats;
+    typedef struct StatsNode {
+        u8 pad0;
+        u8 type;
+        u8 pad2[0x58 - 2];
+        LocalStats *stats;
+    } StatsNode;
+    typedef struct WeaponParams {
+        u8 pad0[0x24];
+        u32 minAmmo;
+    } WeaponParams;
+    typedef struct WeaponDef {
+        u8 type;
+        u8 pad1[0x30 - 0x1];
+        WeaponParams *params;
+    } WeaponDef;
+    typedef struct WeaponSlot {
+        u8 pad0[0x40];
+        s16 ammo;
+        u8 pad42[0x4C - 0x42];
+        WeaponDef *def;
+    } WeaponSlot;
+    typedef struct WeaponHolder {
+        u8 pad0[0xB0];
+        WeaponSlot slots[12];
+    } WeaponHolder;
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    LocalStats *stats = ((StatsNode *)node)->stats;
+    CarA *car = *(CarA **)(ai + 0x2C);
+    s32 health;
+    u16 count;
+    u16 i;
+    WeaponHolder *holder;
+
+    if (((StatsNode *)node)->type != 1) {
+        return 1;
+    }
+    if (stats->health != 0) {
+        health = (f32)car->speed / (100.0f * (f32)car->vehicleIface->collider->maxHealth);
+        switch (stats->health) {
+        case 1:
+            if (health >= stats->healthValue) {
+                return 0;
+            }
+            break;
+        case 2:
+            if (health <= stats->healthValue) {
+                return 0;
+            }
+            break;
+        }
+    }
+    switch (stats->grip) {
+    case 1:
+        if (car->gripScale >= stats->gripValue) {
+            return 0;
+        }
+        break;
+    case 2:
+        if (car->gripScale <= stats->gripValue) {
+            return 0;
+        }
+        break;
+    }
+    if (stats->weapons != 0) {
+        count = 0;
+        holder = ThingManagerList_GetByType(&car->motionState.slaves, 8);
+        for (i = 0; holder != NULL && i < 12; i++) {
+            WeaponSlot *slot = &holder->slots[i];
+            if (slot->def != NULL && slot->def->type == 3 && slot->ammo > slot->def->params->minAmmo) {
+                count++;
+            }
+        }
+        switch (stats->weapons) {
+        case 1:
+            if (count >= stats->weaponCount) {
+                return 0;
+            }
+            break;
+        case 2:
+            if (count <= stats->weaponCount) {
+                return 0;
+            }
+            break;
+        }
+    }
+    return 1;
+}
+
 #pragma use_lmw_stmw on
 s8 AI_Car_DetermineTarget(u8 *ai, u8 *branch, u8 slot) {
     s8 Player_IsHuman(void *player);
