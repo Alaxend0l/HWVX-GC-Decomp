@@ -89,6 +89,7 @@ BOOL OSInitFont(void *fontData);
 
 void GXSetTevOp(s32 id, s32 mode);
 void Render_StateFogEnable(s32 enable);
+void DisplayList_Init(void);
 
 typedef struct GDL {
     u8 unk0[0x14];
