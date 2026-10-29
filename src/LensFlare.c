@@ -175,7 +175,7 @@ void LensFlare_Render(void) {
         if (f->flare == NULL) {
             continue;
         }
-        screen = f->thing != NULL ? *(Vector4 *)(f->thing + 0x40) : f->pos;
+        screen = LensFlare_GetPos(f->thing, &f->pos);
         PSVECSubtract(&camera, &screen, &dir);
         XformVec(mtx, &dir, &screen);
         screen.z *= -1.0f;
