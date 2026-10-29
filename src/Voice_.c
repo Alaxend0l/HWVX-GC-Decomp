@@ -74,6 +74,42 @@ void AudioVoice_Destroy_(void) {
     AXFXDelayShutdown(&g_reverb[0]);
 }
 
+void OSReport(const char *msg, ...);
+AXVPB *AXAcquireVoice(u32 priority, void (*callback)(AXVPB *), u32 userContext);
+void DestroyVoice_(AXVPB *axv);
+#pragma optimization_level 1
+VoiceHW *GetVoice_(u8 kind, u32 priority) {
+    VoiceHW *voice;
+    AXVPB *axv;
+    s32 level;
+
+    if (g_pFree == NULL) {
+        OSReport("g_pFree NULL\n");
+        return NULL;
+    }
+    level = OSDisableInterrupts();
+    axv = AXAcquireVoice(priority, DestroyVoice_, (u32)g_pFree);
+    if (axv == NULL) {
+        return NULL;
+    }
+    voice = g_pFree;
+    g_pFree = g_pFree->next;
+    voice->next = NULL;
+    voice->axv = axv;
+    voice->kind = kind;
+    voice->state = 3;
+    voice->priority = priority;
+    voice->unk54 = 1;
+    voice->unk5A = -1;
+    voice->unk64 = -1;
+    voice->unk6C = -1;
+    voice->unk55 = 0;
+    voice->unk56 = 0;
+    voice->unk57 = 0;
+    voice->unk48 = 0x7FFF;
+    OSRestoreInterrupts(level);
+    return voice;
+}
 void SetVoicePriority_(VoiceHW *voice) {
     s32 level;
 
