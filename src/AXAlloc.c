@@ -16,6 +16,10 @@ extern void * __AXCallbackStack;
 extern void * __AXStackHead[32];
 extern void * __AXStackTail[32];
 
+void *__AXPopCallbackStack(void);
+void __AXRemoveFromStack(AXVPB *p);
+void __AXPushFreeStack(AXVPB *p);
+
 #pragma peephole on
 void *__AXGetStackHead(u32 priority)
 {
