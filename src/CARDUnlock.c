@@ -11,6 +11,18 @@ extern CARDControl __CARDBlock[2];
 
 void DSPSendMailToDSP(u32 mail);
 u32 DSPCheckMailToDSP(void);
+u32 OSGetTick(void);
+
+static u32 next = 1;
+
+static int CARDRand(void) {
+    next = next * 1103515245 + 12345;
+    return (int)((u32)(next / 65536) % 32768);
+}
+
+static void CARDSrand(unsigned int seed) {
+    next = seed;
+}
 
 static void InitCallback(void *task) {
     s32 chan;
