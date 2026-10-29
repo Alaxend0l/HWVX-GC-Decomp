@@ -129,7 +129,8 @@ typedef struct CarA {
   u8 pad98[0x28];           /* 0x98 */
   OBox orientedBox;         /* 0xC0 BuildOOBOffset writes it; GetOrientedCollision
                                returns car + 0xC0; GetTargetPos reads its v[0] */
-  u8 padD0[0x240];          /* 0xF0 */
+  u8 padF0[0xC0];           /* 0xF0 */
+  CarAWheelState wheelStates[8]; /* 0x1B0 one per CarAInfo.wheels entry */
   MotionState motionState;   /* 0x330 embedded base subobject: model @0x330,
                                animMatrices @0x340, slave players list @0x344 */
   u8 pad348[0x28];          /* 0x348 */
