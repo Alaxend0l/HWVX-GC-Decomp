@@ -60,9 +60,11 @@ typedef struct IT_TRACK
     u32 prevFlags;           /* 0x6C */
 } IT_TRACK;
 
-IT_TRACK g_trk[0x20];
-
 s32 g_song[0xC];
+static IT_TRACK g_trk[0x20];
+static u8 *g_pIns[100];
+static u8 *g_pSmp[100];
+static u8 *g_pPtrn[200];
 
 void SetVoiceState_(IT_VOICE *voice, s32 state);
 void SetVoiceVol_(IT_VOICE *voice, s32 vol);
@@ -242,6 +244,510 @@ void SetITTrackOff(u32 mask, s8 deferred)
         mask >>= 1;
     }
 }
+
+#pragma push
+#pragma optimization_level 1
+void ProcessIT(u32 ticks)
+{
+    extern u8 *g_pOrder;
+    extern u32 g_trkOff;
+    extern u32 g_trkOn;
+    extern u8 *g_pHdr;
+    extern const s32 g_amigaNote[120];
+    extern u8 *g_pIns[100];
+    extern u8 *g_pSmp[100];
+    extern u8 *g_pPtrn[200];
+    s8 SetVoiceRate_(IT_VOICE *voice);
+    void SetVoiceOffset_(IT_VOICE *voice, u32 offset);
+    s16 GetITGVol_(s32 *song, IT_TRACK *trk);
+    static u8 *pPtrn;
+    IT_TRACK *trk;
+    s32 i;
+    u32 mask;
+    u8 c;
+    u8 order;
+    IT_VOICE *voice;
+    IT_VOICE *next;
+
+    g_song[1] += (u32)(g_song[0] * ticks) >> 16;
+    if ((u32)g_song[1] >> 16)
+    {
+        g_song[2]++;
+        g_song[1] &= 0xFFFF;
+        if ((u32)g_song[2] < (u32)g_song[8])
+        {
+            for (i = 0; i < 0x20; i++)
+            {
+                if (g_trk[i].active == NULL)
+                {
+                    continue;
+                }
+                trk = &g_trk[i];
+                if (trk->flags & 0x40)
+                {
+                    trk->period -= trk->slideSpeed;
+                    if (trk->flags & 0x80)
+                    {
+                        if (trk->period < trk->targetPeriod)
+                        {
+                            trk->period = trk->targetPeriod;
+                            trk->flags &= ~0xC0;
+                        }
+                    }
+                    else if (trk->period < 1)
+                    {
+                        StopActive(trk);
+                        continue;
+                    }
+                    *(u32 *)((u8 *)trk->active + 0x30) = (u32)(*(s32 *)(trk->smp + 0x3C) * 0x6B0) / trk->period;
+                    if (!SetVoiceRate_(trk->active))
+                    {
+                        trk->active = NULL;
+                    }
+                }
+                else if (trk->flags & 0x20)
+                {
+                    trk->period += trk->slideSpeed;
+                    if ((trk->flags & 0x80) && trk->period > trk->targetPeriod)
+                    {
+                        trk->period = trk->targetPeriod;
+                        trk->flags &= ~0xA0;
+                    }
+                    *(u32 *)((u8 *)trk->active + 0x30) = (u32)(*(s32 *)(trk->smp + 0x3C) * 0x6B0) / trk->period;
+                    if (!SetVoiceRate_(trk->active))
+                    {
+                        trk->active = NULL;
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (trk = g_trk, i = 0; i < 0x20; i++, trk++)
+            {
+                if (trk->active != NULL && (trk->flags & 0x10))
+                {
+                    trk->curVol = trk->volBase + trk->volSlide;
+                    if (trk->curVol < 0)
+                    {
+                        trk->curVol = 0;
+                    }
+                    else if (trk->curVol > 0x7FFF)
+                    {
+                        trk->curVol = 0x7FFF;
+                    }
+                    trk->active->vol = trk->curVol;
+                }
+                trk->prevFlags = trk->flags;
+                trk->flags = 0;
+            }
+            g_song[2] = 0;
+            if (--g_song[4] == 0)
+            {
+                if ((s8)*((u8 *)g_song + 0x15) != -1)
+                {
+                    *((u8 *)g_song + 0x14) = *((u8 *)g_song + 0x15);
+                    *((u8 *)g_song + 0x15) = 0xFF;
+                }
+                do
+                {
+                    order = g_pOrder[(*((u8 *)g_song + 0x14))++];
+                    if (order == 0xFF)
+                    {
+                        *((u8 *)g_song + 0x14) = 0;
+                    }
+                } while (order > 199);
+                pPtrn = g_pPtrn[order];
+                g_trkOff &= ~g_trkOn;
+                g_song[4] = *(u16 *)(pPtrn + 2);
+                pPtrn += 8;
+                if (g_trkOff != 0)
+                {
+                    for (trk = g_trk, mask = g_trkOff; mask != 0; trk++)
+                    {
+                        if (mask & 1)
+                        {
+                            trk->state = 0;
+                            voice = trk->head;
+                            trk->head = NULL;
+                            trk->active = NULL;
+                            while (voice)
+                            {
+                                next = voice->next;
+                                SetVoiceState_(voice, 3);
+                                voice = next;
+                            }
+                        }
+                        mask >>= 1;
+                    }
+                }
+                if (g_trkOn != 0)
+                {
+                    for (trk = g_trk, mask = g_trkOn; mask != 0; trk++)
+                    {
+                        trk->state |= mask & 1;
+                        mask >>= 1;
+                    }
+                }
+                g_trkOff = 0;
+                g_trkOn = 0;
+            }
+            while ((c = *pPtrn++) != 0)
+            {
+                trk = &g_trk[(c - 1) & 0x3F];
+                if (c & 0x80)
+                {
+                    trk->mask = *pPtrn++;
+                }
+                c = trk->mask;
+                if (c & 1)
+                {
+                    trk->note = *pPtrn++;
+                }
+                if (c & 2)
+                {
+                    trk->insNum = *pPtrn++ - 1;
+                    if (*(u16 *)(g_pHdr + 0x2C) & 4)
+                    {
+                        trk->ins = g_pIns[trk->insNum];
+                        trk->smp = g_pSmp[trk->ins[trk->note * 2 + 0x41]];
+                    }
+                    else
+                    {
+                        trk->smp = g_pSmp[trk->insNum];
+                    }
+                }
+                if (c & 4)
+                {
+                    trk->volCol = *pPtrn++;
+                }
+                if (c & 8)
+                {
+                    trk->cmd = *pPtrn++;
+                    trk->param = *pPtrn++;
+                }
+                if (trk->state)
+                {
+                    if (c & 0x13)
+                    {
+                        if (trk->note < 0x78)
+                        {
+                            if (*(u16 *)(g_pHdr + 0x2C) & 4)
+                            {
+                                trk->realNote = trk->ins[trk->note * 2 + 0x40];
+                            }
+                            else
+                            {
+                                trk->realNote = trk->note;
+                            }
+                            if (!(c & 0x88) || trk->cmd != 7)
+                            {
+                                trk->curVol = ((c & 0x44) ? trk->volCol : trk->smp[0x13]) << 9;
+                                if (trk->curVol >= 0x8000)
+                                {
+                                    trk->curVol = 0x7FFF;
+                                }
+                                trk->period = g_amigaNote[trk->realNote];
+                                PlayNote(trk);
+                                goto effects;
+                            }
+                        }
+                        else
+                        {
+                            if (trk->active != NULL)
+                            {
+                                StopActive(trk);
+                            }
+                            goto effects;
+                        }
+                    }
+                    if (c & 0x44)
+                    {
+                        trk->curVol = trk->volCol << 9;
+                        if (trk->curVol > 0x8000)
+                        {
+                            trk->curVol = 0x7FFF;
+                        }
+                        if (trk->active != NULL)
+                        {
+                            trk->active->vol = trk->curVol;
+                            SetVoiceVol_(trk->active, trk->gvol);
+                        }
+                    }
+                    else if (c & 0x20)
+                    {
+                        trk->curVol = trk->smp[0x13] << 9;
+                        if (trk->active != NULL)
+                        {
+                            trk->active->vol = trk->curVol;
+                            SetVoiceVol_(trk->active, trk->gvol);
+                        }
+                    }
+                }
+            effects:
+                if (!(c & 0x88))
+                {
+                    continue;
+                }
+                switch (trk->cmd)
+                {
+                case 1:
+                    g_song[8] = trk->param;
+                    break;
+                case 2:
+                    if (trk->param < *(u16 *)(g_pHdr + 0x20))
+                    {
+                        *((u8 *)g_song + 0x14) = trk->param;
+                        g_song[4] = 1;
+                    }
+                    break;
+                case 3:
+                    *((u8 *)g_song + 0xD) = trk->param;
+                    *((u8 *)g_song + 0xF) |= 8;
+                    g_song[4] = 1;
+                    break;
+                case 5:
+                    if (trk->param)
+                    {
+                        trk->memPitchSlide = trk->param;
+                    }
+                    if (trk->memPitchSlide < 0xE0)
+                    {
+                        trk->flags |= 0x20;
+                        trk->slideSpeed = trk->memPitchSlide << 2;
+                    }
+                    else if (trk->memPitchSlide & 0xF)
+                    {
+                        if (trk->memPitchSlide <= 0xF0)
+                        {
+                            trk->period += trk->memPitchSlide & 0xF;
+                        }
+                        else
+                        {
+                            trk->period += (trk->memPitchSlide & 0xF) * 4;
+                        }
+                        *(u32 *)((u8 *)trk->active + 0x30) = (u32)(*(s32 *)(trk->smp + 0x3C) * 0x6B0) / trk->period;
+                        if (trk->active != NULL && !SetVoiceRate_(trk->active))
+                        {
+                            trk->active = NULL;
+                        }
+                    }
+                    break;
+                case 6:
+                    if (trk->param)
+                    {
+                        trk->memPitchSlide = trk->param;
+                    }
+                    if (trk->memPitchSlide < 0xE0)
+                    {
+                        trk->flags |= 0x40;
+                        trk->slideSpeed = trk->memPitchSlide << 2;
+                    }
+                    else
+                    {
+                        if (trk->memPitchSlide <= 0xF0)
+                        {
+                            trk->period += trk->memPitchSlide & 0xF;
+                        }
+                        else
+                        {
+                            trk->period += (trk->memPitchSlide & 0xF) * 4;
+                        }
+                        *(u32 *)((u8 *)trk->active + 0x30) = (u32)(*(s32 *)(trk->smp + 0x3C) * 0x6B0) / trk->period;
+                        if (trk->active != NULL && !SetVoiceRate_(trk->active))
+                        {
+                            trk->active = NULL;
+                        }
+                    }
+                    break;
+                case 7:
+                    if (trk->param)
+                    {
+                        trk->memPitchSlide = trk->param;
+                    }
+                    trk->slideSpeed = trk->memPitchSlide << 2;
+                    if (c & 0x11)
+                    {
+                        trk->targetPeriod = g_amigaNote[trk->realNote];
+                    }
+                    trk->flags |= ((trk->targetPeriod > trk->period) ? 0x20 : 0x40) | 0x80;
+                    break;
+                case 8:
+                    if (trk->param)
+                    {
+                        trk->memVibrato = trk->param;
+                    }
+                    break;
+                case 9:
+                    if (trk->param)
+                    {
+                        trk->memTremor = trk->param;
+                    }
+                    break;
+                case 10:
+                    if (trk->param)
+                    {
+                        trk->memArp = trk->param;
+                    }
+                    break;
+                case 11:
+                case 12:
+                    if (trk->cmd == 12)
+                    {
+                        trk->flags |= ((trk->targetPeriod > trk->period) ? 0x20 : 0x40) | 0x80;
+                    }
+                    else
+                    {
+                        trk->flags |= 0x100;
+                    }
+                case 4:
+                    if (trk->param)
+                    {
+                        trk->memVolSlide = trk->param;
+                    }
+                    trk->flags |= 0x10;
+                    trk->volBase = trk->curVol;
+                    if ((trk->memVolSlide & 0xF) == 0)
+                    {
+                        trk->volSlide = (trk->memVolSlide << 5) * (g_song[8] - 1);
+                        if (trk->memVolSlide == 0xF0)
+                        {
+                            trk->volSlide += trk->memVolSlide << 5;
+                        }
+                    }
+                    else if ((trk->memVolSlide & 0xF0) == 0)
+                    {
+                        trk->volSlide = -((trk->memVolSlide << 9) * (g_song[8] - 1));
+                        if (trk->memVolSlide == 0xF)
+                        {
+                            trk->volSlide -= trk->memVolSlide << 9;
+                        }
+                    }
+                    else if ((trk->memVolSlide & 0xF) == 0xF)
+                    {
+                        trk->volSlide = (trk->memVolSlide & 0xF0) << 5;
+                    }
+                    else if ((trk->memVolSlide & 0xF0) == 0xF0)
+                    {
+                        trk->volSlide = -((trk->memVolSlide & 0xF) << 9);
+                    }
+                    else
+                    {
+                        trk->flags &= ~0x10;
+                    }
+                    break;
+                case 13:
+                    if (trk->param)
+                    {
+                        trk->memChVolSlide = trk->param;
+                    }
+                    if (trk->param <= 0x40)
+                    {
+                        trk->chVol = trk->param;
+                    }
+                    trk->gvol = GetITGVol_(g_song, trk);
+                    SetTrackVol(trk);
+                    break;
+                case 15:
+                    if (trk->param)
+                    {
+                        trk->memOffset = trk->param;
+                    }
+                    if (trk->active != NULL)
+                    {
+                        SetVoiceOffset_(trk->active, trk->memOffset << 8);
+                    }
+                    break;
+                case 19:
+                    if (trk->param)
+                    {
+                        trk->memSpecial = trk->param;
+                    }
+                    if ((trk->memSpecial & 0xF0) == 0x90)
+                    {
+                        switch (trk->memSpecial)
+                        {
+                        case 0x90:
+                            trk->panSep = -0x8000;
+                            break;
+                        case 0x91:
+                            trk->panSep = 0x8000;
+                            break;
+                        }
+                    }
+                    break;
+                case 20:
+                    if (trk->param)
+                    {
+                        trk->memTempo = trk->param;
+                    }
+                    if (trk->memTempo < 0x20)
+                    {
+                        if ((trk->memTempo & 0xF0) == 0)
+                        {
+                            g_song[0xB] = -trk->memTempo;
+                        }
+                        else
+                        {
+                            g_song[0xB] = trk->memTempo & 0xF;
+                        }
+                    }
+                    else
+                    {
+                        g_song[9] = trk->memTempo;
+                        g_song[0] = ((u32)g_song[0xA] << 0xF) / (0x1C9C380U / ((u32)g_song[9] * 0x18));
+                    }
+                    break;
+                case 21:
+                    if (trk->param)
+                    {
+                        trk->memVibrato = trk->param;
+                    }
+                    break;
+                case 22:
+                    if (trk->param <= 0x80)
+                    {
+                        g_song[6] = trk->param;
+                    }
+                    break;
+                case 23:
+                    if (trk->param)
+                    {
+                        trk->memPanSlide = trk->param;
+                    }
+                    *((u8 *)g_song + 0xE) = trk->memPanSlide;
+                    break;
+                case 24:
+                    trk->pan = trk->param * 0x100 - 0x8000;
+                    trk->pan -= trk->pan >> 15;
+                    SetTrackPan(trk);
+                    break;
+                }
+            }
+            return;
+        }
+    }
+    for (trk = g_trk, i = 0; i < 0x20; i++, trk++)
+    {
+        if (trk->active != NULL && (trk->flags & 0x10))
+        {
+            trk->curVol = trk->volBase + ((trk->volSlide * ((s32)(((u32)g_song[2] << 16 | (u16)g_song[1]) / (u32)g_song[8]) >> 1)) >> 15);
+            if (trk->curVol < 0)
+            {
+                trk->curVol = 0;
+                trk->flags &= ~0x10;
+            }
+            else if (trk->curVol > 0x7FFF)
+            {
+                trk->curVol = 0x7FFF;
+                trk->flags &= ~0x10;
+            }
+            trk->active->vol = trk->curVol;
+            SetVoiceVol_(trk->active, trk->gvol);
+        }
+    }
+}
+#pragma pop
 
 s32 PlayNote(IT_TRACK *trk)
 {
