@@ -239,7 +239,7 @@ typedef struct CarA {
   u32 transmissionFlags;    /* 0x48C & 0x1000 selects 4WD torque split */
   u8 tiltState;             /* 0x490 0: rest, 1/2: tilted by the stick, 3 */
   u8 pad491[0xF];           /* 0x491 */
-  char *stuntMessage;       /* 0x4A0 */
+  char **stuntMessage;      /* 0x4A0 */
   u8 pad4A4[0xC];           /* 0x4A4 */
   Vector4 stuntSpin;        /* 0x4B0 zeroed when a stunt fails */
   f32 torquePolyCoeffs[4];  /* 0x4C0 Horner polynomial in rpm */
