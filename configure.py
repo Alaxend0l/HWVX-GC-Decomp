@@ -384,7 +384,7 @@ config.libs = [
             Object(NonMatching, "FontManager.c"),
             Object(NonMatching, "Gfx_Anim.c"),
             Object(NonMatching, "Gfx_DisplayList.c"),
-            Object(NonMatching, "Gfx_GeometryHandler.c"),
+            Object(Matching, "Gfx_GeometryHandler.c"),
             Object(NonMatching, "Gfx_Main.c"),
             Object(NonMatching, "Gfx_TextureHandler.c"),
             Object(Matching, "MovieManager.c"),
