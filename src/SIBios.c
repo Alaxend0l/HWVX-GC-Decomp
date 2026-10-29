@@ -52,7 +52,6 @@ u32 SISetXY(u32 x, u32 y) {
     OSRestoreInterrupts(enabled);
     return poll;
 }
-#pragma peephole on
 
 static void AlarmHandler(OSAlarm *alarm, void *context) {
     s32 chan;
