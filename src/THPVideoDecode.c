@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 typedef struct THPReadBuffer {
     u8 *ptr;
     s32 frameNumber;
@@ -87,6 +89,47 @@ void *VideoDecoder(void *param) {
         }
         VideoDecode(readBuffer);
         PushFreeReadBuffer(readBuffer);
+    }
+}
+
+void *PopFreeTextureSet(void);
+void PushDecodedTextureSet(void *arg0);
+void PrepareReady(s32 arg0);
+s32 THPVideoDecode(void *file, void *tileY, void *tileU, void *tileV, void *work);
+void VideoDecode(THPReadBuffer *readBuffer) {
+    THPTextureSet *textureSet;
+    s32 old;
+    u32 i;
+    u32 *compSizePtr;
+    u8 *ptr;
+
+    ptr = readBuffer->ptr + ActivePlayer.numComponents * 4 + 8;
+    compSizePtr = (u32 *)(readBuffer->ptr + 8);
+    textureSet = PopFreeTextureSet();
+    for (i = 0; i < ActivePlayer.numComponents; i++) {
+        switch (ActivePlayer.components[i]) {
+        case 0:
+            ActivePlayer.videoError = THPVideoDecode(ptr, textureSet->ytexture, textureSet->utexture, textureSet->vtexture, ActivePlayer.thpWork);
+            if (ActivePlayer.videoError) {
+                if (First) {
+                    PrepareReady(0);
+                    First = 0;
+                }
+                OSSuspendThread(VideoDecodeThread);
+            }
+            textureSet->frameNumber = readBuffer->frameNumber;
+            PushDecodedTextureSet(textureSet);
+            old = OSDisableInterrupts();
+            ActivePlayer.videoDecodeCount++;
+            OSRestoreInterrupts(old);
+            break;
+        }
+        ptr += *compSizePtr;
+        compSizePtr++;
+    }
+    if (First) {
+        PrepareReady(1);
+        First = 0;
     }
 }
 
