@@ -380,6 +380,10 @@ u32 FileManager_GetDeviceStatus(u32 device) {
     return device == 1;
 }
 
+static inline s32 MemCard_Mount(s32 chan) {
+    return CARDMount(chan, CardWorkArea, 0);
+}
+
 s32 MemCard_Open__FUlPCScUlPl(u32 device, const char *fileName, u32 flags, s32 *unused) {
     u32 chan;
     CARDFileInfo *fileInfo;
