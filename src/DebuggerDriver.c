@@ -75,7 +75,7 @@ void DBInitInterrupts(void) {
 
 volatile unsigned long __EXIRegs[16] : 0xCC006800;
 
-static inline int DBGEXISelect(unsigned long v) {
+static int DBGEXISelect(unsigned long v) {
     unsigned long regs = __EXIRegs[10];
     regs &= 0x405;
     regs |= 0x80 | (v << 4);
@@ -129,19 +129,17 @@ int DBGEXIImm(void *buffer, long bytecounter, unsigned long write);
 #pragma push
 #pragma use_lmw_stmw on
 int DBGReadStatus(unsigned long *status) {
-    int err;
-    unsigned long cmd;
+    int total = 0;
+    unsigned long v;
 
-    __EXIRegs[10] = (__EXIRegs[10] & 0x405) | 0xC0;
-    cmd = 0x40000000;
-    err = !DBGEXIImm(&cmd, 2, 1);
-    while (__EXIRegs[13] & 1) {
-    }
-    err |= !DBGEXIImm(status, 4, 0);
-    while (__EXIRegs[13] & 1) {
-    }
-    __EXIRegs[10] &= 0x405;
-    return !err;
+    DBGEXISelect(4);
+    v = 1 << 30;
+    total |= !DBGEXIImm(&v, 2, 1);
+    DBGEXISync();
+    total |= !DBGEXIImm(status, 4, 0);
+    DBGEXISync();
+    DBGEXIDeselect();
+    return !total;
 }
 #pragma pop
 
