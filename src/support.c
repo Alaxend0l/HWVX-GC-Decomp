@@ -99,3 +99,44 @@ s32 HandleCloseFileSupportRequest(u32 fileHandle, u8 *ioResult) {
     TRKReleaseBuffer(bufferId);
     return error;
 }
+
+s32 HandleOpenFileSupportRequest(const char *path, u8 replyError, u32 *param, u8 *ioResult) {
+    s32 error;
+    s32 replyBufferId;
+    TRKBuffer *replyBuffer;
+    s32 bufferId;
+    TRKBuffer *buffer;
+
+    *param = 0;
+    error = TRKGetFreeBuffer(&bufferId, &buffer);
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui8(buffer, 0xD2);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui8(buffer, replyError);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer1_ui16(buffer, strlen(path) + 1);
+    }
+    if (error == 0) {
+        error = TRKAppendBuffer_ui8(buffer, (const u8 *)path, strlen(path) + 1);
+    }
+    if (error == 0) {
+        *ioResult = 0;
+        error = TRKRequestSend(buffer, &replyBufferId, 7, 3, 0);
+        if (error == 0) {
+            replyBuffer = TRKGetBuffer(replyBufferId);
+            TRKSetBufferPosition(replyBuffer, 2);
+        }
+        if (error == 0) {
+            error = TRKReadBuffer1_ui8(replyBuffer, ioResult);
+        }
+        if (error == 0) {
+            error = TRKReadBuffer1_ui32(replyBuffer, param);
+        }
+        TRKReleaseBuffer(replyBufferId);
+    }
+    TRKReleaseBuffer(bufferId);
+    return error;
+}
+
