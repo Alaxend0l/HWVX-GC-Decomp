@@ -441,6 +441,7 @@ s32 TriggerVariableValueCheck(u32 *data) {
 }
 
 s32 ActionVariableChangeValue(u32 *action) {
+    f32 GetCodeVariable(s32 var, u8 *thing);
     u32 i;
     f32 value;
     u8 **var;
