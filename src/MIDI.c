@@ -12,7 +12,7 @@ typedef struct MIDI_VOICE
     u8 priority;
     u8 state;
     u8 state2;
-    u8 byte17;
+    s8 byte17;
     u32 rate;
     u32 count;
     u32 field_20;
@@ -22,11 +22,11 @@ typedef struct MIDI_VOICE
     u8 pad_2D_30[3];
     u32 noteRate;
     u32 pitch2;
-    u32 field_38;
-    u32 field_3C;
-    u32 field_40;
-    u32 field_44;
-    u32 field_48;
+    s32 field_38;
+    s32 field_3C;
+    s32 field_40;
+    s32 field_44;
+    s32 field_48;
     u8 pad_4C_50[4];
 } MIDI_VOICE;
 
