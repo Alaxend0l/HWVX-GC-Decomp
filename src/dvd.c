@@ -64,6 +64,12 @@ void DVDReset(void);
     }
 
 
+void cbForStateReadingFST(u32 intType);
+void stateReadingFST(void) {
+    LastState = (u32)stateReadingFST;
+    DVDLowRead(*(void **)(bootInfo + 0x38), (((u32 *)tmpBuffer)[2] + 31) & ~31, ((u32 *)tmpBuffer)[1], cbForStateReadingFST);
+}
+
 void stateGettingError(void)
 {
     void DVDLowRequestError(void (*cb)(u32));
