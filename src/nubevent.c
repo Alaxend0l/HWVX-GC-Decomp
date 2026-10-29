@@ -18,3 +18,29 @@ void TRKConstructEvent(TRKEvent *event, s32 eventType) {
     event->msgBufID = -1;
 }
 
+s32 TRKGetNextEvent(TRKEvent *event) {
+    s32 result = 0;
+
+    TRKAcquireMutex(&gTRKEventQueue);
+    if (gTRKEventQueue.count > 0) {
+        TRK_memcpy(event, &gTRKEventQueue.events[gTRKEventQueue.next], sizeof(TRKEvent));
+        gTRKEventQueue.count--;
+        if (++gTRKEventQueue.next == 2) {
+            gTRKEventQueue.next = 0;
+        }
+        result = 1;
+    }
+    TRKReleaseMutex(&gTRKEventQueue);
+    return result;
+}
+
+s32 TRKInitializeEventQueue(void) {
+    TRKInitializeMutex(&gTRKEventQueue);
+    TRKAcquireMutex(&gTRKEventQueue);
+    gTRKEventQueue.count = 0;
+    gTRKEventQueue.next = 0;
+    gTRKEventQueue.eventID = 0x100;
+    TRKReleaseMutex(&gTRKEventQueue);
+    return 0;
+}
+
