@@ -348,6 +348,22 @@ void ThingManager_MoveThings_DARYL_SUBTICK(void)
 {
 }
 
+void ThingManager_DARYL_Render(void) {
+    extern void *g_pNoRayCollideThing;
+    s32 Gfx_FrustrumCullSphereTestAllWindows(void *, f32);
+    void Thing_DrawSlaves(void *);
+    ThingHeader *thing;
+
+    for (thing = g_thingManager_DARYL.activeList; thing != NULL; thing = thing->next) {
+        if (!(thing->flags & 0x200200) && Gfx_FrustrumCullSphereTestAllWindows(thing->unk40, thing->unk70)) {
+            ((void (**)(void *))thing->vtable)[4](thing);
+            g_pNoRayCollideThing = thing;
+            Thing_DrawSlaves(thing);
+        }
+    }
+    g_pNoRayCollideThing = NULL;
+}
+
 void *ThingManager_DARYL_CreateThing(s32 type, void *params) {
     void *thing = g_thingManager_DARYL.freeList[type];
 
