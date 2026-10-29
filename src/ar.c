@@ -2,6 +2,42 @@
 
 volatile u16 __DSPRegs[32] : 0xCC005000;
 
+static inline void __ARClearInterrupt(void) {
+    u16 tmp;
+    tmp = __DSPRegs[5];
+    tmp = (u16)((tmp & ~0x88) | 0x20);
+    __DSPRegs[5] = tmp;
+}
+
+static inline void __ARWaitForDMA(void) {
+    while (__DSPRegs[5] & 0x200) {
+    }
+}
+
+static inline void __ARWriteDMA(u32 mmem_addr, u32 aram_addr, u32 length) {
+    __DSPRegs[16] = (u16)((__DSPRegs[16] & ~0x3ff) | (u16)(mmem_addr >> 16));
+    __DSPRegs[17] = (u16)((__DSPRegs[17] & ~0xffe0) | (u16)(mmem_addr & 0xffff));
+    __DSPRegs[18] = (u16)((__DSPRegs[18] & ~0x3ff) | (u16)(aram_addr >> 16));
+    __DSPRegs[19] = (u16)((__DSPRegs[19] & ~0xffe0) | (u16)(aram_addr & 0xffff));
+    __DSPRegs[20] = (u16)(__DSPRegs[20] & ~0x8000);
+    __DSPRegs[20] = (u16)((__DSPRegs[20] & ~0x3ff) | (u16)(length >> 16));
+    __DSPRegs[21] = (u16)((__DSPRegs[21] & ~0xffe0) | (u16)(length & 0xffff));
+    __ARWaitForDMA();
+    __ARClearInterrupt();
+}
+
+static inline void __ARReadDMA(u32 mmem_addr, u32 aram_addr, u32 length) {
+    __DSPRegs[16] = (u16)((__DSPRegs[16] & ~0x3ff) | (u16)(mmem_addr >> 16));
+    __DSPRegs[17] = (u16)((__DSPRegs[17] & ~0xffe0) | (u16)(mmem_addr & 0xffff));
+    __DSPRegs[18] = (u16)((__DSPRegs[18] & ~0x3ff) | (u16)(aram_addr >> 16));
+    __DSPRegs[19] = (u16)((__DSPRegs[19] & ~0xffe0) | (u16)(aram_addr & 0xffff));
+    __DSPRegs[20] = (u16)(__DSPRegs[20] | 0x8000);
+    __DSPRegs[20] = (u16)((__DSPRegs[20] & ~0x3ff) | (u16)(length >> 16));
+    __DSPRegs[21] = (u16)((__DSPRegs[21] & ~0xffe0) | (u16)(length & 0xffff));
+    __ARWaitForDMA();
+    __ARClearInterrupt();
+}
+
 
 s32 ARRegisterDMACallback(s32 cb) {
     extern s32 __AR_Callback;
