@@ -59,15 +59,7 @@ void LensFlare_Init(void) {
     g_LensFlareRayTest = 1;
 }
 
-s32 LensFlare_Add(void *flare, s32 arg1, Vector4 *pos) {
-    typedef struct Flare {
-        void *flare;
-        s32 unk4;
-        u8 unk8[0x10 - 0x8];
-        Vector4 pos;
-        u8 unk20;
-        u8 unk21[0x30 - 0x21];
-    } Flare;
+s32 LensFlare_Add(FlareData *flare, u8 *thing, Vector4 *pos) {
     extern Flare g_pFlare[64];
     extern u32 g_activeFlares;
     u32 i;
@@ -75,9 +67,9 @@ s32 LensFlare_Add(void *flare, s32 arg1, Vector4 *pos) {
     if (flare != NULL) {
         for (i = 0; i < 64; i++) {
             if (g_pFlare[i].flare == NULL) {
-                g_pFlare[i].unk4 = arg1;
+                g_pFlare[i].thing = thing;
                 g_pFlare[i].flare = flare;
-                g_pFlare[i].unk20 = 0;
+                g_pFlare[i].visible = 0;
                 if (pos != NULL) {
                     g_pFlare[i].pos = *pos;
                 }
