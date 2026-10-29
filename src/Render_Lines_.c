@@ -47,7 +47,7 @@ typedef struct GDL {
     u32 numLines;
     u8 unk38[0xA2B80 - 0x38];
     GDL3DLine lines3D[2000];
-    u8 unkB8380[0xC0040 - 0xB8380];
+    u8 unkBA280[0xC0040 - 0xBA280];
     GDLLine lines[0x100];
 } GDL;
 
