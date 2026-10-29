@@ -1,5 +1,16 @@
 #include "common.h"
 
+static inline s8 AI_Car_CanTarget(u8 *ai, u8 *def) {
+    s8 ok = 1;
+
+    if (ai == NULL) {
+        ok = 0;
+    } else if (def[1] == 2) {
+        ok = 0;
+    }
+    return ok;
+}
+
 
 s32 AI_Car_CheckIfStuck(u8 *ai) {
     f32 PSVECSquareDistance(void *a, void *b);
