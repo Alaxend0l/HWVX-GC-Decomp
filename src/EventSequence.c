@@ -382,6 +382,232 @@ void EventSeq_Advanced_GetOffset(u8 *seq, void *arg1, Vector4 *out) {
 }
 
 #pragma use_lmw_stmw on
+void EventSeq_Advanced_GetInitData(u8 *emit, void *arg1, Vector4 *vel, Vector4 *pos, Vector4 *quat, Vector4 *angVel) {
+    typedef struct EventSeqThing {
+        Vector4 vel;
+        Matrix4 mtx;
+        Vector4 quat;
+    } EventSeqThing;
+    f32 RandomAdd(f32 base, f32 range);
+    f32 RandomDirVar(f32 base, f32 range);
+    void RandomNumberGenerator_GetRandomSubMatrix(Matrix4 *out);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void PSVECAdd(void *a, void *b, void *out);
+    void SetOrientation(void *m, f32 x, f32 y, f32 z);
+    void MultiplyMatrix(Matrix4 *a, Matrix4 *b, Matrix4 *out);
+    void SubMatrixToQuaternion(Matrix4 *mtx, Vector4 *quat);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *a, Vector4 *out);
+    EventSeqThing *seq = arg1;
+    Matrix4 mtx1;
+    Matrix4 res;
+    Matrix4 rot;
+    Matrix4 mtx3;
+    Matrix4 mtx4;
+    Vector4 tmp __attribute__((aligned(16)));
+    Vector4 v __attribute__((aligned(16)));
+    Vector4 a __attribute__((aligned(16)));
+    Vector4 offset __attribute__((aligned(16)));
+    Vector4 dir3 __attribute__((aligned(16)));
+
+    EventSeq_Advanced_GetOffset(emit, &seq->mtx, &offset);
+    switch (emit[0x22]) {
+    case 0:
+        XformVecOrientation(&seq->mtx, &offset, &tmp);
+        PSVECAdd(&seq->mtx.v[3], &tmp, pos);
+        v.x = 0.0f;
+        v.y = 0.0f;
+        v.z = RandomAdd(*(f32 *)(emit + 0x8), *(f32 *)(emit + 0xC));
+        a.x = 0.0f;
+        a.y = 0.0f;
+        a.z = 0.001f * RandomAdd(*(f32 *)(emit + 0x10), *(f32 *)(emit + 0x14));
+        XformVecOrientation(&seq->mtx, &v, vel);
+        XformVecOrientation(&seq->mtx, &a, angVel);
+        if (quat != NULL) {
+            *quat = seq->quat;
+        }
+        break;
+    case 1: {
+        f32 speed;
+        f32 spin;
+
+        speed = RandomAdd(*(f32 *)(emit + 0x8), *(f32 *)(emit + 0xC));
+        spin = 0.001f * RandomAdd(*(f32 *)(emit + 0x10), *(f32 *)(emit + 0x14));
+        RandomNumberGenerator_GetRandomSubMatrix(&mtx1);
+        v.x = mtx1.v[2].x * speed;
+        v.y = mtx1.v[2].y * speed;
+        v.z = mtx1.v[2].z * speed;
+        a.x = mtx1.v[2].x * spin;
+        a.y = mtx1.v[2].y * spin;
+        a.z = mtx1.v[2].z * spin;
+        offset.x += mtx1.v[2].x;
+        offset.y += mtx1.v[2].y;
+        offset.z += mtx1.v[2].z;
+        if (quat != NULL) {
+            SubMatrixToQuaternion(&mtx1, quat);
+        }
+        XformVecOrientation(&seq->mtx, &v, vel);
+        XformVecOrientation(&seq->mtx, &a, angVel);
+        XformVecOrientation(&seq->mtx, &offset, &tmp);
+        PSVECAdd(&seq->mtx.v[3], &tmp, pos);
+        break;
+    }
+    case 2: {
+        f32 *range = *(f32 **)(emit + 0x2C);
+        f32 ry;
+        f32 rx;
+        f32 rz;
+
+        ry = RandomDirVar(range[2], range[3]);
+        rx = -RandomDirVar(range[0], range[1]);
+        rz = RandomDirVar(range[4], range[5]);
+        XformVecOrientation(&seq->mtx, &offset, &tmp);
+        PSVECAdd(&seq->mtx.v[3], &tmp, pos);
+        SetOrientation(&rot, 0.01745329238474369f * ry, 0.01745329238474369f * rx, 0.01745329238474369f * rz);
+        rot.v[3].x = rot.v[3].y = rot.v[3].z = 0.0f;
+        MultiplyMatrix(&rot, &seq->mtx, &res);
+        v.x = 0.0f;
+        v.y = 0.0f;
+        v.z = RandomAdd(*(f32 *)(emit + 0x8), *(f32 *)(emit + 0xC));
+        a.x = 0.0f;
+        a.y = 0.0f;
+        a.z = 0.001f * RandomAdd(*(f32 *)(emit + 0x10), *(f32 *)(emit + 0x14));
+        if (quat != NULL) {
+            SubMatrixToQuaternion(&res, quat);
+        }
+        XformVecOrientation(&res, &v, vel);
+        XformVecOrientation(&res, &a, angVel);
+        break;
+    }
+    case 3: {
+        f32 speed;
+        f32 spin;
+
+        mtx3 = seq->mtx;
+        speed = RandomAdd(*(f32 *)(emit + 0x8), *(f32 *)(emit + 0xC));
+        spin = 0.001f * RandomAdd(*(f32 *)(emit + 0x10), *(f32 *)(emit + 0x14));
+        dir3 = offset;
+        XformVecOrientation(&seq->mtx, &offset, &tmp);
+        PSVECAdd(&seq->mtx.v[3], &tmp, pos);
+        if (!dir3.x && !dir3.y && !dir3.z) {
+            dir3.x = 0.0f;
+            dir3.y = 0.0f;
+            dir3.z = 1.0f;
+        } else if (PSVECSquareMag(&dir3)) {
+            PSVECNormalize(&dir3, &dir3);
+        }
+        v.x = dir3.x * speed;
+        v.y = dir3.y * speed;
+        v.z = dir3.z * speed;
+        a.x = dir3.x * spin;
+        a.y = dir3.y * spin;
+        a.z = dir3.z * spin;
+        if (quat != NULL) {
+            SubMatrixToQuaternion(&mtx3, quat);
+        }
+        XformVecOrientation(&seq->mtx, &v, vel);
+        XformVecOrientation(&seq->mtx, &a, angVel);
+        break;
+    }
+    case 4: {
+        f32 speed;
+        f32 spin;
+        u8 *info;
+
+        speed = RandomAdd(*(f32 *)(emit + 0x8), *(f32 *)(emit + 0xC));
+        spin = 0.001f * RandomAdd(*(f32 *)(emit + 0x10), *(f32 *)(emit + 0x14));
+        info = *(u8 **)(emit + 0x2C);
+        RandomNumberGenerator_GetRandomSubMatrix(&mtx4);
+        switch (info[0x10]) {
+        case 4:
+            if (mtx4.v[2].x < 0.0f) {
+                mtx4.v[1].x *= -1.0f;
+                mtx4.v[1].y *= -1.0f;
+                mtx4.v[1].z *= -1.0f;
+                mtx4.v[2].x *= -1.0f;
+                mtx4.v[2].y *= -1.0f;
+                mtx4.v[2].z *= -1.0f;
+            }
+            break;
+        case 5:
+            if (mtx4.v[2].x > 0.0f) {
+                mtx4.v[1].x *= -1.0f;
+                mtx4.v[1].y *= -1.0f;
+                mtx4.v[1].z *= -1.0f;
+                mtx4.v[2].x *= -1.0f;
+                mtx4.v[2].y *= -1.0f;
+                mtx4.v[2].z *= -1.0f;
+            }
+            break;
+        case 2:
+            if (mtx4.v[2].y < 0.0f) {
+                mtx4.v[0].x *= -1.0f;
+                mtx4.v[0].y *= -1.0f;
+                mtx4.v[0].z *= -1.0f;
+                mtx4.v[2].x *= -1.0f;
+                mtx4.v[2].y *= -1.0f;
+                mtx4.v[2].z *= -1.0f;
+            }
+            break;
+        case 3:
+            if (mtx4.v[2].y > 0.0f) {
+                mtx4.v[0].x *= -1.0f;
+                mtx4.v[0].y *= -1.0f;
+                mtx4.v[0].z *= -1.0f;
+                mtx4.v[2].x *= -1.0f;
+                mtx4.v[2].y *= -1.0f;
+                mtx4.v[2].z *= -1.0f;
+            }
+            break;
+        case 0:
+            if (mtx4.v[2].z < 0.0f) {
+                mtx4.v[1].x *= -1.0f;
+                mtx4.v[1].y *= -1.0f;
+                mtx4.v[1].z *= -1.0f;
+                mtx4.v[2].x *= -1.0f;
+                mtx4.v[2].y *= -1.0f;
+                mtx4.v[2].z *= -1.0f;
+            }
+            break;
+        case 1:
+            if (mtx4.v[2].z > 0.0f) {
+                mtx4.v[1].x *= -1.0f;
+                mtx4.v[1].y *= -1.0f;
+                mtx4.v[1].z *= -1.0f;
+                mtx4.v[2].x *= -1.0f;
+                mtx4.v[2].y *= -1.0f;
+                mtx4.v[2].z *= -1.0f;
+            }
+            break;
+        }
+        v.x = mtx4.v[2].x * speed;
+        v.y = mtx4.v[2].y * speed;
+        v.z = mtx4.v[2].z * speed;
+        a.x = mtx4.v[2].x * spin;
+        a.y = mtx4.v[2].y * spin;
+        a.z = mtx4.v[2].z * spin;
+        offset.x += mtx4.v[2].x;
+        offset.y += mtx4.v[2].y;
+        offset.z += mtx4.v[2].z;
+        if (quat != NULL) {
+            SubMatrixToQuaternion(&mtx4, quat);
+        }
+        XformVecOrientation(&seq->mtx, &v, vel);
+        XformVecOrientation(&seq->mtx, &a, angVel);
+        XformVecOrientation(&seq->mtx, &offset, &tmp);
+        PSVECAdd(&seq->mtx.v[3], &tmp, pos);
+        break;
+    }
+    }
+    if (emit[0x20]) {
+        vel->x += seq->vel.x * *(f32 *)(emit + 0x24);
+        vel->y += seq->vel.y * *(f32 *)(emit + 0x24);
+        vel->z += seq->vel.z * *(f32 *)(emit + 0x24);
+    }
+    pos->w = 1.0f;
+}
+
+#pragma use_lmw_stmw on
 void EventSeq_Advanced_GetInitData_NonDirectional(u8 *emit, void *arg1, Vector4 *vel, Vector4 *pos, Vector4 *quat, Vector4 *angVel) {
     typedef struct EventSeqThing {
         Vector4 vel;
