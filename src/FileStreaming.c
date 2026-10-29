@@ -52,7 +52,8 @@ typedef struct ItemInfo {
 typedef struct ItemThing {
     u8 pad0[0x74];
     u32 flags;
-    u8 pad78[0x90 - 0x78];
+    u8 pad78[0x8C - 0x78];
+    void (**vtbl)(struct ItemThing *);
     void *owner;
     u8 pad94[0xD0 - 0x94];
     void *respawnItem;
@@ -266,37 +267,36 @@ void FileStreaming_HeartBeatItems(void)
                         params.rot.x = 0.0f;
                         params.rot.y = 0.0f;
                         params.rot.z = 0.0f;
-                        if (item->hasValue) {
+                        if (item->hasValue != 0) {
                             params.value = item->value;
                         }
                         params.subtype = item->subtype;
-                        thing = ThingManager_DARYL_CreateThing(4, &params);
-                        if (thing == NULL) {
-                            continue;
-                        }
-                        item->spawned = 1;
-                        if (GameSettings_GetCodeVariable(0x12D, 0) != 0 && GameSettings_GetCodeVariable(0x136, 0) == 0) {
-                            item->respawn = 0;
-                        }
-                        item->thing = thing;
-                        thing->respawnItem = item;
-                        thing->owner = item;
-                        thing->flags |= 1;
-                        if (item->respawn != 0) {
+                        thing = (ItemThing *)ThingManager_DARYL_CreateThing(4, &params);
+                        if (thing) {
+                            item->spawned = 1;
+                            if (GameSettings_GetCodeVariable(0x12D, 0) && !GameSettings_GetCodeVariable(0x136, 0)) {
+                                item->respawn = 0;
+                            }
+                            item->thing = thing;
                             thing->respawnItem = item;
-                        }
-                        if (item->info->effect != 0) {
-                            p.id = item->info->effect;
-                            p.pos = item->pos;
-                            p.animRefPos = *(Vector4 *)&params.rot;
-                            p.vel.z = 0.0f;
-                            p.vel.y = 0.0f;
-                            p.vel.x = 0.0f;
-                            p.player = NULL;
-                            p.unk48 = 0.0f;
-                            p.unk4C = 0.0f;
-                            p.angVel = g_zeroVector;
-                            ThingManager_DARYL_CreateThing(1, &p);
+                            thing->owner = item;
+                            thing->flags |= 1;
+                            if (item->respawn) {
+                                thing->respawnItem = item;
+                            }
+                            if (item->info->effect) {
+                                p.id = item->info->effect;
+                                p.pos = item->pos;
+                                p.animRefPos = *(Vector4 *)&params.rot;
+                                p.vel.z = 0.0f;
+                                p.vel.y = 0.0f;
+                                p.vel.x = 0.0f;
+                                p.player = NULL;
+                                p.unk48 = 0.0f;
+                                p.unk4C = 0.0f;
+                                p.angVel = g_zeroVector;
+                                ThingManager_DARYL_CreateThing(1, &p);
+                            }
                         }
                     }
                 }
