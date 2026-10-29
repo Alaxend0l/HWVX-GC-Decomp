@@ -285,10 +285,10 @@ void GetTrimmedCameraPos2(Vector4 *from, Vector4 *to, f32 *trim) {
         Vector4 point;
         Vector4 normal;
         u8 unk20[0x30];
-    } info;
-    Vector4 pos;
-    Vector4 target;
-    Vector4 d;
+    } info __attribute__((aligned(16)));
+    Vector4 pos __attribute__((aligned(16)));
+    Vector4 target __attribute__((aligned(16)));
+    Vector4 d __attribute__((aligned(16)));
     f32 t;
     f32 trimAmt;
     f32 travelled;
