@@ -78,6 +78,8 @@ s32 EXIUnlock(s32 chan);
 s32 EXISelect(s32 chan, u32 dev, u32 freq);
 s32 EXIImm(s32 chan, void *buf, s32 len, u32 type, void *callback);
 s32 EXISync(s32 chan);
+void EXISetExiCallback(s32 chan, void *callback);
+void OSCancelAlarm(void *alarm);
 s32 OSDisableInterrupts(void);
 s32 OSRestoreInterrupts(s32 level);
 
