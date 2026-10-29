@@ -1,5 +1,18 @@
 #include "common.h"
 
+typedef struct AIStats {
+    u32 unk0[7];
+    u32 unk1C;
+    u32 unk20[19];
+} AIStats;
+
+typedef struct AIEvent {
+    void *data;
+    void (*func)();
+    struct AIEvent *next;
+    s8 queued;
+} AIEvent;
+
 
 void AI_Create(void)
 {
