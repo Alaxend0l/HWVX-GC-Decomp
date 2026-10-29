@@ -271,6 +271,21 @@ void ThingManager_DARYL_CreateMain(void) {
     }
 }
 
+void OBoxHolder_Init(void);
+void OConvexHullHolder_Init(void);
+void CollisionPairCache_Clear(void);
+void CollisionTriCache_Clear(void);
+void *memset(void *dst, int c, u32 n);
+extern u8 g_aSharedSlaveHolder[0x200];
+void ThingManager_DARYL_Create(void) {
+    OBoxHolder_Init();
+    OConvexHullHolder_Init();
+    ThingManager_DARYL_CreateMain();
+    CollisionPairCache_Clear();
+    CollisionTriCache_Clear();
+    memset(g_aSharedSlaveHolder, 0, sizeof(g_aSharedSlaveHolder));
+}
+
 void ThingManager_DARYL_Destroy(void) {
     void *thing;
     u32 i;
@@ -324,6 +339,10 @@ void ThingManager_DARYL_Heartbeat(void) {
         return;
     }
     ThingManager_MoveThings_DARYL_SUBTICK();
+}
+
+void ThingManager_MoveThings_DARYL_SUBTICK(void)
+{
 }
 
 void *ThingManager_DARYL_CreateThing(s32 type, void *params) {
