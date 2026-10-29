@@ -532,7 +532,7 @@ config.libs = [
             Object(NonMatching, "SISteeringAuto.c"),
             Object(NonMatching, "EXIBios.c"),
             Object(NonMatching, "EXIUart.c"),
-            Object(NonMatching, "mainloop.c"),
+            Object(NonMatching, "mainloop.c", mw_version="GC/1.3"),
             Object(NonMatching, "nubevent.c", mw_version="GC/1.3"),
             Object(NonMatching, "nubinit.c", mw_version="GC/1.3"),
             Object(NonMatching, "msg.c"),
