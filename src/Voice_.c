@@ -53,7 +53,8 @@ typedef struct VoiceHW {
     u8 unk2C[4];
     u32 rate;
     u32 pitch;
-    u8 unk38[0x10];
+    s32 vol;
+    u8 unk3C[0xC];
     s32 unk48;
     u8 unk4C[4];
     AXVPB *axv;
