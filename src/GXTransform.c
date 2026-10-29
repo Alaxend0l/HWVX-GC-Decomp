@@ -69,7 +69,7 @@ void GXProject(f32 x, f32 y, f32 z, f32 mtx[3][4], f32 *pm, f32 *vp, f32 *sx, f3
 #pragma peephole off
 void GXGetProjectionv(f32 *p) {
     extern GXData *gx;
-    p[0] = (u32)gx->projType;
+    p[0] = (f32)gx->projType;
     p[1] = gx->projMtx[0];
     p[2] = gx->projMtx[1];
     p[3] = gx->projMtx[2];
@@ -108,6 +108,28 @@ void GXSetCurrentMtx(u32 id) {
     __GXSetMatrixIndex(0);
 }
 
+void WriteMTXPS4x2(f32 mtx[3][4], volatile f32 *wgpipe);
+#pragma peephole off
+void GXLoadTexMtxImm(f32 mtx[3][4], u32 id, s32 type) {
+    u32 reg;
+    u32 addr;
+    u32 count;
+
+    if (id >= 0x40) {
+        addr = (id - 0x40) * 4 + 0x500;
+    } else {
+        addr = id * 4;
+    }
+    count = (type == 1) ? 8 : 12;
+    reg = addr | ((count - 1) << 16);
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = reg;
+    if (type == 0) {
+        WriteMTXPS4x3(mtx, (volatile f32 *)0xCC008000);
+    } else {
+        WriteMTXPS4x2(mtx, (volatile f32 *)0xCC008000);
+    }
+}
 void GXSetViewportJitter(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz, u32 field);
 #pragma peephole off
 void GXSetViewport(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz) {
