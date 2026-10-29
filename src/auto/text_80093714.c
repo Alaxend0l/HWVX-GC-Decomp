@@ -25,7 +25,7 @@ typedef struct TRKState {
 } TRKState;
 
 typedef struct TRKStepStatus {
-    u32 active;
+    s32 active;
     u8 type;        /* 0: count, 1: out of range, 0x10: over */
     u8 pad_5[3];
     u32 count;
