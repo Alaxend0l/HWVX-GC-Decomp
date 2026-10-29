@@ -169,7 +169,8 @@ typedef struct CarA {
   s32 engineRpmState;       /* 0x470 compared < 10000 in GetTorqueAtWheels */
   u8 pad474[0x18];          /* 0x474 */
   u32 transmissionFlags;    /* 0x48C & 0x1000 selects 4WD torque split */
-  u8 pad490[0x30];          /* 0x490 */
+  u8 tiltState;             /* 0x490 0: rest, 1/2: tilted by the stick, 3 */
+  u8 pad491[0x2F];          /* 0x491 */
   f32 torquePolyCoeffs[4];  /* 0x4C0 Horner polynomial in rpm */
   u8 pad4D0[0x14];          /* 0x4D0 */
   f32 rpm;                  /* 0x4E4 */
