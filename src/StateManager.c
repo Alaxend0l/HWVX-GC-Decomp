@@ -17,40 +17,29 @@ typedef struct StateManager {
 } StateManager;
 
 void StateManager_Create(void) {
-    typedef struct GameState {
-        void *interrupt;
-        void *heartbeat;
-        void *enter;
-        void *exit;
-    } GameState;
-    typedef struct StateManager {
-        GameState states[13];
-        s32 current;
-        s32 next;
-    } StateManager;
-    extern StateManager *g_pStateManager;
     void *Allocate(u32 size, s32 type, const char *name);
-    s32 StateMovie_Heartbeat(void);
-    s32 StateMovie_Init(s32 returnState);
-    s32 StateMovie_Shutdown(void);
-    s32 StateGamePlay_Heartbeat(void);
-    s32 StateGamePlay_Init(void);
-    s32 StateGamePlay_Shutdown(void);
-    s32 StateRenderTest_Heartbeat(void);
-    s32 StateRenderTest_Init(void);
-    s32 StateRenderTest_Shutdown(void);
-    s32 StateShutdown_Heartbeat(void);
-    s32 StateShutdown_Init(void);
-    s32 StateShutdown_Shutdown(void);
-    s32 StateTitleScreen_Heartbeat(void);
-    s32 StateTitleScreen_Init(s32 prevState);
-    s32 StateTitleScreen_Shutdown(void);
-    s32 StateProgressionManager_Heartbeat(void);
-    s32 StateProgressionManager_Init(void);
-    s32 StateProgressionManager_Shutdown(void);
-    s32 StateGameManager_Heartbeat(void);
-    s32 StateGameManager_Init(void);
-    s32 StateGameManager_Shutdown(void);
+    void StateMovie_Heartbeat(void);
+    s8 StateMovie_Init(s32 prev);
+    s8 StateMovie_Shutdown(s32 next);
+    void StateGamePlay_Heartbeat(void);
+    s8 StateGamePlay_Init(s32 prev);
+    s8 StateGamePlay_Shutdown(s32 next);
+    void StateRenderTest_Heartbeat(void);
+    s8 StateRenderTest_Init(s32 prev);
+    s8 StateRenderTest_Shutdown(s32 next);
+    void StateShutdown_Heartbeat(void);
+    s8 StateShutdown_Init(s32 prev);
+    s8 StateShutdown_Shutdown(s32 next);
+    void StateTitleScreen_Heartbeat(void);
+    s8 StateTitleScreen_Init(s32 prev);
+    s8 StateTitleScreen_Shutdown(s32 next);
+    void StateProgressionManager_Heartbeat(void);
+    s8 StateProgressionManager_Init(s32 prev);
+    s8 StateProgressionManager_Shutdown(s32 next);
+    void StateGameManager_Heartbeat(void);
+    s8 StateGameManager_Init(s32 prev);
+    s8 StateGameManager_Shutdown(s32 next);
+    extern StateManager *g_pStateManager;
     s32 i;
 
     g_pStateManager = Allocate(sizeof(StateManager), 0, "");
