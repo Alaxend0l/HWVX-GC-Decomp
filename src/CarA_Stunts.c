@@ -4,6 +4,8 @@ typedef struct DroneProps {
     u8 pad00[0x20];
     f32 mass;               /* 0x20 */
     f32 gravity;            /* 0x24 */
+    u8 pad28[4];            /* 0x28 */
+    f32 spinDamping;        /* 0x2C */
 } DroneProps;
 
 typedef struct DroneInfo {
