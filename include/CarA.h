@@ -93,7 +93,7 @@ typedef struct CarA {
   u32 collDirtyFlags;       /* 0x74 &= ~0x180 when the oriented box is rebuilt */
   s32 speed;                /* 0x78 scaled by AI speedScale */
   u8 pad7C[0x18];           /* 0x7C */
-  u8 *player;               /* 0x94 NULL-checked, copied to slave players */
+  Player *player;           /* 0x94 NULL-checked, copied to slave players */
   u8 pad98[0x28];           /* 0x98 */
   OBox orientedBox;         /* 0xC0 BuildOOBOffset writes it; GetOrientedCollision
                                returns car + 0xC0; GetTargetPos reads its v[0] */
