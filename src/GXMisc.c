@@ -2,6 +2,13 @@
 
 
 extern volatile u16 *__peReg;
+void GXPokeAlphaMode(s32 func, u8 threshold) {
+    u32 reg;
+
+    reg = (func << 8) | threshold;
+    __peReg[3] = reg;
+}
+
 void GXPokeAlphaRead(s32 mode) {
     u32 reg;
 
