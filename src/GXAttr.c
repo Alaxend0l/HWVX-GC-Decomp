@@ -153,6 +153,18 @@ void GXClearVtxDesc(void) {
     gx->dirtyState |= 8;
 }
 
+void GXGetVtxAttrFmt(s32 fmt, s32 attr, s32 *cnt, s32 *type, u8 *frac);
+void GXGetVtxAttrFmtv(s32 fmt, GXVtxAttrFmtList *list) {
+    s32 attr;
+
+    for (attr = 9; attr < 26; attr++) {
+        list->attr = attr;
+        GXGetVtxAttrFmt(fmt, attr, &list->cnt, &list->type, &list->frac);
+        list++;
+    }
+    list->attr = 0xFF;
+}
+
 void GXInvalidateVtxCache(void) {
     *(volatile u8 *)0xCC008000 = 0x48;
 }
