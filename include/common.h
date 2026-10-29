@@ -370,7 +370,9 @@ typedef struct CarTrailBone {
   f32 offset;
   f32 width0;
   f32 width1;
-  u8 padC[0x3F - 0xC];
+  u8 padC[8];
+  f32 unk14;
+  u8 pad18[0x3F - 0x18];
   u8 parent;
   u16 bone;
   u8 pad42[0x50 - 0x42];
