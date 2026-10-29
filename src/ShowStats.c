@@ -2,6 +2,28 @@
 
 #pragma use_lmw_stmw on
 
+typedef struct DebugFontInfo {
+    u32 texture;
+    u8 unk4[5];
+    u8 width;
+    u8 height;
+    u8 caseMode;
+    u8 unkC[0x1C];
+    f32 spacing;
+} DebugFontInfo;
+
+typedef struct GameDataFonts {
+    u8 unk0[0xC8];
+    DebugFontInfo *debugFont;
+} GameDataFonts;
+
+u8 g_timeBar[0x20];
+u32 g_bDrawTimeBars;
+s32 debugFont;
+u32 g_debugDataFlag;
+s32 g_timeBarOn;
+s32 g_pActiveTimeBar;
+
 typedef struct TimeBarVtx {
     f32 x;
     f32 y;
