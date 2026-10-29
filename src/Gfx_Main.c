@@ -88,6 +88,30 @@ void Gfx_RemovePointLights(void) {
     }
 }
 
+void Gfx_AddPointLight(GXColor *color, Vector *pos, f32 radius) {
+    if (g_state.numPointLights < 3) {
+        g_state.pointLights[g_state.numPointLights].color = *color;
+        g_state.pointLights[g_state.numPointLights].position = *pos;
+        g_state.pointLights[g_state.numPointLights].radius = radius;
+        g_state.lightChanged = 1;
+        g_state.numPointLights++;
+    }
+}
+
+void Gfx_SetParallelLight(GXColor *color, Vector *dir) {
+    Vector *lightDir;
+
+    g_state.lightColor = *color;
+    if (dir != NULL) {
+        lightDir = &g_state.lightDir;
+        *lightDir = *dir;
+        if (PSVECSquareMag(lightDir) != 0.0f) {
+            PSVECNormalize(lightDir, lightDir);
+            g_state.lightChanged = 1;
+        }
+    }
+}
+
 void Gfx_SetAmbientColor(GXColor *color) {
     g_state.ambientColor = *color;
 }
