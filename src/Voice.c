@@ -48,6 +48,7 @@ extern u32 g_freeSound;
 extern s32 g_sfxvol;
 extern s8 g_speakers;
 extern void (*VoiceUpdate)(void);
+extern s32 g_sfxState;
 
 void *memcpy(void *dst, const void *src, u32 n);
 void *memset(void *dst, int c, u32 n);
