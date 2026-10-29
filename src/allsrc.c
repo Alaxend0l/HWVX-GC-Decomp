@@ -175,11 +175,6 @@ static inline void SimThread_SetWeights(SimThread *t, const s32 *weights) {
 void VDevice_RecalcGammaTable(void);
 double pow(double x, double y);
 
-static inline f32 VDevice_GammaCurve(s32 v) {
-    f32 gamma = 0.6666667f;
-
-    return 128.0f * (f32)pow((f32)v / 128.0f, gamma);
-}
 s32 VDevice_Shutdown(VDevice *dev);
 s32 VDevice_StartEffect(VDevice *dev, u32 handle);
 u32 VDevice_GetFreeEffect(VDevice *dev);
