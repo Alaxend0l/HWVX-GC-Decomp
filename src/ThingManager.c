@@ -605,6 +605,27 @@ void *ThingManager_DARYL_CreateThing(s32 type, void *params) {
     return NULL;
 }
 
+void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id) {
+    void *slave = g_thingManager_DARYL.freeList[type];
+
+    if (slave == NULL) {
+        slave = NULL;
+    } else {
+        g_thingManager_DARYL.freeList[type] = M2C_FIELD(slave, void **, 0xA4);
+        if (g_thingManager_DARYL.freeList[type] != NULL) {
+            M2C_FIELD(g_thingManager_DARYL.freeList[type], void **, 0xA0) = NULL;
+        }
+        M2C_FIELD(slave, void **, 0xA4) = NULL;
+    }
+    if (slave != NULL) {
+        ((void (*)(void *, void *))(M2C_FIELD(slave, void ***, 0x8C))[0])(slave, params);
+        M2C_FIELD(slave, u8 *, 0x82) = id;
+        M2C_FIELD(slave, u32 *, 0x74) |= 0x20000000;
+        return slave;
+    }
+    return NULL;
+}
+
 s32 OBox_CollideAllThingsZeroTime(void *obox, void *thing, void *info) {
     u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults);
     s8 OBoxHitsOBoxZeroTime(void *a, void *b, void *info);
