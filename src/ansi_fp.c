@@ -1,5 +1,8 @@
 #include "common.h"
 
+#pragma pool_strings on
+#pragma readonly_strings on
+
 #define SIGDIGLEN 36
 
 typedef struct decimal {
@@ -163,6 +166,93 @@ void __num2dec_internal(decimal *d, double x) {
         __ull2dec(&int_d, (unsigned long long)integer);
         __timesdec(d, &int_d, &pow2_d);
         d->sign = sign;
+    }
+}
+
+static void __str2dec(decimal *d, const signed char *s, short exp);
+void __two_exp(decimal *result, short exp) {
+    decimal temp;
+
+    switch (exp) {
+    case -64:
+        __str2dec(result, (const signed char *)"542101086242752217003726400434970855712890625", -20);
+        return;
+    case -53:
+        __str2dec(result, (const signed char *)"11102230246251565404236316680908203125", -16);
+        return;
+    case -32:
+        __str2dec(result, (const signed char *)"23283064365386962890625", -10);
+        return;
+    case -16:
+        __str2dec(result, (const signed char *)"152587890625", -5);
+        return;
+    case -8:
+        __str2dec(result, (const signed char *)"390625", -3);
+        return;
+    case -7:
+        __str2dec(result, (const signed char *)"78125", -3);
+        return;
+    case -6:
+        __str2dec(result, (const signed char *)"15625", -2);
+        return;
+    case -5:
+        __str2dec(result, (const signed char *)"3125", -2);
+        return;
+    case -4:
+        __str2dec(result, (const signed char *)"625", -2);
+        return;
+    case -3:
+        __str2dec(result, (const signed char *)"125", -1);
+        return;
+    case -2:
+        __str2dec(result, (const signed char *)"25", -1);
+        return;
+    case -1:
+        __str2dec(result, (const signed char *)"5", -1);
+        return;
+    case 0:
+        __str2dec(result, (const signed char *)"1", 0);
+        return;
+    case 1:
+        __str2dec(result, (const signed char *)"2", 0);
+        return;
+    case 2:
+        __str2dec(result, (const signed char *)"4", 0);
+        return;
+    case 3:
+        __str2dec(result, (const signed char *)"8", 0);
+        return;
+    case 4:
+        __str2dec(result, (const signed char *)"16", 1);
+        return;
+    case 5:
+        __str2dec(result, (const signed char *)"32", 1);
+        return;
+    case 6:
+        __str2dec(result, (const signed char *)"64", 1);
+        return;
+    case 7:
+        __str2dec(result, (const signed char *)"128", 2);
+        return;
+    case 8:
+        __str2dec(result, (const signed char *)"256", 2);
+        return;
+    }
+
+    __two_exp(result, exp / 2);
+    __timesdec(result, result, result);
+
+    if (exp & 1) {
+        temp = *result;
+        if (exp > 0) {
+            decimal two;
+            __str2dec(&two, (const signed char *)"2", 0);
+            __timesdec(result, &temp, &two);
+        } else {
+            decimal half;
+            __str2dec(&half, (const signed char *)"5", -1);
+            __timesdec(result, &temp, &half);
+        }
     }
 }
 
