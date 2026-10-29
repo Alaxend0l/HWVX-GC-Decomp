@@ -313,7 +313,8 @@ typedef struct CarA {
   s32 soundIds[3];          /* 0x4F0 SoundSource ids, -1 == none; stopped + reset in Release */
   f32 unk4FC;               /* 0x4FC */
   s32 damageAccum;          /* 0x500 */
-  u8 pad504[8];             /* 0x504 */
+  s32 groundedTime;         /* 0x504 ms */
+  f32 groundedScale;        /* 0x508 */
   f32 forwardAccel;         /* 0x50C velocity += forward * this * dt */
   u8 pad510[0x10];          /* 0x510 */
   Vector4 bodyOffset;       /* 0x520 XformVec(worldMatrix, this) -> camera/reflection pos */
