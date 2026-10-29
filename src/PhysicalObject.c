@@ -351,6 +351,33 @@ u8 PhysicalObject_Move(u8 *obj) {
     return Destructible_Move(obj);
 }
 
+void Mover_DynamicRotation(u8 *mover) {
+    typedef struct Mover {
+        u8 pad0[0x10];
+        Matrix4 mtx;
+        Quaternion quat;
+        u8 pad60[0x74 - 0x60];
+        u32 flags;
+        u8 pad78[0xE0 - 0x78];
+        Quaternion rot;
+    } Mover;
+    void QuaternionToSubMatrix(Quaternion *quat, Matrix4 *mtx);
+    Mover *m = (Mover *)mover;
+    Quaternion quat __attribute__((aligned(16)));
+    Matrix4 mtx;
+
+    if (!(m->flags & 0x10)) {
+        m->flags |= 0x10;
+        quat = m->rot;
+        QuaternionToSubMatrix(&quat, &mtx);
+        mtx.v[3].x = m->mtx.v[3].x;
+        mtx.v[3].y = m->mtx.v[3].y;
+        mtx.v[3].z = m->mtx.v[3].z;
+        m->quat = quat;
+        m->mtx = mtx;
+    }
+}
+
 void PhysicalObject_DynamicCollideImpact(u8 *obj, u8 *collision, f32 force) {
     extern Vector4 g_zeroVector;
     f32 PSVECSquareMag(void *v);
