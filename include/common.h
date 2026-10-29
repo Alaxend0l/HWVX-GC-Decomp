@@ -73,7 +73,17 @@ typedef struct Camera {
   u32 *mode;                /* 0xB4 */
   f32 modeTime;             /* 0xB8 */
   f32 trim;                 /* 0xBC */
-  u8 padC0[0xC0];
+  u8 padC0[0x20];
+  Vector4 lookDir;          /* 0xE0 */
+  u8 padF0[0x20];
+  Vector4 springPos;        /* 0x110 */
+  Vector4 springVel;        /* 0x120 */
+  Vector4 rollUp;           /* 0x130 */
+  Vector4 rollUpVel;        /* 0x140 */
+  Vector4 tiltUp;           /* 0x150 */
+  Vector4 tiltUpVel;        /* 0x160 */
+  u8 pad170[0xC];
+  s32 flipTimer;            /* 0x17C */
   CameraListener *listener; /* 0x180 */
   u8 pad184[0x190 - 0x184];
 } Camera;
