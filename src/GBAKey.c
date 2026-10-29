@@ -81,7 +81,8 @@ void F25(u32 arg0) {
     void OSPanic(const char *file, s32 line, const char *msg, ...);
 
     GBAControl *gba;
-    u32 idx;
+    s32 idx;
+    s32 chan;
 
     gba = __GBA;
     if ((u32)&gba->realLength == arg0) {
@@ -97,6 +98,7 @@ void F25(u32 arg0) {
         idx = -1;
     }
 
-    __GBAX01(idx, 0);
+    chan = idx;
+    __GBAX01(chan, 0);
 }
 
