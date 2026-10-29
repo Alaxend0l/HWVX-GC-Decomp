@@ -120,7 +120,9 @@ typedef struct GDL {
     u16 alphaTable[0x100];
     GDLAlphaEntry alphaEntries[0x4268];
     GDLSprite sprites[0x7CF];
-    u8 unk38C90[0xC0040 - 0x38C90];
+    u8 unk38C90[0x7EA00 - 0x38C90];
+    GDLRect rects2D[0x400];
+    u8 unk9FA00[0xC0040 - 0x9FA00];
     GDLLine lines[0x100];
     u8 unkC3040[0xF3C00 - 0xC3040];
     void *matrices[0x578];
