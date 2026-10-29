@@ -134,6 +134,29 @@ void stateCoverClosed_CMD(DVDCommandBlock *block) {
     DVDLowReadDiskID(tmpBuffer, cbForStateCoverClosed);
 }
 
+void cbForStateCoverClosed(u32 intType) {
+    void __DVDStoreErrorCode(u32 code);
+    void cbForStateError(u32 code);
+    void cbForStateGettingError(u32 code);
+    void DVDLowRequestError(void (*cb)(u32));
+    void stateCheckID(void);
+
+    if (intType == 16) {
+        executing->state = -1;
+        __DVDStoreErrorCode(0x1234568);
+        DVDReset();
+        cbForStateError(0);
+        return;
+    }
+
+    if (intType & 1) {
+        NumInternalRetry = 0;
+        stateCheckID();
+    } else {
+        DVDLowRequestError(cbForStateGettingError);
+    }
+}
+
 void stateMotorStopped(void)
 {
     void DVDLowWaitCoverClose(void (*cb)(u32));
