@@ -533,16 +533,22 @@ typedef struct GXObject {
 } GXObject;
 
 typedef struct QuadPack {
-  u8 pad00[0x10];
+  u8 pad00[0xC];
+  u32 enabled;    /* 0x0C */
   void *data;     /* 0x10 */
   void *vertices; /* 0x14 */
   u8 pad18[0x10];
-  GXObject *gxObject; /* 0x28 */
+  union {
+    GXObject *gxObject;            /* 0x28 */
+    struct QuadPackHeader *header; /* 0x28 */
+  };
   s32 gxBase;         /* 0x2C */
   u8 pad30[0x4];
   u8 flag34; /* 0x34 */
-  u8 pad35[0xC];
-  void *alloc; /* 0x44 */
+  u8 pad35[0x7];
+  s32 fileOffset; /* 0x3C */
+  u32 size;       /* 0x40 */
+  void *alloc;    /* 0x44 */
 } QuadPack;
 
 typedef struct DataPackShader {
