@@ -37,6 +37,42 @@ void CopyMatrix(Matrix4 *dst, Matrix4 *src)
     memcpy(dst, src, 0x40);
 }
 
+void Init_Math3D(void)
+{
+    g_identity.v[0].x = 1.0f;
+    g_identity.v[0].y = 0.0f;
+    g_identity.v[0].z = 0.0f;
+    g_identity.v[0].w = 0.0f;
+    g_identity.v[1].x = 0.0f;
+    g_identity.v[1].y = 1.0f;
+    g_identity.v[1].z = 0.0f;
+    g_identity.v[1].w = 0.0f;
+    g_identity.v[2].x = 0.0f;
+    g_identity.v[2].y = 0.0f;
+    g_identity.v[2].z = 1.0f;
+    g_identity.v[2].w = 0.0f;
+    g_identity.v[3].x = 0.0f;
+    g_identity.v[3].y = 0.0f;
+    g_identity.v[3].z = 0.0f;
+    g_identity.v[3].w = 1.0f;
+    g_zeroVector.x = 0.0f;
+    g_zeroVector.y = 0.0f;
+    g_zeroVector.z = 0.0f;
+    g_zeroVector.w = 1.0f;
+    g_iBasis.x = 1.0f;
+    g_jBasis.x = 0.0f;
+    g_kBasis.x = 0.0f;
+    g_jBasis.y = 1.0f;
+    g_kBasis.y = 0.0f;
+    g_iBasis.y = 0.0f;
+    g_kBasis.z = 1.0f;
+    g_iBasis.z = 0.0f;
+    g_jBasis.z = 0.0f;
+    g_iBasis.w = 1.0f;
+    g_kBasis.w = 1.0f;
+    g_kBasis.w = 1.0f;
+}
+
 void SinCos(f32 *s, f32 *c, f32 angle)
 {
     f64 sin(f32);
