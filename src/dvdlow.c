@@ -143,6 +143,16 @@ s32 DVDLowStopMotor(DVDLowCallback callback)
     return 1;
 }
 
+s32 DVDLowRequestError(DVDLowCallback callback)
+{
+    Callback = callback;
+    StopAtNextInt = 0;
+    __DIRegs[2] = 0xE0000000;
+    __DIRegs[7] = 1;
+    SetTimeoutAlarm((OSAlarmHandler)AlarmHandlerForTimeout, (__OSBusClock / 4) * 10);
+    return 1;
+}
+
 s32 DVDLowBreak(void)
 {
     StopAtNextInt = 1;
