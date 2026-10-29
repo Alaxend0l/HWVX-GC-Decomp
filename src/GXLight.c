@@ -55,4 +55,23 @@ void GXInitLightPos(GXLightObjInt *lt_obj, f32 x, f32 y, f32 z) {
 void GXInitLightColor(GXLightObjInt *lt_obj, GXColor color) {
     lt_obj->Color = (color.r << 24) | (color.g << 16) | (color.b << 8) | color.a;
 }
+#include "common.h"
 
+typedef union PPCWGPipe {
+    u8 u8;
+    u16 u16;
+    u32 u32;
+    s32 s32;
+    f32 f32;
+} PPCWGPipe;
+
+#define GXWGFifo (*(volatile PPCWGPipe *)0xCC008000)
+
+typedef struct GXData {
+    u8 pad0[0x204];
+    u32 genMode;
+    u8 pad208[0x4F4 - 0x208];
+    u32 dirtyState;
+} GXData;
+
+extern GXData *gx;
