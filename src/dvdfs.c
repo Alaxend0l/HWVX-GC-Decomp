@@ -1,5 +1,33 @@
 #include "common.h"
 
+typedef struct DVDCommandBlock DVDCommandBlock;
+typedef void (*DVDCBCallback)(s32 result, DVDCommandBlock *block);
+
+struct DVDCommandBlock {
+    DVDCommandBlock *next;
+    DVDCommandBlock *prev;
+    u32 command;
+    s32 state;
+    u32 offset;
+    u32 length;
+    void *addr;
+    u32 currTransferSize;
+    u32 transferredSize;
+    void *id;
+    DVDCBCallback callback;
+    void *userData;
+};
+
+typedef struct DVDFileInfo DVDFileInfo;
+typedef void (*DVDCallback)(s32 result, DVDFileInfo *fileInfo);
+
+struct DVDFileInfo {
+    DVDCommandBlock cb;
+    u32 startAddr;
+    u32 length;
+    DVDCallback callback;
+};
+
 
 #pragma push
 #pragma peephole on
