@@ -129,6 +129,17 @@ void Render_StateZWriteEnable(s32 enable) {
     m_zwrite = enable;
 }
 
+void Render_StateFogEnable(s32 enable) {
+    if (m_fogMode != enable) {
+        if (enable) {
+            GXSetFog(m_fogType, m_fogRange1, m_fogRange2, 1.0f, 15000.0f, m_fogColor);
+        } else {
+            GXSetFog(0, 1.0f, 10.0f, 1.0f, 10.0f, m_fogColor);
+        }
+        m_fogMode = enable;
+    }
+}
+
 void Render_ClearScreen(void) {
 
 }
