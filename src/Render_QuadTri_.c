@@ -53,6 +53,16 @@ void Render_StateBlendMode(u8 mode);
 void Render_StateAlphaBlendEnable(s32 enable);
 void SetTriVtxDesc(void);
 
+typedef struct GfxState {
+    u8 unk0[0x8C];
+    u16 debugFont;
+    u8 unk8E[0xA0 - 0x8E];
+} GfxState;
+
+extern GfxState g_state;
+extern u8 g_screenText[0xA00];
+u32 FontManager_Print(char *str, s32 id, f32 x, f32 y);
+
 extern GXColor g_textcolor;
 void Render_DrawPointSprites(void) {
     u32 i;
