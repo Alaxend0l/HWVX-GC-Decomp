@@ -21,8 +21,8 @@ f32 Gfx_GetProjectionMatrix(void) {
 }
 
 void Gfx_SetOrthoMatrix(void) {
-    f32 proj[3][4];
     f32 mtx[3][4];
+    f32 proj[3][4];
     f32 width;
 
     width = GetRenderWindow()->width;
