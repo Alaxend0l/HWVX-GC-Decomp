@@ -43,22 +43,22 @@ u32 Mpeg_Heartbeat(void) {
     s32 THPPlayerGetState(void);
     void THPPlayerStop(void);
     void THPPlayerClose(void);
-    extern u8 badMojo_803C7734;
-    extern s32 m_movie_x_803C7740;
-    extern s32 m_movie_y_803C773C;
-    extern s32 m_rendermode_803C7754;
-    extern THPVideoInfo m_videoInfo_803C7744;
+    extern u8 badMojo;
+    extern s32 m_movie_x;
+    extern s32 m_movie_y;
+    extern s32 m_rendermode;
+    extern THPVideoInfo m_videoInfo;
 
-    if (badMojo_803C7734) {
+    if (badMojo) {
         return 0;
     }
     GXInvalidateVtxCache();
-    THPPlayerDrawCurrentFrame(m_rendermode_803C7754, m_movie_x_803C7740, m_movie_y_803C773C, m_videoInfo_803C7744.xSize, m_videoInfo_803C7744.ySize);
+    THPPlayerDrawCurrentFrame(m_rendermode, m_movie_x, m_movie_y, m_videoInfo.xSize, m_videoInfo.ySize);
     THPPlayerDrawDone();
     if (THPPlayerGetState() == 5) {
         THPPlayerStop();
         THPPlayerClose();
-        badMojo_803C7734 = 1;
+        badMojo = 1;
         return 0;
     }
     return THPPlayerGetState() != 3;
