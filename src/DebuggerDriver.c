@@ -16,6 +16,24 @@ void DBOpen(void) {
 
 }
 
+int DBGRead(unsigned long addr, void *data, unsigned long size);
+int DBRead(void *data, unsigned long size) {
+    int interrupts;
+    unsigned long base;
+
+    interrupts = OSDisableInterrupts();
+    if (SendMailData & 0x10000) {
+        base = 0x1000;
+    } else {
+        base = 0;
+    }
+    DBGRead(base + 0x1e000, data, (size + 3) & ~3);
+    RecvDataLeng = 0;
+    EXIInputFlag = 0;
+    OSRestoreInterrupts(interrupts);
+    return 0;
+}
+
 int OSDisableInterrupts(void);
 int OSRestoreInterrupts(int level);
 int DBGReadStatus(unsigned long *status);
