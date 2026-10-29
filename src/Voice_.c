@@ -174,11 +174,11 @@ s8 SetVoiceRate_(VoiceHW *voice) {
     return 0;
 }
 s32 SetVoiceOffset_(VoiceHW *voice, u32 offset) {
-    VoiceHW *v = voice;
+    AXVPB *axv;
 
-    if (offset < v->length) {
-        AXVPB *axv = v->axv;
-        *(u32 *)&axv->currentAddressHi = v->addr + offset;
+    if (offset < voice->length) {
+        axv = voice->axv;
+        *(u32 *)&axv->currentAddressHi = voice->addr + offset;
         axv->sync |= 0x1000;
         return 1;
     }
