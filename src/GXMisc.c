@@ -25,6 +25,14 @@ void GXPokeAlphaUpdate(u8 update_enable) {
     __peReg[1] = reg;
 }
 
+void GXPokeColorUpdate(u8 update_enable) {
+    u32 reg;
+
+    reg = __peReg[1];
+    reg = (reg & ~0x8) | (update_enable << 3);
+    __peReg[1] = reg;
+}
+
 void GXPokeDstAlpha(u8 enable, u8 alpha) {
     u32 reg;
 
