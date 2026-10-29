@@ -144,6 +144,20 @@ s32 DVDLowWaitCoverClose(DVDLowCallback callback)
     return 1;
 }
 
+s32 DVDLowReadDiskID(void *diskID, DVDLowCallback callback)
+{
+    Callback = callback;
+    StopAtNextInt = 0;
+    __DIRegs[2] = 0xA8000040;
+    __DIRegs[3] = 0;
+    __DIRegs[4] = 0x20;
+    __DIRegs[5] = (u32)diskID;
+    __DIRegs[6] = 0x20;
+    __DIRegs[7] = 3;
+    SetTimeoutAlarm((OSAlarmHandler)AlarmHandlerForTimeout, (__OSBusClock / 4) * 10);
+    return 1;
+}
+
 s32 DVDLowStopMotor(DVDLowCallback callback)
 {
     Callback = callback;
