@@ -61,3 +61,20 @@ void AIReset(void) {
     extern s32 __AI_init_flag;
     __AI_init_flag = 0;
 }
+
+void OSClearContext(void *);
+void OSSetCurrentContext(void *);
+extern void (*__AIS_Callback)(u32);
+void __AISHandler(s16 interrupt, void *context) {
+    u8 exceptionContext[0x2C8];
+
+    __AIRegs[0] |= 8;
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(exceptionContext);
+    if (__AIS_Callback) {
+        __AIS_Callback(__AIRegs[2]);
+    }
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(context);
+}
+
