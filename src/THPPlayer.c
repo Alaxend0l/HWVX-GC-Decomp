@@ -313,6 +313,38 @@ returnFalse:
     return FALSE;
 }
 
+s32 ProperTimingForGettingNextFrame(void)
+{
+    u32 VIGetNextField();
+    s32 frameRate;
+
+    if (ActivePlayer.playFlag & 2)
+    {
+        if (VIGetNextField() == 0)
+        {
+            return TRUE;
+        }
+    }
+    else if (ActivePlayer.playFlag & 4)
+    {
+        if (VIGetNextField() == 1)
+        {
+            return TRUE;
+        }
+    }
+    else
+    {
+        frameRate = ActivePlayer.frameRate * 100.0f;
+        ActivePlayer.unkCC = (*(s64 *)&ActivePlayer.unkC0 * frameRate) / 5994;
+        if (ActivePlayer.unkC8 != ActivePlayer.unkCC)
+        {
+            ActivePlayer.unkC8 = ActivePlayer.unkCC;
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 s32 THPPlayerAudioOutput(s16 *destination, u32 sample, s32 volume)
 {
     s32 ret;
