@@ -13,6 +13,22 @@ TrailSegment g_TrialData[1000];
 u32 g_nextTrail;
 f32 g_trailTimer;
 
+static inline s32 Trail_FindFreeSegment(void) {
+    s32 i;
+
+    i = 1000;
+    while (i-- > 0) {
+        if (g_nextTrail == 1000) {
+            g_nextTrail = 0;
+        }
+        if (g_TrialData[g_nextTrail++].life == 0) {
+            i = g_nextTrail - 1;
+            break;
+        }
+    }
+    return i;
+}
+
 void Trail_Create(void) {
     M2C_UNK fn_800957D4();
     fn_800957D4();
