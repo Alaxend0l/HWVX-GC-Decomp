@@ -43,6 +43,14 @@ typedef struct TRKExceptionStatus {
     u8 pad_E[2];
 } TRKExceptionStatus;
 
+typedef struct memRange {
+    u8 *start;
+    u8 *end;
+    s32 readable;
+    s32 writeable;
+} memRange;
+
+extern const memRange gTRKMemMap[1];
 extern TRKCPUState gTRKCPUState;
 extern TRKState gTRKState;
 extern TRKStepStatus gTRKStepStatus_800DA0B4;
