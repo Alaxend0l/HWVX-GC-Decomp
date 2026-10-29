@@ -2,6 +2,11 @@
 
 #pragma use_lmw_stmw on
 
+SpawnVolume gs_aSpawnVolumes[256];
+u8 *gs_pCurrentAICreature;
+u32 g_volumeTotal;
+u32 gs_currentVolume;
+
 s32 AI_Creature_Deactivate(u8 *creature) {
     extern u8 g_cameraManager[];
     void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
