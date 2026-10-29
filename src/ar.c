@@ -104,8 +104,8 @@ s32 ARGetBaseAddress(void)
     return 0x4000;
 }
 
-s32 ARGetSize(void) {
-    extern s32 __AR_Size;
+u32 ARGetSize(void) {
+    extern u32 __AR_Size;
     return __AR_Size;
 }
 
