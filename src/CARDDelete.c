@@ -67,6 +67,44 @@ error:
     }
 }
 
+s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard);
+s32 __CARDGetFileNo(CARDControl *card, const char *fileName, s32 *pfileNo);
+BOOL __CARDIsOpened(CARDControl *card, s32 fileNo);
+u8 *__CARDGetDirBlock(CARDControl *card);
+s32 __CARDUpdateDir(s32 chan, CARDCallback callback);
+void __CARDDefaultApiCallback(s32 chan, s32 result);
+void *memset(void *dst, int val, unsigned long n);
+s32 CARDDeleteAsync(s32 chan, const char *fileName, CARDCallback callback)
+{
+    CARDControl *card;
+    s32 fileNo;
+    s32 result;
+    u8 *ent;
+
+    result = __CARDGetControlBlock(chan, &card);
+    if (result < 0) {
+        return result;
+    }
+    result = __CARDGetFileNo(card, fileName, &fileNo);
+    if (result < 0) {
+        return __CARDPutControlBlock(card, result);
+    }
+    if (__CARDIsOpened(card, fileNo)) {
+        return __CARDPutControlBlock(card, -1);
+    }
+
+    ent = __CARDGetDirBlock(card) + fileNo * 0x40;
+    card->startBlock = *(u16 *)(ent + 0x36);
+    memset(ent, 0xFF, 0x40);
+
+    card->apiCallback = callback ? callback : __CARDDefaultApiCallback;
+    result = __CARDUpdateDir(chan, DeleteCallback);
+    if (result < 0) {
+        __CARDPutControlBlock(card, result);
+    }
+    return result;
+}
+
 s32 CARDDelete(s32 chan, const char *fileName)
 {
     s32 CARDDeleteAsync(s32 chan, const char *fileName, CARDCallback callback);
