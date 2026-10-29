@@ -61,9 +61,28 @@ typedef struct GfxState {
 
 extern GfxState g_state;
 extern u8 g_screenText[0xA00];
-u32 FontManager_Print(char *str, s32 id, f32 x, f32 y);
+u32 FontManager_Print(char *str, f32 x, f32 y, s32 id);
 
 extern GXColor g_textcolor;
+#pragma push
+#pragma use_lmw_stmw on
+void Render_Print(void) {
+    f32 y;
+    s32 i;
+    s32 j;
+    char buf[88];
+
+    y = 10.0f;
+    for (i = 0; i < 32; i++) {
+        for (j = 0; j < 80; j++) {
+            buf[j] = g_screenText[i * 80 + j];
+        }
+        buf[j] = 0;
+        y += FontManager_Print(buf, g_state.debugFont, 10.0f, y);
+    }
+}
+#pragma pop
+
 void Render_DrawPointSprites(void) {
     u32 i;
     u32 color;
