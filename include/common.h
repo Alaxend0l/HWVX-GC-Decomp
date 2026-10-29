@@ -776,14 +776,26 @@ typedef struct CreateCarParams {
   u8 unk44[0x4C - 0x44];
   void *player;
 } CreateCarParams;
+typedef struct FlashDef {
+  u8 unk0;
+  u8 enabled;
+  u8 unk2[0x20 - 0x2];
+  u8 *colorKey;
+  u8 unk24[0x2C - 0x24];
+  u8 pointKey[4];
+} FlashDef;
+
 typedef struct Flash {
   Vector4 pos;
-  u8 unk10[0x3C - 0x10];
+  u8 colorOut[0x34 - 0x10];
+  GXColor color;
+  u8 unk38[0x3C - 0x38];
   u8 active;
-  u8 unk3D[0x58 - 0x3D];
+  u8 unk3D[0x40 - 0x3D];
+  u8 pointOut[0x58 - 0x40];
   u8 visible;
   u8 unk59[0x5C - 0x59];
-  void *flash;
+  FlashDef *flash;
   s32 unk60;
   u8 unk64[0x68 - 0x64];
   s32 unk68;
