@@ -204,7 +204,7 @@ typedef struct CarA {
   u8 pad420[0x20];          /* 0x420 */
   Vector4 prevVelocity;     /* 0x440 velocity at the start of PreMove */
   u32 reverseTimer;         /* 0x450 ms the brake is held at standstill */
-  u8 pad454[4];             /* 0x454 */
+  void *rollSurface;        /* 0x454 surface whose rolling sound plays */
   f32 gradeOrReverse;       /* 0x458 < 0.0f gates AI braking */
   s32 unk45C;               /* 0x45C */
   s32 unk460;               /* 0x460 */
