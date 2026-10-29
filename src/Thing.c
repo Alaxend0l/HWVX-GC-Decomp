@@ -145,8 +145,6 @@ block_8:
     goto loop_9;
 }
 
-#pragma push
-#pragma use_lmw_stmw on
 s32 TriggerCreatureVolumeEntered(u32 *trigger) {
     f32 dist;
     u8 *volume;
