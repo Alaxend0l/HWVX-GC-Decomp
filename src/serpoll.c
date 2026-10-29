@@ -40,8 +40,8 @@ void TRKProcessInput(s32 bufferIdx) {
 }
 
 void TRKGetInput(void) {
-    s32 id;
     void *buf;
+    s32 id;
     u8 command;
 
     id = TRKTestForPacket();
