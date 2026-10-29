@@ -225,11 +225,10 @@ void CollisionPairCache_Heartbeat(void)
 
     for (i = 0; i < 4; i++)
     {
-        if (g_aCollisionPairCache[i].objectA == 0)
+        if (g_aCollisionPairCache[i].objectA != 0)
         {
-            continue;
+            g_aCollisionPairCache[i].time += g_iDeltaTimeMS;
         }
-        g_aCollisionPairCache[i].time += g_iDeltaTimeMS;
         if ((u32) g_aCollisionPairCache[i].time > 1000)
         {
             g_aCollisionPairCache[i].objectB = 0;
