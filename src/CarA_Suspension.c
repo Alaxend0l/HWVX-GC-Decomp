@@ -1,6 +1,8 @@
 #include "common.h"
 #include "CarA.h"
 
+#pragma use_lmw_stmw on
+
 /* What a suspension ray hit is made of (RayHit.surface). */
 typedef struct SuspSurface {
     u8 type;                  /* 0x00 1: no skids, 2: own skid texture */
@@ -85,6 +87,244 @@ f32 CarA_GetImpactMultiplier(void *car, void *other, f32 scale) {
         return 1.0f;
     }
     return 1.0f - impact;
+}
+
+void CarA_ComputeSuspensionForces_Aux1(CarA *car) {
+    extern Player *g_pSourcePlayer;
+    extern char stunt_msg_buffer_second[];
+    extern char *g_stuntMessageLocalString;
+    s8 CarA_DoFreeStyleStunts(CarA *car);
+    void MotionState_InitAllSlavesNow(MotionState *state, u8 *slaves, s32 type);
+    void MotionState_ReleaseSlavesByType(MotionState *state, u8 type);
+    f32 GetComponentOfVector(Vector4 *v, Vector4 *dir);
+    int sprintf(char *buf, const char *fmt, ...);
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    typedef struct RackItem {
+        u8 pad0[0x30];
+        struct { u8 pad0[0x28]; s32 maxCount; } *data;
+    } RackItem;
+    typedef struct RackSlot {
+        u8 pad0[0x40];
+        s16 count;
+        u8 pad42[0xA];
+        RackItem *item;
+    } RackSlot;
+    typedef struct Rack {
+        u8 pad0[0xB0];
+        RackSlot slots[12];
+    } Rack;
+    SuspThingParams params;
+    Vector4 torque;
+    Vector4 arm;
+    f32 dot;
+    f32 force;
+    f32 t;
+    f32 range;
+    CarAEngine *engine;
+    CarAAccel *accel;
+    CarAInfo *info;
+    CarAStuntInfo *stunt;
+    u32 points;
+    u32 numMsgs;
+    u32 numDebris;
+    u32 idx;
+    Rack *rack;
+    s32 n;
+
+    dot = PSVECDotProduct(&car->worldMatrix.v[2], &car->velocity);
+    if (!(car->transmissionFlags & 2)) {
+        force = -car->vehicleIface->collider->gravity;
+        car->torqueAccum.x += force * car->localAxis.x;
+        car->torqueAccum.y += force * car->localAxis.y;
+        car->torqueAccum.z += force * car->localAxis.z;
+    }
+    if (car->numWheelsGrounded == 0) {
+        car->unk460 += g_iDeltaTimeMS;
+        car->groundedTime = 0;
+        if (!(car->transmissionFlags & 2) && !CarA_DoFreeStyleStunts(car) && car->worldMatrix.v[1].y > 0.3f) {
+            if (car->unk460 > (engine = car->vehicleIface->engine)->selfRightDelay) {
+                f32 len = engine->selfRightArm;
+
+                arm.x = -car->worldMatrix.v[1].x * len;
+                arm.y = (1.0f - car->worldMatrix.v[1].y) * len;
+                arm.z = -car->worldMatrix.v[1].z * len;
+                PSVECCrossProduct(&car->worldMatrix.v[1], &arm, &torque);
+                car->torqueAccum.x += torque.x;
+                car->torqueAccum.y += torque.y;
+                car->torqueAccum.z += torque.z;
+            }
+            if (car->unk460 > (accel = car->vehicleIface->accel)->airDownforceDelay) {
+                force = accel->airDownforceRate * car->lowSpeedFlag + accel->airDownforceBase;
+                if (force > accel->airDownforceMax) {
+                    force = accel->airDownforceMax;
+                }
+                force = -force;
+                car->torqueAccum.x += force * car->localAxis.x;
+                car->torqueAccum.y += force * car->localAxis.y;
+                car->torqueAccum.z += force * car->localAxis.z;
+            }
+        }
+        if (!(car->transmissionFlags & 0x80000)) {
+            info = car->vehicleIface;
+            if (info->numSlaves > 8 && car->unk460 > info->engine->selfRightDelay) {
+                MotionState_InitAllSlavesNow(&car->motionState, info->slaves + 0x64, 8);
+                car->transmissionFlags |= 0x80000;
+            }
+        }
+        car->groundedScale = 0.0f;
+    } else {
+        if (car->unk460 > 300) {
+            MotionState_ReleaseSlavesByType(&car->motionState, 4);
+            car->transmissionFlags &= ~2;
+        }
+        car->unk460 = 0;
+    }
+    t = car->forwardAccel;
+    force = 20.0f * (car->vehicleIface->accel->spinDecay * g_fDeltaTimeSec);
+    if (t > 0.0f) {
+        car->forwardAccel = t - force;
+    } else if (t < 0.0f) {
+        car->forwardAccel = t + force;
+    }
+    if (t * car->forwardAccel <= 0.0f) {
+        car->forwardAccel = 0.0f;
+    }
+    car->transmissionFlags &= ~0x40;
+    if (car->numWheelsGrounded == car->vehicleIface->numWheels) {
+        car->transmissionFlags &= ~0x80000;
+        MotionState_ReleaseSlavesByType(&car->motionState, 8);
+        if ((car->transmissionFlags & 0x100) && _fabs(car->gradeOrReverse) < 2.0f &&
+            (car->worldMatrix.v[1].y > 0.83f ||
+             (car->worldMatrix.v[1].y > 0.6f && car->player != NULL && (car->transmissionFlags & 0x20) &&
+              car->player->throttle == 0))) {
+            car->velocity.x *= 0.9f;
+            car->velocity.y *= 0.9f;
+            car->velocity.z *= 0.9f;
+            GetComponentOfVector(&car->groundNormal, &car->forceAccum);
+        }
+        if (car->transmissionFlags & 0x10) {
+            car->gradeOrReverse = dot;
+            car->rpm = car->gradeOrReverse / car->vehicleIface->gears[car->curveTableIdx].ratio;
+            while (car->rpm < car->vehicleIface->unk24 && car->curveTableIdx > 1) {
+                car->curveTableIdx--;
+                car->rpm = car->gradeOrReverse / car->vehicleIface->gears[car->curveTableIdx].ratio;
+            }
+            car->transmissionFlags &= ~0x10;
+        }
+        if (car->player != NULL) {
+            g_pSourcePlayer = car->player;
+            if ((car->player->buttonsHeld & 1) && dot > 0.0f && car->forwardAccel < 0.1f) {
+                car->forwardAccel = car->vehicleIface->accel->spinImpulse * dot;
+                car->transmissionFlags |= 0x40;
+                if (car->vehicleIface->numSlaves > 5 && dot > 30.0f) {
+                    MotionState_ReleaseSlavesByType(&car->motionState, 5);
+                    MotionState_ReleaseSlavesByType(&car->motionState, 6);
+                    MotionState_InitAllSlavesNow(&car->motionState, car->vehicleIface->slaves + 0x40, 5);
+                }
+            }
+            if ((car->player->buttonsHeld & 0x400) && dot > 0.0f && car->forwardAccel > -0.1f) {
+                car->forwardAccel = -car->vehicleIface->accel->spinImpulse * dot;
+                car->transmissionFlags |= 0x40;
+                if (car->vehicleIface->numSlaves > 5 && dot > 30.0f) {
+                    MotionState_ReleaseSlavesByType(&car->motionState, 5);
+                    MotionState_ReleaseSlavesByType(&car->motionState, 6);
+                    MotionState_InitAllSlavesNow(&car->motionState, car->vehicleIface->slaves + 0x4C, 6);
+                }
+            }
+            g_pSourcePlayer = NULL;
+        }
+        if (car->player != NULL && Player_IsHuman(car->player)) {
+            info = car->vehicleIface;
+            if (car->stuntTime > info->stunt->minFailTime) {
+                points = car->stuntTime;
+                if (info->numSlaves > 7) {
+                    MotionState_InitAllSlavesNow(&car->motionState, info->slaves + 0x58, 7);
+                }
+                MotionState_ReleaseSlavesByType(&car->motionState, 8);
+                stunt = car->vehicleIface->stunt;
+                range = stunt->maxFailTime - stunt->minFailTime;
+                t = ((f32)points - stunt->minFailTime) / range;
+                if (range > 0.0f && (f32)points > stunt->minFailTime) {
+                    numMsgs = stunt->numMessages;
+                    numDebris = stunt->numRewardThings;
+                    if (numMsgs != 0) {
+                        if (car->groundNormal.y < -0.5f) {
+                            sprintf(stunt_msg_buffer_second, "CEILING PLANT!|%d x8", points);
+                            car->stuntPopup = &g_stuntMessageLocalString;
+                            points *= 8;
+                            car->stuntTime *= 8.0f;
+                        } else if (car->groundNormal.y < 0.25f) {
+                            sprintf(stunt_msg_buffer_second, "Wall Plant|%d x3", points);
+                            car->stuntPopup = &g_stuntMessageLocalString;
+                            points *= 3;
+                            car->stuntTime *= 3.0f;
+                        } else {
+                            idx = 0;
+                            if (numMsgs > 1) {
+                                idx = t * numMsgs + 0.5f;
+                                if (idx >= numMsgs) {
+                                    idx = numMsgs - 1;
+                                }
+                            }
+                            if (stunt->messages[idx] != NULL) {
+                                sprintf(stunt_msg_buffer_second, "%s%d\n", *stunt->messages[idx], points);
+                                car->stuntPopup = &g_stuntMessageLocalString;
+                            }
+                        }
+                    }
+                    car->player->stuntScored = 1;
+                    car->player->stuntPoints += points;
+                    if (car->player->stuntPoints > 99999) {
+                        car->player->stuntPoints = 99999;
+                    }
+                    if (numDebris != 0) {
+                        idx = 0;
+                        if (numDebris > 1) {
+                            idx = t * numDebris + 0.5f;
+                            if (idx >= numDebris) {
+                                idx = numDebris - 1;
+                            }
+                        }
+                        params.id = car->vehicleIface->stunt->rewardThings[idx];
+                        if (params.id != 0) {
+                            params.pos = car->worldMatrix.v[3];
+                            params.animRefPos = car->animRefPos;
+                            params.vel.x = car->velocity.x;
+                            params.vel.y = 0.0f;
+                            params.vel.z = car->velocity.z;
+                            params.player = NULL;
+                            params.unk48 = 0.0f;
+                            params.unk4C = 0.0f;
+                            params.angVel = g_zeroVector;
+                            ThingManager_DARYL_CreateThing(1, &params);
+                        }
+                    }
+                }
+                rack = ThingManagerList_GetByType(&car->motionState.slaves, 8);
+                for (n = 0; n < 12; n++) {
+                    RackSlot *slot = &rack->slots[n];
+
+                    if (slot->item != NULL) {
+                        slot->count += (s16)points;
+                        if (slot->count > (s16)slot->item->data->maxCount) {
+                            slot->count = slot->item->data->maxCount;
+                        }
+                    }
+                }
+                car->turboTime += (s32)((f32)points * car->vehicleIface->stunt->turboPerPoint);
+                if (car->turboTime > 30000) {
+                    car->turboTime = 30000;
+                }
+                car->stuntTime = 0.0f;
+            }
+        }
+        car->stuntSpin.x = 0.0f;
+        car->stuntSpin.y = 0.0f;
+        car->stuntSpin.z = 0.0f;
+        car->groundedScale = 1.0f;
+        car->groundedTime += g_iDeltaTimeMS;
+        car->transmissionFlags &= ~0x40000;
+    }
 }
 
 #pragma use_lmw_stmw on
