@@ -144,6 +144,33 @@ int DBGReadStatus(unsigned long *status) {
 
 #pragma push
 #pragma use_lmw_stmw on
+int DBGWrite(unsigned long count, void *buffer, long size) {
+    int total = 0;
+    unsigned long *buf = (unsigned long *)buffer;
+    unsigned long cmd;
+    unsigned long v;
+
+    DBGEXISelect(4);
+    cmd = (count & 0x1fffc) << 8 | 0xa0000000;
+    total |= !DBGEXIImm(&cmd, 4, 1);
+    total |= !DBGEXISync();
+
+    while (size != 0) {
+        v = *buf++;
+        total |= !DBGEXIImm(&v, 4, 1);
+        total |= !DBGEXISync();
+        size -= 4;
+        if (size < 0) {
+            size = 0;
+        }
+    }
+    total |= !DBGEXIDeselect();
+    return !total;
+}
+#pragma pop
+
+#pragma push
+#pragma use_lmw_stmw on
 int DBGReadMailbox(unsigned long *mailbox) {
     int total = 0;
     unsigned long v;
