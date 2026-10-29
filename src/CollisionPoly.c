@@ -1,5 +1,12 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
+typedef struct Poly {
+    Vector4 plane;   /* 0x00 */
+    Vector4 *verts;  /* 0x10: w holds the index of the opposite vertex */
+    u32 numVerts;    /* 0x14 */
+} Poly;
 
 f32 RayHitsPoly(Vector4 *start, Vector4 *dir, Vector4 *poly, f32 t) {
     typedef struct Poly {
