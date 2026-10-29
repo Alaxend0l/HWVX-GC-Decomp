@@ -56,6 +56,8 @@ typedef struct DVDDIRegs {
 
 volatile u32 __DIRegs[16] : 0xCC006000;
 
+void DVDReset(void);
+
 #define DVD_SET_DI_REG()    \
     {                        \
         __DIRegs[1] = __DIRegs[1];   \
