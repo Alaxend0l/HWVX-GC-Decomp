@@ -305,6 +305,22 @@ void DVDReset(void) {
     ResumeFromHere = 0;
 }
 
+BOOL OSDisableInterrupts(void);
+BOOL OSRestoreInterrupts(BOOL level);
+s32 DVDGetCommandBlockStatus(const DVDCommandBlock *block) {
+    BOOL enabled;
+    s32 retVal;
+
+    enabled = OSDisableInterrupts();
+    if (block->state == 3) {
+        retVal = 1;
+    } else {
+        retVal = block->state;
+    }
+    OSRestoreInterrupts(enabled);
+    return retVal;
+}
+
 s32 DVDSetAutoInvalidation(s32 arg0) {
     extern s32 autoInvalidation;
     s32 temp_r0;
