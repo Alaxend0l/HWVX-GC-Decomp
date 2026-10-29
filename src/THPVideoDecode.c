@@ -48,9 +48,6 @@ void VideoDecodeThreadStart(void) {
 }
 
 void VideoDecodeThreadCancel(void) {
-    extern s32 VideoDecodeThreadCreated;
-    extern u8 VideoDecodeThread[];
-
     if (VideoDecodeThreadCreated) {
         OSCancelThread(VideoDecodeThread);
         VideoDecodeThreadCreated = 0;
