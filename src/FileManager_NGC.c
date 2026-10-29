@@ -167,6 +167,7 @@ s32 File_Read(u32 id, s32 size, void *data) {
     extern s32 m_reset;
     extern s32 m_cd_drive_status;
     extern u32 shithack;
+    s8 isInThread(void);
     s32 MemCard_Read__FUllPv(u32 device, s32 size, void *data);
     s32 DVDReadPrio(void *fileInfo, void *addr, s32 length, s32 offset, s32 prio);
     BOOL DVDReadAsyncPrio(void *fileInfo, void *addr, s32 length, s32 offset, void *callback, s32 prio);
@@ -197,7 +198,7 @@ s32 File_Read(u32 id, s32 size, void *data) {
         return 1;
     }
     idx = (u8)id;
-    if (size + g_files[idx].position <= g_files[idx].size) {
+    if (g_files[idx].position + size <= g_files[idx].size) {
         if (size < 0xC800) {
             length = (size + 0x1F) & ~0x1F;
             buffer = (s32)Allocate(length + 0x40, 0, "");
