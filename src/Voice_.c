@@ -246,6 +246,103 @@ void DestroyVoice_(AXVPB *axv) {
     g_pFree = voice;
     OSRestoreInterrupts(level);
 }
+
+void ProcessVoice_(void) {
+    extern const u16 g_volTab[];
+    VoiceHW *voice;
+    AXVPB *axv;
+    s32 i;
+    s32 level2;
+    s32 level;
+    s32 steps;
+
+    g_active = -1;
+    for (voice = g_voice, i = 0x20; i != 0; i--) {
+        u8 state = voice->state;
+        voice++;
+        if (state == 1) {
+            g_active++;
+        }
+    }
+
+    for (voice = g_voice, i = 0x20; i != 0; voice++, i--) {
+        if (voice->state != 1) {
+            continue;
+        }
+        axv = voice->axv;
+        if (axv->state == 0) {
+            if (voice->kind == 0) {
+                DestroySongVoice(voice);
+            }
+            level = OSDisableInterrupts();
+            voice->state = 0;
+            voice->id = 0xFE;
+            if (voice->axv != NULL) {
+                level2 = OSDisableInterrupts();
+                if (voice->axv->priority != 0) {
+                    AXFreeVoice(voice->axv);
+                }
+                voice->axv = NULL;
+                OSRestoreInterrupts(level2);
+            }
+            voice->next = g_pFree;
+            g_pFree = voice;
+            OSRestoreInterrupts(level);
+            continue;
+        }
+
+        axv->sync |= 0x200;
+        if (voice->unk5A < 0) {
+            voice->unk5A = (voice->vol * g_volTab[g_active]) >> 15;
+            axv->ve = voice->unk5A;
+            axv->veDelta = 0;
+        } else {
+            steps = (((voice->vol * g_volTab[g_active]) >> 15) - voice->unk5A) / 160;
+            if (steps != 0) {
+                axv->ve = voice->unk5A;
+                axv->veDelta = (u16)steps;
+                voice->unk5A += steps * 160;
+            } else {
+                voice->unk5A = (voice->vol * g_volTab[g_active]) >> 15;
+                axv->ve = voice->unk5A;
+                axv->veDelta = 0;
+            }
+        }
+
+        if (voice->unk56 != 0) {
+            voice->unk56 = 0;
+            voice->unk64 = voice->unk60;
+            voice->unk66 = voice->unk62;
+            axv->vL = voice->unk60;
+            axv->vR = voice->unk62;
+            axv->vDeltaL = 0;
+            axv->vDeltaR = 0;
+            axv->mixerCtrl &= ~0x8;
+            axv->sync |= 0x12;
+        }
+
+        if (voice->unk57 != 0) {
+            voice->unk57 = 0;
+            voice->unk6C = voice->unk68;
+            voice->unk6E = voice->unk6A;
+            if (voice->kind != 0) {
+                axv->vAuxBL = voice->unk68;
+                axv->vAuxBR = voice->unk6A;
+                axv->vAuxBDeltaL = 0;
+                axv->vAuxBDeltaR = 0;
+                axv->mixerCtrl &= ~0x800;
+            } else {
+                axv->vAuxAL = voice->unk68;
+                axv->vAuxAR = voice->unk6A;
+                axv->vAuxADeltaL = 0;
+                axv->vAuxADeltaR = 0;
+                axv->mixerCtrl &= ~0x40;
+            }
+            axv->sync |= 0x12;
+        }
+    }
+}
+
 void SetVoiceVol_(u8 *v, u32 vol) {
     extern s32 g_speakers_803C789C;
     extern const u16 g_panTab[128];
