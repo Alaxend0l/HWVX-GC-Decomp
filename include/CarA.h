@@ -104,6 +104,8 @@ typedef struct CarAInfo {
   u8 padE8[0x28];           /* 0xE8 */
   u32 numShiftSounds;       /* 0x110 */
   u32 *shiftSounds;         /* 0x114 */
+  u32 numSoundSets;         /* 0x118 */
+  CarASoundSet **soundSets; /* 0x11C */
 } CarAInfo;
 
 typedef struct CarA {
