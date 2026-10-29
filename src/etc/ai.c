@@ -1,5 +1,7 @@
 #include "common.h"
 
+volatile u16 __DSPRegs[32] : 0xCC005000;
+
 
 s32 AIRegisterDMACallback(s32 cb) {
     extern s32 __AID_Callback;
