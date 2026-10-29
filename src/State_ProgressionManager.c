@@ -180,7 +180,7 @@ s32 StateProgressionManager_Heartbeat(void) {
     void ProcessManager_Heartbeat(s32 activeOnly);
     void ProcessManager_Render(s32 arg0);
     void ProcessManager_Release(char *name);
-    s32 LoadWorldProcess(char *world, u8 loaded);
+    s32 LoadWorldProcess(char *world, s8 loaded);
     int sprintf(char *buf, const char *fmt, ...);
     char buf[512];
     char *world;
