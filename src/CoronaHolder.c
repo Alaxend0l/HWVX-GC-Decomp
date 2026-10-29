@@ -134,7 +134,6 @@ void CoronaHolder_Heartbeat(void) {
     Corona *corona;
     u32 i;
     u32 delta;
-    f64 t;
 
     delta = g_iDeltaTimeMS;
     for (i = 0; i < g_totalCoronas; i++) {
@@ -143,15 +142,13 @@ void CoronaHolder_Heartbeat(void) {
             if (corona->time < corona->track->fadeTime) {
                 corona->active = 1;
                 corona->time += delta;
-                t = corona->time;
-                ExtractColorKey(corona->track->colorTrack, corona->color, t);
+                ExtractColorKey(corona->track->colorTrack, corona->color, corona->time);
             }
         } else if (corona->time != 0) {
             corona->active = 1;
             if (delta < corona->time) {
                 corona->time -= delta;
-                t = corona->time;
-                ExtractColorKey(corona->track->colorTrack, corona->color, t);
+                ExtractColorKey(corona->track->colorTrack, corona->color, corona->time);
             } else {
                 corona->time = 0;
             }
