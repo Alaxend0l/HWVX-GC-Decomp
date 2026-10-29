@@ -55,6 +55,53 @@ u32 HAllocA_(s32 size) {
     g_memblk[g_last].size -= size;
     return g_heap;
 }
+
+#pragma push
+#pragma optimization_level 1
+u32 MAllocA_(s32 size) {
+    typedef struct MemBlk {
+        u32 addr;
+        s32 size;
+        u32 prev;
+        u32 next;
+    } MemBlk;
+    extern MemBlk g_memblk[];
+    extern s32 g_last;
+    extern u32 g_free;
+    int printf();
+    u32 i;
+    u32 n;
+
+    i = 0;
+    size = (size + 0x1F) & ~0x1F;
+    while (i != 0xFFFFFFFF) {
+        if (g_memblk[i].size >= size) {
+            if (g_memblk[i].size > size) {
+                if (g_free == 0xFFFFFFFF) {
+                    return 0;
+                }
+                n = g_free;
+                g_free = g_memblk[n].next;
+                g_memblk[n].addr = g_memblk[i].addr;
+                g_memblk[n].size = g_memblk[i].size - size;
+                g_memblk[n].prev = i;
+                g_memblk[n].next = g_memblk[i].next;
+                if (g_memblk[n].next == 0xFFFFFFFF) {
+                    g_last = n;
+                }
+                g_memblk[i].next = n;
+            }
+            g_memblk[i].addr += g_memblk[i].size - size;
+            g_memblk[i].size = -size;
+            return g_memblk[i].addr;
+        }
+        i = g_memblk[i].next;
+    }
+    printf("Audio :: MAllocA_ - Insufficient ARAM  size: %i\n", size);
+    return 0;
+}
+#pragma pop
+
 #pragma pop
 void MemCpyDone(void) {
     extern s32 g_arqWait;
@@ -77,5 +124,11 @@ u32 MemCpyA_(u32 dst, u32 src, u32 len) {
         PPCSync();
     }
     return dst + len;
+}
+
+s32 Mul16_(u32 a, u32 b) {
+    u32 hi = __mulhwu(a, b);
+    u32 lo = a * b;
+    return (lo >> 16) | (hi << 16);
 }
 
