@@ -800,7 +800,7 @@ typedef struct Flash {
   FlashDef *flash;
   s32 unk60;
   u8 unk64[0x68 - 0x64];
-  s32 unk68;
+  u32 remaining;
   u8 unk6C[0x74 - 0x6C];
   f32 time;
   u8 unk78[0x80 - 0x78];
