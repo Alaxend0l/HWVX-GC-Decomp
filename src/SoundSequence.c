@@ -227,10 +227,9 @@ s32 SoundSequence_GetTotalElementsInQueue(void)
 }
 
 static inline void SoundSeq_ReleaseThing(void *thing) {
-    if (thing == NULL) {
-        return;
+    if (thing != NULL) {
+        SoundSeq_Release(thing);
     }
-    SoundSeq_Release(thing);
 }
 
 void SoundSequence_Stop(u32 handle) {
