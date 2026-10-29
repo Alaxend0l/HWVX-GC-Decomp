@@ -121,17 +121,31 @@ typedef struct GDLEnvmapState {
     u16 unkA;
 } GDLEnvmapState;
 
+typedef struct GDLBox {
+    Vector4 min;
+    Vector4 max;
+    u8 unk20[0x30 - 0x20];
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
+    u8 unk34[0x50 - 0x34];
+} GDLBox;
+
 typedef struct GDL {
     u8 unk0[0x2C];
     u32 numSpheres;
-    u8 unk30[0x54 - 0x30];
+    u32 numBoxes;
+    u8 unk34[0x54 - 0x34];
     u32 numDrawEntries;
     u32 numLODEntries;
     u8 unk5C[0x69A00 - 0x5C];
     GDLAlphaGroup alphaGroups[0x400];
     u8 unk7EA00[0xBC800 - 0x7EA00];
     GDLSphere spheres[200];
-    u8 unkBE100[0xDFCC0 - 0xBE100];
+    u8 unkBE100[0xBE110 - 0xBE100];
+    GDLBox boxes[100];
+    u8 unkC0050[0xDFCC0 - 0xC0050];
     GDLDrawEntry drawEntries[0x800];
     GDLLODEntry lodEntries[0x400];
     u8 unkEBCC0[0xF3A80 - 0xEBCC0];
