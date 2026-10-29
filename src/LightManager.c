@@ -20,3 +20,29 @@ u32 g_numThingsToLight;
 u32 g_numDirectionalLights;
 s8 g_bLightVolumesExist;
 GXColor g_ambientColor;
+
+static inline s8 LightManager_AddThing(CarA *thing, u32 numSteps) {
+    static u32 offsetCount;
+    ThingLightingData *data;
+
+    if (g_numThingsToLight >= 0x400) {
+        thing->lightIndex = -1;
+        return 0;
+    }
+    if (thing->lightIndex < g_numThingsToLight && g_ThingLightingData[thing->lightIndex].thing == thing) {
+        g_ThingLightingData[thing->lightIndex].dirty = 1;
+        return 1;
+    }
+    data = &g_ThingLightingData[g_numThingsToLight];
+    data->thing = thing;
+    data->numSteps = numSteps;
+    data->step = offsetCount % numSteps;
+    data->dirty = 1;
+    thing->lightIndex = g_numThingsToLight;
+    g_numThingsToLight++;
+    offsetCount += 5;
+    if (offsetCount == 0xFFFFFFFF) {
+        offsetCount = 0;
+    }
+    return 1;
+}
