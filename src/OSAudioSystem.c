@@ -73,4 +73,34 @@ void __OSInitAudioSystem(void)
         ;
     memcpy((void *)0x81000000, (void *)(OSGetArenaHi() - 0x80), 0x80);
 }
-#pragma pop
+
+#pragma use_lmw_stmw on
+void __OSStopAudioSystem(void)
+{
+    extern u32 OSGetTick(void);
+    u32 reg32;
+    u16 reg16;
+    u32 start_tick;
+
+    __DSPRegs[5] = 0x804;
+    reg16 = __DSPRegs[27];
+    __DSPRegs[27] = reg16 & ~0x8000;
+    reg16 = __DSPRegs[5];
+    while (reg16 & 0x400)
+        reg16 = __DSPRegs[5];
+    reg16 = __DSPRegs[5];
+    while (reg16 & 0x200)
+        reg16 = __DSPRegs[5];
+    __DSPRegs[5] = 0x8AC;
+    __DSPRegs[0] = 0;
+    while (((__DSPRegs[2] << 16) | __DSPRegs[3]) & 0x80000000)
+        ;
+    start_tick = OSGetTick();
+    while ((s32)(OSGetTick() - start_tick) < 0x2C)
+        ;
+    reg32 = __DSPRegs[5];
+    __DSPRegs[5] = reg32 | 1;
+    reg16 = __DSPRegs[5];
+    while (reg16 & 1)
+        reg16 = __DSPRegs[5];
+}
