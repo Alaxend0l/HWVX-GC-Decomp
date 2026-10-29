@@ -46,6 +46,56 @@ s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, void *callback);
 s32 __CARDPutControlBlock(void *card, s32 result);
 static void WriteCallback(s32 chan, s32 result);
 
+u8 *__CARDGetDirBlock(CARDControl *card);
+u16 *__CARDGetFatBlock(CARDControl *card);
+s32 __CARDUpdateDir(s32 chan, CARDCallback callback);
+s32 __CARDEraseSector(s32 chan, u32 addr, CARDCallback callback);
+s64 OSGetTime(void);
+void EraseCallback(s32 chan, s32 result);
+static void WriteCallback(s32 chan, s32 result) {
+    CARDControl *card;
+    CARDCallback callback;
+    u16 *fat;
+    u8 *dir;
+    u8 *ent;
+    CARDFileInfo *fileInfo;
+
+    card = &__CARDBlock[chan];
+    if (result < 0) {
+        goto error;
+    }
+    fileInfo = card->fileInfo;
+    if (fileInfo->length < 0) {
+        result = -14;
+        goto error;
+    }
+    fileInfo->length -= card->sectorSize;
+    if (fileInfo->length <= 0) {
+        dir = __CARDGetDirBlock(card);
+        ent = dir + fileInfo->fileNo * 0x40;
+        *(u32 *)(ent + 0x28) = (u32)(OSGetTime() / (*(u32 *)0x800000F8 / 4));
+        callback = card->apiCallback;
+        card->apiCallback = NULL;
+        result = __CARDUpdateDir(chan, callback);
+    } else {
+        fat = __CARDGetFatBlock(card);
+        fileInfo->offset += card->sectorSize;
+        fileInfo->iBlock = fat[fileInfo->iBlock];
+        if (fileInfo->iBlock < 5 || fileInfo->iBlock >= card->cBlock) {
+            result = -6;
+            goto error;
+        }
+        result = __CARDEraseSector(chan, card->sectorSize * fileInfo->iBlock, EraseCallback);
+    }
+    if (result < 0) {
+    error:
+        callback = card->apiCallback;
+        card->apiCallback = NULL;
+        __CARDPutControlBlock(card, result);
+        callback(chan, result);
+    }
+}
+
 void EraseCallback(s32 chan, s32 result) {
     CARDControl *card;
     CARDCallback callback;
