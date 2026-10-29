@@ -1,5 +1,23 @@
 #include "common.h"
 
+typedef struct THPReadBuffer {
+    u8 *ptr;
+    s32 frameNumber;
+} THPReadBuffer;
+
+typedef struct THPPlayer {
+    u8 pad0[0x50];
+    u32 numFrames;
+    u8 pad54[0x9E - 0x54];
+    u8 playFlag;
+    u8 audioExist;
+    u8 padA0[0xB8 - 0xA0];
+    s32 initReadFrame;
+    u8 padBC[0xD0 - 0xBC];
+    s32 videoDecodeCount;
+} THPPlayer;
+
+extern THPPlayer ActivePlayer;
 
 void VideoDecodeThreadStart(void) {
     extern s32 VideoDecodeThreadCreated;
