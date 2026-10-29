@@ -3204,6 +3204,72 @@ void InterfaceManager_DrawMap(u8 *obj, u8 *iface) {
     rect->v[3].color = *(u32 *)&colour;
 }
 
+s32 ActionTargetArrowSetTarget(void *params) {
+    extern s32 g_TargetArrow[7];
+    extern Vector4 g_zeroVector;
+    typedef struct {
+        u8 unk0[0x10];
+        u8 *unk10;
+        u8 unk14[0x10];
+        u8 *unk24;
+        u8 *unk28;
+        u8 *unk2C;
+    } TargetObject;
+    typedef struct {
+        u32 type;
+        TargetObject *obj;
+    } TargetParams;
+    TargetParams *p = params;
+    void *target;
+
+    g_TargetArrow[3] = 0;
+    switch (p->type) {
+    case 1:
+        if (p->obj->unk28 != NULL) {
+            target = p->obj->unk28 + 0x40;
+        } else {
+            target = p->obj;
+        }
+        break;
+    case 4:
+        if (p->obj->unk10 != NULL) {
+            target = p->obj->unk10 + 0x40;
+        } else {
+            target = &g_zeroVector;
+        }
+        break;
+    case 2:
+        if (p->obj->unk2C != NULL) {
+            target = p->obj->unk2C + 0x40;
+        } else {
+            target = p->obj;
+        }
+        break;
+    case 3:
+        if (p->obj->unk24 != NULL) {
+            g_TargetArrow[3] = (s32)p->obj->unk24;
+            target = p->obj->unk24 + 0x40;
+        } else {
+            target = p->obj;
+        }
+        break;
+    case 6:
+        target = p->obj;
+        break;
+    case 0:
+    case 5:
+    default:
+        target = NULL;
+        break;
+    }
+    if ((void *)g_TargetArrow[0] != target) {
+        g_TargetArrow[0] = (s32)target;
+        g_TargetArrow[4] = -1;
+        g_TargetArrow[2] = 0;
+    }
+    return 1;
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 s32 InterfaceManager_GetTargetArrowNearestNavPoint(void)
