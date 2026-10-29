@@ -334,9 +334,9 @@ static inline void Camera_Orbit(Camera *cam, Vector4 *center, Vector4 *target, f
     void PSVECSubtract(void *a, void *b, void *out);
     void PSVECCrossProduct(void *a, void *b, void *out);
     void Gfx_SetProjectionMatrix(f32 fov);
-    Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
-    Vector4 dir;
     Vector4 eye;
+    Vector4 dir;
+    Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
     f32 s;
     f32 c;
 
@@ -448,11 +448,10 @@ void Camera_UpdatePosition(Camera *cam) {
     s32 NavHolder_FindIndexOfNearestNavPoint(Vector4 *pos, s32 hint);
     Vector4 *NavHolder_GetNavPoint(s32 index);
     void Camera_UpdatePosition_Default(Camera *cam, void *params);
-    Vector4 oldPos;
-    CameraInfo info __attribute__((aligned(16)));
     u32 *mode;
-    f32 s;
-    f32 c;
+    Vector4 oldPos __attribute__((aligned(16)));
+    CameraInfo info;
+    s32 i;
 
     oldPos = cam->pos;
     info.subMode = NULL;
@@ -477,31 +476,7 @@ void Camera_UpdatePosition(Camera *cam) {
                     info.mtx = cam->mtx;
                 }
             } else {
-                Vector4 eye;
-                Vector4 dir;
-                Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
-
-                cam->modeTime += 0.3f * g_fDeltaTimeSec;
-                s = sin(cam->modeTime);
-                c = cos(cam->modeTime);
-                eye.x = 15.0f * s + cam->mtx.v[3].x;
-                eye.y = cam->mtx.v[3].y + 5.0f;
-                eye.z = 15.0f * c + cam->mtx.v[3].z;
-                PSVECSubtract(&cam->mtx.v[3], &eye, &dir);
-                GetTrimmedCameraPos((u8 *)cam, &cam->mtx.v[3], &dir, &cam->trim, 1.0f);
-                PSVECSubtract(&cam->mtx.v[3], &cam->pos, &cam->dir);
-                if (PSVECSquareMag(&cam->dir) != 0.0f) {
-                    PSVECNormalize(&cam->dir, &cam->dir);
-                }
-                PSVECCrossProduct(&up, &cam->dir, &cam->right);
-                PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
-                if (PSVECSquareMag(&cam->right) != 0.0f) {
-                    PSVECNormalize(&cam->right, &cam->right);
-                }
-                if (PSVECSquareMag(&cam->up) != 0.0f) {
-                    PSVECNormalize(&cam->up, &cam->up);
-                }
-                Gfx_SetProjectionMatrix(60.0f);
+                Camera_Orbit(cam, &cam->mtx.v[3], &cam->mtx.v[3], 15.0f, 5.0f, 0.3f, 60.0f);
                 return;
             }
         }
@@ -549,11 +524,8 @@ void Camera_UpdatePosition(Camera *cam) {
             CameraOrbitParams *params = info.subMode->params;
             Vector4 targetPos;
             Vector4 *center;
-            Vector4 eye;
-            Vector4 dir;
-            Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
-            f32 sv;
             f32 cv;
+            f32 sv;
 
             cam->modeTime += params->speed * g_fDeltaTimeSec;
             SinCosRad(&sv, &cv, cam->modeTime);
@@ -563,27 +535,35 @@ void Camera_UpdatePosition(Camera *cam) {
             } else {
                 center = &cam->mtx.v[3];
             }
-            cam->modeTime += params->speed * g_fDeltaTimeSec;
-            s = sin(cam->modeTime);
-            c = cos(cam->modeTime);
-            eye.x = params->radius * s + center->x;
-            eye.y = center->y + params->height;
-            eye.z = params->radius * c + center->z;
-            PSVECSubtract(center, &eye, &dir);
-            GetTrimmedCameraPos((u8 *)cam, center, &dir, &cam->trim, 1.0f);
-            PSVECSubtract(center, &cam->pos, &cam->dir);
-            if (PSVECSquareMag(&cam->dir) != 0.0f) {
-                PSVECNormalize(&cam->dir, &cam->dir);
+            {
+                Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
+                Vector4 dir;
+                Vector4 eye;
+                f32 s;
+                f32 c;
+
+                cam->modeTime += params->speed * g_fDeltaTimeSec;
+                s = sin(cam->modeTime);
+                c = cos(cam->modeTime);
+                eye.x = params->radius * s + center->x;
+                eye.y = center->y + params->height;
+                eye.z = params->radius * c + center->z;
+                PSVECSubtract(center, &eye, &dir);
+                GetTrimmedCameraPos((u8 *)cam, center, &dir, &cam->trim, 1.0f);
+                PSVECSubtract(center, &cam->pos, &cam->dir);
+                if (0.0f != PSVECSquareMag(&cam->dir)) {
+                    PSVECNormalize(&cam->dir, &cam->dir);
+                }
+                PSVECCrossProduct(&up, &cam->dir, &cam->right);
+                PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
+                if (0.0f != PSVECSquareMag(&cam->right)) {
+                    PSVECNormalize(&cam->right, &cam->right);
+                }
+                if (0.0f != PSVECSquareMag(&cam->up)) {
+                    PSVECNormalize(&cam->up, &cam->up);
+                }
+                Gfx_SetProjectionMatrix(params->fov);
             }
-            PSVECCrossProduct(&up, &cam->dir, &cam->right);
-            PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
-            if (PSVECSquareMag(&cam->right) != 0.0f) {
-                PSVECNormalize(&cam->right, &cam->right);
-            }
-            if (PSVECSquareMag(&cam->up) != 0.0f) {
-                PSVECNormalize(&cam->up, &cam->up);
-            }
-            Gfx_SetProjectionMatrix(params->fov);
             cam->vel = g_zeroVector;
             break;
         }
@@ -614,83 +594,68 @@ void Camera_UpdatePosition(Camera *cam) {
         }
         break;
     case 27: {
-        Vector4 target = {0.0f, 0.0f, 0.0f, 0.0f};
-        Vector4 pos = {1.0f, 1.0f, 1.0f, 0.0f};
-        Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
-        f32 fov = *(f32 *)&mode[1];
-        s32 i;
+        Vector4 target __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 0.0f};
+        Vector4 pos __attribute__((aligned(16))) = {1.0f, 1.0f, 1.0f, 0.0f};
+        f32 fov;
 
-        i = Camera_TriggerActionGetLocation((u8 *)cam, mode + 2, &pos);
-        Camera_TriggerActionGetLocation((u8 *)cam, mode + 2 + i, &target);
-        cam->pos = pos;
-        PSVECSubtract(&target, &cam->pos, &cam->dir);
-        if (PSVECSquareMag(&cam->dir) != 0.0f) {
-            PSVECNormalize(&cam->dir, &cam->dir);
-        }
-        PSVECCrossProduct(&up, &cam->dir, &cam->right);
-        PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
-        if (PSVECSquareMag(&cam->right) != 0.0f) {
-            PSVECNormalize(&cam->right, &cam->right);
-        }
-        if (PSVECSquareMag(&cam->up) != 0.0f) {
-            PSVECNormalize(&cam->up, &cam->up);
+        i = 1;
+        fov = *(f32 *)&mode[i++];
+        i += Camera_TriggerActionGetLocation((u8 *)cam, &mode[i], &pos);
+        Camera_TriggerActionGetLocation((u8 *)cam, &mode[i], &target);
+        {
+            Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
+
+            cam->pos = pos;
+            PSVECSubtract(&target, &cam->pos, &cam->dir);
+            if (PSVECSquareMag(&cam->dir) != 0.0f) {
+                PSVECNormalize(&cam->dir, &cam->dir);
+            }
+            PSVECCrossProduct(&up, &cam->dir, &cam->right);
+            PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
+            if (PSVECSquareMag(&cam->right) != 0.0f) {
+                PSVECNormalize(&cam->right, &cam->right);
+            }
+            if (PSVECSquareMag(&cam->up) != 0.0f) {
+                PSVECNormalize(&cam->up, &cam->up);
+            }
         }
         Gfx_SetProjectionMatrix(fov);
         break;
     }
+    case 29: {
+        Vector4 target __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 0.0f};
+        Vector4 pos __attribute__((aligned(16))) = {1.0f, 1.0f, 1.0f, 0.0f};
+        CameraZoomParams zoom __attribute__((aligned(16)));
+
+        zoom.zoom = 0.014f;
+        i = 1;
+        i += Camera_TriggerActionGetLocation((u8 *)cam, &mode[i], &pos);
+        Camera_TriggerActionGetLocation((u8 *)cam, &mode[i], &target);
+        Camera_UpdatePosition_Zoom_Generic((u8 *)cam, (u8 *)&zoom, &pos, &target, 10.0f, 0.0f);
+        break;
+    }
     case 28: {
-        Vector4 target = {0.0f, 0.0f, 0.0f, 0.0f};
-        Vector4 center = {1.0f, 1.0f, 1.0f, 0.0f};
-        Vector4 eye;
-        Vector4 dir;
-        Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
-        f32 fov = *(f32 *)&mode[1];
-        f32 radius = *(f32 *)&mode[2];
-        f32 height = *(f32 *)&mode[3];
-        f32 speed = *(f32 *)&mode[4];
-        s32 i;
+        Vector4 target __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 0.0f};
+        Vector4 center __attribute__((aligned(16))) = {1.0f, 1.0f, 1.0f, 0.0f};
+        f32 fov;
+        f32 radius;
+        f32 height;
+        f32 speed;
         CarA *car;
 
-        i = Camera_TriggerActionGetLocation((u8 *)cam, mode + 5, &center);
-        Camera_TriggerActionGetLocation((u8 *)cam, mode + 5 + i, &target);
-        cam->modeTime += speed * g_fDeltaTimeSec;
-        s = sin(cam->modeTime);
-        c = cos(cam->modeTime);
-        eye.x = radius * s + center.x;
-        eye.y = center.y + height;
-        eye.z = radius * c + center.z;
-        PSVECSubtract(&target, &eye, &dir);
-        GetTrimmedCameraPos((u8 *)cam, &target, &dir, &cam->trim, 1.0f);
-        PSVECSubtract(&target, &cam->pos, &cam->dir);
-        if (PSVECSquareMag(&cam->dir) != 0.0f) {
-            PSVECNormalize(&cam->dir, &cam->dir);
-        }
-        PSVECCrossProduct(&up, &cam->dir, &cam->right);
-        PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
-        if (PSVECSquareMag(&cam->right) != 0.0f) {
-            PSVECNormalize(&cam->right, &cam->right);
-        }
-        if (PSVECSquareMag(&cam->up) != 0.0f) {
-            PSVECNormalize(&cam->up, &cam->up);
-        }
-        Gfx_SetProjectionMatrix(fov);
+        i = 1;
+        fov = *(f32 *)&mode[i++];
+        radius = *(f32 *)&mode[i++];
+        height = *(f32 *)&mode[i++];
+        speed = *(f32 *)&mode[i++];
+        i += Camera_TriggerActionGetLocation((u8 *)cam, &mode[i], &center);
+        Camera_TriggerActionGetLocation((u8 *)cam, &mode[i], &target);
+        Camera_Orbit(cam, &center, &target, radius, height, speed, fov);
         car = cam->player->vehicle;
         if (car != NULL && (u8 *)car->vtable == g_carAVTable && (car->stuckCounter > 0 || car->unk460 <= 0) &&
             car->worldMatrix.v[1].y < 0.5f) {
             cam->mode = &g_triggerAction_params_default;
         }
-        break;
-    }
-    case 29: {
-        Vector4 target = {0.0f, 0.0f, 0.0f, 0.0f};
-        Vector4 pos = {1.0f, 1.0f, 1.0f, 0.0f};
-        CameraZoomParams zoom;
-        s32 i;
-
-        zoom.zoom = 0.014f;
-        i = Camera_TriggerActionGetLocation((u8 *)cam, mode + 1, &pos);
-        Camera_TriggerActionGetLocation((u8 *)cam, mode + 1 + i, &target);
-        Camera_UpdatePosition_Zoom_Generic((u8 *)cam, (u8 *)&zoom, &pos, &target, 10.0f, 0.0f);
         break;
     }
     }
