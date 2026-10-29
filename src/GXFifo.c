@@ -34,3 +34,9 @@ void GXInitFifoLimits(GXFifoObj *fifo, u32 hiWatermark, u32 loWatermark) {
     realFifo->hiWatermark = hiWatermark;
     realFifo->loWatermark = loWatermark;
 }
+
+void __GXFifoReadEnable(void) {
+    gx->cpEnable = (gx->cpEnable & ~1) | 1;
+    __cpReg[1] = gx->cpEnable;
+}
+
