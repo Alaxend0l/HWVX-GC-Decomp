@@ -64,7 +64,10 @@ typedef struct THPPlayer {
     s32 audioFrameNumber;
     THPTextureSet *dispTextureSet;
     THPAudioBuffer *audioBuffer;
-    u8 padE4[0x198 - 0xE4];
+    THPReadBuffer readBuffer[10];
+    THPTextureSet textureSet[3];
+    THPAudioBuffer audioBuffers[3];
+    u8 pad194[0x198 - 0x194];
 } THPPlayer;
 
 THPPlayer ActivePlayer;
