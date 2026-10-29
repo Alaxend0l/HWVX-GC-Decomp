@@ -69,14 +69,6 @@ s32 __OSSyncSram(void)
     return Scb.sync;
 }
 
-void DCInvalidateRange(void *addr, u32 nBytes);
-s32 EXILock(s32 chan, u32 dev, void *unlockedCallback);
-s32 EXIUnlock(s32 chan);
-s32 EXISelect(s32 chan, u32 dev, u32 freq);
-s32 EXIDeselect(s32 chan);
-s32 EXIImm(s32 chan, void *buf, s32 len, u32 type, void *callback);
-s32 EXIDma(s32 chan, void *buf, s32 len, u32 type, void *callback);
-s32 EXISync(s32 chan);
 s32 __OSReadROM(void *buffer, s32 length, s32 offset) {
     s32 err;
     u32 cmd;
