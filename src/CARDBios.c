@@ -62,6 +62,19 @@ void __CARDSetDiskID(u8 *id) {
     __CARDBlock[1].diskID = id ? id : __CARDDiskNone;
 }
 
+s32 __CARDPutControlBlock(CARDControl *card, s32 result) {
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    if (card->attached) {
+        card->result = result;
+    } else if (card->result == -1) {
+        card->result = result;
+    }
+    OSRestoreInterrupts(enabled);
+    return result;
+}
+
 extern int CARDUnmount(int);
 s32 OnReset(s32 arg0)
 {
