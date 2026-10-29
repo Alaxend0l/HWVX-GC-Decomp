@@ -62,6 +62,30 @@ static inline s32 TRKReadBuffer_inline(TRKBuffer *b, void *data, u32 length) {
     return error;
 }
 
+s32 TRKReadBuffer1_ui8(TRKBuffer *b, u8 *data) {
+    return TRKReadBuffer_inline(b, data, 1);
+}
+
+s32 TRKAppendBuffer_ui32(TRKBuffer *b, const u32 *data, s32 count) {
+    s32 err;
+    s32 i;
+
+    for (i = 0, err = 0; err == 0 && i < count; i++) {
+        err = TRKAppendBuffer1_ui32_inline(b, data[i]);
+    }
+    return err;
+}
+
+s32 TRKAppendBuffer_ui8(TRKBuffer *b, const u8 *data, s32 count) {
+    s32 err;
+    s32 i;
+
+    for (i = 0, err = 0; err == 0 && i < count; i++) {
+        err = TRKAppendBuffer1_ui8(b, data[i]);
+    }
+    return err;
+}
+
 s32 TRKAppendBuffer1_ui32(TRKBuffer *b, u32 data) {
     u8 *bigEndianData;
     u8 *byteData;
