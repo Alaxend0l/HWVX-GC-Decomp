@@ -17,7 +17,8 @@ typedef struct CameraOrbitParams {
 } CameraOrbitParams;
 
 typedef struct CameraBoneParams {
-    u8 pad0[0x14];
+    Vector4 offset;         /* 0x00 bone-local camera position */
+    u8 pad10[4];
     u16 bone;               /* 0x14 */
 } CameraBoneParams;
 
@@ -428,6 +429,8 @@ s32 Camera_TriggerActionGetLocation(u8 *cam, u32 *data, Vector4 *out) {
     return i;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 void Camera_UpdatePosition(Camera *cam) {
     extern f32 g_fDeltaTimeSec;
     extern CarA *g_pNoRayCollideThing;
@@ -551,15 +554,15 @@ void Camera_UpdatePosition(Camera *cam) {
                 PSVECSubtract(center, &eye, &dir);
                 GetTrimmedCameraPos((u8 *)cam, center, &dir, &cam->trim, 1.0f);
                 PSVECSubtract(center, &cam->pos, &cam->dir);
-                if (PSVECSquareMag(&cam->dir) != 0.0f) {
+                if (PSVECSquareMag(&cam->dir)) {
                     PSVECNormalize(&cam->dir, &cam->dir);
                 }
                 PSVECCrossProduct(&up, &cam->dir, &cam->right);
                 PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
-                if (PSVECSquareMag(&cam->right) != 0.0f) {
+                if (PSVECSquareMag(&cam->right)) {
                     PSVECNormalize(&cam->right, &cam->right);
                 }
-                if (PSVECSquareMag(&cam->up) != 0.0f) {
+                if (PSVECSquareMag(&cam->up)) {
                     PSVECNormalize(&cam->up, &cam->up);
                 }
                 Gfx_SetProjectionMatrix(params->fov);
@@ -572,18 +575,18 @@ void Camera_UpdatePosition(Camera *cam) {
             CarA *car = cam->player->vehicle;
 
             if ((u8 *)car->vtable == g_carAVTable) {
-                cam->right = car->motionState.animMatrices[params->bone].v[0];
-                cam->up = car->motionState.animMatrices[params->bone].v[1];
-                cam->dir = car->motionState.animMatrices[params->bone].v[2];
-                cam->pos = car->motionState.animMatrices[params->bone].v[3];
+                cam->right = ((Vector4 *)car->motionState.animMatrices)[params->bone * 4 + 0];
+                cam->up = ((Vector4 *)car->motionState.animMatrices)[params->bone * 4 + 1];
+                cam->dir = ((Vector4 *)car->motionState.animMatrices)[params->bone * 4 + 2];
+                cam->pos = ((Vector4 *)car->motionState.animMatrices)[params->bone * 4 + 3];
                 XformVec(&car->motionState.animMatrices[params->bone], &cam->pos, &cam->pos);
             } else if ((u8 *)car->vtable == g_lookerVTable) {
                 car = car->unkBC;
                 if (car->motionState.animMatrices != NULL) {
-                    cam->right = car->motionState.animMatrices[params->bone].v[0];
-                    cam->up = car->motionState.animMatrices[params->bone].v[1];
-                    cam->dir = car->motionState.animMatrices[params->bone].v[2];
-                    cam->pos = car->motionState.animMatrices[params->bone].v[3];
+                    cam->right = ((Vector4 *)car->motionState.animMatrices)[params->bone * 4 + 0];
+                    cam->up = ((Vector4 *)car->motionState.animMatrices)[params->bone * 4 + 1];
+                    cam->dir = ((Vector4 *)car->motionState.animMatrices)[params->bone * 4 + 2];
+                    cam->pos = ((Vector4 *)car->motionState.animMatrices)[params->bone * 4 + 3];
                     XformVec(&car->motionState.animMatrices[params->bone], &cam->pos, &cam->pos);
                 }
             }
@@ -667,7 +670,7 @@ void Camera_UpdatePosition(Camera *cam) {
         cam->listener->pos.z = ((CarA *)cam->player->vehicle)->velocity.z * scale + cam->pos.z;
     }
 }
-
+#pragma pop
 void CameraManager_ReturnAllToPlayer(void) {
     extern u8 g_cameraManager[];
     extern u32 g_triggerAction_params_default;
