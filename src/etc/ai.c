@@ -16,6 +16,17 @@ s32 AIRegisterDMACallback(s32 cb) {
     return old;
 }
 
+s32 OSRestoreInterrupts(s32 level);
+void AIInitDMA(u32 start_addr, u32 length) {
+    s32 old;
+
+    old = OSDisableInterrupts();
+    __DSPRegs[24] = (u16)((__DSPRegs[24] & ~0x3FF) | (start_addr >> 16));
+    __DSPRegs[25] = (u16)((__DSPRegs[25] & ~0xFFE0) | (0xFFFF & start_addr));
+    __DSPRegs[27] = (u16)((__DSPRegs[27] & ~0x7FFF) | (u16)((length >> 5) & 0xFFFF));
+    OSRestoreInterrupts(old);
+}
+
 void AIStartDMA(void) {
     __DSPRegs[27] |= 0x8000;
 }
