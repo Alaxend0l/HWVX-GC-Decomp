@@ -231,6 +231,25 @@ s32 DVDLowAudioBufferConfig(s32 enable, u32 size, DVDLowCallback callback)
     return 1;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void DVDLowReset(void)
+{
+    u32 reg;
+    s64 resetStart;
+
+    __DIRegs[1] = 2;
+    reg = __PIRegs[9];
+    __PIRegs[9] = (reg & ~4) | 1;
+    resetStart = __OSGetSystemTime();
+    while ((__OSGetSystemTime() - resetStart) < ((12 * ((__OSBusClock / 4) / 125000)) / 8))
+        ;
+    __PIRegs[9] = reg | 5;
+    ResetOccurred = 1;
+    LastResetEnd = __OSGetSystemTime();
+}
+#pragma pop
+
 s32 DVDLowBreak(void)
 {
     StopAtNextInt = 1;
