@@ -135,10 +135,10 @@ int DBGReadStatus(unsigned long *status) {
     DBGEXISelect(4);
     v = 1 << 30;
     total |= !DBGEXIImm(&v, 2, 1);
-    DBGEXISync();
+    total |= !DBGEXISync();
     total |= !DBGEXIImm(status, 4, 0);
-    DBGEXISync();
-    DBGEXIDeselect();
+    total |= !DBGEXISync();
+    total |= !DBGEXIDeselect();
     return !total;
 }
 #pragma pop
