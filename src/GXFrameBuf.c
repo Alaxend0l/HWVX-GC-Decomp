@@ -135,6 +135,25 @@ void GXSetCopyClamp(s32 clamp) {
     gx->cpTex = (gx->cpTex & ~2) | (clmpB << 1);
 }
 
+u32 GXSetDispCopyYScale(f32 vscale) {
+    u8 enable;
+    u32 iScale;
+    u32 ht;
+    u32 reg;
+
+    iScale = (u32)(256.0f / vscale) & 0x1FF;
+    enable = (iScale != 256);
+    reg = 0;
+    reg = ((u32)reg & ~0x1FF) | ((u32)iScale);
+    reg = ((u32)reg & ~0xFF000000) | ((u32)0x4E << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    gx->bpSentNot = 0;
+    gx->cpDisp = ((u32)gx->cpDisp & ~0x400) | ((u32)enable << 10);
+    ht = (u32)((gx->cpDispSize >> 10) & 0x3FF) + 1;
+    return __GXGetNumXfbLines(ht, iScale);
+}
+
 void GXSetCopyClear(GXColor clear_clr, u32 clear_z) {
     u32 reg;
 
