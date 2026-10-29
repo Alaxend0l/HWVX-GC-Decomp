@@ -173,6 +173,18 @@ GDLLine *Gfx_Add3DLineFX(void) {
     return &g_pGDL->lines[g_pGDL->numLines++];
 }
 
+void Gfx_Add2DFXLine(Vector4 *p0, Vector4 *p1, GXColor *c0, GXColor *c1, u8 flag) {
+    if (g_pGDL->num2DFXLines == 200) {
+        return;
+    }
+    g_pGDL->fxLines2D[g_pGDL->num2DFXLines].p0 = *p0;
+    g_pGDL->fxLines2D[g_pGDL->num2DFXLines].p1 = *p1;
+    g_pGDL->fxLines2D[g_pGDL->num2DFXLines].c0 = *c0;
+    g_pGDL->fxLines2D[g_pGDL->num2DFXLines].c1 = *c1;
+    g_pGDL->fxLines2D[g_pGDL->num2DFXLines].flag = flag;
+    g_pGDL->num2DFXLines++;
+}
+
 GDLSprite *Gfx_AddBillBoardSprite(u16 tex) {
     GDLSprite *sprite;
 
