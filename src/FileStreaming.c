@@ -276,6 +276,65 @@ void FileStreaming_InitializeAllQuads(void)
     }
 }
 
+void FileStreaming_ResetQuadResources(void)
+{
+    u32 i;
+    u32 j;
+    s8 paused;
+    QuadStatic *st;
+    QuadDynamic *dyn;
+    QuadItem *item;
+    QuadrantEntry *quad;
+
+    paused = Trigger_IsTACSystemPaused();
+    Trigger_PauseTACSystem(1);
+    g_LoadedQuadrants[g_numQuadPacksInMemory] = g_pWorldQuadrant;
+    for (i = 0; i < g_numQuadPacksInMemory + 1; i++) {
+        if (g_LoadedQuadrants[i] != NULL && (*(QuadItemList **)(g_LoadedQuadrants[i] + 0x30))->dirty) {
+            (*(QuadItemList **)(g_LoadedQuadrants[i] + 0x30))->dirty = 0;
+            for (j = 0; j < (*(QuadItemList **)(g_LoadedQuadrants[i] + 0x30))->numStatics; j++) {
+                st = &(*(QuadItemList **)(g_LoadedQuadrants[i] + 0x30))->statics[j];
+                if (st->thing != NULL && st->info[7] == 0) {
+                    st->thing->vtbl[1](st->thing);
+                    st->thing = NULL;
+                    st->active = 1;
+                }
+            }
+            for (j = 0; j < (*(QuadItemList **)(g_LoadedQuadrants[i] + 0x30))->numDynamics; j++) {
+                dyn = &(*(QuadItemList **)(g_LoadedQuadrants[i] + 0x30))->dynamics[j];
+                if (dyn->thing != NULL) {
+                    dyn->thing->vtbl[1](dyn->thing);
+                    dyn->thing = NULL;
+                    dyn->active = 1;
+                }
+            }
+            for (j = 0; j < (*(QuadItemList **)(g_LoadedQuadrants[i] + 0x30))->count; j++) {
+                item = &(*(QuadItemList **)(g_LoadedQuadrants[i] + 0x30))->items[j];
+                if (item->thing != NULL) {
+                    item->thing->vtbl[1](item->thing);
+                    item->thing = NULL;
+                    item->type = 1;
+                }
+            }
+        }
+    }
+    for (i = 0; i < ((QuadrantWorld *)g_worldData.world)->numQuads; i++) {
+        quad = &((QuadrantWorld *)g_worldData.world)->quads[i];
+        for (j = 0; j < quad->data->numDynamics; j++) {
+            quad->data->dynamics[j].active = quad->data->dynamics[j].defActive;
+        }
+        for (j = 0; j < quad->data->count; j++) {
+            quad->data->items[j].type = quad->data->items[j].defType;
+            quad->data->items[j].spawned = 0;
+        }
+        for (j = 0; j < quad->data->numStatics; j++) {
+            quad->data->statics[j].active = quad->data->statics[j].defActive;
+        }
+    }
+    FileStreaming_SetActiveQuadrants((s32)g_LoadedQuadrants, g_numQuadPacksInMemory + 1);
+    Trigger_PauseTACSystem(paused);
+}
+
 #pragma use_lmw_stmw on
 void FileStreaming_HeartBeatItems(void)
 {
