@@ -35,7 +35,7 @@ typedef struct THPPlayer {
     u32 unk68;
     u32 numComponents;
     u8 components[0x80 - 0x70];
-    u8 videoInfo[8];
+    THPVideoInfo videoInfo;
     u8 audioInfo[0xC];
     u8 pad94[4];
     BOOL open;
