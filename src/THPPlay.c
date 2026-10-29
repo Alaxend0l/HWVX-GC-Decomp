@@ -77,14 +77,14 @@ void AudioInit(void) {
     void AudioCallback(void);
     void *AIRegisterDMACallback(void *callback);
     void AIStartDMA(void);
-    extern s32 SoundBufferNumber_803C7730;
-    extern u8 SoundBuffer_8036E360[][0x3C0];
+    extern s32 SoundBufferNumber;
+    extern u8 SoundBuffer[][0x3C0];
     extern void *audio_restore_cb;
 
     audio_restore_cb = AIRegisterDMACallback(AudioCallback);
-    memset(SoundBuffer_8036E360[SoundBufferNumber_803C7730], 0, 0x3C0);
-    DCFlushRange(SoundBuffer_8036E360[SoundBufferNumber_803C7730], 0x3C0);
-    AIInitDMA(SoundBuffer_8036E360[SoundBufferNumber_803C7730], 0x3C0);
+    memset(SoundBuffer[SoundBufferNumber], 0, 0x3C0);
+    DCFlushRange(SoundBuffer[SoundBufferNumber], 0x3C0);
+    AIInitDMA(SoundBuffer[SoundBufferNumber], 0x3C0);
     AIStartDMA();
 }
 
