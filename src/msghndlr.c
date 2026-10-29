@@ -22,6 +22,10 @@ static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
 }
 
 __declspec(section ".data") extern s32 IsTRKConnected;
+void SetTRKConnected(s32 connected) {
+    IsTRKConnected = connected;
+}
+
 s32 GetTRKConnected(void) {
     return IsTRKConnected;
 }
