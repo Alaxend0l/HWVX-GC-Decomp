@@ -651,3 +651,54 @@ DLSkinGroup *DisplayList_AddGroup_Skin(void) {
     return &dl->skinGroups[dl->numSkinGroups++];
 }
 
+u32 Gfx_GetCullLODGX(void *geometry, void *matrix, u8 *lod, u8 flag);
+void DisplayList_AddGeometry(u32 geometry, u16 matrix, s32 lightState, u8 lod, u8 flag, GXColor color);
+#pragma use_lmw_stmw on
+void DisplayList_RenderGXList(void) {
+    GXColor color = {0, 0, 0, 0};
+    u32 j;
+    u32 i;
+    u32 view;
+    void *matrix;
+    u32 geometry;
+    u8 lod;
+    u8 lod2;
+
+    if (g_CurrentViews == 1) {
+        for (j = 0; j < g_pGDL->numDrawEntries; j++) {
+            matrix = Gfx_GetWorldMatrixState(g_pGDL->drawEntries[j].matrix);
+            geometry = Gfx_GetCullLODGX(g_pGDL->drawEntries[j].geometry, matrix, &lod, g_pGDL->drawEntries[j].unk11);
+            if (geometry) {
+                DisplayList_AddGeometry(geometry, g_pGDL->drawEntries[j].matrix, g_pGDL->drawEntries[j].lightState,
+                                        lod, g_pGDL->drawEntries[j].unk10, g_pGDL->drawEntries[j].color);
+            }
+        }
+        for (j = 0; j < g_pGDL->numLODEntries; j++) {
+            DisplayList_AddGeometry((u32)g_pGDL->lodEntries[j].geometry, g_pGDL->lodEntries[j].matrix, -1, 1, 0, color);
+        }
+    } else {
+        for (i = 0; i < g_pGDL->numDrawEntries; i++) {
+            matrix = Gfx_GetWorldMatrixState(g_pGDL->drawEntries[i].matrix);
+            for (view = 1; view < 5; view++) {
+                if (g_CurrentViews & (1 << view)) {
+                    Gfx_SetRenderWindow(view);
+                    geometry = Gfx_GetCullLODGX(g_pGDL->drawEntries[i].geometry, matrix, &lod2, g_pGDL->drawEntries[i].unk11);
+                    if (geometry) {
+                        DisplayList_AddGeometry(geometry, g_pGDL->drawEntries[i].matrix,
+                                                g_pGDL->drawEntries[i].lightState, lod2, g_pGDL->drawEntries[i].unk10,
+                                                g_pGDL->drawEntries[i].color);
+                    }
+                }
+            }
+        }
+        for (i = 0; i < g_pGDL->numLODEntries; i++) {
+            for (view = 1; view < 5; view++) {
+                if (g_CurrentViews & (1 << view)) {
+                    Gfx_SetRenderWindow(view);
+                    DisplayList_AddGeometry((u32)g_pGDL->lodEntries[i].geometry, g_pGDL->lodEntries[i].matrix, -1, 1, 0, color);
+                }
+            }
+        }
+    }
+}
+#pragma use_lmw_stmw reset
