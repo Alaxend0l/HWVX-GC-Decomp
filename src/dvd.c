@@ -43,7 +43,7 @@ void (*CancelCallback)(s32 result, DVDCommandBlock *block);
 volatile u32 ResumeFromHere;
 u32 CancelLastError;
 u32 LastError;
-volatile s32 NumInternalRetry;
+s32 NumInternalRetry;
 u32 ResetRequired;
 u32 FirstTimeInBootrom;
 s32 DVDInitialized;
