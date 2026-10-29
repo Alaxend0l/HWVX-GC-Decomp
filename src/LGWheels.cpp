@@ -284,6 +284,19 @@ u8 LGWheels::SameFrontalCollisionForceParams(s32 chan, s16 force)
 	return limbi[chan] == force;
 }
 
+void LGWheels::StopCarAirborne(s32 chan)
+{
+	if (limbo.IsOpened(chan))
+	{
+		SetOverallForceGain(chan, savedGain);
+		airborne[chan] = 0;
+	}
+	else
+	{
+		OSReport("ERROR: trying to play a force on port %d but no wheel opened.\n", chan);
+	}
+}
+
 #pragma pop
 
 #pragma pop
