@@ -1,5 +1,6 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
 
 s32 World_Create(void) {
     extern s32 m_VertIn;
