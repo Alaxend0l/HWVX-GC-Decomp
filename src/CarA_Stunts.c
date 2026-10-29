@@ -232,3 +232,37 @@ void Drone_DynamicCollideImpact(u8 *drone, u8 *collision, f32 force)
     }
 }
 
+void Drone_DynamicRotation(u8 *drone) {
+    typedef struct Drone {
+        u8 pad0[0x10];
+        Matrix4 mtx;
+        Quaternion quat;
+        u8 pad60[0x74 - 0x60];
+        u32 flags;
+        u8 pad78[0xE0 - 0x78];
+        Quaternion rot;
+        u8 padF0[0x1DC - 0xF0];
+        u8 mode;
+    } Drone;
+    void QuaternionToSubMatrix(Quaternion *quat, Matrix4 *mtx);
+    void PhysicalObject_DynamicRotation(u8 *obj);
+    Drone *d = (Drone *)drone;
+    Quaternion quat __attribute__((aligned(16)));
+    Matrix4 mtx;
+
+    if (d->mode == 2) {
+        if (!(d->flags & 0x10)) {
+            d->flags |= 0x10;
+            quat = d->rot;
+            QuaternionToSubMatrix(&quat, &mtx);
+            mtx.v[3].x = d->mtx.v[3].x;
+            mtx.v[3].y = d->mtx.v[3].y;
+            mtx.v[3].z = d->mtx.v[3].z;
+            d->quat = quat;
+            d->mtx = mtx;
+        }
+    } else {
+        PhysicalObject_DynamicRotation(drone);
+    }
+}
+
