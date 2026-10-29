@@ -43,6 +43,7 @@ void OSClearContext(OSContext *context);
 void OSSetCurrentContext(OSContext *context);
 void OSWakeupThread(OSThreadQueue *queue);
 
+static void (*TokenCB)(u16 token);
 static void (*DrawDoneCB)(void);
 static u8 DrawDone;
 static OSThreadQueue FinishQueue;
