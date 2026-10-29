@@ -1,5 +1,49 @@
 #include "common.h"
 
+typedef struct AXVPB {
+    struct AXVPB *next;
+    struct AXVPB *prev;
+    struct AXVPB *next1;
+    u32 priority;
+    void *callback;
+    void *userContext;
+    u32 index;
+    u32 sync;
+    u8 unk20[0x1B2 - 0x20];
+    u16 currentAddressHi;
+    u16 currentAddressLo;
+    u8 unk1B6[0x1DE - 0x1B6];
+    u16 ratioHi;
+    u16 ratioLo;
+} AXVPB;
+
+typedef struct VoiceHW {
+    u8 kind;
+    u8 id;
+    u8 unk2[2];
+    struct VoiceHW *next;
+    u8 unk8[0xC];
+    u8 priority;
+    u8 state;
+    u8 unk16[0xA];
+    u32 addr;
+    u8 unk24[4];
+    u32 length;
+    u8 unk2C[4];
+    u32 rate;
+    u32 pitch;
+    u8 unk38[0x18];
+    AXVPB *axv;
+    u8 unk54[0x1C];
+} VoiceHW;
+
+extern void (*DestroySongVoice)(VoiceHW *voice);
+extern VoiceHW *g_pFree;
+
+s32 OSDisableInterrupts(void);
+void OSRestoreInterrupts(s32 level);
+void AXSetVoicePriority(AXVPB *axv, u32 priority);
+
 
 void SetVoiceVol_(u8 *v, u32 vol) {
     extern s32 g_speakers_803C789C;
