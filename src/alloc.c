@@ -153,6 +153,80 @@ void *malloc(u32 size) {
     return allocate_from_var_pools(pool, size);
 }
 
+void deallocate_from_fixed_pools(void *pool, void *ptr, u32 size) {
+    u32 i = 0;
+    FixSubBlock *p;
+    FixBlock *b;
+    FixStart *fs;
+
+    while (size > fix_pool_sizes[i]) {
+        ++i;
+    }
+    fs = &((mem_pool_obj *)pool)->fix_start[i];
+    p = (FixSubBlock *)((u8 *)ptr - 4);
+    b = p->block_;
+    if (b->start_ == NULL && fs->head_ != b) {
+        if (fs->tail_ == b) {
+            fs->head_ = fs->head_->prev_;
+            fs->tail_ = fs->tail_->prev_;
+        } else {
+            b->prev_->next_ = b->next_;
+            b->next_->prev_ = b->prev_;
+            b->next_ = fs->head_;
+            b->prev_ = b->next_->prev_;
+            b->prev_->next_ = b;
+            b->next_->prev_ = b;
+            fs->head_ = b;
+        }
+    }
+    p->next_ = b->start_;
+    b->start_ = p;
+    if (--b->n_allocated_ == 0) {
+        Block *bp;
+        Block *n;
+        SubBlock *sb;
+        s32 empty;
+
+        if (fs->head_ == b) {
+            fs->head_ = b->next_;
+        }
+        if (fs->tail_ == b) {
+            fs->tail_ = b->prev_;
+        }
+        b->prev_->next_ = b->next_;
+        b->next_->prev_ = b->prev_;
+        if (fs->head_ == b) {
+            fs->head_ = NULL;
+        }
+        if (fs->tail_ == b) {
+            fs->tail_ = NULL;
+        }
+        sb = (SubBlock *)((u8 *)b - 8);
+        bp = (Block *)((u32)sb->bp_ & ~1);
+        Block_link(bp, sb);
+        sb = (SubBlock *)((u8 *)bp + 16);
+        empty = 0;
+        if (!(sb->size_ & 2) && (sb->size_ & ~7) == (bp->size_ & ~7) - 24) {
+            empty = 1;
+        }
+        if (empty) {
+            n = bp->next_;
+            if (n == bp) {
+                n = NULL;
+            }
+            if (((mem_pool_obj *)pool)->start_ == bp) {
+                ((mem_pool_obj *)pool)->start_ = n;
+            }
+            if (n != NULL) {
+                n->prev_ = bp->prev_;
+                n->prev_->next_ = n;
+            }
+            bp->prev_ = bp->next_ = NULL;
+            __sys_free(bp);
+        }
+    }
+}
+
 #pragma use_lmw_stmw on
 void *allocate_from_fixed_pools(void *pool, u32 size) {
     u32 i = 0;
