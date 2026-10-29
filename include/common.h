@@ -383,7 +383,9 @@ typedef struct CarPart {
   u8 pad6[2];
   void *geom;
   Vector4 *offset;
-  u8 pad10[0xC];
+  Vector4 *slavePos;        /* 0x10 NULL: g_zeroVector */
+  u32 debris;               /* 0x14 thing spawned when the part breaks off */
+  void *slaveInfo;          /* 0x18 */
 } CarPart;
 typedef struct CarPartList {
   u32 count;
