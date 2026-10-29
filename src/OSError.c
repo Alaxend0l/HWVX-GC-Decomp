@@ -17,6 +17,14 @@ typedef struct __va_list_struct {
 int vprintf(const char *format, va_list arg);
 
 #pragma peephole on
+void OSReport(const char *msg, ...)
+{
+    va_list marker;
+
+    __builtin_va_info(&marker);
+    vprintf(msg, marker);
+}
+
 OSErrorHandler OSSetErrorHandler(OSError error, OSErrorHandler handler)
 {
     OSErrorHandler *slot;
