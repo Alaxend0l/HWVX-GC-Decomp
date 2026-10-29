@@ -4,6 +4,17 @@
 extern "C" void *memcpy(void *dst, const void *src, u32 n);
 extern "C" void LGInit(void);
 extern "C" void OSReport(const char *msg, ...);
+LGWheels::LGWheels()
+{
+	savedGain = 0xFF;
+	unk13CD = 0;
+	InitLGLibrary();
+	airborne[0] = 0;
+	airborne[1] = 0;
+	airborne[2] = 0;
+	airborne[3] = 0;
+}
+
 void LGWheels::InitLGLibrary(void)
 {
 	LGInit();
