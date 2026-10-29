@@ -23,9 +23,17 @@ typedef struct GDLFXLine2D {
 
 typedef struct GDLGroupTri {
     u8 type;
-    u8 unk1[0xC - 0x1];
+    u8 unk1;
+    u8 unk2;
+    u8 unk3;
+    u16 tex;
+    u16 unk6;
+    s32 unk8;
     u32 count;
-    u8 unk10[0x20 - 0x10];
+    u32 unk10;
+    u8 unk14[0x18 - 0x14];
+    f32 unk18;
+    f32 unk1C;
 } GDLGroupTri;
 
 typedef struct GDLAlphaEntry {
