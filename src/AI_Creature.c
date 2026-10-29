@@ -15,7 +15,7 @@ s32 AI_Creature_Deactivate(u8 *creature) {
     u8 *pos;
     f32 dist;
     f32 minDist;
-    Vector4 p;
+    Vector4 p __attribute__((aligned(16)));
 
     thing = *(u8 **)(creature + 0x2C);
     if (thing != NULL && !(*(u32 *)(thing + 0x74) & 0x1000)) {
