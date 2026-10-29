@@ -57,6 +57,19 @@ void __CARDSyncCallback(s32 chan, s32 result) {
     OSWakeupThread(&__CARDBlock[chan].threadQueue);
 }
 
+s32 EXIProbe(s32 chan);
+void __CARDUnlockedHandler(s32 chan, void *context) {
+    CARDControl *card;
+    CARDCallback callback;
+
+    card = &__CARDBlock[chan];
+    callback = card->unlockCallback;
+    if (callback) {
+        card->unlockCallback = 0;
+        callback(chan, EXIProbe(chan) ? 1 : -3);
+    }
+}
+
 void __CARDSetDiskID(u8 *id) {
     __CARDBlock[0].diskID = id ? id : __CARDDiskNone;
     __CARDBlock[1].diskID = id ? id : __CARDDiskNone;
