@@ -17,6 +17,16 @@ typedef struct GXTexObj {
     u32 dummy[8];
 } GXTexObj;
 
+typedef struct __GXTlutRegionInt {
+    u32 loadTlut1;
+    u32 tlutObj[2];
+    u32 unkC;
+} __GXTlutRegionInt;
+
+typedef struct GXTlutRegion {
+    u32 dummy[4];
+} GXTlutRegion;
+
 typedef struct GXDataSUTex {
     u8 unk0[0x100];
     u32 tref[8];
