@@ -31,3 +31,25 @@ void OSInitMessageQueue(OSMessageQueue *mq, OSMessage *msgArray, s32 msgCount) {
     mq->firstIndex = 0;
     mq->usedCount = 0;
 }
+
+BOOL OSSendMessage(OSMessageQueue *mq, OSMessage msg, s32 flags) {
+    BOOL enabled;
+    s32 lastIndex;
+
+    enabled = OSDisableInterrupts();
+    while (mq->msgCount <= mq->usedCount) {
+        if (!(flags & OS_MESSAGE_BLOCK)) {
+            OSRestoreInterrupts(enabled);
+            return 0;
+        } else {
+            OSSleepThread(&mq->queueSend);
+        }
+    }
+    lastIndex = (mq->firstIndex + mq->usedCount) % mq->msgCount;
+    mq->msgArray[lastIndex] = msg;
+    mq->usedCount++;
+    OSWakeupThread(&mq->queueReceive);
+    OSRestoreInterrupts(enabled);
+    return 1;
+}
+
