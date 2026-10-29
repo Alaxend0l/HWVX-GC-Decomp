@@ -168,9 +168,9 @@ void InverseXformVec(Matrix4 *m, Vector *v, Vector *out)
     f32 dy = v->y - m->v[3].y;
     f32 dz = v->z - m->v[3].z;
 
-    f32 tx = m->v[0].x * dx + m->v[1].x * dy + m->v[2].x * dz;
-    f32 ty = m->v[0].y * dx + m->v[1].y * dy + m->v[2].y * dz;
-    f32 tz = m->v[0].z * dx + m->v[1].z * dy + m->v[2].z * dz;
+    f32 tx = m->v[0].x * dx + m->v[0].y * dy + m->v[0].z * dz;
+    f32 ty = m->v[1].x * dx + m->v[1].y * dy + m->v[1].z * dz;
+    f32 tz = m->v[2].x * dx + m->v[2].y * dy + m->v[2].z * dz;
 
     out->x = tx;
     out->y = ty;
