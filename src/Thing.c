@@ -107,42 +107,27 @@ s32 Thing_GetSource(void *arg0) {
     return 0;
 }
 
-s32 TriggerAirboxEntered(u32 *arg0) {
-    M2C_UNK sp8;
-    s32 temp_r30;
-    u32 *var_r31;
-    u32 temp_r27;
-    u32 temp_r3;
-    u32 var_r26;
-    u32 var_r28;
-    void *temp_r29;
+s32 TriggerAirboxEntered(u32 *trigger) {
+    f32 dist;
+    u8 *volume;
+    u8 *thing;
+    u32 i;
+    u32 numThings;
+    u32 j;
 
-    var_r28 = 0U;
-    var_r31 = arg0;
-    temp_r27 = *arg0;
-    temp_r30 = (temp_r27 * 4) + 4;
-loop_9:
-    if (var_r28 >= temp_r27) {
-        return 0;
-    }
-    temp_r29 = M2C_FIELD(var_r31, void **, 4);
-    if ((u32) M2C_FIELD(temp_r29, u32 *, 4) == 1U) {
-        var_r26 = 0U;
-loop_7:
-        if (var_r26 >= (u32) *(arg0 + temp_r30)) {
-            goto block_8;
+    numThings = trigger[0];
+    for (i = 0; i < numThings; i++) {
+        thing = (u8 *)trigger[i + 1];
+        if (M2C_FIELD(thing, u32 *, 4) == 1) {
+            for (j = 0; j < trigger[numThings + 1]; j++) {
+                volume = M2C_FIELD(trigger[numThings + 2 + j], u8 **, 0x28);
+                if (volume != NULL && IsPointWithinVolume((Vector4 *)(volume + 0x40), thing, &dist)) {
+                    return 1;
+                }
+            }
         }
-        temp_r3 = M2C_FIELD(*(arg0 + ((temp_r27 + var_r26 + 2) * 4)), u32 *, 0x28);
-        if ((temp_r3 != 0U) && (IsPointWithinVolume(temp_r3 + 0x40, temp_r29, &sp8) != 0)) {
-            return 1;
-        }
-        var_r26 += 1;
-        goto loop_7;
     }
-block_8:
-    var_r31 += 4;
-    var_r28 += 1;
-    goto loop_9;
+    return 0;
 }
 
 s32 TriggerCreatureVolumeEntered(u32 *trigger) {
