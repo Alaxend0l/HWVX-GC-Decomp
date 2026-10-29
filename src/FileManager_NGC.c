@@ -3,6 +3,8 @@
 #pragma use_lmw_stmw on
 #pragma readonly_strings on
 
+u8 CardWorkArea[0xA000] __attribute__((aligned(32)));
+
 void OSReport(const char *fmt, ...);
 
 s32 stricmp(const char *s1, const char *s2) {
@@ -322,7 +324,7 @@ u32 FileManager_GetDeviceStatus(u32 device) {
 }
 
 s32 MemCard_Open__FUlPCScUlPl(u32 device, const char *fileName, u32 flags, s32 *unused) {
-    u32 chan;
+    s32 chan;
     CARDFileInfo *fileInfo;
     s32 *blockSize;
 
@@ -330,10 +332,10 @@ s32 MemCard_Open__FUlPCScUlPl(u32 device, const char *fileName, u32 flags, s32 *
     if (FileManager_GetDeviceStatus(device) == 3) {
         return 0;
     }
-    m_memcardstatus_803C7970[chan] = CARDMount(chan, CardWorkArea, 0);
+    m_memcardstatus_803C7970[chan] = CARDMount(chan, &CardWorkArea, NULL);
     OSReport("CARDMount\n");
     if (m_memcardstatus_803C7970[chan] < 0) {
-        OSReport("CARD error %d\n", m_memcardstatus_803C7970[chan]);
+        OSReport("failed. (%d)\n", m_memcardstatus_803C7970[chan]);
         return 0;
     }
     blockSize = &memCardBlockSize[chan];
@@ -347,7 +349,7 @@ s32 MemCard_Open__FUlPCScUlPl(u32 device, const char *fileName, u32 flags, s32 *
         m_memcardstatus_803C7970[chan] = CARDCreate(chan, fileName, *blockSize, fileInfo);
         if (m_memcardstatus_803C7970[chan] < 0) {
             m_memcardstatus_803C7970[chan] = CARDUnmount(chan);
-            OSReport("CARD error %d\n", m_memcardstatus_803C7970[chan]);
+            OSReport("failed. (%d)\n", m_memcardstatus_803C7970[chan]);
             return 0;
         }
         OSReport("CARDCreate\n");
