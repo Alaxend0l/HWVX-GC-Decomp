@@ -45,6 +45,8 @@ static inline s8 LightManager_AddThing(CarA *thing, u32 numSteps) {
     return 1;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 void LightManager_LightThing(CarA *thing) {
     void Gfx_SetAmbientColor(GXColor color);
     void Gfx_SetParallelLight(GXColor color, s32 unk);
@@ -56,38 +58,38 @@ void LightManager_LightThing(CarA *thing) {
     void VertexColorSeqManager_GetLightColor(s32 index, GXColor *color);
     f32 PSVECDotProduct(void *a, void *b);
     Vector4 normal __attribute__((aligned(16)));
-    GXColor parallel;
     GXColor ambient;
+    GXColor parallel;
+    GXColor whiteAmbient;
+    GXColor whiteParallel;
     f32 dist;
+    GXColor seq;
+    GXColor seqFade;
+    u32 numVolumes;
+    s8 tracked;
     ThingLightingData *data;
+    u32 i;
+    s32 cell;
     Volume *volume;
     Light *light;
-    Light **dirLight;
-    s32 cell;
-    u32 numVolumes;
-    u32 i;
     f32 r;
     f32 g;
     f32 b;
     f32 f;
-    s8 tracked;
     s8 isNew;
 
     isNew = 0;
     tracked = 1;
     data = NULL;
     if (!g_bLightVolumesExist || g_worldData.world == NULL || ((LightWorld *)g_worldData.world)->unk0 == 0) {
-        GXColor white1;
-        GXColor white2;
-
-        white1.r = 0xFF;
-        white1.g = 0xFF;
-        white1.b = 0xFF;
-        white2.r = 0xFF;
-        white2.g = 0xFF;
-        white2.b = 0xFF;
-        Gfx_SetAmbientColor(white1);
-        Gfx_SetParallelLight(white2, 0);
+        whiteAmbient.r = 0xFF;
+        whiteAmbient.g = 0xFF;
+        whiteAmbient.b = 0xFF;
+        whiteParallel.r = 0xFF;
+        whiteParallel.g = 0xFF;
+        whiteParallel.b = 0xFF;
+        Gfx_SetAmbientColor(whiteAmbient);
+        Gfx_SetParallelLight(whiteParallel, 0);
         return;
     }
     *(u32 *)&ambient = 0;
@@ -106,10 +108,10 @@ void LightManager_LightThing(CarA *thing) {
     if (isNew || data->dirty || data->step == data->numSteps) {
         cell = VolumeManager_GetVolumeCellIndex(&thing->worldMatrix.v[3]);
         numVolumes = VolumeManager_GetNumVolumesOfTypeByCell(6, cell);
-        data->dirty = 0;
         r = g_ambientColor.r;
         g = g_ambientColor.g;
         b = g_ambientColor.b;
+        data->dirty = 0;
         if (data->step == data->numSteps) {
             data->step = 0;
         }
@@ -119,8 +121,6 @@ void LightManager_LightThing(CarA *thing) {
                 light = volume->light;
                 if (volume->falloff == 0 || dist < volume->innerDist) {
                     if (light->type == 3) {
-                        GXColor seq;
-
                         VertexColorSeqManager_GetLightColor(light->index, &seq);
                         r += seq.r;
                         g += seq.g;
@@ -137,12 +137,10 @@ void LightManager_LightThing(CarA *thing) {
                 } else {
                     f = 1.0f - (dist - volume->innerDist) / (volume->outerDist - volume->innerDist);
                     if (light->type == 3) {
-                        GXColor seq;
-
-                        VertexColorSeqManager_GetLightColor(light->index, &seq);
-                        r += f * seq.r;
-                        g += f * seq.g;
-                        b += f * seq.b;
+                        VertexColorSeqManager_GetLightColor(light->index, &seqFade);
+                        r += f * seqFade.r;
+                        g += f * seqFade.g;
+                        b += f * seqFade.b;
                     } else if (light->subtract) {
                         r -= f * light->r;
                         g -= f * light->g;
@@ -239,19 +237,16 @@ void LightManager_LightThing(CarA *thing) {
                 parallel.b = b;
             }
         }
-        r = 100.0f;
-        g = 100.0f;
-        b = 100.0f;
-        dirLight = g_directionalLights;
+        g = b = r = 100.0f;
         for (i = 0; i < g_numDirectionalLights; i++) {
             normal = thing->worldMatrix.v[2];
-            f = PSVECDotProduct(*dirLight, &normal);
-            if (f > 0.0f) {
-                r += f * (*dirLight)->r;
-                g += f * (*dirLight)->g;
-                b += f * (*dirLight)->b;
+            f = PSVECDotProduct(g_directionalLights[i], &normal);
+            if (f <= 0.0f) {
+                continue;
             }
-            dirLight++;
+            r += f * g_directionalLights[i]->r;
+            g += f * g_directionalLights[i]->g;
+            b += f * g_directionalLights[i]->b;
         }
         if (tracked) {
             if (data->numSteps != 0xFFFFFFFF && data->numSteps != 1) {
@@ -396,3 +391,4 @@ void LightManager_LightThing(CarA *thing) {
     Gfx_SetParallelLight(parallel, 0);
     LightHolder_SetRenderState(&thing->worldMatrix.v[3]);
 }
+#pragma pop
