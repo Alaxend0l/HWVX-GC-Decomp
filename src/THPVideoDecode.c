@@ -1,6 +1,15 @@
 #include "common.h"
 
 
+void VideoDecodeThreadStart(void) {
+    extern s32 VideoDecodeThreadCreated;
+    extern u8 VideoDecodeThread[];
+
+    if (VideoDecodeThreadCreated) {
+        OSResumeThread(VideoDecodeThread);
+    }
+}
+
 void VideoDecodeThreadCancel(void) {
     extern s32 VideoDecodeThreadCreated;
     extern u8 VideoDecodeThread[];
