@@ -27,3 +27,11 @@ s32 WriteUART1(u8 c) {
     return 0;
 }
 
+void TRKEXICallBack(s16 chan, void *ctx);
+void TRKLoadContext(void *ctx, u32 value);
+void OSEnableScheduler(void);
+void EnableEXI2Interrupts(void) {
+    extern void (*gDBCommTable[7])(void);
+    gDBCommTable[1]();
+}
+
