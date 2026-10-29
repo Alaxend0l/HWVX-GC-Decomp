@@ -18,6 +18,10 @@ static OSAlarm Alarm[4];
 
 BOOL __SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback);
 
+BOOL SIBusy(void) {
+    return Si.chan != -1 ? TRUE : FALSE;
+}
+
 void SISetCommand(s32 chan, u32 command) {
     __SIRegs[3 * chan] = command;
 }
