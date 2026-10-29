@@ -46,6 +46,10 @@ s32 TRKTargetAccessMemory(void *data, u32 start, u32 *length, s32 space, s32 rea
 s32 TRKAppendBuffer1_ui32(void *buffer, u32 data);
 s32 TRKAppendBuffer1_ui16(void *buffer, u16 data);
 
+u32 TRKTargetGetPC(void) {
+    return gTRKCPUState.regs.pc;
+}
+
 s32 TRKTargetStepOutOfRange(u32 rangeStart, u32 rangeEnd, s32 stepOver) {
     if (stepOver != 0) {
         return 0x703;
