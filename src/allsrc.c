@@ -129,6 +129,7 @@ typedef struct LGDevice {
 } LGDevice;
 
 LGDevice g_lgDevices[4];
+s8 g_iGammaLookup[129];
 
 s32 g_lgInitialized;
 s32 g_bGammaInitialized;
@@ -574,6 +575,55 @@ s32 LGClose(LGDevice *device)
     return 0;
 }
 
+s32 LGGetDeviceProperty(LGDevice *device, u32 property, s32 *value) {
+    s32 result = -2;
+
+    if (device == NULL || (u32)device == 0xFFFFFFFF) {
+        return result;
+    }
+    if (value == NULL) {
+        return result;
+    }
+    if (property != 3) {
+        return result;
+    }
+    if (!device->opened) {
+        return result;
+    }
+    if (device->started) {
+        LGClose(device);
+        return result;
+    }
+    *value = device->vdev.unk11F4;
+    return 0;
+}
+
+s32 LGSetDeviceProperty(LGDevice *device, u32 property, s32 value) {
+    if (device == NULL || (u32)device == 0xFFFFFFFF) {
+        return -2;
+    }
+    if (value < 0 || value > 0xFF) {
+        return -2;
+    }
+    if (property != 3) {
+        return -2;
+    }
+    if (!device->opened) {
+        return -2;
+    }
+    if (device->started) {
+        if (device != NULL && (u32)device != 0xFFFFFFFF && device->opened) {
+            device->opened = 0;
+            device->started = 0;
+            VDevice_Shutdown(&device->vdev);
+            device->unk8 = -1;
+        }
+        return -2;
+    }
+    device->vdev.unk11F4 = value;
+    return 0;
+}
+
 #pragma use_lmw_stmw on
 s32 LGRead(SISteeringStatus *status)
 {
@@ -607,6 +657,30 @@ s32 LGRead(SISteeringStatus *status)
     }
     return 0;
 }
+
+s32 VDevice_DownloadEffect(VDevice *dev, u32 *handle, u8 *desc);
+s32 LGDownloadForceEffect(LGDevice *device, u32 *handle, u8 *desc)
+{
+    if (device == NULL || device == (LGDevice *)0xFFFFFFFF)
+        return -2;
+
+    if (!device->opened)
+        return -2;
+
+    if (handle == NULL)
+        return -2;
+
+    if (desc == NULL)
+        return -2;
+
+    if (device->started) {
+        LGClose(device);
+        return -2;
+    }
+
+    return VDevice_DownloadEffect(&device->vdev, handle, desc);
+}
+
 s32 LGUpdateForceEffect(u32 handle, u8 *desc)
 {
     s32 VDevice_UpdateEffect(VDevice *dev, u32 handle, u8 *desc);
@@ -1107,6 +1181,35 @@ s32 Effect_Update(Effect *effect, u32 dt) {
         effect->force = 0;
     }
     return 1;
+}
+
+s32 Effect_PerformEnvelope(Effect *effect, EffectEnvelope *env, s32 magnitude) {
+    s32 start;
+    s32 level;
+    s32 negative;
+    u32 elapsed;
+    u32 fadeStart;
+
+    elapsed = effect->elapsed;
+    negative = magnitude < 0;
+    start = magnitude < 0 ? -magnitude : magnitude;
+    level = start;
+    if (elapsed < env->attackTime) {
+        level = env->attackLevel + Effect_MulDiv(elapsed, start - env->attackLevel, env->attackTime);
+    } else if (effect->duration != 0xFFFFFFFF) {
+        fadeStart = effect->duration - env->fadeTime;
+        if (elapsed > fadeStart) {
+            if (elapsed < effect->duration) {
+                level = start + Effect_MulDiv(elapsed - fadeStart, env->fadeLevel - start, env->fadeTime);
+            } else {
+                level = env->fadeLevel;
+            }
+        }
+    }
+    if (negative) {
+        level = -level;
+    }
+    return level;
 }
 
 #pragma push
