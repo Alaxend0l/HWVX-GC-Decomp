@@ -164,7 +164,8 @@ static inline f32 RayBoxTestLocal(Vector4 *start, Vector4 *dir, Vector4 *box, f3
         { { 0.0f, -1.0f, 0.0f, 0.0f }, 2, 0, 1 },
         { { 0.0f, 0.0f, -1.0f, 0.0f }, 0, 0, 0 },
     };
-    Vector4 end;
+    Vector4 end __attribute__((aligned(16)));
+    Vector4 seg __attribute__((aligned(16)));
     Vector4 *res;
     f32 d0;
     f32 d1;
@@ -202,7 +203,6 @@ f32 PhysicalProperties_CollideWithRay(u8 *props, void *mtx, Vector4 *start, Vect
     void InverseXformVec(void *mtx, Vector4 *in, Vector4 *out);
     void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
     void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
-    f32 RaySphereTest(Vector4 *start, Vector4 *dir, Vector4 *center, f32 radius, f32 t, u8 *hit);
     f32 result = t;
 
     switch (props[0x10]) {
@@ -211,11 +211,12 @@ f32 PhysicalProperties_CollideWithRay(u8 *props, void *mtx, Vector4 *start, Vect
         Vector4 localDir;
         Vector4 localStart;
         RayHit localHit;
+        f32 d;
 
         InverseXformVec(mtx, start, &localStart);
         InverseXformVecOrientation(mtx, dir, &localDir);
-        result = RayBoxTestLocal(&localStart, &localDir, box, t, &localHit.pos);
-        if (hit != NULL && result < t) {
+        result = d = RayBoxTestLocal(&localStart, &localDir, box, t, &localHit.pos);
+        if (hit != NULL && d < t) {
             XformVec(mtx, &localHit.pos, (Vector4 *)hit);
             XformVecOrientation(mtx, &localHit.normal, (Vector4 *)(hit + 0x10));
             *(s32 *)(hit + 0x28) = *(s32 *)(props + 0x30);
