@@ -1,5 +1,20 @@
 #include "common.h"
 
+typedef struct GeometryEntry {
+    void *geometry;
+    u8 unk4;
+    u8 unk5[0x3F];
+    s16 refCount;
+    u8 unk46[2];
+} GeometryEntry;
+
+typedef struct GeometryHandler {
+    GeometryEntry entries[0x800];
+    s32 count;
+    u32 max;
+} GeometryHandler;
+
+void *Allocate(u32 size, s32 type, const char *name);
 
 void Geometry_Destroy(void) {
     M2C_UNK Geometry_Init(M2C_UNK);
