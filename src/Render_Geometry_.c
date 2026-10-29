@@ -35,6 +35,32 @@ typedef struct Geometry {
     f32 center[4];
 } Geometry;
 
+typedef struct GDLSphere {
+    f32 x;
+    f32 y;
+    f32 z;
+    u8 unkC[0x14 - 0xC];
+    f32 radius;
+    u8 unk18[0x20 - 0x18];
+} GDLSphere;
+
+typedef struct GDL {
+    u8 unk0[0x2C];
+    u32 numSpheres;
+    u8 unk30[0xBC800 - 0x30];
+    GDLSphere spheres[200];
+} GDL;
+
+typedef struct GDLMatrix {
+    f32 m[16];
+} __attribute__((aligned(16))) GDLMatrix;
+
+extern GDL *g_pGDL;
+extern s32 m_cullMode;
+void Render_SetTextureHandle(s32 handle);
+void Render_StateCullMode(s32 mode);
+void GXDrawSphere(u8 numMajor, u8 numMinor);
+
 extern f32 g_identity[4][4];
 extern u32 m_fillMode;
 void Gfx_SetWorldMatrix(f32 (*matrix)[4]);
