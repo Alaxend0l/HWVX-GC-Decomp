@@ -16,7 +16,7 @@ u32 g_free;
 u32 g_silence;
 s32 g_size;
 u32 g_heap;
-extern MemBlk g_memblk[];
+MemBlk g_memblk[255];
 
 
 s32 Audio_Create_(void) {
