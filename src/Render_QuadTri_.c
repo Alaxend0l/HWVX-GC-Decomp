@@ -239,7 +239,7 @@ void Render_DrawNewBBSprites(void) {
                 Render_StateBlendMode(blend);
             }
             if (first) {
-                Render_SetTextureHandle(tex & 0xFFFF);
+                Render_SetTextureHandle(tex);
                 first = 0;
             }
             size = 0.5f * g_pGDL->sprites[cur].pos.w;
