@@ -38,6 +38,41 @@ void VideoDecodeThreadCancel(void) {
     }
 }
 
+void *VideoDecoder(void *param) {
+    void VideoDecode(THPReadBuffer *readBuffer);
+    void *PopReadedBuffer(void);
+    void *PopReadedBuffer2(void);
+    void PushFreeReadBuffer(void *arg0);
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32 level);
+    THPReadBuffer *readBuffer;
+    s32 old;
+    u32 curFrame;
+
+    while (TRUE) {
+        if (ActivePlayer.audioExist) {
+            while (ActivePlayer.videoDecodeCount < 0) {
+                readBuffer = PopReadedBuffer2();
+                curFrame = (readBuffer->frameNumber + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+                if (curFrame == ActivePlayer.numFrames - 1 && !(ActivePlayer.playFlag & 1)) {
+                    VideoDecode(readBuffer);
+                }
+                PushFreeReadBuffer(readBuffer);
+                old = OSDisableInterrupts();
+                ActivePlayer.videoDecodeCount++;
+                OSRestoreInterrupts(old);
+            }
+        }
+        if (ActivePlayer.audioExist) {
+            readBuffer = PopReadedBuffer2();
+        } else {
+            readBuffer = PopReadedBuffer();
+        }
+        VideoDecode(readBuffer);
+        PushFreeReadBuffer(readBuffer);
+    }
+}
+
 void *PopFreeTextureSet(void) {
     extern u8 FreeTextureSetQueue[];
     void *msg;
