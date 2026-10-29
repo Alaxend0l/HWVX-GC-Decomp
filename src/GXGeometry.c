@@ -44,6 +44,14 @@ void GXSetPointSize(u8 pointSize, u32 texOffsets) {
     gx->bpSentNot = 0;
 }
 
+void GXEnableTexOffsets(s32 coord, u8 line_enable, u8 point_enable) {
+    gx->suTs0[coord] = (gx->suTs0[coord] & ~0x40000) | ((u32)line_enable << 18);
+    gx->suTs0[coord] = (gx->suTs0[coord] & ~0x80000) | ((u32)point_enable << 19);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->suTs0[coord];
+    gx->bpSentNot = 0;
+}
+
 void GXSetCullMode(s32 mode) {
     s32 hwMode;
 
