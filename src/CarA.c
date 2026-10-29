@@ -106,6 +106,43 @@ static inline void CarA_UpdateDamageSlaves(CarA *car) {
     }
 }
 
+void CarA_Extract_Keyframes(CarA *car, AnimKeyFrame *frames) {
+    void MotionState_ExtractBlendedKeyFrame(MotionState *state, AnimKeyFrame *keyFrame);
+    void Gfx_AnimExtractKeyFrame(void *anim, f32 time, AnimKeyFrame *keyFrame, u32 count);
+    void SinCosRad(f32 *s, f32 *c, f32 rad);
+    u32 *numBones;
+    u32 i;
+    CarTrailBone *wheel;
+    AnimKeyFrame keys[64];
+
+    numBones = car->motionState.model->numBones;
+    MotionState_ExtractBlendedKeyFrame(&car->motionState, frames);
+    for (i = 0; i < car->vehicleIface->numWheels; i++) {
+        wheel = &car->vehicleIface->wheels[i];
+        SinCosRad(&frames[wheel->bone].rot.x, &frames[wheel->bone].rot.w, 0.5f * car->wheelStates[i].rotation);
+        frames[wheel->bone].rot.y = 0.0f;
+        frames[wheel->bone].rot.z = 0.0f;
+    }
+    if (car->vehicleIface->steerAnim != NULL) {
+        Gfx_AnimExtractKeyFrame(car->vehicleIface->steerAnim,
+                                10.0f * (car->unk378 / 0.7853982f) * car->vehicleIface->engine->animSpeed,
+                                keys, *numBones);
+        Anim_AddKeyFrames(frames, keys, *numBones);
+    }
+    if (car->vehicleIface->modelRef->anims[0] != NULL) {
+        Gfx_AnimExtractKeyFrame(car->vehicleIface->modelRef->anims[0], -car->animTimes[0], keys, *numBones);
+        Anim_AddKeyFrames(frames, keys, *numBones);
+    }
+    if (car->vehicleIface->modelRef->anims[1] != NULL) {
+        Gfx_AnimExtractKeyFrame(car->vehicleIface->modelRef->anims[1], -car->animTimes[1], keys, *numBones);
+        Anim_AddKeyFrames(frames, keys, *numBones);
+    }
+    if (car->vehicleIface->modelRef->anims[2] != NULL) {
+        Gfx_AnimExtractKeyFrame(car->vehicleIface->modelRef->anims[2], -car->animTimes[2], keys, *numBones);
+        Anim_AddKeyFrames(frames, keys, *numBones);
+    }
+}
+
 void CarA_InitInverseBodyInertiaTensor(CarA *car) {
     extern Matrix4 g_identity;
     void PSVECAdd(void *a, void *b, Vector4 *out);
