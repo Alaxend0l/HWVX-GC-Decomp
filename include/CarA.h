@@ -73,8 +73,15 @@ typedef struct CarAGear {
 } CarAGear;
 
 /* The car's config/vehicle-interface container (CarA.vehicleIface). */
+typedef struct CarASoundSet {
+  u8 pad00[0xC];            /* 0x00 */
+  f32 pitchScale;           /* 0x0C */
+} CarASoundSet;
+
 typedef struct CarAInfo {
-  u8 pad00[0x1C];           /* 0x00 */
+  u8 pad00[0x11];           /* 0x00 */
+  u8 driveMode;             /* 0x11 1: human-controlled */
+  u8 pad12[0xA];            /* 0x12 */
   f32 unk1C;                /* 0x1C */
   f32 unk20;                /* 0x20 */
   f32 unk24;                /* 0x24 */
