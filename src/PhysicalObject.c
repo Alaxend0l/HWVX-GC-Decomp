@@ -46,9 +46,9 @@ void PhysicalObject_ProcessForce(u8 *obj, Vector4 *force, Vector4 *dir)
 }
 
 s32 PhysicalObject_Init(u8 *obj, u8 *data) {
-    typedef struct OBox {
+    typedef struct ABox {
         Vector4 v[3];
-    } OBox;
+    } __attribute__((aligned(16))) ABox;
     typedef struct Mesh {
         u8 pad0[0xC];
         u32 count;
@@ -62,7 +62,7 @@ s32 PhysicalObject_Init(u8 *obj, u8 *data) {
         u8 pad11[0x20 - 0x11];
         f32 mass;
         u8 pad24[0x44 - 0x24];
-        OBox *box;
+        ABox *box;
         Mesh *mesh;
     } DestructibleInfo;
     void Destructible_Init(u8 *obj, u8 *data);
@@ -70,9 +70,9 @@ s32 PhysicalObject_Init(u8 *obj, u8 *data) {
     void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
     s32 Thing_HitsTerrain(void *thing, void *arg1, void *arg2);
     u8 hit[0x50];
-    OBox box;
-    Vector4 scaled;
-    Vector4 local;
+    ABox box;
+    Vector4 scaled __attribute__((aligned(16)));
+    Vector4 local __attribute__((aligned(16)));
     f32 dist;
     DestructibleInfo *info;
     Mesh *mesh;
