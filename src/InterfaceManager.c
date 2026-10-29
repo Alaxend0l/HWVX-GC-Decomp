@@ -119,6 +119,45 @@ void InterfaceManager_SetInput(s32 index, s32 input) {
     }
 }
 
+static inline void InterfaceManager_ReleaseInterfaceObjects(u8 *objs) {
+    typedef struct ObjectAllocation {
+        u32 start;
+        u32 count;
+        s8 free;
+    } ObjectAllocation;
+    extern ObjectAllocation g_objectAllocations[28];
+    extern u32 g_numInterfaceObjectAllocations;
+    extern u32 g_numInterfaceObjectsAllocated;
+    void *memset(void *dst, int c, u32 n);
+    s32 i;
+
+    if (objs == NULL) {
+        return;
+    }
+    for (i = g_numInterfaceObjectAllocations - 1; i >= 0; i--) {
+        if (*(u32 *)(objs + 0x2FC) == g_objectAllocations[i].start) {
+            break;
+        }
+    }
+    if (i == -1) {
+        return;
+    }
+    if (g_numInterfaceObjectsAllocated == g_objectAllocations[i].start + g_objectAllocations[i].count) {
+        g_numInterfaceObjectsAllocated -= g_objectAllocations[i].count;
+        g_numInterfaceObjectAllocations--;
+        while (g_numInterfaceObjectAllocations != 0 &&
+               (g_objectAllocations[g_numInterfaceObjectAllocations - 1].free ||
+                g_objectAllocations[g_numInterfaceObjectAllocations - 1].count == 0)) {
+            g_numInterfaceObjectsAllocated -= g_objectAllocations[g_numInterfaceObjectAllocations - 1].count;
+            memset(&g_objectAllocations[g_numInterfaceObjectAllocations - 1], 0, sizeof(ObjectAllocation));
+            g_numInterfaceObjectAllocations--;
+        }
+    } else {
+        g_objectAllocations[i].free = 1;
+    }
+    *(u32 *)(objs + 0x2FC) = -1;
+}
+
 void InterfaceManager_ReleaseInterface(u32 index) {
     typedef struct {
         u32 index;
