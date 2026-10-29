@@ -1085,6 +1085,186 @@ void InterfaceManager_SetObjectReactive(u8 *iface, u32 onId, u32 offId) {
     }
 }
 
+u32 InterfaceManager_KeyPress(InterfaceKeyState *im, s32 pad, u8 key) {
+    extern s32 g_iDeltaTimeMS;
+    s8 Input_KeyPress(s32 chan, u8 key);
+    u32 result = 0;
+
+    if (pad == -2 || im->disabled) {
+        return 0;
+    }
+    switch (pad) {
+    case -1: {
+        s16 x, y, cx, cy;
+        u32 i;
+        for (i = 0; i < 4; i++) {
+            if (Input_KeyPress(i, key)) {
+                result |= 1 << i;
+            }
+        }
+        if (result == 0) {
+            if (key == 3) {
+                for (i = 0; i < 4; i++) {
+                    if (Input_GetAnalog(i, &x, &y, &cx, &cy)) {
+                        if (x > 100 && !im->dir[i][2].active && !im->locked) {
+                            im->dir[i][2].active = 1;
+                            result |= 1 << i;
+                            im->dir[i][2].held = 1;
+                            im->dir[i][2].timer = 250;
+                        } else if (im->dir[i][2].held) {
+                            result |= 1 << i;
+                        } else {
+                            im->dir[i][2].timer -= (s16)g_iDeltaTimeMS;
+                            if (im->dir[i][2].timer <= 0) {
+                                im->dir[i][2].timer = 0;
+                                im->dir[i][2].active = 0;
+                            }
+                        }
+                    }
+                }
+            } else if (key == 2) {
+                for (i = 0; i < 4; i++) {
+                    if (Input_GetAnalog(i, &x, &y, &cx, &cy)) {
+                        if (x < -100 && !im->dir[i][3].active && !im->locked) {
+                            im->dir[i][3].active = 1;
+                            result |= 1 << i;
+                            im->dir[i][3].held = 1;
+                            im->dir[i][3].timer = 250;
+                        } else if (im->dir[i][3].held) {
+                            result |= 1 << i;
+                        } else {
+                            im->dir[i][3].timer -= (s16)g_iDeltaTimeMS;
+                            if (im->dir[i][3].timer <= 0) {
+                                im->dir[i][3].timer = 0;
+                                im->dir[i][3].active = 0;
+                            }
+                        }
+                    }
+                }
+            } else if (key == 4) {
+                for (i = 0; i < 4; i++) {
+                    if (Input_GetAnalog(i, &x, &y, &cx, &cy)) {
+                        if (y > 100 && !im->dir[i][0].active && !im->locked) {
+                            im->dir[i][0].active = 1;
+                            result |= 1 << i;
+                            im->dir[i][0].held = 1;
+                            im->dir[i][0].timer = 250;
+                        } else if (im->dir[i][0].held) {
+                            result |= 1 << i;
+                        } else {
+                            im->dir[i][0].timer -= (s16)g_iDeltaTimeMS;
+                            if (im->dir[i][0].timer <= 0) {
+                                im->dir[i][0].timer = 0;
+                                im->dir[i][0].active = 0;
+                            }
+                        }
+                    }
+                }
+            } else if (key == 5) {
+                for (i = 0; i < 4; i++) {
+                    if (Input_GetAnalog(i, &x, &y, &cx, &cy)) {
+                        if (y < -100 && !im->dir[i][1].active && !im->locked) {
+                            im->dir[i][1].active = 1;
+                            result |= 1 << i;
+                            im->dir[i][1].held = 1;
+                            im->dir[i][1].timer = 250;
+                        } else if (im->dir[i][1].held) {
+                            result |= 1 << i;
+                        } else {
+                            im->dir[i][1].timer -= (s16)g_iDeltaTimeMS;
+                            if (im->dir[i][1].timer <= 0) {
+                                im->dir[i][1].timer = 0;
+                                im->dir[i][1].active = 0;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        break;
+    }
+    default: {
+        s16 x, y, cx, cy;
+        if (Input_KeyPress(pad, key)) {
+            result |= 1 << pad;
+        }
+        if (result == 0) {
+            if (key == 3) {
+                if (Input_GetAnalog(pad, &x, &y, &cx, &cy)) {
+                    if (x > 100 && !im->dir[pad][2].active && !im->locked) {
+                        im->dir[pad][2].active = 1;
+                        result |= 1 << pad;
+                        im->dir[pad][2].held = 1;
+                        im->dir[pad][2].timer = 250;
+                    } else if (im->dir[pad][2].held) {
+                        result |= 1 << pad;
+                    } else {
+                        im->dir[pad][2].timer -= (s16)g_iDeltaTimeMS;
+                        if (im->dir[pad][2].timer <= 0) {
+                            im->dir[pad][2].timer = 0;
+                            im->dir[pad][2].active = 0;
+                        }
+                    }
+                }
+            } else if (key == 2) {
+                if (Input_GetAnalog(pad, &x, &y, &cx, &cy)) {
+                    if (x < -100 && !im->dir[pad][3].active && !im->locked) {
+                        im->dir[pad][3].active = 1;
+                        result |= 1 << pad;
+                        im->dir[pad][3].held = 1;
+                        im->dir[pad][3].timer = 250;
+                    } else if (im->dir[pad][3].held) {
+                        result |= 1 << pad;
+                    } else {
+                        im->dir[pad][3].timer -= (s16)g_iDeltaTimeMS;
+                        if (im->dir[pad][3].timer <= 0) {
+                            im->dir[pad][3].timer = 0;
+                            im->dir[pad][3].active = 0;
+                        }
+                    }
+                }
+            } else if (key == 4) {
+                if (Input_GetAnalog(pad, &x, &y, &cx, &cy)) {
+                    if (y > 100 && !im->dir[pad][0].active && !im->locked) {
+                        im->dir[pad][0].active = 1;
+                        result |= 1 << pad;
+                        im->dir[pad][0].held = 1;
+                        im->dir[pad][0].timer = 250;
+                    } else if (im->dir[pad][0].held) {
+                        result |= 1 << pad;
+                    } else {
+                        im->dir[pad][0].timer -= (s16)g_iDeltaTimeMS;
+                        if (im->dir[pad][0].timer <= 0) {
+                            im->dir[pad][0].timer = 0;
+                            im->dir[pad][0].active = 0;
+                        }
+                    }
+                }
+            } else if (key == 5) {
+                if (Input_GetAnalog(pad, &x, &y, &cx, &cy)) {
+                    if (y < -100 && !im->dir[pad][1].active && !im->locked) {
+                        im->dir[pad][1].active = 1;
+                        result |= 1 << pad;
+                        im->dir[pad][1].held = 1;
+                        im->dir[pad][1].timer = 250;
+                    } else if (im->dir[pad][1].held) {
+                        result |= 1 << pad;
+                    } else {
+                        im->dir[pad][1].timer -= (s16)g_iDeltaTimeMS;
+                        if (im->dir[pad][1].timer <= 0) {
+                            im->dir[pad][1].timer = 0;
+                            im->dir[pad][1].active = 0;
+                        }
+                    }
+                }
+            }
+        }
+        break;
+    }
+    }
+    return result;
+}
+
 #pragma use_lmw_stmw on
 s32 InterfaceManager_PlayEvent(InterfaceState *iface, u8 *obj, u8 *event, u16 arg) {
     typedef struct {
