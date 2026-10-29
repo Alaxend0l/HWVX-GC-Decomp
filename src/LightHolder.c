@@ -70,7 +70,7 @@ void LightHolder_Render(void) {
     void Gfx_GetCameraPosition(Vector4 *pos);
     void Gfx_ScreenOverlay(GXColor *color, u8 mode);
     void DistanceXYZ(void *a, void *b, f32 *dist);
-    Vector4 camera;
+    Vector4 camera __attribute__((aligned(16)));
     f32 dist;
     GXColor color;
     u8 *light;
