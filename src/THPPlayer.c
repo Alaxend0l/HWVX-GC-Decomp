@@ -302,6 +302,87 @@ void THPPlayerStop(void) {
     }
 }
 
+void PlayControl(u32 retraceCount) {
+    s32 ProperTimingForStart(void);
+    s32 ProperTimingForGettingNextFrame(void);
+    void PushUsedTextureSet(void *buffer);
+    void *PopDecodedTextureSet(s32 flag);
+    extern void (*OldVIPostCallback)(u32);
+    s32 diff;
+    s32 frameNumber;
+    THPTextureSet *textureSet;
+
+    if (OldVIPostCallback) {
+        OldVIPostCallback(retraceCount);
+    }
+    textureSet = (THPTextureSet *)-1;
+    if (ActivePlayer.open && ActivePlayer.state == 2) {
+        if (ActivePlayer.dvdError || ActivePlayer.videoError) {
+            ActivePlayer.state = ActivePlayer.unk9D = 5;
+            return;
+        }
+        if (*(s64 *)&ActivePlayer.unkC0 == 0 && ActivePlayer.unk9D == 0) {
+            ActivePlayer.unk9D = 2;
+        }
+        (*(s64 *)&ActivePlayer.unkC0)++;
+        if (ActivePlayer.unk9D == 0 || ActivePlayer.unk9D == 4) {
+            if (ProperTimingForStart()) {
+                if (ActivePlayer.audioExist) {
+                    diff = ActivePlayer.curVideoNumber - ActivePlayer.audioFrameNumber;
+                    if (diff <= 1) {
+                        textureSet = PopDecodedTextureSet(0);
+                        if (ActivePlayer.videoDecodeCount > diff) {
+                            ActivePlayer.videoDecodeCount--;
+                        }
+                    } else {
+                        ActivePlayer.unk9D = 2;
+                    }
+                } else {
+                    textureSet = PopDecodedTextureSet(0);
+                    ActivePlayer.unk9D = 2;
+                }
+            } else {
+                *(s64 *)&ActivePlayer.unkC0 = -1;
+            }
+        } else if (ProperTimingForGettingNextFrame()) {
+            if (ActivePlayer.audioExist) {
+                diff = ActivePlayer.curVideoNumber - ActivePlayer.audioFrameNumber;
+                if (diff <= 1) {
+                    textureSet = PopDecodedTextureSet(0);
+                    if (ActivePlayer.videoDecodeCount > diff) {
+                        ActivePlayer.videoDecodeCount--;
+                    }
+                }
+            } else {
+                textureSet = PopDecodedTextureSet(0);
+            }
+        }
+        if (textureSet && textureSet != (THPTextureSet *)-1) {
+            ActivePlayer.curVideoNumber = textureSet->frameNumber;
+            if (ActivePlayer.dispTextureSet) {
+                PushUsedTextureSet(ActivePlayer.dispTextureSet);
+            }
+            ActivePlayer.dispTextureSet = textureSet;
+        }
+        if (!(ActivePlayer.playFlag & 1)) {
+            if (ActivePlayer.audioExist) {
+                frameNumber = (ActivePlayer.audioFrameNumber + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+                if (frameNumber == ActivePlayer.numFrames - 1 && ActivePlayer.audioBuffer == NULL) {
+                    frameNumber = (ActivePlayer.curVideoNumber + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+                    if (frameNumber == ActivePlayer.numFrames - 1 && textureSet == NULL) {
+                        ActivePlayer.state = ActivePlayer.unk9D = 3;
+                    }
+                }
+            } else {
+                frameNumber = (ActivePlayer.curVideoNumber + ActivePlayer.initReadFrame) % ActivePlayer.numFrames;
+                if (frameNumber == ActivePlayer.numFrames - 1 && textureSet == NULL) {
+                    ActivePlayer.state = ActivePlayer.unk9D = 3;
+                }
+            }
+        }
+    }
+}
+
 s32 ProperTimingForStart(void)
 {
     u32 VIGetNextField();
