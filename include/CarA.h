@@ -158,7 +158,9 @@ typedef struct CarAInfo {
   u32 skidsEnabled;         /* 0x50 */
   u8 pad54[0x18];           /* 0x54 */
   GXColor *skidColor;       /* 0x6C */
-  u8 pad70[0x10];           /* 0x70 */
+  u8 pad70[8];              /* 0x70 */
+  CarAModelRef *modelRef;   /* 0x78 */
+  u8 pad7C[4];              /* 0x7C */
   CarAEngine *engine;       /* 0x80 */
   u8 pad84[4];              /* 0x84 */
   CarAAccel *accel;         /* 0x88 */
