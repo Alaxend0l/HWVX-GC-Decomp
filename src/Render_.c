@@ -104,6 +104,21 @@ void Render_StateBlendMode(u32 mode) {
     GXSetBlendMode(1, m_srcBlend, m_dstBlend, 5);
 }
 
+void Render_StateCullMode(s32 mode) {
+    switch (mode) {
+    case 0:
+        GXSetCullMode(0);
+        break;
+    case 1:
+        GXSetCullMode(1);
+        break;
+    case 2:
+        GXSetCullMode(2);
+        break;
+    }
+    m_cullMode = mode;
+}
+
 void Render_StateZEnable(s32 enable) {
     GXSetZMode(enable, m_zmode, m_zwrite);
     m_zstate = enable;
