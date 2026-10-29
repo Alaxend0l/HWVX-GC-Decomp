@@ -1,6 +1,15 @@
 #include "common.h"
 
 
+void AudioDecodeThreadStart(void) {
+    extern s32 AudioDecodeThreadCreated;
+    extern u8 AudioDecodeThread[];
+
+    if (AudioDecodeThreadCreated) {
+        OSResumeThread(AudioDecodeThread);
+    }
+}
+
 void PushFreeAudioBuffer(void *arg0)
 {
     extern u8 UsedTextureSetQueue_8036EC78[];
