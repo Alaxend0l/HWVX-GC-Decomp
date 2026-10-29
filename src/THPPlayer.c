@@ -58,6 +58,7 @@ typedef struct THPPlayer {
     s32 audioFrameNumber;
     THPTextureSet *dispTextureSet;
     THPAudioBuffer *audioBuffer;
+    u8 padE4[0x198 - 0xE4];
 } THPPlayer;
 
 THPPlayer ActivePlayer;
@@ -96,14 +97,12 @@ void PushFreeAudioBuffer(void *arg0);
 s32 THPPlayerInit(void)
 {
     void LCEnable(void);
-    void OSInitMessageQueue(u8 *, u8 *, s32);
+    void OSInitMessageQueue(void *, void *, s32);
     s32 THPInit(void);
-    u8 *player;
 
-    player = (u8 *)&ActivePlayer;
-    memset(player, 0, 0x198);
+    memset(&ActivePlayer, 0, sizeof(ActivePlayer));
     LCEnable();
-    OSInitMessageQueue(player + 0x198, player + 0x1B8, 3);
+    OSInitMessageQueue(UsedTextureSetQueue_8036EC78, UsedTextureSetMessage, 3);
     if (THPInit())
     {
         Initialized = 1;
