@@ -555,8 +555,7 @@ void Camera_UpdatePosition(Camera *cam) {
     if (cam->player != NULL) {
         cam->player->flags &= ~0x80;
     }
-    mode = cam->mode;
-    switch (mode[0]) {
+    switch (*(mode = cam->mode)) {
     case 30:
         if (cam->player != NULL) {
             if (cam->player->vehicle != NULL) {
@@ -686,6 +685,28 @@ void Camera_UpdatePosition(Camera *cam) {
         cam->listener->pos.z = ((CarA *)cam->player->vehicle)->velocity.z * scale + cam->pos.z;
     }
 }
+
+void Camera_SetPlayer(Camera *camera, Player *player) {
+    extern u8 g_cameraManager[];
+    void PlayerManager_ClearAllCameraFlags_PRIVATE(void);
+    void Player_RefreshInterface(Player *player);
+    u32 i;
+    Camera *cam;
+    Player *p;
+
+    camera->player = player;
+    PlayerManager_ClearAllCameraFlags_PRIVATE();
+    cam = (Camera *)g_cameraManager;
+    for (i = 0; i < g_cameraManager[0x640]; i++) {
+        p = cam->player;
+        if (p != NULL) {
+            p->flags |= 0x10;
+        }
+        cam++;
+    }
+    Player_RefreshInterface(player);
+}
+
 #pragma pop
 void CameraManager_ReturnAllToPlayer(void) {
     extern u8 g_cameraManager[];
