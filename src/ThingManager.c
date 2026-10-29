@@ -74,6 +74,14 @@ static inline void ThingManager_InitFreeThing(ThingHeader *thing, void *vtable, 
     ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
 }
 
+static inline void ThingManager_InitPool(void *pool, u32 count, u32 size, void *vtable, u32 type) {
+    u32 i;
+
+    for (i = 0; i < count; i++) {
+        ThingManager_InitFreeThing((ThingHeader *)((u8 *)pool + i * size), vtable, type);
+    }
+}
+
 void ThingManagerList_Remove(void **arg0, void *arg1) {
     void *temp_r5;
     void *temp_r5_2;
@@ -150,6 +158,106 @@ void ThingManagerList_ReleaseAll(void **list) {
         next = M2C_FIELD(thing, void **, 0xA4);
         M2C_FIELD(M2C_FIELD(thing, void **, 0x8C), void (**)(void *), 4)(thing);
         thing = next;
+    }
+}
+
+void ThingManager_DARYL_CreateMain(void) {
+    extern u8 g_projectileVTable[];
+    extern u8 g_eventSeqVTable[];
+    extern u8 g_emitterVTable[];
+    extern u8 g_destructibleVTable[];
+    extern u8 g_itemVTable[];
+    extern u8 g_attachVTable[];
+    extern u8 g_debrisVTable[];
+    extern u8 g_creatureVTable[];
+    extern u8 g_wildCardRackVTable[];
+    extern u8 g_physicalObjectVTable[];
+    extern u8 g_lookerVTable[];
+    extern u8 g_tracerVTable[];
+    extern u8 g_podVTable[];
+    extern u8 g_droneVTable[];
+    extern u8 g_motionVTable[];
+    extern u8 g_soundSeqVTable[];
+    extern u8 g_radarBlipVTable[];
+    ThingPools *tm = (ThingPools *)&g_thingManager_DARYL;
+    ThingHeader *thing;
+    u32 i;
+
+    for (i = 0; i < 18; i++) {
+        tm->freeList[i] = NULL;
+    }
+    tm->activeList = NULL;
+    for (i = 0; i < 140; i++) {
+        ThingSlotProjectile *p = &tm->projectiles[i];
+
+        p->thing.vtable = g_projectileVTable;
+        p->unk130 = -1;
+        p->thing.unk88 = 0;
+        p->thing.flags |= 0x1000;
+        p->thing.prev = NULL;
+        p->thing.next = NULL;
+        p->thing.type = 0;
+        ThingManagerList_Append(&g_thingManager_DARYL.freeList[p->thing.type], &p->thing);
+    }
+    for (i = 0; i < 192; i++) {
+        thing = &tm->eventSeqs[i].thing;
+        ThingManager_InitFreeThing(thing, g_eventSeqVTable, 1);
+    }
+    for (i = 0; i < 160; i++) {
+        thing = &tm->emitters[i].thing;
+        ThingManager_InitFreeThing(thing, g_emitterVTable, 2);
+    }
+    for (i = 0; i < 500; i++) {
+        thing = &tm->destructibles[i].thing;
+        ThingManager_InitFreeThing(thing, g_destructibleVTable, 3);
+    }
+    for (i = 0; i < 96; i++) {
+        thing = &tm->items[i].thing;
+        ThingManager_InitFreeThing(thing, g_itemVTable, 4);
+    }
+    for (i = 0; i < 192; i++) {
+        thing = &tm->attaches[i].thing;
+        ThingManager_InitFreeThing(thing, g_attachVTable, 5);
+    }
+    for (i = 0; i < 128; i++) {
+        thing = &tm->debris[i].thing;
+        ThingManager_InitFreeThing(thing, g_debrisVTable, 6);
+    }
+    thing = &tm->creature.thing;
+    ThingManager_InitFreeThing(thing, g_creatureVTable, 7);
+    for (i = 0; i < 16; i++) {
+        thing = &tm->wildCardRacks[i].thing;
+        ThingManager_InitFreeThing(thing, g_wildCardRackVTable, 8);
+    }
+    for (i = 0; i < 8; i++) {
+        thing = &tm->cars[i].thing;
+        ThingManager_InitFreeThing(thing, g_carAVTable, 9);
+    }
+    for (i = 0; i < 100; i++) {
+        thing = &tm->physicalObjects[i].thing;
+        ThingManager_InitFreeThing(thing, g_physicalObjectVTable, 10);
+    }
+    thing = &tm->looker.thing;
+    ThingManager_InitFreeThing(thing, g_lookerVTable, 11);
+    for (i = 0; i < 32; i++) {
+        thing = &tm->tracers[i].thing;
+        ThingManager_InitFreeThing(thing, g_tracerVTable, 12);
+    }
+    thing = &tm->pod.thing;
+    ThingManager_InitFreeThing(thing, g_podVTable, 13);
+    thing = &tm->drone.thing;
+    ThingManager_InitFreeThing(thing, g_droneVTable, 14);
+    for (i = 0; i < 56; i++) {
+        thing = &tm->motions[i].thing;
+        ThingManager_InitFreeThing(thing, g_motionVTable, 15);
+    }
+    for (i = 0; i < 128; i++) {
+        thing = &tm->soundSeqs[i].thing;
+        ThingManager_InitFreeThing(thing, g_soundSeqVTable, 16);
+    }
+    for (i = 0; i < 64; i++) {
+        thing = &tm->radarBlips[i].thing;
+        ThingManager_InitFreeThing(thing, g_radarBlipVTable, 17);
     }
 }
 
