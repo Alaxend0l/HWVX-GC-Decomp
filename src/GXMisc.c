@@ -135,3 +135,19 @@ void GXPokeZMode(u8 compare_enable, s32 func, u8 update_enable) {
     __peReg[0] = reg;
 }
 
+void __GXPEInit(void) {
+    u32 reg;
+
+    __OSSetInterruptHandler(0x12, GXTokenInterruptHandler);
+    __OSSetInterruptHandler(0x13, GXFinishInterruptHandler);
+    OSInitThreadQueue(&FinishQueue);
+    __OSUnmaskInterrupts(0x2000);
+    __OSUnmaskInterrupts(0x1000);
+    reg = __peReg[5];
+    reg = (reg & ~4) | 4;
+    reg = (reg & ~8) | 8;
+    reg = (reg & ~1) | 1;
+    reg = (reg & ~2) | 2;
+    __peReg[5] = reg;
+}
+
