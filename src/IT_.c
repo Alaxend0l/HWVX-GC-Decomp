@@ -35,6 +35,30 @@ typedef struct ITSample {
 u32 HAllocA_(s32 size);
 void MemCpyA_(u32 dst, u32 src, s32 size);
 
+#pragma optimization_level 1
+s32 CreateIT_(ITHeader *hdr, ITSample **smp) {
+    u32 i;
+    u32 size;
+
+    i = hdr->smpNum - 1;
+    size = smp[i]->data + (smp[i]->length << ((smp[i]->flags & 2) != 0));
+    g_aheap = HAllocA_(size);
+    if (g_aheap == 0) {
+        return 0;
+    }
+    DCFlushRange((void *)smp[0]->data, size);
+    MemCpyA_(g_aheap, smp[0]->data, size);
+    smp[0]->data = 0;
+    for (i = 0; i < hdr->smpNum; i++) {
+        smp[i]->data += g_aheap;
+        if (smp[i]->flags & 2) {
+            smp[i]->data >>= 1;
+        }
+    }
+    return 1;
+}
+#pragma optimization_level reset
+
 void DestroyIT_(void *data) {
     OSFreeToHeap(__OSCurrHeap, data);
     FreeA_(g_aheap);
