@@ -123,4 +123,16 @@ void *__AXPopCallbackStack(void)
     }
     return pvpb;
 }
+void AXFreeVoice(AXVPB *p)
+{
+    BOOL old;
 
+    old = OSDisableInterrupts();
+    __AXRemoveFromStack(p);
+    if (p->state == 1) {
+        p->depop = 1;
+    }
+    __AXSetPBDefault(p);
+    __AXPushFreeStack(p);
+    OSRestoreInterrupts(old);
+}
