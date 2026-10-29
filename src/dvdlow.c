@@ -34,3 +34,11 @@ void AlarmHandler(void)
         DVDLowSeek(CommandList[n].seekLba, CommandList[n].seekSectors);
     }
 }
+
+s32 DVDLowBreak(void)
+{
+    StopAtNextInt = 1;
+    Breaking = 1;
+    return 1;
+}
+
