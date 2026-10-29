@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 
 void ForceIPLReset(void) {
     extern s32 m_ilpreset;
