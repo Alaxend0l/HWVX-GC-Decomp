@@ -15,6 +15,7 @@ volatile u32 __SIRegs[64] : 0xCC006400;
 static SIControl Si = {-1, 0, 0, NULL, NULL};
 static SIPacket Packet[4];
 static OSAlarm Alarm[4];
+static u32 Type[4];
 
 BOOL __SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback);
 
