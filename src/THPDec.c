@@ -37,6 +37,7 @@ typedef struct THPFileInfo {
 } THPFileInfo;
 
 static THPFileInfo *__THPInfo;
+static u8 *__THPHuffmanBits;
 static u8 *__THPHuffmanSizeTab;
 static u16 *__THPHuffmanCodeTab;
 static s16 *__THPMCUBuffer[6];
