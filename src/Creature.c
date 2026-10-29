@@ -18,6 +18,51 @@ typedef struct AnimTable
     AnimEntry *entries;
 } AnimTable;
 
+/* damage parts: pieces a creature can lose when gibbed */
+typedef struct DamagePart
+{
+    u8 spawned;
+    u8 useOffset;
+    u16 unk2;
+    u16 bone;
+    u16 unk6;
+    void *geom;
+    Vector4 *offset;
+    Vector4 *slavePos;
+    u32 debris;
+    void *slaveInfo;
+} DamagePart;
+typedef struct DamagePartList
+{
+    u32 count;
+    DamagePart *parts;
+} DamagePartList;
+
+static inline u32 Creature_FindDamagePart(DamagePartList *list, u32 bone)
+{
+    u32 i;
+
+    for (i = 0; i < list->count; i++)
+    {
+        if (bone == list->parts[i].bone)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static inline Vector4 Vector4_OrZero(Vector4 *v)
+{
+    extern Vector4 g_zeroVector;
+
+    if (v != NULL)
+    {
+        return *v;
+    }
+    return g_zeroVector;
+}
+
 /* parameter 2 of Creature_Init: the spawn description it copies out of */
 typedef struct CreatureInit
 {
