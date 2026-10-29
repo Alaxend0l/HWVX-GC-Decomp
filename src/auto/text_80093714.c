@@ -98,6 +98,34 @@ void TRKTargetSetInputPendingPtr(void *ptr) {
     gTRKState.inputPendingPtr = ptr;
 }
 
+s32 TRKPPCAccessFPRegister(void *srcDestPtr, u32 fpr, s32 read) {
+    s32 error = 0;
+    u32 instructionData1[10] = {
+        0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
+        0x60000000, 0x60000000, 0x60000000, 0x60000000, 0x60000000,
+    };
+
+    if (fpr < 0x20) {
+        if (read) {
+            instructionData1[0] = 0xD8030000 | (fpr << 21);
+        } else {
+            instructionData1[0] = 0xC8030000 | (fpr << 21);
+        }
+        error = TRKPPCAccessSpecialReg(srcDestPtr, instructionData1, read);
+    } else if (fpr == 0x20) {
+        *(u64 *)srcDestPtr &= 0xFFFFFFFF;
+    } else if (fpr == 0x21) {
+        if (!read) {
+            *(u32 *)srcDestPtr = *((u32 *)srcDestPtr + 1);
+        }
+        error = TRKPPCAccessSPR(srcDestPtr, 1022, read);
+        if (read) {
+            *(u64 *)srcDestPtr = (*(u64 *)srcDestPtr >> 32) & 0xFFFFFFFF;
+        }
+    }
+    return error;
+}
+
 s32 TRKTargetStop(void) {
     gTRKState.field_98 = 1;
     return 0;
