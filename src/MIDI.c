@@ -79,9 +79,9 @@ typedef struct MIDI_SND
     MIDI_INST inst[1];
 } MIDI_SND;
 
-MIDI_CHN g_chn[0x10];
-MIDI_INST *g_pProg[0x80];
-MIDI_INST *g_pDrum[0x80];
+static MIDI_CHN g_chn[0x10];
+static MIDI_INST *g_pProg[0x80];
+static MIDI_INST *g_pDrum[0x80];
 u8 g_mrk[0x40][8];
 u32 gap_08_803771B4[1];
 MIDI_SND *g_pSnd;
