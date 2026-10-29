@@ -11,7 +11,9 @@ typedef struct AXVPB {
     void *userContext;
     u32 index;
     u32 sync;
-    u8 unk20[0x1B2 - 0x20];
+    u8 unk20[0x146 - 0x20];
+    u16 state;
+    u8 unk148[0x1B2 - 0x148];
     u16 currentAddressHi;
     u16 currentAddressLo;
     u8 unk1B6[0x1DE - 0x1B6];
