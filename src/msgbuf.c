@@ -67,10 +67,9 @@ static inline s32 TRKReadBuffer_inline(TRKBuffer *b, void *data, u32 length) {
 s32 TRKReadBuffer1_ui8(TRKBuffer *b, u8 *data) {
     s32 error = 0;
     u32 length = 1;
-    u32 bytesLeft;
+    u32 bytesLeft = b->length - b->position;
 
-    bytesLeft = b->length - b->position;
-    if (length > bytesLeft) {
+    if (bytesLeft < length) {
         error = 0x302;
         length = bytesLeft;
     }
@@ -237,5 +236,18 @@ TRKBuffer *TRKGetBuffer(s32 idx) {
         buf = &gTRKMsgBufs[idx];
     }
     return buf;
+}
+
+s32 TRKInitializeMutex(void *mutex);
+s32 TRKInitializeMessageBuffers(void) {
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        TRKInitializeMutex(&gTRKMsgBufs[i]);
+        TRKAcquireMutex(&gTRKMsgBufs[i]);
+        gTRKMsgBufs[i].isInUse = 0;
+        TRKReleaseMutex(&gTRKMsgBufs[i]);
+    }
+    return 0;
 }
 
