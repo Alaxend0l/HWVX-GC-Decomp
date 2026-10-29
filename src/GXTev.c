@@ -177,6 +177,39 @@ void GXSetAlphaCompare(s32 comp0, u8 ref0, s32 op, s32 comp1, u8 ref1) {
     gx->bpSentNot = 0;
 }
 
+void GXSetZTexture(s32 op, s32 fmt, u32 bias) {
+    u32 zenv0;
+    u32 zenv1;
+    u32 type;
+
+    zenv0 = 0;
+    zenv0 = ((u32)zenv0 & ~0xFFFFFF) | (u32)bias;
+    zenv0 = ((u32)zenv0 & 0xFFFFFF) | 0xF4000000;
+    zenv1 = 0;
+    switch (fmt) {
+    case 0x11:
+        type = 0;
+        break;
+    case 0x13:
+        type = 1;
+        break;
+    case 0x16:
+        type = 2;
+        break;
+    default:
+        type = 2;
+        break;
+    }
+    zenv1 = ((u32)zenv1 & ~3) | (u32)type;
+    zenv1 = ((u32)zenv1 & ~0xC) | ((u32)op << 2);
+    zenv1 = ((u32)zenv1 & 0xFFFFFF) | 0xF5000000;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = zenv0;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = zenv1;
+    gx->bpSentNot = 0;
+}
+
 void GXSetTevOrder(s32 stage, s32 coord, s32 map, s32 color) {
     static s32 c2r[] = { 0, 1, 0, 1, 0, 1, 7, 5, 6 };
     u32 *ptref;
