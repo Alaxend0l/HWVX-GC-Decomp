@@ -144,7 +144,6 @@ void PushFreeTextureSet(void *arg0)
 }
 
 void *PopDecodedTextureSet(s32 flags) {
-    extern u8 DecodedTextureSetQueue[];
     void *msg;
 
     if (OSReceiveMessage(DecodedTextureSetQueue, &msg, flags) == 1) {
