@@ -45,41 +45,13 @@ void PlayerManager_Destroy(void) {
 }
 
 void PlayerManager_Release(void) {
-    typedef struct PMPlayer {
-        u8 pad0[0xB0];
-        struct PMPlayer *next;
-        struct PMPlayer *prev;
-    } PMPlayer;
-    typedef struct PlayerManager {
-        u8 pad0[0x20D8];
-        PMPlayer *active;
-        PMPlayer *free;
-    } PlayerManager;
     void Player_ReleaseInterface(void *player);
     PlayerManager *mgr = (PlayerManager *)g_playerManager;
     PMPlayer *player;
 
-    while (1) {
-        player = mgr->active;
-        if (player == NULL) {
-            player = NULL;
-        } else {
-            mgr->active = player->next;
-            if (mgr->active != NULL) {
-                mgr->active->prev = NULL;
-            }
-            player->next = NULL;
-        }
-        if (player == NULL) {
-            break;
-        }
+    while ((player = PlayerManager_PopActive(mgr)) != NULL) {
         Player_ReleaseInterface(player);
-        player->next = mgr->free;
-        player->prev = NULL;
-        if (player->next != NULL) {
-            player->next->prev = player;
-        }
-        mgr->free = player;
+        PlayerManager_PushFree(mgr, player);
     }
 }
 
