@@ -262,3 +262,8 @@ void OSInit(void)
     }
 }
 
+#pragma peephole off
+void *__OSGetExceptionHandler(u8 exception) {
+    return OSExceptionTable[exception];
+}
+
