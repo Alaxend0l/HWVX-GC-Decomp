@@ -89,7 +89,7 @@ static inline void GXTexCoord2f32(f32 s, f32 t) {
 
 void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
 void GXSetPointSize(u8 size, s32 fmt);
-void Render_SetTextureHandle(s32 handle);
+void Render_SetTextureHandle(u16 handle);
 void Render_StateBlendMode(s32 mode);
 void Render_StateAlphaBlendEnable(s32 enable);
 void SetTriVtxDesc(void);
@@ -239,7 +239,7 @@ void Render_DrawNewBBSprites(void) {
                 Render_StateBlendMode(blend);
             }
             if (first) {
-                Render_SetTextureHandle((u16)tex);
+                Render_SetTextureHandle(tex & 0xFFFF);
                 first = 0;
             }
             size = 0.5f * g_pGDL->sprites[cur].pos.w;
