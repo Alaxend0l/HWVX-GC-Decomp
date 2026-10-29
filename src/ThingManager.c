@@ -21,7 +21,10 @@ typedef struct ThingHeader {
     u8 pad50[0x20];
     f32 unk70;                  /* 0x70 bounding sphere radius */
     u32 flags;                  /* 0x74 */
-    u8 pad78[0x10];
+    u8 pad78[0xA];
+    u8 slaveId;                 /* 0x82 trigger id of a slave */
+    u8 slavePlayer;             /* 0x83 */
+    u8 pad84[4];
     u32 unk88;                  /* 0x88 */
     void *vtable;               /* 0x8C */
     u8 pad90[0x10];
