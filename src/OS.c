@@ -254,5 +254,3 @@ void OSInit(void)
     }
 }
 
-#pragma peephole on
-
