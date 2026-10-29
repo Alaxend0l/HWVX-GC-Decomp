@@ -25,7 +25,8 @@ u32 __OSSavedRegionStart;
 BOOL __OSInIPL;
 s64 __OSStartTime;
 
-static u32 DriveInfo[8];
+static u32 DriveInfo[8] __attribute__((aligned(32)));
+static u32 DriveBlock[12];
 
 extern u32 __DVDLongFileNameFlag;
 extern u32 __PADSpec;
