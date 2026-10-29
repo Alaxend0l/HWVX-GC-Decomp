@@ -2,6 +2,24 @@
 
 
 extern s32 g_timer300;
+extern s32 g_timer163;
+extern s32 g_timer78;
+extern s32 g_iDeltaTimeMS;
+void Timer_Heartbeat(void) {
+    if (g_timer300 < 0) {
+        g_timer300 += 300;
+    }
+    g_timer300 -= g_iDeltaTimeMS;
+    if (g_timer163 < 0) {
+        g_timer163 += 163;
+    }
+    g_timer163 -= g_iDeltaTimeMS;
+    if (g_timer78 < 0) {
+        g_timer78 += 78;
+    }
+    g_timer78 -= g_iDeltaTimeMS;
+}
+
 s8 Timer_Interrupt300(void) {
     return (u32)g_timer300 >> 31;
 }
