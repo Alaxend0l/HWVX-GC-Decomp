@@ -44,11 +44,33 @@ typedef struct GDLSphere {
     u8 unk18[0x20 - 0x18];
 } GDLSphere;
 
+typedef struct GDLDrawEntry {
+    void *geometry;
+    GXColor color;
+    u32 matrix;
+    s32 lightState;
+    u8 unk10;
+    u8 unk11;
+    u8 envmapState;
+    u8 unk13;
+} GDLDrawEntry;
+
+typedef struct GDLLODEntry {
+    void *geometry;
+    u32 matrix;
+} GDLLODEntry;
+
 typedef struct GDL {
     u8 unk0[0x2C];
     u32 numSpheres;
-    u8 unk30[0xBC800 - 0x30];
+    u8 unk30[0x54 - 0x30];
+    u32 numDrawEntries;
+    u32 numLODEntries;
+    u8 unk5C[0xBC800 - 0x5C];
     GDLSphere spheres[200];
+    u8 unkBE100[0xDFCC0 - 0xBE100];
+    GDLDrawEntry drawEntries[0x800];
+    GDLLODEntry lodEntries[0x400];
 } GDL;
 
 typedef struct GDLMatrix {
