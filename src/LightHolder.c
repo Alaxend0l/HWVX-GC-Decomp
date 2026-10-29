@@ -49,34 +49,19 @@ void LightHolder_SetTexture(u16 index) {
     Gfx_SetTextureWrapMode(index, 1);
 }
 
-s32 LightHolder_Add(u8 *owner, Vector4 *pos, void *thing) {
-    extern struct {
-        Vector4 pos;
-        u8 unk10[0x2C];
-        u8 unk3C;
-        u8 unk3D[0x13];
-        u8 unk50;
-        u8 unk51[0xF];
-        u8 *owner;
-        void *thing;
-        u32 unk68;
-        u32 life;
-        u32 unk70;
-        u32 unk74;
-        f32 rate;
-        u32 unk7C;
-    } g_pLight[16];
+s32 LightHolder_Add(LightHolderDef *def, Vector4 *pos, void *thing) {
+    extern LightHolderLight g_pLight[16];
     s32 i;
 
     for (i = 0; i < 16; i++) {
-        if (g_pLight[i].owner == NULL) {
-            g_pLight[i].owner = owner;
+        if (g_pLight[i].def == NULL) {
+            g_pLight[i].def = def;
             g_pLight[i].pos = *pos;
             g_pLight[i].thing = thing;
-            g_pLight[i].life = RandomAdd_s32(*(u32 *)(owner + 4), *(u32 *)(owner + 8));
+            g_pLight[i].life = RandomAdd_s32(def->lifeMin, def->lifeRange);
             g_pLight[i].rate = 1.0f;
-            if (*(u32 *)(owner + 4) != 0 && *(u32 *)(owner + 8) != 0) {
-                g_pLight[i].rate = 1.0f / ((f32)g_pLight[i].life / (f32)*(u32 *)(owner + 4));
+            if (def->lifeMin != 0 && def->lifeRange != 0) {
+                g_pLight[i].rate = 1.0f / ((f32)g_pLight[i].life / (f32)def->lifeMin);
             }
             g_pLight[i].unk50 = 1;
             g_pLight[i].unk3C = 1;
