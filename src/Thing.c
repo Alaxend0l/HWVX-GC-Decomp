@@ -70,6 +70,38 @@ void Thing_Release(s32 thing) {
     }
 }
 
+s32 Thing_GetLocalCollision(u8 *thing) {
+    extern u8 g_destructibleVTable[];
+    extern u8 g_moverVTable[];
+    extern u8 g_physicalObjectVTable[];
+    extern u8 g_itemVTable[];
+    extern u8 g_droneVTable[];
+    u8 *vtable = M2C_FIELD(thing, u8 **, 0x8C);
+    u8 *physics;
+
+    if (vtable == g_carAVTable) {
+        physics = M2C_FIELD(M2C_FIELD(thing, u8 **, 0x3BC), u8 **, 0xA0);
+    } else if (vtable == g_destructibleVTable || vtable == g_moverVTable || vtable == g_physicalObjectVTable) {
+        physics = M2C_FIELD(M2C_FIELD(thing, u8 **, 0xC0), u8 **, 0x10);
+    } else if (vtable == g_itemVTable) {
+        physics = NULL;
+    } else if (vtable == g_droneVTable) {
+        physics = M2C_FIELD(M2C_FIELD(thing, u8 **, 0xC0), u8 **, 0x10);
+    } else {
+        physics = NULL;
+    }
+    switch (physics[0x10]) {
+    case 0:
+        return M2C_FIELD(physics, s32 *, 0x44);
+    case 1:
+        return M2C_FIELD(physics, s32 *, 0x48);
+    case 7:
+        return M2C_FIELD(physics, s32 *, 0x44);
+    default:
+        return 0;
+    }
+}
+
 s32 Thing_PreMove(void) {
     return 1;
 }
