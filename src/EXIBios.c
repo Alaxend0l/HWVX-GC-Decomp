@@ -21,6 +21,12 @@ typedef struct EXIControl {
 
 static EXIControl Ecb[3];
 
+volatile u32 __EXIRegs[16] : 0xCC006800;
+
+s32 OSDisableInterrupts(void);
+s32 OSRestoreInterrupts(s32 level);
+s64 OSGetTime(void);
+
 u32 EXIGetState(s32 chan) {
     EXIControl *exi = &Ecb[chan];
     return exi->state;
