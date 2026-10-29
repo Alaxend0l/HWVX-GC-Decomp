@@ -97,3 +97,14 @@ void PSVECScale(Vector *src, Vector *dst, f32 scale);
 void PSVECSubtract(Vector *a, Vector *b, Vector *a_b);
 f32 PSVECDotProduct(Vector *a, Vector *b);
 f32 Sqrt(f32 x);
+
+void Gfx_DrawGeometry(s32 geometry, s32 matrix) {
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].geometry = geometry;
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].matrix = Gfx_AddWorldMatrixState_CacheMatrix(matrix);
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].unk10 = (g_state.unk7C >> 4) & 1;
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].unk4 = g_state.unk74;
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].lightState = Gfx_GetLightState();
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].envmapState = Gfx_GetEnvmapState();
+    g_pGDL->drawEntries[g_pGDL->numDrawEntries].unk11 = 0;
+    g_pGDL->numDrawEntries++;
+}
