@@ -25,6 +25,14 @@ extern GXData *gx;
 
 #pragma push
 #pragma peephole on
+void GXSetPointSize(u8 pointSize, u32 texOffsets) {
+    gx->lpSize = (gx->lpSize & ~0xFF00) | ((u32)pointSize << 8);
+    gx->lpSize = (gx->lpSize & ~0x380000) | (texOffsets << 19);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->lpSize;
+    gx->bpSentNot = 0;
+}
+
 void GXSetCullMode(s32 mode) {
     s32 hwMode;
 
