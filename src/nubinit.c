@@ -14,9 +14,8 @@ __declspec(section ".data") s32 gTRKBigEndian;
 
 static BOOL TRK_InitializeEndian(void) {
     u8 bendian[4];
-    BOOL result;
+    BOOL result = FALSE;
 
-    result = FALSE;
     gTRKBigEndian = TRUE;
     bendian[0] = 0x12;
     bendian[1] = 0x34;
@@ -46,5 +45,52 @@ s32 TRKTerminateNub(void)
 
     TRKTerminateSerialHandler();
     return 0;
+}
+
+s32 TRKInitializeNub(void) {
+    s32 result;
+    s32 resultTemp;
+    u8 bendian[4];
+
+    result = 0;
+    gTRKBigEndian = 1;
+    bendian[0] = 0x12;
+    bendian[1] = 0x34;
+    bendian[2] = 0x56;
+    bendian[3] = 0x78;
+    if (*(u32 *)bendian == 0x12345678) {
+        gTRKBigEndian = 1;
+    } else if (*(u32 *)bendian == 0x78563412) {
+        gTRKBigEndian = result;
+    } else {
+        result = gTRKBigEndian;
+    }
+
+    if (result == 0) {
+        usr_put_initialize();
+    }
+    if (result == 0) {
+        result = TRKInitializeEventQueue();
+    }
+    if (result == 0) {
+        result = TRKInitializeMessageBuffers();
+    }
+    if (result == 0) {
+        result = TRKInitializeDispatcher();
+    }
+    if (result == 0) {
+        resultTemp = TRKInitializeIntDrivenUART(0xE100, 1, 0, (volatile u8 **)gTRKInputPendingPtr);
+        TRKTargetSetInputPendingPtr(gTRKInputPendingPtr[0]);
+        if (resultTemp != 0) {
+            result = resultTemp;
+        }
+    }
+    if (result == 0) {
+        result = TRKInitializeSerialHandler();
+    }
+    if (result == 0) {
+        result = TRKInitializeTarget();
+    }
+    return result;
 }
 
