@@ -124,6 +124,9 @@ void ShowStats_EndScene(void) {
     Performance_End();
 }
 
+void ShowStats(void) {
+}
+
 #pragma opt_propagation off
 void Render_TimeBars(void *bar) {
     TimeBarRect *Gfx_Add2DRectangle(void);
