@@ -111,6 +111,18 @@ void AudioVoice_Destroy_(void);
 void SetVoiceState_(VoiceHW *voice, s32 state);
 #pragma push
 #pragma optimization_level 1
+s32 AudioVoice_Create_(void) {
+    u32 i;
+
+    for (i = 0; i < 0x20; i++) {
+        g_voice[i].axv = NULL;
+        *(u32 *)&g_voice[i] = i;
+        g_voice[i].id = 0xFF;
+    }
+    m_InitOnce = 1;
+    return 1;
+}
+
 s32 AudioVoice_Init_(void) {
     u32 i;
 
