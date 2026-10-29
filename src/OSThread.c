@@ -62,3 +62,11 @@ s32 __OSGetEffectivePriority(void * thread)
     return priority;
 }
 
+void SelectThread(s32 yield);
+extern s32 RunQueueHint;
+void __OSReschedule(void) {
+    if (RunQueueHint) {
+        SelectThread(0);
+    }
+}
+
