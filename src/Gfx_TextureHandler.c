@@ -27,6 +27,18 @@ s32 File_Open(u32 dev, const char *name, u32 flags, s32 *size);
 s32 File_Read(s32 handle, s32 size, void *data);
 void File_Close(s32 handle);
 void Render_DestroyTextureSlot(u32 id);
+s32 File_Seek(s32 handle, s32 offset, s8 mode);
+
+typedef struct BTFHeader {
+    u8 version;
+    u8 unk1;
+    s16 width;
+    s16 height;
+    s16 bpp;
+    s16 numColors;
+    s16 numMips;
+    s32 unkC;
+} BTFHeader;
 
 s32 Gfx_TextureHandler_Create(void) {
     m_totalTextures = 0x1FF;
