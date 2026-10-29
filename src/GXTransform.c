@@ -15,7 +15,10 @@ volatile PPCWGPipe GXWGFifo : 0xCC008000;
 typedef struct GXData {
     u16 vNumNot;
     u16 bpSentNot;
-    u8 pad4[0xF8 - 0x4];
+    u8 pad4[0x80 - 0x4];
+    u32 matIdxA;
+    u32 matIdxB;
+    u8 pad88[0xF8 - 0x88];
     u32 suScis0;
     u32 suScis1;
     u8 pad100[0x43C - 0x100];
