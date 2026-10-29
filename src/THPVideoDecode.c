@@ -8,10 +8,17 @@ typedef struct THPReadBuffer {
 typedef struct THPPlayer {
     u8 pad0[0x50];
     u32 numFrames;
-    u8 pad54[0x9E - 0x54];
+    u8 pad54[0x6C - 0x54];
+    u32 numComponents;
+    u8 components[16];
+    u8 pad80[0x94 - 0x80];
+    void *thpWork;
+    u8 pad98[0x9E - 0x98];
     u8 playFlag;
     u8 audioExist;
-    u8 padA0[0xB8 - 0xA0];
+    u8 padA0[0xA4 - 0xA0];
+    s32 videoError;
+    u8 padA8[0xB8 - 0xA8];
     s32 initReadFrame;
     u8 padBC[0xD0 - 0xBC];
     s32 videoDecodeCount;
