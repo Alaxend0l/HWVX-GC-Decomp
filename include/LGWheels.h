@@ -91,6 +91,7 @@ typedef struct Constant
 	/* 0x0A0 */
 
 		/* The effect classes' methods, in main/Constant. */
+		Constant();
 		long		DownloadForce(long chan, long effect, unsigned long &device, unsigned long duration, unsigned long startDelay, short magnitude, unsigned short direction, unsigned long attackTime, unsigned long fadeTime, unsigned char attackLevel, unsigned char fadeLevel);
 		/* 0x0A0 */
 		long		UpdateForce(long chan, long effect, unsigned long duration, unsigned long startDelay, short magnitude, unsigned short direction, unsigned long attackTime, unsigned long fadeTime, unsigned char attackLevel, unsigned char fadeLevel);
