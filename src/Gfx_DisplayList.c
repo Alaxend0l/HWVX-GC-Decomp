@@ -125,7 +125,8 @@ typedef struct GDL {
     GDLSprite sprites[0x7CF];
     u8 unk38C90[0x7EA00 - 0x38C90];
     GDLRect rects2D[0x400];
-    u8 unk9FA00[0xC0040 - 0x9FA00];
+    GDLRect rects[0x20];
+    u8 unkA0A80[0xC0040 - 0xA0A80];
     GDLLine lines[0x100];
     u8 unkC3040[0xF3C00 - 0xC3040];
     void *matrices[0x578];
