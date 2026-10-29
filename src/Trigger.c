@@ -272,15 +272,15 @@ s8 TriggerCheckConditions(u8 mode, s32 count, s32 conds) {
 }
 
 /* Returns 1 from the calling trigger check when `a op b` holds
-   (op: 20 >, 21 <, 22 ==, 47 >=, 48 <=). */
+   (op: 21 >, 20 <, 22 ==, 47 >=, 48 <=). */
 #define TRIGGER_COMPARE_RETURN(op, a, b) \
     switch (op) {                        \
-    case 20:                             \
+    case 21:                             \
         if ((a) > (b)) {                 \
             return 1;                    \
         }                                \
         break;                           \
-    case 21:                             \
+    case 20:                             \
         if ((a) < (b)) {                 \
             return 1;                    \
         }                                \
