@@ -100,6 +100,70 @@ u32 MAllocA_(s32 size) {
     printf("Audio :: MAllocA_ - Insufficient ARAM  size: %i\n", size);
     return 0;
 }
+
+#pragma push
+#pragma optimization_level 1
+s32 FreeA_(u32 addr) {
+    typedef struct MemBlk {
+        u32 addr;
+        s32 size;
+        u32 prev;
+        u32 next;
+    } MemBlk;
+    extern MemBlk g_memblk[];
+    extern s32 g_last;
+    extern u32 g_heap;
+    extern u32 g_free;
+    int printf();
+    u32 i;
+    s32 size;
+    u32 next;
+    u32 prev;
+
+    i = 0;
+    while (i != 0xFFFFFFFF) {
+        if (addr == g_memblk[i].addr) {
+            size = -g_memblk[i].size;
+            g_memblk[i].size = size;
+            next = g_memblk[i].next;
+            prev = g_memblk[i].prev;
+            if (next != 0xFFFFFFFF && g_memblk[next].size > 0) {
+                g_memblk[i].addr = g_memblk[next].addr;
+                g_memblk[i].size += g_memblk[next].size;
+                g_memblk[i].next = g_memblk[next].next;
+                g_memblk[g_memblk[i].next].prev = i;
+                g_memblk[next].next = g_free;
+                g_memblk[next].size = 0;
+                g_free = next;
+            }
+            if (prev != 0xFFFFFFFF && g_memblk[prev].size > 0) {
+                g_memblk[prev].addr = g_memblk[i].addr;
+                g_memblk[prev].size += g_memblk[i].size;
+                g_memblk[prev].next = g_memblk[i].next;
+                g_memblk[g_memblk[prev].next].prev = prev;
+                g_memblk[i].next = g_free;
+                g_memblk[i].size = 0;
+                g_free = i;
+                i = prev;
+            }
+            if (g_memblk[i].next == 0xFFFFFFFF) {
+                g_last = i;
+            }
+            return size;
+        }
+        i = g_memblk[i].next;
+    }
+    if (g_heap == addr) {
+        size = g_memblk[g_last].addr - g_heap;
+        g_memblk[g_last].size += size;
+        g_memblk[g_last].addr = g_heap;
+        return size;
+    }
+    printf("Audio :: FreeA_ - Invalid pointer: %06X\n", addr);
+    return 0;
+}
+#pragma pop
+
 #pragma pop
 
 #pragma pop
