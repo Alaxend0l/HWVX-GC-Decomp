@@ -839,13 +839,15 @@ typedef struct QuadPackRef {
 
 /* The quad pack's header carries its pack references inline, at 0x2C. */
 typedef struct QuadPackHeader {
-  u32 pad00[2];        /* 0x00 */
+  u32 valid;           /* 0x00 */
+  u32 numPointers;     /* 0x04 */
   u32 numRelocs;       /* 0x08 */
   s32 *relocs;         /* 0x0C */
   u32 pad10[3];        /* 0x10 */
   u32 numShaders;      /* 0x1C */
   s32 *shaderList;     /* 0x20 */
-  u32 pad24[2];        /* 0x24 */
+  u32 dataSize;        /* 0x24 */
+  u32 numTexRelocs;    /* 0x28 */
   QuadPackRef refs[2]; /* 0x2C */
 } QuadPackHeader;
 
