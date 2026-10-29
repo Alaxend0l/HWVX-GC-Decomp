@@ -719,6 +719,8 @@ void Trigger_CreatureDroppedOff(void *vehicle, void *creature) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 void Trigger_GameRoundsComplete(void) {
     extern u32 TriggerStats_800D3C58[][3];
     extern u32 **m_Triggers_802C1890[];
@@ -744,7 +746,7 @@ void Trigger_GameRoundsComplete(void) {
         }
     }
 }
-
+#pragma pop
 void Trigger_GameRoundXComplete(void) {
     extern u32 TriggerStats_800D3C58[][3];
     extern u32 **m_Triggers_802C1890[];
