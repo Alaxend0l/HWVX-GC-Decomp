@@ -245,3 +245,31 @@ void ProjectVectorToNormal(Vector *n, Vector *v) {
     v->z = scale * n->z + v->z;
 }
 
+void MinMaxVec(Vector4 *min, Vector4 *max, Vector4 *v)
+{
+    if (min->x > v->x) {
+        min->x = v->x;
+    }
+    if (min->y > v->y) {
+        min->y = v->y;
+    }
+    if (min->z > v->z) {
+        min->z = v->z;
+    }
+    if (min->w > v->w) {
+        min->w = v->w;
+    }
+    if (max->x < v->x) {
+        max->x = v->x;
+    }
+    if (max->y < v->y) {
+        max->y = v->y;
+    }
+    if (max->z < v->z) {
+        max->z = v->z;
+    }
+    if (max->w < v->w) {
+        max->w = v->w;
+    }
+}
+
