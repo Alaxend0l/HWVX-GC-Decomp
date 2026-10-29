@@ -39,6 +39,29 @@ s32 VolumeManager_GetVolumeCellIndex(Vector4 *point) {
     return M2C_FIELD(holder, s32 **, 0x14)[z * M2C_FIELD(holder, s32 *, 0x2C) + M2C_FIELD(holder, s32 *, 0x34) * (y * M2C_FIELD(holder, s32 *, 0x2C)) + x];
 }
 
+s32 VolumeManager_GetNumVolumesOfType(u32 type) {
+    typedef struct Volume {
+        u8 pad0[0xC];
+        u32 type;
+        u8 pad10[0x20];
+    } Volume;
+    typedef struct World {
+        u8 pad0[0x68];
+        u32 numVolumes;
+        Volume *volumes;
+    } World;
+    World *world = g_worldData.world;
+    s32 count = 0;
+    u32 i;
+
+    for (i = 0; i < world->numVolumes; i++) {
+        if (type == world->volumes[i].type) {
+            count++;
+        }
+    }
+    return count;
+}
+
 s32 VolumeManager_GetNumVolumesOfTypeByCell(s32 type, s32 cell) {
     extern s32 g_VolumeHolder;
     if ((void *)g_VolumeHolder != NULL) {
