@@ -261,6 +261,48 @@ s32 TRKTargetVersions(u8 *targetVersions)
     return 0;
 }
 
+#pragma use_lmw_stmw on
+s32 TRKTargetAccessFP(u32 firstRegister, u32 lastRegister, void *b, u32 *registersLengthPtr, s32 read)
+{
+    u32 __TRK_get_MSR(void);
+    void __TRK_set_MSR(u32 msr);
+    s32 TRKPPCAccessFPRegister(void *srcDestPtr, u32 fpr, s32 read);
+    s32 TRKReadBuffer1_ui64(void *buffer, u64 *data);
+    u64 temp;
+    TRKExceptionStatus savedException;
+    s32 error;
+    u32 current;
+
+    if (lastRegister > 0x21) {
+        return 0x701;
+    }
+
+    savedException = gTRKExceptionStatus_800DA0A4;
+    gTRKExceptionStatus_800DA0A4.exceptionDetected = 0;
+
+    __TRK_set_MSR(__TRK_get_MSR() | 0x2000);
+
+    *registersLengthPtr = 0;
+    error = 0;
+
+    for (current = firstRegister; current <= lastRegister && error == 0; current++, *registersLengthPtr += sizeof(u64)) {
+        if (read) {
+            TRKPPCAccessFPRegister(&temp, current, read);
+            error = TRKAppendBuffer1_ui64(b, temp);
+        } else {
+            TRKReadBuffer1_ui64(b, &temp);
+            error = TRKPPCAccessFPRegister(&temp, current, read);
+        }
+    }
+
+    if (gTRKExceptionStatus_800DA0A4.exceptionDetected) {
+        *registersLengthPtr = 0;
+        error = 0x702;
+    }
+    gTRKExceptionStatus_800DA0A4 = savedException;
+    return error;
+}
+#pragma use_lmw_stmw off
 s32 TRKTargetAccessDefault(u32 firstRegister, u32 lastRegister, void *b, u32 *registersLengthPtr, s32 read)
 {
     s32 TRKAppendBuffer_ui32(void *buffer, u32 *data, s32 count);
