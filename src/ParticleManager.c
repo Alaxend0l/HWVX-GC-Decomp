@@ -566,7 +566,7 @@ void ParticleSprite_Move(u8 *sprite) {
         f32 unk48;
         f32 unk4C;
     } FxParams;
-    FxParams params;
+    FxParams params __attribute__((aligned(16)));
     f32 dt;
     u8 *anim;
     s32 idx;
