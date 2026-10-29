@@ -6,6 +6,7 @@
 u8 CardWorkArea[0xA000] __attribute__((aligned(32)));
 
 void OSReport(const char *fmt, ...);
+s32 CARDMount(s32 chan, void *workArea, void *detachCallback);
 
 s32 stricmp(const char *s1, const char *s2) {
     char c1, c2;
@@ -384,11 +385,11 @@ s32 MemCard_Open__FUlPCScUlPl(u32 device, const char *fileName, u32 flags, s32 *
     CARDFileInfo *fileInfo;
     s32 *blockSize;
 
-    chan = device - 11;
     if (FileManager_GetDeviceStatus(device) == 3) {
         return 0;
     }
-    m_memcardstatus_803C7970[chan] = CARDMount(chan, (void *)((u32)CardWorkArea), 0);
+    chan = device - 11;
+    m_memcardstatus_803C7970[chan] = CARDMount(chan, CardWorkArea, 0);
     OSReport("CARDMount\n");
     if (m_memcardstatus_803C7970[chan] < 0) {
         OSReport("failed. (%d)\n", m_memcardstatus_803C7970[chan]);
