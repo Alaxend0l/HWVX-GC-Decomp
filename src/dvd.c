@@ -80,6 +80,27 @@ void stateGettingError(void)
     DVDLowRequestError(cbForStateGettingError);
 }
 
+void cbForUnrecoveredError(u32 intType) {
+    void __DVDStoreErrorCode(u32 code);
+    void cbForStateError(u32 code);
+    void DVDLowRequestError(void (*cb)(u32));
+
+    if (intType == 16) {
+        executing->state = -1;
+        __DVDStoreErrorCode(0x1234568);
+        DVDReset();
+        cbForStateError(0);
+        return;
+    }
+
+    if (intType & 1) {
+        stateGoToRetry();
+        return;
+    }
+
+    DVDLowRequestError(cbForUnrecoveredErrorRetry);
+}
+
 void stateGoToRetry(void)
 {
     void DVDLowStopMotor(void (*cb)(u32));
