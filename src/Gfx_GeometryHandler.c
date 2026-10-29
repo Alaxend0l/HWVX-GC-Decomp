@@ -118,6 +118,28 @@ s32 Gfx_FrustrumCullSphereTestAllWindows(Vector *center, f32 radius) {
     return Gfx_FrustrumCullSphereTest(center, radius);
 }
 
+s32 Gfx_FrustrumCullSphereTest(Vector *center, f32 radius) {
+    Vector normal __attribute__((aligned(16)));
+    s32 result;
+    u32 i;
+    f32 dist;
+
+    result = 2;
+    for (i = 0; i < 5; i++) {
+        normal.x = ((f32 *)GetRenderWindow())[i * 4 + 0x70];
+        normal.y = ((f32 *)GetRenderWindow())[i * 4 + 0x71];
+        normal.z = ((f32 *)GetRenderWindow())[i * 4 + 0x72];
+        dist = PSVECDotProduct(center, &normal) + ((f32 *)GetRenderWindow())[i * 4 + 0x73];
+        if (dist > radius) {
+            return 0;
+        }
+        if (dist > -radius) {
+            result = 1;
+        }
+    }
+    return result;
+}
+
 void Gfx_DrawGeometry(s32 geometry, s32 matrix) {
     g_pGDL->drawEntries[g_pGDL->numDrawEntries].geometry = geometry;
     g_pGDL->drawEntries[g_pGDL->numDrawEntries].matrix = Gfx_AddWorldMatrixState_CacheMatrix(matrix);
