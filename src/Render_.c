@@ -30,6 +30,37 @@ void DisplayList_Init(void) {
     memset(g_pDL, 0, 0x18);
 }
 
+void Render_StateBlendMode(u32 mode) {
+    switch (mode) {
+    case 0:
+    case 1:
+        m_srcBlend = 1;
+        m_dstBlend = 0;
+        break;
+    case 2:
+        m_srcBlend = 1;
+        m_dstBlend = 1;
+        break;
+    case 3:
+    case 8:
+    case 10:
+        m_srcBlend = 0;
+        m_dstBlend = 3;
+        break;
+    case 5:
+    case 6:
+    case 7:
+        m_srcBlend = 4;
+        m_dstBlend = 5;
+        break;
+    default:
+        m_srcBlend = 1;
+        m_dstBlend = 0;
+        break;
+    }
+    GXSetBlendMode(1, m_srcBlend, m_dstBlend, 5);
+}
+
 void Render_ClearScreen(void) {
 
 }
