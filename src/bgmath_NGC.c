@@ -346,3 +346,23 @@ void Distance_Plane_4(Vector4 *planes, Vector4 *point, f32 *out)
     out[3] = Distance_Plane(&planes[3], point);
 }
 
+void ScaleMatrix(Matrix4 *m, Vector4 *s)
+{
+    m->v[0].x *= s->x;
+    m->v[0].y *= s->x;
+    m->v[0].z *= s->x;
+    m->v[0].w *= s->x;
+    m->v[1].x *= s->y;
+    m->v[1].y *= s->y;
+    m->v[1].z *= s->y;
+    m->v[1].w *= s->y;
+    m->v[2].x *= s->z;
+    m->v[2].y *= s->z;
+    m->v[2].z *= s->z;
+    m->v[2].w *= s->z;
+    m->v[3].x *= s->w;
+    m->v[3].y *= s->w;
+    m->v[3].z *= s->w;
+    m->v[3].w *= s->w;
+}
+
