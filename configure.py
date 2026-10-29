@@ -478,7 +478,7 @@ config.libs = [
             Object(NonMatching, "Pad.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "etc/ai.c", mw_version="GC/1.2.5n"),
             Object(Matching, "ar.c", mw_version="GC/1.2.5n"),
-            Object(NonMatching, "arq.c", mw_version="GC/1.2.5n"),
+            Object(Matching, "arq.c", mw_version="GC/1.2.5n"),
             Object(Matching, "AX.c"),
             Object(Matching, "AXAlloc.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "AXAux.c"),
