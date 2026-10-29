@@ -38,6 +38,13 @@ s32 RunThread(void *(*func)(void *)) {
     return 1;
 }
 
+s8 isInThread(void) {
+    void *OSGetCurrentThread(void);
+    extern u8 Thread[0x310];
+
+    return (s8)(Thread == OSGetCurrentThread());
+}
+
 void TextureManager_ReleaseCache(void) {
 
 }
