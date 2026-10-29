@@ -25,6 +25,7 @@ void Motion_Release(s32 arg0) {
 }
 
 s32 Motion_Move(u8 *motion) {
+    void MotionState_BuildMatricesWorld(void *mtx, void *pos, void *state, f32 scale);
     void MotionState_Heartbeat(void *state, void *arg1, void *thing);
     MotionState_BuildMatricesWorld(motion + 0x50, motion + 0x40, motion + 0xB0, 1.0f);
     MotionState_Heartbeat(motion + 0xB0, motion + 0x10, motion);
