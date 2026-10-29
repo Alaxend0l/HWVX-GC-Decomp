@@ -20,6 +20,8 @@ typedef struct GXData {
     u32 IndTexScale1;
     u8 pad130[0x204 - 0x130];
     u32 genMode;
+    u8 pad208[0x4F4 - 0x208];
+    u32 dirtyState;
 } GXData;
 
 extern GXData *gx;
