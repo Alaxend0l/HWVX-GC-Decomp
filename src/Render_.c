@@ -103,7 +103,9 @@ typedef struct RenderStats {
 } RenderStats;
 
 typedef struct SilhouetteEdge {
-    f32 normal0[4];
+    f32 normal0[3];
+    u16 v0;
+    u16 v1;
     f32 normal1[3];
     s32 type;
 } SilhouetteEdge;
