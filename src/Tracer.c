@@ -220,11 +220,11 @@ void Tracer_Render(u8 *thing) {
     s32 n;
 
     idx = *(u32 *)(thing + 0xB4);
-    if (tracers_802CD600[idx].active != 0 && tracers_802CD600[idx].unk4CC > 1) {
-        p = tracers_802CD600[idx].head;
+    if (tracers[idx].active != 0 && tracers[idx].unk4CC > 1) {
+        p = tracers[idx].head;
         n = 0;
-        tri = Gfx_Begin_GroupTriShaded(tracers_802CD600[idx].unk4D0, tracers_802CD600[idx].unk4D2, 0);
-        for (i = 0; i < (tracers_802CD600[idx].unk4CC == 15 ? tracers_802CD600[idx].unk4CC - 2 : tracers_802CD600[idx].unk4CC - 1); i++) {
+        tri = Gfx_Begin_GroupTriShaded(tracers[idx].unk4D0, tracers[idx].unk4D2, 0);
+        for (i = 0; i < (tracers[idx].unk4CC == 15 ? tracers[idx].unk4CC - 2 : tracers[idx].unk4CC - 1); i++) {
             tri[0].color[0][0] = p->color[0];
             tri[0].color[0][1] = p->color[1];
             tri[0].color[0][2] = p->color[2];
