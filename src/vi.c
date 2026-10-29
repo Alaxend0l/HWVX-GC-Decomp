@@ -192,6 +192,22 @@ static u32 getCurrentFieldEvenOdd(void) {
     return ((((vct - 1) << 1) + ((hct - 1) / CurrTiming->hlw)) < CurrTiming->nhlines) ? 1 : 0;
 }
 
+u32 VIGetNextField(void) {
+    extern VITiming *CurrTiming;
+    s32 OSDisableInterrupts(void);
+    void OSRestoreInterrupts(s32 level);
+    s32 enabled;
+    u32 field;
+    u32 hct;
+    u32 vct;
+
+    enabled = OSDisableInterrupts();
+    GetCurrentDisplayPosition(&hct, &vct);
+    field = ((((vct - 1) << 1) + ((hct - 1) / CurrTiming->hlw)) < CurrTiming->nhlines) ? 1 : 0;
+    OSRestoreInterrupts(enabled);
+    return (field ^ 1) ^ (HorVer.AdjustedDispPosY & 1);
+}
+
 u32 VIGetCurrentLine(void) {
     extern VITiming *CurrTiming;
     s32 OSDisableInterrupts(void);
