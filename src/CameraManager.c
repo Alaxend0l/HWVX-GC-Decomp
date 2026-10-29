@@ -195,11 +195,12 @@ static inline s8 RayHitsTerrainAndObjects_Camera(Vector4 *start, Vector4 *dir, f
 
     hit = RayHitsTerrain_Aux3(start, dir, t, info);
     if (RayHitsObjects_CameraSpecial(start, dir, t, info)) {
-        hit = 1;
+        return 1;
     }
     return hit;
 }
 
+#pragma use_lmw_stmw on
 void GetTrimmedCameraPos(u8 *camera, Vector4 *from, Vector4 *dir, f32 *trim, f32 dist) {
     extern f32 g_fDeltaTimeSec;
     f32 PSVECDotProduct(void *a, void *b);
@@ -209,9 +210,9 @@ void GetTrimmedCameraPos(u8 *camera, Vector4 *from, Vector4 *dir, f32 *trim, f32
         Vector4 point;
         Vector4 normal;
         u8 unk20[0x30];
-    } info;
-    Vector4 pos;
-    Vector4 d;
+    } info __attribute__((aligned(16)));
+    Vector4 pos __attribute__((aligned(16)));
+    Vector4 d __attribute__((aligned(16)));
     f32 t;
     f32 trimAmt;
     f32 travelled;
@@ -274,7 +275,6 @@ void GetTrimmedCameraPos(u8 *camera, Vector4 *from, Vector4 *dir, f32 *trim, f32
     }
     *(Vector4 *)(camera + 0x60) = pos;
 }
-
 void GetTrimmedCameraPos2(Vector4 *from, Vector4 *to, f32 *trim) {
     extern f32 g_fDeltaTimeSec;
     f32 PSVECDotProduct(void *a, void *b);
