@@ -79,3 +79,13 @@ u32 OSGetSoundMode(void) {
     return mode;
 }
 
+u16 OSGetWirelessID(s32 chan) {
+    OSSramEx *sram;
+    u16 id;
+
+    sram = __OSLockSramEx();
+    id = sram->wirelessPadID[chan];
+    __OSUnlockSramEx(0);
+    return id;
+}
+
