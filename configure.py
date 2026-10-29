@@ -456,7 +456,7 @@ config.libs = [
             Object(NonMatching, "OSReboot.c"),
             Object(NonMatching, "OSReset.c"),
             Object(NonMatching, "OSResetSW.c"),
-            Object(NonMatching, "OSRtc.c", mw_version="GC/1.2.5n"),
+            Object(Matching, "OSRtc.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "OSSync.c"),
             Object(NonMatching, "OSThread.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "OSTime.c"),
