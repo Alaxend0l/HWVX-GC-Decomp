@@ -1,5 +1,15 @@
 #include "common.h"
 
+typedef union PPCWGPipe {
+    u8 u8;
+    u16 u16;
+    u32 u32;
+    s32 s32;
+    f32 f32;
+} PPCWGPipe;
+
+volatile PPCWGPipe GXWGFifo : 0xCC008000;
+
 typedef struct GXRenderModeObj {
     s32 viTVmode;
     u16 fbWidth;
