@@ -452,7 +452,7 @@ config.libs = [
             Object(Matching, "OSLink.c"),
             Object(NonMatching, "OSMessage.c"),
             Object(NonMatching, "OSMemory.c", mw_version="GC/1.2.5n"),
-            Object(NonMatching, "OSMutex.c"),
+            Object(NonMatching, "OSMutex.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "OSReboot.c"),
             Object(NonMatching, "OSReset.c"),
             Object(NonMatching, "OSResetSW.c"),
