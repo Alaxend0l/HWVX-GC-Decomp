@@ -64,7 +64,7 @@ static BOOL __EXIProbe(s32 chan) {
     cpr = __EXIRegs[chan * 5];
     if (!(exi->state & 8)) {
         if (cpr & 0x800) {
-            __EXIRegs[chan * 5] = __EXIRegs[chan * 5] & 0x7F5 | 0x800;
+            __EXIClearInterrupts(chan, FALSE, FALSE, TRUE);
             exi->idTime = 0;
             __EXIProbeStartTime[chan] = 0;
         }
