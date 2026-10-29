@@ -42,9 +42,6 @@ extern u8 DecodedTextureSetQueue[];
 extern s32 VideoDecodeThreadCreated;
 
 void VideoDecodeThreadStart(void) {
-    extern s32 VideoDecodeThreadCreated;
-    extern u8 VideoDecodeThread[];
-
     if (VideoDecodeThreadCreated) {
         OSResumeThread(VideoDecodeThread);
     }
