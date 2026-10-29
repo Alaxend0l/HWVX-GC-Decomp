@@ -748,7 +748,7 @@ typedef struct GeometryGroup {
     u8 unk16[0x18 - 0x16];
     u16 unk18;
     u8 unk1A[0x1C - 0x1A];
-    u16 *indices;
+    u16 (*tris)[3];
 } GeometryGroup;
 
 typedef struct GeometryVertex {
