@@ -1,4 +1,53 @@
 #include "common.h"
+#include "CarA.h"
+
+/* A camera sub-mode a vehicle hands out (CameraInfo.subMode). */
+typedef struct CameraSubMode {
+    u8 type;                /* 0x00 0: default, 2: zoom, 3: orbit, 4: bone */
+    u8 pad1[3];
+    void *params;           /* 0x04 */
+} CameraSubMode;
+
+typedef struct CameraOrbitParams {
+    u8 pad0[0x10];
+    f32 fov;                /* 0x10 */
+    f32 radius;             /* 0x14 */
+    f32 height;             /* 0x18 */
+    f32 speed;              /* 0x1C */
+} CameraOrbitParams;
+
+typedef struct CameraBoneParams {
+    u8 pad0[0x14];
+    u16 bone;               /* 0x14 */
+} CameraBoneParams;
+
+typedef struct CameraZoomParams {
+    u8 pad0[0x10];
+    f32 zoom;               /* 0x10 */
+    u8 pad14[0xC];
+} CameraZoomParams;
+
+/* Filled by the vehicle's getCameraInfo. */
+typedef struct CameraInfo {
+    u8 pad0[0x14];
+    f32 fov;                /* 0x14 */
+    u8 pad18[8];
+    Matrix4 mtx;            /* 0x20 */
+    u8 pad60[0x24];
+    CameraSubMode *subMode; /* 0x84 */
+    u32 cameraCount;        /* 0x88 */
+    u8 pad8C[4];
+} CameraInfo;
+
+typedef struct CameraWorldScale {
+    u8 pad0[0x3C];
+    f32 scale;              /* 0x3C */
+} CameraWorldScale;
+
+typedef struct CameraWorld {
+    u8 pad0[0x9C];
+    CameraWorldScale *unk9C; /* 0x9C */
+} CameraWorld;
 
 
 void *GetCameraManager(void) {
