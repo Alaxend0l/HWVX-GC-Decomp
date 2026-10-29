@@ -19,6 +19,27 @@ typedef struct CARDDir {
 } CARDDir;
 
 
+BOOL __CARDCompareFileName(CARDDir *ent, const char *fileName) {
+    char *entName;
+    char c1;
+    char c2;
+    int n;
+
+    entName = (char *)ent->fileName;
+    n = 32;
+    while (0 <= --n) {
+        if ((c1 = *entName++) != (c2 = *fileName++)) {
+            return FALSE;
+        } else if (c2 == '\0') {
+            return TRUE;
+        }
+    }
+    if (*fileName == '\0') {
+        return TRUE;
+    }
+    return FALSE;
+}
+
 s32 __CARDIsPublic(CARDDir *ent) {
     if (ent->gameName[0] == 0xFF) {
         return -4;
