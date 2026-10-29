@@ -17,6 +17,48 @@ BOOL OSDisableInterrupts(void);
 BOOL OSRestoreInterrupts(BOOL level);
 BOOL AXFXDelaySettings(AXFX_DELAY *delay);
 
+extern void *(*__AXFXAlloc)(u32);
+BOOL AXFXDelayShutdown(AXFX_DELAY *delay);
+BOOL AXFXDelaySettings(AXFX_DELAY *delay)
+{
+    u32 i;
+    s32 *l;
+    s32 *r;
+    s32 *s;
+    BOOL old;
+
+    AXFXDelayShutdown(delay);
+    old = OSDisableInterrupts();
+
+    for (i = 0; i < 3; i++) {
+        delay->currentSize[i] = ((delay->delay[i] - 5) * 32 + 159) / 160;
+        delay->currentPos[i] = 0;
+        delay->currentFeedback[i] = (delay->feedback[i] * 128) / 100;
+        delay->currentOutput[i] = (delay->output[i] * 128) / 100;
+    }
+
+    delay->left = __AXFXAlloc(delay->currentSize[0] * 0x280);
+    delay->right = __AXFXAlloc(delay->currentSize[1] * 0x280);
+    delay->sur = __AXFXAlloc(delay->currentSize[2] * 0x280);
+
+    l = delay->left;
+    r = delay->right;
+    s = delay->sur;
+
+    for (i = 0; i < delay->currentSize[0] * 160; i++) {
+        *l++ = 0;
+    }
+    for (i = 0; i < delay->currentSize[1] * 160; i++) {
+        *r++ = 0;
+    }
+    for (i = 0; i < delay->currentSize[2] * 160; i++) {
+        *s++ = 0;
+    }
+
+    OSRestoreInterrupts(old);
+    return TRUE;
+}
+
 BOOL AXFXDelayInit(AXFX_DELAY *delay)
 {
     BOOL old;
