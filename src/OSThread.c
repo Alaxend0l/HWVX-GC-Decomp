@@ -138,8 +138,8 @@ void OSClearContext(void *context);
 void __OSUnlockAllMutex(OSThread *thread);
 void OSWakeupThread(OSThreadQueue *queue);
 void OSExitThread(void *val) {
-    BOOL enabled;
     OSThread *currentThread;
+    BOOL enabled;
 
     enabled = OSDisableInterrupts();
     currentThread = __OSCurrentThread;
