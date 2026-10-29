@@ -35,7 +35,10 @@ typedef struct TRKExceptionStatus {
     u32 field_0;
     u8 pad_4[4];
     u16 field_8;
-    u8 pad_A[6];
+    u8 pad_A[2];
+    u8 inTRK;             /* 0xC */
+    u8 exceptionDetected; /* 0xD */
+    u8 pad_E[2];
 } TRKExceptionStatus;
 
 extern TRKCPUState gTRKCPUState;
