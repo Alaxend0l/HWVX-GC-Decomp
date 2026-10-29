@@ -52,3 +52,36 @@ s32 StateTitleScreen_Heartbeat(void) {
     return 1;
 }
 
+void TitleScreen_Interface(InterfaceMsg *msg) {
+    extern s32 g_pInterfaceScript;
+    extern u8 g_bPlayingFMV;
+    s32 StateManager_QueueChange(s32 state);
+    u32 GameSettings_GetCodeVariable(s32 code, s32 arg);
+    s8 IsLoadingThreadRunning(void);
+    switch (msg->type) {
+    case 0:
+        break;
+    case 6:
+        msg->result = 4;
+        break;
+    case 5:
+        if (GameSettings_GetCodeVariable(0x198, 0)) {
+            StateManager_QueueChange(0xB);
+        }
+        break;
+    case 15:
+        if (IsLoadingThreadRunning()) {
+            msg->result = 0xB;
+        }
+        break;
+    case 9:
+        StateManager_QueueChange(2);
+        break;
+    case 17:
+        g_pInterfaceScript = msg->value;
+        g_bPlayingFMV = 1;
+        msg->result = 4;
+        break;
+    }
+}
+
