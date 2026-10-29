@@ -13,6 +13,12 @@ typedef struct AXFX_DELAY {
     u32 output[3];
 } AXFX_DELAY;
 
+typedef struct AXFX_BUFFERUPDATE {
+    s32 *left;
+    s32 *right;
+    s32 *surround;
+} AXFX_BUFFERUPDATE;
+
 BOOL OSDisableInterrupts(void);
 BOOL OSRestoreInterrupts(BOOL level);
 BOOL AXFXDelaySettings(AXFX_DELAY *delay);
