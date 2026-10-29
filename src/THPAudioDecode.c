@@ -15,9 +15,18 @@ typedef struct THPReadBuffer {
 } THPReadBuffer;
 
 typedef struct THPPlayer {
-    u8 pad0[0x6C];
+    u8 pad0[0x50];
+    u32 numFrames;
+    u8 pad54[0x6C - 0x54];
     u32 numComponents;
     u8 components[0x10];
+    u8 pad80[0x9E - 0x80];
+    u8 playFlag;
+    u8 pad9F[0xAC - 0x9F];
+    u8 *movieData;
+    u8 padB0[4];
+    s32 initReadSize;
+    s32 initReadFrame;
 } THPPlayer;
 
 extern THPPlayer ActivePlayer;
