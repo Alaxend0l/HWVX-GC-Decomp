@@ -36,6 +36,22 @@ s32 TRKAppendBuffer1_ui32(TRKBuffer *b, u32 data) {
     return TRKAppendBuffer(b, bigEndianData, sizeof(data));
 }
 
+s32 TRKAppendBuffer1_ui16(TRKBuffer *b, u16 data) {
+    u8 *bigEndianData;
+    u8 *byteData;
+    u8 swapBuffer[sizeof(data)];
+
+    if (gTRKBigEndian) {
+        bigEndianData = (u8 *)&data;
+    } else {
+        byteData = (u8 *)&data;
+        bigEndianData = swapBuffer;
+        bigEndianData[0] = byteData[1];
+        bigEndianData[1] = byteData[0];
+    }
+    return TRKAppendBuffer(b, bigEndianData, sizeof(data));
+}
+
 s32 TRKSetBufferPosition(TRKBuffer *b, u32 position) {
     s32 err = 0;
 
