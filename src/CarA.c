@@ -1845,7 +1845,7 @@ void CarA_GetCameraOrientationInfo(CarA *car, u32 index, void *out) {
     }
     PSVECSubtract(&car->bodyOffset, (Vector4 *)car->vehicleIface->engine, &offset);
     XformVec(&car->worldMatrix, &offset, &info->pos);
-    switch (*((u8 *)car->vehicleIface->collider + 0x10)) {
+    switch (car->vehicleIface->collider->type) {
     case 0:
         info->target = *(Vector4 *)CarA_GetOrientedCollision((u8 *)car);
         break;
