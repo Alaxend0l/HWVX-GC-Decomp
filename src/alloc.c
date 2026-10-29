@@ -121,6 +121,63 @@ void *malloc(u32 size) {
     return allocate_from_var_pools(pool, size);
 }
 
+#pragma use_lmw_stmw on
+void *allocate_from_fixed_pools(void *pool, u32 size) {
+    u32 i = 0;
+    FixSubBlock *p;
+    FixStart *fs;
+
+    while (size > fix_pool_sizes[i]) {
+        ++i;
+    }
+    fs = &((mem_pool_obj *)pool)->fix_start[i];
+    if (fs->head_ == NULL || fs->head_->start_ == NULL) {
+        u32 size_received;
+        u32 n;
+        void *newblock;
+        u32 nsave;
+        u32 u_size;
+
+        n = 0xFEC / (fix_pool_sizes[i] + sizeof(void *));
+        if (n > 0x100) {
+            n = 0x100;
+        }
+        nsave = n;
+        while (n >= 10) {
+            newblock = soft_allocate_from_var_pools(pool, n * (fix_pool_sizes[i] + sizeof(void *)) + sizeof(FixBlock), &size_received);
+            if (newblock != NULL) {
+                break;
+            }
+            if (size_received > sizeof(FixBlock)) {
+                n = (size_received - sizeof(FixBlock)) / (fix_pool_sizes[i] + sizeof(void *));
+            } else {
+                n = 0;
+            }
+        }
+        if (newblock == NULL && n < nsave) {
+            newblock = allocate_from_var_pools(pool, nsave * (fix_pool_sizes[i] + sizeof(void *)) + sizeof(FixBlock));
+            if (newblock == NULL) {
+                return NULL;
+            }
+        }
+        u_size = !(*(u32 *)((u8 *)newblock - 4) & 1) ? (*(FixBlock **)((u8 *)newblock - 4))->client_size_
+                                                    : (*(u32 *)((u8 *)newblock - 8) & ~7) - 8;
+        if (fs->head_ == NULL) {
+            fs->head_ = newblock;
+            fs->tail_ = newblock;
+        }
+        FixBlock_construct(newblock, fs->tail_, fs->head_, i, (FixSubBlock *)((u8 *)newblock + sizeof(FixBlock)), u_size - sizeof(FixBlock));
+        fs->head_ = newblock;
+    }
+    p = fs->head_->start_;
+    fs->head_->start_ = p->next_;
+    ++fs->head_->n_allocated_;
+    if (fs->head_->start_ == NULL) {
+        fs->head_ = fs->head_->next_;
+        fs->tail_ = fs->tail_->next_;
+    }
+    return (u8 *)p + 4;
+}
 void *soft_allocate_from_var_pools(Block **pool_obj, u32 size, u32 *max_size) {
     Block *bp;
     void *ptr;
