@@ -6,6 +6,55 @@ extern NavHolder gs_NavHolder_803C6CD8;
 extern s8 gs_useMainRouteOnly_803C7000;
 extern PathNode *gs_pOpenListHead_803C7008;
 extern PathNode *gs_pClosedListHead_803C7004;
+extern s32 __float_nan[];
+extern s32 __float_huge[];
+
+static inline f64 sqrt(f64 x) {
+    f64 guess;
+    s32 i;
+
+    if (x > 0.0) {
+        guess = __frsqrte(x);
+        for (i = 0; i < 4; i++) {
+            guess = 0.5 * guess * (3.0 - x * (guess * guess));
+        }
+        return x * guess;
+    } else if (x == 0.0) {
+        return 0.0;
+    } else if (x) {
+        return *(f32 *)__float_nan;
+    }
+    return *(f32 *)__float_huge;
+}
+
+static inline PathNode *NavHolder_PopLowestOpen(void) {
+    PathNode *head = gs_pOpenListHead_803C7008;
+    PathNode *prev = NULL;
+    PathNode *p;
+    PathNode *best;
+    f32 bestF;
+
+    if (head == NULL) {
+        return NULL;
+    }
+    bestF = head->f;
+    p = head;
+    best = head;
+    for (; p->next != NULL; p = p->next) {
+        if (p->next->f < bestF) {
+            bestF = p->next->f;
+            prev = p;
+            best = p->next;
+        }
+    }
+    if (prev == NULL) {
+        gs_pOpenListHead_803C7008 = head->next;
+    } else {
+        prev->next = best->next;
+    }
+    best->flags &= ~2;
+    return best;
+}
 
 void NavHolder_Init(NavData *data) {
     u32 i;
