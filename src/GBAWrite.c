@@ -96,16 +96,34 @@ void WriteProc(s32 chan)
 }
 
 s32 GBAWriteAsync(s32 chan, u8 *src, u8 *status, GBACallback callback) {
-    GBAControl *gba = &__GBA[chan];
+    GBAControl *gba;
+    s32 ret;
 
+    gba = &__GBA[chan];
     if (gba->callback != NULL) {
-        return 2;
+        ret = 2;
+    } else {
+        gba->output[0] = 0x15;
+        memcpy(&gba->output[1], src, 4);
+        gba->ptr = src;
+        gba->status = status;
+        gba->callback = callback;
+        ret = __GBATransfer(chan, 5, 1, WriteProc);
     }
-    gba->output[0] = 0x15;
-    memcpy(&gba->output[1], src, 4);
-    gba->ptr = src;
-    gba->status = status;
-    gba->callback = callback;
-    return __GBATransfer(chan, 5, 1, WriteProc);
+    return ret;
+}
+
+void __GBASyncCallback(s32 chan, s32 ret);
+s32 __GBASync(s32 chan);
+s32 GBAWrite(s32 chan, u8 *src, u8 *status) {
+    GBAControl *gba;
+    s32 ret;
+
+    gba = &__GBA[chan];
+    ret = GBAWriteAsync(chan, src, status, __GBASyncCallback);
+    if (ret != 0) {
+        return ret;
+    }
+    return __GBASync(chan);
 }
 
