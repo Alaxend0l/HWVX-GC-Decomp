@@ -19,3 +19,20 @@ static s32 OnReset(s32 final)
     }
     return 1;
 }
+
+static void MEMIntrruptHandler(__OSInterrupt interrupt, OSContext *context)
+{
+    u32 addr;
+    u32 cause;
+
+    cause = __MEMRegs[0xF];
+    addr = (((u32)__MEMRegs[0x12] & 0x3FF) << 16) | __MEMRegs[0x11];
+    __MEMRegs[0x10] = 0;
+
+    if (__OSErrorTable[15]) {
+        __OSErrorTable[15](15, context, cause, addr);
+        return;
+    }
+    __OSUnhandledException(15, context, cause, addr);
+}
+
