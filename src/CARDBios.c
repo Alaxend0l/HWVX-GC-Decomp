@@ -178,6 +178,28 @@ s32 __CARDEnableInterrupt(s32 chan, BOOL enable) {
     return 0;
 }
 
+s32 __CARDReadStatus(s32 chan, u8 *status) {
+    BOOL err;
+    u32 cmd;
+
+    if (!EXISelect(chan, 0, 4)) {
+        return -3;
+    }
+
+    cmd = 0x83000000;
+    err = FALSE;
+    err |= !EXIImm(chan, &cmd, 2, 1, 0);
+    err |= !EXISync(chan);
+    err |= !EXIImm(chan, status, 1, 0, 0);
+    err |= !EXISync(chan);
+    err |= !EXIDeselect(chan);
+
+    if (err) {
+        return -3;
+    }
+    return 0;
+}
+
 s32 __CARDClearStatus(s32 chan) {
     BOOL err;
     u32 cmd;
