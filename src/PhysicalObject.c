@@ -797,4 +797,55 @@ f32 PhysicalObject_CollideWithRay(u8 *obj, Vector4 *start, Vector4 *end, Vector4
     }
     return dist;
 }
+void Destructible_Release();
+void Destructible_Draw();
+void Destructible_GetMass();
+void Destructible_DynamicCollideImpact();
+void Destructible_GetSurfaceScript();
+void Destructible_GetOrientedCollision();
+void Thing_GetCameraOrientationInfo();
+void Thing_GetInterfaceInfo();
+void Thing_SlaveTransform();
+void Thing_GetNearestNavPoint();
+void Thing_GetInverseLocalInertiaTensor();
+void Thing_GetTargetPos();
 
+void *g_physicalObjectVTable[] = {
+    PhysicalObject_Init,
+    Destructible_Release,
+    PhysicalObject_PreMove,
+    PhysicalObject_Move,
+    Destructible_Draw,
+    Destructible_GetMass,
+    PhysicalObject_DynamicCollideImpact,
+    Thing_GetCameraOrientationInfo,
+    Thing_GetInterfaceInfo,
+    Thing_SlaveTransform,
+    Destructible_GetSurfaceScript,
+    Thing_GetNearestNavPoint,
+    PhysicalObject_GetInverseLocalInertiaTensor,
+    PhysicalObject_DynamicRotation,
+    PhysicalObject_CollideWithRay,
+    Thing_GetTargetPos,
+    Destructible_GetOrientedCollision,
+};
+
+void *g_moverVTable[] = {
+    Mover_Init,
+    Destructible_Release,
+    Mover_PreMove,
+    Destructible_Move,
+    Destructible_Draw,
+    Destructible_GetMass,
+    Destructible_DynamicCollideImpact,
+    Thing_GetCameraOrientationInfo,
+    Thing_GetInterfaceInfo,
+    Thing_SlaveTransform,
+    Destructible_GetSurfaceScript,
+    Thing_GetNearestNavPoint,
+    Thing_GetInverseLocalInertiaTensor,
+    Mover_DynamicRotation,
+    PhysicalObject_CollideWithRay,
+    Thing_GetTargetPos,
+    Destructible_GetOrientedCollision,
+};
