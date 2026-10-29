@@ -112,7 +112,7 @@ s32 SoundSequence_Play(s8 *seq, Vector4 *pos) {
     extern Vector4 g_zeroVector;
     extern s8 g_bFreezeWorld;
     Vector4 p;
-    struct { Vector4 pos; s8 *seq; u8 flag; } params;
+    struct { Vector4 pos; s8 *seq; u8 flag; } params __attribute__((aligned(16)));
     u8 *thing;
 
     if (!seq[4] && PlayerManager_PlayerHumanCount() > 1) {
