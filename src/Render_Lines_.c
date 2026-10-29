@@ -24,3 +24,14 @@ void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
 extern u32 m_VtxDescFlag;
 
 void Set2DLineVtxDesc(void);
+
+void Set2DLineVtxDesc(void) {
+    if (m_VtxDescFlag != 1) {
+        m_VtxDescFlag = 1;
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 1);
+        GXSetVtxDesc(0xB, 1);
+        GXSetVtxAttrFmt(0, 9, 0, 4, 0);
+        GXSetVtxAttrFmt(0, 0xB, 0, 1, 0);
+    }
+}
