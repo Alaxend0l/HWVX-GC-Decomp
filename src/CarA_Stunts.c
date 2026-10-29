@@ -134,6 +134,56 @@ s32 Drone_Init(u8 *drone, u8 *data) {
     return 1;
 }
 
+void Gfx_AnimExtractKeyFrame(void *anim, f32 time, void *keyFrame, u32 count);
+void TransposeSubMatrix(Matrix4 *mtx);
+void MultiplySubMatrix(void *a, Matrix4 *b, Matrix4 *out);
+void SubMatrixToQuaternion(void *mtx, Vector4 *quat);
+void GenerateSpinAngleFromQuaternion(Vector4 *quat, void *axis, f32 *angle);
+void Drone_ComputeSuspensionForces(Drone *drone);
+void PhysicalObject_IntegrateNonLateral(Drone *obj);
+s32 Drone_PreMove(Drone *drone) {
+    Matrix4 inv;
+    Matrix4 rel;
+    Matrix4 world;
+    Matrix4 rot;
+    DroneKeyFrame key;
+    Quaternion delta;
+    Quaternion quat;
+    f32 angle;
+
+    if (drone->state == 2) {
+        Gfx_AnimExtractKeyFrame(drone->anim, drone->animTime, &key, 1);
+        drone->velocity.x = (key.pos.x - drone->mtx.v[3].x) / g_fDeltaTimeSec;
+        drone->velocity.y = (key.pos.y - drone->mtx.v[3].y) / g_fDeltaTimeSec;
+        drone->velocity.z = (key.pos.z - drone->mtx.v[3].z) / g_fDeltaTimeSec;
+        quat = key.rot;
+        inv = drone->mtx;
+        Mover_SetRotation(drone, quat);
+        QuaternionToSubMatrix(&quat, &rot);
+        TransposeSubMatrix(&inv);
+        MultiplySubMatrix(&inv, &rot, &rel);
+        MultiplySubMatrix(&drone->mtx, &rel, &world);
+        SubMatrixToQuaternion(&rel, (Vector4 *)&delta);
+        GenerateSpinAngleFromQuaternion((Vector4 *)&delta, &drone->angVel, &angle);
+        angle /= g_fDeltaTimeSec;
+        drone->angVel.x *= angle;
+        drone->angVel.y *= angle;
+        drone->angVel.z *= angle;
+        drone->flags &= ~0x10;
+        drone->animTime += g_fDeltaTimeSec;
+        if (drone->animTime > drone->anim->end) {
+            drone->animTime = drone->anim->start;
+        }
+    } else {
+        drone->baseForce = g_zeroVector;
+        drone->force = drone->baseForce;
+        drone->force.y += drone->info->props->gravity * drone->info->props->mass;
+        Drone_ComputeSuspensionForces(drone);
+        PhysicalObject_IntegrateNonLateral(drone);
+    }
+    return 1;
+}
+
 void Drone_DynamicCollideImpact(u8 *drone, u8 *collision, f32 force)
 {
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
