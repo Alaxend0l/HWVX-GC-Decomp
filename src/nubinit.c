@@ -26,7 +26,7 @@ static BOOL TRK_InitializeEndian(void) {
     } else if (*(u32 *)bendian == 0x78563412) {
         gTRKBigEndian = FALSE;
     } else {
-        result = TRUE;
+        return TRUE;
     }
     return result;
 }
@@ -51,19 +51,21 @@ s32 TRKInitializeNub(void) {
     s32 result;
     s32 resultTemp;
     u8 bendian[4];
+    s32 one;
 
     result = 0;
-    gTRKBigEndian = 1;
+    one = 1;
+    gTRKBigEndian = one;
     bendian[0] = 0x12;
     bendian[1] = 0x34;
     bendian[2] = 0x56;
     bendian[3] = 0x78;
     if (*(u32 *)bendian == 0x12345678) {
-        gTRKBigEndian = 1;
+        gTRKBigEndian = one;
     } else if (*(u32 *)bendian == 0x78563412) {
         gTRKBigEndian = result;
     } else {
-        result = gTRKBigEndian;
+        result = one;
     }
 
     if (result == 0) {
