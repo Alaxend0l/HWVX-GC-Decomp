@@ -72,13 +72,9 @@ s32 LightHolder_Add(LightHolderDef *def, Vector4 *pos, void *thing) {
 }
 
 void LightHolder_Delete(s32 index) {
-    extern struct {
-        u8 unk0[0x60];
-        void *owner;
-        u8 unk64[0x1C];
-    } g_pLight[16];
+    extern LightHolderLight g_pLight[16];
     if (index >= 0) {
-        g_pLight[index].owner = NULL;
+        g_pLight[index].def = NULL;
     }
 }
 
