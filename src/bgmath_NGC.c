@@ -64,6 +64,11 @@ void SinCosRad(f32 *s, f32 *c, f32 rad)
     *c = cos(r);
 }
 
+double atan2(double x);
+float ArcTan(float x) {
+    return (float)atan2(x);
+}
+
 f32 Sqrt(f64 x)
 {
     f64 guess;
