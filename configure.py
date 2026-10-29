@@ -528,7 +528,7 @@ config.libs = [
             Object(NonMatching, "SIBios.c", mw_version="GC/1.2.5n"),
             Object(Matching, "SISamplingRate.c", mw_version="GC/1.2.5n"),
             Object(Matching, "SISteering.c", mw_version="GC/1.2.5n"),
-            Object(NonMatching, "SISteeringXfer.c", mw_version="GC/1.2.5n"),
+            Object(Matching, "SISteeringXfer.c", mw_version="GC/1.2.5n"),
             Object(Matching, "SISteeringAuto.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "EXIBios.c", mw_version="GC/1.2.5n"),
             Object(Matching, "EXIUart.c"),
