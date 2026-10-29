@@ -77,6 +77,15 @@ void Gfx_EndScene(void) {
     g_screenTextX = 0;
 }
 
+void Gfx_FlipBuffers(void) {
+    void Render_FlipBuffers(void);
+    void *memset(void *dst, int c, u32 n);
+    extern u8 g_screenText[0xA00];
+
+    Render_FlipBuffers();
+    memset(g_screenText, 0, sizeof(g_screenText));
+}
+
 void Gfx_EnableState(s32 arg0) {
     M2C_FIELD(&g_state, s32 *, 0x7C) = (s32) (M2C_FIELD(&g_state, s32 *, 0x7C) | arg0);
 }
