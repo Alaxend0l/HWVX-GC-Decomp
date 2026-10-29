@@ -39,6 +39,25 @@ extern u8 m_fogType;
 extern GXColor m_fogColor;
 extern s32 m_fogMode;
 extern s32 m_cullMode;
+extern s32 m_blendMode;
+
+void GXSetTevOp(s32 id, s32 mode);
+void Render_StateFogEnable(s32 enable);
+
+typedef struct GDL {
+    u8 unk0[0x14];
+    s32 numTris;
+} GDL;
+
+typedef struct RenderStats {
+    s32 numTris;
+    s32 debugTriCount;
+    u8 unk8[0x100 - 0x8];
+} RenderStats;
+
+extern GDL *g_pGDL;
+extern RenderStats g_renderStats;
+extern s32 g_debugTriCount;
 
 void Render_FlipBuffers(void) {
     PrintDVDMessage();
