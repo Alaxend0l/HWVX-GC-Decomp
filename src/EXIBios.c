@@ -20,3 +20,8 @@ typedef struct EXIControl {
 } EXIControl;
 
 static EXIControl Ecb[3];
+
+u32 EXIGetState(s32 chan) {
+    EXIControl *exi = &Ecb[chan];
+    return exi->state;
+}
