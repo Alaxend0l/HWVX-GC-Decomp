@@ -125,6 +125,23 @@ void GXSetScissor(u32 left, u32 top, u32 wd, u32 ht) {
     gx->bpSentNot = 0;
 }
 
+#pragma peephole off
+void GXSetScissorBoxOffset(s32 x_off, s32 y_off) {
+    extern GXData *gx;
+    u32 reg = 0;
+    u32 hx;
+    u32 hy;
+
+    hx = (u32)(x_off + 342) >> 1;
+    hy = (u32)(y_off + 342) >> 1;
+    reg = (reg & ~0x3FF) | hx;
+    reg = (reg & ~0xFFC00) | (hy << 10);
+    reg = (reg & ~0xFF000000) | (0x59 << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    gx->bpSentNot = 0;
+}
+
 void GXSetClipMode(u32 mode) {
     extern GXData *gx;
     GXWGFifo.u8 = 0x10;
