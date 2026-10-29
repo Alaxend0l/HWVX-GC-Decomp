@@ -37,6 +37,55 @@ void VertexColorSeqManager_Destroy(void) {
     g_iTotalVertexColorTiles = 0;
 }
 
+void VertexColorSeqManager_AddVertices(void *vertices);
+void VertexColorSeqManager_Init(void) {
+    typedef struct VertexColorTile {
+        u8 *light;
+        u8 key[0x2C];
+        u8 active;
+        u8 unk31[3];
+    } VertexColorTile;
+    typedef struct VCSZone {
+        u8 unk0[0x14];
+        void *vertices;
+        u8 unk18[0x4];
+        u32 unk1C;
+        u8 unk20[0x30];
+    } VCSZone;
+    typedef struct VCSWorld {
+        u8 unk0[0x20];
+        u32 numZones;
+        VCSZone *zones;
+        u8 unk28[0x38];
+        u32 numLights;
+        u8 *lights;
+    } VCSWorld;
+    extern VertexColorTile g_VertexColorTiles[64];
+    extern s32 g_iTotalVertexColorSeq;
+    extern s32 g_iTotalVertexColorTiles;
+    VCSWorld *world;
+    u32 i;
+
+    g_iTotalVertexColorSeq = 0;
+    g_iTotalVertexColorTiles = 0;
+    world = g_worldData.world;
+    if (world != NULL) {
+        for (i = 0; i < world->numLights; i++) {
+            g_VertexColorTiles[i].light = world->lights + i * 0x10;
+            g_VertexColorTiles[i].active = 1;
+            g_iTotalVertexColorTiles++;
+        }
+        for (i = 0; i < ((VCSWorld *)g_worldData.world)->numZones; i++) {
+            if (((VCSWorld *)g_worldData.world)->zones[i].unk1C == 0) {
+                if (((VCSWorld *)g_worldData.world)->zones[i].vertices != NULL) {
+                    VertexColorSeqManager_AddVertices(((VCSWorld *)g_worldData.world)->zones[i].vertices);
+                }
+                break;
+            }
+        }
+    }
+}
+
 void VertexColorSeqManager_Heartbeat(void) {
     typedef struct VertexColorTile {
         u8 *light;
