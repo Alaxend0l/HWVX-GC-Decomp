@@ -1,5 +1,6 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
 
 void ShaderHolder_Destroy(void) {
     M2C_UNK Deallocate(void *);
