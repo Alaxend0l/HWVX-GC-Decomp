@@ -1,4 +1,17 @@
 #include "common.h"
+#include "msl_file.h"
+
+typedef struct __OutStrCtrl {
+    char *CharStr;
+    u32 MaxCharCount;
+    u32 CharsWritten;
+} __OutStrCtrl;
+
+extern FILE __files[];
+
+void *memcpy(void *dst, const void *src, u32 n);
+u32 fwrite(const void *ptr, u32 memb_size, u32 num_memb, FILE *file);
+int fwide(FILE *stream, int mode);
 
 typedef struct print_format {
     u8 justification_options;
