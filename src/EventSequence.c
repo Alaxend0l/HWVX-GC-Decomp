@@ -8,6 +8,7 @@ s32 Gfx_GetCameraPositions(Vector4 *positions);
 f32 PSVECSquareDistance(f32 *a, f32 *b);
 
 void Thing_Release(void *);
+#pragma use_lmw_stmw on
 void Blast_Action(u8 *blast, Vector4 *pos, u8 *source) {
     extern Vector4 g_zeroVector;
     struct GridResult {
@@ -32,11 +33,11 @@ void Blast_Action(u8 *blast, Vector4 *pos, u8 *source) {
         u8 *source;
         u32 unk28;
         u8 unk2C[0x50 - 0x2C];
-    } impact;
-    struct { Vector4 pos; Vector4 quat; Vector4 row; Vector4 vel; u32 id; u32 unk74; f32 unk78; f32 unk7C; } params;
-    Vector4 min;
-    Vector4 max;
-    Vector4 dir;
+    } __attribute__((aligned(16))) impact;
+    struct { Vector4 pos; Vector4 quat; Vector4 row; Vector4 vel; u32 id; u32 unk74; f32 unk78; f32 unk7C; } __attribute__((aligned(16))) params;
+    Vector4 min __attribute__((aligned(16)));
+    Vector4 max __attribute__((aligned(16)));
+    Vector4 dir __attribute__((aligned(16)));
     f32 t;
     u32 count;
     s32 damageType;
@@ -128,7 +129,7 @@ void Blast_Action(u8 *blast, Vector4 *pos, u8 *source) {
             switch (data[3]) {
             case 2:
                 if (*(u8 **)(thing + 0x8C) == g_carAVTable) {
-                    Vector4 impulse = {0.0f, -9.0f, 0.0f, 0.0f};
+                    Vector4 impulse __attribute__((aligned(16))) = {0.0f, -9.0f, 0.0f, 0.0f};
                     CarA_SlaveWeaponStop(thing, 0);
                     *(s32 *)(thing + 0x46C) = 9000;
                     CarA_StuntImpulse(thing, &g_zeroVector, &impulse);
@@ -204,7 +205,6 @@ void Blast_Action(u8 *blast, Vector4 *pos, u8 *source) {
         (*(void (**)(u8 *, void *, s32, f32))(*(u8 **)(thing + 0x8C) + 0x18))(thing, &impact, damageType, force);
     }
 }
-
 s32 EventSeq_Init(u8 *seq, u8 *data)
 {
     void QuaternionToSubMatrix(void *quat, void *mtx);
