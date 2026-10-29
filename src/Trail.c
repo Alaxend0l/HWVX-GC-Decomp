@@ -1,5 +1,17 @@
 #include "common.h"
 
+typedef struct TrailSegment {
+    u32 color[4];
+    f32 v[4][4];
+    s32 life;
+    u8 pad54[8];
+    u16 texture;
+    u16 active;
+} TrailSegment;
+
+TrailSegment g_TrialData[1000];
+u32 g_nextTrail;
+f32 g_trailTimer;
 
 void Trail_Create(void) {
     M2C_UNK fn_800957D4();
@@ -7,39 +19,34 @@ void Trail_Create(void) {
 }
 
 void Trail_Init(void) {
-    extern u8 g_TrialData[1000][0x60];
-    extern s32 g_nextTrail;
-    extern f32 g_trailTimer;
     s32 i;
 
     for (i = 0; i < 1000; i++) {
-        *(s32 *)(g_TrialData[i] + 0x50) = 0;
+        g_TrialData[i].life = 0;
     }
     g_nextTrail = 0;
     g_trailTimer = 0.0f;
 }
 
 void Trail_Heartbeat(void) {
-    extern u8 g_TrialData[1000][0x60];
     extern s32 g_iDeltaTimeMS;
-    extern f32 g_trailTimer;
     extern f32 g_fDeltaTimeSec;
-    u8 *trail;
+    TrailSegment *trail;
     u32 alpha;
     s32 i;
     s32 delta;
 
     delta = g_iDeltaTimeMS;
     for (i = 0; i < 1000; i++) {
-        trail = g_TrialData[i];
-        if (*(s32 *)(trail + 0x50) > 0) {
-            *(s32 *)(trail + 0x50) -= delta;
-            if (*(s32 *)(trail + 0x50) <= 0) {
-                *(s32 *)(trail + 0x50) = 0;
-            } else if (*(s32 *)(trail + 0x50) < 2000) {
-                alpha = (*(s32 *)(trail + 0x50) << 7) / 2000;
-                if (alpha < *(u32 *)(trail + 0xC)) {
-                    *(u32 *)(trail + 0xC) = alpha;
+        trail = &g_TrialData[i];
+        if (trail->life > 0) {
+            trail->life -= delta;
+            if (trail->life <= 0) {
+                trail->life = 0;
+            } else if (trail->life < 2000) {
+                alpha = (trail->life << 7) / 2000;
+                if (alpha < trail->color[3]) {
+                    trail->color[3] = alpha;
                 }
             }
         }
@@ -53,11 +60,10 @@ void Trail_Heartbeat(void) {
 #pragma push
 #pragma use_lmw_stmw on
 void Trail_Render(void) {
-    extern u8 g_TrialData[1000][0x60];
     void *Gfx_Begin_GroupQuadFlat(u16 texture, s32 arg1, s32 arg2);
     void Gfx_End_GroupTri(u32 count);
     void MemCpy32(void *dst, void *src, u32 size);
-    u8 *trail;
+    TrailSegment *trail;
     u32 i;
     u16 texture;
     u32 count;
@@ -67,15 +73,15 @@ void Trail_Render(void) {
     texture = 0xFFFF;
     dst = NULL;
     for (i = 0; i < 1000; i++) {
-        trail = g_TrialData[i];
-        if (*(s32 *)(trail + 0x50) > 0 && *(u16 *)(trail + 0x5E) != 0) {
-            if (texture != *(u16 *)(trail + 0x5C)) {
+        trail = &g_TrialData[i];
+        if (trail->life > 0 && trail->active != 0) {
+            if (texture != trail->texture) {
                 if (count != 0) {
                     Gfx_End_GroupTri(count);
                     count = 0;
                 }
-                dst = Gfx_Begin_GroupQuadFlat(*(u16 *)(trail + 0x5C), 7, 0);
-                texture = *(u16 *)(trail + 0x5C);
+                dst = Gfx_Begin_GroupQuadFlat(trail->texture, 7, 0);
+                texture = trail->texture;
             }
             MemCpy32(dst, trail, 0x50);
             dst += 0x50;
