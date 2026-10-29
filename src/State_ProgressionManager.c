@@ -67,7 +67,6 @@ s32 StateProgressionManager_Heartbeat(void) {
     extern u8 g_bLoadingDemoLand;
     static s32 loadingInterfaceID;
     u32 GameSettings_GetCodeVariable(s32, s32);
-    void GameSettings_GetMCP(void);
     void StateManager_GotoState(s32 state);
     void StateManager_QueueChange(s32 state);
     void StateMovie_SetMovieToPlay(void *movie);
