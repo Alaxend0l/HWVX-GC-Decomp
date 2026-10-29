@@ -362,9 +362,9 @@ void ParticleGX_MicroStep(void *arg0) {
         u8 unkCC[0xF0 - 0xCC];
         Vector4 vel;
     } *particle = arg0;
-    Vector4 pos;
-    Vector4 rot;
-    Vector4 out;
+    Vector4 pos __attribute__((aligned(16)));
+    Vector4 rot __attribute__((aligned(16)));
+    Vector4 out __attribute__((aligned(16)));
 
     AccumulateVector(&particle->vel, &particle->pos, &pos, g_fDeltaTimeMS);
     particle->pos = pos;
