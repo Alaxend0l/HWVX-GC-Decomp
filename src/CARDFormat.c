@@ -41,6 +41,61 @@ typedef struct CARDControl {
 
 extern CARDControl __CARDBlock[2];
 
+typedef struct CARDID {
+    u8 serial[32];
+    u16 deviceID;
+    u16 size;
+    u16 encode;
+    u8 padding[0x1FC - 0x26];
+    u16 checkSum;
+    u16 checkSumInv;
+} CARDID;
+
+typedef struct CARDDirCheck {
+    u8 padding0[0x3A];
+    s16 checkCode;
+    u16 checkSum;
+    u16 checkSumInv;
+} CARDDirCheck;
+
+static inline CARDDirCheck *__CARDGetDirCheck(u8 *dir) {
+    return (CARDDirCheck *)(dir + 0x1FC0);
+}
+
+typedef struct OSSram {
+    u16 checkSum;
+    u16 checkSumInv;
+    u32 ead0;
+    u32 ead1;
+    u32 counterBias;
+    s8 displayOffsetH;
+    u8 ntd;
+    u8 language;
+    u8 flags;
+} OSSram;
+
+typedef struct OSSramEx {
+    u8 flashID[2][12];
+    u32 wirelessKeyboardID;
+    u16 wirelessPadID[4];
+    u8 dvdErrorCode;
+    u8 _padding0;
+    u8 flashIDCheckSum[2];
+    u16 gbs;
+    u16 _padding1;
+} OSSramEx;
+
+s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard);
+void *memset(void *dst, int val, unsigned long n);
+OSSram *__OSLockSram(void);
+s32 __OSUnlockSram(s32 commit);
+OSSramEx *__OSLockSramEx(void);
+s32 __OSUnlockSramEx(s32 commit);
+s64 OSGetTime(void);
+void __CARDCheckSum(void *ptr, s32 length, u16 *checksum, u16 *checksumInv);
+void DCStoreRange(void *addr, u32 nBytes);
+void __CARDDefaultApiCallback(s32 chan, s32 result);
+
 s32 __CARDEraseSector(s32 chan, u32 addr, CARDCallback callback);
 s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, CARDCallback callback);
 s32 __CARDPutControlBlock(CARDControl *card, s32 result);
