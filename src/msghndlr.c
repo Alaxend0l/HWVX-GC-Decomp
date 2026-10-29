@@ -50,6 +50,7 @@ __declspec(section ".data") extern s32 IsTRKConnected;
 void __TRK_reset(void);
 s32 TRKTargetStop(void);
 s32 TRKTargetStopped(void);
+s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data);
 u32 TRKTargetGetPC(void);
 s32 TRKTargetSingleStep(u32 count, s32 stepOver);
 s32 TRKTargetStepOutOfRange(u32 rangeStart, u32 rangeEnd, s32 stepOver);
