@@ -16,6 +16,8 @@ typedef struct GeometryHandler {
     u32 max;
 } GeometryHandler;
 
+GeometryHandler *g_pGeometryHandler;
+
 void *Allocate(u32 size, s32 type, const char *name);
 
 s32 Geometry_Create(void) {
