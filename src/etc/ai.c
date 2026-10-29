@@ -48,6 +48,10 @@ u8 AIGetStreamVolLeft(void)
     return (u8) *(s32 *)0xCC006C04;
 }
 
+void AISetStreamVolRight(u8 vol) {
+    __AIRegs[1] = (__AIRegs[1] & ~0xFF00) | (((u32)vol & 0xFF) << 8);
+}
+
 u8 AIGetStreamVolRight(void)
 {
     return (u8) ((u32) *(u32 *)0xCC006C04 >> 8U);
