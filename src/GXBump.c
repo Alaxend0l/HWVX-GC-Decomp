@@ -43,6 +43,40 @@ void GXSetTevIndirect(s32 tev_stage, s32 ind_stage, s32 format, s32 bias_sel, s3
     gx->bpSentNot = 0;
 }
 
+void GXSetIndTexCoordScale(s32 ind_state, s32 scale_s, s32 scale_t) {
+    switch (ind_state) {
+    case 0:
+        gx->IndTexScale0 = (gx->IndTexScale0 & ~0xF) | scale_s;
+        gx->IndTexScale0 = (gx->IndTexScale0 & ~0xF0) | (scale_t << 4);
+        gx->IndTexScale0 = (gx->IndTexScale0 & ~0xFF000000) | (0x25 << 24);
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = gx->IndTexScale0;
+        break;
+    case 1:
+        gx->IndTexScale0 = (gx->IndTexScale0 & ~0xF00) | (scale_s << 8);
+        gx->IndTexScale0 = (gx->IndTexScale0 & ~0xF000) | (scale_t << 12);
+        gx->IndTexScale0 = (gx->IndTexScale0 & ~0xFF000000) | (0x25 << 24);
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = gx->IndTexScale0;
+        break;
+    case 2:
+        gx->IndTexScale1 = (gx->IndTexScale1 & ~0xF) | scale_s;
+        gx->IndTexScale1 = (gx->IndTexScale1 & ~0xF0) | (scale_t << 4);
+        gx->IndTexScale1 = (gx->IndTexScale1 & ~0xFF000000) | (0x26 << 24);
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = gx->IndTexScale1;
+        break;
+    case 3:
+        gx->IndTexScale1 = (gx->IndTexScale1 & ~0xF00) | (scale_s << 8);
+        gx->IndTexScale1 = (gx->IndTexScale1 & ~0xF000) | (scale_t << 12);
+        gx->IndTexScale1 = (gx->IndTexScale1 & ~0xFF000000) | (0x26 << 24);
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = gx->IndTexScale1;
+        break;
+    }
+    gx->bpSentNot = 0;
+}
+
 void __GXUpdateBPMask(void) {
     u32 nIndStages;
     u32 i;
