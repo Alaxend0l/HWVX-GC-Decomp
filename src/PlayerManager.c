@@ -59,6 +59,84 @@ void PlayerManager_Release(void) {
     }
 }
 
+void PlayerManager_Init(void) {
+    typedef struct {
+        PMPlayer base;
+        u8 padB8[0x158 - 0xB8];
+    } HumanPlayer;
+    typedef struct {
+        PMPlayer base;
+        u8 padB8[0x670 - 0xB8];
+    } CarPlayer;
+    typedef struct {
+        PMPlayer base;
+        u8 padB8[0x100 - 0xB8];
+    } CreaturePlayer;
+    typedef struct {
+        HumanPlayer humans[4];
+        CarPlayer cars[4];
+        CreaturePlayer creatures[1];
+        PMPlayer nulls[1];
+        PMPlayer *active;
+        PMPlayer *free;
+    } PlayerMgr;
+    extern s32 g_aiHoldIndex;
+    void Player_DefaultControlReader();
+    void PlayerHuman_Init();
+    void PlayerHuman_Heartbeat();
+    void AI_Car_Heartbeat();
+    void AI_Car_Init();
+    void AI_Creature_Heartbeat();
+    void AI_Creature_Init();
+    void Player_Heartbeat();
+    void Player_NULL();
+    void Player_Init();
+    void AI_Create(void);
+    void ForceFeedback_Init(void);
+    void Player_ReleaseInterface(void *player);
+    PlayerMgr *pm = (PlayerMgr *)g_playerManager;
+    PMPlayer *player;
+    s32 i;
+
+    pm->active = NULL;
+    pm->free = NULL;
+    for (i = 0; i < 4; i++) {
+        player = &pm->humans[i].base;
+        player->controlReader = Player_DefaultControlReader;
+        player->init = PlayerHuman_Init;
+        player->heartbeat = PlayerHuman_Heartbeat;
+        PlayerManager_PushFree((PlayerManager *)pm, player);
+    }
+    for (i = 0; i < 4; i++) {
+        player = &pm->cars[i].base;
+        player->controlReader = AI_Car_Heartbeat;
+        player->init = AI_Car_Init;
+        player->heartbeat = Player_Heartbeat;
+        PlayerManager_PushFree((PlayerManager *)pm, player);
+    }
+    for (i = 0; i < 1; i++) {
+        player = &pm->creatures[i].base;
+        player->controlReader = AI_Creature_Heartbeat;
+        player->init = AI_Creature_Init;
+        player->heartbeat = Player_Heartbeat;
+        PlayerManager_PushFree((PlayerManager *)pm, player);
+    }
+    for (i = 0; i < 1; i++) {
+        player = &pm->nulls[i];
+        player->controlReader = Player_NULL;
+        player->init = Player_Init;
+        player->heartbeat = Player_NULL;
+        PlayerManager_PushFree((PlayerManager *)pm, player);
+    }
+    g_aiHoldIndex = 0;
+    AI_Create();
+    ForceFeedback_Init();
+    while ((player = PlayerManager_PopActive((PlayerManager *)pm)) != NULL) {
+        Player_ReleaseInterface(player);
+        PlayerManager_PushFree((PlayerManager *)pm, player);
+    }
+}
+
 void *PlayerManager_NewHumanPlayer(void) {
     extern u8 g_playerManager[0x20E0];
     u8 *player;
