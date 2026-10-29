@@ -4,6 +4,16 @@
 typedef s16 __OSInterrupt;
 typedef void (*__OSInterruptHandler)(__OSInterrupt interrupt, void *context);
 static __OSInterruptHandler *InterruptHandlerTable;
+#pragma peephole off
+__OSInterruptHandler __OSSetInterruptHandler(__OSInterrupt interrupt, __OSInterruptHandler handler)
+{
+	__OSInterruptHandler oldHandler;
+
+	oldHandler = InterruptHandlerTable[interrupt];
+	InterruptHandlerTable[interrupt] = handler;
+	return oldHandler;
+}
+
 __OSInterruptHandler __OSGetInterruptHandler(__OSInterrupt interrupt)
 {
 	return InterruptHandlerTable[interrupt];
@@ -51,3 +61,25 @@ check:;
 	return prev;
 }
 
+#pragma peephole off
+u32 __OSUnmaskInterrupts(u32 global)
+{
+	u32 prev;
+	u32 local;
+	u32 mask;
+	BOOL enabled;
+
+	enabled = OSDisableInterrupts();
+	prev = *(u32 *)((u32)0x00C4 + 0x80000000);
+	local = *(u32 *)((u32)0x00C8 + 0x80000000);
+	mask = (prev | local) & global;
+	global = prev & ~global;
+	*(u32 *)((u32)0x00C4 + 0x80000000) = global;
+	global |= local;
+	while (mask) {
+		mask = SetInterruptMask(mask, global);
+	}
+	OSRestoreInterrupts(enabled);
+	return prev;
+}
+#pragma peephole reset
