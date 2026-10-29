@@ -45,11 +45,11 @@ static int QueueLength(void) {
 
 s32 WriteUARTN(const void *buf, u32 len) {
     u32 cmd;
-    s32 xLen;
-    s32 qLen;
+    int xLen;
+    int qLen;
     char *ptr;
     BOOL locked;
-    s32 error;
+    int error;
 
     if (Enabled != 0xA5FF005A) {
         return 2;
@@ -84,7 +84,7 @@ s32 WriteUARTN(const void *buf, u32 len) {
             if (qLen < 4 && qLen < len) {
                 break;
             }
-            xLen = (len < 4) ? (s32)len : 4;
+            xLen = (len < 4) ? (int)len : 4;
             EXIImm(Chan, (void *)buf, xLen, 1, 0);
             buf = (char *)buf + xLen;
             len -= xLen;
