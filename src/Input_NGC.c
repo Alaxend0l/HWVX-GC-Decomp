@@ -27,6 +27,35 @@ u8 IsOpened__8LGWheelsFl(void *wheels, s32 chan);
 void PlaySpringForce__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 saturation, s16 coefficient);
 void PlayFrontalCollisionForce__8LGWheelsFlUc(void *wheels, s32 chan, u8 force);
 
+void InitTables__Fv(void);
+s32 Input_Create(void) {
+    void Input_Init(void);
+    void SISetSamplingRate(u32 msec);
+    void *__nw__FUl(u32 size);
+    void *__ct__8LGWheelsFv(void *self);
+    void GenerateNonLinValues__8LGWheelsFlUc(void *self, s32 chan, u8 value);
+    void PadSamplingCallback__Fv(void);
+    void *PADSetSamplingCallback(void *callback);
+    void GBAConnectivityInit__Fv(void);
+    void *w;
+
+    InitTables__Fv();
+    Input_Init();
+    SISetSamplingRate(1);
+    w = __nw__FUl(0x1430);
+    if (w != NULL) {
+        w = __ct__8LGWheelsFv(w);
+    }
+    wheels = w;
+    GenerateNonLinValues__8LGWheelsFlUc(wheels, 0, 0x50);
+    GenerateNonLinValues__8LGWheelsFlUc(wheels, 1, 0x64);
+    GenerateNonLinValues__8LGWheelsFlUc(wheels, 2, 0x64);
+    GenerateNonLinValues__8LGWheelsFlUc(wheels, 3, 0x64);
+    PADSetSamplingCallback(PadSamplingCallback__Fv);
+    GBAConnectivityInit__Fv();
+    return 1;
+}
+
 void Input_Destroy(void) {
     M2C_UNK PADControlMotor(M2C_UNK, M2C_UNK);
     PADControlMotor(0, 0);
