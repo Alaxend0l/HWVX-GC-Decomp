@@ -34,6 +34,13 @@ void GXSetColorUpdate(u8 update_enable) {
     gx->bpSentNot = 0;
 }
 
+void GXSetAlphaUpdate(u8 update_enable) {
+    gx->cmode0 = (gx->cmode0 & ~0x10) | (update_enable << 4);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->cmode0;
+    gx->bpSentNot = 0;
+}
+
 void GXSetFieldMask(u8 odd_mask, u8 even_mask) {
     u32 reg;
 
