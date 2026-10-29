@@ -607,7 +607,7 @@ config.libs = [
             Object(Matching, "w_acos.c", mw_version="GC/1.3"),
             Object(NonMatching, "w_atan2.c"),
             Object(NonMatching, "w_pow.c"),
-            Object(NonMatching, "math_ppc.c", mw_version="GC/1.3"),
+            Object(Matching, "math_ppc.c", mw_version="GC/1.3"),
             Object(NonMatching, "AmcExi2Stubs.c"),
             Object(Matching, "odenotstub.c"),
             Object(NonMatching, "etc/gba.c", mw_version="GC/1.3"),
