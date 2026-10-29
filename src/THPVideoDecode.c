@@ -48,6 +48,23 @@ void OSInitMessageQueue(void *queue, void *msgArray, s32 msgCount);
 void *VideoDecoder(void *param);
 void VideoDecoderForOnMemory(void *bufAddr);
 
+BOOL CreateVideoDecodeThread(s32 priority, void *param) {
+    if (param) {
+        if (OSCreateThread(VideoDecodeThread, VideoDecoderForOnMemory, param, VideoDecodeThreadStack + 0x1000, 0x1000, priority, 1) == 0) {
+            return FALSE;
+        }
+    } else {
+        if (OSCreateThread(VideoDecodeThread, VideoDecoder, NULL, VideoDecodeThreadStack + 0x1000, 0x1000, priority, 1) == 0) {
+            return FALSE;
+        }
+    }
+    OSInitMessageQueue(FreeTextureSetQueue, FreeTextureSetMessage, 3);
+    OSInitMessageQueue(DecodedTextureSetQueue, DecodedTextureSetMessage, 3);
+    VideoDecodeThreadCreated = TRUE;
+    First = TRUE;
+    return TRUE;
+}
+
 void VideoDecodeThreadStart(void) {
     if (VideoDecodeThreadCreated) {
         OSResumeThread(VideoDecodeThread);
