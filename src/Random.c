@@ -34,3 +34,11 @@ f32 RandomAdd(f32 base, f32 range) {
     return rng->floats[rng->index] * range + base;
 }
 
+s32 RandomAdd_s32(s32 base, s32 range) {
+    RandomNumberGenerator *rng = &g_randomNumberGenerator;
+    if (++rng->index >= 0x400) {
+        rng->index = 0;
+    }
+    return rng->floats[rng->index] * (f32)range + (f32)base;
+}
+
