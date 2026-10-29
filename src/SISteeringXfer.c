@@ -61,3 +61,20 @@ static void TypeAndStatusCallback(s32 chan, u32 type) {
         __OSReschedule();
     }
 }
+
+s32 OSDisableInterrupts(void);
+s32 OSRestoreInterrupts(s32 level);
+s32 SIGetTypeAsync(s32 chan, void *callback);
+s32 __SISteeringTransfer(s32 chan, u32 outputBytes, u32 inputBytes, SISteeringResetCallback callback) {
+    s32 enabled;
+    SISteeringControl *steering = &__SISteering[chan];
+
+    enabled = OSDisableInterrupts();
+    steering->resetCallback = callback;
+    steering->outputBytes = outputBytes;
+    steering->inputBytes = inputBytes;
+    SIGetTypeAsync(chan, TypeAndStatusCallback);
+    OSRestoreInterrupts(enabled);
+    return 0;
+}
+
