@@ -121,6 +121,7 @@ typedef struct Ramp
 	/* 0x020 */
 	u32		ids[4][8];		/* 0x020 effect ids, -1 once the slot is free */
 	/* 0x0A0 */
+	Ramp();
 } Ramp;
 
 typedef struct LGWheels
