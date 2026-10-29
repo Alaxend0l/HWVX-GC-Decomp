@@ -9,6 +9,8 @@ typedef struct Vector {
 extern s32 __float_nan[];
 extern s32 __float_huge[];
 
+f32 PSVECMag(Vector *v);
+
 f32 MagnitudeVector(Vector *v) {
     f32 zero = 0.0f;
 
@@ -290,6 +292,32 @@ void ProjectVectorToNormal(Vector *n, Vector *v) {
     v->x = scale * n->x + v->x;
     v->y = scale * n->y + v->y;
     v->z = scale * n->z + v->z;
+}
+
+f32 LinearPointTest(Vector *point, Vector *start, Vector *end)
+{
+    void PSVECSubtract(Vector *a, Vector *b, Vector *out);
+    f32 PSVECDotProduct(Vector *a, Vector *b);
+    f32 PSVECMag(Vector *v);
+    Vector4 toPoint __attribute__((aligned(16)));
+    Vector4 toEnd __attribute__((aligned(16)));
+    f32 dot;
+    f32 zero;
+    f32 mag;
+
+    PSVECSubtract(point, start, (Vector *)&toPoint);
+    PSVECSubtract(end, start, (Vector *)&toEnd);
+    dot = PSVECDotProduct((Vector *)&toPoint, (Vector *)&toEnd);
+    zero = 0.0f;
+    if (toPoint.x != zero || toPoint.y != zero || toPoint.z != zero) {
+        zero = PSVECMag((Vector *)&toPoint);
+    }
+    mag = zero;
+    zero = 0.0f;
+    if (toEnd.x != zero || toEnd.y != zero || toEnd.z != zero) {
+        zero = PSVECMag((Vector *)&toEnd);
+    }
+    return dot / (mag * zero);
 }
 
 void MinMaxVec(Vector4 *min, Vector4 *max, Vector4 *v)
