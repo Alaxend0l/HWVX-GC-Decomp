@@ -37,3 +37,14 @@ void __AXPushCallbackStack(void * arg0)
     ((void **)arg0)[2] = __AXCallbackStack;
     __AXCallbackStack = arg0;
 }
+
+void *__AXPopCallbackStack(void)
+{
+    void *pvpb = __AXCallbackStack;
+
+    if (pvpb != NULL) {
+        __AXCallbackStack = ((void **)pvpb)[2];
+    }
+    return pvpb;
+}
+
