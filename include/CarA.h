@@ -144,7 +144,8 @@ typedef struct CarA {
   ThingVTable *vtable;      /* 0x8C */
   u8 pad90[4];              /* 0x90 */
   Player *player;           /* 0x94 NULL-checked, copied to slave players */
-  u8 pad98[0x24];           /* 0x98 */
+  u32 lightIndex;           /* 0x98 index into g_ThingLightingData, -1: none */
+  u8 pad9C[0x20];           /* 0x9C */
   struct CarA *unkBC;       /* 0xBC a looker's target */
   OBox orientedBox;         /* 0xC0 BuildOOBOffset writes it; GetOrientedCollision
                                returns car + 0xC0; GetTargetPos reads its v[0] */
