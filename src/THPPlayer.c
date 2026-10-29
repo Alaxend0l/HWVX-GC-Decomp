@@ -264,6 +264,54 @@ s32 THPPlayerCalcNeedMemory(void)
     return 0;
 }
 
+void DCInvalidateRange(void *addr, u32 nBytes);
+BOOL THPPlayerSetBuffer(u8 *buffer) {
+    u32 i;
+    u8 *ptr;
+    u32 ysize;
+    u32 uvsize;
+
+    if (ActivePlayer.open && ActivePlayer.state == 0) {
+        ptr = buffer;
+        if (ActivePlayer.onMemory) {
+            ActivePlayer.movieData = ptr;
+            ptr += ActivePlayer.unk58;
+        } else {
+            for (i = 0; i < 10; i++) {
+                ActivePlayer.readBuffer[i].ptr = ptr;
+                ptr += (ActivePlayer.unk44 + 0x1F) & ~0x1F;
+            }
+        }
+
+        ysize = (ActivePlayer.videoInfo.xSize * ActivePlayer.videoInfo.ySize + 0x1F) & ~0x1F;
+        uvsize = (ActivePlayer.videoInfo.xSize * ActivePlayer.videoInfo.ySize / 4 + 0x1F) & ~0x1F;
+        for (i = 0; i < 3; i++) {
+            ActivePlayer.textureSet[i].ytexture = ptr;
+            DCInvalidateRange(ptr, ysize);
+            ptr += ysize;
+            ActivePlayer.textureSet[i].utexture = ptr;
+            DCInvalidateRange(ptr, uvsize);
+            ptr += uvsize;
+            ActivePlayer.textureSet[i].vtexture = ptr;
+            DCInvalidateRange(ptr, uvsize);
+            ptr += uvsize;
+        }
+
+        if (ActivePlayer.audioExist) {
+            for (i = 0; i < 3; i++) {
+                ActivePlayer.audioBuffers[i].buffer = (s16 *)ptr;
+                ActivePlayer.audioBuffers[i].curPtr = (s16 *)ptr;
+                ActivePlayer.audioBuffers[i].validSample = 0;
+                ptr += (ActivePlayer.unk48 * 4 + 0x1F) & ~0x1F;
+            }
+        }
+
+        ActivePlayer.bufferEnd = ptr;
+        return TRUE;
+    }
+    return FALSE;
+}
+
 void PrepareReady(void *arg0) {
     extern u8 PrepareReadyQueue_8036ED00[];
     OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
