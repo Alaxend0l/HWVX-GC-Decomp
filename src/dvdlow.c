@@ -20,6 +20,11 @@ static DVDLowCallback Callback;
 static volatile s32 WaitingCoverClose;
 static u32 WorkAroundType;
 static u32 WorkAroundSeekLocation;
+static volatile s32 ResetOccurred;
+static s64 LastResetEnd;
+
+s64 __OSGetSystemTime(void);
+volatile u32 __PIRegs[12] : 0xCC003000;
 
 s32 OSDisableInterrupts(void);
 s32 OSRestoreInterrupts(s32 level);
