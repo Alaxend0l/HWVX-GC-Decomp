@@ -26,3 +26,12 @@ s32 OSRestoreInterrupts(s32 level);
 void DefaultCallback(void) {
 
 }
+
+static void ResetProc(s32 chan) {
+    SISteeringControl *steering = &__SISteering[chan];
+
+    if (steering->ret == 0 && __SIResetSteering == 0) {
+        __SISteeringEnable(chan);
+    }
+}
+
