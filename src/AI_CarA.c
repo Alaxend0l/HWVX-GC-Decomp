@@ -81,6 +81,7 @@ s32 AI_Car_CheckIfStuck(u8 *ai) {
     return 1;
 }
 
+#pragma use_lmw_stmw on
 void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed) {
     f32 PSVECSquareDistance(void *a, void *b);
     f32 PSVECSquareMag(void *v);
@@ -90,7 +91,7 @@ void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed) {
     f32 AI_AngleToTarget(u8 *ai, Vector4 *target);
     void CarA_GetAngularVelocity(void *car, Vector4 *vel);
     void DistanceXYZ(void *a, void *b, f32 *dist);
-    Vector4 angVel;
+    Vector4 angVel __attribute__((aligned(16)));
     f32 dist;
     f32 angle;
     u8 *car;
@@ -156,7 +157,7 @@ void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed) {
         }
         r /= t;
         if (*(s16 *)(ai + 0x640) == 0 || ((*(s16 *)(ai + 0x640) << 16) ^ *(s32 *)&angle) < 0) {
-            *(s16 *)(ai + 0x640) = (-127.0f / 3.1415927f) * angle;
+            *(s16 *)(ai + 0x640) = -40.425358f * angle;
         }
         full = angle > 0.0f ? -127 : 127;
         if (r <= 1.0f) {
@@ -234,7 +235,6 @@ void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed) {
         ai[0x15] = reverse;
     }
 }
-
 void AI_Car_WeaponAsyncHeartbeat_80008210(u8 *ai) {
     typedef struct WeaponParams {
         u8 pad0[0x24];
