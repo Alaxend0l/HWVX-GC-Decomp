@@ -14,6 +14,18 @@ void VolumeManager_Release(void) {
     SetReverb(1, 0, 0, 0);
 }
 
+void VolumeManager_Initialize(void) {
+    typedef struct World {
+        u8 pad0[0x4];
+        s32 volumeHolder;
+    } World;
+    extern s32 g_VolumeHolder;
+    extern u8 g_bReset;
+    VolumeManager_Release();
+    g_VolumeHolder = ((World *)g_worldData.world)->volumeHolder;
+    g_bReset = 1;
+}
+
 s32 VolumeManager_GetVolumeCellIndex(Vector4 *point) {
     extern u8 *g_VolumeHolder;
     u8 *holder = g_VolumeHolder;
@@ -60,6 +72,31 @@ s32 VolumeManager_GetNumVolumesOfType(u32 type) {
         }
     }
     return count;
+}
+
+void *VolumeManager_GetVolumeTypeByIndex(u32 type, u32 index) {
+    typedef struct Volume {
+        u8 pad0[0xC];
+        u32 type;
+        u8 pad10[0x20];
+    } Volume;
+    typedef struct World {
+        u8 pad0[0x68];
+        u32 numVolumes;
+        Volume *volumes;
+    } World;
+    World *world = g_worldData.world;
+    u32 i;
+
+    for (i = 0; i < world->numVolumes; i++) {
+        if (world->volumes[i].type == type) {
+            if (index == 0) {
+                return world->volumes + i;
+            }
+            index--;
+        }
+    }
+    return NULL;
 }
 
 s32 VolumeManager_GetNumVolumesOfTypeByCell(s32 type, s32 cell) {
