@@ -44,8 +44,8 @@ typedef struct CARDControl {
     u8 *diskID;
 } CARDControl;
 
-CARDControl __CARDBlock[2];
 static u8 __CARDDiskNone[32];
+CARDControl __CARDBlock[2];
 
 void OSWakeupThread(OSThreadQueue *queue);
 
@@ -55,6 +55,11 @@ void __CARDDefaultApiCallback(void)
 
 void __CARDSyncCallback(s32 chan, s32 result) {
     OSWakeupThread(&__CARDBlock[chan].threadQueue);
+}
+
+void __CARDSetDiskID(u8 *id) {
+    __CARDBlock[0].diskID = id ? id : __CARDDiskNone;
+    __CARDBlock[1].diskID = id ? id : __CARDDiskNone;
 }
 
 extern int CARDUnmount(int);
