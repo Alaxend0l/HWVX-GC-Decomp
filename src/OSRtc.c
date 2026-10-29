@@ -9,7 +9,7 @@ typedef struct SramControlBlock {
     void (*callback)(void);
 } SramControlBlock;
 
-extern SramControlBlock Scb;
+static SramControlBlock Scb __attribute__((aligned(32)));
 
 s32 OSDisableInterrupts(void);
 s32 OSRestoreInterrupts(s32 level);
