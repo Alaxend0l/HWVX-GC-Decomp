@@ -32,6 +32,11 @@ s32 UnlockSram(s32 commit, u32 offset);
 void *__OSLockSram(void) {
     return LockSram(0);
 }
+
+void *__OSLockSramEx(void) {
+    return LockSram(0x14);
+}
+
 s32 __OSUnlockSram(s32 commit) {
     return UnlockSram(commit, 0);
 }
