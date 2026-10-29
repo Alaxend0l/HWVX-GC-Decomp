@@ -1,5 +1,35 @@
 #include "common.h"
 
+s32 TRKInitializeEventQueue(void);
+s32 TRKInitializeMessageBuffers(void);
+s32 TRKInitializeDispatcher(void);
+s32 TRKInitializeSerialHandler(void);
+s32 TRKInitializeTarget(void);
+void usr_put_initialize(void);
+void TRKTargetSetInputPendingPtr(void *ptr);
+s32 TRKInitializeIntDrivenUART(u32 param1, u32 param2, u32 param3, volatile u8 **inputPendingPtrRef);
+
+extern u8 *gTRKInputPendingPtr[];
+s32 gTRKBigEndian;
+
+static BOOL TRK_InitializeEndian(void) {
+    u8 bendian[4];
+    BOOL result = FALSE;
+
+    gTRKBigEndian = TRUE;
+    bendian[0] = 0x12;
+    bendian[1] = 0x34;
+    bendian[2] = 0x56;
+    bendian[3] = 0x78;
+    if (*(u32 *)bendian == 0x12345678) {
+        gTRKBigEndian = TRUE;
+    } else if (*(u32 *)bendian == 0x78563412) {
+        gTRKBigEndian = FALSE;
+    } else {
+        result = TRUE;
+    }
+    return result;
+}
 
 void TRKNubWelcome(void)
 {
