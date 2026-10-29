@@ -388,12 +388,22 @@ typedef struct CarTrailBone {
   f32 offset;
   f32 width0;
   f32 width1;
-  u8 padC[8];
+  f32 restLength;           /* 0x0C */
+  f32 springRate;           /* 0x10 */
   f32 unk14;
-  u8 pad18[0x3F - 0x18];
+  f32 friction;             /* 0x18 */
+  f32 damping;              /* 0x1C */
+  f32 maxFriction;          /* 0x20 */
+  f32 handbrakeGrip;        /* 0x24 */
+  u8 pad28[0x38 - 0x28];
+  f32 maxDamping;           /* 0x38 */
+  u8 driven;                /* 0x3C */
+  u8 pad3D;
+  u8 skids;                 /* 0x3E */
   u8 parent;
   u16 bone;
-  u8 pad42[0x50 - 0x42];
+  u8 dusts;                 /* 0x42 */
+  u8 pad43[0x50 - 0x43];
 } CarTrailBone;
 
 typedef struct CarNavPath {
