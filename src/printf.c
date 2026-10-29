@@ -45,6 +45,9 @@ typedef struct decimal {
     } sig;
 } decimal;
 
+#pragma readonly_strings on
+#pragma pool_strings on
+
 typedef struct decform {
     char style;
     char unk1;
@@ -422,6 +425,126 @@ static void round_decimal(decimal *dec, int new_length) {
 
     dec->sig.length = new_length;
 }
+
+#pragma push
+#pragma readonly_strings on
+#pragma pool_strings on
+char *double2hex(double num, char *buff, print_format format) {
+    char *p;
+    u8 *q;
+    u8 working_byte;
+    double ld;
+    s32 exp;
+    print_format exp_format;
+    s32 hex_precision;
+    char c;
+    decform form;
+    decimal dec;
+
+    p = buff;
+    ld = num;
+
+    if (format.precision > 509) {
+        return 0;
+    }
+
+    form.style = 0;
+    form.digits = 0x20;
+    __num2dec(&form, num, &dec);
+
+    if (dec.sig.text[0] == 'I') {
+        if (*(s16 *)&ld & 0x8000) {
+            p = buff - 5;
+            if (format.conversion_char == 'A') {
+                strcpy(p, "-INF");
+            } else {
+                strcpy(p, "-inf");
+            }
+        } else {
+            p = buff - 4;
+            if (format.conversion_char == 'A') {
+                strcpy(p, "INF");
+            } else {
+                strcpy(p, "inf");
+            }
+        }
+        return p;
+    } else if (dec.sig.text[0] == 'N') {
+        if (*(u8 *)&num & 0x80) {
+            p = buff - 5;
+            if (format.conversion_char == 'A') {
+                strcpy(p, "-NAN");
+            } else {
+                strcpy(p, "-nan");
+            }
+        } else {
+            p = buff - 4;
+            if (format.conversion_char == 'A') {
+                strcpy(p, "NAN");
+            } else {
+                strcpy(p, "nan");
+            }
+        }
+        return p;
+    }
+
+    exp_format.justification_options = 1;
+    exp_format.sign_options = 1;
+    exp_format.precision_specified = 0;
+    exp_format.alternate_form = 0;
+    exp_format.argument_options = 0;
+    exp_format.conversion_char = 'd';
+    exp_format.field_width = 0;
+    exp_format.precision = 1;
+
+    exp = (s16)((*(s16 *)&ld & 0x7FF0) >> 4) - 1023;
+    p = long2str(exp, buff, exp_format);
+
+    if (format.conversion_char == 'a') {
+        *--p = 'p';
+    } else {
+        *--p = 'P';
+    }
+
+    q = (u8 *)&num;
+    for (hex_precision = format.precision; hex_precision >= 1; hex_precision--) {
+        working_byte = q[hex_precision / 2 + 1];
+        if (hex_precision % 2) {
+            c = working_byte & 0xF;
+        } else {
+            c = (working_byte >> 4) & 0xF;
+        }
+        if (c < 10) {
+            c += '0';
+        } else if (format.conversion_char == 'a') {
+            c += 'a' - 10;
+        } else {
+            c += 'A' - 10;
+        }
+        *--p = c;
+    }
+
+    if (format.precision || format.alternate_form) {
+        *--p = '.';
+    }
+    *--p = '1';
+    if (format.conversion_char == 'a') {
+        *--p = 'x';
+    } else {
+        *--p = 'X';
+    }
+    *--p = '0';
+
+    if (*(s16 *)&ld & 0x8000) {
+        *--p = '-';
+    } else if (format.sign_options == 1) {
+        *--p = '+';
+    } else if (format.sign_options == 2) {
+        *--p = ' ';
+    }
+    return p;
+}
+#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
