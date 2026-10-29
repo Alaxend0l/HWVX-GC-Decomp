@@ -159,7 +159,7 @@ typedef struct CarA {
   u32 reverseTimer;         /* 0x450 ms the brake is held at standstill */
   u8 pad454[4];             /* 0x454 */
   f32 gradeOrReverse;       /* 0x458 < 0.0f gates AI braking */
-  u8 pad45C[4];             /* 0x45C */
+  s32 unk45C;               /* 0x45C */
   s32 unk460;               /* 0x460 */
   s32 stuckCounter;         /* 0x464 > 600 marks the AI car stuck */
   f32 gripScale;            /* 0x468 *= AI gripScale */
