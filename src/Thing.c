@@ -1,5 +1,11 @@
 #include "common.h"
 
+/* The transform every Thing starts with. */
+typedef struct Thing {
+    u8 pad0[0x10];
+    Matrix4 mtx;   /* 0x10 */
+    Quaternion quat; /* 0x50 */
+} Thing;
 
 void Thing_Release(s32 thing) {
     M2C_UNK Grid_FreeObject(void *);
