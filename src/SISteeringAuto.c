@@ -86,17 +86,17 @@ static void SamplingHandler(s16 interrupt, void *context)
 
 s32 SIRegisterPollingHandler(void *handler);
 s32 SIUnregisterPollingHandler(void *handler);
-u32 SISetSteeringSamplingCallback(u32 arg0) {
-    extern u32 SamplingCallback_803C75B0;
-    u32 temp_r31;
+void *SISetSteeringSamplingCallback(void (*callback)(void))
+{
+    void *prev;
 
-    temp_r31 = SamplingCallback_803C75B0;
-    SamplingCallback_803C75B0 = arg0;
-    if (arg0 != 0U) {
-        SIRegisterPollingHandler(&SamplingHandler);
+    prev = SamplingCallback;
+    SamplingCallback = callback;
+    if (callback != NULL) {
+        SIRegisterPollingHandler(SamplingHandler);
     } else {
-        SIUnregisterPollingHandler(&SamplingHandler);
+        SIUnregisterPollingHandler(SamplingHandler);
     }
-    return temp_r31;
+    return prev;
 }
 
