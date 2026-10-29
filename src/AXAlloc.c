@@ -22,6 +22,24 @@ void *__AXGetStackHead(u32 priority)
     return __AXStackHead[priority];
 }
 
+void *__AXPopCallbackStack(void);
+void __AXRemoveFromStack(AXVPB *p);
+void __AXPushFreeStack(AXVPB *p);
+void __AXServiceCallbackStack(void)
+{
+    AXVPB *pvpb;
+
+    for (pvpb = __AXPopCallbackStack(); pvpb != NULL; pvpb = __AXPopCallbackStack()) {
+        if (pvpb->priority != 0) {
+            if (pvpb->callback != NULL) {
+                pvpb->callback(pvpb);
+            }
+            __AXRemoveFromStack(pvpb);
+            __AXPushFreeStack(pvpb);
+        }
+    }
+}
+
 void __AXAllocInit(void)
 {
     u32 i;
