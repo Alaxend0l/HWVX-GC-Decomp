@@ -34,3 +34,7 @@ GXTexObj m_gxTexObjArray[511];
 u32 m_curTexture;
 
 #pragma use_lmw_stmw on
+
+void Render_DestroyTextureSlot(u32 id) {
+    GXInitTexObj(&m_gxTexObjArray[id], NULL, 0x20, 0x20, 6, 0, 0, 0);
+}
