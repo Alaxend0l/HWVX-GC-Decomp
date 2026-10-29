@@ -109,6 +109,19 @@ void InsertAlarm(OSAlarm *alarm, s64 time, void *(*handler)(void *, void *))
     PPCMtdec(0x7FFFFFFF);
 }
 
+s32 OSDisableInterrupts(void);
+s32 OSRestoreInterrupts(s32 level);
+void OSSetAlarm(OSAlarm *alarm, s64 tick, void *(*handler)(void *, void *))
+{
+    s64 __OSGetSystemTime(void);
+    s32 enabled;
+
+    enabled = OSDisableInterrupts();
+    alarm->fire2 = 0;
+    InsertAlarm(alarm, __OSGetSystemTime() + tick, handler);
+    OSRestoreInterrupts(enabled);
+}
+
 void DecrementerExceptionCallback(u32 arg0, void *arg1)
 {
     void OSClearContext(void *context);
