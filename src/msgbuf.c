@@ -86,6 +86,16 @@ static inline s32 TRKReadBuffer1_ui32_inline(TRKBuffer *b, u32 *data) {
     return err;
 }
 
+s32 TRKReadBuffer_ui32(TRKBuffer *b, u32 *data, s32 count) {
+    s32 err;
+    s32 i;
+
+    for (i = 0, err = 0; err == 0 && i < count; i++) {
+        err = TRKReadBuffer1_ui32_inline(b, &data[i]);
+    }
+    return err;
+}
+
 s32 TRKReadBuffer_ui8(TRKBuffer *b, u8 *data, s32 count) {
     s32 err;
     s32 i;
