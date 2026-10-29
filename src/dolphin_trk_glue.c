@@ -41,3 +41,8 @@ s32 TRKInitializeIntDrivenUART(u32 param1, u32 param2, u32 param3, volatile u8 *
     return 0;
 }
 
+void TRKEXICallBack(s16 chan, void *ctx) {
+    OSEnableScheduler();
+    TRKLoadContext(ctx, 0x500);
+}
+
