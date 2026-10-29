@@ -14,7 +14,6 @@ extern FragmentInfo fragmentinfo_8030DC08[1];
 extern "C" s32 __register_fragment(void *info, char *TOC);
 extern "C" void __unregister_fragment(s32 fragmentID);
 
-void *what__Q23std13bad_exceptionCFv(void) {
-    extern u8 g_cameraManager[];
-    return g_cameraManager;
+const char *std::bad_exception::what() const {
+    return "bad_exception";
 }
