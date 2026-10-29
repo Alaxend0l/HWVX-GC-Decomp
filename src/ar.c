@@ -2,6 +2,15 @@
 
 volatile u16 __DSPRegs[32] : 0xCC005000;
 
+static void (*__AR_Callback)(void);
+static u32 __AR_Size;
+static u32 __AR_InternalSize;
+static u32 __AR_ExpansionSize;
+static u32 __AR_StackPointer;
+static u32 __AR_FreeBlocks;
+static u32 *__AR_BlockLength;
+static s32 __AR_init_flag;
+
 static inline void __ARClearInterrupt(void) {
     u16 tmp;
     tmp = __DSPRegs[5];
