@@ -61,6 +61,36 @@ BOOL DVDCancelAsync(DVDCommandBlock *block, void (*callback)(s32, DVDCommandBloc
 void cbForCancelSync(void);
 void OSSleepThread(void *queue);
 
+extern s32 autoInvalidation;
+void DCInvalidateRange(void *addr, u32 nBytes);
+BOOL OSDisableInterrupts(void);
+BOOL OSRestoreInterrupts(BOOL level);
+BOOL __DVDPushWaitingQueue(s32 prio, DVDCommandBlock *block);
+void stateReady(void);
+
+static inline BOOL issueCommand(s32 prio, DVDCommandBlock *block) {
+    BOOL level;
+    BOOL result;
+
+    if (autoInvalidation &&
+        (block->command == 1 || block->command == 4 || block->command == 5 || block->command == 14)) {
+        DCInvalidateRange(block->address, block->length);
+    }
+
+    level = OSDisableInterrupts();
+
+    block->state = 2;
+    result = __DVDPushWaitingQueue(prio, block);
+
+    if ((executing == (DVDCommandBlock *)NULL) && (PauseFlag == FALSE)) {
+        stateReady();
+    }
+
+    OSRestoreInterrupts(level);
+
+    return result;
+}
+
 void DVDReset(void);
 void stateGoToRetry(void);
 void cbForUnrecoveredErrorRetry(u32 intType);
