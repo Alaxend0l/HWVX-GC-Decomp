@@ -553,6 +553,71 @@ s8 OBoxHitsTerrainAndObjectsZeroTimeEdgesOnly(void *obox, void *thing, void *arg
     return OBox_CollideAllThingsZeroTime(obox, thing, arg2);
 }
 
+s32 RayHitsObjects_GetObject(Vector4 *start, Vector4 *end, f32 *t, s8 statics, s8 dynamics) {
+    u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults);
+    s8 SegmentVsSphere(void *center, Vector4 *start, Vector4 *end, f32 radius);
+    GridResult results[256];
+    u8 info[0x50] __attribute__((aligned(16)));
+    Vector4 hitEnd __attribute__((aligned(16)));
+    Vector4 dir __attribute__((aligned(16)));
+    Vector4 min __attribute__((aligned(16)));
+    Vector4 max __attribute__((aligned(16)));
+    u32 count;
+    u32 i;
+    Destructible *other;
+    f32 best;
+    f32 hit;
+
+    best = *t;
+    dir.x = end->x - start->x;
+    dir.y = end->y - start->y;
+    dir.z = end->z - start->z;
+    hitEnd.x = dir.x * best + start->x;
+    hitEnd.y = dir.y * best + start->y;
+    hitEnd.z = dir.z * best + start->z;
+    min = *end;
+    max = *start;
+    if (start->x < min.x) {
+        min.x = start->x;
+    }
+    if (start->y < min.y) {
+        min.y = start->y;
+    }
+    if (start->z < min.z) {
+        min.z = start->z;
+    }
+    if (end->x > max.x) {
+        max.x = end->x;
+    }
+    if (end->y > max.y) {
+        max.y = end->y;
+    }
+    if (end->z > max.z) {
+        max.z = end->z;
+    }
+    count = Grid_GetObjects(&min, &max, 4, results, 0x100);
+    for (i = 0; i < count; i++) {
+        other = (Destructible *)results[i].id;
+        if (other->flags & 2) {
+            continue;
+        }
+        if ((statics == 1 && other->record->info->takesDamage == 0 && other->record->info->armour == 0) ||
+            (dynamics == 1 && (other->record->info->takesDamage == 1 || other->record->info->armour != 0))) {
+            if (SegmentVsSphere(&other->offsetPos, start, &hitEnd, *(f32 *)((u8 *)other + 0x70))) {
+                hit = (*(f32 (**)(void *, Vector4 *, Vector4 *, void *, f32))((u8 *)other->vtable + 0x38))(other, start, &dir, info, best);
+                if (hit < *t) {
+                    best = hit;
+                }
+            }
+        }
+    }
+    if (best < *t) {
+        *t = best;
+        return 0;
+    }
+    return 0;
+}
+
 s32 ThingManager_GetActiveCars(void **cars) {
     s32 count;
     s32 i;
