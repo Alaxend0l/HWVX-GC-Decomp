@@ -88,7 +88,7 @@ void Reader(void) {
     }
 }
 void *PopReadedBuffer(void) {
-    extern u8 ReadedBufferQueue[];
+    extern u8 ReadedBufferQueue[0x20];
     void *msg;
 
     OSReceiveMessage(ReadedBufferQueue, &msg, 1);
