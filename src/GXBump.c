@@ -84,6 +84,13 @@ void GXSetNumIndStages(u8 nIndStages) {
     gx->dirtyState |= 6;
 }
 
+#pragma push
+#pragma dont_inline on
+void GXSetTevDirect(s32 tev_stage) {
+    GXSetTevIndirect(tev_stage, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+}
+#pragma pop
+
 void __GXUpdateBPMask(void) {
     u32 nIndStages;
     u32 i;
