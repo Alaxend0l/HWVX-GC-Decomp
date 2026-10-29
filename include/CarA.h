@@ -23,7 +23,8 @@ typedef struct MotionState {
 typedef struct Player {
   s8 stickX;                /* 0x00 */
   s8 stickY;                /* 0x01 */
-  u8 pad02[0xE];            /* 0x02 */
+  u8 pad02[0xA];            /* 0x02 */
+  u32 buttonsHeld;          /* 0x0C & 4: turbo button */
   u8 button10;              /* 0x10 */
   u8 pad11;                 /* 0x11 */
   u8 throttle;              /* 0x12 */
