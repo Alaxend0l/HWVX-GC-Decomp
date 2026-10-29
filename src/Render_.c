@@ -49,7 +49,15 @@ typedef struct GfxWindow {
     f32 unk100[4][4];
     u8 unk140[0x270 - 0x140];
     f32 fov;
-    u8 unk274[0x2D0 - 0x274];
+    u8 unk274[0x280 - 0x274];
+    u32 width;
+    u32 height;
+    u8 unk288[0x2B0 - 0x288];
+    u32 unk2B0;
+    u32 unk2B4;
+    u32 unk2B8;
+    u32 unk2BC;
+    u8 unk2C0[0x2D0 - 0x2C0];
 } GfxWindow;
 
 typedef struct GfxState {
