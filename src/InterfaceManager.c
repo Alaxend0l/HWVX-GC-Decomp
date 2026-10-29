@@ -2,6 +2,24 @@
 
 #pragma use_lmw_stmw on
 
+/* Analog stick "virtual key" state, one per pad and direction. */
+typedef struct InterfaceDirState {
+    s8 active;
+    s8 held;
+    s16 timer;
+} InterfaceDirState;
+
+typedef struct InterfaceKeyState {
+    u8 pad0[0x116];
+    InterfaceDirState dir[4][4];
+    u8 pad156[0x160 - 0x156];
+    s8 disabled;
+    u8 pad161[0x168 - 0x161];
+    s8 locked;
+} InterfaceKeyState;
+
+s8 Input_GetAnalog(u32 chan, s16 *x, s16 *y, s16 *cx, s16 *cy);
+
 /* Message passed to an interface's callback (InterfaceState.callback). */
 typedef struct InterfaceEventMsg {
     u32 index;
