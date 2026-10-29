@@ -40,6 +40,16 @@ typedef struct VoiceHW {
 extern void (*DestroySongVoice)(VoiceHW *voice);
 extern VoiceHW *g_pFree;
 
+typedef struct AXFX_DELAY {
+    u8 data[0x60];
+} AXFX_DELAY;
+
+extern AXFX_DELAY g_reverb[2];
+
+void AXRegisterAuxACallback(void *callback, void *context);
+void AXRegisterAuxBCallback(void *callback, void *context);
+s32 AXFXDelayShutdown(AXFX_DELAY *delay);
+
 s32 OSDisableInterrupts(void);
 void OSRestoreInterrupts(s32 level);
 void AXSetVoicePriority(AXVPB *axv, u32 priority);
