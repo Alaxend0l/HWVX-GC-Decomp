@@ -17,6 +17,7 @@ static volatile s32 Breaking;
 
 typedef void (*DVDLowCallback)(u32 intType);
 static DVDLowCallback Callback;
+static volatile s32 WaitingCoverClose;
 
 volatile u32 __DIRegs[16] : 0xCC006000;
 
