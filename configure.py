@@ -537,7 +537,7 @@ config.libs = [
             Object(NonMatching, "nubinit.c", mw_version="GC/1.3"),
             Object(NonMatching, "msg.c"),
             Object(NonMatching, "msgbuf.c"),
-            Object(NonMatching, "serpoll.c"),
+            Object(NonMatching, "serpoll.c", mw_version="GC/2.6"),
             Object(NonMatching, "usr_put.c"),
             Object(Matching, "dispatch.c", mw_version="GC/1.3"),
             Object(NonMatching, "msghndlr.c"),
