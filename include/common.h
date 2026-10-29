@@ -800,7 +800,7 @@ typedef struct BulletHole {
   f32 v[16];
   s32 life;
   u8 unk54[0x5C - 0x54];
-  s16 texture;
+  u16 texture;
   u8 unk5E[0x60 - 0x5E];
 } BulletHole;
 
