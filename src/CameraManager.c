@@ -325,6 +325,44 @@ void Camera_UpdatePosition_Zoom_Generic(u8 *cam, u8 *mode, Vector4 *target, Vect
     PSVECSubtract((Vector4 *)(cam + 0x60), &pos, (Vector4 *)(cam + 0x70));
 }
 
+static inline void Camera_Orbit(Camera *cam, Vector4 *center, Vector4 *target, f32 radius, f32 height, f32 speed, f32 fov) {
+    extern f32 g_fDeltaTimeSec;
+    double sin(double x);
+    double cos(double x);
+    f32 PSVECSquareMag(void *v);
+    void PSVECNormalize(void *src, void *dst);
+    void PSVECSubtract(void *a, void *b, void *out);
+    void PSVECCrossProduct(void *a, void *b, void *out);
+    void Gfx_SetProjectionMatrix(f32 fov);
+    Vector4 up = {0.0f, 1.0f, 0.0f, 0.0f};
+    Vector4 dir;
+    Vector4 eye;
+    f32 s;
+    f32 c;
+
+    cam->modeTime += speed * g_fDeltaTimeSec;
+    s = sin(cam->modeTime);
+    c = cos(cam->modeTime);
+    eye.x = radius * s + center->x;
+    eye.y = center->y + height;
+    eye.z = radius * c + center->z;
+    PSVECSubtract(target, &eye, &dir);
+    GetTrimmedCameraPos((u8 *)cam, target, &dir, &cam->trim, 1.0f);
+    PSVECSubtract(target, &cam->pos, &cam->dir);
+    if (PSVECSquareMag(&cam->dir) != 0.0f) {
+        PSVECNormalize(&cam->dir, &cam->dir);
+    }
+    PSVECCrossProduct(&up, &cam->dir, &cam->right);
+    PSVECCrossProduct(&cam->dir, &cam->right, &cam->up);
+    if (PSVECSquareMag(&cam->right) != 0.0f) {
+        PSVECNormalize(&cam->right, &cam->right);
+    }
+    if (PSVECSquareMag(&cam->up) != 0.0f) {
+        PSVECNormalize(&cam->up, &cam->up);
+    }
+    Gfx_SetProjectionMatrix(fov);
+}
+
 s32 Camera_TriggerActionGetLocation(u8 *cam, u32 *data, Vector4 *out) {
     extern u8 *g_pNoRayCollideThing;
     extern s32 g_triggerAction_params_default;
