@@ -1,7 +1,9 @@
 #include "common.h"
 
 typedef struct GfxWindow {
-    u8 unk0[0x270];
+    u8 unk0[0x100];
+    f32 unk100[4][4];
+    u8 unk140[0x270 - 0x140];
     f32 fov;
     u8 unk274[0x280 - 0x274];
     u32 width;
