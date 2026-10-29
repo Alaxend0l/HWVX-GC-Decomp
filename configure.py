@@ -599,7 +599,7 @@ config.libs = [
             Object(NonMatching, "s_copysign.c"),
             Object(NonMatching, "s_cos.c"),
             Object(NonMatching, "s_floor.c"),
-            Object(NonMatching, "s_frexp.c", mw_version="GC/1.3"),
+            Object(Matching, "s_frexp.c", mw_version="GC/1.3"),
             Object(NonMatching, "s_ldexp.c"),
             Object(NonMatching, "s_modf.c"),
             Object(NonMatching, "s_sin.c"),
