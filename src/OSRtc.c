@@ -59,6 +59,29 @@ static inline void *LockSram(u32 offset) {
     return Scb.sram + offset;
 }
 
+static inline s32 ReadSram(void *buffer) {
+    s32 err;
+    u32 cmd;
+
+    DCInvalidateRange(buffer, 64);
+    if (!EXILock(0, 1, 0)) {
+        return 0;
+    }
+    if (!EXISelect(0, 1, 3)) {
+        EXIUnlock(0);
+        return 0;
+    }
+    cmd = 0x20000000 | 0x100;
+    err = 0;
+    err |= !EXIImm(0, &cmd, 4, 1, 0);
+    err |= !EXISync(0);
+    err |= !EXIDma(0, buffer, 64, 0, 0);
+    err |= !EXISync(0);
+    err |= !EXIDeselect(0);
+    EXIUnlock(0);
+    return !err;
+}
+
 s32 UnlockSram(s32 commit, u32 offset);
 #pragma peephole on
 s32 WriteSram(void *buffer, u32 offset, u32 size);
