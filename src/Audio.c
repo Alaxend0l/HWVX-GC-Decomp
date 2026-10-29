@@ -19,11 +19,6 @@ s8 AudioMIDI_Create(void);
 s8 AudioVoice_Create(void);
 s8 Audio_Create_(void);
 
-static inline void Audio_ClearVoiceUpdate(void)
-{
-	VoiceUpdate = NULL;
-}
-
 s8 Audio_Create(void)
 {
 	if (!g_init)
@@ -42,7 +37,8 @@ s8 Audio_Create(void)
 
 s8 Audio_Init(void)
 {
-	SongUpdate = VoiceUpdate = NULL;
+	*(volatile s32 *)&VoiceUpdate = 0;
+	SongUpdate = NULL;
 
 	if (AudioMusic_Init() && AudioIT_Init() && AudioMIDI_Init() && AudioVoice_Init() && Audio_Init_())
 	{
