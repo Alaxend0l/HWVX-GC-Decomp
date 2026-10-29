@@ -6,7 +6,12 @@ typedef struct GfxWindow {
     f32 unk80[4][4];
     f32 unkC0[4][4];
     f32 unk100[4][4];
-    u8 unk140[0x270 - 0x140];
+    u8 unk140[0x180 - 0x140];
+    Vector4 cameraPos;
+    Vector4 cameraRight;
+    Vector4 cameraUp;
+    Vector4 cameraAt;
+    u8 unk1C0[0x270 - 0x1C0];
     f32 fov;
     u8 unk274[0x280 - 0x274];
     u32 width;
@@ -55,6 +60,64 @@ void Gfx_SetWorldMatrix(f32 (*matrix)[4]) {
     MatrixToMtxTranspose(GXCameraSpace, GetRenderWindow()->unk80);
     GXLoadPosMtxImm(GXCameraSpace, 0);
     GXSetCurrentMtx(0);
+}
+
+void Render_SetClipPlanes(f32 fov);
+void Gfx_SetCameraMatrix(Vector4 *pos, Vector4 *right, Vector4 *up, Vector4 *at) {
+    f32 m[4][4] __attribute__((aligned(16)));
+    Vector4 defPos __attribute__((aligned(16)));
+    Vector4 defRight __attribute__((aligned(16)));
+    Vector4 defUp __attribute__((aligned(16)));
+    Vector4 defAt __attribute__((aligned(16)));
+
+    if (pos == NULL) {
+        pos = &defPos;
+        defPos.x = 0.0f;
+        defPos.y = 0.0f;
+        defPos.z = 0.0f;
+    }
+    if (right == NULL) {
+        right = &defRight;
+        up = &defUp;
+        at = &defAt;
+        defRight.x = 0.0f;
+        defRight.y = 0.0f;
+        defRight.z = -1.0f;
+        defUp.x = 0.0f;
+        defUp.y = 1.0f;
+        defUp.z = 0.0f;
+        defAt.x = -1.0f;
+        defAt.y = 0.0f;
+        defAt.z = 0.0f;
+    }
+    *(Vector4 *)GetRenderWindow()->unk140 = *pos;
+    *(Vector4 *)(GetRenderWindow()->unk140 + 0x10) = *right;
+    *(Vector4 *)(GetRenderWindow()->unk140 + 0x20) = *up;
+    *(Vector4 *)(GetRenderWindow()->unk140 + 0x30) = *at;
+    m[0][0] = -at->x;
+    m[1][0] = -at->y;
+    m[2][0] = -at->z;
+    m[0][1] = up->x;
+    m[1][1] = up->y;
+    m[2][1] = up->z;
+    m[0][2] = -right->x;
+    m[1][2] = -right->y;
+    m[2][2] = -right->z;
+    m[3][0] = -(m[0][0] * pos->x + m[1][0] * pos->y + m[2][0] * pos->z);
+    m[3][1] = -(m[0][1] * pos->x + m[1][1] * pos->y + m[2][1] * pos->z);
+    m[3][2] = -(m[0][2] * pos->x + m[1][2] * pos->y + m[2][2] * pos->z);
+    m[2][3] = 0.0f;
+    m[1][3] = 0.0f;
+    m[0][3] = 0.0f;
+    m[3][3] = 1.0f;
+    memcpy(GetRenderWindow()->unk40, m, 0x40);
+    MultiplyMatrix4x4(GetRenderWindow()->unk0, GetRenderWindow()->unk40, GetRenderWindow()->unk80);
+    MultiplyMatrix4x4(GetRenderWindow()->unk80, GetRenderWindow()->unkC0, GetRenderWindow()->unk100);
+    MatrixToMtxTranspose(GXCameraSpace, GetRenderWindow()->unk80);
+    GXLoadPosMtxImm(GXCameraSpace, 0);
+    GXSetCurrentMtx(0);
+    Render_SetClipPlanes(GetRenderWindow()->fov);
+    g_state.unk93 = 0;
 }
 
 f32 Gfx_GetProjectionMatrix(void) {
