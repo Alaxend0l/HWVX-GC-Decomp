@@ -55,7 +55,7 @@ typedef struct THPPlayer {
     u32 unkD0;
     u8 padD4[4];
     s32 audioFrameNumber;
-    u8 padDC[4];
+    THPTextureSet *dispTextureSet;
     THPAudioBuffer *audioBuffer;
 } THPPlayer;
 
