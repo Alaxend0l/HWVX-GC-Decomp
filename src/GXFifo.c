@@ -23,6 +23,8 @@ typedef struct GXData {
     u16 vNum;
     u16 vLim;
     u32 cpEnable;
+    u32 cpStatus;
+    u32 cpClr;
 } GXData;
 
 extern GXData *gx;
