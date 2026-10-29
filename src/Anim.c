@@ -1,5 +1,27 @@
 #include "common.h"
 
+typedef struct Anim {
+    u8 pad0[8];
+    f32 minTime;
+    f32 maxTime;
+    u32 numBones;
+    u32 numKeysPerFrame;
+    u32 *mask;
+    u16 *flags;
+    f32 *times;
+    Vector4 *data;
+    u32 numFrames;
+    f32 *staticData;
+    u32 numCompound;
+} Anim;
+
+typedef struct AnimBone {
+    Quaternion rot;
+    f32 pos[3];
+    u32 info;
+} AnimBone;
+
+f32 Distance_Plane(void *plane, void *point);
 
 void AnimExtractKeyFrame_NonCompound(void) {
 
