@@ -216,8 +216,12 @@ typedef struct DestructibleInfo {
 } DestructibleInfo;
 
 typedef struct ThingRecord {
-  u8 pad00[0x10];
+  void *geometry;         /* 0x00 */
+  u8 noDraw;              /* 0x04 */
+  u8 pad05[0xB];          /* 0x05 */
   DestructibleInfo *info; /* 0x10 */
+  u8 pad14[4];            /* 0x14 */
+  u8 slaves[4];           /* 0x18 shared slaves */
 } ThingRecord;
 
 typedef struct Destructible {
