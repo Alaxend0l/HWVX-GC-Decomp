@@ -510,7 +510,7 @@ config.libs = [
             Object(Matching, "CARDDelete.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "CARDStat.c"),
             Object(NonMatching, "GXInit.c"),
-            Object(NonMatching, "GXFifo.c"),
+            Object(NonMatching, "GXFifo.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "GXAttr.c"),
             Object(NonMatching, "GXMisc.c"),
             Object(NonMatching, "GXGeometry.c"),
