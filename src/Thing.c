@@ -438,6 +438,35 @@ void Thing_DrawSlaves(Thing *thing) {
     }
 }
 
+void Thing_MoveSlaves(Thing *thing) {
+    Thing *slave;
+    Thing *next;
+    Quaternion quat __attribute__((aligned(16)));
+    Vector4 trans __attribute__((aligned(16)));
+    Vector4 pos __attribute__((aligned(16)));
+
+    for (slave = (Thing *)thing->unk88; slave != NULL && !(thing->flags & 0x201000); slave = next) {
+        next = *(Thing **)((u8 *)slave + 0xA4);
+        if (!(slave->flags & 0x201000)) {
+            if (!(slave->flags & 0x400000)) {
+                CopyVector(&quat, &slave->quat);
+                CopyVector(&trans, &slave->mtx.v[3]);
+                CopyVector(&pos, &slave->unk0);
+                QuaternionMult(&thing->quat, &quat, &slave->quat);
+                XformVec(&thing->mtx, &trans, &slave->mtx.v[3]);
+                slave->unk0 = thing->unk0;
+                (*(void (***)(Thing *))((u8 *)slave + 0x8C))[3](slave);
+                CopyVector(&slave->quat, &quat);
+                CopyVector(&slave->mtx.v[3], &trans);
+                CopyVector(&slave->unk0, &pos);
+            } else {
+                (*(void (***)(Thing *))((u8 *)slave + 0x8C))[3](slave);
+            }
+        }
+    }
+    ThingManagerList_RemoveReleasedThings(&thing->unk88);
+}
+
 void Thing_InitAllSlavesNow(s32 arg0) {
     M2C_UNK ThingManagerList_InitAllSlavesNow(s32);
     ThingManagerList_InitAllSlavesNow(arg0 + 0x88);
