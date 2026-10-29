@@ -78,6 +78,16 @@ void stateGoToRetry(void)
     DVDLowStopMotor(cbForStateGoToRetry);
 }
 
+void DCInvalidateRange(void *addr, u32 nBytes);
+void stateCoverClosed_CMD(DVDCommandBlock *block);
+void AlarmHandler(void *alarm, void *context)
+{
+    DVDReset();
+    DCInvalidateRange(tmpBuffer, 0x20);
+    LastState = (u32)stateCoverClosed_CMD;
+    stateCoverClosed_CMD(executing);
+}
+
 void stateMotorStopped(void)
 {
     void DVDLowWaitCoverClose(void (*cb)(u32));
