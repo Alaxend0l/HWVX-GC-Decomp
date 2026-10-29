@@ -81,6 +81,18 @@ u32 CreateSFX(void *desc) {
     return idx;
 }
 
+void SetSFXVol(s32 vol) {
+    Voice *voice;
+    u32 i;
+
+    g_sfxvol = vol;
+    for (voice = g_voice, i = 0x20; i != 0; voice++, i--) {
+        if (voice->kind == 1 && voice->state == 1) {
+            SetVoiceVol_(voice, g_sfxvol);
+        }
+    }
+}
+
 void ReleaseVoice(u32 id) {
     if (id == g_voice[(u8)id].id) {
         SetVoiceState_(&g_voice[(u8)id], 3);
