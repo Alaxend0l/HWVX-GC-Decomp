@@ -50,7 +50,7 @@ typedef struct MIDI_CHN
     s8 field_1F;
 } MIDI_CHN;
 
-static u8 g_song[0x24];
+u8 g_song[0x24];
 
 typedef struct MIDI_INST
 {
@@ -373,53 +373,459 @@ void SetMIDITrackVol(void)
 
 #pragma push
 #pragma use_lmw_stmw on
-void ProcessMIDI(s32 time) {
- extern u16 g_envelope[0x100];
- MIDI_VOICE *DestroyVoice(MIDI_VOICE *voice);
- u32 GetEnvRate(u16 arg0);
- void SetVoiceVol_(void *voice, s32 vol);
- MIDI_VOICE *voice; MIDI_CHN *chn; s32 i; u32 mask; s32 rate; u8 *p;
- if ((signed char)g_song[0x1F] != 0) { JumpToMarker(); g_song[0x1F] = 0; }
- for (chn = g_chn, i = 0x10; i != 0; i--)
-  for (voice = chn->voice; voice != NULL; voice = voice->next) {
-   if (voice->state2 == 3) goto L3;
-   voice->count += Mul16_(voice->rate, time);
-   if (voice->state2 != 3) {
-    if (voice->state >= 5) goto L3;
-    if (voice->state == 1) {
-     if (voice->count < 0x10000) {
-      rate = GetEnvRate(voice->prog->field_1A);
-      if ((rate + 1) != -0xFFFF) voice->rate = rate;
-      else { voice->count = 0; voice->field_38 = 0x7FFF; }
-      voice->state = 2;
-     }
-    } else { voice->state = 3; goto L3; }
-   }
-   if (voice->count < 0x10000) rate = g_envelope[(voice->count >> 1) & 0x1FFFFFE];
-   else rate = voice->count >> 1;
-   voice->field_38 = rate;
-   if (rate <= 0) { voice = DestroyVoice(voice); goto L3; }
-   SetVoiceVol_(voice, chn->vol);
-L3:;
-  }
- *(u32 *)(g_song + 8) += time;
- if (*(u32 *)(g_song + 4) != 0) {
-  *(u32 *)(g_song) += *(u32 *)(g_song + 8) / *(u32 *)(g_song + 4);
-  *(u32 *)(g_song + 8) %= *(u32 *)(g_song + 4);
- }
- p = (u8 *)*(u32 *)(g_song + 0x14);
- chn = (MIDI_CHN *)((u8 *)g_chn + (g_song[0x1D] << 5));
- mask = 0;
- while (1) {
-  if (*p < 0xf0) {
-   if ((signed char)*p >= 0) {
-    g_song[0x1C] = (*p & 0xf0) >> 4;
-    g_song[0x1D] = *p & 0xf;
-    chn = (MIDI_CHN *)((u8 *)g_chn + (g_song[0x1D] << 5));
-    switch (g_song[0x1C] - 8) { }
-   }
-  }
- }
+void ProcessMIDI(s32 time)
+{
+    extern u16 g_envelope[0x100];
+    extern u8 g_priority[0x10];
+    extern u8 g_musicTitle[0x20];
+    extern void *g_pHdr;
+    MIDI_VOICE *DestroyVoice(MIDI_VOICE *voice);
+    u32 GetEnvRate(u16 arg0);
+    void SetVoiceVol_(void *voice, s32 vol);
+    void SetVoicePriority_(void *voice);
+    MIDI_VOICE *GetVoice_(u8 type, u32 priority);
+    u32 GetNoteRate_(u32 rate, u8 note);
+    void StartVoice_(void *voice);
+    void SetGVol(void *chn);
+    u32 GetPitchWheel_(u8 note, u8 count);
+    s8 SetVoiceRate_(void *voice);
+    u32 ReadVar_(u8 **pp);
+    void ChannelOff(void *chn);
+    s32 Mul16_(s32, s32);
+    u32 rate;
+    MIDI_VOICE *voice;
+    MIDI_INST *inst;
+    u32 i;
+    u32 mask;
+    MIDI_CHN *chn;
+    u8 *p;
+
+    if ((s8)g_song[0x1F] != 0)
+    {
+        JumpToMarker();
+        g_song[0x1F] = 0;
+    }
+    for (chn = g_chn, i = 0x10; i != 0; chn++, i--)
+    {
+        voice = chn->voice;
+        while (voice != NULL)
+        {
+            if (voice->state == 3)
+            {
+                voice = voice->next;
+                continue;
+            }
+            voice->count += Mul16_(voice->rate, time);
+            switch (voice->state)
+            {
+            case 1:
+                if (voice->count < 0x10000)
+                {
+                    voice->field_38 = voice->count >> 1;
+                    break;
+                }
+                rate = GetEnvRate(voice->prog->field_1A);
+                if (rate != -1U)
+                {
+                    voice->rate = rate;
+                    voice->count = 0;
+                    voice->field_38 = 0x7FFF;
+                    voice->state = 2;
+                    break;
+                }
+                goto sustain;
+            case 2:
+                if (voice->count < 0x10000)
+                {
+                    voice->field_38 = g_envelope[voice->count >> 8];
+                    if (voice->field_38 > voice->prog->field_1C)
+                    {
+                        break;
+                    }
+                    voice->field_38 = voice->prog->field_1C;
+                }
+            sustain:
+                if (voice->field_38 > 0)
+                {
+                    voice->state = 3;
+                    break;
+                }
+                voice = DestroyVoice(voice);
+                continue;
+            case 4:
+                if (voice->count < 0x10000)
+                {
+                    voice->field_38 = g_envelope[voice->count >> 8];
+                    if (voice->field_38 > 0)
+                    {
+                        break;
+                    }
+                }
+                voice = DestroyVoice(voice);
+                continue;
+            }
+            SetVoiceVol_(voice, chn->vol);
+            voice = voice->next;
+        }
+    }
+restart:
+    *(u32 *)(g_song + 8) += time;
+    if (*(u32 *)(g_song + 4) != 0)
+    {
+        *(u32 *)g_song += *(u32 *)(g_song + 8) / *(u32 *)(g_song + 4);
+        *(u32 *)(g_song + 8) %= *(u32 *)(g_song + 4);
+    }
+    p = *(u8 **)(g_song + 0x14);
+    chn = &g_chn[g_song[0x1D]];
+    mask = 0;
+    while (*(u32 *)(g_song + 0x18) <= *(u32 *)g_song)
+    {
+    top:
+        if (*p < 0xF0)
+        {
+            if ((s8)*p < 0)
+            {
+                g_song[0x1C] = *p >> 4;
+                g_song[0x1D] = *p++ & 0xF;
+                chn = &g_chn[g_song[0x1D]];
+            }
+            switch (g_song[0x1C])
+            {
+            case 8:
+            noteoff:
+                for (voice = chn->voice; voice != NULL; voice = voice->next)
+                {
+                    if (voice->byte2 == (s8)*p)
+                    {
+                        break;
+                    }
+                }
+                if (voice != NULL)
+                {
+                    if (chn->field_1F)
+                    {
+                        voice->byte17 = 1;
+                    }
+                    else
+                    {
+                        ReleaseMIDIVoice(voice);
+                    }
+                }
+                p += 2;
+                break;
+            case 9:
+                if ((s8)p[1] == 0)
+                {
+                    goto noteoff;
+                }
+                if (!chn->field_4)
+                {
+                    p += 2;
+                    break;
+                }
+                if (g_song[0x1D] != 9)
+                {
+                    inst = g_pProg[chn->prog];
+                    if (inst != NULL)
+                    {
+                        while (inst->prog == chn->prog)
+                        {
+                            if ((s8)*p >= inst->lo && (s8)*p <= inst->hi)
+                            {
+                                break;
+                            }
+                            inst++;
+                        }
+                        if (inst->prog != chn->prog)
+                        {
+                            inst = NULL;
+                        }
+                    }
+                }
+                else
+                {
+                    inst = g_pDrum[(s8)*p];
+                }
+                if (inst != NULL)
+                {
+                    for (voice = chn->voice; voice != NULL; voice = voice->next)
+                    {
+                        if (voice->byte2 == (s8)*p)
+                        {
+                            break;
+                        }
+                    }
+                    if (voice == NULL)
+                    {
+                        voice = GetVoice_(0, g_priority[g_song[0x1D]] + 15);
+                        if (voice == NULL)
+                        {
+                            p += 2;
+                            break;
+                        }
+                        voice->next = chn->voice;
+                        chn->voice = voice;
+                        voice->pitch2 = chn->pitch;
+                    }
+                    else
+                    {
+                        if (voice->state == 4)
+                        {
+                            voice->priority += 15;
+                            SetVoicePriority_(voice);
+                        }
+                        if (voice->prog == inst)
+                        {
+                            goto start;
+                        }
+                    }
+                    voice->channel = g_song[0x1D];
+                    voice->byte2 = *p;
+                    voice->byte2C = inst->field_11;
+                    voice->field_20 = inst->field_0;
+                    voice->field_24 = inst->field_8;
+                    voice->field_28 = inst->field_4;
+                    voice->prog = inst;
+                start:
+                    voice->noteRate = GetNoteRate_(inst->field_C, *p);
+                    rate = GetEnvRate(inst->field_18);
+                    if (rate != -1U)
+                    {
+                        voice->state = 1;
+                        voice->field_38 = 0;
+                    }
+                    else
+                    {
+                        rate = GetEnvRate(inst->field_1A);
+                        if (rate != -1U)
+                        {
+                            voice->state = 2;
+                            voice->field_38 = 0x7FFF;
+                        }
+                        else
+                        {
+                            voice->state = 3;
+                            rate = 0;
+                            voice->field_38 = inst->field_1C;
+                        }
+                    }
+                    voice->count = 0;
+                    voice->rate = rate;
+                    voice->field_3C = (s8)p[1] << 8;
+                    voice->field_40 = chn->field_C;
+                    voice->field_44 = -0x7FFF;
+                    voice->field_48 = chn->field_10;
+                    StartVoice_(voice);
+                    SetVoiceVol_(voice, chn->vol);
+                    p += 2;
+                    break;
+                }
+                p += 2;
+                break;
+            case 0xA:
+                p += 2;
+                break;
+            case 0xB:
+                switch ((s8)*p++)
+                {
+                case 0x01:
+                    chn->field_1E = *p;
+                    break;
+                case 0x06:
+                    switch (chn->field_8)
+                    {
+                    case 0:
+                        chn->count = *p;
+                        break;
+                    }
+                    break;
+                case 0x07:
+                    chn->field_B = *p;
+                    SetGVol(chn);
+                    mask |= 1 << g_song[0x1D];
+                    break;
+                case 0x0A:
+                    mask |= 1 << g_song[0x1D];
+                    chn->field_C = (s16)(((s8)*p ^ 0x40) << 9);
+                    break;
+                case 0x0B:
+                    chn->field_A = *p;
+                    SetGVol(chn);
+                    mask |= 1 << g_song[0x1D];
+                    break;
+                case 0x40:
+                    if (chn->field_1F && (s8)*p < 0x40)
+                    {
+                        for (voice = chn->voice; voice != NULL; voice = voice->next)
+                        {
+                            if (voice->byte17)
+                            {
+                                ReleaseMIDIVoice(voice);
+                            }
+                        }
+                    }
+                    chn->field_1F = (s8)*p >> 6;
+                    break;
+                case 0x5B:
+                    chn->field_10 = (s8)*p << 8;
+                    for (voice = chn->voice; voice != NULL; voice = voice->next)
+                    {
+                        voice->field_48 = chn->field_10;
+                    }
+                    mask |= 1 << g_song[0x1D];
+                    break;
+                case 0x64:
+                    chn->field_8 = (chn->field_8 & ~0x7F) | (s8)*p;
+                    break;
+                case 0x65:
+                    chn->field_8 = ((s8)*p << 7) | (chn->field_8 & 0x7F);
+                    break;
+                case 0x6E:
+                case 0x6F:
+                case 0x70:
+                    if (g_song[0x1E] != 0)
+                    {
+                        JumpToMarker();
+                        goto restart;
+                    }
+                    if (p[-1] == 0x70)
+                    {
+                        i = (s8)*p;
+                        if (i < 0x40 && *(u32 *)g_mrk[i] != 0)
+                        {
+                            g_song[0x1E] = i;
+                            JumpToMarker();
+                            goto restart;
+                        }
+                    }
+                    break;
+                case 0x79:
+                    chn->field_A = 0x7F;
+                    chn->field_B = 0x64;
+                    chn->field_C = 0;
+                    chn->field_10 = 0;
+                    chn->count = 2;
+                    chn->pitch = 0x10000;
+                    if (chn->field_1F)
+                    {
+                        for (voice = chn->voice; voice != NULL; voice = voice->next)
+                        {
+                            if (voice->byte17)
+                            {
+                                ReleaseMIDIVoice(voice);
+                            }
+                        }
+                        chn->field_1F = 0;
+                    }
+                    break;
+                case 0x7A:
+                    break;
+                case 0x7B:
+                    voice = chn->voice;
+                    if (chn->field_1F)
+                    {
+                        for (; voice != NULL; voice = voice->next)
+                        {
+                            voice->byte17 = 1;
+                        }
+                    }
+                    else
+                    {
+                        ChannelOff(chn);
+                    }
+                    break;
+                }
+                p++;
+                break;
+            case 0xC:
+                chn->prog = *p++;
+                break;
+            case 0xD:
+                p++;
+                break;
+            case 0xE:
+                chn->note = p[1];
+                chn->pitch = GetPitchWheel_(chn->note, chn->count);
+                p += 2;
+                for (voice = chn->voice; voice != NULL; voice = voice->next)
+                {
+                    voice->pitch2 = chn->pitch;
+                    SetVoiceRate_(voice);
+                }
+                break;
+            }
+        }
+        else if ((*p & 0xF) == 0xF)
+        {
+            p++;
+            switch ((s8)*p++)
+            {
+            case 0x00:
+                break;
+            case 0x03:
+                rate = ReadVar_(&p);
+                memcpy(g_musicTitle, p, rate < 0x20 ? rate : 0x1F);
+                p += rate;
+                break;
+            case 0x2F:
+                p++;
+                *(u32 *)(g_song + 0x18) = -1;
+                continue;
+            case 0x51:
+                p++;
+                *(u32 *)(g_song + 0xC) = (p[0] << 16) | (p[1] << 8) | p[2];
+                p += 3;
+                *(u32 *)(g_song + 4) = (u32)Mul16_(*(u32 *)(g_song + 0xC), *(u32 *)(g_song + 0x10)) / *(u16 *)((u8 *)g_pHdr + 0x18);
+                break;
+            case 0x54:
+            case 0x58:
+            case 0x59:
+                p += *p;
+                p++;
+                break;
+            default:
+                p += ReadVar_(&p);
+                break;
+            }
+        }
+        else
+        {
+            switch (*p++ & 0xF)
+            {
+            case 0:
+            case 4:
+            case 5:
+                while ((s8)*p++ >= -8)
+                {
+                }
+                if ((s8)p[-1] != 0xF7)
+                {
+                    p--;
+                    goto top;
+                }
+                break;
+            case 2:
+                p += 2;
+                break;
+            case 1:
+            case 3:
+                p++;
+                break;
+            }
+        }
+        *(u32 *)(g_song + 0x18) += ReadVar_(&p);
+    }
+    for (chn = g_chn; mask != 0; mask >>= 1, chn++)
+    {
+        if (mask & 1)
+        {
+            for (voice = chn->voice; voice != NULL; voice = voice->next)
+            {
+                SetVoiceVol_(voice, chn->vol);
+            }
+        }
+    }
+    *(u8 **)(g_song + 0x14) = p;
 }
 #pragma pop
 
