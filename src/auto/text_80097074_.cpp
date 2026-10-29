@@ -19,3 +19,5 @@ public:
 };
 
 }
+
+std::bad_exception::~bad_exception() {}
