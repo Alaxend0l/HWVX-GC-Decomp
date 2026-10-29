@@ -29,6 +29,18 @@ s32 DSPCheckInit(void) {
     return __DSP_init_flag;
 }
 
+void DSPReset(void) {
+    extern s32 __DSP_init_flag;
+    BOOL old;
+    u16 tmp;
+
+    old = OSDisableInterrupts();
+    tmp = __DSPRegs[5];
+    __DSPRegs[5] = (u16)((tmp & ~(0x08 | 0x20 | 0x80)) | 0x800 | 0x01);
+    __DSP_init_flag = 0;
+    OSRestoreInterrupts(old);
+}
+
 void DSPHalt(void) {
     BOOL old;
     u16 tmp;
