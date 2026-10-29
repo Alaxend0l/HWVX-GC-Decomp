@@ -57,3 +57,14 @@ s32 __OSSyncSram(void)
 {
     return Scb.sync;
 }
+
+u32 OSGetSoundMode(void) {
+    u8 *sram;
+    u32 mode;
+
+    sram = __OSLockSram();
+    mode = (sram[0x13] & 4) ? 1 : 0;
+    __OSUnlockSram(0);
+    return mode;
+}
+
