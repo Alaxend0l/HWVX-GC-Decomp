@@ -22,3 +22,19 @@ extern CARDControl __CARDBlock[2];
 
 s32 __CARDReadSegment(s32 chan, CARDCallback callback);
 void BlockReadCallback(s32 chan, s32 result);
+
+#pragma peephole on
+s32 __CARDRead(s32 chan, u32 addr, s32 length, void *dst, CARDCallback callback)
+{
+    CARDControl *card;
+
+    card = &__CARDBlock[chan];
+    if (!card->attached) {
+        return -3;
+    }
+    card->xferCallback = callback;
+    card->repeat = (u32)length / 512;
+    card->addr = (void *)addr;
+    card->offset = (s32)dst;
+    return __CARDReadSegment(chan, BlockReadCallback);
+}
