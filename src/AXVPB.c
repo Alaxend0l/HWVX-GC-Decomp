@@ -33,6 +33,21 @@ void *__AXGetPBs(void) {
     return __AXPB;
 }
 
+void __AXSetPBDefault(AXVPB *p)
+{
+    p->state = 0;
+    p->itdFlag = 0;
+    p->sync = 0xA4;
+    p->updateCounter = 0;
+    p->updateMS = 0;
+    p->updateWrite = p->updateData;
+    p->pb_unk184 = 0;
+    p->pb_unk182 = 0;
+    p->pb_unk180 = 0;
+    p->pb_unk17E = 0;
+    p->pb_unk17C = 0;
+}
+
 void __AXVPBQuit(void) {
 }
 
