@@ -238,7 +238,7 @@ typedef struct Destructible {
   void *player;        /* 0x94 */
   u8 pad98[0x28];      /* 0x98 */
   ThingRecord *record; /* 0xC0 */
-  u8 padC4[4];         /* 0xC4 */
+  f32 drawDist;        /* 0xC4 */
   s32 deathTimer;      /* 0xC8 ms until a dead destructible is released */
   ConvexHull *hull;    /* 0xCC */
   OBox *orientedBox;   /* 0xD0 */
