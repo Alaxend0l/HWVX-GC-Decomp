@@ -31,6 +31,17 @@ typedef struct GXData {
 
 extern GXData *gx;
 
+void GXSetTevSwapMode(s32 stage, s32 ras_sel, s32 tex_sel) {
+    u32 *pTevReg;
+
+    pTevReg = &gx->teva[stage];
+    *pTevReg = ((u32)*pTevReg & ~0x3) | (u32)ras_sel;
+    *pTevReg = ((u32)*pTevReg & ~0xC) | ((u32)tex_sel << 2);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = *pTevReg;
+    gx->bpSentNot = 0;
+}
+
 void GXSetAlphaCompare(s32 comp0, u8 ref0, s32 op, s32 comp1, u8 ref1) {
     u32 reg = 0;
 
