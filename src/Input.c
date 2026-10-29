@@ -2,6 +2,8 @@
 
 #pragma use_lmw_stmw on
 
+VirtualPad g_VirtualPad[4];
+
 s32 Input_GetPlayerDevice(s32 player) {
     s16 i;
 
