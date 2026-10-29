@@ -176,6 +176,52 @@ s32 TRKTargetAddStopInfo(void *b) {
     return err;
 }
 
+s32 TRKTargetInterrupt(TRKEvent *event) {
+    s32 TRKDoNotifyStopped(u8 cmd);
+    s32 result = 0;
+    s32 done;
+
+    switch (event->eventType) {
+    case 3:
+    case 4:
+        if (gTRKStepStatus_800DA0B4.active) {
+            gTRKCPUState.stepMode &= ~0x400;
+            done = 1;
+            if (gTRKStepStatus_800DA0B4.active && (u16)gTRKCPUState.field_2F8 == 0xD00) {
+                switch (gTRKStepStatus_800DA0B4.type) {
+                case 0:
+                    if (gTRKStepStatus_800DA0B4.count > 0) {
+                        done = 0;
+                    }
+                    break;
+                case 1:
+                    if (gTRKCPUState.regs.pc >= gTRKStepStatus_800DA0B4.rangeStart &&
+                        gTRKCPUState.regs.pc <= gTRKStepStatus_800DA0B4.rangeEnd) {
+                        done = 0;
+                    }
+                    break;
+                }
+            }
+            if (done) {
+                gTRKStepStatus_800DA0B4.active = 0;
+            } else {
+                gTRKStepStatus_800DA0B4.active = 1;
+                gTRKCPUState.stepMode |= 0x400;
+                if (gTRKStepStatus_800DA0B4.type == 0 || gTRKStepStatus_800DA0B4.type == 0x10) {
+                    gTRKStepStatus_800DA0B4.count--;
+                }
+                gTRKState.field_98 = 0;
+            }
+        }
+        if (gTRKStepStatus_800DA0B4.active == 0) {
+            gTRKState.field_98 = 1;
+            result = TRKDoNotifyStopped(0x90);
+        }
+        break;
+    }
+    return result;
+}
+
 void TRKPostInterruptEvent(void)
 {
     void TRKConstructEvent(void *event, s32 eventType);
