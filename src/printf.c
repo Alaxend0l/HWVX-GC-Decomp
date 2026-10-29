@@ -32,6 +32,19 @@ typedef struct print_format {
     s32 precision;
 } print_format;
 
+#define SIGDIGLEN 36
+
+typedef struct decimal {
+    char sign;
+    char unk1;
+    s16 exp;
+    struct {
+        u8 length;
+        u8 text[SIGDIGLEN];
+        u8 unk25;
+    } sig;
+} decimal;
+
 const char *parse_format(const char *format_string, char *arg, print_format *format);
 char *longlong2str(s64 num, char *buff, print_format format);
 char *long2str(s32 num, char *buff, print_format format);
