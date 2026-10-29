@@ -15,6 +15,9 @@ typedef struct InputUnk108 {
     u8 unkB;
 } InputUnk108;
 
+/* TODO: these belong in .bss (original names, in order: rumbleStatus, g_mouse, g_padDown, g_padUp,
+ * g_pKeyToDI, ngcPad, ngcPadLast, Wheels). Plain statics get laid out in first-use order, which breaks
+ * Input_Init's offsets; the {0} initialisers keep declaration order but put them in .data. */
 static RumbleStatus rumbleStatus[4] = {0};
 static s32 s_rumbleTime[4] = {0};
 static u8 s_unk30[0x40] = {0};
