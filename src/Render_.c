@@ -159,6 +159,12 @@ void Render_StateFogEnable(s32 enable) {
     }
 }
 
+void Gfx_GetRenderStats(RenderStats *stats) {
+    g_renderStats.numTris = g_pGDL->numTris;
+    g_renderStats.debugTriCount = g_debugTriCount;
+    *stats = g_renderStats;
+}
+
 void Render_ClearScreen(void) {
 
 }
