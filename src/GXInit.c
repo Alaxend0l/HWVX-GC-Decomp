@@ -10,3 +10,12 @@ typedef struct GXData {
 } GXData;
 
 extern GXData *gx;
+
+#pragma peephole off
+GXTlutRegion *__GXDefaultTlutRegionCallback(u32 idx)
+{
+    if (idx >= 20) {
+        return NULL;
+    }
+    return &gx->TlutRegions[idx];
+}
