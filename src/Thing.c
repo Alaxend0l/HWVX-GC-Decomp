@@ -18,6 +18,31 @@ typedef struct Thing {
     s32 unk94;         /* 0x94 */
 } Thing;
 
+s32 Thing_Init(Thing *thing, s32 arg1) {
+    extern Matrix4 g_identity;
+
+    thing->unk0.z = 0.0f;
+    thing->unk0.y = 0.0f;
+    thing->unk0.x = 0.0f;
+    thing->unk60.z = 0.0f;
+    thing->unk60.y = 0.0f;
+    thing->unk60.x = 0.0f;
+    thing->unk70 = 0.0f;
+    thing->quat.w = 1.0f;
+    thing->quat.x = 0.0f;
+    thing->quat.y = 0.0f;
+    thing->quat.z = 0.0f;
+    thing->flags = 0;
+    thing->unk80 = 0;
+    thing->mtx = g_identity;
+    thing->unk94 = 0;
+    thing->unk82 = 0xFF;
+    thing->unk83 = 0xFF;
+    thing->unk88 = 0;
+    thing->unk84 = 0;
+    return 1;
+}
+
 void Thing_Release(s32 thing) {
     M2C_UNK Grid_FreeObject(void *);
     M2C_UNK ThingManagerList_EmancipateSlaves(s32, s32);
