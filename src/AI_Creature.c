@@ -224,6 +224,18 @@ void AI_Creature_PopulateVolumes(void) {
     } while (v != gs_currentVolume);
 }
 
+static inline void AI_Creature_InitSpawnVolumes(void) {
+    void *VolumeManager_GetVolumeTypeByIndex(u32 type, u32 index);
+    void MemClr32(void *dst, u32 size);
+    u32 i;
+
+    gs_currentVolume = 0;
+    MemClr32(gs_aSpawnVolumes, g_volumeTotal * sizeof(SpawnVolume));
+    for (i = 0; i < g_volumeTotal; i++) {
+        gs_aSpawnVolumes[i].volume = VolumeManager_GetVolumeTypeByIndex(5, i);
+    }
+}
+
 static inline void AI_Creature_UpdateNearestCars(void) {
     extern NearestCar gs_aNearestCars[8];
     void PSVECScale(void *src, void *dst, f32 scale);
@@ -291,28 +303,23 @@ void AI_Creature_AsyncProcess(void) {
     void PSVECScale(void *src, void *dst, f32 scale);
     void PSVECAdd(void *a, void *b, void *out);
     f32 PSVECSquareDistance(void *a, void *b);
-    f32 PSVECSquareMag(void *v);
     s32 VolumeManager_GetNumVolumesOfType(u32 type);
     void *VolumeManager_GetVolumeTypeByIndex(u32 type, u32 index);
     void MemClr32(void *dst, u32 size);
     u32 World_GetTotalTiles_Creature(void);
     void *World_GetTileCreature(u32 index);
     void *PlayerManager_NewAIPlayer(u8 *desc);
-    s32 ThingManager_GetActiveCars();
     s32 AI_Creature_Deactivate(u8 *creature);
     s8 AI_Creature_Spawn(u8 *creature, u8 *spawner, u32 index);
     void AI_Creature_PopulateVolumes(void);
     static u32 gs_creatureTile;
-    static u32 s_currentCar;
     u8 *creature;
     u8 *tile;
-    u8 *cam;
     u32 j;
-    u32 i;
     u32 n;
-    u32 count;
+    u8 *cam;
+    u32 i;
     u8 *player;
-    u8 *cars[8];
     AIPlayerDesc desc;
     Vec p;
 
@@ -347,27 +354,7 @@ update:
     if (gs_pCurrentAICreature == NULL) {
         return;
     }
-    count = ThingManager_GetActiveCars(cars, 9);
-    if (count != 0) {
-        for (j = 0; j < count; j++) {
-            gs_aNearestCars[j].car = cars[j];
-            PSVECScale(cars[j], &gs_aNearestCars[j].pos, 0.18f);
-            PSVECAdd(cars[j] + 0x40, &gs_aNearestCars[j].pos, &gs_aNearestCars[j].pos);
-        }
-        if (j < 8) {
-            gs_aNearestCars[j].car = NULL;
-        }
-        if (s_currentCar >= count) {
-            s_currentCar = 0;
-        }
-        gs_aNearestCars[s_currentCar].speed = PSVECSquareMag(gs_aNearestCars[s_currentCar].car);
-        if (gs_aNearestCars[s_currentCar].speed > 1.0f) {
-            gs_aNearestCars[s_currentCar].range = 400.0f * (1.0f - gs_aNearestCars[s_currentCar].speed / 100000.0f);
-        } else {
-            gs_aNearestCars[s_currentCar].range = 400.0f;
-        }
-        s_currentCar++;
-    }
+    AI_Creature_UpdateNearestCars();
     for (n = 0; n < 10; n++) {
         if (gs_pCurrentAICreature[0xCD] != 0 && *(u32 *)(gs_pCurrentAICreature + 0xF8) == 0 &&
             !(s8)AI_Creature_Deactivate(gs_pCurrentAICreature)) {
@@ -391,7 +378,7 @@ update:
             tile = World_GetTileCreature(gs_creatureTile);
             if (*(u32 *)(tile + 0x20) != 0 && *(u8 **)(tile + 0x1C) == NULL) {
                 cam = g_cameraManager;
-                for (i = 0; i < g_cameraManager[0x640]; cam += 0x190, i++) {
+                for (j = 0; j < g_cameraManager[0x640]; cam += 0x190, j++) {
                     PSVECScale(cam + 0x80, &p, 150.0f);
                     PSVECAdd(cam + 0x60, &p, &p);
                     if (360000.0f > PSVECSquareDistance(&p, tile)) {
