@@ -21,3 +21,15 @@ extern GXData *gx;
 
 void __GXSetDirtyState(void);
 void __GXSendFlushPrim(void);
+
+void GXCallDisplayList(void *list, u32 nbytes) {
+    if (gx->dirtyState != 0) {
+        __GXSetDirtyState();
+    }
+    if (*(u32 *)&gx->vNumNot == 0) {
+        __GXSendFlushPrim();
+    }
+    GXWGFifo.u8 = 0x40;
+    GXWGFifo.u32 = (u32)list;
+    GXWGFifo.u32 = nbytes;
+}
