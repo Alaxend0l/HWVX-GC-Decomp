@@ -368,7 +368,7 @@ config.libs = [
             Object(NonMatching, "GameRules.c"),
             Object(NonMatching, "GameSpecificInterfaces.c"),
             Object(NonMatching, "FlashHolder.c"),
-            Object(NonMatching, "BulletHoles.c"),
+            Object(Matching, "BulletHoles.c"),
             Object(Matching, "Motion.c"),
             Object(NonMatching, "PPCArch.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "OS.c"),
