@@ -67,8 +67,86 @@ static inline void Grid_GetCell(Vector4 *pos, s32 *cellX, s32 *cellZ) {
     *cellZ = fz;
 }
 
+void Grid_Init(Vector4 *min, Vector4 *max, u32 numX, u32 numZ) {
+    u16 i;
+    u16 j;
+
+    gGridManager.numX = numX;
+    gGridManager.numZ = numZ;
+    gGridManager.numCells = numX * numZ;
+    gGridManager.min = *min;
+    gGridManager.max = *max;
+    gGridManager.cellSizeX = (max->x - min->x) / (f32)numX;
+    gGridManager.cellSizeZ = (max->z - min->z) / (f32)numZ;
+    for (i = 0; i < 7; i++) {
+        for (j = 0; j < gGridManager.numCells; j++) {
+            gGridManager.cells[i][j].count = 0;
+            gGridManager.cells[i][j].head = NULL;
+        }
+    }
+    gGridManager.freeNodes = NULL;
+    for (i = 0; i < 4048; i++) {
+        gGridManager.nodes[i].next = gGridManager.freeNodes;
+        gGridManager.freeNodes = &gGridManager.nodes[i];
+    }
+    gGridManager.freeObjects = NULL;
+    gGridManager.numFreeObjects = 0;
+    for (i = 0; i < 1024; i++) {
+        gGridManager.objects[i].next = gGridManager.freeObjects;
+        gGridManager.freeObjects = &gGridManager.objects[i];
+        gGridManager.numFreeObjects++;
+    }
+}
+
 void Grid_Release(void) {
 
+}
+
+void Dprintf(const char *fmt, ...);
+u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults) {
+    u32 count;
+    u32 x;
+    u32 z;
+    u32 type;
+    GridNode *node;
+    u32 i;
+    s8 found;
+    u32 x0;
+    u32 z0;
+    u32 x1;
+    u32 z1;
+
+    count = 0;
+    Grid_GetCell(min, (s32 *)&x0, (s32 *)&z0);
+    Grid_GetCell(max, (s32 *)&x1, (s32 *)&z1);
+    for (x = x0; x <= x1; x++) {
+        for (z = z0; z <= z1; z++) {
+            for (type = 0; type < 7; type++) {
+                if (typeMask & (1 << type)) {
+                    node = gGridManager.cells[type][x * gGridManager.numZ + z].head;
+                    while (node != NULL) {
+                        found = 0;
+                        for (i = 0; i < count && !found; i++) {
+                            if ((results + i)->id == ((GridResult *)node)->id) {
+                                found = 1;
+                            }
+                        }
+                        if (!found) {
+                            if (count < maxResults) {
+                                results[count] = *(GridResult *)node;
+                                count++;
+                            } else {
+                                Dprintf("%d\n", count);
+                                break;
+                            }
+                        }
+                        node = node->next;
+                    }
+                }
+            }
+        }
+    }
+    return count;
 }
 
 u32 Grid_GetNearestObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults, s8 (*filter)(GridNode *, s32), s32 filterArg) {
