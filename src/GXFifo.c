@@ -76,3 +76,9 @@ void __GXWriteFifoIntEnable(u8 hiWatermarkEn, u8 loWatermarkEn) {
     __cpReg[1] = gx->cpEnable;
 }
 
+void __GXWriteFifoIntReset(u8 hiWatermarkClr, u8 loWatermarkClr) {
+    gx->cpClr = (gx->cpClr & ~1) | (u32)hiWatermarkClr;
+    gx->cpClr = (gx->cpClr & ~2) | ((u32)loWatermarkClr << 1);
+    __cpReg[2] = gx->cpClr;
+}
+
