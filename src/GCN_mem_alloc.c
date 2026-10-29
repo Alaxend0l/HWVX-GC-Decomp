@@ -26,3 +26,18 @@ static inline void InitDefaultHeap(void) {
     OSSetCurrentHeap(OSCreateHeap(arenaLo, arenaHi));
     OSSetArenaLo(arenaLo = arenaHi);
 }
+
+void __sys_free(void *ptr) {
+    if (__OSCurrHeap == -1) {
+        InitDefaultHeap();
+    }
+    OSFreeToHeap(__OSCurrHeap, (s32)ptr);
+}
+
+void *__sys_alloc(u32 size) {
+    if (__OSCurrHeap == -1) {
+        InitDefaultHeap();
+    }
+    return (void *)OSAllocFromHeap(__OSCurrHeap, size);
+}
+
