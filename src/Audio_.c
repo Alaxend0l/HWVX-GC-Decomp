@@ -111,7 +111,6 @@ void Audio_Update_(void) {
 #pragma push
 #pragma optimization_level 1
 u32 HAllocA_(s32 size) {
-    extern MemBlk g_memblk[];
     extern s32 g_last;
     extern u32 g_heap;
 
