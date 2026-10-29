@@ -90,8 +90,11 @@ typedef struct DisplayList {
 } DisplayList;
 
 typedef struct GDLRect {
-    u8 unk0[0x84];
+    u8 unk0[0x83];
+    u8 window;
 } GDLRect;
+
+extern s32 g_currentWindow;
 
 typedef struct GDL {
     u32 numAlphaEntries;
