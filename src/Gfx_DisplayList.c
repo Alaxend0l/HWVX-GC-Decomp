@@ -216,7 +216,9 @@ typedef struct GDL {
     u8 unk48[0x4C - 0x48];
     u32 numLightStates;
     u32 numCachedMatrices;
-    u8 unk54[0x6C - 0x54];
+    u32 numDrawEntries;
+    u32 numLODEntries;
+    u8 unk5C[0x6C - 0x5C];
     u32 numEnvmapStates;
     u32 num2DFXLines;
     u32 numMatrices;
