@@ -57,6 +57,25 @@ BOOL DVDClose(void *fileInfo) {
     return 1;
 }
 
+void OSPanic(const char *file, int line, const char *msg, ...);
+BOOL DVDReadAbsAsyncPrio(DVDCommandBlock *block, void *addr, s32 length, s32 offset, DVDCBCallback callback, s32 prio);
+static void cbForReadAsync(s32 result, DVDCommandBlock *block);
+#pragma push
+#pragma scheduling on
+#pragma peephole on
+BOOL DVDReadAsyncPrio(DVDFileInfo *fileInfo, void *addr, s32 length, s32 offset, DVDCallback callback, s32 prio) {
+    if (!((0 <= offset) && (offset < fileInfo->length))) {
+        OSPanic(__FILE__, 0x2E3, "DVDReadAsync(): specified area is out of the file  ");
+    }
+    if (!((0 <= offset + length) && (offset + length < fileInfo->length + 32))) {
+        OSPanic(__FILE__, 0x2E9, "DVDReadAsync(): specified area is out of the file  ");
+    }
+    fileInfo->callback = callback;
+    DVDReadAbsAsyncPrio(&fileInfo->cb, addr, length, (s32)(fileInfo->startAddr + offset), cbForReadAsync, prio);
+    return TRUE;
+}
+#pragma pop
+
 #pragma push
 #pragma peephole on
 #pragma scheduling off
