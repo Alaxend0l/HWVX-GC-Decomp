@@ -226,6 +226,10 @@ void *Gfx_GetWorldMatrixState(u32 index) {
     return g_pGDL->matrices[index];
 }
 
+void Gfx_GetCameraPosition(Vector4 *pos) {
+    *pos = GetRenderWindow()->cameraPos;
+}
+
 void Gfx_GetCameraVector(Vector4 *right, Vector4 *up, Vector4 *at) {
     *right = GetRenderWindow()->cameraRight;
     *up = GetRenderWindow()->cameraUp;
