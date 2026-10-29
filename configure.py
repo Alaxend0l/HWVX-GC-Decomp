@@ -572,7 +572,7 @@ config.libs = [
             Object(NonMatching, "ansi_fp.c"),
             Object(NonMatching, "buffer_io.c"),
             Object(NonMatching, "ctype.c"),
-            Object(NonMatching, "direct_io.c"),
+            Object(NonMatching, "direct_io.c", mw_version="GC/1.3"),
             Object(NonMatching, "file_io.c"),
             Object(NonMatching, "FILE_POS.C"),
             Object(NonMatching, "mbstring.c"),
