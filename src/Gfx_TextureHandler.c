@@ -24,6 +24,13 @@ void *memset(void *dst, int c, u32 n);
 void Render_CreateTextureSlot(u32 id, s32 arg1, Texture *texture);
 void Render_DestroyTextureSlot(u32 id);
 
+void Gfx_SetTextureWrapMode(u16 id, u16 mode) {
+    Texture *tex = &m_texture[id];
+
+    tex->wrapMode = mode;
+    Render_CreateTextureSlot(id, 1, tex);
+}
+
 void Gfx_LoadPalettes_RAM(void) {
 
 }
