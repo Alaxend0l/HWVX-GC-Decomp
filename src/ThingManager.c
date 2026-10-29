@@ -236,6 +236,160 @@ void Thing_DrawSharedSlaves(u8 *thing, u32 *triggers) {
     }
 }
 
+void ThingManagerList_TriggerSlaves(ThingHeader **list, struct SlaveTrigger {
+        Vector4 pos;
+        u8 type;
+        u8 pad11;
+        u16 id;
+        u8 pad14[4];
+        void *data;
+    } *trigger, Vector4 *a, Vector4 *b, Vector4 *c, u32 player) {
+    typedef struct SharedSlaves {
+        u32 active;
+        u8 pad4[4];
+        u8 *info;
+    } SharedSlaves;
+    extern Vector4 g_zeroVector;
+    extern void *g_pSourcePlayer;
+    ThingHeader *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
+    u32 ViewManager_GetViewFormat(void);
+    struct { Vector4 a; Vector4 b; Vector4 c; Vector4 zero; void *data; void *player; f32 f; } p1 __attribute__((aligned(16)));
+    struct { Vector4 a; Vector4 b; Vector4 c; void *data; void *player; f32 f; } p2 __attribute__((aligned(16)));
+    struct { void *data; u8 pad4[0xC]; Vector4 pos; s32 flag; void *player; } p5 __attribute__((aligned(16)));
+    struct { void *data; u8 pad4[0xC]; Vector4 pos; s32 flag; void *player; } p6 __attribute__((aligned(16)));
+    struct { Vector4 a; Vector4 b; Vector4 c; void *data; s32 time; void *player; f32 f; } p7 __attribute__((aligned(16)));
+    struct { Vector4 unk; Vector4 a; Vector4 b; void *data; s32 flag; } p8 __attribute__((aligned(16)));
+    struct { Vector4 a; void *data; u8 flag; } p3 __attribute__((aligned(16)));
+    struct { void *data; u8 pad4[0xC]; Vector4 a; } p9 __attribute__((aligned(16)));
+    Vector4 p4 __attribute__((aligned(16)));
+    u8 id;
+    u8 pl;
+    SharedSlaves *shared;
+    ThingHeader *slave = NULL;
+    void *data;
+    ThingHeader *thing;
+
+    switch (trigger->type) {
+    case 1:
+        p1.data = trigger->data;
+        p1.c = *c;
+        p1.player = g_pSourcePlayer;
+        p1.zero = g_zeroVector;
+        if (p1.data != NULL && *(u32 *)p1.data != 0) {
+            p1.player = g_pSourcePlayer;
+            p1.f = 0.0f;
+            p1.a = *a;
+            p1.b = *b;
+            slave = ThingManager_DARYL_CreateSlave(1, &p1, trigger->id);
+        }
+        break;
+    case 2:
+        if (trigger->data != NULL) {
+            p2.data = trigger->data;
+            p2.f = 0.0f;
+            p2.c = *c;
+            p2.player = g_pSourcePlayer;
+            p2.a = *a;
+            p2.a.w = 1.0f;
+            p2.b = *b;
+            slave = ThingManager_DARYL_CreateSlave(2, &p2, trigger->id);
+        }
+        break;
+    case 3:
+        data = trigger->data;
+        if (data != NULL && data != NULL) {
+            p3.a = *a;
+            p3.data = data;
+            p3.flag = 1;
+            slave = ThingManager_DARYL_CreateSlave(0x10, &p3, trigger->id);
+        }
+        break;
+    case 4:
+        p4 = trigger->pos;
+        p4.w = 1.0f;
+        slave = ThingManager_DARYL_CreateSlave(8, &p4, trigger->id);
+        break;
+    case 5:
+        if (trigger->data != NULL) {
+            p5.data = trigger->data;
+            p5.pos = trigger->pos;
+            p5.flag = 1;
+            p5.player = g_pSourcePlayer;
+            slave = ThingManager_DARYL_CreateSlave(5, &p5, trigger->id);
+        }
+        break;
+    case 6:
+        if (ViewManager_GetViewFormat() > 1 && *(u8 *)trigger->data != 0) {
+            break;
+        }
+        if (trigger->data != NULL) {
+            p6.data = trigger->data;
+            p6.player = g_pSourcePlayer;
+            p6.pos = trigger->pos;
+            p6.flag = 0;
+            slave = ThingManager_DARYL_CreateSlave(5, &p6, trigger->id);
+        }
+        break;
+    case 7:
+        if (trigger->data != NULL) {
+            p7.data = trigger->data;
+            p7.f = 0.0f;
+            p7.time = 20;
+            p7.c = *c;
+            p7.player = g_pSourcePlayer;
+            p7.a = *a;
+            p7.a.w = 1.0f;
+            p7.b = *b;
+            slave = ThingManager_DARYL_CreateSlave(0xC, &p7, trigger->id);
+        }
+        break;
+    case 8:
+        data = trigger->data;
+        if (data != NULL) {
+            p8.a = *a;
+            p8.b = *b;
+            p8.data = data;
+            p8.flag = 0;
+            slave = ThingManager_DARYL_CreateSlave(0xF, &p8, trigger->id);
+        }
+        break;
+    case 9:
+        data = trigger->data;
+        if (data != NULL) {
+            p9.a = *a;
+            p9.data = data;
+            slave = ThingManager_DARYL_CreateSlave(0x11, &p9, trigger->id);
+        }
+        break;
+    case 10:
+        shared = trigger->data;
+        if (shared != NULL && shared->active == 0) {
+            shared->active = 1;
+            shared->info[0x1D] = SharedSlaveHolder_Get(shared);
+        }
+        break;
+    case 99:
+        id = trigger->id;
+        pl = player;
+        for (thing = *list; thing != NULL; thing = thing->next) {
+            if (thing->slaveId == id && thing->slavePlayer == pl) {
+                ((void (**)(ThingHeader *))thing->vtable)[1](thing);
+            }
+        }
+        break;
+    }
+
+    if (slave != NULL) {
+        slave->slavePlayer = player;
+        slave->next = *list;
+        slave->prev = NULL;
+        if (slave->next != NULL) {
+            slave->next->prev = slave;
+        }
+        *list = slave;
+    }
+}
+
 void ThingManager_DARYL_CreateMain(void) {
     extern u8 g_projectileVTable[];
     extern u8 g_eventSeqVTable[];
