@@ -417,10 +417,10 @@ void ProcessMIDI(s32 time)
     u32 rate;
     u8 *p;
 
-    if (((MIDI_SONG *)g_song)->field_1F != 0)
+    if ((s8)g_song[0x1F] != 0)
     {
         JumpToMarker();
-        ((MIDI_SONG *)g_song)->field_1F = 0;
+        g_song[0x1F] = 0;
     }
     for (chn = g_chn, i = 0x10; i != 0; chn++, i--)
     {
@@ -459,9 +459,9 @@ void ProcessMIDI(s32 time)
                     {
                         break;
                     }
-                    voice->field_38 = voice->prog->field_1C;
                 }
             sustain:
+                voice->field_38 = voice->prog->field_1C;
                 if (voice->field_38 > 0)
                 {
                     voice->state2 = 3;
@@ -486,36 +486,33 @@ void ProcessMIDI(s32 time)
         }
     }
 restart:
-    ((MIDI_SONG *)g_song)->field_8 += time;
-    if (((MIDI_SONG *)g_song)->field_4 != 0)
+    *(u32 *)(g_song + 8) += time;
+    if (*(u32 *)(g_song + 4) != 0)
     {
-        ((MIDI_SONG *)g_song)->field_0 += ((MIDI_SONG *)g_song)->field_8 / ((MIDI_SONG *)g_song)->field_4;
-        ((MIDI_SONG *)g_song)->field_8 %= ((MIDI_SONG *)g_song)->field_4;
+        *(u32 *)g_song += *(u32 *)(g_song + 8) / *(u32 *)(g_song + 4);
+        *(u32 *)(g_song + 8) %= *(u32 *)(g_song + 4);
     }
-    p = ((MIDI_SONG *)g_song)->field_14;
-    chn = &g_chn[((MIDI_SONG *)g_song)->field_1D];
+    p = *(u8 **)(g_song + 0x14);
+    chn = &g_chn[g_song[0x1D]];
     mask = 0;
-    while (((MIDI_SONG *)g_song)->field_18 <= ((MIDI_SONG *)g_song)->field_0)
+    while (*(u32 *)(g_song + 0x18) <= *(u32 *)g_song)
     {
     top:
         if (*p < 0xF0)
         {
             if ((s8)*p < 0)
             {
-                ((MIDI_SONG *)g_song)->field_1C = *p >> 4;
-                ((MIDI_SONG *)g_song)->field_1D = *p++ & 0xF;
-                chn = &g_chn[((MIDI_SONG *)g_song)->field_1D];
+                g_song[0x1C] = (*p & 0xF0) >> 4;
+                g_song[0x1D] = *p & 0xF;
+                p++;
+                chn = &g_chn[g_song[0x1D]];
             }
-            switch (((MIDI_SONG *)g_song)->field_1C)
+            switch (g_song[0x1C])
             {
             case 8:
             noteoff:
-                for (voice = chn->voice; voice != NULL; voice = voice->next)
+                for (voice = chn->voice; voice != NULL && voice->byte2 != (s8)*p; voice = voice->next)
                 {
-                    if (voice->byte2 == (s8)*p)
-                    {
-                        break;
-                    }
                 }
                 if (voice != NULL)
                 {
@@ -540,7 +537,7 @@ restart:
                     p += 2;
                     break;
                 }
-                if (((MIDI_SONG *)g_song)->field_1D != 9)
+                if (g_song[0x1D] != 9)
                 {
                     inst = g_pProg[chn->prog];
                     if (inst != NULL)
@@ -565,16 +562,12 @@ restart:
                 }
                 if (inst != NULL)
                 {
-                    for (voice = chn->voice; voice != NULL; voice = voice->next)
+                    for (voice = chn->voice; voice != NULL && voice->byte2 != (s8)*p; voice = voice->next)
                     {
-                        if (voice->byte2 == (s8)*p)
-                        {
-                            break;
-                        }
                     }
                     if (voice == NULL)
                     {
-                        voice = GetVoice_(0, g_priority[((MIDI_SONG *)g_song)->field_1D] + 15);
+                        voice = GetVoice_(0, g_priority[g_song[0x1D]] + 15);
                         if (voice == NULL)
                         {
                             p += 2;
@@ -596,7 +589,7 @@ restart:
                             goto start;
                         }
                     }
-                    voice->channel = ((MIDI_SONG *)g_song)->field_1D;
+                    voice->channel = g_song[0x1D];
                     voice->byte2 = *p;
                     voice->byte2C = inst->field_11;
                     voice->field_20 = inst->field_0;
@@ -634,8 +627,6 @@ restart:
                     voice->field_48 = chn->field_10;
                     StartVoice_(voice);
                     SetVoiceVol_(voice, chn->vol);
-                    p += 2;
-                    break;
                 }
                 p += 2;
                 break;
@@ -651,7 +642,7 @@ restart:
                 case 0x06:
                     switch (chn->field_8)
                     {
-                    case 0:
+                    case 1:
                         chn->count = *p;
                         break;
                     }
@@ -659,16 +650,16 @@ restart:
                 case 0x07:
                     chn->field_B = *p;
                     SetGVol(chn);
-                    mask |= 1 << ((MIDI_SONG *)g_song)->field_1D;
+                    mask |= 1 << g_song[0x1D];
                     break;
                 case 0x0A:
-                    mask |= 1 << ((MIDI_SONG *)g_song)->field_1D;
                     chn->field_C = (s16)(((s8)*p ^ 0x40) << 9);
+                    mask |= 1 << g_song[0x1D];
                     break;
                 case 0x0B:
                     chn->field_A = *p;
                     SetGVol(chn);
-                    mask |= 1 << ((MIDI_SONG *)g_song)->field_1D;
+                    mask |= 1 << g_song[0x1D];
                     break;
                 case 0x40:
                     if (chn->field_1F && (s8)*p < 0x40)
@@ -689,28 +680,28 @@ restart:
                     {
                         voice->field_48 = chn->field_10;
                     }
-                    mask |= 1 << ((MIDI_SONG *)g_song)->field_1D;
+                    mask |= 1 << g_song[0x1D];
                     break;
                 case 0x64:
                     chn->field_8 = (chn->field_8 & ~0x7F) | (s8)*p;
                     break;
                 case 0x65:
-                    chn->field_8 = ((s8)*p << 7) | (chn->field_8 & 0x7F);
+                    chn->field_8 = (chn->field_8 & 0x7F) | ((u16)(s8)*p << 7);
                     break;
                 case 0x6E:
                 case 0x6F:
                 case 0x70:
-                    if (((MIDI_SONG *)g_song)->field_1E != 0)
+                    if (g_song[0x1E] != 0)
                     {
                         JumpToMarker();
                         goto restart;
                     }
-                    if (p[-1] == 0x70)
+                    if ((s32)p[-1] == 0x70)
                     {
-                        i = (s8)*p;
+                        i = *(s8 *)p;
                         if (i < 0x40 && *(u32 *)g_mrk[i] != 0)
                         {
-                            ((MIDI_SONG *)g_song)->field_1E = i;
+                            g_song[0x1E] = i;
                             JumpToMarker();
                             goto restart;
                         }
@@ -786,19 +777,18 @@ restart:
                 break;
             case 0x2F:
                 p++;
-                ((MIDI_SONG *)g_song)->field_18 = -1;
+                *(u32 *)(g_song + 0x18) = -1;
                 continue;
             case 0x51:
                 p++;
-                ((MIDI_SONG *)g_song)->field_C = (p[0] << 16) | (p[1] << 8) | p[2];
+                *(u32 *)(g_song + 0xC) = (p[0] << 16) | (p[1] << 8) | p[2];
                 p += 3;
-                ((MIDI_SONG *)g_song)->field_4 = (u32)Mul16_(((MIDI_SONG *)g_song)->field_C, ((MIDI_SONG *)g_song)->field_10) / *(u16 *)((u8 *)g_pHdr + 0x18);
+                *(u32 *)(g_song + 4) = (u32)Mul16_(*(u32 *)(g_song + 0xC), *(u32 *)(g_song + 0x10)) / *(u16 *)((u8 *)g_pHdr + 0x18);
                 break;
             case 0x54:
             case 0x58:
             case 0x59:
-                p += *p;
-                p++;
+                p += 1 + *p;
                 break;
             default:
                 p += ReadVar_(&p);
@@ -821,16 +811,16 @@ restart:
                     goto top;
                 }
                 break;
-            case 2:
-                p += 2;
-                break;
             case 1:
             case 3:
                 p++;
                 break;
+            case 2:
+                p += 2;
+                break;
             }
         }
-        ((MIDI_SONG *)g_song)->field_18 += ReadVar_(&p);
+        *(u32 *)(g_song + 0x18) += ReadVar_(&p);
     }
     for (chn = g_chn; mask != 0; mask >>= 1, chn++)
     {
@@ -842,7 +832,7 @@ restart:
             }
         }
     }
-    ((MIDI_SONG *)g_song)->field_14 = p;
+    *(u8 **)(g_song + 0x14) = p;
 }
 #pragma pop
 
