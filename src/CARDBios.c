@@ -40,10 +40,12 @@ typedef struct CARDControl {
     CARDCallback eraseCallback;
     CARDCallback unlockCallback;
     u8 alarm[0x28];
-    u8 unk108[0x110 - 0x108];
+    u8 unk108[0x10C - 0x108];
+    u8 *diskID;
 } CARDControl;
 
 CARDControl __CARDBlock[2];
+static u8 __CARDDiskNone[32];
 
 void OSWakeupThread(OSThreadQueue *queue);
 
