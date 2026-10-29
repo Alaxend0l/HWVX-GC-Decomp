@@ -199,6 +199,19 @@ s32 DVDLowRequestAudioStatus(u32 subcmd, DVDLowCallback callback)
     return 1;
 }
 
+s32 DVDLowAudioBufferConfig(s32 enable, u32 size, DVDLowCallback callback)
+{
+    u32 bufSize;
+
+    Callback = callback;
+    StopAtNextInt = 0;
+    bufSize = enable ? 0x10000 : 0;
+    __DIRegs[2] = size | (0xE4000000 | bufSize);
+    __DIRegs[7] = 1;
+    SetTimeoutAlarm((OSAlarmHandler)AlarmHandlerForTimeout, (__OSBusClock / 4) * 10);
+    return 1;
+}
+
 s32 DVDLowBreak(void)
 {
     StopAtNextInt = 1;
