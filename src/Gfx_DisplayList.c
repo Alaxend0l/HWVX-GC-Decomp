@@ -12,6 +12,15 @@ typedef struct GDLLine {
     u8 unk0[0x30];
 } GDLLine;
 
+typedef struct GDLFXLine2D {
+    Vector4 p0;
+    Vector4 p1;
+    GXColor c0;
+    GXColor c1;
+    u8 flag;
+    u8 unk29[0x30 - 0x29];
+} GDLFXLine2D;
+
 typedef struct GDLGroupTri {
     u8 type;
     u8 unk1[0xC - 0x1];
