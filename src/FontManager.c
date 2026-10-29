@@ -85,14 +85,13 @@ void Gfx_FontManager_GetPrintRect(char *str, s32 id, f32 *width, f32 *height, f3
     u8 c;
 
     while (i < len) {
-        i++;
-        c = *str++;
+        c = str[i++];
         if (font->caseMode == 1 || font->caseMode == 3) {
             if (c >= 'a' && c <= 'z') {
                 c -= 0x20;
             }
         }
-        w = (u8)font->chars[c].spacingX + (w + spacing);
+        w += (u8)font->chars[c].spacingX + spacing;
     }
     *width = (u32)(w - spacing);
     *height = font->height;
