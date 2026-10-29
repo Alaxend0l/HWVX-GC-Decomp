@@ -1,6 +1,48 @@
 #include "common.h"
 
 
+void __ARQServiceQueueLo(void) {
+    typedef struct ARQRequest {
+        struct ARQRequest *next;
+        u32 owner;
+        u32 type;
+        u32 priority;
+        u32 source;
+        u32 dest;
+        u32 length;
+        void (*callback)(u32);
+    } ARQRequest;
+    extern void *__ARQRequestQueueLo;
+    extern void *__ARQRequestPendingLo;
+    extern u32 __ARQChunkSize;
+    extern void *__ARQCallbackLo;
+    void ARStartDMA(u32 type, u32 mainmem, u32 aram, u32 length);
+
+    if (__ARQRequestPendingLo == NULL && __ARQRequestQueueLo != NULL) {
+        __ARQRequestPendingLo = __ARQRequestQueueLo;
+        __ARQRequestQueueLo = ((ARQRequest *)__ARQRequestQueueLo)->next;
+    }
+    if (__ARQRequestPendingLo) {
+        if (((ARQRequest *)__ARQRequestPendingLo)->length <= __ARQChunkSize) {
+            if (((ARQRequest *)__ARQRequestPendingLo)->type == 0) {
+                ARStartDMA(((ARQRequest *)__ARQRequestPendingLo)->type, ((ARQRequest *)__ARQRequestPendingLo)->source, ((ARQRequest *)__ARQRequestPendingLo)->dest, ((ARQRequest *)__ARQRequestPendingLo)->length);
+            } else {
+                ARStartDMA(((ARQRequest *)__ARQRequestPendingLo)->type, ((ARQRequest *)__ARQRequestPendingLo)->dest, ((ARQRequest *)__ARQRequestPendingLo)->source, ((ARQRequest *)__ARQRequestPendingLo)->length);
+            }
+            __ARQCallbackLo = ((ARQRequest *)__ARQRequestPendingLo)->callback;
+        } else {
+            if (((ARQRequest *)__ARQRequestPendingLo)->type == 0) {
+                ARStartDMA(((ARQRequest *)__ARQRequestPendingLo)->type, ((ARQRequest *)__ARQRequestPendingLo)->source, ((ARQRequest *)__ARQRequestPendingLo)->dest, __ARQChunkSize);
+            } else {
+                ARStartDMA(((ARQRequest *)__ARQRequestPendingLo)->type, ((ARQRequest *)__ARQRequestPendingLo)->dest, ((ARQRequest *)__ARQRequestPendingLo)->source, __ARQChunkSize);
+            }
+        }
+        ((ARQRequest *)__ARQRequestPendingLo)->length -= __ARQChunkSize;
+        ((ARQRequest *)__ARQRequestPendingLo)->source += __ARQChunkSize;
+        ((ARQRequest *)__ARQRequestPendingLo)->dest += __ARQChunkSize;
+    }
+}
+
 void __ARQCallbackHack(void) {
 }
 
