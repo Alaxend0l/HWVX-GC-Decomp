@@ -188,7 +188,7 @@ s32 Tracer_Move(u8 *thing) {
 void Tracer_Release(struct Thing *thing) {
     void Thing_Release(void *);
 
-    tracers[thing->tracerIndex].active = 0;
+    tracers_802CD600[thing->tracerIndex].active = 0;
     thing->tracer = 0;
     Thing_Release(thing);
 }
