@@ -67,6 +67,7 @@ char *strchr(const char *str, s32 chr);
 u32 strlen(const char *str);
 u32 wcstombs(char *s, const u16 *pwcs, u32 n);
 void *memchr(const void *src, s32 val, u32 n);
+extern unsigned char __ctype_map[256];
 
 void *__FileWrite(void *File, const char *Buffer, u32 NumChars);
 void *__StringWrite(void *osc, const char *Buffer, u32 NumChars);
