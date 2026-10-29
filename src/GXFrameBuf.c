@@ -79,6 +79,39 @@ void GXSetDispCopyFrame2Field(s32 mode) {
     gx->cpTex = gx->cpTex & ~0x3000;
 }
 
+void GXSetCopyClamp(s32 clamp) {
+    u8 clmpB;
+    u8 clmpT;
+
+    clmpT = (u8)(1 == (clamp & 1));
+    clmpB = (u8)(2 == (clamp & 2));
+    gx->cpDisp = (gx->cpDisp & ~1) | clmpT;
+    gx->cpDisp = (gx->cpDisp & ~2) | (clmpB << 1);
+    gx->cpTex = (gx->cpTex & ~1) | clmpT;
+    gx->cpTex = (gx->cpTex & ~2) | (clmpB << 1);
+}
+
+void GXSetCopyClear(GXColor clear_clr, u32 clear_z) {
+    u32 reg;
+
+    reg = clear_clr.r;
+    reg = (reg & ~0xFF00) | (clear_clr.a << 8);
+    reg = (reg & ~0xFF000000) | (0x4F << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    reg = clear_clr.b;
+    reg = (reg & ~0xFF00) | (clear_clr.g << 8);
+    reg = (reg & ~0xFF000000) | (0x50 << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    reg = 0;
+    reg = (reg & ~0xFFFFFF) | clear_z;
+    reg = (reg & ~0xFF000000) | (0x51 << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    gx->bpSentNot = 0;
+}
+
 void GXSetDispCopyGamma(s32 gamma) {
     gx->cpDisp = (gx->cpDisp & ~0x180) | (gamma << 7);
 }
