@@ -22,3 +22,12 @@ void OSSleepThread(OSThreadQueue *queue);
 void OSWakeupThread(OSThreadQueue *queue);
 BOOL OSDisableInterrupts(void);
 BOOL OSRestoreInterrupts(BOOL level);
+
+void OSInitMessageQueue(OSMessageQueue *mq, OSMessage *msgArray, s32 msgCount) {
+    OSInitThreadQueue(&mq->queueSend);
+    OSInitThreadQueue(&mq->queueReceive);
+    mq->msgArray = msgArray;
+    mq->msgCount = msgCount;
+    mq->firstIndex = 0;
+    mq->usedCount = 0;
+}
