@@ -154,6 +154,7 @@ typedef struct CarAModelData {
 typedef struct CarAModelRef {
   u8 pad00[0x10];           /* 0x00 */
   CarAModelData *data;      /* 0x10 */
+  void *anims[3];           /* 0x14 additive animations, timed by CarA.animTimes */
 } CarAModelRef;
 
 typedef struct CarAInfo {
