@@ -519,6 +519,57 @@ void DisplayList_AddAlphaGroup(s32 arg0, s32 arg1, u32 matrix, u8 arg3, GXColor 
     g_pGDL->numAlphaGroups++;
 }
 
+#pragma use_lmw_stmw on
+void Gfx_SortAlpha(void) {
+    void MemClr32(void *dst, u32 size);
+    void XformVec4x4(Matrix4 *m, Vector4 *v, Vector4 *out);
+    u16 heads[0x1FF];
+    GDLAlphaGroup *grp;
+    u16 key;
+    GDLAlphaEntry *entry;
+    u32 count;
+    f32 z;
+    u16 i;
+
+    MemClr32(g_pGDL->alphaTable, 0x200);
+    g_pGDL->numAlphaEntries = 1;
+    for (i = 0; i < g_pGDL->numTris; i++) {
+        XformVec4x4((Matrix4 *)((u8 *)GetRenderWindow() + 0x40), (Vector4 *)&g_pGDL->tris[i].v[0], (Vector4 *)&g_pGDL->tris[i].v[0]);
+        XformVec4x4((Matrix4 *)((u8 *)GetRenderWindow() + 0x40), (Vector4 *)&g_pGDL->tris[i].v[1], (Vector4 *)&g_pGDL->tris[i].v[1]);
+        XformVec4x4((Matrix4 *)((u8 *)GetRenderWindow() + 0x40), (Vector4 *)&g_pGDL->tris[i].v[2], (Vector4 *)&g_pGDL->tris[i].v[2]);
+        z = 0.333333f * (g_pGDL->tris[i].v[2].z + (g_pGDL->tris[i].v[0].z + g_pGDL->tris[i].v[1].z));
+        g_pGDL->alphaEntries[g_pGDL->numAlphaEntries].func = Render_DrawAlphaTriangle;
+        g_pGDL->alphaEntries[g_pGDL->numAlphaEntries].arg = i;
+        Gfx_LinkAlphaEntry(g_pGDL->numAlphaEntries++, z);
+    }
+
+    grp = g_pGDL->alphaGroups;
+    memset(heads, -1, sizeof(heads));
+    for (i = 0; i < g_pGDL->numAlphaGroups; i++, grp++) {
+        key = ((GDLGeom *)grp->unk40)->groups[grp->unk44].sortKey;
+        grp->next = heads[key];
+        heads[key] = i;
+    }
+
+    count = g_pGDL->numAlphaEntries;
+    if (g_pGDL->numAlphaGroups != 0) {
+        entry = &g_pGDL->alphaEntries[count];
+        for (i = 0; i < 0x1FF; i++) {
+            key = heads[i];
+            while (key != 0xFFFF) {
+                grp = &g_pGDL->alphaGroups[key];
+                entry->func = Render_DrawAlphaGroup;
+                entry->arg = key;
+                Gfx_LinkAlphaEntry(count++, 0.0f);
+                entry++;
+                key = grp->next;
+            }
+        }
+    }
+    g_pGDL->numAlphaEntries = count;
+}
+#pragma use_lmw_stmw reset
+
 void DrawAlphaTable(void) {
     u16 i;
     u16 idx;
