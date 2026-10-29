@@ -56,6 +56,11 @@ typedef struct DVDDIRegs {
 
 volatile u32 __DIRegs[16] : 0xCC006000;
 
+extern u32 __DVDThreadQueue[2];
+BOOL DVDCancelAsync(DVDCommandBlock *block, void (*callback)(s32, DVDCommandBlock *));
+void cbForCancelSync(void);
+void OSSleepThread(void *queue);
+
 void DVDReset(void);
 void stateGoToRetry(void);
 void cbForUnrecoveredErrorRetry(u32 intType);
