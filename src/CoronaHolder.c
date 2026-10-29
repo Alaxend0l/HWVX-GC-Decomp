@@ -37,7 +37,7 @@ typedef struct Corona {
 
 Corona g_aCorona[64];
 extern u32 g_iDeltaTimeMS;
-void ExtractColorKey(void *track, f32 *color, f64 time);
+void ExtractColorKey(void *track, f32 *color, f32 time);
 void Gfx_TransformVector(Vector4 *in, Vector4 *out);
 void Gfx_GetCameraPosition(Vector4 *pos);
 s8 RayHitsTerrainAndObjects(void *start, void *dir, void *dist, void *hit);
@@ -52,9 +52,9 @@ void CoronaHolder_Init(void) {
 
 s32 CoronaHolder_Add(void *corona, Vector4 *pos)
 {
+    u32 n;
     Corona *c;
     void *lens;
-    u32 n;
 
     n = g_totalCoronas;
     if (n >= 64) {
@@ -63,8 +63,8 @@ s32 CoronaHolder_Add(void *corona, Vector4 *pos)
     if (corona == NULL) {
         return -1;
     }
-    g_aCorona[n].track = (CoronaData *)corona;
-    c = &g_aCorona[n];
+    g_aCorona[n].track = corona;
+    c = g_aCorona + n;
     c->pos = *pos;
     c->flare = -1;
     c->playing = 0;
