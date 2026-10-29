@@ -1202,3 +1202,12 @@ f32 InterfaceInputAnimator_GetUDCounter(void) {
     return g_LR_Counter;
 }
 
+void InterfaceInputAnimator_SetCallBack(void *callBack, InterfaceCallBackData *data) {
+    extern void *g_pCallBack;
+
+    g_pCallBack = callBack;
+    if (callBack != NULL) {
+        g_CallBackData = *data;
+    }
+}
+
