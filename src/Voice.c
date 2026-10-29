@@ -47,7 +47,7 @@ extern u8 g_soundLst[0xFE];
 extern u32 g_freeSound;
 extern s32 g_sfxvol;
 extern s8 g_speakers;
-extern void (*VoiceUpdate)(void);
+extern void (*volatile VoiceUpdate)(void);
 extern s32 g_sfxState;
 
 void *memcpy(void *dst, const void *src, u32 n);
@@ -67,6 +67,25 @@ void AudioVoice_Create(void) {
     g_speakers = 1;
     AudioVoice_Create_(g_voice);
 }
+
+void AudioVoice_Init_(void);
+void ProcessVoice(void);
+#pragma push
+#pragma optimization_level 1
+s32 AudioVoice_Init(void) {
+    u32 i;
+
+    for (i = 0; i < 0xFE; i++) {
+        g_soundLst[i] = i + 1;
+        g_sound[i].data = 0;
+    }
+    g_soundLst[0xFD] = 0xFF;
+    g_freeSound = 0;
+    AudioVoice_Init_();
+    VoiceUpdate = ProcessVoice;
+    return 1;
+}
+#pragma pop
 
 void AudioVoice_Destroy(void) {
     VoiceUpdate = 0;
