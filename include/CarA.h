@@ -107,7 +107,7 @@ typedef struct CarAStuntInfo {
   f32 minFailTime;          /* 0x2C */
   f32 maxFailTime;          /* 0x30 */
   u8 pad34[0x14];           /* 0x34 */
-  char *failMessage;        /* 0x48 NULL: "Stunt Failed" */
+  char **failMessage;       /* 0x48 NULL: g_stuntLossString */
   u32 numFailThings;        /* 0x4C */
   u32 *failThings;          /* 0x50 thing ids, picked by fail time */
 } CarAStuntInfo;
