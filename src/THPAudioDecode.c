@@ -38,6 +38,10 @@ u8 DecodedAudioBufferQueue[0x20];
 void *DecodedAudioBufferMessage[3];
 s32 AudioDecodeThreadCreated;
 s32 OSSuspendThread(void *thread);
+s32 OSCreateThread(void *thread, void *func, void *param, void *stack, u32 stackSize, s32 priority, u16 attr);
+void OSInitMessageQueue(void *queue, void *msgArray, s32 msgCount);
+static void AudioDecoder(void);
+static void AudioDecoderForOnMemory(void *bufAddr);
 
 void *PopReadedBuffer(void);
 void PushReadedBuffer2(void *arg0);
