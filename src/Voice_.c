@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma readonly_strings on
+
 typedef struct AXVPB {
     struct AXVPB *next;
     struct AXVPB *prev;
