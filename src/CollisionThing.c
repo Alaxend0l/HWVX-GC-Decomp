@@ -169,7 +169,6 @@ static inline f32 RayBoxTestLocal(Vector4 *start, Vector4 *dir, Vector4 *box, f3
     Vector4 *res;
     f32 d0;
     f32 d1;
-    f32 dist = t;
 
     planes[0].plane.w = -box[1].x;
     planes[1].plane.w = -box[1].y;
