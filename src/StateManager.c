@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma use_lmw_stmw on
+
 
 void StateManager_Destroy(void) {
     M2C_UNK Deallocate(void *);
