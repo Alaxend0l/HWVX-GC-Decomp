@@ -40,7 +40,6 @@ u32 MemCpyA_(u32 dst, u32 src, u32 len);
 #pragma push
 #pragma optimization_level 1
 s32 Audio_Init_(void) {
-    extern MemBlk g_memblk[];
     extern s32 g_last;
     extern u32 g_heap;
     extern s32 g_size;
