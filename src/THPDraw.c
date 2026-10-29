@@ -78,6 +78,74 @@ void THPGXRestore(void) {
     GXSetTevSwapModeTable(3, 2, 2, 2, 3);
 }
 
+void THPGXYuv2RgbSetup(GXRenderModeObj *rmode) {
+    s32 scrWidth;
+    s32 scrHeight;
+    f32 pMtx[4][4];
+    f32 mMtx[3][4];
+
+    scrWidth = rmode->fbWidth;
+    scrHeight = rmode->efbHeight;
+    GXSetPixelFmt(0, 0);
+    C_MTXOrtho(pMtx, 0.0f, scrHeight, 0.0f, scrWidth, 0.0f, -1.0f);
+    GXSetProjection(pMtx, 1);
+    GXSetViewport(0.0f, 0.0f, scrWidth, scrHeight, 0.0f, 1.0f);
+    GXSetScissor(0, 0, scrWidth, scrHeight);
+    PSMTXIdentity(mMtx);
+    GXLoadPosMtxImm(mMtx, 0);
+    GXSetCurrentMtx(0);
+    GXSetZMode(1, 7, 0);
+    GXSetBlendMode(0, 1, 0, 0);
+    GXSetColorUpdate(1);
+    GXSetAlphaUpdate(0);
+    GXSetDispCopyGamma(0);
+    GXSetNumChans(0);
+    GXSetNumTexGens(2);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetTexCoordGen2(1, 1, 4, 0x3C, 0, 0x7D);
+    GXInvalidateTexAll();
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(7, 9, 1, 3, 0);
+    GXSetVtxAttrFmt(7, 0xD, 1, 2, 0);
+    GXSetNumTevStages(4);
+    GXSetTevOrder(0, 1, 1, 0xFF);
+    GXSetTevColorIn(0, 0xF, 8, 0xE, 2);
+    GXSetTevColorOp(0, 0, 0, 0, 0, 0);
+    GXSetTevAlphaIn(0, 7, 4, 6, 1);
+    GXSetTevAlphaOp(0, 1, 0, 0, 0, 0);
+    GXSetTevKColorSel(0, 0xC);
+    GXSetTevKAlphaSel(0, 0x1C);
+    GXSetTevSwapMode(0, 0, 0);
+    GXSetTevOrder(1, 1, 2, 0xFF);
+    GXSetTevColorIn(1, 0xF, 8, 0xE, 0);
+    GXSetTevColorOp(1, 0, 0, 1, 0, 0);
+    GXSetTevAlphaIn(1, 7, 4, 6, 0);
+    GXSetTevAlphaOp(1, 1, 0, 0, 0, 0);
+    GXSetTevKColorSel(1, 0xD);
+    GXSetTevKAlphaSel(1, 0x1D);
+    GXSetTevSwapMode(1, 0, 0);
+    GXSetTevOrder(2, 0, 0, 0xFF);
+    GXSetTevColorIn(2, 0xF, 8, 0xC, 0);
+    GXSetTevColorOp(2, 0, 0, 0, 1, 0);
+    GXSetTevAlphaIn(2, 4, 7, 7, 0);
+    GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
+    GXSetTevSwapMode(2, 0, 0);
+    GXSetTevOrder(3, 0xFF, 0xFF, 0xFF);
+    GXSetTevColorIn(3, 1, 0, 0xE, 0xF);
+    GXSetTevColorOp(3, 0, 0, 0, 1, 0);
+    GXSetTevAlphaIn(3, 7, 7, 7, 7);
+    GXSetTevAlphaOp(3, 0, 0, 0, 1, 0);
+    GXSetTevSwapMode(3, 0, 0);
+    GXSetTevKColorSel(3, 0xE);
+    GXSetTevColorS10(1, (GXColorS10){ -90, 0, -114, 135 });
+    GXSetTevKColor(0, (GXColor){ 0, 0, 226, 88 });
+    GXSetTevKColor(1, (GXColor){ 179, 0, 0, 182 });
+    GXSetTevKColor(2, (GXColor){ 255, 0, 255, 128 });
+    GXSetTevSwapModeTable(0, 0, 1, 2, 3);
+}
+
 #pragma use_lmw_stmw on
 void THPGXYuv2RgbDraw(u32 *yImage, u32 *uImage, u32 *vImage, s16 x, s16 y, s16 textureWidth, s16 textureHeight, s16 polygonWidth, s16 polygonHeight) {
     GXTexObj tobj0;
