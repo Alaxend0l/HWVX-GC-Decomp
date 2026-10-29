@@ -418,6 +418,28 @@ void EXIIntrruptHandler(s16 interrupt, OSContext *context) {
     }
 }
 
+void EXTIntrruptHandler(s16 interrupt, OSContext *context) {
+    s32 chan;
+    EXIControl *exi;
+    EXICallback callback;
+
+    chan = (interrupt - 11) / 3;
+    __OSMaskInterrupts(0x500000U >> (3 * chan));
+    exi = &Ecb[chan];
+    callback = exi->extCallback;
+    exi->state &= ~8;
+    if (callback) {
+        OSContext exceptionContext;
+
+        OSClearContext(&exceptionContext);
+        OSSetCurrentContext(&exceptionContext);
+        exi->extCallback = 0;
+        callback(chan, context);
+        OSClearContext(&exceptionContext);
+        OSSetCurrentContext(context);
+    }
+}
+
 u32 EXIGetState(s32 chan) {
     EXIControl *exi = &Ecb[chan];
     return exi->state;
