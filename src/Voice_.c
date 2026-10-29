@@ -55,6 +55,13 @@ void OSRestoreInterrupts(s32 level);
 void AXSetVoicePriority(AXVPB *axv, u32 priority);
 
 
+void AudioVoice_Destroy_(void) {
+    AXRegisterAuxBCallback(NULL, NULL);
+    AXRegisterAuxACallback(NULL, NULL);
+    AXFXDelayShutdown(&g_reverb[1]);
+    AXFXDelayShutdown(&g_reverb[0]);
+}
+
 void SetVoicePriority_(VoiceHW *voice) {
     s32 level;
 
