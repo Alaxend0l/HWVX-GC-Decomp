@@ -1036,6 +1036,8 @@ void *FindHost(Vector4 *pos, Vector4 *dir) {
     return g_thingManager_DARYL.looker;
 }
 
+#pragma push
+#pragma dont_inline on
 void ThingManager_Invalidate(u32 start, u32 end) {
     typedef struct SoundSeqThing {
         u8 pad0[0xD0];
