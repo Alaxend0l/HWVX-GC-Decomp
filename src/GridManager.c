@@ -98,6 +98,11 @@ void Grid_Init(Vector4 *min, Vector4 *max, u32 numX, u32 numZ) {
     }
 }
 
+static inline void Grid_PushFreeNode(GridNode *node) {
+    node->next = gGridManager.freeNodes;
+    gGridManager.freeNodes = node;
+}
+
 static inline void Grid_RemoveNodes(GridObject *obj) {
     GridNode *node;
     GridNode *next;
