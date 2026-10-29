@@ -20,6 +20,24 @@ void Main_Shutdown_NGC(void) {
 
 }
 
+s32 RunThread(void *(*func)(void *)) {
+    s32 OSCreateThread(void *thread, void *(*func)(void *), void *param, void *stack, u32 stackSize, s32 priority, u16 attr);
+    s32 OSDisableInterrupts(void);
+    s32 OSRestoreInterrupts(s32 level);
+    s32 OSResumeThread(void *thread);
+    extern u8 Thread[0x310];
+    extern u8 ThreadStack[0x5000];
+    extern s8 NGC_Thread_On;
+    s32 enabled;
+
+    OSCreateThread(Thread, func, 0, ThreadStack + 0x5000, 0x5000, 0x10, 1);
+    enabled = OSDisableInterrupts();
+    OSResumeThread(Thread);
+    OSRestoreInterrupts(enabled);
+    NGC_Thread_On = 1;
+    return 1;
+}
+
 void TextureManager_ReleaseCache(void) {
 
 }
