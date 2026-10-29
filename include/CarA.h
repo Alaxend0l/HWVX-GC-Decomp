@@ -137,13 +137,13 @@ typedef struct CarA {
   void *hull;               /* 0x370 OConvexHullHolder: Released + NULLed in CarA_Release */
   u32 partVisMask;          /* 0x374 bit per car part in the reflection loop */
   f32 unk378;               /* 0x378 */
-  u8 pad37C[0x14];          /* 0x37C */
-  f32 forceAccum[3];        /* 0x390 += force in CarA_ProcessForce */
-  u8 pad39C[4];             /* 0x39C */
-  f32 torqueAccum[3];       /* 0x3A0 += torque in CarA_ProcessForce */
-  u8 pad3AC[4];             /* 0x3AC */
+  u8 pad37C[4];             /* 0x37C */
+  Vector4 angularMomentum;  /* 0x380 += torque * dt in PreMove */
+  Vector4 forceAccum;       /* 0x390 += force in CarA_ProcessForce */
+  Vector4 torqueAccum;      /* 0x3A0 += torque in CarA_ProcessForce */
   s32 navPointIndex;        /* 0x3B0 stored as s16 pairs into the player */
-  u8 pad3B4[8];             /* 0x3B4 */
+  s32 navUpdateTimer;       /* 0x3B4 ms until the nearest nav point is searched again */
+  u8 pad3B8[4];             /* 0x3B8 */
   CarAInfo *vehicleIface;   /* 0x3BC config/vehicle-interface container: read as u32
                                by CarA_Invalidate, dereferenced for +0x11 (AI drive
                                mode), +0x54 (reflection geom), +0xA0 (collider),
