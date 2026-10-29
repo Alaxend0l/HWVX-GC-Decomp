@@ -78,9 +78,9 @@ s32 CoronaHolder_Add(void *corona, Vector4 *pos)
 }
 
 void CoronaHolder_Render(void) {
-    Vector4 camera;
-    Vector4 screen;
-    Vector4 dir;
+    Vector4 camera __attribute__((aligned(16)));
+    Vector4 screen __attribute__((aligned(16)));
+    Vector4 dir __attribute__((aligned(16)));
     f32 len;
     f32 dist;
     GXColor color;
@@ -121,7 +121,7 @@ void CoronaHolder_Render(void) {
         if (c->time && c->playing) {
             rot = 0.0f;
             if (c->track->rotate) {
-                rot = (screen.x - 320.0f) * (0.0174533f * (0.25f * -(f32)c->track->spin));
+                rot = (screen.x - 320.0f) * (0.017453292f * (0.25f * -(f32)c->track->spin));
             }
             color = c->rgba;
             Gfx_Add2DSprite(&screen, c->track->texture, color, c->track->size, c->track->type, rot);
