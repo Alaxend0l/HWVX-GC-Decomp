@@ -23,3 +23,10 @@ void DestroyIT_(void *data) {
     FreeA_(g_aheap);
     g_aheap = 0;
 }
+
+#pragma optimization_level 1
+u32 GetITGVol_(ITTrack *trk, ITChannel *ch) {
+    return ((trk->vol * g_musicVol >> 7) * (ch->vol * ch->gvol >> 6)) >> 15;
+}
+#pragma optimization_level reset
+

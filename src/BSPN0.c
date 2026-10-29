@@ -10,6 +10,29 @@ typedef struct BSPNode {
 
 f32 Distance_Plane(void *plane, void *point);
 
+s8 BSPN0_CollideWithVector(void *bsp, Vector4 *point) {
+    typedef struct BSPNode0 {
+        Vector4 plane;
+        u8 type;
+        u8 pad;
+        u16 next;
+        u8 pad14[0xC];
+    } BSPNode0;
+    f32 Distance_Plane(void *plane, void *point);
+    BSPNode0 *node = bsp;
+
+    if (Distance_Plane(node, point) > 0.0f) {
+        if (node->type & 1) {
+            return BSPN0_CollideWithVector(node + 1, point);
+        }
+        return 0;
+    }
+    if (node->type & 2) {
+        return BSPN0_CollideWithVector(node + node->next, point);
+    }
+    return 1;
+}
+
 Vector4 *BSPN0_CollideWithSegment(BSPNode *node, Vector4 *hit, Vector4 *p0, Vector4 *p1) {
     Vector4 *res;
     Vector4 mid __attribute__((aligned(16)));

@@ -335,7 +335,7 @@ s32 StateProgressionManager_Shutdown(void) {
     return 1;
 }
 
-s32 LoadWorldProcess(char *world, u8 loaded)
+s32 LoadWorldProcess(char *world, s8 loaded)
 {
     static s32 newLoadingState;
     static s32 curLoadingState = 7;
@@ -348,17 +348,17 @@ s32 LoadWorldProcess(char *world, u8 loaded)
     static s8 bLoadingItems;
     static s32 numAIToActivate;
     static u32 randOffset;
-    extern u8 g_bLoadingDemoLand;
+    extern s8 g_bLoadingDemoLand;
     u32 GameSettings_GetCodeVariable(s32, s32);
-    LWMCP *mcp;
-    char *name;
     LWItem *item;
+    u32 id;
+    char *name;
     LWCar *car;
-    LWQuad *quad;
+    LWMCP *mcp;
+    u32 cnt;
     u32 i;
     u32 j;
-    u32 id;
-    u32 cnt;
+    LWQuad *quad;
     u32 max;
     void *dp;
 
@@ -659,7 +659,7 @@ s32 LoadWorldProcess(char *world, u8 loaded)
                 if (GameSettings_GetCodeVariable(0x198, 0) != 0)
                 {
                     j = 0;
-                    for (i = 0; i < ((LWWorld *)g_worldData.world)->numCars; i++)
+                    for (car = ((LWWorld *)g_worldData.world)->cars, i = 0; i < ((LWWorld *)g_worldData.world)->numCars; i++)
                     {
                         if (((LWWorld *)g_worldData.world)->cars[i].type <= 4)
                         {
@@ -712,7 +712,7 @@ s32 LoadWorldProcess(char *world, u8 loaded)
                     id = car->id;
                     if (car->type <= 4 && GameSettings_GetCodeVariable(0x198, 0) == 0)
                     {
-                        if (!(s8)g_bLoadingDemoLand)
+                        if (!g_bLoadingDemoLand)
                         {
                             id = GameSettings_GetCodeVariable(0xCB, car->type);
                             if (id == -1)
@@ -724,7 +724,8 @@ s32 LoadWorldProcess(char *world, u8 loaded)
                     else if (id == -1 || GameSettings_GetCodeVariable(0x198, 0) != 0)
                     {
                         cnt = GameSettings_GetCodeVariable(0xCB, 1);
-                        id = (cnt + randOffset + iterationNum) % (car->hi + 1);
+                        id = cnt + randOffset;
+                        id = (id + iterationNum) % (car->hi + 1);
                         if (id == cnt)
                         {
                             id = (cnt + iterationNum) % (car->hi + 1);

@@ -76,13 +76,10 @@ void TimeHandler_SetTimeElapsedSec_f32(f32 sec) {
     extern f32 g_fDeltaTimeSec_inv;
     extern u32 g_iDeltaTimeMS;
     u32 ms;
-    f32 inv;
 
-    ms = 1000.0f * sec;
-    inv = 1.0f / sec;
-    g_iDeltaTimeMS = ms;
+    g_iDeltaTimeMS = ms = 1000.0f * sec;
     g_fDeltaTimeSec = sec;
-    g_fDeltaTimeSec_inv = inv;
+    g_fDeltaTimeSec_inv = 1.0f / sec;
     g_fDeltaTime60th = ms / (1000.0f / 60.0f);
 }
 

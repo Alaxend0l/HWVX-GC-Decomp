@@ -410,7 +410,7 @@ void SetCodeVariable(s32 var, u8 *obj, f32 value) {
 s32 TriggerCodeVariableValueCheck(u32 *data) {
     f32 value;
     f32 operand;
-    u32 i;
+    s32 i;
 
     if (data[1] < 100) {
         for (i = 0; i < data[2]; i++) {

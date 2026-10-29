@@ -515,7 +515,11 @@ s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded) {
     g_dataPackToLoadType = type;
     g_pDataPackToLoad = ((DataPack **)g_StreamingDataPacks)[type] + slot;
     if (threaded) {
-        FileStreaming_StartLoadingThread();
+        if (!g_bLoadingThreadRunning) {
+            g_bLoadDataPack = 1;
+            g_bLoadingThreadRunning = 1;
+            g_loadingThreadID = RunThread(FileStreaming_LoadingThread, 0x63);
+        }
     } else {
         LoadDataPack();
     }
