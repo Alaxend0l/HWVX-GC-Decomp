@@ -136,7 +136,7 @@ typedef struct GDL {
 } GDL;
 
 extern GDL *g_pGDL;
-extern void *g_pDL;
+extern DisplayList *g_pDL;
 
 void Gfx_DisplayList_Destroy(void) {
     Deallocate(g_pGDL);
