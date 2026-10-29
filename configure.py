@@ -471,7 +471,7 @@ config.libs = [
             Object(NonMatching, "dvdfs.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "dvd.c", mw_version="GC/1.2.5n"),
             Object(Matching, "dvdqueue.c", mw_version="GC/1.2.5n"),
-            Object(NonMatching, "dvderror.c"),
+            Object(Matching, "dvderror.c"),
             Object(Matching, "fstload.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "vi.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "Padclamp.c"),
