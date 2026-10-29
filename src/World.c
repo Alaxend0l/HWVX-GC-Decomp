@@ -58,6 +58,32 @@ void World_Refresh(void) {
     }
 }
 
+void World_Unload(void) {
+    void FileStreaming_ReleaseQuadPacks(void);
+    void FileStreaming_ReleaseAllDataPacks(s32 type, s32 flag);
+    void VolumeManager_Release(void);
+    void Gfx_SetFog(GXColor *color, u8 type, f32 start, f32 end);
+    u32 color[2];
+
+    FileStreaming_ReleaseQuadPacks();
+    FileStreaming_ReleaseAllDataPacks(4, 1);
+    FileStreaming_ReleaseAllDataPacks(5, 1);
+    FileStreaming_ReleaseAllDataPacks(6, 1);
+    FileStreaming_ReleaseAllDataPacks(0, 1);
+    FileStreaming_ReleaseAllDataPacks(2, 1);
+    FileStreaming_ReleaseAllDataPacks(8, 1);
+    FileStreaming_ReleaseAllDataPacks(1, 1);
+    FileStreaming_ReleaseAllDataPacks(9, 1);
+    g_worldData.world = NULL;
+    g_worldData.unk8[0] = 0;
+    g_worldData.unk8[1] = 0;
+    g_worldData.unk8[2] = 0;
+    VolumeManager_Release();
+    color[1] = 0;
+    color[0] = 0;
+    Gfx_SetFog((GXColor *)color, 0, 1.0f, 0.0f);
+}
+
 void World_Render(void) {
     typedef struct Quad {
         u8 pad0[0x1C];
