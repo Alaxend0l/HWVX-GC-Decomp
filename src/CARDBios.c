@@ -141,7 +141,7 @@ s32 __CARDSync(s32 chan) {
 
     block = &__CARDBlock[chan];
     enabled = OSDisableInterrupts();
-    while ((result = (chan < 0 || chan >= 2) ? -128 : block->result) == -1) {
+    while ((result = GetResultCode(chan)) == -1) {
         OSSleepThread(&block->threadQueue);
     }
     OSRestoreInterrupts(enabled);
