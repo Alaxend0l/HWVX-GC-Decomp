@@ -11,6 +11,27 @@ s8 Player_IsHuman(void *player) {
     return isHuman;
 }
 
+void Player_Init(void *player, s32 arg1);
+void PlayerHuman_Init(void *player) {
+    typedef struct PlayerHuman {
+        u8 pad0[0x6C];
+        u32 flags;
+        u8 pad70[0xC8 - 0x70];
+        s32 wheelChannel;
+        u8 padCC[0x114 - 0xCC];
+        void *bindings;
+        u8 bindingData[4];
+    } PlayerHuman;
+    void PlayerHuman_SetDefaultControls(void *player, s32 arg);
+    PlayerHuman *human = player;
+
+    Player_Init(player, 0);
+    human->wheelChannel = 0;
+    PlayerHuman_SetDefaultControls(player, 0);
+    human->flags = 0;
+    human->bindings = human->bindingData;
+}
+
 void Player_Init(void *player, s32 arg1) {
     s32 i;
 
