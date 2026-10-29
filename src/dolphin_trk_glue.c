@@ -1,5 +1,11 @@
 #include "common.h"
 
+extern void (*gDBCommTable[7])(void);
+
+static inline s32 TRKWriteUARTN(const void *bytes, u32 length) {
+    return ((s32 (*)(const void *, u32))gDBCommTable[4])(bytes, length) == 0 ? 0 : -1;
+}
+
 
 void TRKUARTInterruptHandler(void) {
 
