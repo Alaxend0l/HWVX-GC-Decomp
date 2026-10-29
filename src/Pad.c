@@ -36,6 +36,18 @@ static u32 CmdProbeDevice[4];
 
 extern u32 __PADFixBits;
 
+typedef struct OSResetFunctionInfo {
+    BOOL (*func)(BOOL final);
+    u32 priority;
+    struct OSResetFunctionInfo *next;
+    struct OSResetFunctionInfo *prev;
+} OSResetFunctionInfo;
+
+void OSRegisterResetFunction(OSResetFunctionInfo *info);
+BOOL OnReset(BOOL final);
+
+static OSResetFunctionInfo ResetFunctionInfo = { OnReset, 127 };
+
 void SPEC0_MakeStatus(s32, void *, u32 *);
 void SPEC1_MakeStatus(s32, void *, u32 *);
 void SPEC2_MakeStatus_80076F6C(s32, void *, u32 *);
