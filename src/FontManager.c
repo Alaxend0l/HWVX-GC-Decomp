@@ -30,6 +30,27 @@ typedef struct FontManager {
     Font fonts[16];
 } FontManager;
 
+typedef struct GDLRectVtx {
+    f32 x;
+    f32 y;
+    f32 z;
+    u8 unkC[0x10 - 0xC];
+    f32 s;
+    f32 t;
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
+    u8 unk1C[0x20 - 0x1C];
+} GDLRectVtx;
+
+typedef struct GDLRect {
+    GDLRectVtx v[4];
+    u16 tex;
+    u8 blendMode;
+    u8 window;
+} GDLRect;
+
 typedef struct GfxState {
     u8 unk0[0x8C];
     u16 debugFont;
