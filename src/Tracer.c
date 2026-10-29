@@ -85,8 +85,8 @@ s32 Tracer_Move(u8 *thing) {
     s32 i;
     TracerPoint *p;
 
-    p = tracers_802CD600[*(u32 *)(thing + 0xB4)].head;
-    for (i = 0; i < tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4CC; i++) {
+    p = tracers[*(u32 *)(thing + 0xB4)].head;
+    for (i = 0; i < tracers[*(u32 *)(thing + 0xB4)].unk4CC; i++) {
         s32 c;
         p->pos[0] += p->unk20[0];
         p->pos[1] += p->unk20[1];
@@ -94,29 +94,29 @@ s32 Tracer_Move(u8 *thing) {
         p->vel[0] += p->unk30[0];
         p->vel[1] += p->unk30[1];
         p->vel[2] += p->unk30[2];
-        p->unk40 += tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4BC;
-        c = p->color[0] + tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[0];
+        p->unk40 += tracers[*(u32 *)(thing + 0xB4)].unk4BC;
+        c = p->color[0] + tracers[*(u32 *)(thing + 0xB4)].unk4B8[0];
         if (c < 0) {
             c = 0;
         } else if (c > 255) {
             c = 255;
         }
         p->color[0] = c;
-        c = p->color[1] + tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[1];
+        c = p->color[1] + tracers[*(u32 *)(thing + 0xB4)].unk4B8[1];
         if (c < 0) {
             c = 0;
         } else if (c > 255) {
             c = 255;
         }
         p->color[1] = c;
-        c = p->color[2] + tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[2];
+        c = p->color[2] + tracers[*(u32 *)(thing + 0xB4)].unk4B8[2];
         if (c < 0) {
             c = 0;
         } else if (c > 255) {
             c = 255;
         }
         p->color[2] = c;
-        c = p->color[3] + tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[3];
+        c = p->color[3] + tracers[*(u32 *)(thing + 0xB4)].unk4B8[3];
         if (c < 0) {
             c = 0;
         } else if (c > 255) {
@@ -127,54 +127,54 @@ s32 Tracer_Move(u8 *thing) {
     }
     switch (*(u8 *)(*(u8 **)(thing + 0xB0) + 0x21)) {
     case 0:
-        AccumulateVector(thing + 0x10, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->pos, *(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
-        AccumulateVector(thing + 0x10, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->vel, -*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
-        PSVECScale(thing + 0x10, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk20, -(*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
-        PSVECScale(thing + 0x10, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk30, (*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        AccumulateVector(thing + 0x10, thing + 0x40, tracers[*(u32 *)(thing + 0xB4)].tail->pos, *(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        AccumulateVector(thing + 0x10, thing + 0x40, tracers[*(u32 *)(thing + 0xB4)].tail->vel, -*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        PSVECScale(thing + 0x10, tracers[*(u32 *)(thing + 0xB4)].tail->unk20, -(*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        PSVECScale(thing + 0x10, tracers[*(u32 *)(thing + 0xB4)].tail->unk30, (*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
         break;
     case 1:
-        AccumulateVector(thing + 0x20, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->pos, *(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
-        AccumulateVector(thing + 0x20, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->vel, -*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
-        PSVECScale(thing + 0x20, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk20, -(*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
-        PSVECScale(thing + 0x20, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk30, (*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        AccumulateVector(thing + 0x20, thing + 0x40, tracers[*(u32 *)(thing + 0xB4)].tail->pos, *(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        AccumulateVector(thing + 0x20, thing + 0x40, tracers[*(u32 *)(thing + 0xB4)].tail->vel, -*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        PSVECScale(thing + 0x20, tracers[*(u32 *)(thing + 0xB4)].tail->unk20, -(*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        PSVECScale(thing + 0x20, tracers[*(u32 *)(thing + 0xB4)].tail->unk30, (*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
         break;
     case 2:
-        AccumulateVector(thing + 0x30, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->pos, *(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
-        AccumulateVector(thing + 0x30, thing + 0x40, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->vel, -*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
-        PSVECScale(thing + 0x30, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk20, -(*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
-        PSVECScale(thing + 0x30, tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk30, (*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        AccumulateVector(thing + 0x30, thing + 0x40, tracers[*(u32 *)(thing + 0xB4)].tail->pos, *(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        AccumulateVector(thing + 0x30, thing + 0x40, tracers[*(u32 *)(thing + 0xB4)].tail->vel, -*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30));
+        PSVECScale(thing + 0x30, tracers[*(u32 *)(thing + 0xB4)].tail->unk20, -(*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
+        PSVECScale(thing + 0x30, tracers[*(u32 *)(thing + 0xB4)].tail->unk30, (*(f32 *)(*(u8 **)(thing + 0xB0) + 0x30) - *(f32 *)(*(u8 **)(thing + 0xB0) + 0x34)) / 14.0f);
         break;
     }
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->unk40 = tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C0;
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C0 += g_fDeltaTimeSec * *(f32 *)(*(u8 **)(thing + 0xB0) + 0x38);
+    tracers[*(u32 *)(thing + 0xB4)].tail->unk40 = tracers[*(u32 *)(thing + 0xB4)].unk4C0;
+    tracers[*(u32 *)(thing + 0xB4)].unk4C0 += g_fDeltaTimeSec * *(f32 *)(*(u8 **)(thing + 0xB0) + 0x38);
     colour.reset = 1;
     colour2.reset = 1;
-    ExtractColorKey(*(u8 **)(thing + 0xB0) + 0x44, &colour, tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C4);
-    ExtractColorKey(*(u8 **)(thing + 0xB0) + 0x4C, &colour2, tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C4);
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C4 += g_iDeltaTimeMS;
-    if (tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D0 != 0xFFFF) {
-        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C8 += g_iDeltaTimeMS;
-        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D4 = tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C8 >> 4;
-        if (tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D4 >= *(u32 *)(*(u8 **)(thing + 0xB0) + 0x54)) {
-            tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4C8 = 0;
-            tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D4 = 0;
+    ExtractColorKey(*(u8 **)(thing + 0xB0) + 0x44, &colour, tracers[*(u32 *)(thing + 0xB4)].unk4C4);
+    ExtractColorKey(*(u8 **)(thing + 0xB0) + 0x4C, &colour2, tracers[*(u32 *)(thing + 0xB4)].unk4C4);
+    tracers[*(u32 *)(thing + 0xB4)].unk4C4 += g_iDeltaTimeMS;
+    if (tracers[*(u32 *)(thing + 0xB4)].unk4D0 != 0xFFFF) {
+        tracers[*(u32 *)(thing + 0xB4)].unk4C8 += g_iDeltaTimeMS;
+        tracers[*(u32 *)(thing + 0xB4)].unk4D4 = tracers[*(u32 *)(thing + 0xB4)].unk4C8 >> 4;
+        if (tracers[*(u32 *)(thing + 0xB4)].unk4D4 >= *(u32 *)(*(u8 **)(thing + 0xB0) + 0x54)) {
+            tracers[*(u32 *)(thing + 0xB4)].unk4C8 = 0;
+            tracers[*(u32 *)(thing + 0xB4)].unk4D4 = 0;
         }
-        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D0 = (*(u32 **)(*(u8 **)(thing + 0xB0) + 0x58))[tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4D4];
+        tracers[*(u32 *)(thing + 0xB4)].unk4D0 = (*(u32 **)(*(u8 **)(thing + 0xB0) + 0x58))[tracers[*(u32 *)(thing + 0xB4)].unk4D4];
     }
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->color[0] = colour.c[0];
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->color[1] = colour.c[1];
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->color[2] = colour.c[2];
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->color[3] = colour.c[3];
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[0] = -(colour.c[0] - colour2.c[0]) / 15;
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[1] = -(colour.c[1] - colour2.c[1]) / 15;
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[2] = -(colour.c[2] - colour2.c[2]) / 15;
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4B8[3] = -(colour.c[3] - colour2.c[3]) / 15;
-    tracers_802CD600[*(u32 *)(thing + 0xB4)].tail = tracers_802CD600[*(u32 *)(thing + 0xB4)].tail->next;
-    if (tracers_802CD600[*(u32 *)(thing + 0xB4)].tail == tracers_802CD600[*(u32 *)(thing + 0xB4)].head) {
-        tracers_802CD600[*(u32 *)(thing + 0xB4)].head = tracers_802CD600[*(u32 *)(thing + 0xB4)].head->next;
+    tracers[*(u32 *)(thing + 0xB4)].tail->color[0] = colour.c[0];
+    tracers[*(u32 *)(thing + 0xB4)].tail->color[1] = colour.c[1];
+    tracers[*(u32 *)(thing + 0xB4)].tail->color[2] = colour.c[2];
+    tracers[*(u32 *)(thing + 0xB4)].tail->color[3] = colour.c[3];
+    tracers[*(u32 *)(thing + 0xB4)].unk4B8[0] = -(colour.c[0] - colour2.c[0]) / 15;
+    tracers[*(u32 *)(thing + 0xB4)].unk4B8[1] = -(colour.c[1] - colour2.c[1]) / 15;
+    tracers[*(u32 *)(thing + 0xB4)].unk4B8[2] = -(colour.c[2] - colour2.c[2]) / 15;
+    tracers[*(u32 *)(thing + 0xB4)].unk4B8[3] = -(colour.c[3] - colour2.c[3]) / 15;
+    tracers[*(u32 *)(thing + 0xB4)].tail = tracers[*(u32 *)(thing + 0xB4)].tail->next;
+    if (tracers[*(u32 *)(thing + 0xB4)].tail == tracers[*(u32 *)(thing + 0xB4)].head) {
+        tracers[*(u32 *)(thing + 0xB4)].head = tracers[*(u32 *)(thing + 0xB4)].head->next;
     }
-    if (tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4CC < 15) {
-        tracers_802CD600[*(u32 *)(thing + 0xB4)].unk4CC++;
+    if (tracers[*(u32 *)(thing + 0xB4)].unk4CC < 15) {
+        tracers[*(u32 *)(thing + 0xB4)].unk4CC++;
     }
     return 1;
 }
