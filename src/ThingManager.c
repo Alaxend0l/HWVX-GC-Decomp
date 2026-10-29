@@ -729,13 +729,13 @@ s8 RayHitsObjects_Aux(Vector4 *start, Vector4 *dir, f32 *t, void *info) {
     extern void *g_pNoRayCollideThing;
     u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults);
     s8 SegmentVsSphere(void *center, Vector4 *start, Vector4 *end, f32 radius);
-    Vector4 min;
-    Vector4 max;
-    Vector4 end;
+    Vector4 min __attribute__((aligned(16)));
+    Vector4 max __attribute__((aligned(16)));
+    Vector4 end __attribute__((aligned(16)));
     GridResult results[512];
     u32 count;
     u32 i;
-    u8 *other;
+    ThingHeader *other;
     f32 best;
     f32 hit;
 
@@ -765,10 +765,10 @@ s8 RayHitsObjects_Aux(Vector4 *start, Vector4 *dir, f32 *t, void *info) {
     }
     count = Grid_GetObjects(&min, &max, 5, results, 0x200);
     for (i = 0; i < count; i++) {
-        other = (u8 *)results[i].id;
-        if (!(*(u32 *)(other + 0x74) & 2) && other != g_pNoRayCollideThing &&
-            SegmentVsSphere(other + 0x40, start, &end, *(f32 *)(other + 0x70))) {
-            hit = (*(f32 (**)(void *, Vector4 *, Vector4 *, void *, f32))(*(u8 **)(other + 0x8C) + 0x38))(other, start, dir, info, best);
+        other = (ThingHeader *)results[i].id;
+        if (!(other->flags & 2) && other != g_pNoRayCollideThing &&
+            SegmentVsSphere(other->unk40, start, &end, other->unk70)) {
+            hit = (*(f32 (**)(void *, Vector4 *, Vector4 *, void *, f32))((u8 *)other->vtable + 0x38))(other, start, dir, info, best);
             if (hit < *t) {
                 best = hit;
             }
