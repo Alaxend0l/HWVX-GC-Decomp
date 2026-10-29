@@ -125,11 +125,11 @@ void DistanceXYZ(Vector *a, Vector *b, f32 *dist)
 
 s32 CompareDistances(Vector *a, Vector *b, f32 dist)
 {
-    f32 dy = a->y - b->y;
     f32 dx = a->x - b->x;
+    f32 dy = a->y - b->y;
     f32 dz = a->z - b->z;
     f32 sq = dist * dist;
-    f32 len = dy * dy + dx * dx + dz * dz;
+    f32 len = dx * dx + dy * dy + dz * dz;
 
     if (len > sq) {
         return 1;
