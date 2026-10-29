@@ -79,6 +79,25 @@ void SetTrackPan(IT_TRACK *trk);
 
 #pragma push
 #pragma optimization_level 1
+#pragma push
+#pragma optimization_level 1
+s32 AudioIT_Create(void)
+{
+    extern void *g_pHdr;
+    void *memset(void *dst, s32 c, u32 n);
+    u8 i;
+
+    memset(g_song, 0, sizeof(g_song));
+    memset(g_trk, 0, sizeof(g_trk));
+    for (i = 0; i < 0x20; i++)
+    {
+        g_trk[i].index = i;
+    }
+    g_pHdr = NULL;
+    return 1;
+}
+#pragma pop
+
 s32 AudioIT_Init(void)
 {
     extern void *g_pHdr;
