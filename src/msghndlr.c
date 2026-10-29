@@ -12,6 +12,15 @@ typedef struct TRKBuffer {
 void TRKResetBuffer(TRKBuffer *b, u8 keepData);
 s32 TRKMessageSend(TRKBuffer *b);
 
+typedef struct DSVersions {
+    u8 kernelMajor;
+    u8 kernelMinor;
+    u8 protocolMajor;
+    u8 protocolMinor;
+} DSVersions;
+
+s32 TRKTargetVersions(DSVersions *versions);
+
 static inline s32 TRKAppendBuffer1_ui8(TRKBuffer *b, u8 data) {
     if (b->position >= 0x880) {
         return 0x301;
