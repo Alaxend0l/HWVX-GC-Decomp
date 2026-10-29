@@ -395,7 +395,7 @@ config.libs = [
             Object(NonMatching, "Render_Matrix_.c"),
             Object(NonMatching, "Render_QuadTri_.c"),
             Object(NonMatching, "THPVideoDecode.c"),
-            Object(NonMatching, "THPDraw.c"),
+            Object(Matching, "THPDraw.c"),
             Object(NonMatching, "THPPlay.c"),
             Object(NonMatching, "THPPlayer.c"),
             Object(NonMatching, "THPRead.c"),
