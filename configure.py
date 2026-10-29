@@ -320,7 +320,7 @@ config.libs = [
             Object(NonMatching, "FileStreaming.c"),
             Object(Matching, "ForceFeedback.c"),
             Object(NonMatching, "GameSettings.c"),
-            Object(NonMatching, "GeometryHandler.c"),
+            Object(Matching, "GeometryHandler.c"),
             Object(NonMatching, "GridManager.c"),
             Object(NonMatching, "InterfaceManager.c"),
             Object(NonMatching, "ItemThing.c"),
