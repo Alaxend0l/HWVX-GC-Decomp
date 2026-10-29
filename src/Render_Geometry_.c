@@ -12,6 +12,34 @@ void GXSetChanAmbColor(s32 chan, GXColor amb_color);
 extern GXColor white;
 extern GXColor black;
 
+typedef struct GeometryGroup {
+    u16 unk0;
+    u16 flags;
+    u8 unk4[0x10 - 0x4];
+    void *data;
+    u16 unk14;
+    u8 unk16[0x18 - 0x16];
+    u16 unk18;
+    u8 unk1A[0x20 - 0x1A];
+} GeometryGroup;
+
+typedef struct Geometry {
+    u16 unk0;
+    u16 numGroups;
+    u16 unk4;
+    u16 unk6;
+    GeometryGroup *groups;
+    f32 *lodDistances;
+    f32 bboxMin[4];
+    f32 bboxMax[4];
+    f32 center[4];
+} Geometry;
+
+extern f32 g_identity[4][4];
+extern u32 m_fillMode;
+void Gfx_SetWorldMatrix(f32 (*matrix)[4]);
+void RenderGroup(Geometry *geometry, u16 group, f32 (*matrix)[4]);
+
 extern u32 m_VtxDescFlag;
 extern u32 *m_vertexBuffer;
 extern u32 m_pointLightMask;
