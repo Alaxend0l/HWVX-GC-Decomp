@@ -164,16 +164,11 @@ s32 SoundSequence_PlayQueued(s8 *seq, Vector4 *pos) {
     return thing;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
 void SoundSequence_ClearQueue(void) {
-    void Trigger_SoundSequenceQueueEmptied(void);
-    s8 SoundSource_IsLooping(s32 index);
-    void SoundSource_Stop(s32 index);
-    void Thing_Release(void *thing);
     SoundSequence *list[128];
-    SoundSequence *seq;
-    SoundSequence *next;
     u32 count;
-    u32 i;
 
     count = ThingManager_GetActiveSoundSequences((u8 **)list, 128);
     while (count != 0) {
@@ -181,27 +176,11 @@ void SoundSequence_ClearQueue(void) {
         if (list[count]->flags & 0x40000000) {
             list[count]->flags &= ~0x40000000;
             list[count]->queued = NULL;
-            seq = list[count];
-            if (seq->flags & 0x40000000) {
-                next = seq->queued;
-                if (next != NULL) {
-                    next->flags &= ~0x80000000;
-                    seq->queued = NULL;
-                } else {
-                    Trigger_SoundSequenceQueueEmptied();
-                }
-            }
-            for (i = 0; i < 4; i++) {
-                if (seq->sources[i] >= 0 && SoundSource_IsLooping(seq->sources[i])) {
-                    SoundSource_Stop(seq->sources[i]);
-                }
-                seq->sources[i] = -1;
-            }
-            Thing_Release(seq);
+            SoundSeq_Release(list[count]);
         }
     }
 }
-
+#pragma pop
 s32 SoundSequence_GetTotalElementsInQueue(void)
 {
     u8 *list[128];
