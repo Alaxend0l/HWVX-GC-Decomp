@@ -16,6 +16,8 @@ extern f32 g_fDeltaTimeSec;
 extern u32 g_iDeltaTimeMS;
 extern void *g_pSourcePlayer;
 extern Vector4 g_zeroVector;
+extern char stunt_msg_buffer[];
+extern char *g_stuntLossString;
 
 s8 Player_IsHuman(void *player);
 s32 RandomAdd_s32(s32 base, s32 range);
