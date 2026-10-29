@@ -188,6 +188,24 @@ void GXPokeZMode(u8 compare_enable, s32 func, u8 update_enable) {
     __peReg[0] = reg;
 }
 
+void GXTokenInterruptHandler(s16 interrupt, void *context) {
+    u16 token;
+    OSContext exceptionContext;
+    u32 reg;
+
+    token = __peReg[7];
+    if (TokenCB) {
+        OSClearContext(&exceptionContext);
+        OSSetCurrentContext(&exceptionContext);
+        TokenCB(token);
+        OSClearContext(&exceptionContext);
+        OSSetCurrentContext(context);
+    }
+    reg = __peReg[5];
+    reg = (reg & ~4) | 4;
+    __peReg[5] = reg;
+}
+
 void GXFinishInterruptHandler(s16 interrupt, void *context) {
     OSContext exceptionContext;
     u32 reg;
