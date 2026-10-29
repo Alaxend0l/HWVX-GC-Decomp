@@ -100,3 +100,66 @@ void TRKGetInput(void) {
     }
 }
 
+s32 TRKTestForPacket(void) {
+    s32 err;
+    s32 result;
+    s32 id;
+    s8 ch;
+
+    err = 0;
+    result = TRKReadUARTPoll((u8 *)&ch);
+    while (result == 0 && err == 0) {
+        if (gTRKFramingState.receiveState != 2) {
+            gTRKFramingState.isEscape = 0;
+        }
+        switch (gTRKFramingState.receiveState) {
+        case 0:
+            if (ch == 0x7E) {
+                err = TRKGetFreeBuffer(&gTRKFramingState.msgBufID, &gTRKFramingState.buffer);
+                gTRKFramingState.fcs = 0;
+                gTRKFramingState.receiveState = 1;
+            }
+            break;
+        case 1:
+            if (ch == 0x7E) {
+                break;
+            }
+            gTRKFramingState.receiveState = 2;
+        case 2:
+            if (ch == 0x7E) {
+                if (gTRKFramingState.isEscape) {
+                    TRKStandardACK(gTRKFramingState.buffer, 0xFF, 4);
+                    TRKDiscardFrame(&gTRKFramingState);
+                    break;
+                }
+                if (TRKCheckFrame(&gTRKFramingState)) {
+                    id = gTRKFramingState.msgBufID;
+                    gTRKFramingState.msgBufID = -1;
+                    gTRKFramingState.buffer = NULL;
+                    gTRKFramingState.receiveState = 0;
+                    return id;
+                }
+                gTRKFramingState.receiveState = 0;
+                break;
+            }
+            if (gTRKFramingState.isEscape) {
+                ch ^= 0x20;
+                gTRKFramingState.isEscape = 0;
+            } else if (ch == 0x7D) {
+                gTRKFramingState.isEscape = 1;
+                break;
+            }
+            err = TRKAppendBuffer1_ui8(gTRKFramingState.buffer, ch);
+            gTRKFramingState.fcs += ch;
+            break;
+        case 3:
+            if (ch == 0x7E) {
+                TRKDiscardFrame(&gTRKFramingState);
+            }
+            break;
+        }
+        result = TRKReadUARTPoll((u8 *)&ch);
+    }
+    return -1;
+}
+
