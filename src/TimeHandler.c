@@ -1,15 +1,15 @@
 #include "common.h"
 
 
-u8 g_iTimeShift;
-f32 g_fDeltaTimeSec_inv;
-f32 g_fDeltaTimeSec;
-s32 g_iLastTimeMS;
-f32 g_fDeltaTime60th;
-f32 g_fDeltaTimeMS;
-s32 g_iDeltaTime60th;
-s32 g_iLastDeltaTimeMS;
 s32 g_iDeltaTimeMS;
+s32 g_iLastDeltaTimeMS;
+s32 g_iDeltaTime60th;
+f32 g_fDeltaTimeMS;
+f32 g_fDeltaTime60th;
+s32 g_iLastTimeMS;
+f32 g_fDeltaTimeSec;
+f32 g_fDeltaTimeSec_inv;
+u8 g_iTimeShift;
 
 s32 g_timer300 = 300;
 s32 g_timer163 = 163;
