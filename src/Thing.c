@@ -576,7 +576,7 @@ void Thing_ProcessEndEvent(u8 *thing, u8 *event, u8 *collision, Vector4 *vel) {
         s32 owner;
         f32 a;
         f32 b;
-    } params;
+    } params __attribute__((aligned(16)));
     void *data;
     u8 *other;
 
