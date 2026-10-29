@@ -461,16 +461,6 @@ void FileStreaming_LoadingThread(void)
     EndThread();
 }
 
-static inline void FileStreaming_StartLoadingThread(void)
-{
-    if (!g_bLoadingThreadRunning)
-    {
-        g_bLoadDataPack = 1;
-        g_bLoadingThreadRunning = 1;
-        g_loadingThreadID = RunThread(FileStreaming_LoadingThread, 0x63);
-    }
-}
-
 s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded) {
     typedef struct DataPack {
         s8 used;
@@ -525,11 +515,7 @@ s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded) {
     g_dataPackToLoadType = type;
     g_pDataPackToLoad = ((DataPack **)g_StreamingDataPacks)[type] + slot;
     if (threaded) {
-        if (!g_bLoadingThreadRunning) {
-            g_bLoadDataPack = TRUE;
-            g_bLoadingThreadRunning = TRUE;
-            g_loadingThreadID = RunThread(FileStreaming_LoadingThread, 0x63);
-        }
+        FileStreaming_StartLoadingThread();
     } else {
         LoadDataPack();
     }
