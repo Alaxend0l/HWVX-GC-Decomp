@@ -600,7 +600,7 @@ config.libs = [
             Object(NonMatching, "s_cos.c"),
             Object(Matching, "s_floor.c", mw_version="GC/1.3"),
             Object(Matching, "s_frexp.c", mw_version="GC/1.3"),
-            Object(NonMatching, "s_ldexp.c", mw_version="GC/1.3"),
+            Object(Matching, "s_ldexp.c", mw_version="GC/1.3"),
             Object(Matching, "s_modf.c", mw_version="GC/1.3"),
             Object(Matching, "s_sin.c", mw_version="GC/1.3"),
             Object(Matching, "s_tan.c", mw_version="GC/1.3"),
