@@ -9,6 +9,18 @@ typedef struct SramControlBlock {
     void (*callback)(void);
 } SramControlBlock;
 
+typedef struct OSSram {
+    u16 checkSum;
+    u16 checkSumInv;
+    u32 ead0;
+    u32 ead1;
+    u32 counterBias;
+    s8 displayOffsetH;
+    u8 ntd;
+    u8 language;
+    u8 flags;
+} OSSram;
+
 typedef struct OSSramEx {
     u8 flashID[2][12];
     u32 wirelessKeyboardID;
