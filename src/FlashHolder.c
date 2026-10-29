@@ -44,6 +44,14 @@ s32 FlashHolder_Add(void *flash, Vector4 *pos, s32 arg2, f32 time) {
     return -1;
 }
 
+static inline void FlashHolder_Remove(s32 index) {
+    extern u8 g_pFlash[16][0x80];
+
+    if (index >= 0) {
+        *(void **)(g_pFlash[index] + 0x5C) = NULL;
+    }
+}
+
 void FlashHolder_Heartbeat(void) {
     extern u8 g_pFlash[16][0x80];
     extern u32 g_iDeltaTimeMS;
