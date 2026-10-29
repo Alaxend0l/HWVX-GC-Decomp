@@ -38,3 +38,21 @@ s32 __CARDRead(s32 chan, u32 addr, s32 length, void *dst, CARDCallback callback)
     card->offset = (s32)dst;
     return __CARDReadSegment(chan, BlockReadCallback);
 }
+
+s32 __CARDWritePage(s32 chan, CARDCallback callback);
+void BlockWriteCallback(s32 chan, s32 result);
+s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *dst, CARDCallback callback)
+{
+    CARDControl *card;
+
+    card = &__CARDBlock[chan];
+    if (!card->attached) {
+        return -3;
+    }
+    card->xferCallback = callback;
+    card->repeat = (u32)length / 128;
+    card->addr = (void *)addr;
+    card->offset = (s32)dst;
+    return __CARDWritePage(chan, BlockWriteCallback);
+}
+
