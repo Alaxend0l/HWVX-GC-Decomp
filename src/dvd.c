@@ -559,6 +559,19 @@ void stateBusy(DVDCommandBlock *block)
     }
 }
 
+BOOL DVDInquiryAsync(DVDCommandBlock *block, void *addr, void (*callback)(s32, DVDCommandBlock *)) {
+    BOOL idle;
+
+    block->command = 14;
+    block->address = addr;
+    block->length = 0x20;
+    block->transferredSize = 0;
+    block->callback = callback;
+
+    idle = issueCommand(2, block);
+    return idle;
+}
+
 void DVDLowReset(void);
 void DVDReset(void) {
     DVDLowReset();
