@@ -725,6 +725,8 @@ s32 AI_Car_CheckLocalStats(u8 *ai, u8 *node) {
         }
     }
     switch (stats->grip) {
+    case 0:
+        break;
     case 1:
         if (car->gripScale >= stats->gripValue) {
             return 0;
@@ -740,8 +742,8 @@ s32 AI_Car_CheckLocalStats(u8 *ai, u8 *node) {
         count = 0;
         holder = ThingManagerList_GetByType(&car->motionState.slaves, 8);
         for (i = 0; holder != NULL && i < 12; i++) {
-            WeaponSlot *slot = &holder->slots[i];
-            if (slot->def != NULL && slot->def->type == 3 && slot->ammo > slot->def->params->minAmmo) {
+            if (holder->slots[i].def != NULL && holder->slots[i].def->type == 3 &&
+                holder->slots[i].ammo > holder->slots[i].def->params->minAmmo) {
                 count++;
             }
         }
