@@ -18,9 +18,30 @@ typedef struct FixBlock {
     struct FixBlock *prev_;
     struct FixBlock *next_;
     u32 client_size_;
+    struct FixSubBlock *start_;
+    u32 n_allocated_;
 } FixBlock;
 
+typedef struct FixSubBlock {
+    FixBlock *block_;
+    struct FixSubBlock *next_;
+} FixSubBlock;
+
+typedef struct FixStart {
+    FixBlock *tail_;
+    FixBlock *head_;
+} FixStart;
+
+typedef struct mem_pool_obj {
+    Block *start_;
+    FixStart fix_start[6];
+} mem_pool_obj;
+
+extern const u32 fix_pool_sizes[6];
+
 void *Block_subBlock(Block *ths, u32 size);
+void FixBlock_construct(FixBlock *ths, FixBlock *prev, FixBlock *next, s32 index, FixSubBlock *chunk, u32 chunk_size);
+void *soft_allocate_from_var_pools(Block **pool_obj, u32 size, u32 *max_size);
 
 
 void *memset(void *dst, int c, u32 n);
