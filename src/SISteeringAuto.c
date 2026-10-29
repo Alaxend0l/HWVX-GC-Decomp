@@ -31,6 +31,21 @@ BOOL SIEnablePolling(u32 poll);
 s32 SISetCommand(s32 chan, u32 command);
 s32 SITransferCommands(void);
 
+void __SISteeringEnable(s32 chan) {
+    u32 cmd;
+    u32 chanBit;
+    u32 data[2];
+
+    chanBit = 0x80000000 >> chan;
+    if (!(__SISteeringEnableBits & chanBit)) {
+        __SISteeringEnableBits |= chanBit;
+        SIGetResponse(chan, data);
+        cmd = 0x300680;
+        SISetCommand(chan, cmd);
+        SIEnablePolling(__SISteeringEnableBits);
+    }
+}
+
 s32 SIReadSteering(s32 chan, SISteeringStatus *status) {
     BOOL enabled;
     SISteeringControl *sc;
