@@ -89,3 +89,15 @@ u16 OSGetWirelessID(s32 chan) {
     return id;
 }
 
+void OSSetWirelessID(s32 chan, u16 id) {
+    OSSramEx *sram;
+
+    sram = __OSLockSramEx();
+    if (sram->wirelessPadID[chan] != id) {
+        sram->wirelessPadID[chan] = id;
+        __OSUnlockSramEx(1);
+    } else {
+        __OSUnlockSramEx(0);
+    }
+}
+
