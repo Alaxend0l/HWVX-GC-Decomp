@@ -43,6 +43,15 @@ typedef struct CARDControl {
 } CARDControl;
 
 extern CARDControl __CARDBlock[2];
+extern u16 __CARDVendorID;
+
+static u32 SectorSizeTable[8] = {
+    8 * 1024, 16 * 1024, 32 * 1024, 64 * 1024, 128 * 1024, 256 * 1024, 0, 0,
+};
+
+static u32 LatencyTable[8] = {
+    4, 8, 16, 32, 64, 128, 256, 512,
+};
 
 int OSDisableInterrupts(void);
 int OSRestoreInterrupts(int level);
