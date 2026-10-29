@@ -219,6 +219,40 @@ s32 TRKTargetVersions(u8 *targetVersions)
     return 0;
 }
 
+s32 TRKTargetAccessDefault(u32 firstRegister, u32 lastRegister, void *b, u32 *registersLengthPtr, s32 read)
+{
+    s32 TRKAppendBuffer_ui32(void *buffer, u32 *data, s32 count);
+    s32 TRKReadBuffer_ui32(void *buffer, u32 *data, s32 count);
+    s32 error;
+    u32 count;
+    u32 *data;
+    TRKExceptionStatus savedException;
+
+    if (lastRegister > 0x24) {
+        return 0x701;
+    }
+
+    savedException = gTRKExceptionStatus_800DA0A4;
+    gTRKExceptionStatus_800DA0A4.exceptionDetected = 0;
+
+    data = gTRKCPUState.regs.gpr + firstRegister;
+    count = (lastRegister - firstRegister) + 1;
+    *registersLengthPtr = count * sizeof(u32);
+
+    if (read) {
+        error = TRKAppendBuffer_ui32(b, data, count);
+    } else {
+        error = TRKReadBuffer_ui32(b, data, count);
+    }
+
+    if (gTRKExceptionStatus_800DA0A4.exceptionDetected) {
+        *registersLengthPtr = 0;
+        error = 0x702;
+    }
+    gTRKExceptionStatus_800DA0A4 = savedException;
+    return error;
+}
+
 void fn_80094FB0(void) {
     int a = 0;
     a = 1 / a;
