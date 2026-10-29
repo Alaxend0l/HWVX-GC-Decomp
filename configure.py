@@ -328,7 +328,7 @@ config.libs = [
             Object(Matching, "LightHolder.c"),
             Object(Matching, "LineManager.c"),
             Object(Matching, "LogHandler.c"),
-            Object(NonMatching, "Looker.c"),
+            Object(Matching, "Looker.c"),
             Object(NonMatching, "Main.c"),
             Object(NonMatching, "MatrixCache.c"),
             Object(NonMatching, "NavHolder.c"),
