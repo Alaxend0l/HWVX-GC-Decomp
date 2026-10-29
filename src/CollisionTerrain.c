@@ -186,6 +186,30 @@ s8 OBoxHitsBSP(void *obox, Vector4 *vel, void *bsp, f32 *time, void *arg4)
     return 1;
 }
 
+static inline s8 PointInsideBSP(void *bsp, void *point) {
+    f32 Distance_Plane(void *arg0, void *arg1);
+    u32 node;
+
+    node = 0;
+    if (*(u8 **)((u8 *)bsp + 0x30) == NULL) {
+        return 0;
+    }
+    while (1) {
+        if (Distance_Plane(*(u8 **)((u8 *)bsp + 0x30) + node * 0x20, point) >= 0.0f) {
+            node = *(u16 *)(*(u8 **)((u8 *)bsp + 0x30) + node * 0x20 + 0x14);
+            if (node == 0xFFFF) {
+                return 0;
+            }
+        } else {
+            node = *(u16 *)(*(u8 **)((u8 *)bsp + 0x30) + node * 0x20 + 0x16);
+            if (node == 0xFFFF) {
+                break;
+            }
+        }
+    }
+    return 1;
+}
+
 s8 OBoxHitsBSPZeroTime(void *obox, void *bsp, void *arg2) {
     typedef struct {
         u8 pad[0x10];
