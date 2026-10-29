@@ -40,3 +40,31 @@ void MatrixCache_Destroy(void) {
     g_pMatrixCacheData = NULL;
 }
 
+u32 MatrixCache_Get(u32 size, void *mtx) {
+    u32 i;
+
+    if (size > 0x10) {
+        for (i = 0; i < 4; i++) {
+            if (g_pMatrixCacheData->large[i].mtx == NULL) {
+                g_pMatrixCacheData->large[i].mtx = mtx;
+                return g_pMatrixCacheData->large[i].key;
+            }
+        }
+    } else if (size > 4) {
+        for (i = 0; i < 0x80; i++) {
+            if (g_pMatrixCacheData->medium[i].mtx == NULL) {
+                g_pMatrixCacheData->medium[i].mtx = mtx;
+                return g_pMatrixCacheData->medium[i].key;
+            }
+        }
+    } else {
+        for (i = 0; i < 0x60; i++) {
+            if (g_pMatrixCacheData->small[i].mtx == NULL) {
+                g_pMatrixCacheData->small[i].mtx = mtx;
+                return g_pMatrixCacheData->small[i].key;
+            }
+        }
+    }
+    return 0;
+}
+
