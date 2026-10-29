@@ -8,6 +8,44 @@ typedef struct VITiming {
     u16 hlw;
 } VITiming;
 
+typedef struct VIPositionInfo {
+    u16 DispPosX;
+    u16 DispPosY;
+    u16 DispSizeX;
+    u16 DispSizeY;
+    u16 AdjustedDispPosX;
+    u16 AdjustedDispPosY;
+    u16 AdjustedDispSizeY;
+    u16 AdjustedPanPosY;
+    u16 AdjustedPanSizeY;
+    u16 FBSizeX;
+    u16 FBSizeY;
+    u16 PanPosX;
+    u16 PanPosY;
+    u16 PanSizeX;
+    u16 PanSizeY;
+    s32 FBMode;
+    u32 nonInter;
+    u32 tv;
+    u8 wordPerLine;
+    u8 std;
+    u8 wpl;
+    u32 bufAddr;
+    u32 tfbb;
+    u32 bfbb;
+    u8 xof;
+    s32 black;
+    s32 threeD;
+    u32 rbufAddr;
+    u32 rtfbb;
+    u32 rbfbb;
+    VITiming *timing;
+} VIPositionInfo;
+
+static u16 regs[59];
+static u16 shdwRegs[59];
+static VIPositionInfo HorVer;
+
 static inline void GetCurrentDisplayPosition(u32 *hct, u32 *vct) {
     u32 hcount;
     u32 vcount0;
