@@ -241,7 +241,7 @@ s32 THPPlayerCalcNeedMemory(void)
         {
             need = ((ActivePlayer.unk44 + 0x1F) & ~0x1F) * 10;
         }
-        pixels = ((u32 *)&ActivePlayer.videoInfo)[0] * ((u32 *)&ActivePlayer.videoInfo)[1];
+        pixels = ActivePlayer.videoInfo.xSize * ActivePlayer.videoInfo.ySize;
         need += ((pixels + 0x1F) & ~0x1F) * 3;
         need += (((pixels >> 2) + 0x1F) & ~0x1F) * 3;
         need += (((pixels >> 2) + 0x1F) & ~0x1F) * 3;
