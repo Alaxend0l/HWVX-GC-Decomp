@@ -440,6 +440,30 @@ void EXTIntrruptHandler(s16 interrupt, OSContext *context) {
     }
 }
 
+void *memmove(void *dst, const void *src, u32 n);
+BOOL EXIUnlock(s32 chan) {
+    EXIControl *exi = &Ecb[chan];
+    BOOL enabled;
+    EXICallback unlockedCallback;
+
+    enabled = OSDisableInterrupts();
+    if (!(exi->state & 0x10)) {
+        OSRestoreInterrupts(enabled);
+        return FALSE;
+    }
+    exi->state &= ~0x10;
+    SetExiInterruptMask(chan, exi);
+    if (0 < exi->items) {
+        unlockedCallback = exi->queue[0].callback;
+        if (0 < --exi->items) {
+            memmove(&exi->queue[0], &exi->queue[1], sizeof(exi->queue[0]) * exi->items);
+        }
+        unlockedCallback(chan, 0);
+    }
+    OSRestoreInterrupts(enabled);
+    return TRUE;
+}
+
 u32 EXIGetState(s32 chan) {
     EXIControl *exi = &Ecb[chan];
     return exi->state;
