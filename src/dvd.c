@@ -296,6 +296,15 @@ void stateBusy(DVDCommandBlock *block)
     }
 }
 
+void DVDLowReset(void);
+void DVDReset(void) {
+    DVDLowReset();
+    __DIRegs[0] = 0x2A;
+    __DIRegs[1] = __DIRegs[1];
+    ResetRequired = 0;
+    ResumeFromHere = 0;
+}
+
 s32 DVDSetAutoInvalidation(s32 arg0) {
     extern s32 autoInvalidation;
     s32 temp_r0;
