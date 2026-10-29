@@ -3,7 +3,7 @@
 
 double fabs(double x);
 
-const double T[] = {
+static const double T[] = {
     3.33333333333334091986e-01,
     1.33333333333201242699e-01,
     5.39682539762260521377e-02,
