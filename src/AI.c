@@ -57,8 +57,8 @@ f32 AI_AngleToTarget(u8 *ai, Vector4 *target) {
     void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
     f32 Distance_Plane(void *arg0, void *arg1);
     double acos(double x);
-    Vector4 dir;
-    Vector4 cross;
+    Vector4 dir __attribute__((aligned(16)));
+    Vector4 cross __attribute__((aligned(16)));
     f32 dot;
     f32 angle;
 
