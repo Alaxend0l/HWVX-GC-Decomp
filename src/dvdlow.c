@@ -82,3 +82,13 @@ DVDLowCallback DVDLowClearCallback(void)
     return old;
 }
 
+void __DVDLowSetWAType(u32 type, u32 seekLoc)
+{
+    s32 enabled;
+
+    enabled = OSDisableInterrupts();
+    WorkAroundType = type;
+    WorkAroundSeekLocation = seekLoc;
+    OSRestoreInterrupts(enabled);
+}
+
