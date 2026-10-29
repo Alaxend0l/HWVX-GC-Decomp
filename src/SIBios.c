@@ -79,11 +79,10 @@ void SISetCommand(s32 chan, u32 command) {
     __SIRegs[3 * chan] = command;
 }
 
-#pragma peephole off
+#pragma peephole on
 void SITransferCommands(void) {
-    *(volatile u32 *)0xCC006438 = 0x80000000;
+    __SIRegs[14] = 0x80000000;
 }
-#pragma peephole reset
 
 BOOL OSDisableInterrupts(void);
 BOOL OSRestoreInterrupts(BOOL level);
