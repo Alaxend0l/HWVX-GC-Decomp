@@ -82,6 +82,11 @@ typedef struct CarAEngine {
   f32 unk6C;                /* 0x6C */
 } CarAEngine;
 
+typedef struct CarAMaterial {
+  u8 pad00[0x18];           /* 0x00 */
+  f32 restitution;          /* 0x18 bounce of impulses (CarA_ProcessImpulse) */
+} CarAMaterial;
+
 typedef struct CarACollider {
   u8 pad00[0x14];           /* 0x00 */
   s32 maxHealth;            /* 0x14 */
