@@ -512,7 +512,7 @@ config.libs = [
             Object(NonMatching, "GXInit.c"),
             Object(NonMatching, "GXFifo.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "GXAttr.c", mw_version="GC/1.2.5n"),
-            Object(NonMatching, "GXMisc.c", mw_version="GC/1.2.5n"),
+            Object(Matching, "GXMisc.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "GXGeometry.c"),
             Object(NonMatching, "GXFrameBuf.c"),
             Object(NonMatching, "GXLight.c"),
