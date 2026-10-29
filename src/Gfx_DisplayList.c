@@ -40,6 +40,13 @@ typedef struct GDLLine {
     u8 unk0[0x30];
 } GDLLine;
 
+typedef struct GDL3DLine {
+    Vector4 p0;
+    Vector4 p1;
+    u32 color;
+    u8 unk24[0x30 - 0x24];
+} GDL3DLine;
+
 typedef struct GDLFXLine2D {
     Vector4 p0;
     Vector4 p1;
