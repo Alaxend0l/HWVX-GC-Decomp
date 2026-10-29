@@ -55,6 +55,7 @@ CARDControl __CARDBlock[2];
 u8 __CARDDiskNone[32];
 
 void OSWakeupThread(OSThreadQueue *queue);
+s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard);
 
 void __CARDDefaultApiCallback(void)
 {
