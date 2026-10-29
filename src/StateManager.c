@@ -91,16 +91,6 @@ void StateManager_Destroy(void) {
 }
 
 s32 StateManager_GotoState(s32 state) {
-    typedef struct GameState {
-        void (*interrupt)(void);
-        void (*heartbeat)(void);
-        s8 (*enter)(s32 prev);
-        s8 (*exit)(s32 next);
-    } GameState;
-    typedef struct StateManager {
-        GameState states[13];
-        s32 current;
-    } StateManager;
     extern StateManager *g_pStateManager;
     extern void (*Interrupt_Process)(void);
     extern void (*Heartbeat_Process)(void);
