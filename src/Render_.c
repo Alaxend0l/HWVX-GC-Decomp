@@ -6,6 +6,26 @@ void GXSetVtxAttrFmt(s32 vtxfmt, s32 attr, s32 cnt, s32 type, u8 frac);
 
 extern u32 m_VtxDescFlag;
 
+void *Allocate(u32 size, u32 flags, const char *name);
+void *memset(void *dst, int c, u32 n);
+void PrintDVDMessage(void);
+void GXSetBlendMode(s32 type, s32 src, s32 dst, s32 op);
+void GXSetColorUpdate(u8 enable);
+void GXCopyDisp(void *dest, u8 clear);
+void GXDrawDone(void);
+void VISetNextFrameBuffer(void *fb);
+void VISetBlack(s32 black);
+void VIFlush(void);
+void VIWaitForRetrace(void);
+
+extern void *g_pDL;
+extern void *g_currentBuffer;
+extern void *g_frameBuffer1;
+extern void *g_frameBuffer2;
+extern u8 m_firstFrame;
+extern s32 m_srcBlend;
+extern s32 m_dstBlend;
+
 void Render_ClearScreen(void) {
 
 }
