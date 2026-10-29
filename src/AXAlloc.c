@@ -4,6 +4,12 @@ extern void * __AXCallbackStack;
 extern void * __AXStackHead[32];
 extern void * __AXStackTail[32];
 
+#pragma peephole on
+void *__AXGetStackHead(u32 priority)
+{
+    return __AXStackHead[priority];
+}
+
 void __AXAllocInit(void)
 {
     u32 i;
