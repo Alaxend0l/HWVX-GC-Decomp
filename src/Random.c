@@ -25,6 +25,24 @@ void RandomNumberGenerator_GetRandomQuaternion(Vector4 *q) {
     GenerateQuaternion(&axis, q, angle);
 }
 
+void RandomNumberGenerator_GetRandomSubMatrix(Vector4 *m) {
+    RandomNumberGenerator *rng = &g_randomNumberGenerator;
+    s32 i = rng->unk3000 * 3;
+
+    m[0].x = rng->vectors[i].x;
+    m[0].y = rng->vectors[i].y;
+    m[0].z = rng->vectors[i++].z;
+    m[1].x = rng->vectors[i].x;
+    m[1].y = rng->vectors[i].y;
+    m[1].z = rng->vectors[i++].z;
+    m[2].x = rng->vectors[i].x;
+    m[2].y = rng->vectors[i].y;
+    m[2].z = rng->vectors[i].z;
+    if (++rng->unk3000 >= 0x100) {
+        rng->unk3000 = 0;
+    }
+}
+
 s32 RandomNumberGenerator_GetRandomInteger(s32 min, s32 max) {
     return RandomAdd_s32(min, max - min);
 }
