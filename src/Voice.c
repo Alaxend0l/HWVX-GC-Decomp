@@ -58,6 +58,7 @@ void AudioVoice_Create_(void *voices);
 void AudioVoice_Destroy_(void);
 void SetVoiceState_(Voice *voice, s32 state);
 void SetVoiceVol_(Voice *voice, s32 vol);
+void StartVoice_(Voice *voice);
 s8 SetVoiceRate_(Voice *voice);
 
 void AudioVoice_Create(void) {
