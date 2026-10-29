@@ -79,8 +79,8 @@ void __fstLoad(void) {
     OSBootInfo *bootInfo;
     DVDDiskID *id;
     u8 idTmpBuf[sizeof(DVDDiskID) + 31];
-    static DVDCommandBlock block;
     void *arenaHi;
+    static DVDCommandBlock block;
 
     arenaHi = OSGetArenaHi();
     bootInfo = (OSBootInfo *)0x80000000;
