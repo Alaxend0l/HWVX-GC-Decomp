@@ -74,6 +74,51 @@ s32 TRKInitializeIntDrivenUART(u32 param1, u32 param2, u32 param3, volatile u8 *
     return 0;
 }
 
+s32 InitMetroTRKCommTable(s32 hwId) {
+    void OSReport(const char *msg, ...);
+    s32 Hu_IsStub(void);
+    s32 AMC_IsStub(void);
+    void DBInitComm(void);
+    void DBInitInterrupts(void);
+    void DBQueryData(void);
+    void DBRead(void);
+    void DBWrite(void);
+    void DBOpen(void);
+    void DBClose(void);
+    void EXI2_Init(void);
+    void EXI2_EnableInterrupts(void);
+    void EXI2_Poll(void);
+    void EXI2_ReadN(void);
+    void EXI2_WriteN(void);
+    void EXI2_Reserve(void);
+    void EXI2_Unreserve(void);
+    extern void (*gDBCommTable[7])(void);
+    s32 result;
+
+    if (hwId == 1) {
+        OSReport("MetroTRK : Set to GDEV hardware\n");
+        result = Hu_IsStub();
+        gDBCommTable[0] = DBInitComm;
+        gDBCommTable[1] = DBInitInterrupts;
+        gDBCommTable[2] = DBQueryData;
+        gDBCommTable[3] = DBRead;
+        gDBCommTable[4] = DBWrite;
+        gDBCommTable[5] = DBOpen;
+        gDBCommTable[6] = DBClose;
+    } else {
+        OSReport("MetroTRK : Set to AMC DDH hardware\n");
+        result = AMC_IsStub();
+        gDBCommTable[0] = EXI2_Init;
+        gDBCommTable[1] = EXI2_EnableInterrupts;
+        gDBCommTable[2] = EXI2_Poll;
+        gDBCommTable[3] = EXI2_ReadN;
+        gDBCommTable[4] = EXI2_WriteN;
+        gDBCommTable[5] = EXI2_Reserve;
+        gDBCommTable[6] = EXI2_Unreserve;
+    }
+    return result;
+}
+
 void TRKEXICallBack(s16 chan, void *ctx) {
     OSEnableScheduler();
     TRKLoadContext(ctx, 0x500);
