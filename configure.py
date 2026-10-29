@@ -296,7 +296,7 @@ config.libs = [
             Object(NonMatching, "AI.c"),
             Object(NonMatching, "AI_CarA.c"),
             Object(NonMatching, "AnimHandler.c"),
-            Object(NonMatching, "AttachThing.c"),
+            Object(Matching, "AttachThing.c"),
             Object(NonMatching, "AudioManager.c"),
             Object(NonMatching, "BSPN0.c"),
             Object(NonMatching, "CameraManager.c"),
