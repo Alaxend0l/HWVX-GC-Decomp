@@ -21,6 +21,17 @@ typedef struct GXData {
 
 extern GXData *gx;
 
+#pragma push
+#pragma peephole on
+void GXSetCoPlanar(u8 enable) {
+    gx->genMode = (gx->genMode & ~0x80000) | ((u32)enable << 19);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = 0xFE080000;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->genMode;
+}
+#pragma pop
+
 void __GXSetGenMode(void) {
     GXWGFifo.u8 = 0x61;
     GXWGFifo.u32 = gx->genMode;
