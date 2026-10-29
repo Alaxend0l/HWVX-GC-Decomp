@@ -62,14 +62,24 @@ void Drone_GetCameraOrientationInfo(void *drone, void *camera, void *info) {
 }
 
 s32 Drone_Init(u8 *drone, u8 *data) {
-    extern Vector4 g_zeroVector;
     void *LoadDataChunkFile(char *name);
     void QuaternionToSubMatrix(void *quat, void *mtx);
-    typedef struct {
+    typedef struct ABox {
         Vector4 v[3];
-    } Box;
-    Box box;
-    u8 *props;
+    } __attribute__((aligned(16))) ABox;
+    typedef struct DroneInfoEx {
+        f32 inertia[3];
+        u8 pad0C[0x10 - 0xC];
+        u8 type;
+        u8 pad11[0x14 - 0x11];
+        u32 unk14;
+        u8 pad18[0x20 - 0x18];
+        f32 mass;
+        u8 pad24[0x44 - 0x24];
+        ABox *box;
+    } DroneInfoEx;
+    ABox box;
+    DroneInfoEx *info;
 
     Thing_Init(drone, (s32)data);
     *(void **)(drone + 0xD4) = LoadDataChunkFile("NPP.ANI");
@@ -87,47 +97,47 @@ s32 Drone_Init(u8 *drone, u8 *data) {
     *(f32 *)(drone + 0x16C) = 40.0f;
     *(f32 *)(drone + 0x168) = 5.0f;
     *(void **)(drone + 0xC0) = *(void **)(data + 0x40);
-    props = *(u8 **)(*(u8 **)(drone + 0xC0) + 0x10);
-    switch (props[0x10]) {
+    info = *(DroneInfoEx **)(*(u8 **)(drone + 0xC0) + 0x10);
+    switch (info->type) {
     case 0:
-        *(f32 *)(drone + 0x70) = *(f32 *)(*(u8 **)(props + 0x44) + 0x20);
+        *(f32 *)(drone + 0x70) = info->box->v[2].x;
         *(u16 *)(drone + 0x80) = 1;
         break;
     case 1:
         break;
     }
-    *(u32 *)(drone + 0x78) = *(u32 *)(*(u8 **)(*(u8 **)(drone + 0xC0) + 0x10) + 0x14);
+    *(u32 *)(drone + 0x78) = (*(DroneInfoEx **)(*(u8 **)(drone + 0xC0) + 0x10))->unk14;
     *(f32 *)(drone + 0x180) = 0.0f;
     *(Vector4 *)(drone + 0x100) = g_zeroVector;
     *(Vector4 *)(drone + 0xF0) = *(Vector4 *)(drone + 0x100);
     *(s32 *)(drone + 0x184) = 0;
     *(s32 *)(drone + 0x17C) = 0;
-    props = *(u8 **)(*(u8 **)(drone + 0xC0) + 0x10);
-    switch (props[0x10]) {
+    info = *(DroneInfoEx **)(*(u8 **)(drone + 0xC0) + 0x10);
+    switch (info->type) {
     case 0:
-        box = **(Box **)(props + 0x44);
+        box = *info->box;
         break;
     case 1:
         break;
     }
-    *(f32 *)(drone + 0x120) = 1.0f / (*(f32 *)(*(u8 **)(*(u8 **)(drone + 0xC0) + 0x10) + 0x0) * *(f32 *)(*(u8 **)(*(u8 **)(drone + 0xC0) + 0x10) + 0x20) * (box.v[1].y * box.v[1].y + box.v[1].z * box.v[1].z));
-    *(f32 *)(drone + 0x124) = 1.0f / (*(f32 *)(*(u8 **)(*(u8 **)(drone + 0xC0) + 0x10) + 0x4) * *(f32 *)(*(u8 **)(*(u8 **)(drone + 0xC0) + 0x10) + 0x20) * (box.v[1].x * box.v[1].x + box.v[1].z * box.v[1].z));
-    *(f32 *)(drone + 0x128) = 1.0f / (*(f32 *)(*(u8 **)(*(u8 **)(drone + 0xC0) + 0x10) + 0x8) * *(f32 *)(*(u8 **)(*(u8 **)(drone + 0xC0) + 0x10) + 0x20) * (box.v[1].x * box.v[1].x + box.v[1].y * box.v[1].y));
+    *(f32 *)(drone + 0x120) = 1.0f / (info->inertia[0] * info->mass * (box.v[1].y * box.v[1].y + box.v[1].z * box.v[1].z));
+    *(f32 *)(drone + 0x124) = 1.0f / ((*(DroneInfoEx **)(*(u8 **)(drone + 0xC0) + 0x10))->inertia[1] * (*(DroneInfoEx **)(*(u8 **)(drone + 0xC0) + 0x10))->mass * (box.v[1].x * box.v[1].x + box.v[1].z * box.v[1].z));
+    *(f32 *)(drone + 0x128) = 1.0f / ((*(DroneInfoEx **)(*(u8 **)(drone + 0xC0) + 0x10))->inertia[2] * (*(DroneInfoEx **)(*(u8 **)(drone + 0xC0) + 0x10))->mass * (box.v[1].x * box.v[1].x + box.v[1].y * box.v[1].y));
     Thing_AddToGrid(drone, 0);
     *(Vector4 *)(drone + 0x110) = g_zeroVector;
     *(Vector4 *)(drone + 0x130) = g_zeroVector;
     *(u32 *)(drone + 0x74) |= 4;
     *(u32 *)(drone + 0x74) |= 0x80;
-    *(f32 *)(drone + 0x190) = -3.3944604f;
+    *(f32 *)(drone + 0x190) = -3.39446f;
     *(f32 *)(drone + 0x194) = -0.48040998f;
     *(f32 *)(drone + 0x198) = -4.5236802f;
-    *(f32 *)(drone + 0x1A0) = 3.3944604f;
+    *(f32 *)(drone + 0x1A0) = 3.39446f;
     *(f32 *)(drone + 0x1A4) = -0.48040998f;
     *(f32 *)(drone + 0x1A8) = -4.5236802f;
-    *(f32 *)(drone + 0x1B0) = -3.3944604f;
+    *(f32 *)(drone + 0x1B0) = -3.39446f;
     *(f32 *)(drone + 0x1B4) = -0.48040998f;
     *(f32 *)(drone + 0x1B8) = 5.6166801f;
-    *(f32 *)(drone + 0x1C0) = 3.3944604f;
+    *(f32 *)(drone + 0x1C0) = 3.39446f;
     *(f32 *)(drone + 0x1C4) = -0.48040998f;
     *(f32 *)(drone + 0x1C8) = 5.6166801f;
     drone[0x1DC] = 0;
