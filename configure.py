@@ -526,7 +526,7 @@ config.libs = [
             Object(NonMatching, "GXTransform.c"),
             Object(NonMatching, "GXPerf.c"),
             Object(NonMatching, "SIBios.c"),
-            Object(NonMatching, "SISamplingRate.c", mw_version="GC/1.2.5n"),
+            Object(Matching, "SISamplingRate.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "SISteering.c"),
             Object(NonMatching, "SISteeringXfer.c", mw_version="GC/1.2.5n"),
             Object(Matching, "SISteeringAuto.c", mw_version="GC/1.2.5n"),
