@@ -874,4 +874,97 @@ void DisplayList_RenderGXList(void) {
         }
     }
 }
+
+void DisplayList_AddGeometry(u32 geometry, u16 matrix, s32 lightState, u8 lod, u8 flag, GXColor color) {
+    Geometry *geom = (Geometry *)geometry;
+    DLGroup *group;
+    u16 i;
+    u16 flags;
+    u8 unkE;
+
+    if (geom->groups[0].flags & 0x4000) {
+        for (i = 0; i < geom->numGroups; i++) {
+            if (geom->groups[i].data != NULL) {
+                group = DisplayList_AddGroup_Overlay();
+                if (group != NULL) {
+                    group->geometry = geom;
+                    group->group = i;
+                    group->matrix = matrix;
+                    group->unkE = 0;
+                    group->unkD = lod;
+                    group->window = g_currentWindow;
+                }
+            }
+        }
+        return;
+    }
+    for (i = 0; i < geom->numGroups; i++) {
+        if (geom->groups[i].data == NULL) {
+            continue;
+        }
+        flags = geom->groups[i].flags;
+        unkE = geom->groups[i].unk14;
+        if (flags & 2) {
+            group = DisplayList_AddGroup_Alpha();
+            if (group != NULL) {
+                group->geometry = geom;
+                group->group = i;
+                group->matrix = matrix;
+                group->unkE = unkE;
+                group->unkD = lod;
+                group->window = g_currentWindow;
+                group->lightState = lightState;
+            }
+        } else if (flags & 0x80) {
+            DisplayList_AddGeometryAlphaGroup(geom, i, matrix, flag, color);
+        } else if (flags & 1) {
+            DisplayList_AddGeometryAlphaGroup(geom, i, matrix, flag, color);
+        } else if (!(flags & 0x40)) {
+            if ((flags & 4) || (flags & 0x10)) {
+                group = DisplayList_AddGroup_Lit(geom->groups[i].unk18);
+                if (group != NULL) {
+                    group->geometry = geom;
+                    group->group = i;
+                    group->matrix = matrix;
+                    group->unkE = unkE;
+                    group->unkD = lod;
+                    group->lightState = lightState;
+                    group->window = g_currentWindow;
+                }
+            } else if (flags & 0x100) {
+                group = DisplayList_AddGroup_Decal();
+                if (group != NULL) {
+                    group->geometry = geom;
+                    group->group = i;
+                    group->matrix = matrix;
+                    group->unkE = unkE;
+                    group->unkD = lod;
+                    group->window = g_currentWindow;
+                }
+            } else {
+                group = DisplayList_AddGroup_Opaque(geom->groups[i].unk18);
+                if (group != NULL) {
+                    group->geometry = geom;
+                    group->group = i;
+                    group->matrix = matrix;
+                    group->unkE = unkE;
+                    group->unkD = lod;
+                    group->window = g_currentWindow;
+                }
+            }
+        }
+        if (geom->groups[i].flags & 0x10) {
+            group = DisplayList_AddGroup_Shadow();
+            if (group != NULL) {
+                group->geometry = geom;
+                group->group = i;
+                group->matrix = matrix;
+                group->unkE = unkE;
+                group->unkD = lod;
+                group->window = g_currentWindow;
+            }
+        }
+    }
+}
+
 #pragma use_lmw_stmw reset
