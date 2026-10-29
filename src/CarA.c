@@ -253,7 +253,7 @@ void CarA_ProcessForce(u8 *car, Vector4 *force, Vector4 *dir)
     *(f32 *)(car + 0x3A8) += torque.z;
 }
 
-void CarA_ProcessImpulse(u8 *car, Vector4 *normal, Vector4 *pos, Vector4 *pointVel, f32 restitution) {
+void CarA_ProcessImpulse(void *thing, Vector4 *normal, Vector4 *pos, Vector4 *pointVel, f32 restitution) {
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
     void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *out);
     f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
@@ -261,67 +261,63 @@ void CarA_ProcessImpulse(u8 *car, Vector4 *normal, Vector4 *pos, Vector4 *pointV
     f32 Sqrt(f32 x);
     void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
     void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
-    Vector4 impulse;
-    Vector4 r;
-    Vector4 vel = *pointVel;
-    Vector4 rxn;
-    Vector4 ang;
-    Vector4 angxr;
-    Vector4 localRxn;
-    Vector4 scaledRxn;
-    Vector4 torque;
-    Vector4 localAng;
-    Vector4 scaledAng;
-    Vector4 scaled;
-    Vector4 local;
+    CarA *car = thing;
+    Vector4 impulse __attribute__((aligned(16)));
+    Vector4 r __attribute__((aligned(16)));
+    Vector4 vel __attribute__((aligned(16)));
+    Vector4 rxn __attribute__((aligned(16)));
+    Vector4 ang __attribute__((aligned(16)));
+    Vector4 angxr __attribute__((aligned(16)));
+    Vector4 localRxn __attribute__((aligned(16)));
+    Vector4 scaledRxn __attribute__((aligned(16)));
+    Vector4 torque __attribute__((aligned(16)));
+    Vector4 localAng __attribute__((aligned(16)));
+    Vector4 scaledAng __attribute__((aligned(16)));
     f32 num;
     f32 j;
     f32 maxAng;
     f32 mag;
 
-    PSVECSubtract(pos, (Vector4 *)(car + 0x40), &r);
-    num = -(restitution * *(f32 *)(*(u8 **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x30) + 0x18) + 1.0f) * PSVECDotProduct(&vel, normal);
+    vel = *pointVel;
+    PSVECSubtract(pos, &car->worldMatrix.v[3], &r);
+    num = -(restitution * car->vehicleIface->collider->material->restitution + 1.0f) * PSVECDotProduct(&vel, normal);
     PSVECCrossProduct(&r, normal, &rxn);
-    InverseXformVecOrientation(car + 0x10, &rxn, &localRxn);
-    scaledRxn.x = *(f32 *)(car + 0x3C0) * localRxn.x;
-    scaledRxn.y = *(f32 *)(car + 0x3D4) * localRxn.y;
-    scaledRxn.z = *(f32 *)(car + 0x3E8) * localRxn.z;
-    XformVecOrientation(car + 0x10, &scaledRxn, &ang);
+    InverseXformVecOrientation(&car->worldMatrix, &rxn, &localRxn);
+    scaledRxn.x = car->inverseBodyInertia.v[0].x * localRxn.x;
+    scaledRxn.y = car->inverseBodyInertia.v[1].y * localRxn.y;
+    scaledRxn.z = car->inverseBodyInertia.v[2].z * localRxn.z;
+    XformVecOrientation(&car->worldMatrix, &scaledRxn, &ang);
     PSVECCrossProduct(&ang, &r, &angxr);
-    j = num / (1.0f / *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x20) + PSVECDotProduct(&angxr, normal));
+    j = num / (1.0f / car->vehicleIface->collider->mass + PSVECDotProduct(&angxr, normal));
     impulse.x = j * normal->x;
     impulse.y = j * normal->y;
     impulse.z = j * normal->z;
-    *(f32 *)(car + 0x0) += impulse.x / *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x20);
-    *(f32 *)(car + 0x4) += impulse.y / *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x20);
-    *(f32 *)(car + 0x8) += impulse.z / *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x20);
+    car->velocity.x += impulse.x / car->vehicleIface->collider->mass;
+    car->velocity.y += impulse.y / car->vehicleIface->collider->mass;
+    car->velocity.z += impulse.z / car->vehicleIface->collider->mass;
     PSVECCrossProduct(&r, &impulse, &torque);
-    *(f32 *)(car + 0x380) += torque.x;
-    *(f32 *)(car + 0x384) += torque.y;
-    *(f32 *)(car + 0x388) += torque.z;
-    if (*(u32 *)(car + 0x3B8) <= 1) {
-        maxAng = *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x80) + 0x3C);
-        InverseXformVecOrientation(car + 0x10, (Vector4 *)(car + 0x380), &localAng);
-        scaledAng.x = *(f32 *)(car + 0x3C0) * localAng.x;
-        scaledAng.y = *(f32 *)(car + 0x3D4) * localAng.y;
-        scaledAng.z = *(f32 *)(car + 0x3E8) * localAng.z;
+    car->angularMomentum.x += torque.x;
+    car->angularMomentum.y += torque.y;
+    car->angularMomentum.z += torque.z;
+    if (car->numWheelsGrounded <= 1) {
+        maxAng = car->vehicleIface->engine->maxAngularVel;
+        InverseXformVecOrientation(&car->worldMatrix, &car->angularMomentum, &localAng);
+        scaledAng.x = car->inverseBodyInertia.v[0].x * localAng.x;
+        scaledAng.y = car->inverseBodyInertia.v[1].y * localAng.y;
+        scaledAng.z = car->inverseBodyInertia.v[2].z * localAng.z;
         mag = PSVECSquareMag(&scaledAng);
         if (mag > maxAng * maxAng) {
             mag = maxAng / Sqrt(mag);
             scaledAng.x *= mag;
             scaledAng.y *= mag;
             scaledAng.z *= mag;
-            localAng.x = scaledAng.x / *(f32 *)(car + 0x3C0);
-            localAng.y = scaledAng.y / *(f32 *)(car + 0x3D4);
-            localAng.z = scaledAng.z / *(f32 *)(car + 0x3E8);
-            XformVecOrientation(car + 0x10, &localAng, (Vector4 *)(car + 0x380));
+            localAng.x = scaledAng.x / car->inverseBodyInertia.v[0].x;
+            localAng.y = scaledAng.y / car->inverseBodyInertia.v[1].y;
+            localAng.z = scaledAng.z / car->inverseBodyInertia.v[2].z;
+            XformVecOrientation(&car->worldMatrix, &localAng, &car->angularMomentum);
         }
     }
-    InverseXformVecOrientation(car + 0x10, (Vector4 *)(car + 0x380), &local);
-    scaled.x = *(f32 *)(car + 0x3C0) * local.x;
-    scaled.y = *(f32 *)(car + 0x3D4) * local.y;
-    scaled.z = *(f32 *)(car + 0x3E8) * local.z;
-    XformVecOrientation(car + 0x10, &scaled, (Vector4 *)(car + 0x410));
+    CarA_UpdateAngularVelocity(car);
 }
 
 s32 CarA_PreMove(void *thing) {
