@@ -10,6 +10,16 @@ void ReadThreadStart(void) {
     }
 }
 
+void ReadThreadCancel(void) {
+    extern s32 ReadThreadCreated;
+    extern u8 ReadThread[];
+
+    if (ReadThreadCreated) {
+        OSCancelThread(ReadThread);
+        ReadThreadCreated = 0;
+    }
+}
+
 void *PopReadedBuffer(void) {
     extern u8 ReadedBufferQueue[];
     void *msg;
