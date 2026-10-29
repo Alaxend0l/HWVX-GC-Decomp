@@ -99,6 +99,25 @@ void Render_Draw3DLines(void) {
     }
 }
 
+void Render_Draw3DFXLines(void) {
+    void Gfx_SetWorldMatrix(void *matrix);
+    void Render_SetTextureHandle(s32 handle);
+    void Render_StateBlendMode(u8 mode);
+    u32 i;
+
+    Gfx_SetWorldMatrix(NULL);
+    Render_SetTextureHandle(0xFFFF);
+    Set3DLineVtxDesc();
+    Render_StateBlendMode(g_pGDL->lines[0].blendMode);
+    for (i = 0; i < g_pGDL->numLines; i++) {
+        GXBegin(0xA8, 0, 2);
+        GXPosition3f32(g_pGDL->lines[i].p0.x, g_pGDL->lines[i].p0.y, g_pGDL->lines[i].p0.z);
+        GXColor3u8(g_pGDL->lines[i].c0.r, g_pGDL->lines[i].c0.g, g_pGDL->lines[i].c0.b);
+        GXPosition3f32(g_pGDL->lines[i].p1.x, g_pGDL->lines[i].p1.y, g_pGDL->lines[i].p1.z);
+        GXColor3u8(g_pGDL->lines[i].c1.r, g_pGDL->lines[i].c1.g, g_pGDL->lines[i].c1.b);
+    }
+}
+
 void Render_DrawLine2D(Line2D *line) {
     Set2DLineVtxDesc();
     GXBegin(0xA8, 0, 2);
