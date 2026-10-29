@@ -114,6 +114,24 @@ static inline void PADDisable(s32 chan)
     OSRestoreInterrupts(enabled);
 }
 
+BOOL SIGetResponse(s32 chan, void *data);
+void SISetCommand(s32 chan, u32 command);
+u32 SIEnablePolling(u32 poll);
+
+static inline void PADEnable(s32 chan)
+{
+    u32 cmd;
+    u32 chanBit;
+    u32 data[2];
+
+    chanBit = 0x80000000 >> chan;
+    EnabledBits |= chanBit;
+    SIGetResponse(chan, data);
+    cmd = (0x40 << 16) | AnalogMode;
+    SISetCommand(chan, cmd);
+    SIEnablePolling(EnabledBits);
+}
+
 static inline void DoReset(void)
 {
     u32 chanBit;
@@ -183,6 +201,23 @@ void UpdateOrigin(s32 chan)
             origin->stickX = 0;
         }
     }
+}
+
+void SISetCommand(s32 chan, u32 command);
+u32 SIEnablePolling(u32 poll);
+void PADOriginCallback(s32 chan, u32 error, void *context)
+{
+    u32 type;
+
+    if (!(error & 0xF)) {
+        UpdateOrigin(ResettingChan);
+        chan = ResettingChan;
+        EnabledBits |= 0x80000000 >> chan;
+        SIGetResponse(chan, &type);
+        SISetCommand(chan, AnalogMode | 0x400000);
+        SIEnablePolling(EnabledBits);
+    }
+    DoReset();
 }
 
 void UpdateOrigin(s32 chan);
