@@ -48,6 +48,17 @@ BOOL __CARDCompareFileName(CARDDir *ent, const char *fileName) {
     return FALSE;
 }
 
+s32 __CARDAccess(CARDControl *card, CARDDir *ent) {
+    if (ent->gameName[0] == 0xFF) {
+        return -4;
+    }
+    if (card->diskID == __CARDDiskNone
+        || (memcmp(ent->gameName, card->diskID, 4) == 0 && memcmp(ent->company, card->diskID + 4, 2) == 0)) {
+        return 0;
+    }
+    return -10;
+}
+
 s32 __CARDIsPublic(CARDDir *ent) {
     if (ent->gameName[0] == 0xFF) {
         return -4;
