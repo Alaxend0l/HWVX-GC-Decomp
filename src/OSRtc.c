@@ -1,6 +1,31 @@
 #include "common.h"
 
-extern u32 Scb[21];
+typedef struct SramControlBlock {
+    u8 sram[64];
+    u32 offset;
+    s32 enabled;
+    s32 locked;
+    s32 sync;
+    void (*callback)(void);
+} SramControlBlock;
+
+extern SramControlBlock Scb;
+
+s32 OSDisableInterrupts(void);
+s32 OSRestoreInterrupts(s32 level);
+
+static inline void *LockSram(u32 offset) {
+    s32 enabled;
+
+    enabled = OSDisableInterrupts();
+    if (Scb.locked != 0) {
+        OSRestoreInterrupts(enabled);
+        return NULL;
+    }
+    Scb.enabled = enabled;
+    Scb.locked = 1;
+    return Scb.sram + offset;
+}
 
 s32 UnlockSram(s32 commit, u32 offset);
 #pragma peephole on
@@ -14,5 +39,5 @@ s32 __OSUnlockSramEx(s32 commit) {
 
 s32 __OSSyncSram(void)
 {
-    return Scb[0x13];
+    return Scb.sync;
 }
