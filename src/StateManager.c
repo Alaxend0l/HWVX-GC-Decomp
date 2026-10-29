@@ -118,8 +118,8 @@ s32 StateManager_GotoState(s32 state) {
 }
 
 s32 StateManager_CurrState(void) {
-    extern void *g_pStateManager;
-    return M2C_FIELD(g_pStateManager, s32 *, 0xD0);
+    extern StateManager *g_pStateManager;
+    return g_pStateManager->current;
 }
 
 s32 StateManager_QueuedState(void) {
