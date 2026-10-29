@@ -1,6 +1,8 @@
 #include "common.h"
 #include "LGWheels.h"
 
+#pragma readonly_strings on
+
 extern "C" void *memcpy(void *dst, const void *src, u32 n);
 extern "C" void LGInit(void);
 extern "C" void OSReport(const char *msg, ...);
