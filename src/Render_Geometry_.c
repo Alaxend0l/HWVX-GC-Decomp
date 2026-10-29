@@ -50,3 +50,16 @@ void SetTriVtxDescIdx(void) {
     }
 }
 
+void SetTriVtxDescIdxAlpha(void) {
+    if (m_VtxDescFlag != 0x400) {
+        m_VtxDescFlag = 0x400;
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 3);
+        GXSetVtxDesc(0xB, 3);
+        GXSetVtxDesc(0xD, 3);
+        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+        GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+        GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    }
+}
+
