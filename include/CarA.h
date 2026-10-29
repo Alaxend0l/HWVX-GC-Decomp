@@ -92,7 +92,11 @@ typedef struct CarAInfo {
   u8 pad84[4];              /* 0x84 */
   CarAAccel *accel;         /* 0x88 */
   CarAStuntInfo *stunt;     /* 0x8C */
-  u8 pad90[0x48];           /* 0x90 */
+  u8 pad90[0x10];           /* 0x90 */
+  CarACollider *collider;   /* 0xA0 */
+  u8 padA4[0x2C];           /* 0xA4 */
+  u32 numWheels;            /* 0xD0 */
+  CarTrailBone *wheels;     /* 0xD4 */
   u32 numGears;             /* 0xD8 */
   CarAGear *gears;          /* 0xDC torque curve table */
   u32 numSlaves;            /* 0xE0 */
