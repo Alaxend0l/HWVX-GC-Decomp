@@ -156,7 +156,6 @@ s32 TRKDoContinue(TRKBuffer *b) {
     return err;
 }
 
-s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data);
 s32 TRKTargetFlushCache(u8 option, u32 start, u32 end);
 s32 TRKDoFlushCache(TRKBuffer *b) {
     u32 start;
