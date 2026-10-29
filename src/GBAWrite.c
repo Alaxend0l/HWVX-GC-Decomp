@@ -94,3 +94,18 @@ void WriteProc(s32 chan)
 	}
 	*gba->status = gba->input[0] & 0x3A;
 }
+
+s32 GBAWriteAsync(s32 chan, u8 *src, u8 *status, GBACallback callback) {
+    GBAControl *gba = &__GBA[chan];
+
+    if (gba->callback != NULL) {
+        return 2;
+    }
+    gba->output[0] = 0x15;
+    memcpy(&gba->output[1], src, 4);
+    gba->ptr = src;
+    gba->status = status;
+    gba->callback = callback;
+    return __GBATransfer(chan, 5, 1, WriteProc);
+}
+
