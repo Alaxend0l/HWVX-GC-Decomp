@@ -76,6 +76,17 @@ void GXSetDispCopySrc(u16 left, u16 top, u16 wd, u16 ht) {
     gx->cpDispSize = ((u32)gx->cpDispSize & ~0xFF000000) | ((u32)0x4A << 24);
 }
 
+void GXSetTexCopySrc(u16 left, u16 top, u16 wd, u16 ht) {
+    gx->cpTexSrc = 0;
+    gx->cpTexSrc = ((u32)gx->cpTexSrc & ~0x3FF) | ((u32)left);
+    gx->cpTexSrc = ((u32)gx->cpTexSrc & ~0xFFC00) | ((u32)top << 10);
+    gx->cpTexSrc = ((u32)gx->cpTexSrc & ~0xFF000000) | ((u32)0x49 << 24);
+    gx->cpTexSize = 0;
+    gx->cpTexSize = ((u32)gx->cpTexSize & ~0x3FF) | ((u32)(wd - 1));
+    gx->cpTexSize = ((u32)gx->cpTexSize & ~0xFFC00) | ((u32)(ht - 1) << 10);
+    gx->cpTexSize = ((u32)gx->cpTexSize & ~0xFF000000) | ((u32)0x4A << 24);
+}
+
 void GXSetDispCopyDst(u16 wd, u16 ht) {
     u16 stride;
 
