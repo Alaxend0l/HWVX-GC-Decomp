@@ -1,5 +1,6 @@
 #include "common.h"
 extern u8 g_playerManager[0x20E0];
+s8 Player_IsHuman(void *player);
 
 void PlayerManager_Create(void) {
 
