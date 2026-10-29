@@ -100,3 +100,28 @@ void *SISetSteeringSamplingCallback(void (*callback)(void))
     return prev;
 }
 
+s32 SISetCommand(s32 chan, u32 command);
+s32 SITransferCommands(void);
+void SIControlSteering(s32 chan, u32 control, s32 level) {
+    BOOL enabled;
+    u32 command;
+
+    control &= 0x600;
+    if (level <= -128) {
+        command = 0;
+    } else if (level >= 128) {
+        command = 0x100;
+    } else {
+        command = level + 128;
+    }
+    command |= control;
+    command &= 0x7FF;
+    enabled = OSDisableInterrupts();
+    if (__SISteeringEnableBits & (0x80000000 >> chan)) {
+        command |= 0x300000;
+        SISetCommand(chan, command);
+        SITransferCommands();
+    }
+    OSRestoreInterrupts(enabled);
+}
+
