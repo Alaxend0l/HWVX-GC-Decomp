@@ -604,7 +604,7 @@ config.libs = [
             Object(NonMatching, "s_modf.c"),
             Object(NonMatching, "s_sin.c"),
             Object(NonMatching, "s_tan.c"),
-            Object(NonMatching, "w_acos.c", mw_version="GC/1.3"),
+            Object(Matching, "w_acos.c", mw_version="GC/1.3"),
             Object(NonMatching, "w_atan2.c"),
             Object(NonMatching, "w_pow.c"),
             Object(NonMatching, "math_ppc.c"),
