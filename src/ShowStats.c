@@ -1,5 +1,23 @@
 #include "common.h"
 
+typedef struct TimeBarVtx {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 w;
+    f32 s;
+    f32 t;
+    GXColor color;
+    u8 pad[4];
+} TimeBarVtx;
+
+typedef struct TimeBarRect {
+    TimeBarVtx v[4];
+    u16 tex;
+    u8 blendMode;
+    u8 window;
+} TimeBarRect;
+
 
 void ShowStats_Create(void) {
     M2C_UNK fn_800957D4();
