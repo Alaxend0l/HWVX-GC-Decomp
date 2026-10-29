@@ -57,6 +57,22 @@ u8 __CARDDiskNone[32];
 void OSWakeupThread(OSThreadQueue *queue);
 s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard);
 void OSSleepThread(OSThreadQueue *queue);
+void OSInitThreadQueue(OSThreadQueue *queue);
+void OSCreateAlarm(void *alarm);
+void OSInitAlarm(void);
+void DSPInit(void);
+
+typedef struct OSResetFunctionInfo {
+    s32 (*func)(s32 final);
+    u32 priority;
+    struct OSResetFunctionInfo *next;
+    struct OSResetFunctionInfo *prev;
+} OSResetFunctionInfo;
+
+void OSRegisterResetFunction(OSResetFunctionInfo *info);
+s32 OnReset(s32 final);
+
+static OSResetFunctionInfo ResetFunctionInfo = { OnReset, 127, NULL, NULL };
 
 static inline s32 GetResultCode(s32 chan) {
     CARDControl *card;
