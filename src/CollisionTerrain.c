@@ -322,8 +322,8 @@ u32 RayHitsBSP2(Vector4 *start, Vector4 *end, Vector4 *bsp, void *node, s32 dept
         return RayHitsBSP2(start, end, bsp, (void *)n->front, depth + 1, plane, t, hit);
     }
     if (d0 > 0.0f && d1 < 0.0f) {
-        Vector4 dir;
-        Vector4 mid;
+        Vector4 dir __attribute__((aligned(16)));
+        Vector4 mid __attribute__((aligned(16)));
         PSVECSubtract(end, start, &dir);
         if (d0 != d1) {
             frac = d0 / (d0 - d1);
@@ -360,8 +360,8 @@ u32 RayHitsBSP2(Vector4 *start, Vector4 *end, Vector4 *bsp, void *node, s32 dept
         return (*(u32 **)((u8 *)*(void **)g_worldData.world + 0x5C))[n->material];
     }
     if (d0 < 0.0f && d1 > 0.0f) {
-        Vector4 dir;
-        Vector4 mid;
+        Vector4 dir __attribute__((aligned(16)));
+        Vector4 mid __attribute__((aligned(16)));
         PSVECSubtract(end, start, &dir);
         if (d0 != d1) {
             frac = d0 / (d0 - d1);
