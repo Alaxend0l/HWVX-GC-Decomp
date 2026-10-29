@@ -22,3 +22,14 @@ s32 OSGetCurrentContext(void)
 {
     return *(s32 *)0x800000d4;
 }
+
+#pragma peephole off
+void OSClearContext(OSContext *context)
+{
+    context->mode = 0;
+    context->state = 0;
+    if (context == *(OSContext **)0x800000D8) {
+        *(OSContext **)0x800000D8 = NULL;
+    }
+}
+
