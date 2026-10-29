@@ -21,6 +21,12 @@ extern GXData *gx;
 
 
 extern volatile u16 *__peReg;
+void GXPixModeSync(void) {
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->peCtrl;
+    gx->bpSentNot = 0;
+}
+
 void GXPokeAlphaMode(s32 func, u8 threshold) {
     u32 reg;
 
