@@ -539,7 +539,7 @@ config.libs = [
             Object(NonMatching, "msgbuf.c"),
             Object(NonMatching, "serpoll.c"),
             Object(NonMatching, "usr_put.c"),
-            Object(NonMatching, "dispatch.c"),
+            Object(NonMatching, "dispatch.c", mw_version="GC/1.3"),
             Object(NonMatching, "msghndlr.c"),
             Object(NonMatching, "support.c"),
             Object(Matching, "mutex_TRK.c"),
