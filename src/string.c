@@ -60,6 +60,85 @@ char *strchr(const char *str, int chr) {
     return c ? 0 : (char *)p;
 }
 
+int strcmp(const char *str1, const char *str2)
+{
+    register u8 *left = (u8 *)str1;
+    register u8 *right = (u8 *)str2;
+    u32 align, l1, r1, x;
+
+    l1 = *left;
+    r1 = *right;
+    if (l1 - r1) {
+        return l1 - r1;
+    }
+
+    if ((align = ((u32)left & 3)) != ((u32)right & 3)) {
+        goto bytecopy;
+    }
+
+    if (align) {
+        if (l1 == 0) {
+            return 0;
+        }
+        for (align = 3 - align; align; align--) {
+            l1 = *(++left);
+            r1 = *(++right);
+            if (l1 - r1) {
+                return l1 - r1;
+            }
+            if (l1 == 0) {
+                return 0;
+            }
+        }
+        left++;
+        right++;
+    }
+
+    l1 = *(u32 *)left;
+    r1 = *(u32 *)right;
+    x = l1 + 0xFEFEFEFF;
+    if (x & 0x80808080) {
+        goto adjust;
+    }
+
+    while (l1 == r1) {
+        l1 = *(++((u32 *)left));
+        r1 = *(++((u32 *)right));
+        x = l1 + 0xFEFEFEFF;
+        if (x & 0x80808080) {
+            goto adjust;
+        }
+    }
+
+    if (l1 > r1) {
+        return 1;
+    }
+    return -1;
+
+adjust:
+    l1 = *left;
+    r1 = *right;
+    if (l1 - r1) {
+        return l1 - r1;
+    }
+
+bytecopy:
+    if (l1 == 0) {
+        return 0;
+    }
+
+    do {
+        l1 = *(++left);
+        r1 = *(++right);
+        if (l1 - r1) {
+            return l1 - r1;
+        }
+        if (l1 == 0) {
+            return 0;
+        }
+    } while (1);
+}
+
 char *strcat(char *dst, const char *src) {
     const unsigned char *p = (unsigned char *)src - 1;
     unsigned char *q = (unsigned char *)dst - 1;
