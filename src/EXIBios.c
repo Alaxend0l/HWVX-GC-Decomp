@@ -261,6 +261,16 @@ BOOL EXIProbe(s32 chan) {
     return rc;
 }
 
+s32 EXIProbeEx(s32 chan) {
+    if (EXIProbe(chan)) {
+        return 1;
+    } else if (__EXIProbeStartTime[chan] != 0) {
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
 u32 __OSMaskInterrupts(u32 mask);
 BOOL EXISelect(s32 chan, u32 dev, u32 freq) {
     EXIControl *exi = &Ecb[chan];
