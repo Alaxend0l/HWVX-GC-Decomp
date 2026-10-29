@@ -303,7 +303,7 @@ config.libs = [
             Object(NonMatching, "CarA.c"),
             Object(NonMatching, "CarA_Stunts.c"),
             Object(NonMatching, "CarA_Suspension.c"),
-            Object(NonMatching, "TimeHandler.c"),
+            Object(Matching, "TimeHandler.c"),
             Object(NonMatching, "CollisionPoly.c"),
             Object(NonMatching, "CollisionTerrain.c"),
             Object(NonMatching, "CollisionThing.c"),
