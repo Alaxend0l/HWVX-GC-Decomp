@@ -44,9 +44,12 @@ typedef struct Player {
   u32 view;                 /* 0x64 viewport, 1-based */
   u8 pad68[4];              /* 0x68 */
   u32 flags;                /* 0x6C & 0x80 cleared every camera update */
-  u8 pad70[8];              /* 0x70 */
+  u8 pad70;                 /* 0x70 */
+  u8 stuntScored;           /* 0x71 set when a landed stunt scores */
+  u8 pad72[6];              /* 0x72 */
   s32 kills;                /* 0x78 */
-  u8 pad7C[0x2C];           /* 0x7C */
+  u32 stuntPoints;          /* 0x7C capped at 99999 */
+  u8 pad80[0x28];           /* 0x80 */
   void *tileCar;            /* 0xA8 the world tile car it was spawned from */
   s16 deathNavPoint;        /* 0xAC */
   s16 respawnNavPoint;      /* 0xAE */
