@@ -26,9 +26,10 @@ typedef struct Quaternion {
   f32 z;
   f32 w;
 } Quaternion;
-typedef struct Matrix4 {
+typedef union Matrix4 {
   Vector4 v[4];
-} Matrix4 __attribute__((aligned(8)));
+  f64 d[8];                 /* the game copies matrices as doubles */
+} Matrix4 __attribute__((aligned(16)));
 #define TRUE 1
 #define FALSE 0
 #ifndef NULL
