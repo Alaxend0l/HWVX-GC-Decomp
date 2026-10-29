@@ -528,9 +528,9 @@ static void SamplingHandler(s16 interrupt, void *context)
         OSClearContext(exceptionContext);
         OSSetCurrentContext(exceptionContext);
         SamplingCallback();
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(context);
     }
-    OSClearContext(exceptionContext);
-    OSSetCurrentContext(context);
 }
 
 s32 SIRegisterPollingHandler(void *handler);
