@@ -175,6 +175,49 @@ void Render_StateSetScissor(void) {
     GXSetScissor(GetRenderWindow()->unk2B0, 0.93333334f * GetRenderWindow()->unk2B8, (f32)GetRenderWindow()->width, 0.93333334f * GetRenderWindow()->height);
 }
 
+extern u8 g_CurrentViews;
+extern u32 *m_vertexBuffer;
+void GXInvalidateVtxCache(void);
+void GXInvalidateTexAll(void);
+void GXSetCopyClear(GXColor clear_clr, u32 clear_z);
+void GXSetAlphaUpdate(u8 enable);
+void Render_StateBlendMode(u32 mode);
+void Gfx_StateTextureBlendMode(s32 mode);
+void Render_StateAlphaBlendEnable(s32 enable);
+void Render_StateCullMode(s32 mode);
+void Render_StateZEnable(s32 enable);
+void Render_StateZWriteEnable(s32 enable);
+void Render_BeginScene(void) {
+    f32 top;
+    f32 wd;
+    f32 ht;
+
+    Gfx_SetProjectionMatrix(GetRenderWindow()->fov);
+    ht = 0.93333334f * GetRenderWindow()->height;
+    wd = GetRenderWindow()->width;
+    top = 0.93333334f * GetRenderWindow()->unk2B8;
+    GXSetViewport(GetRenderWindow()->unk2B0, top, wd, ht, 0.0f, 1.0f);
+    GXSetScissor(GetRenderWindow()->unk2B0, 0.93333334f * GetRenderWindow()->unk2B8, (f32)GetRenderWindow()->width, 0.93333334f * GetRenderWindow()->height);
+    GXInvalidateVtxCache();
+    GXInvalidateTexAll();
+    GXSetCopyClear(m_clearColor, 0xFFFFFF);
+    Render_StateBlendMode(1);
+    Gfx_StateTextureBlendMode(2);
+    Render_StateAlphaBlendEnable(0);
+    Render_StateCullMode(1);
+    Render_StateZEnable(1);
+    Render_StateZWriteEnable(1);
+    if (g_CurrentViews != 1) {
+        DisplayList_Init();
+    }
+    g_debugTriCount = 0;
+    Render_StateFogEnable(1);
+    m_vertexBuffer = 0;
+    m_VtxDescFlag = 0;
+    GXSetColorUpdate(1);
+    GXSetAlphaUpdate(0);
+}
+
 void Render_FlipBuffers(void) {
     PrintDVDMessage();
     GXSetColorUpdate(1);
