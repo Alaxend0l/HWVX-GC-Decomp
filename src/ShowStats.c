@@ -20,11 +20,11 @@ typedef struct GameDataFonts {
 } GameDataFonts;
 
 u8 g_timeBar[0x20];
-u32 g_bDrawTimeBars;
-s32 debugFont;
-u32 g_debugDataFlag;
-s32 g_timeBarOn;
 s32 g_pActiveTimeBar;
+s32 g_timeBarOn;
+u32 g_debugDataFlag;
+s32 debugFont;
+u32 g_bDrawTimeBars;
 
 typedef struct TimeBarVtx {
     f32 x;
