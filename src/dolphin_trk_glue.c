@@ -35,3 +35,9 @@ void EnableEXI2Interrupts(void) {
     gDBCommTable[1]();
 }
 
+s32 TRKInitializeIntDrivenUART(u32 param1, u32 param2, u32 param3, volatile u8 **inputPendingPtrRef) {
+    extern void (*gDBCommTable[7])(void);
+    ((void (*)(volatile u8 **, void *))gDBCommTable[0])(inputPendingPtrRef, TRKEXICallBack);
+    return 0;
+}
+
