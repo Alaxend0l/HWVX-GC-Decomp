@@ -2,6 +2,24 @@
 
 volatile u16 __DSPRegs[32] : 0xCC005000;
 
+typedef struct DSPTaskInfo {
+    volatile u32 state;
+    volatile u32 priority;
+    volatile u32 flags;
+    u8 unkC[0x28 - 0xC];
+    void (*init_cb)(void *task);
+    void (*res_cb)(void *task);
+    void (*done_cb)(void *task);
+    void (*req_cb)(void *task);
+    struct DSPTaskInfo *next;
+    struct DSPTaskInfo *prev;
+} DSPTaskInfo;
+
+extern DSPTaskInfo *__DSP_first_task;
+
+void __DSP_insert_task(DSPTaskInfo *task);
+void __DSP_boot_task(DSPTaskInfo *task);
+
 
 s32 DSPCheckMailToDSP(void)
 {
