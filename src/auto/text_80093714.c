@@ -136,6 +136,38 @@ s32 TRKTargetAddExceptionInfo(void *b) {
     return err;
 }
 
+s32 TRKAppendBuffer1_ui64(void *buffer, u64 data);
+s32 TRKTargetAddStopInfo(void *b) {
+    s32 err;
+    u32 inst;
+    u32 size;
+    s32 i;
+
+    err = TRKAppendBuffer1_ui32(b, gTRKCPUState.regs.pc);
+    if (err == 0) {
+        size = 4;
+        err = TRKTargetAccessMemory(&inst, gTRKCPUState.regs.pc, &size, 0, 1);
+        if (err == 0 && size != 4) {
+            err = 0x700;
+        }
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui32(b, inst);
+    }
+    if (err == 0) {
+        err = TRKAppendBuffer1_ui16(b, gTRKCPUState.field_2F8);
+    }
+    if (err == 0) {
+        for (i = 0; i < 32; i++) {
+            err = TRKAppendBuffer1_ui32(b, (u16)gTRKCPUState.regs.gpr[i]);
+        }
+        for (i = 0; i < 32; i++) {
+            err = TRKAppendBuffer1_ui64(b, (u16)gTRKCPUState.fpr[i]);
+        }
+    }
+    return err;
+}
+
 void TRKPostInterruptEvent(void)
 {
     void TRKConstructEvent(void *event, s32 eventType);
