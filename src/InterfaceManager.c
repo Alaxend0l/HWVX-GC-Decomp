@@ -996,6 +996,9 @@ void InterfaceManager_Heartbeat(void) {
     }
 }
 
+void InterfaceManager_MoveInterface(void *iface, f32 dt) {
+}
+
 void InterfaceManager_SetObjectReactive(u8 *iface, u32 onId, u32 offId) {
     u32 i;
     u32 j;
@@ -1024,48 +1027,7 @@ void InterfaceManager_SetObjectReactive(u8 *iface, u32 onId, u32 offId) {
 }
 
 #pragma use_lmw_stmw on
-s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
-    typedef struct {
-        u32 index;
-        u16 type;
-        u16 id;
-        u16 arg;
-        u16 objState;
-        u8 padC[0x20 - 0xC];
-        u32 result;
-        u32 value;
-        u8 handled;
-        u8 pad29[0x30 - 0x29];
-        u32 data[3];
-        u32 *values;
-        u16 slotId;
-    } InterfaceMessage;
-    typedef struct {
-        u8 pad0[4];
-        u32 state;
-        u8 pad8[4];
-        u8 *parentObj;
-        u32 unk10;
-        u8 pad14[0x20 - 0x14];
-        u16 *header;
-        u16 *targets[0x16];
-        u8 flags;
-        u8 id;
-        u8 pad7E;
-        u8 isChild;
-        u8 curTarget;
-        u8 unk81;
-        u8 pad82[0x90 - 0x82];
-        void (*callback)(InterfaceMessage *);
-        u8 pad94[4];
-        s32 values[0x1E];
-        u32 numValues;
-        u8 player;
-        u8 pad115[0x15C - 0x115];
-        u32 parent;
-        u8 unk160;
-        u8 unk161;
-    } Iface;
+s32 InterfaceManager_PlayEvent(InterfaceState *iface, u8 *obj, u8 *event, u16 arg) {
     typedef struct {
         s8 isVar;
         u8 pad1;
@@ -1104,23 +1066,23 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
         u32 type;
         u32 id;
     } EndLevelAction;
-    extern u8 g_interface[][0x170];
+    extern InterfaceState g_interface[];
     extern s8 g_bMemoryCardHWHack;
-    void InterfaceManager_SetObjectState(u8 *iface, u8 *obj, s32 state, s32 arg);
+    void InterfaceManager_SetObjectState(InterfaceState *iface, u8 *obj, s32 state, s32 arg);
     void SoundSequence_Play(u32 seq, s32 arg);
-    void InterfaceManager_SetLoadState(u8 *iface, s32 state);
-    void InterfaceManager_MoveInterface(u8 *iface, f32 speed);
+    void InterfaceManager_SetLoadState(InterfaceState *iface, s32 state);
+    void InterfaceManager_MoveInterface(InterfaceState *iface, f32 speed);
     u32 GameSettings_GetCodeVariable(s32 var, u32 arg);
     void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
     s32 StateManager_CurrState(void);
     void StateManager_QueueChange(s32 state);
-    void InterfaceManager_Backup_Key(u8 *iface, u8 *event, u8 flags);
+    void InterfaceManager_Backup_Key(InterfaceState *iface, u8 *event, u8 flags);
     void ActionEndLevel(void *action);
     void GameSettings_GetLoadedProgression(u32 *a, u32 *b);
     void StateProgressionManager_SetProgressionID(u32 a, u32 b);
     void InterfaceManager_ReleaseInterface(u32 index);
     void StateProgressionManager_RestartCurrentLevel(void);
-    void InterfaceManager_ExecuteActions(u8 *iface, u16 *actions);
+    void InterfaceManager_ExecuteActions(InterfaceState *iface, u16 *actions);
     void StateMovie_SetMovieToPlay(u32 movie);
     void GameSettings_SaveGame(void);
     void GameSettings_LoadGame(void);
@@ -1132,8 +1094,7 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
     void TitleScreen_RunDemoLoop(void);
     void InterfaceManager_Create(u16 *def, s32 a, s32 b);
     void GameSettings_DeleteGameFile(void);
-    void InterfaceManager_CheckConditions(u8 *iface, u8 *obj);
-    Iface *iface = (Iface *)ifaceData;
+    void InterfaceManager_CheckConditions(InterfaceState *iface, u8 *obj);
     u8 stateSet;
     u32 i;
     u32 a;
@@ -1141,10 +1102,11 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
     s32 v;
     EventMod *mod;
     ValueDef *vdefs;
+    u8 slot;
 
     stateSet = 0;
     if (obj != NULL && (*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44))[5] == 0 && (*(u8 **)(obj + 0x25C))[6] != 0) {
-        InterfaceManager_SetObjectState((u8 *)iface, obj, 3, 0);
+        InterfaceManager_SetObjectState(iface, obj, 3, 0);
         stateSet = 1;
     }
     if (((Event *)event)->def->sound != 0) {
@@ -1156,13 +1118,13 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
     case 0x20:
         if (iface->isChild != 0) {
             if (((Event *)event)->def->type == 0x20) {
-                iface = (Iface *)g_interface[iface->parent];
+                iface = &g_interface[iface->parent];
             } else {
                 return;
             }
         }
         {
-            InterfaceMessage msg;
+            InterfaceEventMsg msg;
 
             msg.index = iface->id;
             msg.type = 0xF;
@@ -1192,7 +1154,7 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
         iface->flags = ((Event *)event)->def->flags;
         iface->targets[0] = ((Event *)event)->def->target;
         if (!stateSet && iface->targets[0] != NULL) {
-            InterfaceManager_SetLoadState((u8 *)iface, 1);
+            InterfaceManager_SetLoadState(iface, 1);
             if (iface->flags & 1) {
                 iface->unk10 = 0;
                 return 0;
@@ -1216,7 +1178,7 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
             return 0;
         }
         {
-            InterfaceMessage msg;
+            InterfaceEventMsg msg;
 
             msg.index = iface->id;
             msg.type = 0x10;
@@ -1241,13 +1203,13 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
         if (StateManager_CurrState() == 2) {
             StateManager_QueueChange(0xB);
         }
-        InterfaceManager_SetLoadState((u8 *)iface, 1);
+        InterfaceManager_SetLoadState(iface, 1);
         if (iface->flags & 1) {
             iface->unk10 = 0;
             return 0;
         }
     case 4: {
-        InterfaceMessage msg;
+        InterfaceEventMsg msg;
 
         msg.index = iface->id;
         msg.type = 0;
@@ -1267,8 +1229,8 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
             SoundSequence_Play(((Event *)event)->def->sound, 0);
         }
         if (msg.result == 4) {
-            InterfaceManager_SetLoadState((u8 *)iface, 1);
-            InterfaceManager_MoveInterface((u8 *)iface, 0.0f);
+            InterfaceManager_SetLoadState(iface, 1);
+            InterfaceManager_MoveInterface(iface, 0.0f);
             return 1;
         }
         if (msg.value == 0) {
@@ -1278,7 +1240,7 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
             iface->flags = ((Event *)event)->def->flags;
             iface->targets[0] = (u16 *)msg.value;
             if (!stateSet && iface->targets[0] != NULL) {
-                InterfaceManager_SetLoadState((u8 *)iface, 1);
+                InterfaceManager_SetLoadState(iface, 1);
                 if (iface->flags & 1) {
                     iface->unk10 = 0;
                     return 0;
@@ -1288,7 +1250,8 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
         }
     }
     case 2: {
-        InterfaceMessage msg;
+        InterfaceEventMsg msg;
+        u32 cur = iface->curTarget;
 
         msg.index = iface->id;
         msg.type = 0xF;
@@ -1298,7 +1261,11 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
         msg.objState = 0;
         msg.handled = 0;
         msg.result = 0;
-        msg.slotId = iface->curTarget ? *iface->targets[iface->curTarget] : 0xFFFF;
+        if (cur != 0) {
+            msg.slotId = *iface->targets[cur];
+        } else {
+            msg.slotId = 0xFFFF;
+        }
         if (iface->parentObj != NULL && *(u8 **)(iface->parentObj + 0x25C) != NULL) {
             msg.objState = **(u8 **)(*(u8 **)(iface->parentObj + 0x25C) + 0x44);
         }
@@ -1309,7 +1276,7 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
         if (msg.result == 0xB) {
             return 1;
         }
-        InterfaceManager_Backup_Key((u8 *)iface, event, ((Event *)event)->def->flags);
+        InterfaceManager_Backup_Key(iface, event, ((Event *)event)->def->flags);
         return 0;
     }
     case 6:
@@ -1318,7 +1285,7 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
     case 9:
     case 10:
     case 0x1E: {
-        InterfaceMessage msg;
+        InterfaceEventMsg msg;
 
         msg.index = iface->id;
         if (((Event *)event)->def->type == 7) {
@@ -1387,8 +1354,8 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
             SoundSequence_Play(((Event *)event)->def->sound, 0);
         }
         if (msg.result == 4) {
-            InterfaceManager_SetLoadState((u8 *)iface, 1);
-            InterfaceManager_MoveInterface((u8 *)iface, 0.0f);
+            InterfaceManager_SetLoadState(iface, 1);
+            InterfaceManager_MoveInterface(iface, 0.0f);
             return 1;
         }
         if (msg.value == 0) {
@@ -1400,7 +1367,7 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
         iface->flags = ((Event *)event)->def->flags;
         iface->targets[0] = (u16 *)msg.value;
         if (!stateSet && iface->targets[0] != NULL) {
-            InterfaceManager_SetLoadState((u8 *)iface, 1);
+            InterfaceManager_SetLoadState(iface, 1);
             if (iface->flags & 1) {
                 iface->unk10 = 0;
                 return 0;
@@ -1409,7 +1376,7 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
         return 0;
     }
     case 0xD: {
-        InterfaceMessage msg;
+        InterfaceEventMsg msg;
 
         msg.index = iface->id;
         msg.type = 0xD;
@@ -1431,7 +1398,7 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
         break;
     }
     case 0xE: {
-        InterfaceMessage msg;
+        InterfaceEventMsg msg;
 
         msg.index = iface->id;
         msg.type = 0xE;
@@ -1451,7 +1418,7 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
         break;
     }
     case 0xB:
-        InterfaceManager_ExecuteActions((u8 *)iface, ((Event *)event)->def->target);
+        InterfaceManager_ExecuteActions(iface, ((Event *)event)->def->target);
         break;
     case 0xF:
         if (((EventArg **)((Event *)event)->def->args)[0]->isVar) {
@@ -1467,7 +1434,7 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
         StateProgressionManager_SetProgressionID(a, b);
         break;
     case 0x10: {
-        InterfaceMessage msg;
+        InterfaceEventMsg msg;
 
         msg.index = iface->id;
         msg.type = 0x11;
@@ -1490,7 +1457,7 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
         break;
     }
     case 0x11: {
-        InterfaceMessage msg;
+        InterfaceEventMsg msg;
 
         if (((EventArg *)((Event *)event)->def->args)->isVar) {
             a = iface->values[((EventArg *)((Event *)event)->def->args)->value];
@@ -1584,7 +1551,7 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
     case 0x1D:
         if (iface->state == 2) {
             TitleScreen_RunDemoLoop();
-            InterfaceManager_SetLoadState((u8 *)iface, 1);
+            InterfaceManager_SetLoadState(iface, 1);
         }
         break;
     case 0x1F:
@@ -1597,15 +1564,16 @@ s32 InterfaceManager_PlayEvent(u8 *ifaceData, u8 *obj, u8 *event, u16 arg) {
 
     for (i = 0; i < ((Event *)event)->def->numMods; i++) {
         mod = ((Event *)event)->def->mods;
-        if (mod->slot < iface->numValues) {
-            iface->values[mod->slot] += mod->delta;
+        slot = mod->slot;
+        if (slot < iface->numValues) {
+            iface->values[slot] += mod->delta;
             vdefs = *(ValueDef **)(*(u8 **)((u8 *)iface->header + 0x1C) + 4);
-            if (iface->values[mod->slot] > vdefs[mod->slot].max) {
-                iface->values[mod->slot] = __abs(iface->values[mod->slot] - vdefs[mod->slot].max) + vdefs[mod->slot].min - 1;
-            } else if (iface->values[mod->slot] < vdefs[mod->slot].min) {
-                iface->values[mod->slot] = vdefs[mod->slot].max - (__abs(iface->values[mod->slot] - vdefs[mod->slot].min) - 1);
+            if (iface->values[slot] > vdefs[slot].max) {
+                iface->values[slot] = __abs(iface->values[slot] - vdefs[slot].max) + vdefs[slot].min - 1;
+            } else if (iface->values[slot] < vdefs[slot].min) {
+                iface->values[slot] = vdefs[slot].max - (__abs(iface->values[slot] - vdefs[slot].min) - 1);
             }
-            InterfaceManager_CheckConditions((u8 *)iface, obj);
+            InterfaceManager_CheckConditions(iface, obj);
         }
     }
     return 1;
@@ -1883,6 +1851,14 @@ void InterfaceManager_MoveDialogSystem(u8 *iface, u8 *obj, f32 dt) {
             }
             *(u16 *)(obj + 0x24A) = ((TextureKeyState *)(obj + 0x2E8))->texture;
         }
+    }
+}
+
+void InterfaceManager_MoveObject(void *iface, void *obj, void *data, f32 dt) {
+    void InterfaceManager_MoveDialogSystem(void *iface, void *obj, f32 dt);
+
+    if (*(void **)((u8 *)iface + 0x158) != NULL) {
+        InterfaceManager_MoveDialogSystem(iface, obj, dt);
     }
 }
 
@@ -2475,6 +2451,9 @@ void InterfaceManager_RenderInterface(void *data) {
     }
 }
 
+void InterfaceManager_RenderObject(u8 *iface, s32 index) {
+}
+
 void InterfaceManager_DrawObject_Standard_Image(u8 *obj) {
     typedef struct RectVtx {
         f32 x;
@@ -2813,20 +2792,15 @@ void InterfaceManager_DrawMap(u8 *obj, u8 *iface) {
 #pragma use_lmw_stmw on
 s32 InterfaceManager_GetTargetArrowNearestNavPoint(void)
 {
-    typedef struct TargetArrow
-    {
-        s32 pad[4];
-        s32 nearest;
-        s32 timer;
-        s32 flag;
-    } TargetArrow;
-    extern TargetArrow g_TargetArrow;
+    extern s32 g_TargetArrow[7];
     s32 NavHolder_FindIndexOfNearestNavPoint(void *pos, s32 hint);
 
-    if (g_TargetArrow.nearest != -1 && g_TargetArrow.timer <= 0)
-        g_TargetArrow.nearest = NavHolder_FindIndexOfNearestNavPoint((void *)g_TargetArrow.pad[0], g_TargetArrow.nearest), g_TargetArrow.timer = 300;
-
-    return g_TargetArrow.nearest;
+    if (g_TargetArrow[4] == -1 || g_TargetArrow[5] <= 0)
+    {
+        g_TargetArrow[4] = NavHolder_FindIndexOfNearestNavPoint((void *)g_TargetArrow[0], g_TargetArrow[4]);
+        g_TargetArrow[5] = 300;
+    }
+    return g_TargetArrow[4];
 }
 #pragma pop
 s32 DropShip_IsChildInterfaceReady(s32 index) {
