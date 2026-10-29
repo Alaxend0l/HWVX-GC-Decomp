@@ -28,3 +28,20 @@ BOOL AXFXDelayInit(AXFX_DELAY *delay)
     OSRestoreInterrupts(old);
     return AXFXDelaySettings(delay);
 }
+
+extern void (*__AXFXFree)(void *);
+BOOL AXFXDelayShutdown(AXFX_DELAY *delay)
+{
+    BOOL old = OSDisableInterrupts();
+
+    if (delay->left != NULL)
+        __AXFXFree(delay->left);
+    if (delay->right != NULL)
+        __AXFXFree(delay->right);
+    if (delay->sur != NULL)
+        __AXFXFree(delay->sur);
+
+    OSRestoreInterrupts(old);
+    return TRUE;
+}
+
