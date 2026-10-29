@@ -92,6 +92,42 @@ extern u32 m_VtxDescFlag;
 extern u32 *m_vertexBuffer;
 extern u32 m_pointLightMask;
 
+extern s32 m_curLightState;
+extern s32 m_curEnvmapState;
+void Render_Geometry(void *geometry, void *matrix);
+void Gfx_EnableState(s32 state);
+void Gfx_DisableState(s32 state);
+void Gfx_SetBaseColor(GXColor *color);
+void *Gfx_GetWorldMatrixState(u32 index);
+void Gfx_DrawGeometryLOD_Immediate(Geometry *geometry, f32 (*matrix)[4]);
+void Render_GeometryList(void) {
+    u32 i;
+    void *geometry;
+    void *matrix;
+    GXColor color;
+
+    for (i = 0; i < g_pGDL->numDrawEntries; i++) {
+        geometry = g_pGDL->drawEntries[i].geometry;
+        matrix = Gfx_GetWorldMatrixState(g_pGDL->drawEntries[i].matrix);
+        if (g_pGDL->drawEntries[i].unk10) {
+            Gfx_EnableState(0x10);
+            color = g_pGDL->drawEntries[i].color;
+            Gfx_SetBaseColor(&color);
+        }
+        m_curLightState = g_pGDL->drawEntries[i].lightState;
+        m_curEnvmapState = g_pGDL->drawEntries[i].envmapState;
+        Render_Geometry(geometry, matrix);
+        if (g_pGDL->drawEntries[i].unk10) {
+            Gfx_DisableState(0x10);
+        }
+    }
+    for (i = 0; i < g_pGDL->numLODEntries; i++) {
+        Geometry *lod = g_pGDL->lodEntries[i].geometry;
+        void *lodMatrix = Gfx_GetWorldMatrixState(g_pGDL->lodEntries[i].matrix);
+        Gfx_DrawGeometryLOD_Immediate(lod, lodMatrix);
+    }
+}
+
 void Gfx_DrawGeometryLOD_Immediate(Geometry *geometry, f32 (*matrix)[4]) {
     u16 i;
 
