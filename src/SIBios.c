@@ -28,6 +28,19 @@ static volatile u32 InputBufferVcount[4];
 u32 SIGetType(s32 chan);
 BOOL __SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback);
 
+static inline void CallTypeAndStatusCallback(s32 chan, u32 type) {
+    void (*callback)(s32 chan, u32 type);
+    int i;
+
+    for (i = 0; i < 4; ++i) {
+        callback = (void (*)(s32, u32))TypeCallback[chan][i];
+        if (callback) {
+            TypeCallback[chan][i] = 0;
+            callback(chan, type);
+        }
+    }
+}
+
 BOOL SIBusy(void) {
     return Si.chan != -1 ? TRUE : FALSE;
 }
@@ -346,6 +359,71 @@ BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputB
     OSRestoreInterrupts(enabled);
     return TRUE;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+extern u32 __PADFixBits;
+u16 OSGetWirelessID(s32 chan);
+void OSSetWirelessID(s32 chan, u16 id);
+static void GetTypeCallback(s32 chan, u32 error, void *context) {
+    static u32 cmdFixDevice[4];
+    u32 type;
+    u32 chanBit;
+    BOOL fix;
+    u32 id;
+
+    Type[chan] &= ~0x80;
+    Type[chan] |= error;
+    TypeTime[chan] = __OSGetSystemTime();
+
+    type = Type[chan];
+
+    chanBit = 0x80000000 >> chan;
+    fix = (BOOL)(__PADFixBits & chanBit);
+    __PADFixBits &= ~chanBit;
+
+    if ((error & 0xF) || (type & 0x18000000) != 0x08000000 || !(type & 0x80000000) || (type & 0x04000000)) {
+        OSSetWirelessID(chan, 0);
+        CallTypeAndStatusCallback(chan, Type[chan]);
+        return;
+    }
+
+    id = (u32)(OSGetWirelessID(chan) << 8);
+
+    if (fix && (id & 0x100000)) {
+        cmdFixDevice[chan] = 0x4Eu << 24 | (id & 0xCFFF00) | 0x100000;
+        Type[chan] = 0x80;
+        SITransfer(chan, &cmdFixDevice[chan], 3, &Type[chan], 3, GetTypeCallback, 0);
+        return;
+    }
+
+    if (type & 0x100000) {
+        if ((id & 0xCFFF00) != (type & 0xCFFF00)) {
+            if (!(id & 0x100000)) {
+                id = type & 0xCFFF00;
+                id |= 0x100000;
+                OSSetWirelessID(chan, (u16)((id >> 8) & 0xFFFF));
+            }
+            cmdFixDevice[chan] = 0x4E << 24 | id;
+            Type[chan] = 0x80;
+            SITransfer(chan, &cmdFixDevice[chan], 3, &Type[chan], 3, GetTypeCallback, 0);
+            return;
+        }
+    } else if (type & 0x40000000) {
+        id = type & 0xCFFF00;
+        id |= 0x100000;
+        OSSetWirelessID(chan, (u16)((id >> 8) & 0xFFFF));
+        cmdFixDevice[chan] = 0x4E << 24 | id;
+        Type[chan] = 0x80;
+        SITransfer(chan, &cmdFixDevice[chan], 3, &Type[chan], 3, GetTypeCallback, 0);
+        return;
+    } else {
+        OSSetWirelessID(chan, 0);
+    }
+
+    CallTypeAndStatusCallback(chan, Type[chan]);
+}
+#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
