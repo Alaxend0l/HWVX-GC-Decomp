@@ -185,20 +185,19 @@ static inline s32 SimThread_AddDelta(SimThread *t, s32 dPos, u32 dt) {
     }
     t->deltaPos[t->deltaIdx] = dPos;
     t->deltaTime[t->deltaIdx] = dt;
-    dt = t->deltaIdx;
-    i = dt;
-    for (n = 0, sumT = 0, sumP = 0; n < 16 && sumT < 16; n++) {
+    i = t->deltaIdx;
+    for (n = 0, dt = 0, sumP = 0; n < 16 && dt < 16; n++) {
         sumP += t->deltaPos[i];
-        sumT += t->deltaTime[i++];
+        dt += t->deltaTime[i++];
         if (i == 16) {
             i = 0;
         }
     }
-    if (sumT > 16) {
+    if (dt > 16) {
         if (--i < 0) {
             i = 15;
         }
-        sumP -= Effect_MulDiv(sumT - 16, t->deltaPos[i], t->deltaTime[i]);
+        sumP -= Effect_MulDiv(dt - 16, t->deltaPos[i], t->deltaTime[i]);
     }
     return sumP;
 }
