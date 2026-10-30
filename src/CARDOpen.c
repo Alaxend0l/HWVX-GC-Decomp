@@ -19,9 +19,12 @@ typedef struct CARDDir {
 } CARDDir;
 
 typedef struct CARDControl {
-    u8 unk0[0x10C];
+    BOOL attached; // 0x000
+    u8 unk4[0x10C - 0x4];
     u8 *diskID; // 0x10C
 } CARDControl;
+
+CARDDir *__CARDGetDirBlock(CARDControl *card);
 
 extern u8 __CARDDiskNone[32];
 int memcmp(const void *a, const void *b, u32 n);
