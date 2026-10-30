@@ -49,7 +49,9 @@ static inline int DBGReadStatusInline(unsigned long *status) {
     int total = 0;
     unsigned long v;
 
-    DBGEXISelect(4);
+    if (!DBGEXISelect(4)) {
+        return 0;
+    }
     v = 1 << 30;
     total |= !DBGEXIImm(&v, 2, 1);
     total |= !DBGEXISync();
