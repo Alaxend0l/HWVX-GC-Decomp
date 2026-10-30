@@ -56,6 +56,10 @@ f32 GetBoundingBoxRadius(Vector4 *box, Vector4 *offset)
     return radius;
 }
 
+void Destructible_Init()
+{
+}
+
 void Destructible_Release(Destructible *destructible) {
     void Trigger_DestructibleKilled(void *thing);
     void OBoxHolder_Release(OBox *obox);

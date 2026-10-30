@@ -1260,6 +1260,10 @@ void InterfaceDataPackRouter(void *arg0) {
     }
 }
 
+void ArmageddonDropShip()
+{
+}
+
 f32 InterfaceInputAnimator_GetLRCounter(void);
 f32 InterfaceInputAnimator_GetUDCounter(void);
 void ArmageddonDropShipInfo(void *info) {

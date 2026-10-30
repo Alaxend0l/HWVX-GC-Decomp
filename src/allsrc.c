@@ -1418,7 +1418,7 @@ s32 SimThread_Step(VDevice *dev) {
                 f = 0;
                 flag = 0;
             }
-            if (flag) {
+            if (flag != 0) {
                 sumA += f;
             } else {
                 sumB += f;

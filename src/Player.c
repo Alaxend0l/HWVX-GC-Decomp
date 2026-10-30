@@ -219,6 +219,9 @@ void PlayerHuman_Heartbeat(void *player) {
     Player_Heartbeat(player);
 }
 
+void Player_Heartbeat()
+{}
+
 void PlayerHuman_SetDefaultControls(void *arg0, s32 index) {
     typedef struct { u8 unk0; u8 unk1; u8 keys[14]; } KeyBinding;
     typedef struct { u8 pad0[0xB8]; u8 keys[14]; u8 unkC6; u8 unkC7; } PlayerHuman;
@@ -294,6 +297,10 @@ void PlayerHuman_EvaluateCombo(u8 *player) {
     } else if (*(u32 *)(player + 0xCC) == 4 && (combo[0] & 4) && (combo[1] & 8) && (combo[2] & 8)) {
         player[0x32] = 8;
     }
+}
+
+void Player_DefaultControlReader()
+{
 }
 
 s32 Player_AIControlReader(s8 *ctrl) {

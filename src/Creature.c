@@ -925,9 +925,10 @@ void Creature_MacroStep(void *arg0, f32 dt) {
         if (creature->weight > 1.0f) {
             creature->weight = 1.0f;
         }
+        w = creature->weight;
         a = 0.0f;
         b = a;
-        w = creature->weight / (creature->weight + creature->unk110);
+        w /= w + creature->unk110;
         if (creature->anim != NULL) {
             a = creature->anim->fps;
         }

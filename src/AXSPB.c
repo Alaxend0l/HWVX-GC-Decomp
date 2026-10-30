@@ -80,17 +80,17 @@ void *__AXGetStudio(void) {
 }
 
 void __AXPrintStudio(void) {
-    s16 *studio = (s16 *)__AXStudio;
+    u8 *studio = __AXStudio;
 
-    __AXDepopFade(&__AXSpbAL, (s32 *)&studio[0], &studio[2]);
-    __AXDepopFade(&__AXSpbAR, (s32 *)&studio[3], &studio[5]);
-    __AXDepopFade(&__AXSpbAS, (s32 *)&studio[6], &studio[8]);
-    __AXDepopFade(&__AXSpbAAL, (s32 *)&studio[9], &studio[11]);
-    __AXDepopFade(&__AXSpbAAR, (s32 *)&studio[12], &studio[14]);
-    __AXDepopFade(&__AXSpbAAS, (s32 *)&studio[15], &studio[17]);
-    __AXDepopFade(&__AXSpbABL, (s32 *)&studio[18], &studio[20]);
-    __AXDepopFade(&__AXSpbABR, (s32 *)&studio[21], &studio[23]);
-    __AXDepopFade(&__AXSpbABS, (s32 *)&studio[24], &studio[26]);
+    __AXDepopFade(&__AXSpbAL, (s32 *)(studio + 0x0), (s16 *)(studio + 0x4));
+    __AXDepopFade(&__AXSpbAR, (s32 *)(studio + 0x6), (s16 *)(studio + 0xA));
+    __AXDepopFade(&__AXSpbAS, (s32 *)(studio + 0xC), (s16 *)(studio + 0x10));
+    __AXDepopFade(&__AXSpbAAL, (s32 *)(studio + 0x12), (s16 *)(studio + 0x16));
+    __AXDepopFade(&__AXSpbAAR, (s32 *)(studio + 0x18), (s16 *)(studio + 0x1C));
+    __AXDepopFade(&__AXSpbAAS, (s32 *)(studio + 0x1E), (s16 *)(studio + 0x22));
+    __AXDepopFade(&__AXSpbABL, (s32 *)(studio + 0x24), (s16 *)(studio + 0x28));
+    __AXDepopFade(&__AXSpbABR, (s32 *)(studio + 0x2A), (s16 *)(studio + 0x2E));
+    __AXDepopFade(&__AXSpbABS, (s32 *)(studio + 0x30), (s16 *)(studio + 0x34));
     DCFlushRange(studio, 0x36);
 }
 

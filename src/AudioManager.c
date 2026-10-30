@@ -467,13 +467,15 @@ void SoundSource_Play(s32 index) {
     g_sources[index].playing = 1;
 }
 
-void SoundSource_Stop(u32 index) {
+#pragma push
+#pragma use_lmw_stmw on
+void SoundSource_Stop(s32 index) {
     typedef struct SoundSource {
         u8 pad0[0x24];
         f32 unk24;
         u8 pad28[0x2C - 0x28];
         s32 voice;
-        s32 looping;
+        u32 looping;
         u8 pad34[0x50 - 0x34];
     } SoundSource;
     extern SoundSource *g_sources;
@@ -483,10 +485,11 @@ void SoundSource_Stop(u32 index) {
         ReleaseVoice(g_sources[index].voice);
         g_sources[index].voice = -1;
         g_sources[index].unk24 = 0.0f;
-        g_sources[index].looping = 0;
+        g_sources[index].looping = FALSE;
     }
+    return;
 }
-
+#pragma pop
 s8 SoundSource_IsActive(s32 index) {
     typedef struct SoundSource {
         u8 pad0[0x2C];

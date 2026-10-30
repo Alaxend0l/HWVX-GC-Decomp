@@ -110,9 +110,8 @@ int __ieee754_rem_pio2(double x, double *y) {
             y[0] = -y[0];
             y[1] = -y[1];
             return -n;
-        } else {
+        } else
             return n;
-        }
     }
     if (ix >= 0x7ff00000) {
         y[0] = y[1] = x - x;

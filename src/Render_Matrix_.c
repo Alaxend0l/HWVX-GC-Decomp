@@ -190,6 +190,14 @@ void Render_SaveCamera(void) {
     g_cameraRight_BackUp = GetRenderWindow()->cameraAt;
 }
 
+void Render_LoadCamera(void) {
+    GetRenderWindow()->cameraPos = g_cameraPos_Backup;
+    GetRenderWindow()->cameraRight = g_cameraFacing_BackUp;
+    GetRenderWindow()->cameraUp = g_cameraUp_BackUp;
+    GetRenderWindow()->cameraAt = g_cameraRight_BackUp;
+    Gfx_SetProjectionMatrix(Gfx_GetProjectionMatrix());
+}
+
 double sin(double x);
 double cos(double x);
 double atan(double x);

@@ -1056,7 +1056,15 @@ s32 GameSettings_GetDefaultMemoryCardStatus(s32 *device, s8 bForce)
 #pragma push
 #pragma use_lmw_stmw on
 #pragma opt_common_subs off
+#pragma opt_loop_invariants off
 s32 GameSettings_GetMemoryCardStatus(s32 device, s8 bForce) {
+    typedef struct SaveFile {
+        char *device;
+        u8 *data;
+        const char *name;
+        u32 version;
+        u32 size;
+    } SaveFile;
     s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
     u32 File_Read(s32 handle, u32 size, void *buf);
     void File_Close(s32 handle);
@@ -1068,17 +1076,14 @@ s32 GameSettings_GetMemoryCardStatus(s32 device, s8 bForce) {
     extern u8 *g_pSavedGameData;
     static u32 s_curCount;
     static s32 s_curStatus;
-    static u32 s_curActiveDevice;
+    static char *s_curActiveDevice;
     static u32 s_curMemStatus = 0xFFFFFFFF;
     s32 status;
-    u32 prevDevice;
-    u8 *data;
+    char *prevDevice;
     s32 handle;
     u8 *mcp;
     s8 ok;
-    const char *name;
-    u32 version;
-    u32 size;
+    SaveFile file;
     u32 prevMemStatus;
     u64 freeBytes;
     u64 totalBytes;
@@ -1086,39 +1091,39 @@ s32 GameSettings_GetMemoryCardStatus(s32 device, s8 bForce) {
     status = 2;
     if (++s_curCount >= 30) {
         s_curCount = 0;
-    } else if (!g_bRefreshMC && !bForce && s_curActiveDevice == device + 10) {
+    } else if (!g_bRefreshMC && !bForce && s_curActiveDevice == (char *)device + 10) {
         return s_curStatus;
     }
     prevDevice = s_curActiveDevice;
-    s_curActiveDevice = device + 10;
+    s_curActiveDevice = (char *)device + 10;
     g_bRefreshMC = 0;
     do {
         prevMemStatus = s_curMemStatus;
         s_curMemStatus = FileManager_GetDeviceStatus((char *)device + 10);
         if (s_curMemStatus == 1) {
             status = 1;
-            if (prevMemStatus == s_curMemStatus && !g_bRefreshMC_FileList && !bForce && prevDevice == device + 10) {
+            if (prevMemStatus == s_curMemStatus && !g_bRefreshMC_FileList && !bForce && prevDevice == (char *)device + 10) {
                 return s_curStatus;
             }
             mcp = GameSettings_LoadMCP();
             if (mcp != NULL) {
-                name = g_gameInfo[mcp[1]].fileName;
-                version = g_gameInfo[mcp[1]].unk14;
-                size = g_gameInfo[mcp[1]].unk18;
+                file.name = g_gameInfo[mcp[1]].fileName;
+                file.version = g_gameInfo[mcp[1]].unk14;
+                file.size = g_gameInfo[mcp[1]].unk18;
             } else {
-                name = "saveFile";
-                version = 0;
-                size = version;
+                file.name = "saveFile";
+                file.version = 0;
+                file.size = file.version;
             }
             if (!FileManager_IsDeviceFormatted((char *)device + 10)) {
                 status = 4;
             } else {
-                data = g_pSavedGameData;
+                file.data = g_pSavedGameData;
                 ok = 0;
-                if ((handle = File_Open((char *)device + 10, name, 0, NULL)) != -1) {
-                    File_Read(handle, size * 8 + 0x15C, data);
-                    if (((u32 *)data)[0] == 4 && ((u32 *)data)[1] == version &&
-                        ((u32 *)data)[2] == FileManager_GetChecksum(version, data + 0xC)) {
+                if ((handle = File_Open((char *)device + 10, file.name, 0, NULL)) != -1) {
+                    File_Read(handle, file.size * 8 + 0x15C, file.data);
+                    if (((u32 *)file.data)[0] == 4 && ((u32 *)file.data)[1] == file.version &&
+                        ((u32 *)file.data)[2] == FileManager_GetChecksum(file.version, file.data + 0xC)) {
                         ok = 1;
                     }
                     File_Close(handle);
@@ -1127,7 +1132,7 @@ s32 GameSettings_GetMemoryCardStatus(s32 device, s8 bForce) {
                     if (!((s8 *)g_pSavedGameData)[0x5C]) {
                         status = 0;
                     }
-                } else if ((handle = File_Open((char *)device + 10, name, 0, NULL)) != -1) {
+                } else if ((handle = File_Open((char *)device + 10, file.name, 0, NULL)) != -1) {
                     File_Close(handle);
                     status = 9;
                 } else {
@@ -1608,12 +1613,11 @@ u8 GameSettings_SaveGame(void) {
     extern u8 *g_pGameData;
     extern u32 g_saveFileCheckSum;
     SaveFile file;
-    s32 status;
-    u32 slot;
     u8 *data;
+    u32 slot;
+    s32 status;
     s8 ok;
     s32 handle;
-    u32 sum;
     u8 *mcp;
 
     file.device = g_codeVariables.device;
@@ -1629,22 +1633,10 @@ u8 GameSettings_SaveGame(void) {
         file.version = 0;
         file.size = file.version;
     }
-    if (status == 0 || status == 1) {
-        data = g_pSavedGameData;
-        if ((handle = File_Open(file.device + 0xA, file.name, 0, NULL)) != -1) {
-            File_Read(handle, file.size * 8 + 0x15C, data);
-            File_Close(handle);
-            sum = ((u32 *)data)[2];
-        } else {
-            sum = -1;
-        }
-        if (g_saveFileCheckSum == sum) {
-            goto save;
-        }
+    if ((status != 0 && status != 1) || g_saveFileCheckSum != GameSettings_GetSaveFileChecksum(file.device, file.name, file.size)) {
+        g_codeVariables.unk11C[0] = 0;
+        return 0;
     }
-    g_codeVariables.unk11C[0] = 0;
-    return 0;
-save:
     data = g_pSavedGameData;
     ok = 0;
     if ((handle = File_Open(file.device + 0xA, file.name, 0, NULL)) != -1) {
@@ -1658,9 +1650,10 @@ save:
     if (!ok) {
         memset(data + 0x5C, 0, 0x100);
     }
-    for (; slot != 0; slot--) {
+    while (slot != 0) {
         memcpy(&g_pSavedGameData[slot * file.size + 0x15C], &g_pSavedGameData[(slot - 1) * file.size + 0x15C], file.size);
         memcpy(&((SaveData *)data)->slots[slot], &((SaveData *)data)->slots[slot - 1], sizeof(SaveSlot));
+        slot--;
     }
     memcpy((u8 *)&g_generalGameSettings + 0x50, data + 0x5C, 0x100);
     memcpy(data + 0xC, &g_generalGameSettings, 0x150);
@@ -1671,21 +1664,26 @@ save:
                   &((SaveData *)data)->slots[0].minute);
     GameSettings_GatherGameData();
     memcpy(g_pSavedGameData + 0x15C, g_pGameData, file.size);
-    data = g_pSavedGameData;
-    ok = 0;
-    if ((handle = File_Open(file.device + 0xA, file.name, 5, NULL)) != -1) {
-        ((u32 *)data)[0] = 4;
-        ((u32 *)data)[1] = file.version;
-        ((u32 *)data)[2] = FileManager_GetChecksum(file.version, data + 0xC);
-        if (File_Write(handle, file.size * 8 + 0x15C, data)) {
-            ok = 1;
+    {
+        s8 wok;
+        s32 whandle;
+        u8 *wdata;
+        wdata = g_pSavedGameData;
+        wok = 0;
+        if ((whandle = File_Open(file.device + 0xA, file.name, 5, NULL)) != -1) {
+            ((u32 *)wdata)[0] = 4;
+            ((u32 *)wdata)[1] = file.version;
+            ((u32 *)wdata)[2] = FileManager_GetChecksum(file.version, wdata + 0xC);
+            if (File_Write(whandle, file.size * 8 + 0x15C, wdata)) {
+                wok = 1;
+            }
+            File_Close(whandle);
         }
-        File_Close(handle);
-    }
-    if (ok) {
-        g_codeVariables.unk11C[0] = 1;
-    } else {
-        g_codeVariables.unk11C[0] = 0;
+        if (wok) {
+            g_codeVariables.unk11C[0] = 1;
+        } else {
+            g_codeVariables.unk11C[0] = 0;
+        }
     }
     g_bRefreshMC = 1;
     g_bRefreshMC_FileList = 1;

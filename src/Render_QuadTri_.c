@@ -311,6 +311,82 @@ void Render_ScreenFlash(void) {
     }
 }
 
+void Render_DrawSprite(void) {
+    f32 s;
+    f32 c;
+    u32 i;
+    u32 window = 0;
+    f32 x;
+    f32 y;
+    f32 zero = 0.0f;
+    f32 x2, x3, x0, x1, y3, y1, y0;
+    f32 y2;
+    f32 size;
+    f32 left;
+    f32 top;
+
+    Render_StateZWriteEnable(0);
+    for (i = 0; i < g_pGDL->num2DSprites; i++) {
+        g_debugTriCount += 2;
+        Render_StateBlendMode(g_pGDL->sprites2D[i].flag);
+        Render_SetTextureHandle(g_pGDL->sprites2D[i].tex);
+        if (g_CurrentViews != 1 && window != g_pGDL->sprites2D[i].window) {
+            window = g_pGDL->sprites2D[i].window;
+            Gfx_SetRenderWindow(window);
+            Render_StateSetScissor();
+        }
+        size = 0.5f * g_pGDL->sprites2D[i].unkC;
+        x = g_pGDL->sprites2D[i].x;
+        y = g_pGDL->sprites2D[i].y;
+        if (zero == g_pGDL->sprites2D[i].unk1C) {
+            left = x - size;
+            top = y - size;
+            x += size;
+            y += size;
+            x0 = left;
+            x2 = x;
+            x3 = x;
+            x1 = left;
+            y0 = top;
+            y3 = top;
+            y1 = y;
+            y2 = y;
+        } else {
+            SinCos(&s, &c, 45.0f + g_pGDL->sprites2D[i].unk1C);
+            size *= 1.4142137f;
+            s *= size;
+            c *= size;
+            y3 = y - s;
+            x3 = x + c;
+            x1 = x - c;
+            y1 = y + s;
+            x2 = x + s;
+            y2 = y + c;
+            x0 = x - s;
+            y0 = y - c;
+        }
+        Set2DRectVtxDesc();
+        GXBegin(0x80, 0, 4);
+        GXPosition2f32(x0, y0);
+        GXColor4u8(g_pGDL->sprites2D[i].color.r, g_pGDL->sprites2D[i].color.g, g_pGDL->sprites2D[i].color.b, g_pGDL->sprites2D[i].color.a);
+        GXTexCoord2f32(0.0f, 1.0f);
+        GXPosition2f32(x1, y1);
+        GXColor4u8(g_pGDL->sprites2D[i].color.r, g_pGDL->sprites2D[i].color.g, g_pGDL->sprites2D[i].color.b, g_pGDL->sprites2D[i].color.a);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition2f32(x2, y2);
+        GXColor4u8(g_pGDL->sprites2D[i].color.r, g_pGDL->sprites2D[i].color.g, g_pGDL->sprites2D[i].color.b, g_pGDL->sprites2D[i].color.a);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition2f32(x3, y3);
+        GXColor4u8(g_pGDL->sprites2D[i].color.r, g_pGDL->sprites2D[i].color.g, g_pGDL->sprites2D[i].color.b, g_pGDL->sprites2D[i].color.a);
+        GXTexCoord2f32(1.0f, 1.0f);
+    }
+    if (window != 0) {
+        Gfx_SetRenderWindow(0);
+        Render_StateSetScissor();
+    }
+    Render_StateZWriteEnable(1);
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 void Render_DrawNewBBSprites(void) {

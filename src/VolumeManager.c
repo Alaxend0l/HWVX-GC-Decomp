@@ -270,6 +270,92 @@ VolumeShape *IsPointWithinForceBox(Vector4 *point) {
 
 #pragma push
 #pragma use_lmw_stmw on
+void VolumeManager_SetReverbLevel(Vector4 *point) {
+    typedef struct ReverbSettings {
+        u32 type;
+        u16 volume;
+        u16 feedback;
+    } ReverbSettings;
+    typedef struct WorldReverb {
+        u8 pad0[0x24];
+        f32 level;
+        f32 delay;
+        f32 feedback;
+    } WorldReverb;
+    typedef struct World {
+        u8 pad0[0x9C];
+        WorldReverb *reverb;
+    } World;
+    extern VolumeHolder *g_VolumeHolder;
+    extern s8 g_bReset;
+    void SetReverb(s32 a, s32 b, s32 c, s32 d);
+    static u16 sfx_volume = 0xFFFF;
+    static u16 sfx_feedback = 0xFFFF;
+    static u16 music_volume = 0xFFFF;
+    static u16 music_feedback = 0xFFFF;
+    WorldReverb *settings;
+    s32 level;
+    s32 feedback;
+    s32 delay;
+    VolumeShape *volume;
+    s32 count;
+    u32 i;
+    s32 cell;
+
+    settings = ((World *)g_worldData.world)->reverb;
+    level = 32767.0f * settings->level;
+    feedback = 32767.0f * settings->feedback;
+    delay = settings->delay;
+    cell = VolumeManager_GetCell(g_VolumeHolder, point);
+    count = g_VolumeHolder != NULL ? g_VolumeHolder->cells[cell].types[2].count : 0;
+    for (i = 0; i < count; i++) {
+        volume = g_VolumeHolder->cells[cell].types[2].volumes[i];
+        if (VolumeManager_IsPointInVolume(point, volume)) {
+            ReverbSettings *reverb = (ReverbSettings *)volume->fog;
+
+            if (reverb->type == 0) {
+                if (reverb->volume != music_volume || reverb->feedback != music_feedback) {
+                    SetReverb(0, reverb->volume, reverb->feedback, (u16)delay);
+                    music_volume = reverb->volume;
+                    music_feedback = reverb->feedback;
+                }
+            } else if (reverb->type == 1) {
+                if (reverb->volume != sfx_volume || reverb->feedback != sfx_feedback) {
+                    SetReverb(1, reverb->volume, reverb->feedback, (u16)delay);
+                    sfx_volume = reverb->volume;
+                    sfx_feedback = reverb->feedback;
+                }
+            } else {
+                if (reverb->volume != music_volume || reverb->feedback != music_feedback) {
+                    SetReverb(0, (u16)level, reverb->feedback, (u16)delay);
+                    music_volume = reverb->volume;
+                    music_feedback = reverb->feedback;
+                }
+                if (reverb->volume != sfx_volume || reverb->feedback != sfx_feedback) {
+                    SetReverb(1, (u16)level, reverb->feedback, (u16)delay);
+                    sfx_volume = reverb->volume;
+                    sfx_feedback = reverb->feedback;
+                }
+            }
+            return;
+        }
+    }
+    if (g_bReset || (u16)level != music_volume || (u16)feedback != music_feedback) {
+        SetReverb(0, (u16)level, (u16)feedback, (u16)delay);
+        music_volume = level;
+        music_feedback = feedback;
+    }
+    if (g_bReset || (u16)level != sfx_volume || (u16)feedback != sfx_feedback) {
+        SetReverb(1, (u16)level, (u16)feedback, (u16)delay);
+        sfx_volume = level;
+        sfx_feedback = feedback;
+    }
+    g_bReset = 0;
+}
+#pragma pop
+
+#pragma push
+#pragma use_lmw_stmw on
 void VolumeManager_SetFogLevel(Vector4 *point) {
     typedef struct World {
         u8 pad0[0x9C];

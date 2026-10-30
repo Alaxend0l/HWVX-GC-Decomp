@@ -90,13 +90,12 @@ f32 GetDampFactor(u8 type, u32 n) {
             i -= 10;
         }
         return f * g_frictionTable[type][i];
-    } else {
-        while (type > 8) {
-            f *= GetDampFactor(8, n);
-            type -= 8;
-        }
-        return f * GetDampFactor(type, n);
     }
+    while (type > 8) {
+        f *= GetDampFactor(8, n);
+        type -= 8;
+    }
+    return f * GetDampFactor(type, n);
 }
 
 f32 CarA_GetImpactMultiplier(void *car, void *other, f32 scale) {

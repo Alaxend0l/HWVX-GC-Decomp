@@ -453,14 +453,19 @@ void GBACloseCallback__FlP11DVDFileInfo(s32 result, void *fileInfo)
 
     for (i = 0; i < 4; i++)
     {
-        Param[i].state = 0;
-        Param[i].type = 0x40;
-        Param[i].unk70 = 0;
-        Param[i].program = ClientImage;
-        Param[i].length = ImageSize;
-        Param[i].unk58 = 0;
-        *(u32 *)Param[i].unk5C = 0;
-        GbaSetKey(&Param[i], i);
+        JoyBusParam *p = &Param[i];
+
+        p->state = 0;
+        p->type = 0x40;
+        p->unk70 = 0;
+        p->program = ClientImage;
+        p->length = ImageSize;
+        p->unk58 = 0;
+        *(u32 *)p->unk5C = 0;
+        p->unk60 = (i + 0x40) << 24;
+        p->unk60 |= ((i % 2) ? 0xDF : 0) << 16;
+        p->unk60 |= ((i / 2) ? 0x8F : 0) << 8;
+        p->unk60 |= GbaCalcCrc(((p->unk60 >> 16) & 0xFF) | (p->unk60 & 0xFF00));
     }
     GBAInit();
 }

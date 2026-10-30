@@ -699,6 +699,10 @@ s32 InterfaceManager_Create(u8 *header, u8 *owner, void (*callback)(void *msg)) 
     return index;
 }
 
+void InterfaceManager_AddObject()
+{
+}
+
 void InterfaceManager_PreprocessInterface(u8 *iface) {
     typedef struct MusicInfo {
         char *name;
@@ -2415,6 +2419,60 @@ void InterfaceManager_CheckConditions(u8 *iface, u8 *obj) {
 
 void InterfaceManager_SetControllerConfigInputString(void) {
 
+}
+
+void InterfaceManager_DrawBox(u8 *obj) {
+    void Gfx_Add2DFXLine(Vector4 *p0, Vector4 *p1, u32 *c0, u32 *c1, u8 flag);
+    void Gfx_FontManager_GetPrintRect(char *str, s32 id, f32 *width, f32 *height, f32 spacing);
+    u32 Gfx_FontManager_Print(char *str, u32 id, u8 blendMode, f32 x, f32 y, f32 spacing);
+    int sprintf(char *buf, const char *fmt, ...);
+    f32 width;
+    f32 height;
+    u32 colour = *(u32 *)(obj + 0x24);
+    u32 *box = *(u32 **)(obj + 0x258);
+    Vector4 origin __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 0.0f};
+    Vector4 p0 __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 0.0f};
+    Vector4 p1 __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 0.0f};
+    char buf[16];
+    u32 i;
+    u32 step;
+
+    width = 0.5f * box[0];
+    height = 0.5f * box[1];
+    origin.x = *(f32 *)(obj + 0x60) - width - width * *(f32 *)(*(u8 **)(obj + 0x25C) + 0x30);
+    origin.y = *(f32 *)(obj + 0x64) - height - height * *(f32 *)(*(u8 **)(obj + 0x25C) + 0x34);
+    if (box[2] == 0) {
+        box[2] = 1;
+    }
+    step = box[0] / box[2];
+    for (i = 0; i <= box[0]; i += step) {
+        p0.y = origin.y;
+        p0.x = origin.x + i;
+        p1.x = p0.x;
+        p1.y = origin.y + box[1];
+        Gfx_Add2DFXLine(&p0, &p1, &colour, &colour, 1);
+        sprintf(buf, "%d", (u32)p0.x);
+        Gfx_FontManager_GetPrintRect(buf, obj[0x1B0], &width, &height, **(f32 **)(box[4] + 0x1C));
+        width *= 0.5f;
+        height *= 0.5f;
+        Gfx_FontManager_Print(buf, obj[0x1B0], 5, p0.x - width, p0.y - 2.0f * height, **(f32 **)(box[4] + 0x1C));
+    }
+    if (box[3] == 0) {
+        box[3] = 1;
+    }
+    step = box[1] / box[3];
+    for (i = 0; i <= box[1]; i += step) {
+        p0.x = origin.x;
+        p0.y = origin.y + i;
+        p1.x = origin.x + box[0];
+        p1.y = p0.y;
+        Gfx_Add2DFXLine(&p0, &p1, &colour, &colour, 1);
+        sprintf(buf, "%d", (u32)p0.y);
+        Gfx_FontManager_GetPrintRect(buf, obj[0x1B0], &width, &height, **(f32 **)(box[4] + 0x1C));
+        width *= 0.5f;
+        height *= 0.5f;
+        Gfx_FontManager_Print(buf, obj[0x1B0], 5, p0.x - 2.0f * width, p0.y - height, **(f32 **)(box[4] + 0x1C));
+    }
 }
 
 void InterfaceManager_DrawLine(u8 *obj) {
