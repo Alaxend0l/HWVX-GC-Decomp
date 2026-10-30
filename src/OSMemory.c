@@ -20,6 +20,18 @@ static s32 OnReset(s32 final)
     return 1;
 }
 
+typedef struct OSResetFunctionInfo {
+    s32 (*func)(s32 final);
+    u32 priority;
+    struct OSResetFunctionInfo *next;
+    struct OSResetFunctionInfo *prev;
+} OSResetFunctionInfo;
+
+static OSResetFunctionInfo ResetFunctionInfo = {
+    OnReset,
+    127,
+};
+
 static void MEMIntrruptHandler(__OSInterrupt interrupt, OSContext *context)
 {
     u32 addr;
