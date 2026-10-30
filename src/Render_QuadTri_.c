@@ -180,7 +180,7 @@ static inline void GXPosition2f32(f32 x, f32 y) {
     GXWGFifo.f32 = y;
 }
 
-static inline void FontManager_Vertex2(f32 x, f32 y, f32 s, f32 t) {
+static inline void FontManager_Vertex2(f32 x, f32 y, f32 t, f32 s) {
     GXPosition2f32(x, y);
     GXColor4u8(g_textcolor.r, g_textcolor.g, g_textcolor.b, g_textcolor.a);
     GXTexCoord2f32(s, t);
@@ -202,6 +202,49 @@ void Render_Print(void) {
         y += FontManager_Print(buf, 0.0f, y, g_state.debugFont);
     }
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+u32 FontManager_Print(char *str, f32 x, f32 y, s32 id) {
+    Font *font = &g_fontManager.fonts[id];
+    u32 i;
+    u32 count = 0;
+    u8 c;
+
+    Render_SetTextureHandle(font->texture);
+    Set2DRectVtxDesc();
+    for (i = 0; i < strlen(str); i++) {
+        if ((u8)str[i] != ' ') {
+            count++;
+        }
+    }
+    GXBegin(0x80, 0, count * 4);
+    g_debugTriCount += count * 2;
+    for (i = 0; i < strlen(str); i++) {
+        c = str[i];
+        if (c >= 'a' && c <= 'z') {
+            c -= 0x20;
+        }
+        if (c != ' ') {
+            f32 y1 = y + font->height;
+            FontChar *ch = &font->chars[c];
+            f32 x1 = 0.6f * (u8)ch->spacingX + x;
+            f32 *s0 = &ch->unk0;
+            f32 *t0 = &ch->unk4;
+            f32 *s1 = &ch->unk8;
+            f32 *t1 = &ch->unkC;
+
+            FontManager_Vertex2(x, y, *s0, *t0);
+            FontManager_Vertex2(x, y1, *s0, *t1);
+            FontManager_Vertex2(x1, y1, *s1, *t1);
+            FontManager_Vertex2(x1, y, *s1, *t0);
+        }
+        x += 0.6f * (u8)font->chars[' '].spacingX - 2.0f;
+    }
+    return font->height;
+}
+#pragma pop
+
 #pragma pop
 
 void Render_DrawPointSprites(void) {
