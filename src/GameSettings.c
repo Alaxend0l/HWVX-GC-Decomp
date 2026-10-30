@@ -1021,14 +1021,11 @@ void GameSettings_SetSaveGameName(u32 *letters) {
     extern u8 *g_pSavedGameData;
     extern s32 g_saveFileCheckSum;
     extern GameInfo g_gameInfo[];
-    static s8 bFirstTime = 1;
-    static u8 *pMCP;
     char *device;
     GameInfo info;
     u8 *data;
     s32 index;
     u8 *mcp;
-    void *pack;
     s32 handle;
     s32 sum;
     s32 i;
@@ -1044,17 +1041,7 @@ void GameSettings_SetSaveGameName(u32 *letters) {
         }
     }
     g_saveFileName[10] = 0;
-    if (bFirstTime) {
-        bFirstTime = 0;
-        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
-        if (pack == NULL) {
-            mcp = NULL;
-            goto done;
-        }
-        pMCP = DataPack_GetScript(pack, 0);
-    }
-    mcp = pMCP;
-done:
+    mcp = GameSettings_LoadMCP();
     if (mcp != NULL) {
         info.fileName = g_gameInfo[mcp[1]].fileName;
         index = g_gameInfo[mcp[1]].unk18;
