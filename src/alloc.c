@@ -467,9 +467,11 @@ void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
             *start = NULL;
         }
         next_sub_block->next_->prev_ = next_sub_block->prev_;
-        next_sub_block->prev_->next_ = next_sub_block->next_;
+                    next_sub_block->prev_->next_ = next_sub_block->next_;
     }
 }
+#pragma pop
+
 
 void *Block_subBlock(Block *ths, u32 size) {
     SubBlock *st;
