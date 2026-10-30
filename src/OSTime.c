@@ -49,3 +49,33 @@ static void GetDates(s32 days, s32 *td) {
     td[4] = month;
     td[3] = days - p[month] + 1;
 }
+
+#pragma push
+#pragma dont_inline on
+void OSTicksToCalendarTime(s64 ticks, s32 *td)
+{
+    s32 days;
+    s32 secs;
+    s64 d;
+
+    d = ticks % (__OSBusClock / 4);
+    if (d < 0) {
+        d += __OSBusClock / 4;
+    }
+    td[9] = (s32)(((d) * 8) / ((__OSBusClock / 4) / 125000) % 1000);
+    td[8] = (s32)((d) / ((__OSBusClock / 4) / 1000) % 1000);
+
+    ticks -= d;
+    days = (s32)((ticks) / (__OSBusClock / 4) / 86400 + 0xB2575);
+    secs = (s32)((ticks) / (__OSBusClock / 4) % 86400);
+    if (secs < 0) {
+        days -= 1;
+        secs += 86400;
+    }
+
+    GetDates(days, td);
+    td[2] = secs / 60 / 60;
+    td[1] = (secs / 60) % 60;
+    td[0] = secs % 60;
+}
+#pragma pop
