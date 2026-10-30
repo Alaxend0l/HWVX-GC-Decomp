@@ -26,6 +26,7 @@ static u32 InputBuffer[4][2];
 static volatile u32 InputBufferVcount[4];
 
 u32 SIGetType(s32 chan);
+s64 __OSGetSystemTime(void);
 BOOL __SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback);
 
 static inline void CallTypeAndStatusCallback(s32 chan, u32 type) {
