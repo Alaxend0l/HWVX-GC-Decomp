@@ -58,7 +58,9 @@ typedef struct GDL {
     u32 numSprites;
     u8 unkC[0x18 - 0xC];
     u32 numRects2D;
-    u8 unk1C[0x68 - 0x1C];
+    u8 unk1C[0x20 - 0x1C];
+    u32 numRects;
+    u8 unk24[0x68 - 0x24];
     u32 numPointSprites;
     u8 unk6C[0x215C0 - 0x6C];
     GDLSprite sprites[0x7CF];
