@@ -1993,7 +1993,7 @@ void AI_Car_Init(u8 *car, u8 *params) {
     M2C_FIELD(car, void **, 0xBC) = AI_Car_AsyncHeartbeat;
     M2C_FIELD(car, u8 *, 0xC4) = 0;
     M2C_FIELD(car, void **, 0x644) = car;
-    M2C_FIELD(car, void **, 0x648) = AI_Car_WeaponAsyncHeartbeat;
+    M2C_FIELD(car, void **, 0x648) = AI_Car_WeaponAsyncHeartbeat_80008210;
     M2C_FIELD(car, u8 *, 0x650) = 0;
     M2C_FIELD(car, void **, 0x5F8) = car;
     M2C_FIELD(car, void **, 0x5FC) = AI_Car_AsyncScanDestructibles;
