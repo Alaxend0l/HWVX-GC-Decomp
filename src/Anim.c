@@ -18,7 +18,15 @@ typedef struct Anim {
 typedef struct AnimBone {
     Quaternion rot;
     f32 pos[3];
-    u32 info;
+    union {
+        u32 info;
+        struct {
+            u8 numChildren;
+            u8 pop;
+            u8 next;
+            u8 pad;
+        };
+    };
 } AnimBone;
 
 f32 Distance_Plane(void *plane, void *point);
