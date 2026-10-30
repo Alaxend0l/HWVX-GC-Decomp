@@ -196,8 +196,8 @@ s32 StateTitleScreen_Heartbeat(void) {
 }
 
 void TitleScreen_Interface(InterfaceMsg *msg) {
-    extern s32 g_pInterfaceScript;
-    extern u8 g_bPlayingFMV;
+    extern void *g_pInterfaceScript;
+    extern s8 g_bPlayingFMV;
     s32 StateManager_QueueChange(s32 state);
     u32 GameSettings_GetCodeVariable(s32 code, s32 arg);
     s8 IsLoadingThreadRunning(void);
@@ -221,7 +221,7 @@ void TitleScreen_Interface(InterfaceMsg *msg) {
         StateManager_QueueChange(2);
         break;
     case 17:
-        g_pInterfaceScript = msg->value;
+        g_pInterfaceScript = (void *)msg->value;
         g_bPlayingFMV = 1;
         msg->result = 4;
         break;
