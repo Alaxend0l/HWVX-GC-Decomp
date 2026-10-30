@@ -157,6 +157,45 @@ void GXSetCPUFifo(GXFifoObj *fifo) {
     OSRestoreInterrupts(enabled);
 }
 
+void __GXFifoReadEnable(void);
+void __GXFifoReadDisable(void);
+void GXSetGPFifo(GXFifoObj *fifo) {
+    __GXFifoObj *realFifo = (__GXFifoObj *)fifo;
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    __GXFifoReadDisable();
+    __GXWriteFifoIntEnable(0, 0);
+    GPFifo = realFifo;
+    __cpReg[16] = (u32)realFifo->base;
+    __cpReg[18] = (u32)realFifo->top;
+    __cpReg[24] = realFifo->count;
+    __cpReg[26] = (u32)realFifo->wrPtr;
+    __cpReg[28] = (u32)realFifo->rdPtr;
+    __cpReg[20] = realFifo->hiWatermark;
+    __cpReg[22] = realFifo->loWatermark;
+    __cpReg[17] = ((u32)realFifo->base & 0x3FFFFFFF) >> 16;
+    __cpReg[19] = ((u32)realFifo->top & 0x3FFFFFFF) >> 16;
+    __cpReg[25] = realFifo->count >> 16;
+    __cpReg[27] = ((u32)realFifo->wrPtr & 0x3FFFFFFF) >> 16;
+    __cpReg[29] = ((u32)realFifo->rdPtr & 0x3FFFFFFF) >> 16;
+    __cpReg[21] = realFifo->hiWatermark >> 16;
+    __cpReg[23] = realFifo->loWatermark >> 16;
+    __sync();
+    if (CPUFifo == GPFifo) {
+        CPGPLinked = 1;
+        __GXWriteFifoIntEnable(1, 0);
+        __GXFifoLink(1);
+    } else {
+        CPGPLinked = 0;
+        __GXWriteFifoIntEnable(0, 0);
+        __GXFifoLink(0);
+    }
+    __GXWriteFifoIntReset(1, 1);
+    __GXFifoReadEnable();
+    OSRestoreInterrupts(enabled);
+}
+
 #pragma peephole on
 void __OSSetInterruptHandler(s16 interrupt, void *handler);
 u32 __OSUnmaskInterrupts(u32 mask);
