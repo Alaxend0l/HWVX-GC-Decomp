@@ -238,7 +238,7 @@ void GXDrawSphere(u8 numMajor, u8 numMinor);
 extern f32 g_identity[4][4];
 extern u32 m_fillMode;
 void Gfx_SetWorldMatrix(f32 (*matrix)[4]);
-void RenderGroup();
+void RenderGroup(Geometry *geometry, u32 group, f32 (*matrix)[4]);
 
 extern u32 m_VtxDescFlag;
 extern u32 *m_vertexBuffer;
