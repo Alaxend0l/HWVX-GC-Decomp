@@ -88,6 +88,16 @@ static inline void ThingManager_InitFreeThing(ThingHeader *thing, void *vtable, 
     *freeList = thing;
 }
 
+static inline void ThingManager_InitFreeThing2(ThingHeader *thing, void *vtable, u32 type) {
+    thing->vtable = vtable;
+    thing->unk88 = 0;
+    thing->flags |= 0x1000;
+    thing->prev = NULL;
+    thing->next = NULL;
+    thing->type = type;
+    ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
+}
+
 static inline void ThingManager_InitPool(void *pool, u32 count, u32 size, void *vtable, u32 type) {
     u32 i;
 
