@@ -69,6 +69,47 @@ void __CARDCheckSum(void *ptr, int length, u16 *checksum, u16 *checksumInv) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s32 VerifyID(CARDControl *card) {
+    CARDID *id;
+    u16 checksum;
+    u16 checksumInv;
+    OSSramEx *sramEx;
+    u64 rand;
+    int i;
+
+    id = card->workArea;
+
+    if (id->deviceID != 0 || id->size != card->size) {
+        return -6;
+    }
+
+    __CARDCheckSum(id, sizeof(CARDID) - sizeof(u32), &checksum, &checksumInv);
+    if (id->checkSum != checksum || id->checkSumInv != checksumInv) {
+        return -6;
+    }
+
+    if (id->encode != OSGetFontEncode()) {
+        return -13;
+    }
+
+    rand = *(u64 *)&id->serial[12];
+    sramEx = __OSLockSramEx();
+    for (i = 0; i < 12; i++) {
+        rand = (rand * 1103515245 + 12345) >> 16;
+        if (id->serial[i] != (u8)(sramEx->flashID[card - __CARDBlock][i] + rand)) {
+            __OSUnlockSramEx(FALSE);
+            return -6;
+        }
+        rand = ((rand * 1103515245 + 12345) >> 16) & 0x7FFF;
+    }
+    __OSUnlockSramEx(FALSE);
+
+    return 0;
+}
+#pragma pop
+
 s32 VerifyDir(CARDControl *card, s32 *outCurrent) {
     u8 *dir[2];
     CARDDirCheck *check[2];
