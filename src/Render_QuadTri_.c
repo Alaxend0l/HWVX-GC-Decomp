@@ -180,7 +180,7 @@ static inline void GXPosition2f32(f32 x, f32 y) {
     GXWGFifo.f32 = y;
 }
 
-static inline void FontManager_Vertex2(f32 x, f32 y, f32 s, f32 t) {
+static inline void FontManager_Vertex2(f32 x, f32 y, f32 t, f32 s) {
     GXWGFifo.f32 = x;
     GXWGFifo.f32 = y;
     GXWGFifo.u8 = g_textcolor.r;
@@ -230,8 +230,8 @@ u32 FontManager_Print(char *str, f32 x, f32 y, s32 id) {
             c -= 0x20;
         }
         if (c != ' ') {
-            f32 x1 = 0.6f * (u8)font->chars[c].spacingX + x;
             f32 y1 = y + font->height;
+            f32 x1 = 0.6f * (u8)font->chars[c].spacingX + x;
 
             FontManager_Vertex2(x, y, font->chars[c].unk0, font->chars[c].unk4);
             FontManager_Vertex2(x, y1, font->chars[c].unk0, font->chars[c].unkC);
