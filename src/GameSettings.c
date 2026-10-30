@@ -731,9 +731,9 @@ done:
         ((GameInfo *)info)->unk14 = g_gameInfo[mcp[1]].unk14;
         ((GameInfo *)info)->unk18 = g_gameInfo[mcp[1]].unk18;
     } else {
-        ((GameInfo *)info)->name = "XXXXXXXXXXXXXXXXXXX";
+        ((GameInfo *)info)->name = "BrainCore Engine";
         ((GameInfo *)info)->id = "SLUS_001.00";
-        ((GameInfo *)info)->title = "XXXXXXXXXXX";
+        ((GameInfo *)info)->title = "SavesFolder";
         ((GameInfo *)info)->fileName = "saveFile";
         ((GameInfo *)info)->icon = "mm.ico";
         ((GameInfo *)info)->unk14 = 0;
