@@ -207,7 +207,8 @@ static inline AnimTrack *AnimTrack_Eval3(AnimTrack *track, f32 time, f32 *out) {
     out[0] = time * (time * (time * track->coefs[key][0] + track->coefs[key][1]) + track->coefs[key][2]) + track->coefs[key][3];
     out[1] = time * (time * (time * track->coefs[key][4] + track->coefs[key][5]) + track->coefs[key][6]) + track->coefs[key][7];
     out[2] = time * (time * (time * track->coefs[key][8] + track->coefs[key][9]) + track->coefs[key][10]) + track->coefs[key][11];
-    return track->next;
+    track = track->next;
+    return track;
 }
 
 static inline AnimTrack *AnimTrack_Eval4(AnimTrack *track, f32 time, f32 *out) {
