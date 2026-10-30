@@ -1183,15 +1183,6 @@ char *GameSettings_GetActiveMemoryCardLevelDetails(void) {
 #pragma readonly_strings on
 #pragma use_lmw_stmw on
 u8 GameSettings_LoadGame(void) {
-    typedef struct GameInfo {
-        const char *name;
-        const char *id;
-        const char *title;
-        const char *fileName;
-        const char *icon;
-        s32 unk14;
-        s32 unk18;
-    } GameInfo;
     s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
     u32 File_Read(s32 handle, u32 size, void *buf);
     void File_Close(s32 handle);
