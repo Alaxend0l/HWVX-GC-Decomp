@@ -41,6 +41,20 @@ typedef struct BTFHeader {
     s32 unkC;
 } BTFHeader;
 
+static inline u16 Gfx_FindFreeTexture(void) {
+    u16 i;
+
+    for (i = 1; i < m_totalTextures; i++) {
+        if (m_texture[i].data == NULL) {
+            break;
+        }
+    }
+    if (i >= m_totalTextures) {
+        i = m_totalTextures - 1;
+    }
+    return i;
+}
+
 s32 Gfx_TextureHandler_Create(void) {
     m_totalTextures = 0x1FF;
     m_texture = Allocate(0x7FC0, 0, "");
@@ -78,6 +92,77 @@ void Gfx_TextureManager_Init(void) {
     }
     Gfx_FontManager_Init();
 }
+
+#pragma push
+#pragma readonly_strings on
+#pragma dont_inline on
+char *strstr(const char *s1, const char *s2);
+char *strcpy(char *dst, const char *src);
+char *strncpy(char *dst, const char *src, u32 n);
+int strcmp(const char *s1, const char *s2);
+u32 strlen(const char *s);
+s32 stricmp(const char *s1, const char *s2);
+s32 LoadBTF(const char *name, u32 id);
+s32 LoadTGA(const char *name, u32 id);
+#pragma push
+#pragma readonly_strings on
+#pragma dont_inline on
+u16 Gfx_LoadTexture(char *name) {
+    s32 ok;
+    u32 id;
+    char buf[260];
+    char *ext;
+    u16 i;
+    u16 j;
+
+    if (strcmp(name, "_NONE_") == 0) {
+        return 0xFFFF;
+    }
+    strcpy(buf, name);
+    if ((ext = strstr(buf, ".tga")) != NULL) {
+        *ext = 0;
+    } else if ((ext = strstr(buf, ".TGA")) != NULL) {
+        *ext = 0;
+    } else if ((ext = strstr(buf, ".btf")) != NULL) {
+        *ext = 0;
+    }
+    if (strlen(buf) > 34) {
+        buf[34] = 0;
+    }
+
+    for (j = 1; j < m_totalTextures; j++) {
+        if (stricmp(buf, (char *)m_texture[j].unk0) == 0 && m_currentView == m_texture[j].view) {
+            m_texture[j].refCount++;
+            return j;
+        }
+    }
+
+    for (i = 1; i < m_totalTextures; i++) {
+        if (m_texture[i].data == NULL) {
+            break;
+        }
+    }
+    if (i >= m_totalTextures) {
+        i = m_totalTextures - 1;
+    }
+
+    id = i;
+    m_texture[i].wrapMode = 0;
+    ok = LoadBTF(buf, id);
+    if (!ok) {
+        ok = LoadTGA(buf, id);
+    }
+    if (!ok) {
+        return 0xFFFF;
+    }
+    strncpy((char *)m_texture[i].unk0, buf, 0x24);
+    m_texture[i].refCount++;
+    m_texture[i].view = (s8)m_currentView;
+    m_texture[i].unk2C = 0.25f;
+    m_texture[i].unk3A = 0;
+    return i;
+}
+#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
