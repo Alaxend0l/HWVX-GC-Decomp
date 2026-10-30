@@ -1030,7 +1030,7 @@ void GameSettings_SetSaveGameName(u32 *letters) {
     void File_Close(s32 handle);
     extern u8 *g_pSavedGameData;
     extern s32 g_saveFileCheckSum;
-    extern GameInfo g_gameInfo[];
+    extern GameInfo g_gameInfo[2];
     char *device;
     GameInfo info;
     u8 *data;
