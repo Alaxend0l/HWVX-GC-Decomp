@@ -14,9 +14,6 @@ typedef struct RebootCmd {
     u8 pad2[0x30 - 0x10];
 } RebootCmd;
 
-static ApploaderHeader Header_802EEE00;
-static u32 SaveStart_803C7258;
-static u32 SaveEnd_803C725C;
 static ApploaderHeader Header;
 static void *SaveStart = NULL;
 static void *SaveEnd = NULL;
