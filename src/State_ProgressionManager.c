@@ -114,6 +114,139 @@ void StateProgressionManager_RestartCurrentLevel(void) {
     ExitStateGamePlay(0xB);
 }
 
+s32 StateProgressionManager_Init(s32 prevState) {
+    extern s32 g_GameProgressionID;
+    extern s32 g_GameProgressionState[8];
+    extern s32 g_GameProgressionEndState[2];
+    extern s8 g_bRestartCurrentLevel;
+    void Gfx_TextureManager_Init(void);
+    void StateGameManager_RefreshMCPTextures(void);
+    void ShowStats_Init(void);
+    void ProcessManager_Init(void);
+    void TimeHandler_Heartbeat(void);
+    void Input_Init(void);
+    void Input_Heartbeat(void);
+    void SoundManager_Init(void);
+    void SoundManager_Heartbeat(void);
+    void InterfaceManager_Init(void);
+    void InterfaceManager_Heartbeat(void);
+    void InterfaceManager_Render(void);
+    void ParticleManager_Init(void);
+    void ParticleManager_Heartbeat(void);
+    void ParticleManager_Render(void);
+    void ShaderHolder_Heartbeat(void);
+    void ThingManager_DARYL_Init(void);
+    void ThingManager_DARYL_Heartbeat(void);
+    void ThingManager_DARYL_Render(void);
+    void LidHandler_Init(void);
+    void LidHandler_Heartbeat(void);
+    void Gfx_FontManager_Init(void);
+    void Gfx_SetEnviroMapMode(s32 mode);
+    void CameraManager_Init(void);
+    void ViewManager_Init(void);
+    void PlayerManager_Init(void);
+    void PlayerManager_NewHumanPlayer(void);
+    void Grid_Init(Vector4 *min, Vector4 *max, s32 x, s32 z);
+    void *GetCameraManager(void);
+    void *CameraManager_GetNewCamera(void);
+    void ViewManager_SetCamera(void *camera, s32 view);
+    void GameSettings_GetMCP(void);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void GameSettings_SetCodeVariable(s32, s32, s32);
+    void StateManager_QueueChange(s32 state);
+    s32 StateGameManager_GetProgScript(u32 index);
+    void *camera;
+    s32 *script;
+    Vector4 min;
+    Vector4 max;
+
+    ShowStats_Init();
+    Gfx_TextureManager_Init();
+    StateGameManager_RefreshMCPTextures();
+    ProcessManager_Init();
+    ProcessManager_Add("TimeHandler", NULL, TimeHandler_Heartbeat, 0, 0);
+    ProcessManager_Add("Input", Input_Init, Input_Heartbeat, 0, 1);
+    ProcessManager_Add("SoundManager", SoundManager_Init, SoundManager_Heartbeat, 0, 1);
+    ProcessManager_Add("Interface", InterfaceManager_Init, InterfaceManager_Heartbeat, (s32)InterfaceManager_Render, 1);
+    ProcessManager_Add("Particles", ParticleManager_Init, ParticleManager_Heartbeat, (s32)ParticleManager_Render, 0);
+    ProcessManager_Add("Shader", NULL, ShaderHolder_Heartbeat, 0, 0);
+    ProcessManager_Add("ThingManager", ThingManager_DARYL_Init, ThingManager_DARYL_Heartbeat, (s32)ThingManager_DARYL_Render, 0);
+    ProcessManager_Add("LidHandler", LidHandler_Init, LidHandler_Heartbeat, 0, 1);
+    Gfx_FontManager_Init();
+    Gfx_SetEnviroMapMode(1);
+    CameraManager_Init();
+    ViewManager_Init();
+    PlayerManager_Init();
+    PlayerManager_NewHumanPlayer();
+    min.x = min.y = min.z = -500.0f;
+    max.x = max.y = max.z = 500.0f;
+    Grid_Init(&min, &max, 0x10, 0x10);
+    if (M2C_FIELD(GetCameraManager(), u8 *, 0x640) == 0) {
+        camera = CameraManager_GetNewCamera();
+    }
+    ViewManager_SetCamera(camera, 0);
+    GameSettings_GetMCP();
+    if (GameSettings_GetCodeVariable(0x12D, 0) == 4) {
+        GameSettings_SetCodeVariable(0x12D, 0, 0);
+    }
+    if (prevState == 0xC && GameSettings_GetCodeVariable(0x198, 0) != 0) {
+        prevState = 2;
+    }
+    switch (prevState) {
+    case 2:
+    case 11:
+        script = (s32 *)StateGameManager_GetProgScript(g_GameProgressionID);
+        g_GameProgressionState[0] = (s32)script;
+        g_GameProgressionState[1] = 0;
+        g_GameProgressionState[3] = 0;
+        *(u8 *)&g_GameProgressionState[4] = 0;
+        g_GameProgressionState[5] = 0;
+        if (g_GameProgressionState[2] >= script[0]) {
+            g_GameProgressionState[2] = 0;
+        }
+        g_GameProgressionEndState[0] = 4;
+        g_GameProgressionEndState[1] = 0;
+        break;
+    case 5:
+        g_GameProgressionState[5] = 0;
+        if ((u32)g_GameProgressionState[0] == 0) {
+            return 1;
+        }
+        if (g_bRestartCurrentLevel) {
+            g_GameProgressionState[1] = 0;
+            g_GameProgressionState[3] = 0;
+        } else {
+            g_GameProgressionState[3] = 0;
+            g_GameProgressionState[1] = 2;
+        }
+        break;
+    case 3:
+        if (GameSettings_GetCodeVariable(0x198, 0) != 0) {
+            StateManager_QueueChange(2);
+            return 1;
+        }
+        if ((u32)g_GameProgressionState[0] == 0) {
+            return 0;
+        }
+        switch (g_GameProgressionState[1]) {
+        case 0:
+        case 2:
+            g_GameProgressionState[3]++;
+            break;
+        case 1:
+            break;
+        }
+        break;
+    case 12:
+        g_GameProgressionState[1] = 1;
+        g_GameProgressionState[5] = 0;
+        break;
+    default:
+        return 0;
+    }
+    return 1;
+}
+
 s32 StateProgressionManager_Heartbeat(void) {
     typedef struct {
         char *name;

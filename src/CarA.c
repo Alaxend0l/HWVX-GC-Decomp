@@ -202,6 +202,243 @@ void CarA_GetAngularVelocity(void *car, Vector4 *vel) {
     *vel = M2C_FIELD(car, Vector4 *, 0x410);
 }
 
+static inline void CarA_FitCubic(f32 *coef, f32 x0, f32 x1, f32 y0, f32 y1, f32 m0, f32 m1) {
+    f32 dx = x0 - x1;
+    f32 dy = y0 - y1;
+    f32 a;
+    f32 b;
+    f32 c;
+
+    a = ((m0 + m1) - 2.0f * dy / dx) / (dx * dx);
+    coef[0] = a;
+    b = (m0 - dy / dx) / dx - a * (x0 + x1);
+    coef[1] = b;
+    c = m0 - 3.0f * a * x0 * x0 - 2.0f * b * x0;
+    coef[2] = c;
+    coef[3] = y0 - a * x0 * x0 * x0 - b * x0 * x0 - c * x0;
+}
+
+s32 CarA_Init(void *arg0, void *arg1) {
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    extern Matrix4 g_identity;
+    extern Vector4 g_zeroVector;
+    extern void *g_pSourcePlayer;
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void *OConvexHullHolder_Get(void *owner);
+    void MotionState_Init(void *motion, s8 reset);
+    void CarA_Extract_Keyframes(u8 *car, void *frames, void *state);
+    void MotionState_InitAllSlavesNow(void *motionState, void *slaves, s32 arg2);
+    void WildCardRack_Add(void *rack, u8 *item, s32 count);
+    s32 SoundManager_CreateSource(s32 owner);
+    void SoundSource_Set(s32 index, s32 type, void *value);
+    void SoundSource_Play(s32 index);
+    void CarA_InitInverseBodyInertiaTensor(u8 *car);
+    void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
+    void ThingManagerList_Append(void *list, void *thing);
+    struct SlaveParams {
+        Vector4 pos;
+        Vector4 quat;
+        u8 *info;
+    } params;
+    Vector4 pos;
+    u8 frames[0x800];
+    u32 sample;
+    f32 volume;
+    u8 *info;
+    u8 *hull;
+    u8 *snd;
+    u8 *rack;
+    u8 *slave;
+    s32 *skel;
+    u32 i;
+    u8 *init = arg1;
+    u8 *car = arg0;
+
+    Thing_Init(car, (s32)init);
+    *(u32 *)(car + 0x94) = *(u32 *)(init + 0x3C);
+    *(u8 **)(car + 0x3BC) = *(u8 **)(init + 0x30);
+    *(Vector4 *)(car + 0x40) = *(Vector4 *)init;
+    QuaternionToSubMatrix(init + 0x10, car + 0x10);
+    *(Vector4 *)(car + 0x50) = *(Vector4 *)(init + 0x10);
+    *(void **)(car + 0x370) = NULL;
+    info = *(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0);
+    switch (info[0x10]) {
+    case 0:
+        hull = *(u8 **)(info + 0x44);
+        *(Vector4 *)(car + 0x540) = *(Vector4 *)hull;
+        *(f32 *)(car + 0x70) = *(f32 *)(hull + 0x20);
+        *(s16 *)(car + 0x80) = 1;
+        break;
+    case 1:
+        hull = *(u8 **)(info + 0x48);
+        *(f32 *)(car + 0x540) = 9999.9f;
+        *(f32 *)(car + 0x544) = 9999.9f;
+        *(f32 *)(car + 0x548) = 9999.9f;
+        *(f32 *)(car + 0x70) = 9999.9f;
+        for (i = 0; i < *(u32 *)(hull + 0xC); i++) {
+            if (*(f32 *)(car + 0x540) > (*(Vector4 **)(hull + 0x1C))[i].x) {
+                *(f32 *)(car + 0x540) = (*(Vector4 **)(hull + 0x1C))[i].x;
+            }
+            if (*(f32 *)(car + 0x544) > (*(Vector4 **)(hull + 0x1C))[i].y) {
+                *(f32 *)(car + 0x544) = (*(Vector4 **)(hull + 0x1C))[i].y;
+            }
+            if (*(f32 *)(car + 0x548) > (*(Vector4 **)(hull + 0x1C))[i].z) {
+                *(f32 *)(car + 0x548) = (*(Vector4 **)(hull + 0x1C))[i].z;
+            }
+        }
+        *(void **)(car + 0x370) = OConvexHullHolder_Get(*(void **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x48));
+        *(f32 *)(car + 0x70) = 13.0f;
+        *(s16 *)(car + 0x80) = 4;
+        break;
+    }
+    *(u32 *)(car + 0x78) = *(u32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x14);
+    *(f32 *)(car + 0x468) = **(f32 **)(*(u8 **)(car + 0x3BC) + 0x7C);
+    *(s32 *)(car + 0x400) = -1;
+    *(u32 *)(car + 0x48C) = 0;
+    *(u32 *)(car + 0x330) = *(u32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x78) + 0x10);
+    *(f32 *)(car + 0x354) = 0.0f;
+    MotionState_Init(car + 0x330, 0);
+    car[0x490] = 0;
+    *(Vector4 *)(car + 0x520) = **(Vector4 **)(*(u8 **)(car + 0x3BC) + 0x80);
+    *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x80) + 0xC) = 1.0f;
+    skel = *(s32 **)(*(u8 **)(car + 0x330) + 0x14);
+    CarA_Extract_Keyframes(car, frames, *(void **)(car + 0x330));
+    XformVec(car + 0x10, (Vector4 *)(car + 0x520), &pos);
+    TEST_AnimTraverseHeirarchyToMatricesWorld((Vector4 *)(car + 0x50), &pos, frames, *skel, *(void **)(car + 0x340), 1.0f);
+    if (*(u32 *)(*(u8 **)(car + 0x3BC) + 0xE0) >= 1) {
+        g_pSourcePlayer = *(void **)(car + 0x94);
+        MotionState_InitAllSlavesNow(car + 0x330, *(u8 **)(*(u8 **)(car + 0x3BC) + 0xE4) + 4, 0);
+        g_pSourcePlayer = NULL;
+    }
+    rack = ThingManagerList_GetByType(car + 0x344, 8);
+    if (rack != NULL) {
+        *(u32 *)(rack + 0x94) = *(u32 *)(car + 0x94);
+        for (i = 0; i < *(u32 *)(*(u8 **)(car + 0x3BC) + 0x108); i++) {
+            u8 *item = (*(u8 ***)(*(u8 **)(car + 0x3BC) + 0x10C))[i];
+            if (item != NULL) {
+                WildCardRack_Add(rack, item, *(s32 *)(*(u8 **)(item + 0x30) + 0x20));
+            }
+        }
+    }
+    for (i = 0; i < *(u32 *)(*(u8 **)(car + 0x3BC) + 0xD0); i++) {
+        *(f32 *)(car + i * 0x30 + 0x1B0) = 0.0f;
+        *(u32 *)(car + i * 0x30 + 0x1B8) = 0;
+        *(u16 *)(car + i * 0x30 + 0x1B4) = 0;
+        *(u16 *)(car + i * 0x30 + 0x1B6) = 0;
+        car[i * 0x30 + 0x1C7] = 0;
+        *(f32 *)(car + i * 0x30 + 0x1C0) = 0.0f;
+        *(f32 *)(car + i * 0x30 + 0x1BC) = 0.0f;
+        *(Vector4 *)(car + i * 0x30 + 0x1D0) = g_zeroVector;
+    }
+    *(f32 *)(car + 0x458) = 0.0f;
+    *(f32 *)(car + 0x4E0) = 0.0f;
+    *(f32 *)(car + 0x4E4) = 0.0f;
+    car[0x4E8] = 1;
+    if (*(u8 *)(*(u8 **)(car + 0x3BC) + 0x11) == 2) {
+        CarA_FitCubic((f32 *)(car + 0x4C0), 0.0f, *(f32 *)(*(u8 **)(car + 0x3BC) + 0x1C),
+                      *(f32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x80) + 0x24), 0.0f, 1e-7f, 0.0f);
+    } else {
+        u8 *curve = *(u8 **)(*(u8 **)(car + 0x3BC) + 0x80);
+
+        CarA_FitCubic((f32 *)(car + 0x4C0), 0.0f, *(f32 *)(*(u8 **)(car + 0x3BC) + 0x1C), *(f32 *)(curve + 0x24),
+                      *(f32 *)(curve + 0x28), *(f32 *)(curve + 0x2C), *(f32 *)(curve + 0x30));
+    }
+    sample = 0;
+    volume = 0.0f;
+    snd = *(u8 **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xDC) + 0xC);
+    *(s32 *)(car + 0x4F0) = -1;
+    if (snd != NULL) {
+        *(s32 *)(car + 0x4F0) = SoundManager_CreateSource(1);
+        sample = *(u32 *)(snd + 0x14);
+        SoundSource_Set(*(s32 *)(car + 0x4F0), 8, &sample);
+        SoundSource_Set(*(s32 *)(car + 0x4F0), 5, car + 0x40);
+        if (snd[0] == 0) {
+            SoundSource_Set(*(s32 *)(car + 0x4F0), 2, *(u8 **)(snd + 0x18));
+            SoundSource_Set(*(s32 *)(car + 0x4F0), 3, *(u8 **)(snd + 0x18) + 4);
+        }
+        SoundSource_Play(*(s32 *)(car + 0x4F0));
+    }
+    *(s32 *)(car + 0x4F4) = -1;
+    if (*(u8 **)(*(u8 **)(car + 0x3BC) + 0x11C) != NULL && (snd = *(u8 **)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0x11C) + 4)) != NULL) {
+        *(s32 *)(car + 0x4F4) = SoundManager_CreateSource(1);
+        sample = *(u32 *)(snd + 0x14);
+        SoundSource_Set(*(s32 *)(car + 0x4F4), 8, &sample);
+        SoundSource_Set(*(s32 *)(car + 0x4F4), 5, car + 0x40);
+        if (snd[0] == 0) {
+            SoundSource_Set(*(s32 *)(car + 0x4F4), 2, *(u8 **)(snd + 0x18));
+            SoundSource_Set(*(s32 *)(car + 0x4F4), 3, *(u8 **)(snd + 0x18) + 4);
+        }
+        SoundSource_Play(*(s32 *)(car + 0x4F4));
+    }
+    snd = *(u8 **)(*(u8 **)(car + 0x3BC) + 0x60);
+    *(s32 *)(car + 0x4F8) = -1;
+    if (snd != NULL) {
+        *(s32 *)(car + 0x4F8) = SoundManager_CreateSource(1);
+        SoundSource_Set(*(s32 *)(car + 0x4F8), 5, car + 0x40);
+        SoundSource_Set(*(s32 *)(car + 0x4F8), 0, &volume);
+        if (**(u8 **)(*(u8 **)(car + 0x3BC) + 0x60) == 0) {
+            SoundSource_Set(*(s32 *)(car + 0x4F8), 2, *(u8 **)(snd + 0x18));
+            SoundSource_Set(*(s32 *)(car + 0x4F8), 3, *(u8 **)(snd + 0x18) + 4);
+        }
+        SoundSource_Play(*(s32 *)(car + 0x4F8));
+    }
+    *(s32 *)(car + 0x550) = -1;
+    *(Vector4 *)(car + 0x3A0) = g_zeroVector;
+    *(Vector4 *)(car + 0x390) = *(Vector4 *)(car + 0x3A0);
+    *(u32 *)(car + 0x500) = 0;
+    *(u32 *)(car + 0x374) = 0;
+    *(u32 *)(car + 0x460) = 0;
+    *(u32 *)(car + 0x45C) = 0;
+    *(u32 *)(car + 0x464) = 0;
+    *(u32 *)(car + 0x404) = 0;
+    *(Matrix4 *)(car + 0x3C0) = g_identity;
+    *(f32 *)(car + 0x508) = 0.0f;
+    *(u32 *)(car + 0x4A4) = 0;
+    *(u32 *)(car + 0x494) = 0;
+    *(u32 *)(car + 0x498) = 0;
+    *(u32 *)(car + 0x49C) = 0;
+    *(u32 *)(car + 0x4A0) = 0;
+    *(f32 *)(car + 0x4B0) = 0.0f;
+    *(f32 *)(car + 0x4B4) = 0.0f;
+    *(f32 *)(car + 0x4B8) = 0.0f;
+    car[0x491] = 0;
+    *(s32 *)(car + 0x450) = 99999;
+    *(s32 *)(car + 0x46C) = 10001;
+    *(s32 *)(car + 0x470) = 10001;
+    *(s32 *)(car + 0x474) = 10001;
+    *(s32 *)(car + 0x478) = 10001;
+    *(s32 *)(car + 0x47C) = 10001;
+    *(s32 *)(car + 0x480) = 10001;
+    *(s32 *)(car + 0x484) = 10001;
+    *(s32 *)(car + 0x488) = 10001;
+    *(u32 *)(car + 0x504) = 0;
+    *(f32 *)(car + 0x50C) = 0.0f;
+    car[0x15D] = 1;
+    *(f32 *)(car + 0x554) = 0.0f;
+    CarA_InitInverseBodyInertiaTensor(car);
+    *(Vector4 *)(car + 0x380) = g_zeroVector;
+    *(Vector4 *)(car + 0x410) = g_zeroVector;
+    *(u32 *)(car + 0x454) = 0;
+    *(u32 *)(car + 0x3B4) = 0;
+    *(s32 *)(car + 0x3B0) = -1;
+    *(u32 *)(car + 0x74) |= 4;
+    *(u32 *)(car + 0x74) |= 0x80;
+    *(u32 *)(car + 0x568) = 0;
+    *(u32 *)(car + 0x55C) = 0;
+    Thing_AddToGrid(car, 0);
+    for (i = 0; i < *(u32 *)(*(u8 **)(car + 0x3BC) + 0x100); i++) {
+        params.quat = params.pos = g_zeroVector;
+        params.info = *(u8 **)(*(u8 **)(car + 0x3BC) + 0x104) + i * 0x50;
+        if (params.info != NULL && *(u32 *)(params.info + 0x3C) != 0) {
+            slave = ThingManager_DARYL_CreateSlave(0xD, &params, *(u16 *)(params.info + 0x32));
+            *(u32 *)(slave + 0x94) = *(u32 *)(car + 0x94);
+            ThingManagerList_Append(car + 0x344, slave);
+        }
+    }
+    *(f32 *)(car + 0x4FC) = 1.0f;
+    return 1;
+}
+
 void CarA_Release(u8 *car) {
     typedef struct CarNavPath {
         u8 pad[0x568];

@@ -736,6 +736,49 @@ void ParticleSprite_Move(u8 *sprite) {
     }
 }
 
+void ParticleManager_Render(void) {
+    void ParticleGX_Render(void *particle);
+    void ParticleSprite_Render(void *sprite);
+    typedef struct {
+        u8 unk0[0x94];
+        u8 flags;
+        u8 unk95[0xB0 - 0x95];
+    } ParticleSprite;
+    typedef struct {
+        u8 unk0[0xB4];
+        u8 flags;
+        u8 unkB5[0x100 - 0xB5];
+    } ParticleGX;
+    typedef struct {
+        struct {
+            ParticleGX particles[0x280];
+            u8 unk28000[0x10];
+        } groups[3];
+        ParticleSprite sprites[0x200];
+        u8 unk8E030[0x10];
+    } ParticleManager;
+    extern ParticleManager g_particleManager;
+    extern s32 g_numParticlesCreatedThisFrame;
+    ParticleManager *pm = &g_particleManager;
+    u32 j;
+    u32 i;
+    ParticleSprite *sprite;
+
+    for (i = 0; i < 3; i++) {
+        for (j = 0; j < 0x280; j++) {
+            if (!(pm->groups[i].particles[j].flags & 8)) {
+                ParticleGX_Render(&pm->groups[i].particles[j]);
+            }
+        }
+    }
+    for (j = 0, sprite = pm->sprites; j < 0x200; j++, sprite++) {
+        if (!(pm->sprites[j].flags & 8)) {
+            ParticleSprite_Render(sprite);
+        }
+    }
+    g_numParticlesCreatedThisFrame = 0;
+}
+
 void ParticleGX_Render(u8 *particle) {
     u32 color;
     Vector4 scale __attribute__((aligned(16)));

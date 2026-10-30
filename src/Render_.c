@@ -190,9 +190,14 @@ typedef struct GDLDrawEntry {
 } GDLDrawEntry;
 
 typedef struct GDL {
-    u8 unk0[0x14];
-    s32 numTris;
-    u8 unk18[0x54 - 0x18];
+    u32 numAlphaEntries;      /* 0x00 */
+    u8 unk4[0xC - 0x4];
+    u32 numAlphaGroups;       /* 0x0C */
+    u8 unk10[0x14 - 0x10];
+    s32 numTris;              /* 0x14 */
+    u8 unk18[0x28 - 0x18];
+    u8 unk28[0x2C - 0x28];    /* 0x28 */
+    u8 unk2C[0x54 - 0x2C];
     u32 numDrawEntries;
     u8 unk58[0xDFCC0 - 0x58];
     GDLDrawEntry drawEntries[0x800];
@@ -721,6 +726,218 @@ void Render_BeginScene(void) {
     m_VtxDescFlag = 0;
     GXSetColorUpdate(1);
     GXSetAlphaUpdate(0);
+}
+
+static inline void Render_BeginView(u16 view) {
+    extern GfxState g_state;
+    f32 ht;
+    f32 wd;
+    f32 top;
+    u32 sht;
+    u32 swd;
+    u32 stop;
+
+    Gfx_SetRenderWindow(view);
+    Gfx_SetProjectionMatrix(*(f32 *)((u8 *)GetRenderWindow() + 0x270));
+    ht = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x284);
+    wd = *(u32 *)((u8 *)GetRenderWindow() + 0x280);
+    top = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x2B8);
+    GXSetViewport(*(u32 *)((u8 *)GetRenderWindow() + 0x2B0), top, wd, ht, 0.0f, 1.0f);
+    sht = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x284);
+    swd = (f32)*(u32 *)((u8 *)GetRenderWindow() + 0x280);
+    stop = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x2B8);
+    GXSetScissor(*(u32 *)((u8 *)GetRenderWindow() + 0x2B0), stop, swd, sht);
+    g_state.unk93 = 0;
+    Gfx_SetWorldMatrix(NULL);
+}
+
+static inline void Render_SetWindowViewport(void) {
+    f32 top;
+    f32 wd;
+    f32 ht;
+    u32 stop;
+    u32 swd;
+    u32 sht;
+
+    Gfx_SetProjectionMatrix(*(f32 *)((u8 *)GetRenderWindow() + 0x270));
+    ht = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x284);
+    wd = *(u32 *)((u8 *)GetRenderWindow() + 0x280);
+    top = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x2B8);
+    GXSetViewport(*(u32 *)((u8 *)GetRenderWindow() + 0x2B0), top, wd, ht, 0.0f, 1.0f);
+    sht = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x284);
+    swd = (f32)*(u32 *)((u8 *)GetRenderWindow() + 0x280);
+    stop = 0.5f * *(u32 *)((u8 *)GetRenderWindow() + 0x2B8);
+    GXSetScissor(*(u32 *)((u8 *)GetRenderWindow() + 0x2B0), stop, swd, sht);
+}
+
+void Render_EndScene(void) {
+    extern GDL *g_pGDL;
+    extern u8 g_CurrentViews;
+    extern u32 m_fogMode_803C76CC;
+    extern s32 m_cullMode;
+    extern s32 g_onebitflag;
+    void Render_StateBlendMode(u32 mode);
+    void Render_StateAlphaBlendEnable(s32 enable);
+    void Render_StateCullMode(s32 mode);
+    void Render_StateZEnable(s32 enable);
+    void Render_StateZWriteEnable(s32 enable);
+    void Render_StateFogEnable(s32 enable);
+    void Render_DrawLine2D(void *line);
+    void DisplayList_RenderGXList(void);
+    void Render_GeometryListSplitScreen(void);
+    void Render_GeometryList(void);
+    void Render_DrawAlphaGroup(u16 index);
+    void Render_DrawShadows(void);
+    void Render_DrawTriGroup(void);
+    void Render_SetTextureHandle(u16 id);
+    void Render_DrawSpheres(void);
+    void Render_DrawBoundingBoxes(void);
+    void Render_Draw3DFXLines(void);
+    void Render_Draw3DLines(void);
+    void Render_DrawPointSprites(void);
+    void Render_DrawNewBBSprites(void);
+    void Gfx_SetOrthoMatrix(void);
+    void Render_DrawSprite(void);
+    void Render_DrawRectanglesWindow(void);
+    void Render_DrawRectangles(void);
+    void GXSetBlendMode(s32 type, s32 src, s32 dst, s32 op);
+    void Render_Print(void);
+    void Render_ScreenFlash(void);
+    s32 cull;
+    u32 view;
+    u32 fog;
+    u32 i;
+    u16 v;
+    u16 j;
+
+    fog = m_fogMode_803C76CC;
+    if (g_CurrentViews != 1) {
+        DisplayList_RenderGXList();
+        Render_GeometryListSplitScreen();
+    } else {
+        Render_GeometryList();
+    }
+    cull = m_cullMode;
+    Render_StateCullMode(0);
+    view = 1;
+    g_onebitflag = 1;
+    if (g_CurrentViews == 1) {
+        for (i = 0; i < g_pGDL->numAlphaGroups; i++) {
+            Render_DrawAlphaGroup(i);
+        }
+    } else {
+        for (; view < 5; view++) {
+            if (g_CurrentViews & (1 << view)) {
+                Gfx_SetRenderWindow(view);
+                Render_SetWindowViewport();
+                for (i = 0; i < g_pGDL->numAlphaGroups; i++) {
+                    Render_DrawAlphaGroup(i);
+                }
+            }
+        }
+    }
+    Render_StateCullMode(cull);
+    g_onebitflag = 0;
+    Render_StateFogEnable(0);
+    if (g_CurrentViews == 1) {
+        Render_DrawShadows();
+    }
+    Gfx_SetWorldMatrix(NULL);
+    cull = m_cullMode;
+    Render_StateCullMode(0);
+    if (g_CurrentViews == 1) {
+        Render_DrawTriGroup();
+    } else {
+        for (v = 1; v < 5; v++) {
+            if (g_CurrentViews & (1 << v)) {
+                Render_BeginView(v);
+                Render_DrawTriGroup();
+            }
+        }
+    }
+    Render_StateCullMode(cull);
+    if (g_CurrentViews == 1) {
+        Render_SetTextureHandle(0xFFFF);
+        Render_StateAlphaBlendEnable(1);
+        Render_StateBlendMode(6);
+        Render_DrawSpheres();
+        Render_DrawBoundingBoxes();
+        Render_Draw3DFXLines();
+        Render_StateAlphaBlendEnable(0);
+        Render_Draw3DLines();
+        Render_StateZWriteEnable(0);
+        Render_DrawPointSprites();
+        Render_StateZWriteEnable(1);
+    } else {
+        for (v = 1; v < 5; v++) {
+            if (g_CurrentViews & (1 << v)) {
+                Render_BeginView(v);
+                Render_SetTextureHandle(0xFFFF);
+                Render_StateAlphaBlendEnable(1);
+                Render_StateBlendMode(6);
+                Render_DrawSpheres();
+                Render_DrawBoundingBoxes();
+                Render_Draw3DFXLines();
+                Render_StateAlphaBlendEnable(0);
+                Render_Draw3DLines();
+                Render_StateZWriteEnable(0);
+                Render_DrawPointSprites();
+                Render_StateZWriteEnable(1);
+            }
+        }
+    }
+    Gfx_SetWorldMatrix(NULL);
+    cull = m_cullMode;
+    Render_StateZWriteEnable(0);
+    Render_StateFogEnable(fog);
+    Render_StateAlphaBlendEnable(1);
+    Render_StateCullMode(0);
+    if (g_CurrentViews == 1) {
+        Gfx_SortAlpha();
+        if (g_pGDL->numAlphaEntries != 0) {
+            DrawAlphaTable();
+        }
+        Render_DrawNewBBSprites();
+    } else {
+        for (v = 1; v < 5; v++) {
+            if (g_CurrentViews & (1 << v)) {
+                Render_BeginView(v);
+                Gfx_SortAlpha();
+                if (g_pGDL->numAlphaEntries != 0) {
+                    DrawAlphaTable();
+                }
+                Render_DrawNewBBSprites();
+            }
+        }
+    }
+    Render_StateAlphaBlendEnable(0);
+    Render_StateZWriteEnable(1);
+    if (g_CurrentViews != 1) {
+        Gfx_SetRenderWindow(0);
+        Render_SetWindowViewport();
+    }
+    Gfx_SetOrthoMatrix();
+    Render_StateZEnable(0);
+    if (g_CurrentViews == 1) {
+        Render_StateAlphaBlendEnable(1);
+        Render_DrawSprite();
+    }
+    Render_DrawRectanglesWindow();
+    Render_DrawRectangles();
+    Render_SetTextureHandle(0xFFFF);
+    for (j = 0; j < *(u32 *)g_pGDL->unk28; j++) {
+        Render_DrawLine2D((u8 *)g_pGDL + 0xAE700 + j * 0x30);
+    }
+    Render_StateZWriteEnable(1);
+    GXSetBlendMode(1, 4, 5, 5);
+    Render_Print();
+    Render_StateAlphaBlendEnable(0);
+    Render_StateCullMode(cull);
+    Render_StateZEnable(1);
+    if (fog == 1) {
+        Render_StateFogEnable(1);
+    }
+    Render_ScreenFlash();
 }
 
 void Render_FlipBuffers(void) {

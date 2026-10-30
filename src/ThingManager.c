@@ -265,6 +265,30 @@ void ThingManagerList_EmancipateSlaves(void *mtx, void **list) {
     }
 }
 
+void SharedSlaveHolder_Release(void) {
+    extern u8 g_aSharedSlaveHolder[0x200];
+    M2C_UNK ThingManagerList_RemoveReleasedThings(s32);
+    void *thing;
+    void *next;
+    SharedSlaveHolder *holder;
+    u32 i;
+
+    holder = (SharedSlaveHolder *)g_aSharedSlaveHolder;
+    i = 0;
+    do {
+        if (holder->key != NULL) {
+            for (thing = holder->slaves; thing != NULL; thing = next) {
+                next = M2C_FIELD(thing, void **, 0xA4);
+                ((void (*)(void *))(M2C_FIELD(thing, void ***, 0x8C))[1])(thing);
+            }
+            ThingManagerList_RemoveReleasedThings((s32)&holder->slaves);
+            holder->key = NULL;
+        }
+        i++;
+        holder++;
+    } while (i < 64);
+}
+
 s32 SharedSlaveHolder_Get(void *shared) {
     extern u8 g_aSharedSlaveHolder[0x200];
     void ThingManagerList_InitAllSlavesNow(void *list, void *slaves, u8 player);
@@ -477,6 +501,44 @@ void ThingManagerList_TriggerSlaves(ThingHeader **list, struct SlaveTrigger {
     }
 }
 
+void ThingManagerList_InitAllSlavesNow(void *list, void *slaves, u8 player) {
+    extern Vector4 g_zeroVector;
+    void ThingManagerList_TriggerSlaves(void **list, u8 *trigger, Vector4 *a, Vector4 *b, Vector4 *c, u8 player);
+    typedef struct { f32 x, y, z, w; } Vec4;
+    typedef struct {
+        u8 unk0[0x20];
+    } SlaveTrigger;
+    typedef struct {
+        u32 count;
+        SlaveTrigger *triggers;
+    } SlaveList;
+    SlaveList *sl = slaves;
+    u32 i;
+    void *next;
+    void *thing;
+    void **freeList;
+
+    thing = *(void **)list;
+    while (thing != NULL) {
+        next = M2C_FIELD(thing, void **, 0xA4);
+        if (M2C_FIELD(thing, u8 *, 0x83) == player) {
+            M2C_FIELD(M2C_FIELD(thing, void **, 0x8C), void (**)(void *), 4)(thing);
+            ThingManagerList_Remove(list, thing);
+            M2C_FIELD(thing, u32 *, 0x74) &= ~0x200000;
+            M2C_FIELD(thing, u32 *, 0x74) |= 0x1000;
+            freeList = g_thingManager_DARYL.freeList + M2C_FIELD(thing, u32 *, 0xA8);
+            ThingManagerList_Append(freeList, thing);
+        }
+        thing = next;
+    }
+    for (i = 0; i < sl->count; i++) {
+        Vec4 dir = {0.0f, 0.0f, 0.0f, 1.0f};
+        SlaveTrigger *trigger = &sl->triggers[i];
+
+        ThingManagerList_TriggerSlaves(list, (u8 *)trigger, (Vector4 *)trigger, (Vector4 *)&dir, &g_zeroVector, player);
+    }
+}
+
 void ThingManager_DARYL_CreateMain(void) {
     extern u8 g_projectileVTable[];
     extern u8 g_eventSeqVTable[];
@@ -649,6 +711,9 @@ void ThingManager_DARYL_Init(void) {
     MatrixCache_Init();
 }
 
+/* The original calls these rather than inlining them. */
+#pragma push
+#pragma dont_inline on
 void ThingManager_DARYL_Release(void) {
     void ThingManagerList_ReleaseAndRemoveAll(void *list);
     void ThingManager_DARYL_CreateMain(void);
@@ -658,6 +723,7 @@ void ThingManager_DARYL_Release(void) {
     ThingManagerList_ReleaseAndRemoveAll(&g_thingManager_DARYL.activeList);
     ThingManager_DARYL_CreateMain();
 }
+#pragma pop
 
 void ThingManager_MoveLookerOnly(void) {
     M2C_UNK ThingManagerList_RemoveReleasedThings(s32);
@@ -864,6 +930,54 @@ s8 RayHitsTerrainAndObjects(void *arg0, void *arg1, void *arg2, void *arg3) {
         return 1;
     }
     return hitTerrain;
+}
+
+s8 OBoxHitsTerrainAndObjectsZeroTime(void *obox, void *thing, void *info) {
+    typedef struct { f32 x, y, z, w; } Vec4;
+    u32 Grid_GetObjects(Vec4 *min, Vec4 *max, u32 typeMask, GridResult *results, u32 maxResults);
+    s8 OBoxHitsTerrain(void *obox, Vector4 *vel, f32 *t, void *info);
+    f32 OBoxHitsOBox(void *a, Vector4 *velA, void *b, Vector4 *velB, s32 arg4, f32 t);
+    f32 PSVECSquareDistance(void *a, void *b);
+    extern Vector4 g_zeroVector;
+    f32 time;
+    Vec4 max;
+    Vec4 min;
+    GridResult results[96];
+    u32 count;
+    u32 i;
+    u8 *other;
+    f32 t;
+    s32 hit;
+
+    time = 1.0f;
+    if (!(*(u32 *)((u8 *)thing + 0x74) & 0x40000)) {
+        if (OBoxHitsTerrain(obox, &g_zeroVector, &time, info)) {
+            return 1;
+        }
+    }
+    if (*(u32 *)((u8 *)thing + 0x74) & 0x20000) {
+        hit = 0;
+    } else {
+        Thing_GetStaticRotationalMinMax(thing, (Vector4 *)&min, (Vector4 *)&max);
+        count = Grid_GetObjects(&min, &max, 5, results, 0x60);
+        for (i = 0; i < count; i++) {
+            other = (u8 *)results[i].id;
+            if (!(*(u32 *)(other + 0x74) & 2) && *(s16 *)(other + 0x80) != 0 && other != thing &&
+                (*(f32 *)(other + 0x70) + *(f32 *)((u8 *)thing + 0x70)) * (*(f32 *)(other + 0x70) + *(f32 *)((u8 *)thing + 0x70)) >
+                    PSVECSquareDistance((u8 *)thing + 0x40, other + 0x40)) {
+                if (*(s16 *)(other + 0x80) == 1) {
+                    t = OBoxHitsOBox(obox, &g_zeroVector, (*(void *(**)(void *))(*(u8 **)(other + 0x8C) + 0x40))(other), &g_zeroVector, 0, 1.0f);
+                }
+                if (t < 1.0f) {
+                    hit = 1;
+                    goto done;
+                }
+            }
+        }
+        hit = 0;
+    }
+done:
+    return hit;
 }
 
 s8 OBoxHitsTerrainAndObjectsZeroTimeEdgesOnly(void *obox, void *thing, void *arg2) {

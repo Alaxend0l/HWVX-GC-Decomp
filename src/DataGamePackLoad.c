@@ -156,6 +156,184 @@ s32 DataPack_LoadFile(char *name, s32 arg1, u32 type, u32 id) {
     DataPack_LoadDataPack(g_fileID, arg1);
     return 1;
 }
+
+typedef struct DataPackFileHeader {
+    u32 dataSize;
+    u32 soundDataSize;
+    u32 numSoundPointers;
+    u32 numPointers;
+    u32 numRelocs;
+    u32 numTextures;
+    u32 textureDataOffset;
+    u32 numSoundRelocs;
+    u32 numSounds;
+    u32 sfxOffset;
+    u32 palettes;
+    u32 paletteOffset;
+    u32 numShaders;
+    u32 numGX;
+    u32 numTexRelocs;
+    u32 shaderOffset;
+    u32 numTriggers;
+    u32 triggerOffset;
+    u32 songOffset;
+    u32 songBankOffset;
+    DataPackRef refs[2];
+} DataPackFileHeader;
+
+void DataPack_LoadDataPack(s32 file, DataPack *pack) {
+    void *Allocate(u32 size, u32 flags, const char *name);
+    extern s8 g_bSoundLoadingEnabled;
+    void *memset(void *dst, s32 c, u32 n);
+    void *memcpy(void *dst, const void *src, u32 n);
+    int sprintf(char *buf, const char *fmt, ...);
+    void Dprintf(const char *fmt, ...);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void UpdatePointers(u32 *offsets, u32 count, u8 *base);
+    void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
+    void Deallocate(void *p);
+    void SongManager_LoadSong(void *song, void *bank);
+    u16 CreateSFX(void *sfx);
+    static DataPackFileHeader header;
+    char msg[0x68];
+    u32 relocSize;
+    s8 freeData;
+    u32 soundIDsSize;
+    u8 *alloc;
+    u32 i;
+    u32 readSize;
+    u32 size;
+    u32 pad;
+    u8 *data;
+    u8 *sfx;
+    u32 offset;
+    u32 *reloc;
+    u32 *pointers;
+    u32 packID;
+    u32 idx;
+
+    memset(pack, 0, sizeof(DataPack));
+    File_Read(file, sizeof(DataPackFileHeader), &header);
+    pack->numRelocs = header.numRelocs;
+    pack->numSoundRelocs = header.numSoundRelocs;
+    pack->numTextures = header.numTextures;
+    pack->numSounds = header.numSounds;
+    pack->palettes = (void *)header.palettes;
+    pack->numShaders = header.numShaders;
+    pack->numGX = header.numGX;
+    pack->numTriggers = header.numTriggers;
+    pack->songLoaded = 0;
+    pack->dataSize = header.dataSize;
+    memcpy(pack->refs, header.refs, sizeof(header.refs));
+    size = header.numRelocs * 8 + ((pack->numSounds + pack->numTextures) * 2 + (s32)pack->numShaders * 2 + header.numGX * 8 + header.numSoundRelocs * 8 + header.dataSize + 0x60) + (relocSize = header.numTexRelocs * 8 + header.numPointers * 4);
+    alloc = Allocate(size, 0, "");
+    if (alloc == NULL) {
+        return;
+    }
+    pack->soundIDs = (u16 *)alloc;
+    soundIDsSize = pack->numSounds * 2;
+    if (header.soundDataSize != 0) {
+        freeData = 0;
+        pad = (header.numSoundPointers * 4) & 0x1F;
+        readSize = header.numSoundPointers * 4;
+        readSize += pad == 0 ? 0 : 0x20 - pad;
+        readSize += header.soundDataSize;
+        if (readSize + 0x60 <= size - soundIDsSize) {
+            pack->soundData = alloc + soundIDsSize;
+        } else {
+            pack->soundData = Allocate(readSize + 0x60, 0, "");
+            freeData = 1;
+        }
+        sfx = (u8 *)(((u32)pack->soundData + 0x3F) & ~0x3F);
+        File_Read(file, readSize, sfx);
+        data = sfx;
+        sfx += header.numSoundPointers * 4;
+        pack->soundBase = (u8 *)(((u32)sfx + 0x1F) & ~0x1F);
+        UpdatePointers((u32 *)data, header.numSoundPointers, pack->soundBase);
+        pack->sfxData = (u8 *)(header.sfxOffset + (u32)pack->soundBase);
+        if (header.songOffset != 0 || (header.soundDataSize != 0 && header.numSoundRelocs == 0)) {
+            pack->song = (void *)(header.songOffset + (u32)pack->soundBase);
+        }
+        if (header.songBankOffset != 0) {
+            pack->songBank = (void *)(header.songBankOffset + (u32)pack->soundBase);
+        }
+        pack->soundDataSize = header.soundDataSize;
+        if (pack->song != NULL && pack->songBank != NULL && g_bSoundLoadingEnabled) {
+            SongManager_LoadSong(pack->song, pack->songBank);
+            pack->songLoaded = 1;
+        }
+        sfx = pack->sfxData;
+        for (i = 0; i < pack->numSounds; i++) {
+            if (g_bSoundLoadingEnabled) {
+                pack->soundIDs[i] = CreateSFX(sfx);
+            } else {
+                pack->soundIDs[i] = 0;
+            }
+            if (pack->soundIDs[i] == 0 && g_bSoundLoadingEnabled) {
+                sprintf(msg, "Could not load the SFX, out of sound space.  SFX size = %d\n", *(u32 *)(sfx + 4));
+                Dprintf(msg);
+            }
+            sfx += 0x20;
+        }
+        if (freeData) {
+            Deallocate(pack->soundData);
+            pack->soundData = NULL;
+            pack->soundBase = NULL;
+            pack->sfxData = NULL;
+            pack->song = NULL;
+            pack->songBank = NULL;
+        }
+        pack->soundData = NULL;
+        pack->soundBase = NULL;
+        pack->sfxData = NULL;
+        pack->song = NULL;
+        pack->songBank = NULL;
+    }
+    pack->textureIDs = (u16 *)(alloc + soundIDsSize);
+    offset = soundIDsSize + pack->numTextures * 2;
+    pack->shaderIDs = (u16 *)(alloc + offset);
+    readSize = header.numRelocs * 8 + header.numGX * 8 + header.numSoundRelocs * 8;
+    pad = readSize & 0x1F;
+    pad = pad == 0 ? 0 : 0x20 - pad;
+    offset += pack->numShaders * 2;
+    data = alloc + offset;
+    data = (u8 *)(((u32)data + 0x3F) & ~0x3F);
+    readSize += pad;
+    readSize += header.dataSize;
+    readSize += relocSize;
+    File_Read(file, readSize, data);
+    pack->relocs = (s32 *)data;
+    offset = header.numRelocs * 8;
+    pack->gxList = (u32 *)(data + offset);
+    offset += header.numGX * 8;
+    pack->soundRelocs = (u32 *)(data + offset);
+    offset += header.numSoundRelocs * 8;
+    pack->base = data + offset;
+    pack->base = (u8 *)(((u32)pack->base + 0x1F) & ~0x1F);
+    offset = header.dataSize + offset;
+    offset = pad + offset;
+    reloc = (u32 *)(data + offset);
+    pointers = reloc + header.numTexRelocs * 2;
+    for (i = 0; i < header.numTexRelocs; i++) {
+        packID = reloc[1] & 0xFFFF0000;
+        if (packID != 0) {
+            packID >>= 16;
+            idx = pack->refs[0].id != packID;
+            if (pack->refs[idx].pack == NULL) {
+                pack->refs[idx].pack = FileStreaming_InitializeDataPack(FileStreaming_LoadDataPack(&pack->refs[idx], 8, packID, 0), 8, 1);
+            }
+            *(u32 *)(pack->base + reloc[0]) = ((u32 *)pack->refs[idx].pack->base)[reloc[1] & 0xFFFF];
+        } else {
+            *(u32 *)(pack->base + reloc[0]) += (u32)pack->base;
+        }
+        reloc += 2;
+    }
+    UpdatePointers(pointers, header.numPointers, pack->base);
+    pack->paletteData = (void *)(header.paletteOffset + (u32)pack->base);
+    pack->shaders = (DataPackShader *)(header.shaderOffset + (u32)pack->base);
+    pack->textureData = header.textureDataOffset + (u32)pack->base;
+    pack->triggers = (u8 *)(header.triggerOffset + (u32)pack->base);
+}
 #pragma pop
 
 #pragma push

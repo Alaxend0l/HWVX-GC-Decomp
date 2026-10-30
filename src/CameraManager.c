@@ -95,6 +95,104 @@ void CameraManager_Init(void) {
     M2C_FIELD(g_springProxy, s32 *, 0x1C4) = 0;
 }
 
+void *CameraManager_GetNewCamera(void) {
+    typedef struct Camera {
+        void *player;
+        u8 pad4[0x60 - 0x4];
+        Vector4 pos;
+        u8 pad70[0x80 - 0x70];
+        Vector4 fwd;
+        Vector4 up;
+        Vector4 right;
+        u8 padB0[0xB4 - 0xB0];
+        u32 *mode;
+        f32 modeTime;
+        f32 unkBC;
+        Vector4 unkC0;
+        Vector4 unkD0;
+        Vector4 unkE0;
+        u8 padF0[0x100 - 0xF0];
+        s32 unk100;
+        u8 pad104[0x110 - 0x104];
+        Vector4 unk110;
+        Vector4 unk120;
+        Vector4 unk130;
+        Vector4 unk140;
+        Vector4 unk150;
+        Vector4 unk160;
+        u8 pad170[0x17C - 0x170];
+        s32 unk17C;
+        void *emitter;
+        u8 pad184[0x190 - 0x184];
+    } Camera;
+    typedef struct {
+        Vector4 a;
+        Vector4 b;
+        Vector4 c;
+        void *id;
+        s32 unk34;
+        f32 unk38;
+    } EmitterParams;
+    extern u8 g_cameraManager[];
+    extern u32 g_triggerAction_params_default;
+    extern Vector4 g_zeroVector;
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    Camera *cam;
+    void *id;
+    EmitterParams params;
+
+    if (g_cameraManager[0x640] < 4) {
+        cam = &((Camera *)g_cameraManager)[g_cameraManager[0x640]++];
+        SoundListener_SetTotalListeners(g_cameraManager[0x640]);
+        cam->pos.x = 0.0f;
+        cam->pos.y = 0.0f;
+        cam->pos.z = 0.0f;
+        cam->fwd.x = 0.0f;
+        cam->fwd.y = 0.0f;
+        cam->fwd.z = 1.0f;
+        cam->up.x = 0.0f;
+        cam->up.y = 1.0f;
+        cam->up.z = 0.0f;
+        cam->right.x = 1.0f;
+        cam->right.y = 0.0f;
+        cam->right.z = 0.0f;
+        cam->mode = &g_triggerAction_params_default;
+        cam->modeTime = 0.0f;
+        cam->unkBC = 0.0f;
+        cam->unkE0.x = 0.0f;
+        cam->unkE0.y = 0.0f;
+        cam->unkE0.z = 10.0f;
+        cam->unk110.x = 0.0f;
+        cam->unk110.y = 0.0f;
+        cam->unk110.z = 1.0f;
+        cam->unk120 = g_zeroVector;
+        cam->unkC0 = g_zeroVector;
+        cam->unkD0 = g_zeroVector;
+        cam->unk140 = g_zeroVector;
+        cam->unk160 = g_zeroVector;
+        cam->unk130.x = 0.0f;
+        cam->unk130.y = 1.0f;
+        cam->unk130.z = 0.0f;
+        cam->unk150 = cam->unk130;
+        if (g_worldData.world != NULL) {
+            id = M2C_FIELD(M2C_FIELD(g_worldData.world, u8 **, 0x9C), void **, 0xC4);
+            if (id != NULL) {
+                params.id = id;
+                params.unk38 = 0.0f;
+                params.b = g_zeroVector;
+                params.a = g_zeroVector;
+                params.unk34 = 0;
+                params.c = params.a;
+                cam->emitter = ThingManager_DARYL_CreateThing(2, &params);
+            }
+        }
+        cam->unk100 = -1;
+        cam->unk17C = -1;
+        return cam;
+    }
+    return NULL;
+}
+
 void CameraManager_ResetAllCameras(void) {
     extern u8 g_cameraManager[];
     u32 i;

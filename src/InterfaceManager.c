@@ -221,6 +221,78 @@ typedef struct IMWorld {
 } IMWorld;
 
 
+void *InterfaceManager_GetInterfaceObjects(u32 num) {
+    typedef struct ObjectAllocation {
+        u32 start;
+        u32 count;
+        s8 free;
+    } ObjectAllocation;
+    typedef struct InterfaceObject {
+        u8 pad[0x2FC];
+        u32 index;
+    } InterfaceObject;
+    extern ObjectAllocation g_objectAllocations[28];
+    extern u32 g_numInterfaceObjectAllocations;
+    extern InterfaceObject g_MasterInterfaceObjectList[500];
+    extern u32 g_numInterfaceObjectsAllocated;
+    void *memset(void *dst, int c, u32 n);
+    InterfaceObject *obj;
+    ObjectAllocation *alloc;
+    u32 j;
+    u32 total;
+    u32 i;
+    u32 idx;
+    u32 n;
+
+    for (i = 0; g_numInterfaceObjectAllocations != 0 && i < g_numInterfaceObjectAllocations - 1; i++) {
+        alloc = &g_objectAllocations[i];
+        if (alloc->free) {
+            total = 0;
+            for (j = i + 1; j < g_numInterfaceObjectAllocations &&
+                            (g_objectAllocations[j].free || g_objectAllocations[j].count == 0);
+                 j++) {
+                total += g_objectAllocations[j].count;
+                memset(&g_objectAllocations[j], 0, sizeof(ObjectAllocation));
+            }
+            alloc->count += total;
+            i = j - 1;
+        }
+    }
+    for (i = 0; i < g_numInterfaceObjectAllocations; i++) {
+        if (g_objectAllocations[i].free && g_objectAllocations[i].count >= num) {
+            if (i + 1 < g_numInterfaceObjectAllocations &&
+                (g_objectAllocations[i + 1].free || g_objectAllocations[i + 1].count == 0)) {
+                g_objectAllocations[i].free = 0;
+                idx = g_objectAllocations[i].start;
+                g_objectAllocations[i + 1].start = num + idx;
+                g_MasterInterfaceObjectList[idx].index = idx;
+                g_objectAllocations[i + 1].count = g_objectAllocations[i].count - num;
+                g_objectAllocations[i + 1].free = 1;
+                g_objectAllocations[i].count = num;
+                return &g_MasterInterfaceObjectList[idx];
+            }
+            g_objectAllocations[i].free = 0;
+            idx = g_objectAllocations[i].start;
+            g_MasterInterfaceObjectList[idx].index = idx;
+            return &g_MasterInterfaceObjectList[idx];
+        }
+    }
+    if (g_numInterfaceObjectAllocations + num > 500) {
+        return NULL;
+    }
+    if (g_numInterfaceObjectAllocations >= 28) {
+        return NULL;
+    }
+    obj = &g_MasterInterfaceObjectList[g_numInterfaceObjectsAllocated];
+    obj->index = g_numInterfaceObjectsAllocated;
+    g_numInterfaceObjectsAllocated += num;
+    n = g_numInterfaceObjectAllocations++;
+    g_objectAllocations[n].start = obj->index;
+    g_objectAllocations[n].count = num;
+    g_objectAllocations[n].free = 0;
+    return obj;
+}
+
 void InterfaceManager_Init(void) {
     extern u8 g_interface[][0x170];
     extern s32 g_TargetArrow[7];
@@ -468,6 +540,34 @@ void InterfaceManager_SetCallBackRoutine(s32 index, void *callback) {
 void InterfaceManager_SetInfoCallBackRoutine(s32 index, void *callback) {
     extern u8 g_interface[][0x170];
     *(void **)(g_interface[index] + 0x94) = callback;
+}
+
+void InterfaceManager_PauseInterface(u8 pause, s32 index) {
+    typedef struct InterfaceSlot {
+        u8 pad0[0x243];
+        u8 type;
+        u8 pad244[0x270 - 0x244];
+        s32 child;
+        u8 pad274[0x300 - 0x274];
+    } InterfaceSlot;
+    typedef struct Interface {
+        u32 count;
+        u8 pad4[0x83 - 0x4];
+        u8 paused;
+        u8 pad84[0x88 - 0x84];
+        InterfaceSlot *slots;
+        u8 pad8C[0x170 - 0x8C];
+    } Interface;
+    extern Interface g_interface[];
+    u32 i;
+
+    g_interface[index].paused = pause;
+    for (i = 0; i < g_interface[index].count; i++) {
+        if (g_interface[index].slots[i].type != 6) {
+            continue;
+        }
+        InterfaceManager_PauseInterface(pause, g_interface[index].slots[i].child);
+    }
 }
 
 s32 InterfaceManager_GetTotalActiveInterfaces(void) {
@@ -1148,6 +1248,228 @@ void InterfaceManager_SetLoadState(u8 *iface, s32 state) {
     }
 }
 
+void InterfaceManager_SetObjectState(u8 *iface, u8 *obj, s32 state, s32 arg3) {
+    typedef struct IMState {
+        u8 type;
+        u8 pad1[3];
+        u32 value;
+        u8 *data;
+    } IMState;
+    void SoundSequence_Stop(s32 seq);
+    s32 SoundSequence_Play(s8 *seq, Vector4 *pos);
+    void Thing_Release(s32 thing);
+    void InterfaceManager_ExecuteActions(u8 *iface, u8 *list);
+    void InterfaceManager_CheckConditions(u8 *iface, u8 *obj);
+    void InterfaceManager_MoveObject(u8 *iface, u8 *obj, s32 arg2, f32 dt);
+    u32 i;
+    u8 *numOff = NULL;
+    u8 *numOn = NULL;
+    u8 *numActive = NULL;
+    u8 *numSelected = NULL;
+    u8 *numDisabled = NULL;
+    u32 j;
+
+    if (obj == NULL) {
+        return;
+    }
+    obj[0x240] = 0;
+    obj[0x246] = state;
+    *(s32 *)(*(u8 **)(obj + 0x25C) + 0x18) = -1;
+    *(s32 *)(*(u8 **)(obj + 0x25C) + 0x1C) = -1;
+    *(s32 *)(*(u8 **)(obj + 0x25C) + 0x20) = -1;
+    *(s32 *)(*(u8 **)(obj + 0x25C) + 0x24) = -1;
+    *(s32 *)(*(u8 **)(obj + 0x25C) + 0x28) = -1;
+    *(s32 *)(*(u8 **)(obj + 0x25C) + 0x2C) = -1;
+    for (i = 0; i < *(u32 *)(*(u8 **)(obj + 0x25C) + 0x64); i++) {
+        u8 *info = *(u8 **)(obj + 0x25C);
+        switch ((*(IMState **)(info + 0x68))[i].type) {
+        case 0:
+            if (numOff <= NULL) {
+                *(u32 *)(info + 0x18) = i;
+            }
+            numOff++;
+            break;
+        case 1:
+            if (numOn <= NULL) {
+                *(u32 *)(info + 0x1C) = i;
+            }
+            numOn++;
+            break;
+        case 2:
+            if (numActive <= NULL) {
+                *(u32 *)(info + 0x20) = i;
+            }
+            numActive++;
+            break;
+        case 3:
+            if (numSelected <= NULL) {
+                *(u32 *)(info + 0x24) = i;
+            }
+            numSelected++;
+            break;
+        case 4:
+            if (numOn <= NULL) {
+                *(u32 *)(info + 0x28) = i;
+            }
+            break;
+        case 5:
+            if (numDisabled <= NULL) {
+                *(u32 *)(info + 0x2C) = i;
+            }
+            numDisabled++;
+            break;
+        }
+    }
+    if (*(u32 *)(obj + 0x250) != 0xFFFFFFFF) {
+        SoundSequence_Stop(*(s32 *)(obj + 0x250));
+        *(s32 *)(obj + 0x250) = -1;
+    }
+    if (*(u32 *)(obj + 0x26C) != 0) {
+        Thing_Release(*(s32 *)(obj + 0x26C));
+        *(u32 *)(obj + 0x26C) = 0;
+        obj[0x244] = 0;
+    }
+    switch (state) {
+    case 100:
+        obj[0x240] = 1;
+        obj[0x248] = 0;
+        *(u32 *)(obj + 0x274) = 0;
+        obj[0x247] = 1;
+        *(u8 **)(obj + 0x254) = NULL;
+        return;
+    case 4:
+        if (*(u32 *)(*(u8 **)(obj + 0x25C) + 0x28) == 0xFFFFFFFF) {
+            obj[0x240] = 1;
+            obj[0x248] = 0;
+            *(u8 **)(obj + 0x254) = NULL;
+            return;
+        }
+        *(u8 **)(obj + 0x254) = (*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x28)].data;
+        *(u32 *)(obj + 0x274) = 0;
+        obj[0x247] = 1;
+        if (*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x28)].data + 0x30) != NULL) {
+            *(s32 *)(obj + 0x250) = SoundSequence_Play(*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x28)].data + 0x30), NULL);
+        }
+        InterfaceManager_ExecuteActions(iface, *(u8 **)(obj + 0x254) + 0x34);
+        break;
+    case 5:
+        if (*(u32 *)(*(u8 **)(obj + 0x25C) + 0x2C) == 0xFFFFFFFF) {
+            obj[0x240] = 1;
+            obj[0x248] = 0;
+            *(u8 **)(obj + 0x254) = NULL;
+            return;
+        }
+        *(u8 **)(obj + 0x254) = (*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x2C)].data;
+        *(u32 *)(obj + 0x274) = 0;
+        obj[0x247] = 1;
+        if (*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x2C)].data + 0x30) != NULL) {
+            *(s32 *)(obj + 0x250) = SoundSequence_Play(*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x2C)].data + 0x30), NULL);
+        }
+        InterfaceManager_ExecuteActions(iface, *(u8 **)(obj + 0x254) + 0x34);
+        break;
+    case 0:
+        if (*(u32 *)(*(u8 **)(obj + 0x25C) + 0x18) == 0xFFFFFFFF) {
+            obj[0x240] = 1;
+            obj[0x248] = 0;
+            *(u8 **)(obj + 0x254) = NULL;
+            return;
+        }
+        *(u8 **)(obj + 0x254) = (*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x18)].data;
+        *(u32 *)(obj + 0x274) = 0;
+        obj[0x247] = 1;
+        if (*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x18)].data + 0x30) != NULL) {
+            *(s32 *)(obj + 0x250) = SoundSequence_Play(*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x18)].data + 0x30), NULL);
+        }
+        InterfaceManager_ExecuteActions(iface, *(u8 **)(obj + 0x254) + 0x34);
+        break;
+    case 1:
+        if (*(u32 *)(*(u8 **)(obj + 0x25C) + 0x1C) == 0xFFFFFFFF) {
+            InterfaceManager_SetObjectState(iface, obj, 0, 0);
+            obj[0x246] = 1;
+            return;
+        }
+        *(u8 **)(obj + 0x254) = (*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x1C)].data;
+        *(u32 *)(obj + 0x274) = 0;
+        obj[0x247] = 1;
+        if (*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x1C)].data + 0x30) != NULL) {
+            *(s32 *)(obj + 0x250) = SoundSequence_Play(*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x1C)].data + 0x30), NULL);
+        }
+        InterfaceManager_ExecuteActions(iface, *(u8 **)(obj + 0x254) + 0x34);
+        break;
+    case 2:
+        if (*(u32 *)(*(u8 **)(obj + 0x25C) + 0x20) == 0xFFFFFFFF) {
+            InterfaceManager_SetObjectState(iface, obj, 1, 0);
+            if (*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) != NULL) {
+                obj[0x247] = 0;
+                for (j = 0; j < *(u32 *)(*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) + 0x10); j++) {
+                    *(u32 *)(obj + 0x274) = *(u32 *)(*(u8 **)(*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) + 0x14) + j * 0xC + 4);
+                    if (*(u32 *)(obj + 0x274) != 0) {
+                        break;
+                    }
+                }
+            } else {
+                *(u32 *)(obj + 0x274) = 0;
+                obj[0x247] = 1;
+            }
+            obj[0x248] = 0;
+            return;
+        }
+        *(u8 **)(obj + 0x254) = (*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x20)].data;
+        if (*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) != NULL) {
+            obj[0x247] = 0;
+            for (j = 0; j < *(u32 *)(*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) + 0x10); j++) {
+                *(u32 *)(obj + 0x274) = *(u32 *)(*(u8 **)(*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) + 0x14) + j * 0xC + 4);
+                if (*(u32 *)(obj + 0x274) != 0) {
+                    break;
+                }
+            }
+        } else {
+            *(u32 *)(obj + 0x274) = 0;
+            obj[0x247] = 1;
+        }
+        if (*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x20)].data + 0x30) != NULL) {
+            *(s32 *)(obj + 0x250) = SoundSequence_Play(*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x20)].data + 0x30), NULL);
+        }
+        InterfaceManager_ExecuteActions(iface, *(u8 **)(obj + 0x254) + 0x34);
+        break;
+    case 3:
+        if (*(u32 *)(*(u8 **)(obj + 0x25C) + 0x24) == 0xFFFFFFFF) {
+            InterfaceManager_SetObjectState(iface, obj, 2, 0);
+            obj[0x248] = 0;
+            return;
+        }
+        *(u8 **)(obj + 0x254) = (*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x24)].data;
+        *(u32 *)(iface + 4) = 3;
+        *(u32 *)(iface + 0x10) = (*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x24)].value;
+        if (*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) != NULL) {
+            obj[0x247] = 0;
+            *(u32 *)(obj + 0x274) = *(u32 *)(*(u8 **)(*(u8 **)(*(u8 **)(obj + 0x25C) + 0x44) + 0x14) + 4);
+        } else {
+            *(u32 *)(obj + 0x274) = 0;
+            obj[0x247] = 1;
+        }
+        if (*(u32 *)(iface + 0x10) == 0) {
+            obj[0x240] = 1;
+        }
+        if (*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x24)].data + 0x30) != NULL) {
+            *(s32 *)(obj + 0x250) = SoundSequence_Play(*(s8 **)((*(IMState **)(*(u8 **)(obj + 0x25C) + 0x68))[*(u32 *)(*(u8 **)(obj + 0x25C) + 0x24)].data + 0x30), NULL);
+        }
+        InterfaceManager_ExecuteActions(iface, *(u8 **)(obj + 0x254) + 0x34);
+        break;
+    }
+    obj[0x2C] = 1;
+    obj[0x54] = 1;
+    obj[0x118] = 1;
+    obj[0x84] = 1;
+    obj[0xB4] = 1;
+    obj[0x125] = 1;
+    obj[0x164] = 1;
+    obj[0x194] = 1;
+    obj[0x248] = 1;
+    InterfaceManager_CheckConditions(iface, obj);
+    InterfaceManager_MoveObject(iface, obj, 0, 0.0f);
+}
+
 void InterfaceManager_LinkThingToObject(s32 index, u32 id, void *thing) {
     typedef struct InterfaceSlot {
         u8 pad0[0x25C];
@@ -1723,6 +2045,54 @@ void InterfaceManager_SetObjectReactive(u8 *iface, u32 onId, u32 offId) {
     }
 }
 
+void InterfaceManager_SetObjectReference(u8 *iface, u32 id, u32 state) {
+    u32 i;
+
+    for (i = 0; i < *(u32 *)iface; i++) {
+        u8 *info = *(u8 **)(*(u8 **)(*(u8 **)(iface + 0x88) + i * 0x300 + 0x25C) + 0x44);
+        u8 *obj = *(u8 **)(iface + 0x88) + i * 0x300;
+        if (info != NULL && *info == id) {
+            if (obj[0x246] != state) {
+                InterfaceManager_SetObjectState(iface, obj, state, 0);
+                if (obj[0x243] == 5) {
+                    char **strings = *(char ***)(obj + 0x1A0);
+                    if (strings != NULL) {
+                        u8 *font = *(u8 **)(*(u8 **)(obj + 0x258) + 4);
+                        char *text;
+                        obj[0x248] = 1;
+                        obj[0x2C] = 1;
+                        obj[0x54] = 1;
+                        obj[0x84] = 1;
+                        obj[0x164] = 1;
+                        obj[0x194] = 1;
+                        *(u16 *)(obj + 0x1AA) = 0;
+                        *(s32 *)(obj + 0x1AC) = *(s32 *)(font + 0x14);
+                        *(u16 *)(obj + 0x1A8) = 0;
+                        obj[0x1C0] = 0;
+                        *(char ***)(obj + 0x1A0) = strings;
+                        *(char **)(obj + 0x1A4) = NULL;
+                        obj[0x1B1] = 0;
+                        text = *strings;
+                        if (text != NULL) {
+                            *(char **)(obj + 0x1A4) = text;
+                            *(u16 *)(obj + 0x1A8) = strlen(text);
+                            if (*(s32 *)(obj + 0x1AC) == 0) {
+                                *(u16 *)(obj + 0x1AA) = *(u16 *)(obj + 0x1A8);
+                            }
+                            if (*(u8 *)(*(u8 **)(obj + 0x258) + 0x12) != 0) {
+                                obj[0x1B1] = 1;
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            obj[0x246] = 0;
+            obj[0x240] = 1;
+        }
+    }
+}
+
 u32 InterfaceManager_KeyPress(InterfaceKeyState *im, s32 pad, u8 key) {
     extern s32 g_iDeltaTimeMS;
     s8 Input_KeyPress(s32 chan, u8 key);
@@ -1901,6 +2271,61 @@ u32 InterfaceManager_KeyPress(InterfaceKeyState *im, s32 pad, u8 key) {
     }
     }
     return result;
+}
+
+s32 InterfaceManager_ProcessInput(u8 *iface, u8 *obj, u32 *events) {
+    typedef struct InputSlot {
+        u8 pad0[0x243];
+        u8 type;
+        u8 pad244[0x270 - 0x244];
+        u32 child;
+        u8 pad274[0x300 - 0x274];
+    } InputSlot;
+    typedef struct InputEvent {
+        u8 type;
+        u8 pad1[7];
+        u8 *data;
+    } InputEvent;
+    typedef struct {
+        u32 index;
+        u16 type;
+        u16 id;
+        u16 events;
+        u16 unk12;
+        u8 pad14[0x20 - 0x14];
+        u32 result;
+        s32 unk2C;
+        s8 unk30;
+        u8 pad31[0x44 - 0x31];
+        void *values;
+        u16 unk48;
+        u8 pad4A[2];
+    } InterfaceMessage;
+    extern u8 g_interface[][0x170];
+    u32 InterfaceManager_KeyPress(u8 *iface, void *arg, s32 key);
+    s32 InterfaceManager_PlayEvent(u8 *iface, u8 *obj, InputEvent *event, u16 events);
+    s32 StateManager_CurrState(void);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    u32 i;
+    InputEvent *event;
+    u32 pressed;
+
+    if (obj != NULL && obj[0x240] != 0) {
+        return 1;
+    }
+    for (i = 0; i < events[0]; i++) {
+        event = &((InputEvent *)events[1])[i];
+        pressed = 0;
+        if (event->type == 1) {
+            pressed = InterfaceManager_KeyPress(iface, *(void **)(iface + 0x8C), 6);
+        }
+        if (pressed != 0) {
+            if (!InterfaceManager_PlayEvent(iface, obj, event, pressed)) {
+                return 0;
+            }
+        }
+    }
+    return 1;
 }
 
 #pragma use_lmw_stmw on

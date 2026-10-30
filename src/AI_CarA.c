@@ -1882,6 +1882,52 @@ s32 AI_Car_DetermineState(u8 *car) {
     return 0;
 }
 
+void AI_Car_ResetState(u8 *car, void *arg) {
+    typedef struct AIStateInfo {
+        u8 unk0[6];
+        u8 unk6;
+    } AIStateInfo;
+    typedef struct AIState {
+        AIStateInfo *info;
+        u32 numChildren;
+        struct AIState *children;
+    } AIState;
+    typedef struct AIStateSlot {
+        AIStateInfo *info;
+        s32 unk4;
+        s32 unk8;
+        s32 unkC;
+        u8 unk10[4];
+        u8 unk14;
+    } AIStateSlot;
+    typedef struct AICar {
+        u8 pad0[0xD0];
+        u8 *params;
+        AIStateSlot slots[1];
+    } AICar;
+    static u8 iTotal;
+    AIState *state = arg;
+    u8 i;
+
+    if (state == (AIState *)(((AICar *)car)->params + 0x28)) {
+        iTotal = 0;
+    }
+    if (state->info != NULL) {
+        ((AICar *)car)->slots[iTotal].info = state->info;
+        ((AICar *)car)->slots[iTotal].unk4 = 0;
+        ((AICar *)car)->slots[iTotal].unk8 = 0;
+        ((AICar *)car)->slots[iTotal].unkC = 0;
+        ((AICar *)car)->slots[iTotal].unk14 = state->info->unk6;
+        iTotal++;
+    }
+    for (i = 0; i < state->numChildren; i++) {
+        AI_Car_ResetState(car, &state->children[i]);
+    }
+    if (state == (AIState *)(((AICar *)car)->params + 0x28)) {
+        ((AICar *)car)->slots[iTotal].info = NULL;
+    }
+}
+
 void AI_Car_Reset(u8 *car) {
     typedef struct AICarParams {
         f32 speedScale;
