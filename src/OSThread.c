@@ -61,6 +61,54 @@ static OSThread IdleThread;
 static OSThread DefaultThread;
 static OSContext IdleContext;
 
+void __OSThreadInit(void) {
+    extern volatile u32 RunQueueBits;
+    extern volatile s32 RunQueueHint;
+    extern s32 Reschedule;
+    OSThread *thread = &DefaultThread;
+    int prio;
+
+    thread->state = 2;
+    thread->attr = OS_THREAD_ATTR_DETACH;
+    thread->priority = thread->base = 16;
+    thread->suspend = 0;
+    thread->val = (void *)-1;
+    thread->mutex = NULL;
+    OSInitThreadQueue(&thread->queueJoin);
+    thread->queueMutex.head = thread->queueMutex.tail = NULL;
+
+    __OSFPUContext = &thread->context;
+
+    OSClearContext(&thread->context);
+    OSSetCurrentContext(&thread->context);
+    thread->stackBase = (u8 *)_stack_addr;
+    thread->stackEnd = (u32 *)_stack_end;
+    *(thread->stackEnd) = 0xDEADBABE;
+
+    __OSCurrentThread = thread;
+    RunQueueBits = 0;
+    RunQueueHint = FALSE;
+    for (prio = 0; prio <= 31; ++prio) {
+        OSInitThreadQueue(&RunQueue[prio]);
+    }
+
+    OSInitThreadQueue(&__OSActiveThreadQueue);
+    {
+        OSThread *prev = __OSActiveThreadQueue.tail;
+        if (prev == NULL) {
+            __OSActiveThreadQueue.head = thread;
+        } else {
+            prev->linkActive.next = thread;
+        }
+        thread->linkActive.prev = prev;
+        thread->linkActive.next = NULL;
+        __OSActiveThreadQueue.tail = thread;
+    }
+
+    OSClearContext(&IdleContext);
+    Reschedule = 0;
+}
+
 void OSInitThreadQueue(void * arg0)
 {
     ((s32 *)arg0)[1] = 0;
