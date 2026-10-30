@@ -49,6 +49,46 @@ void __CARDCheckSum(void *ptr, int length, u16 *checksum, u16 *checksumInv) {
     }
 }
 
+s32 VerifyDir(CARDControl *card, s32 *outCurrent) {
+    u8 *dir[2];
+    CARDDirCheck *check[2];
+    u16 checkSum;
+    u16 checkSumInv;
+    s32 i;
+    s32 errors;
+    s32 current;
+
+    errors = 0;
+    current = 0;
+    for (i = 0; i < 2; i++) {
+        dir[i] = (u8 *)card->workArea + (1 + i) * 0x2000;
+        check[i] = (CARDDirCheck *)(dir[i] + 0x1FC0);
+        __CARDCheckSum(dir[i], 0x2000 - sizeof(u32), &checkSum, &checkSumInv);
+        if (check[i]->checkSum != checkSum || check[i]->checkSumInv != checkSumInv) {
+            card->currentDir = NULL;
+            current = i;
+            errors++;
+        }
+    }
+    if (errors == 0) {
+        if (card->currentDir == NULL) {
+            if ((check[0]->checkCode - check[1]->checkCode) < 0) {
+                current = 0;
+            } else {
+                current = 1;
+            }
+            card->currentDir = dir[current];
+            memcpy(dir[current], dir[current ^ 1], 0x2000);
+        } else {
+            current = (card->currentDir == dir[0]) ? 0 : 1;
+        }
+    }
+    if (outCurrent) {
+        *outCurrent = current;
+    }
+    return errors;
+}
+
 s32 __CARDVerify(void *card) {
     s32 result;
     s32 errors;
