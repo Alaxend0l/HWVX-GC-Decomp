@@ -582,6 +582,68 @@ void MotionState_BuildMatricesWorld(void *arg0, void *arg1, void *motionState, f
         TEST_AnimTraverseHeirarchyToMatricesWorld(arg0, arg1, frames, *skel, M2C_FIELD(motionState, u32 *, 0x10), time);
     }
 }
+
+void Motion_HeartbeatB2(void *state, Vector4 *vel) {
+    void MotionState_BlendTriggerEvents(void *state, void *events, Vector4 *vel);
+    void Thing_MoveSlaves(void *thing);
+    void CopyVector(Vector4 *dst, Vector4 *src);
+    void CopyMatrix(void *dst, void *src);
+    typedef struct SlaveThing {
+        Vector4 vel;
+        Matrix4 mtx;
+        Vector4 pos;
+        u8 pad60[0x74 - 0x60];
+        u32 flags;
+        u8 pad78[0x82 - 0x78];
+        u8 bone;
+        u8 pad83[0x8C - 0x83];
+        void (**vtbl)();
+        u8 pad90[0xA4 - 0x90];
+        struct SlaveThing *next;
+    } SlaveThing;
+    typedef struct {
+        u8 *anim;
+        u8 pad4[0x10 - 0x4];
+        Matrix4 *matrices;
+        SlaveThing *slaves;
+    } State;
+    Matrix4 *matrices;
+    SlaveThing *slave;
+
+    MotionState_BlendTriggerEvents(state, ((State *)state)->anim + 0x2C, vel);
+    matrices = ((State *)state)->matrices;
+    {
+        Vector4 v __attribute__((aligned(16))) = {0};
+        Vector4 pos __attribute__((aligned(16)));
+        Vector4 oldVel __attribute__((aligned(16)));
+        Matrix4 mtx __attribute__((aligned(16)));
+
+        if (vel != NULL) {
+            v = *vel;
+        }
+        for (slave = ((State *)state)->slaves; slave != NULL; slave = slave->next) {
+            if (slave->flags & 0x201000) {
+                continue;
+            }
+            if (!(slave->flags & 0x400000)) {
+                CopyVector(&pos, &slave->pos);
+                CopyMatrix(&mtx, &slave->mtx);
+                slave->vtbl[9](slave, &matrices[slave->bone]);
+                oldVel = slave->vel;
+                slave->vel = v;
+                slave->vtbl[3](slave);
+                Thing_MoveSlaves(slave);
+                CopyVector(&slave->pos, &pos);
+                CopyMatrix(&slave->mtx, &mtx);
+                CopyVector(&slave->vel, &oldVel);
+            } else {
+                slave->vtbl[3](slave);
+            }
+        }
+    }
+    ThingManagerList_RemoveReleasedThings((s32)state + 0x14);
+}
+
 #pragma pop
 
 #pragma push
