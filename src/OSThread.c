@@ -40,6 +40,7 @@ struct OSThread {
     OSThreadLink linkActive;
     u8 *stackBase;
     u32 *stackEnd;
+    s32 error;
 };
 
 #define OS_THREAD_ATTR_DETACH 1
@@ -47,6 +48,12 @@ struct OSThread {
 
 OSThread *__OSCurrentThread : 0x800000E4;
 OSThreadQueue __OSActiveThreadQueue : 0x800000DC;
+OSContext *__OSFPUContext : 0x800000D8;
+
+static OSThreadQueue RunQueue[32];
+static OSThread IdleThread;
+static OSThread DefaultThread;
+static OSContext IdleContext;
 
 void OSInitThreadQueue(void * arg0)
 {
@@ -166,7 +173,7 @@ BOOL OSCreateThread(OSThread *thread, void *(*func)(void *), void *param, void *
     sp -= 8;
     ((u32 *)sp)[0] = 0;
     ((u32 *)sp)[1] = 0;
-    OSInitContext(&thread->context, (u32)func, sp);
+    OSInitContext((OSContext *)thread, (u32)func, sp);
     thread->context.lr = (u32)OSExitThread;
     thread->context.gpr[3] = (u32)param;
     thread->stackBase = stack;
