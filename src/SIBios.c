@@ -178,26 +178,6 @@ void SIInterruptHandler(s16 interrupt, void *context)
     }
 }
 
-BOOL OSCancelAlarm(OSAlarm *alarm);
-
-static inline void SITransferNext(s32 chan) {
-    int i;
-    SIPacket *packet;
-
-    for (i = 0; i < 4; ++i) {
-        ++chan;
-        chan %= 4;
-        packet = &Packet[chan];
-        if (packet->chan != -1 && packet->fire <= __OSGetSystemTime()) {
-            if (__SITransfer(packet->chan, packet->output, packet->outputBytes, packet->input, packet->inputBytes, packet->callback)) {
-                OSCancelAlarm(&Alarm[chan]);
-                packet->chan = -1;
-            }
-            break;
-        }
-    }
-}
-
 BOOL SIEnablePollingInterrupt(BOOL enable) {
     BOOL enabled;
     BOOL rc;
