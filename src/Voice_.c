@@ -106,6 +106,10 @@ s32 OSDisableInterrupts(void);
 void OSRestoreInterrupts(s32 level);
 void AXSetVoicePriority(AXVPB *axv, u32 priority);
 
+static inline u32 Voice_LastSample(VoiceHW *voice) {
+    return voice->length - 1;
+}
+
 
 void AudioVoice_Destroy_(void);
 void SetVoiceState_(VoiceHW *voice, s32 state);
@@ -168,7 +172,7 @@ u32 CreateSFX_(u32 *sfx) {
     MemCpyA_(data, sfx[0], size);
     if (((u8 *)sfx)[0x11] == 0x10) {
         sfx[1] >>= 1;
-        *(u32 *)&data >>= 1;
+        *(u32 *)&data = data >> 1;
         ((s32 *)sfx)[2] >>= 1;
     }
     sfx[0] = data;
