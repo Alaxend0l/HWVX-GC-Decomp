@@ -220,11 +220,98 @@ static inline void GXColor1u32(u32 clr) {
     GXWGFifo.u32 = clr;
 }
 
+static inline void GXPosition3s16(const s16 x, const s16 y, const s16 z) {
+    GXWGFifo.s16 = x;
+    GXWGFifo.s16 = y;
+    GXWGFifo.s16 = z;
+}
+
+static inline void GXTexCoord2s16(const s16 s, const s16 t) {
+    GXWGFifo.s16 = s;
+    GXWGFifo.s16 = t;
+}
+
 void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
 
 extern GDL *g_pGDL;
 extern RenderStats g_renderStats;
 extern s32 g_debugTriCount;
+
+void GXInitTexObjLOD(GXTexObj *obj, s32 min_filt, s32 mag_filt, f32 min_lod, f32 max_lod, f32 lod_bias, u8 bias_clamp, u8 do_edge_lod, s32 max_aniso);
+void GXLoadTexObj(GXTexObj *obj, s32 id);
+void GXLoadTexMtxImm(f32 mtx[3][4], u32 id, s32 type);
+void GXSetTexCoordGen2(s32 dst, s32 func, s32 src, u32 mtx, u8 normalize, u32 pt);
+void PSMTXScale(f32 m[3][4], f32 x, f32 y, f32 z);
+char *OSGetFontTexture(char *string, void **image, s32 *x, s32 *y, s32 *width);
+#pragma push
+#pragma use_lmw_stmw on
+s32 DrawChar(s32 x, s32 y, u16 code) {
+    f32 mtx[3][4];
+    GXTexObj tobj;
+    char str[4];
+    s32 width;
+    void *image;
+    s32 s;
+    s32 t;
+    s16 y1;
+    s16 y0;
+    s16 x1;
+    s16 x0;
+    s32 s0;
+    s32 t0;
+    s32 cw;
+    s32 ch;
+
+    if (code == 0) {
+        return 0;
+    }
+    if (code < 0x100) {
+        str[0] = code;
+        str[1] = 0;
+    } else {
+        str[0] = code >> 8;
+        str[1] = code;
+        str[2] = 0;
+    }
+    OSGetFontTexture(str, &image, &s, &t, &width);
+    GXInitTexObj(&tobj, image, FontData->sheetWidth, FontData->sheetHeight, FontData->sheetFormat, 0, 0, 0);
+    GXInitTexObjLOD(&tobj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+    GXLoadTexObj(&tobj, 0);
+    PSMTXScale(mtx, 1.0f / FontData->sheetWidth, 1.0f / FontData->sheetHeight, 1.0f);
+    GXLoadTexMtxImm(mtx, 30, 1);
+    GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
+    x0 = x;
+    y0 = y;
+    t0 = t;
+    cw = FontData->cellWidth;
+    ch = FontData->cellHeight;
+    s0 = s;
+    x1 = x0 + cw;
+    y1 = y0 + ch;
+    GXBegin(0x80, 0, 4);
+    GXWGFifo.s16 = x0;
+    GXWGFifo.s16 = y0;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.s16 = s0;
+    GXWGFifo.s16 = t0;
+    GXWGFifo.s16 = x1;
+    GXWGFifo.s16 = y0;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.s16 = s0 + cw;
+    GXWGFifo.s16 = t0;
+    GXWGFifo.s16 = x1;
+    GXWGFifo.s16 = y1;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.s16 = s0 + cw;
+    GXWGFifo.s16 = t0 + ch;
+    GXWGFifo.s16 = x0;
+    GXWGFifo.s16 = y1;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.s16 = s0;
+    GXWGFifo.s16 = t0 + ch;
+    return width;
+}
+#pragma pop
 
 void Render_Create(void) {
     m_fogMode = 0;
