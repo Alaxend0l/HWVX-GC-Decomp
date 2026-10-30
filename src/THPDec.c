@@ -42,6 +42,7 @@ static u8 *__THPHuffmanSizeTab;
 static u16 *__THPHuffmanCodeTab;
 static s16 *__THPMCUBuffer[6];
 static u8 *__THPWorkArea;
+static BOOL __THPInitFlag;
 
 static void __THPSetupBuffers(void) {
     u8 i;
