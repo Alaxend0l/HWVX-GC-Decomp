@@ -26,8 +26,18 @@ DSPTaskInfo *__DSP_first_task;
 DSPTaskInfo *__DSP_last_task;
 DSPTaskInfo *__DSP_curr_task;
 
+extern volatile u16 __DSPRegs[32] : 0xCC005000;
+extern DSPTaskInfo *__DSP_rude_task;
+extern s32 __DSP_rude_task_pending;
+
+void OSClearContext(void *context);
+void OSSetCurrentContext(void *context);
+u32 DSPCheckMailFromDSP(void);
+u32 DSPReadMailFromDSP(void);
 void DSPSendMailToDSP(u32 mail);
 u32 DSPCheckMailToDSP(void);
+void __DSP_exec_task(DSPTaskInfo *curr, DSPTaskInfo *next);
+void __DSP_remove_task(DSPTaskInfo *task);
 void __DSP_exec_task(DSPTaskInfo *curr, DSPTaskInfo *next)
 {
     if (curr != NULL)
