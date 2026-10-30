@@ -26,7 +26,7 @@ typedef struct GPTileCar {
     GPAIScripts *aiScripts; /* 0x24 */
     CarA *creature;         /* 0x28 */
     u32 mode;               /* 0x2C */
-    u8 pad30[4];
+    u32 vehicle;            /* 0x30 */
     u8 unk34;               /* 0x34 */
     u8 port;                /* 0x35 1-4: human player slot */
     u8 pad36[2];
