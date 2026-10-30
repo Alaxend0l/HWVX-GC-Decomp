@@ -1,5 +1,12 @@
 #include "common.h"
 
+/* Layout used by the drafts moved in from src/auto. */
+typedef struct Thing {
+    Vector4 pos;  /* 0x00 */
+    Matrix4 mtx;  /* 0x10 */
+    Vector4 quat; /* 0x50 */
+} Thing;
+
 #pragma use_lmw_stmw on
 
 void TEST_AnimTraverseHeirarchyToMatricesWorld(Vector4 *quat, void *pos, void *frames, s32 skel, void *matrices, f32 time);
@@ -268,6 +275,78 @@ void MotionState_InitAllSlavesNow(s32 state, void *slaves, u8 player) {
     }
 }
 
+void MotionState_InitSlavesTimed(u8 *state, void *slaves, u8 player, u32 time) {
+    extern u32 g_iDeltaTimeMS;
+    extern Vector4 g_zeroVector;
+    void ThingManagerList_TriggerSlaves(void **list, u8 *trigger, Vector4 *a, Vector4 *b, Vector4 *c, u8 player);
+    typedef struct {
+        u8 unk0[0x14];
+        f32 time;
+        u8 unk18[0x8];
+    } SlaveTrigger;
+    typedef struct {
+        u32 count;
+        SlaveTrigger *triggers;
+    } SlaveList;
+    SlaveList *list = slaves;
+    u32 i;
+
+    for (i = 0; i < list->count; i++) {
+        Vector4 dir;
+        SlaveTrigger *trigger = &list->triggers[i];
+
+        dir = g_zeroVector;
+        if (trigger->time >= time && trigger->time < time + g_iDeltaTimeMS) {
+            ThingManagerList_TriggerSlaves((void **)(state + 0x14), (u8 *)trigger, (Vector4 *)trigger, &dir, &g_zeroVector, player);
+        }
+    }
+}
+
+void MotionState_BlendTriggerEvents(void *state, void *events, Vector4 *vel) {
+    void ThingManagerList_TriggerSlaves(void **list, u8 *trigger, Vector4 *a, Vector4 *b, Vector4 *c, u8 player);
+    typedef struct {
+        u8 unk0[0x14];
+        f32 time;
+        u8 unk18[0x8];
+    } SlaveTrigger;
+    typedef struct {
+        u32 count;
+        SlaveTrigger *triggers;
+    } SlaveList;
+    SlaveList *list = events;
+    Vector4 v;
+    f32 start;
+    f32 end;
+    u32 i;
+
+    v.x = v.y = v.z = v.w = 0.0f;
+    if (vel != NULL) {
+        v = *vel;
+    }
+    start = *(f32 *)((u8 *)state + 0x28);
+    end = *(f32 *)((u8 *)state + 0x2C);
+    for (i = 0; i < *(u32 *)(*(u8 **)((u8 *)state + 0x18) + 0x2C); i++) {
+        SlaveTrigger *trigger = &list->triggers[i];
+        s8 hit = 0;
+
+        if (*((u8 *)state + 0x1E)) {
+            if (start > trigger->time && end <= trigger->time) {
+                hit = 1;
+            }
+        } else {
+            if (start <= trigger->time && end > trigger->time) {
+                hit = 1;
+            }
+        }
+        if (hit) {
+            Vector4 dir;
+            dir.x = dir.y = dir.z = 0.0f;
+            dir.w = 1.0f;
+            ThingManagerList_TriggerSlaves((void **)((u8 *)state + 0x14), (u8 *)trigger, (Vector4 *)trigger, &dir, &v, 0xFF);
+        }
+    }
+}
+
 void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps) {
     extern f32 g_fDeltaTimeSec;
     typedef struct {
@@ -447,6 +526,75 @@ void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps) {
             break;
         }
     }
+}
+
+void MotionState_MoveSlaves(void *state, Matrix4 *matrix, Vector4 *vel) {
+    extern Matrix4 g_identity;
+    extern Vector4 g_zeroVector;
+    void Thing_MoveSlaves(Thing *thing);
+    void CopyVector(Vector4 *dst, Vector4 *src);
+    void CopyMatrix(void *dst, void *src);
+    void ThingManagerList_RemoveReleasedThings(void **list);
+    typedef struct SlaveThing {
+        Thing base;
+        u8 pad60[0x74 - 0x60];
+        u32 flags;
+        u8 pad78[0x82 - 0x78];
+        u8 bone;
+        u8 pad83[0x8C - 0x83];
+        void (**vtbl)();
+        u8 pad90[0xA4 - 0x90];
+        struct SlaveThing *next;
+    } SlaveThing;
+    typedef struct {
+        u8 pad0[0x10];
+        Matrix4 *matrices;
+        SlaveThing *slaves;
+    } State;
+    Vector4 pos;
+    Vector4 quat;
+    Vector4 v = g_zeroVector;
+    Matrix4 saved;
+    Matrix4 out;
+    Matrix4 *mtx = NULL;
+    SlaveThing *slave;
+    Matrix4 *matrices;
+    SlaveThing *next;
+
+    matrices = ((State *)state)->matrices;
+    if (vel != NULL) {
+        v = *vel;
+    }
+    if (matrix != &g_identity) {
+        mtx = matrix;
+    }
+    slave = ((State *)state)->slaves;
+    while (slave != NULL) {
+        next = slave->next;
+        if (!(slave->flags & 0x201000)) {
+            if (!(slave->flags & 0x400000)) {
+                CopyVector(&quat, &slave->base.quat);
+                CopyMatrix(&saved, &slave->base.mtx);
+                if (mtx != NULL) {
+                    MultiplyMatrix(&matrices[slave->bone], mtx, &out);
+                    slave->vtbl[9](slave, &out);
+                } else {
+                    slave->vtbl[9](slave, &matrices[slave->bone]);
+                }
+                pos = slave->base.pos;
+                slave->base.pos = v;
+                slave->vtbl[3](slave);
+                Thing_MoveSlaves(&slave->base);
+                CopyVector(&slave->base.quat, &quat);
+                CopyMatrix(&slave->base.mtx, &saved);
+                CopyVector(&slave->base.pos, &pos);
+            } else {
+                slave->vtbl[3](slave);
+            }
+        }
+        slave = next;
+    }
+    ThingManagerList_RemoveReleasedThings((void **)((u8 *)state + 0x14));
 }
 
 void MotionState_DrawSlaves(void *state, s32 arg1) {
@@ -644,6 +792,144 @@ void Motion_HeartbeatB2(void *state, Vector4 *vel) {
         }
     }
     ThingManagerList_RemoveReleasedThings((s32)state + 0x14);
+}
+
+void MotionState_Heartbeat(void *state, void *arg1, void *thing) {
+    extern f32 g_fDeltaTimeSec;
+    void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps);
+    void MotionState_BlendTriggerEvents(void *state, void *events, void *thing);
+    void MotionState_MoveSlaves(void *state, void *arg1, void *thing);
+    typedef struct {
+        u8 unk0[0x18];
+        f32 fps;
+    } MotionAnim;
+    typedef struct {
+        MotionAnim *anim;
+        u8 unk4[0x8];
+        f32 weight;
+        u8 unk10[0x10];
+    } MotionLayer;
+    typedef struct {
+        u8 *data;
+        u8 unk4[0x14];
+        MotionLayer layers[2];
+    } MotionStateT;
+    MotionStateT *ms = state;
+    f32 rate = 0.0f;
+    u32 i;
+
+    ms->layers[0].weight += g_fDeltaTimeSec;
+    if (ms->layers[0].weight > 1.0f) {
+        ms->layers[0].weight = 1.0f;
+    }
+    Motion_BlendHeartbeat_FPS(&ms->layers[0], 2, ms->layers[0].anim, ms->layers[0].anim->fps);
+    i = 1;
+    while (i < 1) {
+        rate -= 1.0f;
+        ms->layers[i].weight += rate * g_fDeltaTimeSec;
+        if (ms->layers[i].weight <= 0.0f) {
+            ms->layers[i].weight = 0.0f;
+        } else {
+            Motion_BlendHeartbeat_FPS(&ms->layers[i], 2, ms->layers[i].anim, ms->layers[i].anim->fps);
+        }
+        i++;
+    }
+    if (arg1 != NULL) {
+        MotionState_BlendTriggerEvents(state, ms->data + 0x2C, thing);
+        MotionState_MoveSlaves(state, arg1, thing);
+    }
+}
+
+void WildcardState_Heartbeat(void *state, u8 *mtx, void *thing) {
+    extern f32 g_fDeltaTimeSec;
+    void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps);
+    void MotionState_BlendTriggerEvents(void *state, void *events, void *thing);
+    void MotionState_MoveSlaves(void *state, void *arg1, void *thing);
+    void MotionState_ExtractBlendedKeyFrame(u8 *state, void *keyFrame);
+    double cos(double x);
+    double sin(double x);
+    typedef struct {
+        u8 unk0[0x14];
+        s32 *skel;
+        f32 fps;
+        u8 unk1C[0xC];
+        f32 *unk28;
+    } MotionAnim;
+    typedef struct {
+        MotionAnim *anim;
+        u8 mode;
+        u8 unk5[0x3];
+        f32 time;
+        f32 weight;
+        u8 unk10[0x10];
+    } MotionLayer;
+    typedef struct {
+        u8 unk0[0x24];
+        u32 numFrames;
+        u8 unk28[0x4];
+        u8 spinType;
+        u8 unk2D;
+        u16 spinBone;
+    } WildcardData;
+    typedef struct {
+        u8 unk0[0x30];
+        WildcardData *data;
+    } WildcardThing;
+    typedef struct {
+        u8 *data;
+        u8 unk4[0xC];
+        void *matrices;
+        u8 unk14[0x4];
+        MotionLayer layers[2];
+    } MotionStateT;
+    MotionStateT *ms = state;
+    f32 rate = 0.0f;
+    u32 i;
+    s32 *skel;
+    f32 angle;
+    Quaternion quat;
+    Quaternion rot;
+    Quaternion out;
+    u8 frames[0x800];
+
+    ms->layers[0].weight += g_fDeltaTimeSec;
+    if (ms->layers[0].weight > 1.0f) {
+        ms->layers[0].weight = 1.0f;
+    }
+    Motion_BlendHeartbeat_FPS(&ms->layers[0], 2, ms->layers[0].anim, ms->layers[0].anim->fps);
+    i = 1;
+    while (i < 1) {
+        rate -= 1.0f;
+        ms->layers[i].weight += rate * g_fDeltaTimeSec;
+        if (ms->layers[i].weight <= 0.0f) {
+            ms->layers[i].weight = 0.0f;
+        } else {
+            Motion_BlendHeartbeat_FPS(&ms->layers[i], 2, ms->layers[i].anim, ms->layers[i].anim->fps);
+        }
+        i++;
+    }
+    if (ms->layers[0].mode == 2 &&
+        *(s16 *)((u8 *)state + 0x40) < (*(WildcardThing **)((u8 *)state + 0x4C))->data->numFrames) {
+        ms->layers[0].time = ms->layers[0].anim->unk28[1];
+    }
+    if (ms->matrices != NULL) {
+        skel = ms->layers[0].anim->skel;
+        MotionState_ExtractBlendedKeyFrame(state, frames);
+        if ((*(WildcardThing **)((u8 *)state + 0x4C))->data->spinType == 1 ||
+            (*(WildcardThing **)((u8 *)state + 0x4C))->data->spinType == 2) {
+            angle = 6.2831855f * *(f32 *)((u8 *)state + 0x48) * *(f32 *)((u8 *)state + 0x44);
+            rot.w = cos(angle);
+            rot.x = sin(angle);
+            rot.y = 0.0f;
+            rot.z = 0.0f;
+            QuaternionMult((Vector4 *)&rot, (Vector4 *)(frames + (*(WildcardThing **)((u8 *)state + 0x4C))->data->spinBone * 32), (Vector4 *)&out);
+            *(Quaternion *)(frames + (*(WildcardThing **)((u8 *)state + 0x4C))->data->spinBone * 32) = out;
+        }
+        SubMatrixToQuaternion(mtx, (Vector4 *)&quat);
+        TEST_AnimTraverseHeirarchyToMatricesWorld((Vector4 *)&quat, mtx + 0x30, frames, *skel, ms->matrices, 1.0f);
+    }
+    MotionState_BlendTriggerEvents(state, ms->data + 0x2C, thing);
+    MotionState_MoveSlaves(state, NULL, thing);
 }
 
 void TEST_AnimTraverseHeirarchyToMatricesWorld(Vector4 *quat, void *pos0, void *frames, s32 skel, void *matrices, f32 time) {
