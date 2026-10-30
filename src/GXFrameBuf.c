@@ -30,7 +30,11 @@ typedef struct GXData {
     u16 vNumNot;
     u16 bpSentNot;
     u16 vNum;
-    u8 pad6[0x1E0 - 0x6];
+    u8 pad6[0x1D0 - 0x6];
+    u32 cmode0;
+    u32 cmode1;
+    u32 zmode;
+    u32 peCtrl;
     u32 cpDispSrc;
     u32 cpDispSize;
     u32 cpDispStride;
