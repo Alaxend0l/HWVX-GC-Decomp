@@ -39,7 +39,7 @@ static inline void Input_SetKeyDown(VirtualPad *pad, u16 key) {
     s32 k;
 
     for (k = 0; k < 20; k++) {
-        if (key == s_keyMap[k]) {
+        if (*map++ == key) {
             pad->keyDown |= 1 << k;
             pad->keyPress |= 1 << k;
         }
