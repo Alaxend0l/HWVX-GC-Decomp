@@ -1027,7 +1027,7 @@ void AI_Car_AsyncHeartbeat(u8 *ai) {
                 ai[0xCD] = 2;
             }
             if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1 && GameSettings_GetCodeVariable(0x198, 0) == 0) {
-                AI_Car_Cheat(ai);
+                AI_Car_Cheat_80008A60(ai);
             }
         }
     }
