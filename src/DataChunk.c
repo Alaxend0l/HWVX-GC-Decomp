@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma readonly_strings on
+
 
 void UpdatePointers(u32 *offsets, u32 count, u8 *base) {
     u32 i;
