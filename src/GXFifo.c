@@ -57,6 +57,36 @@ void GXInitFifoPtrs(GXFifoObj *fifo, void *readPtr, void *writePtr);
 void GXInitFifoLimits(GXFifoObj *fifo, u32 hiWatermark, u32 loWatermark);
 
 #pragma peephole on
+void GXCPInterruptHandler(s16 interrupt, OSContext *context) {
+    OSContext exceptionContext;
+
+    gx->cpStatus = __cpReg[0];
+    if (((gx->cpEnable >> 3) & 1) && ((gx->cpStatus >> 1) & 1)) {
+        OSResumeThread(__GXCurrentThread);
+        GXOverflowSuspendInProgress = 0;
+        __GXWriteFifoIntReset(1, 1);
+        __GXWriteFifoIntEnable(1, 0);
+    }
+    if (((gx->cpEnable >> 2) & 1) && (gx->cpStatus & 1)) {
+        __GXOverflowCount++;
+        __GXWriteFifoIntEnable(0, 1);
+        __GXWriteFifoIntReset(1, 0);
+        GXOverflowSuspendInProgress = 1;
+        OSSuspendThread(__GXCurrentThread);
+    }
+    if (((gx->cpEnable >> 5) & 1) && ((gx->cpStatus >> 4) & 1)) {
+        gx->cpEnable = (gx->cpEnable & ~0x20) | 0;
+        __cpReg[1] = gx->cpEnable;
+        if (BreakPointCB) {
+            OSClearContext(&exceptionContext);
+            OSSetCurrentContext(&exceptionContext);
+            BreakPointCB();
+            OSClearContext(&exceptionContext);
+            OSSetCurrentContext(context);
+        }
+    }
+}
+
 void GXInitFifoBase(GXFifoObj *fifo, void *base, u32 size) {
     __GXFifoObj *realFifo = (__GXFifoObj *)fifo;
 
