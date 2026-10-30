@@ -68,10 +68,10 @@ void __DVDFSInit(void) {
 
 #pragma push
 #pragma use_lmw_stmw on
+#pragma scheduling on
 s32 DVDConvertPathToEntrynum(char *pathPtr) {
     extern char *FstStringStart;
     extern u32 __DVDLongFileNameFlag;
-    int tolower(int c);
     char *ptr;
     char *stringPtr;
     BOOL isDir;
@@ -150,35 +150,18 @@ s32 DVDConvertPathToEntrynum(char *pathPtr) {
 
             stringPtr = FstStringStart + (FstStart[i * 3] & 0x00ffffff);
 
-            {
-                char *path = ptr;
-                char *string = stringPtr;
-                BOOL same;
-
-                while (1) {
-                    if (*string == '\0') {
-                        same = ((*path == '/') || (*path == '\0')) ? TRUE : FALSE;
-                        break;
-                    }
-                    if (tolower(*string++) != tolower(*path++)) {
-                        same = FALSE;
-                        break;
-                    }
-                }
-                if (same == TRUE) {
-                    if (isDir == FALSE) {
-                        return (s32)i;
-                    }
-                    dirLookAt = i;
-                    pathPtr += length + 1;
-                    goto next_hier;
-                }
+            if (isSame(ptr, stringPtr) == TRUE) {
+                goto next_hier;
             }
         }
         return -1;
 
     next_hier:
-        ;
+        if (isDir == FALSE) {
+            return (s32)i;
+        }
+        dirLookAt = i;
+        pathPtr += length + 1;
     }
 }
 #pragma pop
