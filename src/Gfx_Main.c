@@ -49,14 +49,6 @@ typedef struct GfxWindow {
     u8 unk2C8[0x2D0 - 0x2C8];
 } GfxWindow;
 
-static inline void Gfx_ResetWindowFov(void) {
-    extern s32 g_currentWindow;
-    extern GfxWindow g_window[];
-
-    g_window[g_currentWindow].unk2C4 = 0;
-    g_window[g_currentWindow].fov = g_window[0].fov;
-}
-
 f32 PSVECSquareMag(Vector *v);
 void PSVECNormalize(Vector *src, Vector *dst);
 
@@ -270,10 +262,10 @@ void Gfx_SetRenderWindowSize(s32 x0, s32 y0, s32 x1, s32 y1, s32 arg4) {
         s32 unk2C8;
         u8 unk2CC[4];
     } Window;
-    extern Window g_window[];
+    extern GfxWindow g_window[];
     extern s32 g_currentWindow;
     void Gfx_SetCameraMatrix(void *a, void *b, void *c, void *d);
-    Window *win = &g_window[g_currentWindow];
+    Window *win = (Window *)&g_window[g_currentWindow];
     u32 width = x1 - x0;
     u32 height = y1 - y0;
     u32 marginX = 0x1000 - width;
@@ -299,12 +291,8 @@ void Gfx_SetRenderWindowSize(s32 x0, s32 y0, s32 x1, s32 y1, s32 arg4) {
     win->centerX = (marginX >> 1) * 16;
     win->centerY = (marginY >> 1) * 16;
     Gfx_SetCameraMatrix(NULL, NULL, NULL, NULL);
-    memcpy(g_window[g_currentWindow].unk140, g_window[g_currentWindow].unk40, sizeof(g_window[0].unk40));
-    g_window[g_currentWindow].unk2C4 = 0;
-    {
-        f32 fov = g_window[0].fov;
-        g_window[g_currentWindow].fov = fov;
-    }
+    memcpy((u8 *)&g_window[g_currentWindow] + 0x140, (u8 *)&g_window[g_currentWindow] + 0x40, 0x40);
+    Gfx_ResetWindowFov();
 }
 
 s32 Gfx_GetCameraPositions(Vector *out) {
