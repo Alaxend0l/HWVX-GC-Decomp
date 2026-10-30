@@ -41,7 +41,7 @@ void GXDrawSphere(u8 numMajor, u8 numMinor) {
     s32 ttype;
     f32 radius = 1.0f;
     f32 majorStep = 3.1415927f / numMajor;
-    f32 minorStep = 6.2831855f / numMinor;
+    f32 minorStep = 2.0f * 3.1415927f / numMinor;
     s32 i, j;
     f32 a, b, r0, r1, z0, z1, c, x, y;
 
