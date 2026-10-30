@@ -106,10 +106,6 @@ s32 OSDisableInterrupts(void);
 void OSRestoreInterrupts(s32 level);
 void AXSetVoicePriority(AXVPB *axv, u32 priority);
 
-static inline u32 Voice_LastSample(VoiceHW *voice) {
-    return voice->length - 1;
-}
-
 
 void AudioVoice_Destroy_(void);
 void SetVoiceState_(VoiceHW *voice, s32 state);
