@@ -48,3 +48,46 @@ static void MEMIntrruptHandler(__OSInterrupt interrupt, OSContext *context)
     __OSUnhandledException(15, context, cause, addr);
 }
 
+typedef void (*__OSInterruptHandler)(__OSInterrupt interrupt, OSContext *context);
+BOOL OSDisableInterrupts(void);
+BOOL OSRestoreInterrupts(BOOL level);
+u32 __OSUnmaskInterrupts(u32 mask);
+__OSInterruptHandler __OSSetInterruptHandler(__OSInterrupt interrupt, __OSInterruptHandler handler);
+void OSRegisterResetFunction(OSResetFunctionInfo *info);
+void RealMode(void *config);
+void Config24MB(void);
+void Config48MB(void);
+void __OSInitMemoryProtection(void)
+{
+    u32 padding[12];
+    u32 simulatedSize;
+    BOOL enabled;
+
+    simulatedSize = *(u32 *)0x800000F0;
+    enabled = OSDisableInterrupts();
+
+    if (simulatedSize <= 0x1800000) {
+        RealMode(Config24MB);
+    } else if (simulatedSize <= 0x3000000) {
+        RealMode(Config48MB);
+    }
+
+    __MEMRegs[16] = 0;
+    __MEMRegs[8] = 0xFF;
+
+    __OSMaskInterrupts(0xF0000000);
+
+    __OSSetInterruptHandler(0, MEMIntrruptHandler);
+    __OSSetInterruptHandler(1, MEMIntrruptHandler);
+    __OSSetInterruptHandler(2, MEMIntrruptHandler);
+    __OSSetInterruptHandler(3, MEMIntrruptHandler);
+    __OSSetInterruptHandler(4, MEMIntrruptHandler);
+    OSRegisterResetFunction(&ResetFunctionInfo);
+
+    if (*(u32 *)0x800000F0 < *(u32 *)0x80000028 && *(u32 *)0x800000F0 - 0x1800000 == 0) {
+        __MEMRegs[20] = 2;
+    }
+
+    __OSUnmaskInterrupts(0x08000000);
+    OSRestoreInterrupts(enabled);
+}
