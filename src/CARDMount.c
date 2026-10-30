@@ -197,6 +197,65 @@ void __CARDMountCallback(s32 chan, s32 result) {
     callback(chan, result);
 }
 
+void __CARDDefaultApiCallback(s32 chan, s32 result);
+void __CARDExtHandler(s32 chan, void *context);
+int EXIAttach(s32 chan, void *extCallback);
+#pragma push
+#pragma use_lmw_stmw on
+s32 CARDMountAsync(s32 chan, void *workArea, CARDCallback detachCallback, CARDCallback attachCallback) {
+    CARDControl *card;
+    BOOL enabled;
+
+    if (chan < 0 || 2 <= chan) {
+        return -128;
+    }
+    if (*(u8 *)0x800030E3 & 0x80) {
+        return -3;
+    }
+    card = &__CARDBlock[chan];
+
+    enabled = OSDisableInterrupts();
+    if (card->result == -1) {
+        OSRestoreInterrupts(enabled);
+        return -1;
+    }
+    if (!card->attached && (EXIGetState(chan) & 8)) {
+        OSRestoreInterrupts(enabled);
+        return -2;
+    }
+
+    card->result = -1;
+    card->workArea = workArea;
+    card->extCallback = detachCallback;
+    card->apiCallback = attachCallback ? attachCallback : __CARDDefaultApiCallback;
+    card->exiCallback = 0;
+
+    if (!card->attached && !EXIAttach(chan, __CARDExtHandler)) {
+        card->result = -3;
+        OSRestoreInterrupts(enabled);
+        return -3;
+    }
+
+    card->mountStep = 0;
+    card->attached = 1;
+    EXISetExiCallback(chan, 0);
+    OSCancelAlarm(&card->alarm);
+
+    card->currentDir = 0;
+    card->currentFat = 0;
+
+    OSRestoreInterrupts(enabled);
+
+    card->unlockCallback = __CARDMountCallback;
+    if (!EXILock(chan, 0, __CARDUnlockedHandler)) {
+        return 0;
+    }
+    card->unlockCallback = 0;
+
+    return DoMount(chan);
+}
+#pragma pop
+
 s32 CARDMount(s32 chan, s32 fileNo, u8 *stat)
 {
     s32 CARDMountAsync(s32 chan, s32 fileNo, u8 *stat, CARDCallback callback);
