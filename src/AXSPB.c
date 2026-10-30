@@ -25,6 +25,29 @@ typedef struct {
 
 extern u8 __AXStudio[];
 
+void DCFlushRange(void *addr, u32 nBytes);
+
+static void __AXDepopFade(s32 *hist, s32 *samp, s16 *delta) {
+    s32 step;
+
+    step = *hist / 160;
+    if (step) {
+        if (step > 20) {
+            step = 20;
+        }
+        if (step < -20) {
+            step = -20;
+        }
+        *samp = *hist;
+        *delta = -step;
+        *hist -= step * 160;
+    } else {
+        *hist = 0;
+        *samp = 0;
+        *delta = 0;
+    }
+}
+
 void *__AXGetStudio(void) {
     return __AXStudio;
 }
