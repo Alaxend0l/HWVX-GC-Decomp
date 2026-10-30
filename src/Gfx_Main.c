@@ -44,8 +44,18 @@ typedef struct GfxWindow {
     Vector cameraPos;
     u8 unk190[0x270 - 0x190];
     f32 fov;
-    u8 unk274[0x2D0 - 0x274];
+    u8 unk274[0x2C4 - 0x274];
+    s32 unk2C4;
+    u8 unk2C8[0x2D0 - 0x2C8];
 } GfxWindow;
+
+static inline void Gfx_ResetWindowFov(void) {
+    extern s32 g_currentWindow;
+    extern GfxWindow g_window[];
+
+    g_window[g_currentWindow].unk2C4 = 0;
+    g_window[g_currentWindow].fov = g_window[0].fov;
+}
 
 f32 PSVECSquareMag(Vector *v);
 void PSVECNormalize(Vector *src, Vector *dst);
@@ -224,6 +234,77 @@ GfxWindow *GetRenderWindow(void) {
     extern s32 g_currentWindow;
     extern GfxWindow g_window[];
     return &g_window[g_currentWindow];
+}
+
+void Gfx_SetRenderWindowSize(s32 x0, s32 y0, s32 x1, s32 y1, s32 arg4) {
+    typedef struct {
+        f32 unk0[4][4];
+        f32 unk40[4][4];
+        f32 unk80[4][4];
+        f32 unkC0[4][4];
+        f32 unk100[4][4];
+        f32 unk140[4][4];
+        u8 unk180[0x270 - 0x180];
+        f32 fov;
+        u8 unk274[4];
+        f32 scaleX;
+        f32 scaleY;
+        u32 width;
+        u32 height;
+        u32 halfWidth;
+        u32 halfHeight;
+        f32 offsetX;
+        f32 offsetY;
+        f32 sizeX;
+        f32 sizeY;
+        f32 unk2A0;
+        f32 unk2A4;
+        f32 centerX;
+        f32 centerY;
+        s32 left;
+        s32 right;
+        s32 top;
+        s32 bottom;
+        u8 unk2C0[4];
+        s32 unk2C4;
+        s32 unk2C8;
+        u8 unk2CC[4];
+    } Window;
+    extern Window g_window[];
+    extern s32 g_currentWindow;
+    void Gfx_SetCameraMatrix(void *a, void *b, void *c, void *d);
+    Window *win = &g_window[g_currentWindow];
+    u32 width = x1 - x0;
+    u32 height = y1 - y0;
+    u32 marginX = 0x1000 - width;
+    u32 marginY = 0x1000 - height;
+
+    win->unk2C8 = arg4;
+    win->left = x0 + 1;
+    win->top = y0 + 1;
+    win->right = x1 - 1;
+    win->bottom = y1 - 1;
+    win->width = width;
+    win->halfWidth = width >> 1;
+    win->height = height;
+    win->halfHeight = height >> 1;
+    win->scaleX = marginX / 2.0f;
+    win->scaleY = marginY / 2.0f;
+    win->sizeX = (width * 16) / 640.0f;
+    win->sizeY = (height * 16) / 480.0f;
+    win->offsetX = ((marginX >> 1) - x0) * 16;
+    win->offsetY = ((marginY >> 1) - y0) * 16;
+    win->unk2A0 = 1.0f;
+    win->unk2A4 = 2.0f;
+    win->centerX = (marginX >> 1) * 16;
+    win->centerY = (marginY >> 1) * 16;
+    Gfx_SetCameraMatrix(NULL, NULL, NULL, NULL);
+    memcpy(g_window[g_currentWindow].unk140, g_window[g_currentWindow].unk40, sizeof(g_window[0].unk40));
+    g_window[g_currentWindow].unk2C4 = 0;
+    {
+        f32 fov = g_window[0].fov;
+        g_window[g_currentWindow].fov = fov;
+    }
 }
 
 s32 Gfx_GetCameraPositions(Vector *out) {
