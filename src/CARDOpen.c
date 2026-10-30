@@ -27,6 +27,8 @@ typedef struct CARDControl {
 } CARDControl;
 
 CARDDir *__CARDGetDirBlock(CARDControl *card);
+s32 __CARDGetControlBlock(s32 chan, void **pcard);
+s32 __CARDPutControlBlock(void *card, s32 result);
 
 extern u8 __CARDDiskNone[32];
 int memcmp(const void *a, const void *b, u32 n);
