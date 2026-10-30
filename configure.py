@@ -516,7 +516,7 @@ config.libs = [
             Object(Matching, "GXGeometry.c"),
             Object(NonMatching, "GXFrameBuf.c"),
             Object(Matching, "GXLight.c"),
-            Object(NonMatching, "GXTexture.c"),
+            Object(NonMatching, "GXTexture.c", mw_version="GC/1.2.5n"),
             Object(Matching, "GXBump.c", mw_version="GC/1.2.5n"),
             Object(Matching, "GXTev.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "GXPixel.c", mw_version="GC/1.2.5n"),
