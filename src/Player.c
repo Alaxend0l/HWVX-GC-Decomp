@@ -262,6 +262,17 @@ void PlayerHuman_SetControlBinding(void *arg0, void *arg1) {
     player->unkC7 = binding->unk1;
 }
 
+u8 Input_KeyDown(s32 device, u8 key);
+s8 Input_KeyPress(s32 device, u8 key);
+
+static inline u8 PlayerHuman_KeyDown(void *arg0, u32 key) {
+    return Input_KeyDown(*(s32 *)((u8 *)arg0 + 0xC8), ((u8 *)arg0)[0xB8 + key]);
+}
+
+static inline s8 PlayerHuman_KeyPress(void *arg0, u32 key) {
+    return Input_KeyPress(*(s32 *)((u8 *)arg0 + 0xC8), ((u8 *)arg0)[0xB8 + key]);
+}
+
 s32 Player_NULL(void) {
     return 0;
 }
@@ -299,8 +310,207 @@ void PlayerHuman_EvaluateCombo(u8 *player) {
     }
 }
 
-void Player_DefaultControlReader()
-{
+s8 Input_KeyPress(s32 device, u8 key);
+u8 Input_KeyDown(s32 device, u8 key);
+s8 Wheel_IsConnected(s32 device);
+s8 Input_GetAnalog(s32 chan, s16 *x, s16 *y, s16 *cx, s16 *cy);
+s8 Timer_Interrupt300(void);
+void Dprintf(const char *fmt, ...);
+s32 Playback_GetElement(void);
+void Playback_PutElement(s32 element);
+s32 Player_DefaultControlReader(void *arg0) {
+    typedef struct Thing {
+        u8 pad0[0x24];
+        f32 speed;
+    } Thing;
+    typedef struct PlayerHuman {
+        s8 steer;
+        s8 accel;
+        s8 steerHi;
+        s8 accelHi;
+        u8 pad4[0xC - 0x4];
+        u32 pressed;
+        u8 down[14];
+        u8 pad1E[0x2C - 0x1E];
+        Thing *thing;
+        u8 pad30[0x6C - 0x30];
+        u32 flags;
+        u8 pad70[0xB8 - 0x70];
+        u8 keys[14];
+        u8 stickMode;
+        u8 substickMode;
+        s32 device;
+        u32 comboCount;
+        u8 padD0[4];
+        u32 combo[16];
+    } PlayerHuman;
+    extern u32 g_playbackStatus;
+    PlayerHuman *player = arg0;
+    s16 stickX;
+    s16 substickX;
+    s16 stickY;
+    s16 substickY;
+    u32 i;
+
+    Control_ClearControl(player);
+    if (player->flags & 1) {
+        player->down[3] = 0xFF;
+        player->down[2] = 0xFF;
+        if (player->thing != NULL && player->thing->speed < 0.0f) {
+            player->steer = -128;
+        }
+        return 1;
+    }
+    if (g_playbackStatus == 2) {
+        u32 element = Playback_GetElement();
+        player->steer = element;
+        player->steerHi = element >> 16;
+        element = Playback_GetElement();
+        player->accel = element;
+        player->accelHi = element >> 16;
+    } else {
+        Control_ClearControl(player);
+        for (i = 0; i < 14; i++) {
+            player->down[i] = Input_KeyDown(player->device, *(player->keys + i));
+            if (Input_KeyPress(player->device, *(player->keys + i))) {
+                player->pressed |= 1 << i;
+            }
+        }
+        if (player->down[1]) {
+            if (player->pressed) {
+                player->combo[player->comboCount++] = player->pressed;
+                if (player->comboCount >= 16) {
+                    player->comboCount = 0;
+                }
+                PlayerHuman_EvaluateCombo((u8 *)player);
+            }
+        } else {
+            player->comboCount = 0;
+        }
+        if (!Wheel_IsConnected(player->device) && player->down[2]) {
+            player->down[2] = 0xFF;
+        }
+        if (Input_GetAnalog(player->device, &stickX, &stickY, &substickX, &substickY)) {
+            u8 mode = player->stickMode;
+            switch (mode) {
+            case 0:
+                break;
+            case 1:
+                player->steer = stickX;
+                player->accel = stickY;
+                break;
+            case 2:
+                player->steer = stickX;
+                player->accel = stickY;
+                if (player->accel > 0) {
+                    player->down[2] = player->accel << 1;
+                } else {
+                    player->down[3] = ~player->accel << 1;
+                }
+                break;
+            case 3:
+                player->steer = stickX;
+                player->accel = stickY;
+                if (player->accel > 0) {
+                    player->down[2] = player->accel << 1;
+                } else {
+                    player->down[3] = ~player->accel << 1;
+                }
+                break;
+            case 4:
+                player->steer = stickX;
+                player->accel = stickY;
+                if (player->accel < 0) {
+                    player->down[3] = ~player->accel << 1;
+                }
+                break;
+            case 5:
+                if (Timer_Interrupt300() && stickY > 0) {
+                    player->down[12] = 0xFF;
+                }
+                break;
+            case 6:
+                if (Timer_Interrupt300() && stickX > 0) {
+                    player->down[1] = 0xFF;
+                }
+                break;
+            default:
+                Dprintf("%d\n", mode);
+                break;
+            }
+            switch (player->substickMode) {
+            case 0:
+                break;
+            case 1:
+                player->steer = substickX;
+                break;
+            case 2:
+                player->accel = substickY;
+                if (player->accel >= 0) {
+                    if (!player->down[2]) {
+                        player->down[2] = player->accel << 1;
+                    }
+                } else {
+                    if (!player->down[3]) {
+                        player->down[3] = ~player->accel << 1;
+                    }
+                }
+                break;
+            case 3:
+                player->steer = substickX;
+                player->accel = substickY;
+                if (player->accel > 0) {
+                    if (!player->down[2]) {
+                        player->down[2] = player->accel << 1;
+                    }
+                } else {
+                    if (!player->down[3]) {
+                        player->down[3] = ~player->accel << 1;
+                    }
+                }
+                break;
+            case 4:
+                player->steer = substickX;
+                if (substickY < 0 && !player->down[3]) {
+                    player->down[3] = ~substickY << 1;
+                }
+                break;
+            case 5:
+                if (Timer_Interrupt300()) {
+                    if (substickY > 40 || substickY < -40 || substickX > 40 || substickX < -40) {
+                        player->down[12] = 0xFF;
+                        player->pressed |= 0x1000;
+                    }
+                }
+                break;
+            case 6:
+                if (Timer_Interrupt300()) {
+                    if (substickY > 40 || substickY < -40 || substickX > 40 || substickX < -40) {
+                        player->down[1] = 0xFF;
+                        player->pressed |= 2;
+                    }
+                }
+                break;
+            }
+        }
+        if (Input_KeyDown(player->device, player->keys[6])) {
+            player->accel = 0x7F;
+        }
+        if (Input_KeyDown(player->device, player->keys[7])) {
+            player->accel = -0x7F;
+        }
+        if (Input_KeyDown(player->device, player->keys[9])) {
+            player->steer = -0x7F;
+        }
+        if (Input_KeyDown(player->device, player->keys[8])) {
+            player->steer = 0x7F;
+        }
+        if (g_playbackStatus == 1) {
+            Playback_PutElement((u16)player->steer + (player->steerHi << 16));
+            Playback_PutElement((u16)player->accel + (player->accelHi << 16));
+        }
+    }
+    return 1;
 }
 
 s32 Player_AIControlReader(s8 *ctrl) {
