@@ -71,6 +71,51 @@ s32 __CARDRead(s32 chan, u32 addr, s32 length, void *dst, CARDCallback callback)
 typedef void (*CARDCallback)(s32 chan, s32 result);
 #pragma push
 #pragma use_lmw_stmw on
+s32 __CARDSeek(CARDFileInfo *fileInfo, s32 length, s32 offset, CARDControl **pcard)
+{
+    CARDControl *card;
+    CARDDir *dir;
+    CARDDir *ent;
+    s32 result;
+    u16 *fat;
+
+    result = __CARDGetControlBlock(fileInfo->chan, &card);
+    if (result < 0) {
+        return result;
+    }
+    if (!(5 <= fileInfo->iBlock && fileInfo->iBlock < card->cBlock) || card->cBlock * card->sectorSize <= fileInfo->offset) {
+        return __CARDPutControlBlock(card, -128);
+    }
+
+    dir = __CARDGetDirBlock(card);
+    ent = &dir[fileInfo->fileNo];
+    if (ent->length * card->sectorSize <= offset || ent->length * card->sectorSize < offset + length) {
+        return __CARDPutControlBlock(card, -11);
+    }
+
+    card->fileInfo = fileInfo;
+    fileInfo->length = length;
+    if (offset < fileInfo->offset) {
+        fileInfo->offset = 0;
+        fileInfo->iBlock = ent->startBlock;
+        if (!(5 <= fileInfo->iBlock && fileInfo->iBlock < card->cBlock)) {
+            return __CARDPutControlBlock(card, -6);
+        }
+    }
+    fat = __CARDGetFatBlock(card);
+    while (fileInfo->offset < ((u32)offset & ~(card->sectorSize - 1))) {
+        fileInfo->offset += card->sectorSize;
+        fileInfo->iBlock = fat[fileInfo->iBlock];
+        if (!(5 <= fileInfo->iBlock && fileInfo->iBlock < card->cBlock)) {
+            return __CARDPutControlBlock(card, -6);
+        }
+    }
+
+    fileInfo->offset = offset;
+    *pcard = card;
+    return 0;
+}
+
 static void ReadCallback(s32 chan, s32 result)
 {
     CARDControl *card;
