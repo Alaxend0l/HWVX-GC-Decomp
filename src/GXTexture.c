@@ -133,6 +133,43 @@ void __GetImageTileCount(s32 fmt, u16 wd, u16 ht, u32 *rowTiles, u32 *colTiles, 
     *cmpTiles = (fmt == 0x6 || fmt == 0x16) ? 2 : 1;
 }
 
+extern u8 GX2HWFiltConv[6];
+void GXInitTexObjLOD(GXTexObj *obj, s32 min_filt, s32 mag_filt, f32 min_lod, f32 max_lod, f32 lod_bias, u8 bias_clamp, u8 do_edge_lod, s32 max_aniso) {
+    u8 lbias;
+    u8 lmin;
+    u8 lmax;
+    __GXTexObjInt *t = (__GXTexObjInt *)obj;
+
+    if (lod_bias < -4.0f) {
+        lod_bias = -4.0f;
+    } else if (lod_bias >= 4.0f) {
+        lod_bias = 3.99f;
+    }
+    lbias = (u8)(32.0f * lod_bias);
+    t->mode0 = ((u32)t->mode0 & ~(0xFF << 9)) | ((u32)lbias << 9);
+    t->mode0 = ((u32)t->mode0 & ~(1 << 4)) | ((u32)((mag_filt == 1) ? 1 : 0) << 4);
+    t->mode0 = ((u32)t->mode0 & ~(7 << 5)) | ((u32)GX2HWFiltConv[min_filt] << 5);
+    t->mode0 = ((u32)t->mode0 & ~(1 << 8)) | ((u32)(do_edge_lod ? 0 : 1) << 8);
+    t->mode0 = ((u32)t->mode0 & ~(1 << 17)) | ((u32)0 << 17);
+    t->mode0 = ((u32)t->mode0 & ~(1 << 18)) | ((u32)0 << 18);
+    t->mode0 = ((u32)t->mode0 & ~(3 << 19)) | ((u32)max_aniso << 19);
+    t->mode0 = ((u32)t->mode0 & ~(1 << 21)) | ((u32)bias_clamp << 21);
+    if (min_lod < 0.0f) {
+        min_lod = 0.0f;
+    } else if (min_lod > 10.0f) {
+        min_lod = 10.0f;
+    }
+    lmin = (u8)(16.0f * min_lod);
+    if (max_lod < 0.0f) {
+        max_lod = 0.0f;
+    } else if (max_lod > 10.0f) {
+        max_lod = 10.0f;
+    }
+    lmax = (u8)(16.0f * max_lod);
+    t->mode1 = ((u32)t->mode1 & ~0xFF) | ((u32)lmin);
+    t->mode1 = ((u32)t->mode1 & ~(0xFF << 8)) | ((u32)lmax << 8);
+}
+
 void *GXGetTexObjData(GXTexObj *to) {
     __GXTexObjInt *t = (__GXTexObjInt *)to;
 
