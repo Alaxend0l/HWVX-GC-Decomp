@@ -169,8 +169,6 @@ void AlarmHandler(void)
 }
 
 void __OSMaskInterrupts(u32 mask);
-void OSClearContext(void *context);
-void OSSetCurrentContext(void *context);
 void AlarmHandlerForTimeout(void *alarm, void *context)
 {
     u8 tmpContext[0x2C8];
