@@ -379,8 +379,8 @@ s32 Player_DefaultControlReader(void *arg0) {
     } else {
         Control_ClearControl(player);
         for (i = 0; i < 14; i++) {
-            player->down[i] = Input_KeyDown(player->device, *(player->keys + i));
-            if (Input_KeyPress(player->device, *(player->keys + i))) {
+            player->down[i] = PlayerHuman_KeyDown((PlayerHumanKeys *)player, i);
+            if (PlayerHuman_KeyPress((PlayerHumanKeys *)player, i)) {
                 player->pressed |= 1 << i;
             }
         }
