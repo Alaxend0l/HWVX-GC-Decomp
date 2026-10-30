@@ -117,7 +117,8 @@ typedef struct IMMusicInfo {
 } IMMusicInfo;
 
 typedef struct IMHeader {
-    u8 pad0[0x14];
+    u16 type;
+    u8 pad2[0x14 - 0x2];
     IMEventList events;
     IMVariableList *vars;
     u8 pad20[0x2C - 0x20];
