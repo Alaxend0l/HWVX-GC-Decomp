@@ -339,7 +339,7 @@ static void CarA_ApplyWheelLoads(void *thing) {
             car->motionState.animMatrices[bone].v[3].y -= susp->wheelStates[0].compression * up->y;
             car->motionState.animMatrices[bone].v[3].z -= susp->wheelStates[0].compression * up->z;
         } else {
-            up = &((CarA *)thing)->worldMatrix.v[1];
+            up = &car->worldMatrix.v[1];
         }
         car->motionState.animMatrices[wheel->bone].v[3].x -= susp->wheelStates[0].compression * up->x;
         car->motionState.animMatrices[wheel->bone].v[3].y -= susp->wheelStates[0].compression * up->y;
