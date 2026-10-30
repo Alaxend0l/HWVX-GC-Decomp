@@ -1,5 +1,14 @@
 #include "common.h"
 
+#pragma readonly_strings on
+
+u16 g_dirt;
+s32 pCar;
+s32 g_pCamera;
+f32 g_cameraAngle;
+f32 g_yaw;
+f32 g_cameraRange = 60.0f;
+
 Vector4 g_carPos[80];
 f32 g_carRot[80];
 Vector4 g_carCamPos;
