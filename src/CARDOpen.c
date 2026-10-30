@@ -20,7 +20,9 @@ typedef struct CARDDir {
 
 typedef struct CARDControl {
     BOOL attached; // 0x000
-    u8 unk4[0x10C - 0x4];
+    u8 unk4[0x10 - 0x4];
+    u16 cBlock; // 0x010
+    u8 unk12[0x10C - 0x12];
     u8 *diskID; // 0x10C
 } CARDControl;
 
