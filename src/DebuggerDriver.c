@@ -128,7 +128,7 @@ void MWCallback(void) {
 int DBGEXIImm(void *buffer, long bytecounter, unsigned long write);
 #pragma push
 #pragma use_lmw_stmw on
-int DBGReadStatus(unsigned long *status) {
+inline int DBGReadStatus(unsigned long *status) {
     int total = 0;
     unsigned long v;
 
