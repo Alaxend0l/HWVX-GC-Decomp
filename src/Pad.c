@@ -27,7 +27,8 @@ s32 ResettingChan = 0x20;
 u32 XPatchBits = 0xF0000000;
 u32 AnalogMode = 0x300;
 u32 Spec = 5;
-void *MakeStatus = NULL;
+void SPEC2_MakeStatus(s32, void *, u32 *);
+void *MakeStatus = SPEC2_MakeStatus;
 f32 CmdReadOrigin = 8.0f;
 f32 CmdCalibrate = 32.0f;
 
