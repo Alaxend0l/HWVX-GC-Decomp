@@ -2311,51 +2311,140 @@ u32 InterfaceManager_KeyPress(InterfaceKeyState *im, s32 pad, u8 key) {
     return result;
 }
 
-s32 InterfaceManager_ProcessInput(u8 *iface, u8 *obj, u32 *events) {
-    typedef struct InputSlot {
-        u8 pad0[0x243];
+s32 InterfaceManager_ProcessInput(IMInterface *iface, IMSlot *obj, u32 *events) {
+    typedef struct InputEventDef {
+        u16 *target;
+        u8 flags;
         u8 type;
-        u8 pad244[0x270 - 0x244];
-        u32 child;
-        u8 pad274[0x300 - 0x274];
-    } InputSlot;
+        u16 id;
+    } InputEventDef;
     typedef struct InputEvent {
         u8 type;
         u8 pad1[7];
-        u8 *data;
+        InputEventDef *def;
     } InputEvent;
-    typedef struct {
-        u32 index;
-        u16 type;
-        u16 id;
-        u16 events;
-        u16 unk12;
-        u8 pad14[0x20 - 0x14];
-        u32 result;
-        s32 unk2C;
-        s8 unk30;
-        u8 pad31[0x44 - 0x31];
-        void *values;
-        u16 unk48;
-        u8 pad4A[2];
-    } InterfaceMessage;
-    extern u8 g_interface[][0x170];
-    u32 InterfaceManager_KeyPress(u8 *iface, void *arg, s32 key);
-    s32 InterfaceManager_PlayEvent(u8 *iface, u8 *obj, InputEvent *event, u16 events);
+    extern IMInterface g_interface[];
+    u32 InterfaceManager_KeyPress(IMInterface *iface, s32 input, s32 key);
+    u32 InterfaceManager_PlayEvent(IMInterface *iface, IMSlot *obj, InputEvent *event, u16 events);
     s32 StateManager_CurrState(void);
     u32 GameSettings_GetCodeVariable(s32, s32);
+    InterfaceEventMsg msg;
     u32 i;
     InputEvent *event;
     u32 pressed;
+    s8 ok;
+    u32 j;
+    u32 voters;
+    u32 votes;
+    u8 player;
+    s32 vote;
 
-    if (obj != NULL && obj[0x240] != 0) {
+    if (obj != NULL && obj->hidden != 0) {
         return 1;
     }
     for (i = 0; i < events[0]; i++) {
         event = &((InputEvent *)events[1])[i];
         pressed = 0;
-        if (event->type == 1) {
-            pressed = InterfaceManager_KeyPress(iface, *(void **)(iface + 0x8C), 6);
+        switch (event->type) {
+        case 1:
+            pressed = InterfaceManager_KeyPress(iface, iface->input, 6);
+            break;
+        case 2:
+            pressed = InterfaceManager_KeyPress(iface, iface->input, 7);
+            break;
+        case 3:
+            pressed = InterfaceManager_KeyPress(iface, iface->input, 6);
+            break;
+        case 4:
+            if (StateManager_CurrState() == 5 && GameSettings_GetCodeVariable(0x198, 0) != 0) {
+                pressed = 1;
+            } else {
+                pressed = InterfaceManager_KeyPress(iface, iface->input, 9);
+            }
+            break;
+        case 5:
+            pressed = InterfaceManager_KeyPress(iface, iface->input, 0xC);
+            break;
+        case 6:
+            pressed = InterfaceManager_KeyPress(iface, iface->input, 0xD);
+            break;
+        case 7:
+            pressed = InterfaceManager_KeyPress(iface, iface->input, 0xF);
+            break;
+        case 10:
+            pressed = InterfaceManager_KeyPress(iface, iface->input, 0xA);
+            break;
+        case 11:
+            pressed = InterfaceManager_KeyPress(iface, iface->input, 0xB);
+            break;
+        case 12:
+            pressed = InterfaceManager_KeyPress(iface, iface->input, 0xE);
+            break;
+        case 13:
+            pressed = InterfaceManager_KeyPress(iface, iface->input, 2);
+            break;
+        case 14:
+            pressed = InterfaceManager_KeyPress(iface, iface->input, 3);
+            break;
+        case 15:
+            pressed = InterfaceManager_KeyPress(iface, iface->input, 4);
+            break;
+        case 16:
+            pressed = InterfaceManager_KeyPress(iface, iface->input, 5);
+            break;
+        case 20:
+            pressed = InterfaceManager_KeyPress(iface, iface->input, 1);
+            break;
+        case 21:
+            pressed = InterfaceManager_KeyPress(iface, iface->input, 0);
+            break;
+        case 31:
+            if (iface->header->type == 8) {
+                ok = 1;
+                voters = 0;
+                votes = 0;
+                for (j = 0; j < iface->count && ok; j++) {
+                    if (iface->slots[j].kind == 6) {
+                        if (g_interface[iface->slots[j].child].header->type == 2 ||
+                            g_interface[iface->slots[j].child].header->type == 3) {
+                            player = g_interface[iface->slots[j].child].player;
+                            vote = GameSettings_GetCodeVariable(0xC9, player);
+                            voters++;
+                            if (vote == 2) {
+                                ok = 0;
+                            } else if (vote == 3) {
+                                if (g_interface[iface->slots[j].child].callback != NULL) {
+                                    msg.index = g_interface[iface->slots[j].child].index;
+                                    msg.type = 0xF;
+                                    msg.id = event->def->id;
+                                    msg.arg = pressed;
+                                    msg.value = 0;
+                                    msg.objState = 0;
+                                    msg.handled = 0;
+                                    msg.slotId = 0xFFFF;
+                                    if (event->def->target != NULL) {
+                                        msg.slotId = *event->def->target;
+                                    }
+                                    if (iface->selected != NULL && iface->selected->object != NULL) {
+                                        msg.objState = iface->selected->object->data->id;
+                                    }
+                                    msg.values = (u32 *)g_interface[iface->slots[j].child].vars;
+                                    g_interface[iface->slots[j].child].callback(&msg);
+                                    if (msg.result == 11) {
+                                        ok = 0;
+                                    }
+                                }
+                                pressed |= 1 << (player - 1);
+                                votes++;
+                            }
+                        }
+                    }
+                }
+                if (!ok || (voters > 1 && votes < 2)) {
+                    pressed = 0;
+                }
+            }
+            break;
         }
         if (pressed != 0) {
             if (!InterfaceManager_PlayEvent(iface, obj, event, pressed)) {
