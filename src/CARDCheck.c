@@ -10,7 +10,7 @@ typedef struct CARDControl {
     u8  unk12[0x80 - 0x12];
     void *workArea;            // 0x80
     u8 *currentDir;            // 0x84
-    void *buffer;              // 0x88
+    u16 *currentFat;           // 0x88
     u8  unk8C[0x110 - 0x8C];
 } CARDControl;
 
