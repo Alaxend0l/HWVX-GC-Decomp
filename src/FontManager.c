@@ -57,7 +57,30 @@ typedef struct GfxState {
     u8 unk8E[0xA0 - 0x8E];
 } GfxState;
 
-extern FontManager g_fontManager;
+/* The letters a font texture holds, in order, per language (E/F/G) and case mode. */
+char g_lettersE[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.,!?abcdefghijklmnopqrstuvwxyz;:+-*/=%\"()&#'";
+char g_lettersNoLowerCaseE[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.,!?;:+-*/=%\"()&#'";
+char g_lettersNoNumE[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ.,!?abcdefghijklmnopqrstuvwxyz;:+-*/=%\"()&#'";
+char g_lettersNoLowerCaseNoNumsE[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ.,!?:-'/%\";+=()&#";
+char g_lettersF[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.,!?abcdefghijklmnopqrstuvwxyz;:+-*/=%\"()&#'      \xC9\xE9\xC8\xE8\xCA\xEA\xD4\xF4\xB0";
+char g_lettersNoLowerCaseF[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.'!?;:+-*/=%\xC9\xC8,\"()&#'";
+char g_lettersNoNumF[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ.,!?abcdefghijklmnopqrstuvwxyz;:+-*/=%\"()&#'";
+char g_lettersNoLowerCaseNoNumsF[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ.,!?:-'/%\"\xC9\xCA\xC7\xC8\xD4\xC2\xC0;+=()&#";
+char g_lettersG[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.,!?abcdefghijklmnopqrstuvwxyz;:+-*/=%\"()&#'      \xC4\xE4\xD6\xF6\xDC\xFC\xDF";
+char g_lettersNoLowerCaseG[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ.'!?;:+-*/=%\xC4\xD6\xDC\xDF,\"()&#'";
+char g_lettersNoNumG[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ.,!?abcdefghijklmnopqrstuvwxyz;:+-*/=%\"()&#'";
+char g_lettersNoLowerCaseNoNumsG[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ.,!?:-'/%\"\xC4\xD6\xDC\xDF;+=()&#";
+u8 g_letterWidth[100] = {
+    0x12, 0x0D, 0x12, 0x11, 0x12, 0x12, 0x11, 0x11, 0x11, 0x11, 0x13, 0x12, 0x14, 0x13, 0x10, 0x11,
+    0x13, 0x14, 0x08, 0x10, 0x13, 0x0F, 0x18, 0x14, 0x13, 0x13, 0x13, 0x13, 0x11, 0x12, 0x13, 0x12,
+    0x17, 0x13, 0x13, 0x13, 0x06, 0x08, 0x08, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x0C, 0x0F, 0x10,
+    0x08, 0x0A, 0x0F, 0x08, 0x16, 0x0F, 0x10, 0x10, 0x0F, 0x0D, 0x0E, 0x0D, 0x0F, 0x0F, 0x14, 0x0E,
+    0x0F, 0x0F, 0x08, 0x08, 0x10, 0x0F, 0x0F, 0x14, 0x12, 0x18, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
+    0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
+    0x10, 0x10, 0x10, 0x10,
+};
+
+FontManager g_fontManager;
 extern GfxState g_state;
 
 typedef struct Texture {
