@@ -696,15 +696,6 @@ ControllerSettings *GameSettings_GetControllerSettings(s32 player) {
 }
 
 void GameSettings_GetGameInfo(void *info) {
-    typedef struct GameInfo {
-        const char *name;
-        const char *id;
-        const char *title;
-        const char *fileName;
-        const char *icon;
-        s32 unk14;
-        s32 unk18;
-    } GameInfo;
     void *FileStreaming_InitializeDataPack(void *, s32, s32);
     u8 *DataPack_GetScript(void *, s32);
     extern GameInfo g_gameInfo[];
