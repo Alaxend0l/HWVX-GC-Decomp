@@ -114,6 +114,34 @@ typedef union {
 
 #define GXWGFifo (*(volatile PPCWGPipe *)0xCC008000)
 
+#define SET_REG_FIELD(line, reg, size, shift, val) \
+    do { \
+        (reg) = ((u32)(reg) & ~(((1 << (size)) - 1) << (shift))) | ((u32)(val) << (shift)); \
+    } while (0)
+
+#define GX_WRITE_U8(ub) GXWGFifo.u8 = (u8)(ub)
+#define GX_WRITE_U32(ui) GXWGFifo.u32 = (u32)(ui)
+
+#define GX_WRITE_RAS_REG(value) \
+    do { \
+        GX_WRITE_U8(0x61); \
+        GX_WRITE_U32((value)); \
+    } while (0)
+
+#define GX_WRITE_XF_REG(addr, value) \
+    do { \
+        GX_WRITE_U8(0x10); \
+        GX_WRITE_U32(0x1000 + (addr)); \
+        GX_WRITE_U32(value); \
+    } while (0)
+
+#define GX_WRITE_CP_STRM_REG(addr, vtxfmt, data) \
+    do { \
+        GX_WRITE_U8(0x08); \
+        GX_WRITE_U8((addr) | (vtxfmt)); \
+        GX_WRITE_U32(data); \
+    } while (0)
+
 #pragma peephole off
 s32 GXGetTexObjFmt(GXTexObj *obj);
 GXTexRegion *__GXDefaultTexRegionCallback(GXTexObj *t_obj, s32 id)
@@ -135,3 +163,151 @@ GXTlutRegion *__GXDefaultTlutRegionCallback(u32 idx)
     }
     return &gx->TlutRegions[idx];
 }
+
+GXFifoObj *GXInit(void *base, u32 size)
+{
+    void GXSetMisc(u32 token, u32 val);
+    void __GXFifoInit(void);
+    void GXInitFifoBase(GXFifoObj *fifo, void *base, u32 size);
+    void GXSetCPUFifo(GXFifoObj *fifo);
+    void GXSetGPFifo(GXFifoObj *fifo);
+    void __GXPEInit(void);
+    u32 PPCMfhid2(void);
+    void PPCMtwpar(u32 val);
+    void PPCMthid2(u32 val);
+    void __GXFlushTextureState(void);
+    void GXInitTexCacheRegion(GXTexRegion *region, u8 is32bMipmap, u32 tmemEven, u32 sizeEven, u32 tmemOdd, u32 sizeOdd);
+    void GXInitTlutRegion(GXTlutRegion *region, u32 tmemAddr, u32 tlutSize);
+    void __GXSetTmemConfig(u32 config);
+    void __GXInitGX(void);
+    u32 i;
+    u32 reg;
+    u32 freqBase;
+
+    gx->inDispList = 0;
+    gx->dlSaveContext = 1;
+    gx->tcsManEnab = 0;
+    gx->tevTcEnab = 0;
+    GXSetMisc(1, 0);
+    __cpReg = (volatile u16 *)0xCC000000;
+    __piReg = (volatile u32 *)0xCC003000;
+    __peReg = (volatile u16 *)0xCC001000;
+    __memReg = (volatile u16 *)0xCC004000;
+    __GXFifoInit();
+    GXInitFifoBase(&FifoObj, base, size);
+    GXSetCPUFifo(&FifoObj);
+    GXSetGPFifo(&FifoObj);
+    __GXPEInit();
+    reg = PPCMfhid2();
+    PPCMtwpar(0x0C008000);
+    PPCMthid2(reg | 0x40000000);
+
+    gx->genMode = 0;
+    gx->genMode = (gx->genMode & 0x00FFFFFF) | (0 << 24);
+    gx->bpMask = 0xFF;
+    gx->bpMask = (gx->bpMask & 0x00FFFFFF) | (0x0F << 24);
+    gx->lpSize = 0;
+    gx->lpSize = (gx->lpSize & 0x00FFFFFF) | (0x22 << 24);
+    for (i = 0; i < 16; i++) {
+        gx->tevc[i] = 0;
+        gx->teva[i] = 0;
+        gx->tref[i / 2] = 0;
+        gx->texmapId[i] = 0xFF;
+        gx->tevc[i] = (gx->tevc[i] & 0x00FFFFFF) | ((0xC0 + i * 2) << 24);
+        gx->teva[i] = (gx->teva[i] & 0x00FFFFFF) | ((0xC1 + i * 2) << 24);
+        gx->tevKsel[i / 2] = (gx->tevKsel[i / 2] & 0x00FFFFFF) | ((0xF6 + i / 2) << 24);
+        gx->tref[i / 2] = (gx->tref[i / 2] & 0x00FFFFFF) | ((0x28 + i / 2) << 24);
+    }
+    gx->iref = 0;
+    gx->iref = (gx->iref & 0x00FFFFFF) | (0x27 << 24);
+    for (i = 0; i < 8; i++) {
+        gx->suTs0[i] = 0;
+        gx->suTs1[i] = 0;
+        gx->suTs0[i] = (gx->suTs0[i] & 0x00FFFFFF) | ((0x30 + i * 2) << 24);
+        gx->suTs1[i] = (gx->suTs1[i] & 0x00FFFFFF) | ((0x31 + i * 2) << 24);
+    }
+    gx->suScis0 = (gx->suScis0 & 0x00FFFFFF) | (0x20 << 24);
+    gx->suScis1 = (gx->suScis1 & 0x00FFFFFF) | (0x21 << 24);
+    gx->cmode0 = (gx->cmode0 & 0x00FFFFFF) | (0x41 << 24);
+    gx->cmode1 = (gx->cmode1 & 0x00FFFFFF) | (0x42 << 24);
+    gx->zmode = (gx->zmode & 0x00FFFFFF) | (0x40 << 24);
+    gx->peCtrl = (gx->peCtrl & 0x00FFFFFF) | (0x43 << 24);
+    gx->cpTex = (gx->cpTex & ~0x180) | (0 << 7);
+    gx->dirtyState = 0;
+    gx->dirtyVAT = 0;
+
+    freqBase = *(u32 *)0x800000F8 / 500;
+    __GXFlushTextureState();
+    reg = (freqBase >> 11) | 0x400 | 0x69000000;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    __GXFlushTextureState();
+    reg = (freqBase / 4224) | 0x200 | 0x46000000;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+
+    for (i = 0; i < 8; i++) {
+        gx->vatA[i] = (gx->vatA[i] & ~0x40000000) | (1 << 30);
+        gx->vatB[i] = (gx->vatB[i] & ~0x80000000) | (1 << 31);
+        GXWGFifo.u8 = 8;
+        GXWGFifo.u8 = i | 0x80;
+        GXWGFifo.u32 = gx->vatB[i];
+    }
+    {
+        u32 reg1 = 0;
+        u32 reg2 = 0;
+        reg1 = (reg1 & ~1) | 1;
+        reg1 = (reg1 & ~2) | 2;
+        reg1 = (reg1 & ~4) | 4;
+        reg1 = (reg1 & ~8) | 8;
+        reg1 = (reg1 & ~0x10) | 0x10;
+        reg1 = (reg1 & ~0x20) | 0x20;
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1000;
+        GXWGFifo.u32 = reg1;
+        reg2 = (reg2 & ~1) | 1;
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1012;
+        GXWGFifo.u32 = reg2;
+        reg = 0;
+        reg = (reg & ~1) | 1;
+        reg = (reg & ~2) | 2;
+        reg = (reg & ~4) | 4;
+        reg = (reg & ~8) | 8;
+        reg = (reg & 0x00FFFFFF) | (0x58 << 24);
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = reg;
+    }
+
+    for (i = 0; i < 8; i++) {
+        GXInitTexCacheRegion(&gx->TexRegions[i], 0, i * 0x8000, 0, 0x80000 + i * 0x8000, 0);
+    }
+    for (i = 0; i < 4; i++) {
+        GXInitTexCacheRegion(&gx->TexRegionsCI[i], 0, (i * 2 + 8) << 15, 0, (i * 2 + 9) << 15, 0);
+    }
+    for (i = 0; i < 16; i++) {
+        GXInitTlutRegion(&gx->TlutRegions[i], 0xC0000 + i * 0x2000, 16);
+    }
+    for (i = 0; i < 4; i++) {
+        GXInitTlutRegion(&gx->TlutRegions[i + 16], 0xE0000 + i * 0x8000, 64);
+    }
+
+    __cpReg[3] = 0;
+    gx->perfSel = (gx->perfSel & ~0xF0) | (0 << 4);
+    GXWGFifo.u8 = 8;
+    GXWGFifo.u8 = 0x20;
+    GXWGFifo.u32 = gx->perfSel;
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = 0x1006;
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = 0x23000000;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = 0x24000000;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = 0x67000000;
+    __GXSetTmemConfig(0);
+    __GXInitGX();
+    return &FifoObj;
+}
+
