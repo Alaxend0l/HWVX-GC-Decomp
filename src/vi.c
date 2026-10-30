@@ -382,6 +382,7 @@ void __VIInit(s32 mode) {
 
 #pragma pop
 
+#pragma auto_inline off
 void VIInit(void) {
     extern u32 encoderType;
     extern u32 retraceCount;
