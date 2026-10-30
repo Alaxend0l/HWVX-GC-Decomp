@@ -34,7 +34,7 @@ u8 IsOpened__8LGWheelsFl(void *wheels, s32 chan);
 void PlaySpringForce__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 saturation, s16 coefficient);
 void PlayFrontalCollisionForce__8LGWheelsFlUc(void *wheels, s32 chan, u8 force);
 
-static inline void Input_SetKeyDown(VirtualPad *pad, u16 key) {
+static inline void Input_SetKeyDown(VirtualPad *pad, u32 key) {
     s32 k;
 
     for (k = 0; k < 20; k++) {
