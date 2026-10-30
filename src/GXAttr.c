@@ -60,6 +60,47 @@ void __GXSetVCD(void) {
     __GXXfVtxSpecs();
 }
 
+void __GXCalculateVLim(void) {
+    static u8 tbl1[] = { 0, 4, 1, 2 };
+    static u8 tbl2[] = { 0, 8, 1, 2 };
+    static u8 tbl3[] = { 0, 12, 1, 2 };
+    s32 compCnt;
+    u32 vlm;
+    u32 vl;
+    u32 vh;
+    u32 va;
+
+    if (gx->vNum == 0) {
+        return;
+    }
+    vl = gx->vcdLo;
+    vh = gx->vcdHi;
+    va = gx->vatA[0];
+    compCnt = (va & 0x200) >> 9;
+    vlm = vl & 1;
+    vlm += (vl >> 1) & 1;
+    vlm += (vl >> 2) & 1;
+    vlm += (vl >> 3) & 1;
+    vlm += (vl >> 4) & 1;
+    vlm += (vl >> 5) & 1;
+    vlm += (vl >> 6) & 1;
+    vlm += (vl >> 7) & 1;
+    vlm += (vl >> 8) & 1;
+    vlm += tbl3[(vl >> 9) & 3];
+    vlm += tbl3[(vl >> 11) & 3] * ((compCnt == 1) ? 3 : 1);
+    vlm += tbl1[(vl >> 13) & 3];
+    vlm += tbl1[(vl >> 15) & 3];
+    vlm += tbl2[vh & 3];
+    vlm += tbl2[(vh >> 2) & 3];
+    vlm += tbl2[(vh >> 4) & 3];
+    vlm += tbl2[(vh >> 6) & 3];
+    vlm += tbl2[(vh >> 8) & 3];
+    vlm += tbl2[(vh >> 10) & 3];
+    vlm += tbl2[(vh >> 12) & 3];
+    vlm += tbl2[(vh >> 14) & 3];
+    gx->vLim = vlm;
+}
+
 void GXGetVtxDesc(s32 attr, s32 *type) {
     s32 cpType;
 
