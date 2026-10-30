@@ -286,6 +286,88 @@ void OSExitThread(void *val) {
     OSRestoreInterrupts(enabled);
 }
 
+#pragma push
+#pragma dont_inline on
+void OSCancelThread(OSThread *thread) {
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    switch (thread->state) {
+    case 1:
+        if (thread->suspend <= 0) {
+            UnsetRun((void **)thread);
+        }
+        break;
+    case 2:
+        RunQueueHint = TRUE;
+        break;
+    case 4: {
+        OSThread *next;
+        OSThread *prev;
+
+        next = thread->link.next;
+        prev = thread->link.prev;
+        if (next == NULL) {
+            thread->queue->tail = prev;
+        } else {
+            next->link.prev = prev;
+        }
+        if (prev == NULL) {
+            thread->queue->head = next;
+        } else {
+            prev->link.next = next;
+        }
+        thread->queue = NULL;
+        if (0 < thread->suspend || !thread->mutex) {
+            break;
+        }
+        {
+            OSThread *owner = ((OSThread **)thread->mutex)[2];
+            do {
+                s32 priority;
+                if (0 < owner->suspend) {
+                    break;
+                }
+                priority = __OSGetEffectivePriority(owner);
+                if (owner->priority == priority) {
+                    break;
+                }
+                owner = SetEffectivePriority(owner, priority);
+            } while (owner);
+        }
+        break;
+    }
+    default:
+        OSRestoreInterrupts(enabled);
+        return;
+    }
+    OSClearContext(&thread->context);
+    if (thread->attr & OS_THREAD_ATTR_DETACH) {
+        OSThread *next = thread->linkActive.next;
+        OSThread *prev = thread->linkActive.prev;
+        if (next == NULL) {
+            __OSActiveThreadQueue.tail = prev;
+        } else {
+            next->linkActive.prev = prev;
+        }
+        if (prev == NULL) {
+            __OSActiveThreadQueue.head = next;
+        } else {
+            prev->linkActive.next = next;
+        }
+        thread->state = 0;
+    } else {
+        thread->state = OS_THREAD_STATE_MORIBUND;
+    }
+    __OSUnlockAllMutex(thread);
+    OSWakeupThread(&thread->queueJoin);
+    if (RunQueueHint) {
+        SelectThread(0);
+    }
+    OSRestoreInterrupts(enabled);
+}
+#pragma pop
+
 OSThread *SetEffectivePriority(OSThread *thread, s32 priority);
 #pragma push
 #pragma dont_inline on
