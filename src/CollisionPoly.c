@@ -92,6 +92,255 @@ f32 RayHitsPoly(Vector4 *start, Vector4 *dir, Poly *p, f32 t) {
     return 0.0f;
 }
 
+f32 OOBHitsPoly(PolyOBox *box, CollisionPoly *poly, Vector4 *vel, PolyHit *hit, f32 maxT) {
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *axb);
+    void Create_Plane(Vector4 *plane, Vector4 *normal, Vector4 *point);
+    f32 Distance_Plane(Vector4 *plane, Vector4 *point);
+    u8 FloatsEqual(f32 a, f32 b, f32 eps);
+    s8 CollisionTriCache_Get(u32 tri0, u32 tri1, Vector4 *a, Vector4 *b);
+    void CollisionTriCache_Set(u32 tri0, u32 tri1, Vector4 *a, Vector4 *b);
+    s32 Collision_ProcessDividingAxis(DividingAxis *axis);
+    f32 planeD;
+    DividingAxis da;
+    Vector4 edge __attribute__((aligned(16)));
+    Vector4 axis __attribute__((aligned(16)));
+    Vector4 p0 __attribute__((aligned(16)));
+    Vector4 p1 __attribute__((aligned(16)));
+    Vector4 dir __attribute__((aligned(16)));
+    Vector4 start __attribute__((aligned(16)));
+    Vector4 end __attribute__((aligned(16)));
+    Vector4 plane __attribute__((aligned(16)));
+    Vector4 cross __attribute__((aligned(16)));
+    Vector4 corner __attribute__((aligned(16)));
+    Vector4 cornerEnd __attribute__((aligned(16)));
+    u8 hiIdx;
+    s32 j;
+    u8 type;
+    u32 cornerIdx;
+    u8 axisIdx;
+    u8 edgeIdx;
+    u8 edgeVert;
+    s32 i;
+    u8 loIdx;
+    u8 vert;
+    u8 minIdx;
+    u8 maxIdx;
+    u32 k;
+    s32 prev;
+    f32 a;
+    f32 b;
+    f32 d;
+    f32 d2;
+
+    planeD = -poly->plane.w;
+    da.tEnter = 0.0f;
+    da.tExit = maxT;
+    type = 0;
+    axisIdx = 0;
+    vert = 99;
+    edgeIdx = 99;
+    for (i = 0; i < 3; i++) {
+        minIdx = 0;
+        maxIdx = 0;
+        da.minA = da.maxA = PSVECDotProduct(box->axis[i], &poly->verts[0]);
+        for (k = 1; k < poly->numVerts; k++) {
+            d = PSVECDotProduct(box->axis[i], &poly->verts[k]);
+            if (d < da.minA) {
+                da.minA = d;
+                minIdx = k;
+            } else if (d > da.maxA) {
+                da.maxA = d;
+                maxIdx = k;
+            }
+        }
+        da.dir = -PSVECDotProduct(box->axis[i], vel);
+        d = PSVECDotProduct(box->axis[i], &box->center);
+        da.maxB = d + box->extent[i];
+        da.minB = d - box->extent[i];
+        switch ((u8)Collision_ProcessDividingAxis(&da)) {
+        case 0:
+            return maxT;
+        case 2:
+            vert = minIdx;
+            axisIdx = i + 3;
+            type = 1;
+            break;
+        case 3:
+            vert = maxIdx;
+            axisIdx = i;
+            type = 1;
+            break;
+        }
+    }
+    cornerIdx = 0;
+    da.minB = da.maxB = PSVECDotProduct(&poly->plane, &box->corners[0]);
+    for (k = 1; k < 8; k++) {
+        d = PSVECDotProduct(&poly->plane, &box->corners[k]);
+        if (d < da.minB) {
+            da.minB = d;
+            cornerIdx = (u8)k;
+        } else if (d > da.maxB) {
+            da.maxB = d;
+        }
+    }
+    da.dir = -PSVECDotProduct(&poly->plane, vel);
+    da.minA = planeD;
+    da.maxA = planeD;
+    switch ((u8)Collision_ProcessDividingAxis(&da)) {
+    case 0:
+        return maxT;
+    case 2:
+        type = 2;
+        break;
+    case 3:
+        type = 2;
+        break;
+    }
+    prev = poly->numVerts - 1;
+    for (j = 0; j < (s32)poly->numVerts; j++) {
+        PSVECSubtract(&poly->verts[j], &poly->verts[prev], &edge);
+        for (i = 0; i < 3; i++) {
+            u8 edgeMax = 0;
+            u8 edgeMin = 0;
+            s32 m;
+
+            PSVECCrossProduct(box->axis[i], &edge, &axis);
+            da.minB = da.maxB = PSVECDotProduct(&axis, &box->corners[0]);
+            for (m = 1; m < 8; m++) {
+                d = PSVECDotProduct(&axis, &box->corners[m]);
+                if (d < da.minB) {
+                    da.minB = d;
+                    edgeMin = m;
+                } else if (d > da.maxB) {
+                    edgeMax = m;
+                    da.maxB = d;
+                }
+            }
+            a = PSVECDotProduct(&axis, &poly->verts[j]);
+            b = PSVECDotProduct(&axis, &poly->verts[(u32)poly->verts[j].w]);
+            if (a > b) {
+                da.minA = b;
+                hiIdx = j;
+                da.maxA = a;
+                loIdx = poly->verts[j].w;
+            } else {
+                da.minA = a;
+                loIdx = j;
+                da.maxA = b;
+                hiIdx = poly->verts[j].w;
+            }
+            da.dir = -PSVECDotProduct(&axis, vel);
+            switch ((u8)Collision_ProcessDividingAxis(&da)) {
+            case 0:
+                return maxT;
+            case 2:
+                edgeVert = loIdx;
+                edgeIdx = j;
+                axisIdx = i;
+                cornerIdx = edgeMax;
+                type = 3;
+                break;
+            case 3:
+                edgeVert = hiIdx;
+                edgeIdx = j;
+                axisIdx = i;
+                cornerIdx = edgeMin;
+                type = 3;
+                break;
+            }
+        }
+        prev = j;
+    }
+    if (hit != NULL && da.tEnter < maxT) {
+        hit->type = type;
+        hit->unk28 = (*(u32 **)(*(u8 **)g_worldData.world + 0x5C))[poly->material];
+        box->unkCC = (u32)poly;
+        switch (type) {
+        case 1:
+            hit->pos = poly->verts[vert];
+            hit->normal = *box->axis[axisIdx % 3];
+            if (axisIdx >= 3) {
+                hit->normal.x *= -1.0f;
+                hit->normal.y *= -1.0f;
+                hit->normal.z *= -1.0f;
+            }
+            CollisionTriCache_Set((u32)box, (u32)poly, &hit->pos, &hit->normal);
+            break;
+        case 2:
+            hit->pos = box->corners[cornerIdx];
+            hit->pos.x += vel->x * da.tEnter;
+            hit->pos.y += vel->y * da.tEnter;
+            hit->pos.z += vel->z * da.tEnter;
+            hit->normal = poly->plane;
+            CollisionTriCache_Set((u32)box, (u32)poly, &hit->pos, &hit->normal);
+            break;
+        case 3:
+            p0 = poly->verts[edgeIdx];
+            p1 = poly->verts[(edgeIdx + poly->numVerts - 1) % poly->numVerts];
+            PSVECCrossProduct(box->axis[axisIdx], vel, &cross);
+            Create_Plane(&plane, &cross, &box->corners[cornerIdx]);
+            start = poly->verts[edgeVert];
+            PSVECSubtract(&p1, &p0, &dir);
+            PSVECAdd(&start, &dir, &end);
+            a = Distance_Plane(&plane, &start);
+            b = Distance_Plane(&plane, &end);
+            corner = box->corners[cornerIdx];
+            cornerEnd.x = corner.x + box->axis[axisIdx]->x;
+            cornerEnd.y = corner.y + box->axis[axisIdx]->y;
+            cornerEnd.z = corner.z + box->axis[axisIdx]->z;
+            d = Distance_Plane(&poly->plane, &corner);
+            d2 = Distance_Plane(&poly->plane, &cornerEnd);
+            if (FloatsEqual(d, 0.0f, 0.001f) && FloatsEqual(d2, 0.0f, 0.001f)) {
+                hit->pos = box->corners[cornerIdx];
+                hit->pos.x += vel->x * da.tEnter;
+                hit->pos.y += vel->y * da.tEnter;
+                hit->pos.z += vel->z * da.tEnter;
+                hit->normal = poly->plane;
+                CollisionTriCache_Set((u32)box, (u32)poly, &hit->pos, &hit->normal);
+            } else {
+                if (FloatsEqual(a - b, 0.0f, 0.0001f)) {
+                    hit->pos = poly->verts[edgeVert];
+                    hit->normal.x = -vel->x;
+                    hit->normal.y = -vel->y;
+                    hit->normal.z = -vel->z;
+                    if (PSVECSquareMag(&hit->normal)) {
+                        PSVECNormalize(&hit->normal, &hit->normal);
+                    }
+                } else {
+                    d = a / (a - b);
+                    hit->pos.x = dir.x * d + start.x;
+                    hit->pos.y = dir.y * d + start.y;
+                    hit->pos.z = dir.z * d + start.z;
+                    PSVECCrossProduct(box->axis[axisIdx], &dir, &hit->normal);
+                    if (PSVECSquareMag(&hit->normal)) {
+                        PSVECNormalize(&hit->normal, &hit->normal);
+                    }
+                    if (PSVECDotProduct(&hit->normal, vel) > 0.0f) {
+                        hit->normal.x *= -1.0f;
+                        hit->normal.y *= -1.0f;
+                        hit->normal.z *= -1.0f;
+                    }
+                }
+                CollisionTriCache_Set((u32)box, (u32)poly, &hit->pos, &hit->normal);
+            }
+            break;
+        default:
+            hit->type = 0xFF;
+            if (!CollisionTriCache_Get((u32)box, (u32)poly, &hit->pos, &hit->normal)) {
+                hit->pos = poly->verts[0];
+                hit->normal = poly->plane;
+            }
+            break;
+        }
+    }
+    return da.tEnter;
+}
+
 s8 OBoxHitsPolyZeroTime(OBoxZT *box, Poly *p, HitZT *hit) {
     f32 PSVECDotProduct(void *a, void *b);
     void PSVECSubtract(void *a, void *b, void *out);

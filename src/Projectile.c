@@ -1,5 +1,245 @@
 #include "common.h"
 
+#pragma push
+#pragma use_lmw_stmw on
+s32 Projectile_Init(u8 *proj, u8 *params) {
+    typedef struct {
+        u8 pad0[0x14];
+        f32 friction;
+        f32 restitution;
+    } Material;
+    typedef struct {
+        u8 pad0[0x14];
+        f32 (*getMass)(u8 *obj);
+        void (*applyImpulse)(u8 *obj, void *hit, s32 arg2, f32 impulse);
+        u8 pad1C[0x28 - 0x1C];
+        Material *(*getMaterial)(u8 *obj);
+        u8 pad2C[0x30 - 0x2C];
+        void (*getInverseInertia)(u8 *obj, Vector4 *out);
+        u8 pad34[0x3C - 0x34];
+        void (*getPosition)(u8 *obj, Vector4 *out);
+    } VTable;
+    typedef struct {
+        Vector4 pos;
+        Vector4 normal;
+        u8 *thing;
+        s32 unk24;
+        Material *material;
+        u8 pad2C[0x40 - 0x2C];
+        u8 type;
+    } CollisionInfo;
+    extern u8 g_projectileVTable[];
+    extern u8 g_smartProjectileAVTable[];
+    void Thing_Init(u8 *thing, s32 arg1);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    f32 RandomAdd(f32 base, f32 range);
+    f32 RandomDirVar(f32 base, f32 range);
+    s32 LensFlare_Add(void *flare, u8 *thing, s32 arg2);
+    void GenerateQuaternionXYZ(Vector4 *euler, Vector4 *q);
+    void GenerateSpinAngleFromQuaternion(Vector4 *quat, void *axis, f32 *angle);
+    void ExtractColorKey(void *key, void *out, f32 t);
+    void ExtractScaleKey(void *key, void *out, f32 t);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    s32 LightHolder_Add(void *light, void *pos, u8 *thing);
+    void Thing_AddToGrid(u8 *thing, s32 arg1);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *axb);
+    void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareDistance(void *a, void *b);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVec(void *mtx, void *in, f32 *out);
+    u32 ThingManager_GetActiveCars(u8 **cars, s32 max);
+    u8 *Thing_GetSource(u8 *thing);
+    f32 Sqrt(f32 x);
+    f32 ArcTan(f32 y, f32 x);
+    void SmartProjectileA_AquireTarget(u8 *proj);
+    void Projectile_YAim(u8 *proj, Vector4 *target, f32 step, f32 range);
+    CollisionInfo hit __attribute__((aligned(16)));
+    u8 *cars[32];
+    Vector4 euler __attribute__((aligned(16)));
+    Vector4 q __attribute__((aligned(16)));
+    Vector4 rot __attribute__((aligned(16)));
+    Vector4 tmp __attribute__((aligned(16)));
+    Vector4 r __attribute__((aligned(16)));
+    Vector4 rxn __attribute__((aligned(16)));
+    Vector4 angVel __attribute__((aligned(16)));
+    Vector4 invInertia __attribute__((aligned(16)));
+    Vector4 local __attribute__((aligned(16)));
+    Vector4 scaled __attribute__((aligned(16)));
+    Vector4 sum __attribute__((aligned(16)));
+    Vector4 targetPos __attribute__((aligned(16)));
+    f32 rel[4];
+    GXColor color;
+    u8 *src;
+    u8 *info;
+    f32 vn;
+    f32 invMassA;
+    f32 invMassB;
+
+    src = NULL;
+    Thing_Init(proj, 0);
+    if (*(u8 **)(params + 0x38) != NULL) {
+        src = *(u8 **)(*(u8 **)(params + 0x38) + 0x2C);
+    }
+    *(s32 *)(proj + 0x7C) = RandomAdd_s32(*(s32 *)(*(u8 **)(params + 0x34) + 0x1C), *(s32 *)(*(u8 **)(params + 0x34) + 0x20));
+    *(u8 **)(proj + 0x120) = *(u8 **)(params + 0x34);
+    *(s32 *)(proj + 0x124) = RandomAdd_s32(*(s32 *)(*(u8 **)(proj + 0x120) + 0x14), *(s32 *)(*(u8 **)(proj + 0x120) + 0x18));
+    *(f32 *)(proj + 0x140) = 1.0f;
+    if (*(u32 *)(*(u8 **)(proj + 0x120) + 0x14) != 0 && *(u32 *)(*(u8 **)(proj + 0x120) + 0x18) != 0) {
+        *(f32 *)(proj + 0x140) = 1.0f / ((f32)*(s32 *)(proj + 0x124) / (f32)*(u32 *)(*(u8 **)(proj + 0x120) + 0x14));
+    }
+    *(s32 *)(proj + 0x130) = LensFlare_Add(*(void **)(*(u8 **)(proj + 0x120) + 0x64), proj, 0);
+    *(Vector4 *)(proj + 0x40) = *(Vector4 *)(params + 0x0);
+    *(Vector4 *)(proj + 0x50) = *(Vector4 *)(params + 0x24);
+    *(Vector4 *)(proj + 0x0) = *(Vector4 *)(params + 0x10);
+    *(f32 *)(proj + 0x148) = *(f32 *)(params + 0x20);
+    *(u8 **)(proj + 0x94) = *(u8 **)(params + 0x38);
+    if (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4) != NULL) {
+        euler.x = 0.0174533f * RandomDirVar((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[0], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[1]);
+        euler.y = 0.0174533f * RandomDirVar((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[2], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[3]);
+        euler.z = 0.0174533f * RandomDirVar((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[4], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[5]);
+        GenerateQuaternionXYZ(&euler, &q);
+        QuaternionMult(&q, (Vector4 *)(proj + 0x50), &rot);
+        *(Vector4 *)(proj + 0x50) = rot;
+        euler.x = 0.0174533f * RandomAdd((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[6], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[7]);
+        euler.y = 0.0174533f * RandomAdd((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[8], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[9]);
+        euler.z = 0.0174533f * RandomAdd((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[10], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[11]);
+        GenerateQuaternionXYZ(&euler, &q);
+        GenerateSpinAngleFromQuaternion(&q, proj + 0xB0, (f32 *)(proj + 0x13C));
+        *(f32 *)(proj + 0x13C) *= 10.0f;
+    } else {
+        *(f32 *)(proj + 0x13C) = 0.0f;
+    }
+    *(s32 *)(proj + 0x144) = 0;
+    proj[0xE4] = 1;
+    proj[0x11C] = 1;
+    ExtractColorKey(*(u8 **)(proj + 0x120) + 0x94, proj + 0xF0, 0.0f);
+    ExtractScaleKey(*(u8 **)(proj + 0x120) + 0x8C, proj + 0xC0, 0.0f);
+    *(u32 *)(proj + 0x74) |= 0x4000;
+    if (*(u32 *)(*(u8 **)(proj + 0x120) + 0x94) == 0) {
+        *(u32 *)(proj + 0x74) &= ~0x4000;
+    } else if (*(u32 *)(*(u8 **)(proj + 0x120) + 0x94) == 1) {
+        color = **(GXColor **)(*(u8 **)(proj + 0x120) + 0x98);
+        if (color.r == 0xFF && color.b == 0xFF && color.g == 0xFF) {
+            *(u32 *)(proj + 0x74) &= ~0x4000;
+        }
+    }
+    if ((*(u8 **)(proj + 0x120))[4] == 1) {
+        *(f32 *)(proj + 0x12C) = RandomAdd((*(u32 **)(*(u8 **)(proj + 0x120) + 0xC))[0], (*(u32 **)(*(u8 **)(proj + 0x120) + 0xC))[1]);
+    } else if ((*(u8 **)(proj + 0x120))[4] == 2) {
+        *(f32 *)(proj + 0x12C) = RandomAdd((*(f32 **)(*(u8 **)(proj + 0x120) + 0xC))[0], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xC))[1]);
+    }
+    *(f32 *)(proj + 0x128) = 0.0f;
+    QuaternionToSubMatrix(proj + 0x50, proj + 0x10);
+    *(u16 *)(proj + 0x80) = 3;
+    *(s32 *)(proj + 0x134) = -1;
+    if (*(void **)(*(u8 **)(proj + 0x120) + 0x68) != NULL) {
+        *(s32 *)(proj + 0x134) = LightHolder_Add(*(void **)(*(u8 **)(proj + 0x120) + 0x68), proj + 0x40, proj);
+    }
+    switch ((*(u8 **)(proj + 0x120))[3]) {
+    case 5:
+        *(u32 *)(proj + 0x74) |= 2;
+    case 3:
+        *(u32 *)(proj + 0x74) |= 0x20000;
+    case 4:
+        *(u32 *)(proj + 0x74) |= 4;
+        break;
+    case 0:
+    case 1:
+    case 6:
+        *(u32 *)(proj + 0x74) &= ~2;
+        *(u32 *)(proj + 0x74) |= 4;
+        Thing_AddToGrid(proj, 1);
+        break;
+    case 2:
+        break;
+    }
+    *(f32 *)(proj + 0x150) = 0.0f;
+    *(f32 *)(proj + 0x154) = 0.0f;
+    *(f32 *)(proj + 0x158) = 0.0f;
+    *(u8 **)(proj + 0x14C) = NULL;
+    *(void **)(proj + 0x8C) = g_projectileVTable;
+    if (src != NULL && *(f32 *)(*(u8 **)(proj + 0x120) + 0x30)) {
+        vn = PSVECDotProduct((Vector4 *)(proj + 0x30), (Vector4 *)proj);
+        invMassB = 1.0f / (*(VTable **)(src + 0x8C))->getMass(src);
+        invMassA = 1.0f / (*(VTable **)(proj + 0x8C))->getMass(proj);
+        hit.normal = *(Vector4 *)(proj + 0x30);
+        hit.pos = *(Vector4 *)(proj + 0x40);
+        hit.material = NULL;
+        hit.thing = src;
+        hit.unk24 = 0;
+        PSVECSubtract(&hit.pos, (Vector4 *)(src + 0x40), &r);
+        PSVECCrossProduct(&r, &hit.normal, &rxn);
+        (*(VTable **)(src + 0x8C))->getInverseInertia(src, &invInertia);
+        InverseXformVecOrientation(src + 0x10, &rxn, &local);
+        scaled.x = invInertia.x * local.x;
+        scaled.y = invInertia.y * local.y;
+        scaled.z = invInertia.z * local.z;
+        XformVecOrientation(src + 0x10, &scaled, &angVel);
+        PSVECCrossProduct(&angVel, &r, &tmp);
+        vn *= 1.0f + (*(VTable **)(src + 0x8C))->getMaterial(src)->restitution;
+        PSVECAdd(&tmp, (Vector4 *)(proj + 0x30), &sum);
+        vn = *(f32 *)(*(u8 **)(proj + 0x120) + 0x30) * vn / (invMassB + invMassA + PSVECDotProduct(&sum, (Vector4 *)(proj + 0x30)));
+        (*(VTable **)(src + 0x8C))->applyImpulse(src, &hit, 0, -vn);
+        if (*(u8 **)(src + 0x94) != NULL) {
+            *(s32 *)(*(u8 **)(src + 0x94) + 0x8C) += *(s32 *)(proj + 0x7C);
+        }
+    }
+    *(void **)(proj + 0x8C) = g_projectileVTable;
+    switch ((*(u8 **)(proj + 0x120))[5]) {
+    case 1:
+    case 2:
+        *(u16 *)(proj + 0x15E) = (*(u16 **)(*(u8 **)(proj + 0x120) + 0xA8))[1];
+        *(void **)(proj + 0x8C) = g_smartProjectileAVTable;
+        SmartProjectileA_AquireTarget(proj);
+        break;
+    case 3: {
+        u32 best;
+        u8 *source;
+        u32 i;
+        u32 count;
+        u8 **car;
+        f32 z;
+        f32 bestDist;
+        f32 dist;
+
+        count = ThingManager_GetActiveCars(cars, 32);
+        bestDist = 99999.9f;
+        best = count;
+        source = Thing_GetSource(proj);
+        for (car = cars, i = 0; i < count; car++, i++) {
+            dist = PSVECSquareDistance(proj + 0x40, *car + 0x40);
+            if (*car != proj && *car != source && !(dist < 80.0f)) {
+                InverseXformVec(proj + 0x10, *car + 0x40, rel);
+                z = rel[2];
+                if (!(z < 1.0f)) {
+                    if (!(ArcTan(Sqrt(rel[0] * rel[0] + rel[1] * rel[1]), z) > 0.17453292f) && dist < bestDist) {
+                        bestDist = dist;
+                        best = i;
+                    }
+                }
+            }
+        }
+        if (best < count) {
+            *(u8 **)(proj + 0x14C) = cars[best];
+        } else {
+            *(u8 **)(proj + 0x14C) = NULL;
+        }
+        if (*(u8 **)(proj + 0x14C) != NULL) {
+            (*(VTable **)(*(u8 **)(proj + 0x14C) + 0x8C))->getPosition(*(u8 **)(proj + 0x14C), &targetPos);
+            Projectile_YAim(proj, &targetPos, 10.0f, 0.34906584f);
+        }
+        break;
+    }
+    }
+    *(s32 *)(proj + 0x138) = -1;
+    Thing_InitAllSlavesNow(proj, *(u8 **)(proj + 0x120) + 0x9C, 0xFF);
+    return 1;
+}
+#pragma pop
+
 void Projectile_Release(void * projectile)
 {
     void LensFlare_Delete(s32);
