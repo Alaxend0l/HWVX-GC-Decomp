@@ -38,6 +38,47 @@ s32 HostId;
 s32 DiskId;
 s32 gLinkFinished;
 
+static inline u8 GbaCalcCrc(u32 data)
+{
+    u32 crc;
+    u32 bit;
+    s32 i;
+
+    crc = 0;
+    for (i = 0; i < 2; i++)
+    {
+        for (bit = 0x80; bit != 0; bit >>= 1)
+        {
+            crc <<= 1;
+            if (data & bit)
+            {
+                if (crc & 0x100)
+                {
+                    crc ^= 0xCC;
+                }
+                else
+                {
+                    crc += 1;
+                }
+            }
+            else if (crc & 0x100)
+            {
+                crc ^= 0xCD;
+            }
+        }
+        data >>= 8;
+    }
+    for (i = 0; i < 8; i++)
+    {
+        crc <<= 1;
+        if (crc & 0x100)
+        {
+            crc ^= 0xCD;
+        }
+    }
+    return crc;
+}
+
 
 #pragma use_lmw_stmw on
 void GbaOpen__Fl(s32 chan) {
