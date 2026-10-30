@@ -278,6 +278,66 @@ void GXCopyDisp(void *dest, u8 clear) {
     gx->bpSentNot = 0;
 }
 
+void GXCopyTex(void *dest, u8 clear) {
+    u32 reg;
+    u32 tempPeCtrl;
+    u8 changePeCtrl;
+
+    if (clear) {
+        reg = gx->zmode;
+        reg = ((u32)reg & ~1) | ((u32)1);
+        reg = ((u32)reg & ~0xE) | ((u32)7 << 1);
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = reg;
+        reg = gx->cmode0;
+        reg = ((u32)reg & ~1) | ((u32)0);
+        reg = ((u32)reg & ~2) | ((u32)0 << 1);
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = reg;
+    }
+    changePeCtrl = 0;
+    tempPeCtrl = gx->peCtrl;
+    if (gx->cpTexZ && (u32)(tempPeCtrl & 7) != 3) {
+        changePeCtrl = 1;
+        tempPeCtrl = ((u32)tempPeCtrl & ~7) | ((u32)3);
+    }
+    if ((clear || (u32)(tempPeCtrl & 7) == 3) && (u32)((tempPeCtrl >> 6) & 1) == 1) {
+        changePeCtrl = 1;
+        tempPeCtrl = ((u32)tempPeCtrl & ~0x40) | ((u32)0 << 6);
+    }
+    if (changePeCtrl) {
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = tempPeCtrl;
+    }
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->cpTexSrc;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->cpTexSize;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->cpTexStride;
+    reg = 0;
+    reg = ((u32)reg & ~0xFFFFFF) | ((u32)dest >> 5);
+    reg = ((u32)reg & ~0xFF000000) | ((u32)0x4B << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    gx->cpTex = ((u32)gx->cpTex & ~0x800) | ((u32)clear << 11);
+    gx->cpTex = ((u32)gx->cpTex & ~0x4000) | ((u32)0 << 14);
+    gx->cpTex = ((u32)gx->cpTex & ~0xFF000000) | ((u32)0x52 << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->cpTex;
+    if (clear) {
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = gx->zmode;
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = gx->cmode0;
+    }
+    if (changePeCtrl) {
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = gx->peCtrl;
+    }
+    gx->bpSentNot = 0;
+}
+
 void GXClearBoundingBox(void) {
     u32 reg;
 
