@@ -246,7 +246,7 @@ typedef struct CarAWheelState {
   f32 rotation;             /* 0x00 advanced by speed / radius every PreMove */
   s16 dustTimer;            /* 0x04 ms */
   s16 sparkTimer;           /* 0x06 ms */
-  u8 pad08[4];              /* 0x08 */
+  s32 skidTrail;            /* 0x08 Trail_AddSegment handle, -1: no trail */
   f32 compression;          /* 0x0C */
   f32 lastCompression;      /* 0x10 */
   GXColor skidColor;        /* 0x14 */
