@@ -112,7 +112,7 @@ typedef union {
     f32 f32;
 } PPCWGPipe;
 
-#define GXWGFifo (*(volatile PPCWGPipe *)0xCC008000)
+volatile PPCWGPipe GXWGFifo : 0xCC008000;
 
 #define SET_REG_FIELD(line, reg, size, shift, val) \
     do { \
@@ -203,80 +203,77 @@ GXFifoObj *GXInit(void *base, u32 size)
     PPCMthid2(reg | 0x40000000);
 
     gx->genMode = 0;
-    gx->genMode = (gx->genMode & 0x00FFFFFF) | (0 << 24);
+    SET_REG_FIELD(0, gx->genMode, 8, 24, 0);
     gx->bpMask = 0xFF;
-    gx->bpMask = (gx->bpMask & 0x00FFFFFF) | (0x0F << 24);
+    SET_REG_FIELD(0, gx->bpMask, 8, 24, 0x0F);
     gx->lpSize = 0;
-    gx->lpSize = (gx->lpSize & 0x00FFFFFF) | (0x22 << 24);
+    SET_REG_FIELD(0, gx->lpSize, 8, 24, 0x22);
     for (i = 0; i < 16; i++) {
         gx->tevc[i] = 0;
         gx->teva[i] = 0;
         gx->tref[i / 2] = 0;
         gx->texmapId[i] = 0xFF;
-        gx->tevc[i] = (gx->tevc[i] & 0x00FFFFFF) | ((0xC0 + i * 2) << 24);
-        gx->teva[i] = (gx->teva[i] & 0x00FFFFFF) | ((0xC1 + i * 2) << 24);
-        gx->tevKsel[i / 2] = (gx->tevKsel[i / 2] & 0x00FFFFFF) | ((0xF6 + i / 2) << 24);
-        gx->tref[i / 2] = (gx->tref[i / 2] & 0x00FFFFFF) | ((0x28 + i / 2) << 24);
+        SET_REG_FIELD(0, gx->tevc[i], 8, 24, 0xC0 + i * 2);
+        SET_REG_FIELD(0, gx->teva[i], 8, 24, 0xC1 + i * 2);
+        SET_REG_FIELD(0, gx->tevKsel[i / 2], 8, 24, 0xF6 + i / 2);
+        SET_REG_FIELD(0, gx->tref[i / 2], 8, 24, 0x28 + i / 2);
     }
     gx->iref = 0;
-    gx->iref = (gx->iref & 0x00FFFFFF) | (0x27 << 24);
+    SET_REG_FIELD(0, gx->iref, 8, 24, 0x27);
     for (i = 0; i < 8; i++) {
         gx->suTs0[i] = 0;
         gx->suTs1[i] = 0;
-        gx->suTs0[i] = (gx->suTs0[i] & 0x00FFFFFF) | ((0x30 + i * 2) << 24);
-        gx->suTs1[i] = (gx->suTs1[i] & 0x00FFFFFF) | ((0x31 + i * 2) << 24);
+        SET_REG_FIELD(0, gx->suTs0[i], 8, 24, 0x30 + i * 2);
+        SET_REG_FIELD(0, gx->suTs1[i], 8, 24, 0x31 + i * 2);
     }
-    gx->suScis0 = (gx->suScis0 & 0x00FFFFFF) | (0x20 << 24);
-    gx->suScis1 = (gx->suScis1 & 0x00FFFFFF) | (0x21 << 24);
-    gx->cmode0 = (gx->cmode0 & 0x00FFFFFF) | (0x41 << 24);
-    gx->cmode1 = (gx->cmode1 & 0x00FFFFFF) | (0x42 << 24);
-    gx->zmode = (gx->zmode & 0x00FFFFFF) | (0x40 << 24);
-    gx->peCtrl = (gx->peCtrl & 0x00FFFFFF) | (0x43 << 24);
-    gx->cpTex = (gx->cpTex & ~0x180) | (0 << 7);
+    SET_REG_FIELD(0, gx->suScis0, 8, 24, 0x20);
+    SET_REG_FIELD(0, gx->suScis1, 8, 24, 0x21);
+    SET_REG_FIELD(0, gx->cmode0, 8, 24, 0x41);
+    SET_REG_FIELD(0, gx->cmode1, 8, 24, 0x42);
+    SET_REG_FIELD(0, gx->zmode, 8, 24, 0x40);
+    SET_REG_FIELD(0, gx->peCtrl, 8, 24, 0x43);
+    SET_REG_FIELD(0, gx->cpTex, 2, 7, 0);
     gx->dirtyState = 0;
     gx->dirtyVAT = 0;
 
     freqBase = *(u32 *)0x800000F8 / 500;
     __GXFlushTextureState();
     reg = (freqBase >> 11) | 0x400 | 0x69000000;
-    GXWGFifo.u8 = 0x61;
-    GXWGFifo.u32 = reg;
+    GX_WRITE_RAS_REG(reg);
     __GXFlushTextureState();
     reg = (freqBase / 4224) | 0x200 | 0x46000000;
-    GXWGFifo.u8 = 0x61;
-    GXWGFifo.u32 = reg;
+    GX_WRITE_RAS_REG(reg);
 
     for (i = 0; i < 8; i++) {
-        gx->vatA[i] = (gx->vatA[i] & ~0x40000000) | (1 << 30);
-        gx->vatB[i] = (gx->vatB[i] & ~0x80000000) | (1 << 31);
-        GXWGFifo.u8 = 8;
-        GXWGFifo.u8 = i | 0x80;
-        GXWGFifo.u32 = gx->vatB[i];
+        SET_REG_FIELD(0, gx->vatA[i], 1, 30, 1);
+        SET_REG_FIELD(0, gx->vatB[i], 1, 31, 1);
+        do {
+            s32 regAddr;
+            GX_WRITE_U8(0x08);
+            GX_WRITE_U8(i | 0x80);
+            GX_WRITE_U32(gx->vatB[i]);
+            regAddr = i - 12;
+        } while (0);
     }
     {
         u32 reg1 = 0;
         u32 reg2 = 0;
-        reg1 = (reg1 & ~1) | 1;
-        reg1 = (reg1 & ~2) | 2;
-        reg1 = (reg1 & ~4) | 4;
-        reg1 = (reg1 & ~8) | 8;
-        reg1 = (reg1 & ~0x10) | 0x10;
-        reg1 = (reg1 & ~0x20) | 0x20;
-        GXWGFifo.u8 = 0x10;
-        GXWGFifo.u32 = 0x1000;
-        GXWGFifo.u32 = reg1;
-        reg2 = (reg2 & ~1) | 1;
-        GXWGFifo.u8 = 0x10;
-        GXWGFifo.u32 = 0x1012;
-        GXWGFifo.u32 = reg2;
+        SET_REG_FIELD(0, reg1, 1, 0, 1);
+        SET_REG_FIELD(0, reg1, 1, 1, 1);
+        SET_REG_FIELD(0, reg1, 1, 2, 1);
+        SET_REG_FIELD(0, reg1, 1, 3, 1);
+        SET_REG_FIELD(0, reg1, 1, 4, 1);
+        SET_REG_FIELD(0, reg1, 1, 5, 1);
+        GX_WRITE_XF_REG(0, reg1);
+        SET_REG_FIELD(0, reg2, 1, 0, 1);
+        GX_WRITE_XF_REG(0x12, reg2);
         reg = 0;
-        reg = (reg & ~1) | 1;
-        reg = (reg & ~2) | 2;
-        reg = (reg & ~4) | 4;
-        reg = (reg & ~8) | 8;
-        reg = (reg & 0x00FFFFFF) | (0x58 << 24);
-        GXWGFifo.u8 = 0x61;
-        GXWGFifo.u32 = reg;
+        SET_REG_FIELD(0, reg, 1, 0, 1);
+        SET_REG_FIELD(0, reg, 1, 1, 1);
+        SET_REG_FIELD(0, reg, 1, 2, 1);
+        SET_REG_FIELD(0, reg, 1, 3, 1);
+        SET_REG_FIELD(0, reg, 8, 24, 0x58);
+        GX_WRITE_RAS_REG(reg);
     }
 
     for (i = 0; i < 8; i++) {
@@ -293,19 +290,18 @@ GXFifoObj *GXInit(void *base, u32 size)
     }
 
     __cpReg[3] = 0;
-    gx->perfSel = (gx->perfSel & ~0xF0) | (0 << 4);
-    GXWGFifo.u8 = 8;
-    GXWGFifo.u8 = 0x20;
-    GXWGFifo.u32 = gx->perfSel;
-    GXWGFifo.u8 = 0x10;
-    GXWGFifo.u32 = 0x1006;
-    GXWGFifo.u32 = 0;
-    GXWGFifo.u8 = 0x61;
-    GXWGFifo.u32 = 0x23000000;
-    GXWGFifo.u8 = 0x61;
-    GXWGFifo.u32 = 0x24000000;
-    GXWGFifo.u8 = 0x61;
-    GXWGFifo.u32 = 0x67000000;
+    SET_REG_FIELD(0, gx->perfSel, 4, 4, 0);
+    do {
+        s32 regAddr;
+        GX_WRITE_U8(0x08);
+        GX_WRITE_U8(0x20);
+        GX_WRITE_U32(gx->perfSel);
+        regAddr = 0x20 - 12;
+    } while (0);
+    GX_WRITE_XF_REG(6, 0);
+    GX_WRITE_RAS_REG(0x23000000);
+    GX_WRITE_RAS_REG(0x24000000);
+    GX_WRITE_RAS_REG(0x67000000);
     __GXSetTmemConfig(0);
     __GXInitGX();
     return &FifoObj;
