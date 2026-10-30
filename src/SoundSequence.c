@@ -102,6 +102,75 @@ void SoundSeq_Release(void *thing) {
     Thing_Release(thing);
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s32 SoundSeq_Move(void *thing) {
+    extern s32 g_iDeltaTimeMS;
+    extern f32 g_fDeltaTimeMS;
+    s32 ExtractSoundKey(void *keys, void *state, void *pos, f32 time);
+    s8 SoundSource_IsLooping(s32 index);
+    s8 SoundSource_IsActive(s32 index);
+    void SoundSource_Set(s32 index, s32 type, void *value);
+    void SoundSource_Stop(s32 index);
+    void Thing_Release(void *thing);
+    SoundSequence *seq = thing;
+    s8 playing;
+    s32 key;
+    s8 found;
+    u32 i;
+
+    playing = 0;
+    if (seq->flags & 0x80000000) {
+        return 1;
+    }
+    if (!(seq->flags & 0x10000000)) {
+        if (seq->timer < 0) {
+            SoundSeq_Release(thing);
+            return 0;
+        }
+        seq->timer -= g_iDeltaTimeMS;
+    }
+    key = ExtractSoundKey(seq->params + 8, seq->state, &seq->pos, g_fDeltaTimeMS * seq->rate);
+    if (key >= 0) {
+        found = 0;
+        for (i = 0; i < 4; i++) {
+            if (seq->sources[i] == -1) {
+                found = 1;
+                seq->sources[i] = key;
+                if (SoundSource_IsLooping(key)) {
+                    seq->flags |= 0x4000;
+                }
+                break;
+            }
+        }
+        if (!found) {
+            SoundSource_Stop(key);
+        }
+    } else if (key == -2) {
+        if (!(seq->flags & 0x40000000)) {
+            seq->flags |= 0x20;
+        }
+    }
+    if (seq->flags & 0x10) {
+        for (i = 0; i < 4; i++) {
+            if (seq->sources[i] != -1) {
+                if (SoundSource_IsLooping(seq->sources[i]) || SoundSource_IsActive(seq->sources[i])) {
+                    SoundSource_Set(seq->sources[i], 5, &seq->pos);
+                    playing = 1;
+                } else {
+                    SoundSource_Stop(seq->sources[i]);
+                    seq->sources[i] = -1;
+                }
+            }
+        }
+    }
+    if (!playing && (seq->flags & 0x20) && !(seq->flags & 0x40000000)) {
+        Thing_Release(thing);
+    }
+    return 1;
+}
+#pragma pop
+
 s32 SoundSeq_Invalidate(SoundSequence *seq, u32 start, u32 end)
 {
     if ((u32)seq->params >= start && (u32)seq->params < end) {
