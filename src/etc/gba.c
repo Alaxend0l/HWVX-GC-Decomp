@@ -40,8 +40,8 @@ s32 gLinkFinished;
 
 static inline void GbaSetHeaderChecksum(u8 *image)
 {
-    s32 i;
     u8 sum;
+    s32 i;
 
     sum = 0xE7;
     for (i = 0xA0; i < 0xBD; i++)
