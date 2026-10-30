@@ -51,7 +51,7 @@ void GameSetting_Init(void) {
     void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
     u8 OSGetSoundMode(void);
     void *memset(void *dst, s32 c, u32 n);
-    extern GameInfo g_gameInfo[];
+    extern GameInfo g_gameInfo[2];
     extern s8 g_bGameSettingsInitialized;
     extern u8 *g_pGameData;
     extern u8 *g_pSavedGameData;
