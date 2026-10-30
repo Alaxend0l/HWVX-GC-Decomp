@@ -53,6 +53,8 @@ static void __THPRestartDefinition(void);
 s32 __THPReadFrameHeader(void);
 u8 __THPReadScaneHeader(void);
 s32 __THPReadHuffmanTableSpecification(void);
+#pragma push
+#pragma optimization_level 3
 s32 THPVideoDecode(void *file, void *tileY, void *tileU, void *tileV, void *work) {
     u8 all_done, status;
     u8 marker;
@@ -75,7 +77,7 @@ s32 THPVideoDecode(void *file, void *tileY, void *tileU, void *tileV, void *work
 
     __THPWorkArea = work;
     __THPInfo = (THPFileInfo *)(((u32)__THPWorkArea + 31) & ~31);
-    __THPWorkArea = (u8 *)((u32)__THPInfo + sizeof(THPFileInfo));
+    __THPWorkArea = (void *)((u32)__THPInfo + sizeof(THPFileInfo));
     DCZeroRange(__THPInfo, sizeof(THPFileInfo));
     __THPInfo->cnt = 33;
     __THPInfo->decompressedY = 0;
@@ -155,7 +157,7 @@ _err_lc_not_enabled:
 _err_not_initialized:
     return 29;
 }
-
+#pragma pop
 static void __THPSetupBuffers(void) {
     u8 i;
     s16 *buffer;
