@@ -579,7 +579,7 @@ void MotionState_BuildMatricesWorld(void *arg0, void *arg1, void *motionState, f
         anim = M2C_FIELD(motionState, void **, 0);
         skel = M2C_FIELD(anim, s32 **, 0x14);
         MotionState_ExtractBlendedKeyFrame(motionState, frames);
-        TEST_AnimTraverseHeirarchyToMatricesWorld(arg0, arg1, frames, *skel, M2C_FIELD(motionState, u32 *, 0x10), time);
+        TEST_AnimTraverseHeirarchyToMatricesWorld(arg0, arg1, frames, *skel, M2C_FIELD(motionState, void **, 0x10), time);
     }
 }
 
