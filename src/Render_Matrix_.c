@@ -42,6 +42,7 @@ Vector4 g_cameraUp_BackUp;
 Vector4 g_cameraRight_BackUp;
 
 GfxWindow *GetRenderWindow(void);
+double sin(double x);
 void *memcpy(void *dst, const void *src, u32 n);
 void MultiplyMatrix4x4(f32 a[4][4], f32 b[4][4], f32 out[4][4]);
 void C_MTXOrtho(f32 m[3][4], f32 t, f32 b, f32 l, f32 r, f32 n, f32 f);
