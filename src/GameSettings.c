@@ -646,6 +646,60 @@ u8 GameSettings_GetNumOfPlayers(void) {
     return PlayerManager_PlayerHumanCount();
 }
 
+s8 GameSettings_IsCheatEnabled(s32 cheat) {
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    void *pack;
+    s32 type;
+    s8 *cheats;
+    u32 i;
+    u8 result;
+
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        type = mcp[1];
+    } else {
+        type = 0;
+    }
+    switch (type) {
+    case 0:
+        cheats = g_HotWheelsGameData.unk9F;
+        break;
+    case 1:
+        cheats = &g_DDRescueGameData[0x1E];
+        break;
+    }
+    if (cheat == 9) {
+        for (i = 0; i < 11; i++) {
+            if (i != 9 && cheats[i]) {
+                return 1;
+            }
+        }
+        if (i == 11) {
+            return 0;
+        }
+    }
+    if (((u32)(cheat - 1) <= 2 || cheat == 4) && cheats[10] && g_codeVariables.unk128[10]) {
+        return 1;
+    }
+    result = 0;
+    if ((cheats[10] || cheats != NULL) && g_codeVariables.unk128[cheat]) {
+        result = 1;
+    }
+    return result;
+}
+
 ControllerSettings *GameSettings_GetControllerSettings(s32 player) {
     return &g_generalGameSettings.controllers[player - 1];
 }
@@ -1070,6 +1124,7 @@ s32 GameSettings_FormatMemoryCard(void)
 
 #pragma push
 #pragma readonly_strings on
+#pragma use_lmw_stmw off
 s32 GameSettings_DeleteGameFile(void) {
     typedef struct GameInfo {
         const char *name;
