@@ -21,7 +21,9 @@ typedef struct GXData {
     u32 cmode1;
     u32 zmode;
     u32 peCtrl;
-    u8 pad1E0[0x4F1 - 0x1E0];
+    u8 pad1E0[0x204 - 0x1E0];
+    u32 genMode;
+    u8 pad208[0x4F1 - 0x208];
     u8 dlSaveContext;
     u8 pad4F2[2];
     u32 dirtyState;
