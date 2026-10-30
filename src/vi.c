@@ -9,9 +9,23 @@ typedef struct VITiming {
     u16 prbEven;
     u16 psbOdd;
     u16 psbEven;
-    u8 unkC[0xC];
+    u8 bs1;
+    u8 bs2;
+    u8 bs3;
+    u8 bs4;
+    u16 be1;
+    u16 be2;
+    u16 be3;
+    u16 be4;
     u16 nhlines;
     u16 hlw;
+    u8 hsy;
+    u8 hcs;
+    u8 hce;
+    u8 hbe640;
+    u16 hbs640;
+    u8 hbeCCIR656;
+    u16 hbsCCIR656;
 } VITiming;
 
 typedef struct VIPositionInfo {
@@ -167,6 +181,58 @@ void VIWaitForRetrace(void) {
         OSSleepThread(retraceQueue);
     } while (count == retraceCount);
     OSRestoreInterrupts(enabled);
+}
+
+static void setVerticalRegs(u16 dispPosY, u16 dispSizeY, u8 equ, u16 acv, u16 prbOdd, u16 prbEven, u16 psbOdd, u16 psbEven, s32 black) {
+    extern volatile u64 changed;
+    u16 actualPrbOdd;
+    u16 actualPrbEven;
+    u16 actualPsbOdd;
+    u16 actualPsbEven;
+    u16 actualAcv;
+    u16 c;
+    u16 d;
+
+    if (equ >= 10) {
+        c = 1;
+        d = 2;
+    } else {
+        c = 2;
+        d = 1;
+    }
+
+    if (dispPosY % 2 == 0) {
+        actualPrbOdd = prbOdd + d * dispPosY;
+        actualPsbOdd = psbOdd + d * ((c * acv - dispSizeY) - dispPosY);
+        actualPrbEven = prbEven + d * dispPosY;
+        actualPsbEven = psbEven + d * ((c * acv - dispSizeY) - dispPosY);
+    } else {
+        actualPrbOdd = prbEven + d * dispPosY;
+        actualPsbOdd = psbEven + d * ((c * acv - dispSizeY) - dispPosY);
+        actualPrbEven = prbOdd + d * dispPosY;
+        actualPsbEven = psbOdd + d * ((c * acv - dispSizeY) - dispPosY);
+    }
+
+    actualAcv = dispSizeY / c;
+
+    if (black) {
+        actualPrbOdd += 2 * actualAcv - 2;
+        actualPrbEven += 2 * actualAcv - 2;
+        actualPsbOdd += 2;
+        actualPsbEven += 2;
+        actualAcv = 0;
+    }
+
+    regs[0] = (u16)(equ | (actualAcv << 4));
+    changed |= (u64)1 << 63;
+    regs[7] = actualPrbOdd;
+    changed |= (u64)1 << 56;
+    regs[6] = actualPsbOdd;
+    changed |= (u64)1 << 57;
+    regs[9] = actualPrbEven;
+    changed |= (u64)1 << 54;
+    regs[8] = actualPsbEven;
+    changed |= (u64)1 << 55;
 }
 
 void VIFlush(void) {
