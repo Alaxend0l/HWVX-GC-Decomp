@@ -365,6 +365,8 @@ BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputB
 extern u32 __PADFixBits;
 u16 OSGetWirelessID(s32 chan);
 void OSSetWirelessID(s32 chan, u16 id);
+#pragma push
+#pragma use_lmw_stmw on
 static void GetTypeCallback(s32 chan, u32 error, void *context) {
     static u32 cmdFixDevice[4];
     u32 type;
