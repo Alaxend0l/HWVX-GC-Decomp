@@ -336,7 +336,7 @@ typedef struct CarA {
   u8 stuntAxis;             /* 0x491 0: none, 1: pitch (stickX), 2: roll (stickY) */
   u8 pad492[2];             /* 0x492 */
   char **stuntPopup;        /* 0x494 */
-  u8 pad498[4];             /* 0x498 */
+  u32 pickupId;             /* 0x498 last picked-up item's id */
   char **stuntScoreMessage; /* 0x49C */
   char **stuntMessage;      /* 0x4A0 */
   u8 pad4A4[0xC];           /* 0x4A4 */
