@@ -44,6 +44,7 @@ struct OSAlarm {
     s64 start;
 };
 
+static OSAlarm AlarmForWA;
 static OSAlarm AlarmForTimeout;
 
 void OSCreateAlarm(OSAlarm *alarm);
@@ -107,6 +108,26 @@ void AlarmHandlerForTimeout(void *alarm, void *context)
     }
     OSClearContext(tmpContext);
     OSSetCurrentContext(context);
+}
+
+s32 Read(s32 addr, s32 length, s32 offset, s32 callback)
+{
+    StopAtNextInt = 0;
+    Callback = (DVDLowCallback)callback;
+    LastCommandWasRead = 1;
+    LastReadIssued = __OSGetSystemTime();
+    __DIRegs[2] = 0xA8000000;
+    __DIRegs[3] = (u32)offset >> 2;
+    __DIRegs[4] = length;
+    __DIRegs[5] = addr;
+    __DIRegs[6] = length;
+    LastLength = length;
+    __DIRegs[7] = 3;
+    if ((u32)length > 0xA00000) {
+        SetTimeoutAlarm((OSAlarmHandler)AlarmHandlerForTimeout, (__OSBusClock / 4) * 20);
+    } else {
+        SetTimeoutAlarm((OSAlarmHandler)AlarmHandlerForTimeout, (__OSBusClock / 4) * 10);
+    }
 }
 
 void SeekTwiceBeforeRead(s32 addr, s32 length, s32 offset, s32 callback)
