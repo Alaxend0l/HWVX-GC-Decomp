@@ -56,8 +56,8 @@ static inline void PlayerManager_PushFree(PlayerManager *mgr, PMPlayer *player) 
 void AI_Car_Init();
 void AI_Creature_Init();
 
-static inline void *PlayerManager_GetAIInit(s8 *desc) {
-    switch (desc[0xD]) {
+static inline void *PlayerManager_GetAIInit(void *desc) {
+    switch (((u8 *)desc)[0xD]) {
     case 0:
         return AI_Car_Init;
     case 1:
