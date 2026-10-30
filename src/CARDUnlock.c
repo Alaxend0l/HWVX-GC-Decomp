@@ -124,6 +124,19 @@ static u32 DummyLen(void) {
     return tmp;
 }
 
+static u32 exnor(u32 data, u32 lshift) {
+    u32 wk;
+    u32 work;
+    u32 i;
+
+    work = data;
+    for (i = 0; i < lshift; i++) {
+        wk = ~(work ^ (work << 7) ^ (work << 15) ^ (work << 23));
+        work = (work << 1) | ((wk >> 30) & 0x00000002);
+    }
+    return work;
+}
+
 static void InitCallback(void *task) {
     s32 chan;
     CARDControl *card;
