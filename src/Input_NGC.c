@@ -34,7 +34,7 @@ u8 IsOpened__8LGWheelsFl(void *wheels, s32 chan);
 void PlaySpringForce__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 saturation, s16 coefficient);
 void PlayFrontalCollisionForce__8LGWheelsFlUc(void *wheels, s32 chan, u8 force);
 
-static inline u16 Input_SetKeyDown(VirtualPad *pad, u16 key) {
+static inline void Input_SetKeyDown(VirtualPad *pad, u16 key) {
     s32 k;
 
     for (k = 0; k < 20; k++) {
@@ -43,10 +43,9 @@ static inline u16 Input_SetKeyDown(VirtualPad *pad, u16 key) {
             pad->keyPress |= 1 << k;
         }
     }
-    return key;
 }
 
-static inline u16 Input_SetKeyUp(VirtualPad *pad, u16 key) {
+static inline void Input_SetKeyUp(VirtualPad *pad, u16 key) {
     s32 k;
 
     for (k = 0; k < 20; k++) {
@@ -55,7 +54,6 @@ static inline u16 Input_SetKeyUp(VirtualPad *pad, u16 key) {
             pad->keyRelease |= 1 << k;
         }
     }
-    return key;
 }
 
 void InitTables__Fv(void);
