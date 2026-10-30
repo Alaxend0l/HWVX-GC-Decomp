@@ -285,6 +285,76 @@ void OSExitThread(void *val) {
     OSRestoreInterrupts(enabled);
 }
 
+OSThread *SetEffectivePriority(OSThread *thread, s32 priority);
+#pragma push
+#pragma dont_inline on
+s32 OSSuspendThread(OSThread *thread) {
+    BOOL enabled;
+    s32 suspendCount;
+
+    enabled = OSDisableInterrupts();
+    suspendCount = thread->suspend++;
+    if (suspendCount == 0) {
+        switch (thread->state) {
+        case 2:
+            RunQueueHint = TRUE;
+            thread->state = 1;
+            break;
+        case 1:
+            UnsetRun((void **)thread);
+            break;
+        case 4: {
+            OSThread *next;
+            OSThread *prev;
+
+            next = thread->link.next;
+            prev = thread->link.prev;
+            if (next == NULL) {
+                thread->queue->tail = prev;
+            } else {
+                next->link.prev = prev;
+            }
+            if (prev == NULL) {
+                thread->queue->head = next;
+            } else {
+                prev->link.next = next;
+            }
+            thread->priority = 32;
+            prev = thread->queue->tail;
+            if (prev == NULL) {
+                thread->queue->head = thread;
+            } else {
+                prev->link.next = thread;
+            }
+            thread->link.prev = prev;
+            thread->link.next = NULL;
+            thread->queue->tail = thread;
+            if (thread->mutex) {
+                thread = ((OSThread **)thread->mutex)[2];
+                do {
+                    s32 priority;
+                    if (0 < thread->suspend) {
+                        break;
+                    }
+                    priority = __OSGetEffectivePriority(thread);
+                    if (thread->priority == priority) {
+                        break;
+                    }
+                    thread = SetEffectivePriority(thread, priority);
+                } while (thread);
+            }
+            break;
+        }
+        }
+        if (RunQueueHint) {
+            SelectThread(0);
+        }
+    }
+    OSRestoreInterrupts(enabled);
+    return suspendCount;
+}
+#pragma pop
+
 void OSSleepThread(OSThreadQueue *queue) {
     BOOL enabled;
     OSThread *currentThread;
