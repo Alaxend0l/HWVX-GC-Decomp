@@ -169,6 +169,30 @@ void VIWaitForRetrace(void) {
     OSRestoreInterrupts(enabled);
 }
 
+void VIFlush(void) {
+    extern volatile u32 changeMode;
+    extern volatile u64 changed;
+    extern volatile u32 flushFlag;
+    extern volatile u32 shdwChangeMode;
+    extern volatile u64 shdwChanged;
+    s32 OSDisableInterrupts(void);
+    void OSRestoreInterrupts(s32 level);
+    s32 enabled;
+    s32 regIndex;
+
+    enabled = OSDisableInterrupts();
+    shdwChangeMode |= changeMode;
+    changeMode = 0;
+    shdwChanged |= changed;
+    while (changed) {
+        regIndex = cntlzd(changed);
+        shdwRegs[regIndex] = regs[regIndex];
+        changed &= ~((u64)1 << (63 - regIndex));
+    }
+    flushFlag = 1;
+    OSRestoreInterrupts(enabled);
+}
+
 static void setFbbRegs(VIPositionInfo *hv, u32 *tfbb, u32 *bfbb, u32 *rtfbb, u32 *rbfbb);
 void VISetNextFrameBuffer(void *fb) {
     extern s32 FBSet;
