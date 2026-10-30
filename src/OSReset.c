@@ -13,7 +13,7 @@ extern OSResetFunctionInfo *ResetFunctionQueue;
 BOOL __OSSyncSram(void);
 void OSCancelThread(void *thread);
 
-static inline BOOL __OSCallResetFunctions(BOOL final) {
+static BOOL __OSCallResetFunctions(BOOL final) {
     OSResetFunctionInfo *info;
     s32 err = 0;
 
@@ -67,12 +67,10 @@ void LCDisable(void);
 void OSCancelThread(void *thread);
 void __OSReboot(u32 resetCode, BOOL forceMenu);
 void OSResetSystem(s32 reset, u32 resetCode, BOOL forceMenu) {
-    OSResetFunctionInfo *info;
-    BOOL err;
     BOOL rc;
-    u8 *thread;
-    u8 *next;
+    BOOL enabled;
     BOOL disableRecalibration;
+    u8 *sram;
 
     OSDisableScheduler();
     __OSStopAudioSystem();
@@ -80,51 +78,26 @@ void OSResetSystem(s32 reset, u32 resetCode, BOOL forceMenu) {
         disableRecalibration = __PADDisableRecalibration(TRUE);
     }
     do {
-        err = FALSE;
-        for (info = ResetFunctionQueue; info; info = info->next) {
-            err |= !info->func(FALSE);
-        }
-        err |= !__OSSyncSram();
-        rc = err ? FALSE : TRUE;
+        rc = __OSCallResetFunctions(FALSE);
     } while (!rc);
     if (reset == 1 && forceMenu) {
-        u8 *sram = __OSLockSram();
+        sram = __OSLockSram();
         sram[0x13] |= 0x40;
         __OSUnlockSram(TRUE);
         while (!__OSSyncSram()) {
         }
     }
-    OSDisableInterrupts();
-    err = FALSE;
-    for (info = ResetFunctionQueue; info; info = info->next) {
-        err |= !info->func(TRUE);
-    }
-    __OSSyncSram();
+    enabled = OSDisableInterrupts();
+    rc = __OSCallResetFunctions(TRUE);
     LCDisable();
     if (reset == 1) {
         __OSDoHotReset(resetCode);
     } else if (reset == 0) {
-        for (thread = *(u8 **)0x800000DC; thread; thread = next) {
-            next = *(u8 **)(thread + 0x2FC);
-            switch (*(u16 *)(thread + 0x2C8)) {
-            case 1:
-            case 4:
-                OSCancelThread(thread);
-                break;
-            }
-        }
+        KillThreads();
         OSEnableScheduler();
         __OSReboot(resetCode, forceMenu);
     }
-    for (thread = *(u8 **)0x800000DC; thread; thread = next) {
-        next = *(u8 **)(thread + 0x2FC);
-        switch (*(u16 *)(thread + 0x2C8)) {
-        case 1:
-        case 4:
-            OSCancelThread(thread);
-            break;
-        }
-    }
+    KillThreads();
     memset((void *)0x80000040, 0, 0x8C);
     memset((void *)0x800000D4, 0, 0x14);
     memset((void *)0x800000F4, 0, 4);
