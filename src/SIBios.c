@@ -11,6 +11,7 @@ typedef struct OSAlarm {
 } OSAlarm;
 
 volatile u32 __SIRegs[64] : 0xCC006400;
+u32 __OSBusClock : 0x800000F8;
 
 static SIControl Si = {-1, 0, 0, NULL, NULL};
 static SIPacket Packet[4];
@@ -287,6 +288,42 @@ BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputB
     OSRestoreInterrupts(enabled);
     return TRUE;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+u32 SIGetType(s32 chan) {
+    void GetTypeCallback(s32 chan, u32 error, void *context);
+    static u32 cmdTypeAndStatus;
+    BOOL enabled;
+    u32 type;
+    s64 diff;
+
+    enabled = OSDisableInterrupts();
+    type = Type[chan];
+    diff = __OSGetSystemTime() - TypeTime[chan];
+    if (Si.poll & (0x80 >> chan)) {
+        if (type != 8) {
+            TypeTime[chan] = __OSGetSystemTime();
+            OSRestoreInterrupts(enabled);
+            return type;
+        } else {
+            type = Type[chan] = 0x80;
+        }
+    } else if (diff <= (s64)(50 * ((*(u32 *)0x800000F8 / 4) / 1000)) && type != 8) {
+        OSRestoreInterrupts(enabled);
+        return type;
+    } else if (diff <= (s64)(75 * ((*(u32 *)0x800000F8 / 4) / 1000))) {
+        Type[chan] = 0x80;
+    } else {
+        type = Type[chan] = 0x80;
+    }
+    TypeTime[chan] = __OSGetSystemTime();
+    SITransfer(chan, &cmdTypeAndStatus, 1, &Type[chan], 3, GetTypeCallback,
+               (65 * ((*(u32 *)0x800000F8 / 4) / 125000)) / 8);
+    OSRestoreInterrupts(enabled);
+    return type;
+}
+#pragma pop
 
 u32 SIGetTypeAsync(s32 chan, void (*callback)(s32, u32)) {
     BOOL enabled;
