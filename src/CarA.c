@@ -324,9 +324,9 @@ void CarA_ProcessForce(CarA *car, Vector4 *pos, Vector4 *dir, f32 scale)
    bone's) animation matrix, then adds gravity to the force accumulator. */
 static void CarA_ApplyWheelLoads(void *thing) {
     CarA *car = thing;
+    u32 i;
     Vector4 *up;
     CarTrailBone *wheel;
-    u32 i;
     s32 bone;
 
     for (i = 0; i < car->vehicleIface->numWheels; i++) {
