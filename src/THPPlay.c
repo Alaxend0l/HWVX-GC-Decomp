@@ -143,10 +143,6 @@ void Mpeg_StopMovie(void) {
 }
 
 u32 Mpeg_Heartbeat(void) {
-    typedef struct THPVideoInfo {
-        u32 xSize;
-        u32 ySize;
-    } THPVideoInfo;
     void GXInvalidateVtxCache(void);
     void THPPlayerDrawCurrentFrame(s32 rmode, s32 x, s32 y, u32 polyW, u32 polyH);
     void THPPlayerDrawDone(void);
