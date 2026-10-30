@@ -139,7 +139,7 @@ s32 NavHolder_IsNavLinkNearer(f32 *pos, NavLink *link, f32 *nearest, u8 depth) {
 }
 
 /* NavHolder_IsNavLinkNearer with its recursion step (FindIndexOfNearestNavLink) expanded once. */
-static inline s32 NavHolder_IsNavLinkNearerInline(f32 *pos, NavLink *link, f32 *nearest, u8 depth) {
+static inline s32 NavHolder_IsNavLinkNearerInline_old(f32 *pos, NavLink *link, f32 *nearest, u8 depth) {
     extern s32 gs_aLinksDepth3[64];
     u8 *NavHolder_GetNavPoint(s32 index);
     f32 PSVECSquareDistance(f32 *a, f32 *b);
@@ -193,7 +193,7 @@ static inline s32 NavHolder_IsNavLinkNearerInline(f32 *pos, NavLink *link, f32 *
     return result;
 }
 
-s32 NavHolder_FindIndexOfNearestNavLink(f32 *pos, NavLink *link, f32 *nearest, u8 depth) {
+inline s32 NavHolder_FindIndexOfNearestNavLink(f32 *pos, NavLink *link, f32 *nearest, u8 depth) {
     u8 *NavHolder_GetNavPoint(s32 index);
     s32 result = -1;
     s32 found;
