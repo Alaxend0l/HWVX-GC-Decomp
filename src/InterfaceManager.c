@@ -984,8 +984,303 @@ s32 InterfaceManager_Create(u8 *header, u8 *owner, void (*callback)(void *msg)) 
     return index;
 }
 
-void InterfaceManager_AddObject()
-{
+void InterfaceManager_AddObject(void *interface, void *object) {
+    typedef struct KeyTrack {
+        u32 count;
+        void *keys;
+    } KeyTrack;
+    typedef struct ObjAnim {
+        KeyTrack pos;
+        KeyTrack rot;
+        KeyTrack scale;
+        KeyTrack color;
+        KeyTrack uv;
+    } ObjAnim;
+    typedef struct ObjSub {
+        u8 type;
+        u8 unk1;
+        u8 pad2[2];
+        u32 value;
+        u8 pad8[0x10 - 0x8];
+        void *data;
+    } ObjSub;
+    typedef struct ObjText {
+        char **text;
+        u8 *font;
+        u8 pad8[0x10 - 0x8];
+        u8 *font2;
+    } ObjText;
+    typedef struct ObjDef {
+        u8 kind;
+        u8 type;
+        u8 pad2[0x9 - 0x2];
+        u8 input;
+        u8 padA[0xC - 0xA];
+        s16 offset;
+        u8 padE[0x14 - 0xE];
+        void *sub;
+        u8 pad18[0x3C - 0x18];
+        void **header;
+        u8 pad40[0x60 - 0x40];
+        ObjAnim *anim;
+        u8 pad64[0x6C - 0x64];
+    } ObjDef;
+    typedef struct AddSlot {
+        u8 pad0[0x2C];
+        u8 dirty2C;
+        u8 pad2D[0x30 - 0x2D];
+        Vector4 scale;
+        u8 pad40[0x54 - 0x40];
+        u8 dirty54;
+        u8 pad55[0x60 - 0x55];
+        Vector4 pos;
+        u8 pad70[0x84 - 0x70];
+        u8 dirty84;
+        u8 pad85[0x90 - 0x85];
+        Vector4 rot;
+        u8 padA0[0xB4 - 0xA0];
+        u8 dirtyB4;
+        u8 padB5[0xC0 - 0xB5];
+        u8 uv[0x118 - 0xC0];
+        u8 dirty118;
+        u8 pad119[0x125 - 0x119];
+        u8 unk125;
+        u8 pad126[0x130 - 0x126];
+        u8 dirty130;
+        u8 pad131[0x164 - 0x131];
+        u8 dirty164;
+        u8 pad165[0x194 - 0x165];
+        u8 dirty194;
+        u8 pad195[0x1A4 - 0x195];
+        s32 unk1A4;
+        u8 pad1A8[0x1B0 - 0x1A8];
+        u8 fontId;
+        u8 pad1B1[0x1C0 - 0x1B1];
+        char text[0x241 - 0x1C0];
+        u8 unk241;
+        u8 pad242;
+        u8 kind;
+        u8 unk244;
+        u8 renderType;
+        u8 pad246;
+        u8 animDone;
+        u8 unk248;
+        u8 unk249;
+        s16 unk24A;
+        u8 pad24C[0x250 - 0x24C];
+        s32 unk250;
+        u8 pad254[0x258 - 0x254];
+        void *data;
+        ObjDef *object;
+        struct AddSlot *offset;
+        struct AddSlot *parent;
+        u32 unk268;
+        void *thing;
+        s32 child;
+        u32 timer;
+        f32 unk278;
+        s32 unk27C;
+        f32 unk280;
+        u8 pad284[0x288 - 0x284];
+        void *car;
+        s32 unk28C;
+        u8 unk290;
+        u8 pad291[0x2D0 - 0x291];
+        u32 unk2D0;
+        u8 pad2D4[0x2DC - 0x2D4];
+        u32 unk2DC;
+        u8 pad2E0[0x2F8 - 0x2E0];
+        u32 unk2F8;
+        u8 pad2FC[0x300 - 0x2FC];
+    } AddSlot;
+    typedef struct AddIface {
+        u32 count;
+        u32 state;
+        u8 *owner;
+        u8 padC[0x7D - 0xC];
+        u8 index;
+        u8 unk7E;
+        u8 isChild;
+        u8 pad80[0x88 - 0x80];
+        AddSlot *slots;
+        s32 input;
+        void *callback;
+        u8 pad94[0x115 - 0x94];
+        u8 unk115;
+        u8 pad116[0x158 - 0x116];
+        AddSlot *unk158;
+        u32 parent;
+        u8 pad160[0x170 - 0x160];
+    } AddIface;
+    extern AddIface g_interface[];
+    extern s32 g_playerIndex;
+    void ExtractColorKey(void *track, void *out, f32 t);
+    void ExtractScaleKey(void *track, void *out, f32 t);
+    void ExtractUVKey(void *track, void *out, f32 t);
+    s32 InterfaceManager_AddFont(u8 *font);
+    void InterfaceManager_SetObjectText(AddSlot *obj, char **text);
+    s32 InterfaceManager_Create(void *header, u8 *owner, void *callback);
+    void InterfaceManager_SetInput(s32 index, s32 input);
+    char *strcpy(char *dst, const char *src);
+    AddIface *iface = interface;
+    ObjDef *def = object;
+    s32 index;
+    AddSlot *slot;
+    ObjSub *sub;
+    s32 offset;
+    s32 player;
+    void **header;
+    u32 i;
+
+    index = iface->count;
+    iface->count = index + 1;
+    slot = &iface->slots[index];
+    slot->object = def;
+    slot->unk250 = -1;
+    slot->thing = NULL;
+    slot->unk244 = 0;
+    slot->renderType = def->kind;
+    slot->animDone = 1;
+    slot->unk248 = 1;
+    slot->timer = 0;
+    slot->car = NULL;
+    slot->unk2DC = 0;
+    slot->unk2F8 = 0;
+    slot->parent = NULL;
+    slot->unk290 = 0;
+    slot->unk27C = -1;
+    slot->unk249 = 1;
+    slot->unk278 = 0.0f;
+    slot->unk280 = 10.0f;
+    slot->unk28C = -1;
+    slot->unk2D0 = 0;
+    slot->dirty2C = 1;
+    slot->dirty54 = 1;
+    slot->dirty118 = 1;
+    slot->dirty84 = 1;
+    slot->dirtyB4 = 1;
+    slot->unk125 = 1;
+    slot->dirty164 = 1;
+    slot->dirty194 = 1;
+    ExtractColorKey(&slot->object->anim->color, slot, 0.0f);
+    ExtractScaleKey(&slot->object->anim->scale, &slot->scale, 0.0f);
+    ExtractScaleKey(&slot->object->anim->pos, &slot->pos, 0.0f);
+    ExtractScaleKey(&slot->object->anim->rot, &slot->rot, 0.0f);
+    ExtractUVKey(&slot->object->anim->uv, slot->uv, 0.0f);
+    if (slot->renderType == 1) {
+        slot->renderType = 0;
+    }
+    offset = def->offset;
+    if (offset != 0) {
+        offset += index;
+        if (offset > 0) {
+            slot->offset = &iface->slots[offset];
+        }
+    } else {
+        slot->offset = NULL;
+    }
+    switch (def->type) {
+    case 0:
+        sub = def->sub;
+        slot->unk241 = sub->unk1;
+        switch (sub->type) {
+        case 0:
+            slot->unk24A = sub->value;
+            slot->kind = 0;
+            break;
+        case 1:
+            slot->unk268 = sub->value;
+            slot->kind = 2;
+            iface->unk7E = 1;
+            break;
+        case 2:
+            break;
+        case 3:
+            slot->kind = 1;
+            slot->dirty130 = 1;
+            slot->data = sub->data;
+            break;
+        }
+        break;
+    case 1:
+        slot->data = slot->object->sub;
+        slot->kind = 5;
+        slot->fontId = InterfaceManager_AddFont(((ObjText *)slot->data)->font);
+        InterfaceManager_SetObjectText(slot, ((ObjText *)slot->data)->text);
+        if (slot->renderType == 0x40) {
+            slot->unk1A4 = 0;
+            strcpy(slot->text, "Oct  1 2002");
+        }
+        break;
+    case 3:
+        slot->kind = 0xB;
+        break;
+    case 4:
+        slot->kind = 0xC;
+        break;
+    case 6:
+    case 7:
+        player = g_playerIndex;
+        header = def->header;
+        slot->kind = 6;
+        if (slot->object->kind == 3) {
+            g_playerIndex = slot->object->input;
+        }
+        if (slot->renderType == 0x20) {
+            slot->child = InterfaceManager_Create(*header, iface->owner, NULL);
+        } else {
+            slot->child = InterfaceManager_Create(*header, iface->owner, iface->callback);
+        }
+        if (slot->object->kind == 3) {
+            g_playerIndex = player;
+        }
+        g_interface[slot->child].isChild = 1;
+        if (def->type == 7) {
+            g_interface[slot->child].unk115 = 1;
+        }
+        g_interface[slot->child].parent = iface->index;
+        for (i = 0; i < g_interface[slot->child].count; i++) {
+            g_interface[slot->child].slots[i].parent = slot;
+        }
+        if (slot->object->kind == 3) {
+            switch (slot->object->input) {
+            case 1:
+                InterfaceManager_SetInput(slot->child, 0);
+                break;
+            case 2:
+                InterfaceManager_SetInput(slot->child, 1);
+                break;
+            case 3:
+                InterfaceManager_SetInput(slot->child, 2);
+                break;
+            case 4:
+                InterfaceManager_SetInput(slot->child, 3);
+                break;
+            }
+        } else {
+            InterfaceManager_SetInput(slot->child, iface->input);
+        }
+        break;
+    case 2:
+        iface->unk158 = slot;
+        slot->kind = 7;
+        slot->data = slot->object->sub;
+        break;
+    case 10:
+        slot->kind = 0xA;
+        slot->data = slot->object->sub;
+        slot->fontId = InterfaceManager_AddFont(((ObjText *)slot->data)->font2);
+        break;
+    case 11:
+        slot->data = slot->object->sub;
+        slot->kind = 9;
+        break;
+    case 12:
+        slot->data = slot->object->sub;
+        slot->kind = 8;
+        slot->fontId = InterfaceManager_AddFont(((ObjText *)slot->data)->font);
+        break;
+    }
 }
 
 void InterfaceManager_PreprocessInterface(u8 *iface) {
