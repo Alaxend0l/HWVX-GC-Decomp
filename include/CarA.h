@@ -95,6 +95,7 @@ typedef struct CarAEngine {
   f32 unk64;                /* 0x64 */
   f32 unk68;                /* 0x68 */
   f32 unk6C;                /* 0x6C */
+  f32 itemHeight;           /* 0x70 picked-up items ride this high above the rack */
 } CarAEngine;
 
 typedef struct CarAMaterial {
