@@ -156,8 +156,8 @@ s32 StateTitleScreen_Shutdown(void) {
     M2C_UNK Gfx_FlipBuffers();
     M2C_UNK InterfaceManager_ReleaseAllInterfaces();
     M2C_UNK FileStreaming_ReleaseAllDataPacks(M2C_UNK, M2C_UNK);
-    extern u8 g_bPlayingFMV;
-    extern s32 g_pTitleDataPack;
+    extern s8 g_bPlayingFMV;
+    extern void *g_pTitleDataPack;
     Gfx_BeginScene();
     Gfx_EndScene();
     Gfx_FlipBuffers();
