@@ -1012,10 +1012,7 @@ BOOL DVDCheckDisk(void) {
 }
 
 void __DVDPrepareResetAsync(void (*callback)(s32, DVDCommandBlock *)) {
-    BOOL level2;
-    BOOL level;
     BOOL enabled;
-    DVDCommandBlock *p;
 
     enabled = OSDisableInterrupts();
     __DVDClearWaitingQueue();
@@ -1025,29 +1022,7 @@ void __DVDPrepareResetAsync(void (*callback)(s32, DVDCommandBlock *)) {
         if (executing) {
             executing->callback = NULL;
         }
-        level = OSDisableInterrupts();
-        level2 = OSDisableInterrupts();
-        PauseFlag = TRUE;
-        if (executing == (DVDCommandBlock *)NULL) {
-            PausingFlag = TRUE;
-        }
-        OSRestoreInterrupts(level2);
-        while ((p = __DVDPopWaitingQueue()) != NULL) {
-            DVDCancelAsync(p, NULL);
-        }
-        if (executing) {
-            DVDCancelAsync(executing, callback);
-        } else if (callback) {
-            (*callback)(0, NULL);
-        }
-        level2 = OSDisableInterrupts();
-        PauseFlag = FALSE;
-        if (PausingFlag) {
-            PausingFlag = FALSE;
-            stateReady();
-        }
-        OSRestoreInterrupts(level2);
-        OSRestoreInterrupts(level);
+        DVDCancelAllAsync(callback);
     }
     OSRestoreInterrupts(enabled);
 }
