@@ -527,8 +527,7 @@ static void AI_Car_SeekPoint(u8 *ai) {
     AI_Car_DriveToTarget(ai, &target, speed);
 }
 
-static void AI_Car_WeaponAsyncHeartbeat_80008210(u8 *ai);
-static void AI_Car_WeaponAsyncHeartbeat(u8 *ai) {
+static void AI_Car_WeaponAsyncHeartbeat_80008210(u8 *ai) {
     typedef struct WeaponParams {
         u8 pad0[0x24];
         u32 minAmmo;
