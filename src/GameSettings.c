@@ -73,38 +73,6 @@ typedef struct DDRescueGameData {
     s32 item;
 } DDRescueGameData;
 
-static inline void GameSettings_GatherSwitches(void) {
-    u8 *world = g_worldData.world;
-    u32 i;
-
-    for (i = 0; i < *(u32 *)(world + 0x50) && i < 50; i++) {
-        ((DDRescueGameData *)g_DDRescueGameData)->unk880[i] = *(f32 *)((*(u8 ***)(world + 0x54))[i] + 0x8);
-        ((DDRescueGameData *)g_DDRescueGameData)->unk948[i][0] = (*(u8 **)((*(u8 ***)(world + 0x54))[i] + 0xC))[0];
-        ((DDRescueGameData *)g_DDRescueGameData)->unk948[i][1] = (*(u8 **)((*(u8 ***)(world + 0x54))[i] + 0xC))[1];
-    }
-}
-
-static inline void GameSettings_GatherTriggers(void) {
-    u8 *world = g_worldData.world;
-    u8 *group;
-    u32 i;
-    u32 j;
-    u32 nTriggers = 0;
-    u32 nSwitches = 0;
-
-    for (i = 0; i < *(u32 *)(world + 0x20); i++) {
-        group = *(u8 **)(world + 0x24) + i * 0x50;
-        for (j = 0; j < *(u32 *)(*(u8 **)(group + 0x30) + 0x14) && nTriggers < 1000; j++) {
-            ((DDRescueGameData *)g_DDRescueGameData)->unkBA0[nTriggers++] = *(s32 *)(*(u8 **)(*(u8 **)(group + 0x30) + 0x18) + j * 0x40 + 0x28);
-        }
-        for (j = 0; j < *(u32 *)(*(u8 **)(group + 0x30) + 0x4) && nSwitches < 2000; j++) {
-            ((DDRescueGameData *)g_DDRescueGameData)->unkF88[nSwitches++] = *(s32 *)(*(u8 **)(*(u8 **)(group + 0x30) + 0x8) + j * 0x40 + 0x30);
-        }
-    }
-    for (i = 0; i < *(u32 *)(world + 0x10) && i < 500; i++) {
-        ((DDRescueGameData *)g_DDRescueGameData)->unk1758[i] = *(s32 *)(*(u8 **)(world + 0x14) + i * 0x20 + 0x14);
-    }
-}
 
 static inline u32 GameSettings_GetSaveFileChecksum(char *device, const char *name, u32 size)
 {
