@@ -129,6 +129,31 @@ static void Decode(u8 *s, u8 *d) {
     } while (q < os);
 }
 
+static void ReadROM(void *buf, int length, int offset);
+
+static u32 GetFontSize(u8 *buf) {
+    if (buf[0] == 'Y' && buf[1] == 'a' && buf[2] == 'y') {
+        return *(u32 *)(buf + 4);
+    }
+    return 0;
+}
+
+static u32 ReadFont(void *img, void *fontData) {
+    u32 size;
+
+    if (OSGetFontEncode() == 1) {
+        ReadROM(img, 0x4D000, 0x1AFF00);
+    } else {
+        ReadROM(img, 0x3000, 0x1FCF00);
+    }
+    size = GetFontSize(img);
+    if (size == 0) {
+        return 0;
+    }
+    Decode(img, fontData);
+    return size;
+}
+
 u16 OSGetFontEncode(void) {
     static u16 fontEncode = 0xFFFF;
 
@@ -161,6 +186,53 @@ static void ReadROM(void *buf, int length, int offset) {
         offset += len;
         (u8 *)buf += len;
     }
+}
+
+u32 OSLoadFont(OSFontHeader *fontData, void *temp) {
+    u32 size;
+
+    SheetImage = 0;
+    if (OSGetFontEncode() == 1) {
+        ReadROM(temp, 0x4D000, 0x1AFF00);
+    } else {
+        ReadROM(temp, 0x3000, 0x1FCF00);
+    }
+    if (((u8 *)temp)[0] == 'Y' && ((u8 *)temp)[1] == 'a' && ((u8 *)temp)[2] == 'y') {
+        size = *(u32 *)((u8 *)temp + 4);
+    } else {
+        size = 0;
+    }
+    if (size) {
+        Decode(temp, (u8 *)fontData);
+        FontData = fontData;
+        WidthTable = (u8 *)FontData + FontData->widthTable;
+        CharsInSheet = FontData->sheetColumn * FontData->sheetRow;
+        if (OSGetFontEncode() == 1) {
+            u16 fix[4] = { 0x2ABE, 0x003D, 0x003D, 0x003D };
+            u8 *image;
+            int code;
+            int sheet;
+            int numChars;
+            int row;
+            int column;
+            int x;
+            int y;
+            int i;
+
+            code = GetFontCode('T');
+            sheet = code / CharsInSheet;
+            numChars = code - sheet * CharsInSheet;
+            row = numChars / FontData->sheetColumn;
+            column = numChars - row * FontData->sheetColumn;
+            x = column * FontData->cellWidth;
+            y = row * FontData->cellHeight;
+            image = (u8 *)FontData + FontData->sheetImage + (sheet * FontData->sheetSize) / 2;
+            for (i = 4; i < 8; i++) {
+                *(u16 *)(image + ((FontData->sheetWidth / 8 * 32) / 2) * ((y + i) / 8) + (x / 8) * 16 + ((y + i) % 8) * 2 + (x % 8) / 4) = fix[i - 4];
+            }
+        }
+    }
+    return size;
 }
 
 BOOL OSInitFont(OSFontHeader *fontData) {
