@@ -76,7 +76,7 @@ s32 VerifyID(CARDControl *card) {
     u16 checksum;
     u16 checksumInv;
     OSSramEx *sramEx;
-    u64 rand;
+    s64 rand;
     int i;
 
     id = card->workArea;
@@ -94,7 +94,7 @@ s32 VerifyID(CARDControl *card) {
         return -13;
     }
 
-    rand = *(u64 *)&id->serial[12];
+    rand = *(s64 *)&id->serial[12];
     sramEx = __OSLockSramEx();
     for (i = 0; i < 12; i++) {
         rand = (rand * 1103515245 + 12345) >> 16;
