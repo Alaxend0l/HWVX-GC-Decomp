@@ -36,6 +36,12 @@ typedef struct THPFileInfo {
     u8 unk6AE[0x6BC - 0x6AE];
 } THPFileInfo;
 
+static THPHuffmanTab *Ydchuff __attribute__((aligned(32)));
+static THPHuffmanTab *Udchuff __attribute__((aligned(32)));
+static THPHuffmanTab *Vdchuff __attribute__((aligned(32)));
+static THPHuffmanTab *Yachuff __attribute__((aligned(32)));
+static THPHuffmanTab *Uachuff __attribute__((aligned(32)));
+static THPHuffmanTab *Vachuff __attribute__((aligned(32)));
 static THPFileInfo *__THPInfo;
 static u8 *__THPHuffmanBits;
 static u8 *__THPHuffmanSizeTab;
