@@ -100,6 +100,34 @@ s32 __CARDGetFileNo(CARDControl *card, const char *fileName, s32 *pfileNo) {
     return -4;
 }
 
+s32 CARDOpen(s32 chan, const char *fileName, CARDFileInfo *fileInfo) {
+    CARDControl *card;
+    CARDDir *dir;
+    CARDDir *ent;
+    s32 fileNo;
+    s32 result;
+
+    fileInfo->chan = -1;
+    result = __CARDGetControlBlock(chan, (void **)&card);
+    if (result < 0) {
+        return result;
+    }
+    result = __CARDGetFileNo(card, fileName, &fileNo);
+    if (0 <= result) {
+        dir = __CARDGetDirBlock(card);
+        ent = &dir[fileNo];
+        if (ent->startBlock < 5 || ent->startBlock >= card->cBlock) {
+            result = -6;
+        } else {
+            fileInfo->chan = chan;
+            fileInfo->fileNo = fileNo;
+            fileInfo->offset = 0;
+            fileInfo->iBlock = ent->startBlock;
+        }
+    }
+    return __CARDPutControlBlock(card, result);
+}
+
 s32 CARDClose(CARDFileInfo *fileInfo) {
     void *card;
     s32 result;
