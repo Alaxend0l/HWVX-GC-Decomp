@@ -331,7 +331,7 @@ void FileStreaming_ResetQuadResources(void)
             quad->data->statics[j].active = quad->data->statics[j].defActive;
         }
     }
-    FileStreaming_SetActiveQuadrants((s32)g_LoadedQuadrants, g_numQuadPacksInMemory + 1);
+    FileStreaming_SetActiveQuadrants((void **)g_LoadedQuadrants, g_numQuadPacksInMemory + 1);
     Trigger_PauseTACSystem(paused);
 }
 
