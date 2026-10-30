@@ -81,7 +81,7 @@ static inline void SetTimeoutAlarm(OSAlarmHandler handler, s64 timeout)
 static volatile s32 LastCommandWasRead;
 static s64 LastReadIssued;
 static u32 LastLength;
-static s64 LastReadFinished;
+static volatile s64 LastReadFinished;
 static s32 FirstRead = 1;
 
 extern s32 Read(s32, s32, s32, s32);
@@ -234,11 +234,11 @@ s32 DVDLowRead(void *addr, u32 length, u32 offset, DVDLowCallback callback)
                 prevSector = (Prev.offset + Prev.length - 1) >> 15;
                 if (prevSector == Curr.offset >> 15 || prevSector + 1 == Curr.offset >> 15) {
                     diff = __OSGetSystemTime() - LastReadFinished;
-                    if ((s64)((__OSBusClock / 4) / 1000 * 5) < diff) {
+                    if ((s64)(5 * ((__OSBusClock / 4) / 1000)) < diff) {
                         DoJustRead(addr, length, offset, callback);
                     } else {
                         WaitBeforeRead(addr, length, offset, callback,
-                                       (s64)((__OSBusClock / 4) / 1000 * 5) - diff + ((__OSBusClock / 4) / 125000 * 500) / 8);
+                                       (s64)(5 * ((__OSBusClock / 4) / 1000)) - diff + (500 * ((__OSBusClock / 4) / 125000)) / 8);
                     }
                 } else {
                     SeekTwiceBeforeRead((s32)addr, length, offset, (s32)callback);
