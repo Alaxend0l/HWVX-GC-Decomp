@@ -50,6 +50,12 @@ OSThread *__OSCurrentThread : 0x800000E4;
 OSThreadQueue __OSActiveThreadQueue : 0x800000DC;
 OSContext *__OSFPUContext : 0x800000D8;
 
+void OSInitThreadQueue(void *queue);
+void OSClearContext(void *context);
+void OSSetCurrentContext(OSContext *context);
+extern u8 _stack_addr[];
+extern u8 _stack_end[];
+
 static OSThreadQueue RunQueue[32];
 static OSThread IdleThread;
 static OSThread DefaultThread;
