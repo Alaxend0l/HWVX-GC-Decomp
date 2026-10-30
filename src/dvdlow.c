@@ -46,6 +46,28 @@ struct OSAlarm {
 
 static OSAlarm AlarmForWA;
 static OSAlarm AlarmForTimeout;
+static OSAlarm AlarmForBreak;
+
+typedef struct DVDBuffer {
+    void *addr;
+    u32 length;
+    u32 offset;
+} DVDBuffer;
+
+static DVDBuffer Prev;
+static DVDBuffer Curr;
+
+typedef struct DVDDiskID {
+    char gameName[4];
+    char company[2];
+    u8 diskNumber;
+    u8 gameVersion;
+    u8 streaming;
+    u8 streamingBufSize;
+    u8 padding[22];
+} DVDDiskID;
+
+DVDDiskID *DVDGetCurrentDiskID(void);
 
 void OSCreateAlarm(OSAlarm *alarm);
 void OSSetAlarm(OSAlarm *alarm, s64 tick, OSAlarmHandler handler);
