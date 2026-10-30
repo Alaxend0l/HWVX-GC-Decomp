@@ -195,6 +195,86 @@ s32 __OSGetEffectivePriority(void * thread)
     return priority;
 }
 
+#pragma push
+#pragma dont_inline on
+OSThread *SetEffectivePriority(OSThread *thread, s32 priority) {
+    extern volatile u32 RunQueueBits;
+    extern volatile s32 RunQueueHint;
+
+    switch (thread->state) {
+    case 1: {
+        OSThread *prev;
+
+        UnsetRun((void **)thread);
+        thread->priority = priority;
+        thread->queue = &RunQueue[thread->priority];
+        prev = thread->queue->tail;
+        if (prev == NULL) {
+            thread->queue->head = thread;
+        } else {
+            prev->link.next = thread;
+        }
+        thread->link.prev = prev;
+        thread->link.next = NULL;
+        thread->queue->tail = thread;
+        RunQueueBits |= 1u << (31 - thread->priority);
+        RunQueueHint = TRUE;
+        break;
+    }
+    case 4: {
+        OSThread *next;
+        OSThread *prev;
+
+        next = thread->link.next;
+        prev = thread->link.prev;
+        if (next == NULL) {
+            thread->queue->tail = prev;
+        } else {
+            next->link.prev = prev;
+        }
+        if (prev == NULL) {
+            thread->queue->head = next;
+        } else {
+            prev->link.next = next;
+        }
+        thread->priority = priority;
+        for (next = thread->queue->head; next && next->priority <= thread->priority; next = next->link.next) {
+        }
+        if (next == NULL) {
+            prev = thread->queue->tail;
+            if (prev == NULL) {
+                thread->queue->head = thread;
+            } else {
+                prev->link.next = thread;
+            }
+            thread->link.prev = prev;
+            thread->link.next = NULL;
+            thread->queue->tail = thread;
+        } else {
+            thread->link.next = next;
+            prev = next->link.prev;
+            next->link.prev = thread;
+            thread->link.prev = prev;
+            if (prev == NULL) {
+                thread->queue->head = thread;
+            } else {
+                prev->link.next = thread;
+            }
+        }
+        if (thread->mutex) {
+            return ((OSThread **)thread->mutex)[2];
+        }
+        break;
+    }
+    case 2:
+        RunQueueHint = TRUE;
+        thread->priority = priority;
+        break;
+    }
+    return NULL;
+}
+#pragma pop
+
 void SelectThread(s32 yield);
 extern volatile s32 RunQueueHint;
 void __OSReschedule(void) {
