@@ -146,32 +146,3 @@ s8 IsPointWithinVolume(Vector4 *point, void *volume, f32 *distSq) {
     }
     return 0;
 }
-typedef struct VolumeShape {
-    u8 pad0[0x8];
-    s32 type;
-    u8 padC[0x10 - 0xC];
-    Vector4 center;
-    f32 radius;
-    f32 radiusSq;
-    void *bsp;
-} VolumeShape;
-
-s8 BSPN0_CollideWithVector(void *bsp, Vector4 *point);
-void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
-f32 PSVECSquareMag(Vector4 *v);
-
-static inline s8 VolumeManager_IsPointInVolume(Vector4 *point, VolumeShape *shape) {
-    Vector4 diff;
-
-    switch (shape->type) {
-    case 0:
-        return BSPN0_CollideWithVector(shape->bsp, point);
-    case 1:
-        PSVECSubtract(point, &shape->center, &diff);
-        if (PSVECSquareMag(&diff) < shape->radiusSq) {
-            return 1;
-        }
-        return 0;
-    }
-    return 0;
-}
