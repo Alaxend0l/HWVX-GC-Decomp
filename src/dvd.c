@@ -43,7 +43,7 @@ void (*CancelCallback)(s32 result, DVDCommandBlock *block);
 volatile u32 ResumeFromHere;
 u32 CancelLastError;
 u32 LastError;
-s32 NumInternalRetry;
+volatile s32 NumInternalRetry;
 u32 ResetRequired;
 u32 FirstTimeInBootrom;
 s32 DVDInitialized;
@@ -384,8 +384,6 @@ void cbForStateCheckID1(u32 intType) {
     void __DVDStoreErrorCode(u32 code);
     void cbForStateError(u32 intType);
     void DVDLowStopMotor(void (*cb)(u32));
-    DVDCommandBlock *finished;
-    BOOL canceled;
 
     if (intType == 16) {
         executing->state = -1;
@@ -402,24 +400,8 @@ void cbForStateCheckID1(u32 intType) {
         return;
     }
 
-    canceled = FALSE;
     NumInternalRetry = 0;
-    if (Canceling) {
-        ResumeFromHere = 1;
-        finished = executing;
-        Canceling = FALSE;
-        executing = &DummyCommandBlock;
-        finished->state = 10;
-        if (finished->callback) {
-            (*finished->callback)(-3, finished);
-        }
-        if (CancelCallback) {
-            (CancelCallback)(0, finished);
-        }
-        stateReady();
-        canceled = TRUE;
-    }
-    if (!canceled) {
+    if (!CheckCancel(1)) {
         executing->state = 6;
         stateMotorStopped();
     }
