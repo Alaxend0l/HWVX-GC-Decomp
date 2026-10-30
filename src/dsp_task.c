@@ -58,20 +58,21 @@ void DSPSendMailToDSP(u32 mail);
 u32 DSPCheckMailToDSP(void);
 void __DSP_exec_task(DSPTaskInfo *curr, DSPTaskInfo *next);
 void __DSP_remove_task(DSPTaskInfo *task);
-void __DSPHandler(s16 interrupt, void *context) {
-    u8 exceptionContext[0x2C8];
+void __DSPHandler(__OSInterrupt interrupt, OSContext *context) {
+    DSPTaskInfo *tmp_task;
+    OSContext exceptionContext;
     u16 tmp;
     u32 mail;
 
     tmp = __DSPRegs[5];
     tmp = (u16)((tmp & ~0x28) | 0x80);
     __DSPRegs[5] = tmp;
-    OSClearContext(exceptionContext);
-    OSSetCurrentContext(exceptionContext);
+    OSClearContext(&exceptionContext);
+    OSSetCurrentContext(&exceptionContext);
     while (!DSPCheckMailFromDSP()) {
     }
     mail = DSPReadMailFromDSP();
-    if ((__DSP_curr_task->flags & 2) && mail + 0x232F0000 == 2) {
+    if ((__DSP_curr_task->flags & 2) && mail == 0xDCD10002) {
         mail = 0xDCD10003;
     }
     switch (mail) {
@@ -104,8 +105,8 @@ void __DSPHandler(s16 interrupt, void *context) {
                 }
                 __DSP_exec_task(__DSP_curr_task, __DSP_rude_task);
                 __DSP_curr_task->state = 2;
-                __DSP_rude_task_pending = 0;
                 __DSP_curr_task = __DSP_rude_task;
+                __DSP_rude_task_pending = 0;
                 __DSP_rude_task = NULL;
             }
         } else if (__DSP_curr_task->next == NULL) {
@@ -143,8 +144,8 @@ void __DSPHandler(s16 interrupt, void *context) {
             }
             __DSP_exec_task(NULL, __DSP_rude_task);
             __DSP_remove_task(__DSP_curr_task);
-            __DSP_rude_task_pending = 0;
             __DSP_curr_task = __DSP_rude_task;
+            __DSP_rude_task_pending = 0;
             __DSP_rude_task = NULL;
         } else if (__DSP_curr_task->next == NULL) {
             if (__DSP_curr_task == __DSP_first_task) {
@@ -187,7 +188,7 @@ void __DSPHandler(s16 interrupt, void *context) {
         }
         break;
     }
-    OSClearContext(exceptionContext);
+    OSClearContext(&exceptionContext);
     OSSetCurrentContext(context);
 }
 
