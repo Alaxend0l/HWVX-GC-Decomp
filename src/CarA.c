@@ -2449,10 +2449,231 @@ void CarA_CollideWithRay(CarA *car, void *start, void *end, struct RayHit { u8 p
     }
 }
 
-void CarA_ProcessItemPickup()
-{
-}
+#pragma push
+#pragma use_lmw_stmw on
+s8 CarA_ProcessItemPickup(CarA *car, void *thing) {
+    typedef struct PickupDef {
+        u8 type;
+        u8 pad1;
+        u16 value;
+        u8 pad4[0x10 - 0x4];
+        f32 height;
+        u8 pad14[0x20 - 0x14];
+        u32 id;
+    } PickupDef;
+    typedef struct PickupSpawner {
+        u8 pad0[0x14];
+        s32 respawnTime;
+        s32 timer;
+    } PickupSpawner;
+    typedef struct PickupItem {
+        Vector4 velocity;
+        Matrix4 mtx;
+        Vector4 quat;
+        u8 pad60[0x74 - 0x60];
+        u32 flags;
+        u8 pad78[0x82 - 0x78];
+        u8 bone;
+        u8 unk83;
+        void *gridObj;
+        u8 pad88[0x90 - 0x88];
+        void *tileData;
+        Player *player;
+        u8 pad98[0xC0 - 0x98];
+        PickupDef *def;
+        u8 padC4[0xCE - 0xC4];
+        s16 count;
+        PickupSpawner *spawner;
+    } PickupItem;
+    typedef struct SlotAnim {
+        u8 pad0[0x1E];
+        u8 loop;
+        u8 pad1F[0x24 - 0x1F];
+        f32 *times;
+        f32 *loopTimes;
+    } SlotAnim;
+    typedef struct SlotData {
+        u8 pad0[0x28];
+        s32 max;
+    } SlotData;
+    typedef struct SlotThing {
+        u8 pad0[0x30];
+        SlotData *data;
+    } SlotThing;
+    typedef struct RackSlot {
+        SlotAnim *anim;
+        u8 pad4[0x1C - 0x4];
+        u8 mode;
+        u8 state;
+        u8 pad1E[0x20 - 0x1E];
+        f32 time;
+        u8 pad24[0x40 - 0x24];
+        s16 count;
+        u8 pad42[0x44 - 0x42];
+        f32 scale;
+        u8 pad48[0x4C - 0x48];
+        SlotThing *thing;
+    } RackSlot;
+    typedef struct PickupRack {
+        u8 pad0[0x40];
+        Vector4 pos;
+        u8 pad50[0x74 - 0x50];
+        u32 flags;
+        u8 pad78[0x82 - 0x78];
+        u8 bone;
+        u8 pad83[0xB0 - 0x83];
+        RackSlot slots[12];
+        u8 current;
+    } PickupRack;
+    extern Vector4 g_zeroVector;
+    extern char stunt_msg_buffer[];
+    extern char *g_stuntLossString;
+    void Trigger_ItemPickedUp(CarA *car, PickupItem *item);
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    void ThingManagerList_Remove(void *list, void *thing);
+    void ThingManagerList_Append(void *list, void *thing);
+    void WildCardRack_Add(void *rack, PickupDef *def, s32 count);
+    void Item_Release(PickupItem *item);
+    void QuaternionToSubMatrix(Vector4 *q, Matrix4 *m);
+    void Grid_FreeObject(void *obj);
+    void MotionState_InitAllSlavesNow(MotionState *state, void *slaves, u8 player);
+    s8 Player_IsHuman(void *player);
+    int sprintf(char *buf, const char *fmt, ...);
+    Vector4 pos __attribute__((aligned(16)));
+    u8 current;
+    PickupRack *rack;
+    s8 picked;
+    PickupRack *wcRack;
+    u32 points;
+    PickupItem *item = thing;
+    u32 i;
+    s16 ammo;
 
+    picked = 0;
+    Trigger_ItemPickedUp(car, item);
+    car->pickupId = item->def->id;
+    switch (item->def->type) {
+    case 1:
+    case 2:
+    case 3:
+    case 6:
+        rack = ThingManagerList_GetByType(&car->motionState.slaves, 8);
+        if (rack != NULL) {
+            WildCardRack_Add(rack, item->def, item->count);
+            Item_Release(item);
+            if (item->spawner != NULL) {
+                item->spawner->timer = item->spawner->respawnTime;
+            }
+            picked = 1;
+        }
+        break;
+    case 7:
+        if (ThingManagerList_GetByType(&car->motionState.slaves, 4) == NULL) {
+            rack = ThingManagerList_GetByType(&car->motionState.slaves, 8);
+            pos.x = rack->pos.x;
+            pos.y = car->vehicleIface->engine->itemHeight + (rack->pos.y + item->def->height);
+            pos.z = rack->pos.z;
+            pos.w = 1.0f;
+            ThingManagerList_Remove(&g_thingManager_DARYL.activeList, item);
+            ThingManagerList_Append(&car->motionState.slaves, item);
+            item->bone = rack->bone;
+            item->unk83 = 0xEF;
+            item->quat.w = 1.0f;
+            item->quat.x = 0.0f;
+            item->quat.y = 0.0f;
+            item->quat.z = 0.0f;
+            QuaternionToSubMatrix(&item->quat, &item->mtx);
+            item->mtx.v[3] = pos;
+            item->mtx.v[3].w = 1.0f;
+            item->velocity = g_zeroVector;
+            Grid_FreeObject(item->gridObj);
+            item->player = car->player;
+            item->gridObj = NULL;
+            picked = 1;
+            item->tileData = item->spawner;
+            rack->flags |= 0x400200;
+            item->flags |= 8;
+        }
+        break;
+    case 8:
+        if (car->vehicleIface->numPickupSlaves > item->def->value) {
+            MotionState_InitAllSlavesNow(&car->motionState, car->vehicleIface->pickupSlaves + item->def->value * 12 + 4,
+                                         item->def->value);
+        }
+        Item_Release(item);
+        if (item->spawner != NULL) {
+            item->spawner->timer = item->spawner->respawnTime;
+        }
+        picked = 1;
+        break;
+    case 9:
+        car->pickupCount++;
+        Item_Release(item);
+        if (item->spawner != NULL) {
+            item->spawner->timer = item->spawner->respawnTime;
+        }
+        picked = 1;
+        break;
+    case 10:
+        if (Player_IsHuman(car->player)) {
+            Item_Release(item);
+            if (item->spawner != NULL) {
+                item->spawner->timer = item->spawner->respawnTime;
+            }
+            picked = 1;
+        }
+        break;
+    case 11:
+        if (car->player != NULL) {
+            if (Player_IsHuman(car->player)) {
+                wcRack = ThingManagerList_GetByType(&car->motionState.slaves, 8);
+                current = wcRack->current;
+                points = item->def->value;
+                car->player->stuntScored = 1;
+                car->player->stuntPoints += points;
+                if (car->player->stuntPoints > 99999) {
+                    car->player->stuntPoints = 99999;
+                }
+                sprintf(stunt_msg_buffer, "Points +%d", points);
+                car->stuntPopup = &g_stuntLossString;
+                car->turboTime += (s32)(points * car->vehicleIface->stunt->turboPerPoint);
+                if (car->turboTime > 30000) {
+                    car->turboTime = 30000;
+                }
+                ammo = points;
+                for (i = 0; i < 12; i++) {
+                    RackSlot *slot = &wcRack->slots[i];
+
+                    if (slot->thing != NULL) {
+                        if (slot->count < (s16)slot->thing->data->max) {
+                            if (slot->anim->loop) {
+                                slot->time = slot->anim->loopTimes[0];
+                                slot->mode = 2;
+                            } else {
+                                slot->time = slot->anim->times[1];
+                            }
+                            slot->state = 1;
+                        }
+                        slot->count += ammo;
+                        if (slot->count > (s16)slot->thing->data->max) {
+                            slot->count = slot->thing->data->max;
+                        }
+                    }
+                }
+                wcRack->current = current;
+                wcRack->slots[current].scale = 1.0f;
+            }
+            Item_Release(item);
+            if (item->spawner != NULL) {
+                item->spawner->timer = item->spawner->respawnTime;
+            }
+            picked = 1;
+        }
+        break;
+    }
+    return picked;
+}
+#pragma pop
 s32 CarA_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     u32 temp_r0;
 
