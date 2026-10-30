@@ -2,6 +2,8 @@
 
 #pragma use_lmw_stmw on
 
+void TEST_AnimTraverseHeirarchyToMatricesWorld(Vector4 *quat, void *pos, void *frames, s32 skel, void *matrices, f32 time);
+
 void MotionState_Init(void *arg0, s8 reset) {
     typedef struct {
         u8 pad0[0x14];
