@@ -1190,7 +1190,7 @@ u8 GameSettings_LoadGame(void) {
     void *memcpy(void *dst, const void *src, u32 n);
     extern u8 *g_pSavedGameData;
     extern u8 *g_pGameData;
-    extern GameInfo g_gameInfo[];
+    extern GameInfo g_gameInfo[2];
     s32 slot;
     char *device;
     s32 handle;
