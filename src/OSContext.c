@@ -18,9 +18,12 @@ typedef struct OSContext {
     f64 psf[32];
 } OSContext;
 
+OSContext *__OSCurrentContext : 0x800000D4;
+OSContext *__OSFPUContext : 0x800000D8;
+
 OSContext *OSGetCurrentContext(void)
 {
-    return *(OSContext **)0x800000d4;
+    return __OSCurrentContext;
 }
 
 #pragma peephole off
@@ -39,6 +42,7 @@ BOOL OSRestoreInterrupts(BOOL level);
 void OSSetCurrentContext(OSContext *context);
 #pragma push
 #pragma use_lmw_stmw on
+#pragma peephole off
 void OSDumpContext(OSContext *context)
 {
     u32 i;
@@ -54,13 +58,13 @@ void OSDumpContext(OSContext *context)
     for (i = 0; i < 4; ++i) {
         OSReport("gqr%d = 0x%08x \t gqr%d = 0x%08x\n", i, context->gqr[i], i + 4, context->gqr[i + 4]);
     }
-    if (context->state & 1) {
+    if (context->state & 1u) {
         OSContext *currentContext;
         OSContext fpuContext;
         BOOL enabled;
 
         enabled = OSDisableInterrupts();
-        currentContext = (OSContext *)OSGetCurrentContext();
+        currentContext = OSGetCurrentContext();
         OSClearContext(&fpuContext);
         OSSetCurrentContext(&fpuContext);
         OSReport("\n\nFPRs----------\n");
