@@ -5,16 +5,6 @@
 
 extern f32 g_frictionTable[9][10];
 
-static f32 GetDampFactorSingle(u8 type, u32 n) {
-    f32 f = 1.0f;
-
-    while (n >= 10) {
-        f *= g_frictionTable[type][9];
-        n -= 10;
-    }
-    return f * g_frictionTable[type][n];
-}
-
 /* What a suspension ray hit is made of (RayHit.surface). */
 typedef struct SuspSurface {
     u8 type;                  /* 0x00 1: no skids, 2: own skid texture */
@@ -100,12 +90,13 @@ f32 GetDampFactor(u8 type, u32 n) {
             i -= 10;
         }
         return f * g_frictionTable[type][i];
+    } else {
+        while (type > 8) {
+            f *= GetDampFactor(8, n);
+            type -= 8;
+        }
+        return f * GetDampFactor(type, n);
     }
-    while (type > 8) {
-        f *= GetDampFactor(8, n);
-        type -= 8;
-    }
-    return f * GetDampFactor(type, n);
 }
 
 f32 CarA_GetImpactMultiplier(void *car, void *other, f32 scale) {
