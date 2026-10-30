@@ -38,6 +38,16 @@ s32 HostId;
 s32 DiskId;
 s32 gLinkFinished;
 
+static inline u8 GbaCalcCrc(u32 data);
+
+static inline void GbaSetKey(JoyBusParam *p, s32 chan)
+{
+    p->unk60 = (chan + 0x40) << 24;
+    p->unk60 |= ((chan % 2) ? 0xDF : 0) << 16;
+    p->unk60 |= ((chan / 2) ? 0x8F : 0) << 8;
+    p->unk60 |= GbaCalcCrc(((p->unk60 >> 16) & 0xFF) | (p->unk60 & 0xFF00));
+}
+
 static inline void GbaSetHeaderChecksum(u8 *image)
 {
     u8 sum;
@@ -442,6 +452,7 @@ void GBACloseCallback__FlP11DVDFileInfo(s32 result, void *fileInfo)
     s32 *DVDGetCurrentDiskID(void);
     u32 OSGetTick(void);
     void GBAInit(void);
+    u32 crc;
     s32 i;
 
     DVDClose(fileInfo);
@@ -463,7 +474,8 @@ void GBACloseCallback__FlP11DVDFileInfo(s32 result, void *fileInfo)
         Param[i].unk60 = (i + 0x40) << 24;
         Param[i].unk60 |= ((i % 2) ? 0xDF : 0) << 16;
         Param[i].unk60 |= ((i / 2) ? 0x8F : 0) << 8;
-        Param[i].unk60 |= GbaCalcCrc(((Param[i].unk60 >> 16) & 0xFF) | (Param[i].unk60 & 0xFF00));
+        crc = GbaCalcCrc(((Param[i].unk60 >> 16) & 0xFF) | (Param[i].unk60 & 0xFF00));
+        Param[i].unk60 |= crc;
     }
     GBAInit();
 }
