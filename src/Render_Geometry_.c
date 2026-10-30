@@ -257,9 +257,9 @@ void Render_StateSetScissor(void);
 void EnvMap(Geometry *geometry, u32 group, void *matrix, s32 mode);
 void Render_DrawOpaqueGroup(Geometry *geometry, u32 group, void *matrix);
 
-static inline void RenderOpaqueGroup(Geometry *geometry, u32 group, void *matrix) {
+static inline void RenderOpaqueGroup(Geometry *geometry, s32 group, void *matrix) {
     Render_DrawOpaqueGroup(geometry, group, matrix);
-    if ((geometry->groups[group].flags & 0x10) && g_CurrentViews == 1) {
+    if ((geometry->groups[(u32)group].flags & 0x10) && g_CurrentViews == 1) {
         EnvMap(geometry, group, matrix, 2);
     }
 }
