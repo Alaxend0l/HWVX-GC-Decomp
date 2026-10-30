@@ -37,7 +37,7 @@ typedef struct mem_pool_obj {
     FixStart fix_start[6];
 } mem_pool_obj;
 
-extern const u32 fix_pool_sizes[6];
+static const u32 fix_pool_sizes[6] = {4, 12, 20, 36, 52, 68};
 
 void *Block_subBlock(Block *ths, u32 size);
 
