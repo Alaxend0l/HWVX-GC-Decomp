@@ -8,6 +8,18 @@ typedef struct Poly {
     u32 numVerts;    /* 0x14 */
 } Poly;
 
+typedef struct OBoxZT {
+    Vector4 center;      /* 0x00 */
+    Vector4 corners[8];  /* 0x10 */
+    f32 extents[4];      /* 0x90 */
+    Vector4 *axes[3];    /* 0xA0 */
+} OBoxZT;
+
+typedef struct HitZT {
+    Vector4 pos;     /* 0x00 */
+    Vector4 normal;  /* 0x10 */
+} HitZT;
+
 f32 RayHitsPoly(Vector4 *start, Vector4 *dir, Poly *p, f32 t) {
     f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
