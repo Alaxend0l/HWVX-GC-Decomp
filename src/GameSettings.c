@@ -277,6 +277,284 @@ done:
 }
 
 #pragma use_lmw_stmw on
+void GameSettings_SetCodeVariable(s32 var, u32 arg, u32 val) {
+    void GameSetting_Init(void);
+    void GameSettings_ApplyDefaultGameData(void);
+    void GameSettings_DetermineIfOverwritingFile(void);
+    void Input_SetForceFeedbackActive(s32 pad, s32 active);
+    void Input_SetForceFeedback(s32 pad, s32 type, f32 a, f32 b);
+    extern s8 g_bGameSettingsInitialized;
+    extern s8 g_bBlockReset;
+    s32 type;
+    u8 *mcp;
+
+    mcp = GameSettings_LoadMCP();
+    if (mcp != NULL) {
+        type = mcp[1];
+    } else {
+        type = 0;
+    }
+    if (!g_bGameSettingsInitialized) {
+        GameSetting_Init();
+    }
+
+    switch (var) {
+    case 0x64:
+        switch (type) {
+        case 0:
+            if (arg < 0x21) {
+                g_HotWheelsGameData.cars[arg] = val != 0;
+            }
+            break;
+        case 1:
+            if (arg < 0x14) {
+                g_DDRescueGameData[arg] = val != 0;
+            }
+            break;
+        }
+        break;
+    case 0x65:
+        switch (type) {
+        case 0:
+            if (arg < 0x39) {
+                g_HotWheelsGameData.tracks[arg] = val != 0;
+            }
+            break;
+        case 1:
+            if (arg < 0xA) {
+                g_DDRescueGameData[0x14 + arg] = val != 0;
+            }
+            break;
+        }
+        break;
+    case 0x66:
+        switch (type) {
+        case 0:
+            if (arg < 0xC) {
+                g_HotWheelsGameData.unk93[arg] = val != 0;
+            }
+            break;
+        }
+        break;
+    case 0x68:
+        switch (type) {
+        case 0:
+            if (arg < 5) {
+                g_HotWheelsGameData.unkAA[arg] = val != 0;
+            }
+            break;
+        case 1:
+            if (arg < 5) {
+                g_DDRescueGameData[0x29 + arg] = val != 0;
+            }
+            break;
+        }
+        break;
+    case 0x69:
+        switch (type) {
+        case 0:
+            g_HotWheelsGameData.unk9F[9] = val != 0;
+            break;
+        case 1:
+            g_DDRescueGameData[0x27] = val != 0;
+            break;
+        }
+        break;
+    case 0x6A:
+        switch (type) {
+        case 0:
+            if (arg < 0xB) {
+                g_HotWheelsGameData.unk9F[arg] = val != 0;
+            }
+            break;
+        case 1:
+            if (arg < 0xB) {
+                g_DDRescueGameData[0x1E + arg] = val != 0;
+            }
+            break;
+        }
+        break;
+    case 0x6B:
+        if (arg < 0xB) {
+            g_codeVariables.unk128[arg] = val != 0;
+        }
+        break;
+    case 0x6C:
+        if (arg < 0xB) {
+            g_codeVariables.unk128[arg] = val;
+        }
+        break;
+    case 0xC8:
+        g_generalGameSettings.difficulty = val;
+        break;
+    case 0xC9:
+        if (arg >= 1 && arg <= 10) {
+            g_codeVariables.controllerState[arg - 1] = val;
+        }
+        break;
+    case 0xCA:
+        switch (type) {
+        case 0:
+            if (arg < 0x1E) {
+                g_HotWheelsGameData.unkB0[arg] = val;
+            }
+            break;
+        case 1:
+            if (arg < 0x1E) {
+                ((u16 *)&g_DDRescueGameData[0x2E])[arg] = val;
+            }
+            break;
+        }
+        break;
+    case 0xCB:
+        g_codeVariables.playerVehicle[arg - 1] = val;
+        if (arg - 1 == 0) {
+            switch (type) {
+            case 0:
+                g_HotWheelsGameData.unkEC = val;
+                break;
+            case 1:
+                *(s32 *)&g_DDRescueGameData[0x1CD4] = val;
+                break;
+            }
+        }
+        break;
+    case 0xCC:
+        g_codeVariables.playerItem[arg - 1] = val;
+        if (arg - 1 == 0) {
+            switch (type) {
+            case 0:
+                *(s32 *)g_HotWheelsGameData.padF0 = val;
+                break;
+            case 1:
+                *(s32 *)&g_DDRescueGameData[0x1CD8] = val;
+                break;
+            }
+        }
+        break;
+    case 0xCE:
+        if (arg <= 4) {
+            g_generalGameSettings.controllers[arg - 1].data[1] = val;
+            GameSettings_ApplyDefaultGameData();
+        }
+        break;
+    case 0xD1:
+        if (arg <= 4) {
+            g_generalGameSettings.controllers[arg - 1].data[0] = val;
+            GameSettings_ApplyDefaultGameData();
+            if (val) {
+                Input_SetForceFeedbackActive(arg - 1, 1);
+                Input_SetForceFeedback(arg - 1, 0, 1.0f, 5.0f);
+            }
+        }
+        break;
+    case 0xCF:
+        if (val > 100) {
+            val = 100;
+        }
+        g_generalGameSettings.audio.musicVolume = val;
+        GameSettings_ApplyDefaultGameData();
+        break;
+    case 0xD0:
+        if (val > 100) {
+            val = 100;
+        }
+        g_generalGameSettings.audio.sfxVolume = val;
+        GameSettings_ApplyDefaultGameData();
+        break;
+    case 0xD6:
+        if (val > 100) {
+            val = 100;
+        }
+        g_generalGameSettings.audio.speakerMode = val;
+        GameSettings_ApplyDefaultGameData();
+        break;
+    case 0xD5:
+        g_codeVariables.unkE0 = val;
+        break;
+    case 0x12C:
+        g_codeVariables.unkE4 = val != 0;
+        break;
+    case 0x12D:
+        g_codeVariables.unkE8 = val;
+        break;
+    case 0x12E:
+        g_codeVariables.unkEC = val * 300000;
+        break;
+    case 0x12F:
+        g_codeVariables.unkF0 = val;
+        break;
+    case 0x130:
+        g_codeVariables.unkF4 = val * 1000;
+        break;
+    case 0x131:
+        g_codeVariables.unkF8 = val;
+        break;
+    case 0x132:
+        g_codeVariables.unkFC = val != 0;
+        break;
+    case 0x133:
+        g_codeVariables.unk100 = val;
+        break;
+    case 0x134:
+        g_codeVariables.unk104 = val;
+        break;
+    case 0x136:
+        g_codeVariables.unk108 = val != 0;
+        break;
+    case 0x190:
+        g_codeVariables.unk30 = val;
+        break;
+    case 0x191:
+        if (arg <= 4) {
+            g_codeVariables.unk34[arg - 1] = val;
+        }
+        break;
+    case 0x192:
+        if (arg <= 4) {
+            g_codeVariables.unk44[arg - 1] = val;
+        }
+        break;
+    case 0x193:
+        if (arg <= 4) {
+            g_codeVariables.unk54[arg - 1] = val;
+        }
+        break;
+    case 0x194:
+        if (arg <= 4) {
+            g_codeVariables.unk64[arg - 1] = val != 0;
+        }
+        break;
+    case 0x197:
+        g_codeVariables.unk109[0] = val != 0;
+        break;
+    case 0x135:
+        g_codeVariables.unk109[7] = val != 0;
+        break;
+    case 0x198:
+        g_codeVariables.unk109[1] = val != 0;
+        break;
+    case 0x1F7:
+        g_codeVariables.device = (char *)val;
+        break;
+    case 0x1F8:
+        g_codeVariables.fileIndex = val;
+        GameSettings_DetermineIfOverwritingFile();
+        break;
+    case 0x1FE:
+        g_codeVariables.unk120[0] = val != 0;
+        g_bBlockReset = g_codeVariables.unk120[0];
+        break;
+    case 0x19B:
+        g_codeVariables.unk111 = val != 0;
+        break;
+    case 0x19C:
+        if (arg < 0x1E) {
+            g_codeVariables.unk68[arg] = val;
+        }
+        break;
+    }
+}
 u32 GameSettings_GetCodeVariable(s32 var, u32 arg) {
     typedef struct WorldEntry {
         u32 unk0;
