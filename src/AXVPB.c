@@ -66,6 +66,80 @@ s32 __AXGetNumVoices(void) {
     return __AXNumVoices;
 }
 
+void DCInvalidateRange(void *addr, u32 nBytes);
+void __AXServiceVPB(AXVPB *pvpb);
+u32 __AXGetCommandListCycles(void);
+AXVPB *__AXGetStackHead(u32 priority);
+void __AXDepopVoice(AXPB *ppb);
+void __AXPushCallbackStack(AXVPB *pvpb);
+void __AXSyncPBs(u32 lessDspCycles) {
+    u32 cycles;
+    u32 i;
+    AXVPB *pvpb;
+
+    __AXNumVoices = 0;
+    DCInvalidateRange(__AXPB, sizeof(__AXPB));
+    DCInvalidateRange(__AXITD, sizeof(__AXITD));
+    cycles = __AXGetCommandListCycles() + 0xAA10 + lessDspCycles;
+    for (i = 31; i; i--) {
+        pvpb = __AXGetStackHead(i);
+        while (pvpb) {
+            if (pvpb->depop) {
+                __AXDepopVoice(&__AXPB[pvpb->index]);
+            }
+            if (pvpb->pb.state == 1 || pvpb->updateCounter) {
+                if (pvpb->pb.srcSelect != 2) {
+                    cycles += __AXSrcCycles[pvpb->pb.ratioHi];
+                }
+                cycles += __AXMainMixCycles[pvpb->pb.mixerCtrl & 0xF] + __AXAuxMixCycles[(pvpb->pb.mixerCtrl >> 4) & 0x1F] + __AXAuxMixCycles[(pvpb->pb.mixerCtrl >> 9) & 0x1F] + 0x8C;
+                if (__AXMaxDspCycles > cycles) {
+                    __AXServiceVPB(pvpb);
+                } else {
+                    AXPB *ppb = &__AXPB[pvpb->index];
+
+                    if (ppb->state == 1) {
+                        __AXDepopVoice(&__AXPB[pvpb->index]);
+                    }
+                    ppb->unk4C = 0;
+                    ppb->unk4A = 0;
+                    ppb->unk48 = 0;
+                    ppb->unk46 = 0;
+                    ppb->unk44 = 0;
+                    ppb->state = 0;
+                    pvpb->pb.state = 0;
+                    __AXPushCallbackStack(pvpb);
+                }
+            } else {
+                __AXServiceVPB(pvpb);
+            }
+            pvpb->sync = 0;
+            pvpb->depop = 0;
+            pvpb->updateCounter = 0;
+            pvpb->updateMS = 0;
+            pvpb->updateWrite = pvpb->updateData;
+            pvpb = *(AXVPB **)pvpb;
+        }
+    }
+    __AXRecDspCycles = cycles;
+    pvpb = __AXGetStackHead(0);
+    while (pvpb) {
+        if (pvpb->depop) {
+            __AXDepopVoice(&__AXPB[pvpb->index]);
+        }
+        pvpb->depop = 0;
+        __AXPB[pvpb->index].unk4C = 0;
+        __AXPB[pvpb->index].unk4A = 0;
+        __AXPB[pvpb->index].unk48 = 0;
+        __AXPB[pvpb->index].unk46 = 0;
+        __AXPB[pvpb->index].unk44 = 0;
+        __AXPB[pvpb->index].state = 0;
+        pvpb = *(AXVPB **)pvpb;
+    }
+    DCFlushRange(__AXPB, sizeof(__AXPB));
+    DCFlushRange(__AXITD, sizeof(__AXITD));
+    DCFlushRange(__AXUpdates, sizeof(__AXUpdates));
+}
+
 void *__AXGetPBs(void) {
     return __AXPB;
 }
