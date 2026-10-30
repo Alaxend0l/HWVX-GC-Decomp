@@ -100,6 +100,34 @@ void GXSetZCompLoc(u8 before_tex) {
     gx->bpSentNot = 0;
 }
 
+void GXSetPixelFmt(s32 pix_fmt, s32 z_fmt) {
+    u32 oldPeCtrl;
+    u8 aa;
+    static u32 p2f[8] = { 0, 1, 2, 3, 4, 4, 4, 5 };
+
+    oldPeCtrl = gx->peCtrl;
+    gx->peCtrl = ((u32)gx->peCtrl & ~7) | (u32)p2f[pix_fmt];
+    gx->peCtrl = ((u32)gx->peCtrl & ~0x38) | ((u32)z_fmt << 3);
+    if (oldPeCtrl != gx->peCtrl) {
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = gx->peCtrl;
+        if (pix_fmt == 2) {
+            aa = 1;
+        } else {
+            aa = 0;
+        }
+        gx->genMode = ((u32)gx->genMode & ~0x200) | ((u32)aa << 9);
+        gx->dirtyState |= 4;
+    }
+    if (p2f[pix_fmt] == 4) {
+        gx->cmode1 = ((u32)gx->cmode1 & ~0x600) | ((u32)((pix_fmt - 4) & 3) << 9);
+        gx->cmode1 = ((u32)gx->cmode1 & ~0xFF000000) | (0x42 << 24);
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = gx->cmode1;
+    }
+    gx->bpSentNot = 0;
+}
+
 void GXSetDither(u8 dither) {
     gx->cmode0 = (gx->cmode0 & ~4) | (dither << 2);
     GXWGFifo.u8 = 0x61;
