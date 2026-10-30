@@ -1,7 +1,10 @@
 #include "common.h"
 
 typedef struct GXData {
-    u8 unk0[0x14];
+    u8 unk0[0x4];
+    u16 vNum;
+    u16 vLim;
+    u8 unk8[0x14 - 0x8];
     u32 vcdLo;
     u32 vcdHi;
     u32 vatA[8];
@@ -159,6 +162,25 @@ void GXClearVtxDesc(void) {
     gx->hasNrms = 0;
     gx->hasBiNrms = 0;
     gx->dirtyState |= 8;
+}
+
+void __GXSetVAT(void) {
+    u8 i;
+
+    for (i = 0; i < 8; i++) {
+        if (gx->dirtyVAT & (1 << i)) {
+            GXWGFifo.u8 = 8;
+            GXWGFifo.u8 = i | 0x70;
+            GXWGFifo.u32 = *(gx->vatA + i);
+            GXWGFifo.u8 = 8;
+            GXWGFifo.u8 = i | 0x80;
+            GXWGFifo.u32 = *(gx->vatB + i);
+            GXWGFifo.u8 = 8;
+            GXWGFifo.u8 = i | 0x90;
+            GXWGFifo.u32 = *(gx->vatC + i);
+        }
+    }
+    gx->dirtyVAT = 0;
 }
 
 void GXGetVtxAttrFmt(s32 fmt, s32 attr, s32 *cnt, s32 *type, u8 *frac);
