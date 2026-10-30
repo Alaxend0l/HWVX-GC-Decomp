@@ -441,6 +441,133 @@ s32 DrawString(s32 x, s32 y, char *string) {
     }
     return total;
 }
+
+#pragma push
+#pragma readonly_strings on
+void PrintDVDMessage(void) {
+    extern s64 g_resetTicks;
+    extern s32 m_reset;
+    extern s32 m_cd_drive_status;
+    extern u32 g_StopInput;
+    s32 OSGetResetButtonState(void);
+    s64 OSGetTime(void);
+    void OSResetSystem(s32 reset, u32 resetCode, s32 forceMenu);
+    void Gfx_SetOrthoMatrix(void);
+    void Render_StateCullMode(s32 mode);
+    void Render_StateBlendMode(u32 mode);
+    void GXFlush(void);
+    void GXSetTexCoordGen2(s32 dst, s32 func, s32 src, u32 mtx, u8 normalize, u32 pt);
+    void VISetBlack(s32 black);
+    void VIWaitForRetrace(void);
+    s32 DrawString(s32 x, s32 y, char *string);
+    s32 DrawChar(s32 x, s32 y, u16 code);
+
+    if (OSGetResetButtonState()) {
+        m_reset = 1;
+    }
+    switch (m_cd_drive_status) {
+    case -1:
+    case 4:
+    case 5:
+    case 6:
+    case 11:
+        break;
+    default:
+        g_StopInput = 0;
+        return;
+    }
+    g_StopInput = 1;
+    g_resetTicks = OSGetTime();
+    Gfx_SetOrthoMatrix();
+    Render_StateCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(11, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 3, 0);
+    GXSetVtxAttrFmt(0, 11, 1, 5, 0);
+    GXSetTevOp(0, 4);
+    if (m_firstFrame) {
+        GXBegin(0x80, 0, 4);
+        GXPosition3s16(0, 0, 0);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3s16(640, 0, 0);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3s16(640, 480, 0);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3s16(0, 480, 0);
+        GXColor4u8(0, 0, 0, 0xFF);
+    } else {
+        GXBegin(0x80, 0, 4);
+        GXPosition3s16(120, 140, 0);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3s16(520, 140, 0);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3s16(520, 340, 0);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3s16(120, 340, 0);
+        GXColor4u8(0, 0, 0, 0xFF);
+    }
+    GXFlush();
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(13, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 3, 0);
+    GXSetVtxAttrFmt(0, 13, 1, 3, 0);
+    Render_StateBlendMode(2);
+    GXSetNumTexGens(1);
+    GXSetTevOp(0, 3);
+    GXSetTevOrder(0, 0, 0, 4);
+    switch (m_cd_drive_status) {
+    case -1:
+        DrawString(130, 190, "  An error has occured. Turn ");
+        DrawString(130, 210, "  the power off and refer to ");
+        DrawString(130, 230, " the Nintendo GameCube    ");
+        DrawString(130, 250, "      Instruction Booklet");
+        DrawString(130, 270, "    for further instructions.");
+        DrawChar(445, 230, 0x99);
+        break;
+    case 11:
+        DrawString(130, 190, " The Game Disc could not be");
+        DrawString(130, 210, "    read. Please read the");
+        DrawString(130, 230, "   Nintendo GameCube   ");
+        DrawString(130, 250, "     Instruction Booklet");
+        DrawString(130, 270, "    for more information.");
+        DrawChar(420, 230, 0x99);
+        break;
+    case 6:
+        DrawString(130, 180, "      This is not the");
+        DrawString(130, 200, "  Hot Wheels    Velocity X");
+        DrawString(130, 220, "         Game Disc.");
+        DrawString(130, 240, "     Please insert the");
+        DrawString(130, 260, "  Hot Wheels    Velocity X");
+        DrawString(130, 280, "         Game Disc.");
+        DrawChar(300, 200, 0x99);
+        DrawChar(300, 260, 0x99);
+        break;
+    case 5:
+        DrawString(130, 200, "   The Disc Cover is open.");
+        DrawString(130, 220, "   If you want to continue");
+        DrawString(130, 240, "      the game, please");
+        DrawString(130, 260, "    close the Disc Cover.");
+        break;
+    case 4:
+        DrawString(130, 210, "      Please Insert the");
+        DrawString(130, 230, "  Hot Wheels    Velocity X");
+        DrawString(130, 250, "          Game Disc.");
+        DrawChar(300, 230, 0x99);
+        break;
+    }
+    GXSetNumChans(1);
+    GXSetTexCoordGen2(0, 1, 12, 60, 0, 125);
+    if (m_reset && OSGetResetButtonState() == 0) {
+        VISetBlack(1);
+        VIWaitForRetrace();
+        VIWaitForRetrace();
+        OSResetSystem(1, 0, 0);
+    }
+}
+#pragma pop
+
 #pragma pop
 
 #pragma pop
