@@ -172,6 +172,76 @@ static inline void SimThread_SetWeights(SimThread *t, const s32 *weights) {
     }
     t->historyIdx = 0;
 }
+
+static inline s32 SimThread_AddDelta(SimThread *t, s32 dPos, u32 dt) {
+    s32 i;
+    s32 n;
+    s32 sumP;
+    u32 sumT;
+
+    t->deltaIdx--;
+    if (t->deltaIdx < 0) {
+        t->deltaIdx = 15;
+    }
+    t->deltaPos[t->deltaIdx] = dPos;
+    t->deltaTime[t->deltaIdx] = dt;
+    i = t->deltaIdx;
+    for (n = 0, sumT = 0, sumP = 0; n < 16 && sumT < 16; n++) {
+        sumP += t->deltaPos[i];
+        sumT += t->deltaTime[i++];
+        if (i == 16) {
+            i = 0;
+        }
+    }
+    if (sumT > 16) {
+        s32 over;
+        s32 half;
+        s32 lastT;
+        s32 lastP;
+        if (--i < 0) {
+            i = 15;
+        }
+        over = sumT - 16;
+        lastT = t->deltaTime[i];
+        lastP = t->deltaPos[i];
+        half = lastT / 2;
+        if (over < 0) {
+            half = -half;
+        }
+        sumP -= (over * lastP + half) / lastT;
+    }
+    return sumP;
+}
+
+static inline u32 SimThread_Sample(SimThread *t) {
+    u32 OSGetTick(void);
+    u32 now;
+    s32 dt;
+    s32 oldPos;
+    s32 n;
+    s32 accel;
+
+    now = OSGetTick() / ((*(u32 *)0x800000F8 / 4) / 1000);
+    dt = now - t->lastTick;
+    t->lastTick = now;
+    oldPos = t->pos;
+    t->pos = ((LGDevice *)t->owner->unkF0)->curSteering;
+    t->posScaled = t->pos << 12;
+    t->history[t->historyIdx++] = SimThread_AddDelta(t, t->pos - oldPos, dt);
+    if (t->historyIdx > 9) {
+        t->historyIdx = 0;
+    }
+    accel = 0;
+    for (n = 9; n >= 0; n--) {
+        accel += t->history[t->historyIdx++] * t->weights[n];
+        if (t->historyIdx > 9) {
+            t->historyIdx = 0;
+        }
+    }
+    t->accel = accel;
+    return dt;
+}
+
 void VDevice_RecalcGammaTable(void);
 double pow(double x, double y);
 
