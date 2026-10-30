@@ -14,7 +14,7 @@ typedef struct RebootCmd {
     u8 pad2[0x30 - 0x10];
 } RebootCmd;
 
-static ApploaderHeader Header __attribute__((aligned(32)));
+ApploaderHeader Header __attribute__((aligned(32)));
 static void *SaveStart = NULL;
 static void *SaveEnd = NULL;
 extern volatile s32 Prepared_803C7260;
