@@ -88,8 +88,7 @@ static inline void ThingManager_InitFreeThing(ThingHeader *thing, void *vtable, 
     *freeList = thing;
 }
 
-static inline void ThingManager_InitFreeThing2(ThingHeader *thing, void *vtable, u32 type) {
-    thing->vtable = vtable;
+static inline void ThingManager_InitFreeThing2(ThingHeader *thing, u32 type) {
     thing->unk88 = 0;
     thing->flags |= 0x1000;
     thing->prev = NULL;
@@ -526,12 +525,25 @@ void ThingManager_DARYL_CreateMain(void) {
         ThingManagerList_Append(&g_thingManager_DARYL.freeList[p->thing.type], &p->thing);
     }
     for (i = 0; i < 192; i++) {
-        thing = &tm->eventSeqs[i].thing;
-        ThingManager_InitFreeThing(thing, g_eventSeqVTable, 1);
+        tm->eventSeqs[i].thing.vtable = g_eventSeqVTable;
+        tm->eventSeqs[i].thing.unk88 = 0;
+        tm->eventSeqs[i].thing.flags |= 0x1000;
+        tm->eventSeqs[i].thing.prev = NULL;
+        tm->eventSeqs[i].thing.next = NULL;
+        tm->eventSeqs[i].thing.type = 1;
+        ThingManagerList_Append(&g_thingManager_DARYL.freeList[tm->eventSeqs[i].thing.type], &tm->eventSeqs[i]);
     }
     for (i = 0; i < 160; i++) {
-        thing = &tm->emitters[i].thing;
-        ThingManager_InitFreeThing(thing, g_emitterVTable, 2);
+        ThingSlotD0 *p = &tm->emitters[i];
+        thing = &p->thing;
+
+        thing->vtable = g_emitterVTable;
+        thing->unk88 = 0;
+        thing->flags |= 0x1000;
+        thing->prev = NULL;
+        thing->next = NULL;
+        thing->type = 2;
+        ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
     }
     for (i = 0; i < 500; i++) {
         thing = &tm->destructibles[i].thing;
