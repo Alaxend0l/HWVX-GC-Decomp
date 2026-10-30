@@ -30,6 +30,26 @@ extern volatile u16 __DSPRegs[32] : 0xCC005000;
 extern DSPTaskInfo *__DSP_rude_task;
 extern s32 __DSP_rude_task_pending;
 
+typedef struct OSContext {
+    u32 gpr[32];
+    u32 cr;
+    u32 lr;
+    u32 ctr;
+    u32 xer;
+    f64 fpr[32];
+    u32 fpscr_pad;
+    u32 fpscr;
+    u32 srr0;
+    u32 srr1;
+    u16 mode;
+    u16 state;
+    u32 gqr[8];
+    u32 psf_pad;
+    f64 psf[32];
+} OSContext;
+
+typedef s16 __OSInterrupt;
+
 void OSClearContext(void *context);
 void OSSetCurrentContext(void *context);
 u32 DSPCheckMailFromDSP(void);
@@ -38,6 +58,139 @@ void DSPSendMailToDSP(u32 mail);
 u32 DSPCheckMailToDSP(void);
 void __DSP_exec_task(DSPTaskInfo *curr, DSPTaskInfo *next);
 void __DSP_remove_task(DSPTaskInfo *task);
+void __DSPHandler(s16 interrupt, void *context) {
+    u8 exceptionContext[0x2C8];
+    u16 tmp;
+    u32 mail;
+
+    tmp = __DSPRegs[5];
+    tmp = (u16)((tmp & ~0x28) | 0x80);
+    __DSPRegs[5] = tmp;
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(exceptionContext);
+    while (!DSPCheckMailFromDSP()) {
+    }
+    mail = DSPReadMailFromDSP();
+    if ((__DSP_curr_task->flags & 2) && mail + 0x232F0000 == 2) {
+        mail = 0xDCD10003;
+    }
+    switch (mail) {
+    case 0xDCD10000:
+        __DSP_curr_task->state = 1;
+        if (__DSP_curr_task->init_cb) {
+            __DSP_curr_task->init_cb(__DSP_curr_task);
+        }
+        break;
+    case 0xDCD10001:
+        __DSP_curr_task->state = 1;
+        if (__DSP_curr_task->res_cb) {
+            __DSP_curr_task->res_cb(__DSP_curr_task);
+        }
+        break;
+    case 0xDCD10002:
+        if (__DSP_rude_task_pending) {
+            if (__DSP_curr_task == __DSP_rude_task) {
+                DSPSendMailToDSP(0xCDD10003);
+                while (DSPCheckMailToDSP()) {
+                }
+                __DSP_rude_task = NULL;
+                __DSP_rude_task_pending = 0;
+                if (__DSP_curr_task->res_cb) {
+                    __DSP_curr_task->res_cb(__DSP_curr_task);
+                }
+            } else {
+                DSPSendMailToDSP(0xCDD10001);
+                while (DSPCheckMailToDSP()) {
+                }
+                __DSP_exec_task(__DSP_curr_task, __DSP_rude_task);
+                __DSP_curr_task->state = 2;
+                __DSP_rude_task_pending = 0;
+                __DSP_curr_task = __DSP_rude_task;
+                __DSP_rude_task = NULL;
+            }
+        } else if (__DSP_curr_task->next == NULL) {
+            if (__DSP_curr_task == __DSP_first_task) {
+                DSPSendMailToDSP(0xCDD10003);
+                while (DSPCheckMailToDSP()) {
+                }
+                if (__DSP_curr_task->res_cb) {
+                    __DSP_curr_task->res_cb(__DSP_curr_task);
+                }
+            } else {
+                DSPSendMailToDSP(0xCDD10001);
+                while (DSPCheckMailToDSP()) {
+                }
+                __DSP_exec_task(__DSP_curr_task, __DSP_first_task);
+                __DSP_curr_task->state = 2;
+                __DSP_curr_task = __DSP_first_task;
+            }
+        } else {
+            DSPSendMailToDSP(0xCDD10001);
+            while (DSPCheckMailToDSP()) {
+            }
+            __DSP_exec_task(__DSP_curr_task, __DSP_curr_task->next);
+            __DSP_curr_task->state = 2;
+            __DSP_curr_task = __DSP_curr_task->next;
+        }
+        break;
+    case 0xDCD10003:
+        if (__DSP_rude_task_pending) {
+            if (__DSP_curr_task->done_cb) {
+                __DSP_curr_task->done_cb(__DSP_curr_task);
+            }
+            DSPSendMailToDSP(0xCDD10001);
+            while (DSPCheckMailToDSP()) {
+            }
+            __DSP_exec_task(NULL, __DSP_rude_task);
+            __DSP_remove_task(__DSP_curr_task);
+            __DSP_rude_task_pending = 0;
+            __DSP_curr_task = __DSP_rude_task;
+            __DSP_rude_task = NULL;
+        } else if (__DSP_curr_task->next == NULL) {
+            if (__DSP_curr_task == __DSP_first_task) {
+                if (__DSP_curr_task->done_cb) {
+                    __DSP_curr_task->done_cb(__DSP_curr_task);
+                }
+                DSPSendMailToDSP(0xCDD10002);
+                while (DSPCheckMailToDSP()) {
+                }
+                __DSP_curr_task->state = 3;
+                __DSP_remove_task(__DSP_curr_task);
+            } else {
+                if (__DSP_curr_task->done_cb) {
+                    __DSP_curr_task->done_cb(__DSP_curr_task);
+                }
+                DSPSendMailToDSP(0xCDD10001);
+                while (DSPCheckMailToDSP()) {
+                }
+                __DSP_curr_task->state = 3;
+                __DSP_exec_task(NULL, __DSP_first_task);
+                __DSP_curr_task = __DSP_first_task;
+                __DSP_remove_task(__DSP_last_task);
+            }
+        } else {
+            if (__DSP_curr_task->done_cb) {
+                __DSP_curr_task->done_cb(__DSP_curr_task);
+            }
+            DSPSendMailToDSP(0xCDD10001);
+            while (DSPCheckMailToDSP()) {
+            }
+            __DSP_curr_task->state = 3;
+            __DSP_exec_task(NULL, __DSP_curr_task->next);
+            __DSP_curr_task = __DSP_curr_task->next;
+            __DSP_remove_task(__DSP_curr_task->prev);
+        }
+        break;
+    case 0xDCD10004:
+        if (__DSP_curr_task->req_cb) {
+            __DSP_curr_task->req_cb(__DSP_curr_task);
+        }
+        break;
+    }
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(context);
+}
+
 void __DSP_exec_task(DSPTaskInfo *curr, DSPTaskInfo *next)
 {
     if (curr != NULL)
