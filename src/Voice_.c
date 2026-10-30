@@ -219,6 +219,74 @@ VoiceHW *GetVoice_(u8 kind, u32 priority) {
     return voice;
 }
 
+#pragma push
+#pragma optimization_level 1
+void StartVoice_(VoiceHW *voice) {
+    extern u32 g_silence;
+    u8 *axv;
+    s32 level;
+
+    level = OSDisableInterrupts();
+    axv = (u8 *)voice->axv;
+    switch (voice->unk2C[0]) {
+    case 8:
+        *(u16 *)(axv + 0x1D6) = 0x100;
+        *(u16 *)(axv + 0x1A8) = 0x19;
+        break;
+    case 16:
+        *(u16 *)(axv + 0x1D6) = 0x800;
+        *(u16 *)(axv + 0x1A8) = 0xA;
+        break;
+    default:
+        *(u16 *)(axv + 0x1D6) = 0;
+        *(u16 *)(axv + 0x1A8) = 0;
+        break;
+    }
+    *(u32 *)(axv + 0x1C) |= 0x20000;
+    *(u32 *)(axv + 0x1B2) = voice->addr;
+    *(u32 *)(axv + 0x1AE) = voice->addr + (s32)voice->length - 1;
+    if (*(u32 *)voice->unk24 != 0xFFFFFFFF) {
+        *(u16 *)(axv + 0x1A6) = 1;
+        *(u32 *)(axv + 0x1AA) = voice->addr + *(u32 *)voice->unk24;
+    } else {
+        *(u16 *)(axv + 0x1A6) = 0;
+        *(u32 *)(axv + 0x1AA) = g_silence;
+        if (voice->unk2C[0] == 16) {
+            *(u32 *)(axv + 0x1AA) >>= 1;
+        }
+    }
+    *(u32 *)(axv + 0x1C) |= 0x1000;
+    *(u16 *)(axv + 0x140) = 0;
+    *(u16 *)(axv + 0x142) = 2;
+    *(u32 *)(axv + 0x1DE) = (1.0f / 48000.0f) * ((f32)voice->rate * (f32)voice->pitch);
+    *(u16 *)(axv + 0x1E2) = 0;
+    if (voice->unk54) {
+        *(u16 *)(axv + 0x1E4) = 0;
+        *(u16 *)(axv + 0x1E6) = 0;
+        *(u16 *)(axv + 0x1E8) = 0;
+        *(u16 *)(axv + 0x1EA) = 0;
+        *(u32 *)(axv + 0x1C) |= 0x40000 | 1;
+    } else {
+        *(u32 *)(axv + 0x1C) |= 0x80000 | 1;
+    }
+    if (voice->kind) {
+        *(u16 *)(axv + 0x144) = 0x203;
+    } else {
+        *(u16 *)(axv + 0x144) = 0x13;
+    }
+    *(u16 *)(axv + 0x152) = 0;
+    *(u16 *)(axv + 0x156) = 0;
+    *(u16 *)(axv + 0x15A) = 0;
+    *(u16 *)(axv + 0x15E) = 0;
+    *(u32 *)(axv + 0x1C) |= 2;
+    *(u16 *)(axv + 0x146) = 1;
+    *(u32 *)(axv + 0x1C) |= 4;
+    voice->unk54 = 0;
+    voice->state = 1;
+    OSRestoreInterrupts(level);
+}
+#pragma pop
+
 void AXFreeVoice(AXVPB *axv);
 void SetVoiceState_(VoiceHW *voice, s32 state) {
     s32 level;
