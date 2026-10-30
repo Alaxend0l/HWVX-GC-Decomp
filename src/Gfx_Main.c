@@ -99,9 +99,10 @@ void Gfx_Destroy(void) {
     Render_Destroy();
 }
 
-void Gfx_CreateView(void) {
-    M2C_UNK fn_800957D4();
-    fn_800957D4();
+s32 Gfx_CreateView(s32 view, u32 width, u32 height, u32 depth, s32 arg4, s32 arg5) {
+    s32 Render_CreateView(s32 view, u32 width, u32 height);
+
+    return Render_CreateView(view, width, height);
 }
 
 GfxWindow *GetRenderWindow(void);
