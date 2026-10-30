@@ -692,6 +692,34 @@ void *Destructible_GetOrientedCollision(Destructible *destructible) {
         BuildOConvexHullOffset(destructible->hull, info->hull, destructible->matrix, g_zeroVector);
         return destructible->hull;
     default:
-        return NULL;
+                    return NULL;
     }
 }
+
+void Thing_PreMove();
+void Thing_GetCameraOrientationInfo();
+void Thing_GetInterfaceInfo();
+void Thing_SlaveTransform();
+void Thing_GetNearestNavPoint();
+void Thing_GetInverseLocalInertiaTensor();
+void Thing_DynamicRotation();
+
+void *g_destructibleVTable[] = {
+    Destructible_Init,
+    Destructible_Release,
+    Thing_PreMove,
+    Destructible_Move,
+    Destructible_Draw,
+    Destructible_GetMass,
+    Destructible_DynamicCollideImpact,
+    Thing_GetCameraOrientationInfo,
+    Thing_GetInterfaceInfo,
+    Thing_SlaveTransform,
+    Destructible_GetSurfaceScript,
+    Thing_GetNearestNavPoint,
+    Thing_GetInverseLocalInertiaTensor,
+    Thing_DynamicRotation,
+    Destructible_CollideWithRay,
+    Destructible_GetTargetPos,
+    Destructible_GetOrientedCollision,
+};
