@@ -326,8 +326,8 @@ static void CarA_ApplyWheelLoads(void *thing) {
     CarA *car = thing;
     Vector4 *up;
     CarTrailBone *wheel;
-    u32 i;
     CarA *susp;
+    u32 i;
     s32 bone;
 
     susp = car;
