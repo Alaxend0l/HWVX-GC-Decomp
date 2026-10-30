@@ -98,8 +98,6 @@ s32 __CARDGetFileNo(CARDControl *card, const char *fileName, s32 *pfileNo) {
     return -4;
 }
 
-s32 __CARDGetControlBlock(s32 chan, void **pcard);
-s32 __CARDPutControlBlock(void *card, s32 result);
 s32 CARDClose(CARDFileInfo *fileInfo) {
     void *card;
     s32 result;
