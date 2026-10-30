@@ -324,25 +324,26 @@ void CarA_ProcessForce(CarA *car, Vector4 *pos, Vector4 *dir, f32 scale)
    bone's) animation matrix, then adds gravity to the force accumulator. */
 static void CarA_ApplyWheelLoads(void *thing) {
     CarA *car = thing;
-    u32 i;
     Vector4 *up;
     CarTrailBone *wheel;
+    CarA *susp;
+    u32 i;
     s32 bone;
 
-    for (i = 0; i < car->vehicleIface->numWheels; i++) {
+    for (i = 0, susp = car; i < car->vehicleIface->numWheels; i++, susp = (CarA *)((u8 *)susp + sizeof(CarAWheelState))) {
         wheel = &car->vehicleIface->wheels[i];
         if (wheel->parent != 0) {
             bone = wheel->bone - wheel->parent;
             up = &car->motionState.animMatrices[bone].v[1];
-            car->motionState.animMatrices[bone].v[3].x -= car->wheelStates[i].compression * up->x;
-            car->motionState.animMatrices[bone].v[3].y -= car->wheelStates[i].compression * up->y;
-            car->motionState.animMatrices[bone].v[3].z -= car->wheelStates[i].compression * up->z;
+            car->motionState.animMatrices[bone].v[3].x -= susp->wheelStates[0].compression * up->x;
+            car->motionState.animMatrices[bone].v[3].y -= susp->wheelStates[0].compression * up->y;
+            car->motionState.animMatrices[bone].v[3].z -= susp->wheelStates[0].compression * up->z;
         } else {
             up = &car->worldMatrix.v[1];
         }
-        car->motionState.animMatrices[wheel->bone].v[3].x -= car->wheelStates[i].compression * up->x;
-        car->motionState.animMatrices[wheel->bone].v[3].y -= car->wheelStates[i].compression * up->y;
-        car->motionState.animMatrices[wheel->bone].v[3].z -= car->wheelStates[i].compression * up->z;
+        car->motionState.animMatrices[wheel->bone].v[3].x -= susp->wheelStates[0].compression * up->x;
+        car->motionState.animMatrices[wheel->bone].v[3].y -= susp->wheelStates[0].compression * up->y;
+        car->motionState.animMatrices[wheel->bone].v[3].z -= susp->wheelStates[0].compression * up->z;
     }
     car->forceAccum.y += car->vehicleIface->collider->gravityScale * car->vehicleIface->collider->mass;
 }
