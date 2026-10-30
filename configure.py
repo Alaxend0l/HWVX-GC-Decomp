@@ -414,7 +414,7 @@ config.libs = [
             Object(Matching, "Music.c"),
             Object(NonMatching, "Audio.c"),
             Object(NonMatching, "allsrc.c"),
-            Object(NonMatching, "DataChunk.c"),
+            Object(Matching, "DataChunk.c"),
             Object(NonMatching, "FileManager.c"),
             Object(NonMatching, "FileManager_NGC.c"),
             Object(Matching, "Input.c"),
