@@ -18,7 +18,7 @@ static volatile s32 Breaking;
 typedef void (*DVDLowCallback)(u32 intType);
 static DVDLowCallback Callback;
 static volatile s32 WaitingCoverClose;
-static u32 WorkAroundType;
+static volatile u32 WorkAroundType;
 static u32 WorkAroundSeekLocation;
 static volatile s32 ResetOccurred;
 static s64 LastResetEnd;
@@ -210,6 +210,45 @@ void SeekTwiceBeforeRead(s32 addr, s32 length, s32 offset, s32 callback)
     NextCommandNumber = 0;
     DVDLowSeek(offsetToSeek, callback);
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 DVDLowRead(void *addr, u32 length, u32 offset, DVDLowCallback callback)
+{
+    u32 prevSector;
+    s64 diff;
+
+    __DIRegs[6] = length;
+    Curr.addr = addr;
+    Curr.length = length;
+    Curr.offset = offset;
+    if (WorkAroundType == 0) {
+        DoJustRead(addr, length, offset, callback);
+    } else if (WorkAroundType == 1) {
+        if (FirstRead) {
+            SeekTwiceBeforeRead((s32)addr, length, offset, (s32)callback);
+        } else {
+            if (!HitCache(&Curr, &Prev)) {
+                DoJustRead(addr, length, offset, callback);
+            } else {
+                prevSector = (Prev.offset + Prev.length - 1) >> 15;
+                if (prevSector == Curr.offset >> 15 || prevSector + 1 == Curr.offset >> 15) {
+                    diff = __OSGetSystemTime() - LastReadFinished;
+                    if ((s64)((__OSBusClock / 4) / 1000 * 5) < diff) {
+                        DoJustRead(addr, length, offset, callback);
+                    } else {
+                        WaitBeforeRead(addr, length, offset, callback,
+                                       (s64)((__OSBusClock / 4) / 1000 * 5) - diff + ((__OSBusClock / 4) / 125000 * 500) / 8);
+                    }
+                } else {
+                    SeekTwiceBeforeRead((s32)addr, length, offset, (s32)callback);
+                }
+            }
+        }
+    }
+    return 1;
+}
+#pragma pop
 
 s32 DVDLowSeek(s32 offset, s32 callback)
 {
