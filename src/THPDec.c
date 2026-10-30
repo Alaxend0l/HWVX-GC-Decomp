@@ -36,13 +36,125 @@ typedef struct THPFileInfo {
     u8 unk6AE[0x6BC - 0x6AE];
 } THPFileInfo;
 
-static THPFileInfo *__THPInfo;
+THPFileInfo *__THPInfo;
 static u8 *__THPHuffmanBits;
 static u8 *__THPHuffmanSizeTab;
 static u16 *__THPHuffmanCodeTab;
 static s16 *__THPMCUBuffer[6];
 static u8 *__THPWorkArea;
 static BOOL __THPInitFlag;
+
+u32 PPCMfhid2(void);
+void DCZeroRange(void *addr, u32 nBytes);
+u8 __THPReadQuantizationTable(void);
+void __THPDecompressYUV(void *tileY, void *tileU, void *tileV);
+static void __THPSetupBuffers(void);
+static void __THPRestartDefinition(void);
+s32 __THPReadFrameHeader(void);
+u8 __THPReadScaneHeader(void);
+s32 __THPReadHuffmanTableSpecification(void);
+s32 THPVideoDecode(void *file, void *tileY, void *tileU, void *tileV, void *work) {
+    u8 all_done, status;
+    u8 marker;
+
+    if (!file) {
+        goto _err_no_input;
+    }
+    if (!tileY || !tileU || !tileV) {
+        goto _err_no_output;
+    }
+    if (!work) {
+        goto _err_no_work;
+    }
+    if (!(PPCMfhid2() & 0x10000000)) {
+        goto _err_lc_not_enabled;
+    }
+    if (__THPInitFlag == FALSE) {
+        goto _err_not_initialized;
+    }
+
+    __THPWorkArea = work;
+    __THPInfo = (THPFileInfo *)(((u32)__THPWorkArea + 31) & ~31);
+    __THPWorkArea = (u8 *)((u32)__THPInfo + sizeof(THPFileInfo));
+    DCZeroRange(__THPInfo, sizeof(THPFileInfo));
+    __THPInfo->cnt = 33;
+    __THPInfo->decompressedY = 0;
+    __THPInfo->c = file;
+    all_done = FALSE;
+
+    for (;;) {
+        if ((*(__THPInfo->c)++) != 255) {
+            goto _err_bad_syntax;
+        }
+        while (*__THPInfo->c == 255) {
+            (__THPInfo->c)++;
+        }
+        marker = (*(__THPInfo->c)++);
+        if (marker <= 0xD7) {
+            if (marker == 196) {
+                status = __THPReadHuffmanTableSpecification();
+                if (status != 0) {
+                    goto _err_bad_status;
+                }
+            } else if (marker == 192) {
+                status = __THPReadFrameHeader();
+                if (status != 0) {
+                    goto _err_bad_status;
+                }
+            } else {
+                goto _err_unsupported_marker;
+            }
+        } else if (marker >= 0xD8 && marker <= 0xDF) {
+            if (marker == 221) {
+                __THPRestartDefinition();
+            } else if (marker == 219) {
+                status = __THPReadQuantizationTable();
+                if (status != 0) {
+                    goto _err_bad_status;
+                }
+            } else if (marker == 218) {
+                status = __THPReadScaneHeader();
+                if (status != 0) {
+                    goto _err_bad_status;
+                }
+                all_done = TRUE;
+            } else if (marker == 216) {
+            } else {
+                goto _err_unsupported_marker;
+            }
+        } else if (marker >= 0xE0) {
+            if ((marker >= 224 && marker <= 239) || marker == 254) {
+                __THPInfo->c += (__THPInfo->c)[0] << 8 | (__THPInfo->c)[1];
+            } else {
+                goto _err_unsupported_marker;
+            }
+        }
+        if (all_done) {
+            break;
+        }
+    }
+
+    __THPSetupBuffers();
+    __THPDecompressYUV(tileY, tileU, tileV);
+    return 0;
+
+_err_no_input:
+    return 25;
+_err_no_output:
+    return 27;
+_err_no_work:
+    return 26;
+_err_unsupported_marker:
+    return 11;
+_err_bad_syntax:
+    return 3;
+_err_bad_status:
+    return status;
+_err_lc_not_enabled:
+    return 28;
+_err_not_initialized:
+    return 29;
+}
 
 static void __THPSetupBuffers(void) {
     u8 i;
