@@ -419,7 +419,115 @@ void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed) {
         ai[0x15] = reverse;
     }
 }
-void AI_Car_WeaponAsyncHeartbeat_80008210(u8 *ai) {
+static inline void AI_Car_LeadTarget(u8 *ai) {
+    f32 PSVECSquareMag(void *v);
+    f32 PSVECSquareDistance(void *a, void *b);
+    f32 PSVECDotProduct(void *a, void *b);
+    void PSVECScale(void *src, void *dst, f32 scale);
+    void PSVECAdd(void *a, void *b, void *out);
+    void PSVECSubtract(void *a, void *b, void *out);
+    f32 Sqrt(f32 x);
+    Vector4 lead;
+    u8 *myPos;
+    u8 *thing;
+    u8 *thingPos;
+    u8 *car;
+    f32 dist;
+    f32 t;
+
+    myPos = *(u8 **)(ai + 0x2C) + 0x40;
+    thing = *(u8 **)(ai + 0x3E8) != NULL ? *(u8 **)(ai + 0x3E8) : *(u8 **)(ai + 0x3EC);
+    thingPos = thing + 0x40;
+    if (PSVECSquareMag(thing) < 1.0f) {
+        *(Vector4 *)(ai + 0x400) = *(Vector4 *)thingPos;
+    } else {
+        car = *(u8 **)(ai + 0x2C);
+        dist = PSVECSquareDistance(thingPos, myPos);
+        t = Sqrt(dist / PSVECSquareMag(car));
+        PSVECScale(thing, &lead, t);
+        PSVECAdd(&lead, thingPos, &lead);
+        PSVECScale(thing, &lead, t * Sqrt(PSVECSquareDistance(&lead, myPos) / dist));
+        PSVECAdd(&lead, thingPos, ai + 0x400);
+        if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1) {
+            PSVECSubtract(ai + 0x400, myPos, &lead);
+            PSVECScale(thing + 0x10, &lead,
+                       PSVECDotProduct(*(u8 **)(ai + 0x2C) + 0x10, &lead) >= 0.0f ? -15.0f : 15.0f);
+            PSVECAdd(ai + 0x400, &lead, ai + 0x400);
+        }
+    }
+    if (PSVECSquareDistance(myPos, ai + 0x400) > 400.0f) {
+        PSVECSubtract(ai + 0x400, myPos, ai + 0x400);
+        PSVECScale(ai + 0x400, ai + 0x400, 0.5f);
+        PSVECAdd(ai + 0x400, myPos, ai + 0x400);
+    }
+}
+
+static inline void AI_Car_SteerAlongPath(u8 *ai, u32 i) {
+    void PSVECScale(void *src, void *dst, f32 scale);
+    void PSVECAdd(void *a, void *b, void *out);
+    void PSVECSubtract(void *a, void *b, void *out);
+    f32 MagnitudeVector(void *v);
+    Vector4 a;
+    Vector4 b;
+    u8 *myPos;
+    Vector4 *p0;
+    Vector4 *p1;
+    f32 ma;
+    f32 mb;
+
+    p0 = ((Vector4 **)(ai + 0x420))[i];
+    myPos = *(u8 **)(ai + 0x2C) + 0x40;
+    if (i + 1 >= 32 || (p1 = ((Vector4 **)(ai + 0x420))[i + 1]) == NULL) {
+        PSVECSubtract(myPos, p0, ai + 0x400);
+        PSVECScale(ai + 0x400, ai + 0x400, 0.5f);
+        PSVECAdd(ai + 0x400, p0, ai + 0x400);
+    } else {
+        PSVECSubtract(myPos, p0, &a);
+        PSVECSubtract(p1, p0, &b);
+        ma = MagnitudeVector(&a);
+        mb = MagnitudeVector(&b);
+        PSVECScale(&a, &a, mb / ma);
+        PSVECScale(&b, &b, ma / mb);
+        PSVECScale(&a, &a, -1.0f);
+        PSVECAdd(&a, &b, ai + 0x400);
+        PSVECScale(ai + 0x400, ai + 0x400, -(0.5f * ma / MagnitudeVector(ai + 0x400)));
+        PSVECAdd(ai + 0x400, p0, ai + 0x400);
+    }
+}
+
+static void AI_Car_SeekPoint(u8 *ai) {
+    void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed);
+    Vector4 target;
+    f32 speed;
+    u32 i;
+
+    speed = 0.0f;
+    if (*(u8 **)(ai + 0x3E8) != NULL) {
+        AI_Car_LeadTarget(ai);
+    } else if ((i = *(u32 *)(ai + 0x4A4)) < 32 && ((Vector4 **)(ai + 0x420))[i] != NULL) {
+        AI_Car_SteerAlongPath(ai, i);
+        speed = *(f32 *)((u8 *)((Vector4 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] + 0x2C);
+    } else if (*(u8 **)(ai + 0x3EC) != NULL) {
+        AI_Car_LeadTarget(ai);
+    } else {
+        ai[0x13] = 0xFF;
+        if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1) {
+            ai[0x12] = 0xFF;
+        }
+        *(u32 *)(ai + 0x3F0) = 0;
+        return;
+    }
+    if (*(u8 **)(ai + 0x3EC) != NULL) {
+        target = *(Vector4 *)(*(u8 **)(ai + 0x3EC) + 0x40);
+    } else if (*(u32 *)(ai + 0x4A4) < 32 && ((Vector4 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] != NULL) {
+        target = *((Vector4 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)];
+    } else if (*(u8 **)(ai + 0x3E8) != NULL) {
+        target = *(Vector4 *)(*(u8 **)(ai + 0x3E8) + 0x40);
+    }
+    AI_Car_DriveToTarget(ai, &target, speed);
+}
+
+static void AI_Car_WeaponAsyncHeartbeat(u8 *ai) {
     typedef struct WeaponParams {
         u8 pad0[0x24];
         u32 minAmmo;
@@ -609,7 +717,7 @@ void AI_Car_WeaponAsyncHeartbeat_80008210(u8 *ai) {
     }
 }
 
-void AI_Car_ClearedNavPoint_800087C8(u8 *car, s8 arg1) {
+static void AI_Car_ClearedNavPoint(u8 *car, s8 arg1) {
     s32 NavHolder_GetTotalNavPoints(void);
     u8 *NavHolder_GetNavPoint(s32 index);
     s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest);
@@ -669,7 +777,6 @@ s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest) {
     void *memset(void *dst, s32 val, u32 n);
     u8 *NavHolder_FindPath(void *holder, s32 dest);
     void NavHolder_FillPointerArrayPath(u8 *point, u8 **array, u32 max);
-    void AI_Car_ClearedNavPoint_800087C8(u8 *car, s32 arg1);
     f32 LinearPointTest(void *pos, void *a, void *b);
     s32 result = 1;
     u8 *point;
@@ -680,7 +787,7 @@ s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest) {
     if (point != NULL) {
         NavHolder_FillPointerArrayPath(point, (u8 **)(car + 0x420), 0x20);
         *(s32 *)(car + 0x4A8) = dest;
-        AI_Car_ClearedNavPoint_800087C8(car, 1);
+        AI_Car_ClearedNavPoint(car, 1);
         while (*(u32 *)(car + 0x4A4) < 31) {
             u8 *a = ((u8 **)(car + 0x420))[*(u32 *)(car + 0x4A4)];
             u8 *b = ((u8 **)(car + 0x420))[*(u32 *)(car + 0x4A4) + 1];
@@ -690,7 +797,7 @@ s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest) {
             if (LinearPointTest(*(u8 **)(car + 0x2C) + 0x40, a, b) < 0.0f) {
                 break;
             }
-            AI_Car_ClearedNavPoint_800087C8(car, 0);
+            AI_Car_ClearedNavPoint(car, 0);
         }
     } else {
         result = 0;
@@ -700,7 +807,7 @@ s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest) {
 }
 
 #pragma use_lmw_stmw on
-void AI_Car_Cheat_80008A60(u8 *ai) {
+static void AI_Car_Cheat(u8 *ai) {
     typedef struct WeaponParams {
         u8 pad0[0x28];
         u32 maxAmmo;
@@ -803,7 +910,6 @@ void AI_Car_AsyncHeartbeat(u8 *ai) {
     f32 AI_AngleToTarget(u8 *ai, Vector4 *target);
     void GenerateQuaternion(Vector4 *axis, Vector4 *q, f32 angle);
     u32 GameSettings_GetCodeVariable(s32, s32);
-    void AI_Car_Cheat_80008A60(u8 *ai);
     s32 Trigger_IsTACSystemPaused(void);
     void Trigger_PauseTACSystem(s32 pause);
     u8 *car;
@@ -921,7 +1027,7 @@ void AI_Car_AsyncHeartbeat(u8 *ai) {
                 ai[0xCD] = 2;
             }
             if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1 && GameSettings_GetCodeVariable(0x198, 0) == 0) {
-                AI_Car_Cheat_80008A60(ai);
+                AI_Car_Cheat(ai);
             }
         }
     }
@@ -951,7 +1057,7 @@ void AI_Car_AsyncScanDestructibles(u8 *car) {
     }
 }
 
-s8 AI_Car_IsTargetValid_800094EC(u8 *ai, u8 *target, f32 maxDist, f32 minDist, f32 center, f32 range) {
+static s8 AI_Car_IsTargetValid(u8 *ai, u8 *target, f32 maxDist, f32 minDist, f32 center, f32 range) {
     extern u8 g_itemVTable[];
     s8 Player_IsHuman(void *player);
     f32 PSVECSquareDistance(void *a, void *b);
@@ -1181,7 +1287,6 @@ s8 AI_Car_DetermineTarget(u8 *ai, u8 *branch, u8 slot) {
     f32 PSVECSquareDistance(void *a, void *b);
     f32 AI_AngleToTarget(u8 *ai, Vector4 *target);
     s8 AI_CheckAngleInRange(f32 angle, f32 center, f32 range);
-    s8 AI_Car_IsTargetValid_800094EC(u8 *ai, u8 *target, f32 maxDist, f32 minDist, f32 center, f32 range);
     u32 ThingManager_GetActiveCars(u8 **cars, s32 max);
     u32 ThingManager_GetActiveItems(u8 **items, s32 max);
     u32 NavHolder_GetTotalNavPoints(void);
@@ -1337,7 +1442,7 @@ s8 AI_Car_DetermineTarget(u8 *ai, u8 *branch, u8 slot) {
     }
 
     if (branch == ((u8 **)(ai + 0x3D4))[slot] &&
-        AI_Car_IsTargetValid_800094EC(ai, branch, maxDist, minDist, center, range) &&
+        AI_Car_IsTargetValid(ai, branch, maxDist, minDist, center, range) &&
         (((AIBranch *)branch)->def->unk5 == 0 || ((AIBranch *)branch)->unkC != 0)) {
         type = ((AIBranch *)branch)->def->type;
         if (type == 10 || type == 14) {
@@ -1833,7 +1938,6 @@ void AI_Car_Reset(u8 *car) {
 
 void AI_Car_Init(u8 *car, u8 *params) {
     void AI_Car_AsyncHeartbeat(u8 *car);
-    void AI_Car_WeaponAsyncHeartbeat_80008210(u8 *car);
     void *memset(void *dst, s32 c, u32 n);
 
     M2C_FIELD(car, s32 *, 0xD0) = M2C_FIELD(params, s32 *, 0x0);
@@ -1842,7 +1946,7 @@ void AI_Car_Init(u8 *car, u8 *params) {
     M2C_FIELD(car, void **, 0xBC) = AI_Car_AsyncHeartbeat;
     M2C_FIELD(car, u8 *, 0xC4) = 0;
     M2C_FIELD(car, void **, 0x644) = car;
-    M2C_FIELD(car, void **, 0x648) = AI_Car_WeaponAsyncHeartbeat_80008210;
+    M2C_FIELD(car, void **, 0x648) = AI_Car_WeaponAsyncHeartbeat;
     M2C_FIELD(car, u8 *, 0x650) = 0;
     M2C_FIELD(car, void **, 0x5F8) = car;
     M2C_FIELD(car, void **, 0x5FC) = AI_Car_AsyncScanDestructibles;
@@ -1859,3 +1963,106 @@ void AI_Car_Init(u8 *car, u8 *params) {
     M2C_FIELD(car, u8 *, 0xCC) = 1;
 }
 
+void AI_Car_Heartbeat(u8 *ai) {
+    typedef struct AICarTarget {
+        u32 timer;
+        u8 unk4[8];
+        f32 unkC;
+        f32 unk10;
+    } AICarTarget;
+    typedef struct AICarTargets {
+        u8 unk0[0x4B0];
+        AICarTarget targets[16];
+    } AICarTargets;
+    extern u32 g_iDeltaTimeMS;
+    void Control_ClearControl(void *control);
+    s32 AI_Heartbeat(u8 *ai);
+    u32 AI_UpdateTimer(u32 *timer);
+    void AI_AddEvent(void *arg0);
+    f32 PSVECSquareDistance(void *a, void *b);
+    s8 cleared;
+    u8 *pos;
+    u8 *point;
+    u8 *car;
+    u16 i;
+    s16 j;
+    s8 done;
+
+    car = *(u8 **)(ai + 0x2C);
+    if (car != NULL && *(u8 **)(car + 0x8C) != g_carAVTable) {
+        return;
+    }
+    Control_ClearControl(ai);
+    if (!AI_Heartbeat(ai)) {
+        return;
+    }
+    if (*(s8 *)(ai + 0xCC) && car != NULL) {
+        AI_Car_Reset(ai);
+    }
+    if (*(s8 *)(ai + 0xCC)) {
+        return;
+    }
+    if (*(u32 *)(ai + 0xD0) != 0) {
+        AI_Car_DetermineState(ai);
+        if (*(u32 *)(ai + 0x3E4) == 0 || (*(u32 *)(ai + 0x3EC) == 0 && *(u32 *)(ai + 0x3F0) == 0)) {
+            ai[0x13] = 0xFF;
+            if ((*(u8 **)(car + 0x3BC))[0x11] == 1) {
+                ai[0x12] = 0xFF;
+            }
+            return;
+        }
+        if (*(u32 *)(ai + 0x608) != 0 && AI_UpdateTimer((u32 *)(ai + 0x608)) == 0) {
+            AI_AddEvent(ai + 0x5F8);
+        }
+        if (*(u32 *)(ai + 0x4AC) != 0) {
+            AI_UpdateTimer((u32 *)(ai + 0x4AC));
+        }
+        if (*(u32 *)(ai + 0x4A4) < 32 && ((u8 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] != NULL) {
+            pos = *(u8 **)(ai + 0x2C);
+            cleared = 1;
+            while (cleared && *(u32 *)(ai + 0x4A4) < 32 && (point = *(u8 **)(ai + 0x420 + *(u32 *)(ai + 0x4A4) * 4)) != NULL) {
+                cleared = 0;
+                if (PSVECSquareDistance(point, pos + 0x40) < *(f32 *)(point + 0x24) * *(f32 *)(point + 0x24)) {
+                    AI_Car_ClearedNavPoint(ai, 0);
+                    cleared = 1;
+                }
+            }
+        }
+        for (i = 0; i < 16 && ((AICarTargets *)ai)->targets[i].timer != 0; i++) {
+            done = 0;
+            while (!done) {
+                done = 1;
+                if (((AICarTargets *)ai)->targets[i].timer != 0) {
+                    ((AICarTargets *)ai)->targets[i].unkC += g_iDeltaTimeMS;
+                    ((AICarTargets *)ai)->targets[i].unk10 += g_iDeltaTimeMS;
+                    if (((AICarTargets *)ai)->targets[i].unkC > 500.0f && ((AICarTargets *)ai)->targets[i].unk10 > 500.0f) {
+                        for (j = i; j < 16 && ((AICarTargets *)ai)->targets[j].timer != 0; j++) {
+                            if (j == 15) {
+                                ((AICarTargets *)ai)->targets[j].timer = 0;
+                            } else {
+                                ((AICarTargets *)ai)->targets[j] = ((AICarTargets *)ai)->targets[j + 1];
+                            }
+                        }
+                        done = 0;
+                    }
+                }
+            }
+        }
+        *(u32 *)(ai + 0x5F0) = 0;
+        *(u32 *)(ai + 0x5F4) = 0;
+        if (*(u32 *)(ai + 0x5F0) != 0) {
+            *(u32 *)(ai + 0x5F4) += g_iDeltaTimeMS;
+            if (*(u32 *)(ai + 0x5F4) > 20000) {
+                *(u32 *)(ai + 0x5F4) = 0;
+                *(u32 *)(ai + 0x5F0) = 0;
+            }
+        }
+        if (!AI_Car_CheckIfStuck(ai)) {
+            AI_Car_SeekPoint(ai);
+        }
+        AI_UpdateTimer((u32 *)(ai + 0x658));
+        if (*(u32 *)(ai + 0x654) != 0 && AI_UpdateTimer((u32 *)(ai + 0x654)) == 0) {
+            AI_AddEvent(ai + 0x644);
+        }
+    }
+}

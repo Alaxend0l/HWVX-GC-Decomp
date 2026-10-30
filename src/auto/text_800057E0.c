@@ -2100,7 +2100,7 @@ void AI_Init(void) {
     fn_800957D4();
 }
 
-void AI_AsyncProcess_80006C80(void) {
+static void AI_AsyncProcess(void) {
     M2C_UNK AI_Car_AsyncProcess();
     M2C_UNK AI_Creature_AsyncProcess();
     AI_Car_AsyncProcess();
@@ -2700,7 +2700,7 @@ static inline void AI_Car_SteerAlongPath(u8 *ai, u32 i) {
 #pragma use_lmw_stmw on
 #pragma push
 #pragma use_lmw_stmw on
-void AI_Car_SeekPoint_80007C7C(u8 *ai) {
+static void AI_Car_SeekPoint(u8 *ai) {
     void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed);
     Vector4 target;
     f32 speed;
@@ -2732,7 +2732,7 @@ void AI_Car_SeekPoint_80007C7C(u8 *ai) {
     AI_Car_DriveToTarget(ai, &target, speed);
 }
 
-void AI_Car_WeaponAsyncHeartbeat_80008210(u8 *ai) {
+static void AI_Car_WeaponAsyncHeartbeat(u8 *ai) {
     typedef struct WeaponParams {
         u8 pad0[0x24];
         u32 minAmmo;
@@ -2923,7 +2923,7 @@ void AI_Car_WeaponAsyncHeartbeat_80008210(u8 *ai) {
 }
 
 #pragma pop
-void AI_Car_ClearedNavPoint_800087C8(u8 *car, s8 arg1) {
+static void AI_Car_ClearedNavPoint(u8 *car, s8 arg1) {
     s32 NavHolder_GetTotalNavPoints(void);
     u8 *NavHolder_GetNavPoint(s32 index);
     s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest);
@@ -2983,7 +2983,6 @@ s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest) {
     void *memset(void *dst, s32 val, u32 n);
     u8 *NavHolder_FindPath(void *holder, s32 dest);
     void NavHolder_FillPointerArrayPath(u8 *point, u8 **array, u32 max);
-    void AI_Car_ClearedNavPoint_800087C8(u8 *car, s32 arg1);
     f32 LinearPointTest(void *pos, void *a, void *b);
     s32 result = 1;
     u8 *point;
@@ -2994,7 +2993,7 @@ s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest) {
     if (point != NULL) {
         NavHolder_FillPointerArrayPath(point, (u8 **)(car + 0x420), 0x20);
         *(s32 *)(car + 0x4A8) = dest;
-        AI_Car_ClearedNavPoint_800087C8(car, 1);
+        AI_Car_ClearedNavPoint(car, 1);
         while (*(u32 *)(car + 0x4A4) < 31) {
             u8 *a = ((u8 **)(car + 0x420))[*(u32 *)(car + 0x4A4)];
             u8 *b = ((u8 **)(car + 0x420))[*(u32 *)(car + 0x4A4) + 1];
@@ -3004,7 +3003,7 @@ s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest) {
             if (LinearPointTest(*(u8 **)(car + 0x2C) + 0x40, a, b) < 0.0f) {
                 break;
             }
-            AI_Car_ClearedNavPoint_800087C8(car, 0);
+            AI_Car_ClearedNavPoint(car, 0);
         }
     } else {
         result = 0;
@@ -3015,7 +3014,7 @@ s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest) {
 
 #pragma push
 #pragma use_lmw_stmw on
-void AI_Car_Cheat_80008A60(u8 *ai) {
+static void AI_Car_Cheat(u8 *ai) {
     extern u8 g_cameraManager[];
     u32 GameSettings_GetCodeVariable(s32, s32);
     f32 PSVECSquareDistance(void *a, void *b);
@@ -3100,7 +3099,6 @@ void AI_Car_AsyncHeartbeat(u8 *ai) {
     f32 AI_AngleToTarget(u8 *ai, Vector4 *target);
     void GenerateQuaternion(Vector4 *axis, Vector4 *q, f32 angle);
     u32 GameSettings_GetCodeVariable(s32, s32);
-    void AI_Car_Cheat_80008A60(u8 *ai);
     s32 Trigger_IsTACSystemPaused(void);
     void Trigger_PauseTACSystem(s32 pause);
     Vector4 out;
@@ -3223,7 +3221,7 @@ void AI_Car_AsyncHeartbeat(u8 *ai) {
                 ai[0xCD] = 2;
             }
             if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1 && GameSettings_GetCodeVariable(0x198, 0) == 0) {
-                AI_Car_Cheat_80008A60(ai);
+                AI_Car_Cheat(ai);
             }
         }
     }
@@ -3357,7 +3355,7 @@ static inline s8 AI_Car_CanTarget(u8 *ai, u8 *def) {
     return ok;
 }
 
-s8 AI_Car_IsTargetValid_800094EC(u8 *ai, u8 *target, f32 maxDist, f32 minDist, f32 center, f32 range) {
+static s8 AI_Car_IsTargetValid(u8 *ai, u8 *target, f32 maxDist, f32 minDist, f32 center, f32 range) {
     extern u8 g_itemVTable[];
     s8 Player_IsHuman(void *player);
     f32 PSVECSquareDistance(void *a, void *b);
@@ -3763,7 +3761,6 @@ void AI_Car_Reset(u8 *car) {
 #pragma dont_inline on
 void AI_Car_Init(u8 *car, u8 *params) {
     void AI_Car_AsyncHeartbeat(u8 *car);
-    void AI_Car_WeaponAsyncHeartbeat_80008210(u8 *car);
     void *memset(void *dst, s32 c, u32 n);
 
     M2C_FIELD(car, s32 *, 0xD0) = M2C_FIELD(params, s32 *, 0x0);
@@ -3772,7 +3769,7 @@ void AI_Car_Init(u8 *car, u8 *params) {
     M2C_FIELD(car, void **, 0xBC) = AI_Car_AsyncHeartbeat;
     M2C_FIELD(car, u8 *, 0xC4) = 0;
     M2C_FIELD(car, void **, 0x644) = car;
-    M2C_FIELD(car, void **, 0x648) = AI_Car_WeaponAsyncHeartbeat_80008210;
+    M2C_FIELD(car, void **, 0x648) = AI_Car_WeaponAsyncHeartbeat;
     M2C_FIELD(car, u8 *, 0x650) = 0;
     M2C_FIELD(car, void **, 0x5F8) = car;
     M2C_FIELD(car, void **, 0x5FC) = AI_Car_AsyncScanDestructibles;
@@ -3808,9 +3805,7 @@ void AI_Car_Heartbeat(u8 *ai) {
     u32 AI_UpdateTimer(u32 *timer);
     void AI_AddEvent(void *arg0);
     f32 PSVECSquareDistance(void *a, void *b);
-    void AI_Car_ClearedNavPoint_800087C8(u8 *car, s8 arg1);
     s8 AI_Car_CheckIfStuck(u8 *ai);
-    void AI_Car_SeekPoint_80007C7C(u8 *ai);
     s8 cleared;
     u8 *pos;
     u8 *point;
@@ -3854,7 +3849,7 @@ void AI_Car_Heartbeat(u8 *ai) {
             while (cleared && *(u32 *)(ai + 0x4A4) < 32 && (point = *(u8 **)(ai + 0x420 + *(u32 *)(ai + 0x4A4) * 4)) != NULL) {
                 cleared = 0;
                 if (PSVECSquareDistance(point, pos + 0x40) < *(f32 *)(point + 0x24) * *(f32 *)(point + 0x24)) {
-                    AI_Car_ClearedNavPoint_800087C8(ai, 0);
+                    AI_Car_ClearedNavPoint(ai, 0);
                     cleared = 1;
                 }
             }
@@ -3889,7 +3884,7 @@ void AI_Car_Heartbeat(u8 *ai) {
             }
         }
         if (!AI_Car_CheckIfStuck(ai)) {
-            AI_Car_SeekPoint_80007C7C(ai);
+            AI_Car_SeekPoint(ai);
         }
         AI_UpdateTimer((u32 *)(ai + 0x658));
         if (*(u32 *)(ai + 0x654) != 0 && AI_UpdateTimer((u32 *)(ai + 0x654)) == 0) {
