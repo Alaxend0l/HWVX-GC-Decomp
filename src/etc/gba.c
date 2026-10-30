@@ -45,28 +45,44 @@ static inline u8 GbaCalcCrc(u32 data)
     s32 i;
 
     crc = 0;
-    for (i = 0; i < 2; i++)
+    for (bit = 0x80; bit != 0; bit >>= 1)
     {
-        for (bit = 0x80; bit != 0; bit >>= 1)
+        crc <<= 1;
+        if (data & bit)
         {
-            crc <<= 1;
-            if (data & bit)
+            if (crc & 0x100)
             {
-                if (crc & 0x100)
-                {
-                    crc ^= 0xCC;
-                }
-                else
-                {
-                    crc += 1;
-                }
+                crc ^= 0xCC;
             }
-            else if (crc & 0x100)
+            else
             {
-                crc ^= 0xCD;
+                crc += 1;
             }
         }
-        data >>= 8;
+        else if (crc & 0x100)
+        {
+            crc ^= 0xCD;
+        }
+    }
+    data >>= 8;
+    for (bit = 0x80; bit != 0; bit >>= 1)
+    {
+        crc <<= 1;
+        if (data & bit)
+        {
+            if (crc & 0x100)
+            {
+                crc ^= 0xCC;
+            }
+            else
+            {
+                crc += 1;
+            }
+        }
+        else if (crc & 0x100)
+        {
+            crc ^= 0xCD;
+        }
     }
     for (i = 0; i < 8; i++)
     {
