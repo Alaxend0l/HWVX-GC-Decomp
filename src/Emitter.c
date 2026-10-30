@@ -60,23 +60,6 @@ typedef struct Emitter {
 void Thing_Release(s32 thing);
 u32 Emitter_InCameraRange(Emitter *emitter, f32 range);
 
-static inline u32 Emitter_GetDeltaTime(Emitter *emitter)
-{
-    extern f32 g_fDeltaTimeMS;
-    f32 MagnitudeVector(void *v);
-    u32 dt;
-
-    if (emitter->fx->speedScale > 0.0f) {
-        dt = g_fDeltaTimeMS * (emitter->fx->speedScale * MagnitudeVector(emitter) + 1.0f);
-        if (dt > 1000) {
-            dt = 1000;
-        }
-    } else {
-        dt = g_fDeltaTimeMS;
-    }
-    return dt;
-}
-
 u32 Gfx_GetCameraPositions(Vector4 *positions);
 f32 PSVECSquareDistance(f32 *a, f32 *b);
 extern u8 g_CurrentViews;
