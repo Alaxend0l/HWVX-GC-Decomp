@@ -470,6 +470,34 @@ void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
                     next_sub_block->prev_->next_ = next_sub_block->next_;
     }
 }
+
+void Block_link(Block *ths, SubBlock *sb) {
+    SubBlock **st;
+    u32 this_size;
+
+    this_size = sb->size_ & 0xFFFFFFF8;
+    sb->size_ &= ~2;
+    *(u32 *)((u8 *)sb + this_size) &= ~4;
+    *(u32 *)((u8 *)sb + this_size - sizeof(u32)) = this_size;
+    st = (SubBlock **)((u8 *)ths + (ths->size_ & 0xFFFFFFF8) - sizeof(SubBlock *));
+    if (*st != NULL) {
+        sb->prev_ = (*st)->prev_;
+        sb->prev_->next_ = sb;
+        sb->next_ = *st;
+        (*st)->prev_ = sb;
+        *st = sb;
+        *st = SubBlock_merge_prev(*st, st);
+        SubBlock_merge_next(*st, st);
+    } else {
+        *st = sb;
+        sb->prev_ = sb;
+        sb->next_ = sb;
+    }
+    if (ths->max_size_ < ((*st)->size_ & 0xFFFFFFF8)) {
+        ths->max_size_ = (*st)->size_ & 0xFFFFFFF8;
+    }
+}
+
 #pragma pop
 
 
