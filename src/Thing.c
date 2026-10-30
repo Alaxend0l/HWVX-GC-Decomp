@@ -44,7 +44,9 @@ static inline s8 Thing_ProcessItemPickup(u8 *thing, u8 *item) {
             *(s32 *)((u8 *)motion + 0x18) = *(s32 *)((u8 *)motion + 0x14);
         }
         return 1;
-    default:
+    case 0:
+    case 1:
+    case 2:
         break;
     }
     return 0;
