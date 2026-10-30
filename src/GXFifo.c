@@ -30,13 +30,13 @@ typedef struct GXData {
 extern GXData *gx;
 extern volatile u16 *__cpReg;
 extern volatile u32 *__piReg;
-extern void *CPUFifo;
-extern void *GPFifo;
-extern u8 CPGPLinked;
-extern void *__GXCurrentThread;
-extern s32 GXOverflowSuspendInProgress;
-extern u32 __GXOverflowCount;
-extern void (*BreakPointCB)(void);
+void *CPUFifo;
+void *GPFifo;
+void *__GXCurrentThread;
+u8 CPGPLinked;
+s32 GXOverflowSuspendInProgress;
+void (*BreakPointCB)(void);
+u32 __GXOverflowCount;
 
 typedef struct OSContext {
     u8 pad[0x2C8];
