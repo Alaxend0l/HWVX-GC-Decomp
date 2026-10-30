@@ -91,15 +91,15 @@ static u32 entryToPath(u32 entry, char *path, u32 maxlen);
 #pragma scheduling on
 #pragma peephole on
 BOOL DVDGetCurrentDir(char *path, u32 maxlen) {
+    BOOL result;
     u32 loc;
     u32 entry;
-    BOOL result;
 
     entry = currentDirectory;
     loc = entryToPath(entry, path, maxlen);
     result = FALSE;
     if (loc == maxlen) {
-        path[maxlen - 1] = '\0';
+        path[maxlen - 1] = result;
     } else {
         if (((FstStart[entry * 3] & 0xff000000) == 0) ? FALSE : TRUE) {
             if (loc == maxlen - 1) {
@@ -144,6 +144,56 @@ static void cbForReadAsync(s32 result, DVDCommandBlock *block) {
         (fileInfo->callback)(result, fileInfo);
     }
 }
+
+void cbForReadSync(void);
+s32 OSDisableInterrupts(void);
+s32 OSRestoreInterrupts(s32 level);
+void OSSleepThread(void *queue);
+#pragma push
+#pragma use_lmw_stmw on
+#pragma scheduling on
+#pragma peephole on
+s32 DVDReadPrio(DVDFileInfo *fileInfo, void *addr, s32 length, s32 offset, s32 prio) {
+    extern u32 __DVDThreadQueue[2];
+    BOOL result;
+    DVDCommandBlock *block;
+    s32 state;
+    BOOL enabled;
+    s32 retVal;
+
+    if (!((0 <= offset) && (offset < fileInfo->length))) {
+        OSPanic(__FILE__, 0x329, "DVDRead(): specified area is out of the file  ");
+    }
+    if (!((0 <= offset + length) && (offset + length < fileInfo->length + 32))) {
+        OSPanic(__FILE__, 0x32F, "DVDRead(): specified area is out of the file  ");
+    }
+    block = &fileInfo->cb;
+    result = DVDReadAbsAsyncPrio(block, addr, length, (s32)(fileInfo->startAddr + offset), (DVDCBCallback)cbForReadSync, prio);
+    if (result == FALSE) {
+        return -1;
+    }
+    enabled = OSDisableInterrupts();
+    while (1) {
+        state = ((volatile DVDCommandBlock *)block)->state;
+        if (state == 0) {
+            retVal = (s32)block->transferredSize;
+            break;
+        }
+        if (state == -1) {
+            retVal = -1;
+            break;
+        }
+        if (state == 10) {
+            retVal = -3;
+            break;
+        }
+        OSSleepThread(__DVDThreadQueue);
+    }
+    OSRestoreInterrupts(enabled);
+    return retVal;
+}
+#pragma pop
+
 #pragma pop
 
 #pragma pop
