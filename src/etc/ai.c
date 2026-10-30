@@ -247,3 +247,70 @@ void __AIDHandler(s16 interrupt, void *context) {
     OSSetCurrentContext(context);
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+#pragma peephole off
+static void __AI_SRC_INIT(void) {
+    s64 OSGetTime(void);
+    extern s64 bound_32KHz;
+    extern s64 bound_48KHz;
+    extern s64 min_wait;
+    extern s64 max_wait;
+    extern s64 buffer;
+    s64 rise32 = 0;
+    s64 rise48 = 0;
+    s64 diff = 0;
+    s64 t1 = 0;
+    s64 temp = 0;
+    u32 temp0 = 0;
+    u32 temp1 = 0;
+    u32 done = 0;
+    u32 walking = 0;
+    u32 initCnt = 0;
+
+    walking = 0;
+    initCnt = 0;
+    temp = 0;
+
+    while (!done) {
+        __AIRegs[0] = (__AIRegs[0] & ~0x20) | 0x20;
+        __AIRegs[0] &= ~2;
+        __AIRegs[0] = (__AIRegs[0] & ~1) | 1;
+
+        temp0 = __AIRegs[2];
+        while (temp0 == __AIRegs[2]) {
+        }
+        rise32 = OSGetTime();
+
+        __AIRegs[0] = (__AIRegs[0] & ~2) | 2;
+        __AIRegs[0] = (__AIRegs[0] & ~1) | 1;
+
+        temp1 = __AIRegs[2];
+        while (temp1 == __AIRegs[2]) {
+        }
+        rise48 = OSGetTime();
+
+        diff = rise48 - rise32;
+        __AIRegs[0] &= ~2;
+        __AIRegs[0] &= ~1;
+
+        if (diff < (bound_32KHz - buffer)) {
+            temp = min_wait;
+            done = 1;
+            ++initCnt;
+        } else if (diff >= (bound_32KHz + buffer) && diff < (bound_48KHz - buffer)) {
+            temp = max_wait;
+            done = 1;
+            ++initCnt;
+        } else {
+            done = 0;
+            walking = 1;
+            ++initCnt;
+        }
+    }
+
+    while ((rise48 + temp) > OSGetTime()) {
+    }
+}
+#pragma pop
+
