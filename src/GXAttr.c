@@ -374,6 +374,126 @@ void GXInvalidateVtxCache(void) {
     *(volatile u8 *)0xCC008000 = 0x48;
 }
 
+void GXSetTexCoordGen2(u32 dst_coord, s32 func, s32 src_param, u32 mtx, u8 normalize, u32 pt_texmtx) {
+    void __GXSetMatrixIndex(u32 attr);
+    u32 reg = 0;
+    u32 row;
+    u32 form;
+    u32 mtxIdAttr;
+
+    form = 0;
+    row = 5;
+    switch (src_param) {
+    case 0: row = 0; form = 1; break;
+    case 1: row = 1; form = 1; break;
+    case 2: row = 3; form = 1; break;
+    case 3: row = 4; form = 1; break;
+    case 19: row = 2; break;
+    case 20: row = 2; break;
+    case 4: row = 5; break;
+    case 5: row = 6; break;
+    case 6: row = 7; break;
+    case 7: row = 8; break;
+    case 8: row = 9; break;
+    case 9: row = 10; break;
+    case 10: row = 11; break;
+    case 11: row = 12; break;
+    case 12:
+    case 13:
+    case 14:
+    case 15:
+    case 16:
+    case 17:
+    case 18:
+        break;
+    default:
+        break;
+    }
+
+    switch (func) {
+    case 1:
+        reg = ((u32)reg & ~0x2) | ((u32)0 << 1);
+        reg = ((u32)reg & ~0x4) | ((u32)form << 2);
+        reg = ((u32)reg & ~0x70) | ((u32)0 << 4);
+        reg = ((u32)reg & ~0xF80) | ((u32)row << 7);
+        break;
+    case 0:
+        reg = ((u32)reg & ~0x2) | ((u32)1 << 1);
+        reg = ((u32)reg & ~0x4) | ((u32)form << 2);
+        reg = ((u32)reg & ~0x70) | ((u32)0 << 4);
+        reg = ((u32)reg & ~0xF80) | ((u32)row << 7);
+        break;
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+        reg = ((u32)reg & ~0x2) | ((u32)0 << 1);
+        reg = ((u32)reg & ~0x4) | ((u32)form << 2);
+        reg = ((u32)reg & ~0x70) | ((u32)1 << 4);
+        reg = ((u32)reg & ~0xF80) | ((u32)row << 7);
+        reg = ((u32)reg & ~0x7000) | ((u32)(src_param - 12) << 12);
+        reg = ((u32)reg & ~0x38000) | ((u32)(func - 2) << 15);
+        break;
+    case 10:
+        reg = ((u32)reg & ~0x2) | ((u32)0 << 1);
+        reg = ((u32)reg & ~0x4) | ((u32)form << 2);
+        if (src_param == 19) {
+            reg = ((u32)reg & ~0x70) | ((u32)2 << 4);
+        } else {
+            reg = ((u32)reg & ~0x70) | ((u32)3 << 4);
+        }
+        reg = ((u32)reg & ~0xF80) | ((u32)2 << 7);
+        break;
+    default:
+        break;
+    }
+
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = dst_coord + 0x1040;
+    GXWGFifo.u32 = reg;
+
+    reg = 0;
+    reg = ((u32)reg & ~0x3F) | ((u32)(pt_texmtx - 64));
+    reg = ((u32)reg & ~0x100) | ((u32)normalize << 8);
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = dst_coord + 0x1050;
+    GXWGFifo.u32 = reg;
+
+    switch (dst_coord) {
+    case 0:
+        gx->matIdxA = ((u32)gx->matIdxA & ~0xFC0) | ((u32)mtx << 6);
+        break;
+    case 1:
+        gx->matIdxA = ((u32)gx->matIdxA & ~0x3F000) | ((u32)mtx << 12);
+        break;
+    case 2:
+        gx->matIdxA = ((u32)gx->matIdxA & ~0xFC0000) | ((u32)mtx << 18);
+        break;
+    case 3:
+        gx->matIdxA = ((u32)gx->matIdxA & ~0x3F000000) | ((u32)mtx << 24);
+        break;
+    case 4:
+        gx->matIdxB = ((u32)gx->matIdxB & ~0x3F) | (u32)mtx;
+        break;
+    case 5:
+        gx->matIdxB = ((u32)gx->matIdxB & ~0xFC0) | ((u32)mtx << 6);
+        break;
+    case 6:
+        gx->matIdxB = ((u32)gx->matIdxB & ~0x3F000) | ((u32)mtx << 12);
+        break;
+    default:
+        gx->matIdxB = ((u32)gx->matIdxB & ~0xFC0000) | ((u32)mtx << 18);
+        break;
+    }
+
+    mtxIdAttr = dst_coord + 1;
+    __GXSetMatrixIndex(mtxIdAttr);
+}
+
 void GXSetNumTexGens(u8 nTexGens) {
     gx->genMode = ((u32)gx->genMode & ~0xF) | (u32)nTexGens;
     GXWGFifo.u8 = 0x10;
