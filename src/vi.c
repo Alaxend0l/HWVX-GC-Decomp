@@ -164,17 +164,17 @@ static inline BOOL VISetRegs(void) {
     return FALSE;
 }
 
-static void __VIRetraceHandler(s16 interrupt, void *context) {
+static void __VIRetraceHandler(s16 interrupt, OSContext *context) {
     extern u32 retraceCount;
     extern volatile u32 flushFlag;
     extern void (*PreCB)(u32 retraceCount);
     extern void (*PostCB)(u32 retraceCount);
     extern u8 retraceQueue[8];
-    void OSClearContext(void *context);
-    void OSSetCurrentContext(void *context);
+    void OSClearContext(OSContext *context);
+    void OSSetCurrentContext(OSContext *context);
     void OSWakeupThread(void *queue);
     void SIRefreshSamplingRate(void);
-    u8 exceptionContext[0x2C8];
+    OSContext exceptionContext;
     u16 reg;
     u32 inter = 0;
 
@@ -203,8 +203,8 @@ static void __VIRetraceHandler(s16 interrupt, void *context) {
         return;
     }
     retraceCount++;
-    OSClearContext(exceptionContext);
-    OSSetCurrentContext(exceptionContext);
+    OSClearContext(&exceptionContext);
+    OSSetCurrentContext(&exceptionContext);
     if (PreCB) {
         (*PreCB)(retraceCount);
     }
@@ -215,11 +215,11 @@ static void __VIRetraceHandler(s16 interrupt, void *context) {
         }
     }
     if (PostCB) {
-        OSClearContext(exceptionContext);
+        OSClearContext(&exceptionContext);
         (*PostCB)(retraceCount);
     }
     OSWakeupThread(retraceQueue);
-    OSClearContext(exceptionContext);
+    OSClearContext(&exceptionContext);
     OSSetCurrentContext(context);
 }
 
