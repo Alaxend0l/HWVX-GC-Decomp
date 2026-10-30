@@ -78,6 +78,148 @@ typedef struct InterfaceState {
     u8 pad162[0x170 - 0x162];
 } InterfaceState;
 
+/* Interface definition data and live interface, as InterfaceManager_MoveInterface sees them. */
+typedef struct IMCondValue {
+    s8 isVar;
+    u8 pad1;
+    u16 value;
+} IMCondValue;
+
+typedef struct IMCodeVar {
+    u32 id;
+    IMCondValue *val;
+} IMCodeVar;
+
+typedef struct IMVariable {
+    u8 type;
+    u8 update;
+    u8 pad2[2];
+    s32 min;
+    s32 max;
+    s32 offset;
+    IMCodeVar *data;
+    u8 pad14[0x34 - 0x14];
+} IMVariable;
+
+typedef struct IMVariableList {
+    u32 count;
+    IMVariable *vars;
+} IMVariableList;
+
+typedef struct IMEventList {
+    u32 count;
+    u8 *list;
+} IMEventList;
+
+typedef struct IMMusicInfo {
+    char *name;
+    u32 id;
+} IMMusicInfo;
+
+typedef struct IMHeader {
+    u8 pad0[0x14];
+    IMEventList events;
+    IMVariableList *vars;
+    u8 pad20[0x2C - 0x20];
+    s8 *sound;
+    IMMusicInfo *music;
+} IMHeader;
+
+typedef struct IMStep {
+    u32 var;
+    s32 val[4];
+    u8 set[4];
+    u8 pad18[0x28 - 0x18];
+} IMStep;
+
+typedef struct IMAnimEvent {
+    u8 pad0[4];
+    u32 delay;
+    u8 pad8[0xC - 0x8];
+} IMAnimEvent;
+
+typedef struct IMObjectData {
+    u8 id;
+    u8 next[4];
+    u8 pad5[0x8 - 0x5];
+    u32 numSteps;
+    IMStep *steps;
+    u32 numEvents;
+    IMAnimEvent *events;
+} IMObjectData;
+
+typedef struct IMObject {
+    u8 pad0[0x8];
+    u8 active;
+    u8 pad9[0x44 - 0x9];
+    IMObjectData *data;
+} IMObject;
+
+typedef struct IMSlot {
+    u8 pad0[0x240];
+    u8 hidden;
+    u8 pad241[0x247 - 0x241];
+    u8 animDone;
+    u8 pad248[0x25C - 0x248];
+    IMObject *object;
+    u8 pad260[0x274 - 0x260];
+    u32 timer;
+    u8 pad278[0x300 - 0x278];
+} IMSlot;
+
+typedef struct IMInterface {
+    u32 count;
+    u32 state;
+    u8 *owner;
+    IMSlot *selected;
+    u32 timer;
+    s32 seq;
+    f32 delay;
+    u32 event;
+    IMHeader *header;
+    IMHeader *next;
+    IMHeader *history[3];
+    u8 pad34[0x70 - 0x34];
+    u8 historyIds[0xC];
+    u8 flags;
+    u8 index;
+    u8 pad7E;
+    u8 isChild;
+    u8 historyCount;
+    u8 goBack;
+    u8 pad82[0x84 - 0x82];
+    u8 hasInput;
+    u8 pad85[0x88 - 0x85];
+    IMSlot *slots;
+    s32 input;
+    void (*callback)(InterfaceEventMsg *msg);
+    void (*infoCallback)(u8 *info);
+    s32 vars[30];
+    u32 numVars;
+    u8 pad114[0x116 - 0x114];
+    InterfaceDirState dir[4][4];
+    u8 pad156[0x160 - 0x156];
+    u8 unk160;
+    s8 unk161;
+    u8 pad162[0x164 - 0x162];
+    f32 unk164;
+    s8 locked;
+    u8 pad169[0x170 - 0x169];
+} IMInterface;
+
+typedef struct IMWorldVar {
+    u8 pad0[2];
+    u8 id;
+    u8 pad3;
+    f32 value;
+} IMWorldVar;
+
+typedef struct IMWorld {
+    u8 pad0[0x48];
+    u32 numVars;
+    IMWorldVar **vars;
+} IMWorld;
+
 
 void InterfaceManager_Init(void) {
     extern u8 g_interface[][0x170];
@@ -1114,7 +1256,7 @@ void InterfaceManager_MoveInterface(u8 *ifacePtr, f32 dt) {
     typedef struct {
         u32 var;
         s32 val[4];
-        s8 set[4];
+        u8 set[4];
         u8 pad18[0x28 - 0x18];
     } Step;
     typedef struct {
@@ -1150,7 +1292,7 @@ void InterfaceManager_MoveInterface(u8 *ifacePtr, f32 dt) {
     } Slot;
     typedef struct {
         u32 count;
-        s32 state;
+        u32 state;
         u8 *owner;
         Slot *selected;
         u32 timer;
@@ -1208,7 +1350,7 @@ void InterfaceManager_MoveInterface(u8 *ifacePtr, f32 dt) {
     void InterfaceManager_MoveObject(Interface *iface, Slot *obj, u8 *data, f32 dt);
     void InterfaceManager_CheckConditions(Interface *iface, Slot *obj);
     void InterfaceManager_SetObjectReactive(Interface *iface, u32 onId, u32 offId);
-    s32 InterfaceManager_ProcessInput(Interface *iface, Slot *obj, void *events);
+    u32 InterfaceManager_ProcessInput(Interface *iface, Slot *obj, void *events);
     s32 InterfaceManager_Create(Header *header, u8 *owner, void (*callback)(InterfaceEventMsg *msg));
     u32 InterfaceManager_KeyPress(InterfaceKeyState *im, s32 pad, u8 key);
     u32 GameSettings_GetCodeVariable(s32, s32);
@@ -1222,6 +1364,7 @@ void InterfaceManager_MoveInterface(u8 *ifacePtr, f32 dt) {
     u32 ms;
     u32 i;
     u32 j;
+    u32 m;
     Slot *sel;
     Slot *best;
     Slot *newSel;
@@ -1231,9 +1374,9 @@ void InterfaceManager_MoveInterface(u8 *ifacePtr, f32 dt) {
     Step *step;
     u32 id;
     u32 bestId;
+    u16 target;
     u16 oldId;
     u16 dir;
-    u16 target;
     u16 origTarget;
     s8 changed;
     s8 up;
@@ -1253,7 +1396,7 @@ void InterfaceManager_MoveInterface(u8 *ifacePtr, f32 dt) {
         iface->unk160 = 0;
         iface->unk161 = 0;
     }
-    if (0.0f != iface->delay) {
+    if (iface->delay != 0.0f) {
         if (dt < iface->delay) {
             iface->delay -= dt;
         } else {
@@ -1289,13 +1432,14 @@ void InterfaceManager_MoveInterface(u8 *ifacePtr, f32 dt) {
                 SoundSequence_Stop(iface->seq);
             }
             if (iface->next != NULL) {
-                u8 selId = 0;
                 u8 count = iface->historyCount;
                 u8 goBack = iface->goBack;
+                u8 selId = 0;
                 u8 flags = iface->flags;
                 s32 input = iface->input;
-                Header *hdr = iface->header;
                 Interface *newI;
+                Header *hdr = iface->header;
+                u8 histId;
 
                 if (iface->selected != NULL) {
                     selId = iface->selected->object->data->id;
@@ -1331,17 +1475,20 @@ void InterfaceManager_MoveInterface(u8 *ifacePtr, f32 dt) {
                     newI->historyIds[count] = selId;
                     newI->historyCount = count + 1;
                 } else {
+                    histId = newI->historyIds[count];
                     for (j = 0; j < newI->count; j++) {
                         slot = &newI->slots[j];
-                        if (slot->object->active && slot->object->data->id == newI->historyIds[count]) {
+                        if (slot->object->active && slot->object->data->id == histId) {
                             newI->selected = slot;
-                            for (k = 0; k < newI->header->vars->count && k < 30; k++) {
-                                if (newI->header->vars->vars[k].type == 3) {
+                            for (m = 0; m < newI->header->vars->count && m < 30; m++) {
+                                switch (newI->header->vars->vars[m].type) {
+                                case 3:
                                     if (newI->selected != NULL) {
-                                        newI->vars[k] = newI->selected->object->data->id;
+                                        newI->vars[m] = newI->selected->object->data->id;
                                     } else {
-                                        newI->vars[k] = 0;
+                                        newI->vars[m] = 0;
                                     }
+                                    break;
                                 }
                             }
                             break;
@@ -1442,6 +1589,8 @@ void InterfaceManager_MoveInterface(u8 *ifacePtr, f32 dt) {
             v = &iface->header->vars->vars[i];
             if (v->update) {
                 switch (v->type) {
+                case 0:
+                    break;
                 case 1:
                     cv = v->data;
                     if (cv->val->isVar) {
@@ -1455,6 +1604,8 @@ void InterfaceManager_MoveInterface(u8 *ifacePtr, f32 dt) {
                     } else if (iface->vars[i] < iface->header->vars->vars[i].min) {
                         iface->vars[i] = iface->header->vars->vars[i].max - (iface->header->vars->vars[i].min - iface->vars[i] - 1);
                     }
+                    break;
+                case 2:
                     break;
                 case 3:
                     if (iface->selected != NULL) {
@@ -1547,10 +1698,7 @@ void InterfaceManager_MoveInterface(u8 *ifacePtr, f32 dt) {
         if (InterfaceManager_ProcessInput(iface, NULL, &iface->header->events) == 0) {
             return;
         }
-        if (iface->state != 2) {
-            return;
-        }
-        if (iface->selected == NULL) {
+        if (iface->state != 2 || iface->selected == NULL) {
             return;
         }
         if (InterfaceManager_ProcessInput(iface, iface->selected, &iface->selected->object->data->numEvents) == 0) {
@@ -1593,48 +1741,48 @@ void InterfaceManager_MoveInterface(u8 *ifacePtr, f32 dt) {
                     case 0:
                         target = slot->object->data->next[0];
                         for (j = 0; j < sel->object->data->numSteps; j++) {
-                            step = &sel->object->data->steps[j];
-                            iface->vars[step->var] += step->val[0];
-                            if (iface->vars[step->var] > iface->header->vars->vars[step->var].max) {
-                                iface->vars[step->var] = __abs(iface->vars[step->var] - iface->header->vars->vars[step->var].max) + iface->header->vars->vars[step->var].min - 1;
-                            } else if (iface->vars[step->var] < iface->header->vars->vars[step->var].min) {
-                                iface->vars[step->var] = iface->header->vars->vars[step->var].max - (__abs(iface->vars[step->var] - iface->header->vars->vars[step->var].min) - 1);
+                            var = sel->object->data->steps[j].var;
+                            iface->vars[var] += sel->object->data->steps[j].val[0];
+                            if (iface->vars[var] > iface->header->vars->vars[var].max) {
+                                iface->vars[var] = __abs(iface->vars[var] - iface->header->vars->vars[var].max) + iface->header->vars->vars[var].min - 1;
+                            } else if (iface->vars[var] < iface->header->vars->vars[var].min) {
+                                iface->vars[var] = iface->header->vars->vars[var].max - (__abs(iface->vars[var] - iface->header->vars->vars[var].min) - 1);
                             }
                         }
                         break;
                     case 1:
                         target = slot->object->data->next[1];
                         for (j = 0; j < sel->object->data->numSteps; j++) {
-                            step = &sel->object->data->steps[j];
-                            iface->vars[step->var] += step->val[1];
-                            if (iface->vars[step->var] > iface->header->vars->vars[step->var].max) {
-                                iface->vars[step->var] = __abs(iface->vars[step->var] - iface->header->vars->vars[step->var].max) + iface->header->vars->vars[step->var].min - 1;
-                            } else if (iface->vars[step->var] < iface->header->vars->vars[step->var].min) {
-                                iface->vars[step->var] = iface->header->vars->vars[step->var].max - (__abs(iface->vars[step->var] - iface->header->vars->vars[step->var].min) - 1);
+                            var = sel->object->data->steps[j].var;
+                            iface->vars[var] += sel->object->data->steps[j].val[1];
+                            if (iface->vars[var] > iface->header->vars->vars[var].max) {
+                                iface->vars[var] = __abs(iface->vars[var] - iface->header->vars->vars[var].max) + iface->header->vars->vars[var].min - 1;
+                            } else if (iface->vars[var] < iface->header->vars->vars[var].min) {
+                                iface->vars[var] = iface->header->vars->vars[var].max - (__abs(iface->vars[var] - iface->header->vars->vars[var].min) - 1);
                             }
                         }
                         break;
                     case 2:
                         target = slot->object->data->next[2];
                         for (j = 0; j < sel->object->data->numSteps; j++) {
-                            step = &sel->object->data->steps[j];
-                            iface->vars[step->var] += step->val[2];
-                            if (iface->vars[step->var] > iface->header->vars->vars[step->var].max) {
-                                iface->vars[step->var] = __abs(iface->vars[step->var] - iface->header->vars->vars[step->var].max) + iface->header->vars->vars[step->var].min - 1;
-                            } else if (iface->vars[step->var] < iface->header->vars->vars[step->var].min) {
-                                iface->vars[step->var] = iface->header->vars->vars[step->var].max - (__abs(iface->vars[step->var] - iface->header->vars->vars[step->var].min) - 1);
+                            var = sel->object->data->steps[j].var;
+                            iface->vars[var] += sel->object->data->steps[j].val[2];
+                            if (iface->vars[var] > iface->header->vars->vars[var].max) {
+                                iface->vars[var] = __abs(iface->vars[var] - iface->header->vars->vars[var].max) + iface->header->vars->vars[var].min - 1;
+                            } else if (iface->vars[var] < iface->header->vars->vars[var].min) {
+                                iface->vars[var] = iface->header->vars->vars[var].max - (__abs(iface->vars[var] - iface->header->vars->vars[var].min) - 1);
                             }
                         }
                         break;
                     case 3:
                         target = slot->object->data->next[3];
                         for (j = 0; j < sel->object->data->numSteps; j++) {
-                            step = &sel->object->data->steps[j];
-                            iface->vars[step->var] += step->val[3];
-                            if (iface->vars[step->var] > iface->header->vars->vars[step->var].max) {
-                                iface->vars[step->var] = __abs(iface->vars[step->var] - iface->header->vars->vars[step->var].max) + iface->header->vars->vars[step->var].min - 1;
-                            } else if (iface->vars[step->var] < iface->header->vars->vars[step->var].min) {
-                                iface->vars[step->var] = iface->header->vars->vars[step->var].max - (__abs(iface->vars[step->var] - iface->header->vars->vars[step->var].min) - 1);
+                            var = sel->object->data->steps[j].var;
+                            iface->vars[var] += sel->object->data->steps[j].val[3];
+                            if (iface->vars[var] > iface->header->vars->vars[var].max) {
+                                iface->vars[var] = __abs(iface->vars[var] - iface->header->vars->vars[var].max) + iface->header->vars->vars[var].min - 1;
+                            } else if (iface->vars[var] < iface->header->vars->vars[var].min) {
+                                iface->vars[var] = iface->header->vars->vars[var].max - (__abs(iface->vars[var] - iface->header->vars->vars[var].min) - 1);
                             }
                         }
                         break;
@@ -1664,9 +1812,9 @@ void InterfaceManager_MoveInterface(u8 *ifacePtr, f32 dt) {
             dirMsg.value = 0;
             dirMsg.objState = target;
             dirMsg.handled = 0;
-            dirMsg.pad29[1] = 1;
+            dirMsg.accept = 1;
             iface->callback(&dirMsg);
-            if (!(s8)dirMsg.pad29[1]) {
+            if (!dirMsg.accept) {
                 return;
             }
         }
