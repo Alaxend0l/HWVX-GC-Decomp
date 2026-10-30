@@ -55,8 +55,8 @@ static inline u32 GameSettings_GetSaveFileChecksum(char *device, const char *nam
     u32 File_Read(s32 handle, u32 size, void *buf);
     void File_Close(s32 handle);
     extern u8 *g_pSavedGameData;
-    s32 handle;
     u8 *data = g_pSavedGameData;
+    s32 handle;
 
     if ((handle = File_Open(device + 0xA, name, 0, NULL)) != -1)
     {
