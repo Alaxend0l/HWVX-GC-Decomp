@@ -330,6 +330,40 @@ void Render_DrawAlphaTriangle(u16 index) {
     }
 }
 
+void Render_StateCullMode(s32 mode);
+void Render_SaveCamera(void);
+void Render_LoadCamera(void);
+void Gfx_SetOrthoMatrix(void);
+void Set2DRectVtxDesc(void);
+extern s32 m_cullMode;
+void Render_DrawRectangle(GDLRect *rect) {
+    s32 cullMode;
+    u32 i;
+
+    cullMode = m_cullMode;
+    g_debugTriCount += 2;
+    Render_StateCullMode(0);
+    Render_StateAlphaBlendEnable(rect->blendMode > 1);
+    Render_SaveCamera();
+    Gfx_SetOrthoMatrix();
+    Render_StateZWriteEnable(0);
+    Render_StateBlendMode(rect->blendMode);
+    Render_SetTextureHandle(rect->tex);
+    Set2DRectVtxDesc();
+    GXBegin(0x80, 0, 4);
+    for (i = 0; i < 4; i++) {
+        GXPosition2f32(rect->v[i].x, rect->v[i].y);
+        GXColor4u8(rect->v[i].color.r, rect->v[i].color.g, rect->v[i].color.b, rect->v[i].color.a);
+        GXTexCoord2f32(rect->v[i].s, rect->v[i].t);
+    }
+    if (rect->blendMode != 0) {
+        Render_StateAlphaBlendEnable(0);
+    }
+    Render_StateZWriteEnable(1);
+    Render_StateCullMode(cullMode);
+    Render_LoadCamera();
+}
+
 void Gfx_SetTextColor(u8 r, u8 g, u8 b, u8 a) {
     g_textcolor.r = r;
     g_textcolor.g = g;
