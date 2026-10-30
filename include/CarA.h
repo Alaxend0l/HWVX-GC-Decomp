@@ -179,6 +179,21 @@ typedef struct CarAModelRef {
   void *anims[3];           /* 0x14 additive animations, timed by CarA.animTimes */
 } CarAModelRef;
 
+/* Extra points CarA_ComputeForces pushes the car down at (CarAInfo.forcePoints). */
+typedef struct CarAForcePoint {
+  Vector4 pos;              /* 0x00 body space */
+  u8 ray;                   /* 0x10 only when a ray down hits something */
+  u8 pad11[3];              /* 0x11 */
+  f32 weight;               /* 0x14 */
+  u8 pad18[0x18];           /* 0x18 */
+} CarAForcePoint;
+
+typedef struct CarAForcePoints {
+  u8 pad00[4];              /* 0x00 */
+  u32 count;                /* 0x04 */
+  CarAForcePoint *points;   /* 0x08 */
+} CarAForcePoints;
+
 typedef struct CarAInfo {
   u8 pad00[0x10];           /* 0x00 */
   u8 damagePercent;         /* 0x10 health % below which parts break off */
