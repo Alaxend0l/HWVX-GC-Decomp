@@ -1,5 +1,27 @@
 #include "common.h"
 
+typedef struct DSPTaskInfo {
+    u32 state;
+    u32 priority;
+    u32 flags;
+    void *iram_mmem_addr;
+    u32 iram_length;
+    u32 iram_addr;
+    void *dram_mmem_addr;
+    u32 dram_length;
+    u32 dram_addr;
+    u16 dsp_init_vector;
+    u16 dsp_resume_vector;
+    void (*init_cb)(void *task);
+    void (*res_cb)(void *task);
+    void (*done_cb)(void *task);
+    void (*req_cb)(void *task);
+    struct DSPTaskInfo *next;
+    struct DSPTaskInfo *prev;
+    s64 t_context;
+    s64 t_task;
+} DSPTaskInfo;
+
 typedef struct CARDControl {
     u8 unk0[0x14];
     s32 latency;     // 0x14
