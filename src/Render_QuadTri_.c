@@ -557,6 +557,88 @@ void Render_DrawAlphaTriangle(u16 index) {
     }
 }
 
+void Render_DrawTriGroup(void) {
+    void Render_StateZWriteEnable(s32 enable);
+    u32 i;
+    u32 j;
+    u32 start;
+    s32 blend;
+    GDLGroupTriVtx *tri;
+    GDLGroupQuadVtx *quad;
+    GDLGroupLitTriVtx *lit;
+
+    Render_StateZWriteEnable(0);
+    for (i = 0; i < g_pGDL->numGroupTris; i++) {
+        blend = g_pGDL->groupTris[i].blendMode;
+        start = g_pGDL->groupTris[i].start;
+        g_debugTriCount += g_pGDL->groupTris[i].count;
+        Render_StateAlphaBlendEnable(blend > 1);
+        Render_StateBlendMode(blend);
+        Render_SetTextureHandle(g_pGDL->groupTris[i].tex);
+        switch (g_pGDL->groupTris[i].type) {
+        case 0:
+            SetTriVtxDesc();
+            GXBegin(0x90, 0, g_pGDL->groupTris[i].count * 3);
+            for (j = 0; j < g_pGDL->groupTris[i].count; j++) {
+                tri = &g_pGDL->groupTriVtx[start++];
+                GXPosition3f32(tri->x0, tri->y0, tri->z0);
+                GXColor4u8(tri->r, tri->g, tri->b, tri->a);
+                GXTexCoord2f32(tri->s0, tri->t0);
+                GXPosition3f32(tri->x1, tri->y1, tri->z1);
+                GXColor4u8(tri->r, tri->g, tri->b, tri->a);
+                GXTexCoord2f32(tri->s1, tri->t1);
+                GXPosition3f32(tri->x2, tri->y2, tri->z2);
+                GXColor4u8(tri->r, tri->g, tri->b, tri->a);
+                GXTexCoord2f32(tri->s2, tri->t2);
+            }
+            break;
+        case 4:
+            SetTriVtxDesc();
+            GXBegin(0x90, 0, g_pGDL->groupTris[i].count * 6);
+            for (j = 0; j < g_pGDL->groupTris[i].count; j++) {
+                quad = &g_pGDL->groupQuadVtx[start++];
+                GXPosition3f32(quad->x0, quad->y0, quad->z0);
+                GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+                GXTexCoord2f32(0.0f, quad->s);
+                GXPosition3f32(quad->x1, quad->y1, quad->z1);
+                GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+                GXTexCoord2f32(1.0f, quad->s);
+                GXPosition3f32(quad->x2, quad->y2, quad->z2);
+                GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+                GXTexCoord2f32(0.0f, quad->t);
+                GXPosition3f32(quad->x1, quad->y1, quad->z1);
+                GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+                GXTexCoord2f32(1.0f, quad->s);
+                GXPosition3f32(quad->x3, quad->y3, quad->z3);
+                GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+                GXTexCoord2f32(1.0f, quad->t);
+                GXPosition3f32(quad->x2, quad->y2, quad->z2);
+                GXColor4u8(quad->r, quad->g, quad->b, quad->a);
+                GXTexCoord2f32(0.0f, quad->t);
+            }
+            break;
+        case 1:
+            SetTriVtxDesc();
+            GXBegin(0x90, 0, g_pGDL->groupTris[i].count * 3);
+            for (j = 0; j < g_pGDL->groupTris[i].count; j++) {
+                lit = &g_pGDL->groupLitTriVtx[start++];
+                GXPosition3f32(lit->x0, lit->y0, lit->z0);
+                GXColor4u8(lit->c[0][0], lit->c[0][1], lit->c[0][2], lit->c[0][3]);
+                GXTexCoord2f32(lit->s0, lit->t0);
+                GXPosition3f32(lit->x1, lit->y1, lit->z1);
+                GXColor4u8(lit->c[1][0], lit->c[1][1], lit->c[1][2], lit->c[1][3]);
+                GXTexCoord2f32(lit->s1, lit->t1);
+                GXPosition3f32(lit->x2, lit->y2, lit->z2);
+                GXColor4u8(lit->c[2][0], lit->c[2][1], lit->c[2][2], lit->c[2][3]);
+                GXTexCoord2f32(lit->s2, lit->t2);
+            }
+            break;
+        }
+    }
+    Render_StateZWriteEnable(1);
+    Render_StateAlphaBlendEnable(1);
+}
+
 void Render_DrawRectanglesWindow(void) {
     u32 i;
     u32 window = 0;
