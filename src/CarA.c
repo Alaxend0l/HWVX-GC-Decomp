@@ -339,7 +339,7 @@ static void CarA_ApplyWheelLoads(void *thing) {
             car->motionState.animMatrices[bone].v[3].y -= susp->wheelStates[0].compression * up->y;
             car->motionState.animMatrices[bone].v[3].z -= susp->wheelStates[0].compression * up->z;
         } else {
-            up = &car->worldMatrix.v[1];
+            up = &((CarA *)thing)->worldMatrix.v[1];
         }
         car->motionState.animMatrices[wheel->bone].v[3].x -= susp->wheelStates[0].compression * up->x;
         car->motionState.animMatrices[wheel->bone].v[3].y -= susp->wheelStates[0].compression * up->y;
@@ -413,6 +413,52 @@ void CarA_ProcessImpulse(void *thing, Vector4 *normal, Vector4 *pos, Vector4 *po
         }
     }
     CarA_UpdateAngularVelocity(car);
+}
+
+void CarA_ComputeForces(CarA *car) {
+    typedef struct RayHit {
+        Vector4 pos;
+        Vector4 normal;
+        u8 pad20[8];
+        u8 *surface;
+        u8 pad2C[0x24];
+    } RayHit;
+    extern Vector4 g_zeroVector;
+    void CarA_ComputeSuspensionForces(CarA *car);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    s8 RayHitsTerrainAndObjects(void *pos, void *vel, f32 *t, RayHit *hit);
+    void XformVec(void *mtx, void *in, Vector4 *out);
+    RayHit hit __attribute__((aligned(16)));
+    f32 worldPos[4];
+    f32 down[4];
+    u32 i;
+    CarAForcePoints *forces;
+    f32 dot;
+    f32 scale;
+    f32 dist;
+
+    car->forceAccum = car->torqueAccum = g_zeroVector;
+    CarA_ApplyWheelLoads(car);
+    CarA_ComputeSuspensionForces(car);
+    dot = PSVECDotProduct(&car->worldMatrix.v[2], &car->velocity);
+    forces = car->vehicleIface->forcePoints;
+    if (dot < 0.0f) {
+        return;
+    }
+    down[0] = -car->worldMatrix.v[1].x;
+    down[1] = -car->worldMatrix.v[1].y;
+    down[2] = -car->worldMatrix.v[1].z;
+    scale = 1.0f - car->vehicleIface->engine->unk58 * (car->worldMatrix.v[1].y - 1.0f);
+    for (i = 0; i < forces->count; i++) {
+        if (forces->points[i].ray) {
+            dist = 6.0f;
+            if (car->numWheelsGrounded < car->vehicleIface->numWheels && !RayHitsTerrainAndObjects(&car->worldMatrix.v[3], down, &dist, &hit)) {
+                continue;
+            }
+        }
+        XformVec(&car->worldMatrix, &forces->points[i].pos, (Vector4 *)worldPos);
+        CarA_ProcessForce(car, (Vector4 *)worldPos, (Vector4 *)down, scale * (dot * forces->points[i].weight));
+    }
 }
 
 s32 CarA_PreMove(void *thing) {
