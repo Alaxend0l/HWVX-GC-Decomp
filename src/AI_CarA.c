@@ -1882,51 +1882,58 @@ s32 AI_Car_DetermineState(u8 *car) {
     return 0;
 }
 
-void AI_Car_ResetState(u8 *car, void *arg) {
-    typedef struct AIStateInfo {
-        u8 unk0[6];
-        u8 unk6;
-    } AIStateInfo;
-    typedef struct AIState {
-        AIStateInfo *info;
-        u32 numChildren;
-        struct AIState *children;
-    } AIState;
-    typedef struct AIStateSlot {
-        AIStateInfo *info;
-        s32 unk4;
-        s32 unk8;
-        s32 unkC;
-        u8 unk10[4];
-        u8 unk14;
-    } AIStateSlot;
-    typedef struct AICar {
-        u8 pad0[0xD0];
-        u8 *params;
-        AIStateSlot slots[1];
-    } AICar;
+typedef struct AIResetStateInfo {
+    u8 unk0[6];
+    u8 unk6;
+} AIResetStateInfo;
+typedef struct AIResetState {
+    AIResetStateInfo *info;
+    u32 numChildren;
+    struct AIResetState *children;
+} AIResetState;
+typedef struct AIResetStateSlot {
+    AIResetStateInfo *info;
+    s32 unk4;
+    s32 unk8;
+    s32 unkC;
+    u8 unk10[4];
+    u8 unk14;
+} AIResetStateSlot;
+typedef struct AIResetParams {
+    u8 pad0[0x28];
+    AIResetState state;
+} AIResetParams;
+typedef struct AIResetCar {
+    u8 pad0[0xD0];
+    AIResetParams *params;
+    AIResetStateSlot slots[1];
+} AIResetCar;
+
+#pragma push
+#pragma inline_max_size(600)
+void AI_Car_ResetState(AIResetCar *car, AIResetState *state) {
     static u8 iTotal;
-    AIState *state = arg;
     u8 i;
 
-    if (state == (AIState *)(((AICar *)car)->params + 0x28)) {
+    if (state == &car->params->state) {
         iTotal = 0;
     }
     if (state->info != NULL) {
-        ((AICar *)car)->slots[iTotal].info = state->info;
-        ((AICar *)car)->slots[iTotal].unk4 = 0;
-        ((AICar *)car)->slots[iTotal].unk8 = 0;
-        ((AICar *)car)->slots[iTotal].unkC = 0;
-        ((AICar *)car)->slots[iTotal].unk14 = state->info->unk6;
+        car->slots[iTotal].info = state->info;
+        car->slots[iTotal].unk4 = 0;
+        car->slots[iTotal].unk8 = 0;
+        car->slots[iTotal].unkC = 0;
+        car->slots[iTotal].unk14 = state->info->unk6;
         iTotal++;
     }
     for (i = 0; i < state->numChildren; i++) {
         AI_Car_ResetState(car, &state->children[i]);
     }
-    if (state == (AIState *)(((AICar *)car)->params + 0x28)) {
-        ((AICar *)car)->slots[iTotal].info = NULL;
+    if (state == &car->params->state) {
+        car->slots[iTotal].info = NULL;
     }
 }
+#pragma pop
 
 void AI_Car_Reset(u8 *car) {
     typedef struct AICarParams {
