@@ -82,8 +82,8 @@ void __OSReboot(u32 resetCode, u32 bootDol) {
     *(u32 *)0x817FFFFC = 0;
     *(u32 *)0x817FFFF8 = 0;
     *(u8 *)0x800030E2 = 1;
-    *(u32 *)0x812FDFF0 = SaveStart_803C7258;
-    *(u32 *)0x812FDFEC = SaveEnd_803C725C;
+    *(void **)0x812FDFF0 = SaveStart;
+    *(void **)0x812FDFEC = SaveEnd;
     OSClearContext(exceptionContext);
     OSSetCurrentContext(exceptionContext);
     DVDInit();
@@ -98,10 +98,10 @@ void __OSReboot(u32 resetCode, u32 bootDol) {
 
     offset = 0;
     numBytes = 0x20;
-    ReadApploader(&dvdCmd, &Header_802EEE00, offset, numBytes);
+    ReadApploader(&dvdCmd, &Header, offset, numBytes);
 
-    offset = Header_802EEE00.size + 0x20;
-    numBytes = (Header_802EEE00.rebootSize + 0x1F) & ~0x1F;
+    offset = Header.size + 0x20;
+    numBytes = (Header.rebootSize + 0x1F) & ~0x1F;
     ReadApploader(&dvdCmd2, (void *)0x81300000, offset, numBytes);
 
     ICInvalidateRange((void *)0x81300000, numBytes);
