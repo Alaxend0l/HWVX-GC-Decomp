@@ -17,6 +17,7 @@ typedef struct Texture {
 
 extern Texture *m_texture;
 extern u32 m_totalTextures;
+extern s32 m_currentView;
 
 void *Allocate(u32 size, s32 flags, const char *name);
 void Deallocate(void *p);
