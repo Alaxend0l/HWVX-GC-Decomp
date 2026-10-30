@@ -364,7 +364,7 @@ void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps) {
         MotionAnim *anim;
         u8 phase;
         u8 loops;
-        s8 reverse;
+        u8 reverse;
         f32 time;
         f32 weight;
         f32 prevTime;
@@ -372,17 +372,17 @@ void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps) {
         s32 done;
     } MotionLayer;
     MotionLayer *l = layer;
+    f32 time;
+    f32 prev;
+    f32 raw;
+    f32 start;
+    f32 end;
     f32 over;
     f32 step;
-    f32 end;
-    f32 start;
-    f32 raw;
-    f32 prev;
-    f32 time;
-    u8 wrapped;
+    s8 reverse;
     u8 oldPhase;
     s8 type;
-    s8 reverse;
+    u8 wrapped;
 
     l->done = 0;
     raw = 0.0f;
@@ -404,6 +404,8 @@ void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps) {
         start = l->anim->loop->start;
         end = l->anim->loop->end;
         switch (l->anim->loopMode) {
+        case 0:
+            break;
         case 1:
             if (l->anim->maxLoops == 0 || l->loops < l->anim->maxLoops) {
                 type |= 2;
@@ -422,6 +424,7 @@ void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps) {
     step = fps * g_fDeltaTimeSec;
     if (reverse) {
         switch (type) {
+        case 2:
         case 3:
             break;
         case 4:
@@ -462,20 +465,71 @@ void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps) {
             break;
         }
     } else {
-        if (type == 0) {
+        switch (type) {
+        case 0:
             raw = time -= step;
             if (time < start) {
                 over = start - time;
                 wrapped = 1;
                 time = start;
             }
-        } else if (type == 1) {
+            break;
+        case 1:
             raw = time += step;
             if (time > end) {
                 over = time - end;
                 wrapped = 1;
                 time = end;
             }
+            break;
+        case 2:
+            raw = time -= step;
+            if (time < start) {
+                over = start - time;
+                wrapped = 1;
+                time = end;
+            }
+            break;
+        case 3:
+            raw = time += step;
+            if (time > end) {
+                over = time - end;
+                wrapped = 1;
+                time = start;
+            }
+            break;
+        case 4:
+            raw = time -= step;
+            if (time < start) {
+                over = start - time;
+                reverse = 1;
+                time = 2.0f * start - time;
+            }
+            break;
+        case 5:
+            raw = time += step;
+            if (time > end) {
+                over = time - end;
+                reverse = 1;
+                time = 2.0f * end - time;
+            }
+            break;
+        case 6:
+            raw = time -= step;
+            if (time < start) {
+                over = start - time;
+                reverse = 1;
+                time = 2.0f * start - time;
+            }
+            break;
+        case 7:
+            raw = time += step;
+            if (time > end) {
+                over = time - end;
+                reverse = 1;
+                time = 2.0f * end - time;
+            }
+            break;
         }
     }
     l->prevTime = prev;
