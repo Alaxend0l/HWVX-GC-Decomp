@@ -11,7 +11,28 @@ typedef struct CARDControl {
     void *workArea;            // 0x80
     u8 *currentDir;            // 0x84
     void *buffer;              // 0x88
+    u8  unk8C[0x110 - 0x8C];
 } CARDControl;
+
+extern CARDControl __CARDBlock[2];
+
+typedef struct CARDID {
+    u8 serial[32];
+    u16 deviceID;
+    u16 size;
+    u16 encode;
+    u8 padding[0x1FC - 0x26];
+    u16 checkSum;
+    u16 checkSumInv;
+} CARDID;
+
+typedef struct OSSramEx {
+    u8 flashID[2][12];
+} OSSramEx;
+
+u16 OSGetFontEncode(void);
+OSSramEx *__OSLockSramEx(void);
+BOOL __OSUnlockSramEx(BOOL commit);
 
 typedef struct CARDDirCheck {
     u8 padding0[0x3A];
