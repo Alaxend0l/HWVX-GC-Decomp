@@ -352,6 +352,56 @@ void VIWaitForRetrace(void) {
     OSRestoreInterrupts(enabled);
 }
 
+static void setFbbRegs(VIPositionInfo *hv, u32 *tfbb, u32 *bfbb, u32 *rtfbb, u32 *rbfbb) {
+    extern volatile u64 changed;
+    u32 shifted;
+
+    calcFbbs(hv->bufAddr, hv->PanPosX, hv->AdjustedPanPosY, hv->wordPerLine, hv->FBMode, hv->AdjustedDispPosY, tfbb, bfbb);
+
+    if (hv->threeD) {
+        calcFbbs(hv->rbufAddr, hv->PanPosX, hv->AdjustedPanPosY, hv->wordPerLine, hv->FBMode, hv->AdjustedDispPosY, rtfbb, rbfbb);
+    }
+
+    if (*tfbb < 0x1000000 && *bfbb < 0x1000000 && *rtfbb < 0x1000000 && *rbfbb < 0x1000000) {
+        shifted = 0;
+    } else {
+        shifted = 1;
+    }
+
+    if (shifted) {
+        *tfbb >>= 5;
+        *bfbb >>= 5;
+        *rtfbb >>= 5;
+        *rbfbb >>= 5;
+    }
+
+    regs[15] = (u16)(*tfbb & 0xFFFF);
+    changed |= (u64)1 << 48;
+
+    regs[14] = (u16)((*tfbb >> 16) | (hv->xof << 8) | (shifted << 12));
+    changed |= (u64)1 << 49;
+
+    regs[19] = (u16)(*bfbb & 0xFFFF);
+    changed |= (u64)1 << 44;
+
+    regs[18] = (u16)(*bfbb >> 16);
+    changed |= (u64)1 << 45;
+
+    if (hv->threeD) {
+        regs[17] = (u16)(*rtfbb & 0xFFFF);
+        changed |= (u64)1 << 46;
+
+        regs[16] = (u16)(*rtfbb >> 16);
+        changed |= (u64)1 << 47;
+
+        regs[21] = (u16)(*rbfbb & 0xFFFF);
+        changed |= (u64)1 << 42;
+
+        regs[20] = (u16)(*rbfbb >> 16);
+        changed |= (u64)1 << 43;
+    }
+}
+
 static void setVerticalRegs(u16 dispPosY, u16 dispSizeY, u8 equ, u16 acv, u16 prbOdd, u16 prbEven, u16 psbOdd, u16 psbEven, s32 black) {
     extern volatile u64 changed;
     u16 actualPrbOdd;
