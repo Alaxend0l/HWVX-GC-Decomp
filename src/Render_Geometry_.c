@@ -169,6 +169,16 @@ typedef struct GDLLightState {
     u8 unk58[0x60 - 0x58];
 } GDLLightState;
 
+static inline GXColor Render_MakeColor(u8 r, u8 g, u8 b) {
+    GXColor c;
+
+    c.r = r;
+    c.g = g;
+    c.b = b;
+    c.a = 0xFF;
+    return c;
+}
+
 typedef struct GDL {
     u8 unk0[0x2C];
     u32 numSpheres;
