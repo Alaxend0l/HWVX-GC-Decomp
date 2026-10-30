@@ -159,6 +159,31 @@ static u32 exnor(u32 data, u32 lshift) {
     return work;
 }
 
+static u32 GetInitVal(void) {
+    u32 tmp;
+    u32 tick;
+
+    tick = OSGetTick();
+    CARDSrand(tick);
+    tmp = 0x7FEC8000;
+    tmp |= CARDRand();
+    tmp &= 0xFFFFF000;
+    return tmp;
+}
+
+static u32 exnor_1st(u32 data, u32 rshift) {
+    u32 wk;
+    u32 work;
+    u32 i;
+
+    work = data;
+    for (i = 0; i < rshift; i++) {
+        wk = ~(work ^ (work >> 7) ^ (work >> 15) ^ (work >> 23));
+        work = (work >> 1) | ((wk << 30) & 0x40000000);
+    }
+    return work;
+}
+
 static void InitCallback(void *task) {
     s32 chan;
     CARDControl *card;
