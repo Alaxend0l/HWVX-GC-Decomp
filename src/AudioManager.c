@@ -1,5 +1,7 @@
 #include "common.h"
 
+#pragma readonly_strings on
+
 extern s32 g_sources_803C6F38;
 
 void SoundManager_Create(void) {
@@ -18,6 +20,86 @@ void SoundManager_Create(void) {
     g_sources_803C6F38 = Allocate(0x1F40, 0, "");
     g_tracks_803C6F30 = Allocate(0x500, 0, "");
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void SoundManager_Init(void) {
+    typedef struct SoundSource {
+        Vector4 pos;
+        Vector4 vel;
+        f32 unk20;
+        f32 unk24;
+        s32 unk28;
+        s32 voice;
+        u32 looping;
+        f32 unk34;
+        f32 unk38;
+        f32 unk3C;
+        f32 unk40;
+        u32 unk44;
+        s8 paused;
+        s8 playing;
+        u8 unk4A[0x50 - 0x4A];
+    } SoundSource;
+    typedef struct SoundListener {
+        Vector4 pos;
+        Vector4 vel;
+        Vector4 fwd;
+        Vector4 up;
+        Vector4 right;
+        Matrix4 mtx;
+    } SoundListener;
+    typedef struct MusicFade {
+        f32 cur;
+        f32 target;
+        f32 time;
+    } MusicFade;
+    typedef struct MusicTrack {
+        u32 active;
+        f32 vol;
+        f32 target;
+        f32 time;
+        u8 pad10[0x28 - 0x10];
+    } MusicTrack;
+    extern s8 g_paused;
+    extern MusicFade g_globalMusic[3];
+    extern MusicTrack *g_tracks;
+    extern SoundSource *g_sources;
+    extern s32 g_nextSource;
+    extern s32 g_numListeners;
+    extern SoundListener g_listener[4];
+    extern Matrix4 g_identity;
+    extern Vector4 g_zeroVector;
+    void Audio_Init(void);
+    void *memset(void *dst, int c, u32 n);
+    Vector4 fwd __attribute__((aligned(16))) = {1.0f, 0.0f, 0.0f, 0.0f};
+    Vector4 up __attribute__((aligned(16))) = {0.0f, 1.0f, 0.0f, 0.0f};
+    Vector4 right __attribute__((aligned(16))) = {0.0f, 0.0f, 1.0f, 0.0f};
+    u32 i;
+
+    Audio_Init();
+    memset(g_globalMusic, 0, sizeof(g_globalMusic));
+    g_globalMusic[0].cur = 1.0f;
+    g_listener[0].pos = g_listener[0].vel = g_zeroVector;
+    g_listener[0].fwd = fwd;
+    g_listener[0].up = up;
+    g_listener[0].right = right;
+    g_listener[0].mtx = g_identity;
+    g_numListeners = 0;
+    memset(g_sources, 0, 100 * sizeof(SoundSource));
+    for (i = 0; i < 100; i++) {
+        g_sources[i].voice = -1;
+        g_sources[i].unk24 = 0.0f;
+    }
+    g_nextSource = 0;
+    memset(g_tracks, 0, 32 * sizeof(MusicTrack));
+    for (i = 0; i < 32; i++) {
+        g_tracks[i].vol = 1.0f;
+        g_tracks[i].active = 1;
+    }
+    g_paused = 0;
+}
+#pragma pop
 
 void SoundManager_Destroy(void) {
     M2C_UNK Audio_Destroy();
