@@ -1442,7 +1442,7 @@ s8 AI_Car_DetermineTarget(u8 *ai, u8 *branch, u8 slot) {
     }
 
     if (branch == ((u8 **)(ai + 0x3D4))[slot] &&
-        AI_Car_IsTargetValid(ai, branch, maxDist, minDist, center, range) &&
+        AI_Car_IsTargetValid_800094EC(ai, branch, maxDist, minDist, center, range) &&
         (((AIBranch *)branch)->def->unk5 == 0 || ((AIBranch *)branch)->unkC != 0)) {
         type = ((AIBranch *)branch)->def->type;
         if (type == 10 || type == 14) {
