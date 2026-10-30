@@ -49,6 +49,7 @@ static u32 __AXOutSBuffer[160] __attribute__((aligned(32)));
 static AXPROFILE __AXLocalProfile;
 static DSPTaskInfo task;
 static u16 ax_dram_image[8192];
+u8 lbl_802F7848[24];
 
 void __AXOutNewFrame(u32 lessDspCycles)
 {
