@@ -69,6 +69,64 @@ void __AXSetPBDefault(AXVPB *p)
     p->pb.unk44 = 0;
 }
 
+void __AXVPBInit(void) {
+    void __AXPushFreeStack(AXVPB *p);
+    void DCFlushRange(void *addr, u32 nBytes);
+    u32 i;
+    AXPB *ppb;
+    u32 *pitd;
+    u16 *pupd;
+    AXVPB *pvpb;
+
+    __AXMaxDspCycles = *(u32 *)0x800000F8 / 400;
+    __AXRecDspCycles = 0;
+    for (i = 0; i < sizeof(__AXPB); i += 4) {
+        *(u32 *)((u8 *)__AXPB + i) = 0;
+    }
+    for (i = 0; i < sizeof(__AXITD); i += 4) {
+        *(u32 *)((u8 *)__AXITD + i) = 0;
+    }
+    for (i = 0; i < sizeof(__AXVPB); i += 4) {
+        *(u32 *)((u8 *)__AXVPB + i) = 0;
+    }
+    for (i = 0; i < 64; i++) {
+        ppb = &__AXPB[i];
+        pitd = __AXITD[i];
+        pupd = __AXUpdates[i];
+        pvpb = &__AXVPB[i];
+        pvpb->index = i;
+        pvpb->updateWrite = pvpb->updateData;
+        pvpb->itdBuffer = pitd;
+        __AXSetPBDefault(pvpb);
+        if (i == 63) {
+            ppb->nextLo = 0;
+            ppb->nextHi = 0;
+            pvpb->pb.nextLo = 0;
+            pvpb->pb.nextHi = 0;
+        } else {
+            pvpb->pb.nextHi = (u16)((u32)(ppb + 1) >> 16);
+            pvpb->pb.nextLo = (u16)((u32)(ppb + 1));
+            ppb->nextHi = (u16)((u32)(ppb + 1) >> 16);
+            ppb->nextLo = (u16)((u32)(ppb + 1));
+        }
+        pvpb->pb.currHi = (u16)((u32)ppb >> 16);
+        pvpb->pb.currLo = (u16)((u32)ppb);
+        ppb->currHi = (u16)((u32)ppb >> 16);
+        ppb->currLo = (u16)((u32)ppb);
+        pvpb->pb.itdHi = (u16)((u32)pitd >> 16);
+        pvpb->pb.itdLo = (u16)((u32)pitd);
+        ppb->itdHi = (u16)((u32)pitd >> 16);
+        ppb->itdLo = (u16)((u32)pitd);
+        pvpb->pb.updHi = (u16)((u32)pupd >> 16);
+        pvpb->pb.updLo = (u16)((u32)pupd);
+        ppb->updHi = (u16)((u32)pupd >> 16);
+        ppb->updLo = (u16)((u32)pupd);
+        pvpb->priority = 1;
+        __AXPushFreeStack(pvpb);
+    }
+    DCFlushRange(__AXPB, sizeof(__AXPB));
+}
+
 void __AXVPBQuit(void) {
 }
 
