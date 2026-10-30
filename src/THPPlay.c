@@ -180,7 +180,7 @@ void AudioInit(void) {
     void *AIRegisterDMACallback(void *callback);
     void AIStartDMA(void);
     extern s32 SoundBufferNumber;
-    extern u8 SoundBuffer[][0x3C0];
+    extern u8 SoundBuffer[2][0x3C0];
     extern void *audio_restore_cb;
 
     audio_restore_cb = AIRegisterDMACallback(AudioCallback);
