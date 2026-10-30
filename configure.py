@@ -617,7 +617,7 @@ config.libs = [
             Object(Matching, "Periodic.cpp", mw_version="GC/1.3"),
             Object(Matching, "Ramp.cpp", mw_version="GC/1.3"),
             Object(NonMatching, "Wheels.cpp", mw_version="GC/1.3"),
-            Object(NonMatching, "Conditon.cpp", mw_version="GC/1.3"),
+            Object(Matching, "Conditon.cpp", mw_version="GC/1.3"),
             Object(NonMatching, "GBA.c"),
             Object(Matching, "GBAGetProcessStatus.c"),
             Object(NonMatching, "GBAJoyBoot.c", mw_version="GC/1.2.5n"),
