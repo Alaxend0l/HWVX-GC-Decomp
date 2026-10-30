@@ -62,6 +62,129 @@ s32 StateRenderTest_Init(void) {
     g_debugDataFlag = 100;
     return 1;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 StateRenderTest_Heartbeat(void) {
+    extern s32 g_pCamera;
+    extern s32 pCar;
+    extern u16 g_dirt;
+    extern f32 g_cameraAngle;
+    extern f32 g_cameraRange;
+    extern f32 g_yaw;
+    extern Vector4 g_jBasis;
+    extern Matrix4 g_identity;
+    void ShowStats_StartFrame(void);
+    void ProcessManager_Heartbeat(s32 arg);
+    u8 Input_KeyDown(s32 pad, s32 key);
+    double sin(double x);
+    double cos(double x);
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *axb);
+    void AccumulateVector(Vector4 *a, Vector4 *b, Vector4 *out, f32 scale);
+    void Camera_PrepareForRender(s32 camera);
+    void ShowStats_BeginScene(void);
+    void ShowStats_EndScene(void);
+    f32 *Gfx_Begin_GroupTriFlat(s32 texture, s32 arg1, s32 count);
+    void Gfx_End_GroupTri(s32 arg);
+    void *memcpy(void *dst, const void *src, u32 n);
+    void SetOrientation(void *m, f32 x, f32 y, f32 z);
+    void Gfx_DrawGeometry(s32 geom, Matrix4 *mtx);
+    void ProcessManager_Render(s32 arg);
+    void Gfx_GetRenderStats(void *stats);
+    Matrix4 mtx;
+    u8 stats[0x100];
+    f32 *tri;
+    s32 i;
+
+    ShowStats_StartFrame();
+    ProcessManager_Heartbeat(0);
+    if (Input_KeyDown(0, 2)) {
+        g_cameraAngle -= 0.075f;
+        if (g_cameraAngle < 0.0f) {
+            g_cameraAngle += 6.2831855f;
+        }
+    }
+    if (Input_KeyDown(0, 3)) {
+        g_cameraAngle += 0.075f;
+        if (g_cameraAngle > 6.2831855f) {
+            g_cameraAngle -= 6.2831855f;
+        }
+    }
+    if (Input_KeyDown(0, 4) && g_cameraRange > 1.0f) {
+        g_cameraRange -= 1.0f;
+    }
+    if (Input_KeyDown(0, 5)) {
+        g_cameraRange += 1.0f;
+    }
+    *(f32 *)((u8 *)g_pCamera + 0x64) = 0.0f;
+    *(f32 *)((u8 *)g_pCamera + 0x60) = g_cameraRange * (f32)sin(g_cameraAngle) + 50.0f;
+    *(f32 *)((u8 *)g_pCamera + 0x68) = g_cameraRange * (f32)cos(g_cameraAngle) + 120.0f;
+    PSVECSubtract(&g_carCamPos, (Vector4 *)((u8 *)g_pCamera + 0x60), (Vector4 *)((u8 *)g_pCamera + 0x80));
+    if (PSVECSquareMag((Vector4 *)((u8 *)g_pCamera + 0x80))) {
+        PSVECNormalize((Vector4 *)((u8 *)g_pCamera + 0x80), (Vector4 *)((u8 *)g_pCamera + 0x80));
+    }
+    AccumulateVector((Vector4 *)((u8 *)g_pCamera + 0x80), &g_jBasis, (Vector4 *)((u8 *)g_pCamera + 0x90), -*(f32 *)((u8 *)g_pCamera + 0x84));
+    if (PSVECSquareMag((Vector4 *)((u8 *)g_pCamera + 0x90))) {
+        PSVECNormalize((Vector4 *)((u8 *)g_pCamera + 0x90), (Vector4 *)((u8 *)g_pCamera + 0x90));
+    }
+    PSVECCrossProduct((Vector4 *)((u8 *)g_pCamera + 0x90), (Vector4 *)((u8 *)g_pCamera + 0x80), (Vector4 *)((u8 *)g_pCamera + 0xA0));
+    g_yaw += 0.01f;
+    if (g_yaw > 6.2831855f) {
+        g_yaw -= 6.2831855f;
+    }
+    g_carDrivePos.y = -20.0f;
+    g_carDrivePos.x = 150.0f * (f32)sin(g_yaw);
+    g_carDrivePos.z = 150.0f * (f32)cos(g_yaw) + 150.0f;
+    for (i = 0; i < 80; i++) {
+        g_carRot[i] += 0.02f;
+        if (g_carRot[i] > 6.2831855f) {
+            g_carRot[i] -= 6.2831855f;
+        }
+    }
+    Camera_PrepareForRender(g_pCamera);
+    ShowStats_BeginScene();
+    tri = Gfx_Begin_GroupTriFlat(g_dirt, 0, 1);
+    ((s32 *)tri)[0] = ((s32 *)tri)[1] = ((s32 *)tri)[2] = ((s32 *)tri)[3] = 0x80;
+    tri[5] = tri[9] = tri[13] = -21.75f;
+    tri[4] = tri[8] = -150.0f;
+    tri[12] = 230.0f;
+    tri[6] = -60.0f;
+    tri[10] = tri[14] = 300.0f;
+    tri[7] = tri[11] = tri[17] = 0.0f;
+    tri[18] = tri[16] = tri[19] = 4.0f;
+    ((s32 *)tri)[20] = ((s32 *)tri)[21] = ((s32 *)tri)[22] = ((s32 *)tri)[23] = 0x80;
+    tri[25] = tri[29] = tri[33] = -21.75f;
+    tri[24] = tri[28] = 230.0f;
+    tri[32] = -150.0f;
+    tri[26] = 300.0f;
+    tri[30] = tri[34] = -60.0f;
+    tri[27] = tri[31] = tri[37] = 4.0f;
+    tri[36] = tri[38] = tri[39] = 0.0f;
+    Gfx_End_GroupTri(2);
+    for (i = 0; i < 80; i++) {
+        memcpy(&mtx, &g_identity, sizeof(Matrix4));
+        SetOrientation(&mtx, g_carRot[i], 0.0f, 0.0f);
+        mtx.v[3].x = g_carPos[i].x;
+        mtx.v[3].y = -20.0f;
+        mtx.v[3].z = g_carPos[i].z;
+        Gfx_DrawGeometry(pCar, &mtx);
+    }
+    memcpy(&mtx, &g_identity, sizeof(Matrix4));
+    SetOrientation(&mtx, 1.5707964f + g_yaw, 0.0f, 0.0f);
+    mtx.v[3].x = g_carDrivePos.x;
+    mtx.v[3].y = g_carDrivePos.y;
+    mtx.v[3].z = g_carDrivePos.z;
+    Gfx_DrawGeometry(pCar, &mtx);
+    ProcessManager_Render(1);
+    ShowStats_EndScene();
+    Gfx_GetRenderStats(stats);
+    return 1;
+}
+#pragma pop
+
 #pragma pop
 
 s32 StateRenderTest_Shutdown(void) {
