@@ -1953,3 +1953,30 @@ s32 CarA_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     }
     return 0;
 }
+/* Loads each wheel's suspension compression onto its bone (and the parent
+   bone's) animation matrix, then adds gravity to the force accumulator. */
+static void CarA_ApplyWheelLoads(void *thing) {
+    CarA *car = thing;
+    Vector4 *up;
+    CarTrailBone *wheel;
+    CarAWheelState *ws;
+    u32 i;
+    s32 bone;
+
+    for (i = 0, ws = car->wheelStates; i < car->vehicleIface->numWheels; i++, ws++) {
+        wheel = &car->vehicleIface->wheels[i];
+        if (wheel->parent != 0) {
+            bone = wheel->bone - wheel->parent;
+            up = &car->motionState.animMatrices[bone].v[1];
+            car->motionState.animMatrices[bone].v[3].x -= ws->compression * up->x;
+            car->motionState.animMatrices[bone].v[3].y -= ws->compression * up->y;
+            car->motionState.animMatrices[bone].v[3].z -= ws->compression * up->z;
+        } else {
+            up = &car->worldMatrix.v[1];
+        }
+        car->motionState.animMatrices[wheel->bone].v[3].x -= ws->compression * up->x;
+        car->motionState.animMatrices[wheel->bone].v[3].y -= ws->compression * up->y;
+        car->motionState.animMatrices[wheel->bone].v[3].z -= ws->compression * up->z;
+    }
+    car->forceAccum.y += car->vehicleIface->collider->gravityScale * car->vehicleIface->collider->mass;
+}
