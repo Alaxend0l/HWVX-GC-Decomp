@@ -233,10 +233,13 @@ typedef struct Destructible {
   Vector4 pos;         /* 0x00 */
   f32 matrix[12];      /* 0x10 */
   Vector4 offsetPos;   /* 0x40 */
-  u8 pad50[0x24];      /* 0x50 */
+  u8 pad50[0x20];      /* 0x50 orientation quaternion first */
+  f32 radius;          /* 0x70 */
   u32 flags;           /* 0x74 */
   s32 health;          /* 0x78 */
-  u8 pad7C[0xC];       /* 0x7C */
+  u32 unk7C;           /* 0x7C */
+  s16 collisionType;   /* 0x80 */
+  u8 pad82[6];         /* 0x82 */
   void *slaves;        /* 0x88 slave things list */
   void *vtable;        /* 0x8C */
   u8 *trigger;         /* 0x90 */
