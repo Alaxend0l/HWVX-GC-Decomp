@@ -42,6 +42,42 @@ static BOOL IsSjisTrailByte(u8 c) {
 }
 
 
+u16 OSGetFontEncode(void);
+static int GetFontCode(u16 code) {
+    if (OSGetFontEncode() == 1) {
+        if (0x20 <= code && code <= 0xDF) {
+            return HankakuToCode[code - 0x20];
+        } else if (0x889E < code && code <= 0x9872) {
+            int i = ((code >> 8) - 0x88) * 188;
+            int j = code & 0xFF;
+
+            if (!IsSjisTrailByte(j)) {
+                return 0;
+            }
+            j -= 0x40;
+            if (0x40 <= j) {
+                j--;
+            }
+            return i + j + 0x2BE;
+        } else if (0x8140 <= code && code < 0x879E) {
+            int i = ((code >> 8) - 0x81) * 188;
+            int j = code & 0xFF;
+
+            if (!IsSjisTrailByte(j)) {
+                return 0;
+            }
+            j -= 0x40;
+            if (0x40 <= j) {
+                j--;
+            }
+            return Zenkaku2Code[i + j];
+        }
+    } else if (0x20 < code && code <= 0xFF) {
+        return code - 0x20;
+    }
+    return 0;
+}
+
 static void Decode(u8 *s, u8 *d) {
     int i;
     int j;
