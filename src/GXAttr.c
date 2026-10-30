@@ -1,7 +1,8 @@
 #include "common.h"
 
 typedef struct GXData {
-    u8 unk0[0x4];
+    u8 unk0[0x2];
+    u16 bpSentNot;
     u16 vNum;
     u16 vLim;
     u8 unk8[0x14 - 0x8];
