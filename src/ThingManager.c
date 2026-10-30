@@ -182,21 +182,19 @@ void ThingManagerList_RemoveReleasedThings(void **list) {
 
 void ThingManagerList_ReleaseAll(void **list);
 void ThingManagerList_ReleaseAndRemoveAll(void **list) {
-    ThingManagerList_ReleaseAll(list);
-    {
-        ThingHeader *thing;
-        ThingHeader *next;
+    ThingHeader *thing;
+    ThingHeader *next;
 
-        for (thing = *list; thing != NULL; thing = next) {
-            next = thing->next;
-            if (thing->flags & 0x200000) {
-                void **children;
-                ThingManagerList_ReleaseAndRemoveAll(children = (void **)&thing->unk88);
-                ThingManagerList_Remove(list, thing);
-                ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
-                thing->flags &= ~0x200000;
-                thing->flags |= 0x1000;
-            }
+    ThingManagerList_ReleaseAll(list);
+    for (thing = *list; thing != NULL; thing = next) {
+        next = thing->next;
+        if (thing->flags & 0x200000) {
+            void **children;
+            ThingManagerList_ReleaseAndRemoveAll(children = (void **)&thing->unk88);
+            ThingManagerList_Remove(list, thing);
+            ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
+            thing->flags &= ~0x200000;
+            thing->flags |= 0x1000;
         }
     }
 }
