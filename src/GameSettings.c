@@ -1,5 +1,12 @@
 #include "common.h"
 
+#pragma readonly_strings on
+
+GameInfo g_gameInfo[2] = {
+    { "Hot Wheels(TM)   Velocity X", "HotWheels.elf", "hwvx", "hwvx", "hw.ico", 0, 0 },
+    { "Dooms Day Rescue", "SLUS_001.00", "DoomsDayRescue", "DoomsDayRescue", "ddr.ico", 0, 0 },
+};
+
 char g_saveFileName[11];
 char g_fileNames[8][41];
 u8 g_DDRsavedGameData[0xE83C];
