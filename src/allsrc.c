@@ -194,21 +194,10 @@ static inline s32 SimThread_AddDelta(SimThread *t, s32 dPos, s32 dt) {
         }
     }
     if (sumT > 16) {
-        s32 over;
-        s32 half;
-        s32 lastT;
-        s32 lastP;
         if (--i < 0) {
             i = 15;
         }
-        over = sumT - 16;
-        lastT = t->deltaTime[i];
-        lastP = t->deltaPos[i];
-        half = lastT / 2;
-        if (over < 0) {
-            half = -half;
-        }
-        sumP -= (over * lastP + half) / lastT;
+        sumP -= Effect_MulDiv(sumT - 16, t->deltaPos[i], t->deltaTime[i]);
     }
     return sumP;
 }
