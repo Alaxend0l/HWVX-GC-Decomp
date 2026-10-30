@@ -333,6 +333,35 @@ s32 LoadTGA(const char *name, u32 id) {
     Render_CreateTextureSlot(id, 1);
     return 1;
 }
+
+#pragma push
+#pragma readonly_strings on
+u16 Gfx_LoadTexture_RAM(u8 **data) {
+    extern s32 m_currentView;
+    u8 *LoadBTF_RAM(u8 *data, s32 id);
+    char buf[32];
+    u16 i;
+
+    for (i = 1; i < m_totalTextures; i++) {
+        if (m_texture[i].data == NULL) {
+            break;
+        }
+    }
+    if (i >= m_totalTextures) {
+        i = m_totalTextures - 1;
+    }
+    *data = LoadBTF_RAM(*data, i);
+    sprintf(buf, "/pack:%d", i);
+    memcpy(&m_texture[i], buf, 0x20);
+    m_texture[i].refCount++;
+    m_texture[i].view = (s8)m_currentView;
+    m_texture[i].unk2C = 0.25f;
+    m_texture[i].unk3A = 1;
+    m_texture[i].wrapMode = 0;
+    return i;
+}
+#pragma pop
+
 #pragma pop
 void Gfx_SetTextureWrapMode(u16 id, u16 mode) {
     Texture *tex = &m_texture[id];
