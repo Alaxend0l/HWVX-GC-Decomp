@@ -139,6 +139,10 @@ GfxWindow *GetRenderWindow(void);
 void Render_StateZWriteEnable(s32 enable);
 void Set2DRectFlatVtxDesc(void);
 void Set2DRectVtxDesc(void);
+void Gfx_SetOrthoMatrix(void);
+void Gfx_SetRenderWindow(s32 window);
+void Render_StateSetScissor(void);
+extern u8 g_CurrentViews;
 
 static inline void GXPosition2f32(f32 x, f32 y) {
     GXWGFifo.f32 = x;
