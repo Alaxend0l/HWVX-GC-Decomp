@@ -9,7 +9,7 @@ volatile s64 __AXOsTime;
 void (*__AXUserFrameCallback)(void);
 volatile s32 __AXDSPInitFlag;
 volatile s32 __AXDSPDoneFlag;
-u32 __AXDebugSteppingMode;
+volatile u32 __AXDebugSteppingMode;
 
 typedef struct DSPTaskInfo {
     u32 state;
@@ -173,9 +173,6 @@ void __AXOutInitDSP(void)
 
 void __AXOutInit(void)
 {
-    extern volatile u32 __AXOutFrame;
-    extern u32 __AXDebugSteppingMode;
-    extern void (*__AXUserFrameCallback)(void);
     void __AXOutAiCallback(void);
     void __AXOutInitDSP(void);
     void DCFlushRange(void *addr, u32 nBytes);
@@ -184,19 +181,18 @@ void __AXOutInit(void)
     void AIInitDMA(u32 start_addr, u32 length);
     void AIStartDMA(void);
     u32 *p;
-    u32 i;
+    int i;
 
     __AXOutFrame = 0;
     __AXDebugSteppingMode = 0;
-    for (p = (u32 *)__AXOutBuffer, i = 0; i < sizeof(__AXOutBuffer) / 4; i++) {
-        *p = 0;
-        p++;
+    p = (u32 *)__AXOutBuffer;
+    for (i = 0; i < 320; i++) {
+        p[i] = 0;
     }
     DCFlushRange(__AXOutBuffer, sizeof(__AXOutBuffer));
     p = __AXOutSBuffer;
-    for (i = 0; i < sizeof(__AXOutSBuffer) / 4; i++) {
-        *p = 0;
-        p++;
+    for (i = 0; i < 160; i++) {
+        p[i] = 0;
     }
     DCFlushRange(__AXOutSBuffer, sizeof(__AXOutSBuffer));
     __AXOutInitDSP();
