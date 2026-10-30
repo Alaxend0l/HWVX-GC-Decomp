@@ -38,7 +38,7 @@ static inline void Input_SetKeyDown(VirtualPad *pad, u16 key) {
     s32 k;
 
     for (k = 0; k < 20; k++) {
-        if (s_keyMap[k] == key) {
+        if (key == s_keyMap[k]) {
             pad->keyDown |= 1 << k;
             pad->keyPress |= 1 << k;
         }
@@ -115,6 +115,47 @@ void Input_Destroy(void) {
     PADControlMotor(2, 0);
     PADControlMotor(3, 0);
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void Input_Heartbeat(void) {
+    void GBAConnectivityLoop__Fv(void);
+    void pollControllers__Fv(void);
+    void PADControlMotor(s32 chan, u32 command);
+    extern s32 g_iDeltaTimeMS;
+    s32 i;
+    s32 j;
+    u16 key;
+
+    if (!g_StopInput) {
+        GBAConnectivityLoop__Fv();
+        pollControllers__Fv();
+    }
+    for (i = 0; i < 4; i++) {
+        g_VirtualPad[i].keyPress = 0;
+        for (j = 0; j < g_padDownPos[i]; j++) {
+            key = ((u16 (*)[8])s_unk30)[i][j];
+            Input_SetKeyDown(&g_VirtualPad[i], key);
+            ((u16 (*)[8])s_unk30)[i][j] = key;
+        }
+        for (j = 0; j < g_padUpPos[i]; j++) {
+            key = ((u16 (*)[8])s_unk70)[i][j];
+            Input_SetKeyUp(&g_VirtualPad[i], key);
+            ((u16 (*)[8])s_unk70)[i][j] = key;
+        }
+        g_padUpPos[i] = 0;
+        g_padDownPos[i] = 0;
+        if (rumbleStatus[i].active) {
+            if (rumbleStatus[i].duration < 0) {
+                rumbleStatus[i].active = 0;
+                PADControlMotor(i, 0);
+            } else {
+                rumbleStatus[i].duration -= g_iDeltaTimeMS;
+            }
+        }
+    }
+}
+#pragma pop
 
 void Input_SetForceFeedback(s32 chan, f32 strength, f32 duration) {
     void PADControlMotor(s32 chan, u32 command);
