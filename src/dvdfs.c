@@ -32,6 +32,19 @@ extern u32 *FstStart;
 extern u32 currentDirectory;
 
 void OSPanic(const char *file, int line, const char *msg, ...);
+int tolower(int c);
+
+static inline BOOL isSame(const char *path, const char *string) {
+    while (*string != '\0') {
+        if (tolower(*path++) != tolower(*string++)) {
+            return FALSE;
+        }
+    }
+    if ((*path == '/') || (*path == '\0')) {
+        return TRUE;
+    }
+    return FALSE;
+}
 
 #pragma push
 #pragma peephole on
@@ -52,6 +65,123 @@ void __DVDFSInit(void) {
         FstStringStart = (char *)FstStart + MaxEntryNum * 12;
     }
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 DVDConvertPathToEntrynum(char *pathPtr) {
+    extern char *FstStringStart;
+    extern u32 __DVDLongFileNameFlag;
+    int tolower(int c);
+    char *ptr;
+    char *stringPtr;
+    BOOL isDir;
+    u32 length;
+    u32 dirLookAt;
+    u32 i;
+    char *origPathPtr = pathPtr;
+    char *extentionStart;
+    BOOL illegal;
+    BOOL extention;
+
+    dirLookAt = currentDirectory;
+
+    while (1) {
+        if (*pathPtr == '\0') {
+            return (s32)dirLookAt;
+        } else if (*pathPtr == '/') {
+            dirLookAt = 0;
+            pathPtr++;
+            continue;
+        } else if (*pathPtr == '.') {
+            if (*(pathPtr + 1) == '.') {
+                if (*(pathPtr + 2) == '/') {
+                    dirLookAt = FstStart[dirLookAt * 3 + 1];
+                    pathPtr += 3;
+                    continue;
+                } else if (*(pathPtr + 2) == '\0') {
+                    return (s32)FstStart[dirLookAt * 3 + 1];
+                }
+            } else if (*(pathPtr + 1) == '/') {
+                pathPtr += 2;
+                continue;
+            } else if (*(pathPtr + 1) == '\0') {
+                return (s32)dirLookAt;
+            }
+        }
+
+        if (__DVDLongFileNameFlag == 0) {
+            extention = FALSE;
+            illegal = FALSE;
+            for (ptr = pathPtr; (*ptr != '\0') && (*ptr != '/'); ptr++) {
+                if (*ptr == '.') {
+                    if ((ptr - pathPtr > 8) || (extention == TRUE)) {
+                        illegal = TRUE;
+                        break;
+                    }
+                    extention = TRUE;
+                    extentionStart = ptr + 1;
+                } else if (*ptr == ' ') {
+                    illegal = TRUE;
+                }
+            }
+            if ((extention == TRUE) && (ptr - extentionStart > 3)) {
+                illegal = TRUE;
+            }
+            if (illegal) {
+                OSPanic(__FILE__, 376,
+                        "DVDConvertEntrynumToPath(possibly DVDOpen or DVDChangeDir or DVDOpenDir): specified directory or file (%s) doesn't match standard 8.3 format. This is a temporary restriction and will be removed soon\n",
+                        origPathPtr);
+            }
+        } else {
+            for (ptr = pathPtr; (*ptr != '\0') && (*ptr != '/'); ptr++)
+                ;
+        }
+
+        isDir = (*ptr == '\0') ? FALSE : TRUE;
+        length = (u32)(ptr - pathPtr);
+
+        ptr = pathPtr;
+
+        for (i = dirLookAt + 1; i < FstStart[dirLookAt * 3 + 2];
+             i = (((FstStart[i * 3] & 0xff000000) == 0) ? FALSE : TRUE) ? FstStart[i * 3 + 2] : (i + 1)) {
+            if (((((FstStart[i * 3] & 0xff000000) == 0) ? FALSE : TRUE) == FALSE) && (isDir == TRUE)) {
+                continue;
+            }
+
+            stringPtr = FstStringStart + (FstStart[i * 3] & 0x00ffffff);
+
+            {
+                char *path = ptr;
+                char *string = stringPtr;
+                BOOL same;
+
+                while (1) {
+                    if (*string == '\0') {
+                        same = ((*path == '/') || (*path == '\0')) ? TRUE : FALSE;
+                        break;
+                    }
+                    if (tolower(*string++) != tolower(*path++)) {
+                        same = FALSE;
+                        break;
+                    }
+                }
+                if (same == TRUE) {
+                    if (isDir == FALSE) {
+                        return (s32)i;
+                    }
+                    dirLookAt = i;
+                    pathPtr += length + 1;
+                    goto next_hier;
+                }
+            }
+        }
+        return -1;
+
+    next_hier:
+        ;
+    }
+}
+#pragma pop
 
 s32 DVDConvertPathToEntrynum(char *pathPtr);
 BOOL DVDGetCurrentDir(char *path, u32 maxlen);
