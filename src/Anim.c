@@ -237,6 +237,56 @@ void AnimExtractKeyFrame_CompoundHybrid(Anim *anim, AnimBone *outp, f32 time) {
 }
 #pragma use_lmw_stmw off
 
+typedef struct AnimTrack {
+    u8 type;
+    u8 pad1;
+    u16 numKeys;
+    f32 *times;
+    f32 (*coefs)[16];
+    struct AnimTrack *next;
+    f32 value[4];
+} AnimTrack;
+
+static inline s32 AnimTrack_FindKey(AnimTrack *track, f32 time) {
+    s32 numKeys = track->numKeys;
+    s32 key = 1;
+    u32 step = numKeys;
+
+    do {
+        step = (step + 1) >> 1;
+        if (time > track->times[key]) {
+            key += step;
+            if (key >= numKeys) {
+                return numKeys - 1;
+            }
+        } else if (time <= track->times[key - 1]) {
+            key -= step;
+        } else {
+            return key;
+        }
+    } while (key > 0);
+    return 0;
+}
+
+static inline AnimTrack *AnimTrack_Eval3(AnimTrack *track, f32 time, f32 *out) {
+    s32 key = AnimTrack_FindKey(track, time);
+
+    out[0] = time * (time * (time * track->coefs[key][0] + track->coefs[key][1]) + track->coefs[key][2]) + track->coefs[key][3];
+    out[1] = time * (time * (time * track->coefs[key][4] + track->coefs[key][5]) + track->coefs[key][6]) + track->coefs[key][7];
+    out[2] = time * (time * (time * track->coefs[key][8] + track->coefs[key][9]) + track->coefs[key][10]) + track->coefs[key][11];
+    return track->next;
+}
+
+static inline AnimTrack *AnimTrack_Eval4(AnimTrack *track, f32 time, f32 *out) {
+    s32 key = AnimTrack_FindKey(track, time);
+
+    out[0] = time * (time * (time * track->coefs[key][0] + track->coefs[key][1]) + track->coefs[key][2]) + track->coefs[key][3];
+    out[1] = time * (time * (time * track->coefs[key][4] + track->coefs[key][5]) + track->coefs[key][6]) + track->coefs[key][7];
+    out[2] = time * (time * (time * track->coefs[key][8] + track->coefs[key][9]) + track->coefs[key][10]) + track->coefs[key][11];
+    out[3] = time * (time * (time * track->coefs[key][12] + track->coefs[key][13]) + track->coefs[key][14]) + track->coefs[key][15];
+    return track->next;
+}
+
 #pragma use_lmw_stmw off
 void AnimExtractKeyFrame(void *anim, s32 frame) {
     void AnimExtractKeyFrame_Compound(void *anim, s32 frame);
