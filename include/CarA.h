@@ -55,6 +55,8 @@ typedef struct Player {
   s16 respawnNavPoint;      /* 0xAE */
   u8 padB0[0x18];           /* 0xB0 */
   s32 wheelChannel;         /* 0xC8 force-feedback wheel channel */
+  u8 padCC[4];              /* 0xCC */
+  f32 *healthScale;         /* 0xD0 AI players: divides the health-bar fraction */
 } Player;
 
 struct CarA;
