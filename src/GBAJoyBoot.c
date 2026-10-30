@@ -224,6 +224,90 @@ static void F29(s32 chan, s32 ret) {
     gba->ret = ret;
 }
 
+void __GBAX01(s32 chan, s32 ret) {
+    void F31(s32 chan, s32 ret);
+    s64 OSGetTime(void);
+    GBAControl *gba;
+    GBABootInfo *bootInfo;
+    GBACallback callback;
+    s32 minLength;
+
+    gba = &__GBA[chan];
+    bootInfo = &gba->bootInfo;
+    if (ret == 0) {
+        bootInfo->keyA = gba->param->keyA;
+        bootInfo->keyB = gba->param->keyB;
+        if (bootInfo->readbuf[3] == 0 || bootInfo->readbuf[2] == 0 ||
+            (bootInfo->keyA & (D54[5] << 9)) == 0 || bootInfo->readbuf[1] == 0 ||
+            (bootInfo->keyA >> 15) == 0 || bootInfo->readbuf[0] == 0) {
+            ret = 3;
+        } else {
+            bootInfo->i = ~D54[0x24] & (bootInfo->length + D54[0x24]);
+            minLength = D54[0x14] << D54[0x21];
+            if (bootInfo->i < minLength) {
+                bootInfo->i = minLength;
+            }
+            bootInfo->realLength = bootInfo->i;
+            bootInfo->i -= minLength;
+            bootInfo->i >>= D54[0x20];
+            bootInfo->writebuf[0] = (s32)bootInfo->keyB;
+            bootInfo->writebuf[1] = (s32)bootInfo->keyB >> 8;
+            bootInfo->writebuf[3] = (s32)bootInfo->keyB >> 24;
+            bootInfo->writebuf[2] = (s32)bootInfo->keyB >> 16;
+            bootInfo->crc = (D54[0x26] + 1) << D54[0x22];
+            bootInfo->curOffset = D54[8];
+            bootInfo->begin = OSGetTime();
+            bootInfo->firstXfer = 1;
+            ret = GBAWriteAsync(chan, bootInfo->writebuf, bootInfo->status, F31);
+        }
+    }
+    if (ret != 0) {
+        bootInfo->begin = 0;
+        if (bootInfo->callback) {
+            callback = bootInfo->callback;
+            bootInfo->callback = NULL;
+            callback(chan, ret);
+        }
+    }
+    gba->ret = ret;
+}
+
+static void F35(s32 chan, s32 ret);
+static void F33(s32 chan, s32 ret) {
+    GBAControl *gba;
+    GBABootInfo *bootInfo;
+    GBACallback callback;
+
+    gba = &__GBA[chan];
+    bootInfo = &gba->bootInfo;
+    if (ret == 0) {
+        for (bootInfo->i = 33; bootInfo->i < 36; bootInfo->i++) {
+            ret = ((bootInfo->readbuf[3] ^ (bootInfo->dummyWord[D54[bootInfo->i]] >> 24)) |
+                   (bootInfo->readbuf[2] ^ (bootInfo->dummyWord[D54[bootInfo->i]] >> 16)) |
+                   (bootInfo->readbuf[1] ^ (bootInfo->dummyWord[D54[bootInfo->i]] >> 8)) |
+                   (bootInfo->readbuf[0] ^ bootInfo->dummyWord[D54[bootInfo->i]])) << 24;
+            if (ret == 0) {
+                break;
+            }
+        }
+        if (ret) {
+            ret = 3;
+        } else {
+            bootInfo->start = OSGetTick();
+            ret = GBAGetStatusAsync(chan, bootInfo->status, F35);
+        }
+    }
+    if (ret != 0) {
+        bootInfo->begin = 0;
+        if (bootInfo->callback) {
+            callback = bootInfo->callback;
+            bootInfo->callback = NULL;
+            callback(chan, ret);
+        }
+    }
+    gba->ret = ret;
+}
+#pragma dummy
 static void F37(s32 chan, s32 ret);
 static void F35(s32 chan, s32 ret) {
     GBAControl *gba;
