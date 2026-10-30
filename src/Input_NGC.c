@@ -34,6 +34,28 @@ u8 IsOpened__8LGWheelsFl(void *wheels, s32 chan);
 void PlaySpringForce__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 saturation, s16 coefficient);
 void PlayFrontalCollisionForce__8LGWheelsFlUc(void *wheels, s32 chan, u8 force);
 
+static inline void Input_SetKeyDown(VirtualPad *pad, u16 key) {
+    s32 k;
+
+    for (k = 0; k < 20; k++) {
+        if (s_keyMap[k] == key) {
+            pad->keyDown |= 1 << k;
+            pad->keyPress |= 1 << k;
+        }
+    }
+}
+
+static inline void Input_SetKeyUp(VirtualPad *pad, u16 key) {
+    s32 k;
+
+    for (k = 0; k < 20; k++) {
+        if (s_keyMap[k] == key) {
+            pad->keyDown &= ~(1 << k);
+            pad->keyRelease |= 1 << k;
+        }
+    }
+}
+
 void InitTables__Fv(void);
 s32 Input_Create(void) {
     void Input_Init(void);
