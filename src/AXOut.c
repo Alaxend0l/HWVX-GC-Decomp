@@ -134,8 +134,7 @@ void __AXDSPResumeCallback(void) {
 }
 
 void __AXDSPDoneCallback(void) {
-    extern s32 Prepared_803C7260;
-    Prepared_803C7260 = 1;
+    __AXDSPDoneFlag = 1;
 }
 
 void __AXOutInitDSP(void)
