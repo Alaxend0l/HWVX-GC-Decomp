@@ -49,7 +49,7 @@ static inline void Input_SetKeyUp(VirtualPad *pad, u16 key) {
     s32 k;
 
     for (k = 0; k < 20; k++) {
-        if (s_keyMap[k] == key) {
+        if (key == s_keyMap[k]) {
             pad->keyDown &= ~(1 << k);
             pad->keyRelease |= 1 << k;
         }
