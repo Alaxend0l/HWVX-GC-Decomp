@@ -98,9 +98,28 @@ static u32 CompleteTransfer(void) {
     return sr;
 }
 
+BOOL OSCancelAlarm(OSAlarm *alarm);
+
+static inline void SITransferNext(s32 chan) {
+    int i;
+    SIPacket *packet;
+
+    for (i = 0; i < 4; ++i) {
+        ++chan;
+        chan %= 4;
+        packet = &Packet[chan];
+        if (packet->chan != -1 && packet->fire <= __OSGetSystemTime()) {
+            if (__SITransfer(packet->chan, packet->output, packet->outputBytes, packet->input, packet->inputBytes, packet->callback)) {
+                OSCancelAlarm(&Alarm[chan]);
+                packet->chan = -1;
+            }
+            break;
+        }
+    }
+}
+
 static void GetTypeCallback(s32 chan, u32 error, void *context);
 BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback, s64 delay);
-BOOL OSCancelAlarm(OSAlarm *alarm);
 u32 VIGetCurrentLine(void);
 BOOL SIGetResponseRaw(s32 chan);
 void SIInterruptHandler(s16 interrupt, void *context)
