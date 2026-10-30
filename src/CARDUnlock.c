@@ -1,7 +1,9 @@
 #include "common.h"
 
 typedef struct CARDControl {
-    u8 unk0[0x30];
+    u8 unk0[0x14];
+    s32 latency;     // 0x14
+    u8 unk18[0x30 - 0x18];
     u8 task[0x50];   // 0x30 DSPTaskInfo
     void *workArea;  // 0x80
     u8 unk84[0x110 - 0x84];
