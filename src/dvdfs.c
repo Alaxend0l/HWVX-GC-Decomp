@@ -86,7 +86,34 @@ BOOL DVDClose(void *fileInfo) {
     return 1;
 }
 
-static u32 entryToPath(u32 entry, char *path, u32 maxlen);
+static u32 myStrncpy(char *dest, char *src, u32 maxlen) {
+    u32 i = maxlen;
+
+    while ((i > 0) && (*src != 0)) {
+        *dest++ = *src++;
+        i--;
+    }
+    return maxlen - i;
+}
+
+static u32 entryToPath(u32 entry, char *path, u32 maxlen) {
+    extern char *FstStringStart;
+    char *name;
+    u32 loc;
+
+    if (entry == 0) {
+        return 0;
+    }
+    name = FstStringStart + (FstStart[entry * 3] & 0x00FFFFFF);
+    loc = entryToPath(FstStart[entry * 3 + 1], path, maxlen);
+    if (loc == maxlen) {
+        return loc;
+    }
+    *(path + loc++) = '/';
+    loc += myStrncpy(path + loc, name, maxlen - loc);
+    return loc;
+}
+
 #pragma push
 #pragma scheduling on
 #pragma peephole on
