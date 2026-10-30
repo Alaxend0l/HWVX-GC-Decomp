@@ -194,16 +194,16 @@ u32 OSLoadFont(OSFontHeader *fontData, void *temp) {
         WidthTable = (u8 *)FontData + FontData->widthTable;
         CharsInSheet = FontData->sheetColumn * FontData->sheetRow;
         if (OSGetFontEncode() == 1) {
-            u16 fix[4] = { 0x2ABE, 0x003D, 0x003D, 0x003D };
+            int i;
+            int x;
             u8 *image;
-            int code;
-            int sheet;
-            int numChars;
             int row;
             int column;
-            int x;
+            int sheet;
+            int numChars;
+            int code;
             int y;
-            int i;
+            u16 fix[4] = { 0x2ABE, 0x003D, 0x003D, 0x003D };
 
             code = GetFontCode('T');
             sheet = code / CharsInSheet;
@@ -215,7 +215,12 @@ u32 OSLoadFont(OSFontHeader *fontData, void *temp) {
             image = (u8 *)FontData + FontData->sheetImage;
             image += (sheet * FontData->sheetSize) / 2;
             for (i = 4; i < 8; i++) {
-                *(u16 *)(image + ((FontData->sheetWidth / 8 * 32) / 2) * ((y + i) / 8) + (x / 8) * 16 + ((y + i) % 8) * 2 + (x % 8) / 4) = fix[i - 4];
+                u8 *p;
+                p = image + ((FontData->sheetWidth / 8 * 32) / 2) * ((y + i) / 8);
+                p += (x / 8) * 16;
+                p += ((y + i) % 8) * 2;
+                p += (x % 8) / 4;
+                *(u16 *)p = fix[i - 4];
             }
         }
     }
