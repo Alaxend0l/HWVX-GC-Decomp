@@ -121,6 +121,42 @@ void GXSetDispCopyDst(u16 wd, u16 ht) {
     gx->cpDispStride = (gx->cpDispStride & ~0xFF000000) | (0x4D << 24);
 }
 
+void GXSetTexCopyDst(u16 wd, u16 ht, s32 fmt, u8 mipmap) {
+    u32 rowTiles;
+    u32 colTiles;
+    u32 cmpTiles;
+    u32 peTexFmt;
+    u32 peTexFmtH;
+
+    gx->cpTexZ = 0;
+    peTexFmt = fmt & 0xF;
+    if (fmt == 0x13) {
+        peTexFmt = 0xB;
+    }
+    switch (fmt) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 0x26:
+        gx->cpTex = ((u32)gx->cpTex & ~0x18000) | ((u32)3 << 15);
+        break;
+    default:
+        gx->cpTex = ((u32)gx->cpTex & ~0x18000) | ((u32)2 << 15);
+        break;
+    }
+    gx->cpTexZ = 0x10 == (fmt & 0x10);
+    peTexFmtH = (peTexFmt >> 3) & 1;
+    gx->cpTex = ((u32)gx->cpTex & ~8) | ((u32)peTexFmtH << 3);
+    peTexFmt = peTexFmt & 7;
+    __GetImageTileCount(fmt, wd, ht, &rowTiles, &colTiles, &cmpTiles);
+    gx->cpTexStride = 0;
+    gx->cpTexStride = ((u32)gx->cpTexStride & ~0x3FF) | ((u32)(rowTiles * cmpTiles));
+    gx->cpTexStride = ((u32)gx->cpTexStride & ~0xFF000000) | ((u32)0x4D << 24);
+    gx->cpTex = ((u32)gx->cpTex & ~0x200) | ((u32)mipmap << 9);
+    gx->cpTex = ((u32)gx->cpTex & ~0x70) | ((u32)peTexFmt << 4);
+}
+
 void GXSetDispCopyFrame2Field(s32 mode) {
     gx->cpDisp = (gx->cpDisp & ~0x3000) | (mode << 12);
     gx->cpTex = gx->cpTex & ~0x3000;
@@ -160,19 +196,21 @@ u32 GXSetDispCopyYScale(f32 vscale) {
 void GXSetCopyClear(GXColor clear_clr, u32 clear_z) {
     u32 reg;
 
-    reg = clear_clr.r;
-    reg = (reg & ~0xFF00) | (clear_clr.a << 8);
-    reg = (reg & ~0xFF000000) | (0x4F << 24);
-    GXWGFifo.u8 = 0x61;
-    GXWGFifo.u32 = reg;
-    reg = clear_clr.b;
-    reg = (reg & ~0xFF00) | (clear_clr.g << 8);
-    reg = (reg & ~0xFF000000) | (0x50 << 24);
+    reg = 0;
+    reg = ((u32)reg & ~0xFF) | ((u32)clear_clr.r);
+    reg = ((u32)reg & ~0xFF00) | ((u32)clear_clr.a << 8);
+    reg = ((u32)reg & ~0xFF000000) | ((u32)0x4F << 24);
     GXWGFifo.u8 = 0x61;
     GXWGFifo.u32 = reg;
     reg = 0;
-    reg = (reg & ~0xFFFFFF) | clear_z;
-    reg = (reg & ~0xFF000000) | (0x51 << 24);
+    reg = ((u32)reg & ~0xFF) | ((u32)clear_clr.b);
+    reg = ((u32)reg & ~0xFF00) | ((u32)clear_clr.g << 8);
+    reg = ((u32)reg & ~0xFF000000) | ((u32)0x50 << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = reg;
+    reg = 0;
+    reg = ((u32)reg & ~0xFFFFFF) | ((u32)clear_z);
+    reg = ((u32)reg & ~0xFF000000) | ((u32)0x51 << 24);
     GXWGFifo.u8 = 0x61;
     GXWGFifo.u32 = reg;
     gx->bpSentNot = 0;
