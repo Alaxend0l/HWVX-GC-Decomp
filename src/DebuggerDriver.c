@@ -215,14 +215,3 @@ int DBGReadMailbox(unsigned long *mailbox) {
 #pragma pop
 
 #pragma pop
-static inline int DBGWriteMailbox(unsigned long p1) {
-    int total = 0;
-    unsigned long v;
-
-    DBGEXISelect(4);
-    v = (p1 & 0x1fffffff) | 0xc0000000;
-    total |= !DBGEXIImm(&v, 4, 1);
-    total |= !DBGEXISync();
-    total |= !DBGEXIDeselect();
-    return !total;
-}
