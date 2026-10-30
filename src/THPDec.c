@@ -50,11 +50,12 @@ u8 __THPReadQuantizationTable(void);
 void __THPDecompressYUV(void *tileY, void *tileU, void *tileV);
 static void __THPSetupBuffers(void);
 static void __THPRestartDefinition(void);
-s32 __THPReadFrameHeader(void);
+u8 __THPReadFrameHeader(void);
 u8 __THPReadScaneHeader(void);
-s32 __THPReadHuffmanTableSpecification(void);
+u8 __THPReadHuffmanTableSpecification(void);
 #pragma push
-#pragma optimization_level 3
+#pragma opt_propagation off
+#pragma opt_dead_assignments off
 s32 THPVideoDecode(void *file, void *tileY, void *tileU, void *tileV, void *work) {
     u8 all_done, status;
     u8 marker;
@@ -76,8 +77,7 @@ s32 THPVideoDecode(void *file, void *tileY, void *tileU, void *tileV, void *work
     }
 
     __THPWorkArea = work;
-    __THPInfo = (THPFileInfo *)(((u32)__THPWorkArea + 31) & ~31);
-    __THPWorkArea = (void *)((u32)__THPInfo + sizeof(THPFileInfo));
+    __THPWorkArea = (void *)((u32)(__THPInfo = (THPFileInfo *)(((u32)__THPWorkArea + 31) & ~31)) + sizeof(THPFileInfo));
     DCZeroRange(__THPInfo, sizeof(THPFileInfo));
     __THPInfo->cnt = 33;
     __THPInfo->decompressedY = 0;
@@ -168,7 +168,7 @@ static void __THPSetupBuffers(void) {
     }
 }
 
-s32 __THPReadFrameHeader(void) {
+u8 __THPReadFrameHeader(void) {
     s32 i;
     u8 utmp8;
 
@@ -225,7 +225,7 @@ u8 __THPReadScaneHeader(void) {
 static void __THPHuffGenerateSizeTable(void);
 static void __THPHuffGenerateCodeTable(void);
 static void __THPHuffGenerateDecoderTables(u8 tabIndex);
-s32 __THPReadHuffmanTableSpecification(void) {
+u8 __THPReadHuffmanTableSpecification(void) {
     u8 t_class, id, i, tab_index;
     u16 length, num_Vij;
 
