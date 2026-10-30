@@ -163,6 +163,7 @@ typedef struct CarAStuntInfo {
   char **failMessage;       /* 0x48 NULL: g_stuntLossString */
   u32 numFailThings;        /* 0x4C */
   u32 *failThings;          /* 0x50 thing ids, picked by fail time */
+  f32 spinScore;            /* 0x54 */
 } CarAStuntInfo;
 
 typedef struct CarAGear {
