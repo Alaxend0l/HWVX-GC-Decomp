@@ -163,6 +163,51 @@ error:
     __CARDPutControlBlock(card, result);
     callback(chan, result);
 }
+
+s32 __CARDAccess(CARDControl *card, CARDDir *ent);
+s32 __CARDIsPublic(CARDDir *ent);
+void DCInvalidateRange(void *addr, u32 nBytes);
+void __CARDDefaultApiCallback(s32 chan, s32 result);
+#pragma push
+#pragma use_lmw_stmw on
+s32 CARDReadAsync(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset, CARDCallback callback)
+{
+    CARDControl *card;
+    s32 result;
+    CARDDir *dir;
+    CARDDir *ent;
+
+    if ((offset & 0x1FF) || (length & 0x1FF)) {
+        return -128;
+    }
+    result = __CARDSeek(fileInfo, length, offset, &card);
+    if (result < 0) {
+        return result;
+    }
+
+    dir = __CARDGetDirBlock(card);
+    ent = &dir[fileInfo->fileNo];
+    result = __CARDAccess(card, ent);
+    if (result == -10) {
+        result = __CARDIsPublic(ent);
+    }
+    if (result < 0) {
+        return __CARDPutControlBlock(card, result);
+    }
+
+    DCInvalidateRange(buf, (u32)length);
+    card->apiCallback = callback ? callback : __CARDDefaultApiCallback;
+
+    offset = (s32)(fileInfo->offset & (card->sectorSize - 1));
+    length = (length < card->sectorSize - offset) ? length : card->sectorSize - offset;
+    result = __CARDRead(fileInfo->chan, card->sectorSize * fileInfo->iBlock + offset, length, buf, ReadCallback);
+    if (result < 0) {
+        __CARDPutControlBlock(card, result);
+    }
+    return result;
+}
+#pragma pop
+
 #pragma pop
 
 s32 CARDRead(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset)
