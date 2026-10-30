@@ -156,3 +156,70 @@ static void InitCallback(void *task) {
     while (DSPCheckMailToDSP()) {
     }
 }
+
+s32 EXIUnlock(s32 chan);
+s32 EXIProbe(s32 chan);
+void __CARDMountCallback(s32 chan, s32 result);
+s32 __CARDReadStatus(s32 chan, u8 *status);
+static void DoneCallback(void *_task) {
+    u8 rbuf[64];
+    u8 status;
+    u8 *output;
+    s32 chan;
+    u8 *input;
+    u32 data;
+    u32 dummy;
+    u32 rlen;
+    u32 rshift;
+    u32 wk, wk1, Ans2;
+    CARDControl *card;
+    void *task;
+    s32 result;
+
+    task = _task;
+    for (chan = 0; chan < 2; ++chan) {
+        card = &__CARDBlock[chan];
+        if ((void *)card->task == task) {
+            break;
+        }
+    }
+
+    input = (u8 *)(((u32)card->workArea + 0x10 + 0x1F) & ~0x1F);
+    output = input + 32;
+    Ans2 = *(u32 *)output;
+    dummy = DummyLen();
+    rlen = dummy;
+    data = ((Ans2 ^ card->scramble) & 0xFFFF0000);
+    if (ReadArrayUnlock(chan, data, rbuf, rlen, 1) < 0) {
+        EXIUnlock(chan);
+        __CARDMountCallback(chan, -3);
+        return;
+    }
+
+    rshift = (u32)((dummy + 4 + card->latency) * 8 + 1);
+    wk = exnor(card->scramble, rshift);
+    wk1 = ~(wk ^ (wk << 7) ^ (wk << 15) ^ (wk << 23));
+    card->scramble = (wk | ((wk1 >> 31) & 0x00000001));
+
+    dummy = DummyLen();
+    rlen = dummy;
+    data = (((Ans2 << 16) ^ card->scramble) & 0xFFFF0000);
+    if (ReadArrayUnlock(chan, data, rbuf, rlen, 1) < 0) {
+        EXIUnlock(chan);
+        __CARDMountCallback(chan, -3);
+        return;
+    }
+
+    result = __CARDReadStatus(chan, &status);
+    if (!EXIProbe(chan)) {
+        EXIUnlock(chan);
+        __CARDMountCallback(chan, -3);
+        return;
+    }
+    if (result == 0 && !(status & 0x40)) {
+        EXIUnlock(chan);
+        result = -5;
+    }
+    __CARDMountCallback(chan, result);
+}
+
