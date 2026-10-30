@@ -216,18 +216,18 @@ static inline s32 SimThread_AddDelta(SimThread *t, s32 dPos, s32 dt) {
 static inline u32 SimThread_Sample(SimThread *t) {
     u32 OSGetTick(void);
     u32 now;
-    u32 last;
+    u32 dt;
     s32 oldPos;
     s32 n;
     s32 accel;
 
     now = OSGetTick() / ((*(u32 *)0x800000F8 / 4) / 1000);
-    last = t->lastTick;
+    dt = now - t->lastTick;
     t->lastTick = now;
     oldPos = t->pos;
     t->pos = ((LGDevice *)t->owner->unkF0)->curSteering;
     t->posScaled = t->pos << 12;
-    t->history[t->historyIdx++] = SimThread_AddDelta(t, t->pos - oldPos, now - last);
+    t->history[t->historyIdx++] = SimThread_AddDelta(t, t->pos - oldPos, dt);
     if (t->historyIdx > 9) {
         t->historyIdx = 0;
     }
@@ -239,7 +239,7 @@ static inline u32 SimThread_Sample(SimThread *t) {
         }
     }
     t->accel = accel;
-    return now - last;
+    return dt;
 }
 
 void VDevice_RecalcGammaTable(void);
