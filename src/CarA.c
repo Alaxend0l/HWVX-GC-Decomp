@@ -330,7 +330,8 @@ static void CarA_ApplyWheelLoads(void *thing) {
     u32 i;
     s32 bone;
 
-    for (i = 0, susp = car; i < car->vehicleIface->numWheels; i++, susp = (CarA *)((u8 *)susp + sizeof(CarAWheelState))) {
+    susp = car;
+    for (i = 0; i < car->vehicleIface->numWheels; i++) {
         wheel = &car->vehicleIface->wheels[i];
         if (wheel->parent != 0) {
             bone = wheel->bone - wheel->parent;
