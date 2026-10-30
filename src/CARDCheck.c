@@ -243,6 +243,120 @@ s32 __CARDVerify(void *card) {
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s32 CARDCheckExAsync(s32 chan, s32 *xferBytes, CARDCallback callback) {
+    CARDControl *card;
+    CARDDir *dir[2];
+    u16 *fat[2];
+    u16 *map;
+    s32 result;
+    s32 errors;
+    s32 currentFat;
+    s32 currentDir;
+    s32 fileNo;
+    u16 iBlock;
+    u16 cBlock;
+    u16 cFree;
+    BOOL updateFat = FALSE;
+    BOOL updateDir = FALSE;
+    BOOL updateOrphan = FALSE;
+
+    if (xferBytes) {
+        *xferBytes = 0;
+    }
+    result = __CARDGetControlBlock(chan, &card);
+    if (result < 0) {
+        return result;
+    }
+    result = VerifyID(card);
+    if (result < 0) {
+        return __CARDPutControlBlock(card, result);
+    }
+    errors = VerifyDir(card, &currentDir);
+    errors += VerifyFAT(card, &currentFat);
+    if (1 < errors) {
+        return __CARDPutControlBlock(card, -6);
+    }
+    dir[0] = (CARDDir *)((u8 *)card->workArea + (1 + 0) * 0x2000);
+    dir[1] = (CARDDir *)((u8 *)card->workArea + (1 + 1) * 0x2000);
+    fat[0] = (u16 *)((u8 *)card->workArea + (3 + 0) * 0x2000);
+    fat[1] = (u16 *)((u8 *)card->workArea + (3 + 1) * 0x2000);
+    switch (errors) {
+    case 0:
+        break;
+    case 1:
+        if (!card->currentDir) {
+            card->currentDir = (u8 *)dir[currentDir];
+            memcpy(dir[currentDir], dir[currentDir ^ 1], 0x2000);
+            updateDir = TRUE;
+        } else {
+            card->currentFat = fat[currentFat];
+            memcpy(fat[currentFat], fat[currentFat ^ 1], 0x2000);
+            updateFat = TRUE;
+        }
+        break;
+    }
+    map = fat[currentFat ^ 1];
+    memset(map, 0, 0x2000);
+    for (fileNo = 0; fileNo < 127; fileNo++) {
+        CARDDir *ent = &((CARDDir *)card->currentDir)[fileNo];
+        if (ent->gameName[0] == 0xFF) {
+            continue;
+        }
+        for (iBlock = ent->startBlock, cBlock = 0; iBlock != 0xFFFF && cBlock < ent->length;
+             iBlock = card->currentFat[iBlock], ++cBlock) {
+            if (!(iBlock >= 5 && iBlock < card->cBlock) || 1 < ++map[iBlock]) {
+                return __CARDPutControlBlock(card, -6);
+            }
+        }
+        if (cBlock != ent->length || iBlock != 0xFFFF) {
+            return __CARDPutControlBlock(card, -6);
+        }
+    }
+    cFree = 0;
+    for (iBlock = 5; iBlock < card->cBlock; iBlock++) {
+        u16 nextBlock = card->currentFat[iBlock];
+        if (map[iBlock] == 0) {
+            if (nextBlock != 0) {
+                card->currentFat[iBlock] = 0;
+                updateOrphan = TRUE;
+            }
+            cFree++;
+        } else if (!(nextBlock >= 5 && nextBlock < card->cBlock) && nextBlock != 0xFFFF) {
+            return __CARDPutControlBlock(card, -6);
+        }
+    }
+    if (cFree != card->currentFat[3]) {
+        card->currentFat[3] = cFree;
+        updateOrphan = TRUE;
+    }
+    if (updateOrphan) {
+        __CARDCheckSum(&card->currentFat[2], 0x2000 - sizeof(u32), &card->currentFat[0], &card->currentFat[1]);
+    }
+    memcpy(fat[currentFat ^ 1], fat[currentFat], 0x2000);
+    if (updateDir) {
+        if (xferBytes) {
+            *xferBytes = 0x2000;
+        }
+        return __CARDUpdateDir(chan, callback);
+    }
+    if (updateFat | updateOrphan) {
+        if (xferBytes) {
+            *xferBytes = 0x2000;
+        }
+        return __CARDUpdateFatBlock(chan, card->currentFat, callback);
+    }
+    __CARDPutControlBlock(card, 0);
+    if (callback) {
+        BOOL enabled = OSDisableInterrupts();
+        callback(chan, 0);
+        OSRestoreInterrupts(enabled);
+    }
+    return 0;
+}
+#pragma pop
+
 s32 CARDCheck(s32 chan) {
     s32 xferBytes;
     s32 result;
