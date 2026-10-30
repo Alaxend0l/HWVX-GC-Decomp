@@ -179,6 +179,17 @@ static inline GXColor Render_MakeColor(u8 r, u8 g, u8 b) {
     return c;
 }
 
+static inline void Render_InitLightColor(void *lt_obj, u8 r, u8 g, u8 b) {
+    void GXInitLightColor(void *lt_obj, GXColor color);
+    GXColor c;
+
+    c.r = r;
+    c.g = g;
+    c.b = b;
+    c.a = 0xFF;
+    GXInitLightColor(lt_obj, c);
+}
+
 typedef struct GDL {
     u8 unk0[0x2C];
     u32 numSpheres;
@@ -730,6 +741,52 @@ void Render_UseLighting(u8 enable) {
         GXSetChanCtrl(4, 1, 0, 0, m_pointLightMask | 1, 2, 2);
     } else {
         GXSetChanCtrl(4, 0, 1, 1, 0, 0, 2);
+    }
+}
+
+void Render_UpdateLightState(s32 index) {
+    extern u8 m_totalLights;
+    void *GetRenderWindow();
+    void InverseXformVecOrientation(void *m, Vector4 *v, Vector4 *out);
+    void GXInitLightPos(void *lt_obj, f32 x, f32 y, f32 z);
+    void GXInitLightColor(void *lt_obj, GXColor color);
+    void GXLoadLightObjImm(void *lt_obj, s32 light);
+    void GXInitLightDistAttn(void *lt_obj, f32 ref_dist, f32 ref_br, s32 dist_func);
+    void GXInitLightAttnK(void *lt_obj, f32 k0, f32 k1, f32 k2);
+    void *memset(void *dst, s32 c, u32 n);
+    u8 lightObj[0x40];
+    u8 pointObj[0x40];
+    Vector4 dir;
+    GXColor color;
+    GXColor pointColor;
+    u8 i;
+    GDLLightState *ls;
+
+    if (index == 0xFFFFFFFF) {
+        index = 0;
+    }
+    ls = &g_pGDL->lightStates[index];
+    color = Render_MakeColor(ls->lightColor.r, ls->lightColor.g, ls->lightColor.b);
+    memset(lightObj, 0, 0x40);
+    InverseXformVecOrientation(GetRenderWindow(), &ls->lightDir, &dir);
+    GXInitLightPos(lightObj, -10000.0f * dir.x, 10000.0f * dir.y, -10000.0f * dir.z);
+    GXInitLightColor(lightObj, color);
+    GXLoadLightObjImm(lightObj, 1);
+    GXSetChanAmbColor(4, Render_MakeColor(ls->ambientColor.r, ls->ambientColor.g, ls->ambientColor.b));
+    m_pointLightMask = 0;
+    m_totalLights = 0;
+    for (i = 0; i < ls->numPointLights; i++) {
+        if (m_totalLights <= 4) {
+            m_totalLights++;
+            pointColor = Render_MakeColor(ls->pointColors[i].r, ls->pointColors[i].g, ls->pointColors[i].b);
+            memset(pointObj, 0, 0x40);
+            GXInitLightPos(pointObj, ls->pointLights[i].x, ls->pointLights[i].y, ls->pointLights[i].z);
+            GXInitLightColor(pointObj, pointColor);
+            GXInitLightDistAttn(pointObj, ls->pointLights[i].w, 0.99999f, 1);
+            GXInitLightAttnK(pointObj, 0.0f, 0.0f, 0.01f);
+            GXLoadLightObjImm(pointObj, 1 << m_totalLights);
+            m_pointLightMask |= 1 << m_totalLights;
+        }
     }
 }
 
