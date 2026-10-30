@@ -58,6 +58,7 @@ typedef struct Emitter {
 } Emitter;
 
 void Thing_Release(s32 thing);
+u32 Emitter_InCameraRange(Emitter *emitter, f32 range);
 
 u32 Gfx_GetCameraPositions(Vector4 *positions);
 f32 PSVECSquareDistance(f32 *a, f32 *b);
