@@ -166,6 +166,54 @@ u8 *getTiming(u32 mode) {
     return NULL;
 }
 
+#pragma push
+#pragma dont_inline on
+void __VIInit(s32 mode) {
+    VITiming *tm;
+    u32 nonInter;
+    volatile u32 a;
+    u32 tv, tvForReg;
+    u32 hct, vct;
+
+    nonInter = mode & 2;
+    tv = (u32)mode >> 2;
+    *(u32 *)0x800000CC = tv;
+    tm = (VITiming *)getTiming(mode);
+    __VIRegs[1] = 2;
+    for (a = 0; a < 1000; a++) {
+    }
+    __VIRegs[1] = 0;
+    __VIRegs[3] = tm->hlw;
+    __VIRegs[2] = (u16)(tm->hce | (tm->hcs << 8));
+    __VIRegs[5] = (u16)(tm->hsy | (tm->hbe640 << 7));
+    __VIRegs[4] = (u16)((tm->hbe640 >> 9) | (tm->hbs640 << 1));
+    __VIRegs[0] = tm->equ;
+    __VIRegs[7] = (u16)(tm->prbOdd + tm->acv * 2 - 2);
+    __VIRegs[6] = (u16)(tm->psbOdd + 2);
+    __VIRegs[9] = (u16)(tm->prbEven + tm->acv * 2 - 2);
+    __VIRegs[8] = (u16)(tm->psbEven + 2);
+    __VIRegs[11] = (u16)(tm->bs1 | (tm->be1 << 5));
+    __VIRegs[10] = (u16)(tm->bs3 | (tm->be3 << 5));
+    __VIRegs[13] = (u16)(tm->bs2 | (tm->be2 << 5));
+    __VIRegs[12] = (u16)(tm->bs4 | (tm->be4 << 5));
+    __VIRegs[36] = 0x2828;
+    __VIRegs[27] = 1;
+    __VIRegs[26] = 0x1001;
+    hct = tm->hlw + 1;
+    vct = tm->nhlines / 2 + 1;
+    __VIRegs[25] = (u16)hct;
+    __VIRegs[24] = (u16)(vct | 0x1000);
+    if (mode != 2 && mode != 3) {
+        tvForReg = tv;
+        __VIRegs[1] = (u16)((nonInter << 2) | 1 | (tvForReg << 8));
+        __VIRegs[54] = 0;
+    } else {
+        __VIRegs[1] = (u16)((tv << 8) | 5);
+        __VIRegs[54] = 1;
+    }
+}
+#pragma pop
+
 void VIWaitForRetrace(void) {
     extern u32 retraceCount;
     extern u8 retraceQueue[8];
