@@ -6,7 +6,9 @@ typedef struct OSContext {
     u32 gpr[32];
     u32 cr;
     u32 lr;
-    u8 unk88[0x2C8 - 0x88];
+    u8 unk88[0x1A2 - 0x88];
+    u16 state;
+    u8 unk1A4[0x2C8 - 0x1A4];
 } OSContext;
 
 typedef struct OSThreadQueue {
