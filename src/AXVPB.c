@@ -38,14 +38,19 @@ typedef struct AXVPB {
     AXPB pb;             /* 0x138 */
 } AXVPB;
 
+static AXPB __AXPB[64];
+static u32 __AXITD[64][16];
+static u16 __AXUpdates[64][128];
+static AXVPB __AXVPB[64];
+static u32 __AXMaxDspCycles;
+static u32 __AXRecDspCycles;
+s32 __AXNumVoices;
 
 s32 __AXGetNumVoices(void) {
-    extern s32 __AXNumVoices;
     return __AXNumVoices;
 }
 
 void *__AXGetPBs(void) {
-    extern u8 __AXPB[];
     return __AXPB;
 }
 
