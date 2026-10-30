@@ -134,6 +134,48 @@ void __CARDExtHandler(s32 chan, void *context) {
     }
 }
 
+void __CARDExiHandler(s32 chan, void *context) {
+    CARDControl *card;
+    CARDCallback callback;
+    u8 status;
+    s32 result;
+
+    card = &__CARDBlock[chan];
+
+    OSCancelAlarm(card->alarm);
+
+    if (!card->attached) {
+        return;
+    }
+
+    if (!EXILock(chan, 0, 0)) {
+        result = -128;
+        goto fatal;
+    }
+
+    if ((result = __CARDReadStatus(chan, &status)) < 0 || (result = __CARDClearStatus(chan)) < 0) {
+        goto error;
+    }
+
+    if ((result = (status & 0x18) ? -5 : 0) == -5 && --card->retry > 0) {
+        result = Retry(chan);
+        if (result >= 0) {
+            return;
+        }
+        goto fatal;
+    }
+
+error:
+    EXIUnlock(chan);
+
+fatal:
+    callback = card->exiCallback;
+    if (callback) {
+        card->exiCallback = 0;
+        callback(chan, result);
+    }
+}
+
 void __CARDTxHandler(s32 chan, void *context) {
     CARDControl *card;
     CARDCallback callback;
