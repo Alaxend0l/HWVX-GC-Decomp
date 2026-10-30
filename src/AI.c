@@ -48,8 +48,9 @@ void AI_Init(void) {
 }
 
 void AI_AsyncProcess_80006C80(void) {
-    M2C_UNK AI_Car_AsyncProcess();
-    M2C_UNK AI_Creature_AsyncProcess();
+    void AI_Car_AsyncProcess(void);
+    void AI_Creature_AsyncProcess(void);
+
     AI_Car_AsyncProcess();
     AI_Creature_AsyncProcess();
 }
