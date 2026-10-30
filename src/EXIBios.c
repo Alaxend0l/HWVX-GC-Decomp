@@ -498,6 +498,31 @@ void EXTIntrruptHandler(s16 interrupt, OSContext *context) {
     }
 }
 
+void *__OSSetInterruptHandler(s16 interrupt, void *handler);
+s32 OSGetConsoleType(void);
+void TCIntrruptHandler(s16 interrupt, OSContext *context);
+void EXIInit(void) {
+    __OSMaskInterrupts(0x7F8000);
+    __EXIRegs[0] = 0;
+    __EXIRegs[5] = 0;
+    __EXIRegs[10] = 0;
+    __EXIRegs[0] = 0x2000;
+    __OSSetInterruptHandler(9, EXIIntrruptHandler);
+    __OSSetInterruptHandler(10, TCIntrruptHandler);
+    __OSSetInterruptHandler(11, EXTIntrruptHandler);
+    __OSSetInterruptHandler(12, EXIIntrruptHandler);
+    __OSSetInterruptHandler(13, TCIntrruptHandler);
+    __OSSetInterruptHandler(14, EXTIntrruptHandler);
+    __OSSetInterruptHandler(15, EXIIntrruptHandler);
+    __OSSetInterruptHandler(16, TCIntrruptHandler);
+    if (OSGetConsoleType() & 0x10000000) {
+        __EXIProbeStartTime[0] = __EXIProbeStartTime[1] = 0;
+        Ecb[0].idTime = Ecb[1].idTime = 0;
+        __EXIProbe(0);
+        __EXIProbe(1);
+    }
+}
+
 #pragma push
 #pragma use_lmw_stmw on
 BOOL EXILock(s32 chan, u32 dev, EXICallback unlockedCallback) {
