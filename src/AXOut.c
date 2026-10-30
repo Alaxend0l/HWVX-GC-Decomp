@@ -137,8 +137,8 @@ void __AXOutInitDSP(void)
 {
     extern u8 axDspSlave[];
     extern u16 axDspSlaveLength;
-    extern s32 __AXDSPInitFlag;
-    extern s32 __AXDSPDoneFlag;
+    extern volatile s32 __AXDSPInitFlag;
+    extern volatile s32 __AXDSPDoneFlag;
     s32 DSPCheckInit(void);
     void DSPInit(void);
     void *DSPAddTask(DSPTaskInfo *task);
