@@ -595,16 +595,16 @@ void __GXSetVAT(void) {
     u8 i;
 
     for (i = 0; i < 8; i++) {
-        if (gx->dirtyVAT & (1 << i)) {
+        if (gx->dirtyVAT & (1 << (u32)i)) {
             GXWGFifo.u8 = 8;
-            GXWGFifo.u8 = i | 0x70;
-            GXWGFifo.u32 = *(gx->vatA + i);
+            GXWGFifo.u8 = 0x70 | i;
+            GXWGFifo.u32 = gx->vatA[i];
             GXWGFifo.u8 = 8;
-            GXWGFifo.u8 = i | 0x80;
-            GXWGFifo.u32 = *(gx->vatB + i);
+            GXWGFifo.u8 = 0x80 | i;
+            GXWGFifo.u32 = gx->vatB[i];
             GXWGFifo.u8 = 8;
-            GXWGFifo.u8 = i | 0x90;
-            GXWGFifo.u32 = *(gx->vatC + i);
+            GXWGFifo.u8 = 0x90 | i;
+            GXWGFifo.u32 = gx->vatC[i];
         }
     }
     gx->dirtyVAT = 0;
