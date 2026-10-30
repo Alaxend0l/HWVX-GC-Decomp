@@ -180,7 +180,7 @@ static inline void GXPosition2f32(f32 x, f32 y) {
     GXWGFifo.f32 = y;
 }
 
-static inline void FontManager_Vertex2(f32 s, f32 t, f32 x, f32 y) {
+static inline void FontManager_Vertex2(f32 x, f32 y, f32 s, f32 t) {
     GXPosition2f32(x, y);
     GXColor4u8(g_textcolor.r, g_textcolor.g, g_textcolor.b, g_textcolor.a);
     GXTexCoord2f32(s, t);
