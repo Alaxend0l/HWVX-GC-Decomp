@@ -32,8 +32,8 @@ void *LoadDataChunkFile(const char *name) {
     header.size = 0;
     header.count = 0;
     File_Read(handle, 8, &header);
-    data = Allocate(header.size, 0, "");
-    relocs = Allocate(header.count * 4, 0, "");
+    data = Allocate(header.size, 0, "\0");
+    relocs = Allocate(header.count * 4, 0, "\0");
     if (File_Read(handle, header.count * 4, relocs) == 0) {
         return NULL;
     }
