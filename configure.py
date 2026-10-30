@@ -293,7 +293,7 @@ config.libs = [
         "progress_category": "game",
         "objects": [
             Object(NonMatching, "Action.c"),
-            Object(NonMatching, "AI.c"),
+            Object(Matching, "AI.c"),
             Object(NonMatching, "AI_CarA.c"),
             Object(NonMatching, "AnimHandler.c"),
             Object(Matching, "AttachThing.c"),
