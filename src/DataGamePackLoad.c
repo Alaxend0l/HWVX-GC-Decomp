@@ -44,6 +44,122 @@ void DataPack_CloseFiles(void)
 
 #pragma push
 #pragma use_lmw_stmw on
+#pragma readonly_strings on
+s32 DataPack_LoadFile(char *name, s32 arg1, u32 type, u32 id) {
+    extern u32 g_buffer[];
+    char *strcpy(char *dst, const char *src);
+    char *strcat(char *dst, const char *src);
+    int strcmp(const char *a, const char *b);
+    char *strncpy(char *dst, const char *src, u32 n);
+    u32 strlen(const char *s);
+    void *memcpy(void *dst, const void *src, u32 n);
+    int sprintf(char *buf, const char *fmt, ...);
+    void Dprintf(const char *fmt, ...);
+    s32 File_Open(u32 dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    s32 File_Seek(s32 handle, s32 offset, s8 mode);
+    void DataPack_LoadDataPack(s32 file, s32 arg1);
+    FileTOCCacheEntry *toc;
+    char *tocName;
+    u32 i;
+    s8 found;
+    char path[0x80];
+
+    found = 0;
+    strcpy(path, name);
+    strcat(path, ".xgc");
+    if ((g_fileID != -1 && g_fileTOCCache[type].name == NULL) || strcmp(g_fileTOCCache[type].name, name) != 0) {
+        for (i = 0; i < 11; i++) {
+            if (i != type && g_fileTOCCache[i].name != NULL && strcmp(g_fileTOCCache[i].name, name) == 0) {
+                memcpy(&g_fileTOCCache[type], &g_fileTOCCache[i], sizeof(FileTOCCacheEntry));
+                if (g_fileID && g_openFileDataPackType == i) {
+                    g_openFileDataPackType = type;
+                } else if (g_openFileDataPackType == type) {
+                    File_Close(g_fileID);
+                    g_fileID = -1;
+                    g_openFileDataPackType = 0xB;
+                }
+                break;
+            }
+        }
+    }
+    if (g_fileID == -1 || (tocName = g_fileTOCCache[type].name) == NULL || strcmp(tocName, name) != 0 ||
+        (g_openFileDataPackType != type && strcmp(tocName, g_fileTOCCache[g_openFileDataPackType].name) != 0)) {
+        if (g_fileID != -1) {
+            File_Close(g_fileID);
+            g_openFileDataPackType = 0xB;
+        }
+        g_fileID = File_Open(0, path, 0, 0);
+        if (g_fileID == -1) {
+            if (strcmp(name, "mcp") != 0) {
+                char msg[0x80];
+                sprintf(msg, "Could not open the data pack: %s\n", path);
+                Dprintf(msg);
+            }
+            return 0;
+        }
+        g_openFileDataPackType = type;
+    }
+    toc = &g_fileTOCCache[type];
+    tocName = toc->name;
+    if (tocName == NULL || strcmp(tocName, name) != 0) {
+        File_Read(g_fileID, 0x800, g_buffer);
+        if (g_buffer[0] != 0x020100A0 || g_buffer[1] != 0x040100AE) {
+            File_Close(g_fileID);
+            g_fileID = -1;
+            g_openFileDataPackType = 0xB;
+            return 0;
+        }
+        if (g_buffer[2] != 0xB7) {
+            char msg[0x80];
+            File_Close(g_fileID);
+            g_fileID = -1;
+            g_openFileDataPackType = 0xB;
+            sprintf(msg, "The data pack is out of date: %s. Packfile:%d,  Code:%d\nYou need to repack the data using the latest BrainCore\n", path, g_buffer[2], 0xB7);
+            Dprintf(msg);
+            return 0;
+        }
+        g_fileTOCCache[type].count = g_buffer[3];
+        memcpy(toc, &g_buffer[4], g_fileTOCCache[type].count * sizeof(FileTOCEntry));
+        if (strlen(name) >= 0x4C) {
+            strncpy(tocName, name, 0x4C);
+            g_fileTOCCache[type].name[0x4B] = 0;
+        } else {
+            strcpy(tocName, name);
+        }
+    }
+    for (i = 0; i < toc->count; i++) {
+        if (type == toc->entries[i].type && id == toc->entries[i].id) {
+            if (toc->entries[i].version != 0xB7) {
+                char msg[0x80];
+                sprintf(msg, "The data pack is out of date: %s. Packfile:%d,  Code:%d\nYou need to repack the data using the latest BrainCore\n", path, toc->entries[i].version, 0xB7);
+                Dprintf(msg);
+                File_Close(g_fileID);
+                g_fileID = -1;
+                g_openFileDataPackType = 0xB;
+                return 0;
+            }
+            File_Seek(g_fileID, g_fileTOCCache[type].entries[i].offset + 0x10 + g_fileTOCCache[type].count * sizeof(FileTOCEntry), 0);
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        char msg[0x80];
+        sprintf(msg, "Could not load the data pack with Pack ID: %d. Within the file: %s\n.Check the PackID and repack using the latest BrainCore.\n", id, path);
+        Dprintf(msg);
+        File_Close(g_fileID);
+        g_fileID = -1;
+        g_openFileDataPackType = 0xB;
+        return 0;
+    }
+    DataPack_LoadDataPack(g_fileID, arg1);
+    return 1;
+}
+#pragma pop
+
+#pragma push
+#pragma use_lmw_stmw on
 void DataPack_LoadQuadPack(s32 file, QuadPack *quad) {
     s32 File_Seek(s32 handle, s32 offset, s8 mode);
     u32 File_Read(s32 handle, u32 size, void *buf);

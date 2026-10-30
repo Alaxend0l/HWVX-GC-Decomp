@@ -911,6 +911,7 @@ void GameSettings_GatherGameData(void) {
     void *FileStreaming_InitializeDataPack(void *, s32, s32);
     u8 *DataPack_GetScript(void *, s32);
     void StateProgressionManager_GetProgressionID(s32 *id, s32 *progression);
+    u8 PlayerManager_PlayerHumanCount(void);
     void *PlayerManager_GetHumanPlayerByIndex(u8 index);
     void *memcpy(void *, const void *, u32);
     void Trigger_SaveActions(void *actions, s32 count);
@@ -955,7 +956,7 @@ done:
             ((DDRescueGameData *)g_DDRescueGameData)->progression++;
             break;
         }
-        if ((u8)PlayerManager_PlayerHumanCount() == 1) {
+        if (PlayerManager_PlayerHumanCount() == 1) {
             memcpy(((DDRescueGameData *)g_DDRescueGameData)->playerStats, (u8 *)PlayerManager_GetHumanPlayerByIndex(0) + 0x70, 0x38);
         }
         Trigger_SaveActions(((DDRescueGameData *)g_DDRescueGameData)->actions, 500);
