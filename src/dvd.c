@@ -68,6 +68,7 @@ BOOL OSRestoreInterrupts(BOOL level);
 BOOL __DVDPushWaitingQueue(s32 prio, DVDCommandBlock *block);
 DVDCommandBlock *__DVDPopWaitingQueue(void);
 void __DVDClearWaitingQueue(void);
+void stateMotorStopped(void);
 void stateReady(void);
 
 static inline BOOL CheckCancel(u32 resume) {
