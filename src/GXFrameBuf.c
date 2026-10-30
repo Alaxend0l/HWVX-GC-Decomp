@@ -220,6 +220,81 @@ void GXSetCopyClear(GXColor clear_clr, u32 clear_z) {
     gx->bpSentNot = 0;
 }
 
+void GXSetCopyFilter(u8 aa, const u8 sample_pattern[12][2], u8 vf, const u8 vfilter[7]) {
+    u32 msLoc[4];
+    u32 coeff0;
+    u32 coeff1;
+
+    if (aa) {
+        msLoc[0] = 0;
+        msLoc[0] = ((u32)msLoc[0] & ~0xF) | ((u32)sample_pattern[0][0]);
+        msLoc[0] = ((u32)msLoc[0] & ~0xF0) | ((u32)sample_pattern[0][1] << 4);
+        msLoc[0] = ((u32)msLoc[0] & ~0xF00) | ((u32)sample_pattern[1][0] << 8);
+        msLoc[0] = ((u32)msLoc[0] & ~0xF000) | ((u32)sample_pattern[1][1] << 12);
+        msLoc[0] = ((u32)msLoc[0] & ~0xF0000) | ((u32)sample_pattern[2][0] << 16);
+        msLoc[0] = ((u32)msLoc[0] & ~0xF00000) | ((u32)sample_pattern[2][1] << 20);
+        msLoc[0] = ((u32)msLoc[0] & ~0xFF000000) | ((u32)1 << 24);
+        msLoc[1] = 0;
+        msLoc[1] = ((u32)msLoc[1] & ~0xF) | ((u32)sample_pattern[3][0]);
+        msLoc[1] = ((u32)msLoc[1] & ~0xF0) | ((u32)sample_pattern[3][1] << 4);
+        msLoc[1] = ((u32)msLoc[1] & ~0xF00) | ((u32)sample_pattern[4][0] << 8);
+        msLoc[1] = ((u32)msLoc[1] & ~0xF000) | ((u32)sample_pattern[4][1] << 12);
+        msLoc[1] = ((u32)msLoc[1] & ~0xF0000) | ((u32)sample_pattern[5][0] << 16);
+        msLoc[1] = ((u32)msLoc[1] & ~0xF00000) | ((u32)sample_pattern[5][1] << 20);
+        msLoc[1] = ((u32)msLoc[1] & ~0xFF000000) | ((u32)2 << 24);
+        msLoc[2] = 0;
+        msLoc[2] = ((u32)msLoc[2] & ~0xF) | ((u32)sample_pattern[6][0]);
+        msLoc[2] = ((u32)msLoc[2] & ~0xF0) | ((u32)sample_pattern[6][1] << 4);
+        msLoc[2] = ((u32)msLoc[2] & ~0xF00) | ((u32)sample_pattern[7][0] << 8);
+        msLoc[2] = ((u32)msLoc[2] & ~0xF000) | ((u32)sample_pattern[7][1] << 12);
+        msLoc[2] = ((u32)msLoc[2] & ~0xF0000) | ((u32)sample_pattern[8][0] << 16);
+        msLoc[2] = ((u32)msLoc[2] & ~0xF00000) | ((u32)sample_pattern[8][1] << 20);
+        msLoc[2] = ((u32)msLoc[2] & ~0xFF000000) | ((u32)3 << 24);
+        msLoc[3] = 0;
+        msLoc[3] = ((u32)msLoc[3] & ~0xF) | ((u32)sample_pattern[9][0]);
+        msLoc[3] = ((u32)msLoc[3] & ~0xF0) | ((u32)sample_pattern[9][1] << 4);
+        msLoc[3] = ((u32)msLoc[3] & ~0xF00) | ((u32)sample_pattern[10][0] << 8);
+        msLoc[3] = ((u32)msLoc[3] & ~0xF000) | ((u32)sample_pattern[10][1] << 12);
+        msLoc[3] = ((u32)msLoc[3] & ~0xF0000) | ((u32)sample_pattern[11][0] << 16);
+        msLoc[3] = ((u32)msLoc[3] & ~0xF00000) | ((u32)sample_pattern[11][1] << 20);
+        msLoc[3] = ((u32)msLoc[3] & ~0xFF000000) | ((u32)4 << 24);
+    } else {
+        msLoc[0] = 0x01666666;
+        msLoc[1] = 0x02666666;
+        msLoc[2] = 0x03666666;
+        msLoc[3] = 0x04666666;
+    }
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = msLoc[0];
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = msLoc[1];
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = msLoc[2];
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = msLoc[3];
+    coeff0 = 0;
+    coeff0 = ((u32)coeff0 & ~0xFF000000) | ((u32)0x53 << 24);
+    coeff1 = 0;
+    coeff1 = ((u32)coeff1 & ~0xFF000000) | ((u32)0x54 << 24);
+    if (vf) {
+        coeff0 = ((u32)coeff0 & ~0x3F) | ((u32)vfilter[0]);
+        coeff0 = ((u32)coeff0 & ~0xFC0) | ((u32)vfilter[1] << 6);
+        coeff0 = ((u32)coeff0 & ~0x3F000) | ((u32)vfilter[2] << 12);
+        coeff0 = ((u32)coeff0 & ~0xFC0000) | ((u32)vfilter[3] << 18);
+        coeff1 = ((u32)coeff1 & ~0x3F) | ((u32)vfilter[4]);
+        coeff1 = ((u32)coeff1 & ~0xFC0) | ((u32)vfilter[5] << 6);
+        coeff1 = ((u32)coeff1 & ~0x3F000) | ((u32)vfilter[6] << 12);
+    } else {
+        coeff0 = 0x53595000;
+        coeff1 = 0x54000015;
+    }
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = coeff0;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = coeff1;
+    gx->bpSentNot = 0;
+}
+
 void GXSetDispCopyGamma(s32 gamma) {
     gx->cpDisp = (gx->cpDisp & ~0x180) | (gamma << 7);
 }
