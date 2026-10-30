@@ -235,7 +235,8 @@ typedef struct IMInterface {
     void (*infoCallback)(u8 *info);
     s32 vars[30];
     u32 numVars;
-    u8 pad114[0x116 - 0x114];
+    u8 player;
+    u8 pad115[0x116 - 0x115];
     InterfaceDirState dir[4][4];
     u8 pad156[0x160 - 0x156];
     u8 unk160;
@@ -4004,10 +4005,190 @@ void InterfaceManager_RenderInterface(RenderInterface *iface) {
 }
 
 void InterfaceManager_RenderObject(IMInterface *iface, s32 index) {
+    extern s8 g_bRenderCenterPoints;
+    extern u8 g_carAVTable[];
+    extern Matrix4 g_identity;
+    extern IMInterface g_interface[];
+    void Gfx_Add2DFXLine(Vector4 *p0, Vector4 *p1, u32 *c0, u32 *c1, u8 flag);
+    void Thing_Release(void *thing);
+    void Gfx_GetCameraPosition(Vector4 *pos);
+    void SetOrientation(Matrix4 *m, f32 x, f32 y, f32 z);
+    void MultiplyMatrix(Matrix4 *out, Matrix4 *a, Matrix4 *b);
+    void SubMatrixToQuaternion(Matrix4 *m, Quaternion *q);
+    void CarA_DrawReflection(u8 *car);
+    void InterfaceManager_DrawRadarBlips(f32 *centre, u8 *obj);
+    void InterfaceManager_SetLoadState(IMInterface *iface, s32 state);
+    Matrix4 scaleMtx;
+    Matrix4 mtx;
+    Vector4 cam;
+    Vector4 savedPos;
+    Vector4 savedRot;
+    Vector4 savedScale;
     IMSlot *slot = &iface->slots[index];
+    IMSlot *carSlot = NULL;
+    u8 restore;
+    u32 i;
+    Vector4 *ofs;
 
     if (slot->hidden) {
         return;
+    }
+    if (iface->unk85) {
+        return;
+    }
+    if (g_bRenderCenterPoints && slot->object->unkC == 0) {
+        if (slot->kind == 5 && slot->unk258[0x12]) {
+            u32 colour = 0xFF8080FF;
+            f32 w = *(u16 *)(slot->unk258 + 0x14);
+            f32 h = *(u16 *)(slot->unk258 + 0x16);
+            Vector4 corner = {0.0f, 0.0f, 0.0f, 1.0f};
+            Vector4 p0;
+            Vector4 p1;
+            Vector4 p2;
+
+            corner.x = slot->pos.x - 0.5f * w - 0.5f * w * slot->object->anchorX;
+            corner.y = slot->pos.y - 0.5f * h - 0.5f * h * slot->object->anchorY;
+            p0 = corner;
+            p1 = corner;
+            p1.x += w;
+            p2 = corner;
+            p2.y += h;
+            Gfx_Add2DFXLine(&p0, &p1, &colour, &colour, 1);
+            Gfx_Add2DFXLine(&p0, &p2, &colour, &colour, 1);
+            p0.x += w;
+            p0.y += h;
+            Gfx_Add2DFXLine(&p0, &p1, &colour, &colour, 1);
+            Gfx_Add2DFXLine(&p0, &p2, &colour, &colour, 1);
+        }
+        {
+            u32 colour = 0xFFFFFFFF;
+            Vector4 p0 = slot->pos;
+            Vector4 p1 = slot->pos;
+
+            p0.x -= 10.0f;
+            p1.x += 10.0f;
+            Gfx_Add2DFXLine(&p0, &p1, &colour, &colour, 1);
+            p0.x += 10.0f;
+            p1.x -= 10.0f;
+            p0.y -= 10.0f;
+            p1.y += 10.0f;
+            Gfx_Add2DFXLine(&p0, &p1, &colour, &colour, 1);
+        }
+    }
+    if (slot->unk125) {
+        return;
+    }
+    if (!slot->visible) {
+        switch (slot->kind) {
+        case 4:
+            slot->unk244 = 0;
+            if (slot->thing != NULL) {
+                Thing_Release(slot->thing);
+                slot->thing = NULL;
+            }
+            break;
+        case 3:
+            slot->unk244 = 0;
+            slot->thing = NULL;
+            break;
+        }
+        slot->dirty84 = 1;
+        slot->dirtyB4 = 1;
+        slot->dirty54 = 1;
+        slot->dirty2C = 1;
+        slot->dirty118 = 1;
+        if (slot->kind == 1) {
+            slot->dirty130 = 1;
+        }
+        if (slot->kind == 6) {
+            InterfaceManager_SetLoadState(&g_interface[slot->child], 0);
+        }
+        return;
+    }
+    restore = 0;
+    if (slot->parent != NULL) {
+        if (*(u32 *)(slot->unk254 + 8) == 0) {
+            slot->pos = slot->parent->pos;
+        }
+        if (*(u32 *)(slot->unk254 + 0x28) == 0) {
+            slot->rot = slot->parent->rot;
+        }
+    }
+    if (slot->offset != NULL) {
+        restore = 1;
+        savedPos = slot->pos;
+        slot->pos.x += slot->offset->pos.x;
+        slot->pos.y += slot->offset->pos.y;
+        slot->pos.z += slot->offset->pos.z;
+        savedRot = slot->rot;
+        slot->rot.x += slot->offset->rot.x;
+        slot->rot.y += slot->offset->rot.y;
+        slot->rot.z += slot->offset->rot.z;
+        savedScale = slot->scale;
+        slot->scale.x += slot->offset->scale.x;
+        slot->scale.y += slot->offset->scale.y;
+        slot->scale.z += slot->offset->scale.z;
+    }
+    if (slot->car != NULL) {
+        for (i = 0; i < iface->count; i++) {
+            if (iface->slots[i].renderType == 4) {
+                carSlot = &iface->slots[i];
+                break;
+            }
+        }
+        Gfx_GetCameraPosition(&cam);
+        if (carSlot != NULL) {
+            cam.x -= carSlot->pos.x;
+            cam.y -= carSlot->pos.y;
+            cam.z -= carSlot->pos.z;
+            SetOrientation(&mtx, 0.017453292f * (slot->rot.y + carSlot->rot.y), 0.017453292f * (slot->rot.x + carSlot->rot.x),
+                           0.017453292f * (slot->rot.z + carSlot->rot.z));
+        } else {
+            SetOrientation(&mtx, 0.017453292f * slot->rot.y, 0.017453292f * slot->rot.x, 0.017453292f * slot->rot.z);
+        }
+        if (*(u8 **)(slot->car + 0x8C) == g_carAVTable) {
+            ofs = *(Vector4 **)(slot->car + 0x3BC);
+            if (90.0f == slot->rot.z || -90.0f == slot->rot.z) {
+                cam.x -= ofs->x;
+                cam.y -= ofs->y;
+                cam.z -= ofs->z;
+            } else {
+                cam.x += ofs->x;
+                cam.y += ofs->y;
+                cam.z += ofs->z;
+            }
+        }
+        if (slot->offset != NULL) {
+            mtx.v[3].x = slot->offset->object->anchorX + (cam.x + savedPos.x);
+            mtx.v[3].y = slot->offset->object->anchorY + (cam.y + savedPos.y);
+            mtx.v[3].z = cam.z + savedPos.z;
+        } else {
+            mtx.v[3].x = cam.x + slot->pos.x;
+            mtx.v[3].y = cam.y + slot->pos.y;
+            mtx.v[3].z = cam.z + slot->pos.z;
+        }
+        memcpy(&scaleMtx, &g_identity, sizeof(Matrix4));
+        scaleMtx.v[0].x = slot->scale.x;
+        scaleMtx.v[1].y = slot->scale.y;
+        scaleMtx.v[2].z = slot->scale.z;
+        MultiplyMatrix(&scaleMtx, &mtx, (Matrix4 *)(slot->car + 0x10));
+        SubMatrixToQuaternion((Matrix4 *)(slot->car + 0x10), (Quaternion *)(slot->car + 0x50));
+        *(u32 *)(slot->car + 0x74) |= 0x80;
+        if (*(u8 **)(slot->car + 0x8C) == g_carAVTable) {
+            CarA_DrawReflection(slot->car);
+        } else {
+            (*(void (**)(u8 *))(*(u8 **)(slot->car + 0x8C) + 0x10))(slot->car);
+        }
+    }
+    if (slot->renderType == 7) {
+        if (iface->owner != NULL && *(u32 *)(iface->owner + 0x2C) != 0) {
+            InterfaceManager_DrawRadarBlips(&slot->pos.x, (u8 *)iface);
+        }
+    }
+    if (restore) {
+        slot->pos = savedPos;
+        slot->rot = savedRot;
+        slot->scale = savedScale;
     }
 }
 
