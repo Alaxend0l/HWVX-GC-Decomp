@@ -5,7 +5,9 @@ typedef struct AXPB {
     u16 nextLo;          /* 0x02 */
     u16 currHi;          /* 0x04 */
     u16 currLo;          /* 0x06 */
-    u8 unk8[6];
+    u16 srcSelect;       /* 0x08 */
+    u16 coefSelect;      /* 0x0A */
+    u16 mixerCtrl;       /* 0x0C */
     u16 state;           /* 0x0E */
     u8 unk10[0x26];
     u16 itdFlag;         /* 0x36 */
