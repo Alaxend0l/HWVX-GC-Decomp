@@ -8,6 +8,27 @@ static long RecvDataLeng;
 static unsigned char *pEXIInputFlag;
 static unsigned char EXIInputFlag;
 
+volatile unsigned long __EXIRegs[16] : 0xCC006800;
+
+static int DBGEXISelect(unsigned long v) {
+    unsigned long regs = __EXIRegs[10];
+    regs &= 0x405;
+    regs |= 0x80 | (v << 4);
+    __EXIRegs[10] = regs;
+    return 1;
+}
+
+static int DBGEXIDeselect(void) {
+    __EXIRegs[10] &= 0x405;
+    return 1;
+}
+
+static int DBGEXISync(void) {
+    while (__EXIRegs[13] & 1) {
+    }
+    return 1;
+}
+
 void DBClose(void) {
 
 }
@@ -71,27 +92,6 @@ void DBInitInterrupts(void) {
     DBGCallback = (DBGCallbackType)MWCallback;
     __OSSetInterruptHandler(0x19, DBGHandler);
     __OSUnmaskInterrupts(0x40);
-}
-
-volatile unsigned long __EXIRegs[16] : 0xCC006800;
-
-static int DBGEXISelect(unsigned long v) {
-    unsigned long regs = __EXIRegs[10];
-    regs &= 0x405;
-    regs |= 0x80 | (v << 4);
-    __EXIRegs[10] = regs;
-    return 1;
-}
-
-static int DBGEXIDeselect(void) {
-    __EXIRegs[10] &= 0x405;
-    return 1;
-}
-
-static int DBGEXISync(void) {
-    while (__EXIRegs[13] & 1) {
-    }
-    return 1;
 }
 
 void DBInitComm(unsigned char **inputFlagPtr, MTRCallbackType callback) {
