@@ -113,7 +113,43 @@ void EraseCallback(s32 chan, s32 result) {
     callback(chan, result);
 }
 
-void CARDWrite(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset)
+s32 CARDWriteAsync(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset, CARDCallback callback) {
+    s32 __CARDSeek(CARDFileInfo *fileInfo, s32 length, s32 offset, CARDControl **pcard);
+    s32 __CARDAccess(CARDControl *card, u8 *ent);
+    void DCStoreRange(void *addr, u32 nBytes);
+    void __CARDDefaultApiCallback(s32 chan, s32 result);
+    CARDControl *card;
+    s32 result;
+    u8 *dir;
+    u8 *ent;
+
+    result = __CARDSeek(fileInfo, length, offset, &card);
+    if (result < 0) {
+        return result;
+    }
+
+    if ((offset & (card->sectorSize - 1)) || (length & (card->sectorSize - 1))) {
+        return __CARDPutControlBlock(card, -128);
+    }
+
+    dir = __CARDGetDirBlock(card);
+    ent = dir + fileInfo->fileNo * 0x40;
+    result = __CARDAccess(card, ent);
+    if (result < 0) {
+        return __CARDPutControlBlock(card, result);
+    }
+
+    DCStoreRange(buf, (u32)length);
+    card->apiCallback = callback ? callback : __CARDDefaultApiCallback;
+    card->offset = (s32)buf;
+    result = __CARDEraseSector(fileInfo->chan, card->sectorSize * (u32)fileInfo->iBlock, EraseCallback);
+    if (result < 0) {
+        __CARDPutControlBlock(card, result);
+    }
+    return result;
+}
+
+s32 CARDWrite(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset)
 {
     s32 CARDWriteAsync(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset, CARDCallback callback);
     s32 __CARDSync(s32 chan);
@@ -121,10 +157,9 @@ void CARDWrite(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset)
     s32 result;
 
     result = CARDWriteAsync(fileInfo, buf, length, offset, __CARDSyncCallback);
-    if (result >= 0) {
-        __CARDSync(fileInfo->chan);
+    if (result < 0) {
+        return result;
     }
-    else {
-    }
+    return __CARDSync(fileInfo->chan);
 }
 

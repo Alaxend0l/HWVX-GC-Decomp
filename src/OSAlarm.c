@@ -17,6 +17,22 @@ typedef struct OSAlarmQueue {
 
 OSAlarmQueue AlarmQueue;
 
+void PPCMtdec(u32 newDec);
+s64 __OSGetSystemTime(void);
+
+static inline void SetTimer(OSAlarm *alarm) {
+    s64 delta;
+
+    delta = alarm->fire - __OSGetSystemTime();
+    if (delta < 0) {
+        PPCMtdec(0);
+    } else if (delta < 0x80000000) {
+        PPCMtdec((u32)delta);
+    } else {
+        PPCMtdec(0x7fffffff);
+    }
+}
+
 void OSInitAlarm(void) {
     void *__OSGetExceptionHandler(u8 exception);
     void *__OSSetExceptionHandler(u8 exception, void *handler);
@@ -107,6 +123,46 @@ void InsertAlarm(OSAlarm *alarm, s64 time, void *(*handler)(void *, void *))
         return;
     }
     PPCMtdec(0x7FFFFFFF);
+}
+
+s32 OSDisableInterrupts(void);
+s32 OSRestoreInterrupts(s32 level);
+void OSSetAlarm(OSAlarm *alarm, s64 tick, void *(*handler)(void *, void *))
+{
+    s64 __OSGetSystemTime(void);
+    s32 enabled;
+
+    enabled = OSDisableInterrupts();
+    alarm->fire2 = 0;
+    InsertAlarm(alarm, __OSGetSystemTime() + tick, handler);
+    OSRestoreInterrupts(enabled);
+}
+
+void OSCancelAlarm(OSAlarm *alarm) {
+    OSAlarm *next;
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    if (alarm->handler == NULL) {
+        OSRestoreInterrupts(enabled);
+        return;
+    }
+    next = alarm->next;
+    if (next == NULL) {
+        AlarmQueue.tail = alarm->prev;
+    } else {
+        next->prev = alarm->prev;
+    }
+    if (alarm->prev) {
+        alarm->prev->next = next;
+    } else {
+        AlarmQueue.head = next;
+        if (next) {
+            SetTimer(next);
+        }
+    }
+    alarm->handler = NULL;
+    OSRestoreInterrupts(enabled);
 }
 
 void DecrementerExceptionCallback(u32 arg0, void *arg1)

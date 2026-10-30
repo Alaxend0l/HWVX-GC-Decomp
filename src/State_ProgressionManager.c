@@ -335,6 +335,24 @@ s32 StateProgressionManager_Shutdown(void) {
     return 1;
 }
 
+s32 ActionEndLevel(s32 *arg0)
+{
+    extern u8 g_bRestartCurrentLevel;
+    extern s32 g_GameProgressionEndState[2];
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void ExitStateGamePlay(s32 state);
+
+    if (GameSettings_GetCodeVariable(0x198, 0) != 0) {
+        ExitStateGamePlay(0xC);
+    } else {
+        g_bRestartCurrentLevel = 0;
+        g_GameProgressionEndState[0] = arg0[0];
+        g_GameProgressionEndState[1] = arg0[1];
+        ExitStateGamePlay(0xB);
+    }
+    return 1;
+}
+
 s32 LoadWorldProcess(char *world, s8 loaded)
 {
     static s32 newLoadingState;

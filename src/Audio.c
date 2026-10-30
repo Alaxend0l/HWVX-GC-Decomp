@@ -48,6 +48,22 @@ s8 Audio_Init(void)
 	return 0;
 }
 
+void AudioIT_Destroy(s32);
+void AudioMIDI_Destroy(void);
+void AudioVoice_Destroy(void);
+void Audio_Destroy_(void);
+void Audio_Destroy(void)
+{
+	SongUpdate = VoiceUpdate = NULL;
+
+	AudioIT_Destroy(0);
+	AudioMIDI_Destroy();
+	AudioVoice_Destroy();
+	Audio_Destroy_();
+
+	g_init = 0;
+}
+
 void Audio_Update(void)
 {
 	if (SongUpdate != NULL)

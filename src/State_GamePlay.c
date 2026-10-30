@@ -669,6 +669,53 @@ s32 StateGamePlay_Init(void) {
     GameSettings_RestorePlayerStats();
     return 1;
 }
+
+void SetPlayerControls(void) {
+    typedef struct ControlBinding {
+        u8 unk0[0x8];
+        s32 binding;
+    } ControlBinding;
+    typedef struct MCP {
+        u8 unk0[0x3C];
+        u32 numBindings;
+        ControlBinding ***bindings;
+    } MCP;
+    typedef struct HumanPlayer {
+        u8 unk0[0x60];
+        s32 controller;
+        u8 unk64[0xC8 - 0x64];
+        s32 chan;
+    } HumanPlayer;
+    MCP *GameSettings_GetMCP(void);
+    ControllerSettings *GameSettings_GetControllerSettings(s32 player);
+    u8 PlayerManager_PlayerHumanCount(void);
+    HumanPlayer *PlayerManager_GetHumanPlayerByIndex(u8 index);
+    void PlayerHuman_SetControlBinding(HumanPlayer *player, s32 binding);
+    void PlayerHuman_SetDefaultControls(HumanPlayer *player, s32 arg);
+    void Input_SetForceFeedbackActive(s32 chan, u8 active);
+    ControllerSettings *settings;
+    MCP *mcp;
+    u32 i;
+    u32 count;
+    HumanPlayer *player;
+
+    mcp = GameSettings_GetMCP();
+    count = PlayerManager_PlayerHumanCount();
+    for (i = 0; i < count; i++) {
+        player = PlayerManager_GetHumanPlayerByIndex(i);
+        settings = GameSettings_GetControllerSettings(player->controller);
+        if (mcp != NULL && mcp->numBindings != 0) {
+            if (settings->data[1] >= mcp->numBindings) {
+                settings->data[1] = 0;
+            }
+            PlayerHuman_SetControlBinding(player, (*mcp->bindings[settings->data[1]])->binding);
+        } else {
+            PlayerHuman_SetDefaultControls(player, settings->data[1]);
+        }
+        Input_SetForceFeedbackActive(player->chan, settings->data[0]);
+    }
+}
+
 #pragma pop
 
 s32 StateGamePlay_Heartbeat(void) {
@@ -1102,6 +1149,22 @@ s32 ActionPauseGame(u32 *action) {
     return 1;
 }
 
+s32 TriggerInterfacePackEnd(u32 *pack) {
+    int strcmp(const char *, const char *);
+    u32 i;
+    u32 id;
+    InterfacePackEntry *entry;
+
+    i = 0;
+    id = pack[0];
+    for (entry = g_InterfacePackData; i < g_NumInterfacesPlaying; entry++, i++) {
+        if (id == entry->id && strcmp(entry->name, (char *)(pack + 1)) == 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 s32 ActionPlayInterfacePack(u32 *pack) {
     void *FileStreaming_InitializeDataPack(void *, s32, s32);
     u8 *DataPack_GetScript(void *, s32);
@@ -1195,6 +1258,10 @@ void InterfaceDataPackRouter(void *arg0) {
         InterfaceManager_SetCallBackRoutine(M2C_FIELD(arg0, s32 *, 0), NULL);
         break;
     }
+}
+
+void ArmageddonDropShip()
+{
 }
 
 f32 InterfaceInputAnimator_GetLRCounter(void);

@@ -109,6 +109,14 @@ s32 TRKAppendBuffer1_ui32(void *buffer, u32 data);
 s32 TRKAppendBuffer1_ui16(void *buffer, u16 data);
 s32 TRKReadBuffer1_ui64(void *buffer, u64 *data);
 
+s32 __TRK_get_MSR(void) {
+    return M2C_ERROR(/* unknown instruction: mfmsr $r3 */);
+}
+
+s32 __TRK_set_MSR(void) {
+    return M2C_ERROR(/* unknown instruction: mtmsr $r3 */);
+}
+
 void TRKTargetSetInputPendingPtr(void *ptr) {
     gTRKState.inputPendingPtr = ptr;
 }
@@ -391,6 +399,19 @@ void TRKPostInterruptEvent(void)
         TRKConstructEvent(event, eventType);
         TRKPostEvent(event);
     }
+}
+
+s32 TRKTargetCPUMinorType(void);
+__declspec(section ".data") extern s32 gTRKBigEndian;
+s32 TRKTargetCPUType(u8 *cpuType) {
+    cpuType[0] = 0;
+    cpuType[1] = TRKTargetCPUMinorType();
+    cpuType[2] = gTRKBigEndian;
+    cpuType[3] = sizeof(s32);
+    cpuType[4] = sizeof(f64);
+    cpuType[5] = sizeof(s32);
+    cpuType[6] = sizeof(f64);
+    return 0;
 }
 
 s32 TRKTargetSupportMask(u8 *mask)

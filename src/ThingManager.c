@@ -3,13 +3,10 @@
 #pragma use_lmw_stmw on
 
 void ThingManagerList_Append(void **arg0, void *arg1) {
-    void *temp_r5;
-
     M2C_FIELD(arg1, void **, 0xA4) = (void *) *arg0;
     M2C_FIELD(arg1, s32 *, 0xA0) = 0;
-    temp_r5 = M2C_FIELD(arg1, void **, 0xA4);
-    if (temp_r5 != NULL) {
-        M2C_FIELD(temp_r5, void **, 0xA0) = arg1;
+    if (M2C_FIELD(arg1, void **, 0xA4) != NULL) {
+        M2C_FIELD(M2C_FIELD(arg1, void **, 0xA4), void **, 0xA0) = arg1;
     }
     *arg0 = arg1;
 }
@@ -163,6 +160,42 @@ void ThingManagerList_ReleaseSlavesBySlaveType(void **list, u8 type) {
             *freeList = thing;
         }
         thing = next;
+    }
+}
+
+void ThingManagerList_RemoveReleasedThings(void **list) {
+    void ThingManagerList_ReleaseAndRemoveAll(void *list);
+    ThingHeader *thing;
+    ThingHeader *next;
+
+    for (thing = *list; thing != NULL; thing = next) {
+        next = thing->next;
+        if (thing->flags & 0x200000) {
+            ThingManagerList_ReleaseAndRemoveAll(&thing->unk88);
+            ThingManagerList_Remove(list, thing);
+            ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
+            thing->flags &= ~0x200000;
+            thing->flags |= 0x1000;
+        }
+    }
+}
+
+void ThingManagerList_ReleaseAll(void **list);
+void ThingManagerList_ReleaseAndRemoveAll(void **list) {
+    ThingHeader *thing;
+    ThingHeader *next;
+
+    ThingManagerList_ReleaseAll(list);
+    for (thing = *list; thing != NULL; thing = next) {
+        next = thing->next;
+        if ((thing->flags & 0x200000) != 0) {
+            void **children;
+            ThingManagerList_ReleaseAndRemoveAll(children = (void **)&thing->unk88);
+            ThingManagerList_Remove(list, thing);
+            ThingManagerList_Append(g_thingManager_DARYL.freeList + thing->type, thing);
+            thing->flags &= ~0x200000;
+            thing->flags |= 0x1000;
+        }
     }
 }
 
@@ -1036,6 +1069,8 @@ void *FindHost(Vector4 *pos, Vector4 *dir) {
     return g_thingManager_DARYL.looker;
 }
 
+#pragma push
+#pragma dont_inline on
 void ThingManager_Invalidate(u32 start, u32 end) {
     typedef struct SoundSeqThing {
         u8 pad0[0xD0];
@@ -1161,6 +1196,7 @@ void ThingManager_Invalidate(u32 start, u32 end) {
     }
     ThingManagerList_RemoveReleasedThings(&g_thingManager_DARYL.activeList);
 }
+#pragma pop
 
 s8 TriggerVehicleDamage(u32 *params) {
     u32 i;

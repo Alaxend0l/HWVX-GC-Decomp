@@ -47,18 +47,75 @@ typedef struct GfxWindow {
     f32 unk80[4][4];
     f32 unkC0[4][4];
     f32 unk100[4][4];
-    u8 unk140[0x270 - 0x140];
+    f32 unk140[4][4];
+    u8 unk180[0x270 - 0x180];
     f32 fov;
-    u8 unk274[0x280 - 0x274];
+    u8 unk274[0x278 - 0x274];
+    f32 unk278;
+    f32 unk27C;
     u32 width;
     u32 height;
-    u8 unk288[0x2B0 - 0x288];
+    u32 halfWidth;
+    u32 halfHeight;
+    f32 unk290;
+    f32 unk294;
+    f32 unk298;
+    f32 unk29C;
+    f32 unk2A0;
+    f32 unk2A4;
+    f32 unk2A8;
+    f32 unk2AC;
     u32 unk2B0;
     u32 unk2B4;
     u32 unk2B8;
     u32 unk2BC;
-    u8 unk2C0[0x2D0 - 0x2C0];
+    u8 unk2C0[4];
+    u32 unk2C4;
+    u8 unk2C8[0x2D0 - 0x2C8];
 } GfxWindow;
+
+typedef struct GXRenderModeObj {
+    u32 viTVmode;
+    u16 fbWidth;
+    u16 efbHeight;
+    u16 xfbHeight;
+    u16 viXOrigin;
+    u16 viYOrigin;
+    u16 viWidth;
+    u16 viHeight;
+    u32 xFBmode;
+    u8 field_rendering;
+    u8 aa;
+    u8 sample_pattern[12][2];
+    u8 vfilter[7];
+} GXRenderModeObj;
+
+extern GXRenderModeObj *rmode;
+extern void *m_defaultFifo;
+extern void *m_defaultFifoObj;
+extern u8 ShadowTexture[];
+extern u8 pShadowImage[];
+
+void GXSetViewport(f32 xOrig, f32 yOrig, f32 wd, f32 ht, f32 nearZ, f32 farZ);
+void GXSetScissor(u32 xOrig, u32 yOrig, u32 wd, u32 ht);
+void *GXInit(void *base, u32 size);
+void GXSetDispCopySrc(u16 left, u16 top, u16 wd, u16 ht);
+void GXSetDispCopyDst(u16 wd, u16 ht);
+u32 GXSetDispCopyYScale(f32 vscale);
+void GXSetCopyFilter(u8 aa, u8 sample_pattern[12][2], u8 vf, u8 vfilter[7]);
+void GXSetPixelFmt(s32 pix_fmt, s32 z_fmt);
+void GXSetDispCopyGamma(s32 gamma);
+void Gfx_SetRenderWindow(s32 window);
+void Gfx_SetCameraMatrix(void *a, void *b, void *c, void *d);
+void GXSetNumChans(u8 n);
+void GXSetNumTexGens(u8 n);
+void GXSetNumTevStages(u8 n);
+void GXSetTevOrder(s32 stage, s32 coord, s32 map, s32 color);
+void GXEnableTexOffsets(s32 coord, u8 line, u8 point);
+void GXSetPointSize(u8 size, s32 fmt);
+void GXInitTexObj(void *obj, void *image, u16 width, u16 height, s32 format, s32 wrapS, s32 wrapT, u8 mipmap);
+void Dprintf(const char *fmt, ...);
+s32 DisplayList_Create(void);
 
 typedef struct GfxState {
     u8 unk0[0x60];
@@ -79,7 +136,37 @@ extern s32 m_fillMode;
 extern s32 m_currentView;
 extern s32 m_curLightState;
 extern s32 m_curTexture;
-extern void *FontData;
+typedef struct OSFontHeader {
+    u16 fontType;
+    u16 firstChar;
+    u16 lastChar;
+    u16 invalChar;
+    u16 ascent;
+    u16 descent;
+    u16 width;
+    u16 leading;
+    u16 cellWidth;
+    u16 cellHeight;
+    u32 sheetSize;
+    u16 sheetFormat;
+    u16 sheetColumn;
+    u16 sheetRow;
+    u16 sheetWidth;
+    u16 sheetHeight;
+    u16 widthTable;
+    u32 sheetImage;
+    u32 sheetFullSize;
+    u8 c0;
+    u8 c1;
+    u8 c2;
+    u8 c3;
+} OSFontHeader;
+
+typedef struct GXTexObj {
+    u32 dummy[8];
+} GXTexObj;
+
+extern OSFontHeader *FontData;
 extern s32 __OSCurrHeap;
 
 GfxWindow *GetRenderWindow(void);
@@ -91,10 +178,35 @@ void GXSetTevOp(s32 id, s32 mode);
 void Render_StateFogEnable(s32 enable);
 void DisplayList_Init(void);
 
+typedef struct GDLDrawEntry {
+    void *geometry;
+    GXColor color;
+    u32 matrix;
+    s32 lightState;
+    u8 unk10;
+    u8 unk11;
+    u8 envmapState;
+    u8 unk13;
+} GDLDrawEntry;
+
 typedef struct GDL {
     u8 unk0[0x14];
     s32 numTris;
+    u8 unk18[0x54 - 0x18];
+    u32 numDrawEntries;
+    u8 unk58[0xDFCC0 - 0x58];
+    GDLDrawEntry drawEntries[0x800];
 } GDL;
+
+typedef struct Vector {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 w;
+} Vector;
+
+void Gfx_SetWorldMatrix(void *matrix);
+void Gfx_SetProjectionMatrix(f32 fov);
 
 typedef struct RenderStats {
     s32 numTris;
@@ -116,6 +228,7 @@ typedef union {
     u8 u8;
     u16 u16;
     u32 u32;
+    s16 s16;
     s32 s32;
     f32 f32;
 } PPCWGPipe;
@@ -132,11 +245,332 @@ static inline void GXColor1u32(u32 clr) {
     GXWGFifo.u32 = clr;
 }
 
+static inline void GXPosition3s16(s16 x, s16 y, s16 z) {
+    GXWGFifo.s16 = x;
+    GXWGFifo.s16 = y;
+    GXWGFifo.s16 = z;
+}
+
+static inline void GXColor4u8(u8 r, u8 g, u8 b, u8 a) {
+    GXWGFifo.u8 = r;
+    GXWGFifo.u8 = g;
+    GXWGFifo.u8 = b;
+    GXWGFifo.u8 = a;
+}
+
+static inline void GXTexCoord2f32(f32 s, f32 t) {
+    GXWGFifo.f32 = s;
+    GXWGFifo.f32 = t;
+}
+
+static inline void GXTexCoord2s16(s16 s, s16 t) {
+    GXWGFifo.s16 = s;
+    GXWGFifo.s16 = t;
+}
+
 void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
 
 extern GDL *g_pGDL;
 extern RenderStats g_renderStats;
 extern s32 g_debugTriCount;
+
+void GXInitTexObjLOD(GXTexObj *obj, s32 min_filt, s32 mag_filt, f32 min_lod, f32 max_lod, f32 lod_bias, u8 bias_clamp, u8 do_edge_lod, s32 max_aniso);
+void GXLoadTexObj(GXTexObj *obj, s32 id);
+void GXLoadTexMtxImm(f32 mtx[3][4], u32 id, s32 type);
+void GXSetTexCoordGen2(s32 dst, s32 func, s32 src, u32 mtx, u8 normalize, u32 pt);
+void PSMTXScale(f32 m[3][4], f32 x, f32 y, f32 z);
+char *OSGetFontTexture(char *string, void **image, s32 *x, s32 *y, s32 *width);
+#pragma push
+#pragma use_lmw_stmw on
+s32 DrawChar(s32 x, s32 y, u16 code) {
+    typedef struct {
+        u32 dummy[8];
+    } GXTexObj;
+    typedef struct {
+        u8 unk0[0x10];
+        u16 cellWidth;
+        u16 cellHeight;
+        u8 unk14[4];
+        u16 sheetFormat;
+        u8 unk1A[4];
+        u16 sheetWidth;
+        u16 sheetHeight;
+    } FontHeader;
+    extern FontHeader *FontData_803C76A4;
+    void GXInitTexObj(GXTexObj *obj, void *image, u16 width, u16 height, s32 format, s32 wrap_s, s32 wrap_t, u8 mipmap);
+    void GXInitTexObjLOD(GXTexObj *obj, s32 min_filt, s32 mag_filt, f32 min_lod, f32 max_lod, f32 lod_bias, u8 bias_clamp, u8 do_edge_lod, s32 max_aniso);
+    void GXLoadTexObj(GXTexObj *obj, s32 id);
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    void GXLoadTexMtxImm(f32 mtx[3][4], u32 id, s32 type);
+    void GXSetTexCoordGen2(s32 dst, s32 func, s32 src, u32 mtx, u8 normalize, u32 pt);
+    void PSMTXScale(f32 m[3][4], f32 x, f32 y, f32 z);
+    char *OSGetFontTexture(char *string, void **image, s32 *x, s32 *y, s32 *width);
+    f32 mtx[3][4];
+    GXTexObj tobj;
+    char str[4];
+    s32 width;
+    void *image;
+    s32 s;
+    s32 t;
+    s16 y1;
+    s16 y0;
+    s16 x1;
+    s16 x0;
+    s32 s0;
+    s32 t0;
+    s32 cw;
+    s32 ch;
+
+    if (code == 0) {
+        return 0;
+    }
+    if (code < 0x100) {
+        str[0] = code;
+        str[1] = 0;
+    } else {
+        str[0] = code >> 8;
+        str[1] = code;
+        str[2] = 0;
+    }
+    OSGetFontTexture(str, &image, &s, &t, &width);
+    GXInitTexObj(&tobj, image, FontData_803C76A4->sheetWidth, FontData_803C76A4->sheetHeight, FontData_803C76A4->sheetFormat, 0, 0, 0);
+    GXInitTexObjLOD(&tobj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+    GXLoadTexObj(&tobj, 0);
+    PSMTXScale(mtx, 1.0f / FontData_803C76A4->sheetWidth, 1.0f / FontData_803C76A4->sheetHeight, 1.0f);
+    GXLoadTexMtxImm(mtx, 30, 1);
+    GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
+    x0 = x;
+    y0 = y;
+    t0 = t;
+    cw = FontData_803C76A4->cellWidth;
+    ch = FontData_803C76A4->cellHeight;
+    s0 = s;
+    x1 = x0 + cw;
+    y1 = y0 + ch;
+    GXBegin(0x80, 0, 4);
+    GXWGFifo.s16 = x0;
+    GXWGFifo.s16 = y0;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.s16 = s0;
+    GXWGFifo.s16 = t0;
+    GXWGFifo.s16 = x1;
+    GXWGFifo.s16 = y0;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.s16 = s0 + cw;
+    GXWGFifo.s16 = t0;
+    GXWGFifo.s16 = x1;
+    GXWGFifo.s16 = y1;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.s16 = s0 + cw;
+    GXWGFifo.s16 = t0 + ch;
+    GXWGFifo.s16 = x0;
+    GXWGFifo.s16 = y1;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.s16 = s0;
+    GXWGFifo.s16 = t0 + ch;
+    return width;
+}
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 DrawString(s32 x, s32 y, char *string) {
+    typedef struct {
+        u32 dummy[8];
+    } GXTexObj;
+    typedef struct {
+        u8 unk0[0x10];
+        u16 cellWidth;
+        u16 cellHeight;
+        u8 unk14[4];
+        u16 sheetFormat;
+        u8 unk1A[4];
+        u16 sheetWidth;
+        u16 sheetHeight;
+    } FontHeader;
+    extern FontHeader *FontData_803C76A4;
+    void GXInitTexObj(GXTexObj *obj, void *image, u16 width, u16 height, s32 format, s32 wrap_s, s32 wrap_t, u8 mipmap);
+    void GXInitTexObjLOD(GXTexObj *obj, s32 min_filt, s32 mag_filt, f32 min_lod, f32 max_lod, f32 lod_bias, u8 bias_clamp, u8 do_edge_lod, s32 max_aniso);
+    void GXLoadTexObj(GXTexObj *obj, s32 id);
+    void GXBegin(s32 type, s32 vtxfmt, u16 nverts);
+    void GXLoadTexMtxImm(f32 mtx[3][4], u32 id, s32 type);
+    void GXSetTexCoordGen2(s32 dst, s32 func, s32 src, u32 mtx, u8 normalize, u32 pt);
+    void PSMTXScale(f32 m[3][4], f32 x, f32 y, f32 z);
+    char *OSGetFontTexture(char *string, void **image, s32 *x, s32 *y, s32 *width);
+    f32 mtx[3][4];
+    GXTexObj tobj;
+    void *image;
+    s32 s;
+    s32 t;
+    s32 width;
+    s16 y1;
+    s16 y0;
+    s16 x1;
+    s16 x0;
+    s32 s0;
+    s32 t0;
+    s32 cw;
+    s32 ch;
+    s32 total = 0;
+
+    while (*string != 0) {
+        string = OSGetFontTexture(string, &image, &s, &t, &width);
+        GXInitTexObj(&tobj, image, FontData_803C76A4->sheetWidth, FontData_803C76A4->sheetHeight, FontData_803C76A4->sheetFormat, 0, 0, 0);
+        GXInitTexObjLOD(&tobj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+        GXLoadTexObj(&tobj, 0);
+        PSMTXScale(mtx, 1.0f / FontData_803C76A4->sheetWidth, 1.0f / FontData_803C76A4->sheetHeight, 1.0f);
+        GXLoadTexMtxImm(mtx, 30, 1);
+        GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
+        x0 = x + total;
+        y0 = y;
+        t0 = t;
+        cw = FontData_803C76A4->cellWidth;
+        ch = FontData_803C76A4->cellHeight;
+        s0 = s;
+        x1 = x0 + cw;
+        y1 = y0 + ch;
+        GXBegin(0x80, 0, 4);
+        GXPosition3s16(x0, y0, 0);
+        GXTexCoord2s16(s0, t0);
+        GXPosition3s16(x1, y0, 0);
+        GXTexCoord2s16(s0 + cw, t0);
+        GXPosition3s16(x1, y1, 0);
+        GXTexCoord2s16(s0 + cw, t0 + ch);
+        GXPosition3s16(x0, y1, 0);
+        GXTexCoord2s16(s0, t0 + ch);
+        total += width;
+    }
+    return total;
+}
+
+#pragma push
+#pragma readonly_strings on
+void PrintDVDMessage(void) {
+    extern s64 g_resetTicks;
+    extern s32 m_reset;
+    extern s32 m_cd_drive_status;
+    extern u32 g_StopInput;
+    s32 OSGetResetButtonState(void);
+    s64 OSGetTime(void);
+    void OSResetSystem(s32 reset, u32 resetCode, s32 forceMenu);
+    void Gfx_SetOrthoMatrix(void);
+    void Render_StateCullMode(s32 mode);
+    void Render_StateBlendMode(u32 mode);
+    void GXFlush(void);
+    void GXSetTexCoordGen2(s32 dst, s32 func, s32 src, u32 mtx, u8 normalize, u32 pt);
+    void VISetBlack(s32 black);
+    void VIWaitForRetrace(void);
+    s32 DrawString(s32 x, s32 y, char *string);
+    s32 DrawChar(s32 x, s32 y, u16 code);
+
+    if (OSGetResetButtonState()) {
+        m_reset = 1;
+    }
+    switch (m_cd_drive_status) {
+    case -1:
+    case 4:
+    case 5:
+    case 6:
+    case 11:
+        break;
+    default:
+        g_StopInput = 0;
+        return;
+    }
+    g_StopInput = 1;
+    g_resetTicks = OSGetTime();
+    Gfx_SetOrthoMatrix();
+    Render_StateCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(11, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 3, 0);
+    GXSetVtxAttrFmt(0, 11, 1, 5, 0);
+    GXSetTevOp(0, 4);
+    if (m_firstFrame) {
+        GXBegin(0x80, 0, 4);
+        GXPosition3s16(0, 0, 0);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3s16(640, 0, 0);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3s16(640, 480, 0);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3s16(0, 480, 0);
+        GXColor4u8(0, 0, 0, 0xFF);
+    } else {
+        GXBegin(0x80, 0, 4);
+        GXPosition3s16(120, 140, 0);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3s16(520, 140, 0);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3s16(520, 340, 0);
+        GXColor4u8(0, 0, 0, 0xFF);
+        GXPosition3s16(120, 340, 0);
+        GXColor4u8(0, 0, 0, 0xFF);
+    }
+    GXFlush();
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(13, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 3, 0);
+    GXSetVtxAttrFmt(0, 13, 1, 3, 0);
+    Render_StateBlendMode(2);
+    GXSetNumTexGens(1);
+    GXSetTevOp(0, 3);
+    GXSetTevOrder(0, 0, 0, 4);
+    switch (m_cd_drive_status) {
+    case -1:
+        DrawString(130, 190, "  An error has occured. Turn ");
+        DrawString(130, 210, "  the power off and refer to ");
+        DrawString(130, 230, " the Nintendo GameCube    ");
+        DrawString(130, 250, "      Instruction Booklet");
+        DrawString(130, 270, "    for further instructions.");
+        DrawChar(445, 230, 0x99);
+        break;
+    case 11:
+        DrawString(130, 190, " The Game Disc could not be");
+        DrawString(130, 210, "    read. Please read the");
+        DrawString(130, 230, "   Nintendo GameCube   ");
+        DrawString(130, 250, "     Instruction Booklet");
+        DrawString(130, 270, "    for more information.");
+        DrawChar(420, 230, 0x99);
+        break;
+    case 6:
+        DrawString(130, 180, "      This is not the");
+        DrawString(130, 200, "  Hot Wheels    Velocity X");
+        DrawString(130, 220, "         Game Disc.");
+        DrawString(130, 240, "     Please insert the");
+        DrawString(130, 260, "  Hot Wheels    Velocity X");
+        DrawString(130, 280, "         Game Disc.");
+        DrawChar(300, 200, 0x99);
+        DrawChar(300, 260, 0x99);
+        break;
+    case 5:
+        DrawString(130, 200, "   The Disc Cover is open.");
+        DrawString(130, 220, "   If you want to continue");
+        DrawString(130, 240, "      the game, please");
+        DrawString(130, 260, "    close the Disc Cover.");
+        break;
+    case 4:
+        DrawString(130, 210, "      Please Insert the");
+        DrawString(130, 230, "  Hot Wheels    Velocity X");
+        DrawString(130, 250, "          Game Disc.");
+        DrawChar(300, 230, 0x99);
+        break;
+    }
+    GXSetNumChans(1);
+    GXSetTexCoordGen2(0, 1, 12, 60, 0, 125);
+    if (m_reset && OSGetResetButtonState() == 0) {
+        VISetBlack(1);
+        VIWaitForRetrace();
+        VIWaitForRetrace();
+        OSResetSystem(1, 0, 0);
+    }
+}
+#pragma pop
+
+#pragma pop
+
+#pragma pop
 
 void Render_Create(void) {
     m_fogMode = 0;
@@ -181,6 +615,53 @@ void Render_Create(void) {
     m_zwrite = 1;
     FontData = OSAllocFromHeap(__OSCurrHeap, 0x20120);
     OSInitFont(FontData);
+}
+
+s32 Render_CreateView(s32 view, u32 width, u32 height) {
+    m_defaultFifo = OSAllocFromHeap(__OSCurrHeap, 0x40000);
+    m_defaultFifoObj = GXInit(m_defaultFifo, 0x40000);
+    GXSetViewport(0.0f, 0.0f, rmode->fbWidth, rmode->xfbHeight, 0.0f, 1.0f);
+    GXSetScissor(0, 0, rmode->fbWidth, rmode->efbHeight);
+    GXSetDispCopySrc(0, 0, rmode->fbWidth, rmode->efbHeight);
+    GXSetDispCopyDst(rmode->fbWidth, rmode->xfbHeight);
+    GXSetDispCopyYScale((f32)rmode->xfbHeight / (f32)rmode->efbHeight);
+    GXSetCopyFilter(rmode->aa, rmode->sample_pattern, 1, rmode->vfilter);
+    GXSetPixelFmt(1, 0);
+    GXCopyDisp(g_currentBuffer, 1);
+    GXSetDispCopyGamma(1);
+    Gfx_SetRenderWindow(0);
+    GetRenderWindow()->width = width;
+    GetRenderWindow()->halfWidth = width >> 1;
+    GetRenderWindow()->height = height;
+    GetRenderWindow()->halfHeight = height >> 1;
+    GetRenderWindow()->unk278 = 0.0f;
+    GetRenderWindow()->unk27C = 0.0f;
+    GetRenderWindow()->unk298 = (width * 16) / 640.0f;
+    GetRenderWindow()->unk29C = (height * 16) / 480.0f;
+    GetRenderWindow()->unk290 = ((0x1000 - width) >> 1) * 16;
+    GetRenderWindow()->unk294 = ((0x1000 - height) >> 1) * 16;
+    GetRenderWindow()->unk2A0 = GetRenderWindow()->unk298;
+    GetRenderWindow()->unk2A4 = GetRenderWindow()->unk29C;
+    GetRenderWindow()->unk2A8 = GetRenderWindow()->unk290;
+    GetRenderWindow()->unk2AC = GetRenderWindow()->unk294;
+    GetRenderWindow()->unk2B0 = 0;
+    GetRenderWindow()->unk2B8 = 0;
+    GetRenderWindow()->unk2B4 = width - 1;
+    GetRenderWindow()->unk2BC = height - 1;
+    GetRenderWindow()->unk2C4 = 0;
+    Gfx_SetCameraMatrix(NULL, NULL, NULL, NULL);
+    memcpy(GetRenderWindow()->unk140, GetRenderWindow()->unk40, 0x40);
+    DisplayList_Create();
+    GXSetNumChans(1);
+    GXSetNumTexGens(1);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevOp(0, 0);
+    GXEnableTexOffsets(0, 0, 1);
+    GXSetPointSize(0xFF, 5);
+    GXInitTexObj(ShadowTexture, pShadowImage, 0x140, 0xE0, 1, 0, 0, 0);
+    Dprintf("Render Init\n");
+    return 1;
 }
 
 void Gfx_SetProjectionMatrix(f32 fov);
@@ -431,6 +912,42 @@ void SetTriFlatVtxDesc(void) {
     }
 }
 
+void Gfx_SetFog(GXColor *color, u8 type, f32 start, f32 end) {
+    extern GXColor m_fogColor_803C76C8;
+    extern u8 m_fogType_803C76C4;
+    extern f32 m_fogRange1_803C76C0;
+    extern f32 m_fogRange2_803C76BC;
+    u8 r, g, b, a;
+    f32 scale;
+    switch (type) {
+    case 0:
+        m_fogType_803C76C4 = 2;
+        break;
+    case 1:
+        m_fogType_803C76C4 = 4;
+        break;
+    case 2:
+        m_fogType_803C76C4 = 5;
+        break;
+    }
+    a = color->a;
+    b = color->b;
+    g = color->g;
+    r = color->r;
+    m_fogColor_803C76C8.g = g;
+    m_fogColor_803C76C8.r = r;
+    m_fogColor_803C76C8.b = b;
+    m_fogColor_803C76C8.a = 0xFF;
+    if (a != 0) {
+        scale = a / 255.0f;
+        m_fogRange2_803C76BC = end / scale;
+        m_fogRange1_803C76C0 = start / scale;
+    } else {
+        m_fogRange1_803C76C0 = 1.0f;
+        m_fogRange2_803C76BC = 1.0f;
+    }
+}
+
 void Render_Destroy(void) {
 
 }
@@ -441,6 +958,131 @@ void Gfx_GetViewport(s32 *x, s32 *y, s32 *width, s32 *height) {
     *width = 640;
     *height = 480;
 }
+
+void CreateSilhouette(SilhouetteEdge *edges, u32 count, f32 *dir);
+void DrawVolume(f32 (*verts)[3], SilhouetteEdge *edges, u32 numEdges, f32 dx, f32 dy, f32 dz);
+#pragma push
+#pragma use_lmw_stmw on
+void Render_DrawShadows(void) {
+    typedef struct ShadowGroup {
+        u16 unk0;
+        u16 flags;
+        u8 unk4[0x10 - 0x4];
+        u32 numEdges;
+        u8 unk14[0x1C - 0x14];
+        SilhouetteEdge *edges;
+    } ShadowGroup;
+    typedef struct ShadowGeometry {
+        u16 unk0;
+        u16 numGroups;
+        u8 unk4[0x8 - 0x4];
+        ShadowGroup *groups;
+        f32 (*verts)[3];
+    } ShadowGeometry;
+    typedef struct ShadowModel {
+        u8 unk0[0x8];
+        ShadowGeometry *geometry;
+    } ShadowModel;
+    void *Gfx_GetWorldMatrixState(u32 index);
+    void InverseXformVecOrientation(void *m, Vector *v, Vector *out);
+    void GXSetTevColor(s32 id, GXColor color);
+    void Gfx_SetOrthoMatrix(void);
+    void GXSetTexCopySrc(u16 left, u16 top, u16 wd, u16 ht);
+    void GXSetTexCopyDst(u16 wd, u16 ht, s32 fmt, u8 mipmap);
+    void GXCopyTex(void *dest, u8 clear);
+    void GXPixModeSync(void);
+    void GXSetTevColorOp(s32 stage, s32 op, s32 bias, s32 scale, u8 clamp, s32 reg);
+    void GXSetTevColorIn(s32 stage, s32 a, s32 b, s32 c, s32 d);
+    void GXSetTevAlphaOp(s32 stage, s32 op, s32 bias, s32 scale, u8 clamp, s32 reg);
+    void GXSetTevAlphaIn(s32 stage, s32 a, s32 b, s32 c, s32 d);
+    void GXSetAlphaCompare(s32 comp0, u8 ref0, s32 op, s32 comp1, u8 ref1);
+    void GXSetAlphaUpdate(u8 enable);
+    Vector dir __attribute__((aligned(16)));
+    Vector lightDir __attribute__((aligned(16))) = { 0.707f, -0.707f, 0.0f, 0.0f };
+    GXColor color;
+    u32 i;
+    u32 numShadows;
+    ShadowModel *model;
+    u32 j;
+    void *matrix;
+
+    numShadows = 0;
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xB, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+    m_VtxDescFlag = 0;
+    for (i = 0; i < g_pGDL->numDrawEntries; i++) {
+        model = (ShadowModel *)g_pGDL->drawEntries[i].geometry;
+        matrix = Gfx_GetWorldMatrixState(g_pGDL->drawEntries[i].matrix);
+        if (model->geometry->groups->flags & 0x4000) {
+            numShadows++;
+            Gfx_SetWorldMatrix(matrix);
+            InverseXformVecOrientation(GetRenderWindow(), &lightDir, &dir);
+            for (j = 0; j < model->geometry->numGroups; j++) {
+                CreateSilhouette(model->geometry->groups[j].edges, model->geometry->groups[j].numEdges, &dir.x);
+            }
+            GXSetColorUpdate(0);
+            GXSetZMode(1, 1, 0);
+            GXSetAlphaUpdate(1);
+            GXSetTevOp(0, 4);
+            GXSetNumTexGens(0);
+            GXSetTevOrder(0, 0xFF, 0xFF, 4);
+            GXSetBlendMode(1, 1, 1, 5);
+            for (j = 0; j < model->geometry->numGroups; j++) {
+                DrawVolume(model->geometry->verts, model->geometry->groups[j].edges, model->geometry->groups[j].numEdges,
+                           300.0f * dir.x, 300.0f * dir.y, 300.0f * dir.z);
+            }
+            GXSetBlendMode(1, 0, 3, 5);
+            GXSetCullMode(2);
+            for (j = 0; j < model->geometry->numGroups; j++) {
+                DrawVolume(model->geometry->verts, model->geometry->groups[j].edges, model->geometry->groups[j].numEdges,
+                           300.0f * dir.x, 300.0f * dir.y, 300.0f * dir.z);
+            }
+            GXSetCullMode(1);
+        }
+    }
+    if (numShadows) {
+        color.r = color.g = color.b = 0;
+        color.a = 100;
+        GXSetTexCopySrc(0, 0, 0x280, 0x1C0);
+        GXSetTexCopyDst(0x140, 0xE0, 0x27, 1);
+        GXCopyTex(pShadowImage, 0);
+        GXPixModeSync();
+        GXLoadTexObj((GXTexObj *)ShadowTexture, 0);
+        GXSetTevOrder(0, 0, 0, 0xFF);
+        GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
+        GXSetTevAlphaOp(0, 0xE, 0, 0, 1, 0);
+        GXSetTevAlphaIn(0, 4, 7, 1, 7);
+        GXSetBlendMode(1, 4, 5, 3);
+        GXSetAlphaCompare(7, 0, 1, 7, 0);
+        GXSetTevColor(1, color);
+        GXSetColorUpdate(1);
+        GXSetNumTexGens(1);
+        GXSetTexCoordGen2(0, 1, 0xC, 0x3C, 0, 0x7D);
+        Gfx_SetOrthoMatrix();
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 1);
+        GXSetVtxDesc(0xD, 1);
+        GXSetVtxAttrFmt(0, 9, 1, 3, 0);
+        GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+        GXBegin(0x80, 0, 4);
+        GXPosition3s16(0, 0, 0);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3s16(0, 0x1E0, 0);
+        GXTexCoord2f32(0.0f, 1.0f);
+        GXPosition3s16(0x280, 0x1E0, 0);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3s16(0x280, 0, 0);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXSetAlphaUpdate(1);
+        GXSetZMode(1, 1, 1);
+        Gfx_SetProjectionMatrix(GetRenderWindow()->fov);
+    }
+}
+#pragma pop
 
 void CreateSilhouette(SilhouetteEdge *edges, u32 count, f32 *dir) {
     SilhouetteEdge *e;

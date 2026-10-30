@@ -6,5 +6,30 @@ s32 __AXGetCommandListCycles(void) {
     return __AXCommandListCycles;
 }
 
+void *__AXGetCommandListAddress(void) {
+    extern u16 *__AXClWrite;
+    extern u32 __AXCommandListPosition;
+    extern u16 __AXCommandList[2][384];
+    void *address;
+
+    address = &__AXCommandList[__AXCommandListPosition];
+    __AXCommandListPosition += 1;
+    __AXCommandListPosition &= 1;
+    __AXClWrite = (u16 *)&__AXCommandList[__AXCommandListPosition];
+    return address;
+}
+
+void __AXClInit(void) {
+    extern u32 __AXClMode;
+    extern u16 *__AXClWrite;
+    extern u32 __AXCommandListPosition;
+    extern u16 __AXCommandList[2][384];
+    extern u32 __AXCompressor;
+    __AXClMode = 0;
+    __AXCommandListPosition = 0;
+    __AXClWrite = (u16 *)&__AXCommandList;
+    __AXCompressor = 1;
+}
+
 void __AXClQuit() {}
 

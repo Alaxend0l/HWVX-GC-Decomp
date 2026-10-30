@@ -2,6 +2,8 @@
 
 #pragma use_lmw_stmw on
 
+void TEST_AnimTraverseHeirarchyToMatricesWorld(Vector4 *quat, void *pos, void *frames, s32 skel, void *matrices, f32 time);
+
 void MotionState_Init(void *arg0, s8 reset) {
     typedef struct {
         u8 pad0[0x14];
@@ -242,6 +244,27 @@ void MotionState_Draw2(void *state, s32 mtx, u8 *matrices) {
             Gfx_DrawGeometry(geom, &out);
         }
         MotionState_DrawSlaves(state, mtx);
+    }
+}
+
+void MotionState_InitAllSlavesNow(s32 state, void *slaves, u8 player) {
+    typedef struct SlaveTrigger {
+        u8 pad0[0x20];
+    } SlaveTrigger;
+    typedef struct SlaveList {
+        u32 count;
+        SlaveTrigger *triggers;
+    } SlaveList;
+    extern Vector4 g_zeroVector;
+    void ThingManagerList_TriggerSlaves(void **list, u8 *trigger, Vector4 *a, Vector4 *b, Vector4 *c, u8 player);
+    SlaveList *list = slaves;
+    u32 i;
+
+    MotionState_ReleaseSlavesByType(state, player);
+    for (i = 0; i < list->count; i++) {
+        Vector4 dir = {0.0f, 0.0f, 0.0f, 1.0f};
+
+        ThingManagerList_TriggerSlaves((void **)(state + 0x14), (u8 *)&list->triggers[i], (Vector4 *)&list->triggers[i], &dir, &g_zeroVector, player);
     }
 }
 
@@ -558,9 +581,137 @@ void MotionState_BuildMatricesWorld(void *arg0, void *arg1, void *motionState, f
         anim = M2C_FIELD(motionState, void **, 0);
         skel = M2C_FIELD(anim, s32 **, 0x14);
         MotionState_ExtractBlendedKeyFrame(motionState, frames);
-        TEST_AnimTraverseHeirarchyToMatricesWorld(arg0, arg1, frames, *skel, M2C_FIELD(motionState, u32 *, 0x10), time);
+        TEST_AnimTraverseHeirarchyToMatricesWorld(arg0, arg1, frames, *skel, M2C_FIELD(motionState, void **, 0x10), time);
     }
 }
+
+void Motion_HeartbeatB2(void *state, Vector4 *vel) {
+    void MotionState_BlendTriggerEvents(void *state, void *events, Vector4 *vel);
+    void Thing_MoveSlaves(void *thing);
+    void CopyVector(Vector4 *dst, Vector4 *src);
+    void CopyMatrix(void *dst, void *src);
+    typedef struct SlaveThing {
+        Vector4 vel;
+        Matrix4 mtx;
+        Vector4 pos;
+        u8 pad60[0x74 - 0x60];
+        u32 flags;
+        u8 pad78[0x82 - 0x78];
+        u8 bone;
+        u8 pad83[0x8C - 0x83];
+        void (**vtbl)();
+        u8 pad90[0xA4 - 0x90];
+        struct SlaveThing *next;
+    } SlaveThing;
+    typedef struct {
+        u8 *anim;
+        u8 pad4[0x10 - 0x4];
+        Matrix4 *matrices;
+        SlaveThing *slaves;
+    } State;
+    Matrix4 *matrices;
+    SlaveThing *slave;
+
+    MotionState_BlendTriggerEvents(state, ((State *)state)->anim + 0x2C, vel);
+    matrices = ((State *)state)->matrices;
+    {
+        Vector4 v __attribute__((aligned(16))) = {0};
+        Vector4 pos __attribute__((aligned(16)));
+        Vector4 oldVel __attribute__((aligned(16)));
+        Matrix4 mtx __attribute__((aligned(16)));
+
+        if (vel != NULL) {
+            v = *vel;
+        }
+        for (slave = ((State *)state)->slaves; slave != NULL; slave = slave->next) {
+            if (slave->flags & 0x201000) {
+                continue;
+            }
+            if (!(slave->flags & 0x400000)) {
+                CopyVector(&pos, &slave->pos);
+                CopyMatrix(&mtx, &slave->mtx);
+                slave->vtbl[9](slave, &matrices[slave->bone]);
+                oldVel = slave->vel;
+                slave->vel = v;
+                slave->vtbl[3](slave);
+                Thing_MoveSlaves(slave);
+                CopyVector(&slave->pos, &pos);
+                CopyMatrix(&slave->mtx, &mtx);
+                CopyVector(&slave->vel, &oldVel);
+            } else {
+                slave->vtbl[3](slave);
+            }
+        }
+    }
+    ThingManagerList_RemoveReleasedThings((s32)state + 0x14);
+}
+
+void TEST_AnimTraverseHeirarchyToMatricesWorld(Vector4 *quat, void *pos0, void *frames, s32 skel, void *matrices, f32 time) {
+    typedef struct AnimBone {
+        Quaternion rot;
+        f32 pos[3];
+        u8 numChildren;
+        u8 pop;
+        u8 next;
+        u8 pad[1];
+    } AnimBone;
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    Vector4 posStack[64];
+    Quaternion rotStack[64];
+    Matrix4 m;
+    Quaternion rot;
+    Quaternion q;
+    Vector4 pos;
+    Vector4 *mtx;
+    u32 i;
+    Vector4 *posSp;
+    Quaternion *rotSp;
+    AnimBone *bone;
+    u32 n;
+    Vector4 *p;
+
+    p = pos0;
+    pos.w = 1.0f;
+    bone = frames;
+    mtx = matrices;
+    posSp = posStack;
+    rotSp = rotStack;
+    rot = *(Quaternion *)quat;
+    QuaternionToSubMatrix(quat, &m);
+    m.v[3] = *p;
+    XformVec(&m, (Vector4 *)((AnimBone *)frames)->pos, &pos);
+    for (i = 0; i < skel; i++) {
+        QuaternionMult((Vector4 *)&rot, (Vector4 *)&bone->rot, (Vector4 *)&q);
+        rot = q;
+        QuaternionToSubMatrix(&q, mtx);
+        mtx[3] = pos;
+        mtx[3].w = 1.0f;
+        if (bone->numChildren != 0) {
+            frames = &bone[1];
+            n = bone->numChildren - 1;
+            XformVec(mtx, (Vector4 *)((AnimBone *)frames)->pos, &pos);
+            if (n != 0) {
+                u32 j;
+
+                posSp += n;
+                p = posSp;
+                frames = &((AnimBone *)frames)[((AnimBone *)frames)->next];
+                *rotSp++ = q;
+                for (j = 0; j < n; j++) {
+                    XformVec(mtx, (Vector4 *)((AnimBone *)frames)->pos, --p);
+                    frames = &((AnimBone *)frames)[((AnimBone *)frames)->next];
+                }
+            }
+        } else {
+            pos = *--posSp;
+            rotSp -= bone->pop + 1;
+            rot = *rotSp++;
+        }
+        bone++;
+        mtx += 4;
+    }
+}
+
 #pragma pop
 
 #pragma push

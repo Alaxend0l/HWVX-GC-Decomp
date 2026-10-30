@@ -56,6 +56,33 @@ static inline PathNode *NavHolder_PopLowestOpen(void) {
     return best;
 }
 
+static inline void NavHolder_ResetPathFlags(NavData *data) {
+    u32 RandomNumberGenerator_GetRandomInteger(u32 min, u32 max);
+    u32 i;
+    u32 chance = 1;
+
+    if (data == NULL) {
+        return;
+    }
+    gs_pOpenListHead_803C7008 = NULL;
+    gs_pClosedListHead_803C7004 = NULL;
+    if (gs_useMainRouteOnly_803C7000) {
+        chance = 100;
+        gs_useMainRouteOnly_803C7000 = 0;
+    }
+    for (i = 0; i < data->numNodes; i++) {
+        u32 r = RandomNumberGenerator_GetRandomInteger(chance, 100);
+        u8 *node = data->nodes + i * 0x60;
+        if (node[0x50] != 0 && node[0x35] >= r) {
+            node[0x37] |= 1;
+        } else {
+            node[0x37] &= ~1;
+        }
+        data->nodes[i * 0x60 + 0x37] &= ~6;
+        *(u8 **)(data->nodes + i * 0x60 + 0x38) = NULL;
+    }
+}
+
 void NavHolder_Init(NavData *data) {
     u32 i;
 
@@ -295,6 +322,17 @@ s8 NavHolder_CreatePath(u8 *goal, u8 *start) {
         gs_pClosedListHead_803C7004 = cur;
         cur->flags |= 4;
     }
+}
+
+u8 *NavHolder_FindPath(s32 from, s32 to) {
+    if (from == -1 || to == -1) {
+        return NULL;
+    }
+    NavHolder_ResetPathFlags(gs_NavHolder_803C6CD8.data);
+    if (NavHolder_CreatePath(gs_NavHolder_803C6CD8.data->nodes + from * 0x60, gs_NavHolder_803C6CD8.data->nodes + to * 0x60)) {
+        return gs_NavHolder_803C6CD8.data->nodes + from * 0x60;
+    }
+    return NULL;
 }
 
 u32 NavHolder_GetTotalNavPoints(void) {

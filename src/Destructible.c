@@ -56,6 +56,10 @@ f32 GetBoundingBoxRadius(Vector4 *box, Vector4 *offset)
     return radius;
 }
 
+void Destructible_Init()
+{
+}
+
 void Destructible_Release(Destructible *destructible) {
     void Trigger_DestructibleKilled(void *thing);
     void OBoxHolder_Release(OBox *obox);
@@ -166,6 +170,31 @@ s32 Destructible_Move(Destructible *destructible) {
         }
     }
     return 1;
+}
+
+void Destructible_Draw(Destructible *destructible) {
+    f32 Gfx_GetMinCameraDistSquared(void *pos);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void Gfx_DrawGeometry_MatrixNotCached(void *geom, void *mtx);
+    void Thing_DrawSharedSlaves(void *thing, void *slaves);
+    f32 distSq;
+    ThingRecord *record;
+
+    if (destructible->drawDist) {
+        distSq = Gfx_GetMinCameraDistSquared(&destructible->offsetPos);
+        if ((u32)ViewManager_GetViewFormat() > 1) {
+            distSq *= 4.0f;
+        }
+        if (distSq > destructible->drawDist * destructible->drawDist) {
+            return;
+        }
+    }
+    QuaternionToSubMatrix(destructible->pad50, destructible->matrix);
+    record = destructible->record;
+    if (record->noDraw == 0) {
+        Gfx_DrawGeometry_MatrixNotCached(record->geometry, destructible->matrix);
+    }
+    Thing_DrawSharedSlaves(destructible, destructible->record->slaves);
 }
 
 f32 Destructible_GetMass(Destructible *destructible) {

@@ -1,6 +1,8 @@
 #include "common.h"
 #include "LGWheels.h"
 
+#pragma readonly_strings on
+
 extern "C" void *memcpy(void *dst, const void *src, u32 n);
 extern "C" void LGInit(void);
 extern "C" void OSReport(const char *msg, ...);
@@ -282,6 +284,36 @@ void LGWheels::PlayFrontalCollisionForce(s32 chan, u8 force)
 u8 LGWheels::SameFrontalCollisionForceParams(s32 chan, s16 force)
 {
 	return limbi[chan] == force;
+}
+
+void LGWheels::PlayCarAirborne(s32 chan)
+{
+	if (limbo.IsOpened(chan))
+	{
+		if (GetOverallForceGain(chan))
+		{
+			savedGain = GetOverallForceGain(chan);
+			SetOverallForceGain(chan, 0);
+			airborne[chan] = 1;
+		}
+	}
+	else
+	{
+		OSReport("ERROR: trying to play a force on port %d but no wheel opened.\n", chan);
+	}
+}
+
+void LGWheels::StopCarAirborne(s32 chan)
+{
+	if (limbo.IsOpened(chan))
+	{
+		SetOverallForceGain(chan, savedGain);
+		airborne[chan] = 0;
+	}
+	else
+	{
+		OSReport("ERROR: trying to play a force on port %d but no wheel opened.\n", chan);
+	}
 }
 
 #pragma pop

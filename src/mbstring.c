@@ -1,6 +1,40 @@
 #include "common.h"
 
 
+char *strncpy(char *dst, const char *src, u32 n);
+int unicode_to_UTF8(char *s, u16 wchar);
+#pragma push
+#pragma use_lmw_stmw on
+u32 wcstombs(char *s, const u16 *pwcs, u32 n) {
+    u32 result;
+    u32 chars_written = 0;
+    char temp[3];
+    u16 *source;
+
+    if (!s || !pwcs) {
+        return 0;
+    }
+
+    source = (u16 *)pwcs;
+    while (chars_written <= n) {
+        if (!*source) {
+            *(s + chars_written) = '\0';
+            break;
+        } else {
+            result = unicode_to_UTF8(temp, *source++);
+            if ((chars_written + result) <= n) {
+                strncpy(s + chars_written, temp, result);
+                chars_written += result;
+            } else {
+                break;
+            }
+        }
+    }
+
+    return chars_written;
+}
+#pragma pop
+
 int unicode_to_UTF8(char *s, u16 wchar) {
     int number_of_bytes;
     u16 wide_char;

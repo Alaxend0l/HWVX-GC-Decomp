@@ -37,7 +37,8 @@ typedef struct Player {
   void *vehicle;            /* 0x2C the Thing the player drives */
   u8 pad30;                 /* 0x30 */
   u8 cameraIndex;           /* 0x31 passed to the vehicle's getCameraInfo */
-  u8 pad32[0xA];            /* 0x32 */
+  u8 combo;                 /* 0x32 pending combo/cheat action, run by CarA_ExecuteCombo */
+  u8 pad33[9];              /* 0x33 */
   void *aiScripts;          /* 0x3C AI players: the tile car's script table */
   u8 pad40[0x20];           /* 0x40 */
   u32 port;                 /* 0x60 human players: controller port, 1-based */
@@ -55,6 +56,10 @@ typedef struct Player {
   s16 respawnNavPoint;      /* 0xAE */
   u8 padB0[0x18];           /* 0xB0 */
   s32 wheelChannel;         /* 0xC8 force-feedback wheel channel */
+  u8 padCC[4];              /* 0xCC */
+  f32 *healthScale;         /* 0xD0 AI players: divides the health-bar fraction */
+  u8 padD4[0x40];           /* 0xD4 */
+  char *stuntScoreText;     /* 0x114 */
 } Player;
 
 struct CarA;
@@ -84,7 +89,9 @@ typedef struct CarAEngine {
   f32 maxAngularVel;        /* 0x3C */
   f32 itemDropImpact;       /* 0x40 */
   f32 unk44;                /* 0x44 */
-  u8 pad48[0x1C];           /* 0x48 */
+  u8 pad48[0x10];           /* 0x48 */
+  f32 unk58;                /* 0x58 force point scale by up.y */
+  u8 pad5C[8];              /* 0x5C */
   f32 unk64;                /* 0x64 */
   f32 unk68;                /* 0x68 */
   f32 unk6C;                /* 0x6C */
@@ -104,7 +111,8 @@ typedef struct CarACollider {
   s32 damageThreshold;      /* 0x18 impacts above it hurt */
   u8 pad1C[4];              /* 0x1C */
   f32 mass;                 /* 0x20 */
-  u8 pad24[8];              /* 0x24 */
+  f32 gravityScale;         /* 0x24 forceAccum.y += gravityScale * mass */
+  u8 pad28[4];              /* 0x28 */
   f32 gravity;              /* 0x2C */
   CarAMaterial *material;   /* 0x30 */
   u8 pad34[0x10];           /* 0x34 */
@@ -137,9 +145,15 @@ typedef struct CarAAccel {
 } CarAAccel;
 
 typedef struct CarAStuntInfo {
-  u8 pad00[0x14];           /* 0x00 */
+  f32 pitchRate;            /* 0x00 */
+  f32 rollRate;             /* 0x04 */
+  f32 spinRate;             /* 0x08 */
+  f32 maxTime;              /* 0x0C */
+  u8 pad10[4];              /* 0x10 */
   f32 turboPerPoint;        /* 0x14 */
-  u8 pad18[0x10];           /* 0x18 */
+  f32 pitchScore;           /* 0x18 */
+  f32 rollScore;            /* 0x1C */
+  u8 pad20[8];              /* 0x20 */
   s32 unk28;                /* 0x28 */
   f32 minFailTime;          /* 0x2C also the stunt-time range landed stunts score in */
   f32 maxFailTime;          /* 0x30 */
@@ -151,6 +165,7 @@ typedef struct CarAStuntInfo {
   char **failMessage;       /* 0x48 NULL: g_stuntLossString */
   u32 numFailThings;        /* 0x4C */
   u32 *failThings;          /* 0x50 thing ids, picked by fail time */
+  f32 spinScore;            /* 0x54 */
 } CarAStuntInfo;
 
 typedef struct CarAGear {
@@ -175,6 +190,21 @@ typedef struct CarAModelRef {
   CarAModelData *data;      /* 0x10 */
   void *anims[3];           /* 0x14 additive animations, timed by CarA.animTimes */
 } CarAModelRef;
+
+/* Extra points CarA_ComputeForces pushes the car down at (CarAInfo.forcePoints). */
+typedef struct CarAForcePoint {
+  Vector4 pos;              /* 0x00 body space */
+  u8 ray;                   /* 0x10 only when a ray down hits something */
+  u8 pad11[3];              /* 0x11 */
+  f32 weight;               /* 0x14 */
+  u8 pad18[0x18];           /* 0x18 */
+} CarAForcePoint;
+
+typedef struct CarAForcePoints {
+  u8 pad00[4];              /* 0x00 */
+  u32 count;                /* 0x04 */
+  CarAForcePoint *points;   /* 0x08 */
+} CarAForcePoints;
 
 typedef struct CarAInfo {
   u8 pad00[0x10];           /* 0x00 */
@@ -204,7 +234,8 @@ typedef struct CarAInfo {
   CarAStuntInfo *stunt;     /* 0x8C */
   u8 pad90[0x10];           /* 0x90 */
   CarACollider *collider;   /* 0xA0 */
-  u8 padA4[0xC];            /* 0xA4 */
+  struct CarAForcePoints *forcePoints; /* 0xA4 extra force points (CarA_ComputeForces) */
+  u8 padA8[8];              /* 0xA8 */
   u32 explosionThing;       /* 0xB0 */
   u8 padB4[0x1C];           /* 0xB4 */
   u32 numWheels;            /* 0xD0 */
@@ -213,7 +244,9 @@ typedef struct CarAInfo {
   CarAGear *gears;          /* 0xDC torque curve table */
   u32 numSlaves;            /* 0xE0 */
   u8 *slaves;               /* 0xE4 */
-  u8 padE8[0x28];           /* 0xE8 */
+  u32 numSlaveWeapons;      /* 0xE8 */
+  u8 *slaveWeapons;         /* 0xEC 12-byte entries, slave list at +4 */
+  u8 padF0[0x20];           /* 0xF0 */
   u32 numShiftSounds;       /* 0x110 */
   u32 *shiftSounds;         /* 0x114 */
   u32 numSoundSets;         /* 0x118 */
@@ -225,7 +258,7 @@ typedef struct CarAWheelState {
   f32 rotation;             /* 0x00 advanced by speed / radius every PreMove */
   s16 dustTimer;            /* 0x04 ms */
   s16 sparkTimer;           /* 0x06 ms */
-  u8 pad08[4];              /* 0x08 */
+  s32 skidTrail;            /* 0x08 Trail_AddSegment handle, -1: no trail */
   f32 compression;          /* 0x0C */
   f32 lastCompression;      /* 0x10 */
   GXColor skidColor;        /* 0x14 */
@@ -298,9 +331,11 @@ typedef struct CarA {
   u8 pad47C[0x10];          /* 0x47C */
   u32 transmissionFlags;    /* 0x48C & 0x1000 selects 4WD torque split */
   u8 tiltState;             /* 0x490 0: rest, 1/2: tilted by the stick, 3 */
-  u8 pad491[3];             /* 0x491 */
+  u8 stuntAxis;             /* 0x491 0: none, 1: pitch (stickX), 2: roll (stickY) */
+  u8 pad492[2];             /* 0x492 */
   char **stuntPopup;        /* 0x494 */
-  u8 pad498[8];             /* 0x498 */
+  u8 pad498[4];             /* 0x498 */
+  char **stuntScoreMessage; /* 0x49C */
   char **stuntMessage;      /* 0x4A0 */
   u8 pad4A4[0xC];           /* 0x4A4 */
   Vector4 stuntSpin;        /* 0x4B0 zeroed when a stunt fails */
@@ -316,7 +351,7 @@ typedef struct CarA {
   s32 groundedTime;         /* 0x504 ms */
   f32 groundedScale;        /* 0x508 */
   f32 forwardAccel;         /* 0x50C velocity += forward * this * dt */
-  u8 pad510[0x10];          /* 0x510 */
+  Vector4 stuntAxisVec;     /* 0x510 world axis the stunt spins around */
   Vector4 bodyOffset;       /* 0x520 XformVec(worldMatrix, this) -> camera/reflection pos */
   Vector4 groundNormal;     /* 0x530 */
   f32 tiltX;                /* 0x540 */

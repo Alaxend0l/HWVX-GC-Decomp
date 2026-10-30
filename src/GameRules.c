@@ -81,6 +81,197 @@ void GameRules_Init(void) {
     }
 }
 
+void GameRules_HeartBeat(void) {
+    extern s8 g_bRoundEnd_803C71CC;
+    extern u32 g_playerNumThatWon_803C71C8;
+    extern s8 g_bWaitingForRoundReset;
+    extern s8 g_bInit_803C71C4;
+    extern GRTrigger **g_pTimer_803C71C0;
+    void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void *PlayerManager_GetPlayerByIndex(u8);
+    void *PlayerManager_GetHumanPlayerByIndex(u8 index);
+    u8 PlayerManager_PlayerCount(void);
+    u8 PlayerManager_PlayerHumanCount(void);
+    void Trigger_GameRoundsComplete(void);
+    void Trigger_GameRoundXComplete(void);
+    s32 StateManager_QueueChange(s32 state);
+    static u32 s_requiredNumWins = -1;
+    s8 useWins;
+    u32 numPlayers;
+    u32 i;
+    u32 numRounds;
+    s8 roundOver;
+    u32 winner;
+    u32 count;
+    u8 *player;
+    u32 wins;
+
+    roundOver = 0;
+    if (!g_bWaitingForRoundReset && GameSettings_GetCodeVariable(0x12C, 0) != 0) {
+        winner = -1;
+        if (g_bInit_803C71C4) {
+            s8 used[4] = {0, 0, 0, 0};
+
+            numPlayers = PlayerManager_PlayerHumanCount();
+            for (i = 0; i < numPlayers; i++) {
+                used[*(s32 *)((u8 *)PlayerManager_GetHumanPlayerByIndex(i) + 0x60) - 1] = 1;
+            }
+            numPlayers = PlayerManager_PlayerCount();
+            for (i = 0; i < numPlayers; i++) {
+                player = PlayerManager_GetPlayerByIndex(i);
+                if (*(u32 *)(player + 0x60) > 4) {
+                    s32 j;
+                    for (j = 0; j < 4; j++) {
+                        if (!used[j]) {
+                            used[j] = 1;
+                            *(u32 *)(player + 0x60) = j + 1;
+                            break;
+                        }
+                    }
+                }
+            }
+            g_bInit_803C71C4 = 0;
+        }
+        if (g_bRoundEnd_803C71CC) {
+            winner = g_playerNumThatWon_803C71C8;
+            g_bRoundEnd_803C71CC = 0;
+            roundOver = 1;
+        } else if (g_pTimer_803C71C0 != NULL && (*g_pTimer_803C71C0)->time == 0.0f) {
+            roundOver = 1;
+        } else {
+            switch (GameSettings_GetCodeVariable(0x12D, 0)) {
+            case 1:
+                numRounds = GameSettings_GetCodeVariable(0x130, 0);
+                numPlayers = PlayerManager_PlayerCount();
+                for (i = 0; i < numPlayers; i++) {
+                    player = PlayerManager_GetPlayerByIndex(i);
+                    if (*(u32 *)(player + 0x7C) >= numRounds) {
+                        winner = *(u32 *)(player + 0x60);
+                        roundOver = 1;
+                        break;
+                    }
+                }
+                break;
+            case 2:
+                numRounds = GameSettings_GetCodeVariable(0x12F, 0);
+                numPlayers = PlayerManager_PlayerCount();
+                for (i = 0; i < numPlayers; i++) {
+                    player = PlayerManager_GetPlayerByIndex(i);
+                    if (*(u32 *)(player + 0x78) >= numRounds) {
+                        winner = *(u32 *)(player + 0x60);
+                        roundOver = 1;
+                        break;
+                    }
+                    GameSettings_SetCodeVariable(0x193, *(u32 *)(player + 0x60), *(u32 *)(player + 0x78));
+                }
+                break;
+            }
+        }
+        if (!roundOver) {
+            return;
+        }
+        useWins = GameSettings_GetCodeVariable(0x132, 0) != 0;
+        numRounds = GameSettings_GetCodeVariable(0x131, 0);
+        roundOver = 0;
+        count = PlayerManager_PlayerCount();
+        if (winner == -1) {
+            u32 max = 0;
+            for (i = 0; i < count; i++) {
+                player = PlayerManager_GetPlayerByIndex(i);
+                if (*(u32 *)(player + 0x7C) > max) {
+                    max = *(u32 *)(player + 0x7C);
+                    winner = *(u32 *)(player + 0x60);
+                }
+            }
+            switch (GameSettings_GetCodeVariable(0x12D, 0)) {
+            case 1: {
+                u32 max = 0;
+                for (i = 0; i < count; i++) {
+                    player = PlayerManager_GetPlayerByIndex(i);
+                    if (*(u32 *)(player + 0x7C) > max) {
+                        max = *(u32 *)(player + 0x7C);
+                        winner = *(u32 *)(player + 0x60);
+                    }
+                }
+                break;
+            }
+            case 2: {
+                u32 max = 0;
+                for (i = 0; i < count; i++) {
+                    player = PlayerManager_GetPlayerByIndex(i);
+                    if (*(u32 *)(player + 0x78) > max) {
+                        max = *(u32 *)(player + 0x78);
+                        winner = *(u32 *)(player + 0x60);
+                    }
+                }
+                break;
+            }
+            case 3:
+                winner = -1;
+                break;
+            }
+        }
+        for (i = 0; i < count; i++) {
+            player = PlayerManager_GetPlayerByIndex(i);
+            GameSettings_SetCodeVariable(0x192, *(u32 *)(player + 0x60), *(u32 *)(player + 0x7C));
+            GameSettings_SetCodeVariable(0x193, *(u32 *)(player + 0x60), *(u32 *)(player + 0x78));
+            if (*(u32 *)(player + 0x60) == winner) {
+                GameSettings_SetCodeVariable(0x191, *(u32 *)(player + 0x60),
+                                             GameSettings_GetCodeVariable(0x191, *(u32 *)(player + 0x60)) + 1);
+                GameSettings_SetCodeVariable(0x194, *(u32 *)(player + 0x60), 1);
+            } else {
+                GameSettings_SetCodeVariable(0x194, *(u32 *)(player + 0x60), 0);
+            }
+        }
+        if (useWins) {
+            u32 max = 0;
+            if (s_requiredNumWins == -1) {
+                s_requiredNumWins = numRounds;
+            }
+            for (i = 0; i < count; i++) {
+                wins = GameSettings_GetCodeVariable(0x191, *(u32 *)((u8 *)PlayerManager_GetPlayerByIndex(i) + 0x60));
+                if (wins >= s_requiredNumWins) {
+                    roundOver = 1;
+                    s_requiredNumWins = -1;
+                    break;
+                }
+                if (wins > max) {
+                    max = wins;
+                }
+            }
+        } else if (numRounds == GameSettings_GetCodeVariable(0x190, 0)) {
+            roundOver = 1;
+        }
+        if (roundOver) {
+            u32 max = 0;
+            for (i = 0; i < count; i++) {
+                player = PlayerManager_GetPlayerByIndex(i);
+                wins = GameSettings_GetCodeVariable(0x191, *(u32 *)(player + 0x60));
+                if (wins >= max) {
+                    max = wins;
+                }
+                GameSettings_SetCodeVariable(0x194, *(u32 *)(player + 0x60), 0);
+            }
+            for (i = 0; i < count; i++) {
+                player = PlayerManager_GetPlayerByIndex(i);
+                wins = GameSettings_GetCodeVariable(0x191, *(u32 *)(player + 0x60));
+                if (wins == max) {
+                    GameSettings_SetCodeVariable(0x194, *(u32 *)(player + 0x60), 1);
+                }
+            }
+            GameSettings_SetCodeVariable(0x197, 0, 1);
+            Trigger_GameRoundsComplete();
+            if (GameSettings_GetCodeVariable(0x198, 0) != 0) {
+                StateManager_QueueChange(0xC);
+            }
+        } else {
+            Trigger_GameRoundXComplete();
+        }
+        g_bWaitingForRoundReset = 1;
+    }
+}
+
 void GameRules_ForceRoundEnd(u32 arg0) {
     g_bRoundEnd = 1;
     g_playerNumThatWon = arg0;

@@ -15,17 +15,46 @@ typedef struct InputUnk108 {
     u8 unkB;
 } InputUnk108;
 
-static RumbleStatus rumbleStatus[4];
-static s32 s_rumbleTime[4];
-static u8 s_unk30[0x40];
-static u8 s_unk70[0x40];
-static u16 s_keyMap[20];
-static PADStatus s_unkD8[4];
+/* TODO: these belong in .bss (original names, in order: rumbleStatus, g_mouse, g_padDown, g_padUp,
+ * g_pKeyToDI, ngcPad, ngcPadLast, Wheels). Plain statics get laid out in first-use order, which breaks
+ * Input_Init's offsets; the {0} initialisers keep declaration order but put them in .data. */
+static RumbleStatus rumbleStatus[4] = {0};
+static s32 s_rumbleTime[4] = {0};
+static u8 s_unk30[0x40] = {0};
+static u8 s_unk70[0x40] = {0};
+static u16 s_keyMap[20] = {0};
+static PADStatus s_unkD8[4] = {0};
+static InputUnk108 s_unk108[4] = {0};
 extern u16 g_pKeyToDI[20];
+extern u8 g_padUpPos[4];
+extern u8 g_padDownPos[4];
+extern u32 g_StopInput;
 extern void *wheels;
 u8 IsOpened__8LGWheelsFl(void *wheels, s32 chan);
 void PlaySpringForce__8LGWheelsFlScUcs(void *wheels, s32 chan, s8 offset, u8 saturation, s16 coefficient);
 void PlayFrontalCollisionForce__8LGWheelsFlUc(void *wheels, s32 chan, u8 force);
+
+static inline void Input_SetKeyDown(VirtualPad *pad, u16 key) {
+    s32 k;
+
+    for (k = 0; k < 20; k++) {
+        if (s_keyMap[k] == key) {
+            pad->keyDown |= 1 << k;
+            pad->keyPress |= 1 << k;
+        }
+    }
+}
+
+static inline void Input_SetKeyUp(VirtualPad *pad, u16 key) {
+    s32 k;
+
+    for (k = 0; k < 20; k++) {
+        if (s_keyMap[k] == key) {
+            pad->keyDown &= ~(1 << k);
+            pad->keyRelease |= 1 << k;
+        }
+    }
+}
 
 void InitTables__Fv(void);
 s32 Input_Create(void) {
@@ -56,6 +85,29 @@ s32 Input_Create(void) {
     return 1;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void Input_Init(void) {
+    u32 i;
+
+    memset(s_unk30, 0, 8);
+    memset(s_unk70, 0, 8);
+    for (i = 0; i < 4; i++) {
+        memset(&g_VirtualPad[i], 0, sizeof(VirtualPad));
+        g_VirtualPad[i].unk0[2] = 1;
+        g_VirtualPad[i].forceFeedbackActive = 1;
+        g_padUpPos[i] = 0;
+        g_padDownPos[i] = 0;
+        rumbleStatus[i].duration = -1;
+        rumbleStatus[i].active = 0;
+        s_unk108[i].unkA = 0;
+    }
+    s_rumbleTime[0] = 200;
+    s_rumbleTime[1] = 200;
+    g_StopInput = 0;
+}
+#pragma pop
+
 void Input_Destroy(void) {
     M2C_UNK PADControlMotor(M2C_UNK, M2C_UNK);
     PADControlMotor(0, 0);
@@ -63,6 +115,47 @@ void Input_Destroy(void) {
     PADControlMotor(2, 0);
     PADControlMotor(3, 0);
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void Input_Heartbeat(void) {
+    void GBAConnectivityLoop__Fv(void);
+    void pollControllers__Fv(void);
+    void PADControlMotor(s32 chan, u32 command);
+    extern s32 g_iDeltaTimeMS;
+    s32 i;
+    s32 j;
+    u16 key;
+
+    if (!g_StopInput) {
+        GBAConnectivityLoop__Fv();
+        pollControllers__Fv();
+    }
+    for (i = 0; i < 4; i++) {
+        g_VirtualPad[i].keyPress = 0;
+        for (j = 0; j < g_padDownPos[i]; j++) {
+            key = ((u16 (*)[8])s_unk30)[i][j];
+            Input_SetKeyDown(&g_VirtualPad[i], key);
+            ((u16 (*)[8])s_unk30)[i][j] = key;
+        }
+        for (j = 0; j < g_padUpPos[i]; j++) {
+            key = ((u16 (*)[8])s_unk70)[i][j];
+            Input_SetKeyUp(&g_VirtualPad[i], key);
+            ((u16 (*)[8])s_unk70)[i][j] = key;
+        }
+        g_padUpPos[i] = 0;
+        g_padDownPos[i] = 0;
+        if (rumbleStatus[i].active) {
+            if (rumbleStatus[i].duration < 0) {
+                rumbleStatus[i].active = 0;
+                PADControlMotor(i, 0);
+            } else {
+                rumbleStatus[i].duration -= g_iDeltaTimeMS;
+            }
+        }
+    }
+}
+#pragma pop
 
 void Input_SetForceFeedback(s32 chan, f32 strength, f32 duration) {
     void PADControlMotor(s32 chan, u32 command);

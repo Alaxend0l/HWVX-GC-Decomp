@@ -22,6 +22,25 @@ typedef struct GBAControl
 	u8 _padding3C[0xC4];
 } GBAControl;
 
+typedef struct OSContext
+{
+	u32 gpr[32];
+	u32 cr;
+	u32 lr;
+	u32 ctr;
+	u32 xer;
+	f64 fpr[32];
+	u32 fpscr_pad;
+	u32 fpscr;
+	u32 srr0;
+	u32 srr1;
+	u16 mode;
+	u16 state;
+	u32 gqr[8];
+	u32 psf_pad;
+	f64 psf[32];
+} OSContext;
+
 extern GBAControl __GBA[4];
 extern s32 __GBAReset;
 
@@ -32,6 +51,76 @@ void OSClearContext(void *context);
 void OSSetCurrentContext(void *context);
 void __OSReschedule(void);
 s32 SITransfer(s32 chan, void *output, s32 outputBytes, void *input, s32 inputBytes, void *callback, s64 delay);
+#pragma peephole on
+void __GBAHandler(s32 chan, u32 error, void *context)
+{
+	GBAControl *gba;
+	GBACallback callback;
+	GBAProc proc;
+	OSContext exceptionContext;
+
+	gba = &__GBA[chan];
+	if (__GBAReset != 0)
+	{
+		return;
+	}
+
+	if ((error & 0xF) != 0)
+	{
+		gba->ret = 1;
+	}
+	else
+	{
+		gba->ret = 0;
+	}
+
+	if (gba->proc)
+	{
+		proc = gba->proc;
+		gba->proc = NULL;
+		proc(chan);
+	}
+
+	if (gba->callback == NULL)
+	{
+		return;
+	}
+
+	OSClearContext(&exceptionContext);
+	OSSetCurrentContext(&exceptionContext);
+	callback = gba->callback;
+	gba->callback = NULL;
+	callback(chan, gba->ret);
+	OSClearContext(&exceptionContext);
+	OSSetCurrentContext(context);
+}
+
+void __GBASyncCallback(s32 chan, s32 ret)
+{
+	void OSWakeupThread(void *queue);
+
+	OSWakeupThread(__GBA[chan].threadQueue);
+}
+
+#pragma peephole on
+s32 __GBASync(s32 chan)
+{
+	s32 OSDisableInterrupts(void);
+	s32 OSRestoreInterrupts(s32);
+	void OSSleepThread(void *queue);
+	GBAControl *gba = &__GBA[chan];
+	s32 enabled;
+	s32 ret;
+
+	enabled = OSDisableInterrupts();
+	while (gba->callback)
+	{
+		OSSleepThread(gba->threadQueue);
+	}
+	ret = gba->ret;
+	OSRestoreInterrupts(enabled);
+	return ret;
+}
 static void TypeAndStatusCallback(s32 chan, u32 type)
 {
 	GBAControl *gba;
@@ -79,6 +168,26 @@ static void TypeAndStatusCallback(s32 chan, u32 type)
 		__OSReschedule();
 	}
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 __GBATransfer(s32 chan, s32 outputBytes, s32 inputBytes, GBAProc proc)
+{
+	s32 OSDisableInterrupts(void);
+	s32 OSRestoreInterrupts(s32);
+	s32 SIGetTypeAsync(s32 chan, void (*callback)(s32, u32));
+	s32 enabled;
+	GBAControl *gba = &__GBA[chan];
+
+	enabled = OSDisableInterrupts();
+	gba->proc = proc;
+	gba->outputBytes = outputBytes;
+	gba->inputBytes = inputBytes;
+	SIGetTypeAsync(chan, TypeAndStatusCallback);
+	OSRestoreInterrupts(enabled);
+	return 0;
+}
+#pragma pop
 
 s64 __GBASetDelay(s32 chan, s64 delay)
 {

@@ -37,7 +37,7 @@ typedef struct mem_pool_obj {
     FixStart fix_start[6];
 } mem_pool_obj;
 
-extern const u32 fix_pool_sizes[6];
+static const u32 fix_pool_sizes[6] = {4, 12, 20, 36, 52, 68};
 
 void *Block_subBlock(Block *ths, u32 size);
 
@@ -121,11 +121,11 @@ static inline Block *link_new_block(Block **pool_obj, u32 size) {
 }
 
 static inline void *get_malloc_pool(void) {
-    static u8 protopool[0x34];
+    static u8 protopool[0x38];
     static u8 init;
 
     if (!init) {
-        memset(protopool, 0, sizeof(protopool));
+        memset(protopool, 0, sizeof(mem_pool_obj));
         init = 1;
     }
     return protopool;
@@ -324,6 +324,34 @@ void *allocate_from_fixed_pools(void *pool, u32 size) {
     }
     return (u8 *)p + 4;
 }
+
+void FixBlock_construct(FixBlock *ths, FixBlock *prev, FixBlock *next, s32 index, FixSubBlock *chunk, u32 chunk_size) {
+    u32 fixSubBlock_size;
+    u32 n;
+    char *p;
+    u32 i;
+    char *np;
+
+    ths->prev_ = prev;
+    ths->next_ = next;
+    prev->next_ = ths;
+    next->prev_ = ths;
+    ths->client_size_ = fix_pool_sizes[index];
+    fixSubBlock_size = fix_pool_sizes[index] + sizeof(void *);
+    n = chunk_size / fixSubBlock_size;
+    p = (char *)chunk;
+    for (i = 0; i < n - 1; ++i) {
+        np = p + fixSubBlock_size;
+        ((FixSubBlock *)p)->block_ = ths;
+        ((FixSubBlock *)p)->next_ = (FixSubBlock *)np;
+        p = np;
+    }
+    ((FixSubBlock *)p)->block_ = ths;
+    ((FixSubBlock *)p)->next_ = NULL;
+    ths->start_ = chunk;
+    ths->n_allocated_ = 0;
+}
+
 void *soft_allocate_from_var_pools(Block **pool_obj, u32 size, u32 *max_size) {
     Block *bp;
     void *ptr;
@@ -385,6 +413,93 @@ void *allocate_from_var_pools(Block **pool_obj, u32 size) {
 found:
     return (u8 *)ptr + 8;
 }
+
+static inline SubBlock *SubBlock_merge_prev(SubBlock *ths, SubBlock **start) {
+    u32 prevsz;
+    SubBlock *p;
+
+    if (!(ths->size_ & 4)) {
+        prevsz = *(u32 *)((u8 *)ths - sizeof(u32));
+        if (prevsz & 2) {
+            return ths;
+        }
+        p = (SubBlock *)((u8 *)ths - prevsz);
+        p->size_ &= ~0xFFFFFFF8;
+        p->size_ |= (prevsz + (ths->size_ & 0xFFFFFFF8)) & 0xFFFFFFF8;
+        if (!(p->size_ & 2)) {
+            *(u32 *)((u8 *)p + (prevsz + (ths->size_ & 0xFFFFFFF8)) - sizeof(u32)) = prevsz + (ths->size_ & 0xFFFFFFF8);
+        }
+        if (*start == ths) {
+            *start = (*start)->next_;
+        }
+        ths->next_->prev_ = ths->prev_;
+        ths->next_->prev_->next_ = ths->next_;
+        return p;
+    }
+    return ths;
+}
+
+#pragma push
+#pragma auto_inline off
+void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
+    u32 this_cur_size;
+    SubBlock *next_sub_block;
+    SubBlock *after;
+
+    next_sub_block = (SubBlock *)((u8 *)ths + (ths->size_ & 0xFFFFFFF8));
+    if (!(next_sub_block->size_ & 2)) {
+        this_cur_size = (ths->size_ & 0xFFFFFFF8) + (next_sub_block->size_ & 0xFFFFFFF8);
+        ths->size_ &= ~0xFFFFFFF8;
+        ths->size_ |= this_cur_size & 0xFFFFFFF8;
+        if (!(ths->size_ & 2)) {
+            *(u32 *)((u8 *)ths + this_cur_size - sizeof(u32)) = this_cur_size;
+        }
+        after = (SubBlock *)((u8 *)ths + this_cur_size);
+        if (!(ths->size_ & 2)) {
+            after->size_ &= ~4;
+        } else {
+            after->size_ |= 4;
+        }
+        if (*start == next_sub_block) {
+            *start = (*start)->next_;
+        }
+        if (*start == next_sub_block) {
+            *start = NULL;
+        }
+        next_sub_block->next_->prev_ = next_sub_block->prev_;
+                    next_sub_block->prev_->next_ = next_sub_block->next_;
+    }
+}
+
+void Block_link(Block *ths, SubBlock *sb) {
+    SubBlock **st;
+    u32 this_size;
+
+    this_size = sb->size_ & 0xFFFFFFF8;
+    sb->size_ &= ~2;
+    *(u32 *)((u8 *)sb + this_size) &= ~4;
+    *(u32 *)((u8 *)sb + this_size - sizeof(u32)) = this_size;
+    st = (SubBlock **)((u8 *)ths + (ths->size_ & 0xFFFFFFF8) - sizeof(SubBlock *));
+    if (*st != NULL) {
+        sb->prev_ = (*st)->prev_;
+        sb->prev_->next_ = sb;
+        sb->next_ = *st;
+        (*st)->prev_ = sb;
+        *st = sb;
+        *st = SubBlock_merge_prev(*st, st);
+        SubBlock_merge_next(*st, st);
+    } else {
+        *st = sb;
+        sb->prev_ = sb;
+        sb->next_ = sb;
+    }
+    if (ths->max_size_ < ((*st)->size_ & 0xFFFFFFF8)) {
+        ths->max_size_ = (*st)->size_ & 0xFFFFFFF8;
+    }
+}
+
+#pragma pop
+
 
 void *Block_subBlock(Block *ths, u32 size) {
     SubBlock *st;

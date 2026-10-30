@@ -18,7 +18,8 @@ typedef struct SISteeringControl {
 } SISteeringControl;
 
 extern SISteeringControl __SISteering[4];
-extern u32 __SISteeringEnableBits;
+static void (*SamplingCallback)(void);
+u32 __SISteeringEnableBits;
 
 BOOL OSDisableInterrupts(void);
 BOOL OSRestoreInterrupts(BOOL level);
@@ -26,6 +27,24 @@ BOOL SIIsChanBusy(s32 chan);
 u32 SIGetStatus(s32 chan);
 BOOL SIGetResponse(s32 chan, void *data);
 void SIDisablePolling(u32 poll);
+BOOL SIEnablePolling(u32 poll);
+s32 SISetCommand(s32 chan, u32 command);
+s32 SITransferCommands(void);
+
+void __SISteeringEnable(s32 chan) {
+    u32 cmd;
+    u32 chanBit;
+    u32 data[2];
+
+    chanBit = 0x80000000 >> chan;
+    if (!(__SISteeringEnableBits & chanBit)) {
+        __SISteeringEnableBits |= chanBit;
+        SIGetResponse(chan, data);
+        cmd = 0x300680;
+        SISetCommand(chan, cmd);
+        SIEnablePolling(__SISteeringEnableBits);
+    }
+}
 
 s32 SIReadSteering(s32 chan, SISteeringStatus *status) {
     BOOL enabled;
@@ -67,3 +86,60 @@ s32 SIReadSteering(s32 chan, SISteeringStatus *status) {
     OSRestoreInterrupts(enabled);
     return ret;
 }
+
+void OSClearContext(void *context);
+void OSSetCurrentContext(void *context);
+static void SamplingHandler(s16 interrupt, void *context)
+{
+    u32 exceptionContext[0x2C8 / 4];
+
+    if (SamplingCallback) {
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(exceptionContext);
+        SamplingCallback();
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(context);
+    }
+}
+
+s32 SIRegisterPollingHandler(void *handler);
+s32 SIUnregisterPollingHandler(void *handler);
+void *SISetSteeringSamplingCallback(void (*callback)(void))
+{
+    void *prev;
+
+    prev = SamplingCallback;
+    SamplingCallback = callback;
+    if (callback != NULL) {
+        SIRegisterPollingHandler(SamplingHandler);
+    } else {
+        SIUnregisterPollingHandler(SamplingHandler);
+    }
+    return prev;
+}
+
+s32 SISetCommand(s32 chan, u32 command);
+s32 SITransferCommands(void);
+void SIControlSteering(s32 chan, u32 control, s32 level) {
+    BOOL enabled;
+    u32 command;
+
+    control &= 0x600;
+    if (level <= -128) {
+        command = 0;
+    } else if (level >= 128) {
+        command = 0x100;
+    } else {
+        command = level + 128;
+    }
+    command |= control;
+    command &= 0x7FF;
+    enabled = OSDisableInterrupts();
+    if (__SISteeringEnableBits & (0x80000000 >> chan)) {
+        command |= 0x300000;
+        SISetCommand(chan, command);
+        SITransferCommands();
+    }
+    OSRestoreInterrupts(enabled);
+}
+

@@ -129,6 +129,7 @@ typedef struct LGDevice {
 } LGDevice;
 
 LGDevice g_lgDevices[4];
+s8 g_iGammaLookup[129];
 
 s32 g_lgInitialized;
 s32 g_bGammaInitialized;
@@ -161,7 +162,78 @@ static inline s32 Effect_WaveLookup(s16 *table, u32 a) {
 }
 
 void SimThread_Init(VDevice *dev, VDevice *owner);
+
+static inline void SimThread_SetWeights(SimThread *t, const s32 *weights) {
+    s32 i;
+
+    for (i = 0; i < 10; i++) {
+        t->weights[i] = weights[i];
+        t->history[i] = 0;
+    }
+    t->historyIdx = 0;
+}
+
+static inline s32 SimThread_AddDelta(SimThread *t, s32 dPos, s32 dt) {
+    s32 i;
+    s32 n;
+    s32 sumP;
+    u32 sumT;
+
+    t->deltaIdx--;
+    if (t->deltaIdx < 0) {
+        t->deltaIdx = 15;
+    }
+    t->deltaPos[t->deltaIdx] = dPos;
+    t->deltaTime[t->deltaIdx] = dt;
+    i = t->deltaIdx;
+    for (n = 0, sumT = 0, sumP = 0; n < 16 && sumT < 16; n++) {
+        sumP += t->deltaPos[i];
+        sumT += t->deltaTime[i++];
+        if (i == 16) {
+            i = 0;
+        }
+    }
+    if (sumT > 16) {
+        if (--i < 0) {
+            i = 15;
+        }
+        sumP -= Effect_MulDiv(sumT - 16, t->deltaPos[i], t->deltaTime[i]);
+    }
+    return sumP;
+}
+
+static inline u32 SimThread_Sample(SimThread *t) {
+    u32 OSGetTick(void);
+    u32 now;
+    s32 dt;
+    s32 oldPos;
+    s32 n;
+    s32 accel;
+
+    now = OSGetTick() / ((*(u32 *)0x800000F8 / 4) / 1000);
+    dt = now - t->lastTick;
+    t->lastTick = now;
+    oldPos = t->pos;
+    t->pos = ((LGDevice *)t->owner->unkF0)->curSteering;
+    t->posScaled = t->pos << 12;
+    t->history[t->historyIdx++] = SimThread_AddDelta(t, t->pos - oldPos, dt);
+    if (t->historyIdx > 9) {
+        t->historyIdx = 0;
+    }
+    accel = 0;
+    for (n = 9; n >= 0; n--) {
+        accel += t->history[t->historyIdx++] * t->weights[n];
+        if (t->historyIdx > 9) {
+            t->historyIdx = 0;
+        }
+    }
+    t->accel = accel;
+    return dt;
+}
+
 void VDevice_RecalcGammaTable(void);
+double pow(double x, double y);
+
 s32 VDevice_Shutdown(VDevice *dev);
 s32 VDevice_StartEffect(VDevice *dev, u32 handle);
 u32 VDevice_GetFreeEffect(VDevice *dev);
@@ -357,7 +429,7 @@ void SteeringSamplingCallback(void)
     void SIReadSteering(s32 chan, SISteeringStatus *status);
     void HandlePedals(void *cur, SISteeringStatus *status, SISteeringStatus *calib);
     void HandleTriggers(void *cur, SISteeringStatus *status, SISteeringStatus *calib);
-    void SimThread_Step(VDevice *dev);
+    s32 SimThread_Step(VDevice *dev);
     s32 i;
     LGDevice *device;
     SISteeringStatus *status;
@@ -564,6 +636,55 @@ s32 LGClose(LGDevice *device)
     return 0;
 }
 
+s32 LGGetDeviceProperty(LGDevice *device, u32 property, s32 *value) {
+    s32 result = -2;
+
+    if (device == NULL || (u32)device == 0xFFFFFFFF) {
+        return result;
+    }
+    if (value == NULL) {
+        return result;
+    }
+    if (property != 3) {
+        return result;
+    }
+    if (!device->opened) {
+        return result;
+    }
+    if (device->started) {
+        LGClose(device);
+        return result;
+    }
+    *value = device->vdev.unk11F4;
+    return 0;
+}
+
+s32 LGSetDeviceProperty(LGDevice *device, u32 property, s32 value) {
+    if (device == NULL || (u32)device == 0xFFFFFFFF) {
+        return -2;
+    }
+    if (value < 0 || value > 0xFF) {
+        return -2;
+    }
+    if (property != 3) {
+        return -2;
+    }
+    if (!device->opened) {
+        return -2;
+    }
+    if (device->started) {
+        if (device != NULL && (u32)device != 0xFFFFFFFF && device->opened) {
+            device->opened = 0;
+            device->started = 0;
+            VDevice_Shutdown(&device->vdev);
+            device->unk8 = -1;
+        }
+        return -2;
+    }
+    device->vdev.unk11F4 = value;
+    return 0;
+}
+
 #pragma use_lmw_stmw on
 s32 LGRead(SISteeringStatus *status)
 {
@@ -597,6 +718,30 @@ s32 LGRead(SISteeringStatus *status)
     }
     return 0;
 }
+
+s32 VDevice_DownloadEffect(VDevice *dev, u32 *handle, u8 *desc);
+s32 LGDownloadForceEffect(LGDevice *device, u32 *handle, u8 *desc)
+{
+    if (device == NULL || device == (LGDevice *)0xFFFFFFFF)
+        return -2;
+
+    if (!device->opened)
+        return -2;
+
+    if (handle == NULL)
+        return -2;
+
+    if (desc == NULL)
+        return -2;
+
+    if (device->started) {
+        LGClose(device);
+        return -2;
+    }
+
+    return VDevice_DownloadEffect(&device->vdev, handle, desc);
+}
+
 s32 LGUpdateForceEffect(u32 handle, u8 *desc)
 {
     s32 VDevice_UpdateEffect(VDevice *dev, u32 handle, u8 *desc);
@@ -679,6 +824,50 @@ s32 LGDestroyForceEffect(u32 handle)
     return VDevice_DestroyEffect(&device->vdev, handle);
 }
 
+void zero_mem_aligned(void *dst, u32 n) {
+    u32 i;
+    union {
+        u8 *cpd;
+        u32 *lpd;
+    } dstu;
+
+    dstu.cpd = ((u8 *)dst) - 1;
+
+    if (n >= 32) {
+        dstu.lpd = ((u32 *)dst) - 1;
+
+        i = n >> 5;
+        if (i) {
+            do {
+                *++dstu.lpd = 0;
+                *++dstu.lpd = 0;
+                *++dstu.lpd = 0;
+                *++dstu.lpd = 0;
+                *++dstu.lpd = 0;
+                *++dstu.lpd = 0;
+                *++dstu.lpd = 0;
+                *++dstu.lpd = 0;
+            } while (--i);
+        }
+
+        i = (n & 31) >> 2;
+        if (i) {
+            do
+                *++dstu.lpd = 0;
+            while (--i);
+        }
+
+        dstu.cpd = ((u8 *)(dstu.lpd + 1)) - 1;
+        n &= 3;
+    }
+
+    if (n) {
+        do
+            *++dstu.cpd = 0;
+        while (--n);
+    }
+}
+
 void VDevice_Init(VDevice *dev)
 {
     s32 i;
@@ -693,6 +882,18 @@ void VDevice_Init(VDevice *dev)
         g_bGammaInitialized = 1;
     }
 }
+
+#pragma push
+#pragma optimize_for_size on
+#pragma use_lmw_stmw on
+void VDevice_RecalcGammaTable(void) {
+    s32 i;
+
+    for (i = 0; i < 129; i++) {
+        g_iGammaLookup[i] = VDevice_GammaCurve(i);
+    }
+}
+#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
@@ -1055,6 +1256,35 @@ s32 Effect_Update(Effect *effect, u32 dt) {
     return 1;
 }
 
+s32 Effect_PerformEnvelope(Effect *effect, EffectEnvelope *env, s32 magnitude) {
+    s32 start;
+    s32 level;
+    s32 negative;
+    u32 elapsed;
+    u32 fadeStart;
+
+    elapsed = effect->elapsed;
+    negative = magnitude < 0;
+    start = magnitude < 0 ? -magnitude : magnitude;
+    level = start;
+    if (elapsed < env->attackTime) {
+        level = env->attackLevel + Effect_MulDiv(elapsed, start - env->attackLevel, env->attackTime);
+    } else if (effect->duration != 0xFFFFFFFF) {
+        fadeStart = effect->duration - env->fadeTime;
+        if (elapsed > fadeStart) {
+            if (elapsed < effect->duration) {
+                level = start + Effect_MulDiv(elapsed - fadeStart, env->fadeLevel - start, env->fadeTime);
+            } else {
+                level = env->fadeLevel;
+            }
+        }
+    }
+    if (negative) {
+        level = -level;
+    }
+    return level;
+}
+
 #pragma push
 #pragma optimize_for_size on
 s32 Effect_UpdateSpring(Effect *effect, EffectCondition *cond)
@@ -1126,6 +1356,97 @@ s32 Effect_UpdateDamper(Effect *effect, EffectCondition *cond)
     if (saturation < force)
     {
         force = saturation;
+    }
+    return force;
+}
+
+void SimThread_Init(VDevice *dev, VDevice *owner) {
+    static f32 a[10] = {
+        0.0995392948f, 0.0998378024f, 0.1000645086f, 0.1002266929f, 0.1003241092f,
+        0.1003241092f, 0.1002266929f, 0.1000645086f, 0.0998378024f, 0.0995392948f,
+    };
+    static s32 ia[10];
+    SimThread *t = &dev->sim;
+    s32 w[1] = {0x1000};
+    s32 i;
+    s32 j;
+
+    t->lastTick = 0;
+    t->historyIdx = 0;
+    t->deltaIdx = 0;
+    for (i = 0; i < 16; i++) {
+        t->deltaPos[i] = 0;
+        t->deltaTime[i] = 0;
+    }
+    t->owner = owner;
+    t->lastForce = 0;
+    t->posScaled = 0;
+    t->pos = 0;
+    t->accel = 0;
+    t->lastTick = OSGetTick() / ((*(u32 *)0x800000F8 / 4) / 1000);
+    SimThread_SetWeights(t, w);
+    for (j = 0; j < 10; j++) {
+        ia[j] = 4096.0f * a[j];
+    }
+    SimThread_SetWeights(t, ia);
+}
+
+s32 SimThread_Step(VDevice *dev) {
+    s32 SIControlSteering(s32 chan, s32 cmd, s32 force);
+    SimThread *t = &dev->sim;
+    s32 sumA = 0;
+    s32 sumB = 0;
+    u32 dt;
+    Effect *e;
+    u32 k;
+    s32 f;
+    s32 flag;
+    s32 gain;
+    s32 force;
+
+    dt = SimThread_Sample(t);
+    for (k = 0; k < 64; k++) {
+        e = t->owner->activeEffects[k];
+        if (e != NULL && (e->flags & 1)) {
+            Effect_Update(e, dt);
+            if ((e->flags & 1) && e->delay == 0) {
+                f = e->force;
+                f = f < -127 ? -127 : f;
+                f = f > 127 ? 127 : f;
+                flag = e->flags & 4;
+            } else {
+                f = 0;
+                flag = 0;
+            }
+            if (flag != 0) {
+                sumA += f;
+            } else {
+                sumB += f;
+            }
+        }
+    }
+    gain = t->owner->unk11F4;
+    f = sumA > 128 ? 128 : sumA;
+    f = f < -128 ? -128 : f;
+    if (f < 0) {
+        f = -(u8)g_iGammaLookup[-f];
+    } else {
+        f = (u8)g_iGammaLookup[f];
+    }
+    if (gain < 255) {
+        f = Effect_MulDiv(f, gain, 255);
+        sumB = Effect_MulDiv(sumB, gain, 255);
+    }
+    force = f + sumB;
+    force = force > 128 ? 128 : force;
+    force = force < -128 ? -128 : force;
+    if (t->lastForce != force) {
+        t->lastForce = force;
+        if (force == 0) {
+            SIControlSteering(*t->owner->unkF0, 0x400, 0);
+        } else {
+            SIControlSteering(*t->owner->unkF0, 0x600, force);
+        }
     }
     return force;
 }

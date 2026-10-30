@@ -11,9 +11,11 @@ typedef struct GfxWindow {
     Vector4 cameraRight;
     Vector4 cameraUp;
     Vector4 cameraAt;
-    u8 unk1C0[0x270 - 0x1C0];
+    Vector4 clipPlanes[6];
+    Vector4 shadowClipPlanes[5];
     f32 fov;
-    u8 unk274[0x280 - 0x274];
+    f32 unk274;
+    u8 unk278[0x280 - 0x278];
     u32 width;
     u32 height;
     u8 unk288[0x2B0 - 0x288];
@@ -21,7 +23,8 @@ typedef struct GfxWindow {
     u32 unk2B4;
     u32 unk2B8;
     u32 unk2BC;
-    u8 unk2C0[0x2D0 - 0x2C0];
+    u8 unk2C0[0x2CC - 0x2C0];
+    f32 unk2CC;
 } GfxWindow;
 
 typedef struct GfxState {
@@ -32,9 +35,14 @@ typedef struct GfxState {
 
 extern GfxState g_state;
 extern f32 g_identity[4][4];
-extern f32 GXCameraSpace[3][4];
+static f32 GXCameraSpace[3][4];
+Vector4 g_cameraPos_Backup;
+Vector4 g_cameraFacing_BackUp;
+Vector4 g_cameraUp_BackUp;
+Vector4 g_cameraRight_BackUp;
 
 GfxWindow *GetRenderWindow(void);
+double sin(double x);
 void *memcpy(void *dst, const void *src, u32 n);
 void MultiplyMatrix4x4(f32 a[4][4], f32 b[4][4], f32 out[4][4]);
 void C_MTXOrtho(f32 m[3][4], f32 t, f32 b, f32 l, f32 r, f32 n, f32 f);
@@ -120,6 +128,44 @@ void Gfx_SetCameraMatrix(Vector4 *pos, Vector4 *right, Vector4 *up, Vector4 *at)
     g_state.unk93 = 0;
 }
 
+void C_MTXPerspective(f32 m[4][4], f32 fovY, f32 aspect, f32 n, f32 f);
+f32 Gfx_GetProjectionMatrix(void);
+void Gfx_SetProjectionMatrix(f32 fov) {
+    void C_MTXPerspective(f32 m[4][4], f32 fovY, f32 aspect, f32 n, f32 f);
+    void GXSetProjection(f32 m[4][4], s32 type);
+    void Gfx_SetCameraMatrix(void *a, void *b, void *c, void *d);
+    f32 Gfx_GetProjectionMatrix(void);
+    f32 mtx[4][4];
+    f32 angle;
+    f32 value;
+
+    angle = fov;
+    value = sin(0.017453292f * (0.9f * fov));
+    *(f32 *)((u8 *)GetRenderWindow() + 0x274) = value;
+    *(f32 *)((u8 *)GetRenderWindow() + 0x270) = fov;
+    fov = 90.0f / fov;
+    value = -(fov * *(u32 *)((u8 *)GetRenderWindow() + 0x2B4));
+    *(f32 *)((u8 *)GetRenderWindow() + 0xC0) = value;
+    value = 1.333f * (fov * *(u32 *)((u8 *)GetRenderWindow() + 0x2BC));
+    *(f32 *)((u8 *)GetRenderWindow() + 0xD4) = value;
+    value = 1.0f;
+    *(f32 *)((u8 *)GetRenderWindow() + 0xEC) = value;
+    value = 20000.0f;
+    *(f32 *)((u8 *)GetRenderWindow() + 0xF8) = value;
+    value = *(u32 *)((u8 *)GetRenderWindow() + 0x2B4);
+    *(f32 *)((u8 *)GetRenderWindow() + 0xE0) = value;
+    value = *(u32 *)((u8 *)GetRenderWindow() + 0x2BC);
+    *(f32 *)((u8 *)GetRenderWindow() + 0xE4) = value;
+    Gfx_SetCameraMatrix((u8 *)GetRenderWindow() + 0x180, (u8 *)GetRenderWindow() + 0x190, (u8 *)GetRenderWindow() + 0x1A0, (u8 *)GetRenderWindow() + 0x1B0);
+    value = 1.0 / sin(0.008726646f * Gfx_GetProjectionMatrix());
+    *(f32 *)((u8 *)GetRenderWindow() + 0x2CC) = value;
+    value = *(u32 *)((u8 *)GetRenderWindow() + 0x284);
+    value = *(u32 *)((u8 *)GetRenderWindow() + 0x280) / value;
+    fov = *(u32 *)((u8 *)GetRenderWindow() + 0x280);
+    C_MTXPerspective(mtx, 1.0714285f * angle * *(u32 *)((u8 *)GetRenderWindow() + 0x284) / fov, value, 1.0f, 20000.0f);
+    GXSetProjection(mtx, 0);
+}
+
 f32 Gfx_GetProjectionMatrix(void) {
     return GetRenderWindow()->fov;
 }
@@ -135,6 +181,157 @@ void Gfx_SetOrthoMatrix(void) {
     PSMTXIdentity(mtx);
     GXLoadPosMtxImm(mtx, 0);
     GXSetCurrentMtx(0);
+}
+
+void Render_SaveCamera(void) {
+    g_cameraPos_Backup = GetRenderWindow()->cameraPos;
+    g_cameraFacing_BackUp = GetRenderWindow()->cameraRight;
+    g_cameraUp_BackUp = GetRenderWindow()->cameraUp;
+    g_cameraRight_BackUp = GetRenderWindow()->cameraAt;
+}
+
+void Render_LoadCamera(void) {
+    GetRenderWindow()->cameraPos = g_cameraPos_Backup;
+    GetRenderWindow()->cameraRight = g_cameraFacing_BackUp;
+    GetRenderWindow()->cameraUp = g_cameraUp_BackUp;
+    GetRenderWindow()->cameraAt = g_cameraRight_BackUp;
+    Gfx_SetProjectionMatrix(Gfx_GetProjectionMatrix());
+}
+
+double sin(double x);
+double cos(double x);
+double atan(double x);
+f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+void XformVecOrientation(Matrix4 *mtx, Vector4 *in, Vector4 *out);
+void Render_SetClipPlanes(f32 fov) {
+    Vector4 out __attribute__((aligned(16)));
+    Vector4 in __attribute__((aligned(16)));
+    Matrix4 m;
+    f32 one;
+    f32 adj;
+    f32 c;
+    f32 s;
+    f32 hAngle;
+    f32 vAngle;
+    f32 vc;
+    f32 vs;
+    f32 hc;
+    f32 hs;
+    f32 nhs;
+
+    adj = fov + 8.7f * sin(2.0 * (0.017453293 * fov));
+    fov = 0.5f * (0.017453292f * adj);
+    c = cos(fov);
+    s = sin(fov);
+    fov = 0.75f * s / c;
+    vAngle = atan(fov);
+    hAngle = atan(fov * (4096.0f / GetRenderWindow()->width));
+    vc = cos(vAngle);
+    vs = sin(vAngle);
+    hc = cos(hAngle);
+    hs = sin(hAngle);
+    one = 1.0f;
+    cos(one);
+
+    m.v[0].x = GetRenderWindow()->cameraAt.x;
+    m.v[0].y = GetRenderWindow()->cameraAt.y;
+    m.v[0].z = GetRenderWindow()->cameraAt.z;
+    m.v[0].w = 0.0f;
+    m.v[1].x = GetRenderWindow()->cameraUp.x;
+    m.v[1].y = GetRenderWindow()->cameraUp.y;
+    m.v[1].z = GetRenderWindow()->cameraUp.z;
+    m.v[1].w = 0.0f;
+    m.v[2].x = GetRenderWindow()->cameraRight.x;
+    m.v[2].y = GetRenderWindow()->cameraRight.y;
+    m.v[2].z = GetRenderWindow()->cameraRight.z;
+    m.v[2].w = 0.0f;
+    m.v[3].x = 0.0f;
+    m.v[3].y = 0.0f;
+    m.v[3].z = 0.0f;
+    m.v[3].w = 1.0f;
+
+    in.x = 0.0f;
+    in.y = vc;
+    in.z = -vs;
+    XformVecOrientation(&m, &in, &out);
+    GetRenderWindow()->clipPlanes[0].x = out.x;
+    GetRenderWindow()->clipPlanes[0].y = out.y;
+    GetRenderWindow()->clipPlanes[0].z = out.z;
+    GetRenderWindow()->clipPlanes[0].w = -PSVECDotProduct(&out, &GetRenderWindow()->cameraPos);
+
+    in.x = 0.0f;
+    in.y = -vc;
+    in.z = -vs;
+    XformVecOrientation(&m, &in, &out);
+    GetRenderWindow()->clipPlanes[1].x = out.x;
+    GetRenderWindow()->clipPlanes[1].y = out.y;
+    GetRenderWindow()->clipPlanes[1].z = out.z;
+    GetRenderWindow()->clipPlanes[1].w = -PSVECDotProduct(&out, &GetRenderWindow()->cameraPos);
+
+    in.x = -c;
+    in.y = 0.0f;
+    in.z = -s;
+    XformVecOrientation(&m, &in, &out);
+    GetRenderWindow()->clipPlanes[2].x = out.x;
+    GetRenderWindow()->clipPlanes[2].y = out.y;
+    GetRenderWindow()->clipPlanes[2].z = out.z;
+    GetRenderWindow()->clipPlanes[2].w = -PSVECDotProduct(&out, &GetRenderWindow()->cameraPos);
+
+    in.x = c;
+    in.y = 0.0f;
+    in.z = -s;
+    XformVecOrientation(&m, &in, &out);
+    GetRenderWindow()->clipPlanes[3].x = out.x;
+    GetRenderWindow()->clipPlanes[3].y = out.y;
+    GetRenderWindow()->clipPlanes[3].z = out.z;
+    GetRenderWindow()->clipPlanes[3].w = -PSVECDotProduct(&out, &GetRenderWindow()->cameraPos);
+
+    GetRenderWindow()->clipPlanes[4].x = -GetRenderWindow()->cameraRight.x;
+    GetRenderWindow()->clipPlanes[4].y = -GetRenderWindow()->cameraRight.y;
+    GetRenderWindow()->clipPlanes[4].z = -GetRenderWindow()->cameraRight.z;
+    GetRenderWindow()->clipPlanes[4].w = PSVECDotProduct(&GetRenderWindow()->cameraRight, &GetRenderWindow()->cameraPos);
+
+    nhs = -hs;
+    in.x = 0.0f;
+    in.y = hc;
+    in.z = nhs;
+    XformVecOrientation(&m, &in, &out);
+    GetRenderWindow()->shadowClipPlanes[0].x = out.x;
+    GetRenderWindow()->shadowClipPlanes[0].y = out.y;
+    GetRenderWindow()->shadowClipPlanes[0].z = out.z;
+    GetRenderWindow()->shadowClipPlanes[0].w = -PSVECDotProduct(&out, &GetRenderWindow()->cameraPos);
+
+    in.x = 0.0f;
+    in.y = -hc;
+    in.z = nhs;
+    XformVecOrientation(&m, &in, &out);
+    GetRenderWindow()->shadowClipPlanes[1].x = out.x;
+    GetRenderWindow()->shadowClipPlanes[1].y = out.y;
+    GetRenderWindow()->shadowClipPlanes[1].z = out.z;
+    GetRenderWindow()->shadowClipPlanes[1].w = -PSVECDotProduct(&out, &GetRenderWindow()->cameraPos);
+
+    in.x = -hc;
+    in.y = 0.0f;
+    in.z = nhs;
+    XformVecOrientation(&m, &in, &out);
+    GetRenderWindow()->shadowClipPlanes[2].x = out.x;
+    GetRenderWindow()->shadowClipPlanes[2].y = out.y;
+    GetRenderWindow()->shadowClipPlanes[2].z = out.z;
+    GetRenderWindow()->shadowClipPlanes[2].w = -PSVECDotProduct(&out, &GetRenderWindow()->cameraPos);
+
+    in.x = hc;
+    in.y = 0.0f;
+    in.z = nhs;
+    XformVecOrientation(&m, &in, &out);
+    GetRenderWindow()->shadowClipPlanes[3].x = out.x;
+    GetRenderWindow()->shadowClipPlanes[3].y = out.y;
+    GetRenderWindow()->shadowClipPlanes[3].z = out.z;
+    GetRenderWindow()->shadowClipPlanes[3].w = -PSVECDotProduct(&out, &GetRenderWindow()->cameraPos);
+
+    GetRenderWindow()->shadowClipPlanes[4].x = -GetRenderWindow()->cameraRight.x;
+    GetRenderWindow()->shadowClipPlanes[4].y = -GetRenderWindow()->cameraRight.y;
+    GetRenderWindow()->shadowClipPlanes[4].z = -GetRenderWindow()->cameraRight.z;
+    GetRenderWindow()->shadowClipPlanes[4].w = PSVECDotProduct(&GetRenderWindow()->cameraRight, &GetRenderWindow()->cameraPos);
 }
 
 void MultiplyMatrix4x4(f32 a[4][4], f32 b[4][4], f32 out[4][4]) {

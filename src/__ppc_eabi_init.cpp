@@ -42,6 +42,8 @@ extern "C" void __init_user(void)
     __init_cpp();
 }
 
+#pragma push
+#pragma peephole off
 void __init_cpp(void) {
     void (**constructor)(void);
 
@@ -49,7 +51,7 @@ void __init_cpp(void) {
         (*constructor)();
     }
 }
-
+#pragma pop
 extern "C" void _ExitProcess(void)
 {
     PPCHalt();

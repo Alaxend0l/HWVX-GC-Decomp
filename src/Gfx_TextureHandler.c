@@ -17,6 +17,7 @@ typedef struct Texture {
 
 extern Texture *m_texture;
 extern u32 m_totalTextures;
+extern s32 m_currentView;
 
 void *Allocate(u32 size, s32 flags, const char *name);
 void Deallocate(void *p);
@@ -77,6 +78,250 @@ void Gfx_TextureManager_Init(void) {
     }
     Gfx_FontManager_Init();
 }
+
+#pragma push
+#pragma readonly_strings on
+#pragma dont_inline on
+char *strstr(const char *s1, const char *s2);
+char *strcpy(char *dst, const char *src);
+char *strncpy(char *dst, const char *src, u32 n);
+int strcmp(const char *s1, const char *s2);
+u32 strlen(const char *s);
+s32 stricmp(const char *s1, const char *s2);
+s32 LoadBTF(const char *name, u32 id);
+s32 LoadTGA(const char *name, u32 id);
+#pragma push
+#pragma readonly_strings on
+#pragma dont_inline on
+u16 Gfx_LoadTexture(char *name) {
+    u32 id;
+    char buf[260];
+    char *ext;
+    u16 i;
+    u16 j;
+    s32 ok;
+
+    if (strcmp(name, "_NONE_") == 0) {
+        return 0xFFFF;
+    }
+    strcpy(buf, name);
+    if ((ext = strstr(buf, ".tga")) != NULL) {
+        *ext = 0;
+    } else if ((ext = strstr(buf, ".TGA")) != NULL) {
+        *ext = 0;
+    } else if ((ext = strstr(buf, ".btf")) != NULL) {
+        *ext = 0;
+    }
+    if (strlen(buf) > 34) {
+        buf[34] = 0;
+    }
+
+    for (j = 1; j < m_totalTextures; j++) {
+        if (stricmp(buf, (char *)m_texture[j].unk0) == 0 && m_currentView == m_texture[j].view) {
+            m_texture[j].refCount++;
+            return j;
+        }
+    }
+
+    for (i = 1; i < m_totalTextures; i++) {
+        if (m_texture[i].data == NULL) {
+            break;
+        }
+    }
+    if (i >= m_totalTextures) {
+        i = m_totalTextures - 1;
+    }
+
+    id = i;
+    m_texture[i].wrapMode = 0;
+    ok = LoadBTF(buf, id);
+    if (!ok) {
+        ok = LoadTGA(buf, id);
+    }
+    if (!ok) {
+        return 0xFFFF;
+    }
+    strncpy((char *)m_texture[i].unk0, buf, 0x24);
+    m_texture[i].refCount++;
+    m_texture[i].view = (s8)m_currentView;
+    m_texture[i].unk2C = 0.25f;
+    m_texture[i].unk3A = 0;
+    return i;
+}
+#pragma pop
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 LoadBTF(const char *name, u32 id) {
+    BTFHeader header;
+    char path[64];
+    u8 palette[0x400];
+    s32 size;
+    s32 handle;
+    s32 n;
+    s32 i;
+    s16 width;
+    s16 levels;
+    s16 height;
+    s16 mips;
+    s16 idx;
+    u8 *dst;
+    u8 *src;
+    u8 *buf;
+    u8 *p;
+
+    sprintf(path, "%s.btf", name);
+    handle = File_Open(0, path, 0, 0);
+    if (handle < 0) {
+        return 0;
+    }
+    File_Read(handle, 1, &header);
+    File_Seek(handle, -1, 1);
+    if (header.version == 1) {
+        File_Read(handle, 12, &header);
+        header.unk1 = 0;
+        header.unkC = 0;
+    } else if (header.version == 2) {
+        File_Read(handle, 12, &header);
+        header.unkC = 0;
+    } else if (header.version == 3) {
+        File_Read(handle, 16, &header);
+    }
+    width = header.width;
+    mips = header.numMips;
+    if (width > 0x400 || header.height > 0x400) {
+        return 0;
+    }
+    if (width == 0 || header.height == 0) {
+        return 0;
+    }
+    size = 0;
+    levels = 1;
+    m_texture[id].width = width;
+    height = header.height;
+    m_texture[id].unk30 = height;
+    while (height != 1 && width != 1) {
+        if (mips-- == 0) {
+            break;
+        }
+        size += width * height;
+        height >>= 1;
+        if (height == 0) {
+            height = 1;
+        }
+        width >>= 1;
+        if (width == 0) {
+            width = 1;
+        }
+        levels++;
+    }
+    if (levels == 1) {
+        size = width * height;
+    }
+    buf = NULL;
+    m_texture[id].height = levels;
+    switch (header.bpp) {
+    case 12:
+        size /= 2;
+        p = Allocate(size, 0, "");
+        m_texture[id].data = p;
+        buf = Allocate(size, 0, "");
+        m_texture[id].unk38 = 4;
+        File_Read(handle, size, p);
+        break;
+    case 32:
+        n = size * 4;
+        dst = Allocate(n, 0, "");
+        m_texture[id].data = dst;
+        src = buf = Allocate(n, 0, "");
+        m_texture[id].unk38 = 1;
+        File_Read(handle, n, src);
+        for (i = 0; i < size; i++) {
+            dst[0] = src[2];
+            dst[1] = src[1];
+            dst[2] = src[0];
+            dst[3] = src[3];
+            src += 4;
+            dst += 4;
+        }
+        break;
+    case 24:
+        n = size * 3;
+        dst = Allocate(n, 0, "");
+        m_texture[id].data = dst;
+        src = buf = Allocate(n, 0, "");
+        m_texture[id].unk38 = 0;
+        File_Read(handle, n, src);
+        for (i = 0; i < size; i++) {
+            dst[0] = src[2];
+            dst[1] = src[1];
+            dst[2] = src[0];
+            src += 3;
+            dst += 3;
+        }
+        break;
+    case 9:
+        dst = Allocate(size * 4, 0, "");
+        m_texture[id].data = dst;
+        src = buf = Allocate(size, 0, "");
+        m_texture[id].unk38 = 1;
+        memset(palette, 0, 0x400);
+        if (header.numColors > 0) {
+            File_Read(handle, header.numColors * 4, palette);
+        } else {
+            for (n = 0; n < 0xFF; n++) {
+                p = palette;
+                p += n;
+                p[2] = n;
+                p[1] = n;
+                p[0] = n;
+            }
+        }
+        File_Read(handle, size, src);
+        for (i = 0; i < size; i++) {
+            idx = (u8)*src << 2;
+            dst[0] = palette[idx + 2];
+            dst[1] = palette[idx + 1];
+            dst[2] = palette[idx];
+            dst[3] = palette[idx + 3];
+            src++;
+            dst += 4;
+        }
+        break;
+    case 8:
+        dst = Allocate(size * 3, 0, "");
+        m_texture[id].data = dst;
+        src = buf = Allocate(size, 0, "");
+        m_texture[id].unk38 = 0;
+        memset(palette, 0, 0x300);
+        if (header.numColors > 0) {
+            File_Read(handle, header.numColors * 3, palette);
+        } else {
+            for (n = 0; n < 0xFF; n++) {
+                p = palette;
+                p += n;
+                p[2] = n;
+                p[1] = n;
+                p[0] = n;
+            }
+        }
+        File_Read(handle, size, src);
+        for (i = 0; i < size; i++) {
+            idx = *src * 3;
+            dst[0] = palette[idx + 2];
+            dst[1] = palette[idx + 1];
+            dst[2] = palette[idx];
+            src++;
+            dst += 3;
+        }
+        break;
+    }
+    Deallocate(buf);
+    File_Close(handle);
+    Render_CreateTextureSlot(id, header.numMips > 0);
+    return 1;
+}
+#pragma pop
 
 #pragma push
 #pragma use_lmw_stmw on
@@ -160,6 +405,35 @@ s32 LoadTGA(const char *name, u32 id) {
     Render_CreateTextureSlot(id, 1);
     return 1;
 }
+
+#pragma push
+#pragma readonly_strings on
+u16 Gfx_LoadTexture_RAM(u8 **data) {
+    extern s32 m_currentView;
+    u8 *LoadBTF_RAM(u8 *data, s32 id);
+    char buf[32];
+    u16 i;
+
+    for (i = 1; i < m_totalTextures; i++) {
+        if (m_texture[i].data == NULL) {
+            break;
+        }
+    }
+    if (i >= m_totalTextures) {
+        i = m_totalTextures - 1;
+    }
+    *data = LoadBTF_RAM(*data, i);
+    sprintf(buf, "/pack:%d", i);
+    memcpy(&m_texture[i], buf, 0x20);
+    m_texture[i].refCount++;
+    m_texture[i].view = (s8)m_currentView;
+    m_texture[i].unk2C = 0.25f;
+    m_texture[i].unk3A = 1;
+    m_texture[i].wrapMode = 0;
+    return i;
+}
+#pragma pop
+
 #pragma pop
 void Gfx_SetTextureWrapMode(u16 id, u16 mode) {
     Texture *tex = &m_texture[id];
@@ -171,3 +445,20 @@ void Gfx_SetTextureWrapMode(u16 id, u16 mode) {
 void Gfx_LoadPalettes_RAM(void) {
 
 }
+
+void Gfx_UnLoadTexture(u16 id) {
+    if (id < m_totalTextures && m_texture != NULL) {
+        if (--m_texture[id].refCount == 0) {
+            Render_DestroyTextureSlot(id);
+            if (m_texture[id].unk3A == 0) {
+                Deallocate(m_texture[id].data);
+            }
+            memset(&m_texture[id], 0, 0x20);
+            m_texture[id].refCount = 0;
+            m_texture[id].unk30 = 0;
+            m_texture[id].width = 0;
+            m_texture[id].data = NULL;
+        }
+    }
+}
+

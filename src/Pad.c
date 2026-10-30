@@ -27,7 +27,8 @@ s32 ResettingChan = 0x20;
 u32 XPatchBits = 0xF0000000;
 u32 AnalogMode = 0x300;
 u32 Spec = 5;
-void *MakeStatus = NULL;
+void SPEC2_MakeStatus(s32, void *, u32 *);
+void *MakeStatus = SPEC2_MakeStatus;
 f32 CmdReadOrigin = 8.0f;
 f32 CmdCalibrate = 32.0f;
 
@@ -114,6 +115,25 @@ static inline void PADDisable(s32 chan)
     OSRestoreInterrupts(enabled);
 }
 
+BOOL SIGetResponse(s32 chan, void *data);
+void SISetCommand(s32 chan, u32 command);
+u32 SIEnablePolling(u32 poll);
+BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback, s64 delay);
+
+static inline void PADEnable(s32 chan)
+{
+    u32 cmd;
+    u32 chanBit;
+    u32 data[2];
+
+    chanBit = 0x80000000 >> chan;
+    EnabledBits |= chanBit;
+    SIGetResponse(chan, data);
+    cmd = (0x40 << 16) | AnalogMode;
+    SISetCommand(chan, cmd);
+    SIEnablePolling(EnabledBits);
+}
+
 static inline void DoReset(void)
 {
     u32 chanBit;
@@ -182,6 +202,89 @@ void UpdateOrigin(s32 chan)
         if (64 < origin->stickX && (SIGetType(chan) & 0xFFFF0000) == 0x09000000) {
             origin->stickX = 0;
         }
+    }
+}
+
+void SISetCommand(s32 chan, u32 command);
+u32 SIEnablePolling(u32 poll);
+void PADOriginCallback(s32 chan, u32 error, void *context)
+{
+    if (!(error & 0xF)) {
+        UpdateOrigin(ResettingChan);
+        PADEnable(ResettingChan);
+    }
+    DoReset();
+}
+
+void UpdateOrigin(s32 chan);
+void PADOriginUpdateCallback(s32 chan, u32 error, void *context)
+{
+    if (!(EnabledBits & (0x80000000 >> chan))) {
+        return;
+    }
+    if (!(error & 0xF)) {
+        UpdateOrigin(chan);
+    }
+    if (error & 8) {
+        PADDisable(chan);
+    }
+}
+
+void PADProbeCallback(s32 chan, u32 error, void *context)
+{
+    if (!(error & 0xF)) {
+        PADEnable(ResettingChan);
+        WaitingBits |= 0x80000000 >> ResettingChan;
+    }
+    DoReset();
+}
+
+void PADTypeAndStatusCallback(s32 chan, u32 type)
+{
+    u32 chanBit;
+    u32 recalibrate;
+    BOOL rc = TRUE;
+
+    chanBit = 0x80000000 >> ResettingChan;
+    recalibrate = RecalibrateBits & chanBit;
+    RecalibrateBits &= ~chanBit;
+
+    if (type & 0xF) {
+        DoReset();
+        return;
+    }
+
+    type &= ~0xFF;
+    Type[ResettingChan] = type;
+
+    if ((type & 0x18000000) != 0x08000000 || !(type & 0x01000000)) {
+        DoReset();
+        return;
+    }
+
+    if (Spec < 2) {
+        PADEnable(ResettingChan);
+        DoReset();
+        return;
+    }
+
+    if (!(type & 0x80000000) || (type & 0x04000000)) {
+        if (recalibrate) {
+            rc = SITransfer(ResettingChan, &CmdCalibrate, 3, &Origin[ResettingChan], 10, PADOriginCallback, 0);
+        } else {
+            rc = SITransfer(ResettingChan, &CmdReadOrigin, 1, &Origin[ResettingChan], 10, PADOriginCallback, 0);
+        }
+    } else if ((type & 0x00100000) && !(type & 0x00080000) && !(type & 0x00040000)) {
+        if (type & 0x40000000) {
+            rc = SITransfer(ResettingChan, &CmdReadOrigin, 1, &Origin[ResettingChan], 10, PADOriginCallback, 0);
+        } else {
+            rc = SITransfer(ResettingChan, &CmdProbeDevice[ResettingChan], 3, &Origin[ResettingChan], 8, PADProbeCallback, 0);
+        }
+    }
+    if (!rc) {
+        PendingBits |= chanBit;
+        DoReset();
+        return;
     }
 }
 
@@ -417,6 +520,66 @@ void PADSetSpec(s32 spec)
     Spec = spec;
 }
 
+void SPEC0_MakeStatus(s32 chan, void *arg1, u32 *data)
+{
+    PADStatus *status = arg1;
+
+    status->button = 0;
+    status->button |= ((data[0] >> 16) & 0x0008) ? 0x0100 : 0;
+    status->button |= ((data[0] >> 16) & 0x0020) ? 0x0200 : 0;
+    status->button |= ((data[0] >> 16) & 0x0100) ? 0x0400 : 0;
+    status->button |= ((data[0] >> 16) & 0x0001) ? 0x0800 : 0;
+    status->button |= ((data[0] >> 16) & 0x0010) ? 0x1000 : 0;
+    status->stickX = (s8)(data[1] >> 16);
+    status->stickY = (s8)(data[1] >> 24);
+    status->substickX = (s8)(data[1]);
+    status->substickY = (s8)(data[1] >> 8);
+    status->triggerLeft = (u8)(data[0] >> 8) & 0xff;
+    status->triggerRight = (u8)(data[0] & 0xff);
+    status->analogA = 0;
+    status->analogB = 0;
+    if (170 <= status->triggerLeft) {
+        status->button |= 0x40;
+    }
+    if (170 <= status->triggerRight) {
+        status->button |= 0x20;
+    }
+    status->stickX -= 128;
+    status->stickY -= 128;
+    status->substickX -= 128;
+    status->substickY -= 128;
+}
+
+void SPEC1_MakeStatus(s32 chan, void *arg1, u32 *data)
+{
+    PADStatus *status = arg1;
+
+    status->button = 0;
+    status->button |= ((data[0] >> 16) & 0x0080) ? 0x0100 : 0;
+    status->button |= ((data[0] >> 16) & 0x0100) ? 0x0200 : 0;
+    status->button |= ((data[0] >> 16) & 0x0020) ? 0x0400 : 0;
+    status->button |= ((data[0] >> 16) & 0x0010) ? 0x0800 : 0;
+    status->button |= ((data[0] >> 16) & 0x0200) ? 0x1000 : 0;
+    status->stickX = (s8)(data[1] >> 16);
+    status->stickY = (s8)(data[1] >> 24);
+    status->substickX = (s8)(data[1]);
+    status->substickY = (s8)(data[1] >> 8);
+    status->triggerLeft = (u8)(data[0] >> 8) & 0xff;
+    status->triggerRight = (u8)(data[0] & 0xff);
+    status->analogA = 0;
+    status->analogB = 0;
+    if (170 <= status->triggerLeft) {
+        status->button |= 0x40;
+    }
+    if (170 <= status->triggerRight) {
+        status->button |= 0x20;
+    }
+    status->stickX -= 128;
+    status->stickY -= 128;
+    status->substickX -= 128;
+    status->substickY -= 128;
+}
+
 void SPEC2_MakeStatus(s32 chan, void *arg1, u32 *data)
 {
     typedef struct {
@@ -528,9 +691,9 @@ static void SamplingHandler(s16 interrupt, void *context)
         OSClearContext(exceptionContext);
         OSSetCurrentContext(exceptionContext);
         SamplingCallback();
+        OSClearContext(exceptionContext);
+        OSSetCurrentContext(context);
     }
-    OSClearContext(exceptionContext);
-    OSSetCurrentContext(context);
 }
 
 s32 SIRegisterPollingHandler(void *handler);
@@ -549,4 +712,21 @@ void *PADSetSamplingCallback(void (*callback)(void))
     return prev;
 }
 
+BOOL __PADDisableRecalibration(BOOL disable) {
+    BOOL enabled;
+    BOOL prev;
+
+    enabled = OSDisableInterrupts();
+    if (*(u8 *)0x800030E3 & 0x40) {
+        prev = TRUE;
+    } else {
+        prev = FALSE;
+    }
+    *(u8 *)0x800030E3 &= 0xBF;
+    if (disable) {
+        *(u8 *)0x800030E3 |= 0x40;
+    }
+    OSRestoreInterrupts(enabled);
+    return prev;
+}
 

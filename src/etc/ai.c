@@ -1,5 +1,17 @@
 #include "common.h"
 
+volatile u16 __DSPRegs[32] : 0xCC005000;
+volatile u32 __AIRegs[8] : 0xCC006C00;
+
+void AISetStreamPlayState(u32 state);
+s32 AIGetStreamPlayState(void);
+void __AI_SRC_INIT(void);
+s32 AIGetStreamSampleRate(void);
+u8 AIGetStreamVolLeft(void);
+u8 AIGetStreamVolRight(void);
+void AISetStreamVolLeft(u8 vol);
+void AISetStreamVolRight(u8 vol);
+
 
 s32 AIRegisterDMACallback(s32 cb) {
     extern s32 __AID_Callback;
@@ -14,9 +26,84 @@ s32 AIRegisterDMACallback(s32 cb) {
     return old;
 }
 
+s32 OSRestoreInterrupts(s32 level);
+void AIInitDMA(u32 start_addr, u32 length) {
+    s32 old;
+
+    old = OSDisableInterrupts();
+    __DSPRegs[24] = (u16)((__DSPRegs[24] & ~0x3FF) | (start_addr >> 16));
+    __DSPRegs[25] = (u16)((__DSPRegs[25] & ~0xFFE0) | (0xFFFF & start_addr));
+    __DSPRegs[27] = (u16)((__DSPRegs[27] & ~0x7FFF) | (u16)((length >> 5) & 0xFFFF));
+    OSRestoreInterrupts(old);
+}
+
+void AIStartDMA(void) {
+    __DSPRegs[27] |= 0x8000;
+}
+
+void AIStopDMA(void) {
+    __DSPRegs[27] &= ~0x8000;
+}
+
+void AISetStreamPlayState(u32 state) {
+    s32 enabled;
+    u8 volRight;
+    u8 volLeft;
+
+    if (state == AIGetStreamPlayState()) {
+        return;
+    }
+    if ((u32)AIGetStreamSampleRate() == 0 && state == 1) {
+        volRight = AIGetStreamVolRight();
+        volLeft = AIGetStreamVolLeft();
+        AISetStreamVolRight(0);
+        AISetStreamVolLeft(0);
+        enabled = OSDisableInterrupts();
+        __AI_SRC_INIT();
+        __AIRegs[0] = (__AIRegs[0] & ~0x20) | 0x20;
+        __AIRegs[0] = (__AIRegs[0] & ~1) | 1;
+        OSRestoreInterrupts(enabled);
+        AISetStreamVolLeft(volRight);
+        AISetStreamVolRight(volLeft);
+    } else {
+        __AIRegs[0] = (__AIRegs[0] & ~1) | state;
+    }
+}
+
 s32 AIGetStreamPlayState(void)
 {
-    return *(s32 *)0xCC006C00 & 1;
+    return __AIRegs[0] & 1;
+}
+
+s32 AIGetDSPSampleRate(void);
+void AISetDSPSampleRate(u32 rate) {
+    s32 old;
+    s32 state;
+    u8 left;
+    u8 right;
+    u32 sampleRate;
+
+    if (rate == AIGetDSPSampleRate()) {
+        return;
+    }
+    __AIRegs[0] &= ~0x40;
+    if (rate == 0) {
+        left = AIGetStreamVolLeft();
+        right = AIGetStreamVolRight();
+        state = AIGetStreamPlayState();
+        sampleRate = AIGetStreamSampleRate();
+        AISetStreamVolLeft(0);
+        AISetStreamVolRight(0);
+        old = OSDisableInterrupts();
+        __AI_SRC_INIT();
+        __AIRegs[0] = (__AIRegs[0] & ~0x20) | 0x20;
+        __AIRegs[0] = (__AIRegs[0] & ~2) | (sampleRate << 1);
+        __AIRegs[0] = (__AIRegs[0] & ~1) | state;
+        __AIRegs[0] |= 0x40;
+        OSRestoreInterrupts(old);
+        AISetStreamVolLeft(left);
+        AISetStreamVolRight(right);
+    }
 }
 
 s32 AIGetDSPSampleRate(void)
@@ -24,9 +111,40 @@ s32 AIGetDSPSampleRate(void)
     return (((u32) *(u32 *)0xCC006C00 >> 6U) & 1) ^ 1;
 }
 
+void __AI_set_stream_sample_rate(u32 rate) {
+    s32 old;
+    s32 state;
+    u8 left;
+    u8 right;
+    u32 temp_r26;
+
+    if (rate != AIGetStreamSampleRate()) {
+        state = AIGetStreamPlayState();
+        left = AIGetStreamVolLeft();
+        right = AIGetStreamVolRight();
+        AISetStreamVolRight(0);
+        AISetStreamVolLeft(0);
+        temp_r26 = __AIRegs[0] & 0x40;
+        __AIRegs[0] &= ~0x40;
+        old = OSDisableInterrupts();
+        __AI_SRC_INIT();
+        __AIRegs[0] |= temp_r26;
+        __AIRegs[0] = (__AIRegs[0] & ~0x20) | 0x20;
+        __AIRegs[0] = (__AIRegs[0] & ~2) | (rate << 1);
+        OSRestoreInterrupts(old);
+        AISetStreamPlayState(state);
+        AISetStreamVolLeft(left);
+        AISetStreamVolRight(right);
+    }
+}
+
 s32 AIGetStreamSampleRate(void)
 {
     return ((u32) *(u32 *)0xCC006C00 >> 1U) & 1;
+}
+
+void AISetStreamVolLeft(u8 vol) {
+    __AIRegs[1] = (__AIRegs[1] & ~0xFF) | (vol & 0xFF);
 }
 
 u8 AIGetStreamVolLeft(void)
@@ -34,12 +152,165 @@ u8 AIGetStreamVolLeft(void)
     return (u8) *(s32 *)0xCC006C04;
 }
 
+void AISetStreamVolRight(u8 vol) {
+    __AIRegs[1] = (__AIRegs[1] & ~0xFF00) | (((u32)vol & 0xFF) << 8);
+}
+
 u8 AIGetStreamVolRight(void)
 {
     return (u8) ((u32) *(u32 *)0xCC006C04 >> 8U);
+}
+
+u32 __OSBusClock : 0x800000F8;
+void AIInit(u8 *stack) {
+    extern s32 __AI_init_flag;
+    extern s64 bound_32KHz;
+    extern s64 bound_48KHz;
+    extern s64 min_wait;
+    extern s64 max_wait;
+    extern s64 buffer;
+    extern void (*__AIS_Callback)(u32);
+    extern void (*__AID_Callback)(void);
+    extern u8 *__CallbackStack;
+    void __OSSetInterruptHandler(s16 interrupt, void *handler);
+    u32 __OSUnmaskInterrupts(u32 mask);
+    void __AISHandler(s16 interrupt, void *context);
+    void __AIDHandler(s16 interrupt, void *context);
+
+    if (__AI_init_flag == 1) {
+        return;
+    }
+    bound_32KHz = ((31524) * ((__OSBusClock / 4) / 125000)) / 8000;
+    bound_48KHz = ((42024) * ((__OSBusClock / 4) / 125000)) / 8000;
+    min_wait = ((42000) * ((__OSBusClock / 4) / 125000)) / 8000;
+    max_wait = ((63000) * ((__OSBusClock / 4) / 125000)) / 8000;
+    buffer = ((3000) * ((__OSBusClock / 4) / 125000)) / 8000;
+    AISetStreamVolRight(0);
+    __AIRegs[0] = (__AIRegs[0] & ~0x20) | 0x20;
+    AISetStreamVolLeft(0);
+    __AIRegs[3] = 0;
+    __AI_set_stream_sample_rate(1);
+    AISetDSPSampleRate(0);
+    __AIS_Callback = NULL;
+    __AID_Callback = NULL;
+    __CallbackStack = stack;
+    __OSSetInterruptHandler(5, __AIDHandler);
+    __OSUnmaskInterrupts(0x04000000);
+    __OSSetInterruptHandler(8, __AISHandler);
+    __OSUnmaskInterrupts(0x00800000);
+    __AI_init_flag = 1;
 }
 
 void AIReset(void) {
     extern s32 __AI_init_flag;
     __AI_init_flag = 0;
 }
+
+void OSClearContext(void *);
+void OSSetCurrentContext(void *);
+extern void (*__AIS_Callback)(u32);
+void __AISHandler(s16 interrupt, void *context) {
+    u8 exceptionContext[0x2C8];
+
+    __AIRegs[0] |= 8;
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(exceptionContext);
+    if (__AIS_Callback) {
+        __AIS_Callback(__AIRegs[2]);
+    }
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(context);
+}
+
+void __AIDHandler(s16 interrupt, void *context) {
+    void OSClearContext(void *);
+    void OSSetCurrentContext(void *);
+    void __AICallbackStackSwitch(void *cb);
+    extern void (*__AID_Callback)(void);
+    extern u8 *__CallbackStack;
+    u8 exceptionContext[0x2C8];
+    u16 tmp;
+
+    tmp = __DSPRegs[5];
+    tmp = (u16)((tmp & ~0xA0) | 8);
+    __DSPRegs[5] = tmp;
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(exceptionContext);
+    if (__AID_Callback) {
+        if (__CallbackStack) {
+            __AICallbackStackSwitch(__AID_Callback);
+        } else {
+            __AID_Callback();
+        }
+    }
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(context);
+}
+
+#pragma push
+#pragma use_lmw_stmw on
+#pragma peephole off
+static void __AI_SRC_INIT(void) {
+    s64 OSGetTime(void);
+    extern s64 bound_32KHz;
+    extern s64 bound_48KHz;
+    extern s64 min_wait;
+    extern s64 max_wait;
+    extern s64 buffer;
+    s64 rise32 = 0;
+    s64 rise48 = 0;
+    s64 diff = 0;
+    s64 t1 = 0;
+    s64 temp = 0;
+    u32 temp0 = 0;
+    u32 temp1 = 0;
+    u32 done = 0;
+    u32 walking = 0;
+    u32 initCnt = 0;
+
+    walking = 0;
+    initCnt = 0;
+    temp = 0;
+
+    while (!done) {
+        __AIRegs[0] = (__AIRegs[0] & ~0x20) | 0x20;
+        __AIRegs[0] &= ~2;
+        __AIRegs[0] = (__AIRegs[0] & ~1) | 1;
+
+        temp0 = __AIRegs[2];
+        while (temp0 == __AIRegs[2]) {
+        }
+        rise32 = OSGetTime();
+
+        __AIRegs[0] = (__AIRegs[0] & ~2) | 2;
+        __AIRegs[0] = (__AIRegs[0] & ~1) | 1;
+
+        temp1 = __AIRegs[2];
+        while (temp1 == __AIRegs[2]) {
+        }
+        rise48 = OSGetTime();
+
+        diff = rise48 - rise32;
+        __AIRegs[0] &= ~2;
+        __AIRegs[0] &= ~1;
+
+        if (diff < (bound_32KHz - buffer)) {
+            temp = min_wait;
+            done = 1;
+            ++initCnt;
+        } else if (diff >= (bound_32KHz + buffer) && diff < (bound_48KHz - buffer)) {
+            temp = max_wait;
+            done = 1;
+            ++initCnt;
+        } else {
+            done = 0;
+            walking = 1;
+            ++initCnt;
+        }
+    }
+
+    while ((rise48 + temp) > OSGetTime()) {
+    }
+}
+#pragma pop
+

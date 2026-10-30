@@ -48,6 +48,32 @@ double ldexp(double x, int exp);
 double modf(double x, double *iptr);
 void __two_exp(decimal *result, short exp);
 void __timesdec(decimal *result, const decimal *x, const decimal *y);
+static void __str2dec(decimal *d, const signed char *s, short exp);
+
+static inline int __equals_dec(const decimal *x, const decimal *y) {
+    int i;
+    if (x->sig.text[0] == 0) {
+        return y->sig.text[0] == 0;
+    }
+    if (y->sig.text[0] == 0) {
+        return 0;
+    }
+    if (x->exp != y->exp || x->sig.length != y->sig.length) {
+        return 0;
+    }
+    for (i = 0; i < x->sig.length; i++) {
+        if (x->sig.text[i] != y->sig.text[i]) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int __dec_is_max(const decimal *d) {
+    decimal max;
+    __str2dec(&max, (const signed char *)"179769313486231580793729011405303420", 308);
+    return __equals_dec(&max, d);
+}
 
 static inline int __fpclassifyd(double x) {
     switch ((*(int *)&x) & 0x7FF00000) {
@@ -171,8 +197,6 @@ void __num2dec_internal(decimal *d, double x) {
 
 static void __str2dec(decimal *d, const signed char *s, short exp);
 void __two_exp(decimal *result, short exp) {
-    decimal temp;
-
     switch (exp) {
     case -64:
         __str2dec(result, (const signed char *)"542101086242752217003726400434970855712890625", -20);
@@ -246,7 +270,7 @@ void __two_exp(decimal *result, short exp) {
     }
 
     if (exp & 1) {
-        temp = *result;
+        decimal temp = *result;
         if (exp > 0) {
             decimal two;
             __str2dec(&two, (const signed char *)"2", 0);
@@ -287,6 +311,72 @@ static void __str2dec(decimal *d, const signed char *s, short exp) {
         }
     round_up:
         __dorounddecup(d, d->sig.length);
+    }
+}
+
+void __timesdec(decimal *result, const decimal *x, const decimal *y) {
+    u32 accumulator = 0;
+    u8 mantissa[SIGDIGLEN * 2];
+    int i = x->sig.length + y->sig.length - 1;
+    u8 *pDigit;
+    u8 *ip;
+    u8 *jp;
+    u8 *end;
+
+    end = pDigit = mantissa + i + 1;
+    result->sign = 0;
+
+    while (i > 0) {
+        int k = y->sig.length - 1;
+        int j = i - k - 1;
+        int l;
+        int t;
+
+        if (j < 0) {
+            j = 0;
+            k = i - 1;
+        }
+        ip = (u8 *)&x->sig.text[j];
+        jp = (u8 *)&y->sig.text[k];
+        l = k + 1;
+        t = x->sig.length - j;
+        if (l > t) {
+            l = t;
+        }
+        for (; l > 0; --l, ++ip, --jp) {
+            accumulator += *ip * *jp;
+        }
+        *--pDigit = accumulator % 10;
+        accumulator /= 10;
+        --i;
+    }
+
+    result->exp = x->exp + y->exp;
+
+    if (accumulator > 0) {
+        *--pDigit = accumulator;
+        result->exp++;
+    }
+
+    for (i = 0; i < SIGDIGLEN && pDigit < end; ++i, ++pDigit) {
+        result->sig.text[i] = *pDigit;
+    }
+    result->sig.length = i;
+
+    if (pDigit < end && *pDigit >= 5) {
+        if (*pDigit == 5) {
+            u8 *q = pDigit + 1;
+            for (; q < end; ++q) {
+                if (*q != 0) {
+                    goto round;
+                }
+            }
+            if ((*(pDigit - 1) & 1) == 0) {
+                return;
+            }
+        }
+    round:
+        __dorounddecup(result, result->sig.length);
     }
 }
 

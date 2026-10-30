@@ -1,5 +1,12 @@
 #include "common.h"
 
+#pragma readonly_strings on
+
+GameInfo g_gameInfo[2] = {
+    { "Hot Wheels(TM)   Velocity X", "HotWheels.elf", "hwvx", "hwvx", "hw.ico", 0, 0 },
+    { "Dooms Day Rescue", "SLUS_001.00", "DoomsDayRescue", "DoomsDayRescue", "ddr.ico", 0, 0 },
+};
+
 char g_saveFileName[11];
 char g_fileNames[8][41];
 u8 g_DDRsavedGameData[0xE83C];
@@ -23,16 +30,69 @@ void *FileStreaming_InitializeDataPack(void *, s32, s32);
 u8 *DataPack_GetScript(void *, s32);
 s32 PlayerManager_PlayerHumanCount(void);
 
+static inline u8 *GameSettings_LoadMCP(void)
+{
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    void *pack;
+
+    if (bFirstTime)
+    {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL)
+        {
+            return NULL;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    return pMCP;
+}
+
+typedef struct DDRescueGameData {
+    u8 unk0[0x6C];
+    s32 progressionID;
+    s32 progression;
+    s8 bValid;
+    u8 unk75[0x78 - 0x75];
+    u8 playerStats[0x38];
+    u8 actions[0x880 - 0xB0];
+    f32 unk880[50];
+    u8 unk948[50][2];
+    f32 unk9AC[50];
+    u8 unkA74[50][2];
+    u8 unkAD8[200];
+    u8 unkBA0[1000];
+    u8 unkF88[2000];
+    u8 unk1758[500];
+    u8 unk194C[50];
+    f32 unk1980[50][3];
+    f32 unk1BD8[50];
+    u8 unk1CA0[50];
+    s32 vehicle;
+    s32 item;
+} DDRescueGameData;
+
+
+static inline u32 GameSettings_GetSaveFileChecksum(char *device, const char *name, u32 size)
+{
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    extern u8 *g_pSavedGameData;
+    u8 *data = g_pSavedGameData;
+    s32 handle;
+
+    if ((handle = File_Open(device + 0xA, name, 0, NULL)) != -1)
+    {
+        File_Read(handle, size * 8 + 0x15C, data);
+        File_Close(handle);
+        return ((u32 *)data)[2];
+    }
+    return -1;
+}
+
 void GameSetting_Init(void) {
-    typedef struct GameInfo {
-        const char *name;
-        const char *id;
-        const char *title;
-        const char *fileName;
-        const char *icon;
-        s32 unk14;
-        s32 unk18;
-    } GameInfo;
     void GameSettings_SetDefaultControllerState(void);
     void GameSettings_ResetPlayerVehicleItem(void);
     void GameSettings_ResetGame(void);
@@ -41,7 +101,7 @@ void GameSetting_Init(void) {
     void GameSettings_SetCodeVariable(s32 var, s32 value, s32 arg2);
     u8 OSGetSoundMode(void);
     void *memset(void *dst, s32 c, u32 n);
-    extern GameInfo g_gameInfo[];
+    extern GameInfo g_gameInfo[2];
     extern s8 g_bGameSettingsInitialized;
     extern u8 *g_pGameData;
     extern u8 *g_pSavedGameData;
@@ -627,23 +687,68 @@ u8 GameSettings_GetNumOfPlayers(void) {
     return PlayerManager_PlayerHumanCount();
 }
 
+s8 GameSettings_IsCheatEnabled(s32 cheat) {
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    void *pack;
+    s32 type;
+    s8 *cheats;
+    u32 i;
+    u8 result;
+
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        type = mcp[1];
+    } else {
+        type = 0;
+    }
+    switch (type) {
+    case 0:
+        cheats = g_HotWheelsGameData.unk9F;
+        break;
+    case 1:
+        cheats = &g_DDRescueGameData[0x1E];
+        break;
+    }
+    if (cheat == 9) {
+        for (i = 0; i < 11; i++) {
+            if (i != 9 && cheats[i]) {
+                return 1;
+            }
+        }
+        if (i == 11) {
+            return 0;
+        }
+    }
+    if (((u32)(cheat - 1) <= 2 || cheat == 4) && cheats[10] && g_codeVariables.unk128[10]) {
+        return 1;
+    }
+    result = 0;
+    if ((cheats[10] || cheats != NULL) && g_codeVariables.unk128[cheat]) {
+        result = 1;
+    }
+    return result;
+}
+
 ControllerSettings *GameSettings_GetControllerSettings(s32 player) {
     return &g_generalGameSettings.controllers[player - 1];
 }
 
 void GameSettings_GetGameInfo(void *info) {
-    typedef struct GameInfo {
-        const char *name;
-        const char *id;
-        const char *title;
-        const char *fileName;
-        const char *icon;
-        s32 unk14;
-        s32 unk18;
-    } GameInfo;
     void *FileStreaming_InitializeDataPack(void *, s32, s32);
     u8 *DataPack_GetScript(void *, s32);
-    extern GameInfo g_gameInfo[];
+    extern GameInfo g_gameInfo[2];
     static s8 bFirstTime = 1;
     static u8 *pMCP;
     u8 *mcp;
@@ -669,9 +774,9 @@ done:
         ((GameInfo *)info)->unk14 = g_gameInfo[mcp[1]].unk14;
         ((GameInfo *)info)->unk18 = g_gameInfo[mcp[1]].unk18;
     } else {
-        ((GameInfo *)info)->name = "XXXXXXXXXXXXXXXXXXX";
+        ((GameInfo *)info)->name = "BrainCore Engine";
         ((GameInfo *)info)->id = "SLUS_001.00";
-        ((GameInfo *)info)->title = "XXXXXXXXXXX";
+        ((GameInfo *)info)->title = "SavesFolder";
         ((GameInfo *)info)->fileName = "saveFile";
         ((GameInfo *)info)->icon = "mm.ico";
         ((GameInfo *)info)->unk14 = 0;
@@ -779,6 +884,138 @@ done:
     }
 }
 
+void GameSettings_GatherGameData(void) {
+    typedef struct DDRescueGameData {
+        u8 unk0[0x6C];
+        s32 progressionID;
+        s32 progression;
+        s8 bValid;
+        u8 unk75[0x78 - 0x75];
+        u8 playerStats[0x38];
+        u8 actions[0x880 - 0xB0];
+        f32 unk880[50];
+        u8 unk948[50][2];
+        f32 unk9AC[50];
+        u8 unkA74[50][2];
+        u8 unkAD8[200];
+        u8 unkBA0[1000];
+        u8 unkF88[2000];
+        u8 unk1758[500];
+        u8 unk194C[50];
+        f32 unk1980[50][3];
+        f32 unk1BD8[50];
+        u8 unk1CA0[50];
+        s32 vehicle;
+        s32 item;
+    } DDRescueGameData;
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    void StateProgressionManager_GetProgressionID(s32 *id, s32 *progression);
+    u8 PlayerManager_PlayerHumanCount(void);
+    void *PlayerManager_GetHumanPlayerByIndex(u8 index);
+    void *memcpy(void *, const void *, u32);
+    void Trigger_SaveActions(void *actions, s32 count);
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    void *pack;
+    s32 state;
+    u8 *world;
+    u8 *group;
+    u8 *car;
+    u32 i;
+    u32 j;
+    u32 nTriggers;
+    u32 nSwitches;
+
+    nTriggers = 0;
+    nSwitches = 0;
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        state = mcp[1];
+    } else {
+        state = 0;
+    }
+    switch (state) {
+    case 0:
+        break;
+    case 1:
+        StateProgressionManager_GetProgressionID(&((DDRescueGameData *)g_DDRescueGameData)->progressionID, &((DDRescueGameData *)g_DDRescueGameData)->progression);
+        ((DDRescueGameData *)g_DDRescueGameData)->bValid = g_codeVariables.unk120[0];
+        if (!((DDRescueGameData *)g_DDRescueGameData)->bValid) {
+            ((DDRescueGameData *)g_DDRescueGameData)->progression++;
+            break;
+        }
+        if (PlayerManager_PlayerHumanCount() == 1) {
+            memcpy(((DDRescueGameData *)g_DDRescueGameData)->playerStats, (u8 *)PlayerManager_GetHumanPlayerByIndex(0) + 0x70, 0x38);
+        }
+        Trigger_SaveActions(((DDRescueGameData *)g_DDRescueGameData)->actions, 500);
+        world = g_worldData.world;
+        for (i = 0; i < *(u32 *)(world + 0x50) && i < 50; i++) {
+            ((DDRescueGameData *)g_DDRescueGameData)->unk880[i] = *(f32 *)((*(u8 ***)(world + 0x54))[i] + 0x8);
+            ((DDRescueGameData *)g_DDRescueGameData)->unk948[i][0] = (*(u8 **)((*(u8 ***)(world + 0x54))[i] + 0xC))[0];
+            ((DDRescueGameData *)g_DDRescueGameData)->unk948[i][1] = (*(u8 **)((*(u8 ***)(world + 0x54))[i] + 0xC))[1];
+        }
+        world = g_worldData.world;
+        for (i = 0; i < *(u32 *)(world + 0x48) && i < 50; i++) {
+            ((DDRescueGameData *)g_DDRescueGameData)->unk9AC[i] = *(f32 *)((*(u8 ***)(world + 0x4C))[i] + 0x4);
+            if (*(u8 **)((*(u8 ***)(world + 0x4C))[i] + 0xC) != NULL) {
+                ((DDRescueGameData *)g_DDRescueGameData)->unkA74[i][0] = (*(u8 **)((*(u8 ***)(world + 0x4C))[i] + 0xC))[0];
+                ((DDRescueGameData *)g_DDRescueGameData)->unkA74[i][1] = (*(u8 **)((*(u8 ***)(world + 0x4C))[i] + 0xC))[1];
+            }
+        }
+        world = g_worldData.world;
+        for (i = 0; i < *(u32 *)(world + 0x40) && i < 200; i++) {
+            ((DDRescueGameData *)g_DDRescueGameData)->unkAD8[i] = *(s32 *)(*(u8 **)(world + 0x44) + i * 0x40 + 0x20);
+        }
+        world = g_worldData.world;
+        for (i = 0; i < *(u32 *)(world + 0x20); i++) {
+            group = *(u8 **)(world + 0x24) + i * 0x50;
+            for (j = 0; j < *(u32 *)(*(u8 **)(group + 0x30) + 0x14) && nTriggers < 1000; j++) {
+                ((DDRescueGameData *)g_DDRescueGameData)->unkBA0[nTriggers++] = *(s32 *)(*(u8 **)(*(u8 **)(group + 0x30) + 0x18) + j * 0x40 + 0x28);
+            }
+            for (j = 0; j < *(u32 *)(*(u8 **)(group + 0x30) + 0x4) && nSwitches < 2000; j++) {
+                ((DDRescueGameData *)g_DDRescueGameData)->unkF88[nSwitches++] = *(s32 *)(*(u8 **)(*(u8 **)(group + 0x30) + 0x8) + j * 0x40 + 0x30);
+            }
+        }
+        for (i = 0; i < *(u32 *)(world + 0x10) && i < 500; i++) {
+            ((DDRescueGameData *)g_DDRescueGameData)->unk1758[i] = *(s32 *)(*(u8 **)(world + 0x14) + i * 0x20 + 0x14);
+        }
+        world = g_worldData.world;
+        for (i = 0; i < *(u32 *)(world + 0x8) && i < 50; i++) {
+            ((DDRescueGameData *)g_DDRescueGameData)->unk194C[i] = *(s32 *)(*(u8 **)(world + 0xC) + i * 0x60 + 0x2C);
+            car = *(u8 **)(*(u8 **)(world + 0xC) + i * 0x60 + 0x28);
+            if (car != NULL) {
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][0] = *(f32 *)(car + 0x40);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][1] = *(f32 *)(car + 0x44);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][2] = *(f32 *)(car + 0x48);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1BD8[i] = (f32)*(s32 *)(car + 0x78) / (f32)*(s32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x14);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1CA0[i] = 1;
+            } else {
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][0] = *(f32 *)(*(u8 **)(world + 0xC) + i * 0x60 + 0x0);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][1] = *(f32 *)(*(u8 **)(world + 0xC) + i * 0x60 + 0x4);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][2] = *(f32 *)(*(u8 **)(world + 0xC) + i * 0x60 + 0x8);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1BD8[i] = *(f32 *)(*(u8 **)(world + 0xC) + i * 0x60 + 0x58);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1CA0[i] = 0;
+            }
+        }
+        ((DDRescueGameData *)g_DDRescueGameData)->item = 0;
+        ((DDRescueGameData *)g_DDRescueGameData)->vehicle = g_codeVariables.playerVehicle[0];
+        break;
+    }
+    g_codeVariables.unk120[0] = 0;
+}
+
 void GameSettings_RestoreGameData(void) {
     typedef struct DDRescueGameData {
         u8 unk0[0x74];
@@ -880,6 +1117,61 @@ done:
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s32 GameSettings_LoadDefaultMemoryCardData(void) {
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    u32 FileManager_GetChecksum(u32 size, void *data);
+    void *memcpy(void *dst, const void *src, u32 n);
+    s32 GameSettings_GetDefaultMemoryCardStatus(s32 *device, s8 bForce);
+    extern u8 *g_pSavedGameData;
+    s32 device;
+    s32 status;
+    s32 handle;
+    s8 ok;
+    u8 *data;
+    u32 version;
+    u32 size;
+    GameInfo info;
+    u8 *mcp;
+
+    status = GameSettings_GetDefaultMemoryCardStatus(&device, 1);
+    if (status != 1 && status != 0) {
+        return 0;
+    }
+    device--;
+    mcp = GameSettings_LoadMCP();
+    if (mcp != NULL) {
+        info.fileName = g_gameInfo[mcp[1]].fileName;
+        version = g_gameInfo[mcp[1]].unk14;
+        size = g_gameInfo[mcp[1]].unk18;
+    } else {
+        info.fileName = "saveFile";
+        info.unk14 = 0;
+        version = info.unk14;
+        size = version;
+    }
+    data = g_pSavedGameData;
+    ok = 0;
+    if ((handle = File_Open((char *)device + 0xB, info.fileName, 0, NULL)) != -1) {
+        File_Read(handle, size * 8 + 0x15C, data);
+        if (((u32 *)data)[0] == 4 && ((u32 *)data)[1] == version &&
+            ((u32 *)data)[2] == FileManager_GetChecksum(version, data + 0xC)) {
+            ok = 1;
+        }
+        File_Close(handle);
+    }
+    if (!ok) {
+        return 0;
+    }
+    memcpy(&g_generalGameSettings, g_pSavedGameData + 0xC, 0x150);
+    GameSettings_ApplyDefaultGameData();
+    return 1;
+}
+#pragma pop
+
 s32 GameSettings_GetDefaultMemoryCardStatus(s32 *device, s8 bForce)
 {
     static u32 s_updateCntr = 10;
@@ -918,6 +1210,147 @@ s32 GameSettings_GetDefaultMemoryCardStatus(s32 *device, s8 bForce)
     return s_curStatus;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+#pragma opt_common_subs off
+#pragma opt_loop_invariants off
+s32 GameSettings_GetMemoryCardStatus(s32 device, s8 bForce) {
+    typedef struct SaveFile {
+        char *device;
+        u8 *data;
+        const char *name;
+        u32 version;
+        u32 size;
+    } SaveFile;
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    u32 FileManager_GetChecksum(u32 size, void *data);
+    u32 FileManager_GetDeviceStatus(char *device);
+    s8 FileManager_IsDeviceFormatted(char *device);
+    s32 FileManager_GetDeviceLastError(char *device);
+    s32 FileManager_GetDeviceFreeSpace(char *device, u64 *freeBytes, u64 *totalBytes);
+    extern u8 *g_pSavedGameData;
+    static u32 s_curCount;
+    static s32 s_curStatus;
+    static char *s_curActiveDevice;
+    static u32 s_curMemStatus = 0xFFFFFFFF;
+    s32 status;
+    char *prevDevice;
+    s32 handle;
+    u8 *mcp;
+    s8 ok;
+    SaveFile file;
+    u32 prevMemStatus;
+    u64 freeBytes;
+    u64 totalBytes;
+
+    status = 2;
+    if (++s_curCount >= 30) {
+        s_curCount = 0;
+    } else if (!g_bRefreshMC && !bForce && s_curActiveDevice == (char *)device + 10) {
+        return s_curStatus;
+    }
+    prevDevice = s_curActiveDevice;
+    s_curActiveDevice = (char *)device + 10;
+    g_bRefreshMC = 0;
+    do {
+        prevMemStatus = s_curMemStatus;
+        s_curMemStatus = FileManager_GetDeviceStatus((char *)device + 10);
+        if (s_curMemStatus == 1) {
+            status = 1;
+            if (prevMemStatus == s_curMemStatus && !g_bRefreshMC_FileList && !bForce && prevDevice == (char *)device + 10) {
+                return s_curStatus;
+            }
+            mcp = GameSettings_LoadMCP();
+            if (mcp != NULL) {
+                file.name = g_gameInfo[mcp[1]].fileName;
+                file.version = g_gameInfo[mcp[1]].unk14;
+                file.size = g_gameInfo[mcp[1]].unk18;
+            } else {
+                file.name = "saveFile";
+                file.version = 0;
+                file.size = file.version;
+            }
+            if (!FileManager_IsDeviceFormatted((char *)device + 10)) {
+                status = 4;
+            } else {
+                file.data = g_pSavedGameData;
+                ok = 0;
+                if ((handle = File_Open((char *)device + 10, file.name, 0, NULL)) != -1) {
+                    File_Read(handle, file.size * 8 + 0x15C, file.data);
+                    if (((u32 *)file.data)[0] == 4 && ((u32 *)file.data)[1] == file.version &&
+                        ((u32 *)file.data)[2] == FileManager_GetChecksum(file.version, file.data + 0xC)) {
+                        ok = 1;
+                    }
+                    File_Close(handle);
+                }
+                if (ok) {
+                    if (!((s8 *)g_pSavedGameData)[0x5C]) {
+                        status = 0;
+                    }
+                } else if ((handle = File_Open((char *)device + 10, file.name, 0, NULL)) != -1) {
+                    File_Close(handle);
+                    status = 9;
+                } else {
+                    FileManager_GetDeviceFreeSpace((char *)device + 10, &freeBytes, &totalBytes);
+                    if (FileManager_GetDeviceStatus((char *)device + 10) == 0) {
+                        status = 2;
+                    } else if (freeBytes < 0x1C000) {
+                        status = 3;
+                    } else {
+                        status = 0;
+                    }
+                }
+            }
+            s_curStatus = status;
+            return status;
+        } else if (s_curMemStatus == 3) {
+            switch (FileManager_GetDeviceLastError((char *)device + 10)) {
+            case -11:
+                status = 14;
+                break;
+            case -10:
+                status = 13;
+                break;
+            case -9:
+                status = 12;
+                break;
+            case -8:
+                status = 11;
+                break;
+            case -7:
+                status = 10;
+                break;
+            case -6:
+                status = 8;
+                break;
+            case -5:
+                status = 4;
+                break;
+            case -4:
+                status = 5;
+                break;
+            case -3:
+                status = 6;
+                break;
+            case -2:
+                status = 7;
+                break;
+            case 0:
+                break;
+            case -1:
+            default:
+                status = 3;
+                break;
+            }
+        }
+    } while (s_curMemStatus == 2);
+    s_curStatus = status;
+    return status;
+}
+#pragma pop
+
 void GameSettings_DetermineIfOverwritingFile(void)
 {
     if (g_bValidFileName[g_codeVariables.fileIndex - 1])
@@ -929,6 +1362,197 @@ void GameSettings_DetermineIfOverwritingFile(void)
         g_codeVariables.bOverwritingFile = 0;
     }
 }
+
+#pragma push
+#pragma readonly_strings on
+void GameSettings_GetSaveGameName(s32 *letters) {
+    char *strncpy(char *dst, const char *src, u32 n);
+    int sprintf(char *buf, const char *fmt, ...);
+    u8 *mcp;
+    char name[12];
+    s32 i;
+
+    if (g_bValidFileName[g_codeVariables.fileIndex - 1]) {
+        strncpy(name, g_fileNames[g_codeVariables.fileIndex - 1], 11);
+    } else {
+        mcp = GameSettings_LoadMCP();
+        switch (mcp != NULL ? mcp[1] : 0) {
+        case 0:
+            sprintf(name, "HW VEL X %d", g_codeVariables.fileIndex);
+            break;
+        case 1:
+            sprintf(name, "DD RESCUE%d", g_codeVariables.fileIndex);
+            break;
+        default:
+            sprintf(name, "SAVE GAME%d", g_codeVariables.fileIndex);
+            break;
+        }
+    }
+    for (i = 0; i < 10; i++) {
+        if (name[i] >= 'A' && name[i] <= 'Z') {
+            letters[i] = name[i] - 'A';
+        } else if (name[i] >= '0' && name[i] <= '9') {
+            letters[i] = name[i] - '0' + 26;
+        } else {
+            letters[i] = 36;
+        }
+    }
+}
+#pragma pop
+
+#pragma push
+#pragma readonly_strings on
+void GameSettings_SetSaveGameName(u32 *letters) {
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    extern u8 *g_pSavedGameData;
+    extern s32 g_saveFileCheckSum;
+    extern GameInfo g_gameInfo[2];
+    char *device;
+    GameInfo info;
+    u8 *data;
+    s32 index;
+    u8 *mcp;
+    s32 handle;
+    s32 sum;
+    s32 i;
+
+    device = g_codeVariables.device;
+    for (i = 0; i < 10; i++) {
+        if (letters[i] < 26) {
+            g_saveFileName[i] = (s8)letters[i] + 'A';
+        } else if (letters[i] < 36) {
+            g_saveFileName[i] = letters[i] - 26 + '0';
+        } else {
+            g_saveFileName[i] = ' ';
+        }
+    }
+    g_saveFileName[10] = 0;
+    mcp = GameSettings_LoadMCP();
+    if (mcp != NULL) {
+        info.fileName = g_gameInfo[mcp[1]].fileName;
+        index = g_gameInfo[mcp[1]].unk18;
+    } else {
+        info.fileName = "saveFile";
+        index = 0;
+    }
+    data = g_pSavedGameData;
+    handle = File_Open(device + 0xA, info.fileName, 0, 0);
+    if (handle != -1) {
+        File_Read(handle, index * 8 + 0x15C, data);
+        File_Close(handle);
+        sum = *(s32 *)(data + 8);
+    } else {
+        sum = -1;
+    }
+    g_saveFileCheckSum = sum;
+}
+
+#pragma push
+#pragma readonly_strings on
+#pragma use_lmw_stmw on
+char *GameSettings_GetActiveMemoryCardFileName(s8 bNoDefault, s32 index, char *defaultName) {
+    typedef struct SaveSlot {
+        u8 valid;
+        char name[11];
+        s32 year;
+        s32 month;
+        s32 day;
+        u32 hour;
+        s32 minute;
+    } SaveSlot;
+    typedef struct SaveData {
+        u8 header[0x5C];
+        SaveSlot slots[8];
+    } SaveData;
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    u32 FileManager_GetChecksum(u32 size, void *data);
+    void *memset(void *, s32, u32);
+    char *strcpy(char *dst, const char *src);
+    int sprintf(char *buf, const char *fmt, ...);
+    s32 GameSettings_GetMemoryCardStatus(s32 device, s32 arg1);
+    extern u8 *g_pSavedGameData;
+    static s32 cachedStatus = -1;
+    static char *cachedMemorySlot = (char *)-1;
+    u32 i;
+    u32 size;
+    u32 version;
+    u8 *data;
+    s32 handle;
+    s8 ok;
+    char *slot;
+    s32 status;
+    GameInfo info;
+    u8 *mcp;
+    SaveData *save;
+    u32 hour;
+    u32 hour12;
+
+    slot = g_codeVariables.device - 1;
+    status = GameSettings_GetMemoryCardStatus((s32)g_codeVariables.device, 0);
+    if (cachedMemorySlot != slot || status != cachedStatus || g_bRefreshMC_FileList) {
+        cachedMemorySlot = slot;
+        cachedStatus = status;
+        g_bRefreshMC_FileList = 0;
+        memset(g_bValidFileName, 0, 8);
+        if (status == 1) {
+            mcp = GameSettings_LoadMCP();
+            if (mcp != NULL) {
+                info.fileName = g_gameInfo[mcp[1]].fileName;
+                version = g_gameInfo[mcp[1]].unk14;
+                size = g_gameInfo[mcp[1]].unk18;
+            } else {
+                info.fileName = "saveFile";
+                info.unk14 = 0;
+                version = info.unk14;
+                size = version;
+            }
+            data = g_pSavedGameData;
+            ok = 0;
+            if ((handle = File_Open(slot + 0xB, info.fileName, 0, NULL)) != -1) {
+                File_Read(handle, size * 8 + 0x15C, data);
+                if (((u32 *)data)[0] == 4 && ((u32 *)data)[1] == version &&
+                    ((u32 *)data)[2] == FileManager_GetChecksum(version, data + 0xC)) {
+                    ok = 1;
+                }
+                File_Close(handle);
+            }
+            if (ok) {
+                save = (SaveData *)g_pSavedGameData;
+                for (i = 0; i < 8; i++) {
+                    g_bValidFileName[i] = save->slots[i].valid;
+                    if (g_bValidFileName[i] == 0) {
+                        strcpy(g_fileNames[i], defaultName);
+                        break;
+                    }
+                    hour = save->slots[i].hour;
+                    hour12 = hour;
+                    if (hour == 0) {
+                        hour12 = 12;
+                    } else if (hour > 12) {
+                        hour12 = hour - 12;
+                    }
+                    sprintf(g_fileNames[i], "%s %d/%d/%d %d:%02d %s", save->slots[i].name,
+                            save->slots[i].month, save->slots[i].day, save->slots[i].year, hour12,
+                            save->slots[i].minute, hour >= 12 ? "PM" : "AM");
+                }
+            }
+        }
+    }
+    if (g_bValidFileName[index - 1]) {
+        return g_fileNames[index - 1];
+    }
+    if (!bNoDefault && (index - 1 == 0 || g_bValidFileName[index - 2])) {
+        return defaultName;
+    }
+    return NULL;
+}
+#pragma pop
+
+#pragma pop
 
 char *GameSettings_GetActiveMemoryCardLevelDetails(void) {
     s32 GameSettings_GetMemoryCardStatus(s32 device, s32 arg1);
@@ -1037,6 +1661,260 @@ char *GameSettings_GetActiveMemoryCardLevelDetails(void) {
     return levelDetails;
 }
 
+#pragma push
+#pragma readonly_strings on
+#pragma use_lmw_stmw on
+u8 GameSettings_SaveGeneralGameData(void) {
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    s8 File_Write(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    u32 FileManager_GetChecksum(u32 size, void *data);
+    void *memcpy(void *dst, const void *src, u32 n);
+    void *memset(void *, s32, u32);
+    extern u8 *g_pSavedGameData;
+    GameInfo info;
+    s32 status;
+    s32 handle;
+    s8 ok;
+    u8 *data;
+    u32 version;
+    u32 size;
+    s32 device;
+    u8 *mcp;
+
+    status = GameSettings_GetDefaultMemoryCardStatus(&device, 1);
+    if (status != 1 && status != 0) {
+        return 0;
+    }
+    mcp = GameSettings_LoadMCP();
+    if (mcp != NULL) {
+        info.fileName = g_gameInfo[mcp[1]].fileName;
+        version = g_gameInfo[mcp[1]].unk14;
+        size = g_gameInfo[mcp[1]].unk18;
+    } else {
+        info.fileName = "saveFile";
+        info.unk14 = 0;
+        version = info.unk14;
+        size = version;
+    }
+    data = g_pSavedGameData;
+    ok = 0;
+    if ((handle = File_Open((char *)(device + 0xA), info.fileName, 0, NULL)) != -1) {
+        File_Read(handle, size * 8 + 0x15C, data);
+        if (((u32 *)data)[0] == 4 && ((u32 *)data)[1] == version &&
+            ((u32 *)data)[2] == FileManager_GetChecksum(version, data + 0xC)) {
+            ok = 1;
+        }
+        File_Close(handle);
+    }
+    if (!ok) {
+        memset(data + 0x5C, 0, 0x100);
+    }
+    memcpy((u8 *)&g_generalGameSettings + 0x50, data + 0x5C, 0x100);
+    memcpy(data + 0xC, &g_generalGameSettings, 0x150);
+    data = g_pSavedGameData;
+    ok = 0;
+    if ((handle = File_Open((char *)(device + 0xA), info.fileName, 5, NULL)) != -1) {
+        ((u32 *)data)[0] = 4;
+        ((u32 *)data)[1] = version;
+        ((u32 *)data)[2] = FileManager_GetChecksum(version, data + 0xC);
+        if (File_Write(handle, size * 8 + 0x15C, data)) {
+            ok = 1;
+        }
+        File_Close(handle);
+    }
+    if (ok) {
+        g_codeVariables.unk11C[0] = 1;
+    } else {
+        g_codeVariables.unk11C[0] = 0;
+    }
+    return g_codeVariables.unk11C[0];
+}
+
+#pragma push
+#pragma readonly_strings on
+#pragma use_lmw_stmw on
+u8 GameSettings_SaveGame(void) {
+    typedef struct SaveSlot {
+        u8 valid;
+        char name[11];
+        s32 year;
+        s32 month;
+        s32 day;
+        u32 hour;
+        s32 minute;
+    } SaveSlot;
+    typedef struct SaveData {
+        u8 header[0x5C];
+        SaveSlot slots[8];
+    } SaveData;
+    typedef struct SaveFile {
+        char *device;
+        const char *name;
+        u32 version;
+        u32 size;
+    } SaveFile;
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    s8 File_Write(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    u32 FileManager_GetChecksum(u32 size, void *data);
+    void *memcpy(void *dst, const void *src, u32 n);
+    void *memset(void *, s32, u32);
+    char *strcpy(char *dst, const char *src);
+    void GetSystemDate(s32 *year, s32 *month, s32 *day, u32 *hour, s32 *minute);
+    void GameSettings_GatherGameData(void);
+    s32 GameSettings_GetMemoryCardStatus(char *device, s32 bForce);
+    extern u8 *g_pSavedGameData;
+    extern u8 *g_pGameData;
+    extern u32 g_saveFileCheckSum;
+    SaveFile file;
+    u8 *data;
+    u32 slot;
+    s32 status;
+    s8 ok;
+    s32 handle;
+    u8 *mcp;
+
+    file.device = g_codeVariables.device;
+    slot = g_codeVariables.fileIndex - 1;
+    status = GameSettings_GetMemoryCardStatus(file.device, 1);
+    mcp = GameSettings_LoadMCP();
+    if (mcp != NULL) {
+        file.name = g_gameInfo[mcp[1]].fileName;
+        file.version = g_gameInfo[mcp[1]].unk14;
+        file.size = g_gameInfo[mcp[1]].unk18;
+    } else {
+        file.name = "saveFile";
+        file.version = 0;
+        file.size = file.version;
+    }
+    if ((status != 0 && status != 1) || g_saveFileCheckSum != GameSettings_GetSaveFileChecksum(file.device, file.name, file.size)) {
+        g_codeVariables.unk11C[0] = 0;
+        return 0;
+    }
+    data = g_pSavedGameData;
+    ok = 0;
+    if ((handle = File_Open(file.device + 0xA, file.name, 0, NULL)) != -1) {
+        File_Read(handle, file.size * 8 + 0x15C, data);
+        if (((u32 *)data)[0] == 4 && ((u32 *)data)[1] == file.version &&
+            ((u32 *)data)[2] == FileManager_GetChecksum(file.version, data + 0xC)) {
+            ok = 1;
+        }
+        File_Close(handle);
+    }
+    if (!ok) {
+        memset(data + 0x5C, 0, 0x100);
+    }
+    while (slot != 0) {
+        memcpy(&g_pSavedGameData[slot * file.size + 0x15C], &g_pSavedGameData[(slot - 1) * file.size + 0x15C], file.size);
+        memcpy(&((SaveData *)data)->slots[slot], &((SaveData *)data)->slots[slot - 1], sizeof(SaveSlot));
+        slot--;
+    }
+    memcpy((u8 *)&g_generalGameSettings + 0x50, data + 0x5C, 0x100);
+    memcpy(data + 0xC, &g_generalGameSettings, 0x150);
+    ((SaveData *)data)->slots[0].valid = 1;
+    strcpy(((SaveData *)data)->slots[0].name, g_saveFileName);
+    GetSystemDate(&((SaveData *)data)->slots[0].year, &((SaveData *)data)->slots[0].month,
+                  &((SaveData *)data)->slots[0].day, &((SaveData *)data)->slots[0].hour,
+                  &((SaveData *)data)->slots[0].minute);
+    GameSettings_GatherGameData();
+    memcpy(g_pSavedGameData + 0x15C, g_pGameData, file.size);
+    {
+        s8 wok;
+        s32 whandle;
+        u8 *wdata;
+        wdata = g_pSavedGameData;
+        wok = 0;
+        if ((whandle = File_Open(file.device + 0xA, file.name, 5, NULL)) != -1) {
+            ((u32 *)wdata)[0] = 4;
+            ((u32 *)wdata)[1] = file.version;
+            ((u32 *)wdata)[2] = FileManager_GetChecksum(file.version, wdata + 0xC);
+            if (File_Write(whandle, file.size * 8 + 0x15C, wdata)) {
+                wok = 1;
+            }
+            File_Close(whandle);
+        }
+        if (wok) {
+            g_codeVariables.unk11C[0] = 1;
+        } else {
+            g_codeVariables.unk11C[0] = 0;
+        }
+    }
+    g_bRefreshMC = 1;
+    g_bRefreshMC_FileList = 1;
+    g_bRefreshMC_FileInfo = 1;
+    return g_codeVariables.unk11C[0];
+}
+#pragma pop
+
+#pragma pop
+
+#pragma push
+#pragma readonly_strings on
+#pragma use_lmw_stmw on
+u8 GameSettings_LoadGame(void) {
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    u32 FileManager_GetChecksum(u32 size, void *data);
+    void *memcpy(void *dst, const void *src, u32 n);
+    extern u8 *g_pSavedGameData;
+    extern u8 *g_pGameData;
+    extern GameInfo g_gameInfo[2];
+    s32 slot;
+    char *device;
+    s32 handle;
+    s8 ok;
+    u8 *data;
+    u32 version;
+    u8 *saved;
+    u32 size;
+    GameInfo info;
+    u8 *mcp;
+    u32 i;
+
+    device = g_codeVariables.device;
+    slot = g_codeVariables.fileIndex - 1;
+    mcp = GameSettings_LoadMCP();
+    if (mcp != NULL) {
+        info.fileName = g_gameInfo[mcp[1]].fileName;
+        version = g_gameInfo[mcp[1]].unk14;
+        size = g_gameInfo[mcp[1]].unk18;
+    } else {
+        info.fileName = "saveFile";
+        version = 0;
+        size = version;
+    }
+    data = g_pSavedGameData;
+    ok = 0;
+    if ((handle = File_Open(device + 0xA, info.fileName, 0, NULL)) != -1) {
+        File_Read(handle, size * 8 + 0x15C, data);
+        if (((u32 *)data)[0] == 4 && ((u32 *)data)[1] == version &&
+            ((u32 *)data)[2] == FileManager_GetChecksum(version, data + 0xC)) {
+            ok = 1;
+        }
+        File_Close(handle);
+    }
+    if (!ok) {
+        g_codeVariables.unk11C[1] = 0;
+        return 0;
+    }
+    saved = g_pSavedGameData;
+    memcpy(g_pGameData, &saved[slot * size + 0x15C], size);
+    memcpy(&g_generalGameSettings, saved + 0xC, 0x150);
+    g_codeVariables.unk11C[1] = 1;
+    g_bRefreshMC = 1;
+    g_bRefreshMC_FileList = 1;
+    g_bRefreshMC_FileInfo = 1;
+    for (i = 0; i < 11; i++) {
+        g_codeVariables.unk128[i] = 0;
+    }
+    return g_codeVariables.unk11C[1];
+}
+#pragma pop
+
 s32 GameSettings_FormatMemoryCard(void)
 {
     u8 result;
@@ -1048,3 +1926,40 @@ s32 GameSettings_FormatMemoryCard(void)
     g_bRefreshMC_FileInfo = 1;
     return result;
 }
+
+#pragma push
+#pragma readonly_strings on
+#pragma use_lmw_stmw off
+s32 GameSettings_DeleteGameFile(void) {
+    u8 File_Delete(char *device, const char *fileName);
+    extern GameInfo g_gameInfo[2];
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    char *device;
+    u8 *mcp;
+    void *pack;
+    const char *name;
+    u8 result;
+
+    device = g_codeVariables.device + 0xA;
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    name = (mcp != NULL) ? g_gameInfo[mcp[1]].fileName : "saveFile";
+    result = File_Delete(device, name);
+    g_bRefreshMC = 1;
+    g_codeVariables.unk11C[2] = result;
+    g_bRefreshMC_FileList = 1;
+    g_bRefreshMC_FileInfo = 1;
+    return result;
+}
+#pragma pop
+

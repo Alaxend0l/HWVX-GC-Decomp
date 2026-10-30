@@ -200,6 +200,8 @@ typedef struct LGWheels
 		/* 0x1416 */
 		u8		SameFrontalCollisionForceParams(s32 chan, s16 force);
 		/* 0x1416 */
+		void		PlayCarAirborne(s32 chan);
+		void		StopCarAirborne(s32 chan);
 } LGWheels;
 
 #endif /* LGWHEELS_H */

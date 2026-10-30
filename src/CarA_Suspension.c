@@ -3,6 +3,8 @@
 
 #pragma use_lmw_stmw on
 
+extern f32 g_frictionTable[9][10];
+
 /* What a suspension ray hit is made of (RayHit.surface). */
 typedef struct SuspSurface {
     u8 type;                  /* 0x00 1: no skids, 2: own skid texture */
@@ -77,6 +79,24 @@ void Wheel_PlayCarAirborne(s32 chan);
 void Wheel_StopCarAirborne(s32 chan);
 void CarA_ComputeSuspensionForces_Aux1(CarA *car);
 
+
+f32 GetDampFactor(u8 type, u32 n) {
+    f32 f = 1.0f;
+    u32 i = n;
+
+    if (type <= 8) {
+        while (i >= 10) {
+            f *= g_frictionTable[type][9];
+            i -= 10;
+        }
+        return f * g_frictionTable[type][i];
+    }
+    while (type > 8) {
+        f *= GetDampFactor(8, n);
+        type -= 8;
+    }
+    return f * GetDampFactor(type, n);
+}
 
 f32 CarA_GetImpactMultiplier(void *car, void *other, f32 scale) {
     f32 PSVECDotProduct(void *a, void *b);

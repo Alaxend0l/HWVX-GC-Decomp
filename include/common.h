@@ -38,12 +38,13 @@ typedef union Matrix4 {
 
 
 typedef struct GameInfo {
-  const char *a;
-  const char *b;
-  const char *c;
-  const char *d;
-  const char *e;
-  u8 unk14[0xC];
+  const char *name;
+  const char *id;
+  const char *title;
+  const char *fileName;
+  const char *icon;
+  s32 unk14;
+  s32 unk18;
 } GameInfo;
 
 typedef struct WorldData {
@@ -216,8 +217,12 @@ typedef struct DestructibleInfo {
 } DestructibleInfo;
 
 typedef struct ThingRecord {
-  u8 pad00[0x10];
+  void *geometry;         /* 0x00 */
+  u8 noDraw;              /* 0x04 */
+  u8 pad05[0xB];          /* 0x05 */
   DestructibleInfo *info; /* 0x10 */
+  u8 pad14[4];            /* 0x14 */
+  u8 slaves[4];           /* 0x18 shared slaves */
 } ThingRecord;
 
 typedef struct Destructible {
@@ -234,7 +239,7 @@ typedef struct Destructible {
   void *player;        /* 0x94 */
   u8 pad98[0x28];      /* 0x98 */
   ThingRecord *record; /* 0xC0 */
-  u8 padC4[4];         /* 0xC4 */
+  f32 drawDist;        /* 0xC4 */
   s32 deathTimer;      /* 0xC8 ms until a dead destructible is released */
   ConvexHull *hull;    /* 0xCC */
   OBox *orientedBox;   /* 0xD0 */
@@ -791,7 +796,8 @@ typedef struct InterfaceMsg {
   u16 sub;
   u8 unk8[0x20 - 0x8];
   u32 result;
-  u8 unk24[0x30 - 0x24];
+  u32 value;
+  u8 unk28[0x30 - 0x28];
   u32 selection;
   u32 objects[2];
   u32 *list;

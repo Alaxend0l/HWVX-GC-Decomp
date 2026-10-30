@@ -31,6 +31,19 @@ static inline PMPlayer *PlayerManager_PopActive(PlayerManager *mgr) {
     return player;
 }
 
+static inline void PlayerManager_UnlinkActive(PlayerManager *mgr, PMPlayer *player) {
+    if (player->prev == NULL) {
+        mgr->active = player->next;
+    } else {
+        player->prev->next = player->next;
+    }
+    if (player->next != NULL) {
+        player->next->prev = player->prev;
+        player->next = NULL;
+    }
+    player->prev = NULL;
+}
+
 static inline void PlayerManager_PushFree(PlayerManager *mgr, PMPlayer *player) {
     player->next = mgr->free;
     player->prev = NULL;
@@ -38,6 +51,19 @@ static inline void PlayerManager_PushFree(PlayerManager *mgr, PMPlayer *player) 
         player->next->prev = player;
     }
     mgr->free = player;
+}
+
+void AI_Car_Init();
+void AI_Creature_Init();
+
+static inline void *PlayerManager_GetAIInit(void *desc) {
+    switch (((u8 *)desc)[0xD]) {
+    case 0:
+        return AI_Car_Init;
+    case 1:
+        return AI_Creature_Init;
+    }
+    return NULL;
 }
 
 void PlayerManager_Create(void) {
@@ -169,6 +195,53 @@ void *PlayerManager_NewHumanPlayer(void) {
     return player;
 }
 
+void *PlayerManager_NewAIPlayer(u8 *desc) {
+    extern u8 g_playerManager[0x20E0];
+    void AI_Car_Init(void *player);
+    void AI_Creature_Init(void *player);
+    void (*init)(void *);
+    u8 *player;
+
+    player = *(u8 **)(g_playerManager + 0x20DC);
+    switch (desc[0xD]) {
+    case 0:
+        init = AI_Car_Init;
+        break;
+    case 1:
+        init = AI_Creature_Init;
+        break;
+    default:
+        init = NULL;
+        break;
+    }
+    for (; player != NULL; player = *(u8 **)(player + 0xB0)) {
+        if (*(void (**)(void *))(player + 0x24) == init) {
+            if (*(u8 **)(player + 0xB4) == NULL) {
+                *(u8 **)(g_playerManager + 0x20DC) = *(u8 **)(player + 0xB0);
+            } else {
+                *(u8 **)(*(u8 **)(player + 0xB4) + 0xB0) = *(u8 **)(player + 0xB0);
+            }
+            if (*(u8 **)(player + 0xB0) != NULL) {
+                *(u8 **)(*(u8 **)(player + 0xB0) + 0xB4) = *(u8 **)(player + 0xB4);
+                *(u8 **)(player + 0xB0) = NULL;
+            }
+            *(u8 **)(player + 0xB4) = NULL;
+            break;
+        }
+    }
+    if (player == NULL) {
+        return NULL;
+    }
+    (*(void (**)(void *))(player + 0x24))(player);
+    *(u8 **)(player + 0xB0) = *(u8 **)(g_playerManager + 0x20D8);
+    *(u8 **)(player + 0xB4) = NULL;
+    if (*(u8 **)(player + 0xB0) != NULL) {
+        *(u8 **)(*(u8 **)(player + 0xB0) + 0xB4) = player;
+    }
+    *(u8 **)(g_playerManager + 0x20D8) = player;
+    return player;
+}
+
 u8 PlayerManager_PlayerHumanCount(void) {
     extern u8 g_playerManager[0x20E0];
     u8 count = 0;
@@ -265,5 +338,29 @@ void PlayerManager_ClearAllCameraFlags_PRIVATE(void) {
     for (player = M2C_FIELD(g_pPlayerManager, void **, 0x20D8); player != NULL; player = M2C_FIELD(player, void **, 0xB0)) {
         M2C_FIELD(player, u32 *, 0x6C) &= ~0x10;
     }
+}
+
+s32 PlayerManager_RemovePlayer(void *player) {
+    extern u8 *g_pPlayerManager;
+    PlayerManager *mgr;
+    PMPlayer *p;
+
+    for (p = ((PlayerManager *)g_playerManager)->active; p != NULL; p = p->next) {
+        if (p == player) {
+            break;
+        }
+    }
+    if (p == NULL) {
+        return 0;
+    }
+    PlayerManager_UnlinkActive((PlayerManager *)g_pPlayerManager, p);
+    mgr = (PlayerManager *)g_pPlayerManager;
+    p->next = mgr->free;
+    p->prev = NULL;
+    if (p->next != NULL) {
+        p->next->prev = p;
+    }
+    mgr->free = p;
+    return 1;
 }
 

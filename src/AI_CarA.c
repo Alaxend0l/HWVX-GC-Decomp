@@ -13,6 +13,190 @@ static inline s8 AI_Car_CanTarget(u8 *ai, u8 *def) {
 }
 
 
+#pragma use_lmw_stmw on
+void AI_Car_AsyncProcess(void) {
+    typedef struct AIScripts {
+        u8 pad0[0x90];
+        u32 scripts[4];
+    } AIScripts;
+    typedef struct ItemParams {
+        u8 pad0[0x20];
+        s32 count;
+    } ItemParams;
+    typedef struct TileItem {
+        u8 pad0[0x30];
+        ItemParams *params;
+    } TileItem;
+    typedef struct TileCar {
+        Vector4 pos;
+        f32 rotX;
+        f32 rotY;
+        f32 rotZ;
+        u8 pad1C[0x24 - 0x1C];
+        AIScripts *aiScripts;
+        CarA *creature;
+        u32 mode;
+        u8 pad30[0x34 - 0x30];
+        u8 unk34;
+        u8 unk35;
+        u8 pad36[0x38 - 0x36];
+        f32 nearDist;
+        f32 farDist;
+        u32 scripts[4];
+        u8 pad50[0x54 - 0x50];
+        TileItem *item;
+    } TileCar;
+    typedef struct CreatureParams {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        AIScripts *aiScripts;
+        u8 pad34[0x3C - 0x34];
+        void *player;
+    } CreatureParams;
+    typedef struct AIPlayerDesc {
+        u32 script;
+        f32 nearSq;
+        f32 farSq;
+        u8 unkC;
+        u8 unkD;
+    } AIPlayerDesc;
+    typedef struct AIPlayer {
+        u8 pad0[0x3C];
+        AIScripts *aiScripts;
+        u8 pad40[0xA8 - 0x40];
+        TileCar *tileCar;
+    } AIPlayer;
+    static u32 carTile;
+    extern u8 g_cameraManager[];
+    extern Vector4 g_zeroVector;
+    void *World_GetTileCar(u32 index);
+    AIPlayer *PlayerManager_NewAIPlayer(AIPlayerDesc *desc);
+    s32 PlayerManager_RemovePlayer(AIPlayer *player);
+    void Player_SetName(AIPlayer *player, s32 port, const char *name);
+    void Player_SetThing(AIPlayer *player, CarA *thing);
+    void SetOrientation(Matrix4 *m, f32 x, f32 y, f32 z);
+    void SubMatrixToQuaternion(Matrix4 *m, Vector4 *q);
+    s32 ActionVehicleChangeMode(u32 *action);
+    f32 PSVECSquareDistance(void *a, void *b);
+    s32 GameSettings_GetDifficulty(void);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    void WildCardRack_JettisonAll(void *rack);
+    void WildCardRack_Add(void *rack, TileItem *item, s32 count);
+    CreatureParams params;
+    Matrix4 mtx;
+    u32 action[3];
+    AIPlayerDesc desc;
+    TileCar *car;
+    u32 script;
+    s32 difficulty;
+    u8 *cam;
+    u32 i;
+    f32 farSq;
+    f32 nearSq;
+    f32 minDist;
+    void *rack;
+    AIPlayer *player;
+
+    car = World_GetTileCar(carTile);
+    if (car != NULL) {
+        if (car->aiScripts != NULL && car->creature == NULL && car->unk35 > 4 && car->unk34 != 0 && car->mode != 0) {
+            farSq = car->farDist * car->farDist;
+            nearSq = car->nearDist * car->nearDist;
+            minDist = farSq;
+            difficulty = GameSettings_GetDifficulty();
+            params.aiScripts = car->aiScripts;
+            script = 0;
+            for (i = 0; i < g_cameraManager[0x640]; i++) {
+                f32 dist = PSVECSquareDistance(g_cameraManager + i * 0x190 + 0x60, car);
+                if (dist < minDist) {
+                    minDist = dist;
+                }
+            }
+            if (minDist <= nearSq || minDist >= farSq) {
+                carTile++;
+                return;
+            }
+            if (difficulty == 0) {
+                if (car->scripts[0] != 0) {
+                    script = car->scripts[0];
+                } else if (params.aiScripts->scripts[0] != 0) {
+                    script = params.aiScripts->scripts[0];
+                }
+            } else if (difficulty == 1) {
+                if (car->scripts[1] != 0) {
+                    script = car->scripts[1];
+                } else if (params.aiScripts->scripts[0] != 0) {
+                    script = params.aiScripts->scripts[1];
+                }
+            } else if (difficulty == 2) {
+                if (car->scripts[2] != 0) {
+                    script = car->scripts[2];
+                } else if (params.aiScripts->scripts[0] != 0) {
+                    script = params.aiScripts->scripts[2];
+                }
+            } else if (difficulty == 3) {
+                if (car->scripts[3] != 0) {
+                    script = car->scripts[3];
+                } else if (params.aiScripts->scripts[0] != 0) {
+                    script = params.aiScripts->scripts[3];
+                }
+            }
+            if (script == 0) {
+                if (params.aiScripts->scripts[0] != 0) {
+                    script = params.aiScripts->scripts[0];
+                } else if (params.aiScripts->scripts[1] != 0) {
+                    script = params.aiScripts->scripts[1];
+                } else if (params.aiScripts->scripts[2] != 0) {
+                    script = params.aiScripts->scripts[2];
+                } else {
+                    script = params.aiScripts->scripts[3];
+                }
+            }
+            desc.script = script;
+            desc.unkD = 0;
+            desc.unkC = car->unk34;
+            desc.nearSq = car->nearDist * car->nearDist;
+            desc.farSq = car->farDist * car->farDist;
+            player = PlayerManager_NewAIPlayer(&desc);
+            if (player == NULL) {
+                carTile++;
+                return;
+            }
+            player->tileCar = car;
+            params.pos = car->pos;
+            params.pos.y += 10.0f;
+            params.player = player;
+            params.vel = g_zeroVector;
+            SetOrientation(&mtx, car->rotY, car->rotX, car->rotZ);
+            SubMatrixToQuaternion(&mtx, &params.quat);
+            if ((car->creature = ThingManager_DARYL_CreateThing(9, &params)) == NULL) {
+                PlayerManager_RemovePlayer(player);
+                carTile++;
+                return;
+            }
+            car->creature->tileData = car;
+            Player_SetName(player, -1, "Dynamic AI");
+            Player_SetThing(player, car->creature);
+            player->aiScripts = car->aiScripts;
+            player->tileCar = car;
+            if (car->item != NULL) {
+                rack = ThingManagerList_GetByType(&car->creature->motionState.slaves, 8);
+                WildCardRack_JettisonAll(rack);
+                WildCardRack_Add(rack, car->item, car->item->params->count);
+            }
+            action[0] = car->mode;
+            action[1] = 1;
+            action[2] = (u32)car;
+            ActionVehicleChangeMode(action);
+        }
+        carTile++;
+    } else {
+        carTile = 0;
+    }
+}
+#pragma use_lmw_stmw off
 s32 AI_Car_CheckIfStuck(u8 *ai) {
     f32 PSVECSquareDistance(void *a, void *b);
     f32 PSVECDotProduct(void *a, void *b);
@@ -605,6 +789,144 @@ void AI_Car_Cheat_80008A60(u8 *ai) {
         car->turboTime = 0;
     }
 }
+
+void AI_Car_AsyncHeartbeat(u8 *ai) {
+    extern u8 g_cameraManager[];
+    void AI_AsyncHeartbeat(void *arg0);
+    f32 PSVECSquareDistance(void *a, void *b);
+    void CarA_Release(u8 *car);
+    s32 PlayerManager_RemovePlayer(void *player);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    s32 NavHolder_IsLinked(s32 from, s32 to);
+    s32 NavHolder_GetTotalNavPoints(void);
+    u8 *NavHolder_GetNavPoint(s32 index);
+    f32 AI_AngleToTarget(u8 *ai, Vector4 *target);
+    void GenerateQuaternion(Vector4 *axis, Vector4 *q, f32 angle);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void AI_Car_Cheat_80008A60(u8 *ai);
+    s32 Trigger_IsTACSystemPaused(void);
+    void Trigger_PauseTACSystem(s32 pause);
+    u8 *car;
+    s8 repath;
+    s32 dest;
+    void *holder;
+    s32 paused;
+    u8 *target;
+    u8 *thing;
+    s32 time;
+    u32 j;
+    u8 *tac;
+    u8 i;
+    f32 dist;
+    f32 radius;
+    f32 angle;
+
+    car = *(u8 **)(ai + 0x2C);
+    if (car != NULL && *(u8 **)(car + 0x8C) != g_carAVTable) {
+        return;
+    }
+    AI_AsyncHeartbeat(ai);
+    if (*(s8 *)(ai + 0xCC) || *(u8 **)(ai + 0x2C) == NULL) {
+        ai[0x1B] = 0xFF;
+        return;
+    }
+    if (ai[0xCD] != 3) {
+        dist = *(f32 *)(ai + 0x660);
+        j = 0;
+        do {
+            radius = PSVECSquareDistance(g_cameraManager + j * 0x190 + 0x60, *(u8 **)(ai + 0x2C) + 0x40);
+            if (radius < dist) {
+                dist = radius;
+            }
+            j++;
+        } while (j < g_cameraManager[0x640]);
+        if (dist >= *(f32 *)(ai + 0x660)) {
+            tac = *(u8 **)(ai + 0xA8);
+            paused = Trigger_IsTACSystemPaused();
+            Trigger_PauseTACSystem(1);
+            CarA_Release(*(u8 **)(ai + 0x2C));
+            PlayerManager_RemovePlayer(ai);
+            if (*(s8 *)(tac + 0x5C)) {
+                *(u32 *)(tac + 0x28) = 0;
+            }
+            Trigger_PauseTACSystem(paused);
+            return;
+        }
+    }
+    if (*(u8 **)(ai + 0x3E4) != NULL && (ai + 0x3D4) != NULL) {
+        for (i = 0; i < 4; i++) {
+            u8 **item = *(u8 ***)(ai + 0x3D4 + i * 4);
+            if (item == NULL) {
+                break;
+            }
+            time = RandomAdd_s32(*(s32 *)(*item + 0x40), *(s32 *)(*item + 0x44));
+            if (*(u32 *)(ai + 0xC8) > time) {
+                *(u32 *)(ai + 0xC8) = time;
+            }
+        }
+        thing = *(u8 **)(ai + 0x2C);
+        repath = 0;
+        holder = (*(void *(**)(void *))(*(u8 **)(thing + 0x8C) + 0x2C))(thing);
+        target = *(u8 **)(ai + 0x3E4);
+        if (**(u8 **)target == 10 || **(u8 **)target == 14) {
+            dest = *(s32 *)(*(u8 **)(target + 0x10) + 0x28);
+            if (*(u32 *)(ai + 0x4A4) >= 32 || ((u8 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] == NULL ||
+                *(u32 *)(ai + 0x4AC) == 0) {
+                repath = 1;
+            }
+        } else {
+            thing = *(u8 **)(target + 0x10);
+            if (!(*(u32 *)(thing + 0x74) & 0x1000)) {
+                dest = (*(s32 (**)(void *))(*(u8 **)(thing + 0x8C) + 0x2C))(thing);
+                if ((s8)NavHolder_IsLinked((s32)holder, dest)) {
+                    *(u32 *)(ai + 0x4A4) = 32;
+                    if (*(u32 *)(ai + 0x4A0) < NavHolder_GetTotalNavPoints()) {
+                        dist = PSVECSquareDistance(*(u8 **)(ai + 0x2C) + 0x40, NavHolder_GetNavPoint(*(u32 *)(ai + 0x4A0)));
+                        if (dist < *(f32 *)(NavHolder_GetNavPoint(*(u32 *)(ai + 0x4A0)) + 0x24) *
+                                       *(f32 *)(NavHolder_GetNavPoint(*(u32 *)(ai + 0x4A0)) + 0x24)) {
+                            if (*(u8 *)(NavHolder_GetNavPoint(*(u32 *)(ai + 0x4A0)) + 0x51) == 1) {
+                                *(s32 *)(ai + 0x4A0) = *(s32 *)(NavHolder_GetNavPoint(*(u32 *)(ai + 0x4A0)) + 0x4C);
+                            } else {
+                                *(s32 *)(ai + 0x4A0) = -1;
+                            }
+                        }
+                    }
+                } else if (*(u32 *)(ai + 0x4A4) >= 32 || ((u8 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] == NULL ||
+                           *(u32 *)(ai + 0x4AC) == 0) {
+                    repath = 1;
+                } else if (*(u8 **)(*(u8 **)(*(u8 **)(ai + 0x3E4) + 0x10) + 0x8C) == g_carAVTable &&
+                           dest != *(s32 *)(ai + 0x4A8)) {
+                    repath = 1;
+                }
+            }
+        }
+        if (repath) {
+            AI_Car_PrepareNavPath(ai, holder, dest);
+        }
+        if (*(u32 *)(ai + 0x3EC) != 0 || *(u32 *)(ai + 0x3F0) != 0) {
+            if (ai[0xCD] == 1) {
+                Vector4 out __attribute__((aligned(16)));
+                Vector4 quat __attribute__((aligned(16))) = *(Vector4 *)(*(u8 **)(ai + 0x2C) + 0x50);
+                Vector4 axis __attribute__((aligned(16))) = {0.0f, 1.0f, 0.0f, 0.0f};
+
+                if (*(u32 *)(ai + 0x4A4) < 32 && ((u8 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)] != NULL) {
+                    angle = AI_AngleToTarget(*(u8 **)(ai + 0x2C), (Vector4 *)((u8 **)(ai + 0x420))[*(u32 *)(ai + 0x4A4)]);
+                } else if (*(u8 **)(ai + 0x3EC) != NULL) {
+                    angle = AI_AngleToTarget(*(u8 **)(ai + 0x2C), (Vector4 *)(*(u8 **)(ai + 0x3EC) + 0x40));
+                } else if (*(u8 **)(ai + 0x3F0) != NULL) {
+                    angle = AI_AngleToTarget(*(u8 **)(ai + 0x2C), *(Vector4 **)(ai + 0x3F0));
+                }
+                GenerateQuaternion(&axis, &out, angle);
+                QuaternionMult(&out, &quat, (Vector4 *)(*(u8 **)(ai + 0x2C) + 0x50));
+                ai[0xCD] = 2;
+            }
+            if ((*(u8 **)(*(u8 **)(ai + 0x2C) + 0x3BC))[0x11] == 1 && GameSettings_GetCodeVariable(0x198, 0) == 0) {
+                AI_Car_Cheat_80008A60(ai);
+            }
+        }
+    }
+}
+
 void AI_Car_AsyncScanDestructibles(u8 *car) {
     s32 RandomAdd_s32(s32 base, s32 range);
     void *RayHitsObjects_GetObject(void *pos, void *target, f32 *dist, s32 arg3, s32 arg4);

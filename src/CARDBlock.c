@@ -108,3 +108,40 @@ error:
     }
 }
 
+s32 __CARDUpdateFatBlock(s32 chan, u16 *fat, CARDCallback callback);
+s32 __CARDFreeBlock(s32 chan, u16 nBlock, CARDCallback callback) {
+    CARDControl *card;
+    u16 *fat;
+    u16 nextBlock;
+
+    card = &__CARDBlock[chan];
+    if (!card->attached) {
+        return -3;
+    }
+    fat = __CARDGetFatBlock(card);
+    while (nBlock != 0xFFFF) {
+        if (!(5 <= nBlock && nBlock < card->cBlock)) {
+            return -6;
+        }
+        nextBlock = fat[nBlock];
+        fat[nBlock] = 0;
+        ++fat[3];
+        nBlock = nextBlock;
+    }
+    return __CARDUpdateFatBlock(chan, fat, callback);
+}
+
+void __CARDCheckSum(void *ptr, s32 length, u16 *checksum, u16 *checksumInv);
+void DCStoreRange(void *addr, u32 nBytes);
+s32 __CARDEraseSector(s32 chan, u32 addr, CARDCallback callback);
+s32 __CARDUpdateFatBlock(s32 chan, u16 *fat, CARDCallback callback) {
+    CARDControl *card;
+
+    ++fat[2];
+    card = &__CARDBlock[chan];
+    __CARDCheckSum(fat + 2, 0x1FFC, fat, fat + 1);
+    DCStoreRange(fat, 0x2000);
+    card->eraseCallback = callback;
+    return __CARDEraseSector(chan, card->sectorSize * (((u32)fat - (u32)card->workArea) / 0x2000), EraseCallback);
+}
+

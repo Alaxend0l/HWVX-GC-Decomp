@@ -20,6 +20,22 @@ typedef struct ActionFXList {
 
 void *g_emitterVTable[17];
 
+/* emitter description (EMIX data) an emitter spawns effects from */
+typedef struct EmitterData {
+    u8 unk0;
+    u8 pickMode;       /* 0x01 */
+    u8 limited;        /* 0x02 */
+    u8 pad3;
+    s32 count;         /* 0x04 */
+    s32 delayBase;     /* 0x08 */
+    s32 delayRange;    /* 0x0C */
+    f32 range;         /* 0x10 */
+    f32 speedScale;    /* 0x14 */
+    u32 fxCount;       /* 0x18 */
+    u32 *fxIds;        /* 0x1C */
+    u32 seq;           /* 0x20 */
+} EmitterData;
+
 typedef struct Emitter {
     u8 pad0[0x40];     /* 0x00 world transform */
     Vector4 pos;       /* 0x40 */
@@ -31,7 +47,7 @@ typedef struct Emitter {
     void *thingSlot;   /* 0x90 */
     u32 thingParam1;   /* 0x94 */
     u8 pad98[0x18];
-    ActionFX *fx;      /* 0xB0 */
+    EmitterData *fx;   /* 0xB0 */
     u32 fxId;          /* 0xB4 */
     u32 padB8;         /* 0xB8 */
     u32 timeToNextFx;  /* 0xBC */
@@ -42,6 +58,7 @@ typedef struct Emitter {
 } Emitter;
 
 void Thing_Release(s32 thing);
+u32 Emitter_InCameraRange(Emitter *emitter, f32 range);
 
 u32 Gfx_GetCameraPositions(Vector4 *positions);
 f32 PSVECSquareDistance(f32 *a, f32 *b);
@@ -88,6 +105,73 @@ s32 Emitter_Init(u8 *emitter, u8 *data) {
     return 1;
 }
 
+s32 Emitter_Move(Emitter *emitter) {
+    extern f32 g_fDeltaTimeMS;
+    extern Vector4 g_zeroVector;
+    f32 MagnitudeVector(void *v);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    u32 dt;
+
+    if (emitter->flags & 0x02000000) {
+        return 1;
+    }
+    emitter->flags |= 0x10;
+    if (emitter->fx->speedScale > 0.0f) {
+        dt = g_fDeltaTimeMS * (emitter->fx->speedScale * MagnitudeVector(emitter) + 1.0f);
+        if (dt > 1000) {
+            dt = 1000;
+        }
+    } else {
+        dt = g_fDeltaTimeMS;
+    }
+    if (emitter->fx->fxCount != 0) {
+        for (;;) {
+            if (emitter->timeToNextFx != 0) {
+                if (dt > emitter->timeToNextFx) {
+                    dt -= emitter->timeToNextFx;
+                } else {
+                    emitter->timeToNextFx -= dt;
+                    return 1;
+                }
+            }
+            emitter->timeToNextFx = RandomAdd_s32(emitter->fx->delayBase, emitter->fx->delayRange);
+            if (emitter->fx->fxCount != 0) {
+                if (emitter->fx->pickMode == 1) {
+                    emitter->fxIndex = RandomAdd_s32(0, emitter->fx->fxCount);
+                } else if (emitter->fx->pickMode == 2) {
+                    emitter->fxIndex++;
+                    if (emitter->fxIndex >= emitter->fx->fxCount) {
+                        emitter->fxIndex = 0;
+                    }
+                }
+                emitter->fxId = emitter->fx->fxIds[emitter->fxIndex];
+            }
+            if (emitter->fxId != 0 && Emitter_InCameraRange(emitter, emitter->range)) {
+                struct { Vector4 pos; Vector4 quat; Vector4 row; Vector4 vel; u32 id; u32 unk54; f32 speed; f32 unk5C; } params __attribute__((aligned(16)));
+
+                params.id = emitter->fxId;
+                params.pos = emitter->pos;
+                params.quat = emitter->quat;
+                params.row = *(Vector4 *)emitter->pad0;
+                params.unk54 = emitter->thingParam1;
+                params.speed = emitter->fx->speedScale;
+                params.unk5C = 0.0f;
+                params.vel = g_zeroVector;
+                ThingManager_DARYL_CreateThing(1, &params);
+            }
+            if (emitter->fxCount > 0) {
+                if (emitter->fxCount == 1) {
+                    Thing_Release((s32)emitter);
+                    break;
+                }
+                emitter->fxCount--;
+            }
+        }
+    }
+    return 1;
+}
+
 void Emitter_Release(Emitter *emitter) {
     void *slot;
 
@@ -101,7 +185,7 @@ void Emitter_Release(Emitter *emitter) {
     Thing_Release((s32)emitter);
 }
 
-s32 Emitter_InCameraRange(Emitter *emitter, f32 range) {
+u32 Emitter_InCameraRange(Emitter *emitter, f32 range) {
     Vector4 positions[5] __attribute__((aligned(16)));
     Vector4 *pos;
     f32 dist;

@@ -93,6 +93,42 @@ void Action_ReleaseAllActions(void) {
     memset(m_Actions_800DBC80, 0, 0x140);
 }
 
+#pragma readonly_strings on
+void Dprintf(const char *fmt, ...);
+s32 Action_AddAction(void *arg0) {
+    typedef struct Action {
+        s32 type;
+        void *data;
+        s32 unk8;
+        s32 delayInit;
+        u32 count;
+        s32 delay;
+    } Action;
+    extern Action *m_Actions_800DBC80[80];
+    Action *action = arg0;
+    u32 i;
+
+    for (i = 0; i < 80; i++) {
+        if (m_Actions_800DBC80[i] == NULL) {
+            break;
+        }
+    }
+    if (i >= 80) {
+        Dprintf("The max number of actions has been exceeded for this point in the game.  There can only be %d simaltaneous actions\n", 80);
+        return 1;
+    }
+    if (action->count != 0xFFFFFFFF) {
+        action->count--;
+    }
+    m_Actions_800DBC80[i] = action;
+    m_Actions_800DBC80[i]->delay = m_Actions_800DBC80[i]->delayInit;
+    if (action->count != 0) {
+        return 1;
+    }
+    return 0;
+}
+#pragma readonly_strings reset
+
 s32 ActionPrintDebugString(u32 *action)
 {
     void InterfaceManager_SetPlayerMessage(void *message, u32 player);
@@ -253,6 +289,10 @@ s32 ActionMissionObjChangeMode(u32 *action) {
     return 1;
 }
 
+void ActionVehicleChangeMode()
+{
+}
+
 s32 ActionNavPointChangeMode(u32 *action) {
     u32 i;
 
@@ -314,6 +354,219 @@ s32 ActionSwapAIScript(u32 *action) {
     return 1;
 }
 
+#pragma use_lmw_stmw on
+s32 ActionVehicleRemoveItem(u32 *action) {
+    typedef struct ItemThing {
+        u8 unk0[0x74];
+        u32 flags;
+        u8 unk78[0x8C - 0x78];
+        void (**vtable)(struct ItemThing *);
+    } ItemThing;
+    typedef struct Vehicle {
+        u8 unk0[0x28];
+        u8 *creature;
+    } Vehicle;
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    void WildCardRack_JettisonAll(ItemThing *rack);
+    void *list;
+    u32 i;
+    ItemThing *rack;
+    ItemThing *item;
+    u8 *creature;
+
+    for (i = 0; i < action[1]; i++) {
+        creature = ((Vehicle *)action[i + 2])->creature;
+        if (creature != NULL) {
+            list = creature + 0x344;
+            rack = ThingManagerList_GetByType(list, 8);
+            switch (action[0]) {
+            case 0:
+                WildCardRack_JettisonAll(rack);
+                break;
+            case 1:
+                item = ThingManagerList_GetByType(list, 4);
+                if (item != NULL) {
+                    item->vtable[1](item);
+                }
+                break;
+            }
+            rack->flags &= ~0x400200;
+        }
+    }
+    return 1;
+}
+
+#pragma push
+#pragma use_lmw_stmw on
+s32 ActionVehicleGiveItem(void *arg) {
+    typedef struct ItemInfo {
+        u8 type;
+        u8 pad1[0x10 - 0x1];
+        f32 height;
+        u8 pad14[0x28 - 0x14];
+        u32 effect;
+    } ItemInfo;
+    typedef struct Item {
+        Vector4 pos;
+        u8 pad10[0x4];
+        s32 respawn;
+        s32 timer;
+        ItemInfo *info;
+        f32 value;
+        u8 *thing;
+        u32 type;
+        u8 pad2C[0x34 - 0x2C];
+        u8 hasValue;
+        u8 subtype;
+        u8 pad36[0x38 - 0x36];
+        s8 spawned;
+        u8 pad39[0x40 - 0x39];
+    } Item;
+    typedef struct ItemParams {
+        Vector4 quat;
+        Vector4 pos;
+        f32 unk30;
+        f32 unk34;
+        f32 unk38;
+        u32 unk3C;
+        ItemInfo *info;
+        f32 value;
+        u8 subtype;
+    } ItemParams;
+    typedef struct Action {
+        s32 type;
+        void *item;
+        u32 count;
+        u8 *cars[1];
+    } Action;
+    extern Vector4 g_zeroVector;
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    void ThingManagerList_Remove(void **arg0, void *arg1);
+    void *PlayerManager_GetPlayerByIndex(u8);
+    u8 PlayerManager_PlayerCount(void);
+    u32 FileStreaming_GetPackID(char *name, s32 type, u32 id);
+    void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
+    u8 *DataPack_GetScript(void *pack, s32 id);
+    s8 CarA_ProcessItemPickup(void *car, void *item);
+    Item *item;
+    Action *action = arg;
+    u32 i;
+    u8 *thing = NULL;
+    u32 j;
+    u8 *car;
+    u8 numPlayers;
+    struct { Vector4 a; Vector4 b; Vector4 c; Vector4 zero; u32 id; s32 player; f32 f0; f32 f1; } p;
+    ItemParams params __attribute__((aligned(16)));
+    ItemParams params2;
+    ItemInfo *info;
+    u8 *t;
+    u32 packID;
+    void *pack;
+
+    switch (action->type) {
+    case 0:
+        item = action->item;
+        if (item == NULL) {
+            return;
+        }
+        if (item->info->type == 7) {
+            numPlayers = PlayerManager_PlayerCount();
+            for (j = 0; j < numPlayers; j++) {
+                car = *(u8 **)((u8 *)PlayerManager_GetPlayerByIndex(j) + 0x2C);
+                if (car != NULL && *(u8 **)(car + 0x8C) == g_carAVTable) {
+                    t = ThingManagerList_GetByType(car + 0x344, 4);
+                    if (t != NULL && *(Item **)(t + 0x90) == item) {
+                        ThingManagerList_Remove((void **)(car + 0x344), t);
+                    }
+                }
+            }
+        }
+        if (item->thing == NULL) {
+            item->timer = 0;
+            params.pos = item->pos;
+            params.pos.y += item->info->height;
+            params.unk30 = 0.0f;
+            params.unk34 = 0.0f;
+            params.unk38 = 0.0f;
+            params.info = item->info;
+            params.quat.w = 1.0f;
+            params.quat.x = 0.0f;
+            params.quat.y = 0.0f;
+            params.quat.z = 0.0f;
+            params.value = item->hasValue ? item->value : 0.0f;
+            params.subtype = item->subtype;
+            t = ThingManager_DARYL_CreateThing(4, &params);
+            if (t != NULL) {
+                item->spawned = 1;
+                item->thing = t;
+                *(Item **)(item->thing + 0x90) = item;
+                *(u32 *)(t + 0x74) |= 1;
+                if (item->respawn != 0) {
+                    *(Item **)(t + 0xD0) = item;
+                }
+                if (item->info->effect != 0) {
+                    p.id = item->info->effect;
+                    p.a = item->pos;
+                    p.b = params.quat;
+                    p.c.z = 0.0f;
+                    p.c.y = 0.0f;
+                    p.c.x = 0.0f;
+                    p.player = 0;
+                    p.f0 = 0.0f;
+                    p.f1 = 0.0f;
+                    p.zero = g_zeroVector;
+                    ThingManager_DARYL_CreateThing(1, &p);
+                }
+            }
+        }
+        thing = item->thing;
+        break;
+    case 1:
+        info = NULL;
+        if ((u32)action->item < 1000) {
+            packID = FileStreaming_GetPackID(*(char **)(*(u8 **)((u8 *)g_worldData.world + 0x9C) + 0xA4), 2, (u32)action->item);
+            if (packID < 0xFFFFFFFF) {
+                pack = FileStreaming_InitializeDataPack(packID, 2, 1);
+                if (pack != NULL) {
+                    info = (ItemInfo *)DataPack_GetScript(pack, (s32)action->item);
+                }
+            }
+        } else {
+            info = action->item;
+        }
+        if (info != NULL) {
+            params2.pos = g_zeroVector;
+            params2.pos.y += info->height;
+            params2.unk30 = 0.0f;
+            params2.unk34 = 0.0f;
+            params2.unk38 = 0.0f;
+            params2.info = info;
+            params2.quat.w = 1.0f;
+            params2.quat.x = 0.0f;
+            params2.quat.y = 0.0f;
+            params2.quat.z = 0.0f;
+            params2.value = 0.0f;
+            thing = ThingManager_DARYL_CreateThing(4, &params2);
+            if (thing != NULL) {
+                *(u32 *)(thing + 0x74) |= 1;
+            }
+        }
+        break;
+    }
+    if (thing == NULL) {
+        return 0;
+    }
+    for (i = 0; i < action->count; i++) {
+        if (*(u8 **)(action->cars[i] + 0x28) != NULL) {
+            CarA_ProcessItemPickup(*(u8 **)(action->cars[i] + 0x28), thing);
+        }
+    }
+    return 1;
+}
+#pragma pop
+
+#pragma use_lmw_stmw off
 s32 ActionPlaySoundSequence(void *arg0) {
     void SoundSequence_ClearQueue();
     void SoundSequence_Play(u32, s32);

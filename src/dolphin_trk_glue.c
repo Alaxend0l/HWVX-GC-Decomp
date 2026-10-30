@@ -1,5 +1,11 @@
 #include "common.h"
 
+extern void (*gDBCommTable[7])(void);
+
+static inline s32 TRKWriteUARTN(const void *bytes, u32 length) {
+    return ((s32 (*)(const void *, u32))gDBCommTable[4])(bytes, length) == 0 ? 0 : -1;
+}
+
 
 void TRKUARTInterruptHandler(void) {
 
@@ -58,6 +64,24 @@ s32 WriteUART1(u8 c) {
     extern s32 gWritePos[];
     gWriteBuf[gWritePos[0]++] = c;
     return 0;
+}
+
+s32 WriteUARTFlush(void) {
+    unsigned long result = 0;
+    extern u8 gWriteBuf_8030CAF4[];
+    extern s32 gWritePos_8030B9D8[];
+    extern void (*gDBCommTable[7])(void);
+
+    while (gWritePos_8030B9D8[0] < 0x800) {
+        gWriteBuf_8030CAF4[gWritePos_8030B9D8[0]] = 0;
+        gWritePos_8030B9D8[0]++;
+    }
+    if (gWritePos_8030B9D8[0] != 0) {
+        result = ((s32 (*)(u8 *, s32))gDBCommTable[4])(gWriteBuf_8030CAF4, gWritePos_8030B9D8[0]);
+        result = result != 0 ? -1 : 0;
+        gWritePos_8030B9D8[0] = 0;
+    }
+    return result;
 }
 
 void TRKEXICallBack(s16 chan, void *ctx);

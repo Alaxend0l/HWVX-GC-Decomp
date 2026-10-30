@@ -22,20 +22,38 @@ typedef struct THPPlayer {
 
 extern THPPlayer ActivePlayer;
 
+static s32 ReadThreadCreated;
+static u8 ReadThread[0x310];
+static u8 ReadThreadStack[0x1000];
+static u8 FreeReadBufferQueue[0x20];
+static void *FreeReadBufferMessage[10];
+static u8 ReadedBufferQueue[0x20];
+static void *ReadedBufferMessage[10];
+static u8 ReadedBufferQueue2[0x20];
+static void *ReadedBufferMessage2[10];
+
+s32 CreateReadThread(s32 priority) {
+    s32 OSCreateThread(void *thread, void *func, void *param, void *stack, u32 stackSize, s32 priority, u16 attr);
+    void OSInitMessageQueue(void *queue, void *msgArray, s32 msgCount);
+    void Reader(void);
+
+    if (OSCreateThread(ReadThread, Reader, NULL, ReadThreadStack + 0x1000, 0x1000, priority, 1) == 0) {
+        return 0;
+    }
+    OSInitMessageQueue(FreeReadBufferQueue, FreeReadBufferMessage, 10);
+    OSInitMessageQueue(ReadedBufferQueue, ReadedBufferMessage, 10);
+    OSInitMessageQueue(ReadedBufferQueue2, ReadedBufferMessage2, 10);
+    ReadThreadCreated = 1;
+    return 1;
+}
 
 void ReadThreadStart(void) {
-    extern s32 ReadThreadCreated;
-    extern u8 ReadThread[];
-
     if (ReadThreadCreated) {
         OSResumeThread(ReadThread);
     }
 }
 
 void ReadThreadCancel(void) {
-    extern s32 ReadThreadCreated;
-    extern u8 ReadThread[];
-
     if (ReadThreadCreated) {
         OSCancelThread(ReadThread);
         ReadThreadCreated = 0;
@@ -49,7 +67,6 @@ void Reader(void) {
     s32 DVDReadPrio(void *fileInfo, void *addr, s32 length, s32 offset, s32 prio);
     s32 OSSuspendThread(void *thread);
     void PrepareReady(s32 flag);
-    extern u8 ReadThread[];
     THPReadBuffer *readBuffer;
     s32 offset;
     s32 size;
@@ -88,7 +105,7 @@ void Reader(void) {
     }
 }
 void *PopReadedBuffer(void) {
-    extern u8 ReadedBufferQueue[];
+    extern u8 ReadedBufferQueue[0x20];
     void *msg;
 
     OSReceiveMessage(ReadedBufferQueue, &msg, 1);
@@ -96,12 +113,11 @@ void *PopReadedBuffer(void) {
 }
 
 void PushReadedBuffer(void *arg0) {
-    extern u8 PrepareReadyQueue_8036ED00[];
-    OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
+    OSSendMessage(ReadedBufferQueue, arg0, 1);
 }
 
 void *PopFreeReadBuffer(void) {
-    extern u8 FreeReadBufferQueue[];
+    extern u8 FreeReadBufferQueue[0x20];
     void *msg;
 
     OSReceiveMessage(FreeReadBufferQueue, &msg, 1);
@@ -109,12 +125,11 @@ void *PopFreeReadBuffer(void) {
 }
 
 void PushFreeReadBuffer(void *arg0) {
-    extern u8 PrepareReadyQueue_8036ED00[];
-    OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
+    OSSendMessage(FreeReadBufferQueue, arg0, 1);
 }
 
 void *PopReadedBuffer2(void) {
-    extern u8 ReadedBufferQueue2[];
+    extern u8 ReadedBufferQueue2[0x20];
     void *msg;
 
     OSReceiveMessage(ReadedBufferQueue2, &msg, 1);
@@ -122,6 +137,5 @@ void *PopReadedBuffer2(void) {
 }
 
 void PushReadedBuffer2(void *arg0) {
-    extern u8 PrepareReadyQueue_8036ED00[];
-    OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
+    OSSendMessage(ReadedBufferQueue2, arg0, 1);
 }

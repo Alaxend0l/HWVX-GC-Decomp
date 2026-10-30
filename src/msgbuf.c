@@ -1,6 +1,7 @@
 #include "common.h"
 
 #pragma use_lmw_stmw on
+#pragma readonly_strings on
 
 typedef struct TRKBuffer {
     u32 mutex;
@@ -14,7 +15,7 @@ void *TRK_memset(void *dst, s32 val, u32 n);
 s32 TRKAcquireMutex(void *mutex);
 s32 TRKReleaseMutex(void *mutex);
 
-extern TRKBuffer gTRKMsgBufs[3];
+TRKBuffer gTRKMsgBufs[3];
 __declspec(section ".data") extern s32 gTRKBigEndian;
 
 void *TRK_memcpy(void *dst, const void *src, u32 n);
@@ -150,6 +151,26 @@ s32 TRKReadBuffer1_ui32(TRKBuffer *b, u32 *data) {
         byteData[1] = bigEndianData[2];
         byteData[2] = bigEndianData[1];
         byteData[3] = bigEndianData[0];
+    }
+    return err;
+}
+
+s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data) {
+    s32 err;
+    u8 *bigEndianData;
+    u8 *byteData;
+    u8 swapBuffer[sizeof(data)];
+
+    if (gTRKBigEndian) {
+        bigEndianData = (u8 *)data;
+    } else {
+        bigEndianData = swapBuffer;
+    }
+    err = TRKReadBuffer_inline(b, bigEndianData, sizeof(*data));
+    if (!gTRKBigEndian && err == 0) {
+        byteData = (u8 *)data;
+        byteData[0] = bigEndianData[1];
+        byteData[1] = bigEndianData[0];
     }
     return err;
 }

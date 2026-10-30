@@ -11,6 +11,16 @@ extern s32 __float_huge[];
 
 f32 PSVECMag(Vector *v);
 
+static inline f32 SquareMagnitude(Vector *v) {
+    return v->x * v->x + v->y * v->y + v->z * v->z;
+}
+
+Matrix4 g_identity;
+Vector4 g_zeroVector;
+Vector4 g_iBasis;
+Vector4 g_jBasis;
+Vector4 g_kBasis;
+
 f32 MagnitudeVector(Vector *v) {
     f32 zero = 0.0f;
 
@@ -29,6 +39,42 @@ void CopyMatrix(Matrix4 *dst, Matrix4 *src)
     void *memcpy(void *dst, const void *src, u32 n);
 
     memcpy(dst, src, 0x40);
+}
+
+void Init_Math3D(void)
+{
+    g_identity.v[0].x = 1.0f;
+    g_identity.v[0].y = 0.0f;
+    g_identity.v[0].z = 0.0f;
+    g_identity.v[0].w = 0.0f;
+    g_identity.v[1].x = 0.0f;
+    g_identity.v[1].y = 1.0f;
+    g_identity.v[1].z = 0.0f;
+    g_identity.v[1].w = 0.0f;
+    g_identity.v[2].x = 0.0f;
+    g_identity.v[2].y = 0.0f;
+    g_identity.v[2].z = 1.0f;
+    g_identity.v[2].w = 0.0f;
+    g_identity.v[3].x = 0.0f;
+    g_identity.v[3].y = 0.0f;
+    g_identity.v[3].z = 0.0f;
+    g_identity.v[3].w = 1.0f;
+    g_zeroVector.x = 0.0f;
+    g_zeroVector.y = 0.0f;
+    g_zeroVector.z = 0.0f;
+    g_zeroVector.w = 1.0f;
+    g_iBasis.x = 1.0f;
+    g_jBasis.x = 0.0f;
+    g_kBasis.x = 0.0f;
+    g_jBasis.y = 1.0f;
+    g_kBasis.y = 0.0f;
+    g_iBasis.y = 0.0f;
+    g_kBasis.z = 1.0f;
+    g_iBasis.z = 0.0f;
+    g_jBasis.z = 0.0f;
+    g_iBasis.w = 1.0f;
+    g_kBasis.w = 1.0f;
+    g_kBasis.w = 1.0f;
 }
 
 void SinCos(f32 *s, f32 *c, f32 angle)
@@ -110,6 +156,17 @@ void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0) {
     M2C_FIELD(arg2, f32 *, 0) = (f32) ((M2C_FIELD(arg0, f32 *, 0) * farg0) + M2C_FIELD(arg1, f32 *, 0));
     M2C_FIELD(arg2, f32 *, 4) = (f32) ((M2C_FIELD(arg0, f32 *, 4) * farg0) + M2C_FIELD(arg1, f32 *, 4));
     M2C_FIELD(arg2, f32 *, 8) = (f32) ((M2C_FIELD(arg0, f32 *, 8) * farg0) + M2C_FIELD(arg1, f32 *, 8));
+}
+
+void ProjectVectorTangential(Vector *v, Vector *n, Vector *out) {
+    f32 PSVECDotProduct();
+    f32 scale;
+
+    scale = PSVECDotProduct(v, n);
+    scale = -scale;
+    out->x = scale * n->x + v->x;
+    out->y = scale * n->y + v->y;
+    out->z = scale * n->z + v->z;
 }
 
 void DistanceXYZ(Vector *a, Vector *b, f32 *dist)
@@ -375,6 +432,30 @@ void QuaternionMult(Quaternion *a, Quaternion *b, Quaternion *out)
     out->z = a->x * b->y - a->y * b->x + a->w * b->z + a->z * b->w;
 }
 
+void GenerateQuaternionXYZ(Vector *angles, Quaternion *q) {
+    Quaternion tmp = {0.0f, 0.0f, 0.0f, 1.0f};
+    Vector4 axis;
+    Quaternion r;
+
+    axis.x = 0.0f;
+    axis.y = 0.0f;
+    axis.z = 1.0f;
+    GenerateQuaternion(&axis, &r, angles->z);
+    QuaternionMult(&r, &tmp, q);
+    memcpy(&tmp, q, sizeof(Quaternion));
+    axis.x = 1.0f;
+    axis.y = 0.0f;
+    axis.z = 0.0f;
+    GenerateQuaternion(&axis, &r, angles->x);
+    QuaternionMult(&r, &tmp, q);
+    memcpy(&tmp, q, sizeof(Quaternion));
+    axis.x = 0.0f;
+    axis.y = 1.0f;
+    axis.z = 0.0f;
+    GenerateQuaternion(&axis, &r, angles->y);
+    QuaternionMult(&r, &tmp, q);
+}
+
 void QuaternionToSubMatrix(Quaternion *q, Matrix4 *m)
 {
     f32 s;
@@ -453,6 +534,41 @@ f32 LinearPointTest(Vector *point, Vector *start, Vector *end)
     PSVECSubtract(end, start, (Vector *)&toEnd);
     dot = PSVECDotProduct((Vector *)&toPoint, (Vector *)&toEnd);
     return dot / (MagnitudeVector((Vector *)&toPoint) * MagnitudeVector((Vector *)&toEnd));
+}
+
+s8 SegmentVsSphere(Vector *start, Vector *end, Vector *center, f32 radius) {
+    void PSVECSubtract(Vector *a, Vector *b, Vector *a_b);
+    f32 PSVECDotProduct(Vector *a, Vector *b);
+    f32 PSVECSquareDistance(Vector *a, Vector *b);
+    void PSVECCrossProduct(Vector *a, Vector *b, Vector *axb);
+    Vector toCenter __attribute__((aligned(16)));
+    Vector dir __attribute__((aligned(16)));
+    Vector negToCenter __attribute__((aligned(16)));
+    Vector startToCenter __attribute__((aligned(16)));
+    Vector cross __attribute__((aligned(16)));
+    f32 radiusSq = radius * radius;
+
+    PSVECSubtract(start, end, &dir);
+    if (dir.x * dir.x + dir.y * dir.y + dir.z * dir.z < radiusSq) {
+        return 1;
+    }
+    if (PSVECSquareDistance(start, center) < radiusSq) {
+        return 1;
+    }
+    PSVECSubtract(center, end, &toCenter);
+    if (PSVECDotProduct(&toCenter, &dir) < 0.0f) {
+        return 0;
+    }
+    negToCenter.x = -toCenter.x;
+    negToCenter.y = -toCenter.y;
+    negToCenter.z = -toCenter.z;
+    PSVECSubtract(start, center, &startToCenter);
+    if (PSVECDotProduct(&negToCenter, &startToCenter) < 0.0f) {
+        return 0;
+    }
+    PSVECCrossProduct(&toCenter, &dir, &cross);
+    return cross.x * cross.x + cross.y * cross.y + cross.z * cross.z <
+           radiusSq * (toCenter.x * toCenter.x + toCenter.y * toCenter.y + toCenter.z * toCenter.z);
 }
 
 void MinMaxVec(Vector4 *min, Vector4 *max, Vector4 *v)

@@ -289,9 +289,93 @@ f32 CarA_Transmission_GetTorqueAtWheels(u8 *car)
            ((f32 *)(*(u8 **)(trans + 0xDC)))[*(u8 *)(car + 0x4E8) * 2];
 }
 
-void CarA_ProcessForce(u8 *car, Vector4 *force, Vector4 *dir)
+void CarA_ExecuteCombo(CarA *car) {
+    extern Vector4 g_zeroVector;
+    extern char *g_stunt1localString;
+    void Thing_ProcessEndEvent(void *thing, void *event, void *collision, Vector4 *vel);
+    void CarA_StuntImpulse(CarA *car, Vector4 *a, Vector4 *b);
+
+    switch (car->player->combo) {
+    case 2:
+        car->speed = car->vehicleIface->collider->maxHealth;
+        car->partVisMask = 0;
+        break;
+    case 3:
+        car->player->combo = 0;
+        Thing_ProcessEndEvent(car, car->vehicleIface->collider, NULL, &car->localAxis);
+        CarA_Release((u8 *)car);
+        return;
+    case 4:
+        car->transmissionFlags ^= 1;
+        break;
+    case 5:
+        car->velocity = g_zeroVector;
+        car->gradeOrReverse = 0.0f;
+        car->rpm = 0.0f;
+        car->curveTableIdx = 1;
+        break;
+    case 6:
+        car->turboTime = 30000;
+        break;
+    }
+    if (car->unk460 == 0) {
+        switch (car->player->combo) {
+        case 9: {
+            Vector4 a __attribute__((aligned(16))) = {0.0f, 57.0f, 0.0f, 0.0f};
+            Vector4 b __attribute__((aligned(16))) = {5.8f, 0.0f, 0.0f, 0.0f};
+            CarA_StuntImpulse(car, &a, &b);
+            break;
+        }
+        case 10: {
+            Vector4 a __attribute__((aligned(16))) = {0.0f, 57.0f, 0.0f, 0.0f};
+            Vector4 b __attribute__((aligned(16))) = {-5.5f, 0.0f, 0.0f, 0.0f};
+            CarA_StuntImpulse(car, &a, &b);
+            break;
+        }
+        case 11: {
+            Vector4 a __attribute__((aligned(16))) = {0.0f, 85.0f, 0.0f, 0.0f};
+            Vector4 b __attribute__((aligned(16))) = {0.0f, 0.0f, 2.0f, 0.0f};
+            CarA_StuntImpulse(car, &a, &b);
+            break;
+        }
+        case 12: {
+            Vector4 a __attribute__((aligned(16))) = {0.0f, 85.0f, 0.0f, 0.0f};
+            Vector4 b __attribute__((aligned(16))) = {0.0f, 0.0f, -2.0f, 0.0f};
+            CarA_StuntImpulse(car, &a, &b);
+            break;
+        }
+        case 13: {
+            Vector4 a __attribute__((aligned(16))) = {0.0f, 67.0f, 0.0f, 0.0f};
+            Vector4 b __attribute__((aligned(16))) = {-5.056695f, 0.0f, -5.2875133f, 0.0f};
+            CarA_StuntImpulse(car, &a, &b);
+            break;
+        }
+        case 14: {
+            Vector4 a __attribute__((aligned(16))) = {0.0f, 65.0f, 0.0f, 0.0f};
+            Vector4 b __attribute__((aligned(16))) = {5.056695f, 0.0f, 5.2875133f, 0.0f};
+            CarA_StuntImpulse(car, &a, &b);
+            break;
+        }
+        case 15: {
+            Vector4 b __attribute__((aligned(16))) = {0.0f, -7.0f, 0.0f, 0.0f};
+            CarA_StuntImpulse(car, &g_zeroVector, &b);
+            car->stuntPopup = &g_stunt1localString;
+            break;
+        }
+        case 16: {
+            Vector4 b __attribute__((aligned(16))) = {0.0f, 7.0f, 0.0f, 0.0f};
+            CarA_StuntImpulse(car, &g_zeroVector, &b);
+            car->stuntPopup = &g_stunt1localString;
+            break;
+        }
+        }
+    }
+    car->player->combo = 0;
+}
+
+void CarA_ProcessForce(CarA *car, Vector4 *pos, Vector4 *dir, f32 scale)
 {
-    void PSVECScale(Vector4 *src, Vector4 *dst, u32 scale);
+    void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *dst);
     void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *dst);
     void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *dst);
@@ -304,20 +388,50 @@ void CarA_ProcessForce(u8 *car, Vector4 *force, Vector4 *dir)
     Vector4 carVel;
     Vector4 scaled __attribute__((aligned(16)));
 
-    carVel = *(Vector4 *)car;
-    PSVECScale(dir, &scaled, *(u32 *)(car + 8));
-    PSVECSubtract(force, (Vector4 *)(car + 0x40), &r);
+    carVel = car->velocity;
+    PSVECScale(dir, &scaled, scale);
+    PSVECSubtract(pos, &car->worldMatrix.v[3], &r);
     GetComponentOfVector(dir, &carVel);
-    PSVECCrossProduct((Vector4 *)(car + 0x410), &r, &cross);
-    PSVECAdd((Vector4 *)car, &cross, &pointVel);
+    PSVECCrossProduct(&car->localAxis, &r, &cross);
+    PSVECAdd(&car->velocity, &cross, &pointVel);
     PSVECCrossProduct(&r, &scaled, &torque);
 
-    *(f32 *)(car + 0x390) += scaled.x;
-    *(f32 *)(car + 0x394) += scaled.y;
-    *(f32 *)(car + 0x398) += scaled.z;
-    *(f32 *)(car + 0x3A0) += torque.x;
-    *(f32 *)(car + 0x3A4) += torque.y;
-    *(f32 *)(car + 0x3A8) += torque.z;
+    car->forceAccum.x += scaled.x;
+    car->forceAccum.y += scaled.y;
+    car->forceAccum.z += scaled.z;
+    car->torqueAccum.x += torque.x;
+    car->torqueAccum.y += torque.y;
+    car->torqueAccum.z += torque.z;
+}
+
+/* Loads each wheel's suspension compression onto its bone (and the parent
+   bone's) animation matrix, then adds gravity to the force accumulator. */
+static void CarA_ApplyWheelLoads(void *thing) {
+    CarA *car = thing;
+    Vector4 *up;
+    CarTrailBone *wheel;
+    CarA *susp;
+    u32 i;
+    s32 bone;
+
+    susp = car;
+    for (i = 0; i < car->vehicleIface->numWheels; i++) {
+        wheel = &car->vehicleIface->wheels[i];
+        if (wheel->parent != 0) {
+            bone = wheel->bone - wheel->parent;
+            up = &car->motionState.animMatrices[bone].v[1];
+            car->motionState.animMatrices[bone].v[3].x -= susp->wheelStates[0].compression * up->x;
+            car->motionState.animMatrices[bone].v[3].y -= susp->wheelStates[0].compression * up->y;
+            car->motionState.animMatrices[bone].v[3].z -= susp->wheelStates[0].compression * up->z;
+        } else {
+            up = &car->worldMatrix.v[1];
+        }
+        car->motionState.animMatrices[wheel->bone].v[3].x -= susp->wheelStates[0].compression * up->x;
+        car->motionState.animMatrices[wheel->bone].v[3].y -= susp->wheelStates[0].compression * up->y;
+        car->motionState.animMatrices[wheel->bone].v[3].z -= susp->wheelStates[0].compression * up->z;
+        susp = (CarA *)((u8 *)susp + sizeof(CarAWheelState));
+    }
+    car->forceAccum.y += car->vehicleIface->collider->gravityScale * car->vehicleIface->collider->mass;
 }
 
 void CarA_ProcessImpulse(void *thing, Vector4 *normal, Vector4 *pos, Vector4 *pointVel, f32 restitution) {
@@ -385,6 +499,52 @@ void CarA_ProcessImpulse(void *thing, Vector4 *normal, Vector4 *pos, Vector4 *po
         }
     }
     CarA_UpdateAngularVelocity(car);
+}
+
+void CarA_ComputeForces(CarA *car) {
+    typedef struct RayHit {
+        Vector4 pos;
+        Vector4 normal;
+        u8 pad20[8];
+        u8 *surface;
+        u8 pad2C[0x24];
+    } RayHit;
+    extern Vector4 g_zeroVector;
+    void CarA_ComputeSuspensionForces(CarA *car);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    s8 RayHitsTerrainAndObjects(void *pos, void *vel, f32 *t, RayHit *hit);
+    void XformVec(void *mtx, void *in, Vector4 *out);
+    RayHit hit __attribute__((aligned(16)));
+    f32 worldPos[4];
+    f32 down[4];
+    u32 i;
+    CarAForcePoints *forces;
+    f32 dot;
+    f32 scale;
+    f32 dist;
+
+    car->forceAccum = car->torqueAccum = g_zeroVector;
+    CarA_ApplyWheelLoads(car);
+    CarA_ComputeSuspensionForces(car);
+    dot = PSVECDotProduct(&car->worldMatrix.v[2], &car->velocity);
+    forces = car->vehicleIface->forcePoints;
+    if (dot < 0.0f) {
+        return;
+    }
+    down[0] = -car->worldMatrix.v[1].x;
+    down[1] = -car->worldMatrix.v[1].y;
+    down[2] = -car->worldMatrix.v[1].z;
+    scale = 1.0f - car->vehicleIface->engine->unk58 * (car->worldMatrix.v[1].y - 1.0f);
+    for (i = 0; i < forces->count; i++) {
+        if (forces->points[i].ray) {
+            dist = 6.0f;
+            if (car->numWheelsGrounded < car->vehicleIface->numWheels && !RayHitsTerrainAndObjects(&car->worldMatrix.v[3], down, &dist, &hit)) {
+                continue;
+            }
+        }
+        XformVec(&car->worldMatrix, &forces->points[i].pos, (Vector4 *)worldPos);
+        CarA_ProcessForce(car, (Vector4 *)worldPos, (Vector4 *)down, scale * (dot * forces->points[i].weight));
+    }
 }
 
 s32 CarA_PreMove(void *thing) {
@@ -651,6 +811,118 @@ s32 CarA_PreMove(void *thing) {
         CarA_ExecuteCombo(car);
     }
     Thing_PassiveTargeting(car);
+    return 1;
+}
+
+s32 CarA_Move(void *thing) {
+    typedef struct HealthSlave {
+        u8 pad00[0xB8];
+        f32 fraction;
+    } HealthSlave;
+    extern Matrix4 g_identity;
+    extern void *g_pSourcePlayer;
+    s8 Timer_Interrupt300(void);
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    s8 Player_IsHuman(void *player);
+    s8 GameSettings_IsCheatEnabled(u32 cheat);
+    s8 Thing_CollideWithTeleporters(void *thing);
+    void CarA_StuntFail(CarA *car);
+    void Thing_CollideWithItems(void *thing);
+    void XformVec(void *mtx, Vector4 *in, Vector4 *out);
+    void TEST_AnimTraverseHeirarchyToMatricesWorld(Vector4 *refPos, Vector4 *pos, AnimKeyFrame *frames, u32 numBones, f32 scale, Matrix4 *out);
+    void Trail_AddSegment(s32 *handle, Vector4 *pos, Vector4 *dir, u16 texture, GXColor *color, f32 width0, f32 width1, u32 life);
+    void MotionState_Heartbeat(MotionState *state, Matrix4 *mtx, void *thing);
+    f32 Sqrt(f32 x);
+    CarA *car = thing;
+    HealthSlave *slave;
+    u32 *numBones;
+    u32 i;
+    CarTrailBone *wheel;
+    s32 bone;
+    f32 dy;
+    f32 dz;
+    f32 t;
+    f32 oz;
+    f32 oy;
+    f32 ox;
+    f32 dx;
+    f32 comp;
+    f32 scale;
+    GXColor color __attribute__((aligned(16)));
+    Vector4 pos __attribute__((aligned(16)));
+    Vector4 trailPos __attribute__((aligned(16)));
+    AnimKeyFrame frames[64] __attribute__((aligned(16)));
+
+    Timer_Interrupt300();
+    slave = ThingManagerList_GetByType(&car->motionState.slaves, 0x11);
+    if (slave != NULL) {
+        slave->fraction = (f32)car->speed / (f32)car->vehicleIface->collider->maxHealth;
+        if (car->player != NULL && !Player_IsHuman(car->player)) {
+            slave->fraction /= *car->player->healthScale;
+        }
+        if (slave->fraction > 1.0f) {
+            slave->fraction = 1.0f;
+        }
+    }
+    scale = 1.0f / Sqrt(car->animRefPos.w * car->animRefPos.w +
+                        (car->animRefPos.z * car->animRefPos.z +
+                         (car->animRefPos.x * car->animRefPos.x + car->animRefPos.y * car->animRefPos.y)));
+    car->animRefPos.x *= scale;
+    car->animRefPos.y *= scale;
+    car->animRefPos.z *= scale;
+    car->animRefPos.w *= scale;
+    if (car->player != NULL && Player_IsHuman(car->player) && GameSettings_IsCheatEnabled(5)) {
+        car->turboTime = 30000;
+    }
+    if (Thing_CollideWithTeleporters(car)) {
+        CarA_StuntFail(car);
+    }
+    Thing_CollideWithItems(car);
+    numBones = car->motionState.model->numBones;
+    CarA_Extract_Keyframes(car, frames);
+    XformVec(&car->worldMatrix, &car->bodyOffset, &pos);
+    TEST_AnimTraverseHeirarchyToMatricesWorld(&car->animRefPos, &pos, frames, *numBones, 1.0f, car->motionState.animMatrices);
+    for (i = 0; i < car->vehicleIface->numWheels; i++) {
+        wheel = &car->vehicleIface->wheels[i];
+        if (wheel->parent != 0) {
+            bone = wheel->bone - wheel->parent;
+            comp = car->wheelStates[i].compression;
+            dx = car->motionState.animMatrices[bone].v[1].x;
+            ox = comp * dx;
+            dy = car->motionState.animMatrices[bone].v[1].y;
+            oy = comp * dy;
+            dz = car->motionState.animMatrices[bone].v[1].z;
+            oz = comp * dz;
+            car->motionState.animMatrices[bone].v[3].x += ox;
+            car->motionState.animMatrices[bone].v[3].y += oy;
+            car->motionState.animMatrices[bone].v[3].z += oz;
+            car->motionState.animMatrices[wheel->bone].v[3].x += ox;
+            car->motionState.animMatrices[wheel->bone].v[3].y += oy;
+            car->motionState.animMatrices[wheel->bone].v[3].z += oz;
+        } else {
+            dx = car->worldMatrix.v[1].x;
+            dy = car->worldMatrix.v[1].y;
+            dz = car->worldMatrix.v[1].z;
+            car->motionState.animMatrices[wheel->bone].v[3].x += car->wheelStates[i].compression * dx;
+            car->motionState.animMatrices[wheel->bone].v[3].y += car->wheelStates[i].compression * car->worldMatrix.v[1].y;
+            car->motionState.animMatrices[wheel->bone].v[3].z += car->wheelStates[i].compression * car->worldMatrix.v[1].z;
+        }
+        if (car->wheelStates[i].skidColor.a != 0) {
+            wheel = &car->vehicleIface->wheels[i];
+            t = 0.1f - wheel->offset;
+            trailPos.x = t * dx + car->motionState.animMatrices[wheel->bone].v[3].x;
+            trailPos.y = t * dy + car->motionState.animMatrices[wheel->bone].v[3].y;
+            trailPos.z = t * dz + car->motionState.animMatrices[wheel->bone].v[3].z;
+            color = car->wheelStates[i].skidColor;
+            Trail_AddSegment(&car->wheelStates[i].skidTrail, &trailPos, &car->motionState.animMatrices[wheel->bone - 1].v[2],
+                             car->vehicleIface->skidsEnabled, &color, wheel->width0, wheel->width1, car->wheelStates[i].skidTexture);
+        } else {
+            car->wheelStates[i].skidTrail = -1;
+        }
+    }
+    g_pSourcePlayer = car->player;
+    MotionState_Heartbeat(&car->motionState, &g_identity, car);
+    g_pSourcePlayer = NULL;
     return 1;
 }
 
@@ -1912,6 +2184,20 @@ void CarA_GetCameraOrientationInfo(CarA *car, u32 index, void *out) {
     }
 }
 
+s32 CarA_GetNearestNavPoint(CarA *car) {
+    s32 NavHolder_FindIndexOfNearestNavPoint(Vector4 *pos);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    s32 timer;
+
+    if (car->navPointIndex == 0xFFFFFFFF) {
+        car->navPointIndex = NavHolder_FindIndexOfNearestNavPoint(&car->worldMatrix.v[3]);
+        timer = RandomAdd_s32(300, 100);
+        car->navUpdateTimer = timer;
+        car->navUpdateTimer = timer;
+    }
+    return car->navPointIndex;
+}
+
 void CarA_CollideWithRay(CarA *car, void *start, void *end, struct RayHit { u8 pad0[0x30]; Vector4 normal; } *hit, f32 maxDist) {
     void XformVec(void *mtx, void *in, Vector4 *out);
     f32 PhysicalProperties_CollideWithRay(void *props, void *pos, void *start, void *end, void *hit, f32 maxDist);
@@ -1924,6 +2210,10 @@ void CarA_CollideWithRay(CarA *car, void *start, void *end, struct RayHit { u8 p
     if (hit != NULL && dist < maxDist) {
         hit->normal = car->velocity;
     }
+}
+
+void CarA_ProcessItemPickup()
+{
 }
 
 s32 CarA_Invalidate(void *arg0, u32 arg1, u32 arg2) {

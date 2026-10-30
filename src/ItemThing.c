@@ -49,7 +49,7 @@ s32 Item_Init(u8 *item, u8 *data) {
 }
 
 void Item_Release(void *item) {
-    extern u8 g_itemVTable[];
+    extern void *g_itemVTable[];
     void Thing_Release(s32 thing);
     void *slot;
 
@@ -160,6 +160,22 @@ s8 Item_Move(u8 *item) {
     return 1;
 }
 
+void Item_Draw(u8 *item) {
+    f32 Gfx_GetMinCameraDistSquared(void *pos);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void Thing_DrawSharedSlaves(void *thing, void *slaves);
+
+    if (*(f32 *)(item + 0xC8)) {
+        if (Gfx_GetMinCameraDistSquared(item + 0x40) > *(f32 *)(item + 0xC8) * *(f32 *)(item + 0xC8)) {
+            return;
+        }
+    }
+    if (*(u32 *)(item + 0x74) & 8) {
+        QuaternionToSubMatrix(item + 0x50, item + 0x10);
+    }
+    Thing_DrawSharedSlaves(item, *(u8 **)(item + 0xC0) + 0x38);
+}
+
 s32 Item_GetNearestNavPoint(void *arg0) {
     return M2C_FIELD(arg0, s32 *, 0xD4);
 }
@@ -173,4 +189,35 @@ s32 Item_Invalidate(void *arg0, u32 arg1, u32 arg2) {
     }
     return 0;
 }
+void Item_Draw(u8 *item);
+void Thing_GetMass();
+void Thing_DynamicCollideImpact();
+void Thing_GetCameraOrientationInfo();
+void Thing_GetInterfaceInfo();
+void Thing_SlaveTransform();
+void Thing_GetSurfaceScript();
+void Thing_GetInverseLocalInertiaTensor();
+void Thing_DynamicRotation();
+void Thing_CollideWithRay();
+void Thing_GetTargetPos();
+void Thing_GetOrientedCollision();
 
+void *g_itemVTable[] = {
+    Item_Init,
+    Item_Release,
+    Item_PreMove,
+    Item_Move,
+    Item_Draw,
+    Thing_GetMass,
+    Thing_DynamicCollideImpact,
+    Thing_GetCameraOrientationInfo,
+    Thing_GetInterfaceInfo,
+    Thing_SlaveTransform,
+    Thing_GetSurfaceScript,
+    Item_GetNearestNavPoint,
+    Thing_GetInverseLocalInertiaTensor,
+    Thing_DynamicRotation,
+    Thing_CollideWithRay,
+    Thing_GetTargetPos,
+    Thing_GetOrientedCollision,
+};

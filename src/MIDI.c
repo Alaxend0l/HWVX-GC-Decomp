@@ -847,6 +847,14 @@ u32 GetEnvRate(u16 arg0)
     return -1U;
 }
 
+extern s32 g_musicVol;
+void SetGVol(MIDI_CHN *chn)
+{
+    u32 vol = chn->field_B * chn->field_A;
+    vol = (vol * vol) / 3970;
+    chn->vol = Mul16_(vol, g_musicVol);
+}
+
 #pragma push
 #pragma optimization_level 1
 void ReleaseMIDIVoice(void *voice)
@@ -1027,6 +1035,72 @@ void FindMarkers(u8 *p)
         ReadVar_(&p);
     }
 }
+
+void JumpToMarker(void)
+{
+    extern u32 g_trkOn;
+    extern u32 g_trkOff;
+    u32 ReadVar_(u8 **pp);
+    void SetVoicePriority_(void *voice);
+    MIDI_CHN *chn;
+    MIDI_VOICE *voice;
+    u32 i;
+    u32 rate;
+    u16 env;
+    MIDI_CHN *c;
+    u32 mask;
+
+    for (c = g_chn, mask = g_trkOn; mask != 0; c++)
+    {
+        c->field_4 |= mask & 1;
+        mask >>= 1;
+    }
+    for (chn = g_chn; g_trkOff != 0; chn++)
+    {
+        chn->field_4 &= ~(g_trkOff & 1);
+    }
+    g_trkOn = 0;
+    g_trkOff = 0;
+    ((MIDI_SONG *)g_song)->field_14 = *(u8 **)g_mrk[((MIDI_SONG *)g_song)->field_1E];
+    ((MIDI_SONG *)g_song)->field_0 = 0;
+    ((MIDI_SONG *)g_song)->field_8 = 0;
+    ((MIDI_SONG *)g_song)->field_18 = ReadVar_(&((MIDI_SONG *)g_song)->field_14);
+    ((MIDI_SONG *)g_song)->field_1D = (&g_mrk[((MIDI_SONG *)g_song)->field_1E][4])[1];
+    ((MIDI_SONG *)g_song)->field_1C = g_mrk[((MIDI_SONG *)g_song)->field_1E][4];
+    for (i = 0x10, chn = g_chn; i != 0; chn++, i--)
+    {
+        for (voice = chn->voice; voice != NULL; voice = voice->next)
+        {
+            if (voice->state2 != 4)
+            {
+                voice->state2 = 4;
+                voice->byte17 = 0;
+                env = *(u16 *)((u8 *)voice->prog + 0x1E);
+                if (env != 0)
+                {
+                    rate = -1U / (u32)(env * 0x3E8);
+                }
+                else
+                {
+                    rate = -1U;
+                }
+                if (rate + 0x10000 == 0xFFFF)
+                {
+                    voice->count = 0x10000;
+                    rate = 0;
+                }
+                voice->rate = rate;
+                voice->priority -= 15;
+                SetVoicePriority_(voice);
+            }
+        }
+        chn->field_1F = 0;
+        chn->note = 0x40;
+        chn->pitch = 0x10000;
+    }
+    ((MIDI_SONG *)g_song)->field_1E = 0;
+}
+
 #pragma pop
 
 #pragma pop

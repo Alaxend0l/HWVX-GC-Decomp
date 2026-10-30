@@ -925,9 +925,10 @@ void Creature_MacroStep(void *arg0, f32 dt) {
         if (creature->weight > 1.0f) {
             creature->weight = 1.0f;
         }
+        w = creature->weight;
         a = 0.0f;
         b = a;
-        w = creature->weight / (creature->weight + creature->unk110);
+        w /= w + creature->unk110;
         if (creature->anim != NULL) {
             a = creature->anim->fps;
         }
@@ -998,27 +999,25 @@ s32 Creature_ProcessItemPickup(u8 *creature, void *item)
     switch (*M2C_FIELD(item, u8 **, 0xC0))
     {
     case 0:
-        goto end;
     case 1:
-        goto end;
     case 2:
-        goto end;
+        break;
     case 3:
-        rack = ThingManagerList_GetByType(creature + 0xE0, 8);
-        if (rack != NULL)
+        if ((rack = ThingManagerList_GetByType(creature + 0xE0, 8)) == NULL)
         {
-            WildCardRack_Add(rack, M2C_FIELD(item, u8 **, 0xC0), M2C_FIELD(item, s16 *, 0xCE));
-            Item_Release(item);
-            motion = M2C_FIELD(item, void **, 0xD0);
-            if (motion != NULL)
-            {
-                M2C_FIELD(motion, s32 *, 0x18) = M2C_FIELD(motion, s32 *, 0x14);
-            }
-            return 1;
+            break;
         }
+        WildCardRack_Add(rack, M2C_FIELD(item, u8 **, 0xC0), M2C_FIELD(item, s16 *, 0xCE));
+        Item_Release(item);
+        motion = M2C_FIELD(item, void **, 0xD0);
+        if (motion != NULL)
+        {
+            M2C_FIELD(motion, s32 *, 0x18) = M2C_FIELD(motion, s32 *, 0x14);
+        }
+        return 1;
+    case 4:
         break;
     }
-    end:
     return 0;
 }
 

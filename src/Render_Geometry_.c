@@ -159,6 +159,65 @@ typedef struct GDLBox {
     u8 unk34[0x50 - 0x34];
 } GDLBox;
 
+typedef struct GDLLightState {
+    Vector4 pointLights[3];
+    Vector4 lightDir;
+    u32 numPointLights;
+    GXColor pointColors[3];
+    GXColor lightColor;
+    GXColor ambientColor;
+    u8 unk58[0x60 - 0x58];
+} GDLLightState;
+
+static inline GXColor Render_MakeColor(u8 r, u8 g, u8 b) {
+    GXColor c;
+
+    c.r = r;
+    c.g = g;
+    c.b = b;
+    c.a = 0xFF;
+    return c;
+}
+
+extern u8 m_totalLights;
+
+static inline void Render_InitDirLight(void *lt_obj, Vector4 *dir, Vector4 *lightDir, GXColor *rgb) {
+    void *GetRenderWindow();
+    void InverseXformVecOrientation(void *m, Vector4 *v, Vector4 *out);
+    void GXInitLightPos(void *lt_obj, f32 x, f32 y, f32 z);
+    void GXInitLightColor(void *lt_obj, GXColor color);
+    void GXLoadLightObjImm(void *lt_obj, s32 light);
+    void *memset(void *dst, s32 c, u32 n);
+    GXColor color;
+
+    color.r = rgb->r;
+    color.g = rgb->g;
+    color.b = rgb->b;
+    color.a = 0xFF;
+    memset(lt_obj, 0, 0x40);
+    InverseXformVecOrientation(GetRenderWindow(), lightDir, dir);
+    GXInitLightPos(lt_obj, -10000.0f * dir->x, 10000.0f * dir->y, -10000.0f * dir->z);
+    GXInitLightColor(lt_obj, color);
+    GXLoadLightObjImm(lt_obj, 1);
+}
+
+static inline void Render_InitPointLight(void *lt_obj, Vector4 *pos, GXColor *rgb) {
+    void GXInitLightPos(void *lt_obj, f32 x, f32 y, f32 z);
+    void GXInitLightColor(void *lt_obj, GXColor color);
+    void GXLoadLightObjImm(void *lt_obj, s32 light);
+    void GXInitLightDistAttn(void *lt_obj, f32 ref_dist, f32 ref_br, s32 dist_func);
+    void GXInitLightAttnK(void *lt_obj, f32 k0, f32 k1, f32 k2);
+    void *memset(void *dst, s32 c, u32 n);
+    GXColor color = Render_MakeColor(rgb->r, rgb->g, rgb->b);
+
+    memset(lt_obj, 0, 0x40);
+    GXInitLightPos(lt_obj, pos->x, pos->y, pos->z);
+    GXInitLightColor(lt_obj, color);
+    GXInitLightDistAttn(lt_obj, pos->w, 0.99999f, 1);
+    GXInitLightAttnK(lt_obj, 0.0f, 0.0f, 0.01f);
+    GXLoadLightObjImm(lt_obj, 1 << m_totalLights);
+}
+
 typedef struct GDL {
     u8 unk0[0x2C];
     u32 numSpheres;
@@ -172,7 +231,9 @@ typedef struct GDL {
     GDLSphere spheres[200];
     u8 unkBE100[0xBE110 - 0xBE100];
     GDLBox boxes[100];
-    u8 unkC0050[0xDFCC0 - 0xC0050];
+    u8 unkC0050[0xC6EC0 - 0xC0050];
+    GDLLightState lightStates[0x80];
+    u8 unkC9EC0[0xDFCC0 - 0xC9EC0];
     GDLDrawEntry drawEntries[0x800];
     GDLLODEntry lodEntries[0x400];
     u8 unkEBCC0[0xF3A80 - 0xEBCC0];
@@ -254,6 +315,15 @@ void *Gfx_GetWorldMatrixState(u32 index);
 void Gfx_DrawGeometryLOD_Immediate(Geometry *geometry, f32 (*matrix)[4]);
 void Gfx_SetRenderWindow(u32 view);
 void Render_StateSetScissor(void);
+void EnvMap(Geometry *geometry, u32 group, void *matrix, s32 mode);
+void Render_DrawOpaqueGroup(Geometry *geometry, u32 group, void *matrix);
+
+static inline void RenderOpaqueGroup(Geometry *geometry, u32 group, void *matrix) {
+    Render_DrawOpaqueGroup(geometry, group, matrix);
+    if ((geometry->groups[group].flags & 0x10) && g_CurrentViews == 1) {
+        EnvMap(geometry, group, matrix, 2);
+    }
+}
 #pragma use_lmw_stmw on
 void Render_GeometryListSplitScreen(void) {
     u8 view;
@@ -412,6 +482,29 @@ void Gfx_DrawGeometryLOD_Immediate(Geometry *geometry, f32 (*matrix)[4]) {
             RenderGroup(geometry, i, matrix);
             geometry->groups[i].flags &= ~m_fillMode;
         }
+    }
+}
+
+void DisplayList_AddAlphaGroup(s32 arg0, s32 arg1, u32 matrix, u8 arg3, GXColor *color);
+void DrawGroupWireframe(Geometry *geometry, u32 group, void *matrix);
+void EnvMap(Geometry *geometry, u32 group, void *matrix, s32 mode);
+void Render_DrawOpaqueGroup(Geometry *geometry, u32 group, void *matrix);
+void RenderGroup(Geometry *geometry, u32 group, f32 (*matrix)[4]) {
+    if (geometry->groups[group].flags & 0x4000) {
+        return;
+    }
+    if (geometry->groups[group].flags & 0x80) {
+        GXColor color = g_state.constColor;
+        DisplayList_AddAlphaGroup((s32)geometry, group, 0, (g_state.flags >> 4) & 1, &color);
+    } else if (geometry->groups[group].flags & 1) {
+        GXColor color = g_state.constColor;
+        DisplayList_AddAlphaGroup((s32)geometry, group, 0, (g_state.flags >> 4) & 1, &color);
+    } else if (geometry->groups[group].flags & 2) {
+        EnvMap(geometry, group, matrix, 1);
+    } else if (geometry->groups[group].flags & 0x100) {
+        DrawGroupWireframe(geometry, group, matrix);
+    } else {
+        RenderOpaqueGroup(geometry, group, matrix);
     }
 }
 
@@ -676,6 +769,35 @@ void Render_UseLighting(u8 enable) {
         GXSetChanCtrl(4, 1, 0, 0, m_pointLightMask | 1, 2, 2);
     } else {
         GXSetChanCtrl(4, 0, 1, 1, 0, 0, 2);
+    }
+}
+
+void Render_UpdateLightState(s32 index) {
+    u8 lightObj[0x40];
+    u8 pointObj[0x40];
+    Vector4 dir;
+    GXColor ambient;
+    u8 i;
+    GDLLightState *ls;
+
+    if (index == 0xFFFFFFFF) {
+        index = 0;
+    }
+    ls = &g_pGDL->lightStates[index];
+    Render_InitDirLight(lightObj, &dir, &ls->lightDir, &ls->lightColor);
+    ambient.r = ls->ambientColor.r;
+    ambient.g = ls->ambientColor.g;
+    ambient.b = ls->ambientColor.b;
+    ambient.a = 0xFF;
+    GXSetChanAmbColor(4, ambient);
+    m_pointLightMask = 0;
+    m_totalLights = 0;
+    for (i = 0; i < ls->numPointLights; i++) {
+        if (m_totalLights <= 4) {
+            m_totalLights++;
+            Render_InitPointLight(pointObj, &ls->pointLights[i], &ls->pointColors[i]);
+            m_pointLightMask |= 1 << m_totalLights;
+        }
     }
 }
 

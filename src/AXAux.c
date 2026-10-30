@@ -19,6 +19,30 @@ u32 __AXAuxCpuReadWritePosition;
 u32 __AXClMode;
 
 
+void __AXAuxInit(void) {
+    u32 i;
+    u32 *pA;
+    u32 *pB;
+
+    __AXCallbackAuxA = NULL;
+    __AXCallbackAuxB = NULL;
+    __AXContextAuxA = NULL;
+    __AXContextAuxB = NULL;
+    __AXAuxDspWritePosition = 0;
+    __AXAuxDspReadPosition = 1;
+    __AXAuxDspWritePositionDpl2 = 0;
+    __AXAuxDspReadPositionDpl2 = 1;
+    __AXAuxCpuReadWritePosition = 2;
+    pA = (u32 *)__AXBufferAuxA;
+    pB = (u32 *)__AXBufferAuxB;
+    for (i = 0; i < 480; i++) {
+        *pA = 0;
+        pA++;
+        *pB = 0;
+        pB++;
+    }
+}
+
 void __AXAuxQuit(void) {
     extern void *__AXCallbackAuxA;
     extern void *__AXCallbackAuxB;

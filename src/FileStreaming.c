@@ -22,7 +22,7 @@ extern u8 *g_LoadedQuadrants[11];
 extern void *g_pWorldQuadrant;
 extern s32 g_quadFileID;
 s32 FileStreaming_GetPackID(char *name, s32 type, u32 id);
-void FileStreaming_SetActiveQuadrants(s32 arg0, s32 arg1);
+void FileStreaming_SetActiveQuadrants(void **quads, u32 count);
 void File_Close(s32 file);
 s32 FileStreaming_ReleaseDataPack(u32 index, s32 type);
 void ThingManager_Invalidate(u32 start, u32 end);
@@ -33,7 +33,7 @@ void FileStreaming_LoadingThread(void);
 void DataPack_LoadFile(s32 file, void *pack, s32 type, s32 size, s32 *out);
 void DataPack_ReleaseDataPack(void *pack);
 void DataPack_ReleaseQuadPack(void *pack);
-void LoadQuadrants(s32 arg0);
+void LoadQuadrants(s8 refresh);
 void EndThread(void);
 
 extern s32 g_loadingThreadID;
@@ -331,7 +331,7 @@ void FileStreaming_ResetQuadResources(void)
             quad->data->statics[j].active = quad->data->statics[j].defActive;
         }
     }
-    FileStreaming_SetActiveQuadrants((s32)g_LoadedQuadrants, g_numQuadPacksInMemory + 1);
+    FileStreaming_SetActiveQuadrants((void **)g_LoadedQuadrants, g_numQuadPacksInMemory + 1);
     Trigger_PauseTACSystem(paused);
 }
 
@@ -459,6 +459,125 @@ void FileStreaming_LoadingThread(void)
     g_bLoadDataPack = 0;
     g_bLoadingThreadRunning = 0;
     EndThread();
+}
+
+void LoadQuadrants(s8 refresh) {
+    typedef struct TocEntry {
+        u32 version;
+        u32 type;
+        u32 world;
+        u32 id;
+        u32 size;
+        u32 offset;
+    } TocEntry;
+    typedef struct Quad {
+        u8 pad0[0xC];
+        u32 index;
+        u8 pad10[0x38 - 0x10];
+        u32 id;
+        u32 fileOffset;
+        u32 size;
+        u8 pad44[0x50 - 0x44];
+    } Quad;
+    typedef struct World {
+        u8 pad0[0x20];
+        u32 numQuads;
+        Quad *quads;
+        u8 pad28[0x7C - 0x28];
+        char *fileName;
+        u8 pad80[0x8C - 0x80];
+        char *name;
+        u32 id;
+    } World;
+    typedef struct QuadPack {
+        u8 pad0[0x10];
+        void *loaded;
+        u8 pad14[0x34 - 0x14];
+        s8 inMemory;
+    } QuadPack;
+    s32 File_Open(u32 dev, const char *name, u32 flags, s32 *size);
+    s32 File_Read(u32 id, s32 size, void *data);
+    void DataPack_LoadQuadPack(s32 file, void *quad, u32 worldID);
+    void Dprintf(const char *fmt, ...);
+    int sprintf(char *buf, const char *fmt, ...);
+    char *strcpy(char *dst, const char *src);
+    char *strcat(char *dst, const char *src);
+    static TocEntry tocHeader[50];
+    char path[0x80];
+    char name[0x80];
+    char msg[0x100];
+    u32 i;
+    u32 j;
+    s8 error;
+    u32 count;
+    Quad *quad;
+    u32 alt;
+
+    strcpy(name, ((World *)g_worldData.world)->name);
+    strcpy(path, ((World *)g_worldData.world)->name);
+    strcat(path, ".xgc");
+    if (g_quadFileID == -1) {
+        error = 0;
+        g_quadFileID = File_Open(0, path, 0, NULL);
+        if (g_quadFileID != -1) {
+            File_Read(g_quadFileID, 0x10, tocHeader);
+            if (tocHeader[0].version != 0x020100A0 || tocHeader[0].type != 0x040100AE) {
+                error = 1;
+            } else if (tocHeader[0].world != 0xB7) {
+                Dprintf("\n*The world format is different %s. Packfile:%d,  Code:%d\n", ((World *)g_worldData.world)->fileName, tocHeader[0].world, 0xB7);
+                error = 1;
+            } else {
+                count = tocHeader[0].id;
+                File_Read(g_quadFileID, count * sizeof(TocEntry), tocHeader);
+                for (i = 0; i < ((World *)g_worldData.world)->numQuads; i++) {
+                    quad = &((World *)g_worldData.world)->quads[i];
+                    alt = 0;
+                    for (j = 0; j < count; j++) {
+                        u32 id = tocHeader[j].id;
+                        u32 type = tocHeader[j].type;
+                        u32 index = id >> 16;
+
+                        if (type == 7 && ((World *)g_worldData.world)->id == tocHeader[j].world &&
+                            quad->id == id && index == quad->index) {
+                            if (tocHeader[j].version != 0xB7) {
+                                Dprintf("\n*The world format is different %s. Packfile:%d,  Code:%d\n", ((World *)g_worldData.world)->name, tocHeader[j].version, 0xB7);
+                            } else {
+                                quad->size = tocHeader[j].size;
+                                quad->fileOffset = (count * sizeof(TocEntry) + 0x10) + tocHeader[j].offset;
+                            }
+                            break;
+                        }
+                        if (type == 7 && ((World *)g_worldData.world)->id == tocHeader[j].world &&
+                            (u16)quad->id == (u16)id) {
+                            alt = index;
+                        }
+                    }
+                    if (j == count) {
+                        if (alt == 0) {
+                            sprintf(msg, "The quadrant pack could not be found, Pack ID = %d Num GX = %d\nYou need to repack the world using the latest BrainCore\n", (u16)quad->id, quad->index);
+                        } else {
+                            sprintf(msg, "The quadrant pack could not be found, Pack ID = %d Num GX = %d\nThe quadrant pack contains a pack with the same ID however the Num GX = %d\nYou need to repack the world using the latest BrainCore\n", (u16)quad->id, quad->index, alt);
+                        }
+                        Dprintf(msg);
+                    }
+                }
+            }
+        }
+        if (error || g_quadFileID == -1) {
+            g_numQuadPacksToLoad = 0;
+            return;
+        }
+    }
+    for (i = 0; i < g_numQuadPacksToLoad; i++) {
+        if (((QuadPack *)g_QuadrantsToLoad[i])->loaded == NULL) {
+            DataPack_LoadQuadPack(g_quadFileID, g_QuadrantsToLoad[i], ((World *)g_worldData.world)->id);
+            if (refresh) {
+                DataPack_RefreshQuadPackPtrs(g_worldData.unk8[2], g_QuadrantsToLoad[i]);
+                ((QuadPack *)g_QuadrantsToLoad[i])->inMemory = 1;
+            }
+        }
+    }
+    g_numQuadPacksToLoad = 0;
 }
 
 s32 FileStreaming_LoadDataPack(void *name, s32 type, u32 id, s8 threaded) {

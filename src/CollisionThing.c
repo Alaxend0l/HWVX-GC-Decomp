@@ -99,6 +99,53 @@ void OBoxHolder_Release(OBoxHolder *obox) {
     }
 }
 
+f32 RayBoxTest(Vector4 *start, Vector4 *dir, Vector4 *box, f32 t, Vector4 *hit) {
+    typedef struct BoxNode {
+        Vector4 plane;
+        u8 type;
+        u8 pad;
+        s16 next;
+    } __attribute__((aligned(16))) BoxNode;
+    Vector4 *BSPN0_CollideWithSegment(BoxNode *nodes, s32 node, Vector4 *p0, Vector4 *p1);
+    f32 Distance_Plane(void *plane, void *point);
+    Vector4 end __attribute__((aligned(16)));
+    Vector4 endPt __attribute__((aligned(16)));
+    BoxNode nodes[6] = {
+        { { 1.0f, 0.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, 1.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, 0.0f, 1.0f, 0.0f }, 2, 0, 1 },
+        { { -1.0f, 0.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, -1.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, 0.0f, -1.0f, 0.0f }, 0, 0, 0 },
+    };
+    Vector4 *plane;
+    f32 d0;
+    f32 frac;
+
+    nodes[0].plane.w = -box[1].x;
+    nodes[1].plane.w = -box[1].y;
+    nodes[2].plane.w = -box[1].z;
+    nodes[3].plane.w = box[0].x;
+    nodes[4].plane.w = box[0].y;
+    nodes[5].plane.w = box[0].z;
+    endPt.x = end.x = t * dir->x + start->x;
+    endPt.y = end.y = t * dir->y + start->y;
+    endPt.z = end.z = t * dir->z + start->z;
+    frac = t;
+    plane = BSPN0_CollideWithSegment(nodes, 0, start, &end);
+    if (plane != NULL) {
+        d0 = Distance_Plane(plane, start);
+        frac *= d0 / (d0 - Distance_Plane(plane, &endPt));
+        if (hit != NULL) {
+            hit[0].x = dir->x * frac + start->x;
+            hit[0].y = dir->y * frac + start->y;
+            hit[0].z = dir->z * frac + start->z;
+            hit[1] = *plane;
+        }
+    }
+    return frac;
+}
+
 f32 RaySphereTest(Vector4 *start, Vector4 *dir, Vector4 *center, f32 radius, f32 t, u8 *hit) {
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
     f32 PSVECSquareMag(Vector4 *v);
@@ -745,5 +792,155 @@ f32 OBoxHitsSegment(CollisionOBox *box, Vector4 *vel, Vector4 *seg, f32 maxT, Co
         }
     }
     return da.tEnter;
+}
+
+s8 OBoxHitsSegmentZeroTime(CollisionOBox *box, Vector4 *seg, CollisionInfo *hit) {
+    void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
+    f32 PSVECSquareMag(Vector4 *v);
+    void PSVECNormalize(Vector4 *src, Vector4 *dst);
+    f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
+    void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *axb);
+    void Create_Plane(Vector4 *plane, Vector4 *normal, Vector4 *point);
+    void Reverse_Plane(Vector4 *plane);
+    f32 Distance_Plane(Vector4 *plane, Vector4 *point);
+    u32 k;
+    s32 i;
+    u8 type;
+    u8 axisIdx;
+    u8 corner;
+    u8 idx;
+    u32 j;
+    u8 maxIdx;
+    u8 minIdx;
+    f32 boxMin;
+    f32 lo;
+    f32 hi;
+    f32 min;
+    f32 max;
+    f32 c;
+    f32 d;
+    f32 t;
+    f32 best = -99999.9f;
+    Vector4 dir __attribute__((aligned(16)));
+    Vector4 axis __attribute__((aligned(16)));
+    Vector4 point __attribute__((aligned(16)));
+    Vector4 perp __attribute__((aligned(16)));
+    Vector4 normal __attribute__((aligned(16)));
+    Vector4 plane __attribute__((aligned(16)));
+    Vector4 segDir __attribute__((aligned(16)));
+    Vector4 diff __attribute__((aligned(16)));
+
+    type = 0;
+    axisIdx = 0;
+    for (i = 0; i < 3; i++) {
+        hi = PSVECDotProduct(box->axis[i], &seg[0]);
+        d = PSVECDotProduct(box->axis[i], &seg[1]);
+        if (hi > d) {
+            lo = d;
+            idx = 1;
+        } else {
+            lo = hi;
+            idx = 0;
+            hi = d;
+        }
+        c = PSVECDotProduct(box->axis[i], &box->center);
+        boxMin = c - box->extent[i];
+        c = c + box->extent[i];
+        if (hi < boxMin || c < lo) {
+            return 0;
+        }
+        if (lo < c) {
+            d = lo - c;
+            if (d > best) {
+                best = d;
+                if (hit != NULL) {
+                    hit->pos = seg[idx];
+                    hit->normal = *box->axis[i];
+                    Reverse_Plane(&hit->normal);
+                }
+            }
+        }
+        if (boxMin < hi) {
+            d = boxMin - hi;
+            if (d > best) {
+                best = d;
+                if (hit != NULL) {
+                    hit->pos = seg[idx];
+                    hit->normal = *box->axis[i];
+                }
+            }
+        }
+    }
+    PSVECSubtract(&seg[0], &seg[1], &dir);
+    for (j = 0; j < 3; j++) {
+        maxIdx = 0;
+        minIdx = 0;
+        PSVECCrossProduct(box->axis[j], &dir, &axis);
+        if (PSVECSquareMag(&axis)) {
+            PSVECNormalize(&axis, &axis);
+        }
+        max = PSVECDotProduct(&axis, &box->corners[0]);
+        min = max;
+        for (k = 1; k < 8; k++) {
+            d = PSVECDotProduct(&axis, &box->corners[k]);
+            if (d < min) {
+                min = d;
+                minIdx = k;
+            } else if (d > max) {
+                maxIdx = k;
+                max = d;
+            }
+        }
+        c = PSVECDotProduct(&axis, &seg[0]);
+        if (c < min || max < c) {
+            return 0;
+        }
+        if (c < max) {
+            d = c - max;
+            if (d > best) {
+                best = d;
+                corner = maxIdx;
+                axisIdx = j;
+                type = 3;
+            }
+        }
+        if (min < c) {
+            d = min - c;
+            if (d > best) {
+                best = d;
+                corner = minIdx;
+                axisIdx = j;
+                type = 3;
+            }
+        }
+    }
+    if (hit != NULL && best < 0.0f) {
+        switch (type) {
+        case 3:
+            point = box->corners[corner];
+            PSVECSubtract(&seg[1], &seg[0], &segDir);
+            PSVECCrossProduct(&segDir, box->axis[axisIdx], &normal);
+            PSVECCrossProduct(&segDir, &normal, &perp);
+            Create_Plane(&plane, &perp, &seg[0]);
+            d = Distance_Plane(&plane, &point);
+            t = -d / PSVECDotProduct(&plane, box->axis[axisIdx]);
+            point.x += box->axis[axisIdx]->x * t;
+            point.y += box->axis[axisIdx]->y * t;
+            point.z += box->axis[axisIdx]->z * t;
+            hit->pos = point;
+            hit->normal = normal;
+            if (PSVECSquareMag(&hit->normal)) {
+                PSVECNormalize(&hit->normal, &hit->normal);
+            }
+            PSVECSubtract(&box->center, &hit->pos, &diff);
+            if (PSVECDotProduct(&diff, &hit->normal) < 0.0f) {
+                hit->normal.x *= -1.0f;
+                hit->normal.y *= -1.0f;
+                hit->normal.z *= -1.0f;
+            }
+            break;
+        }
+    }
+    return 1;
 }
 

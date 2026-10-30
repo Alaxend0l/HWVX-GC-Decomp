@@ -40,6 +40,13 @@ typedef struct GDLLine {
     u8 unk0[0x30];
 } GDLLine;
 
+typedef struct GDL3DLine {
+    Vector4 p0;
+    Vector4 p1;
+    GXColor color;
+    u8 unk24[0x30 - 0x24];
+} GDL3DLine;
+
 typedef struct GDLFXLine2D {
     Vector4 p0;
     Vector4 p1;
@@ -260,7 +267,8 @@ typedef struct GDL {
     GDLAlphaGroup alphaGroups[0x400];
     GDLRect rects2D[0x400];
     GDLRect rects[0x20];
-    u8 unkA0A80[0xBA280 - 0xA0A80];
+    u8 unkA0A80[0xA2B80 - 0xA0A80];
+    GDL3DLine lines3D[2000];
     GDLFXLine2D fxLines2D[200];
     u8 unkBC800[0xC0040 - 0xBC800];
     GDLLine lines[0x100];
@@ -468,6 +476,22 @@ void Gfx_End_GroupTri(s32 n) {
         }
         g_pGDL->numGroupTris++;
     }
+}
+
+void Gfx_Add2DSprite(Vector4 *pos, u16 tex, GXColor *color, u8 flag, f32 a, f32 b) {
+    if (g_pGDL->num2DSprites == 2000) {
+        return;
+    }
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].x = pos->x;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].y = pos->y;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].z = pos->z;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].unkC = a;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].unk1C = b;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].color = *color;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].tex = tex;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].flag = flag;
+    g_pGDL->sprites2D[g_pGDL->num2DSprites].window = g_currentWindow;
+    g_pGDL->num2DSprites++;
 }
 
 void Gfx_AddCorona(Vector4 *pos, u16 tex, GXColor *color, u8 flag, f32 a, f32 b) {
@@ -715,6 +739,41 @@ u32 Gfx_AddWorldMatrixState_CacheMatrixQuaternionScalePos(void *quat, void *scal
     return g_pGDL->numMatrices++;
 }
 
+typedef struct GeometryGroup {
+    u16 unk0;
+    u16 flags;
+    u8 unk4[0x10 - 0x4];
+    void *data;
+    u16 unk14;
+    u8 unk16[0x18 - 0x16];
+    u16 unk18;
+    u8 unk1A[0x1C - 0x1A];
+    u16 (*tris)[3];
+} GeometryGroup;
+
+typedef struct GeometryVertex {
+    Vector4 pos;
+    u8 unk10[0x1C - 0x10];
+    GXColor color;
+    u8 unk20[0x30 - 0x20];
+} GeometryVertex;
+
+typedef struct Geometry {
+    u16 unk0;
+    u16 numGroups;
+    u16 unk4;
+    u16 unk6;
+    GeometryGroup *groups;
+    GeometryVertex *verts;
+} Geometry;
+
+static inline void Gfx_Add3DLine(Vector4 *p0, Vector4 *p1, GXColor *color) {
+    g_pGDL->lines3D[g_pGDL->num3DLines].p0 = *p0;
+    g_pGDL->lines3D[g_pGDL->num3DLines].p1 = *p1;
+    g_pGDL->lines3D[g_pGDL->num3DLines].color = *color;
+    g_pGDL->num3DLines++;
+}
+
 void *Gfx_GetWorldMatrixState(u32 index) {
     if (index == 0xFFFE) {
         return &g_identity;
@@ -724,6 +783,28 @@ void *Gfx_GetWorldMatrixState(u32 index) {
     }
     return g_pGDL->matrices[index];
 }
+
+void XformVec(void *m, Vector4 *v, Vector4 *out);
+#pragma use_lmw_stmw on
+void DrawGroupWireframe(Geometry *geometry, u32 group, void *matrix) {
+    Vector4 v[3] __attribute__((aligned(16)));
+    GeometryGroup *grp;
+    u32 i;
+    u32 count;
+    s32 j;
+
+    grp = &geometry->groups[group];
+    count = (u32)grp->data;
+    for (i = 0; i < count; i++) {
+        for (j = 0; j < 3; j++) {
+            XformVec(matrix, &geometry->verts[grp->tris[i][j]].pos, &v[j]);
+        }
+        Gfx_Add3DLine(&v[0], &v[1], &geometry->verts[grp->tris[i][0]].color);
+        Gfx_Add3DLine(&v[1], &v[2], &geometry->verts[grp->tris[i][1]].color);
+        Gfx_Add3DLine(&v[2], &v[0], &geometry->verts[grp->tris[i][2]].color);
+    }
+}
+#pragma use_lmw_stmw off
 
 void Gfx_GetCameraPosition(Vector4 *pos) {
     *pos = GetRenderWindow()->cameraPos;
@@ -763,25 +844,6 @@ DLSkinGroup *DisplayList_AddGroup_Skin(void) {
     }
     return &dl->skinGroups[dl->numSkinGroups++];
 }
-
-typedef struct GeometryGroup {
-    u16 unk0;
-    u16 flags;
-    u8 unk4[0x10 - 0x4];
-    void *data;
-    u16 unk14;
-    u8 unk16[0x18 - 0x16];
-    u16 unk18;
-    u8 unk1A[0x20 - 0x1A];
-} GeometryGroup;
-
-typedef struct Geometry {
-    u16 unk0;
-    u16 numGroups;
-    u16 unk4;
-    u16 unk6;
-    GeometryGroup *groups;
-} Geometry;
 
 static inline DLGroup *DisplayList_AddGroup_Opaque(u16 key) {
     DLGroup *group;

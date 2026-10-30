@@ -71,6 +71,25 @@ s8 ParticleManager_CanCreatureParticle(void *creature) {
     return 0;
 }
 
+void CreateParticleGX(Vector4 *pos, Vector4 *vel, Vector4 *accel, Vector4 *quat, u8 *info, f32 speed, f32 age);
+void CreateParticleSprite(Vector4 *pos, Vector4 *vel, Vector4 *accel, void *owner, u8 *info, f32 speed, f32 age);
+void LineManager_Add(void *arg, Vector4 *start, Vector4 *dir, Vector4 *accel);
+void CreateParticle(Vector4 *pos, Vector4 *vel, Vector4 *accel, Vector4 *quat, u8 *info, f32 speed, f32 age) {
+    switch (*info) {
+    case 3:
+        break;
+    case 0:
+        CreateParticleGX(pos, vel, accel, quat, info, speed, age);
+        break;
+    case 1:
+        CreateParticleSprite(pos, vel, accel, quat, info, speed, age);
+        break;
+    case 2:
+        LineManager_Add(info, pos, vel, accel);
+        break;
+    }
+}
+
 void CreateParticleGX(Vector4 *pos, Vector4 *vel, Vector4 *accel, Vector4 *quat, u8 *info, f32 speed, f32 age) {
     extern Vector4 g_zeroVector;
     extern s32 g_iDeltaTimeMS;
@@ -346,6 +365,104 @@ void CreateParticleSprite(Vector4 *pos, Vector4 *vel, Vector4 *accel, void *owne
             }
         }
     }
+}
+
+void ParticleGX_Move();
+void ParticleManager_Heartbeat(void) {
+    extern s8 g_bFreezeWorld;
+    extern f32 g_fDeltaTimeMS;
+    void ParticleSprite_Move(void *sprite, void *sprites);
+    void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0);
+    typedef struct {
+        Vector4 pos;
+        Vector4 vel;
+        Vector4 accel;
+        u8 unk30[0x94 - 0x30];
+        u8 flags;
+        u8 unk95[0xB0 - 0x95];
+    } ParticleSprite;
+    typedef struct {
+        u8 unk0[0xB4];
+        u8 flags;
+        u8 unkB5[0x100 - 0xB5];
+    } ParticleGX;
+    typedef struct {
+        struct {
+            ParticleGX particles[0x280];
+            u8 unk28000[0x10];
+        } groups[3];
+        ParticleSprite sprites[0x200];
+        u8 unk8E030[0x10];
+    } ParticleManager;
+    extern ParticleManager g_particleManager;
+    ParticleManager *pm;
+    u32 j;
+    u32 i;
+    ParticleSprite *sprite;
+    ParticleSprite *sprites;
+    f32 dt;
+
+    if (!g_bFreezeWorld) {
+        pm = &g_particleManager;
+        for (i = 0; i < 3; i++) {
+            for (j = 0; j < 0x280; j++) {
+                if (!(pm->groups[i].particles[j].flags & 8)) {
+                    ParticleGX_Move(&pm->groups[i].particles[j]);
+                }
+            }
+        }
+        dt = g_fDeltaTimeMS;
+        sprites = pm->sprites;
+        sprite = pm->sprites;
+        for (j = 0; j < 0x200; j++) {
+            if (!(pm->sprites[j].flags & 8)) {
+                ParticleSprite_Move(&sprite[j], sprites);
+            }
+        }
+        sprite = pm->sprites;
+        for (j = 0; j < 0x200; j++) {
+            if (!(pm->sprites[j].flags & 8)) {
+                AccumulateVector(&sprite[j].accel, &sprite[j].vel, &sprite[j].vel, dt);
+                AccumulateVector(&sprite[j].vel, &sprite[j].pos, &sprite[j].pos, dt);
+            }
+        }
+    }
+}
+
+void ParticleGX_Move(struct ParticleGX_Move_t {
+        Vector4 pos;
+        u8 unk10[0xDC - 0x10];
+        s32 timer;
+        Vector4 targetPos;
+    } *particle) {
+    extern s32 g_iDeltaTimeMS;
+    f32 Gfx_GetMinCameraDistSquared(void *pos);
+    f32 Sqrt(f32 x);
+    void ParticleGX_MacroStep(void *particle);
+    void ParticleGX_MicroStep(void *particle);
+    f32 distSq;
+
+    if (particle->timer <= 0) {
+        particle->pos = particle->targetPos;
+        distSq = Gfx_GetMinCameraDistSquared(particle);
+        if ((u32)ViewManager_GetViewFormat() > 1) {
+            distSq *= 4.0f;
+        }
+        if (distSq > 1000000.0f) {
+            particle->timer = 700;
+        } else {
+            distSq = Sqrt(distSq) - 1.0f;
+            distSq /= 999.0f;
+            distSq *= 700.0f;
+            particle->timer = (u32)distSq;
+        }
+        if (particle->timer < g_iDeltaTimeMS) {
+            particle->timer = g_iDeltaTimeMS;
+        }
+        ParticleGX_MacroStep(particle);
+    }
+    ParticleGX_MicroStep(particle);
+    particle->timer -= g_iDeltaTimeMS;
 }
 
 void ParticleGX_MicroStep(void *arg0) {

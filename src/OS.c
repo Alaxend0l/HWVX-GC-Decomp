@@ -262,3 +262,21 @@ void OSInit(void)
     }
 }
 
+void *__OSSetExceptionHandler(u8 exception, void *handler) {
+    void *oldHandler;
+
+    oldHandler = OSExceptionTable[exception];
+    OSExceptionTable[exception] = handler;
+    return oldHandler;
+}
+
+#pragma peephole off
+void *__OSGetExceptionHandler(u8 exception) {
+    return OSExceptionTable[exception];
+}
+
+extern volatile u32 __DIRegs[16] : 0xCC006000;
+u8 __OSGetDIConfig(void) {
+    return (u8)(__DIRegs[9] & 0xFF);
+}
+

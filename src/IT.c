@@ -79,6 +79,25 @@ void SetTrackPan(IT_TRACK *trk);
 
 #pragma push
 #pragma optimization_level 1
+#pragma push
+#pragma optimization_level 1
+s32 AudioIT_Create(void)
+{
+    extern void *g_pHdr;
+    void *memset(void *dst, s32 c, u32 n);
+    u8 i;
+
+    memset(g_song, 0, sizeof(g_song));
+    memset(g_trk, 0, sizeof(g_trk));
+    for (i = 0; i < 0x20; i++)
+    {
+        g_trk[i].index = i;
+    }
+    g_pHdr = NULL;
+    return 1;
+}
+#pragma pop
+
 s32 AudioIT_Init(void)
 {
     extern void *g_pHdr;
@@ -173,6 +192,147 @@ void DestroyIT(void)
     g_pHdr = NULL;
     memset(g_musicTitle, 0, 0x20);
 }
+
+#pragma push
+#pragma optimization_level 1
+#pragma use_lmw_stmw on
+s32 SetITState(s32 state)
+{
+    extern u8 *g_pHdr;
+    extern s32 g_musicState;
+    extern void (*SongUpdate)(u32 ticks);
+    extern u32 g_trkOn;
+    extern u32 g_trkOff;
+    void *memset(void *dst, s32 c, u32 n);
+    void ProcessIT(u32 ticks);
+    IT_VOICE *voice;
+    IT_VOICE *next;
+    u32 i;
+    IT_TRACK *trk;
+    s32 old;
+
+    if (g_pHdr == NULL)
+    {
+        return -1;
+    }
+    if (state == 0 || g_pHdr == NULL)
+    {
+        return g_musicState;
+    }
+    if (state != 1)
+    {
+        SongUpdate = NULL;
+    }
+    if (state == 2)
+    {
+        for (i = 0; i < 0x20; i++)
+        {
+            for (voice = g_trk[i].head; voice != NULL; voice = voice->next)
+            {
+                SetVoiceState_(voice, 2);
+            }
+        }
+    }
+    if (state == 3 || state == 4)
+    {
+        g_song[0] = 0;
+        g_song[1] = 0;
+        for (i = 0; i < 0x20; i++)
+        {
+            voice = g_trk[i].head;
+            g_trk[i].head = NULL;
+            g_trk[i].active = NULL;
+            while (voice != NULL)
+            {
+                next = voice->next;
+                SetVoiceState_(voice, 3);
+                voice = next;
+            }
+        }
+    }
+    if (state == 1 || state == 4)
+    {
+        if (g_musicState == 3 || state == 4 || g_musicState == 0)
+        {
+            g_song[8] = g_pHdr[0x32];
+            g_song[9] = g_pHdr[0x33];
+            g_song[0xA] = 0x10000;
+            g_song[2] = 0;
+            g_song[4] = 1;
+            *((u8 *)g_song + 0x14) = 0;
+            *((u8 *)g_song + 0x15) = 0xFF;
+            g_song[6] = g_pHdr[0x30];
+            g_song[0] = ((u32)g_song[0xA] << 0xF) / (0x1C9C380U / ((u32)g_song[9] * 0x18));
+            for (trk = g_trk, i = 0; i < 0x20; trk++, i++)
+            {
+                memset(trk, 0, sizeof(IT_TRACK));
+                trk->index = i;
+                trk->ins = g_pIns[0];
+                trk->smp = g_pSmp[0];
+                trk->note = 0x3C;
+                trk->chVol = g_pHdr[0x80 + i];
+                trk->vol = 0x8000;
+                trk->panSep = -0x8000;
+                trk->priority = 0x10;
+                if ((s8)g_pHdr[0x40 + i] >= 0)
+                {
+                    trk->state = 1;
+                    if ((s8)g_pHdr[0x40 + i] == 100)
+                    {
+                        trk->panSep = 0x7FFF;
+                    }
+                    else
+                    {
+                        trk->pan = ((s8)g_pHdr[0x40 + i] << 10) - 0x8000;
+                        trk->pan -= trk->pan >> 15;
+                    }
+                }
+            }
+            g_trkOn = 0;
+            g_trkOff = 0;
+        }
+        if (g_musicState == 2)
+        {
+            for (i = 0; i < 0x20; i++)
+            {
+                for (voice = g_trk[i].head; voice != NULL; voice = voice->next)
+                {
+                    SetVoiceState_(voice, 1);
+                }
+            }
+        }
+        state = 1;
+        SongUpdate = ProcessIT;
+    }
+    old = g_musicState;
+    g_musicState = state;
+    return old;
+}
+#pragma pop
+
+#pragma push
+#pragma dont_inline on
+void SetITVol(void)
+{
+    u16 GetITGVol_(s32 *song, IT_TRACK *trk);
+    IT_TRACK *trk;
+    IT_VOICE *voice;
+    s32 i;
+    s32 gvol;
+
+    for (trk = g_trk, i = 0x20; i != 0; trk++, i--)
+    {
+        voice = trk->head;
+        gvol = GetITGVol_(g_song, trk);
+        trk->gvol = gvol;
+        for (; voice != NULL; voice = voice->next)
+        {
+            SetVoiceVol_(voice, gvol);
+        }
+    }
+}
+#pragma pop
+
 #pragma pop
 
 #pragma push
@@ -319,6 +479,26 @@ void SetITTrackOff(u32 mask, s8 deferred)
         mask >>= 1;
     }
 }
+
+#pragma push
+#pragma optimization_level 1
+#pragma dont_inline on
+void SetITTrackVol(u32 track, s32 vol)
+{
+    u16 GetITGVol_(s32 *song, IT_TRACK *trk);
+    IT_VOICE *voice;
+    s32 gvol;
+
+    voice = g_trk[track].head;
+    g_trk[track].vol = vol;
+    gvol = GetITGVol_(g_song, &g_trk[track]);
+    g_trk[track].gvol = gvol;
+    for (; voice != NULL; voice = voice->next)
+    {
+        SetVoiceVol_(voice, gvol);
+    }
+}
+#pragma pop
 
 #pragma push
 #pragma optimization_level 1
