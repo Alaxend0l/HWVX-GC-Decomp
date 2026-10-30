@@ -7,6 +7,24 @@ s32 __CARDSync(s32 chan);
 s32 VerifyID(void *card);
 s32 VerifyDir(void *card, s32 *outCurrent);
 s32 VerifyFAT(void *card, s32 *outCurrent);
+void __CARDCheckSum(void *ptr, int length, u16 *checksum, u16 *checksumInv) {
+    u16 *p;
+    int i;
+
+    length /= sizeof(u16);
+    *checksum = *checksumInv = 0;
+    for (i = 0, p = ptr; i < length; i++, p++) {
+        *checksum += *p;
+        *checksumInv += ~*p;
+    }
+    if (*checksum == 0xFFFF) {
+        *checksum = 0;
+    }
+    if (*checksumInv == 0xFFFF) {
+        *checksumInv = 0;
+    }
+}
+
 s32 __CARDVerify(void *card) {
     s32 result;
     s32 errors;
