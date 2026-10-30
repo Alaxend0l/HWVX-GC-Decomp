@@ -1,13 +1,16 @@
 #include "common.h"
 
 typedef struct SoundSequence {
-    u8 pad0[0x74];
+    u8 pad0[0x40];
+    Vector4 pos;  /* 0x40 */
+    u8 pad50[0x74 - 0x50];
     u32 flags;    /* 0x74 */
     u8 pad78[0x38];
     u8 *params;   /* 0xB0 */
-    u8 padB4[0xC8 - 0xB4];
+    u8 state[0xC4 - 0xB4]; /* 0xB4 */
+    s32 timer;    /* 0xC4 */
     struct SoundSequence *queued; /* 0xC8 */
-    u8 padCC[0xD0 - 0xCC];
+    f32 rate;     /* 0xCC */
     s32 sources[4]; /* 0xD0 */
 } SoundSequence;
 
@@ -232,7 +235,9 @@ void SoundSequence_Stop(u32 handle) {
 
     if (handle != 0xFFFFFFFF) {
         thing = (void *)handle;
-        SoundSeq_ReleaseThing(thing);
+        if (thing != NULL) {
+            SoundSeq_Release(thing);
+        }
     }
 }
 
