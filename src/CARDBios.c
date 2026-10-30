@@ -350,6 +350,57 @@ void UnlockedCallback(s32 chan, s32 result) {
     }
 }
 
+void OSSetAlarm(void *alarm, s64 tick, void *handler);
+void UnlockedCallback(s32 chan, s32 result);
+#pragma push
+#pragma use_lmw_stmw on
+s32 __CARDStart(s32 chan, CARDCallback txCallback, CARDCallback exiCallback) {
+    BOOL enabled;
+    CARDControl *card;
+    s32 result;
+
+    enabled = OSDisableInterrupts();
+
+    card = &__CARDBlock[chan];
+    if (!card->attached) {
+        result = -3;
+    } else {
+        if (txCallback) {
+            card->txCallback = txCallback;
+        }
+        if (exiCallback) {
+            card->exiCallback = exiCallback;
+        }
+        card->unlockCallback = UnlockedCallback;
+        if (!EXILock(chan, 0, __CARDUnlockedHandler)) {
+            result = -1;
+        } else {
+            card->unlockCallback = 0;
+            if (!EXISelect(chan, 0, 4)) {
+                EXIUnlock(chan);
+                result = -3;
+            } else {
+                OSCancelAlarm(&card->alarm);
+                switch (card->cmd[0]) {
+                case 0xF2:
+                    OSSetAlarm(&card->alarm, ((*(u32 *)0x800000F8 / 4) / 1000) * 100, TimeoutHandler);
+                    break;
+                case 0xF3:
+                    break;
+                case 0xF4:
+                case 0xF1:
+                    OSSetAlarm(&card->alarm, (s64)2 * (*(u32 *)0x800000F8 / 4) * (card->sectorSize / 0x2000), TimeoutHandler);
+                    break;
+                }
+                result = 0;
+            }
+        }
+    }
+    OSRestoreInterrupts(enabled);
+    return result;
+}
+#pragma pop
+
 s32 __CARDReadSegment(s32 chan, CARDCallback callback) {
     CARDControl *card;
     s32 result;
