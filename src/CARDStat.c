@@ -55,6 +55,62 @@ void UpdateIconOffsets(CARDDir *ent, CARDStat *stat);
 
 
 typedef void (*CARDCallback)(s32 chan, s32 result);
+void UpdateIconOffsets(CARDDir *ent, CARDStat *stat)
+{
+    u32 offset;
+    BOOL iconTlut;
+    int i;
+
+    offset = ent->iconAddr;
+    if (offset == 0xFFFFFFFF) {
+        stat->bannerFormat = 0;
+        stat->iconFormat = 0;
+        stat->iconSpeed = 0;
+        offset = 0;
+    }
+
+    iconTlut = FALSE;
+    switch (ent->bannerFormat & 3) {
+    case 1:
+        stat->offsetBanner = offset;
+        stat->offsetBannerTlut = offset + 96 * 32;
+        offset += 96 * 32 + 2 * 256;
+        break;
+    case 2:
+        stat->offsetBanner = offset;
+        stat->offsetBannerTlut = 0xFFFFFFFF;
+        offset += 2 * 96 * 32;
+        break;
+    default:
+        stat->offsetBanner = 0xFFFFFFFF;
+        stat->offsetBannerTlut = 0xFFFFFFFF;
+        break;
+    }
+    for (i = 0; i < 8; ++i) {
+        switch ((ent->iconFormat >> (2 * i)) & 3) {
+        case 1:
+            stat->offsetIcon[i] = offset;
+            offset += 32 * 32;
+            iconTlut = TRUE;
+            break;
+        case 2:
+            stat->offsetIcon[i] = offset;
+            offset += 2 * 32 * 32;
+            break;
+        default:
+            stat->offsetIcon[i] = 0xFFFFFFFF;
+            break;
+        }
+    }
+    if (iconTlut) {
+        stat->offsetIconTlut = offset;
+        offset += 2 * 256;
+    } else {
+        stat->offsetIconTlut = 0xFFFFFFFF;
+    }
+    stat->offsetData = offset;
+}
+
 s32 CARDGetStatus(s32 chan, s32 fileNo, CARDStat *stat)
 {
     CARDControl *card;
