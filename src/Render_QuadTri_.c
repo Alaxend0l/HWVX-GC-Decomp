@@ -180,10 +180,15 @@ static inline void GXPosition2f32(f32 x, f32 y) {
     GXWGFifo.f32 = y;
 }
 
-static inline void FontManager_Vertex2(f32 x, f32 y, f32 t, f32 s) {
-    GXPosition2f32(x, y);
-    GXColor4u8(g_textcolor.r, g_textcolor.g, g_textcolor.b, g_textcolor.a);
-    GXTexCoord2f32(s, t);
+static inline void FontManager_Vertex2(f32 x, f32 y, f32 s, f32 t) {
+    GXWGFifo.f32 = x;
+    GXWGFifo.f32 = y;
+    GXWGFifo.u8 = g_textcolor.r;
+    GXWGFifo.u8 = g_textcolor.g;
+    GXWGFifo.u8 = g_textcolor.b;
+    GXWGFifo.u8 = g_textcolor.a;
+    GXWGFifo.f32 = s;
+    GXWGFifo.f32 = t;
 }
 #pragma push
 #pragma use_lmw_stmw on
