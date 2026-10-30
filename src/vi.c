@@ -125,6 +125,47 @@ static inline void calcFbbs(u32 bufAddr, u16 panPosX, u16 panPosY, u8 wordPerLin
     *bfbb = *bfbb & 0x3FFFFFFF;
 }
 
+extern s16 displayOffsetH;
+extern s16 displayOffsetV;
+
+u8 *__OSLockSram(void);
+BOOL __OSUnlockSram(BOOL commit);
+
+static inline void ImportAdjustingValues(void) {
+    u8 *sram;
+
+    sram = __OSLockSram();
+    displayOffsetH = (s8)sram[0x10];
+    displayOffsetV = 0;
+    __OSUnlockSram(FALSE);
+}
+
+static inline void AdjustPosition(u16 acv) {
+    s32 coeff;
+    s32 frac;
+
+    HorVer.AdjustedDispPosX = (u16)(((s16)HorVer.DispPosX + displayOffsetH > 720 - HorVer.DispSizeX) ? 720 - HorVer.DispSizeX
+        : (((s16)HorVer.DispPosX + displayOffsetH < 0) ? 0 : (s16)HorVer.DispPosX + displayOffsetH));
+
+    coeff = (HorVer.FBMode == 0) ? 2 : 1;
+    frac = HorVer.DispPosY & 1;
+
+    HorVer.AdjustedDispPosY = (u16)(((s16)HorVer.DispPosY + displayOffsetV > frac) ? (s16)HorVer.DispPosY + displayOffsetV : frac);
+
+    HorVer.AdjustedDispSizeY = (u16)(HorVer.DispSizeY
+        + (((s16)HorVer.DispPosY + displayOffsetV - frac < 0) ? (s16)HorVer.DispPosY + displayOffsetV - frac : 0)
+        - (((s16)HorVer.DispPosY + (s16)HorVer.DispSizeY + displayOffsetV - ((s16)acv * 2 - frac) > 0)
+               ? (s16)HorVer.DispPosY + (s16)HorVer.DispSizeY + displayOffsetV - ((s16)acv * 2 - frac) : 0));
+
+    HorVer.AdjustedPanPosY = (u16)(HorVer.PanPosY
+        - (((s16)HorVer.DispPosY + displayOffsetV - frac < 0) ? (s16)HorVer.DispPosY + displayOffsetV - frac : 0) / coeff);
+
+    HorVer.AdjustedPanSizeY = (u16)(HorVer.PanSizeY
+        + (((s16)HorVer.DispPosY + displayOffsetV - frac < 0) ? (s16)HorVer.DispPosY + displayOffsetV - frac : 0) / coeff
+        - (((s16)HorVer.DispPosY + (s16)HorVer.DispSizeY + displayOffsetV - ((s16)acv * 2 - frac) > 0)
+               ? (s16)HorVer.DispPosY + (s16)HorVer.DispSizeY + displayOffsetV - ((s16)acv * 2 - frac) : 0) / coeff);
+}
+
 static u8 timing[0x130] = {
     0x06, 0x00, 0x00, 0xF0, 0x00, 0x18, 0x00, 0x19, 0x00, 0x03, 0x00, 0x02, 0x0C, 0x0D, 0x0C, 0x0D, 0x02, 0x08, 0x02, 0x07,
     0x02, 0x08, 0x02, 0x07, 0x02, 0x0D, 0x01, 0xAD, 0x40, 0x47, 0x69, 0xA2, 0x01, 0x75, 0x7A, 0x00, 0x01, 0x9C,
