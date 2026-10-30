@@ -173,7 +173,7 @@ static inline void SimThread_SetWeights(SimThread *t, const s32 *weights) {
     t->historyIdx = 0;
 }
 
-static inline s32 SimThread_AddDelta(SimThread *t, s32 dPos, s32 dt) {
+static inline s32 SimThread_AddDelta(SimThread *t, s32 dPos, u32 dt) {
     s32 i;
     s32 n;
     s32 sumP;
@@ -185,7 +185,8 @@ static inline s32 SimThread_AddDelta(SimThread *t, s32 dPos, s32 dt) {
     }
     t->deltaPos[t->deltaIdx] = dPos;
     t->deltaTime[t->deltaIdx] = dt;
-    i = t->deltaIdx;
+    dt = t->deltaIdx;
+    i = dt;
     for (n = 0, sumT = 0, sumP = 0; n < 16 && sumT < 16; n++) {
         sumP += t->deltaPos[i];
         sumT += t->deltaTime[i++];
@@ -1399,8 +1400,8 @@ s32 SimThread_Step(VDevice *dev) {
     u32 dt;
     Effect *e;
     u32 k;
-    s32 flag;
     s32 f;
+    s32 flag;
     s32 gain;
     s32 force;
 
