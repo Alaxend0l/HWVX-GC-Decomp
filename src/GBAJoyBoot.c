@@ -233,7 +233,7 @@ static void F35(s32 chan, s32 ret) {
     gba = &__GBA[chan];
     bootInfo = &gba->bootInfo;
     if (ret == 0) {
-        if (OSGetTick() - bootInfo->start >= (__OSBusClock / 4) * 10) {
+        if ((__OSBusClock / 4) * 10 <= OSGetTick() - bootInfo->start) {
             ret = 3;
         } else if (*bootInfo->status & 0x32) {
             ret = 3;
