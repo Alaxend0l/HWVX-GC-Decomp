@@ -83,6 +83,29 @@ void VolumeManager_Initialize(void) {
     g_bReset = 1;
 }
 
+static inline s32 VolumeManager_GetCell(VolumeHolder *holder, Vector4 *point) {
+    s32 x;
+    s32 y;
+    s32 z;
+
+    if (holder == NULL) {
+        return 0;
+    }
+    x = (point->x - holder->origin.x) / holder->cellSize.x;
+    y = (point->y - holder->origin.y) / holder->cellSize.y;
+    z = (point->z - holder->origin.z) / holder->cellSize.z;
+    if (x < 0 || x >= holder->numX) {
+        return 0;
+    }
+    if (y < 0 || y >= holder->numY) {
+        return 0;
+    }
+    if (z < 0 || z >= holder->numZ) {
+        return 0;
+    }
+    return holder->cellIndex[z * holder->numX + holder->numZ * (y * holder->numX) + x];
+}
+
 s32 VolumeManager_GetVolumeCellIndex(Vector4 *point) {
     extern u8 *g_VolumeHolder;
     u8 *holder = g_VolumeHolder;
