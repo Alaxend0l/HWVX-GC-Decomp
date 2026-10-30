@@ -55,6 +55,19 @@ void GXSetFogRangeAdj(u8 enable, u16 center, u16 *table) {
     gx->bpSentNot = 0;
 }
 
+void GXSetBlendMode(s32 type, s32 src_factor, s32 dst_factor, s32 op) {
+    gx->cmode0 = ((u32)gx->cmode0 & ~1) | ((u32)(type == 1 || type == 3));
+    gx->cmode0 = ((u32)gx->cmode0 & ~0x800) | ((u32)(type == 3) << 11);
+    gx->cmode0 = ((u32)gx->cmode0 & ~2) | ((u32)(type == 2) << 1);
+    gx->cmode0 = ((u32)gx->cmode0 & ~0xF000) | ((u32)op << 12);
+    gx->cmode0 = ((u32)gx->cmode0 & ~0x700) | ((u32)src_factor << 8);
+    gx->cmode0 = ((u32)gx->cmode0 & ~0xE0) | ((u32)dst_factor << 5);
+    gx->cmode0 = ((u32)gx->cmode0 & ~0xFF000000) | (0x41 << 24);
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = gx->cmode0;
+    gx->bpSentNot = 0;
+}
+
 void GXSetColorUpdate(u8 update_enable) {
     gx->cmode0 = (gx->cmode0 & ~8) | (update_enable << 3);
     GXWGFifo.u8 = 0x61;
