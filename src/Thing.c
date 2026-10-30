@@ -48,10 +48,9 @@ static inline s8 Thing_ProcessItemPickup(u8 *thing, u8 *item) {
         if (motion != NULL) {
             *(s32 *)((u8 *)motion + 0x18) = *(s32 *)((u8 *)motion + 0x14);
         }
-        picked = 1;
-        break;
+        return 1;
     }
-    return picked;
+    return 0;
 }
 
 s32 Thing_Init(Thing *thing, s32 arg1) {
