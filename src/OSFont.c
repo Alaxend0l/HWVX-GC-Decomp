@@ -146,8 +146,7 @@ static u32 ReadFont(void *img, void *fontData) {
     } else {
         ReadROM(img, 0x3000, 0x1FCF00);
     }
-    size = GetFontSize(img);
-    return size;
+    return GetFontSize(img);
 }
 
 u16 OSGetFontEncode(void) {
@@ -190,6 +189,7 @@ u32 OSLoadFont(OSFontHeader *fontData, void *temp) {
     SheetImage = 0;
     size = ReadFont(temp, fontData);
     if (size) {
+        Decode(temp, (u8 *)fontData);
         FontData = fontData;
         WidthTable = (u8 *)FontData + FontData->widthTable;
         CharsInSheet = FontData->sheetColumn * FontData->sheetRow;
