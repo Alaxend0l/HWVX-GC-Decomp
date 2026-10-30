@@ -189,8 +189,8 @@ GXFifoObj *GXInit(void *base, u32 size)
     gx->tcsManEnab = 0;
     gx->tevTcEnab = 0;
     GXSetMisc(1, 0);
-    __cpReg = (volatile u16 *)0xCC000000;
     __piReg = (volatile u32 *)0xCC003000;
+    __cpReg = (volatile u16 *)0xCC000000;
     __peReg = (volatile u16 *)0xCC001000;
     __memReg = (volatile u16 *)0xCC004000;
     __GXFifoInit();
@@ -264,9 +264,21 @@ GXFifoObj *GXInit(void *base, u32 size)
         SET_REG_FIELD(0, reg1, 1, 3, 1);
         SET_REG_FIELD(0, reg1, 1, 4, 1);
         SET_REG_FIELD(0, reg1, 1, 5, 1);
-        GX_WRITE_XF_REG(0, reg1);
+        do {
+            s32 regAddr;
+            GX_WRITE_U8(0x10);
+            GX_WRITE_U32(0x1000);
+            GX_WRITE_U32(reg1);
+            regAddr = 0;
+        } while (0);
         SET_REG_FIELD(0, reg2, 1, 0, 1);
-        GX_WRITE_XF_REG(0x12, reg2);
+        do {
+            s32 regAddr;
+            GX_WRITE_U8(0x10);
+            GX_WRITE_U32(0x1012);
+            GX_WRITE_U32(reg2);
+            regAddr = 0x12;
+        } while (0);
         reg = 0;
         SET_REG_FIELD(0, reg, 1, 0, 1);
         SET_REG_FIELD(0, reg, 1, 1, 1);
@@ -298,7 +310,13 @@ GXFifoObj *GXInit(void *base, u32 size)
         GX_WRITE_U32(gx->perfSel);
         regAddr = 0x20 - 12;
     } while (0);
-    GX_WRITE_XF_REG(6, 0);
+    do {
+        s32 regAddr;
+        GX_WRITE_U8(0x10);
+        GX_WRITE_U32(0x1006);
+        GX_WRITE_U32(0);
+        regAddr = 6;
+    } while (0);
     GX_WRITE_RAS_REG(0x23000000);
     GX_WRITE_RAS_REG(0x24000000);
     GX_WRITE_RAS_REG(0x67000000);
