@@ -56,8 +56,254 @@ f32 GetBoundingBoxRadius(Vector4 *box, Vector4 *offset)
     return radius;
 }
 
-void Destructible_Init()
-{
+extern u8 g_moverVTable[];
+extern u8 g_physicalObjectVTable[];
+extern u8 g_droneVTable[];
+s32 Thing_Init(void *thing, s32 arg1);
+OBox *OBoxHolder_Get(void);
+ConvexHull *OConvexHullHolder_Get(void *owner);
+s32 Thing_GetLocalCollision(u8 *thing);
+void Thing_InitAllSlavesNow(void *thing, void *slaves, u8 player);
+u8 *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
+void ThingManagerList_Append(void *list, void *thing);
+void Thing_AddToGrid(void *thing, s32 type);
+void *Destructible_GetOrientedCollision(Destructible *destructible);
+s32 Destructible_Init(Destructible *destructible, void *data) {
+    typedef struct DestructibleParams {
+        Vector4 offsetPos;
+        Vector4 pos;
+        Vector4 unk20;
+        Vector4 quat;
+        ThingRecord *record;
+        u32 unk44;
+        f32 drawDist;
+        u32 unk4C;
+        s32 moveType;
+        f32 speed;
+        u32 unk58;
+        void *anim;
+    } DestructibleParams;
+    typedef struct ABox {
+        Vector4 v[3];
+    } __attribute__((aligned(16))) ABox;
+    typedef struct Geometry {
+        u8 pad0[0x10];
+        ABox bounds;
+    } Geometry;
+    typedef struct CollisionOBox {
+        Vector4 center;
+        Vector4 corners[8];
+        u8 pad90[0xCC - 0x90];
+        u32 unkCC;
+        Vector4 min;
+        Vector4 max;
+    } CollisionOBox;
+    typedef struct CollisionSphere {
+        Vector4 pos;
+        f32 radius;
+        u8 pad14[0xC];
+    } CollisionSphere;
+    typedef struct CollisionSpheres {
+        u32 count;
+        CollisionSphere *spheres;
+    } CollisionSpheres;
+    typedef struct SlaveParams {
+        Vector4 pos;
+        Vector4 vel;
+        Vector4 quat;
+        void *geometry;
+        void *slaves;
+    } SlaveParams;
+    CollisionSpheres *spheres;
+    ABox *box;
+    DestructibleParams *params = data;
+    Vector4 corner __attribute__((aligned(16)));
+    Vector4 zero;
+    SlaveParams slaveParams;
+    CollisionOBox *obb;
+    ThingRecord *record;
+    u8 *slave;
+    f32 r;
+
+    destructible->flags = 0;
+    Thing_Init(destructible, (s32)data);
+    *(Vector4 *)destructible->pad50 = params->quat;
+    destructible->pos = params->pos;
+    QuaternionToSubMatrix(destructible->pad50, destructible->matrix);
+    destructible->offsetPos = params->offsetPos;
+    destructible->record = params->record;
+    destructible->orientedBox = NULL;
+    destructible->hull = NULL;
+    destructible->anim = NULL;
+    switch (destructible->record->info->type) {
+    case 3:
+        box = (ABox *)destructible->record->info->box;
+        *box = ((Geometry *)destructible->record->geometry)->bounds;
+        box->v[2].x = GetBoundingBoxRadius(box->v, (Vector4 *)g_zeroVector);
+        destructible->record->info->type = 0;
+        break;
+    }
+    destructible->flags |= 4;
+    switch (destructible->record->info->type) {
+    case 0: {
+        u32 i;
+
+        destructible->collisionType = 1;
+        destructible->flags |= 0x80;
+        destructible->orientedBox = OBoxHolder_Get();
+        ((CollisionOBox *)destructible->orientedBox)->unkCC = 0;
+        obb = Destructible_GetOrientedCollision(destructible);
+        obb->min.x = 99999.9f;
+        obb->min.y = 99999.9f;
+        obb->min.z = 99999.9f;
+        obb->max.x = -99999.9f;
+        obb->max.y = -99999.9f;
+        obb->max.z = -99999.9f;
+        for (i = 0; i < 8; i++) {
+            corner = obb->corners[i];
+            if (corner.x < obb->min.x) {
+                obb->min.x = corner.x;
+            }
+            if (corner.y < obb->min.y) {
+                obb->min.y = corner.y;
+            }
+            if (corner.z < obb->min.z) {
+                obb->min.z = corner.z;
+            }
+            if (corner.x > obb->max.x) {
+                obb->max.x = corner.x;
+            }
+            if (corner.y > obb->max.y) {
+                obb->max.y = corner.y;
+            }
+            if (corner.z > obb->max.z) {
+                obb->max.z = corner.z;
+            }
+        }
+        box = (ABox *)destructible->record->info->box;
+        box->v[2].x = GetBoundingBoxRadius(box->v, (Vector4 *)g_zeroVector);
+        destructible->radius = box->v[2].x;
+        break;
+    }
+    case 1:
+        destructible->collisionType = 4;
+        destructible->hull = OConvexHullHolder_Get(destructible->record->info->hull);
+        destructible->hull->pad0[0x3CC] = 0;
+        destructible->radius = 30.0f;
+        break;
+    case 4:
+        destructible->collisionType = 0;
+        destructible->flags |= 0x20002;
+        break;
+    case 6:
+        destructible->collisionType = 5;
+        destructible->hull = OConvexHullHolder_Get(destructible->record->info->hull);
+        destructible->hull->pad0[0x3CC] = 1;
+        destructible->radius = 30.0f;
+        break;
+    case 7: {
+        u32 i;
+
+        destructible->collisionType = 6;
+        spheres = (CollisionSpheres *)Thing_GetLocalCollision((u8 *)destructible);
+        destructible->radius = 0.0f;
+        for (i = 0; i < spheres->count; i++) {
+            r = spheres->spheres[i].radius + MagnitudeVector(&spheres->spheres[i].pos);
+            if (r > destructible->radius) {
+                destructible->radius = r;
+            }
+        }
+        break;
+    }
+    default:
+        destructible->flags &= ~4;
+        destructible->flags |= 0x60002;
+        destructible->collisionType = 0;
+        destructible->radius = 0.0f;
+        break;
+    }
+    destructible->flags |= 0x40000;
+    switch (params->moveType) {
+    case 0:
+        destructible->flags |= 8;
+        destructible->anim = NULL;
+        destructible->vtable = g_destructibleVTable;
+        destructible->flags |= 0x40000000;
+        destructible->flags &= ~4;
+        break;
+    case 1:
+        destructible->flags &= ~8;
+        destructible->flags |= 0x4000000;
+        destructible->anim = params->anim;
+        destructible->trackPos = 0.0f;
+        destructible->speed = params->speed;
+        destructible->vtable = g_moverVTable;
+        break;
+    case 2:
+        destructible->flags |= 0x20000;
+        destructible->flags |= 0x100000;
+        destructible->flags &= ~4;
+        destructible->flags &= ~8;
+        destructible->flags &= ~0x40000;
+        destructible->anim = NULL;
+        destructible->vtable = g_physicalObjectVTable;
+        break;
+    case 3:
+        destructible->flags |= 0x20000;
+        destructible->flags &= ~4;
+        destructible->flags &= ~8;
+        destructible->flags &= ~0x40000;
+        destructible->anim = NULL;
+        destructible->vtable = g_droneVTable;
+        break;
+    }
+    if (destructible->record->info->deathTime < 0) {
+        destructible->flags |= 0x10000000;
+    } else {
+        destructible->deathTimer = destructible->record->info->deathTime;
+    }
+    if (destructible->record->info->takesDamage) {
+        destructible->health = destructible->record->info->maxHealth;
+    } else {
+        destructible->health = 1;
+    }
+    destructible->drawDist = params->drawDist;
+    if (0.0f == params->drawDist && params->record->hasDrawDist) {
+        destructible->drawDist = params->record->drawDist;
+    }
+    if (!params->record->collides) {
+        destructible->flags |= 0x200;
+    }
+    record = destructible->record;
+    switch (record->noDraw) {
+    case 0:
+        Thing_InitAllSlavesNow(destructible, record->slaves, 0xFF);
+        if (((Geometry *)destructible->record->geometry)->bounds.v[0].w > destructible->radius) {
+            destructible->radius = ((Geometry *)destructible->record->geometry)->bounds.v[0].w;
+        }
+        break;
+    case 1:
+        zero = *(Vector4 *)g_zeroVector;
+        slaveParams.pos = zero;
+        slaveParams.vel = zero;
+        slaveParams.quat = zero;
+        slaveParams.geometry = record->geometry;
+        slaveParams.slaves = record->slaves;
+        slave = ThingManager_DARYL_CreateSlave(0xF, &slaveParams, 0xFF);
+        if (slave != NULL) {
+            slave[0x83] = 0;
+            ThingManagerList_Append(&destructible->slaves, slave);
+        }
+        break;
+    }
+    destructible->unk7C = 0;
+    if (!(destructible->flags & 0x20002)) {
+        Thing_AddToGrid(destructible, 2);
+    }
+    if (destructible->flags & 2) {
+        destructible->flags &= ~4;
+    }
+    return 1;
 }
 
 void Destructible_Release(Destructible *destructible) {
