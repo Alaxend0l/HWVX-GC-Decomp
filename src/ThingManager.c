@@ -752,6 +752,194 @@ void ThingManager_DARYL_Heartbeat(void) {
 
 void ThingManager_MoveThings_DARYL_SUBTICK(void)
 {
+    typedef struct MThing {
+        Vector4 vel;
+        u8 pad10[0x30];
+        Vector4 pos;
+        u8 pad50[0x10];
+        Vector4 angVel;
+        u8 pad70[4];
+        u32 flags;
+    } MThing;
+    typedef struct HitInfo {
+        Vector4 pos;
+        Vector4 normal;
+        MThing *thing;
+        u32 unk24;
+        u32 unk28;
+        u8 pad2C[0x14];
+        u8 type;
+    } HitInfo;
+    typedef struct GridEntry {
+        u32 unk0;
+        MThing *thing;
+    } GridEntry;
+    extern u8 g_aCI[0x280];
+    extern f32 g_fDeltaTimeSec;
+    void MemClr32(void *dst, u32 size);
+    void CollisionPairCache_Heartbeat(void);
+    void CollisionTriCache_Heartbeat(void);
+    void Thing_DynamicGridMove(void *thing, f32 dt);
+    void *Thing_GetSource(void *thing);
+    s8 Thing_HitsTerrain(void *thing, f32 *dt, HitInfo *hit);
+    f32 PSVECDotProduct(void *a, void *b);
+    void PSVECScale(void *in, void *out, f32 scale);
+    f32 PSVECSquareMag(void *v);
+    f32 Distance_Plane(Vector4 *normal, HitInfo *hit);
+    s8 RayHitsTerrain(Vector4 *pos, HitInfo *hit, f32 *dist, HitInfo *out);
+    void Thing_GetDynamicMinMax(void *thing, Vector4 *min, Vector4 *max, f32 dt);
+    u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 flags, GridEntry *out, u32 max_count);
+    static f32 offset = 0.2f;
+    static f32 mult = 10.0f;
+    ThingHeader *moved[0x200];
+    GridEntry objs[0x200];
+    HitInfo hit;
+    HitInfo rayHit;
+    Vector4 push;
+    Vector4 min;
+    Vector4 max;
+    ThingHeader *thing;
+    MThing *t;
+    void *source;
+    u32 numMoved;
+    u32 count;
+    u32 i;
+    u32 j;
+    u32 gridFlags;
+    f32 dt;
+    f32 dtSave;
+    f32 dtStep;
+    f32 depth;
+    f32 dist;
+
+    numMoved = 0;
+    MemClr32(g_aCI, sizeof(g_aCI));
+    CollisionPairCache_Heartbeat();
+    CollisionTriCache_Heartbeat();
+    for (thing = g_thingManager_DARYL.activeList; thing != NULL; thing = thing->next) {
+        if (!(thing->flags & 0x280008)) {
+            ((void (*)(void *))((void **)thing->vtable)[2])(thing);
+        }
+        thing->flags &= ~0x1A040;
+        if (M2C_FIELD(thing, s16 *, 0x80) == 0) {
+            continue;
+        }
+        if (!(thing->flags & 4) || (thing->flags & 0x200000)) {
+            continue;
+        }
+        moved[numMoved++] = thing;
+        if (M2C_FIELD(thing, u32 *, 0x84) == 0 || (thing->flags & 8)) {
+            continue;
+        }
+        Thing_DynamicGridMove(thing, g_fDeltaTimeSec);
+    }
+    hit.thing = NULL;
+    hit.unk24 = 0;
+    hit.unk28 = 0;
+    dt = g_fDeltaTimeSec - 0.0f;
+    dtStep = dt;
+    for (i = 0; i < numMoved; i++) {
+        t = (MThing *)moved[i];
+        dtSave = dt;
+        source = Thing_GetSource(t);
+        t->flags |= 0x8000;
+        if (t->flags & 0x40) {
+            continue;
+        }
+        if (t->flags & 0x200000) {
+            continue;
+        }
+        hit.type = 0;
+        if (dt != 0.0f && !(t->flags & 0x24000B) && Thing_HitsTerrain(t, &dt, &hit)) {
+            if (hit.type == 0xFF) {
+                if (PSVECDotProduct(t, &hit.normal) < 0.0f) {
+                    f32 d;
+
+                    depth = 0.0f;
+                    d = PSVECDotProduct(t, &hit.normal);
+                    if (d <= 15.5f) {
+                        depth = -(d - 15.5f);
+                    }
+                    t->flags |= 0x12000;
+                    PSVECScale(&hit.normal, &push, depth);
+                    if (PSVECSquareMag(&t->angVel) < 40000.0f) {
+                        t->vel.x += push.x;
+                        t->vel.y += push.y;
+                        t->vel.z += push.z;
+                        t->angVel.x += push.x;
+                        t->angVel.y += push.y;
+                        t->angVel.z += push.z;
+                    }
+                }
+                dt = dtSave;
+            } else if (hit.type == 0xFE) {
+                if (Distance_Plane(&hit.normal, &hit) < -offset) {
+                    dist = 1.5f;
+                    rayHit.type = 0;
+                    offset = 0.3f;
+                    if (RayHitsTerrain(&t->pos, &hit, &dist, &rayHit)) {
+                        if (PSVECSquareMag(&t->angVel) < 40000.0f) {
+                            t->vel.x += rayHit.normal.x * mult;
+                            t->vel.y += rayHit.normal.y * mult;
+                            t->vel.z += rayHit.normal.z * mult;
+                            t->angVel.x += rayHit.normal.x * mult;
+                            t->angVel.y += rayHit.normal.y * mult;
+                            t->angVel.z += rayHit.normal.z * mult;
+                        }
+                        hit.type = 0xFF;
+                    } else {
+                        if (PSVECSquareMag(&t->angVel) < 40000.0f) {
+                            t->vel.x += hit.normal.x * mult;
+                            t->vel.y += hit.normal.y * mult;
+                            t->vel.z += hit.normal.z * mult;
+                            t->angVel.x += hit.normal.x * mult;
+                            t->angVel.y += hit.normal.y * mult;
+                            t->angVel.z += hit.normal.z * mult;
+                        }
+                        hit.type = 0xFF;
+                    }
+                    t->flags |= 0x10080;
+                    dt = dtSave;
+                } else {
+                    t->pos.x += hit.normal.x * offset;
+                    t->pos.y += hit.normal.y * offset;
+                    t->pos.z += hit.normal.z * offset;
+                    t->flags |= 0x80;
+                    hit.type = 0;
+                    hit.thing = t;
+                    hit.unk24 = 0;
+                }
+            } else {
+                hit.thing = t;
+                hit.unk24 = 0;
+            }
+        }
+        if (!(t->flags & 0x20002) && dt > 0.0f) {
+            gridFlags = 4;
+            if (t->flags & 0x4000009) {
+                gridFlags = 0;
+            }
+            Thing_GetDynamicMinMax(t, &min, &max, dtStep);
+            count = Grid_GetObjects(&min, &max, gridFlags | 3, objs, 0x200);
+            hit.type = 0;
+            for (j = 0; j < count; j++) {
+                MThing *other = objs[j].thing;
+                void *otherSource;
+
+                dtSave = dt;
+                otherSource = Thing_GetSource(other);
+                if (other->flags & 0x8000) {
+                    continue;
+                }
+                if (source != NULL && source == other) {
+                    continue;
+                }
+                if (otherSource != NULL && otherSource == t) {
+                    continue;
+                }
+            }
+        }
+    }
 }
 
 void ThingManager_DARYL_Render(void) {

@@ -3591,6 +3591,7 @@ void InterfaceManager_MoveObject(u8 *iface, u8 *obj, u8 *data, f32 dt) {
     void *SoundAudioSample_Play(u32 id);
     void SoundAudioSample_Set(void *s, s32 what, s32 value);
     f32 ArcTan(f32 y, f32 x);
+    void Gfx_SetProjectionMatrix(f32 fov);
     static const MoveObjStrBuf empty = { "" };
     char tmp[0x80];
     MoveObjStrBuf buf;
@@ -3644,36 +3645,39 @@ void InterfaceManager_MoveObject(u8 *iface, u8 *obj, u8 *data, f32 dt) {
     value = 1.0f;
     if (data != NULL) {
         switch (type) {
-        case 1:
+        case 4:
+            Gfx_SetProjectionMatrix(*(u16 *)(*(u8 **)(obj + 0x25C) + 0xA));
+            break;
+        case 5:
             value = *(f32 *)(data + 0x24);
             break;
-        case 2:
+        case 6:
             value = *(f32 *)(data + 0x28);
             break;
-        case 4:
+        case 8:
             if (*(u8 **)(data + 0x7C) != NULL) {
                 value = 0.5f * (3.1415927f + ArcTan(*(f32 *)(*(u8 **)(data + 0x7C) + 0x38), *(f32 *)(*(u8 **)(data + 0x7C) + 0x30)));
             }
             break;
-        case 5:
+        case 10:
             value = *(u32 *)(data + 0x10);
             break;
-        case 6:
+        case 11:
             value = *(f32 *)(data + 0x20);
             break;
-        case 7:
+        case 12:
             value = *(u32 *)(data + 0x14);
             break;
-        case 8:
+        case 13:
             value = *(f32 *)(data + 0x2C);
             break;
-        case 9:
+        case 14:
             value = *(u32 *)(data + 0x1C);
             break;
-        case 10:
+        case 15:
             value = *(u32 *)(data + 0x30);
             break;
-        case 11:
+        case 16:
             if ((s8)data[0x74] != 0) {
                 if (obj[0x243] == 5) {
                     InterfaceManager_SetObjectString(obj, (char *)(data + 0x74));
@@ -3683,48 +3687,48 @@ void InterfaceManager_MoveObject(u8 *iface, u8 *obj, u8 *data, f32 dt) {
                 obj[0x54] = 1;
             }
             break;
-        case 12:
+        case 17:
             if (*(char ***)(data + 0x48) != NULL) {
                 InterfaceManager_SetObjectText(obj, *(char ***)(data + 0x48));
             }
             break;
-        case 13:
+        case 18:
             if (*(char ***)(data + 0x4C) != NULL) {
                 InterfaceManager_SetObjectText(obj, *(char ***)(data + 0x4C));
             }
             break;
-        case 14:
+        case 19:
             if (*(char ***)(data + 0x60) != NULL) {
                 InterfaceManager_SetObjectText(obj, *(char ***)(data + 0x60));
             }
             break;
-        case 15:
+        case 20:
             if (data[0x82] != 0) {
                 value = 0.0f;
                 obj[0x54] = 1;
                 obj[0x2C] = 1;
             }
             break;
-        case 16:
+        case 21:
             if (data[0x81] != 0) {
                 value = 0.0f;
                 obj[0x54] = 1;
                 obj[0x2C] = 1;
             }
             break;
-        case 17:
+        case 24:
             value = data[0xC9];
             break;
-        case 18:
+        case 25:
             value = data[0xCA];
             break;
-        case 19:
+        case 26:
             value = data[0xCB];
             break;
-        case 20:
+        case 27:
             value = data[0xCC];
             break;
-        case 21:
+        case 28:
             if (*(s32 *)(obj + 0x27C) < 0) {
                 *(s32 *)(obj + 0x27C) = 500;
                 obj[0x84] = 1;
@@ -4415,10 +4419,7 @@ void InterfaceManager_RenderObject(IMInterface *iface, s32 index) {
     u32 i;
     Vector4 *ofs;
 
-    if (slot->hidden) {
-        return;
-    }
-    if (iface->unk85) {
+    if (slot->hidden || iface->unk85) {
         return;
     }
     if (g_bRenderCenterPoints && slot->object->unkC == 0) {

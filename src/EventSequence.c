@@ -798,7 +798,233 @@ void EventSeq_Advanced_GetInitData_NonDirectional(u8 *emit, void *arg1, Vector4 
     }
     pos->w = 1.0f;
 }
-s32 EventSeq_Move(void *thing) {
+s32 EventSeq_InCameraRange(u8 *seq, f32 range);
+s32 EventSeq_Move(u8 *seq) {
+    extern f32 g_fDeltaTimeMS;
+    extern Vector4 g_zeroVector;
+    extern Matrix4 g_identity;
+    f32 MagnitudeVector(void *v);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    f32 RandomAdd(f32 base, f32 range);
+    s32 ParticleManager_CanCreatureParticle(void *p);
+    void CreateParticle(Vector4 *pos, Vector4 *vel, Vector4 *accel, Vector4 *quat, u8 *info, f32 speed, f32 age);
+    u32 GameSettings_GetNumOfPlayers(void);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void PSVECAdd(void *a, void *b, void *out);
+    typedef struct { u32 type; void *a; void *b; } Entry;
+    typedef struct { u32 count; Entry *entries; } Script;
+    typedef struct { Vector4 pos; Vector4 vel; f32 unk20; Vector4 quat; u8 *p; u32 id; } Params0;
+    typedef struct { Vector4 pos; Vector4 quat; Vector4 vel; Vector4 angVel; u8 *p; u32 id; f32 unk48; f32 unk4C; } Params1;
+    typedef struct { Vector4 pos; Vector4 quat; Vector4 vel; u8 *p; u32 id; f32 unk38; } Params2;
+    typedef struct { Vector4 pos; Vector4 vel; Vector4 row; Vector4 quat; u8 *p; u32 unk44; f32 unk48; u32 unk4C; u32 unk50; u32 unk54; u32 unk58; u32 unk5C; } Params3;
+    f32 scale;
+    u32 dt;
+    Entry *entry;
+    Script *script;
+
+    scale = 1.0f;
+    if (*(f32 *)(seq + 0xF8) != 0.0f) {
+        scale = *(f32 *)(seq + 0xF8) * MagnitudeVector(seq) + 1.0f;
+        dt = g_fDeltaTimeMS * scale;
+    } else {
+        dt = g_fDeltaTimeMS;
+    }
+    if (*(Script **)(seq + 0xD0) == NULL) {
+        return 0;
+    }
+    seq[0xF1] = 1;
+    while (1) {
+        if (*(u32 *)(seq + 0xE0) != 0) {
+            if (dt > *(u32 *)(seq + 0xE0)) {
+                dt -= *(u32 *)(seq + 0xE0);
+                *(u32 *)(seq + 0xE0) = 0;
+            } else {
+                *(u32 *)(seq + 0xE0) -= dt;
+                return 1;
+            }
+        }
+        script = *(Script **)(seq + 0xD0);
+        if (*(u32 *)(seq + 0xD4) >= script->count) {
+            Thing_Release(seq);
+            break;
+        }
+        entry = &script->entries[*(u32 *)(seq + 0xD4)];
+        switch (entry->type) {
+        case 0:
+            break;
+        case 1: {
+            u8 *p = entry->a;
+            u8 *emit;
+            u32 n, i;
+            Vector4 vel __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 0.0f};
+            Vector4 quat __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 1.0f};
+            Vector4 pos __attribute__((aligned(16)));
+            Vector4 ang __attribute__((aligned(16)));
+
+            if (p == NULL) break;
+            if (!ParticleManager_CanCreatureParticle(p)) break;
+            emit = (*(Script **)(seq + 0xD0))->entries[*(u32 *)(seq + 0xD4)].b;
+            n = RandomAdd_s32(((s32 *)emit)[0], ((s32 *)emit)[1]);
+            if (!EventSeq_InCameraRange(seq, *(f32 *)(p + 0x10)) && GameSettings_GetNumOfPlayers() != 1) break;
+            QuaternionToSubMatrix(seq + 0x50, seq + 0x10);
+            if (n == 0) n = 1;
+            for (i = 0; i < n; i++) {
+                if (p[0] == 0) {
+                    EventSeq_Advanced_GetInitData(emit, seq, &vel, &pos, &quat, &ang);
+                } else {
+                    EventSeq_Advanced_GetInitData_NonDirectional(emit, seq, &vel, &pos, &quat, &ang);
+                }
+                vel.x *= 0.001f;
+                vel.y *= 0.001f;
+                vel.z *= 0.001f;
+                ang.x *= 0.001f;
+                ang.y *= 0.001f;
+                ang.z *= 0.001f;
+                ang.y += 9.666667e-7f * RandomAdd(*(f32 *)(emit + 0x18), *(f32 *)(emit + 0x1C));
+                CreateParticle(&pos, &vel, &ang, &quat, p, scale, 0.0f);
+            }
+            break;
+        }
+        case 2: {
+            u8 *p = entry->a;
+            u8 *emit;
+            u32 n, i;
+            Params0 prm __attribute__((aligned(16)));
+            Vector4 ang __attribute__((aligned(16)));
+
+            if (p == NULL) break;
+            emit = entry->b;
+            n = RandomAdd_s32(((s32 *)emit)[0], ((s32 *)emit)[1]);
+            prm.p = p;
+            prm.id = *(u32 *)(seq + 0x94);
+            QuaternionToSubMatrix(seq + 0x50, seq + 0x10);
+            if (n == 0) n = 1;
+            for (i = 0; i < n; i++) {
+                EventSeq_Advanced_GetInitData(emit, seq, &prm.vel, &prm.pos, &prm.quat, &ang);
+                prm.unk20 = RandomAdd(*(f32 *)(emit + 0x18), *(f32 *)(emit + 0x1C));
+                ThingManager_DARYL_CreateThing(0, &prm);
+            }
+            break;
+        }
+        case 3: {
+            u8 *p = entry->a;
+            u8 *emit;
+            u32 n, i;
+            Params1 prm __attribute__((aligned(16)));
+            Vector4 ang __attribute__((aligned(16)));
+
+            if (p == NULL) break;
+            emit = entry->b;
+            n = RandomAdd_s32(((s32 *)emit)[0], ((s32 *)emit)[1]);
+            QuaternionToSubMatrix(seq + 0x50, seq + 0x10);
+            prm.id = *(u32 *)(seq + 0x94);
+            prm.unk4C = prm.unk48 = 0.0f;
+            prm.p = p;
+            prm.angVel = g_zeroVector;
+            if (n == 0) n = 1;
+            for (i = 0; i < n; i++) {
+                EventSeq_Advanced_GetInitData(emit, seq, &prm.vel, &prm.pos, &prm.quat, &ang);
+                ThingManager_DARYL_CreateThing(1, &prm);
+            }
+            break;
+        }
+        case 4: {
+            u8 *p = entry->a;
+            u8 *emit;
+            u32 n, i;
+            Params2 prm __attribute__((aligned(16)));
+            Vector4 ang __attribute__((aligned(16)));
+
+            if (p == NULL) break;
+            emit = entry->b;
+            n = RandomAdd_s32(((s32 *)emit)[0], ((s32 *)emit)[1]);
+            QuaternionToSubMatrix(seq + 0x50, seq + 0x10);
+            if (n == 0) n = 1;
+            for (i = 0; i < n; i++) {
+                prm.p = p;
+                prm.unk38 = 0.0f;
+                EventSeq_Advanced_GetInitData(emit, seq, &prm.vel, &prm.pos, &prm.quat, &ang);
+                prm.id = *(u32 *)(seq + 0x94);
+                ThingManager_DARYL_CreateThing(2, &prm);
+            }
+            break;
+        }
+        case 6: {
+            u8 *p = entry->a;
+            u8 *emit;
+            Vector4 off __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 0.0f};
+            Matrix4 m;
+            Vector4 pos __attribute__((aligned(16)));
+            Vector4 tmp __attribute__((aligned(16)));
+            Params3 prm __attribute__((aligned(16)));
+
+            if (p == NULL) break;
+            emit = entry->b;
+            if (emit[0x18] == 1) {
+                m = g_identity;
+                *(f32 *)(seq + 0x50) = 0.0f;
+                *(f32 *)(seq + 0x54) = 0.0f;
+                *(f32 *)(seq + 0x58) = 0.0f;
+                *(f32 *)(seq + 0x5C) = 1.0f;
+            } else {
+                QuaternionToSubMatrix(seq + 0x50, &m);
+            }
+            pos = *(Vector4 *)(seq + 0x40);
+            if (emit[0x19]) {
+                f32 *r = *(f32 **)(emit + 0x1C);
+                off.x = RandomAdd(r[0], r[1]);
+                off.y = RandomAdd(r[2], r[3]);
+                off.z = RandomAdd(r[4], r[5]);
+            }
+            XformVecOrientation(&m, &off, &tmp);
+            PSVECAdd(&pos, &tmp, &pos);
+            prm.p = p;
+            prm.unk4C = 0;
+            prm.unk50 = 0;
+            prm.pos = pos;
+            prm.quat = *(Vector4 *)(seq + 0x50);
+            prm.row = prm.vel = g_zeroVector;
+            prm.unk58 = 0;
+            prm.unk5C = 0;
+            if (p[6]) {
+                prm.unk48 = *(f32 *)(p + 8);
+            } else {
+                prm.unk48 = 0.0f;
+            }
+            ThingManager_DARYL_CreateThing(3, &prm);
+            break;
+        }
+        case 7: {
+            u8 *p = entry->a;
+            u8 *emit;
+            u32 n, i;
+            Params3 prm __attribute__((aligned(16)));
+            Vector4 ang __attribute__((aligned(16)));
+
+            if (p == NULL) break;
+            emit = entry->b;
+            n = RandomAdd_s32(((s32 *)emit)[0], ((s32 *)emit)[1]);
+            QuaternionToSubMatrix(seq + 0x50, seq + 0x10);
+            prm.unk4C = 0;
+            prm.unk50 = 2;
+            prm.row = *(Vector4 *)(seq + 0xC0);
+            prm.unk5C = 0;
+            if (n == 0) n = 1;
+            for (i = 0; i < n; i++) {
+                prm.p = p;
+                prm.unk48 = 0.0f;
+                EventSeq_Advanced_GetInitData(emit, seq, &prm.vel, &prm.pos, &prm.quat, &ang);
+                ThingManager_DARYL_CreateThing(10, &prm);
+            }
+            break;
+        }
+        default:
+            break;
+        }
+        *(u32 *)(seq + 0xD4) += 1;
+    }
     return 0;
 }
 

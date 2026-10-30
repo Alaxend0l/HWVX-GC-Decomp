@@ -338,9 +338,9 @@ void Player_Heartbeat(void *arg0) {
     void WildCardRack_JettisonAll(void *rack);
     void WildCardRack_Add(void *rack, HBItem *item, s32 count);
     HBPlayer *player = arg0;
+    NavPoint *b;
     HBTileCar *tile;
     HBVehicle *thing;
-    NavPoint *b;
     NavPath *path;
     Vector4 *pos;
     NavPoint *a;

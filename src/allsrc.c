@@ -1289,6 +1289,7 @@ s32 Effect_PerformEnvelope(Effect *effect, EffectEnvelope *env, s32 magnitude) {
 #pragma optimize_for_size on
 void Effect_PolarToRect(s32 magnitude, s32 angle, s32 *out)
 {
+    *out = -Effect_MulDiv(Effect_WaveLookup(g_iQuarterSineTable, angle & 0xFF) * magnitude, 0x7F, 0x3FC00);
 }
 #pragma pop
 
