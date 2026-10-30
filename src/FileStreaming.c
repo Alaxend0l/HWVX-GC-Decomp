@@ -33,7 +33,7 @@ void FileStreaming_LoadingThread(void);
 void DataPack_LoadFile(s32 file, void *pack, s32 type, s32 size, s32 *out);
 void DataPack_ReleaseDataPack(void *pack);
 void DataPack_ReleaseQuadPack(void *pack);
-void LoadQuadrants(s32 arg0);
+void LoadQuadrants(s8 refresh);
 void EndThread(void);
 
 extern s32 g_loadingThreadID;
