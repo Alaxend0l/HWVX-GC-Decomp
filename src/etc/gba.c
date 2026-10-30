@@ -53,9 +53,9 @@ static inline void GbaSetHeaderChecksum(u8 *image)
 
 static inline u8 GbaCalcCrc(u32 data)
 {
-    s32 crc;
     u32 bit;
     s32 i;
+    s32 crc;
 
     crc = 0;
     for (bit = 0x80; bit != 0; bit >>= 1)
@@ -434,6 +434,38 @@ void GbaCommunication__Fl(s32 chan)
             return;
         }
     }
+}
+
+void GBACloseCallback__FlP11DVDFileInfo(s32 result, void *fileInfo)
+{
+    s32 DVDClose(void *fileInfo);
+    s32 *DVDGetCurrentDiskID(void);
+    u32 OSGetTick(void);
+    void GBAInit(void);
+    s32 i;
+
+    DVDClose(fileInfo);
+    DiskId = (s32)DVDGetCurrentDiskID();
+    HostId = OSGetTick();
+    *(s32 *)(ClientImage + 0xC8) = HostId;
+    *(s32 *)(ClientImage + 0xAC) = *(s32 *)DiskId;
+    GbaSetHeaderChecksum(ClientImage);
+
+    for (i = 0; i < 4; i++)
+    {
+        Param[i].state = 0;
+        Param[i].type = 0x40;
+        Param[i].unk70 = 0;
+        Param[i].program = ClientImage;
+        Param[i].length = ImageSize;
+        Param[i].unk58 = 0;
+        *(u32 *)Param[i].unk5C = 0;
+        Param[i].unk60 = (i + 0x40) << 24;
+        Param[i].unk60 |= ((i % 2) ? 0xDF : 0) << 16;
+        Param[i].unk60 |= ((i / 2) ? 0x8F : 0) << 8;
+        Param[i].unk60 |= GbaCalcCrc(((Param[i].unk60 >> 16) & 0xFF) | (Param[i].unk60 & 0xFF00));
+    }
+    GBAInit();
 }
 
 void GBAConnectivityInit__Fv(void)
