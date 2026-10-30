@@ -349,6 +349,22 @@ s32 EXIProbeEx(s32 chan) {
     }
 }
 
+BOOL EXIAttach(s32 chan, EXICallback extCallback) {
+    EXIControl *exi = &Ecb[chan];
+    BOOL enabled;
+    BOOL rc;
+
+    EXIProbe(chan);
+    enabled = OSDisableInterrupts();
+    if (exi->idTime == 0) {
+        OSRestoreInterrupts(enabled);
+        return FALSE;
+    }
+    rc = __EXIAttach(chan, extCallback);
+    OSRestoreInterrupts(enabled);
+    return rc;
+}
+
 BOOL EXIDetach(s32 chan) {
     EXIControl *exi = &Ecb[chan];
     BOOL enabled;
