@@ -289,9 +289,9 @@ f32 CarA_Transmission_GetTorqueAtWheels(u8 *car)
            ((f32 *)(*(u8 **)(trans + 0xDC)))[*(u8 *)(car + 0x4E8) * 2];
 }
 
-void CarA_ProcessForce(u8 *car, Vector4 *force, Vector4 *dir)
+void CarA_ProcessForce(CarA *car, Vector4 *pos, Vector4 *dir, f32 scale)
 {
-    void PSVECScale(Vector4 *src, Vector4 *dst, u32 scale);
+    void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *dst);
     void PSVECAdd(Vector4 *a, Vector4 *b, Vector4 *dst);
     void PSVECCrossProduct(Vector4 *a, Vector4 *b, Vector4 *dst);
@@ -304,20 +304,20 @@ void CarA_ProcessForce(u8 *car, Vector4 *force, Vector4 *dir)
     Vector4 carVel;
     Vector4 scaled __attribute__((aligned(16)));
 
-    carVel = *(Vector4 *)car;
-    PSVECScale(dir, &scaled, *(u32 *)(car + 8));
-    PSVECSubtract(force, (Vector4 *)(car + 0x40), &r);
+    carVel = car->velocity;
+    PSVECScale(dir, &scaled, scale);
+    PSVECSubtract(pos, &car->worldMatrix.v[3], &r);
     GetComponentOfVector(dir, &carVel);
-    PSVECCrossProduct((Vector4 *)(car + 0x410), &r, &cross);
-    PSVECAdd((Vector4 *)car, &cross, &pointVel);
+    PSVECCrossProduct(&car->localAxis, &r, &cross);
+    PSVECAdd(&car->velocity, &cross, &pointVel);
     PSVECCrossProduct(&r, &scaled, &torque);
 
-    *(f32 *)(car + 0x390) += scaled.x;
-    *(f32 *)(car + 0x394) += scaled.y;
-    *(f32 *)(car + 0x398) += scaled.z;
-    *(f32 *)(car + 0x3A0) += torque.x;
-    *(f32 *)(car + 0x3A4) += torque.y;
-    *(f32 *)(car + 0x3A8) += torque.z;
+    car->forceAccum.x += scaled.x;
+    car->forceAccum.y += scaled.y;
+    car->forceAccum.z += scaled.z;
+    car->torqueAccum.x += torque.x;
+    car->torqueAccum.y += torque.y;
+    car->torqueAccum.z += torque.z;
 }
 
 void CarA_ProcessImpulse(void *thing, Vector4 *normal, Vector4 *pos, Vector4 *pointVel, f32 restitution) {
@@ -1938,6 +1938,10 @@ void CarA_CollideWithRay(CarA *car, void *start, void *end, struct RayHit { u8 p
     if (hit != NULL && dist < maxDist) {
         hit->normal = car->velocity;
     }
+}
+
+void CarA_ProcessItemPickup()
+{
 }
 
 s32 CarA_Invalidate(void *arg0, u32 arg1, u32 arg2) {
