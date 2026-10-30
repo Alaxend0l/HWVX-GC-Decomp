@@ -25,6 +25,132 @@ void StateTitleScreen_SetMenuFile(s32 arg0, s32 arg1) {
     g_mainMenuFileID = arg1;
 }
 
+void TitleScreen_Interface(InterfaceMsg *msg);
+#pragma push
+#pragma readonly_strings on
+s32 StateTitleScreen_Init(s32 prevState) {
+    extern void *g_pTitleDataPack;
+    extern void *g_pInterfaceScript;
+    extern s8 g_bPlayingFMV;
+    extern void *g_mainMenuFile;
+    extern s32 g_mainMenuFileID;
+    extern s8 g_clearTextureCache;
+    void Gfx_SetProjectionMatrix(f32 fov);
+    void Gfx_StateTextureBlendMode(s32);
+    void Gfx_BeginScene(void);
+    void Gfx_EndScene(void);
+    void Gfx_FlipBuffers(void);
+    void GameSettings_ResetGame(void);
+    void Gfx_TextureManager_Init(void);
+    void StateGameManager_RefreshMCPTextures(void);
+    void ShowStats_Init(void);
+    void ProcessManager_Init(void);
+    void ProcessManager_Add(char *name, void (*init)(void), void (*update)(void), s32 arg, u32 flags);
+    void TimeHandler_Heartbeat(void);
+    void Input_Init(void);
+    void Input_Heartbeat(void);
+    void SoundManager_Init(void);
+    void SoundManager_Heartbeat(void);
+    void InterfaceManager_Init(void);
+    void InterfaceManager_Heartbeat(void);
+    void InterfaceManager_Render(void);
+    void ParticleManager_Init(void);
+    void ParticleManager_Heartbeat(void);
+    void ParticleManager_Render(void);
+    void ShaderHolder_Heartbeat(void);
+    void ThingManager_DARYL_Init(void);
+    void ThingManager_DARYL_Heartbeat(void);
+    void ThingManager_DARYL_Render(void);
+    void LidHandler_Init(void);
+    void LidHandler_Heartbeat(void);
+    void DataPack_RefreshTextures(void *pack);
+    void InterfaceManager_Create(void *, s32, void (*)(InterfaceMsg *));
+    void *FileStreaming_LoadDataPack(void *, s32, s32, s32);
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    void *DataPack_GetScript(void *, s32);
+    u32 GameSettings_GetCodeVariable(s32, s32);
+    void CameraManager_Init(void);
+    void CameraManager_Pause(s32);
+    void PlayerManager_Init(void);
+    void PlayerManager_NewHumanPlayer(void);
+    void Grid_Init(Vector4 *min, Vector4 *max, s32 x, s32 z);
+    u8 *GetCameraManager(void);
+    void *CameraManager_GetNewCamera(void);
+    void ViewManager_SetCamera(void *camera, s32 view);
+    void GameSettings_ResetPlayerVehicleItem(void);
+    void *camera;
+    void *script;
+    Vector4 min __attribute__((aligned(16)));
+    Vector4 max __attribute__((aligned(16)));
+
+    Gfx_SetProjectionMatrix(90.0f);
+    Gfx_StateTextureBlendMode(2);
+    Gfx_BeginScene();
+    Gfx_EndScene();
+    Gfx_FlipBuffers();
+    Gfx_BeginScene();
+    Gfx_EndScene();
+    Gfx_FlipBuffers();
+    GameSettings_ResetGame();
+    ShowStats_Init();
+    Gfx_TextureManager_Init();
+    StateGameManager_RefreshMCPTextures();
+    ProcessManager_Init();
+    ProcessManager_Add("TimeHandler", NULL, TimeHandler_Heartbeat, 0, 0);
+    ProcessManager_Add("Input", Input_Init, Input_Heartbeat, 0, 1);
+    if (prevState != 0xC && prevState != 3) {
+        ProcessManager_Add("SoundManager", SoundManager_Init, SoundManager_Heartbeat, 0, 1);
+    } else {
+        ProcessManager_Add("SoundManager", NULL, SoundManager_Heartbeat, 0, 1);
+    }
+    ProcessManager_Add("Interface", InterfaceManager_Init, InterfaceManager_Heartbeat, (s32)InterfaceManager_Render, 1);
+    ProcessManager_Add("Particle", ParticleManager_Init, ParticleManager_Heartbeat, (s32)ParticleManager_Render, 0);
+    ProcessManager_Add("Shader", NULL, ShaderHolder_Heartbeat, 0, 0);
+    ProcessManager_Add("ThingManager", ThingManager_DARYL_Init, ThingManager_DARYL_Heartbeat, (s32)ThingManager_DARYL_Render, 0);
+    ProcessManager_Add("Lid Handler", LidHandler_Init, LidHandler_Heartbeat, 0, 1);
+    switch (prevState) {
+    case 3:
+        DataPack_RefreshTextures(g_pTitleDataPack);
+        InterfaceManager_Create(g_pInterfaceScript, 0, TitleScreen_Interface);
+        g_bPlayingFMV = 0;
+        g_pInterfaceScript = NULL;
+        break;
+    default:
+        if (g_mainMenuFile == NULL) {
+            return 0;
+        }
+        g_pTitleDataPack = FileStreaming_InitializeDataPack(FileStreaming_LoadDataPack(g_mainMenuFile, 1, g_mainMenuFileID, 0), 1, 1);
+        if (g_pTitleDataPack == NULL) {
+            return 0;
+        }
+        script = DataPack_GetScript(g_pTitleDataPack, g_mainMenuFileID);
+        if (script == NULL) {
+            return 0;
+        }
+        InterfaceManager_Create(script, 0, TitleScreen_Interface);
+        g_clearTextureCache = 0;
+        if (GameSettings_GetCodeVariable(0x198, 0) != 0) {
+            GameSettings_SetCodeVariable(0xC8, 0, g_gameDifficulty);
+            GameSettings_SetCodeVariable(0x198, 0, 0);
+        }
+        break;
+    }
+    CameraManager_Init();
+    CameraManager_Pause(1);
+    PlayerManager_Init();
+    PlayerManager_NewHumanPlayer();
+    min.x = min.y = min.z = -500.0f;
+    max.x = max.y = max.z = 500.0f;
+    Grid_Init(&min, &max, 0x10, 0x10);
+    if (GetCameraManager()[0x640] == 0) {
+        camera = CameraManager_GetNewCamera();
+    }
+    ViewManager_SetCamera(camera, 0);
+    GameSettings_ResetPlayerVehicleItem();
+    return 1;
+}
+#pragma pop
+
 s32 StateTitleScreen_Shutdown(void) {
     M2C_UNK Gfx_EndScene();
     M2C_UNK Gfx_FlipBuffers();
