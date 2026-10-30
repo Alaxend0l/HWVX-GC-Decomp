@@ -273,11 +273,11 @@ typedef struct PlayerHumanKeys {
     s32 device;
 } PlayerHumanKeys;
 
-static inline u8 PlayerHuman_KeyDown(PlayerHumanKeys *player, u32 key) {
+static inline u8 PlayerHuman_KeyDown(PlayerHumanKeys *player, s32 key) {
     return Input_KeyDown(player->device, player->keys[key]);
 }
 
-static inline s8 PlayerHuman_KeyPress(PlayerHumanKeys *player, u32 key) {
+static inline s8 PlayerHuman_KeyPress(PlayerHumanKeys *player, s32 key) {
     return Input_KeyPress(player->device, player->keys[key]);
 }
 
