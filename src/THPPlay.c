@@ -95,7 +95,7 @@ s32 Mpeg_StartMovie(char *name, f32 volume) {
     size = THPPlayerCalcNeedMemory();
     m_movie_buffer = OSAllocFromHeap(__OSCurrHeap, size);
     if (m_movie_buffer == NULL) {
-        OSPanic("THPPlay.c", 113, "Can't allocate the memory\n");
+        OSPanic("THPPlay.c", 113, "Can't allocate the memory");
     }
     THPPlayerSetBuffer(m_movie_buffer);
     if (!THPPlayerPrepare(0, 0)) {
