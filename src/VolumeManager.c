@@ -124,6 +124,23 @@ static inline s32 VolumeManager_GetCell(VolumeHolder *holder, Vector4 *point) {
     return holder->cellIndex[z * holder->numX + holder->numZ * (y * holder->numX) + x];
 }
 
+static inline VolumeShape *VolumeManager_FindVolume(VolumeHolder *holder, Vector4 *point, s32 type) {
+    VolumeShape *volume;
+    u32 count;
+    s32 i;
+    s32 cell;
+
+    cell = VolumeManager_GetCell(holder, point);
+    count = holder != NULL ? holder->cells[cell].types[type].count : 0;
+    for (i = 0; i < count; i++) {
+        volume = holder->cells[cell].types[type].volumes[i];
+        if (VolumeManager_IsPointInVolume(point, volume)) {
+            return volume;
+        }
+    }
+    return NULL;
+}
+
 s32 VolumeManager_GetVolumeCellIndex(Vector4 *point) {
     extern u8 *g_VolumeHolder;
     u8 *holder = g_VolumeHolder;
@@ -266,5 +283,57 @@ VolumeShape *IsPointWithinForceBox(Vector4 *point) {
     }
     return NULL;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+void VolumeManager_SetFogLevel(Vector4 *point) {
+    typedef struct World {
+        u8 pad0[0x9C];
+        WorldFog *fog;
+    } World;
+    extern VolumeHolder *g_VolumeHolder;
+    void Gfx_SetFog(GXColor *color, s32 type, f32 start, f32 end);
+    static u32 fogColor;
+    static u8 fogType = 0xFF;
+    static f32 fogNearDistance = -1.0f;
+    static f32 fogFarDistance = -1.0f;
+    WorldFog *settings;
+    s32 cell;
+    u32 count;
+    VolumeShape *volume;
+    GXColor color;
+    GXColor worldColor;
+    s32 i;
+
+    settings = ((World *)g_worldData.world)->fog;
+    cell = VolumeManager_GetCell(g_VolumeHolder, point);
+    count = g_VolumeHolder != NULL ? g_VolumeHolder->cells[cell].types[4].count : 0;
+    for (i = 0; i < count; i++) {
+        volume = g_VolumeHolder->cells[cell].types[4].volumes[i];
+        if (VolumeManager_IsPointInVolume(point, volume)) {
+            FogSettings *fog = volume->fog;
+
+            if (*(u32 *)&fog->color != fogColor || fogType != fog->type || fogNearDistance != fog->nearDistance || fogFarDistance != fog->farDistance) {
+                color = fog->color;
+                Gfx_SetFog(&color, fog->type, fog->nearDistance, fog->farDistance);
+                fogColor = *(u32 *)&fog->color;
+                fogType = fog->type;
+                fogNearDistance = fog->nearDistance;
+                fogFarDistance = fog->farDistance;
+            }
+            return;
+        }
+    }
+    if (*(u32 *)settings->color != fogColor || fogType != settings->type || fogNearDistance != settings->nearDistance || fogFarDistance != settings->farDistance) {
+        worldColor = *settings->color;
+        Gfx_SetFog(&worldColor, settings->type, settings->nearDistance, settings->farDistance);
+        fogColor = *(u32 *)settings->color;
+        fogType = settings->type;
+        fogNearDistance = settings->nearDistance;
+        fogFarDistance = settings->farDistance;
+    }
+}
+#pragma pop
+
 #pragma pop
 
