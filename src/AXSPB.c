@@ -39,8 +39,8 @@ static void __AXDepopFade(s32 *hist, s32 *samp, s16 *delta) {
             step = -20;
         }
         *samp = *hist;
-        *delta = -step;
         *hist -= step * 160;
+        *delta = -step;
     } else {
         *hist = 0;
         *samp = 0;
