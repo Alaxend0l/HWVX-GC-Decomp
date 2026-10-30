@@ -427,7 +427,7 @@ static inline SubBlock *SubBlock_merge_prev(SubBlock *ths, SubBlock **start) {
         p->size_ &= ~0xFFFFFFF8;
         p->size_ |= (prevsz + (ths->size_ & 0xFFFFFFF8)) & 0xFFFFFFF8;
         if (!(p->size_ & 2)) {
-            *(u32 *)((u8 *)p + (p->size_ & 0xFFFFFFF8) - sizeof(u32)) = p->size_ & 0xFFFFFFF8;
+            *(u32 *)((u8 *)p + (prevsz + (ths->size_ & 0xFFFFFFF8)) - sizeof(u32)) = prevsz + (ths->size_ & 0xFFFFFFF8);
         }
         if (*start == ths) {
             *start = (*start)->next_;
