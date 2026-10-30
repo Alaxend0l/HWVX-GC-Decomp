@@ -33,11 +33,9 @@ static inline s8 Thing_ProcessItemPickup(u8 *thing, u8 *item) {
 
     switch (**(u8 **)(item + 0xC0)) {
     case 0:
-        break;
     case 1:
-        break;
     case 2:
-        break;
+        return 0;
     default:
         break;
     case 3:
