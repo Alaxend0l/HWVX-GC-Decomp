@@ -98,6 +98,106 @@ static u32 CompleteTransfer(void) {
     return sr;
 }
 
+static void GetTypeCallback(s32 chan, u32 error, void *context);
+BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback, s64 delay);
+BOOL OSCancelAlarm(OSAlarm *alarm);
+u32 VIGetCurrentLine(void);
+BOOL SIGetResponseRaw(s32 chan);
+void SIInterruptHandler(s16 interrupt, void *context)
+{
+    u32 reg;
+
+    reg = __SIRegs[13];
+    if ((reg & 0xC0000000) == 0xC0000000) {
+        s32 chan;
+        u32 sr;
+        void (*callback)(s32 chan, u32 sr, void *context);
+        int i;
+        SIPacket *packet;
+
+        chan = Si.chan;
+        sr = CompleteTransfer();
+        callback = (void (*)(s32, u32, void *))Si.callback;
+        Si.callback = NULL;
+        {
+            s32 next = chan;
+            for (i = 0; i < 4; ++i) {
+                ++next;
+                next %= 4;
+                packet = &Packet[next];
+                if (packet->chan != -1 && packet->fire <= __OSGetSystemTime()) {
+                    if (__SITransfer(packet->chan, packet->output, packet->outputBytes, packet->input, packet->inputBytes, packet->callback)) {
+                        OSCancelAlarm(&Alarm[next]);
+                        packet->chan = -1;
+                    }
+                    break;
+                }
+            }
+        }
+        if (callback) {
+            callback(chan, sr, context);
+        }
+        sr = __SIRegs[14];
+        sr &= 0x0F000000 >> (8 * chan);
+        __SIRegs[14] = sr;
+        if (Type[chan] == 0x80 && !SIIsChanBusy(chan)) {
+            static u32 cmdTypeAndStatus = 0;
+            SITransfer(chan, &cmdTypeAndStatus, 1, &Type[chan], 3, GetTypeCallback,
+                       ((__OSBusClock / 4) / 125000) * 65 / 8);
+        }
+    }
+
+    if ((reg & 0x18000000) == 0x18000000) {
+        int i;
+        u32 vcount;
+        u32 x;
+
+        vcount = VIGetCurrentLine() + 1;
+        x = (Si.poll & 0x03FF0000) >> 16;
+        for (i = 0; i < 4; ++i) {
+            if (SIGetResponseRaw(i)) {
+                InputBufferVcount[i] = vcount;
+            }
+        }
+        for (i = 0; i < 4; ++i) {
+            if (!(Si.poll & (0x80000000 >> (24 + i)))) {
+                continue;
+            }
+            if (InputBufferVcount[i] == 0 || InputBufferVcount[i] + (x >> 1) < vcount) {
+                return;
+            }
+        }
+        for (i = 0; i < 4; ++i) {
+            InputBufferVcount[i] = 0;
+        }
+        for (i = 0; i < 4; ++i) {
+            if (RDSTHandler[i]) {
+                ((void (*)(s16, void *))RDSTHandler[i])(interrupt, context);
+            }
+        }
+    }
+}
+
+BOOL OSCancelAlarm(OSAlarm *alarm);
+
+static inline void SITransferNext(s32 chan) {
+    int i;
+    SIPacket *packet;
+
+    for (i = 0; i < 4; ++i) {
+        ++chan;
+        chan %= 4;
+        packet = &Packet[chan];
+        if (packet->chan != -1 && packet->fire <= __OSGetSystemTime()) {
+            if (__SITransfer(packet->chan, packet->output, packet->outputBytes, packet->input, packet->inputBytes, packet->callback)) {
+                OSCancelAlarm(&Alarm[chan]);
+                packet->chan = -1;
+            }
+            break;
+        }
+    }
+}
+
 BOOL SIEnablePollingInterrupt(BOOL enable) {
     BOOL enabled;
     BOOL rc;
