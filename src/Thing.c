@@ -38,15 +38,17 @@ static inline s8 Thing_ProcessItemPickup(u8 *thing, u8 *item) {
         break;
     case 3:
         rack = ThingManagerList_GetByType(thing + 0x88, 8);
-        if (rack != NULL) {
-            WildCardRack_Add(rack, *(u8 **)(item + 0xC0), *(s16 *)(item + 0xCE));
-            Item_Release(item);
-            motion = *(void **)(item + 0xD0);
-            if (motion != NULL) {
-                *(s32 *)((u8 *)motion + 0x18) = *(s32 *)((u8 *)motion + 0x14);
-            }
-            return 1;
+        if (rack == NULL) {
+            break;
         }
+        WildCardRack_Add(rack, *(u8 **)(item + 0xC0), *(s16 *)(item + 0xCE));
+        Item_Release(item);
+        motion = *(void **)(item + 0xD0);
+        if (motion != NULL) {
+            *(s32 *)((u8 *)motion + 0x18) = *(s32 *)((u8 *)motion + 0x14);
+        }
+        return 1;
+    default:
         break;
     }
     return 0;
