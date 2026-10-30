@@ -376,11 +376,10 @@ s32 ActionVehicleChangeMode(u32 *action) {
     void Trigger_PauseTACSystem(s32 pause);
     void CarA_Release(CarA *car);
     void Thing_ProcessEndEvent(void *thing, void *event, s32 a, s32 b);
-    s32 difficulty;
-    AIPlayer *player;
     CreatureParams params;
     Matrix4 mtx;
     AIPlayerDesc desc;
+    AIPlayer *player;
     u32 mode;
     u32 count;
     u32 i;
@@ -388,6 +387,7 @@ s32 ActionVehicleChangeMode(u32 *action) {
     CarA *creature;
     AIPlayer *ai;
     u32 script;
+    s32 difficulty;
     s32 paused;
     void *rack;
 
@@ -396,7 +396,7 @@ s32 ActionVehicleChangeMode(u32 *action) {
     for (i = 0; i < count; i++) {
         spawn = (TileCar *)action[i + 2];
         creature = spawn->creature;
-        player = creature != NULL ? (AIPlayer *)creature->player : NULL;
+        player = (AIPlayer *)Action_GetCarPlayer(creature);
         switch (mode) {
         case 0:
             if (creature != NULL) {
