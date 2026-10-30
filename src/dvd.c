@@ -387,6 +387,37 @@ void stateGoToRetry(void)
     DVDLowStopMotor(cbForStateGoToRetry);
 }
 
+void cbForStateGoToRetry(u32 intType) {
+    void __DVDStoreErrorCode(u32 code);
+    void cbForStateError(u32 intType);
+    void DVDLowStopMotor(void (*cb)(u32));
+
+    if (intType == 16) {
+        executing->state = -1;
+        __DVDStoreErrorCode(0x1234568);
+        DVDReset();
+        cbForStateError(0);
+        return;
+    }
+
+    if (intType & 2) {
+        executing->state = -1;
+        __DVDStoreErrorCode(0x1234567);
+        DVDLowStopMotor(cbForStateError);
+        return;
+    }
+
+    NumInternalRetry = 0;
+    if ((CurrCommand == 4) || (CurrCommand == 5) || (CurrCommand == 13) || (CurrCommand == 15)) {
+        ResetRequired = TRUE;
+    }
+
+    if (!CheckCancel(2)) {
+        executing->state = 11;
+        stateMotorStopped();
+    }
+}
+
 void stateCheckID(void) {
     int memcmp(const void *a, const void *b, u32 n);
     void *memcpy(void *dst, const void *src, u32 n);
