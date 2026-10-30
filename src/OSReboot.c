@@ -37,3 +37,31 @@ void Run(void *entry);
 void Callback(void) {
     Prepared_803C7260 = 1;
 }
+static inline void ReadApploader(RebootCmd *dvdCmd, void *addr, u32 offset, u32 numBytes) {
+    while (!Prepared_803C7260) {
+    }
+    DVDReadAbsAsyncForBS(dvdCmd, addr, numBytes, offset + 0x2440, NULL);
+    for (;;) {
+        switch (dvdCmd->state) {
+        case 0:
+            break;
+        case 1:
+        default:
+            continue;
+        case -1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+        case 11:
+            __OSDoHotReset(*(u32 *)0x817FFFFC);
+            continue;
+        }
+        break;
+    }
+}
