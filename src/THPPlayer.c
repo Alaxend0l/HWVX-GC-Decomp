@@ -315,8 +315,7 @@ BOOL THPPlayerSetBuffer(u8 *buffer) {
 }
 
 void PrepareReady(void *arg0) {
-    extern u8 PrepareReadyQueue_8036ED00[];
-    OSSendMessage(PrepareReadyQueue_8036ED00, arg0, 1);
+    OSSendMessage(PrepareReadyQueue, arg0, 1);
 }
 
 s32 THPPlayerPlay(void)
