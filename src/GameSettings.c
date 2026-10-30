@@ -1003,6 +1003,78 @@ void GameSettings_DetermineIfOverwritingFile(void)
     }
 }
 
+#pragma push
+#pragma readonly_strings on
+void GameSettings_SetSaveGameName(u32 *letters) {
+    typedef struct GameInfo {
+        const char *name;
+        const char *id;
+        const char *title;
+        const char *fileName;
+        const char *icon;
+        s32 unk14;
+        s32 unk18;
+    } GameInfo;
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    extern u8 *g_pSavedGameData;
+    extern s32 g_saveFileCheckSum;
+    extern GameInfo g_gameInfo[];
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    char *device;
+    GameInfo info;
+    u8 *data;
+    s32 index;
+    u8 *mcp;
+    void *pack;
+    s32 handle;
+    s32 sum;
+    s32 i;
+
+    device = g_codeVariables.device;
+    for (i = 0; i < 10; i++) {
+        if (letters[i] < 26) {
+            g_saveFileName[i] = (s8)letters[i] + 'A';
+        } else if (letters[i] < 36) {
+            g_saveFileName[i] = letters[i] - 26 + '0';
+        } else {
+            g_saveFileName[i] = ' ';
+        }
+    }
+    g_saveFileName[10] = 0;
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        info.fileName = g_gameInfo[mcp[1]].fileName;
+        index = g_gameInfo[mcp[1]].unk18;
+    } else {
+        info.fileName = "saveFile";
+        index = 0;
+    }
+    data = g_pSavedGameData;
+    handle = File_Open(device + 0xA, info.fileName, 0, 0);
+    if (handle != -1) {
+        File_Read(handle, index * 8 + 0x15C, data);
+        File_Close(handle);
+        sum = *(s32 *)(data + 8);
+    } else {
+        sum = -1;
+    }
+    g_saveFileCheckSum = sum;
+}
+#pragma pop
+
 char *GameSettings_GetActiveMemoryCardLevelDetails(void) {
     s32 GameSettings_GetMemoryCardStatus(s32 device, s32 arg1);
     int sprintf(char *buf, const char *fmt, ...);
