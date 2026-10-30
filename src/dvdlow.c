@@ -20,8 +20,8 @@ static DVDLowCallback Callback;
 static volatile s32 WaitingCoverClose;
 static volatile u32 WorkAroundType;
 static u32 WorkAroundSeekLocation;
-static volatile s32 ResetOccurred;
-static s64 LastResetEnd;
+static volatile u32 ResetOccurred;
+static volatile s64 LastResetEnd;
 
 s64 __OSGetSystemTime(void);
 volatile u32 __PIRegs[12] : 0xCC003000;
@@ -149,6 +149,92 @@ void __DVDInitWA(void)
     CommandList[0].command = -1;
     __DVDLowSetWAType(0, 0);
     OSInitAlarm();
+}
+
+void __DVDInterruptHandler(s16 interrupt, void *context)
+{
+    u8 exceptionContext[0x2C8];
+    u32 cause = 0;
+    u32 reg;
+    u32 intr;
+    u32 mask;
+    DVDLowCallback callback;
+
+    OSCancelAlarm(&AlarmForTimeout);
+    if (LastCommandWasRead) {
+        LastReadFinished = __OSGetSystemTime();
+        FirstRead = FALSE;
+        Prev.addr = Curr.addr;
+        Prev.length = Curr.length;
+        Prev.offset = Curr.offset;
+        if (StopAtNextInt == TRUE) {
+            cause |= 8;
+        }
+    }
+    LastCommandWasRead = FALSE;
+    StopAtNextInt = FALSE;
+    reg = __DIRegs[0];
+    mask = reg & 0x2A;
+    intr = (reg & 0x54) & (mask << 1);
+    if (intr & 0x40) {
+        cause |= 8;
+    }
+    if (intr & 0x10) {
+        cause |= 1;
+    }
+    if (intr & 4) {
+        cause |= 2;
+    }
+    if (cause) {
+        ResetOccurred = FALSE;
+    }
+    __DIRegs[0] = intr | mask;
+    if (ResetOccurred && (__OSGetSystemTime() - LastResetEnd) < (s64)(200 * ((__OSBusClock / 4) / 1000))) {
+        reg = __DIRegs[1];
+        mask = reg & 2;
+        intr = (reg & 4) & (mask << 1);
+        if (intr & 4) {
+            if (ResetCoverCallback) {
+                ResetCoverCallback(4);
+            }
+            ResetCoverCallback = NULL;
+        }
+        __DIRegs[1] = __DIRegs[1];
+    } else if (WaitingCoverClose) {
+        reg = __DIRegs[1];
+        mask = reg & 2;
+        intr = (reg & 4) & (mask << 1);
+        if (intr & 4) {
+            cause |= 4;
+        }
+        __DIRegs[1] = intr | mask;
+        WaitingCoverClose = FALSE;
+    } else {
+        __DIRegs[1] = 0;
+    }
+    if ((cause & 8) && !Breaking) {
+        cause &= ~8;
+    }
+    if (cause & 1) {
+        if (ProcessNextCommand()) {
+            return;
+        }
+    } else {
+        CommandList[0].command = -1;
+        NextCommandNumber = 0;
+    }
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(exceptionContext);
+    if (cause) {
+        callback = Callback;
+        Callback = NULL;
+        if (callback) {
+            callback(cause);
+        }
+        Breaking = FALSE;
+    }
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(context);
 }
 
 void AlarmHandler(void)
