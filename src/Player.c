@@ -140,9 +140,7 @@ void Player_SetThing(void *player, void *thing) {
             *(u32 *)((u8 *)player + 0x3C) = *(u32 *)((u8 *)thing + 0xB8);
             Thing_SetSlavePlayers(thing);
         }
-        if (thing != NULL) {
-            Player_RefreshInterface(player);
-        }
+        Player_RefreshInterface(player);
     }
 }
 
