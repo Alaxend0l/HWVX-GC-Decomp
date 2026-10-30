@@ -45,7 +45,7 @@ static inline void Input_SetKeyDown(VirtualPad *pad, u32 key) {
     }
 }
 
-static inline void Input_SetKeyUp(VirtualPad *pad, u16 key) {
+static inline void Input_SetKeyUp(VirtualPad *pad, u32 key) {
     s32 k;
 
     for (k = 0; k < 20; k++) {
