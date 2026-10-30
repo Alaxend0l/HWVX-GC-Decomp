@@ -219,6 +219,26 @@ void PlayerHuman_Heartbeat(void *player) {
     Player_Heartbeat(player);
 }
 
+void PlayerHuman_SetDefaultControls(void *arg0, s32 index) {
+    typedef struct { u8 unk0; u8 unk1; u8 keys[14]; } KeyBinding;
+    typedef struct { u8 pad0[0xB8]; u8 keys[14]; u8 unkC6; u8 unkC7; } PlayerHuman;
+    extern KeyBinding g_keyBinding[9];
+    void *memset(void *dst, int c, u32 n);
+    PlayerHuman *player = arg0;
+    u16 i;
+
+    memset(player->keys, 0, 0x10);
+    for (i = 0; i < 14; i++) {
+        player->keys[i] = 0xFF;
+    }
+    index++;
+    for (i = 0; i < 14; i++) {
+        player->keys[g_keyBinding[0].keys[i]] = g_keyBinding[index].keys[i];
+    }
+    player->unkC6 = g_keyBinding[index].unk0;
+    player->unkC7 = g_keyBinding[index].unk1;
+}
+
 void PlayerHuman_SetControlBinding(void *arg0, void *arg1) {
     typedef struct { u8 unk0; u8 unk1; u8 keys[14]; } KeyBinding;
     typedef struct { u8 pad0[0xB8]; u8 keys[14]; u8 unkC6; u8 unkC7; } PlayerHuman;
