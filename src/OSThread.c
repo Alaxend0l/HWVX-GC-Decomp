@@ -25,7 +25,7 @@ typedef struct OSMutexQueue {
 } OSMutexQueue;
 
 struct OSThread {
-    u8 context[0x2C8];
+    OSContext context;
     u16 state;
     u16 attr;
     s32 suspend;
