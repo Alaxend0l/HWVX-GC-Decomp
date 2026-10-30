@@ -205,7 +205,7 @@ typedef struct DestructibleInfo {
   u8 pad12[2];       /* 0x12 */
   s32 maxHealth;     /* 0x14 */
   s32 armour;        /* 0x18 */
-  u8 pad1C[4];       /* 0x1C */
+  s32 deathTime;     /* 0x1C ms before a destroyed one is released, <0 never */
   f32 mass;          /* 0x20 */
   u8 pad24[0x0C];    /* 0x24 */
   s32 surfaceScript; /* 0x30 */
