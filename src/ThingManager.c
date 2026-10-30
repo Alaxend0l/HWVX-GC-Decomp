@@ -1445,16 +1445,16 @@ void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id) {
     return NULL;
 }
 
-s32 OBox_CollideAllThingsZeroTime(void *obox, void *thing, void *info) {
+s32 OBox_CollideAllThingsZeroTime(void *obox, ThingHeader *thing, void *info) {
     u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, GridResult *results, u32 maxResults);
     s8 OBoxHitsOBoxZeroTime(void *a, void *b, void *info);
     f32 PSVECSquareDistance(f32 *a, f32 *b);
-    Vector4 min;
-    Vector4 max;
+    Vector4 min __attribute__((aligned(16)));
+    Vector4 max __attribute__((aligned(16)));
     GridResult results[256];
     u32 count;
     u32 i;
-    u8 *other;
+    ThingHeader *other;
     f32 t;
     f32 dist;
     f32 r;
@@ -1463,14 +1463,14 @@ s32 OBox_CollideAllThingsZeroTime(void *obox, void *thing, void *info) {
     Thing_GetStaticRotationalMinMax(thing, &min, &max);
     count = Grid_GetObjects(&min, &max, 5, results, 0x100);
     for (i = 0; i < count; i++) {
-        other = (u8 *)results[i].id;
-        if (!(*(u32 *)(other + 0x74) & 2) && *(s16 *)(other + 0x80) != 0 && other != thing) {
-            dist = PSVECSquareDistance((f32 *)((u8 *)thing + 0x40), (f32 *)(other + 0x40));
-            r = *(f32 *)(other + 0x70) + *(f32 *)((u8 *)thing + 0x70);
+        other = (ThingHeader *)results[i].id;
+        if (!(other->flags & 2) && *(s16 *)((u8 *)other + 0x80) != 0 && other != thing) {
+            dist = PSVECSquareDistance(thing->unk40, other->unk40);
+            r = other->unk70 + thing->unk70;
             if (r * r > dist) {
                 t = 1.0f;
-                if (*(s16 *)(other + 0x80) == 1) {
-                    otherBox = (*(void *(**)(void *))(*(u8 **)(other + 0x8C) + 0x40))(other);
+                if (*(s16 *)((u8 *)other + 0x80) == 1) {
+                    otherBox = ((void *(**)(void *))other->vtable)[0x10](other);
                     if (OBoxHitsOBoxZeroTime(obox, otherBox, info)) {
                         if (info != NULL) {
                             *(void **)((u8 *)info + 0x20) = thing;
