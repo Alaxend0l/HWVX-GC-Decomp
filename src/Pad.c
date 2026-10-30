@@ -117,6 +117,7 @@ static inline void PADDisable(s32 chan)
 BOOL SIGetResponse(s32 chan, void *data);
 void SISetCommand(s32 chan, u32 command);
 u32 SIEnablePolling(u32 poll);
+BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback, s64 delay);
 
 static inline void PADEnable(s32 chan)
 {
@@ -235,6 +236,55 @@ void PADProbeCallback(s32 chan, u32 error, void *context)
         WaitingBits |= 0x80000000 >> ResettingChan;
     }
     DoReset();
+}
+
+void PADTypeAndStatusCallback(s32 chan, u32 type)
+{
+    u32 chanBit;
+    u32 recalibrate;
+    BOOL rc = TRUE;
+
+    chanBit = 0x80000000 >> ResettingChan;
+    recalibrate = RecalibrateBits & chanBit;
+    RecalibrateBits &= ~chanBit;
+
+    if (type & 0xF) {
+        DoReset();
+        return;
+    }
+
+    type &= ~0xFF;
+    Type[ResettingChan] = type;
+
+    if ((type & 0x18000000) != 0x08000000 || !(type & 0x01000000)) {
+        DoReset();
+        return;
+    }
+
+    if (Spec < 2) {
+        PADEnable(ResettingChan);
+        DoReset();
+        return;
+    }
+
+    if (!(type & 0x80000000) || (type & 0x04000000)) {
+        if (recalibrate) {
+            rc = SITransfer(ResettingChan, &CmdCalibrate, 3, &Origin[ResettingChan], 10, PADOriginCallback, 0);
+        } else {
+            rc = SITransfer(ResettingChan, &CmdReadOrigin, 1, &Origin[ResettingChan], 10, PADOriginCallback, 0);
+        }
+    } else if ((type & 0x00100000) && !(type & 0x00080000) && !(type & 0x00040000)) {
+        if (type & 0x40000000) {
+            rc = SITransfer(ResettingChan, &CmdReadOrigin, 1, &Origin[ResettingChan], 10, PADOriginCallback, 0);
+        } else {
+            rc = SITransfer(ResettingChan, &CmdProbeDevice[ResettingChan], 3, &Origin[ResettingChan], 8, PADProbeCallback, 0);
+        }
+    }
+    if (!rc) {
+        PendingBits |= chanBit;
+        DoReset();
+        return;
+    }
 }
 
 void PADReceiveCheckCallback(s32 chan, u32 type)
