@@ -11,6 +11,10 @@ extern s32 __float_huge[];
 
 f32 PSVECMag(Vector *v);
 
+static inline f32 SquareMagnitude(Vector *v) {
+    return v->x * v->x + v->y * v->y + v->z * v->z;
+}
+
 Matrix4 g_identity;
 Vector4 g_zeroVector;
 Vector4 g_iBasis;
@@ -506,6 +510,41 @@ f32 LinearPointTest(Vector *point, Vector *start, Vector *end)
     PSVECSubtract(end, start, (Vector *)&toEnd);
     dot = PSVECDotProduct((Vector *)&toPoint, (Vector *)&toEnd);
     return dot / (MagnitudeVector((Vector *)&toPoint) * MagnitudeVector((Vector *)&toEnd));
+}
+
+s8 SegmentVsSphere(Vector *start, Vector *end, Vector *center, f32 radius) {
+    void PSVECSubtract(Vector *a, Vector *b, Vector *a_b);
+    f32 PSVECDotProduct(Vector *a, Vector *b);
+    f32 PSVECSquareDistance(Vector *a, Vector *b);
+    void PSVECCrossProduct(Vector *a, Vector *b, Vector *axb);
+    Vector toCenter __attribute__((aligned(16)));
+    Vector dir __attribute__((aligned(16)));
+    Vector negToCenter __attribute__((aligned(16)));
+    Vector startToCenter __attribute__((aligned(16)));
+    Vector cross __attribute__((aligned(16)));
+    f32 radiusSq = radius * radius;
+
+    PSVECSubtract(start, end, &dir);
+    if (dir.x * dir.x + dir.y * dir.y + dir.z * dir.z < radiusSq) {
+        return 1;
+    }
+    if (PSVECSquareDistance(start, center) < radiusSq) {
+        return 1;
+    }
+    PSVECSubtract(center, end, &toCenter);
+    if (PSVECDotProduct(&toCenter, &dir) < 0.0f) {
+        return 0;
+    }
+    negToCenter.x = -toCenter.x;
+    negToCenter.y = -toCenter.y;
+    negToCenter.z = -toCenter.z;
+    PSVECSubtract(start, center, &startToCenter);
+    if (PSVECDotProduct(&negToCenter, &startToCenter) < 0.0f) {
+        return 0;
+    }
+    PSVECCrossProduct(&toCenter, &dir, &cross);
+    return cross.x * cross.x + cross.y * cross.y + cross.z * cross.z <
+           radiusSq * (toCenter.x * toCenter.x + toCenter.y * toCenter.y + toCenter.z * toCenter.z);
 }
 
 void MinMaxVec(Vector4 *min, Vector4 *max, Vector4 *v)
