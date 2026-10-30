@@ -44,7 +44,8 @@ typedef struct GPWorldInfo {
     u32 radarBlip;          /* 0x7C */
     u8 pad80[8];
     u32 lightTexture;       /* 0x88 */
-    u8 pad8C[0x18];
+    u8 pad8C[0x14];
+    void *vehiclePackList;  /* 0xA0 */
     void *packList;         /* 0xA4 */
 } GPWorldInfo;
 
