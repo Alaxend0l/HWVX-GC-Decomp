@@ -107,6 +107,46 @@ u8 __THPReadScaneHeader(void) {
     return 0;
 }
 
+static void __THPHuffGenerateSizeTable(void);
+static void __THPHuffGenerateCodeTable(void);
+static void __THPHuffGenerateDecoderTables(u8 tabIndex);
+s32 __THPReadHuffmanTableSpecification(void) {
+    u8 t_class, id, i, tab_index;
+    u16 length, num_Vij;
+
+    __THPHuffmanSizeTab = __THPWorkArea;
+    __THPHuffmanCodeTab = (u16 *)((u32)__THPWorkArea + 256 + 1);
+    length = (u16)((__THPInfo->c[0] << 8) | __THPInfo->c[1]);
+    __THPInfo->c += 2;
+    length -= 2;
+
+    for (;;) {
+        i = *(__THPInfo->c)++;
+        id = (u8)(i & 15);
+        t_class = (u8)(i >> 4);
+        __THPHuffmanBits = __THPInfo->c;
+        tab_index = (u8)((id << 1) + t_class);
+        num_Vij = 0;
+
+        for (i = 0; i < 16; i++) {
+            num_Vij += *(__THPInfo->c)++;
+        }
+
+        __THPInfo->huffmanTabs[tab_index].Vij = __THPInfo->c;
+        __THPInfo->c += num_Vij;
+        __THPHuffGenerateSizeTable();
+        __THPHuffGenerateCodeTable();
+        __THPHuffGenerateDecoderTables(tab_index);
+        __THPInfo->validHuffmanTabs |= 1 << tab_index;
+        length -= 17 + num_Vij;
+
+        if (length == 0) {
+            break;
+        }
+    }
+    return 0;
+}
+
 static void __THPHuffGenerateSizeTable(void) {
     s32 p, l, i;
 
