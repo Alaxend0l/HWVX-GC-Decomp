@@ -951,6 +951,103 @@ s32 DVDSetAutoInvalidation(s32 arg0) {
     return temp_r0;
 }
 
+s32 DVDLowBreak(void);
+void *DVDLowClearCallback(void);
+s32 __DVDDequeueWaitingQueue(DVDCommandBlock *block);
+void cbForStateMotorStopped(u32 intType);
+BOOL DVDCancelAsync(DVDCommandBlock *block, void (*callback)(s32 result, DVDCommandBlock *block)) {
+    BOOL enabled;
+    void *old;
+
+    enabled = OSDisableInterrupts();
+    switch (block->state) {
+    case -1:
+    case 0:
+    case 10:
+        if (callback) {
+            (*callback)(0, block);
+        }
+        break;
+    case 1:
+        if (Canceling) {
+            OSRestoreInterrupts(enabled);
+            return FALSE;
+        }
+        Canceling = TRUE;
+        CancelCallback = callback;
+        if (block->command == 4 || block->command == 1) {
+            DVDLowBreak();
+        }
+        break;
+    case 2:
+        __DVDDequeueWaitingQueue(block);
+        block->state = 10;
+        if (block->callback) {
+            (*block->callback)(-3, block);
+        }
+        if (callback) {
+            (*callback)(0, block);
+        }
+        break;
+    case 3:
+        switch (block->command) {
+        case 5:
+        case 4:
+        case 13:
+        case 15:
+            if (callback) {
+                (*callback)(0, block);
+            }
+            break;
+        default:
+            if (Canceling) {
+                OSRestoreInterrupts(enabled);
+                return FALSE;
+            }
+            Canceling = TRUE;
+            CancelCallback = callback;
+            break;
+        }
+        break;
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 11:
+        old = DVDLowClearCallback();
+        if (old != (void *)cbForStateMotorStopped) {
+            OSRestoreInterrupts(enabled);
+            return FALSE;
+        }
+        if (block->state == 4) {
+            ResumeFromHere = 3;
+        }
+        if (block->state == 5) {
+            ResumeFromHere = 4;
+        }
+        if (block->state == 6) {
+            ResumeFromHere = 1;
+        }
+        if (block->state == 11) {
+            ResumeFromHere = 2;
+        }
+        if (block->state == 7) {
+            ResumeFromHere = 7;
+        }
+        block->state = 10;
+        if (block->callback) {
+            (*block->callback)(-3, block);
+        }
+        if (callback) {
+            (*callback)(0, block);
+        }
+        stateReady();
+        break;
+    }
+    OSRestoreInterrupts(enabled);
+    return TRUE;
+}
+
 s32 DVDCancel(volatile DVDCommandBlock *block) {
     BOOL result;
     s32 state;
