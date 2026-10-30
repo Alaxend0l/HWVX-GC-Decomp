@@ -797,7 +797,7 @@ s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest) {
             if (LinearPointTest(*(u8 **)(car + 0x2C) + 0x40, a, b) < 0.0f) {
                 break;
             }
-            AI_Car_ClearedNavPoint(car, 0);
+            AI_Car_ClearedNavPoint_800087C8(car, 0);
         }
     } else {
         result = 0;
