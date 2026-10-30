@@ -33,7 +33,6 @@ void *memset(void *dst, int c, u32 n);
 
 #pragma push
 #pragma use_lmw_stmw on
-#pragma scheduling on
 static s32 ReadArrayUnlock(s32 chan, u32 data, void *rbuf, s32 rlen, s32 mode) {
     CARDControl *card;
     BOOL err;
