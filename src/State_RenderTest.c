@@ -11,7 +11,7 @@ s32 StateRenderTest_Init(void) {
     extern s32 g_pCamera;
     extern s8 g_cameraManagerPause;
     extern s32 pCar;
-    extern s16 g_dirt;
+    extern u16 g_dirt;
     extern s32 g_debugDataFlag;
     void Geometry_Init(s8 clear);
     void Gfx_SetEnviroMapMode(s32 mode);
