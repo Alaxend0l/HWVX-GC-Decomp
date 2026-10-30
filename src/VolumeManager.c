@@ -124,16 +124,17 @@ static inline s32 VolumeManager_GetCell(VolumeHolder *holder, Vector4 *point) {
     return holder->cellIndex[z * holder->numX + holder->numZ * (y * holder->numX) + x];
 }
 
-static inline VolumeShape *VolumeManager_FindVolume(VolumeHolder *holder, Vector4 *point, s32 type) {
+static inline VolumeShape *VolumeManager_FindVolume(Vector4 *point, s32 type) {
+    extern VolumeHolder *g_VolumeHolder;
     VolumeShape *volume;
     u32 count;
     s32 i;
     s32 cell;
 
-    cell = VolumeManager_GetCell(holder, point);
-    count = holder != NULL ? holder->cells[cell].types[type].count : 0;
+    cell = VolumeManager_GetCell(g_VolumeHolder, point);
+    count = g_VolumeHolder != NULL ? g_VolumeHolder->cells[cell].types[type].count : 0;
     for (i = 0; i < count; i++) {
-        volume = holder->cells[cell].types[type].volumes[i];
+        volume = g_VolumeHolder->cells[cell].types[type].volumes[i];
         if (VolumeManager_IsPointInVolume(point, volume)) {
             return volume;
         }
