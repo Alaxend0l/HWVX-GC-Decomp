@@ -37,6 +37,10 @@ void ExpandFontSheet(u8 *src, u8 *dst);
 extern u16 HankakuToCode[];
 extern u16 Zenkaku2Code[];
 
+static BOOL IsSjisLeadByte(u8 c) {
+    return (0x81 <= c && c <= 0x9F) || (0xE0 <= c && c <= 0xFC);
+}
+
 static BOOL IsSjisTrailByte(u8 c) {
     return 0x40 <= c && c <= 0xFC && c != 0x7F;
 }
