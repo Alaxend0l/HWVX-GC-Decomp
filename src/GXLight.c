@@ -254,3 +254,46 @@ void GXSetNumChans(u8 nChans) {
     gx->dirtyState |= 4;
 }
 
+void GXSetChanCtrl(s32 chan, u8 enable, s32 amb_src, s32 mat_src, u32 light_mask, s32 diff_fn, s32 attn_fn) {
+    u32 reg;
+    u32 idx;
+
+    if (chan == 4) {
+        idx = 0;
+    } else if (chan == 5) {
+        idx = 1;
+    } else {
+        idx = chan;
+    }
+
+    reg = 0;
+    reg = ((u32)reg & ~(1 << 1)) | ((u32)enable << 1);
+    reg = ((u32)reg & ~(1 << 0)) | ((u32)mat_src << 0);
+    reg = ((u32)reg & ~(1 << 6)) | ((u32)amb_src << 6);
+    reg = ((u32)reg & ~(1 << 2)) | ((u32)((light_mask & 0x1) != 0) << 2);
+    reg = ((u32)reg & ~(1 << 3)) | ((u32)((light_mask & 0x2) != 0) << 3);
+    reg = ((u32)reg & ~(1 << 4)) | ((u32)((light_mask & 0x4) != 0) << 4);
+    reg = ((u32)reg & ~(1 << 5)) | ((u32)((light_mask & 0x8) != 0) << 5);
+    reg = ((u32)reg & ~(1 << 11)) | ((u32)((light_mask & 0x10) != 0) << 11);
+    reg = ((u32)reg & ~(1 << 12)) | ((u32)((light_mask & 0x20) != 0) << 12);
+    reg = ((u32)reg & ~(1 << 13)) | ((u32)((light_mask & 0x40) != 0) << 13);
+    reg = ((u32)reg & ~(1 << 14)) | ((u32)((light_mask & 0x80) != 0) << 14);
+    reg = ((u32)reg & ~(3 << 7)) | ((u32)(attn_fn == 0 ? 0 : diff_fn) << 7);
+    reg = ((u32)reg & ~(1 << 9)) | ((u32)(attn_fn != 2) << 9);
+    reg = ((u32)reg & ~(1 << 10)) | ((u32)(attn_fn != 0) << 10);
+
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = idx + 0x100E;
+    GXWGFifo.u32 = reg;
+    gx->bpSentNot = 1;
+    if (chan == 4) {
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1010;
+        GXWGFifo.u32 = reg;
+    } else if (chan == 5) {
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u32 = 0x1011;
+        GXWGFifo.u32 = reg;
+    }
+}
+
