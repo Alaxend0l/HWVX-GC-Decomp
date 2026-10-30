@@ -347,13 +347,13 @@ s32 Retry(s32 chan)
         return -3;
     }
 
-    if (card->mode == -1) {
+    if (card->mode == 0xFFFFFFFF) {
         EXIDeselect(chan);
         EXIUnlock(chan);
         return 0;
     }
 
-    if (!EXIDma(chan, (void *)card->offset, (card->cmd[0] == 0x52) ? 512 : 128, card->mode, __CARDTxHandler)) {
+    if (!EXIDma(chan, (void *)card->offset, (s32)((card->cmd[0] == 0x52) ? 512 : 128), card->mode, __CARDTxHandler)) {
         EXIDeselect(chan);
         EXIUnlock(chan);
         return -3;
