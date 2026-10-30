@@ -57,6 +57,7 @@ void OSRegisterResetFunction(OSResetFunctionInfo *info);
 void RealMode(void *config);
 void Config24MB(void);
 void Config48MB(void);
+#pragma peephole off
 void __OSInitMemoryProtection(void)
 {
     u32 padding[12];
