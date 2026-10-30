@@ -302,7 +302,7 @@ void MotionState_InitSlavesTimed(u8 *state, void *slaves, u8 player, u32 time) {
     }
 }
 
-void MotionState_BlendTriggerEvents(void *state, void *events, Vector4 *vel) {
+void MotionState_BlendTriggerEvents(s32 state, void *events, Vector4 *vel) {
     void ThingManagerList_TriggerSlaves(void **list, u8 *trigger, Vector4 *a, Vector4 *b, Vector4 *c, u8 player);
     typedef struct {
         u8 unk0[0x14];
@@ -314,35 +314,33 @@ void MotionState_BlendTriggerEvents(void *state, void *events, Vector4 *vel) {
         SlaveTrigger *triggers;
     } SlaveList;
     SlaveList *list = events;
-    Vector4 v;
+    Vector4 v __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 0.0f};
     f32 start;
     f32 end;
     u32 i;
 
-    v.x = v.y = v.z = v.w = 0.0f;
     if (vel != NULL) {
         v = *vel;
     }
-    start = *(f32 *)((u8 *)state + 0x28);
-    end = *(f32 *)((u8 *)state + 0x2C);
-    for (i = 0; i < *(u32 *)(*(u8 **)((u8 *)state + 0x18) + 0x2C); i++) {
+    start = *(f32 *)(state + 0x28);
+    end = *(f32 *)(state + 0x2C);
+    for (i = 0; i < *(u32 *)(*(u8 **)(state + 0x18) + 0x2C); i++) {
         SlaveTrigger *trigger = &list->triggers[i];
+        f32 time = trigger->time;
         s8 hit = 0;
 
-        if (*((u8 *)state + 0x1E)) {
-            if (start > trigger->time && end <= trigger->time) {
+        if (*(u8 *)(state + 0x1E)) {
+            if (start > time && end <= time) {
                 hit = 1;
             }
         } else {
-            if (start <= trigger->time && end > trigger->time) {
+            if (start <= time && end > time) {
                 hit = 1;
             }
         }
         if (hit) {
-            Vector4 dir;
-            dir.x = dir.y = dir.z = 0.0f;
-            dir.w = 1.0f;
-            ThingManagerList_TriggerSlaves((void **)((u8 *)state + 0x14), (u8 *)trigger, (Vector4 *)trigger, &dir, &v, 0xFF);
+            Vector4 dir __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 1.0f};
+            ThingManagerList_TriggerSlaves((void **)(state + 0x14), (u8 *)trigger, (Vector4 *)trigger, &dir, &v, 0xFF);
         }
     }
 }
