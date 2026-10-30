@@ -37,7 +37,8 @@ typedef struct Player {
   void *vehicle;            /* 0x2C the Thing the player drives */
   u8 pad30;                 /* 0x30 */
   u8 cameraIndex;           /* 0x31 passed to the vehicle's getCameraInfo */
-  u8 pad32[0xA];            /* 0x32 */
+  u8 combo;                 /* 0x32 pending combo/cheat action, run by CarA_ExecuteCombo */
+  u8 pad33[9];              /* 0x33 */
   void *aiScripts;          /* 0x3C AI players: the tile car's script table */
   u8 pad40[0x20];           /* 0x40 */
   u32 port;                 /* 0x60 human players: controller port, 1-based */
