@@ -334,6 +334,98 @@ s32 CategorizeError(u32 error) {
     }
 }
 
+void stateCoverClosed(void);
+void cbForUnrecoveredError(u32 intType);
+void cbForStateGettingError(u32 intType) {
+    void __DVDStoreErrorCode(u32 code);
+    void cbForStateError(u32 intType);
+    void DVDLowStopMotor(void (*cb)(u32));
+    void DVDLowSeek(u32 offset, void (*cb)(u32));
+    u32 error;
+    u32 status;
+    u32 errorCategory;
+    u32 resume;
+
+    if (intType == 16) {
+        executing->state = -1;
+        __DVDStoreErrorCode(0x1234568);
+        DVDReset();
+        cbForStateError(0);
+        return;
+    }
+
+    if (intType & 2) {
+        executing->state = -1;
+        __DVDStoreErrorCode(0x1234567);
+        DVDLowStopMotor(cbForStateError);
+        return;
+    }
+
+    error = __DIRegs[8];
+    status = error & 0xFF000000;
+
+    errorCategory = CategorizeError(error);
+
+    if (errorCategory == 1) {
+        executing->state = -1;
+        __DVDStoreErrorCode(error);
+        DVDLowStopMotor(cbForStateError);
+        return;
+    }
+
+    if ((errorCategory == 2) || (errorCategory == 3)) {
+        resume = 0;
+    } else {
+        if (status == 0x01000000) {
+            resume = 4;
+        } else if (status == 0x02000000) {
+            resume = 6;
+        } else if (status == 0x03000000) {
+            resume = 3;
+        } else {
+            resume = 5;
+        }
+    }
+
+    if (CheckCancel(resume)) {
+        return;
+    }
+
+    if (errorCategory == 2) {
+        __DVDStoreErrorCode(error);
+        stateGoToRetry();
+        return;
+    }
+
+    if (errorCategory == 3) {
+        if ((error & 0x00FFFFFF) == 0x00031100) {
+            DVDLowSeek(executing->offset, cbForUnrecoveredError);
+        } else {
+            ((void (*)(DVDCommandBlock *))LastState)(executing);
+        }
+        return;
+    }
+
+    if (status == 0x01000000) {
+        executing->state = 5;
+        stateMotorStopped();
+        return;
+    } else if (status == 0x02000000) {
+        executing->state = 3;
+        stateCoverClosed();
+        return;
+    } else if (status == 0x03000000) {
+        executing->state = 4;
+        stateMotorStopped();
+        return;
+    } else {
+        executing->state = -1;
+        __DVDStoreErrorCode(0x1234567);
+        DVDLowStopMotor(cbForStateError);
+        return;
+    }
+}
+
 void cbForUnrecoveredError(u32 intType) {
     void __DVDStoreErrorCode(u32 code);
     void cbForStateError(u32 code);
