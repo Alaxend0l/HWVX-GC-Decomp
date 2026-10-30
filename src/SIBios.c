@@ -309,17 +309,17 @@ u32 SIGetType(s32 chan) {
         } else {
             type = Type[chan] = 0x80;
         }
-    } else if (diff <= (s64)(50 * ((*(u32 *)0x800000F8 / 4) / 1000)) && type != 8) {
+    } else if (diff <= (s64)(50 * ((__OSBusClock / 4) / 1000)) && type != 8) {
         OSRestoreInterrupts(enabled);
         return type;
-    } else if (diff <= (s64)(75 * ((*(u32 *)0x800000F8 / 4) / 1000))) {
+    } else if (diff <= (s64)(75 * ((__OSBusClock / 4) / 1000))) {
         Type[chan] = 0x80;
     } else {
         type = Type[chan] = 0x80;
     }
     TypeTime[chan] = __OSGetSystemTime();
     SITransfer(chan, &cmdTypeAndStatus, 1, &Type[chan], 3, GetTypeCallback,
-               (65 * ((*(u32 *)0x800000F8 / 4) / 125000)) / 8);
+               (65 * ((__OSBusClock / 4) / 125000)) / 8);
     OSRestoreInterrupts(enabled);
     return type;
 }
