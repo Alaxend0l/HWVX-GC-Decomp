@@ -43,10 +43,6 @@ s32 Mpeg_StartMovie(char *name, f32 volume) {
         u16 fbWidth;
         u16 efbHeight;
     } RenderMode;
-    typedef struct THPVideoInfo {
-        u32 xSize;
-        u32 ySize;
-    } THPVideoInfo;
     BOOL THPPlayerOpen(char *fileName, BOOL onMemory);
     BOOL THPPlayerSetBuffer(void *buffer);
     BOOL THPPlayerPrepare(s32 frameNum, s32 playFlag);
