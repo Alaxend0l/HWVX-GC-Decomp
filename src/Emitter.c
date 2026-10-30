@@ -117,7 +117,7 @@ void Emitter_Release(Emitter *emitter) {
     Thing_Release((s32)emitter);
 }
 
-s32 Emitter_InCameraRange(Emitter *emitter, f32 range) {
+u32 Emitter_InCameraRange(Emitter *emitter, f32 range) {
     Vector4 positions[5] __attribute__((aligned(16)));
     Vector4 *pos;
     f32 dist;
