@@ -227,7 +227,8 @@ typedef struct IMInterface {
     u8 goBack;
     u8 pad82[0x84 - 0x82];
     u8 hasInput;
-    u8 pad85[0x88 - 0x85];
+    u8 unk85;
+    u8 pad86[0x88 - 0x86];
     IMSlot *slots;
     s32 input;
     void (*callback)(InterfaceEventMsg *msg);
