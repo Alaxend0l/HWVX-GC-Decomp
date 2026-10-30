@@ -215,7 +215,7 @@ int DBGReadMailbox(unsigned long *mailbox) {
 #pragma pop
 
 #pragma pop
-static int DBGWriteMailbox(unsigned long p1) {
+static inline int DBGWriteMailbox(unsigned long p1) {
     int total = 0;
     unsigned long v;
 
