@@ -66,6 +66,8 @@ void DCInvalidateRange(void *addr, u32 nBytes);
 BOOL OSDisableInterrupts(void);
 BOOL OSRestoreInterrupts(BOOL level);
 BOOL __DVDPushWaitingQueue(s32 prio, DVDCommandBlock *block);
+DVDCommandBlock *__DVDPopWaitingQueue(void);
+void __DVDClearWaitingQueue(void);
 void stateReady(void);
 
 static inline BOOL CheckCancel(u32 resume) {
