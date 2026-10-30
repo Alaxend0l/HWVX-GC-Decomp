@@ -69,6 +69,40 @@ typedef struct GDL2DSprite {
     u8 unk2C[0x30 - 0x2C];
 } GDL2DSprite;
 
+typedef struct GDLGroupTri {
+    u8 type;   /* 0x00 0: tris, 1: lit tris, 4: quads */
+    u8 unk1[3];
+    u16 tex;   /* 0x04 */
+    u16 blendMode; /* 0x06 */
+    u32 start; /* 0x08 */
+    u32 count; /* 0x0C */
+    u8 unk10[0x20 - 0x10];
+} GDLGroupTri;
+
+typedef struct GDLGroupTriVtx {
+    u32 r, g, b, a;
+    f32 x0, y0, z0, s0;
+    f32 x1, y1, z1, t0;
+    f32 x2, y2, z2, unk3C;
+    f32 s1, t1, s2, t2;
+} GDLGroupTriVtx;
+
+typedef struct GDLGroupQuadVtx {
+    u32 r, g, b, a;
+    f32 x0, y0, z0, s;
+    f32 x1, y1, z1, t;
+    f32 x2, y2, z2, unk3C;
+    f32 x3, y3, z3, unk4C;
+} GDLGroupQuadVtx;
+
+typedef struct GDLGroupLitTriVtx {
+    u32 c[3][4];
+    f32 x0, y0, z0, s0;
+    f32 x1, y1, z1, t0;
+    f32 x2, y2, z2, unk5C;
+    f32 s1, t1, s2, t2;
+} GDLGroupLitTriVtx;
+
 typedef struct GDL {
     u8 unk0[0x4];
     u32 num2DSprites;
@@ -77,7 +111,9 @@ typedef struct GDL {
     u32 numRects2D;
     u8 unk1C[0x20 - 0x1C];
     u32 numRects;
-    u8 unk24[0x68 - 0x24];
+    u8 unk24[0x44 - 0x24];
+    u32 numGroupTris;
+    u8 unk48[0x68 - 0x48];
     u32 numPointSprites;
     u8 unk6C[0x9EC0 - 0x6C];
     GDL2DSprite sprites2D[2000];
