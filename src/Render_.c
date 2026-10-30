@@ -136,7 +136,37 @@ extern s32 m_fillMode;
 extern s32 m_currentView;
 extern s32 m_curLightState;
 extern s32 m_curTexture;
-extern void *FontData;
+typedef struct OSFontHeader {
+    u16 fontType;
+    u16 firstChar;
+    u16 lastChar;
+    u16 invalChar;
+    u16 ascent;
+    u16 descent;
+    u16 width;
+    u16 leading;
+    u16 cellWidth;
+    u16 cellHeight;
+    u32 sheetSize;
+    u16 sheetFormat;
+    u16 sheetColumn;
+    u16 sheetRow;
+    u16 sheetWidth;
+    u16 sheetHeight;
+    u16 widthTable;
+    u32 sheetImage;
+    u32 sheetFullSize;
+    u8 c0;
+    u8 c1;
+    u8 c2;
+    u8 c3;
+} OSFontHeader;
+
+typedef struct GXTexObj {
+    u32 dummy[8];
+} GXTexObj;
+
+extern OSFontHeader *FontData;
 extern s32 __OSCurrHeap;
 
 GfxWindow *GetRenderWindow(void);
@@ -532,6 +562,42 @@ void SetTriFlatVtxDesc(void) {
         GXSetVtxDesc(0xB, 1);
         GXSetVtxAttrFmt(0, 9, 1, 4, 0);
         GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+    }
+}
+
+void Gfx_SetFog(GXColor *color, u8 type, f32 start, f32 end) {
+    extern GXColor m_fogColor_803C76C8;
+    extern u8 m_fogType_803C76C4;
+    extern f32 m_fogRange1_803C76C0;
+    extern f32 m_fogRange2_803C76BC;
+    u8 r, g, b, a;
+    f32 scale;
+    switch (type) {
+    case 0:
+        m_fogType_803C76C4 = 2;
+        break;
+    case 1:
+        m_fogType_803C76C4 = 4;
+        break;
+    case 2:
+        m_fogType_803C76C4 = 5;
+        break;
+    }
+    a = color->a;
+    b = color->b;
+    g = color->g;
+    r = color->r;
+    m_fogColor_803C76C8.g = g;
+    m_fogColor_803C76C8.r = r;
+    m_fogColor_803C76C8.b = b;
+    m_fogColor_803C76C8.a = 0xFF;
+    if (a != 0) {
+        scale = a / 255.0f;
+        m_fogRange2_803C76BC = end / scale;
+        m_fogRange1_803C76C0 = start / scale;
+    } else {
+        m_fogRange1_803C76C0 = 1.0f;
+        m_fogRange2_803C76BC = 1.0f;
     }
 }
 
