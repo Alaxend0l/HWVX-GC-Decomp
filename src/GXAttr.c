@@ -18,7 +18,8 @@ typedef struct GXData {
     u32 indexStride[4];
     u8 unkA8[0x204 - 0xA8];
     u32 genMode;
-    u8 unk208[0x41C - 0x208];
+    u8 unk208[0x418 - 0x208];
+    u32 nrmType;
     u8 hasNrms;
     u8 hasBiNrms;
     u8 unk41E[0x4F2 - 0x41E];
