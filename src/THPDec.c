@@ -55,7 +55,6 @@ u8 __THPReadScaneHeader(void);
 u8 __THPReadHuffmanTableSpecification(void);
 #pragma push
 #pragma opt_propagation off
-#pragma opt_dead_assignments off
 s32 THPVideoDecode(void *file, void *tileY, void *tileU, void *tileV, void *work) {
     u8 all_done, status;
     u8 marker;
