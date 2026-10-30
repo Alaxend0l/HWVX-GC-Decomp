@@ -345,6 +345,7 @@ static void CarA_ApplyWheelLoads(void *thing) {
         car->motionState.animMatrices[wheel->bone].v[3].x -= susp->wheelStates[0].compression * up->x;
         car->motionState.animMatrices[wheel->bone].v[3].y -= susp->wheelStates[0].compression * up->y;
         car->motionState.animMatrices[wheel->bone].v[3].z -= susp->wheelStates[0].compression * up->z;
+        susp = (CarA *)((u8 *)susp + sizeof(CarAWheelState));
     }
     car->forceAccum.y += car->vehicleIface->collider->gravityScale * car->vehicleIface->collider->mass;
 }
