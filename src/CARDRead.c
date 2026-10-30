@@ -48,6 +48,57 @@ s32 __CARDRead(s32 chan, u32 addr, s32 length, void *dst, CARDCallback callback)
 
 
 typedef void (*CARDCallback)(s32 chan, s32 result);
+#pragma push
+#pragma use_lmw_stmw on
+static void ReadCallback(s32 chan, s32 result)
+{
+    CARDControl *card;
+    s32 length;
+    CARDFileInfo *fileInfo;
+    u16 *fat;
+    CARDCallback callback;
+
+    card = &__CARDBlock[chan];
+    if (result < 0) {
+        goto error;
+    }
+
+    fileInfo = card->fileInfo;
+    if (fileInfo->length < 0) {
+        result = -14;
+        goto error;
+    }
+
+    length = (s32)(((u32)(fileInfo->offset + card->sectorSize)) & ~(card->sectorSize - 1)) - fileInfo->offset;
+    fileInfo->length -= length;
+    if (fileInfo->length <= 0) {
+        goto error;
+    }
+
+    fat = __CARDGetFatBlock(card);
+    fileInfo->offset += length;
+    fileInfo->iBlock = fat[fileInfo->iBlock];
+    if (fileInfo->iBlock < 5 || fileInfo->iBlock >= card->cBlock) {
+        result = -6;
+        goto error;
+    }
+    result = __CARDRead(chan, card->sectorSize * fileInfo->iBlock,
+                        (fileInfo->length < card->sectorSize) ? fileInfo->length : card->sectorSize,
+                        card->offset, ReadCallback);
+    if (result < 0) {
+        goto error;
+    }
+
+    return;
+
+error:
+    callback = card->apiCallback;
+    card->apiCallback = 0;
+    __CARDPutControlBlock(card, result);
+    callback(chan, result);
+}
+#pragma pop
+
 s32 CARDRead(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset)
 {
     s32 CARDReadAsync(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset, CARDCallback callback);
