@@ -205,7 +205,7 @@ static inline s32 SimThread_AddDelta(SimThread *t, s32 dPos, s32 dt) {
 static inline u32 SimThread_Sample(SimThread *t) {
     u32 OSGetTick(void);
     u32 now;
-    u32 dt;
+    s32 dt;
     s32 oldPos;
     s32 n;
     s32 accel;
@@ -1399,8 +1399,8 @@ s32 SimThread_Step(VDevice *dev) {
     u32 dt;
     Effect *e;
     u32 k;
-    s32 f;
     s32 flag;
+    s32 f;
     s32 gain;
     s32 force;
 
@@ -1434,8 +1434,8 @@ s32 SimThread_Step(VDevice *dev) {
         f = (u8)g_iGammaLookup[f];
     }
     if (gain < 255) {
-        f = (f * gain + (f < 0 ? -127 : 127)) / 255;
-        sumB = (sumB * gain + (sumB < 0 ? -127 : 127)) / 255;
+        f = Effect_MulDiv(f, gain, 255);
+        sumB = Effect_MulDiv(sumB, gain, 255);
     }
     force = f + sumB;
     force = force > 128 ? 128 : force;
