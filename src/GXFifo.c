@@ -33,6 +33,19 @@ extern volatile u32 *__piReg;
 extern void *CPUFifo;
 extern void *GPFifo;
 extern u8 CPGPLinked;
+extern void *__GXCurrentThread;
+extern s32 GXOverflowSuspendInProgress;
+extern u32 __GXOverflowCount;
+extern void (*BreakPointCB)(void);
+
+typedef struct OSContext {
+    u8 pad[0x2C8];
+} OSContext;
+
+s32 OSResumeThread(void *thread);
+s32 OSSuspendThread(void *thread);
+void OSClearContext(OSContext *context);
+void OSSetCurrentContext(OSContext *context);
 
 s32 OSDisableInterrupts(void);
 s32 OSRestoreInterrupts(s32 level);
