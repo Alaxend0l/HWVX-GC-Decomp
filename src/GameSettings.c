@@ -43,15 +43,6 @@ static inline u8 *GameSettings_LoadMCP(void)
 }
 
 void GameSetting_Init(void) {
-    typedef struct GameInfo {
-        const char *name;
-        const char *id;
-        const char *title;
-        const char *fileName;
-        const char *icon;
-        s32 unk14;
-        s32 unk18;
-    } GameInfo;
     void GameSettings_SetDefaultControllerState(void);
     void GameSettings_ResetPlayerVehicleItem(void);
     void GameSettings_ResetGame(void);
@@ -1005,6 +996,43 @@ void GameSettings_DetermineIfOverwritingFile(void)
 
 #pragma push
 #pragma readonly_strings on
+void GameSettings_GetSaveGameName(s32 *letters) {
+    char *strncpy(char *dst, const char *src, u32 n);
+    int sprintf(char *buf, const char *fmt, ...);
+    u8 *mcp;
+    char name[12];
+    s32 i;
+
+    if (g_bValidFileName[g_codeVariables.fileIndex - 1]) {
+        strncpy(name, g_fileNames[g_codeVariables.fileIndex - 1], 11);
+    } else {
+        mcp = GameSettings_LoadMCP();
+        switch (mcp != NULL ? mcp[1] : 0) {
+        case 0:
+            sprintf(name, "HW VEL X %d", g_codeVariables.fileIndex);
+            break;
+        case 1:
+            sprintf(name, "DD RESCUE%d", g_codeVariables.fileIndex);
+            break;
+        default:
+            sprintf(name, "SAVE GAME%d", g_codeVariables.fileIndex);
+            break;
+        }
+    }
+    for (i = 0; i < 10; i++) {
+        if (name[i] >= 'A' && name[i] <= 'Z') {
+            letters[i] = name[i] - 'A';
+        } else if (name[i] >= '0' && name[i] <= '9') {
+            letters[i] = name[i] - '0' + 26;
+        } else {
+            letters[i] = 36;
+        }
+    }
+}
+#pragma pop
+
+#pragma push
+#pragma readonly_strings on
 void GameSettings_SetSaveGameName(u32 *letters) {
     typedef struct GameInfo {
         const char *name;
@@ -1168,6 +1196,79 @@ char *GameSettings_GetActiveMemoryCardLevelDetails(void) {
     }
     return levelDetails;
 }
+
+#pragma push
+#pragma readonly_strings on
+#pragma use_lmw_stmw on
+u8 GameSettings_LoadGame(void) {
+    typedef struct GameInfo {
+        const char *name;
+        const char *id;
+        const char *title;
+        const char *fileName;
+        const char *icon;
+        s32 unk14;
+        s32 unk18;
+    } GameInfo;
+    s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
+    u32 File_Read(s32 handle, u32 size, void *buf);
+    void File_Close(s32 handle);
+    u32 FileManager_GetChecksum(u32 size, void *data);
+    void *memcpy(void *dst, const void *src, u32 n);
+    extern u8 *g_pSavedGameData;
+    extern u8 *g_pGameData;
+    extern GameInfo g_gameInfo[];
+    s32 slot;
+    char *device;
+    s32 handle;
+    s8 ok;
+    u8 *data;
+    u32 version;
+    u8 *saved;
+    u32 size;
+    GameInfo info;
+    u8 *mcp;
+    u32 i;
+
+    device = g_codeVariables.device;
+    slot = g_codeVariables.fileIndex - 1;
+    mcp = GameSettings_LoadMCP();
+    if (mcp != NULL) {
+        info.fileName = g_gameInfo[mcp[1]].fileName;
+        version = g_gameInfo[mcp[1]].unk14;
+        size = g_gameInfo[mcp[1]].unk18;
+    } else {
+        info.fileName = "saveFile";
+        version = 0;
+        size = version;
+    }
+    data = g_pSavedGameData;
+    ok = 0;
+    if ((handle = File_Open(device + 0xA, info.fileName, 0, NULL)) != -1) {
+        File_Read(handle, size * 8 + 0x15C, data);
+        if (((u32 *)data)[0] == 4 && ((u32 *)data)[1] == version &&
+            ((u32 *)data)[2] == FileManager_GetChecksum(version, data + 0xC)) {
+            ok = 1;
+        }
+        File_Close(handle);
+    }
+    if (!ok) {
+        g_codeVariables.unk11C[1] = 0;
+        return 0;
+    }
+    saved = g_pSavedGameData;
+    memcpy(g_pGameData, &saved[slot * size + 0x15C], size);
+    memcpy(&g_generalGameSettings, saved + 0xC, 0x150);
+    g_codeVariables.unk11C[1] = 1;
+    g_bRefreshMC = 1;
+    g_bRefreshMC_FileList = 1;
+    g_bRefreshMC_FileInfo = 1;
+    for (i = 0; i < 11; i++) {
+        g_codeVariables.unk128[i] = 0;
+    }
+    return g_codeVariables.unk11C[1];
+}
+#pragma pop
 
 s32 GameSettings_FormatMemoryCard(void)
 {
