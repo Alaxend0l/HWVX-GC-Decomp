@@ -335,6 +335,32 @@ void Render_DrawAlphaTriangle(u16 index) {
     }
 }
 
+void Render_DrawRectangles(void) {
+    u32 i;
+    u32 j;
+    s32 blend;
+
+    if (g_pGDL->numRects2D == 0) {
+        return;
+    }
+    g_debugTriCount += g_pGDL->numRects2D * 2;
+    Render_StateZWriteEnable(0);
+    Set2DRectVtxDesc();
+    for (i = 0; i < g_pGDL->numRects2D; i++) {
+        blend = g_pGDL->rects2D[i].blendMode;
+        Render_StateAlphaBlendEnable(blend > 1);
+        Render_StateBlendMode(blend);
+        Render_SetTextureHandle(g_pGDL->rects2D[i].tex);
+        GXBegin(0x80, 0, 4);
+        for (j = 0; j < 4; j++) {
+            GXPosition2f32(g_pGDL->rects2D[i].v[j].x, g_pGDL->rects2D[i].v[j].y);
+            GXColor4u8(g_pGDL->rects2D[i].v[j].color.r, g_pGDL->rects2D[i].v[j].color.g, g_pGDL->rects2D[i].v[j].color.b, g_pGDL->rects2D[i].v[j].color.a);
+            GXTexCoord2f32(g_pGDL->rects2D[i].v[j].s, g_pGDL->rects2D[i].v[j].t);
+        }
+    }
+    Render_StateAlphaBlendEnable(1);
+}
+
 void Render_StateCullMode(s32 mode);
 void Render_SaveCamera(void);
 void Render_LoadCamera(void);
