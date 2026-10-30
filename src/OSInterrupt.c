@@ -24,6 +24,10 @@ u32 __OSMaskInterrupts(u32 mask);
 void __OSSetExceptionHandler(u8 exception, void *handler);
 void ExternalInterruptHandler(void);
 volatile u32 __PIRegs[12] : 0xCC003000;
+volatile u16 __MEMRegs[64] : 0xCC004000;
+volatile u16 __DSPRegs[32] : 0xCC005000;
+volatile u32 __AIRegs[8] : 0xCC006C00;
+volatile u32 __EXIRegs[16] : 0xCC006800;
 void __OSInterruptInit(void)
 {
 	InterruptHandlerTable = (__OSInterruptHandler *)((u32)0x3040 + 0x80000000);
