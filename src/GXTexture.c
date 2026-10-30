@@ -27,6 +27,19 @@ typedef struct GXTlutRegion {
     u32 dummy[4];
 } GXTlutRegion;
 
+typedef struct __GXTexRegionInt {
+    u32 image1;
+    u32 image2;
+    u16 sizeEven;
+    u16 sizeOdd;
+    u8 is32bMipmap;
+    u8 isCached;
+} __GXTexRegionInt;
+
+typedef struct GXTexRegion {
+    u32 dummy[4];
+} GXTexRegion;
+
 typedef union PPCWGPipe {
     u8 u8;
     u16 u16;
