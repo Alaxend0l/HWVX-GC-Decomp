@@ -43,7 +43,7 @@ static int DBGWriteMailbox(unsigned long p1) {
     return !total;
 }
 
-static inline int DBGReadStatusInline(unsigned long *status) {
+static int DBGReadStatusInline(unsigned long *status) {
     int total = 0;
     unsigned long v;
 
