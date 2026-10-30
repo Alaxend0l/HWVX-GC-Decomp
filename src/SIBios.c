@@ -248,6 +248,30 @@ static void AlarmHandler(OSAlarm *alarm, void *context) {
     }
 }
 
+u32 SIGetTypeAsync(s32 chan, void (*callback)(s32, u32)) {
+    BOOL enabled;
+    u32 type;
+
+    enabled = OSDisableInterrupts();
+    type = SIGetType(chan);
+    if (Type[chan] & 0x80) {
+        int i;
+        for (i = 0; i < 4; ++i) {
+            if (TypeCallback[chan][i] == callback) {
+                break;
+            }
+            if (TypeCallback[chan][i] == 0) {
+                TypeCallback[chan][i] = callback;
+                break;
+            }
+        }
+    } else {
+        callback(chan, type);
+    }
+    OSRestoreInterrupts(enabled);
+    return type;
+}
+
 s32 SIDecodeType(s32 type) {
     u32 error;
     s32 kind;
