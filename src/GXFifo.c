@@ -131,7 +131,7 @@ void GXSetCPUFifo(GXFifoObj *fifo) {
 void __OSSetInterruptHandler(s16 interrupt, void *handler);
 u32 __OSUnmaskInterrupts(u32 mask);
 void *OSGetCurrentThread(void);
-void GXCPInterruptHandler(s16 interrupt, void *context);
+void GXCPInterruptHandler(s16 interrupt, OSContext *context);
 extern void *__GXCurrentThread;
 extern s32 GXOverflowSuspendInProgress;
 extern void *CPUFifo;
