@@ -232,6 +232,86 @@ void GXClearVtxDesc(void) {
     gx->dirtyState |= 8;
 }
 
+void GXSetVtxAttrFmt(s32 vtxfmt, s32 attr, s32 cnt, s32 type, u8 frac) {
+    u32 *va;
+    u32 *vb;
+    u32 *vc;
+
+    va = &gx->vatA[vtxfmt];
+    vb = &gx->vatB[vtxfmt];
+    vc = &gx->vatC[vtxfmt];
+    switch (attr) {
+    case 9:
+        *va = ((u32)*va & ~0x1) | (u32)cnt;
+        *va = ((u32)*va & ~0xE) | ((u32)type << 1);
+        *va = ((u32)*va & ~0x1F0) | ((u32)frac << 4);
+        break;
+    case 10:
+    case 25:
+        *va = ((u32)*va & ~0x1C00) | ((u32)type << 10);
+        if (cnt == 2) {
+            *va = ((u32)*va & ~0x200) | ((u32)1 << 9);
+            *va = ((u32)*va & ~0x80000000) | ((u32)1 << 31);
+        } else {
+            *va = ((u32)*va & ~0x200) | ((u32)cnt << 9);
+            *va = ((u32)*va & ~0x80000000) | ((u32)0 << 31);
+        }
+        break;
+    case 11:
+        *va = ((u32)*va & ~0x2000) | ((u32)cnt << 13);
+        *va = ((u32)*va & ~0x1C000) | ((u32)type << 14);
+        break;
+    case 12:
+        *va = ((u32)*va & ~0x20000) | ((u32)cnt << 17);
+        *va = ((u32)*va & ~0x1C0000) | ((u32)type << 18);
+        break;
+    case 13:
+        *va = ((u32)*va & ~0x200000) | ((u32)cnt << 21);
+        *va = ((u32)*va & ~0x1C00000) | ((u32)type << 22);
+        *va = ((u32)*va & ~0x3E000000) | ((u32)frac << 25);
+        break;
+    case 14:
+        *vb = ((u32)*vb & ~0x1) | (u32)cnt;
+        *vb = ((u32)*vb & ~0xE) | ((u32)type << 1);
+        *vb = ((u32)*vb & ~0x1F0) | ((u32)frac << 4);
+        break;
+    case 15:
+        *vb = ((u32)*vb & ~0x200) | ((u32)cnt << 9);
+        *vb = ((u32)*vb & ~0x1C00) | ((u32)type << 10);
+        *vb = ((u32)*vb & ~0x3E000) | ((u32)frac << 13);
+        break;
+    case 16:
+        *vb = ((u32)*vb & ~0x40000) | ((u32)cnt << 18);
+        *vb = ((u32)*vb & ~0x380000) | ((u32)type << 19);
+        *vb = ((u32)*vb & ~0x7C00000) | ((u32)frac << 22);
+        break;
+    case 17:
+        *vb = ((u32)*vb & ~0x8000000) | ((u32)cnt << 27);
+        *vb = ((u32)*vb & ~0x70000000) | ((u32)type << 28);
+        *vc = ((u32)*vc & ~0x1F) | (u32)frac;
+        break;
+    case 18:
+        *vc = ((u32)*vc & ~0x20) | ((u32)cnt << 5);
+        *vc = ((u32)*vc & ~0x1C0) | ((u32)type << 6);
+        *vc = ((u32)*vc & ~0x3E00) | ((u32)frac << 9);
+        break;
+    case 19:
+        *vc = ((u32)*vc & ~0x4000) | ((u32)cnt << 14);
+        *vc = ((u32)*vc & ~0x38000) | ((u32)type << 15);
+        *vc = ((u32)*vc & ~0x7C0000) | ((u32)frac << 18);
+        break;
+    case 20:
+        *vc = ((u32)*vc & ~0x800000) | ((u32)cnt << 23);
+        *vc = ((u32)*vc & ~0x7000000) | ((u32)type << 24);
+        *vc = ((u32)*vc & ~0xF8000000) | ((u32)frac << 27);
+        break;
+    default:
+        break;
+    }
+    gx->dirtyState |= 0x10;
+    gx->dirtyVAT |= (u8)(1 << (u8)vtxfmt);
+}
+
 void __GXSetVAT(void) {
     u8 i;
 
