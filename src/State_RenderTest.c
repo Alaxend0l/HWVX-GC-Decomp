@@ -3,6 +3,7 @@
 Vector4 g_carPos[80];
 f32 g_carRot[80];
 Vector4 g_carCamPos;
+Vector4 g_carDrivePos;
 
 #pragma push
 #pragma use_lmw_stmw on
