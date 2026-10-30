@@ -34,9 +34,6 @@ s32 DVDReadAbsAsyncForBS(void *block, void *addr, s32 length, s32 offset, void *
 void ICInvalidateRange(void *addr, u32 nBytes);
 void Run(void *entry);
 
-void Callback(void) {
-    Prepared_803C7260 = 1;
-}
 static inline void ReadApploader(RebootCmd *dvdCmd, void *addr, u32 offset, u32 numBytes) {
     while (!Prepared_803C7260) {
     }
@@ -64,4 +61,8 @@ static inline void ReadApploader(RebootCmd *dvdCmd, void *addr, u32 offset, u32 
         }
         break;
     }
+}
+
+void Callback(void) {
+    Prepared_803C7260 = 1;
 }
