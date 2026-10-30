@@ -181,3 +181,37 @@ BOOL OSInitFont(OSFontHeader *fontData) {
     return TRUE;
 }
 
+char *OSGetFontTexture(char *string, void **image, s32 *x, s32 *y, s32 *width) {
+    u16 code;
+    s32 fontCode;
+    s32 sheet;
+    s32 numChars;
+    s32 row;
+    s32 column;
+
+    code = (u8)*string;
+    if (code == '\0') {
+        *image = 0;
+        return string;
+    }
+    string++;
+    if (OSGetFontEncode() == 1 && IsSjisLeadByte(code) && *string) {
+        code = (code << 8) | (u8)*string++;
+    }
+    fontCode = GetFontCode(code);
+
+    sheet = fontCode / CharsInSheet;
+    *image = SheetImage + FontData->sheetSize * sheet;
+
+    numChars = fontCode - sheet * CharsInSheet;
+    row = numChars / FontData->sheetColumn;
+    column = numChars - row * FontData->sheetColumn;
+    *x = column * FontData->cellWidth;
+    *y = row * FontData->cellHeight;
+
+    if (width) {
+        *width = WidthTable[fontCode];
+    }
+    return string;
+}
+
