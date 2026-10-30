@@ -39,7 +39,10 @@ typedef struct GXData {
     u32 cpTexSize;
     u32 cpTexStride;
     u32 cpTex;
+    u8 cpTexZ;
 } GXData;
+
+void __GetImageTileCount(s32 fmt, u16 wd, u16 ht, u32 *rowTiles, u32 *colTiles, u32 *cmpTiles);
 
 extern GXData *gx;
 
