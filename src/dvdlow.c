@@ -86,6 +86,39 @@ static s32 FirstRead = 1;
 
 extern s32 Read(s32, s32, s32, s32);
 extern s32 DVDLowSeek(s32, s32);
+void AlarmHandler(void);
+
+static inline void DoJustRead(void *addr, u32 length, u32 offset, DVDLowCallback callback)
+{
+    CommandList[0].command = -1;
+    NextCommandNumber = 0;
+    Read((s32)addr, length, offset, (s32)callback);
+}
+
+static inline BOOL HitCache(DVDBuffer *cur, DVDBuffer *prev)
+{
+    u32 uNumBlocks = (prev->offset + prev->length - 1) >> 15;
+    u32 blockNum = cur->offset >> 15;
+    u32 cacheBlockSize = (DVDGetCurrentDiskID()->streaming ? TRUE : FALSE) ? 5 : 15;
+
+    if ((blockNum > uNumBlocks - 2) || (blockNum < uNumBlocks + cacheBlockSize + 3)) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+static inline void WaitBeforeRead(void *addr, u32 length, u32 offset, DVDLowCallback callback, s64 timeout)
+{
+    CommandList[0].command = 1;
+    CommandList[0].readArg1 = (s32)addr;
+    CommandList[0].readArg2 = length;
+    CommandList[0].seekLba = offset;
+    CommandList[0].seekSectors = (s32)callback;
+    CommandList[1].command = -1;
+    NextCommandNumber = 0;
+    OSCreateAlarm(&AlarmForWA);
+    OSSetAlarm(&AlarmForWA, timeout, (OSAlarmHandler)AlarmHandler);
+}
 
 void __DVDLowSetWAType(u32 type, u32 location);
 void OSInitAlarm(void);
