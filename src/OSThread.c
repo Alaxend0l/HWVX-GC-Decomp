@@ -551,6 +551,21 @@ void OSCancelThread(OSThread *thread) {
 }
 
 #pragma dont_inline off
+static void UpdatePriority(OSThread *thread) {
+    s32 priority;
+
+    do {
+        if (0 < thread->suspend) {
+            break;
+        }
+        priority = __OSGetEffectivePriority(thread);
+        if (thread->priority == priority) {
+            break;
+        }
+        thread = SetEffectivePriority(thread, priority);
+    } while (thread);
+}
+
 s32 OSResumeThread(OSThread *thread) {
     extern volatile u32 RunQueueBits;
     BOOL enabled;
