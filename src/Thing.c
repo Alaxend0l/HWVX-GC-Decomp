@@ -35,8 +35,7 @@ static inline s8 Thing_ProcessItemPickup(u8 *thing, u8 *item) {
     case 0:
     case 1:
     case 2:
-    default:
-        return 0;
+        break;
     case 3:
         rack = ThingManagerList_GetByType(thing + 0x88, 8);
         if (rack == NULL) {
