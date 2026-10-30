@@ -10,6 +10,33 @@ typedef struct VolumeShape {
     void *bsp;
 } VolumeShape;
 
+typedef struct VolumeList {
+    u32 count;
+    VolumeShape **volumes;
+} VolumeList;
+
+typedef struct VolumeCell {
+    VolumeList types[7];
+} VolumeCell;
+
+typedef struct VolumeVec3 {
+    f32 x;
+    f32 y;
+    f32 z;
+} VolumeVec3;
+
+typedef struct VolumeHolder {
+    VolumeVec3 origin;      /* 0x00 */
+    u8 padC[4];
+    VolumeCell *cells;      /* 0x10 */
+    s32 *cellIndex;         /* 0x14 */
+    u8 pad18[8];
+    VolumeVec3 cellSize;    /* 0x20 */
+    s32 numX;               /* 0x2C */
+    s32 numY;               /* 0x30 */
+    s32 numZ;               /* 0x34 */
+} VolumeHolder;
+
 s8 BSPN0_CollideWithVector(void *bsp, Vector4 *point);
 void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
 f32 PSVECSquareMag(Vector4 *v);
