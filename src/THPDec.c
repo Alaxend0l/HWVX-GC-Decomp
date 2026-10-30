@@ -53,6 +53,32 @@ static void __THPSetupBuffers(void) {
     }
 }
 
+s32 __THPReadFrameHeader(void) {
+    s32 i;
+    u8 utmp8;
+
+    __THPInfo->c += 2;
+    if (*(__THPInfo->c)++ != 8) {
+        return 10;
+    }
+    __THPInfo->yPixelSize = (u16)((__THPInfo->c[0] << 8) | __THPInfo->c[1]);
+    __THPInfo->c += 2;
+    __THPInfo->xPixelSize = (u16)((__THPInfo->c[0] << 8) | __THPInfo->c[1]);
+    __THPInfo->c += 2;
+    if (*(__THPInfo->c)++ != 3) {
+        return 12;
+    }
+    for (i = 0; (u8)i < 3; i++) {
+        __THPInfo->c++;
+        utmp8 = *(__THPInfo->c)++;
+        if (((u8)i == 0 && utmp8 != 0x22) || ((u8)i > 0 && utmp8 != 0x11)) {
+            return 19;
+        }
+        __THPInfo->components[i].quantizationTableSelector = *(__THPInfo->c)++;
+    }
+    return 0;
+}
+
 u8 __THPReadScaneHeader(void) {
     s32 i;
     s32 compId;
