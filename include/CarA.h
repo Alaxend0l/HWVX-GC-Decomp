@@ -84,7 +84,9 @@ typedef struct CarAEngine {
   f32 maxAngularVel;        /* 0x3C */
   f32 itemDropImpact;       /* 0x40 */
   f32 unk44;                /* 0x44 */
-  u8 pad48[0x1C];           /* 0x48 */
+  u8 pad48[0x10];           /* 0x48 */
+  f32 unk58;                /* 0x58 force point scale by up.y */
+  u8 pad5C[8];              /* 0x5C */
   f32 unk64;                /* 0x64 */
   f32 unk68;                /* 0x68 */
   f32 unk6C;                /* 0x6C */
