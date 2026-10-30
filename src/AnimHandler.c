@@ -292,12 +292,10 @@ void MotionState_InitSlavesTimed(u8 *state, void *slaves, u8 player, u32 time) {
     u32 i;
 
     for (i = 0; i < list->count; i++) {
-        Vector4 dir;
-        SlaveTrigger *trigger = &list->triggers[i];
+        Vector4 dir = {0.0f, 0.0f, 0.0f, 1.0f};
 
-        dir = g_zeroVector;
-        if (trigger->time >= time && trigger->time < time + g_iDeltaTimeMS) {
-            ThingManagerList_TriggerSlaves((void **)(state + 0x14), (u8 *)trigger, (Vector4 *)trigger, &dir, &g_zeroVector, player);
+        if (list->triggers[i].time >= time && list->triggers[i].time < time + g_iDeltaTimeMS) {
+            ThingManagerList_TriggerSlaves((void **)(state + 0x14), (u8 *)&list->triggers[i], (Vector4 *)&list->triggers[i], &dir, &g_zeroVector, player);
         }
     }
 }
