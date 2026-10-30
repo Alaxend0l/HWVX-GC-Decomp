@@ -432,6 +432,30 @@ void QuaternionMult(Quaternion *a, Quaternion *b, Quaternion *out)
     out->z = a->x * b->y - a->y * b->x + a->w * b->z + a->z * b->w;
 }
 
+void GenerateQuaternionXYZ(Vector *angles, Quaternion *q) {
+    Quaternion tmp = {0.0f, 0.0f, 0.0f, 1.0f};
+    Vector4 axis;
+    Quaternion r;
+
+    axis.x = 0.0f;
+    axis.y = 0.0f;
+    axis.z = 1.0f;
+    GenerateQuaternion(&axis, &r, angles->z);
+    QuaternionMult(&r, &tmp, q);
+    memcpy(&tmp, q, sizeof(Quaternion));
+    axis.x = 1.0f;
+    axis.y = 0.0f;
+    axis.z = 0.0f;
+    GenerateQuaternion(&axis, &r, angles->x);
+    QuaternionMult(&r, &tmp, q);
+    memcpy(&tmp, q, sizeof(Quaternion));
+    axis.x = 0.0f;
+    axis.y = 1.0f;
+    axis.z = 0.0f;
+    GenerateQuaternion(&axis, &r, angles->y);
+    QuaternionMult(&r, &tmp, q);
+}
+
 void QuaternionToSubMatrix(Quaternion *q, Matrix4 *m)
 {
     f32 s;
