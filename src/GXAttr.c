@@ -169,6 +169,103 @@ void GXSetVtxDesc(s32 attr, s32 type) {
     gx->dirtyState |= 8;
 }
 
+void GXSetVtxDescv(const GXVtxDescList *attrPtr) {
+    while (attrPtr->attr != 0xFF) {
+        s32 attr = attrPtr->attr;
+        s32 type = attrPtr->type;
+
+        switch (attr) {
+        case 0:
+            gx->vcdLo = ((u32)gx->vcdLo & ~0x1) | (u32)type;
+            break;
+        case 1:
+            gx->vcdLo = ((u32)gx->vcdLo & ~0x2) | ((u32)type << 1);
+            break;
+        case 2:
+            gx->vcdLo = ((u32)gx->vcdLo & ~0x4) | ((u32)type << 2);
+            break;
+        case 3:
+            gx->vcdLo = ((u32)gx->vcdLo & ~0x8) | ((u32)type << 3);
+            break;
+        case 4:
+            gx->vcdLo = ((u32)gx->vcdLo & ~0x10) | ((u32)type << 4);
+            break;
+        case 5:
+            gx->vcdLo = ((u32)gx->vcdLo & ~0x20) | ((u32)type << 5);
+            break;
+        case 6:
+            gx->vcdLo = ((u32)gx->vcdLo & ~0x40) | ((u32)type << 6);
+            break;
+        case 7:
+            gx->vcdLo = ((u32)gx->vcdLo & ~0x80) | ((u32)type << 7);
+            break;
+        case 8:
+            gx->vcdLo = ((u32)gx->vcdLo & ~0x100) | ((u32)type << 8);
+            break;
+        case 9:
+            gx->vcdLo = ((u32)gx->vcdLo & ~0x600) | ((u32)type << 9);
+            break;
+        case 10:
+            if (type != 0) {
+                gx->hasNrms = 1;
+                gx->hasBiNrms = 0;
+                gx->nrmType = type;
+            } else {
+                gx->hasNrms = 0;
+            }
+            break;
+        case 25:
+            if (type != 0) {
+                gx->hasBiNrms = 1;
+                gx->hasNrms = 0;
+                gx->nrmType = type;
+            } else {
+                gx->hasBiNrms = 0;
+            }
+            break;
+        case 11:
+            gx->vcdLo = ((u32)gx->vcdLo & ~0x6000) | ((u32)type << 13);
+            break;
+        case 12:
+            gx->vcdLo = ((u32)gx->vcdLo & ~0x18000) | ((u32)type << 15);
+            break;
+        case 13:
+            gx->vcdHi = ((u32)gx->vcdHi & ~0x3) | (u32)type;
+            break;
+        case 14:
+            gx->vcdHi = ((u32)gx->vcdHi & ~0xC) | ((u32)type << 2);
+            break;
+        case 15:
+            gx->vcdHi = ((u32)gx->vcdHi & ~0x30) | ((u32)type << 4);
+            break;
+        case 16:
+            gx->vcdHi = ((u32)gx->vcdHi & ~0xC0) | ((u32)type << 6);
+            break;
+        case 17:
+            gx->vcdHi = ((u32)gx->vcdHi & ~0x300) | ((u32)type << 8);
+            break;
+        case 18:
+            gx->vcdHi = ((u32)gx->vcdHi & ~0xC00) | ((u32)type << 10);
+            break;
+        case 19:
+            gx->vcdHi = ((u32)gx->vcdHi & ~0x3000) | ((u32)type << 12);
+            break;
+        case 20:
+            gx->vcdHi = ((u32)gx->vcdHi & ~0xC000) | ((u32)type << 14);
+            break;
+        default:
+            break;
+        }
+        attrPtr++;
+    }
+    if (gx->hasNrms || gx->hasBiNrms) {
+        gx->vcdLo = ((u32)gx->vcdLo & ~0x1800) | ((u32)gx->nrmType << 11);
+    } else {
+        gx->vcdLo = ((u32)gx->vcdLo & ~0x1800) | ((u32)0 << 11);
+    }
+    gx->dirtyState |= 8;
+}
+
 void __GXSetVCD(void) {
     GXWGFifo.u8 = 8;
     GXWGFifo.u8 = 0x50;
