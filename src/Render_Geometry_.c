@@ -179,7 +179,25 @@ static inline GXColor Render_MakeColor(u8 r, u8 g, u8 b) {
     return c;
 }
 
-static inline void Render_InitPointLight(void *lt_obj, Vector4 *pos, GXColor *rgb, u32 id) {
+extern u8 m_totalLights;
+
+static inline void Render_InitDirLight(void *lt_obj, Vector4 *dir, Vector4 *lightDir, GXColor *rgb) {
+    void *GetRenderWindow();
+    void InverseXformVecOrientation(void *m, Vector4 *v, Vector4 *out);
+    void GXInitLightPos(void *lt_obj, f32 x, f32 y, f32 z);
+    void GXInitLightColor(void *lt_obj, GXColor color);
+    void GXLoadLightObjImm(void *lt_obj, s32 light);
+    void *memset(void *dst, s32 c, u32 n);
+    GXColor color = Render_MakeColor(rgb->r, rgb->g, rgb->b);
+
+    memset(lt_obj, 0, 0x40);
+    InverseXformVecOrientation(GetRenderWindow(), lightDir, dir);
+    GXInitLightPos(lt_obj, -10000.0f * dir->x, 10000.0f * dir->y, -10000.0f * dir->z);
+    GXInitLightColor(lt_obj, color);
+    GXLoadLightObjImm(lt_obj, 1);
+}
+
+static inline void Render_InitPointLight(void *lt_obj, Vector4 *pos, GXColor *rgb) {
     void GXInitLightPos(void *lt_obj, f32 x, f32 y, f32 z);
     void GXInitLightColor(void *lt_obj, GXColor color);
     void GXLoadLightObjImm(void *lt_obj, s32 light);
@@ -193,7 +211,7 @@ static inline void Render_InitPointLight(void *lt_obj, Vector4 *pos, GXColor *rg
     GXInitLightColor(lt_obj, color);
     GXInitLightDistAttn(lt_obj, pos->w, 0.99999f, 1);
     GXInitLightAttnK(lt_obj, 0.0f, 0.0f, 0.01f);
-    GXLoadLightObjImm(lt_obj, id);
+    GXLoadLightObjImm(lt_obj, 1 << m_totalLights);
 }
 
 typedef struct GDL {
