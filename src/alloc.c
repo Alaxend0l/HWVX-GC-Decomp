@@ -324,6 +324,34 @@ void *allocate_from_fixed_pools(void *pool, u32 size) {
     }
     return (u8 *)p + 4;
 }
+
+void FixBlock_construct(FixBlock *ths, FixBlock *prev, FixBlock *next, s32 index, FixSubBlock *chunk, u32 chunk_size) {
+    u32 fixSubBlock_size;
+    u32 n;
+    char *p;
+    u32 i;
+    char *np;
+
+    ths->prev_ = prev;
+    ths->next_ = next;
+    prev->next_ = ths;
+    next->prev_ = ths;
+    ths->client_size_ = fix_pool_sizes[index];
+    fixSubBlock_size = fix_pool_sizes[index] + sizeof(void *);
+    n = chunk_size / fixSubBlock_size;
+    p = (char *)chunk;
+    for (i = 0; i < n - 1; ++i) {
+        np = p + fixSubBlock_size;
+        ((FixSubBlock *)p)->block_ = ths;
+        ((FixSubBlock *)p)->next_ = (FixSubBlock *)np;
+        p = np;
+    }
+    ((FixSubBlock *)p)->block_ = ths;
+    ((FixSubBlock *)p)->next_ = NULL;
+    ths->start_ = chunk;
+    ths->n_allocated_ = 0;
+}
+
 void *soft_allocate_from_var_pools(Block **pool_obj, u32 size, u32 *max_size) {
     Block *bp;
     void *ptr;
