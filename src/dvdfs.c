@@ -96,6 +96,8 @@ static u32 myStrncpy(char *dest, char *src, u32 maxlen) {
     return maxlen - i;
 }
 
+#pragma push
+#pragma scheduling on
 static u32 entryToPath(u32 entry, char *path, u32 maxlen) {
     extern char *FstStringStart;
     char *name;
@@ -113,6 +115,7 @@ static u32 entryToPath(u32 entry, char *path, u32 maxlen) {
     loc += myStrncpy(path + loc, name, maxlen - loc);
     return loc;
 }
+#pragma pop
 
 #pragma push
 #pragma scheduling on
