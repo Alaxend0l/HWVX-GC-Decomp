@@ -225,7 +225,9 @@ void DataPack_LoadDataPack(s32 file, DataPack *pack) {
     pack->songLoaded = 0;
     pack->dataSize = header.dataSize;
     memcpy(pack->refs, header.refs, sizeof(header.refs));
-    size = header.numRelocs * 8 + ((pack->numSounds + pack->numTextures) * 2 + (s32)pack->numShaders * 2 + header.numGX * 8 + header.numSoundRelocs * 8 + header.dataSize + 0x60) + (relocSize = header.numTexRelocs * 8 + header.numPointers * 4);
+    size = header.numRelocs * 8 + (pack->numSounds + pack->numTextures) * 2 + pack->numShaders * 2 + header.numGX * 8 + header.numSoundRelocs * 8 + header.dataSize + 0x60;
+    relocSize = header.numTexRelocs * 8 + header.numPointers * 4;
+    size += relocSize;
     alloc = Allocate(size, 0, "");
     if (alloc == NULL) {
         return;
@@ -292,10 +294,10 @@ void DataPack_LoadDataPack(s32 file, DataPack *pack) {
     pack->textureIDs = (u16 *)(alloc + soundIDsSize);
     offset = soundIDsSize + pack->numTextures * 2;
     pack->shaderIDs = (u16 *)(alloc + offset);
+    offset += pack->numShaders * 2;
     readSize = header.numRelocs * 8 + header.numGX * 8 + header.numSoundRelocs * 8;
     pad = readSize & 0x1F;
     pad = pad == 0 ? 0 : 0x20 - pad;
-    offset += pack->numShaders * 2;
     data = alloc + offset;
     data = (u8 *)(((u32)data + 0x3F) & ~0x3F);
     readSize += pad;
@@ -309,8 +311,8 @@ void DataPack_LoadDataPack(s32 file, DataPack *pack) {
     pack->soundRelocs = (u32 *)(data + offset);
     offset += header.numSoundRelocs * 8;
     pack->base = data + offset;
-    pack->base = (u8 *)(((u32)pack->base + 0x1F) & ~0x1F);
     offset = header.dataSize + offset;
+    pack->base = (u8 *)(((u32)pack->base + 0x1F) & ~0x1F);
     offset = pad + offset;
     reloc = (u32 *)(data + offset);
     pointers = reloc + header.numTexRelocs * 2;
