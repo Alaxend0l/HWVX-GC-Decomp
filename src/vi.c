@@ -104,6 +104,27 @@ static inline s32 cntlzd(u64 bit) {
     return 32 + __cntlzw(lo);
 }
 
+static inline void calcFbbs(u32 bufAddr, u16 panPosX, u16 panPosY, u8 wordPerLine, s32 xfbMode, u16 dispPosY, u32 *tfbb, u32 *bfbb) {
+    u32 bytesPerLine;
+    u32 xoffInWords;
+    u32 tmp;
+
+    xoffInWords = (u32)panPosX / 16;
+    bytesPerLine = (u32)wordPerLine * 32;
+
+    *tfbb = bufAddr + xoffInWords * 32 + bytesPerLine * panPosY;
+    *bfbb = (xfbMode == 0) ? *tfbb : (*tfbb + bytesPerLine);
+
+    if (dispPosY % 2 == 1) {
+        tmp = *tfbb;
+        *tfbb = *bfbb;
+        *bfbb = tmp;
+    }
+
+    *tfbb = *tfbb & 0x3FFFFFFF;
+    *bfbb = *bfbb & 0x3FFFFFFF;
+}
+
 static u8 timing[0x130] = {
     0x06, 0x00, 0x00, 0xF0, 0x00, 0x18, 0x00, 0x19, 0x00, 0x03, 0x00, 0x02, 0x0C, 0x0D, 0x0C, 0x0D, 0x02, 0x08, 0x02, 0x07,
     0x02, 0x08, 0x02, 0x07, 0x02, 0x0D, 0x01, 0xAD, 0x40, 0x47, 0x69, 0xA2, 0x01, 0x75, 0x7A, 0x00, 0x01, 0x9C,
