@@ -178,6 +178,12 @@ void DataPack_RefreshQuadPackPtrs(DataPack *pack, void *quad)
 
 #pragma push
 #pragma use_lmw_stmw on
+void DataPack_RefreshTextures(DataPack *pack) {
+    void Gfx_LoadPalettes_RAM(void *data, void *palettes);
+
+    Gfx_LoadPalettes_RAM(pack->paletteData, pack->palettes);
+}
+
 void DataPack_RefreshPtrs(DataPack *pack) {
     void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
     u16 ShaderHolder_AddShader(s32 shader);
