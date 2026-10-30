@@ -240,6 +240,40 @@ u8 __THPReadScaneHeader(void) {
     return 0;
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+u8 __THPReadQuantizationTable(void) {
+    u16 length, id, i, row, col;
+    f32 q_temp[64];
+
+    length = (u16)((__THPInfo->c[0] << 8) | __THPInfo->c[1]);
+    __THPInfo->c += 2;
+    length -= 2;
+
+    for (;;) {
+        id = *(__THPInfo->c)++;
+
+        for (i = 0; i < 64; i++) {
+            q_temp[__THPJpegNaturalOrder[i]] = (f32)(*(__THPInfo->c)++);
+        }
+
+        i = 0;
+        for (row = 0; row < 8; row++) {
+            for (col = 0; col < 8; col++) {
+                __THPInfo->quantTabs[id][i] = (f32)((f64)q_temp[i] * __THPAANScaleFactor[row] * __THPAANScaleFactor[col]);
+                i++;
+            }
+        }
+
+        length -= 65;
+        if (!length) {
+            break;
+        }
+    }
+    return 0;
+}
+#pragma pop
+
 static void __THPHuffGenerateSizeTable(void);
 static void __THPHuffGenerateCodeTable(void);
 static void __THPHuffGenerateDecoderTables(u8 tabIndex);
