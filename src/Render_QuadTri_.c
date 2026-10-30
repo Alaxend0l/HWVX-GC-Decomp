@@ -126,7 +126,12 @@ typedef struct GDL {
     GDLRect rects[1000];
     u8 unkBFDA0[0xEDCC0 - 0xBFDA0];
     GDLPointSprite pointSprites[1000];
-    u8 unkF3A80[0x24CDF4 - 0xF3A80];
+    u8 unkF3A80[0x24CDE0 - 0xF3A80];
+    GDLGroupTriVtx *groupTriVtx;      /* 0x24CDE0 */
+    GDLGroupTri *groupTris;           /* 0x24CDE4 */
+    GDLGroupQuadVtx *groupQuadVtx;    /* 0x24CDE8 */
+    GDLGroupLitTriVtx *groupLitTriVtx; /* 0x24CDEC */
+    u8 unk24CDF0[0x24CDF4 - 0x24CDF0];
     u16 spriteHeads[0x1FF];
 } GDL;
 
