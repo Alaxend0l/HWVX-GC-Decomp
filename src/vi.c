@@ -458,10 +458,10 @@ void VIInit(void) {
     HorVer.threeD = FALSE;
     OSInitThreadQueue(retraceQueue);
     value = __VIRegs[24];
-    value = value & ~0x8000;
+    value = value & 0x7FFF;
     __VIRegs[24] = value;
     value = __VIRegs[26];
-    value = value & ~0x8000;
+    value = value & 0x7FFF;
     __VIRegs[26] = value;
     PreCB = NULL;
     PostCB = NULL;
