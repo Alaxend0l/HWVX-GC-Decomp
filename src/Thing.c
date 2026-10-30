@@ -23,6 +23,35 @@ typedef struct Thing {
     s32 unk94;         /* 0x94 */
 } Thing;
 
+void *ThingManagerList_GetByType(void *list, s32 type);
+void WildCardRack_Add(void *rack, void *data, s16 count);
+void Item_Release(void *item);
+
+static inline s8 Thing_ProcessItemPickup(u8 *thing, u8 *item) {
+    void *rack;
+    void *motion;
+
+    switch (**(u8 **)(item + 0xC0)) {
+    case 0:
+    case 1:
+    case 2:
+        break;
+    case 3:
+        rack = ThingManagerList_GetByType(thing + 0x88, 8);
+        if (rack == NULL) {
+            break;
+        }
+        WildCardRack_Add(rack, *(u8 **)(item + 0xC0), *(s16 *)(item + 0xCE));
+        Item_Release(item);
+        motion = *(void **)(item + 0xD0);
+        if (motion != NULL) {
+            *(s32 *)((u8 *)motion + 0x18) = *(s32 *)((u8 *)motion + 0x14);
+        }
+        return 1;
+    }
+    return 0;
+}
+
 s32 Thing_Init(Thing *thing, s32 arg1) {
     extern Matrix4 g_identity;
 
