@@ -88,6 +88,24 @@ extern s32 Read(s32, s32, s32, s32);
 extern s32 DVDLowSeek(s32, s32);
 void AlarmHandler(void);
 
+static DVDLowCallback ResetCoverCallback;
+
+static inline BOOL ProcessNextCommand(void)
+{
+    s32 n = NextCommandNumber;
+
+    if (CommandList[n].command == 1) {
+        NextCommandNumber++;
+        Read(CommandList[n].readArg1, CommandList[n].readArg2, CommandList[n].seekLba, CommandList[n].seekSectors);
+        return TRUE;
+    } else if (CommandList[n].command == 2) {
+        NextCommandNumber++;
+        DVDLowSeek(CommandList[n].seekLba, CommandList[n].seekSectors);
+        return TRUE;
+    }
+    return FALSE;
+}
+
 static inline void DoJustRead(void *addr, u32 length, u32 offset, DVDLowCallback callback)
 {
     CommandList[0].command = -1;
