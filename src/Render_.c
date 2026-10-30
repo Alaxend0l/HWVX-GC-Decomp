@@ -251,6 +251,13 @@ static inline void GXPosition3s16(s16 x, s16 y, s16 z) {
     GXWGFifo.s16 = z;
 }
 
+static inline void GXColor4u8(u8 r, u8 g, u8 b, u8 a) {
+    GXWGFifo.u8 = r;
+    GXWGFifo.u8 = g;
+    GXWGFifo.u8 = b;
+    GXWGFifo.u8 = a;
+}
+
 static inline void GXTexCoord2f32(f32 s, f32 t) {
     GXWGFifo.f32 = s;
     GXWGFifo.f32 = t;
