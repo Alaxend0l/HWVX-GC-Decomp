@@ -209,6 +209,131 @@ static u32 DummyLen(void) {
     return tmp;
 }
 
+void DCFlushRange(void *addr, u32 len);
+void DCInvalidateRange(void *addr, u32 len);
+void DSPAddTask(DSPTaskInfo *task);
+static void InitCallback(void *task);
+static void DoneCallback(void *task);
+#pragma push
+#pragma use_lmw_stmw on
+s32 __CARDUnlock(s32 chan, u8 flashID[12]) {
+    u32 init_val;
+    u32 data;
+    s32 dummy;
+    s32 rlen;
+    u32 rshift;
+    u8 fsts;
+    u32 wk, wk1;
+    u32 Ans1 = 0;
+    u32 Ans2 = 0;
+    u32 *dp;
+    u8 rbuf[64];
+    u32 para1A = 0;
+    u32 para1B = 0;
+    u32 para2A = 0;
+    u32 para2B = 0;
+    CARDControl *card;
+    DSPTaskInfo *task;
+    u32 *param;
+    u8 *input;
+    u8 *output;
+
+    card = &__CARDBlock[chan];
+    task = (DSPTaskInfo *)card->task;
+    param = (u32 *)card->workArea;
+    input = (u8 *)((u8 *)param + 0x10);
+    input = (u8 *)(((u32)input + 0x1F) & ~0x1F);
+    output = input + 32;
+
+    fsts = 0;
+    init_val = GetInitVal();
+
+    dummy = DummyLen();
+    rlen = dummy;
+    if (ReadArrayUnlock(chan, init_val, rbuf, rlen, 0) < 0) {
+        return -3;
+    }
+
+    rshift = (u32)(dummy * 8 + 1);
+    wk = exnor_1st(init_val, rshift);
+    wk1 = ~(wk ^ (wk >> 7) ^ (wk >> 15) ^ (wk >> 23));
+    card->scramble = (wk | ((wk1 << 31) & 0x80000000));
+    card->scramble = bitrev(card->scramble);
+    dummy = DummyLen();
+    rlen = 20 + dummy;
+    data = 0;
+    if (ReadArrayUnlock(chan, data, rbuf, rlen, 1) < 0) {
+        return -3;
+    }
+
+    dp = (u32 *)rbuf;
+    para1A = *dp++;
+    para1B = *dp++;
+    Ans1 = *dp++;
+    para2A = *dp++;
+    para2B = *dp++;
+    para1A = (para1A ^ card->scramble);
+    rshift = 32;
+    wk = exnor(card->scramble, rshift);
+    wk1 = ~(wk ^ (wk << 7) ^ (wk << 15) ^ (wk << 23));
+    card->scramble = (wk | ((wk1 >> 31) & 0x00000001));
+    para1B = (para1B ^ card->scramble);
+    rshift = 32;
+    wk = exnor(card->scramble, rshift);
+    wk1 = ~(wk ^ (wk << 7) ^ (wk << 15) ^ (wk << 23));
+    card->scramble = (wk | ((wk1 >> 31) & 0x00000001));
+    Ans1 ^= card->scramble;
+    rshift = 32;
+    wk = exnor(card->scramble, rshift);
+    wk1 = ~(wk ^ (wk << 7) ^ (wk << 15) ^ (wk << 23));
+    card->scramble = (wk | ((wk1 >> 31) & 0x00000001));
+    para2A = (para2A ^ card->scramble);
+    rshift = 32;
+    wk = exnor(card->scramble, rshift);
+    wk1 = ~(wk ^ (wk << 7) ^ (wk << 15) ^ (wk << 23));
+    card->scramble = (wk | ((wk1 >> 31) & 0x00000001));
+    para2B = (para2B ^ card->scramble);
+    rshift = (u32)(dummy * 8);
+    wk = exnor(card->scramble, rshift);
+    wk1 = ~(wk ^ (wk << 7) ^ (wk << 15) ^ (wk << 23));
+    card->scramble = (wk | ((wk1 >> 31) & 0x00000001));
+    rshift = 32 + 1;
+    wk = exnor(card->scramble, rshift);
+    wk1 = ~(wk ^ (wk << 7) ^ (wk << 15) ^ (wk << 23));
+    card->scramble = (wk | ((wk1 >> 31) & 0x00000001));
+
+    *(u32 *)&input[0] = para2A;
+    *(u32 *)&input[4] = para2B;
+
+    param[0] = (u32)input;
+    param[1] = 8;
+    param[3] = (u32)output;
+    param[2] = 0;
+
+    DCFlushRange(input, 8);
+    DCInvalidateRange(output, 4);
+    DCFlushRange(param, 0x10);
+
+    task->priority = 255;
+    task->iram_mmem_addr = (void *)((u32)CardData - 0x80000000);
+    task->iram_length = 0x160;
+    task->iram_addr = 0;
+    task->dsp_init_vector = 0x10;
+    task->init_cb = InitCallback;
+    task->res_cb = NULL;
+    task->done_cb = DoneCallback;
+    task->req_cb = NULL;
+    DSPAddTask(task);
+
+    dp = (u32 *)flashID;
+    *dp++ = para1A;
+    *dp++ = para1B;
+    *dp = Ans1;
+
+    return 0;
+}
+#pragma pop
+
 static void InitCallback(void *task) {
     s32 chan;
     CARDControl *card;
