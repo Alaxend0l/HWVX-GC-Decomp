@@ -34,7 +34,7 @@ DVDCommandBlock *executing;
 u32 currID;
 u32 bootInfo;
 volatile s32 PauseFlag;
-s32 PausingFlag;
+volatile s32 PausingFlag;
 s32 AutoFinishing;
 s32 FatalErrorFlag;
 volatile u32 CurrCommand;
