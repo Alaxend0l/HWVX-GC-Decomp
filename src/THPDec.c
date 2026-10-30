@@ -41,7 +41,7 @@ static u8 *__THPHuffmanBits;
 static u8 *__THPHuffmanSizeTab;
 static u16 *__THPHuffmanCodeTab;
 static s16 *__THPMCUBuffer[6];
-u8 *__THPWorkArea;
+static void *__THPWorkArea;
 static BOOL __THPInitFlag;
 
 u32 PPCMfhid2(void);
