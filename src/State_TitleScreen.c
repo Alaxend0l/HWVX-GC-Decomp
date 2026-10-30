@@ -263,29 +263,28 @@ void TitleScreen_RunDemoLoop(void) {
     u32 index;
 
     mcp = GameSettings_GetMCP();
-    if (mcp != NULL) {
-        if (mcp->demos->demoList == NULL) {
-            return;
-        } else if (mcp->demos->bRandom) {
-            index = RandomNumberGenerator_GetRandomInteger(0, *mcp->demos->demoList);
-        } else {
-            index = progressionIndex++;
-        }
-        if (index >= *mcp->demos->demoList) {
-            index = 0;
-            progressionIndex = 1;
-        }
-        if (index < 6) {
-            GameSettings_SetCodeVariable(0x12D, 0, 3);
-        } else {
-            GameSettings_SetCodeVariable(0x12D, 0, 2);
-        }
-        g_gameDifficulty = GameSettings_GetDifficulty();
-        GameSettings_SetCodeVariable(0x198, 0, 1);
-        GameSettings_SetCodeVariable(0x133, 0, 3);
-        GameSettings_SetCodeVariable(0x131, 0, 1);
-        GameSettings_SetCodeVariable(0xC8, 0, 3);
-        StateProgressionManager_SetProgressionID(0, index);
+    if (mcp == NULL || mcp->demos->demoList == NULL) {
+        return;
     }
+    if (mcp->demos->bRandom) {
+        index = RandomNumberGenerator_GetRandomInteger(0, *mcp->demos->demoList);
+    } else {
+        index = progressionIndex++;
+    }
+    if (index >= *mcp->demos->demoList) {
+        index = 0;
+        progressionIndex = 1;
+    }
+    if (index < 6) {
+        GameSettings_SetCodeVariable(0x12D, 0, 3);
+    } else {
+        GameSettings_SetCodeVariable(0x12D, 0, 2);
+    }
+    g_gameDifficulty = GameSettings_GetDifficulty();
+    GameSettings_SetCodeVariable(0x198, 0, 1);
+    GameSettings_SetCodeVariable(0x133, 0, 3);
+    GameSettings_SetCodeVariable(0x131, 0, 1);
+    GameSettings_SetCodeVariable(0xC8, 0, 3);
+    StateProgressionManager_SetProgressionID(0, index);
 }
 
