@@ -14,9 +14,9 @@ typedef struct RebootCmd {
     u8 pad2[0x30 - 0x10];
 } RebootCmd;
 
-extern ApploaderHeader Header_802EEE00;
-extern u32 SaveStart_803C7258;
-extern u32 SaveEnd_803C725C;
+static ApploaderHeader Header_802EEE00;
+static u32 SaveStart_803C7258;
+static u32 SaveEnd_803C725C;
 extern volatile s32 Prepared_803C7260;
 
 s32 OSDisableInterrupts(void);
@@ -65,4 +65,44 @@ static inline void ReadApploader(RebootCmd *dvdCmd, void *addr, u32 offset, u32 
 
 void Callback(void) {
     Prepared_803C7260 = 1;
+}
+
+#pragma peephole off
+void __OSReboot(u32 resetCode, u32 bootDol) {
+    u8 exceptionContext[0x2C8];
+    RebootCmd dvdCmd;
+    RebootCmd dvdCmd2;
+    u32 numBytes;
+    u32 offset;
+    ApploaderHeader *header;
+
+    header = &Header_802EEE00;
+    OSDisableInterrupts();
+    *(u32 *)0x817FFFFC = 0;
+    *(u32 *)0x817FFFF8 = 0;
+    *(u8 *)0x800030E2 = 1;
+    *(u32 *)0x812FDFF0 = SaveStart_803C7258;
+    *(u32 *)0x812FDFEC = SaveEnd_803C725C;
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(exceptionContext);
+    DVDInit();
+    DVDSetAutoInvalidation(1);
+    __DVDPrepareResetAsync(Callback);
+    if (!DVDCheckDisk()) {
+        __OSDoHotReset(*(u32 *)0x817FFFFC);
+    }
+    __OSMaskInterrupts(0xFFFFFFE0);
+    __OSUnmaskInterrupts(0x400);
+    OSEnableInterrupts();
+
+    offset = 0;
+    numBytes = 0x20;
+    ReadApploader(&dvdCmd, header, offset, numBytes);
+
+    offset = header->size + 0x20;
+    numBytes = (header->rebootSize + 0x1F) & ~0x1F;
+    ReadApploader(&dvdCmd2, (void *)0x81300000, offset, numBytes);
+
+    ICInvalidateRange((void *)0x81300000, numBytes);
+    Run((void *)0x81300000);
 }
