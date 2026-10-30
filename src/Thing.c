@@ -33,23 +33,21 @@ static inline s8 Thing_ProcessItemPickup(u8 *thing, u8 *item) {
 
     switch (**(u8 **)(item + 0xC0)) {
     case 0:
-        break;
     case 1:
-        break;
     case 2:
         break;
     case 3:
         rack = ThingManagerList_GetByType(thing + 0x88, 8);
-        if (rack == NULL) {
-            break;
+        if (rack != NULL) {
+            WildCardRack_Add(rack, *(u8 **)(item + 0xC0), *(s16 *)(item + 0xCE));
+            Item_Release(item);
+            motion = *(void **)(item + 0xD0);
+            if (motion != NULL) {
+                *(s32 *)((u8 *)motion + 0x18) = *(s32 *)((u8 *)motion + 0x14);
+            }
+            return 1;
         }
-        WildCardRack_Add(rack, *(u8 **)(item + 0xC0), *(s16 *)(item + 0xCE));
-        Item_Release(item);
-        motion = *(void **)(item + 0xD0);
-        if (motion != NULL) {
-            *(s32 *)((u8 *)motion + 0x18) = *(s32 *)((u8 *)motion + 0x14);
-        }
-        return 1;
+        break;
     }
     return 0;
 }
@@ -819,6 +817,7 @@ void Thing_CollideWithItems(u8 *thing) {
     struct GridResult results[64];
     s32 count;
     s32 i;
+    u8 *item;
     s8 picked;
 
     max = *(Vector4 *)(thing + 0x40);
@@ -831,10 +830,11 @@ void Thing_CollideWithItems(u8 *thing) {
     max.z += *(f32 *)(thing + 0x70);
     count = Grid_GetObjects(&min, &max, 8, results, 0x40);
     for (i = 0; i < count; i++) {
-        u8 *item = (u8 *)results[i].id;
-        u8 *obj = item;
-
-        if (*(s16 *)(obj + 0xCC) <= 0 && PSVECSquareDistance((f32 *)(thing + 0x40), (f32 *)(obj + 0x40)) < *(f32 *)(item + 0xE8)) {
+        item = (u8 *)results[i].id;
+        if (*(s16 *)(results[i].id + 0xCC) > 0) {
+            continue;
+        }
+        if (PSVECSquareDistance((f32 *)(thing + 0x40), (f32 *)(results[i].id + 0x40)) < *(f32 *)(item + 0xE8)) {
             picked = 0;
             switch (*(s32 *)(thing + 0xA8)) {
             case 7:
