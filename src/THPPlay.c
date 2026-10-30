@@ -1,5 +1,10 @@
 #include "common.h"
 
+typedef struct THPVideoInfo {
+    u32 xSize;
+    u32 ySize;
+} THPVideoInfo;
+
 void Mpeg_Init(void);
 
 
