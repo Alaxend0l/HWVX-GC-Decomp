@@ -344,6 +344,40 @@ void Render_DrawAlphaTriangle(u16 index) {
     }
 }
 
+void Render_DrawRectanglesWindow(void) {
+    u32 i;
+    u32 window = 0;
+    u32 j;
+
+    if (g_pGDL->numRects == 0) {
+        return;
+    }
+    Set2DRectVtxDesc();
+    for (i = 0; i < g_pGDL->numRects; i++) {
+        if (g_CurrentViews != 1 && window != g_pGDL->rects[i].window) {
+            window = g_pGDL->rects[i].window;
+            Gfx_SetRenderWindow(window);
+            Render_StateSetScissor();
+            Gfx_SetOrthoMatrix();
+        }
+        Render_StateAlphaBlendEnable(g_pGDL->rects[i].blendMode > 1);
+        Render_SetTextureHandle(g_pGDL->rects[i].tex);
+        Render_StateBlendMode(g_pGDL->rects[i].blendMode);
+        GXBegin(0x80, 0, 4);
+        for (j = 0; j < 4; j++) {
+            GXPosition2f32(g_pGDL->rects[i].v[j].x, g_pGDL->rects[i].v[j].y);
+            GXColor4u8(g_pGDL->rects[i].v[j].color.r, g_pGDL->rects[i].v[j].color.g, g_pGDL->rects[i].v[j].color.b, g_pGDL->rects[i].v[j].color.a);
+            GXTexCoord2f32(g_pGDL->rects[i].v[j].s, g_pGDL->rects[i].v[j].t);
+        }
+    }
+    if (window != 0) {
+        Gfx_SetRenderWindow(0);
+        Render_StateSetScissor();
+        Gfx_SetOrthoMatrix();
+    }
+    Render_StateAlphaBlendEnable(1);
+}
+
 void Render_DrawRectangles(void) {
     u32 i;
     u32 j;
