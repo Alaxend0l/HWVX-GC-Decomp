@@ -322,9 +322,11 @@ typedef struct CarA {
   u8 pad47C[0x10];          /* 0x47C */
   u32 transmissionFlags;    /* 0x48C & 0x1000 selects 4WD torque split */
   u8 tiltState;             /* 0x490 0: rest, 1/2: tilted by the stick, 3 */
-  u8 pad491[3];             /* 0x491 */
+  u8 stuntAxis;             /* 0x491 0: none, 1: pitch (stickX), 2: roll (stickY) */
+  u8 pad492[2];             /* 0x492 */
   char **stuntPopup;        /* 0x494 */
-  u8 pad498[8];             /* 0x498 */
+  u8 pad498[4];             /* 0x498 */
+  char **stuntScoreMessage; /* 0x49C */
   char **stuntMessage;      /* 0x4A0 */
   u8 pad4A4[0xC];           /* 0x4A4 */
   Vector4 stuntSpin;        /* 0x4B0 zeroed when a stunt fails */
