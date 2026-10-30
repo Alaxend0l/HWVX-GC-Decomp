@@ -121,11 +121,11 @@ static inline Block *link_new_block(Block **pool_obj, u32 size) {
 }
 
 static inline void *get_malloc_pool(void) {
-    static u8 protopool[0x34];
+    static u8 protopool[0x38];
     static u8 init;
 
     if (!init) {
-        memset(protopool, 0, sizeof(protopool));
+        memset(protopool, 0, sizeof(mem_pool_obj));
         init = 1;
     }
     return protopool;
