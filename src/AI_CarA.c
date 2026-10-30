@@ -717,7 +717,7 @@ static void AI_Car_WeaponAsyncHeartbeat(u8 *ai) {
     }
 }
 
-static void AI_Car_ClearedNavPoint(u8 *car, s8 arg1) {
+static void AI_Car_ClearedNavPoint_800087C8(u8 *car, s8 arg1) {
     s32 NavHolder_GetTotalNavPoints(void);
     u8 *NavHolder_GetNavPoint(s32 index);
     s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest);
