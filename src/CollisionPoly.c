@@ -20,6 +20,32 @@ typedef struct HitZT {
     Vector4 normal;  /* 0x10 */
 } HitZT;
 
+typedef struct CollisionPoly {
+    Vector4 plane;   /* 0x00 */
+    Vector4 *verts;  /* 0x10: w holds the index of the opposite vertex */
+    u32 numVerts;    /* 0x14 */
+    u32 unk18;       /* 0x18 */
+    u32 material;    /* 0x1C */
+} CollisionPoly;
+
+typedef struct PolyOBox {
+    Vector4 center;      /* 0x00 */
+    Vector4 corners[8];  /* 0x10 */
+    f32 extent[4];       /* 0x90 */
+    Vector4 *axis[3];    /* 0xA0 */
+    u8 unkAC[0xCC - 0xAC];
+    u32 unkCC;           /* 0xCC */
+} PolyOBox;
+
+typedef struct PolyHit {
+    Vector4 pos;     /* 0x00 */
+    Vector4 normal;  /* 0x10 */
+    u8 unk20[8];
+    u32 unk28;       /* 0x28 */
+    u8 unk2C[0x40 - 0x2C];
+    u8 type;         /* 0x40 */
+} PolyHit;
+
 f32 RayHitsPoly(Vector4 *start, Vector4 *dir, Poly *p, f32 t) {
     f32 PSVECDotProduct(Vector4 *a, Vector4 *b);
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
