@@ -173,7 +173,7 @@ static inline void SimThread_SetWeights(SimThread *t, const s32 *weights) {
     t->historyIdx = 0;
 }
 
-static inline s32 SimThread_AddDelta(SimThread *t, s32 dPos, u32 dt) {
+static inline s32 SimThread_AddDelta(SimThread *t, s32 dPos, s32 dt) {
     s32 i;
     s32 n;
     s32 sumP;
