@@ -250,6 +250,9 @@ typedef struct Destructible {
   s32 deathTimer;      /* 0xC8 ms until a dead destructible is released */
   ConvexHull *hull;    /* 0xCC */
   OBox *orientedBox;   /* 0xD0 */
+  void *anim;          /* 0xD4 movers: track animation */
+  f32 speed;           /* 0xD8 */
+  f32 trackPos;        /* 0xDC */
 } Destructible;
 
 typedef struct OConvexHull {
