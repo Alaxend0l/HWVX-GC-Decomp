@@ -100,6 +100,46 @@ static volatile u8 D54[] = {
 	0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0xAC, 0xC4, 0xF8, 0x08, 0x10, 0xBF, 0x18,
 };
 
+s32 GBAGetProcessStatus(s32 chan, u8 *percentp);
+static void F23(s32 chan, s32 ret);
+s32 GBAJoyBootAsync(s32 chan, s32 paletteColor, s32 paletteSpeed, u8 *programp, s32 length, u8 *status, GBACallback callback) {
+    GBABootInfo *bootInfo = &__GBA[chan].bootInfo;
+    u8 percent;
+    s32 ret;
+
+    if (chan & ~3) {
+        return 4;
+    }
+    if (length == 0 || 0x40000 < length) {
+        return 4;
+    }
+    if (paletteSpeed < -4 || paletteSpeed > 4) {
+        return 4;
+    }
+    if (paletteColor < 0 || paletteColor > 6) {
+        return 4;
+    }
+    if (programp[0xac] * programp[0xad] * programp[0xae] * programp[0xaf] == 0) {
+        return 4;
+    }
+    ret = GBAGetProcessStatus(chan, &percent);
+    if (ret != 0) {
+        return ret;
+    }
+    bootInfo->paletteColor = paletteColor;
+    bootInfo->paletteSpeed = paletteSpeed;
+    bootInfo->programp = programp;
+    bootInfo->length = length;
+    bootInfo->status = status;
+    bootInfo->callback = callback;
+    bootInfo->curOffset = D54[8];
+    ret = GBAGetStatusAsync(chan, bootInfo->status, F23);
+    if (ret != 0) {
+        bootInfo->callback = NULL;
+    }
+    return ret;
+}
+
 static void F23(s32 chan, s32 ret) {
     GBAControl *gba;
     GBABootInfo *bootInfo;
