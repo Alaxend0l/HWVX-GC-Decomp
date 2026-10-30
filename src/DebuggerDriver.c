@@ -31,7 +31,7 @@ static int DBGEXISync(void) {
 
 int DBGEXIImm(void *buffer, long bytecounter, unsigned long write);
 
-static inline int DBGWriteMailbox(unsigned long p1) {
+static int DBGWriteMailbox(unsigned long p1) {
     int total = 0;
     unsigned long v;
 
@@ -63,6 +63,39 @@ void DBClose(void) {
 
 void DBOpen(void) {
 
+}
+
+extern unsigned char SendCount;
+int DBWrite(const void *src, unsigned long size) {
+    unsigned long v;
+    unsigned long busyFlag;
+    int interrupts = OSDisableInterrupts();
+
+    do {
+        DBGReadStatusInline(&busyFlag);
+    } while (busyFlag & 2);
+
+    SendCount++;
+    v = (SendCount & 1) ? 0x1000 : 0;
+
+    while (!DBGWrite(v | 0x1c000, (void *)src, (size + 3) & ~3)) {
+    }
+
+    do {
+        DBGReadStatusInline(&busyFlag);
+    } while (busyFlag & 2);
+
+    v = SendCount;
+    while (!DBGWriteMailbox(0x1f000000 | v << 16 | size)) {
+    }
+
+    do {
+        while (!DBGReadStatusInline(&busyFlag)) {
+        }
+    } while (busyFlag & 2);
+
+    OSRestoreInterrupts(interrupts);
+    return 0;
 }
 
 int DBGRead(unsigned long count, void *buffer, long size);
