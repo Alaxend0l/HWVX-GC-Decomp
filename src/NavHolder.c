@@ -196,6 +196,9 @@ s32 NavHolder_IsNavLinkNearer(f32 *pos, NavLink *link, f32 *nearest, u8 depth) {
     return result;
 }
 
+#pragma push
+#pragma always_inline on
+#pragma inline_depth(1)
 s32 NavHolder_FindIndexOfNearestNavLink(f32 *pos, NavLink *link, f32 *nearest, u8 depth) {
     u8 *NavHolder_GetNavPoint(s32 index);
     s32 result = -1;
@@ -204,7 +207,7 @@ s32 NavHolder_FindIndexOfNearestNavLink(f32 *pos, NavLink *link, f32 *nearest, u
 
     for (i = 0; i < link->numPrev; i++) {
         if (link->prev[i] != -0x8000) {
-            found = NavHolder_IsNavLinkNearer(pos, (NavLink *)NavHolder_GetNavPoint(link->prev[i]), nearest, depth);
+            found = NavHolder_IsNavLinkNearer_Expanded(pos, (NavLink *)NavHolder_GetNavPoint(link->prev[i]), nearest, depth);
             if (found != -1) {
                 result = found;
             }
@@ -212,7 +215,7 @@ s32 NavHolder_FindIndexOfNearestNavLink(f32 *pos, NavLink *link, f32 *nearest, u
     }
     for (i = 0; i < link->numNext; i++) {
         if (link->next[i] != -0x8000) {
-            found = NavHolder_IsNavLinkNearer(pos, (NavLink *)NavHolder_GetNavPoint(link->next[i]), nearest, depth);
+            found = NavHolder_IsNavLinkNearer_Expanded(pos, (NavLink *)NavHolder_GetNavPoint(link->next[i]), nearest, depth);
             if (found != -1) {
                 result = found;
             }
@@ -220,7 +223,7 @@ s32 NavHolder_FindIndexOfNearestNavLink(f32 *pos, NavLink *link, f32 *nearest, u
     }
     return result;
 }
-
+#pragma pop
 s32 NavHolder_FindIndexOfNearestNavPoint(f32 *pos, s32 hint) {
     extern s32 gs_aLinksDepth3[64];
     s32 NavHolder_FindIndexOfNearestNavLink(f32 *pos, NavLink *link, f32 *nearest, u8 depth);
