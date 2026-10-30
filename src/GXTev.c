@@ -31,6 +31,44 @@ typedef struct GXData {
 
 extern GXData *gx;
 
+void GXSetTevColorIn(s32 stage, s32 a, s32 b, s32 c, s32 d);
+void GXSetTevAlphaIn(s32 stage, s32 a, s32 b, s32 c, s32 d);
+void GXSetTevColorOp(s32 stage, s32 op, s32 bias, s32 scale, u8 clamp, s32 out_reg);
+void GXSetTevAlphaOp(s32 stage, s32 op, s32 bias, s32 scale, u8 clamp, s32 out_reg);
+void GXSetTevOp(s32 id, s32 mode) {
+    s32 carg = 10;
+    s32 aarg = 5;
+
+    if (id != 0) {
+        carg = 0;
+        aarg = 0;
+    }
+    switch (mode) {
+    case 0:
+        GXSetTevColorIn(id, 15, 8, carg, 15);
+        GXSetTevAlphaIn(id, 7, 4, aarg, 7);
+        break;
+    case 1:
+        GXSetTevColorIn(id, carg, 8, 9, 15);
+        GXSetTevAlphaIn(id, 7, 7, 7, aarg);
+        break;
+    case 2:
+        GXSetTevColorIn(id, carg, 12, 8, 15);
+        GXSetTevAlphaIn(id, 7, 4, aarg, 7);
+        break;
+    case 3:
+        GXSetTevColorIn(id, 15, 15, 15, 8);
+        GXSetTevAlphaIn(id, 7, 7, 7, 4);
+        break;
+    case 4:
+        GXSetTevColorIn(id, 15, 15, 15, carg);
+        GXSetTevAlphaIn(id, 7, 7, 7, aarg);
+        break;
+    }
+    GXSetTevColorOp(id, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(id, 0, 0, 0, 1, 0);
+}
+
 void GXSetTevColorIn(s32 stage, s32 a, s32 b, s32 c, s32 d) {
     u32 *pTevReg;
 
