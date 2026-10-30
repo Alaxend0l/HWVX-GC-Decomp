@@ -70,6 +70,8 @@ typedef struct GXDataSUTex {
     u32 texmapId[16];
     u32 tcsManEnab;
     u32 tevTcEnab;
+    u8 unk4E4[0x4F4 - 0x4E4];
+    u32 dirtyState;
 } GXDataSUTex;
 
 extern GXDataSUTex *gx;
