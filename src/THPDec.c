@@ -36,7 +36,7 @@ typedef struct THPFileInfo {
     u8 unk6AE[0x6BC - 0x6AE];
 } THPFileInfo;
 
-THPFileInfo *__THPInfo;
+static THPFileInfo *__THPInfo;
 static u8 *__THPHuffmanBits;
 static u8 *__THPHuffmanSizeTab;
 static u16 *__THPHuffmanCodeTab;
