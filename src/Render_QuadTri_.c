@@ -180,7 +180,7 @@ static inline void GXPosition2f32(f32 x, f32 y) {
     GXWGFifo.f32 = y;
 }
 
-static inline void FontManager_Vertex2(f32 x, f32 y, f32 s, f32 t) {
+static inline void FontManager_Vertex2(f32 x, f32 y, f32 t, f32 s) {
     GXWGFifo.f32 = x;
     GXWGFifo.f32 = y;
     GXWGFifo.u8 = g_textcolor.r;
@@ -232,17 +232,12 @@ u32 FontManager_Print(char *str, f32 x, f32 y, s32 id) {
         }
         if (c != ' ') {
             f32 y1 = y + font->height;
-            FontChar *ch = &font->chars[c];
-            f32 x1 = 0.6f * (u8)ch->spacingX + x;
-            f32 *s0 = &ch->unk0;
-            f32 *t0 = &ch->unk4;
-            f32 *s1 = &ch->unk8;
-            f32 *t1 = &ch->unkC;
+            f32 x1 = 0.6f * (u8)font->chars[c].spacingX + x;
 
-            FontManager_Vertex2(x, y, *s0, *t0);
-            FontManager_Vertex2(x, y1, *s0, *t1);
-            FontManager_Vertex2(x1, y1, *s1, *t1);
-            FontManager_Vertex2(x1, y, *s1, *t0);
+            FontManager_Vertex2(x, y, font->chars[c].unk0, font->chars[c].unk4);
+            FontManager_Vertex2(x, y1, font->chars[c].unk0, font->chars[c].unkC);
+            FontManager_Vertex2(x1, y1, font->chars[c].unk8, font->chars[c].unkC);
+            FontManager_Vertex2(x1, y, font->chars[c].unk8, font->chars[c].unk4);
         }
         x += 0.6f * (u8)font->chars[' '].spacingX - 2.0f;
     }
