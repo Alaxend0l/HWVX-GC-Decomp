@@ -646,6 +646,72 @@ void Motion_HeartbeatB2(void *state, Vector4 *vel) {
     ThingManagerList_RemoveReleasedThings((s32)state + 0x14);
 }
 
+void TEST_AnimTraverseHeirarchyToMatricesWorld(Vector4 *quat, void *pos0, void *frames, s32 skel, void *matrices, f32 time) {
+    typedef struct AnimBone {
+        Quaternion rot;
+        f32 pos[3];
+        u8 numChildren;
+        u8 pop;
+        u8 next;
+        u8 pad[1];
+    } AnimBone;
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    Vector4 posStack[64];
+    Quaternion rotStack[64];
+    Matrix4 m;
+    Quaternion rot;
+    Quaternion q;
+    Vector4 pos;
+    Vector4 *mtx;
+    u32 i;
+    Vector4 *posSp;
+    Quaternion *rotSp;
+    AnimBone *bone;
+    u32 n;
+    Vector4 *p;
+
+    p = pos0;
+    pos.w = 1.0f;
+    bone = frames;
+    mtx = matrices;
+    posSp = posStack;
+    rotSp = rotStack;
+    rot = *(Quaternion *)quat;
+    QuaternionToSubMatrix(quat, &m);
+    m.v[3] = *p;
+    XformVec(&m, (Vector4 *)((AnimBone *)frames)->pos, &pos);
+    for (i = 0; i < skel; i++) {
+        QuaternionMult((Vector4 *)&rot, (Vector4 *)&bone->rot, (Vector4 *)&q);
+        rot = q;
+        QuaternionToSubMatrix(&q, mtx);
+        mtx[3] = pos;
+        mtx[3].w = 1.0f;
+        if (bone->numChildren != 0) {
+            frames = &bone[1];
+            n = bone->numChildren - 1;
+            XformVec(mtx, (Vector4 *)((AnimBone *)frames)->pos, &pos);
+            if (n != 0) {
+                u32 j;
+
+                posSp += n;
+                p = posSp;
+                frames = &((AnimBone *)frames)[((AnimBone *)frames)->next];
+                *rotSp++ = q;
+                for (j = 0; j < n; j++) {
+                    XformVec(mtx, (Vector4 *)((AnimBone *)frames)->pos, --p);
+                    frames = &((AnimBone *)frames)[((AnimBone *)frames)->next];
+                }
+            }
+        } else {
+            pos = *--posSp;
+            rotSp -= bone->pop + 1;
+            rot = *rotSp++;
+        }
+        bone++;
+        mtx += 4;
+    }
+}
+
 #pragma pop
 
 #pragma push

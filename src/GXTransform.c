@@ -158,6 +158,50 @@ void GXLoadTexMtxImm(f32 mtx[3][4], u32 id, s32 type) {
         WriteMTXPS4x2(mtx, (volatile f32 *)0xCC008000);
     }
 }
+
+void __GXSetRange(f32 nearz, f32 fgSideX);
+#pragma peephole on
+void GXSetViewportJitter(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz, u32 field) {
+    extern GXData *gx;
+    f32 sx;
+    f32 sy;
+    f32 sz;
+    f32 ox;
+    f32 oy;
+    f32 oz;
+    f32 zmin;
+    f32 zmax;
+
+    if (field == 0) {
+        top -= 0.5f;
+    }
+    sx = wd / 2.0f;
+    sy = -ht / 2.0f;
+    ox = 342.0f + (left + (wd / 2.0f));
+    oy = 342.0f + (top + (ht / 2.0f));
+    zmin = 16777215.0f * nearz;
+    zmax = 16777215.0f * farz;
+    sz = zmax - zmin;
+    oz = zmax;
+    gx->vpLeft = left;
+    gx->vpTop = top;
+    gx->vpWd = wd;
+    gx->vpHt = ht;
+    gx->vpNearz = nearz;
+    gx->vpFarz = farz;
+    if (*((u8 *)gx + 0x454) != 0) {
+        __GXSetRange(nearz, *(f32 *)((u8 *)gx + 0x458));
+    }
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = 0x5101A;
+    GXWGFifo.f32 = sx;
+    GXWGFifo.f32 = sy;
+    GXWGFifo.f32 = sz;
+    GXWGFifo.f32 = ox;
+    GXWGFifo.f32 = oy;
+    GXWGFifo.f32 = oz;
+    gx->bpSentNot = 1;
+}
 void GXSetViewportJitter(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz, u32 field);
 #pragma peephole off
 void GXSetViewport(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz) {

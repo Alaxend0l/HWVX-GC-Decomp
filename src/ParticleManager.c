@@ -367,6 +367,68 @@ void CreateParticleSprite(Vector4 *pos, Vector4 *vel, Vector4 *accel, void *owne
     }
 }
 
+void ParticleGX_Move();
+void ParticleManager_Heartbeat(void) {
+    extern s8 g_bFreezeWorld;
+    extern f32 g_fDeltaTimeMS;
+    void ParticleSprite_Move(void *sprite, void *sprites);
+    void AccumulateVector(void *arg0, void *arg1, void *arg2, f32 farg0);
+    typedef struct {
+        Vector4 pos;
+        Vector4 vel;
+        Vector4 accel;
+        u8 unk30[0x94 - 0x30];
+        u8 flags;
+        u8 unk95[0xB0 - 0x95];
+    } ParticleSprite;
+    typedef struct {
+        u8 unk0[0xB4];
+        u8 flags;
+        u8 unkB5[0x100 - 0xB5];
+    } ParticleGX;
+    typedef struct {
+        struct {
+            ParticleGX particles[0x280];
+            u8 unk28000[0x10];
+        } groups[3];
+        ParticleSprite sprites[0x200];
+        u8 unk8E030[0x10];
+    } ParticleManager;
+    extern ParticleManager g_particleManager;
+    ParticleManager *pm;
+    u32 j;
+    u32 i;
+    ParticleSprite *sprite;
+    ParticleSprite *sprites;
+    f32 dt;
+
+    if (!g_bFreezeWorld) {
+        pm = &g_particleManager;
+        for (i = 0; i < 3; i++) {
+            for (j = 0; j < 0x280; j++) {
+                if (!(pm->groups[i].particles[j].flags & 8)) {
+                    ParticleGX_Move(&pm->groups[i].particles[j]);
+                }
+            }
+        }
+        dt = g_fDeltaTimeMS;
+        sprites = pm->sprites;
+        sprite = pm->sprites;
+        for (j = 0; j < 0x200; j++) {
+            if (!(pm->sprites[j].flags & 8)) {
+                ParticleSprite_Move(&sprite[j], sprites);
+            }
+        }
+        sprite = pm->sprites;
+        for (j = 0; j < 0x200; j++) {
+            if (!(pm->sprites[j].flags & 8)) {
+                AccumulateVector(&sprite[j].accel, &sprite[j].vel, &sprite[j].vel, dt);
+                AccumulateVector(&sprite[j].vel, &sprite[j].pos, &sprite[j].pos, dt);
+            }
+        }
+    }
+}
+
 void ParticleGX_Move(struct ParticleGX_Move_t {
         Vector4 pos;
         u8 unk10[0xDC - 0x10];

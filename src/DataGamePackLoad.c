@@ -180,8 +180,38 @@ void DataPack_RefreshQuadPackPtrs(DataPack *pack, void *quad)
 #pragma use_lmw_stmw on
 void DataPack_RefreshTextures(DataPack *pack) {
     void Gfx_LoadPalettes_RAM(void *data, void *palettes);
+    u16 Gfx_LoadTexture_RAM(u32 *data);
+    void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
+    u8 *base;
+    u32 texData;
+    u32 id;
+    u32 i;
+    u32 idx;
+    u32 texID;
 
+    base = pack->base;
     Gfx_LoadPalettes_RAM(pack->paletteData, pack->palettes);
+    texData = pack->textureData;
+    for (i = 0; i < pack->numTextures; i++) {
+        pack->textureIDs[i] = Gfx_LoadTexture_RAM(&texData);
+        if (texData & 0x1F) {
+            texData += 0x20 - (texData & 0x1F);
+        }
+    }
+    for (i = 0; i < pack->numRelocs; i++) {
+        id = pack->relocs[i * 2 + 1];
+        if (id & 0xFFFF0000) {
+            u32 packID = id >> 16;
+            idx = pack->refs[0].id != packID;
+            if (pack->refs[idx].pack == NULL) {
+                pack->refs[idx].pack = FileStreaming_InitializeDataPack(FileStreaming_LoadDataPack(&pack->refs[idx], 8, packID, 0), 8, 1);
+            }
+            texID = pack->refs[idx].pack->textureIDs[id & 0xFFFF];
+        } else {
+            texID = pack->textureIDs[id];
+        }
+        *(u32 *)(base + pack->relocs[i * 2]) = texID;
+    }
 }
 
 void DataPack_RefreshPtrs(DataPack *pack) {

@@ -403,7 +403,7 @@ BOOL OSCreateThread(OSThread *thread, void *(*func)(void *), void *param, void *
     thread->suspend = 1;
     thread->val = (void *)-1;
     thread->mutex = NULL;
-    thread->queueJoin.head = thread->queueJoin.tail = NULL;
+    OSInitThreadQueue(&thread->queueJoin);
     thread->queueMutex.head = thread->queueMutex.tail = NULL;
 
     sp = (u32)stack;
@@ -411,10 +411,10 @@ BOOL OSCreateThread(OSThread *thread, void *(*func)(void *), void *param, void *
     sp -= 8;
     ((u32 *)sp)[0] = 0;
     ((u32 *)sp)[1] = 0;
-    OSInitContext((OSContext *)thread, (u32)func, sp);
+    OSInitContext((void *)thread, (u32)func, sp);
     thread->context.lr = (u32)OSExitThread;
     thread->context.gpr[3] = (u32)param;
-    thread->stackBase = stack;
+    thread->stackBase = (u8 *)stack;
     thread->stackEnd = (u32 *)((u32)stack - stackSize);
     *thread->stackEnd = 0xDEADBABE;
 

@@ -188,11 +188,11 @@ void ThingManagerList_ReleaseAndRemoveAll(void **list) {
     ThingManagerList_ReleaseAll(list);
     for (thing = *list; thing != NULL; thing = next) {
         next = thing->next;
-        if (thing->flags & 0x200000) {
+        if ((thing->flags & 0x200000) != 0) {
             void **children;
             ThingManagerList_ReleaseAndRemoveAll(children = (void **)&thing->unk88);
             ThingManagerList_Remove(list, thing);
-            ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
+            ThingManagerList_Append(g_thingManager_DARYL.freeList + thing->type, thing);
             thing->flags &= ~0x200000;
             thing->flags |= 0x1000;
         }

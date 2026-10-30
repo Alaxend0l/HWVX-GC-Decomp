@@ -33,6 +33,77 @@ extern GXData *gx;
 
 void __GXFlushTextureState(void);
 
+void GXSetFog(s32 type, f32 startz, f32 endz, f32 nearz, f32 farz, GXColor color) {
+    u32 fogclr, fog0, fog1, fog2, fog3;
+    f32 A, B, B_mant, C, a, c;
+    s32 B_expn;
+    u32 b_m;
+    u32 b_s;
+    u32 a_hex;
+    u32 c_hex;
+
+    if (farz == nearz || endz == startz) {
+        A = 0.0f;
+        B = 0.5f;
+        C = 0.0f;
+    } else {
+        A = (farz * nearz) / ((farz - nearz) * (endz - startz));
+        B = farz / (farz - nearz);
+        C = startz / (endz - startz);
+    }
+    B_mant = B;
+    B_expn = 0;
+    while (B_mant > 1.0) {
+        B_mant /= 2;
+        B_expn++;
+    }
+    while (B_mant > 0 && B_mant < 0.5) {
+        B_mant *= 2;
+        B_expn--;
+    }
+    a = A / (f32)(1 << (B_expn + 1));
+    b_m = (u32)(8.388638e6f * B_mant);
+    b_s = B_expn + 1;
+    c = C;
+
+    fog1 = 0;
+    fog1 = (fog1 & ~0xFFFFFF) | b_m;
+    fog1 = (fog1 & 0xFFFFFF) | 0xEF000000;
+    fog2 = 0;
+    fog2 = (fog2 & ~0x1F) | b_s;
+    fog2 = (fog2 & 0xFFFFFF) | 0xF0000000;
+    a_hex = *(u32 *)&a;
+    c_hex = *(u32 *)&c;
+    fog0 = 0;
+    fog0 = (fog0 & ~0x7F800) | (((a_hex >> 23) & 0xFF) << 11);
+    fog0 = (fog0 & ~0x7FF) | ((a_hex >> 12) & 0x7FF);
+    fog0 = (fog0 & ~0x80000) | ((a_hex >> 31) << 19);
+    fog0 = (fog0 & 0xFFFFFF) | 0xEE000000;
+    fog3 = 0;
+    fog3 = (fog3 & ~0x7F800) | (((c_hex >> 23) & 0xFF) << 11);
+    fog3 = (fog3 & ~0x7FF) | ((c_hex >> 12) & 0x7FF);
+    fog3 = (fog3 & ~0x80000) | ((c_hex >> 31) << 19);
+    fog3 = (fog3 & ~0x100000);
+    fog3 = (fog3 & ~0xE00000) | (type << 21);
+    fog3 = (fog3 & 0xFFFFFF) | 0xF1000000;
+    fogclr = 0;
+    fogclr = (fogclr & ~0xFF) | color.b;
+    fogclr = (fogclr & ~0xFF00) | (color.g << 8);
+    fogclr = (fogclr & ~0xFF0000) | (color.r << 16);
+    fogclr = (fogclr & 0xFFFFFF) | 0xF2000000;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = fog0;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = fog1;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = fog2;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = fog3;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = fogclr;
+    gx->bpSentNot = 0;
+}
+
 void GXSetFogRangeAdj(u8 enable, u16 center, u16 *table) {
     u32 i;
     u32 range_adj;

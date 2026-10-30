@@ -105,15 +105,13 @@ s32 Emitter_Init(u8 *emitter, u8 *data) {
     return 1;
 }
 
-s32 Emitter_Move(void *arg0) {
+s32 Emitter_Move(Emitter *emitter) {
     extern f32 g_fDeltaTimeMS;
     extern Vector4 g_zeroVector;
     f32 MagnitudeVector(void *v);
     void *ThingManager_DARYL_CreateThing(s32 type, void *params);
     s32 RandomAdd_s32(s32 base, s32 range);
-    struct { Vector4 pos; Vector4 quat; Vector4 row; Vector4 vel; u32 id; u32 unk54; f32 speed; f32 unk5C; } params __attribute__((aligned(16)));
     u32 dt;
-    Emitter *emitter = arg0;
 
     if (emitter->flags & 0x02000000) {
         return 1;
@@ -150,6 +148,8 @@ s32 Emitter_Move(void *arg0) {
                 emitter->fxId = emitter->fx->fxIds[emitter->fxIndex];
             }
             if (emitter->fxId != 0 && Emitter_InCameraRange(emitter, emitter->range)) {
+                struct { Vector4 pos; Vector4 quat; Vector4 row; Vector4 vel; u32 id; u32 unk54; f32 speed; f32 unk5C; } params __attribute__((aligned(16)));
+
                 params.id = emitter->fxId;
                 params.pos = emitter->pos;
                 params.quat = emitter->quat;

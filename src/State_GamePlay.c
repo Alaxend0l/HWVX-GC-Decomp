@@ -1149,6 +1149,22 @@ s32 ActionPauseGame(u32 *action) {
     return 1;
 }
 
+s32 TriggerInterfacePackEnd(u32 *pack) {
+    int strcmp(const char *, const char *);
+    u32 i;
+    u32 id;
+    InterfacePackEntry *entry;
+
+    i = 0;
+    id = pack[0];
+    for (entry = g_InterfacePackData; i < g_NumInterfacesPlaying; entry++, i++) {
+        if (id == entry->id && strcmp(entry->name, (char *)(pack + 1)) == 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 s32 ActionPlayInterfacePack(u32 *pack) {
     void *FileStreaming_InitializeDataPack(void *, s32, s32);
     u8 *DataPack_GetScript(void *, s32);

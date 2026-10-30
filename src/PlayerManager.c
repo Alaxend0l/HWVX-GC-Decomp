@@ -196,11 +196,13 @@ void *PlayerManager_NewHumanPlayer(void) {
 }
 
 void *PlayerManager_NewAIPlayer(u8 *desc) {
-    void AI_Car_Init();
-    void AI_Creature_Init();
-    PMPlayer *player = ((PlayerManager *)g_playerManager)->free;
-    void (*init)();
+    extern u8 g_playerManager[0x20E0];
+    void AI_Car_Init(void *player);
+    void AI_Creature_Init(void *player);
+    void (*init)(void *);
+    u8 *player;
 
+    player = *(u8 **)(g_playerManager + 0x20DC);
     switch (desc[0xD]) {
     case 0:
         init = AI_Car_Init;
@@ -212,32 +214,31 @@ void *PlayerManager_NewAIPlayer(u8 *desc) {
         init = NULL;
         break;
     }
-    for (; player != NULL; player = player->next) {
-        if (player->init == init) {
-            if (player->prev == NULL) {
-                ((PlayerManager *)g_playerManager)->free = player->next;
+    for (; player != NULL; player = *(u8 **)(player + 0xB0)) {
+        if (*(void (**)(void *))(player + 0x24) == init) {
+            if (*(u8 **)(player + 0xB4) == NULL) {
+                *(u8 **)(g_playerManager + 0x20DC) = *(u8 **)(player + 0xB0);
             } else {
-                player->prev->next = player->next;
+                *(u8 **)(*(u8 **)(player + 0xB4) + 0xB0) = *(u8 **)(player + 0xB0);
             }
-            if (player->next != NULL) {
-                player->next->prev = player->prev;
-                player->next = NULL;
+            if (*(u8 **)(player + 0xB0) != NULL) {
+                *(u8 **)(*(u8 **)(player + 0xB0) + 0xB4) = *(u8 **)(player + 0xB4);
+                *(u8 **)(player + 0xB0) = NULL;
             }
-            player->prev = NULL;
+            *(u8 **)(player + 0xB4) = NULL;
             break;
         }
     }
     if (player == NULL) {
         return NULL;
     }
-    player->init(player);
-    PlayerManager_PushFree2:
-    player->next = ((PlayerManager *)g_playerManager)->active;
-    player->prev = NULL;
-    if (player->next != NULL) {
-        player->next->prev = player;
+    (*(void (**)(void *))(player + 0x24))(player);
+    *(u8 **)(player + 0xB0) = *(u8 **)(g_playerManager + 0x20D8);
+    *(u8 **)(player + 0xB4) = NULL;
+    if (*(u8 **)(player + 0xB0) != NULL) {
+        *(u8 **)(*(u8 **)(player + 0xB0) + 0xB4) = player;
     }
-    ((PlayerManager *)g_playerManager)->active = player;
+    *(u8 **)(g_playerManager + 0x20D8) = player;
     return player;
 }
 

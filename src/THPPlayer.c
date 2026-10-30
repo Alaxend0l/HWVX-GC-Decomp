@@ -333,10 +333,10 @@ BOOL THPPlayerPrepare(s32 frameNum, u8 playFlag) {
     s32 OSReceiveMessage(void *messageQueue, void **message, s32 block);
     void *VISetPostRetraceCallback(void *callback);
     extern void *OldVIPostCallback;
-    s32 offset;
-    u8 *ptr;
-    s32 i;
     void *msg;
+    s32 i;
+    u8 *ptr;
+    s32 offset;
 
     if (ActivePlayer.open && ActivePlayer.state == 0) {
         if (frameNum > 0) {
@@ -348,9 +348,9 @@ BOOL THPPlayerPrepare(s32 frameNum, u8 playFlag) {
                 if (DVDReadPrio(&ActivePlayer, WorkBuffer, 0x20, offset, 2) < 0) {
                     return FALSE;
                 }
-                ActivePlayer.initOffset = ActivePlayer.unk64 + ((u32 *)WorkBuffer)[0];
-                ActivePlayer.initReadSize = ((u32 *)WorkBuffer)[1] - ((u32 *)WorkBuffer)[0];
+                ActivePlayer.initOffset = ActivePlayer.unk64 + WorkBuffer[0];
                 ActivePlayer.initReadFrame = frameNum;
+                ActivePlayer.initReadSize = WorkBuffer[1] - WorkBuffer[0];
             } else {
                 return FALSE;
             }

@@ -1912,6 +1912,20 @@ void CarA_GetCameraOrientationInfo(CarA *car, u32 index, void *out) {
     }
 }
 
+s32 CarA_GetNearestNavPoint(CarA *car) {
+    s32 NavHolder_FindIndexOfNearestNavPoint(Vector4 *pos);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    s32 timer;
+
+    if (car->navPointIndex == 0xFFFFFFFF) {
+        car->navPointIndex = NavHolder_FindIndexOfNearestNavPoint(&car->worldMatrix.v[3]);
+        timer = RandomAdd_s32(300, 100);
+        car->navUpdateTimer = timer;
+        car->navUpdateTimer = timer;
+    }
+    return car->navPointIndex;
+}
+
 void CarA_CollideWithRay(CarA *car, void *start, void *end, struct RayHit { u8 pad0[0x30]; Vector4 normal; } *hit, f32 maxDist) {
     void XformVec(void *mtx, void *in, Vector4 *out);
     f32 PhysicalProperties_CollideWithRay(void *props, void *pos, void *start, void *end, void *hit, f32 maxDist);

@@ -94,12 +94,12 @@ s32 LoadTGA(const char *name, u32 id);
 #pragma readonly_strings on
 #pragma dont_inline on
 u16 Gfx_LoadTexture(char *name) {
-    s32 ok;
     u32 id;
     char buf[260];
     char *ext;
     u16 i;
     u16 j;
+    s32 ok;
 
     if (strcmp(name, "_NONE_") == 0) {
         return 0xFFFF;

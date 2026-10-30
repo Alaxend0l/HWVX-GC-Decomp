@@ -128,6 +128,44 @@ void Gfx_SetCameraMatrix(Vector4 *pos, Vector4 *right, Vector4 *up, Vector4 *at)
     g_state.unk93 = 0;
 }
 
+void C_MTXPerspective(f32 m[4][4], f32 fovY, f32 aspect, f32 n, f32 f);
+f32 Gfx_GetProjectionMatrix(void);
+void Gfx_SetProjectionMatrix(f32 fov) {
+    void C_MTXPerspective(f32 m[4][4], f32 fovY, f32 aspect, f32 n, f32 f);
+    void GXSetProjection(f32 m[4][4], s32 type);
+    void Gfx_SetCameraMatrix(void *a, void *b, void *c, void *d);
+    f32 Gfx_GetProjectionMatrix(void);
+    f32 mtx[4][4];
+    f32 angle;
+    f32 value;
+
+    angle = fov;
+    value = sin(0.017453292f * (0.9f * fov));
+    *(f32 *)((u8 *)GetRenderWindow() + 0x274) = value;
+    *(f32 *)((u8 *)GetRenderWindow() + 0x270) = fov;
+    fov = 90.0f / fov;
+    value = -(fov * *(u32 *)((u8 *)GetRenderWindow() + 0x2B4));
+    *(f32 *)((u8 *)GetRenderWindow() + 0xC0) = value;
+    value = 1.333f * (fov * *(u32 *)((u8 *)GetRenderWindow() + 0x2BC));
+    *(f32 *)((u8 *)GetRenderWindow() + 0xD4) = value;
+    value = 1.0f;
+    *(f32 *)((u8 *)GetRenderWindow() + 0xEC) = value;
+    value = 20000.0f;
+    *(f32 *)((u8 *)GetRenderWindow() + 0xF8) = value;
+    value = *(u32 *)((u8 *)GetRenderWindow() + 0x2B4);
+    *(f32 *)((u8 *)GetRenderWindow() + 0xE0) = value;
+    value = *(u32 *)((u8 *)GetRenderWindow() + 0x2BC);
+    *(f32 *)((u8 *)GetRenderWindow() + 0xE4) = value;
+    Gfx_SetCameraMatrix((u8 *)GetRenderWindow() + 0x180, (u8 *)GetRenderWindow() + 0x190, (u8 *)GetRenderWindow() + 0x1A0, (u8 *)GetRenderWindow() + 0x1B0);
+    value = 1.0 / sin(0.008726646f * Gfx_GetProjectionMatrix());
+    *(f32 *)((u8 *)GetRenderWindow() + 0x2CC) = value;
+    value = *(u32 *)((u8 *)GetRenderWindow() + 0x284);
+    value = *(u32 *)((u8 *)GetRenderWindow() + 0x280) / value;
+    fov = *(u32 *)((u8 *)GetRenderWindow() + 0x280);
+    C_MTXPerspective(mtx, 1.0714285f * angle * *(u32 *)((u8 *)GetRenderWindow() + 0x284) / fov, value, 1.0f, 20000.0f);
+    GXSetProjection(mtx, 0);
+}
+
 f32 Gfx_GetProjectionMatrix(void) {
     return GetRenderWindow()->fov;
 }

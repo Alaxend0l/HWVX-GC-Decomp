@@ -223,7 +223,6 @@ s32 TRKRequestSend(TRKBuffer *msgBuf, s32 *bufferId, u32 p1, u32 p2, s32 p3) {
 s32 TRKReadBuffer1_ui16(TRKBuffer *b, u16 *data);
 s32 TRKReadBuffer_ui8(TRKBuffer *b, u8 *data, s32 count);
 s32 TRKSuppAccessFile(u32 file, u8 *data, u32 *count, u8 *io_result, s32 need_reply, s32 read) {
-    s32 error;
     s32 exit;
     u32 done;
     u32 length;
@@ -233,6 +232,7 @@ s32 TRKSuppAccessFile(u32 file, u8 *data, u32 *count, u8 *io_result, s32 need_re
     TRKBuffer *replyBuffer;
     u16 replyLength;
     u8 replyIOResult;
+    s32 error;
 
     if (data == NULL || *count == 0) {
         return 2;
@@ -251,7 +251,7 @@ s32 TRKSuppAccessFile(u32 file, u8 *data, u32 *count, u8 *io_result, s32 need_re
 
         error = TRKGetFreeBuffer(&bufferId, &buffer);
         if (error == 0) {
-            error = TRKAppendBuffer1_ui8(buffer, (u8)(read ? 0xD1 : 0xD0));
+            error = TRKAppendBuffer1_ui8(buffer, read ? kDSReadFile : kDSWriteFile);
         }
         if (error == 0) {
             error = TRKAppendBuffer1_ui32(buffer, file);

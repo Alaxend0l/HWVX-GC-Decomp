@@ -687,8 +687,94 @@ void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, f32 fps);
 #pragma push
 #pragma use_lmw_stmw on
 void Creature_MacroStep(void *arg0, f32 dt) {
+    extern f32 g_fDeltaTimeSec;
+    extern s32 g_iDeltaTimeMS;
+    void TimeHandler_SetTimeElapsedSec_f32(f32 t);
+    void Creature_InterpretControls(void *creature);
+    s8 RayHitsTerrainAndObjects(void *start, void *dir, void *dist, void *hit);
+    f32 PSVECDotProduct(void *a, void *b);
+    f32 GetDampFactor(u8 type, u32 n);
+    u8 FloatsEqual(f32 a, f32 b, f32 eps);
+    void SinCosRad(f32 *s, f32 *c, f32 rad);
+    void Motion_HeartbeatB2(void *motion, void *thing);
     void MotionState_BuildMatricesWorld(void *mtx, void *pos, void *state, f32 scale);
-    struct CreatureMS *creature = arg0;
+    void Thing_PassiveTargeting(void *thing);
+    void *memset(void *dst, s32 c, u32 n);
+    void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, f32 fps);
+    struct CreatureAnim {
+        u8 unk0[0x18];
+        f32 fps;
+    };
+    struct CreatureEntry {
+        u8 unk0[4];
+        f32 forward;
+        f32 side;
+        f32 lift;
+        f32 start;
+        f32 end;
+        u8 unk18;
+        u8 unk19;
+    };
+    struct CreatureControls {
+        s8 x;
+        u8 unk1[3];
+        f32 angle;
+        f32 speed;
+        u8 unkC[0x6C - 0xC];
+        u32 flags;
+    };
+    struct CreatureModel {
+        u8 unk0[0x14];
+        u32 *numBones;
+    };
+    struct Creature {
+        Vector4 vel;
+        Vector4 mtx[3];
+        Vector4 pos;
+        Vector4 quat;
+        u8 unk60[0x74 - 0x60];
+        u32 flags;
+        s32 unk78;
+        u8 unk7C[0x94 - 0x7C];
+        struct CreatureControls *controls;
+        u8 unk98[0xB0 - 0x98];
+        f32 angle;
+        f32 angVel;
+        u8 unkB8[0xBF - 0xB8];
+        s8 onGround;
+        u8 unkC0[0xC8 - 0xC0];
+        f32 unkC8;
+        struct CreatureModel *model;
+        u8 unkD0[0xDC - 0xD0];
+        u8 *bones;
+        u8 unkE0[0xE4 - 0xE0];
+        struct CreatureAnim *anim;
+        u8 unkE8;
+        u8 unkE9;
+        u8 unkEA[0xEC - 0xEA];
+        f32 time;
+        f32 weight;
+        f32 unkF4;
+        f32 unkF8;
+        u32 unkFC;
+        u8 unk100[0x104 - 0x100];
+        struct CreatureAnim *anim2;
+        u8 unk108[0x110 - 0x108];
+        f32 unk110;
+        u8 unk114[0x118 - 0x114];
+        struct CreatureEntry *entry;
+        u8 unk11C[0x120 - 0x11C];
+        Vector4 normal;
+        f32 unk130;
+        u8 unk134[0x190 - 0x134];
+        Vector4 newPos;
+        Vector4 newVel;
+        s32 unk1B0;
+        u8 unk1B4[0x1C0 - 0x1B4];
+        f32 unk1C0;
+        u8 unk1C4[0x1C8 - 0x1C4];
+        u32 unk1C8;
+    } *creature = arg0;
     struct {
         Vector4 point;
         Vector4 normal;
@@ -713,7 +799,7 @@ void Creature_MacroStep(void *arg0, f32 dt) {
     f32 m;
     u32 count;
     u32 i;
-    struct CreatureControlsMS *controls;
+    struct CreatureControls *controls;
 
     if (creature->unk1C0 < 1.0f) {
         return;
@@ -848,7 +934,7 @@ void Creature_MacroStep(void *arg0, f32 dt) {
         if (creature->anim2 != NULL) {
             b = creature->anim2->fps;
         }
-        b = CreatureMS_Lerp(b, a, w);
+        b += w * (a - b);
         if (creature->controls != NULL && (creature->controls->flags & 0x100)) {
             b *= creature->controls->speed;
         }

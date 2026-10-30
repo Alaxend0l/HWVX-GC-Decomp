@@ -78,13 +78,13 @@ void __OSReboot(u32 resetCode, u32 bootDol) {
     OSDisableInterrupts();
     *(u32 *)0x817FFFFC = 0;
     *(u32 *)0x817FFFF8 = 0;
-    *(u8 *)0x800030E2 = 1;
-    *(void **)0x812FDFF0 = SaveStart;
-    *(void **)0x812FDFEC = SaveEnd;
-    OSClearContext(exceptionContext);
-    OSSetCurrentContext(exceptionContext);
+    *(u8 *)0x800030E2 = TRUE;
+    *(u32 *)0x812FDFF0 = (u32)SaveStart;
+    *(u32 *)0x812FDFEC = (u32)SaveEnd;
+    OSClearContext((void *)exceptionContext);
+    OSSetCurrentContext((void *)exceptionContext);
     DVDInit();
-    DVDSetAutoInvalidation(1);
+    DVDSetAutoInvalidation(TRUE);
     __DVDPrepareResetAsync(Callback);
     if (!DVDCheckDisk()) {
         __OSDoHotReset(*(u32 *)0x817FFFFC);

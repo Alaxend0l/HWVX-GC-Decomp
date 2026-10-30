@@ -124,6 +124,22 @@ void CarA_StuntFail(CarA *car) {
     car->transmissionFlags |= 0x40000;
 }
 
+void CarA_SlaveWeaponHeartbeat(CarA *car) {
+    void MotionState_InitSlavesTimed(MotionState *state, void *slaves, u8 type, s32 time);
+    void ThingManagerList_RemoveReleasedThings(void *list);
+    u32 i;
+    s32 *rpm;
+
+    for (i = 0; i < car->vehicleIface->numSlaveWeapons; i++) {
+        rpm = &car->slaveWeaponRpm[i];
+        if (*rpm < 10000) {
+            MotionState_InitSlavesTimed(&car->motionState, car->vehicleIface->slaveWeapons + i * 0xC + 4, i + 0xF0, *rpm);
+            ThingManagerList_RemoveReleasedThings(&car->motionState.slaves);
+            *rpm += g_iDeltaTimeMS;
+        }
+    }
+}
+
 void CarA_SlaveWeaponStop(CarA *car, s32 weapon) {
     void MotionState_ReleaseSlavesByType(MotionState *state, u8 type);
     void ThingManagerList_RemoveReleasedThings(void *list);

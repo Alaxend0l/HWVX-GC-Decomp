@@ -99,6 +99,53 @@ void OBoxHolder_Release(OBoxHolder *obox) {
     }
 }
 
+f32 RayBoxTest(Vector4 *start, Vector4 *dir, Vector4 *box, f32 t, Vector4 *hit) {
+    typedef struct BoxNode {
+        Vector4 plane;
+        u8 type;
+        u8 pad;
+        s16 next;
+    } __attribute__((aligned(16))) BoxNode;
+    Vector4 *BSPN0_CollideWithSegment(BoxNode *nodes, s32 node, Vector4 *p0, Vector4 *p1);
+    f32 Distance_Plane(void *plane, void *point);
+    Vector4 end __attribute__((aligned(16)));
+    Vector4 endPt __attribute__((aligned(16)));
+    BoxNode nodes[6] = {
+        { { 1.0f, 0.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, 1.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, 0.0f, 1.0f, 0.0f }, 2, 0, 1 },
+        { { -1.0f, 0.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, -1.0f, 0.0f, 0.0f }, 2, 0, 1 },
+        { { 0.0f, 0.0f, -1.0f, 0.0f }, 0, 0, 0 },
+    };
+    Vector4 *plane;
+    f32 d0;
+    f32 frac;
+
+    nodes[0].plane.w = -box[1].x;
+    nodes[1].plane.w = -box[1].y;
+    nodes[2].plane.w = -box[1].z;
+    nodes[3].plane.w = box[0].x;
+    nodes[4].plane.w = box[0].y;
+    nodes[5].plane.w = box[0].z;
+    endPt.x = end.x = t * dir->x + start->x;
+    endPt.y = end.y = t * dir->y + start->y;
+    endPt.z = end.z = t * dir->z + start->z;
+    frac = t;
+    plane = BSPN0_CollideWithSegment(nodes, 0, start, &end);
+    if (plane != NULL) {
+        d0 = Distance_Plane(plane, start);
+        frac *= d0 / (d0 - Distance_Plane(plane, &endPt));
+        if (hit != NULL) {
+            hit[0].x = dir->x * frac + start->x;
+            hit[0].y = dir->y * frac + start->y;
+            hit[0].z = dir->z * frac + start->z;
+            hit[1] = *plane;
+        }
+    }
+    return frac;
+}
+
 f32 RaySphereTest(Vector4 *start, Vector4 *dir, Vector4 *center, f32 radius, f32 t, u8 *hit) {
     void PSVECSubtract(Vector4 *a, Vector4 *b, Vector4 *out);
     f32 PSVECSquareMag(Vector4 *v);

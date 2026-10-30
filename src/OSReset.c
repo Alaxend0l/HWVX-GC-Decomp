@@ -70,18 +70,18 @@ void OSResetSystem(s32 reset, u32 resetCode, BOOL forceMenu) {
     BOOL rc;
     BOOL enabled;
     BOOL disableRecalibration;
-    u8 *sram;
+    u8 *thread;
+    u8 *next;
 
     OSDisableScheduler();
     __OSStopAudioSystem();
     if (reset == 2) {
         disableRecalibration = __PADDisableRecalibration(TRUE);
     }
-    do {
-        rc = __OSCallResetFunctions(FALSE);
-    } while (!rc);
+    while (!__OSCallResetFunctions(FALSE)) {
+    }
     if (reset == 1 && forceMenu) {
-        sram = __OSLockSram();
+        u8 *sram = __OSLockSram();
         sram[0x13] |= 0x40;
         __OSUnlockSram(TRUE);
         while (!__OSSyncSram()) {
@@ -93,7 +93,15 @@ void OSResetSystem(s32 reset, u32 resetCode, BOOL forceMenu) {
     if (reset == 1) {
         __OSDoHotReset(resetCode);
     } else if (reset == 0) {
-        KillThreads();
+        for (thread = *(u8 **)0x800000DC; thread; thread = next) {
+            next = *(u8 **)(thread + 0x2FC);
+            switch (*(u16 *)(thread + 0x2C8)) {
+            case 1:
+            case 4:
+                OSCancelThread(thread);
+                break;
+            }
+        }
         OSEnableScheduler();
         __OSReboot(resetCode, forceMenu);
     }
