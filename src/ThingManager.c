@@ -553,7 +553,13 @@ void ThingManager_DARYL_CreateMain(void) {
         ThingManager_InitFreeThing(thing, g_debrisVTable, 6);
     }
     thing = &tm->creature.thing;
-    ThingManager_InitFreeThing(thing, g_creatureVTable, 7);
+    thing->vtable = g_creatureVTable;
+    thing->unk88 = 0;
+    thing->flags |= 0x1000;
+    thing->prev = NULL;
+    thing->next = NULL;
+    thing->type = 7;
+    ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
     for (i = 0; i < 16; i++) {
         thing = &tm->wildCardRacks[i].thing;
         ThingManager_InitFreeThing(thing, g_wildCardRackVTable, 8);
@@ -567,15 +573,33 @@ void ThingManager_DARYL_CreateMain(void) {
         ThingManager_InitFreeThing(thing, g_physicalObjectVTable, 10);
     }
     thing = &tm->looker.thing;
-    ThingManager_InitFreeThing(thing, g_lookerVTable, 11);
+    thing->vtable = g_lookerVTable;
+    thing->unk88 = 0;
+    thing->flags |= 0x1000;
+    thing->prev = NULL;
+    thing->next = NULL;
+    thing->type = 11;
+    ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
     for (i = 0; i < 32; i++) {
         thing = &tm->tracers[i].thing;
         ThingManager_InitFreeThing(thing, g_tracerVTable, 12);
     }
     thing = &tm->pod.thing;
-    ThingManager_InitFreeThing(thing, g_podVTable, 13);
+    thing->vtable = g_podVTable;
+    thing->unk88 = 0;
+    thing->flags |= 0x1000;
+    thing->prev = NULL;
+    thing->next = NULL;
+    thing->type = 13;
+    ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
     thing = &tm->drone.thing;
-    ThingManager_InitFreeThing(thing, g_droneVTable, 14);
+    thing->vtable = g_droneVTable;
+    thing->unk88 = 0;
+    thing->flags |= 0x1000;
+    thing->prev = NULL;
+    thing->next = NULL;
+    thing->type = 14;
+    ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
     for (i = 0; i < 56; i++) {
         thing = &tm->motions[i].thing;
         ThingManager_InitFreeThing(thing, g_motionVTable, 15);

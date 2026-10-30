@@ -1213,165 +1213,38 @@ void InterfaceManager_Heartbeat(void) {
     }
 }
 
-void InterfaceManager_MoveInterface(u8 *ifacePtr, f32 dt) {
-    typedef struct {
-        s8 isVar;
-        u8 pad1;
-        u16 value;
-    } CondValue;
-    typedef struct {
-        s32 id;
-        CondValue *val;
-    } CodeVar;
-    typedef struct {
-        u8 type;
-        u8 update;
-        u8 pad2[2];
-        s32 min;
-        s32 max;
-        s32 offset;
-        CodeVar *data;
-        u8 pad14[0x34 - 0x14];
-    } Variable;
-    typedef struct {
-        u32 count;
-        Variable *vars;
-    } VariableList;
-    typedef struct {
-        u32 count;
-        u8 *list;
-    } EventList;
-    typedef struct {
-        char *name;
-        u32 id;
-    } MusicInfo;
-    typedef struct {
-        u8 pad0[0x14];
-        EventList events;
-        VariableList *vars;
-        u8 pad20[0x2C - 0x20];
-        s8 *sound;
-        MusicInfo *music;
-    } Header;
-    typedef struct {
-        u32 var;
-        s32 val[4];
-        u8 set[4];
-        u8 pad18[0x28 - 0x18];
-    } Step;
-    typedef struct {
-        u8 pad0[4];
-        u32 delay;
-        u8 pad8[0xC - 0x8];
-    } AnimEvent;
-    typedef struct {
-        u8 id;
-        u8 next[4];
-        u8 pad5[0x8 - 0x5];
-        u32 numSteps;
-        Step *steps;
-        u32 numEvents;
-        AnimEvent *events;
-    } ObjectData;
-    typedef struct {
-        u8 pad0[0x8];
-        u8 active;
-        u8 pad9[0x44 - 0x9];
-        ObjectData *data;
-    } Object;
-    typedef struct {
-        u8 pad0[0x240];
-        u8 hidden;
-        u8 pad241[0x247 - 0x241];
-        u8 animDone;
-        u8 pad248[0x25C - 0x248];
-        Object *object;
-        u8 pad260[0x274 - 0x260];
-        u32 timer;
-        u8 pad278[0x300 - 0x278];
-    } Slot;
-    typedef struct {
-        u32 count;
-        u32 state;
-        u8 *owner;
-        Slot *selected;
-        u32 timer;
-        s32 seq;
-        f32 delay;
-        u32 event;
-        Header *header;
-        Header *next;
-        Header *history[3];
-        u8 pad34[0x70 - 0x34];
-        u8 historyIds[0xC];
-        u8 flags;
-        u8 index;
-        u8 pad7E;
-        u8 isChild;
-        u8 historyCount;
-        u8 goBack;
-        u8 pad82[0x84 - 0x82];
-        u8 hasInput;
-        u8 pad85[0x88 - 0x85];
-        Slot *slots;
-        s32 input;
-        void (*callback)(InterfaceEventMsg *msg);
-        void (*infoCallback)(u8 *info);
-        s32 vars[30];
-        u32 numVars;
-        u8 pad114[0x116 - 0x114];
-        InterfaceDirState dir[4][4];
-        u8 pad156[0x160 - 0x156];
-        u8 unk160;
-        s8 unk161;
-        u8 pad162[0x164 - 0x162];
-        f32 unk164;
-        s8 locked;
-        u8 pad169[0x170 - 0x169];
-    } Interface;
-    typedef struct {
-        u8 pad0[2];
-        u8 id;
-        u8 pad3;
-        f32 value;
-    } WorldVar;
-    typedef struct {
-        u8 pad0[0x48];
-        u32 numVars;
-        WorldVar **vars;
-    } World;
+void InterfaceManager_MoveInterface(IMInterface *iface, f32 dt) {
     extern char *g_curMusicPackName;
     extern u32 g_curMusicPackID;
     extern u8 g_bUnloadMusicPack;
-    extern Interface g_interface[];
-    void InterfaceManager_PlayEvent(Interface *iface, Slot *obj, void *event, u32 arg);
-    void InterfaceManager_SetLoadState(Interface *iface, s32 state);
-    void InterfaceManager_SetObjectState(Interface *iface, Slot *obj, s32 state, s32 arg3);
-    void InterfaceManager_MoveObject(Interface *iface, Slot *obj, u8 *data, f32 dt);
-    void InterfaceManager_CheckConditions(Interface *iface, Slot *obj);
-    void InterfaceManager_SetObjectReactive(Interface *iface, u32 onId, u32 offId);
-    u32 InterfaceManager_ProcessInput(Interface *iface, Slot *obj, void *events);
-    s32 InterfaceManager_Create(Header *header, u8 *owner, void (*callback)(InterfaceEventMsg *msg));
+    extern IMInterface g_interface[];
+    void InterfaceManager_PlayEvent(IMInterface *iface, IMSlot *obj, void *event, u32 arg);
+    void InterfaceManager_SetLoadState(IMInterface *iface, s32 state);
+    void InterfaceManager_SetObjectState(IMInterface *iface, IMSlot *obj, s32 state, s32 arg3);
+    void InterfaceManager_MoveObject(IMInterface *iface, IMSlot *obj, u8 *data, f32 dt);
+    void InterfaceManager_CheckConditions(IMInterface *iface, IMSlot *obj);
+    void InterfaceManager_SetObjectReactive(IMInterface *iface, u32 onId, u32 offId);
+    u32 InterfaceManager_ProcessInput(IMInterface *iface, IMSlot *obj, void *events);
+    s32 InterfaceManager_Create(IMHeader *header, u8 *owner, void (*callback)(InterfaceEventMsg *msg));
     u32 InterfaceManager_KeyPress(InterfaceKeyState *im, s32 pad, u8 key);
     u32 GameSettings_GetCodeVariable(s32, s32);
     void Player_GetInterfaceInfo(void *player, u8 *info);
     void SoundSequence_Stop(u32 id);
     s32 SoundSequence_Play(s8 *seq, Vector4 *pos);
-    Interface *iface = (Interface *)ifacePtr;
-    InterfaceEventMsg dirMsg;
     InterfaceEventMsg msg;
+    InterfaceEventMsg dirMsg;
     u8 info[0xD0];
     u32 ms;
     u32 i;
     u32 j;
     u32 m;
-    Slot *sel;
-    Slot *best;
-    Slot *newSel;
-    Slot *slot;
-    Variable *v;
-    CodeVar *cv;
-    Step *step;
+    IMSlot *sel;
+    IMSlot *slot;
+    IMSlot *best;
+    IMSlot *newSel;
+    IMVariable *v;
+    IMCodeVar *cv;
+    IMStep *step;
     u32 id;
     u32 bestId;
     u16 target;
@@ -1437,8 +1310,8 @@ void InterfaceManager_MoveInterface(u8 *ifacePtr, f32 dt) {
                 u8 selId = 0;
                 u8 flags = iface->flags;
                 s32 input = iface->input;
-                Interface *newI;
-                Header *hdr = iface->header;
+                IMInterface *newI;
+                IMHeader *hdr = iface->header;
                 u8 histId;
 
                 if (iface->selected != NULL) {
@@ -1615,10 +1488,10 @@ void InterfaceManager_MoveInterface(u8 *ifacePtr, f32 dt) {
                     }
                     break;
                 case 4:
-                    if ((World *)g_worldData.world != NULL) {
-                        for (j = 0; j < ((World *)g_worldData.world)->numVars; j++) {
-                            if (((World *)g_worldData.world)->vars[j]->id == iface->header->vars->vars[i].offset) {
-                                iface->vars[i] = ((World *)g_worldData.world)->vars[j]->value;
+                    if ((IMWorld *)g_worldData.world != NULL) {
+                        for (j = 0; j < ((IMWorld *)g_worldData.world)->numVars; j++) {
+                            if (((IMWorld *)g_worldData.world)->vars[j]->id == iface->header->vars->vars[i].offset) {
+                                iface->vars[i] = ((IMWorld *)g_worldData.world)->vars[j]->value;
                             }
                         }
                     }
