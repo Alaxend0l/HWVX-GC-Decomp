@@ -249,6 +249,87 @@ void __GXSetVAT(void) {
     gx->dirtyVAT = 0;
 }
 
+void GXGetVtxAttrFmt(s32 fmt, s32 attr, s32 *cnt, s32 *type, u8 *frac) {
+    u32 *va;
+    u32 *vb;
+    u32 *vc;
+
+    va = &gx->vatA[fmt];
+    vb = &gx->vatB[fmt];
+    vc = &gx->vatC[fmt];
+    switch (attr) {
+    case 9:
+        *cnt = *va & 1;
+        *type = (*va >> 1) & 7;
+        *frac = (*va >> 4) & 0x1F;
+        break;
+    case 10:
+    case 25:
+        *cnt = (*va >> 9) & 1;
+        if (*cnt == 1 && (*va >> 31)) {
+            *cnt = 2;
+        }
+        *type = (*va >> 10) & 7;
+        *frac = 0;
+        break;
+    case 11:
+        *cnt = (*va >> 13) & 1;
+        *type = (*va >> 14) & 7;
+        *frac = 0;
+        break;
+    case 12:
+        *cnt = (*va >> 17) & 1;
+        *type = (*va >> 18) & 7;
+        *frac = 0;
+        break;
+    case 13:
+        *cnt = (*va >> 21) & 1;
+        *type = (*va >> 22) & 7;
+        *frac = (*va >> 25) & 0x1F;
+        break;
+    case 14:
+        *cnt = *vb & 1;
+        *type = (*vb >> 1) & 7;
+        *frac = (*vb >> 4) & 0x1F;
+        break;
+    case 15:
+        *cnt = (*vb >> 9) & 1;
+        *type = (*vb >> 10) & 7;
+        *frac = (*vb >> 13) & 0x1F;
+        break;
+    case 16:
+        *cnt = (*vb >> 18) & 1;
+        *type = (*vb >> 19) & 7;
+        *frac = (*vb >> 22) & 0x1F;
+        break;
+    case 17:
+        *cnt = (*vb >> 27) & 1;
+        *type = (*vb >> 28) & 7;
+        *frac = *vc & 0x1F;
+        break;
+    case 18:
+        *cnt = (*vc >> 5) & 1;
+        *type = (*vc >> 6) & 7;
+        *frac = (*vc >> 9) & 0x1F;
+        break;
+    case 19:
+        *cnt = (*vc >> 14) & 1;
+        *type = (*vc >> 15) & 7;
+        *frac = (*vc >> 18) & 0x1F;
+        break;
+    case 20:
+        *cnt = (*vc >> 23) & 1;
+        *type = (*vc >> 24) & 7;
+        *frac = (*vc >> 27) & 0x1F;
+        break;
+    default:
+        *cnt = 1;
+        *type = 0;
+        *frac = 0;
+        break;
+    }
+}
+
 void GXGetVtxAttrFmt(s32 fmt, s32 attr, s32 *cnt, s32 *type, u8 *frac);
 void GXGetVtxAttrFmtv(s32 fmt, GXVtxAttrFmtList *list) {
     s32 attr;
