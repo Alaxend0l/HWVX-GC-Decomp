@@ -164,8 +164,8 @@ typedef struct GDLLightState {
     Vector4 lightDir;
     u32 numPointLights;
     GXColor pointColors[3];
-    GXColor ambientColor;
     GXColor lightColor;
+    GXColor ambientColor;
     u8 unk58[0x60 - 0x58];
 } GDLLightState;
 
