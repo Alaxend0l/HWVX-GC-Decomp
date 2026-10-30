@@ -84,6 +84,7 @@ s32 EXIImmEx(s32 chan, void *buf, s32 len, u32 mode);
 s32 __CARDStart(s32 chan, CARDCallback txCallback, CARDCallback exiCallback);
 int EXILock(s32 chan, u32 dev, void *unlockedCallback);
 s32 Retry(s32 chan);
+s32 EXIDma(s32 chan, void *buf, s32 len, u32 type, void *callback);
 s32 __CARDReadStatus(s32 chan, u8 *status);
 s32 __CARDClearStatus(s32 chan);
 s32 OSDisableInterrupts(void);
