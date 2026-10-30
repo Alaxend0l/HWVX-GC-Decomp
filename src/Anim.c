@@ -178,14 +178,13 @@ typedef struct AnimTrack {
     f32 value[4];
 } AnimTrack;
 
-static inline s32 AnimTrack_FindKey(AnimTrack *track, f32 time) {
-    s32 numKeys = track->numKeys;
+static inline s32 AnimTrack_FindKey(f32 *times, s32 numKeys, f32 time) {
     s32 key = 1;
     u32 step = numKeys;
     f32 *t;
 
     do {
-        t = &track->times[key];
+        t = &times[key];
         step = (step + 1) >> 1;
         if (time > t[0]) {
             key += step;
@@ -202,17 +201,16 @@ static inline s32 AnimTrack_FindKey(AnimTrack *track, f32 time) {
 }
 
 static inline AnimTrack *AnimTrack_Eval3(AnimTrack *track, f32 time, f32 *out) {
-    s32 key = AnimTrack_FindKey(track, time);
+    s32 key = AnimTrack_FindKey(track->times, track->numKeys, time);
 
     out[0] = time * (time * (time * track->coefs[key][0] + track->coefs[key][1]) + track->coefs[key][2]) + track->coefs[key][3];
     out[1] = time * (time * (time * track->coefs[key][4] + track->coefs[key][5]) + track->coefs[key][6]) + track->coefs[key][7];
     out[2] = time * (time * (time * track->coefs[key][8] + track->coefs[key][9]) + track->coefs[key][10]) + track->coefs[key][11];
-    track = track->next;
-    return track;
+    return track->next;
 }
 
 static inline AnimTrack *AnimTrack_Eval4(AnimTrack *track, f32 time, f32 *out) {
-    s32 key = AnimTrack_FindKey(track, time);
+    s32 key = AnimTrack_FindKey(track->times, track->numKeys, time);
 
     out[0] = time * (time * (time * track->coefs[key][0] + track->coefs[key][1]) + track->coefs[key][2]) + track->coefs[key][3];
     out[1] = time * (time * (time * track->coefs[key][4] + track->coefs[key][5]) + track->coefs[key][6]) + track->coefs[key][7];
