@@ -178,10 +178,35 @@ void GXSetTevOp(s32 id, s32 mode);
 void Render_StateFogEnable(s32 enable);
 void DisplayList_Init(void);
 
+typedef struct GDLDrawEntry {
+    void *geometry;
+    GXColor color;
+    u32 matrix;
+    s32 lightState;
+    u8 unk10;
+    u8 unk11;
+    u8 envmapState;
+    u8 unk13;
+} GDLDrawEntry;
+
 typedef struct GDL {
     u8 unk0[0x14];
     s32 numTris;
+    u8 unk18[0x54 - 0x18];
+    u32 numDrawEntries;
+    u8 unk58[0xDFCC0 - 0x58];
+    GDLDrawEntry drawEntries[0x800];
 } GDL;
+
+typedef struct Vector {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 w;
+} Vector;
+
+void Gfx_SetWorldMatrix(void *matrix);
+void Gfx_SetProjectionMatrix(f32 fov);
 
 typedef struct RenderStats {
     s32 numTris;
