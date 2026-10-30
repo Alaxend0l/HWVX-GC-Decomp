@@ -8,10 +8,6 @@ u8 CardWorkArea[0xA000] __attribute__((aligned(32)));
 void OSReport(const char *fmt, ...);
 s32 CARDMount(s32 chan, void *workArea, void *detachCallback);
 
-static inline s32 MemCard_Mount(void *workArea, s32 chan) {
-    return CARDMount(chan, workArea, 0);
-}
-
 s32 stricmp(const char *s1, const char *s2) {
     char c1, c2;
 
