@@ -21,7 +21,9 @@ typedef struct AXPB {
     u16 unk4C;
     u16 updHi;           /* 0x4E */
     u16 updLo;           /* 0x50 */
-    u8 unk52[0xEC - 0x52];
+    u8 unk52[0xA6 - 0x52];
+    u16 ratioHi;         /* 0xA6 */
+    u8 unkA8[0xEC - 0xA8];
 } AXPB;
 
 typedef struct AXVPB {
