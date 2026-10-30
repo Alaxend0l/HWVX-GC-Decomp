@@ -2,6 +2,13 @@
 
 typedef struct OSThread OSThread;
 
+typedef struct OSContext {
+    u32 gpr[32];
+    u32 cr;
+    u32 lr;
+    u8 unk88[0x2C8 - 0x88];
+} OSContext;
+
 typedef struct OSThreadQueue {
     OSThread *head;
     OSThread *tail;
@@ -132,6 +139,54 @@ void __OSReschedule(void) {
     if (RunQueueHint) {
         SelectThread(0);
     }
+}
+
+void OSInitContext(void *context, u32 pc, u32 sp);
+void OSExitThread(void *val);
+BOOL OSCreateThread(OSThread *thread, void *(*func)(void *), void *param, void *stack, u32 stackSize, s32 priority, u16 attr) {
+    BOOL enabled;
+    u32 sp;
+
+    if (priority < 0 || 31 < priority) {
+        return FALSE;
+    }
+
+    thread->state = 1;
+    thread->attr = (u16)(attr & OS_THREAD_ATTR_DETACH);
+    thread->base = priority;
+    thread->priority = priority;
+    thread->suspend = 1;
+    thread->val = (void *)-1;
+    thread->mutex = NULL;
+    thread->queueJoin.head = thread->queueJoin.tail = NULL;
+    thread->queueMutex.head = thread->queueMutex.tail = NULL;
+
+    sp = (u32)stack;
+    sp &= ~7;
+    sp -= 8;
+    ((u32 *)sp)[0] = 0;
+    ((u32 *)sp)[1] = 0;
+    OSInitContext(&thread->context, (u32)func, sp);
+    ((u32 *)thread->context)[0x84 / 4] = (u32)OSExitThread;
+    ((u32 *)thread->context)[3] = (u32)param;
+    thread->stackBase = stack;
+    thread->stackEnd = (u32 *)((u32)stack - stackSize);
+    *thread->stackEnd = 0xDEADBABE;
+
+    enabled = OSDisableInterrupts();
+    {
+        OSThread *prev = __OSActiveThreadQueue.tail;
+        if (prev == NULL) {
+            __OSActiveThreadQueue.head = thread;
+        } else {
+            prev->linkActive.next = thread;
+        }
+        thread->linkActive.prev = prev;
+        thread->linkActive.next = NULL;
+        __OSActiveThreadQueue.tail = thread;
+    }
+    OSRestoreInterrupts(enabled);
+    return TRUE;
 }
 
 void OSClearContext(void *context);
