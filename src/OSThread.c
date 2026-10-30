@@ -275,6 +275,102 @@ OSThread *SetEffectivePriority(OSThread *thread, s32 priority) {
     }
     return NULL;
 }
+
+OSContext *OSGetCurrentContext(void);
+u32 OSSaveContext(OSContext *context);
+void OSLoadContext(OSContext *context);
+s32 OSEnableInterrupts(void);
+OSThread *SelectThread(BOOL yield) {
+    extern volatile u32 RunQueueBits;
+    extern volatile s32 RunQueueHint;
+    extern s32 Reschedule;
+    OSContext *currentContext;
+    OSThread *currentThread;
+    OSThread *nextThread;
+    s32 priority;
+    OSThreadQueue *queue;
+    OSContext *context;
+
+    if (0 < Reschedule) {
+        return 0;
+    }
+
+    currentContext = OSGetCurrentContext();
+    currentThread = __OSCurrentThread;
+    context = &currentThread->context;
+    if (currentContext != context) {
+        return 0;
+    }
+
+    if (currentThread) {
+        if (currentThread->state == 2) {
+            if (!yield) {
+                priority = __cntlzw(RunQueueBits);
+                if (currentThread->priority <= priority) {
+                    return 0;
+                }
+            }
+            currentThread->state = 1;
+            currentThread->queue = &RunQueue[currentThread->priority];
+            {
+                OSThread *prev = currentThread->queue->tail;
+                if (prev == NULL) {
+                    currentThread->queue->head = currentThread;
+                } else {
+                    prev->link.next = currentThread;
+                }
+                currentThread->link.prev = prev;
+                currentThread->link.next = NULL;
+                currentThread->queue->tail = currentThread;
+            }
+            RunQueueBits |= 1u << (31 - currentThread->priority);
+            RunQueueHint = TRUE;
+        }
+
+        if (!(currentThread->context.state & 2) && OSSaveContext(context)) {
+            return 0;
+        }
+    }
+
+    __OSCurrentThread = NULL;
+    if (RunQueueBits == 0) {
+        OSSetCurrentContext(&IdleContext);
+        do {
+            OSEnableInterrupts();
+            while (RunQueueBits == 0)
+                ;
+            OSDisableInterrupts();
+        } while (RunQueueBits == 0);
+
+        OSClearContext(&IdleContext);
+    }
+
+    RunQueueHint = FALSE;
+
+    priority = __cntlzw(RunQueueBits);
+    queue = &RunQueue[priority];
+    {
+        OSThread *next;
+        nextThread = queue->head;
+        next = nextThread->link.next;
+        if (next == NULL) {
+            queue->tail = NULL;
+        } else {
+            next->link.prev = NULL;
+        }
+        queue->head = next;
+    }
+    if (queue->head == NULL) {
+        RunQueueBits &= ~(1u << (31 - priority));
+    }
+    nextThread->queue = NULL;
+    nextThread->state = 2;
+    __OSCurrentThread = nextThread;
+    OSSetCurrentContext(&nextThread->context);
+    OSLoadContext(&nextThread->context);
+    return nextThread;
+}
+
 #pragma pop
 
 OSThread *SelectThread(BOOL yield);
