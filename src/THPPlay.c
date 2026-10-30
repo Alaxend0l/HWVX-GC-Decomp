@@ -5,6 +5,19 @@ typedef struct THPVideoInfo {
     u32 ySize;
 } THPVideoInfo;
 
+#pragma readonly_strings on
+
+u8 SoundBuffer[2][0x3C0];
+s32 m_rendermode;
+void *audio_restore_cb;
+void *m_movie_buffer;
+THPVideoInfo m_videoInfo;
+s32 m_movie_x;
+s32 m_movie_y;
+s32 m_movieVolume;
+u8 badMojo;
+s32 SoundBufferNumber;
+
 void Mpeg_Init(void);
 
 
