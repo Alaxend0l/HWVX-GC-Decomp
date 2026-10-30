@@ -23,6 +23,7 @@ s8 Player_IsHuman(void *player);
 s32 RandomAdd_s32(s32 base, s32 range);
 void *ThingManager_DARYL_CreateThing(s32 type, void *params);
 f32 CarA_Transmission_GetTorqueAtWheels(CarA *car);
+int sprintf(char *buf, const char *fmt, ...);
 
 
 s8 CarA_DoFreeStyleStunts(CarA *car) {
