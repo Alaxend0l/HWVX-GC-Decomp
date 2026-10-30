@@ -152,6 +152,141 @@ s32 CARDProbeEx(s32 chan, s32 *memSize, s32 *sectorSize) {
     OSRestoreInterrupts(enabled);
     return result;
 }
+
+static s32 DoMount(s32 chan) {
+    typedef struct OSSramEx {
+        u8 flashID[2][12];
+        u32 wirelessKeyboardID;
+        u16 wirelessPadID[4];
+        u8 dvdErrorCode;
+        u8 _padding0;
+        u8 flashIDCheckSum[2];
+    } OSSramEx;
+    void __CARDExiHandler(s32 chan, void *context);
+    void __CARDMountCallback(s32 chan, s32 result);
+    s32 EXIProbe(s32 chan);
+    s32 EXIUnlock(s32 chan);
+    s32 __CARDClearStatus(s32 chan);
+    s32 __CARDReadStatus(s32 chan, u8 *status);
+    s32 __CARDUnlock(s32 chan, u8 *flashID);
+    s32 __CARDEnableInterrupt(s32 chan, BOOL enable);
+    s32 __CARDRead(s32 chan, u32 addr, s32 length, void *dst, CARDCallback callback);
+    OSSramEx *__OSLockSramEx(void);
+    BOOL __OSUnlockSramEx(BOOL commit);
+    void DCInvalidateRange(void *addr, u32 nBytes);
+    CARDControl *card;
+    u32 id;
+    u8 status;
+    s32 result;
+    OSSramEx *sram;
+    int i;
+    u8 checkSum;
+    int step;
+
+    card = &__CARDBlock[chan];
+
+    if (card->mountStep == 0) {
+        if (EXIGetID(chan, 0, &id) == 0) {
+            result = -3;
+        } else if (IsCard(id)) {
+            result = 0;
+        } else {
+            result = -2;
+        }
+        if (result < 0) {
+            goto error;
+        }
+
+        *(u32 *)card->unk108 = id;
+        card->size = (u16)(id & 0xFC);
+        card->sectorSize = SectorSizeTable[(id & 0x00003800) >> 11];
+        card->cBlock = (u16)((card->size * 1024 * 1024 / 8) / card->sectorSize);
+        card->latency = LatencyTable[(id & 0x00000700) >> 8];
+
+        result = __CARDClearStatus(chan);
+        if (result < 0) {
+            goto error;
+        }
+        result = __CARDReadStatus(chan, &status);
+        if (result < 0) {
+            goto error;
+        }
+
+        if (!EXIProbe(chan)) {
+            result = -3;
+            goto error;
+        }
+
+        if (!(status & 0x40)) {
+            result = __CARDUnlock(chan, card->unk18);
+            if (result < 0) {
+                goto error;
+            }
+
+            checkSum = 0;
+            sram = __OSLockSramEx();
+            for (i = 0; i < 12; i++) {
+                sram->flashID[chan][i] = card->unk18[i];
+                checkSum += card->unk18[i];
+            }
+            sram->flashIDCheckSum[chan] = (u8)~checkSum;
+            __OSUnlockSramEx(TRUE);
+            return result;
+        } else {
+            card->mountStep = 1;
+
+            checkSum = 0;
+            sram = __OSLockSramEx();
+            for (i = 0; i < 12; i++) {
+                checkSum += sram->flashID[chan][i];
+            }
+            __OSUnlockSramEx(FALSE);
+            if (sram->flashIDCheckSum[chan] != (u8)~checkSum) {
+                result = -5;
+                goto error;
+            }
+        }
+    }
+
+    if (card->mountStep == 1) {
+        if (*(u32 *)card->unk108 == 0x80000004) {
+            u16 vendorID;
+
+            sram = __OSLockSramEx();
+            vendorID = *(u16 *)sram->flashID[chan];
+            __OSUnlockSramEx(FALSE);
+            if (__CARDVendorID == 0xFFFF || vendorID != __CARDVendorID) {
+                result = -2;
+                goto error;
+            }
+        }
+
+        card->mountStep = 2;
+
+        result = __CARDEnableInterrupt(chan, TRUE);
+        if (result < 0) {
+            goto error;
+        }
+
+        EXISetExiCallback(chan, __CARDExiHandler);
+        EXIUnlock(chan);
+        DCInvalidateRange(card->workArea, 0xA000);
+    }
+
+    step = card->mountStep - 2;
+    result = __CARDRead(chan, (u32)card->sectorSize * step, 0x2000, (u8 *)card->workArea + (0x2000 * step),
+                        __CARDMountCallback);
+    if (result < 0) {
+        __CARDPutControlBlock(card, result);
+    }
+    return result;
+
+error:
+    EXIUnlock(chan);
+    DoUnmount(chan, result);
+    return result;
+}
+
 #pragma pop
 
 static s32 DoMount(s32 chan);
