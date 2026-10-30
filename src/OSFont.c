@@ -34,6 +34,13 @@ static int CharsInSheet;
 u32 OSLoadFont(OSFontHeader *fontData, void *temp);
 void ExpandFontSheet(u8 *src, u8 *dst);
 
+extern u16 HankakuToCode[];
+extern u16 Zenkaku2Code[];
+
+static BOOL IsSjisTrailByte(u8 c) {
+    return 0x40 <= c && c <= 0xFC && c != 0x7F;
+}
+
 
 static void Decode(u8 *s, u8 *d) {
     int i;
