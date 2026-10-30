@@ -17,6 +17,9 @@ typedef struct RebootCmd {
 static ApploaderHeader Header_802EEE00;
 static u32 SaveStart_803C7258;
 static u32 SaveEnd_803C725C;
+static ApploaderHeader Header;
+static void *SaveStart = NULL;
+static void *SaveEnd = NULL;
 extern volatile s32 Prepared_803C7260;
 
 s32 OSDisableInterrupts(void);
@@ -74,9 +77,7 @@ void __OSReboot(u32 resetCode, u32 bootDol) {
     RebootCmd dvdCmd2;
     u32 numBytes;
     u32 offset;
-    ApploaderHeader *header;
 
-    header = &Header_802EEE00;
     OSDisableInterrupts();
     *(u32 *)0x817FFFFC = 0;
     *(u32 *)0x817FFFF8 = 0;
@@ -97,10 +98,10 @@ void __OSReboot(u32 resetCode, u32 bootDol) {
 
     offset = 0;
     numBytes = 0x20;
-    ReadApploader(&dvdCmd, header, offset, numBytes);
+    ReadApploader(&dvdCmd, &Header_802EEE00, offset, numBytes);
 
-    offset = header->size + 0x20;
-    numBytes = (header->rebootSize + 0x1F) & ~0x1F;
+    offset = Header_802EEE00.size + 0x20;
+    numBytes = (Header_802EEE00.rebootSize + 0x1F) & ~0x1F;
     ReadApploader(&dvdCmd2, (void *)0x81300000, offset, numBytes);
 
     ICInvalidateRange((void *)0x81300000, numBytes);
