@@ -1,6 +1,7 @@
 #include "common.h"
 
 #pragma use_lmw_stmw on
+#pragma readonly_strings on
 
 /* The target arrow points at the override target, else the main one. */
 static inline Vector4 TargetArrow_GetTargetPos(void) {
@@ -3580,30 +3581,65 @@ void InterfaceManager_MoveDialogSystem(u8 *iface, u8 *obj, f32 dt) {
 
 void InterfaceManager_MoveObject(u8 *iface, u8 *obj, u8 *data, f32 dt) {
     typedef struct { char str[0x200]; } MoveObjStrBuf;
+    typedef struct {
+        u32 index;      /* 0x00 */
+        u16 unk4;       /* 0x04 */
+        u16 item;       /* 0x06 */
+        u16 unk8;       /* 0x08 */
+        u16 player;     /* 0x0A */
+        char text[0x10]; /* 0x0C */
+        f32 value;      /* 0x1C */
+        u32 state;      /* 0x20 */
+        u8 pad24[0x20];
+    } MoveObjQuery;
     extern char rndNumberBuffer[16];
-    extern char *g_rndNumber[];
+    extern char *g_rndNumber[1];
     extern s32 g_iDeltaTimeMS;
+    extern u8 g_interface[][0x170];
+    extern char **g_playerMessage1;
+    extern char **g_playerMessage2;
+    extern char **g_playerMessage3;
     void InterfaceManager_MoveDialogSystem(void *iface, void *obj, f32 dt);
     void InterfaceManager_SetObjectString(u8 *obj, char *str);
     void InterfaceManager_SetObjectText(u8 *obj, char **text);
+    void InterfaceManager_SetObjectState(u8 *iface, u8 *obj, s32 state, s32 arg3);
+    void InterfaceManager_SetObjectReference(u8 *iface, u32 id, u32 state);
+    void InterfaceManager_CheckConditions(u8 *iface, u8 *obj);
+    void InterfaceManager_SetControllerConfigInputString(u8 *iface, u8 *obj);
+    char *GameSettings_GetActiveMemoryCardFileName(s8 bNoDefault, s32 index, char *defaultName);
+    char *GameSettings_GetActiveMemoryCardLevelDetails(void);
+    u32 GameSettings_GetCodeVariable(s32 var, u32 arg);
     void ExtractScaleKey(void *anim, void *state, f32 dt);
+    void ExtractColorKey(void *keys, void *out, f32 t);
+    void ExtractUVKey(void *track, void *out, f32 t);
+    void ExtractActiveKey(void *track, void *state, f32 dt);
+    void ExtractTextureKey(void *anim, void *state, f32 dt);
     f32 RandomAdd(f32 a, f32 b);
     void *SoundAudioSample_Play(u32 id);
     void SoundAudioSample_Set(void *s, s32 what, s32 value);
     f32 ArcTan(f32 y, f32 x);
+    int sprintf(char *buf, const char *fmt, ...);
+    char *strcat(char *dst, const char *src);
+    char *strcpy(char *dst, const char *src);
+    u32 strlen(const char *s);
     void Gfx_SetProjectionMatrix(f32 fov);
-    static const MoveObjStrBuf empty = { "" };
     char tmp[0x80];
-    MoveObjStrBuf buf;
-    f32 value;
     f32 dtCopy;
+    f32 value;
     u8 *snd;
     void *sample;
     f32 pitch;
     u32 i;
     u8 type;
+    u32 *ref;
+    u32 doText;
+    s8 isTime;
+    s8 isCount;
+    s8 valid;
+    s8 setDirty;
 
     dtCopy = dt;
+    ref = NULL;
     if (obj[0x124] != 0) {
         switch (obj[0x243]) {
         case 5:
@@ -3616,8 +3652,8 @@ void InterfaceManager_MoveObject(u8 *iface, u8 *obj, u8 *data, f32 dt) {
                         pitch = RandomAdd(*(f32 *)(snd + 0xC), *(f32 *)(snd + 0x10));
                         sample = SoundAudioSample_Play(*(u32 *)(snd + 0x14));
                         if (sample != NULL) {
-                            SoundAudioSample_Set(sample, 0, 127.0f * *(f32 *)(snd + 8));
-                            SoundAudioSample_Set(sample, 1, 4096.0f * pitch);
+                            SoundAudioSample_Set(sample, 0, 32767.0f * *(f32 *)(snd + 8));
+                            SoundAudioSample_Set(sample, 1, 65536.0f * pitch);
                         }
                     }
                     *(s32 *)(obj + 0x1AC) += *(s32 *)(*(u8 **)(*(u8 **)(obj + 0x258) + 4) + 0x14);
@@ -3625,123 +3661,512 @@ void InterfaceManager_MoveObject(u8 *iface, u8 *obj, u8 *data, f32 dt) {
                 }
             }
             break;
-        case 8:
-            buf = empty;
+        case 8: {
+            MoveObjStrBuf buf = { "" };
+
             for (i = 0; i < **(u32 **)(*(u8 **)(iface + 0x20) + 0x1C); i++) {
-                sprintf(tmp, "%d %d ", i, ((s32 *)(iface + 0x98))[i]);
+                sprintf(tmp, "v%d = %d|", i, *(s32 *)(iface + i * 4 + 0x98));
                 strcat(buf.str, tmp);
             }
             InterfaceManager_SetObjectString(obj, buf.str);
             break;
+        }
         }
     }
     if (*(void **)(iface + 0x158) != NULL) {
         InterfaceManager_MoveDialogSystem(iface, obj, dt);
     }
     type = obj[0x245];
-    if (type == 0 || type == 3) {
-        return;
-    }
-    value = 1.0f;
-    if (data != NULL) {
-        switch (type) {
-        case 4:
-            Gfx_SetProjectionMatrix(*(u16 *)(*(u8 **)(obj + 0x25C) + 0xA));
-            break;
-        case 5:
-            value = *(f32 *)(data + 0x24);
-            break;
-        case 6:
-            value = *(f32 *)(data + 0x28);
-            break;
-        case 8:
-            if (*(u8 **)(data + 0x7C) != NULL) {
-                value = 0.5f * (3.1415927f + ArcTan(*(f32 *)(*(u8 **)(data + 0x7C) + 0x38), *(f32 *)(*(u8 **)(data + 0x7C) + 0x30)));
-            }
-            break;
-        case 10:
-            value = *(u32 *)(data + 0x10);
-            break;
-        case 11:
-            value = *(f32 *)(data + 0x20);
-            break;
-        case 12:
-            value = *(u32 *)(data + 0x14);
-            break;
-        case 13:
-            value = *(f32 *)(data + 0x2C);
-            break;
-        case 14:
-            value = *(u32 *)(data + 0x1C);
-            break;
-        case 15:
-            value = *(u32 *)(data + 0x30);
-            break;
-        case 16:
-            if ((s8)data[0x74] != 0) {
-                if (obj[0x243] == 5) {
-                    InterfaceManager_SetObjectString(obj, (char *)(data + 0x74));
+    if (type != 0 && type != 3) {
+        value = 99999.99f;
+        doText = 1;
+        isTime = 0;
+        isCount = 0;
+        valid = 1;
+        setDirty = 1;
+        if (data != NULL) {
+            switch (type) {
+            case 2:
+                if (*(void **)(iface + 0x90) != NULL) {
+                    MoveObjQuery q = {0, 1};
+
+                    data = *(u8 **)(*(u8 **)(obj + 0x25C) + 0x40);
+                    q.index = iface[0x7D];
+                    q.item = *(u16 *)(*(u8 **)(obj + 0x25C) + 0xA);
+                    if (*(u8 **)(iface + 0xC) != NULL && *(u8 **)(*(u8 **)(iface + 0xC) + 0x25C) != NULL) {
+                        q.player = **(u8 **)(*(u8 **)(*(u8 **)(iface + 0xC) + 0x25C) + 0x44);
+                    }
+                    (*(void (**)(MoveObjQuery *))(iface + 0x90))(&q);
+                    if (data[0] != 0) {
+                        value = q.value;
+                    }
+                    if (q.state == 0 && obj[0x246] != 0) {
+                        InterfaceManager_SetObjectState(iface, obj, 0, 0);
+                    }
+                    if (q.state == 1 && obj[0x246] == 0 && *(u32 *)(*(u8 **)(obj + 0x25C) + 0x1C) != 0xFFFFFFFF) {
+                        InterfaceManager_SetObjectState(iface, obj, 1, 0);
+                    }
+                    if (q.state == 2) {
+                        InterfaceManager_SetObjectState(iface, obj, 1, 0);
+                    }
+                    if (q.state == 10) {
+                        InterfaceManager_SetObjectState(iface, obj, 100, 0);
+                    }
+                    if (obj[0x243] == 5) {
+                        u8 *anim = *(u8 **)(obj + 0x258);
+
+                        if (anim[0x10] == 1) {
+                            if (q.item < 0xFFFF) {
+                                u32 *list = *(u32 **)(anim + 8);
+
+                                if (q.item >= list[0]) {
+                                    q.item = (u16)list[0] - 1;
+                                }
+                                if (*(char ***)(obj + 0x1A0) != ((char ***)list[1])[q.item]) {
+                                    InterfaceManager_SetObjectText(obj, ((char ***)list[1])[q.item]);
+                                }
+                            }
+                        } else if ((s8)q.text[0] != 0) {
+                            *(u32 *)(obj + 0x1A4) = 0;
+                            strcpy((char *)(obj + 0x1C0), q.text);
+                            *(u16 *)(obj + 0x1A8) = strlen(q.text);
+                        } else if (*(u32 *)(obj + 0x1A4) == 0) {
+                            InterfaceManager_SetObjectText(obj, *(char ***)(obj + 0x1A0));
+                        }
+                        doText = 0;
+                    } else if (obj[0x243] == 6 && obj[0x246] == 1) {
+                        InterfaceManager_SetObjectReference(g_interface[*(u32 *)(obj + 0x270)], q.item, q.state != 0);
+                    }
                 }
+                break;
+            case 4:
+                Gfx_SetProjectionMatrix(*(u16 *)(*(u8 **)(obj + 0x25C) + 0xA));
+                break;
+            case 5:
+                value = *(f32 *)(data + 0x24);
+                break;
+            case 6:
+                value = *(f32 *)(data + 0x28);
+                break;
+            case 8:
+                if (*(u8 **)(data + 0x7C) != NULL) {
+                    value = 15.915494f * (3.1415927f + ArcTan(*(f32 *)(*(u8 **)(data + 0x7C) + 0x38), *(f32 *)(*(u8 **)(data + 0x7C) + 0x30)));
+                }
+                break;
+            case 10:
+                value = *(u32 *)(data + 0x10);
+                break;
+            case 11:
+                value = *(f32 *)(data + 0x20);
+                break;
+            case 12:
+                value = *(u32 *)(data + 0x14);
+                break;
+            case 13:
+                value = *(f32 *)(data + 0x2C);
+                break;
+            case 14:
+                value = *(u32 *)(data + 0x1C);
+                break;
+            case 15:
+                value = *(u32 *)(data + 0x30);
+                break;
+            case 16:
+                if ((s8)data[0x74] != 0) {
+                    if (obj[0x243] == 5) {
+                        InterfaceManager_SetObjectString(obj, (char *)(data + 0x74));
+                    }
+                    obj[0x84] = 1;
+                    obj[0x2C] = 1;
+                    obj[0x54] = 1;
+                }
+                break;
+            case 17:
+                if (*(char ***)(data + 0x48) != NULL) {
+                    InterfaceManager_SetObjectText(obj, *(char ***)(data + 0x48));
+                }
+                break;
+            case 18:
+                if (*(char ***)(data + 0x4C) != NULL) {
+                    InterfaceManager_SetObjectText(obj, *(char ***)(data + 0x4C));
+                }
+                break;
+            case 19:
+                if (*(char ***)(data + 0x60) != NULL) {
+                    InterfaceManager_SetObjectText(obj, *(char ***)(data + 0x60));
+                }
+                break;
+            case 20:
+                if (data[0x82] != 0) {
+                    value = 0.0f;
+                    obj[0x54] = 1;
+                    obj[0x2C] = 1;
+                }
+                break;
+            case 21:
+                if (data[0x81] != 0) {
+                    value = 0.0f;
+                    obj[0x54] = 1;
+                    obj[0x2C] = 1;
+                }
+                break;
+            case 70:
+                value = data[0xC9];
+                break;
+            case 71:
+                value = data[0xCA];
+                break;
+            case 72:
+                value = data[0xCB];
+                break;
+            case 73:
+                value = data[0xCC];
+                break;
+            case 91:
+                if (*(s32 *)(obj + 0x27C) < 0) {
+                    *(s32 *)(obj + 0x27C) = 500;
+                    obj[0x84] = 1;
+                    obj[0x54] = 1;
+                    obj[0x2C] = 1;
+                    *(f32 *)(obj + 0x278) = RandomAdd(0.0f, *(u16 *)(*(u8 **)(obj + 0x25C) + 0xA));
+                    sprintf(rndNumberBuffer, "%1.0f", *(f32 *)(obj + 0x278));
+                    *(char ***)(data + 0x5C) = g_rndNumber;
+                    InterfaceManager_SetObjectText(obj, *(char ***)(data + 0x5C));
+                } else {
+                    *(s32 *)(obj + 0x27C) -= g_iDeltaTimeMS;
+                }
+                break;
+            case 92:
+                if (*(s32 *)(obj + 0x27C) < 0) {
+                    *(f32 *)(obj + 0x278) += *(f32 *)(obj + 0x284);
+                    *(s32 *)(obj + 0x27C) = 50;
+                    if ((obj[0x249] != 0 && *(f32 *)(obj + 0x278) < *(f32 *)(obj + 0x280)) ||
+                        (obj[0x249] == 0 && *(f32 *)(obj + 0x278) > *(f32 *)(obj + 0x280))) {
+                        obj[0x84] = 1;
+                        obj[0x54] = 1;
+                        obj[0x2C] = 1;
+                        *(f32 *)(obj + 0x280) = RandomAdd(0.0f, *(u16 *)(*(u8 **)(obj + 0x25C) + 0xA));
+                        *(f32 *)(obj + 0x284) = 0.1f * (*(f32 *)(obj + 0x280) - *(f32 *)(obj + 0x278));
+                        if (*(f32 *)(obj + 0x278) < *(f32 *)(obj + 0x280)) {
+                            obj[0x249] = 0;
+                        } else {
+                            obj[0x249] = 1;
+                        }
+                    }
+                } else {
+                    *(s32 *)(obj + 0x27C) -= g_iDeltaTimeMS;
+                    sprintf(rndNumberBuffer, "%1.0f", *(f32 *)(obj + 0x278));
+                    *(char ***)(data + 0x5C) = g_rndNumber;
+                    InterfaceManager_SetObjectText(obj, *(char ***)(data + 0x5C));
+                }
+                break;
+            case 40: {
+                u32 **slot = (u32 **)(data + *(u16 *)(*(u8 **)(obj + 0x25C) + 0xA) * 4);
+
+                if (slot[0x80 / 4] != NULL) {
+                    if (*slot[0x80 / 4] != *(u32 *)(obj + 0x2F8)) {
+                        obj[0x84] = 1;
+                        obj[0x54] = 1;
+                        obj[0x2C] = 1;
+                    }
+                    *(u32 *)(obj + 0x2F8) = *slot[0x80 / 4];
+                    ref = slot[0x80 / 4];
+                }
+                break;
+            }
+            case 41:
+            case 42:
+            case 43:
+            case 44:
+            case 45:
+            case 46:
+            case 47:
+            case 48:
+                if (*(u16 **)(data + 0xC4) != NULL) {
+                    setDirty = 0;
+                    value = (*(u16 **)(data + 0xC4))[(u8)(type - 41)];
+                    if ((s32)data[0xC8] == 1) {
+                        obj[0x2C] = 1;
+                        obj[0x54] = 1;
+                        obj[0x84] = 1;
+                    }
+                }
+                break;
+            case 49:
+                if (*(char ***)(data + 0x64) != NULL) {
+                    InterfaceManager_SetObjectText(obj, *(char ***)(data + 0x64));
+                }
+                break;
+            case 60:
+                if (*(char ***)(data + 0x40) != NULL) {
+                    InterfaceManager_SetObjectText(obj, *(char ***)(data + 0x40));
+                }
+                break;
+            case 61:
+                if (*(char ***)(data + 0x44) != NULL) {
+                    InterfaceManager_SetObjectText(obj, *(char ***)(data + 0x44));
+                }
+                break;
+            case 62:
+                if (data[0x80] == 1) {
+                    obj[0x240] = 0;
+                } else if (data[0x80] == 0) {
+                    obj[0x240] = 1;
+                }
+                break;
+            case 65:
+                if (g_playerMessage1 != NULL) {
+                    InterfaceManager_SetObjectText(obj, g_playerMessage1);
+                    g_playerMessage1 = NULL;
+                }
+                break;
+            case 66:
+                if (g_playerMessage2 != NULL) {
+                    InterfaceManager_SetObjectText(obj, g_playerMessage2);
+                    g_playerMessage2 = NULL;
+                }
+                break;
+            case 67:
+                if (g_playerMessage3 != NULL) {
+                    InterfaceManager_SetObjectText(obj, g_playerMessage3);
+                    g_playerMessage3 = NULL;
+                }
+                break;
+            case 80:
+                *(u16 *)(obj + 0x24A) = 0xFFFF;
+                if (data[0x34] != 0) {
+                    *(u16 *)(obj + 0x24A) = *(u16 *)(data + 0x6C);
+                }
+                break;
+            case 81:
+                if (*(char ***)(data + 0x68) != NULL) {
+                    InterfaceManager_SetObjectText(obj, *(char ***)(data + 0x68));
+                }
+                break;
+            case 82:
+                value = *(u32 *)(data + 0x38);
+                break;
+            case 83:
+                *(u16 *)(obj + 0x24A) = 0xFFFF;
+                if (data[0x35] != 0) {
+                    *(u16 *)(obj + 0x24A) = *(u16 *)(data + 0x6E);
+                }
+                break;
+            case 84:
+                value = *(u32 *)(data + 0x3C);
+                break;
+            case 86:
+                *(u16 *)(obj + 0x24A) = 0xFFFF;
+                if (data[0x36] != 0) {
+                    *(u16 *)(obj + 0x24A) = *(u16 *)(data + 0x70);
+                }
+                break;
+            case 50: {
+                u8 *world;
+                u8 *e;
+                u32 j;
+                u32 id;
+
+                id = *(u16 *)(*(u8 **)(obj + 0x25C) + 0xA);
+                world = g_worldData.world;
+                if (world != NULL) {
+                    valid = 0;
+                    for (j = 0; j < *(u32 *)(world + 0x50); j++) {
+                        e = (*(u8 ***)(world + 0x54))[j];
+                        if (e[1] != 0 && id == e[2]) {
+                            if (**(u8 **)((*(u8 ***)(world + 0x54))[j] + 0xC) == 0x17) {
+                                valid = 1;
+                            }
+                            obj[0x84] = 1;
+                            obj[0x130] = 1;
+                            obj[0x54] = 1;
+                            obj[0x2C] = 1;
+                            value = *(f32 *)((*(u8 ***)((u8 *)g_worldData.world + 0x54))[j] + 0x8);
+                            break;
+                        }
+                    }
+                }
+                isTime = 1;
+                break;
+            }
+            case 51: {
+                u8 *world;
+                u8 *e;
+                u32 j;
+                u32 id;
+
+                id = *(u16 *)(*(u8 **)(obj + 0x25C) + 0xA);
+                world = g_worldData.world;
+                if (world != NULL) {
+                    valid = 0;
+                    for (j = 0; j < *(u32 *)(world + 0x48); j++) {
+                        e = (*(u8 ***)(world + 0x4C))[j];
+                        if (e[1] != 0 && id == e[2]) {
+                            if (**(u8 **)((*(u8 ***)(world + 0x4C))[j] + 0xC) == 0x17) {
+                                valid = 1;
+                            }
+                            obj[0x84] = 1;
+                            obj[0x130] = 1;
+                            obj[0x54] = 1;
+                            obj[0x2C] = 1;
+                            value = *(f32 *)((*(u8 ***)((u8 *)g_worldData.world + 0x4C))[j] + 0x4);
+                            break;
+                        }
+                    }
+                }
+                isCount = 1;
+                break;
+            }
+            case 100:
+                if (*(u32 *)(iface + 0x4) == 2) {
+                    char *name = GameSettings_GetActiveMemoryCardFileName(**(u16 **)(iface + 0x20) == 5,
+                                                                         *(u16 *)(*(u8 **)(obj + 0x25C) + 0xA),
+                                                                         ***(char ****)(obj + 0x258));
+
+                    if (name != NULL) {
+                        InterfaceManager_SetObjectText(obj, &name);
+                    }
+                    if (name != NULL && *(void **)(obj + 0x254) != NULL) {
+                        obj[0x240] = 0;
+                    } else {
+                        obj[0x240] = 1;
+                    }
+                    if (obj[0x240] == 0) {
+                        InterfaceManager_CheckConditions(iface, obj);
+                    }
+                }
+                break;
+            case 101:
+                if ((*(u8 **)(iface + 0xC))[0x245] != 100) {
+                    obj[0x240] = 1;
+                } else if (*(void **)(obj + 0x254) != NULL) {
+                    obj[0x240] = 0;
+                    InterfaceManager_SetObjectString(obj, GameSettings_GetActiveMemoryCardLevelDetails());
+                }
+                break;
+            case 102:
+                value = GameSettings_GetCodeVariable(0xD0, 0);
+                break;
+            case 103:
+                value = GameSettings_GetCodeVariable(0xCF, 0);
+                break;
+            case 104:
+                InterfaceManager_SetControllerConfigInputString(iface, obj);
+                break;
+            }
+        }
+        if (value != 99999.99f) {
+            if (setDirty) {
+                obj[0xB4] = 1;
                 obj[0x84] = 1;
-                obj[0x2C] = 1;
-                obj[0x54] = 1;
-            }
-            break;
-        case 17:
-            if (*(char ***)(data + 0x48) != NULL) {
-                InterfaceManager_SetObjectText(obj, *(char ***)(data + 0x48));
-            }
-            break;
-        case 18:
-            if (*(char ***)(data + 0x4C) != NULL) {
-                InterfaceManager_SetObjectText(obj, *(char ***)(data + 0x4C));
-            }
-            break;
-        case 19:
-            if (*(char ***)(data + 0x60) != NULL) {
-                InterfaceManager_SetObjectText(obj, *(char ***)(data + 0x60));
-            }
-            break;
-        case 20:
-            if (data[0x82] != 0) {
-                value = 0.0f;
+                obj[0x118] = 1;
                 obj[0x54] = 1;
                 obj[0x2C] = 1;
             }
-            break;
-        case 21:
-            if (data[0x81] != 0) {
-                value = 0.0f;
-                obj[0x54] = 1;
-                obj[0x2C] = 1;
+            dt = value;
+            if (doText && obj[0x243] == 5) {
+                if (isCount) {
+                    if (valid) {
+                        sprintf((char *)(obj + 0x1C0), "%d", (u32)value);
+                        *(u32 *)(obj + 0x1A4) = 0;
+                        *(u16 *)(obj + 0x1A8) = strlen((char *)(obj + 0x1C0));
+                    } else {
+                        sprintf((char *)(obj + 0x1C0), " ");
+                        *(u32 *)(obj + 0x1A4) = 0;
+                        *(u16 *)(obj + 0x1A8) = strlen((char *)(obj + 0x1C0));
+                    }
+                } else if (isTime) {
+                    if (valid) {
+                        u32 secs = (u32)value / 1000;
+                        u32 mins = secs / 60;
+
+                        sprintf((char *)(obj + 0x1C0), "%.2d:%.2d", mins, secs - mins * 60);
+                        *(u32 *)(obj + 0x1A4) = 0;
+                        *(u16 *)(obj + 0x1A8) = strlen((char *)(obj + 0x1C0));
+                    } else {
+                        sprintf((char *)(obj + 0x1C0), " ");
+                        *(u32 *)(obj + 0x1A4) = 0;
+                        *(u16 *)(obj + 0x1A8) = strlen((char *)(obj + 0x1C0));
+                    }
+                } else {
+                    *(u32 *)(obj + 0x1A4) = 0;
+                    sprintf((char *)(obj + 0x1C0), "%d", (u32)value);
+                    *(u16 *)(obj + 0x1A8) = strlen((char *)(obj + 0x1C0));
+                }
             }
-            break;
-        case 24:
-            value = data[0xC9];
-            break;
-        case 25:
-            value = data[0xCA];
-            break;
-        case 26:
-            value = data[0xCB];
-            break;
-        case 27:
-            value = data[0xCC];
-            break;
-        case 28:
-            if (*(s32 *)(obj + 0x27C) < 0) {
-                *(s32 *)(obj + 0x27C) = 500;
-                obj[0x84] = 1;
-                obj[0x54] = 1;
-                obj[0x2C] = 1;
-                *(f32 *)(obj + 0x278) = RandomAdd(0.0f, *(u16 *)(*(u8 **)(obj + 0x25C) + 0xA));
-                sprintf(rndNumberBuffer, "%.0f", *(f32 *)(obj + 0x278));
-                *(char ***)(data + 0x5C) = g_rndNumber;
-                InterfaceManager_SetObjectText(obj, *(char ***)(data + 0x5C));
+        }
+    }
+    if (obj[0x240] == 0) {
+        if (obj[0x243] == 1) {
+            u8 *anim = *(u8 **)(obj + 0x258);
+
+            if (anim[0xC] != 0) {
+                u32 idx = ((u32 *)(iface + 0x98))[*(u16 *)(anim + 0xE)];
+
+                if (idx >= *(u32 *)(anim + 0)) {
+                    idx = *(u32 *)(anim + 0) - 1;
+                }
+                *(u16 *)(obj + 0x24A) = (*(u32 **)(anim + 4))[idx];
+                if (*(u32 *)(obj + 0x28C) != idx) {
+                    *(u32 *)(obj + 0x28C) = idx;
+                    obj[0x2C] = 1;
+                    obj[0x54] = 1;
+                    obj[0x118] = 1;
+                    obj[0x84] = 1;
+                    obj[0xB4] = 1;
+                    obj[0x125] = 1;
+                    obj[0x164] = 1;
+                    obj[0x194] = 1;
+                    obj[0x248] = 1;
+                }
             } else {
-                *(s32 *)(obj + 0x27C) -= g_iDeltaTimeMS;
+                ExtractTextureKey(anim, obj + 0x128, dt);
+                *(u16 *)(obj + 0x24A) = *(u16 *)(obj + 0x128);
             }
-            break;
+        }
+        if (obj[0x243] == 5 && (*(u8 **)(obj + 0x258))[0x10] == 1) {
+            u8 *list = *(u8 **)(*(u8 **)(obj + 0x258) + 8);
+
+            if (list[8] != 0) {
+                u32 idx = ((u32 *)(iface + 0x98))[*(u16 *)(list + 0xA)];
+
+                if (idx >= *(u32 *)(list + 0)) {
+                    idx = *(u32 *)(list + 0) - 1;
+                }
+                if (idx != *(u32 *)(obj + 0x28C)) {
+                    *(u32 *)(obj + 0x28C) = idx;
+                    InterfaceManager_SetObjectText(obj, (*(char ****)(list + 4))[idx]);
+                }
+            }
+        }
+        if (*(void **)(*(u8 **)(obj + 0x254) + 0x10) != NULL) {
+            ExtractColorKey(*(u8 **)(obj + 0x254) + 0x10, obj, dt);
+        } else {
+            ExtractColorKey(*(u8 **)(*(u8 **)(obj + 0x25C) + 0x60) + 0x18, obj, dt);
+        }
+        if (*(void **)(*(u8 **)(obj + 0x254) + 0x18) != NULL) {
+            ExtractScaleKey(*(u8 **)(obj + 0x254) + 0x18, obj + 0x30, dt);
+        } else {
+            ExtractScaleKey(*(u8 **)(*(u8 **)(obj + 0x25C) + 0x60) + 0x10, obj + 0x30, dt);
+        }
+        if (*(void **)(*(u8 **)(obj + 0x254) + 0x8) != NULL) {
+            ExtractScaleKey(*(u8 **)(obj + 0x254) + 0x8, obj + 0x60, dt);
+        } else {
+            ExtractScaleKey(*(u8 **)(*(u8 **)(obj + 0x25C) + 0x60), obj + 0x60, dt);
+        }
+        if (*(void **)(*(u8 **)(obj + 0x254) + 0x28) != NULL) {
+            ExtractScaleKey(*(u8 **)(obj + 0x254) + 0x28, obj + 0x90, dt);
+        } else {
+            ExtractScaleKey(*(u8 **)(*(u8 **)(obj + 0x25C) + 0x60) + 0x8, obj + 0x90, dt);
+        }
+        if (*(void **)(*(u8 **)(obj + 0x254) + 0x20) != NULL) {
+            ExtractUVKey(*(u8 **)(obj + 0x254) + 0x20, obj + 0xC0, dt);
+        } else {
+            ExtractUVKey(*(u8 **)(*(u8 **)(obj + 0x25C) + 0x60) + 0x20, obj + 0xC0, dt);
+        }
+        ExtractActiveKey(*(u8 **)(obj + 0x254), obj + 0x11C, dtCopy);
+        if (ref != NULL) {
+            *(u32 *)(obj + 0x24) = *ref;
         }
     }
 }
