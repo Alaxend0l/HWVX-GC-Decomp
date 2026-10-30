@@ -48,7 +48,7 @@ void *memcpy(void *dst, const void *src, u32 n);
 s32 CARDCheckExAsync(s32 chan, s32 *xferBytes, void *callback);
 void __CARDSyncCallback(s32 chan, s32 result);
 s32 __CARDSync(s32 chan);
-s32 VerifyID(void *card);
+s32 VerifyID(CARDControl *card);
 s32 VerifyDir(CARDControl *card, s32 *outCurrent);
 s32 VerifyFAT(void *card, s32 *outCurrent);
 void __CARDCheckSum(void *ptr, int length, u16 *checksum, u16 *checksumInv) {
