@@ -46,7 +46,7 @@ void AI_Init(void) {
     fn_800957D4();
 }
 
-static void AI_AsyncProcess(void) {
+void AI_AsyncProcess_80006C80(void) {
     M2C_UNK AI_Car_AsyncProcess();
     M2C_UNK AI_Creature_AsyncProcess();
     AI_Car_AsyncProcess();
