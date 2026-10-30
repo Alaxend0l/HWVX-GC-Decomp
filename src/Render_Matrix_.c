@@ -14,7 +14,8 @@ typedef struct GfxWindow {
     Vector4 clipPlanes[6];
     Vector4 shadowClipPlanes[5];
     f32 fov;
-    u8 unk274[0x280 - 0x274];
+    f32 unk274;
+    u8 unk278[0x280 - 0x278];
     u32 width;
     u32 height;
     u8 unk288[0x2B0 - 0x288];
