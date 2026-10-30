@@ -1260,7 +1260,7 @@ s32 GameSettings_FormatMemoryCard(void)
 #pragma use_lmw_stmw off
 s32 GameSettings_DeleteGameFile(void) {
     u8 File_Delete(char *device, const char *fileName);
-    extern GameInfo g_gameInfo[];
+    extern GameInfo g_gameInfo[2];
     static s8 bFirstTime = 1;
     static u8 *pMCP;
     char *device;
