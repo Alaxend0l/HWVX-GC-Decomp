@@ -50,6 +50,54 @@ BOOL SIIsChanBusy(s32 chan) {
     return Packet[chan].chan != -1 || Si.chan == chan;
 }
 
+static u32 CompleteTransfer(void) {
+    u32 sr;
+    u32 i;
+    u32 rLen;
+    u8 *input;
+
+    sr = __SIRegs[14];
+    __SIRegs[13] = (__SIRegs[13] | 0x80000000) & ~1;
+
+    if (Si.chan != -1) {
+        XferTime[Si.chan] = __OSGetSystemTime();
+
+        input = Si.input;
+
+        rLen = Si.inputBytes / 4;
+        for (i = 0; i < rLen; i++) {
+            *(u32 *)input = __SIRegs[32 + i];
+            input += 4;
+        }
+
+        rLen = Si.inputBytes & 3;
+        if (rLen) {
+            u32 temp = __SIRegs[32 + i];
+            for (i = 0; i < rLen; i++) {
+                *input++ = (u8)((temp >> ((3 - i) * 8)) & 0xff);
+            }
+        }
+
+        if (__SIRegs[13] & 0x20000000) {
+            sr >>= 8 * (3 - Si.chan);
+            sr &= 0xf;
+
+            if ((sr & 8) && !(Type[Si.chan] & 0x80)) {
+                Type[Si.chan] = 8;
+            }
+            if (sr == 0) {
+                sr = 4;
+            }
+        } else {
+            TypeTime[Si.chan] = __OSGetSystemTime();
+            sr = 0;
+        }
+
+        Si.chan = -1;
+    }
+    return sr;
+}
+
 BOOL SIEnablePollingInterrupt(BOOL enable) {
     BOOL enabled;
     BOOL rc;
