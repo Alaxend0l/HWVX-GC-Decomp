@@ -412,6 +412,211 @@ void Projectile_YAim(u8 *proj, Vector4 *target)
     }
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+void Projectile_DynamicCollisionCorrection(u8 *proj, u8 *hit) {
+    extern Vector4 g_zeroVector;
+    extern u8 g_projectileVTable[];
+    void *Thing_GetSource(void *thing);
+    f32 PSVECDotProduct(void *a, void *b);
+    void PSVECCrossProduct(void *a, void *b, void *out);
+    void PSVECNormalize(void *a, void *out);
+    f32 PSVECSquareMag(void *v);
+    void GenerateQuaternion(void *axis, void *q, f32 angle);
+    void QuaternionToSubMatrix(void *quat, void *mtx);
+    void TransposeSubMatrix(Matrix4 *mtx);
+    void MultiplySubMatrix(Matrix4 *a, Matrix4 *b, void *out);
+    void InverseXformVec(void *mtx, void *in, void *out);
+    void Grid_FreeObject(void *object);
+    void ThingManagerList_Remove(void *list, void *thing);
+    void ThingManagerList_Append(void *list, void *thing);
+    void *ThingManager_DARYL_CreateSlave(s32 type, void *params, u8 id);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    f32 RandomAdd(f32 base, f32 range);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    void BulletHole_AddSegment(void *mtx, u16 texture, GXColor color, u32 life, f32 size);
+    void LensFlare_Delete(s32 flare);
+    void LightHolder_Delete(s32 light);
+    double acos(double x);
+    struct { Vector4 a; Vector4 b; Vector4 c; Vector4 zero; u32 id; s32 player; f32 f0; f32 f1; } p;
+    Matrix4 mtx;
+    Matrix4 other;
+    Matrix4 hole;
+    Vector4 normal __attribute__((aligned(16)));
+    Vector4 q __attribute__((aligned(16)));
+    Vector4 axis __attribute__((aligned(16)));
+    u8 *target;
+    u8 *surface;
+    u8 *slave;
+    u32 id;
+    f32 dot;
+    f32 angle;
+    f32 size;
+
+    Thing_GetSource(proj);
+    if (!(*(u32 *)(proj + 0x74) & 0x40) && !(*(u32 *)(proj + 0x74) & 0x200000) && hit != NULL) {
+        *(u16 *)(proj + 0x15C) += 1;
+        if (*(u16 *)(proj + 0x15C) > 8) {
+            *(u32 *)(proj + 0x74) |= 0x40;
+            return;
+        }
+        if (*(u8 **)(hit + 0x20) == proj) {
+            target = *(u8 **)(hit + 0x24);
+            normal = *(Vector4 *)(hit + 0x10);
+        } else {
+            target = *(u8 **)(hit + 0x24);
+            normal.x = -*(f32 *)(hit + 0x10);
+            normal.y = -*(f32 *)(hit + 0x14);
+            normal.z = -*(f32 *)(hit + 0x18);
+        }
+        switch ((*(u8 **)(proj + 0x120))[3]) {
+        case 6:
+            if (target != NULL) {
+                mtx = *(Matrix4 *)(proj + 0x10);
+                other = *(Matrix4 *)(target + 0x10);
+                TransposeSubMatrix(&other);
+                MultiplySubMatrix(&other, &mtx, proj + 0x10);
+                SubMatrixToQuaternion(proj + 0x10, (Vector4 *)(proj + 0x50));
+                InverseXformVec(target + 0x10, &mtx.v[3], proj + 0x40);
+                if (*(void **)(proj + 0x84) != NULL) {
+                    Grid_FreeObject(*(void **)(proj + 0x84));
+                }
+                *(void **)(proj + 0x84) = NULL;
+                proj[0x83] = 0xEF;
+                ThingManagerList_Remove(&g_thingManager_DARYL.activeList, proj);
+                ThingManagerList_Append(target + 0x88, proj);
+                *(Vector4 *)proj = g_zeroVector;
+            } else {
+                *(u32 *)(proj + 0x74) |= 0x80000;
+                *(Vector4 *)proj = g_zeroVector;
+            }
+            break;
+        case 0:
+        case 3:
+            id = *(u32 *)(*(u8 **)(proj + 0x120) + 0x74);
+            if (id != 0) {
+                dot = PSVECDotProduct(&normal, proj + 0x30);
+                switch ((*(u8 **)(proj + 0x120))[8]) {
+                case 0:
+                    p.b = *(Vector4 *)(proj + 0x50);
+                    break;
+                case 1:
+                    if (dot < -0.97f) {
+                        Vector4 flip __attribute__((aligned(16))) = {0.0f, 1.0f, 0.0f, 0.0f};
+                        GenerateQuaternion(&flip, &q, 3.1415927f);
+                        QuaternionMult(&q, (Vector4 *)(proj + 0x50), &p.b);
+                    } else {
+                        angle = acos(dot);
+                        PSVECCrossProduct(proj + 0x30, &normal, &axis);
+                        if (dot > 0.99f) {
+                            axis = *(Vector4 *)(proj + 0x10);
+                        } else if (PSVECSquareMag(&axis)) {
+                            PSVECNormalize(&axis, &axis);
+                        }
+                        GenerateQuaternion(&axis, &q, angle);
+                        QuaternionMult(&q, (Vector4 *)(proj + 0x50), &p.b);
+                    }
+                    break;
+                case 2:
+                    if (dot < -0.97f) {
+                        Vector4 flip __attribute__((aligned(16))) = {0.0f, 1.0f, 0.0f, 0.0f};
+                        GenerateQuaternion(&flip, &q, 3.1415927f);
+                        QuaternionMult(&q, (Vector4 *)(proj + 0x50), &p.b);
+                    } else {
+                        if (dot > 0.97f) {
+                            angle = -1.5707964f;
+                        } else {
+                            angle = (f32)acos(dot) - 1.5707964f;
+                        }
+                        PSVECCrossProduct(proj + 0x30, &normal, &axis);
+                        if (dot > 0.99f) {
+                            axis = *(Vector4 *)(proj + 0x10);
+                        } else if (PSVECSquareMag(&axis)) {
+                            PSVECNormalize(&axis, &axis);
+                        }
+                        GenerateQuaternion(&axis, &q, 2.0f * angle);
+                        QuaternionMult(&q, (Vector4 *)(proj + 0x50), &p.b);
+                    }
+                    break;
+                }
+                p.id = id;
+                p.c = g_zeroVector;
+                p.player = *(s32 *)(proj + 0x94);
+                p.f0 = 0.0f;
+                p.f1 = 0.0f;
+                p.zero = g_zeroVector;
+                if (target != NULL) {
+                    InverseXformVec(target + 0x10, proj + 0x40, &p.a);
+                    slave = ThingManager_DARYL_CreateSlave(1, &p, 0xFF);
+                    if (slave != NULL) {
+                        slave[0x83] = 0xEF;
+                        ThingManagerList_Append(target + 0x88, slave);
+                    }
+                } else {
+                    p.a = *(Vector4 *)(proj + 0x40);
+                    p.a.x = 0.5f * normal.x + p.a.x;
+                    p.a.y = 0.5f * normal.y + p.a.y;
+                    p.a.z = 0.5f * normal.z + p.a.z;
+                    ThingManager_DARYL_CreateThing(1, &p);
+                }
+            }
+            ((Vector4 *)proj)->x = 0.0f;
+            ((Vector4 *)proj)->y = 0.0f;
+            ((Vector4 *)proj)->z = 0.0f;
+            if (*(u8 **)(hit + 0x24) == NULL && (surface = *(u8 **)(hit + 0x28)) != NULL && *(u32 *)(*(u8 **)(proj + 0x120) + 0x5C) != 0) {
+                switch (surface[1]) {
+                case 0: {
+                    Vector4 rot __attribute__((aligned(16)));
+                    Vector4 q2 __attribute__((aligned(16)));
+                    Vector4 axis2 __attribute__((aligned(16)));
+                    dot = PSVECDotProduct(&normal, proj + 0x30);
+                    if (dot < -0.985f) {
+                        Vector4 flip __attribute__((aligned(16))) = {0.0f, 1.0f, 0.0f, 0.0f};
+                        GenerateQuaternion(&flip, &q2, 3.1415927f);
+                        QuaternionMult(&q2, (Vector4 *)(proj + 0x50), &rot);
+                    } else {
+                        angle = acos(dot);
+                        PSVECCrossProduct(proj + 0x30, &normal, &axis2);
+                        if (dot > 0.99f) {
+                            axis2 = *(Vector4 *)(proj + 0x10);
+                        } else if (PSVECSquareMag(&axis2)) {
+                            PSVECNormalize(&axis2, &axis2);
+                        }
+                        GenerateQuaternion(&axis2, &q2, angle);
+                        QuaternionMult(&q2, (Vector4 *)(proj + 0x50), &rot);
+                    }
+                    QuaternionToSubMatrix(&rot, &hole);
+                    hole.v[3].x = 0.5f * *(f32 *)(hit + 0x10) + *(f32 *)(hit + 0x0);
+                    hole.v[3].y = 0.5f * *(f32 *)(hit + 0x14) + *(f32 *)(hit + 0x4);
+                    hole.v[3].z = 0.5f * *(f32 *)(hit + 0x18) + *(f32 *)(hit + 0x8);
+                    size = RandomAdd(*(f32 *)(*(u8 **)(proj + 0x120) + 0x4C), *(f32 *)(*(u8 **)(proj + 0x120) + 0x50));
+                    angle = RandomAdd_s32(*(s32 *)(*(u8 **)(proj + 0x120) + 0x54), *(s32 *)(*(u8 **)(proj + 0x120) + 0x58));
+                    BulletHole_AddSegment(&hole, *(u32 *)(*(u8 **)(proj + 0x120) + 0x5C), **(GXColor **)(*(u8 **)(proj + 0x120) + 0xAC), angle, size);
+                    break;
+                }
+                case 1:
+                case 2:
+                    break;
+                }
+            }
+            LensFlare_Delete(*(s32 *)(proj + 0x130));
+            Thing_Release((s32)proj);
+            LightHolder_Delete(*(s32 *)(proj + 0x134));
+            *(void **)(proj + 0x8C) = g_projectileVTable;
+            *(u32 *)(proj + 0x74) |= 2;
+            break;
+        case 1:
+        case 4:
+            ((Vector4 *)(proj + 0x40))->x = 0.02f * normal.x + ((Vector4 *)(proj + 0x40))->x;
+            ((Vector4 *)(proj + 0x40))->y = 0.02f * normal.y + ((Vector4 *)(proj + 0x40))->y;
+            ((Vector4 *)(proj + 0x40))->z = 0.02f * normal.z + ((Vector4 *)(proj + 0x40))->z;
+        case 2:
+        case 5:
+            break;
+        }
+    }
+}
+#pragma pop
 void Projectile_DynamicCollideImpact(void * proj, void * dir, s32 damage, f32 force)
 {
     void Projectile_DynamicCollisionCorrection(void *);
