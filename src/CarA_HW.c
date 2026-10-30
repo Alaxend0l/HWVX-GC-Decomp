@@ -72,6 +72,126 @@ void CarA_StuntImpulse(CarA *car, Vector4 *linImpulse, Vector4 *angImpulse) {
     }
 }
 
+#pragma push
+#pragma readonly_strings on
+s32 CarA_StuntsGetNewOrientation(CarA *car, Quaternion *outQ, f32 t) {
+    f32 MagnitudeVector(Vector4 *v);
+    void GenerateQuaternion(Vector4 *axis, Quaternion *q, f32 angle);
+    void XformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(void *mtx, Vector4 *in, Vector4 *out);
+    Vector4 accum __attribute__((aligned(16))) = {0.0f, 0.0f, 0.0f, 0.0f};
+    Quaternion q;
+    Quaternion newQ;
+    f32 rates[3] = {0.0f, 0.0f, 0.0f};
+    Vector4 axis __attribute__((aligned(16)));
+    Vector4 scaled;
+    Vector4 local;
+    CarAStuntInfo *stunt;
+    Player *player;
+    f32 scale;
+    f32 frac;
+    f32 spin;
+    f32 roll;
+    f32 mag;
+
+    stunt = car->vehicleIface->stunt;
+    scale = 1.0f;
+    frac = (f32)(u32)(car->unk460 - stunt->unk28) / stunt->maxTime;
+    if (!CarA_DoFreeStyleStunts(car)) {
+        car->stuntAxis = 0;
+        return 0;
+    }
+    if (car->player->stickX > 100 || car->player->stickX < -100) {
+        rates[0] = 1.0f;
+        if (car->stuntAxis != 1) {
+            car->stuntAxisVec = car->worldMatrix.v[1];
+            car->stuntAxis = 1;
+        }
+        if (car->player->stickX > 0) {
+            scale = -1.0f;
+        }
+    } else if (car->player->stickY > 100 || car->player->stickY < -100) {
+        rates[1] = 1.0f;
+        if (car->stuntAxis != 2) {
+            car->stuntAxisVec = car->worldMatrix.v[0];
+            car->stuntAxis = 2;
+        }
+        if (car->player->stickY > 0) {
+            scale = -1.0f;
+        }
+    } else {
+        car->stuntAxis = 0;
+    }
+    if (frac > 1.0f) {
+        frac = 1.0f;
+    }
+    spin = scale;
+    switch (car->stuntAxis) {
+    case 0:
+        spin *= 0.0f;
+        break;
+    case 1:
+        spin *= car->vehicleIface->stunt->pitchRate;
+        break;
+    case 2:
+        spin *= -car->vehicleIface->stunt->rollRate;
+        break;
+    }
+    accum.x += car->stuntAxisVec.x * spin;
+    accum.y += car->stuntAxisVec.y * spin;
+    accum.z += car->stuntAxisVec.z * spin;
+    stunt = car->vehicleIface->stunt;
+    player = car->player;
+    roll = 0.0f;
+    scale = 0.5f * (stunt->pitchRate + stunt->spinRate);
+    if (player->button10) {
+        roll -= stunt->spinRate;
+        rates[2] = 1.0f;
+    }
+    if (player->button1A) {
+        roll += stunt->spinRate;
+        rates[2] = 1.0f;
+    }
+    accum.x += car->worldMatrix.v[2].x * roll;
+    accum.y += car->worldMatrix.v[2].y * roll;
+    accum.z += car->worldMatrix.v[2].z * roll;
+    if (!(car->transmissionFlags & 0x20000)) {
+        stunt = car->vehicleIface->stunt;
+        car->stuntTime += g_fDeltaTimeSec * (stunt->rollRate * (rates[0] * stunt->rollScore)) +
+                          g_fDeltaTimeSec * (stunt->pitchRate * (rates[1] * stunt->pitchScore)) +
+                          g_fDeltaTimeSec * (stunt->spinRate * (rates[2] * stunt->spinScore));
+        car->transmissionFlags |= 0x20000;
+    }
+    axis = accum;
+    mag = MagnitudeVector(&axis);
+    if (mag > scale) {
+        mag = scale;
+        accum.x *= scale / mag;
+        accum.y *= scale / mag;
+        accum.z *= scale / mag;
+    }
+    if (mag > 1.6f) {
+        t = mag * t;
+        GenerateQuaternion(&axis, &q, frac * t);
+        QuaternionMult((Vector4 *)&q, &car->animRefPos, (Vector4 *)&newQ);
+        InverseXformVecOrientation(&car->worldMatrix, &accum, &local);
+        scaled.x = local.x / car->inverseBodyInertia.v[0].x;
+        scaled.y = local.y / car->inverseBodyInertia.v[1].y;
+        scaled.z = local.z / car->inverseBodyInertia.v[2].z;
+        XformVecOrientation(&car->worldMatrix, &scaled, &car->angularMomentum);
+        car->stuntSpin.x += 3.0f * t;
+        *outQ = newQ;
+        if (car->stuntTime > car->vehicleIface->stunt->minFailTime) {
+            player = car->player;
+            sprintf(player->stuntScoreText, "Points +%d", (u32)car->stuntTime);
+            car->stuntScoreMessage = &player->stuntScoreText;
+        }
+        return 1;
+    }
+    return 0;
+}
+#pragma pop
+
 int sprintf(char *buf, const char *fmt, ...);
 void CarA_StuntFail(CarA *car) {
     CarAStuntInfo *stunt;
