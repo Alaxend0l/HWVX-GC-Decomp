@@ -83,6 +83,7 @@ void CarA_ComputeSuspensionForces_Aux1(CarA *car);
 f32 GetDampFactor(u8 type, u32 n) {
     f32 f = 1.0f;
     u32 i = n;
+    u8 t;
 
     if (type <= 8) {
         while (i >= 10) {
@@ -91,11 +92,12 @@ f32 GetDampFactor(u8 type, u32 n) {
         }
         return f * g_frictionTable[type][i];
     }
-    while (type > 8) {
+    t = type;
+    while (t > 8) {
         f *= GetDampFactor(8, n);
-        type -= 8;
+        t -= 8;
     }
-    return f * GetDampFactor(type, n);
+    return f * GetDampFactor(t, n);
 }
 
 f32 CarA_GetImpactMultiplier(void *car, void *other, f32 scale) {
