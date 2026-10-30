@@ -115,7 +115,7 @@ void __AXOutAiCallback(void) {
 }
 
 void __AXDSPInitCallback(void) {
-    extern s32 __AXDSPInitFlag;
+    extern volatile s32 __AXDSPInitFlag;
     __AXDSPInitFlag = 1;
 }
 
@@ -164,6 +164,43 @@ void __AXOutInitDSP(void)
     DSPAddTask(&task);
     while (!__AXDSPInitFlag) {
     }
+}
+
+void __AXOutInit(void)
+{
+    extern volatile u32 __AXOutFrame;
+    extern u32 __AXDebugSteppingMode;
+    extern void (*__AXUserFrameCallback)(void);
+    void __AXOutAiCallback(void);
+    void __AXOutInitDSP(void);
+    void DCFlushRange(void *addr, u32 nBytes);
+    void *AIRegisterDMACallback(void (*callback)(void));
+    void __AXNextFrame(void *sbuffer, void *buffer);
+    void AIInitDMA(u32 start_addr, u32 length);
+    void AIStartDMA(void);
+    u32 *p;
+    u32 i;
+
+    __AXOutFrame = 0;
+    __AXDebugSteppingMode = 0;
+    for (p = (u32 *)__AXOutBuffer, i = 0; i < sizeof(__AXOutBuffer) / 4; i++) {
+        *p = 0;
+        p++;
+    }
+    DCFlushRange(__AXOutBuffer, sizeof(__AXOutBuffer));
+    p = __AXOutSBuffer;
+    for (i = 0; i < sizeof(__AXOutSBuffer) / 4; i++) {
+        *p = 0;
+        p++;
+    }
+    DCFlushRange(__AXOutSBuffer, sizeof(__AXOutSBuffer));
+    __AXOutInitDSP();
+    AIRegisterDMACallback(__AXOutAiCallback);
+    __AXNextFrame(__AXOutSBuffer, __AXOutBuffer[1]);
+    __AXOutDspReady = 1;
+    __AXUserFrameCallback = NULL;
+    AIInitDMA((u32)__AXOutBuffer[__AXOutFrame], sizeof(__AXOutBuffer[0]));
+    AIStartDMA();
 }
 
 s32 OSDisableInterrupts(void);
