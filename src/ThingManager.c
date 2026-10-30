@@ -750,196 +750,703 @@ void ThingManager_DARYL_Heartbeat(void) {
     ThingManager_MoveThings_DARYL_SUBTICK();
 }
 
+typedef struct MovePhys {
+    u8 pad0[0x14];
+    f32 friction;               /* 0x14 */
+    f32 elasticity;             /* 0x18 */
+} MovePhys;
+
+typedef struct MoveThing {
+    Vector4 vel;                /* 0x00 */
+    Matrix4 mtx;                /* 0x10 v[3] = position */
+    Vector4 quat;               /* 0x50 */
+    Vector4 pushVel;            /* 0x60 */
+    f32 radius;                 /* 0x70 */
+    u32 flags;                  /* 0x74 */
+    s32 unk78;                  /* 0x78 */
+    s32 damage;                 /* 0x7C */
+    s16 unk80;                  /* 0x80 */
+    u8 pad82[2];
+    void *gridData;             /* 0x84 */
+    u8 pad88[4];
+    struct MoveThingVTable *vtable; /* 0x8C */
+    u8 pad90[4];
+    void *player;               /* 0x94 */
+    u8 pad98[0xC];
+    struct MoveThing *next;     /* 0xA4 */
+    s32 type;                   /* 0xA8 */
+} MoveThing;
+
+typedef struct MoveHit {
+    Vector4 pos;                /* 0x00 */
+    Vector4 normal;             /* 0x10 */
+    MoveThing *thing;           /* 0x20 */
+    MoveThing *other;           /* 0x24 */
+    MovePhys *surface;          /* 0x28 */
+    u8 pad2C[0x14];
+    u8 type;                    /* 0x40 0xFF: pushed out, 0xFE: embedded */
+    u8 pad41[0xF];
+} MoveHit;
+
+typedef struct MoveThingVTable {
+    void *fn0;
+    void *fn4;
+    void (*move)(MoveThing *);                          /* 0x08 */
+    void (*update)(MoveThing *);                        /* 0x0C */
+    void *fn10;
+    f32 (*getMass)(MoveThing *);                        /* 0x14 */
+    void (*collide)(MoveThing *, MoveHit *, s32, f32);  /* 0x18 */
+    void *fn1C;
+    void *fn20;
+    void *fn24;
+    MovePhys *(*getPhys)(MoveThing *);                  /* 0x28 */
+    void *fn2C;
+    void (*getInvInertia)(MoveThing *, Vector4 *);      /* 0x30 */
+    void (*postMove)(MoveThing *, f32);                 /* 0x34 */
+} MoveThingVTable;
+
+typedef struct MoveGridEntry {
+    u32 unk0;
+    MoveThing *thing;
+} MoveGridEntry;
+
+typedef struct MoveCarTuning {
+    u8 pad0[0x38];
+    f32 maxImpactVel;           /* 0x38 */
+    u8 pad3C[0x20];
+    f32 damageScale;            /* 0x5C */
+} MoveCarTuning;
+
+typedef struct MoveCarBody {
+    u8 pad0[0x18];
+    f32 bumperHeight;           /* 0x18 */
+} MoveCarBody;
+
+typedef struct MoveCarIface {
+    u8 pad0[0x80];
+    MoveCarTuning *tuning;      /* 0x80 */
+    u8 pad84[0x1C];
+    struct { u8 pad0[0x44]; MoveCarBody *body; } *model; /* 0xA0 */
+} MoveCarIface;
+
+typedef struct MoveCar {
+    MoveThing thing;
+    u8 padAC[0x3BC - 0xAC];
+    MoveCarIface *iface;        /* 0x3BC */
+    u8 pad3C0[0x50C - 0x3C0];
+    f32 drag;                   /* 0x50C */
+    u8 pad510[0x18];
+    f32 rideHeight;             /* 0x528 */
+} MoveCar;
+
+typedef struct MovePlayer {
+    u8 pad0[0xD0];
+    struct { u8 pad0[0x1C]; f32 damageScale; } *difficulty; /* 0xD0 */
+} MovePlayer;
+
+typedef struct MoveImpactFx {
+    u8 pad0[0x68];
+    f32 minVel;                 /* 0x68 */
+    f32 maxVel;                 /* 0x6C */
+    u8 pad70[0x80];
+    u32 count;                  /* 0xF0 */
+    u32 *ids;                   /* 0xF4 */
+} MoveImpactFx;
+
+extern MoveHit g_aCI[8];
+void Dprintf(const char *fmt, ...);
+
+static inline u32 CI_Find(MoveThing *a, MoveThing *b) {
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        if ((g_aCI[i].thing == a && g_aCI[i].other == b) || (g_aCI[i].other == a && g_aCI[i].thing == b)) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+static inline void CI_Add(MoveThing *a, MoveThing *b) {
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        if (g_aCI[i].thing == NULL) {
+            g_aCI[i].thing = a;
+            g_aCI[i].other = b;
+            return;
+        }
+    }
+    Dprintf("out of CI slots\n");
+}
+
 void ThingManager_MoveThings_DARYL_SUBTICK(void)
 {
-    typedef struct MThing {
-        Vector4 vel;
-        u8 pad10[0x30];
-        Vector4 pos;
-        u8 pad50[0x10];
-        Vector4 angVel;
-        u8 pad70[4];
-        u32 flags;
-    } MThing;
-    typedef struct HitInfo {
-        Vector4 pos;
-        Vector4 normal;
-        MThing *thing;
-        u32 unk24;
-        u32 unk28;
-        u8 pad2C[0x14];
-        u8 type;
-    } HitInfo;
-    typedef struct GridEntry {
-        u32 unk0;
-        MThing *thing;
-    } GridEntry;
-    extern u8 g_aCI[0x280];
     extern f32 g_fDeltaTimeSec;
+    extern u32 g_frameCounter;
+    extern u8 g_carAVTable[];
+    extern Matrix4 g_identity;
+    extern Vector4 g_zeroVector;
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    M2C_UNK ThingManagerList_RemoveReleasedThings(s32);
     void MemClr32(void *dst, u32 size);
     void CollisionPairCache_Heartbeat(void);
     void CollisionTriCache_Heartbeat(void);
     void Thing_DynamicGridMove(void *thing, f32 dt);
-    void *Thing_GetSource(void *thing);
-    s8 Thing_HitsTerrain(void *thing, f32 *dt, HitInfo *hit);
+    void Thing_RotationalGridMove(void *thing);
+    void Thing_StaticGridMove(void *thing);
+    void Thing_MoveSlaves(void *thing);
+    MoveThing *Thing_GetSource(void *thing);
+    s8 Thing_HitsTerrain(void *thing, f32 *dt, MoveHit *hit);
+    s8 Thing_TestThingCollision(void *a, void *b, f32 *dt, MoveHit *hit);
+    s8 RayHitsTerrain(Vector4 *pos, MoveHit *hit, f32 *dist, MoveHit *out);
+    void Thing_GetDynamicMinMax(void *thing, Vector4 *min, Vector4 *max, f32 dt);
+    s32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 flags, MoveGridEntry *out, u32 max_count);
     f32 PSVECDotProduct(void *a, void *b);
     void PSVECScale(void *in, void *out, f32 scale);
     f32 PSVECSquareMag(void *v);
-    f32 Distance_Plane(Vector4 *normal, HitInfo *hit);
-    s8 RayHitsTerrain(Vector4 *pos, HitInfo *hit, f32 *dist, HitInfo *out);
-    void Thing_GetDynamicMinMax(void *thing, Vector4 *min, Vector4 *max, f32 dt);
-    u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 flags, GridEntry *out, u32 max_count);
+    void PSVECNormalize(void *in, void *out);
+    void PSVECAdd(void *a, void *b, void *out);
+    void PSVECSubtract(void *a, void *b, void *out);
+    void PSVECCrossProduct(void *a, void *b, void *out);
+    f32 Distance_Plane(Vector4 *normal, MoveHit *hit);
+    void XformVecOrientation(Matrix4 *m, Vector4 *in, Vector4 *out);
+    void InverseXformVecOrientation(Matrix4 *m, Vector4 *in, Vector4 *out);
+    void TransposeSubMatrix(Matrix4 *m);
+    void MultiplySubMatrix(Matrix4 *a, Matrix4 *b, Matrix4 *out);
+    f32 CarA_GetImpactMultiplier(void *car, MoveHit *hit, f32 scale);
+    u8 FloatsEqual(f32 a, f32 b, f32 eps);
+    s8 Player_IsHuman(void *player);
+    s8 Timer_Interrupt300(void);
+    f32 _fabs(f32 x);
+    f32 Sqrt(f64 x);
+    void Dprintf(const char *fmt, ...);
     static f32 offset = 0.2f;
     static f32 mult = 10.0f;
-    ThingHeader *moved[0x200];
-    GridEntry objs[0x200];
-    HitInfo hit;
-    HitInfo rayHit;
+    MoveThing *moved[0x200];
+    MoveGridEntry objs[0x200];
+    MoveHit hit;
+    MoveHit rayHit;
+    FxParams fx;
+    Matrix4 invInertia;
+    Matrix4 rot;
+    Matrix4 inertia;
+    Matrix4 tmp;
     Vector4 push;
     Vector4 min;
     Vector4 max;
-    ThingHeader *thing;
-    MThing *t;
-    void *source;
-    u32 numMoved;
-    u32 count;
-    u32 i;
-    u32 j;
-    u32 gridFlags;
     f32 dt;
-    f32 dtSave;
-    f32 dtStep;
-    f32 depth;
     f32 dist;
+    MoveThing *thing;
+    MoveThing *t;
+    MoveThing *other;
+    MoveThing *source;
+    MoveThing *otherSource;
+    SharedSlaveHolder *holder;
+    s32 numMoved;
+    s32 count;
+    s32 i;
+    s32 j;
+    u32 k;
+    u32 gridFlags;
+    u32 stuck;
+    u32 iters;
+    f32 elapsed;
+    f32 dtStep;
+    f32 dtSave;
+    f32 depth;
 
+    stuck = 0;
+    iters = 0;
+    elapsed = 0.0f;
     numMoved = 0;
     MemClr32(g_aCI, sizeof(g_aCI));
     CollisionPairCache_Heartbeat();
     CollisionTriCache_Heartbeat();
     for (thing = g_thingManager_DARYL.activeList; thing != NULL; thing = thing->next) {
         if (!(thing->flags & 0x280008)) {
-            ((void (*)(void *))((void **)thing->vtable)[2])(thing);
+            thing->vtable->move(thing);
         }
         thing->flags &= ~0x1A040;
-        if (M2C_FIELD(thing, s16 *, 0x80) == 0) {
+        if (thing->unk80 == 0) {
             continue;
         }
         if (!(thing->flags & 4) || (thing->flags & 0x200000)) {
             continue;
         }
         moved[numMoved++] = thing;
-        if (M2C_FIELD(thing, u32 *, 0x84) == 0 || (thing->flags & 8)) {
+        if (thing->gridData == NULL || (thing->flags & 8)) {
             continue;
         }
         Thing_DynamicGridMove(thing, g_fDeltaTimeSec);
     }
-    hit.thing = NULL;
-    hit.unk24 = 0;
-    hit.unk28 = 0;
-    dt = g_fDeltaTimeSec - 0.0f;
-    dtStep = dt;
-    for (i = 0; i < numMoved; i++) {
-        t = (MThing *)moved[i];
-        dtSave = dt;
-        source = Thing_GetSource(t);
-        t->flags |= 0x8000;
-        if (t->flags & 0x40) {
-            continue;
-        }
-        if (t->flags & 0x200000) {
-            continue;
-        }
-        hit.type = 0;
-        if (dt != 0.0f && !(t->flags & 0x24000B) && Thing_HitsTerrain(t, &dt, &hit)) {
-            if (hit.type == 0xFF) {
-                if (PSVECDotProduct(t, &hit.normal) < 0.0f) {
-                    f32 d;
 
-                    depth = 0.0f;
-                    d = PSVECDotProduct(t, &hit.normal);
-                    if (d <= 15.5f) {
-                        depth = -(d - 15.5f);
-                    }
-                    t->flags |= 0x12000;
-                    PSVECScale(&hit.normal, &push, depth);
-                    if (PSVECSquareMag(&t->angVel) < 40000.0f) {
-                        t->vel.x += push.x;
-                        t->vel.y += push.y;
-                        t->vel.z += push.z;
-                        t->angVel.x += push.x;
-                        t->angVel.y += push.y;
-                        t->angVel.z += push.z;
-                    }
-                }
-                dt = dtSave;
-            } else if (hit.type == 0xFE) {
-                if (Distance_Plane(&hit.normal, &hit) < -offset) {
-                    dist = 1.5f;
-                    rayHit.type = 0;
-                    offset = 0.3f;
-                    if (RayHitsTerrain(&t->pos, &hit, &dist, &rayHit)) {
-                        if (PSVECSquareMag(&t->angVel) < 40000.0f) {
-                            t->vel.x += rayHit.normal.x * mult;
-                            t->vel.y += rayHit.normal.y * mult;
-                            t->vel.z += rayHit.normal.z * mult;
-                            t->angVel.x += rayHit.normal.x * mult;
-                            t->angVel.y += rayHit.normal.y * mult;
-                            t->angVel.z += rayHit.normal.z * mult;
-                        }
-                        hit.type = 0xFF;
-                    } else {
-                        if (PSVECSquareMag(&t->angVel) < 40000.0f) {
-                            t->vel.x += hit.normal.x * mult;
-                            t->vel.y += hit.normal.y * mult;
-                            t->vel.z += hit.normal.z * mult;
-                            t->angVel.x += hit.normal.x * mult;
-                            t->angVel.y += hit.normal.y * mult;
-                            t->angVel.z += hit.normal.z * mult;
-                        }
-                        hit.type = 0xFF;
-                    }
-                    t->flags |= 0x10080;
-                    dt = dtSave;
-                } else {
-                    t->pos.x += hit.normal.x * offset;
-                    t->pos.y += hit.normal.y * offset;
-                    t->pos.z += hit.normal.z * offset;
-                    t->flags |= 0x80;
-                    hit.type = 0;
-                    hit.thing = t;
-                    hit.unk24 = 0;
-                }
-            } else {
-                hit.thing = t;
-                hit.unk24 = 0;
+    do {
+        hit.thing = NULL;
+        hit.other = NULL;
+        dt = dtStep = g_fDeltaTimeSec - elapsed;
+        hit.surface = NULL;
+        for (i = 0; i < numMoved; i++) {
+            t = moved[i];
+            dtSave = dt;
+            source = Thing_GetSource(t);
+            t->flags |= 0x8000;
+            if (t->flags & 0x40) {
+                continue;
             }
-        }
-        if (!(t->flags & 0x20002) && dt > 0.0f) {
-            gridFlags = 4;
-            if (t->flags & 0x4000009) {
-                gridFlags = 0;
+            if (t->flags & 0x200000) {
+                continue;
             }
-            Thing_GetDynamicMinMax(t, &min, &max, dtStep);
-            count = Grid_GetObjects(&min, &max, gridFlags | 3, objs, 0x200);
             hit.type = 0;
-            for (j = 0; j < count; j++) {
-                MThing *other = objs[j].thing;
-                void *otherSource;
+            if (dt && !(t->flags & 0x24000B) && Thing_HitsTerrain(t, &dt, &hit)) {
+                if (hit.type == 0xFF) {
+                    if (PSVECDotProduct(t, &hit.normal) < 0.0f) {
+                        f32 d;
 
-                dtSave = dt;
-                otherSource = Thing_GetSource(other);
-                if (other->flags & 0x8000) {
-                    continue;
+                        depth = 0.0f;
+                        d = PSVECDotProduct(t, &hit.normal);
+                        if (d <= 15.5f) {
+                            depth = -(d - 15.5f);
+                        }
+                        t->flags |= 0x12000;
+                        PSVECScale(&hit.normal, &push, depth);
+                        if (PSVECSquareMag(&t->pushVel) < 40000.0f) {
+                            t->vel.x += push.x;
+                            t->vel.y += push.y;
+                            t->vel.z += push.z;
+                            t->pushVel.x += push.x;
+                            t->pushVel.y += push.y;
+                            t->pushVel.z += push.z;
+                        }
+                    }
+                    dt = dtSave;
+                } else if (hit.type == 0xFE) {
+                    if (Distance_Plane(&hit.normal, &hit) < -offset) {
+                        dist = 1.5f;
+                        rayHit.type = 0;
+                        offset = 0.3f;
+                        if (RayHitsTerrain(&t->mtx.v[3], &hit, &dist, &rayHit)) {
+                            if (PSVECSquareMag(&t->pushVel) < 40000.0f) {
+                                t->vel.x += rayHit.normal.x * mult;
+                                t->vel.y += rayHit.normal.y * mult;
+                                t->vel.z += rayHit.normal.z * mult;
+                                t->pushVel.x += rayHit.normal.x * mult;
+                                t->pushVel.y += rayHit.normal.y * mult;
+                                t->pushVel.z += rayHit.normal.z * mult;
+                            }
+                            hit.type = 0xFF;
+                        } else {
+                            if (PSVECSquareMag(&t->pushVel) < 40000.0f) {
+                                t->vel.x += hit.normal.x * mult;
+                                t->vel.y += hit.normal.y * mult;
+                                t->vel.z += hit.normal.z * mult;
+                                t->pushVel.x += hit.normal.x * mult;
+                                t->pushVel.y += hit.normal.y * mult;
+                                t->pushVel.z += hit.normal.z * mult;
+                            }
+                            hit.type = 0xFF;
+                        }
+                        t->flags |= 0x10080;
+                        dt = dtSave;
+                    } else {
+                        t->mtx.v[3].x += hit.normal.x * offset;
+                        t->mtx.v[3].y += hit.normal.y * offset;
+                        t->mtx.v[3].z += hit.normal.z * offset;
+                        t->flags |= 0x80;
+                        hit.type = 0;
+                    }
+                    hit.thing = t;
+                    hit.other = NULL;
+                } else {
+                    hit.thing = t;
+                    hit.other = NULL;
                 }
-                if (source != NULL && source == other) {
-                    continue;
+            }
+            if (!(t->flags & 0x20002) && dt > 0.0f) {
+                gridFlags = 4;
+                if (t->flags & 0x4000009) {
+                    gridFlags = 0;
                 }
-                if (otherSource != NULL && otherSource == t) {
-                    continue;
+                Thing_GetDynamicMinMax(t, &min, &max, dtStep);
+                count = Grid_GetObjects(&min, &max, gridFlags | 3, objs, 0x200);
+                hit.type = 0;
+                for (j = 0; j < count; j++) {
+                    other = objs[j].thing;
+                    dtSave = dt;
+                    otherSource = Thing_GetSource(other);
+                    if (other->flags & 0x8000) {
+                        continue;
+                    }
+                    if (source != NULL && source == other) {
+                        continue;
+                    }
+                    if (otherSource != NULL && otherSource == t) {
+                        continue;
+                    }
+                    if (!(other->flags & 0x40000004)) {
+                        continue;
+                    }
+                    if (other->flags & 0x200042) {
+                        continue;
+                    }
+                    if ((t->flags & 0x4000009) && (other->flags & 0x4000009)) {
+                        continue;
+                    }
+                    if ((other->flags & 8) && (t->flags & 8)) {
+                        continue;
+                    }
+                    if (CI_Find(t, other)) {
+                        continue;
+                    }
+                    if (!Thing_TestThingCollision(t, other, &dt, &hit)) {
+                        continue;
+                    }
+                    if (hit.type == 0xFF && t->vtable->getPhys(t)->elasticity > 0.0f &&
+                        other->vtable->getPhys(other)->elasticity > 0.0f && t->unk78 > 0 && other->unk78 > 0) {
+                        f32 pushA = 0.0f;
+                        f32 pushB = 0.0f;
+                        f32 dA = PSVECDotProduct(t, &hit.normal);
+                        f32 dB = PSVECDotProduct(other, &hit.normal);
+
+                        if (dA - 5.5f <= 0.0f) {
+                            pushA = -(dA - 5.5f);
+                        }
+                        if (dB + 5.5f >= 0.0f) {
+                            pushB = dB + 5.5f;
+                        }
+                        t->flags |= 0x10000;
+                        other->flags |= 0x10000;
+                        if (t->flags & 0x4002008) {
+                            pushB += pushA;
+                            t->flags &= ~0x10000;
+                            pushA = 0.0f;
+                        } else if (other->flags & 0x4002008) {
+                            pushA += pushB;
+                            other->flags &= ~0x10000;
+                            pushB = 0.0f;
+                        }
+                        if (PSVECSquareMag(&t->pushVel) < 40000.0f) {
+                            t->vel.x += hit.normal.x * pushA;
+                            t->vel.y += hit.normal.y * pushA;
+                            t->vel.z += hit.normal.z * pushA;
+                            t->pushVel.x += hit.normal.x * pushA;
+                            t->pushVel.y += hit.normal.y * pushA;
+                            t->pushVel.z += hit.normal.z * pushA;
+                        }
+                        if (PSVECSquareMag(&other->pushVel) < 40000.0f) {
+                            other->vel.x -= hit.normal.x * pushB;
+                            other->vel.y -= hit.normal.y * pushB;
+                            other->vel.z -= hit.normal.z * pushB;
+                            other->pushVel.x -= hit.normal.x * pushB;
+                            other->pushVel.y -= hit.normal.y * pushB;
+                            other->pushVel.z -= hit.normal.z * pushB;
+                        }
+                        CI_Add(t, other);
+                        dt = dtSave;
+                    } else {
+                        hit.thing = t;
+                        hit.other = other;
+                        hit.surface = NULL;
+                    }
                 }
+            }
+        }
+
+        if (dt <= 0.0f) {
+            stuck++;
+            dt = 0.0f;
+            if (stuck > 10) {
+                if (!(hit.thing->flags & 0x4000008)) {
+                    hit.thing->vel.x = 0.0f;
+                    hit.thing->vel.y = 0.0f;
+                    hit.thing->vel.z = 0.0f;
+                    hit.thing->flags |= 0x40;
+                }
+                if (hit.other != NULL && !(hit.other->flags & 0x4000008)) {
+                    hit.other->vel.x = 0.0f;
+                    hit.other->vel.y = 0.0f;
+                    hit.other->vel.z = 0.0f;
+                    hit.other->flags |= 0x40;
+                }
+            }
+        } else {
+            stuck = 0;
+            for (i = 0; i < numMoved; i++) {
+                t = moved[i];
+                if (!(t->flags & 8)) {
+                    t->mtx.v[3].x += t->vel.x * dt;
+                    t->mtx.v[3].y += t->vel.y * dt;
+                    t->mtx.v[3].z += t->vel.z * dt;
+                    t->flags |= 0x80;
+                }
+            }
+        }
+
+        if (hit.thing != NULL) {
+            f32 vA = PSVECDotProduct(&hit.normal, hit.thing);
+            f32 vB = 0.0f;
+            f32 invMassA = 0.0f;
+            f32 invMassB = 0.0f;
+            f32 elastA = hit.thing->vtable->getPhys(hit.thing)->elasticity;
+            s32 damageB = 0;
+            s32 damageA = hit.thing->damage;
+            Vector4 crossA;
+            Vector4 crossB = {0.0f, 0.0f, 0.0f, 0.0f};
+            f32 elastB = 1.0f;
+            Vector4 negVel;
+            Vector4 rA;
+            Vector4 rxnA;
+            Vector4 wA;
+            Vector4 diagA;
+            Vector4 localA;
+            Vector4 scaledA;
+            Vector4 rB;
+            Vector4 rxnB;
+            Vector4 wB;
+            Vector4 diagB;
+            Vector4 sum;
+            Vector4 armA;
+            Vector4 armB __attribute__((aligned(16)));
+
+            if (hit.other == NULL && hit.thing->vtable == (MoveThingVTable *)g_carAVTable &&
+                PSVECDotProduct(&hit.thing->mtx.v[1], &hit.normal) < 0.5f) {
+                elastA *= CarA_GetImpactMultiplier(hit.thing, &hit, 1.0f);
+                if (hit.thing->mtx.v[1].y < 0.0f) {
+                    f32 blend = 0.6f * hit.surface->friction * hit.thing->vtable->getPhys(hit.thing)->friction;
+
+                    negVel.x = -hit.thing->vel.x;
+                    negVel.y = -hit.thing->vel.y;
+                    negVel.z = -hit.thing->vel.z;
+                    if (blend > 1.0f) {
+                        blend = 1.0f;
+                    }
+                    if (PSVECSquareMag(&negVel) != 0.0f) {
+                        PSVECNormalize(&negVel, &negVel);
+                    }
+                    hit.normal.x = (1.0f - blend) * hit.normal.x + blend * negVel.x;
+                    hit.normal.y = (1.0f - blend) * hit.normal.y + blend * negVel.y;
+                    hit.normal.z = (1.0f - blend) * hit.normal.z + blend * negVel.z;
+                    if (PSVECSquareMag(&hit.normal) != 0.0f) {
+                        PSVECNormalize(&hit.normal, &hit.normal);
+                    }
+                }
+            }
+            if (!(hit.thing->flags & 0x4000008) || hit.thing->unk78 == 0) {
+                invMassA = 1.0f / hit.thing->vtable->getMass(hit.thing);
+            }
+            if (hit.thing->vtable == (MoveThingVTable *)g_carAVTable &&
+                (hit.other == NULL || (hit.other->unk78 != 0 && (hit.other->flags & 8) &&
+                                       hit.other->vtable->getPhys(hit.other)->elasticity > 0.0f))) {
+                MoveCar *car = (MoveCar *)hit.thing;
+                f32 lim = car->iface->tuning->maxImpactVel * (0.7f * CarA_GetImpactMultiplier(car, &hit, 1.0f) + 0.3f);
+
+                if (vA > lim) {
+                    f32 d = lim - vA;
+
+                    vA = lim;
+                    hit.thing->vel.x += hit.normal.x * d;
+                    hit.thing->vel.y += hit.normal.y * d;
+                    hit.thing->vel.z += hit.normal.z * d;
+                } else if (vA < -lim) {
+                    f32 d = -lim - vA;
+
+                    vA = -lim;
+                    hit.thing->vel.x += hit.normal.x * d;
+                    hit.thing->vel.y += hit.normal.y * d;
+                    hit.thing->vel.z += hit.normal.z * d;
+                }
+            }
+            PSVECSubtract(&hit.pos, &hit.thing->mtx.v[3], &rA);
+            PSVECCrossProduct(&rA, &hit.normal, &rxnA);
+            hit.thing->vtable->getInvInertia(hit.thing, &diagA);
+            InverseXformVecOrientation(&hit.thing->mtx, &rxnA, &localA);
+            scaledA.x = diagA.x * localA.x;
+            scaledA.y = diagA.y * localA.y;
+            scaledA.z = diagA.z * localA.z;
+            XformVecOrientation(&hit.thing->mtx, &scaledA, &wA);
+            PSVECCrossProduct(&wA, &rA, &crossA);
+            if (hit.other != NULL) {
+                vB = PSVECDotProduct(&hit.normal, hit.other);
+                elastB = hit.other->vtable->getPhys(hit.other)->elasticity;
+                if (!(hit.other->flags & 0x4000008) || hit.other->unk78 == 0) {
+                    invMassB = 1.0f / hit.other->vtable->getMass(hit.other);
+                }
+                if (hit.other->type == 9) {
+                    elastB *= CarA_GetImpactMultiplier(hit.other, &hit, -1.0f);
+                    if (hit.thing->type == 9) {
+                        MoveImpactFx *fx_ = *(MoveImpactFx **)((u8 *)g_worldData.world + 0x9C);
+                        f32 rel = vB - vA;
+                        f32 lo = fx_->minVel;
+                        u32 n = fx_->count;
+                        f32 hi = fx_->maxVel;
+
+                        if (rel > lo && hi - lo != 0.0f && n != 0) {
+                            u32 idx = (f32)n * ((rel - lo) / (hi - lo));
+                            u32 id;
+
+                            if (idx > n) {
+                                idx = n;
+                            }
+                            id = fx_->ids[idx - 1];
+                            if (id != 0) {
+                                fx.id = id;
+                                fx.pos = hit.pos;
+                                fx.vel = g_zeroVector;
+                                fx.unk44 = 0;
+                                fx.unk48 = 0.0f;
+                                fx.unk4C = 0.0f;
+                                fx.angVel = g_zeroVector;
+                                fx.quat = g_zeroVector;
+                                ThingManager_DARYL_CreateThing(1, &fx);
+                            }
+                        }
+                    }
+                }
+                if (hit.other->type == 9 && (hit.thing->flags & 8) && hit.thing->unk78 != 0 && elastA > 0.0f) {
+                    f32 lim = ((MoveCar *)hit.other)->iface->tuning->maxImpactVel;
+
+                    if (vB > lim) {
+                        f32 d = lim - vB;
+
+                        vB = lim;
+                        hit.other->vel.x += hit.normal.x * d;
+                        hit.other->vel.y += hit.normal.y * d;
+                        hit.other->vel.z += hit.normal.z * d;
+                    } else if (vB < -lim) {
+                        f32 d = -lim - vB;
+
+                        vB = -lim;
+                        hit.other->vel.x += hit.normal.x * d;
+                        hit.other->vel.y += hit.normal.y * d;
+                        hit.other->vel.z += hit.normal.z * d;
+                    }
+                }
+                PSVECSubtract(&hit.pos, &hit.other->mtx.v[3], &rB);
+                rot = hit.other->mtx;
+                inertia = g_identity;
+                hit.other->vtable->getInvInertia(hit.other, &diagB);
+                TransposeSubMatrix(&rot);
+                inertia.v[0].x = diagB.x;
+                inertia.v[1].y = diagB.y;
+                inertia.v[2].z = diagB.z;
+                MultiplySubMatrix(&inertia, &hit.other->mtx, &tmp);
+                MultiplySubMatrix(&rot, &tmp, &invInertia);
+                PSVECCrossProduct(&rB, &hit.normal, &rxnB);
+                XformVecOrientation(&invInertia, &rxnB, &wB);
+                PSVECCrossProduct(&wB, &rB, &crossB);
+                damageB = hit.other->damage;
+            } else if (hit.surface != NULL) {
+                elastB = hit.surface->elasticity;
+            }
+            vA = (vA - vB) * -(1.0f + _fabs(elastA * elastB));
+            PSVECAdd(&crossA, &crossB, &sum);
+            vA /= (invMassA + invMassB) * PSVECDotProduct(&hit.normal, &hit.normal) + PSVECDotProduct(&sum, &hit.normal);
+            if (elastB < 0.0f) {
+                elastB = 0.0f;
+            } else {
+                elastB = vA;
+            }
+            if (elastA < 0.0f) {
+                elastA = 0.0f;
+            } else {
+                elastA = -vA;
+            }
+            if (hit.other != NULL && hit.thing->vtable == (MoveThingVTable *)g_carAVTable &&
+                hit.other->vtable == (MoveThingVTable *)g_carAVTable) {
+                MoveCar *car = (MoveCar *)hit.thing;
+                MoveCarBody *body = car->iface->model->body;
+
+                armA.x = hit.pos.x - car->thing.mtx.v[3].x;
+                armA.y = hit.pos.y - car->thing.mtx.v[3].y;
+                armA.z = hit.pos.z - car->thing.mtx.v[3].z;
+                if (FloatsEqual(PSVECDotProduct(&car->thing.mtx.v[2], &armA) - car->rideHeight, body->bumperHeight, 0.3f)) {
+                    damageA = -vA * car->iface->tuning->damageScale * PSVECDotProduct(&hit.thing->mtx.v[2], &hit.normal);
+                    if (hit.thing->player != NULL && !Player_IsHuman(hit.thing->player)) {
+                        damageA = (f32)damageA * ((MovePlayer *)hit.thing->player)->difficulty->damageScale;
+                    }
+                }
+                car = (MoveCar *)hit.other;
+                body = car->iface->model->body;
+                armB.x = hit.pos.x - car->thing.mtx.v[3].x;
+                armB.y = hit.pos.y - car->thing.mtx.v[3].y;
+                armB.z = hit.pos.z - car->thing.mtx.v[3].z;
+                if (FloatsEqual(PSVECDotProduct(&car->thing.mtx.v[2], &armB) - car->rideHeight, body->bumperHeight, 0.3f)) {
+                    damageB = vA * car->iface->tuning->damageScale * PSVECDotProduct(&hit.other->mtx.v[2], &hit.normal);
+                    if (hit.other->player != NULL && !Player_IsHuman(hit.other->player)) {
+                        damageB = (f32)damageB * ((MovePlayer *)hit.other->player)->difficulty->damageScale;
+                    }
+                }
+            }
+            hit.thing->vtable->collide(hit.thing, &hit, damageB, elastB);
+            Thing_DynamicGridMove(hit.thing, dtStep);
+            if (hit.other != NULL) {
+                hit.other->vtable->collide(hit.other, &hit, damageA, elastA);
+                Thing_DynamicGridMove(hit.other, dtStep);
+            }
+        }
+
+        for (i = 0; i < numMoved; i++) {
+            t = moved[i];
+            t->vtable->postMove(t, dt);
+            t->flags &= ~0x8000;
+        }
+        if (dt < 0.00001f && iters > 100) {
+            elapsed = g_fDeltaTimeSec;
+        }
+        elapsed += dt;
+        iters++;
+    } while (elapsed < g_fDeltaTimeSec);
+
+    g_frameCounter++;
+    for (t = g_thingManager_DARYL.activeList; t != NULL; t = t->next) {
+        if (t->gridData != NULL && !(t->flags & 0x200008)) {
+            Thing_RotationalGridMove(t);
+        }
+    }
+    for (t = g_thingManager_DARYL.activeList; t != NULL; t = t->next) {
+        if (!(t->flags & 0x10000)) {
+            t->vel.x -= t->pushVel.x;
+            t->vel.y -= t->pushVel.y;
+            t->vel.z -= t->pushVel.z;
+            t->pushVel.x = 0.0f;
+            t->pushVel.y = 0.0f;
+            t->pushVel.z = 0.0f;
+        }
+        if (t->vtable == (MoveThingVTable *)g_carAVTable) {
+            t->vel.x -= g_fDeltaTimeSec * (((MoveCar *)t)->drag * t->mtx.v[0].x);
+            t->vel.y -= g_fDeltaTimeSec * (((MoveCar *)t)->drag * t->mtx.v[0].y);
+            t->vel.z -= g_fDeltaTimeSec * (((MoveCar *)t)->drag * t->mtx.v[0].z);
+        }
+        if (!(t->flags & 0x200000)) {
+            t->vtable->update(t);
+            if (!(t->flags & 8) && t->gridData != NULL) {
+                Thing_StaticGridMove(t);
+            }
+            Thing_MoveSlaves(t);
+        }
+    }
+    for (k = 0; k < 0x40; k++) {
+        if (((SharedSlaveHolder *)g_aSharedSlaveHolder)[k].key != NULL) {
+            MoveThing *slave = ((SharedSlaveHolder *)g_aSharedSlaveHolder)[k].slaves;
+
+            while (slave != NULL) {
+                MoveThing *next = slave->next;
+
+                slave->vtable->update(slave);
+                if (Timer_Interrupt300()) {
+                    f32 inv = 1.0f / Sqrt(slave->quat.x * slave->quat.x + slave->quat.y * slave->quat.y +
+                                          slave->quat.z * slave->quat.z + slave->quat.w * slave->quat.w);
+
+                    slave->quat.x *= inv;
+                    slave->quat.y *= inv;
+                    slave->quat.z *= inv;
+                    slave->quat.w *= inv;
+                }
+                slave = next;
             }
         }
     }
+    ThingManagerList_RemoveReleasedThings((s32)&g_thingManager_DARYL.activeList);
 }
 
 void ThingManager_DARYL_Render(void) {
