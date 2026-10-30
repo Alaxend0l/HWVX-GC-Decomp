@@ -33,6 +33,12 @@ typedef struct GDLTri {
     s16 blendMode;  /* 0x62 */
 } GDLTri;
 
+typedef struct GDLRect {
+    GDLTriVtx v[4]; /* 0x00 */
+    u16 tex;        /* 0x80 */
+    u8 blendMode;   /* 0x82 */
+} GDLRect;
+
 typedef struct GDLSprite {
     Vector4 pos;
     u8 unk10[0x1C - 0x10];
