@@ -184,6 +184,51 @@ s32 GXGetTexObjFmt(GXTexObj *to) {
     return t->fmt;
 }
 
+extern u8 GXTexMode0Ids[8];
+extern u8 GXTexMode1Ids[8];
+extern u8 GXTexImage0Ids[8];
+extern u8 GXTexImage1Ids[8];
+extern u8 GXTexImage2Ids[8];
+extern u8 GXTexImage3Ids[8];
+extern u8 GXTexTlutIds[8];
+void GXLoadTexObjPreLoaded(GXTexObj *obj, void *region, u32 id) {
+    __GXTlutRegionInt *tlr;
+    __GXTexObjInt *t = (__GXTexObjInt *)obj;
+    __GXTexRegionInt *r = (__GXTexRegionInt *)region;
+
+    t->mode0 = ((u32)t->mode0 & ~0xFF000000) | ((u32)GXTexMode0Ids[id] << 24);
+    t->mode1 = ((u32)t->mode1 & ~0xFF000000) | ((u32)GXTexMode1Ids[id] << 24);
+    t->image0 = ((u32)t->image0 & ~0xFF000000) | ((u32)GXTexImage0Ids[id] << 24);
+    r->image1 = ((u32)r->image1 & ~0xFF000000) | ((u32)GXTexImage1Ids[id] << 24);
+    r->image2 = ((u32)r->image2 & ~0xFF000000) | ((u32)GXTexImage2Ids[id] << 24);
+    t->image3 = ((u32)t->image3 & ~0xFF000000) | ((u32)GXTexImage3Ids[id] << 24);
+
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = t->mode0;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = t->mode1;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = t->image0;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = r->image1;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = r->image2;
+    GXWGFifo.u8 = 0x61;
+    GXWGFifo.u32 = t->image3;
+
+    if (!(t->flags & 2)) {
+        tlr = ((__GXTlutRegionInt *(*)(u32))gx->tlutRegionCallback)(t->tlutName);
+        tlr->tlutObj[0] = ((u32)tlr->tlutObj[0] & ~0xFF000000) | ((u32)GXTexTlutIds[id] << 24);
+        GXWGFifo.u8 = 0x61;
+        GXWGFifo.u32 = tlr->tlutObj[0];
+    }
+
+    gx->tImage0[id] = t->image0;
+    gx->tMode0[id] = t->mode0;
+    gx->dirtyState |= 1;
+    gx->bpSentNot = 0;
+}
+
 void GXLoadTexObjPreLoaded(GXTexObj *obj, void *region, u32 id);
 void GXLoadTexObj(GXTexObj *obj, u32 id) {
     void *r;
