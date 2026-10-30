@@ -28,6 +28,7 @@ s64 OSGetTime(void) {
     return ((s64)hi << 32) | lo;
 }
 
+#pragma peephole off
 static void GetDates(s32 days, s32 *td) {
     s32 year;
     s32 n;
@@ -46,4 +47,3 @@ static void GetDates(s32 days, s32 *td) {
     td[4] = month;
     td[3] = days - p[month] + 1;
 }
-
