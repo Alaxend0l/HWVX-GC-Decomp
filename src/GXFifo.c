@@ -78,8 +78,6 @@ extern void *__GXCurrentThread;
 extern s32 GXOverflowSuspendInProgress;
 extern void *CPUFifo;
 extern void *GPFifo;
-extern volatile u32 *__piReg;
-extern u8 CPGPLinked;
 void __GXFifoInit(void) {
     __OSSetInterruptHandler(0x11, GXCPInterruptHandler);
     __OSUnmaskInterrupts(0x4000);
