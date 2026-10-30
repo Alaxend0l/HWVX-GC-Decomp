@@ -76,6 +76,61 @@ void GXInitLightColor(GXLightObjInt *lt_obj, GXColor color) {
     lt_obj->Color = (color.r << 24) | (color.g << 16) | (color.b << 8) | color.a;
 }
 
+void GXLoadLightObjImm(GXLightObjInt *lt_obj, s32 light) {
+    u32 addr;
+    u32 idx;
+
+    switch (light) {
+    case 0x1:
+        idx = 0;
+        break;
+    case 0x2:
+        idx = 1;
+        break;
+    case 0x4:
+        idx = 2;
+        break;
+    case 0x8:
+        idx = 3;
+        break;
+    case 0x10:
+        idx = 4;
+        break;
+    case 0x20:
+        idx = 5;
+        break;
+    case 0x40:
+        idx = 6;
+        break;
+    case 0x80:
+        idx = 7;
+        break;
+    default:
+        idx = 0;
+        break;
+    }
+    addr = idx * 0x10 + 0x600;
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = addr | 0xF0000;
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u32 = 0;
+    GXWGFifo.u32 = lt_obj->Color;
+    GXWGFifo.f32 = lt_obj->a[0];
+    GXWGFifo.f32 = lt_obj->a[1];
+    GXWGFifo.f32 = lt_obj->a[2];
+    GXWGFifo.f32 = lt_obj->k[0];
+    GXWGFifo.f32 = lt_obj->k[1];
+    GXWGFifo.f32 = lt_obj->k[2];
+    GXWGFifo.f32 = lt_obj->lpos[0];
+    GXWGFifo.f32 = lt_obj->lpos[1];
+    GXWGFifo.f32 = lt_obj->lpos[2];
+    GXWGFifo.f32 = lt_obj->ldir[0];
+    GXWGFifo.f32 = lt_obj->ldir[1];
+    GXWGFifo.f32 = lt_obj->ldir[2];
+    gx->bpSentNot = 1;
+}
+
 void GXSetNumChans(u8 nChans) {
     gx->genMode = ((u32)gx->genMode & ~(((1 << 3) - 1) << 4)) | ((u32)nChans << 4);
     GXWGFifo.u8 = 0x10;
