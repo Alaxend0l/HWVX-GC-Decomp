@@ -187,19 +187,16 @@ void UnsetRun(void ** arg0)
     arg0[0xb7] = NULL;
 }
 
-s32 __OSGetEffectivePriority(void * thread)
-{
+s32 __OSGetEffectivePriority(OSThread *thread) {
     s32 priority;
-    void * blocked;
-    void * mutex;
+    OSMutex *mutex;
+    OSThread *blocked;
 
-    priority = ((s32 *)thread)[0xb5];
-    for (mutex = (void *)((void **)thread)[0xbd]; mutex != NULL; mutex = (void *)((void **)mutex)[4])
-    {
-        blocked = (void *)((void **)mutex)[0];
-        if (blocked != NULL && ((s32 *)blocked)[0xb4] < priority)
-        {
-            priority = ((s32 *)blocked)[0xb4];
+    priority = thread->base;
+    for (mutex = thread->queueMutex.head; mutex; mutex = mutex->next) {
+        blocked = mutex->queue.head;
+        if (blocked && blocked->priority < priority) {
+            priority = blocked->priority;
         }
     }
     return priority;
@@ -552,6 +549,118 @@ void OSCancelThread(OSThread *thread) {
     }
     OSRestoreInterrupts(enabled);
 }
+
+s32 OSResumeThread(OSThread *thread) {
+    extern volatile u32 RunQueueBits;
+    BOOL enabled;
+    s32 suspendCount;
+
+    enabled = OSDisableInterrupts();
+    suspendCount = thread->suspend--;
+    if (thread->suspend < 0) {
+        thread->suspend = 0;
+    } else if (thread->suspend == 0) {
+        switch (thread->state) {
+        case 1: {
+            s32 priority;
+            OSMutex *mutex;
+            OSThread *prev;
+
+            priority = thread->base;
+            for (mutex = thread->queueMutex.head; mutex; mutex = mutex->next) {
+                OSThread *blocked = mutex->queue.head;
+                if (blocked && blocked->priority < priority) {
+                    priority = blocked->priority;
+                }
+            }
+            thread->priority = priority;
+            thread->queue = &RunQueue[thread->priority];
+            prev = thread->queue->tail;
+            if (prev == NULL) {
+                thread->queue->head = thread;
+            } else {
+                prev->link.next = thread;
+            }
+            thread->link.prev = prev;
+            thread->link.next = NULL;
+            thread->queue->tail = thread;
+            RunQueueBits |= 1u << (31 - thread->priority);
+            RunQueueHint = TRUE;
+            break;
+        }
+        case 4: {
+            s32 priority;
+            OSMutex *mutex;
+            OSThread *next;
+            OSThread *prev;
+
+            next = thread->link.next;
+            prev = thread->link.prev;
+            if (next == NULL) {
+                thread->queue->tail = prev;
+            } else {
+                next->link.prev = prev;
+            }
+            if (prev == NULL) {
+                thread->queue->head = next;
+            } else {
+                prev->link.next = next;
+            }
+            priority = thread->base;
+            for (mutex = thread->queueMutex.head; mutex; mutex = mutex->next) {
+                OSThread *blocked = mutex->queue.head;
+                if (blocked && blocked->priority < priority) {
+                    priority = blocked->priority;
+                }
+            }
+            thread->priority = priority;
+            for (next = thread->queue->head; next && next->priority <= thread->priority; next = next->link.next) {
+            }
+            if (next == NULL) {
+                prev = thread->queue->tail;
+                if (prev == NULL) {
+                    thread->queue->head = thread;
+                } else {
+                    prev->link.next = thread;
+                }
+                thread->link.prev = prev;
+                thread->link.next = NULL;
+                thread->queue->tail = thread;
+            } else {
+                thread->link.next = next;
+                prev = next->link.prev;
+                next->link.prev = thread;
+                thread->link.prev = prev;
+                if (prev == NULL) {
+                    thread->queue->head = thread;
+                } else {
+                    prev->link.next = thread;
+                }
+            }
+            if (thread->mutex) {
+                thread = thread->mutex->thread;
+                do {
+                    if (0 < thread->suspend) {
+                        break;
+                    }
+                    priority = __OSGetEffectivePriority(thread);
+                    if (thread->priority == priority) {
+                        break;
+                    }
+                    thread = SetEffectivePriority(thread, priority);
+                } while (thread);
+            }
+            break;
+        }
+        }
+        if (RunQueueHint) {
+            SelectThread(0);
+        }
+    }
+    OSRestoreInterrupts(enabled);
+    return suspendCount;
+}
+
 #pragma pop
 
 OSThread *SetEffectivePriority(OSThread *thread, s32 priority);
