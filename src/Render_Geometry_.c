@@ -159,6 +159,16 @@ typedef struct GDLBox {
     u8 unk34[0x50 - 0x34];
 } GDLBox;
 
+typedef struct GDLLightState {
+    Vector4 pointLights[3];
+    Vector4 lightDir;
+    u32 numPointLights;
+    GXColor pointColors[3];
+    GXColor ambientColor;
+    GXColor lightColor;
+    u8 unk58[0x60 - 0x58];
+} GDLLightState;
+
 typedef struct GDL {
     u8 unk0[0x2C];
     u32 numSpheres;
