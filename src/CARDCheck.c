@@ -20,9 +20,8 @@ typedef struct CARDDirCheck {
     u16 checkSumInv;
 } CARDDirCheck;
 
-static inline CARDDirCheck *__CARDGetDirCheck(u8 *dir) {
-    return (CARDDirCheck *)(dir + 0x1FC0);
-}
+/* A macro in the SDK: an inline function adds a stack slot (GC/1.2.5n) */
+#define __CARDGetDirCheck(dir) ((CARDDirCheck *)((u8 *)(dir) + 0x1FC0))
 
 void *memcpy(void *dst, const void *src, u32 n);
 s32 CARDCheckExAsync(s32 chan, s32 *xferBytes, void *callback);
