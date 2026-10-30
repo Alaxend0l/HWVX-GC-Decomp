@@ -22,13 +22,14 @@ typedef struct DSPTaskInfo {
     struct DSPTaskInfo *prev;
 } DSPTaskInfo;
 
+DSPTaskInfo *__DSP_curr_task;
 DSPTaskInfo *__DSP_first_task;
 DSPTaskInfo *__DSP_last_task;
-DSPTaskInfo *__DSP_curr_task;
+DSPTaskInfo *__DSP_tmp_task;
+DSPTaskInfo *__DSP_rude_task;
+s32 __DSP_rude_task_pending;
 
 extern volatile u16 __DSPRegs[32] : 0xCC005000;
-extern DSPTaskInfo *__DSP_rude_task;
-extern s32 __DSP_rude_task_pending;
 
 typedef struct OSContext {
     u32 gpr[32];
