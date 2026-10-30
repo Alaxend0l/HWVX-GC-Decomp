@@ -307,8 +307,8 @@ void __DSP_boot_task(DSPTaskInfo *task)
     __DSP_debug_printf("__DSP_boot_task()  : IRAM MMEM ADDR: 0x%08X\n", (u32)task->iram_mmem_addr);
     __DSP_debug_printf("__DSP_boot_task()  : IRAM DSP ADDR : 0x%08X\n", task->iram_addr);
     __DSP_debug_printf("__DSP_boot_task()  : IRAM LENGTH   : 0x%08X\n", task->iram_length);
-    __DSP_debug_printf("__DSP_boot_task()  : DRAM MMEM ADDR : 0x%08X\n", task->dram_length);
-    __DSP_debug_printf("__DSP_boot_task()  : Start Vector   : 0x%08X\n", task->dsp_init_vector);
+    __DSP_debug_printf("__DSP_boot_task()  : DRAM MMEM ADDR: 0x%08X\n", task->dram_length);
+    __DSP_debug_printf("__DSP_boot_task()  : Start Vector  : 0x%08X\n", task->dsp_init_vector);
 }
 
 void __DSP_insert_task(DSPTaskInfo *task)
