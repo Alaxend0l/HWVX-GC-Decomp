@@ -153,6 +153,48 @@ void GXLoadTexObj(GXTexObj *obj, u32 id) {
     GXLoadTexObjPreLoaded(obj, r, id);
 }
 
+void GXInitTexCacheRegion(GXTexRegion *region, u8 is32bMipmap, u32 tmem_even, s32 size_even, u32 tmem_odd, s32 size_odd) {
+    u32 WidthExp2;
+    __GXTexRegionInt *t = (__GXTexRegionInt *)region;
+
+    switch (size_even) {
+    case 0:
+        WidthExp2 = 3;
+        break;
+    case 1:
+        WidthExp2 = 4;
+        break;
+    case 2:
+        WidthExp2 = 5;
+        break;
+    }
+    t->image1 = 0;
+    t->image1 = ((u32)t->image1 & ~0x7FFF) | (u32)(tmem_even >> 5);
+    t->image1 = ((u32)t->image1 & ~0x38000) | ((u32)WidthExp2 << 15);
+    t->image1 = ((u32)t->image1 & ~0x1C0000) | ((u32)WidthExp2 << 18);
+    t->image1 = ((u32)t->image1 & ~0x200000);
+    switch (size_odd) {
+    case 0:
+        WidthExp2 = 3;
+        break;
+    case 1:
+        WidthExp2 = 4;
+        break;
+    case 2:
+        WidthExp2 = 5;
+        break;
+    case 3:
+        WidthExp2 = 0;
+        break;
+    }
+    t->image2 = 0;
+    t->image2 = ((u32)t->image2 & ~0x7FFF) | (u32)(tmem_odd >> 5);
+    t->image2 = ((u32)t->image2 & ~0x38000) | ((u32)WidthExp2 << 15);
+    t->image2 = ((u32)t->image2 & ~0x1C0000) | ((u32)WidthExp2 << 18);
+    t->is32bMipmap = is32bMipmap;
+    t->isCached = 1;
+}
+
 void GXInitTlutRegion(GXTlutRegion *region, u32 tmem_addr, u32 tlut_size) {
     __GXTlutRegionInt *t = (__GXTlutRegionInt *)region;
 
