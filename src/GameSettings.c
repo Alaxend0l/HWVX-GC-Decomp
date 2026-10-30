@@ -698,7 +698,7 @@ ControllerSettings *GameSettings_GetControllerSettings(s32 player) {
 void GameSettings_GetGameInfo(void *info) {
     void *FileStreaming_InitializeDataPack(void *, s32, s32);
     u8 *DataPack_GetScript(void *, s32);
-    extern GameInfo g_gameInfo[];
+    extern GameInfo g_gameInfo[2];
     static s8 bFirstTime = 1;
     static u8 *pMCP;
     u8 *mcp;
