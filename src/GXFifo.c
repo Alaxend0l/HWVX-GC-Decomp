@@ -79,6 +79,41 @@ void GXInitFifoLimits(GXFifoObj *fifo, u32 hiWatermark, u32 loWatermark) {
     realFifo->loWatermark = loWatermark;
 }
 
+void GXSetCPUFifo(GXFifoObj *fifo) {
+    __GXFifoObj *realFifo = (__GXFifoObj *)fifo;
+    BOOL enabled;
+    u32 reg;
+
+    enabled = OSDisableInterrupts();
+    CPUFifo = realFifo;
+    if (realFifo == GPFifo) {
+        __piReg[3] = (u32)realFifo->base & 0x3FFFFFFF;
+        __piReg[4] = (u32)realFifo->top & 0x3FFFFFFF;
+        reg = 0;
+        reg = (reg & ~0x3FFFFFE0) | ((((u32)realFifo->wrPtr & 0x3FFFFFFF) >> 5) << 5);
+        reg = (reg & ~0x04000000) | 0;
+        __piReg[5] = reg;
+        CPGPLinked = 1;
+        __GXWriteFifoIntReset(1, 1);
+        __GXWriteFifoIntEnable(1, 0);
+        __GXFifoLink(1);
+    } else {
+        if (CPGPLinked) {
+            __GXFifoLink(0);
+            CPGPLinked = 0;
+        }
+        __GXWriteFifoIntEnable(0, 0);
+        __piReg[3] = (u32)realFifo->base & 0x3FFFFFFF;
+        __piReg[4] = (u32)realFifo->top & 0x3FFFFFFF;
+        reg = 0;
+        reg = (reg & ~0x3FFFFFE0) | ((((u32)realFifo->wrPtr & 0x3FFFFFFF) >> 5) << 5);
+        reg = (reg & ~0x04000000) | 0;
+        __piReg[5] = reg;
+    }
+    __sync();
+    OSRestoreInterrupts(enabled);
+}
+
 #pragma peephole on
 void __OSSetInterruptHandler(s16 interrupt, void *handler);
 u32 __OSUnmaskInterrupts(u32 mask);
