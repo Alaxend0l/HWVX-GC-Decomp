@@ -56,6 +56,23 @@ static inline PathNode *NavHolder_PopLowestOpen(void) {
     return best;
 }
 
+static inline void NavHolder_ResetNavPoints(NavData *data, u32 chance) {
+    u32 RandomNumberGenerator_GetRandomInteger(u32 min, u32 max);
+    u32 i;
+
+    for (i = 0; i < data->numNodes; i++) {
+        u32 r = RandomNumberGenerator_GetRandomInteger(chance, 100);
+        u8 *node = data->nodes + i * 0x60;
+        if (node[0x50] != 0 && node[0x35] >= r) {
+            node[0x37] |= 1;
+        } else {
+            node[0x37] &= ~1;
+        }
+        data->nodes[i * 0x60 + 0x37] &= ~6;
+        *(u8 **)(data->nodes + i * 0x60 + 0x38) = NULL;
+    }
+}
+
 void NavHolder_Init(NavData *data) {
     u32 i;
 
