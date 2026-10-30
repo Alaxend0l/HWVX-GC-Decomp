@@ -2069,7 +2069,7 @@ void AI_Car_Heartbeat(u8 *ai) {
             while (cleared && *(u32 *)(ai + 0x4A4) < 32 && (point = *(u8 **)(ai + 0x420 + *(u32 *)(ai + 0x4A4) * 4)) != NULL) {
                 cleared = 0;
                 if (PSVECSquareDistance(point, pos + 0x40) < *(f32 *)(point + 0x24) * *(f32 *)(point + 0x24)) {
-                    AI_Car_ClearedNavPoint(ai, 0);
+                    AI_Car_ClearedNavPoint_800087C8(ai, 0);
                     cleared = 1;
                 }
             }
