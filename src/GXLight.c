@@ -190,6 +190,62 @@ void GXSetChanAmbColor(s32 chan, GXColor amb_color) {
     gx->ambColor[colIdx] = reg;
 }
 
+void GXSetChanMatColor(s32 chan, GXColor mat_color) {
+    u32 reg = 0;
+    u32 colIdx;
+    u32 alpha;
+
+    switch (chan) {
+    case 0:
+        alpha = gx->matColor[0] & 0xFF;
+        reg = ((u32)reg & ~0xFF) | ((u32)alpha);
+        reg = ((u32)reg & ~0xFF00) | ((u32)mat_color.b << 8);
+        reg = ((u32)reg & ~0xFF0000) | ((u32)mat_color.g << 16);
+        reg = ((u32)reg & ~0xFF000000) | ((u32)mat_color.r << 24);
+        colIdx = 0;
+        break;
+    case 1:
+        alpha = gx->matColor[1] & 0xFF;
+        reg = ((u32)reg & ~0xFF) | ((u32)alpha);
+        reg = ((u32)reg & ~0xFF00) | ((u32)mat_color.b << 8);
+        reg = ((u32)reg & ~0xFF0000) | ((u32)mat_color.g << 16);
+        reg = ((u32)reg & ~0xFF000000) | ((u32)mat_color.r << 24);
+        colIdx = 1;
+        break;
+    case 2:
+        reg = gx->matColor[0];
+        reg = ((u32)reg & ~0xFF) | ((u32)mat_color.a);
+        colIdx = 0;
+        break;
+    case 3:
+        reg = gx->matColor[1];
+        reg = ((u32)reg & ~0xFF) | ((u32)mat_color.a);
+        colIdx = 1;
+        break;
+    case 4:
+        reg = ((u32)reg & ~0xFF) | ((u32)mat_color.a);
+        reg = ((u32)reg & ~0xFF00) | ((u32)mat_color.b << 8);
+        reg = ((u32)reg & ~0xFF0000) | ((u32)mat_color.g << 16);
+        reg = ((u32)reg & ~0xFF000000) | ((u32)mat_color.r << 24);
+        colIdx = 0;
+        break;
+    case 5:
+        reg = ((u32)reg & ~0xFF) | ((u32)mat_color.a);
+        reg = ((u32)reg & ~0xFF00) | ((u32)mat_color.b << 8);
+        reg = ((u32)reg & ~0xFF0000) | ((u32)mat_color.g << 16);
+        reg = ((u32)reg & ~0xFF000000) | ((u32)mat_color.r << 24);
+        colIdx = 1;
+        break;
+    default:
+        return;
+    }
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = colIdx + 0x100C;
+    GXWGFifo.u32 = reg;
+    gx->bpSentNot = 1;
+    gx->matColor[colIdx] = reg;
+}
+
 void GXSetNumChans(u8 nChans) {
     gx->genMode = ((u32)gx->genMode & ~(((1 << 3) - 1) << 4)) | ((u32)nChans << 4);
     GXWGFifo.u8 = 0x10;
