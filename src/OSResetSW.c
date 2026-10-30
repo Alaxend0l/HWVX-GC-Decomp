@@ -34,3 +34,58 @@ void __OSResetSWInterruptHandler(s16 exception, void *context)
     }
     __PIRegs[0] = 2;
 }
+
+BOOL OSDisableInterrupts(void);
+BOOL OSRestoreInterrupts(BOOL level);
+extern s64 __OSStartTime;
+u8 GameChoice : 0x800030E3;
+BOOL OSGetResetButtonState(void) {
+    BOOL enabled;
+    BOOL state;
+    u32 reg;
+    s64 now;
+
+    enabled = OSDisableInterrupts();
+    now = __OSGetSystemTime();
+    reg = __PIRegs[0];
+    if (!(reg & 0x00010000)) {
+        if (!Down) {
+            Down = TRUE;
+            state = HoldUp ? TRUE : FALSE;
+            HoldDown = now;
+        } else {
+            state = (HoldUp || ((100 * ((__OSBusClock / 4) / 125000)) / 8) < now - HoldDown) ? TRUE : FALSE;
+        }
+    } else if (Down) {
+        Down = FALSE;
+        state = LastState;
+        if (state) {
+            HoldUp = now;
+        } else {
+            HoldUp = 0;
+        }
+    } else if (HoldUp && (now - HoldUp < 40 * ((__OSBusClock / 4) / 1000))) {
+        state = TRUE;
+    } else {
+        state = FALSE;
+        HoldUp = 0;
+    }
+    LastState = state;
+
+    if (GameChoice & 0x3F) {
+        s64 fire = (GameChoice & 0x3F) * 60;
+        fire = __OSStartTime + fire * (__OSBusClock / 4);
+        if (fire < now) {
+            now -= fire;
+            now = (now / (__OSBusClock / 4)) / 2;
+            if ((now & 1) == 0) {
+                state = TRUE;
+            } else {
+                state = FALSE;
+            }
+        }
+    }
+    OSRestoreInterrupts(enabled);
+    return state;
+}
+
