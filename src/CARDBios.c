@@ -243,6 +243,45 @@ static void TimeoutHandler(void *alarm, void *context) {
     }
 }
 
+int EXILock(s32 chan, u32 dev, void *unlockedCallback);
+s32 Retry(s32 chan);
+void UnlockedCallback(s32 chan, s32 result) {
+    CARDCallback callback;
+    CARDControl *card;
+
+    card = &__CARDBlock[chan];
+    if (result >= 0) {
+        card->unlockCallback = UnlockedCallback;
+        if (!EXILock(chan, 0, __CARDUnlockedHandler)) {
+            result = 0;
+        } else {
+            card->unlockCallback = 0;
+            result = Retry(chan);
+        }
+    }
+
+    if (result < 0) {
+        switch (card->cmd[0]) {
+        case 0x52:
+            callback = card->txCallback;
+            if (callback) {
+                card->txCallback = 0;
+                callback(chan, result);
+            }
+            break;
+        case 0xF2:
+        case 0xF4:
+        case 0xF1:
+            callback = card->exiCallback;
+            if (callback) {
+                card->exiCallback = 0;
+                callback(chan, result);
+            }
+            break;
+        }
+    }
+}
+
 s32 __CARDEraseSector(s32 chan, u32 addr, CARDCallback callback) {
     CARDControl *card;
     s32 result;
