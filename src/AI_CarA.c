@@ -787,7 +787,7 @@ s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest) {
     if (point != NULL) {
         NavHolder_FillPointerArrayPath(point, (u8 **)(car + 0x420), 0x20);
         *(s32 *)(car + 0x4A8) = dest;
-        AI_Car_ClearedNavPoint(car, 1);
+        AI_Car_ClearedNavPoint_800087C8(car, 1);
         while (*(u32 *)(car + 0x4A4) < 31) {
             u8 *a = ((u8 **)(car + 0x420))[*(u32 *)(car + 0x4A4)];
             u8 *b = ((u8 **)(car + 0x420))[*(u32 *)(car + 0x4A4) + 1];
