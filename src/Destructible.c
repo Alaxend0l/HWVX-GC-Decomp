@@ -315,7 +315,7 @@ void Destructible_Release(Destructible *destructible) {
     u8 *trigger;
 
     Trigger_DestructibleKilled(destructible);
-    if (*(u8 **)((u8 *)destructible + 0x8C) == g_destructibleVTable) {
+    if (destructible->vtable == g_destructibleVTable) {
         trigger = *(u8 **)((u8 *)destructible + 0x90);
         if (trigger != NULL) {
             *(u8 **)((u8 *)destructible + 0x90) = NULL;
