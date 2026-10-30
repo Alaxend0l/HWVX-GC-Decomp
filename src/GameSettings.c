@@ -49,6 +49,17 @@ static inline u8 *GameSettings_LoadMCP(void)
     return pMCP;
 }
 
+static inline void GameSettings_GatherSwitches(u8 *dst) {
+    u8 *world = g_worldData.world;
+    u32 i;
+
+    for (i = 0; i < *(u32 *)(world + 0x50) && i < 50; i++) {
+        ((f32 *)dst)[i] = *(f32 *)((*(u8 ***)(world + 0x54))[i] + 0x8);
+        dst[0xC8 + i * 2] = (*(u8 **)((*(u8 ***)(world + 0x54))[i] + 0xC))[0];
+        dst[0xC9 + i * 2] = (*(u8 **)((*(u8 ***)(world + 0x54))[i] + 0xC))[1];
+    }
+}
+
 static inline u32 GameSettings_GetSaveFileChecksum(char *device, const char *name, u32 size)
 {
     s32 File_Open(char *dev, const char *name, u32 flags, s32 *size);
@@ -857,6 +868,137 @@ done:
         }
         break;
     }
+}
+
+void GameSettings_GatherGameData(void) {
+    typedef struct DDRescueGameData {
+        u8 unk0[0x6C];
+        s32 progressionID;
+        s32 progression;
+        s8 bValid;
+        u8 unk75[0x78 - 0x75];
+        u8 playerStats[0x38];
+        u8 actions[0x880 - 0xB0];
+        f32 unk880[50];
+        u8 unk948[50][2];
+        f32 unk9AC[50];
+        u8 unkA74[50][2];
+        u8 unkAD8[200];
+        u8 unkBA0[1000];
+        u8 unkF88[2000];
+        u8 unk1758[500];
+        u8 unk194C[50];
+        f32 unk1980[50][3];
+        f32 unk1BD8[50];
+        u8 unk1CA0[50];
+        s32 vehicle;
+        s32 item;
+    } DDRescueGameData;
+    void *FileStreaming_InitializeDataPack(void *, s32, s32);
+    u8 *DataPack_GetScript(void *, s32);
+    void StateProgressionManager_GetProgressionID(s32 *id, s32 *progression);
+    void *PlayerManager_GetHumanPlayerByIndex(u8 index);
+    void *memcpy(void *, const void *, u32);
+    void Trigger_SaveActions(void *actions, s32 count);
+    static s8 bFirstTime = 1;
+    static u8 *pMCP;
+    u8 *mcp;
+    void *pack;
+    s32 state;
+    u8 *world;
+    u8 *group;
+    u8 *car;
+    u32 i;
+    u32 j;
+    u32 nTriggers;
+    u32 nSwitches;
+
+    nTriggers = 0;
+    nSwitches = 0;
+    if (bFirstTime) {
+        bFirstTime = 0;
+        pack = FileStreaming_InitializeDataPack((void *)FileStreaming_LoadDataPack("mcp", 3, 0, 0), 3, 1);
+        if (pack == NULL) {
+            mcp = NULL;
+            goto done;
+        }
+        pMCP = DataPack_GetScript(pack, 0);
+    }
+    mcp = pMCP;
+done:
+    if (mcp != NULL) {
+        state = mcp[1];
+    } else {
+        state = 0;
+    }
+    switch (state) {
+    case 0:
+        break;
+    case 1:
+        StateProgressionManager_GetProgressionID(&((DDRescueGameData *)g_DDRescueGameData)->progressionID, &((DDRescueGameData *)g_DDRescueGameData)->progression);
+        ((DDRescueGameData *)g_DDRescueGameData)->bValid = g_codeVariables.unk120[0];
+        if (!((DDRescueGameData *)g_DDRescueGameData)->bValid) {
+            ((DDRescueGameData *)g_DDRescueGameData)->progression++;
+            break;
+        }
+        if ((u8)PlayerManager_PlayerHumanCount() == 1) {
+            memcpy(((DDRescueGameData *)g_DDRescueGameData)->playerStats, (u8 *)PlayerManager_GetHumanPlayerByIndex(0) + 0x70, 0x38);
+        }
+        Trigger_SaveActions(((DDRescueGameData *)g_DDRescueGameData)->actions, 500);
+        world = g_worldData.world;
+        for (i = 0; i < *(u32 *)(world + 0x50) && i < 50; i++) {
+            ((DDRescueGameData *)g_DDRescueGameData)->unk880[i] = *(f32 *)((*(u8 ***)(world + 0x54))[i] + 0x8);
+            ((DDRescueGameData *)g_DDRescueGameData)->unk948[i][0] = (*(u8 **)((*(u8 ***)(world + 0x54))[i] + 0xC))[0];
+            ((DDRescueGameData *)g_DDRescueGameData)->unk948[i][1] = (*(u8 **)((*(u8 ***)(world + 0x54))[i] + 0xC))[1];
+        }
+        world = g_worldData.world;
+        for (i = 0; i < *(u32 *)(world + 0x48) && i < 50; i++) {
+            ((DDRescueGameData *)g_DDRescueGameData)->unk9AC[i] = *(f32 *)((*(u8 ***)(world + 0x4C))[i] + 0x4);
+            if (*(u8 **)((*(u8 ***)(world + 0x4C))[i] + 0xC) != NULL) {
+                ((DDRescueGameData *)g_DDRescueGameData)->unkA74[i][0] = (*(u8 **)((*(u8 ***)(world + 0x4C))[i] + 0xC))[0];
+                ((DDRescueGameData *)g_DDRescueGameData)->unkA74[i][1] = (*(u8 **)((*(u8 ***)(world + 0x4C))[i] + 0xC))[1];
+            }
+        }
+        world = g_worldData.world;
+        for (i = 0; i < *(u32 *)(world + 0x40) && i < 200; i++) {
+            ((DDRescueGameData *)g_DDRescueGameData)->unkAD8[i] = *(s32 *)(*(u8 **)(world + 0x44) + i * 0x40 + 0x20);
+        }
+        world = g_worldData.world;
+        for (i = 0; i < *(u32 *)(world + 0x20); i++) {
+            group = *(u8 **)(world + 0x24) + i * 0x50;
+            for (j = 0; j < *(u32 *)(*(u8 **)(group + 0x30) + 0x14) && nTriggers < 1000; j++) {
+                ((DDRescueGameData *)g_DDRescueGameData)->unkBA0[nTriggers++] = *(s32 *)(*(u8 **)(*(u8 **)(group + 0x30) + 0x18) + j * 0x40 + 0x28);
+            }
+            for (j = 0; j < *(u32 *)(*(u8 **)(group + 0x30) + 0x4) && nSwitches < 2000; j++) {
+                ((DDRescueGameData *)g_DDRescueGameData)->unkF88[nSwitches++] = *(s32 *)(*(u8 **)(*(u8 **)(group + 0x30) + 0x8) + j * 0x40 + 0x30);
+            }
+        }
+        for (i = 0; i < *(u32 *)(world + 0x10) && i < 500; i++) {
+            ((DDRescueGameData *)g_DDRescueGameData)->unk1758[i] = *(s32 *)(*(u8 **)(world + 0x14) + i * 0x20 + 0x14);
+        }
+        world = g_worldData.world;
+        for (i = 0; i < *(u32 *)(world + 0x8) && i < 50; i++) {
+            ((DDRescueGameData *)g_DDRescueGameData)->unk194C[i] = *(s32 *)(*(u8 **)(world + 0xC) + i * 0x60 + 0x2C);
+            car = *(u8 **)(*(u8 **)(world + 0xC) + i * 0x60 + 0x28);
+            if (car != NULL) {
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][0] = *(f32 *)(car + 0x40);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][1] = *(f32 *)(car + 0x44);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][2] = *(f32 *)(car + 0x48);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1BD8[i] = (f32)*(s32 *)(car + 0x78) / (f32)*(s32 *)(*(u8 **)(*(u8 **)(car + 0x3BC) + 0xA0) + 0x14);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1CA0[i] = 1;
+            } else {
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][0] = *(f32 *)(*(u8 **)(world + 0xC) + i * 0x60 + 0x0);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][1] = *(f32 *)(*(u8 **)(world + 0xC) + i * 0x60 + 0x4);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1980[i][2] = *(f32 *)(*(u8 **)(world + 0xC) + i * 0x60 + 0x8);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1BD8[i] = *(f32 *)(*(u8 **)(world + 0xC) + i * 0x60 + 0x58);
+                ((DDRescueGameData *)g_DDRescueGameData)->unk1CA0[i] = 0;
+            }
+        }
+        ((DDRescueGameData *)g_DDRescueGameData)->item = 0;
+        ((DDRescueGameData *)g_DDRescueGameData)->vehicle = g_codeVariables.playerVehicle[0];
+        break;
+    }
+    g_codeVariables.unk120[0] = 0;
 }
 
 void GameSettings_RestoreGameData(void) {
