@@ -520,7 +520,7 @@ config.libs = [
             Object(Matching, "GXBump.c", mw_version="GC/1.2.5n"),
             Object(Matching, "GXTev.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "GXPixel.c", mw_version="GC/1.2.5n"),
-            Object(NonMatching, "GXDraw.c", mw_version="GC/1.2.5n"),
+            Object(Matching, "GXDraw.c", mw_version="GC/1.2.5n"),
             Object(Matching, "GXStubs.c"),
             Object(Matching, "GXDisplayList.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "GXTransform.c"),
