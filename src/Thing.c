@@ -32,10 +32,14 @@ static inline s8 Thing_ProcessItemPickup(u8 *thing, u8 *item) {
     void *motion;
 
     switch (**(u8 **)(item + 0xC0)) {
+    case 0:
+    case 1:
+    case 2:
+        break;
     case 3:
         rack = ThingManagerList_GetByType(thing + 0x88, 8);
         if (rack == NULL) {
-            break;
+            return 0;
         }
         WildCardRack_Add(rack, *(u8 **)(item + 0xC0), *(s16 *)(item + 0xCE));
         Item_Release(item);
