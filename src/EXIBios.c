@@ -614,3 +614,53 @@ static void UnlockedHandler(s32 chan, void *context) {
     EXIGetID(chan, 0, &id);
 }
 
+#pragma push
+#pragma use_lmw_stmw on
+s32 EXIGetID(s32 chan, u32 dev, u32 *id) {
+    EXIControl *exi = &Ecb[chan];
+    BOOL err;
+    u32 cmd;
+    s32 startTime;
+    BOOL enabled;
+
+    if (chan < 2 && dev == 0) {
+        if (!__EXIProbe(chan)) {
+            return 0;
+        }
+        if (exi->idTime == __EXIProbeStartTime[chan]) {
+            *id = exi->id;
+            return exi->idTime;
+        }
+        if (!__EXIAttach(chan, NULL)) {
+            return 0;
+        }
+        startTime = __EXIProbeStartTime[chan];
+    }
+    err = !EXILock(chan, dev, (chan < 2 && dev == 0) ? UnlockedHandler : NULL);
+    if (!err) {
+        err = !EXISelect(chan, dev, 0);
+        if (!err) {
+            cmd = 0;
+            err |= !EXIImm(chan, &cmd, 2, 1, NULL);
+            err |= !EXISync(chan);
+            err |= !EXIImm(chan, id, 4, 0, NULL);
+            err |= !EXISync(chan);
+            err |= !EXIDeselect(chan);
+        }
+        EXIUnlock(chan);
+    }
+    if (chan < 2 && dev == 0) {
+        EXIDetach(chan);
+        enabled = OSDisableInterrupts();
+        err |= (startTime != __EXIProbeStartTime[chan]);
+        if (!err) {
+            exi->id = *id;
+            exi->idTime = startTime;
+        }
+        OSRestoreInterrupts(enabled);
+        return err ? 0 : exi->idTime;
+    }
+    return err ? 0 : 1;
+}
+#pragma pop
+
