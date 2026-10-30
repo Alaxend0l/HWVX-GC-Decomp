@@ -63,6 +63,72 @@ s8 RayHitsTerrain(Vector4 *start, Vector4 *end, void *arg2, void *arg3)
 
 #pragma push
 #pragma use_lmw_stmw on
+s8 OBoxHitsCellZeroTimeEdgesOnly(void *obox, void *cell, void *arg2);
+#pragma push
+#pragma use_lmw_stmw on
+s8 OBoxHitsTerrainZeroTimeEdgesOnly(void *obox, void *arg1) {
+    void MinMaxVec(Vector4 *min, Vector4 *max, Vector4 *v);
+    void World_NextSweep(void);
+    TerrainGrid *grid;
+    Vector4 bounds[3] __attribute__((aligned(16)));
+    f32 ox;
+    f32 oy;
+    f32 oz;
+    f32 sx;
+    f32 sy;
+    f32 sz;
+    s32 x;
+    s32 x1;
+    s32 y;
+    s32 y0;
+    s32 y1;
+    s32 z;
+    s32 z0;
+    s32 z1;
+    u32 i;
+
+    if (g_worldData.world == NULL || *(TerrainGrid **)g_worldData.world == NULL) {
+        return 0;
+    }
+    grid = *(TerrainGrid **)g_worldData.world;
+    ox = grid->origin.x;
+    oy = grid->origin.y;
+    oz = grid->origin.z;
+    sx = grid->sizeX;
+    sy = grid->sizeY;
+    sz = grid->sizeZ;
+    bounds[0].x = 99999.0f;
+    bounds[0].y = 99999.0f;
+    bounds[0].z = 99999.0f;
+    bounds[0].w = 99999.0f;
+    bounds[1].x = -99999.0f;
+    bounds[1].y = -99999.0f;
+    bounds[1].z = -99999.0f;
+    bounds[1].w = -99999.0f;
+    for (i = 0; i < 8; i++) {
+        MinMaxVec(&bounds[0], &bounds[1], &((OBoxCorners *)obox)->corners[i]);
+    }
+    World_NextSweep();
+    x1 = (bounds[1].x - ox) / sx;
+    y0 = (bounds[0].y - oy) / sy;
+    y1 = (bounds[1].y - oy) / sy;
+    z0 = (bounds[0].z - oz) / sz;
+    z1 = (bounds[1].z - oz) / sz;
+    for (x = (bounds[0].x - ox) / sx; x <= x1; x++) {
+        for (y = y0; y <= y1; y++) {
+            for (z = z0; z <= z1; z++) {
+                if (OBoxHitsCellZeroTimeEdgesOnly(obox, TerrainGrid_GetCellXYZ(*(TerrainGrid **)g_worldData.world, x, y, z), arg1)) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+#pragma pop
+
+#pragma push
+#pragma use_lmw_stmw on
 s8 OBoxHitsCellZeroTimeEdgesOnly(void *obox, void *cell, void *arg2)
 {
     s8 OBoxHitsBSPZeroTimeEdgesOnly(void *, void *, void *);
@@ -532,6 +598,52 @@ s32 RayHitsCell(Vector4 *start, Vector4 *dir, u8 *cell, f32 *time, u8 *out) {
         }
     }
     return hitAny;
+}
+
+s8 VectorHitsTerrain(Vector4 *point) {
+    f32 Distance_Plane(void *arg0, void *arg1);
+    TerrainGrid *grid;
+    s32 x;
+    s32 y;
+    s32 z;
+    s32 index;
+    u32 node;
+    u8 *cell;
+
+    if (g_worldData.world == NULL || *(TerrainGrid **)g_worldData.world == NULL) {
+        return 0;
+    }
+    grid = *(TerrainGrid **)g_worldData.world;
+    x = (point->x - grid->origin.x) / grid->sizeX;
+    y = (point->y - grid->origin.y) / grid->sizeY;
+    z = (point->z - grid->origin.z) / grid->sizeZ;
+    if (x < 0 || x >= grid->numX) {
+        index = -1;
+    } else if (y < 0 || y >= grid->numY) {
+        index = -1;
+    } else if (z < 0 || z >= grid->numZ) {
+        index = -1;
+    } else {
+        index = z * grid->numX + grid->numZ * (y * grid->numX) + x;
+    }
+    cell = index == -1 ? grid->cells : grid->cells + grid->cellIndex[index] * 0x50;
+    node = 0;
+    if (*(u8 **)(cell + 0x30) == NULL) {
+        return 0;
+    }
+    while (1) {
+        if (Distance_Plane(*(u8 **)(cell + 0x30) + node * 0x20, point) >= 0.0f) {
+            node = *(u16 *)(*(u8 **)(cell + 0x30) + node * 0x20 + 0x14);
+            if (node == 0xFFFF) {
+                return 0;
+            }
+        } else {
+            node = *(u16 *)(*(u8 **)(cell + 0x30) + node * 0x20 + 0x16);
+            if (node == 0xFFFF) {
+                return 1;
+            }
+        }
+    }
 }
 
 s8 RayHitsTerrain_Aux3(Vector4 *start, Vector4 *dir, f32 *t, void *info) {
