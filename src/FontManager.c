@@ -139,6 +139,133 @@ s32 Gfx_FontManager_ReleaseFont(s32 id) {
     return ret;
 }
 
+u32 Gfx_FontManager_AddFont(u16 texture, u32 caseMode, f32 width, f32 height, f32 spacing) {
+    extern Texture *m_texture;
+    extern s32 g_gameLanguage;
+    u32 strlen(const char *);
+    u32 slot = -1;
+    u32 isNew = 1;
+    Font *font;
+    u32 i;
+    f32 texSize;
+    f32 dv;
+    f32 u;
+    f32 v;
+    f32 du;
+
+    for (i = 0; i < 16; i++) {
+        if (g_fontManager.fonts[i].inUse && g_fontManager.fonts[i].texture == texture) {
+            if (g_fontManager.fonts[i].height == height && g_fontManager.fonts[i].width == width &&
+                g_fontManager.fonts[i].caseMode == caseMode) {
+                g_fontManager.fonts[i].refCount++;
+                return i;
+            }
+            slot = i;
+            isNew = 0;
+            g_fontManager.fonts[i].refCount++;
+        } else if (isNew && !g_fontManager.fonts[i].inUse && slot == -1) {
+            slot = i;
+        }
+    }
+    texSize = m_texture[texture].width;
+    font = &g_fontManager.fonts[slot];
+    font->texture = texture;
+    font->height = height;
+    font->width = width;
+    font->caseMode = caseMode;
+    font->inUse = 1;
+    if (isNew) {
+        font->refCount = 1;
+    }
+    switch (font->caseMode) {
+    case 1:
+        switch (g_gameLanguage) {
+        default:
+        case 0:
+        case 2:
+            font->letters = g_lettersNoLowerCaseE;
+            break;
+        case 1:
+            font->letters = g_lettersNoLowerCaseF;
+            break;
+        case 3:
+            font->letters = g_lettersNoLowerCaseG;
+            break;
+        }
+        break;
+    case 2:
+        switch (g_gameLanguage) {
+        default:
+        case 0:
+        case 2:
+            font->letters = g_lettersNoNumE;
+            break;
+        case 1:
+            font->letters = g_lettersNoNumF;
+            break;
+        case 3:
+            font->letters = g_lettersNoNumG;
+            break;
+        }
+        break;
+    case 3:
+        switch (g_gameLanguage) {
+        default:
+        case 0:
+        case 2:
+            font->letters = g_lettersNoLowerCaseNoNumsE;
+            break;
+        case 1:
+            font->letters = g_lettersNoLowerCaseNoNumsF;
+            break;
+        case 3:
+            font->letters = g_lettersNoLowerCaseNoNumsG;
+            break;
+        }
+        break;
+    default:
+        switch (g_gameLanguage) {
+        default:
+        case 0:
+        case 2:
+            font->letters = g_lettersE;
+            break;
+        case 1:
+            font->letters = g_lettersF;
+            break;
+        case 3:
+            font->letters = g_lettersG;
+            break;
+        }
+        break;
+    }
+    font->unkF = strlen(font->letters);
+    for (i = 0; i < 128; i++) {
+        font->chars[i].spacingX = 0;
+    }
+    du = width / texSize;
+    v = 1.0f;
+    u = 0.0f;
+    dv = height / texSize;
+    font->chars[' '].spacingX = spacing;
+    for (i = 0; i < font->unkF; i++) {
+        font->chars[(u8)font->letters[i]].spacingX = spacing;
+        font->chars[(u8)font->letters[i]].unk0 = u;
+        font->chars[(u8)font->letters[i]].unk4 = v;
+        font->chars[(u8)font->letters[i]].unk8 = u + spacing / texSize;
+        font->chars[(u8)font->letters[i]].unkC = v - dv;
+        u += du;
+        if (u + du > 1.0f) {
+            u = 0.0f;
+            v -= dv;
+        }
+    }
+    if (isNew) {
+        g_fontManager.numFonts++;
+    }
+    return slot;
+}
+
 void Gfx_FontManager_SetCharacterSpacing(s32 id, u8 c, f32 x, f32 y) {
     Font *font = &g_fontManager.fonts[id];
     f32 width = m_texture[font->texture].width;
