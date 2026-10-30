@@ -245,6 +245,27 @@ void MotionState_Draw2(void *state, s32 mtx, u8 *matrices) {
     }
 }
 
+void MotionState_InitAllSlavesNow(s32 state, void *slaves, u8 player) {
+    typedef struct SlaveTrigger {
+        u8 pad0[0x20];
+    } SlaveTrigger;
+    typedef struct SlaveList {
+        u32 count;
+        SlaveTrigger *triggers;
+    } SlaveList;
+    extern Vector4 g_zeroVector;
+    void ThingManagerList_TriggerSlaves(void **list, u8 *trigger, Vector4 *a, Vector4 *b, Vector4 *c, u8 player);
+    SlaveList *list = slaves;
+    u32 i;
+
+    MotionState_ReleaseSlavesByType(state, player);
+    for (i = 0; i < list->count; i++) {
+        Vector4 dir = {0.0f, 0.0f, 0.0f, 1.0f};
+
+        ThingManagerList_TriggerSlaves((void **)(state + 0x14), (u8 *)&list->triggers[i], (Vector4 *)&list->triggers[i], &dir, &g_zeroVector, player);
+    }
+}
+
 void Motion_BlendHeartbeat_FPS(void *layer, s32 mode, void *anim, f32 fps) {
     extern f32 g_fDeltaTimeSec;
     typedef struct {
