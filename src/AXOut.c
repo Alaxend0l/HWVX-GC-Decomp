@@ -3,8 +3,8 @@
 s64 OSGetTime(void);
 void __AXOutNewFrame(u32 lessDspCycles);
 void *DSPAssertTask(void *task);
-extern u32 __AXOutDspReady;
-extern s64 __AXOsTime;
+extern volatile u32 __AXOutDspReady;
+extern volatile s64 __AXOsTime;
 
 typedef struct DSPTaskInfo {
     u32 state;
