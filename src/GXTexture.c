@@ -392,3 +392,45 @@ void __GXSetSUTexRegs(void) {
     }
 }
 
+void __GXSetTmemConfig(u32 config) {
+    switch (config) {
+    case 1:
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0x8C0D8000;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0x900DC000;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0x8D0D8800;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0x910DC800;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0x8E0D9000;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0x920DD000;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0x8F0D9800;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0x930DD800;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0xAC0DA000;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0xB00DE000;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0xAD0DA800;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0xB10DE800;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0xAE0DB000;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0xB20DF000;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0xAF0DB800;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0xB30DF800;
+        break;
+    case 0:
+    default:
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0x8C0D8000;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0x900DC000;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0x8D0D8400;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0x910DC400;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0x8E0D8800;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0x920DC800;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0x8F0D8C00;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0x930DCC00;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0xAC0D9000;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0xB00DD000;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0xAD0D9400;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0xB10DD400;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0xAE0D9800;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0xB20DD800;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0xAF0D9C00;
+        GXWGFifo.u8 = 0x61; GXWGFifo.u32 = 0xB30DDC00;
+        break;
+    }
+}
+
