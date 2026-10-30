@@ -22,9 +22,9 @@ typedef u16 OSError;
 volatile u16 __DSPRegs[] : 0xCC005000;
 volatile u32 __DIRegs[] : 0xCC006000;
 
-extern s16 __OSLastInterrupt;
-extern u32 __OSLastInterruptSrr0;
-extern s64 __OSLastInterruptTime;
+extern volatile s16 __OSLastInterrupt;
+extern volatile u32 __OSLastInterruptSrr0;
+extern volatile s64 __OSLastInterruptTime;
 typedef void (*OSErrorHandler)(OSError error, OSContext *context, ...);
 
 extern OSErrorHandler __OSErrorTable[16];
@@ -81,3 +81,55 @@ OSErrorHandler OSSetErrorHandler(OSError error, OSErrorHandler handler)
     *slot = handler;
     return oldHandler;
 }
+
+void __OSUnhandledException(u8 exception, OSContext *context, u32 dsisr, u32 dar) {
+    void OSDisableScheduler(void);
+    void OSEnableScheduler(void);
+    void __OSReschedule(void);
+    void OSLoadContext(OSContext *context);
+    void OSDumpContext(OSContext *context);
+    s64 OSGetTime(void);
+
+    if (!(context->srr1 & 2)) {
+        OSReport("Non-recoverable Exception %d", exception);
+    } else {
+        if (__OSErrorTable[exception]) {
+            OSDisableScheduler();
+            __OSErrorTable[exception](exception, context, dsisr, dar);
+            OSEnableScheduler();
+            __OSReschedule();
+            OSLoadContext(context);
+        }
+        if (exception == 8) {
+            OSLoadContext(context);
+        }
+        OSReport("Unhandled Exception %d", exception);
+    }
+    OSReport("\n");
+    OSDumpContext(context);
+    OSReport("\nDSISR = 0x%08x                   DAR  = 0x%08x\n", dsisr, dar);
+    OSReport("TB = 0x%016llx\n", OSGetTime());
+    switch (exception) {
+    case 2:
+        OSReport("\nInstruction at 0x%x (read from SRR0) attempted to access invalid address 0x%x (read from DAR)\n", context->srr0, dar);
+        break;
+    case 3:
+        OSReport("\nAttempted to fetch instruction from invalid address 0x%x (read from SRR0)\n", context->srr0);
+        break;
+    case 5:
+        OSReport("\nInstruction at 0x%x (read from SRR0) attempted to access unaligned address 0x%x (read from DAR)\n", context->srr0, dar);
+        break;
+    case 6:
+        OSReport("\nProgram exception : Possible illegal instruction/operation at or around 0x%x (read from SRR0)\n", context->srr0, dar);
+        break;
+    case 15:
+        OSReport("\n");
+        OSReport("AI DMA Address =   0x%04x%04x\n", __DSPRegs[0x18], __DSPRegs[0x19]);
+        OSReport("ARAM DMA Address = 0x%04x%04x\n", __DSPRegs[0x10], __DSPRegs[0x11]);
+        OSReport("DI DMA Address =   0x%08x\n", __DIRegs[5]);
+        break;
+    }
+    OSReport("\nLast interrupt (%d): SRR0 = 0x%08x  TB = 0x%016llx\n", __OSLastInterrupt, __OSLastInterruptSrr0, __OSLastInterruptTime);
+    PPCHalt();
+}
+
