@@ -504,6 +504,42 @@ s32 __CARDPutControlBlock(CARDControl *card, s32 result) {
     return result;
 }
 
+s32 CARDFreeBlocks(s32 chan, s32 *byteNotUsed, s32 *filesNotUsed) {
+    CARDControl *card;
+    s32 result;
+    u16 *fat;
+    CARDDir *dir;
+    CARDDir *ent;
+    u16 fileNo;
+
+    result = __CARDGetControlBlock(chan, &card);
+    if (result < 0) {
+        return result;
+    }
+
+    fat = __CARDGetFatBlock(card);
+    dir = __CARDGetDirBlock(card);
+    if (fat == 0 || dir == 0) {
+        return __CARDPutControlBlock(card, -6);
+    }
+
+    if (byteNotUsed) {
+        *byteNotUsed = (s32)(card->sectorSize * fat[3]);
+    }
+
+    if (filesNotUsed) {
+        *filesNotUsed = 0;
+        for (fileNo = 0; fileNo < 127; fileNo++) {
+            ent = &dir[fileNo];
+            if (ent->fileName[0] == 0xFF) {
+                ++*filesNotUsed;
+            }
+        }
+    }
+
+    return __CARDPutControlBlock(card, 0);
+}
+
 s32 CARDGetEncoding(s32 chan, u16 *encode) {
     CARDControl *card;
     CARDID *id;
