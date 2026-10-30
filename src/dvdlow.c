@@ -70,6 +70,9 @@ typedef struct DVDDiskID {
 DVDDiskID *DVDGetCurrentDiskID(void);
 
 void OSCreateAlarm(OSAlarm *alarm);
+void OSCancelAlarm(OSAlarm *alarm);
+void OSClearContext(void *context);
+void OSSetCurrentContext(void *context);
 void OSSetAlarm(OSAlarm *alarm, s64 tick, OSAlarmHandler handler);
 
 static inline void SetTimeoutAlarm(OSAlarmHandler handler, s64 timeout)
