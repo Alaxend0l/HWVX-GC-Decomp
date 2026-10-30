@@ -52,7 +52,8 @@ typedef struct THPPlayer {
     s32 videoError;
     s32 onMemory;
     u8 *movieData;
-    u8 padB0[8];
+    s32 initOffset;
+    s32 initReadSize;
     s32 initReadFrame;
     u8 padBC[4];
     u32 unkC0;
