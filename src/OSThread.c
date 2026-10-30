@@ -578,18 +578,9 @@ s32 OSResumeThread(OSThread *thread) {
     } else if (thread->suspend == 0) {
         switch (thread->state) {
         case 1: {
-            s32 priority;
-            OSMutex *mutex;
             OSThread *prev;
 
-            priority = thread->base;
-            for (mutex = thread->queueMutex.head; mutex; mutex = mutex->next) {
-                OSThread *blocked = mutex->queue.head;
-                if (blocked && blocked->priority < priority) {
-                    priority = blocked->priority;
-                }
-            }
-            thread->priority = priority;
+            thread->priority = __OSGetEffectivePriority(thread);
             thread->queue = &RunQueue[thread->priority];
             prev = thread->queue->tail;
             if (prev == NULL) {
@@ -605,8 +596,6 @@ s32 OSResumeThread(OSThread *thread) {
             break;
         }
         case 4: {
-            s32 priority;
-            OSMutex *mutex;
             OSThread *next;
             OSThread *prev;
 
@@ -622,14 +611,7 @@ s32 OSResumeThread(OSThread *thread) {
             } else {
                 prev->link.next = next;
             }
-            priority = thread->base;
-            for (mutex = thread->queueMutex.head; mutex; mutex = mutex->next) {
-                OSThread *blocked = mutex->queue.head;
-                if (blocked && blocked->priority < priority) {
-                    priority = blocked->priority;
-                }
-            }
-            thread->priority = priority;
+            thread->priority = __OSGetEffectivePriority(thread);
             for (next = thread->queue->head; next && next->priority <= thread->priority; next = next->link.next) {
             }
             if (next == NULL) {
@@ -654,17 +636,7 @@ s32 OSResumeThread(OSThread *thread) {
                 }
             }
             if (thread->mutex) {
-                thread = thread->mutex->thread;
-                do {
-                    if (0 < thread->suspend) {
-                        break;
-                    }
-                    priority = __OSGetEffectivePriority(thread);
-                    if (thread->priority == priority) {
-                        break;
-                    }
-                    thread = SetEffectivePriority(thread, priority);
-                } while (thread);
+                UpdatePriority(thread->mutex->thread);
             }
             break;
         }
