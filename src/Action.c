@@ -1,4 +1,17 @@
 #include "common.h"
+#include "CarA.h"
+
+static inline Player *Action_GetCarPlayer(CarA *car) {
+    Player *player;
+
+    if (car != NULL) {
+        player = car->player;
+    } else {
+        player = NULL;
+    }
+    return player;
+}
+#include "CarA.h"
 
 s32 ActionCameraSetTargets(void) {
     M2C_UNK CameraManager_SetCameraGlobalMode();
@@ -289,10 +302,200 @@ s32 ActionMissionObjChangeMode(u32 *action) {
     return 1;
 }
 
-void ActionVehicleChangeMode()
-{
-}
+#pragma readonly_strings on
+#pragma push
+#pragma use_lmw_stmw on
+s32 ActionVehicleChangeMode(u32 *action) {
+    typedef struct AIScripts {
+        u8 pad0[0x90];
+        u32 scripts[4];
+    } AIScripts;
+    typedef struct ItemParams {
+        u8 pad0[0x20];
+        s32 count;
+    } ItemParams;
+    typedef struct TileItem {
+        u8 pad0[0x30];
+        ItemParams *params;
+    } TileItem;
+    typedef struct TileCar {
+        Vector4 pos;
+        f32 rotX;
+        f32 rotY;
+        f32 rotZ;
+        u8 pad1C[0x24 - 0x1C];
+        AIScripts *aiScripts;
+        CarA *creature;
+        u32 mode;
+        u8 pad30[0x34 - 0x30];
+        u8 unk34;
+        u8 unk35;
+        u8 pad36[0x38 - 0x36];
+        f32 nearDist;
+        f32 farDist;
+        u32 scripts[4];
+        u8 pad50[0x54 - 0x50];
+        TileItem *item;
+    } TileCar;
+    typedef struct CreatureParams {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        AIScripts *aiScripts;
+        u8 pad34[0x3C - 0x34];
+        void *player;
+    } CreatureParams;
+    typedef struct AIPlayerDesc {
+        u32 script;
+        f32 nearSq;
+        f32 farSq;
+        u8 unkC;
+        u8 unkD;
+    } AIPlayerDesc;
+    typedef struct AIPlayer {
+        u8 pad0[0x3C];
+        AIScripts *aiScripts;
+        u8 pad40[0x6C - 0x40];
+        u32 flags;
+        u8 pad70[0xA8 - 0x70];
+        TileCar *tileCar;
+    } AIPlayer;
+    extern Vector4 g_zeroVector;
+    AIPlayer *PlayerManager_NewAIPlayer(AIPlayerDesc *desc);
+    s32 PlayerManager_RemovePlayer(AIPlayer *player);
+    void Player_SetName(AIPlayer *player, s32 port, const char *name);
+    void Player_SetThing(AIPlayer *player, CarA *thing);
+    void SetOrientation(Matrix4 *m, f32 x, f32 y, f32 z);
+    void SubMatrixToQuaternion(Matrix4 *m, Vector4 *q);
+    s32 GameSettings_GetDifficulty(void);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    void WildCardRack_JettisonAll(void *rack);
+    void WildCardRack_Add(void *rack, TileItem *item, s32 count);
+    s32 Trigger_IsTACSystemPaused(void);
+    void Trigger_PauseTACSystem(s32 pause);
+    void CarA_Release(CarA *car);
+    void Thing_ProcessEndEvent(void *thing, void *event, s32 a, s32 b);
+    s32 difficulty;
+    AIPlayer *player;
+    CreatureParams params;
+    Matrix4 mtx;
+    AIPlayerDesc desc;
+    u32 mode;
+    u32 count;
+    u32 i;
+    TileCar *spawn;
+    CarA *creature;
+    AIPlayer *ai;
+    u32 script;
+    s32 paused;
+    void *rack;
 
+    mode = action[0];
+    count = action[1];
+    for (i = 0; i < count; i++) {
+        spawn = (TileCar *)action[i + 2];
+        creature = spawn->creature;
+        player = creature != NULL ? (AIPlayer *)creature->player : NULL;
+        switch (mode) {
+        case 0:
+            if (creature != NULL) {
+                paused = Trigger_IsTACSystemPaused();
+                Trigger_PauseTACSystem(1);
+                spawn->pos = creature->worldMatrix.v[3];
+                CarA_Release(creature);
+                PlayerManager_RemovePlayer(player);
+                spawn->creature = NULL;
+                Trigger_PauseTACSystem(paused);
+            }
+            break;
+        case 9:
+            player->flags |= 1;
+            break;
+        case 3:
+            if (creature != NULL) {
+                Thing_ProcessEndEvent(creature, creature->vehicleIface->collider, 0, 0);
+                CarA_Release(creature);
+            }
+            break;
+        case 1:
+        case 10:
+            if (creature == NULL && spawn->unk34 == 0) {
+                difficulty = GameSettings_GetDifficulty();
+                script = 0;
+                params.pos = spawn->pos;
+                params.pos.y += 10.0f;
+                params.aiScripts = spawn->aiScripts;
+                params.vel = g_zeroVector;
+                SetOrientation(&mtx, spawn->rotY, spawn->rotX, spawn->rotZ);
+                SubMatrixToQuaternion(&mtx, &params.quat);
+                if (difficulty == 0) {
+                    if (spawn->scripts[0] != 0) {
+                        script = spawn->scripts[0];
+                    } else if (params.aiScripts->scripts[0] != 0) {
+                        script = params.aiScripts->scripts[0];
+                    }
+                } else if (difficulty == 1) {
+                    if (spawn->scripts[1] != 0) {
+                        script = spawn->scripts[1];
+                    } else if (params.aiScripts->scripts[0] != 0) {
+                        script = params.aiScripts->scripts[1];
+                    }
+                } else if (difficulty == 2) {
+                    if (spawn->scripts[2] != 0) {
+                        script = spawn->scripts[2];
+                    } else if (params.aiScripts->scripts[0] != 0) {
+                        script = params.aiScripts->scripts[2];
+                    }
+                } else if (difficulty == 3) {
+                    if (spawn->scripts[3] != 0) {
+                        script = spawn->scripts[3];
+                    } else if (params.aiScripts->scripts[0] != 0) {
+                        script = params.aiScripts->scripts[3];
+                    }
+                } else if (params.aiScripts->scripts[0] != 0) {
+                    script = params.aiScripts->scripts[0];
+                } else if (params.aiScripts->scripts[1] != 0) {
+                    script = params.aiScripts->scripts[1];
+                } else {
+                    script = params.aiScripts->scripts[2];
+                }
+                desc.script = script;
+                desc.unkD = 0;
+                desc.unkC = spawn->unk34;
+                desc.nearSq = spawn->nearDist * spawn->nearDist;
+                desc.farSq = spawn->farDist * spawn->farDist;
+                ai = PlayerManager_NewAIPlayer(&desc);
+                if (ai != NULL) {
+                    params.player = ai;
+                    spawn->creature = ThingManager_DARYL_CreateThing(9, &params);
+                    if (spawn->creature != NULL) {
+                        spawn->creature->tileData = spawn;
+                        Player_SetThing(ai, spawn->creature);
+                        Player_SetName(ai, -1, "AI");
+                        ai->tileCar = spawn;
+                        ai->aiScripts = params.aiScripts;
+                        if (spawn->item != NULL) {
+                            rack = ThingManagerList_GetByType(&spawn->creature->motionState.slaves, 8);
+                            WildCardRack_JettisonAll(rack);
+                            WildCardRack_Add(rack, spawn->item, spawn->item->params->count);
+                        }
+                    } else {
+                        PlayerManager_RemovePlayer(ai);
+                    }
+                }
+            }
+            if (player != NULL) {
+                player->flags &= ~1;
+            }
+            break;
+        }
+        spawn->mode = mode;
+    }
+    return 1;
+}
+#pragma pop
+#pragma readonly_strings reset
 s32 ActionNavPointChangeMode(u32 *action) {
     u32 i;
 
