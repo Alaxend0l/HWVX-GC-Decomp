@@ -277,7 +277,7 @@ OSThread *SetEffectivePriority(OSThread *thread, s32 priority) {
 }
 #pragma pop
 
-void SelectThread(s32 yield);
+OSThread *SelectThread(BOOL yield);
 extern volatile s32 RunQueueHint;
 void __OSReschedule(void) {
     if (RunQueueHint) {
