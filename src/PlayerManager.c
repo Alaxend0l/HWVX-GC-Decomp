@@ -66,28 +66,6 @@ static inline void *PlayerManager_GetAIInit(void *desc) {
     return NULL;
 }
 
-static inline PMPlayer *PlayerManager_PopFreeAI(PlayerManager *mgr, u8 *desc) {
-    PMPlayer *player = mgr->free;
-    void *init = PlayerManager_GetAIInit(desc);
-
-    for (; player != NULL; player = player->next) {
-        if (player->init == init) {
-            if (player->prev == NULL) {
-                mgr->free = player->next;
-            } else {
-                player->prev->next = player->next;
-            }
-            if (player->next != NULL) {
-                player->next->prev = player->prev;
-                player->next = NULL;
-            }
-            player->prev = NULL;
-            return player;
-        }
-    }
-    return NULL;
-}
-
 void PlayerManager_Create(void) {
 
 }
