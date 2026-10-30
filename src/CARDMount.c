@@ -58,6 +58,8 @@ int OSRestoreInterrupts(int level);
 void OSCancelAlarm(void *alarm);
 void *EXISetExiCallback(s32 chan, void *callback);
 int EXIDetach(s32 chan);
+static void DoUnmount(s32 chan, s32 result);
+s32 __CARDPutControlBlock(CARDControl *card, s32 result);
 
 
 
