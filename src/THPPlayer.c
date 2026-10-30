@@ -73,7 +73,9 @@ typedef struct THPPlayer {
 THPPlayer ActivePlayer;
 static u8 UsedTextureSetQueue_8036EC78[0x20];
 static void *UsedTextureSetMessage[3];
-extern u8 WorkBuffer[0x40];
+static u8 WorkBuffer[0x40] __attribute__((aligned(32)));
+static u8 PrepareReadyQueue[0x20];
+static void *PrepareReadyMessage;
 static s32 Initialized;
 static s32 m_cd_drive_status;
 static s32 m_reset;
