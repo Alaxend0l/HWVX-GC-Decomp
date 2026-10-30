@@ -22,7 +22,7 @@ extern u8 *g_LoadedQuadrants[11];
 extern void *g_pWorldQuadrant;
 extern s32 g_quadFileID;
 s32 FileStreaming_GetPackID(char *name, s32 type, u32 id);
-void FileStreaming_SetActiveQuadrants(s32 arg0, s32 arg1);
+void FileStreaming_SetActiveQuadrants();
 void File_Close(s32 file);
 s32 FileStreaming_ReleaseDataPack(u32 index, s32 type);
 void ThingManager_Invalidate(u32 start, u32 end);
