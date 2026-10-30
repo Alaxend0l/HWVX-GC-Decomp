@@ -265,12 +265,20 @@ void PlayerHuman_SetControlBinding(void *arg0, void *arg1) {
 u8 Input_KeyDown(s32 device, u8 key);
 s8 Input_KeyPress(s32 device, u8 key);
 
-static inline u8 PlayerHuman_KeyDown(void *arg0, u32 key) {
-    return Input_KeyDown(*(s32 *)((u8 *)arg0 + 0xC8), ((u8 *)arg0)[0xB8 + key]);
+typedef struct PlayerHumanKeys {
+    u8 pad0[0xB8];
+    u8 keys[14];
+    u8 stickMode;
+    u8 substickMode;
+    s32 device;
+} PlayerHumanKeys;
+
+static inline u8 PlayerHuman_KeyDown(PlayerHumanKeys *player, u32 key) {
+    return Input_KeyDown(player->device, player->keys[key]);
 }
 
-static inline s8 PlayerHuman_KeyPress(void *arg0, u32 key) {
-    return Input_KeyPress(*(s32 *)((u8 *)arg0 + 0xC8), ((u8 *)arg0)[0xB8 + key]);
+static inline s8 PlayerHuman_KeyPress(PlayerHumanKeys *player, u32 key) {
+    return Input_KeyPress(player->device, player->keys[key]);
 }
 
 s32 Player_NULL(void) {
