@@ -135,6 +135,87 @@ void __GetImageTileCount(s32 fmt, u16 wd, u16 ht, u32 *rowTiles, u32 *colTiles, 
     *cmpTiles = (fmt == 0x6 || fmt == 0x16) ? 2 : 1;
 }
 
+void GXInitTexObj(GXTexObj *obj, void *image_ptr, u16 width, u16 height, s32 format, s32 wrap_s, s32 wrap_t, u8 mipmap) {
+    u32 imageBase;
+    u32 maxLOD;
+    u16 rowT;
+    u16 colT;
+    u32 rowC;
+    u32 colC;
+    __GXTexObjInt *t = (__GXTexObjInt *)obj;
+
+    memset(t, 0, 0x20);
+    t->mode0 = ((u32)t->mode0 & ~3) | ((u32)wrap_s);
+    t->mode0 = ((u32)t->mode0 & ~(3 << 2)) | ((u32)wrap_t << 2);
+    t->mode0 = ((u32)t->mode0 & ~(1 << 4)) | ((u32)1 << 4);
+    if (mipmap) {
+        u8 lmax;
+        t->flags |= 1;
+        if (format == 8 || format == 9 || format == 10) {
+            t->mode0 = ((u32)t->mode0 & ~(7 << 5)) | ((u32)5 << 5);
+        } else {
+            t->mode0 = ((u32)t->mode0 & ~(7 << 5)) | ((u32)6 << 5);
+        }
+        if (width > height) {
+            maxLOD = 31 - __cntlzw(width);
+        } else {
+            maxLOD = 31 - __cntlzw(height);
+        }
+        lmax = 16.0f * maxLOD;
+        t->mode1 = ((u32)t->mode1 & ~(0xFF << 8)) | ((u32)lmax << 8);
+    } else {
+        t->mode0 = ((u32)t->mode0 & ~(7 << 5)) | ((u32)4 << 5);
+    }
+    t->fmt = format;
+    t->image0 = ((u32)t->image0 & ~0x3FF) | ((u32)(width - 1));
+    t->image0 = ((u32)t->image0 & ~(0x3FF << 10)) | ((u32)(height - 1) << 10);
+    t->image0 = ((u32)t->image0 & ~(0xF << 20)) | ((u32)(format & 0xF) << 20);
+    imageBase = ((u32)image_ptr >> 5) & 0x01FFFFFF;
+    t->image3 = ((u32)t->image3 & ~0x1FFFFF) | ((u32)imageBase);
+    switch (format & 0xF) {
+    case 0:
+    case 8:
+        t->loadFmt = 1;
+        rowT = 3;
+        colT = 3;
+        break;
+    case 1:
+    case 2:
+    case 9:
+        t->loadFmt = 2;
+        rowT = 3;
+        colT = 2;
+        break;
+    case 3:
+    case 4:
+    case 5:
+    case 10:
+        t->loadFmt = 2;
+        rowT = 2;
+        colT = 2;
+        break;
+    case 6:
+        t->loadFmt = 3;
+        rowT = 2;
+        colT = 2;
+        break;
+    case 14:
+        t->loadFmt = 0;
+        rowT = 3;
+        colT = 3;
+        break;
+    default:
+        t->loadFmt = 2;
+        rowT = 2;
+        colT = 2;
+        break;
+    }
+    rowC = (width + (1 << rowT) - 1) >> rowT;
+    colC = (height + (1 << colT) - 1) >> colT;
+    t->loadCnt = (rowC * colC) & 0x7FFF;
+    t->flags |= 2;
+}
+
 extern u8 GX2HWFiltConv[6];
 void GXInitTexObjLOD(GXTexObj *obj, s32 min_filt, s32 mag_filt, f32 min_lod, f32 max_lod, f32 lod_bias, u8 bias_clamp, u8 do_edge_lod, s32 max_aniso) {
     u8 lbias;
