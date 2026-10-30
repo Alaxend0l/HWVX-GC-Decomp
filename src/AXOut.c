@@ -3,13 +3,13 @@
 s64 OSGetTime(void);
 void __AXOutNewFrame(u32 lessDspCycles);
 void *DSPAssertTask(void *task);
-volatile u32 __AXOutFrame;
-volatile u32 __AXOutDspReady;
-volatile s64 __AXOsTime;
-void (*__AXUserFrameCallback)(void);
-volatile s32 __AXDSPInitFlag;
-volatile s32 __AXDSPDoneFlag;
 volatile u32 __AXDebugSteppingMode;
+volatile s32 __AXDSPDoneFlag;
+volatile s32 __AXDSPInitFlag;
+void (*__AXUserFrameCallback)(void);
+volatile s64 __AXOsTime;
+volatile u32 __AXOutDspReady;
+volatile u32 __AXOutFrame;
 
 typedef struct DSPTaskInfo {
     u32 state;
