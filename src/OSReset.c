@@ -1,6 +1,15 @@
 #include "common.h"
 
 
+typedef struct OSResetFunctionInfo {
+    BOOL (*func)(BOOL final);
+    u32 priority;
+    struct OSResetFunctionInfo *next;
+    struct OSResetFunctionInfo *prev;
+} OSResetFunctionInfo;
+
+extern OSResetFunctionInfo *ResetFunctionQueue;
+
 #pragma peephole off
 volatile u32 __PIRegs[12] : 0xCC003000;
 volatile u16 __VIRegs[59] : 0xCC002000;
