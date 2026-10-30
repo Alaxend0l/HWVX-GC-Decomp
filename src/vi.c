@@ -379,7 +379,93 @@ void __VIInit(s32 mode) {
         __VIRegs[54] = 1;
     }
 }
+
 #pragma pop
+
+void VIInit(void) {
+    extern u32 encoderType;
+    extern u32 retraceCount;
+    extern volatile u64 changed;
+    extern volatile u64 shdwChanged;
+    extern volatile u32 changeMode;
+    extern volatile u32 shdwChangeMode;
+    extern volatile u32 flushFlag;
+    extern VITiming *CurrTiming;
+    extern u32 CurrTvMode;
+    extern u8 retraceQueue[8];
+    extern void *PreCB;
+    extern void *PostCB;
+    void OSInitThreadQueue(void *queue);
+    void *__OSSetInterruptHandler(s16 interrupt, void *handler);
+    u32 __OSUnmaskInterrupts(u32 mask);
+    u16 dspCfg;
+    u32 value;
+    u32 tv;
+
+    encoderType = 1;
+    if (!(__VIRegs[1] & 1)) {
+        __VIInit(0);
+    }
+    retraceCount = 0;
+    changed = 0;
+    shdwChanged = 0;
+    changeMode = 0;
+    shdwChangeMode = 0;
+    flushFlag = 0;
+    __VIRegs[39] = taps[0] | ((taps[1] & 0x3F) << 10);
+    __VIRegs[38] = (taps[1] >> 6) | (taps[2] << 4);
+    __VIRegs[41] = taps[3] | ((taps[4] & 0x3F) << 10);
+    __VIRegs[40] = (taps[4] >> 6) | (taps[5] << 4);
+    __VIRegs[43] = taps[6] | ((taps[7] & 0x3F) << 10);
+    __VIRegs[42] = (taps[7] >> 6) | (taps[8] << 4);
+    __VIRegs[45] = taps[9] | (taps[10] << 8);
+    __VIRegs[44] = taps[11] | (taps[12] << 8);
+    __VIRegs[47] = taps[13] | (taps[14] << 8);
+    __VIRegs[46] = taps[15] | (taps[16] << 8);
+    __VIRegs[49] = taps[17] | (taps[18] << 8);
+    __VIRegs[48] = taps[19] | (taps[20] << 8);
+    __VIRegs[51] = taps[21] | (taps[22] << 8);
+    __VIRegs[50] = taps[23] | (taps[24] << 8);
+    __VIRegs[56] = 640;
+    ImportAdjustingValues();
+    dspCfg = __VIRegs[1];
+    HorVer.nonInter = (dspCfg >> 2) & 1;
+    HorVer.tv = (dspCfg >> 8) & 3;
+    tv = (HorVer.tv == 3) ? 0 : HorVer.tv;
+    HorVer.timing = (VITiming *)getTiming((tv << 2) + HorVer.nonInter);
+    regs[1] = dspCfg;
+    CurrTiming = HorVer.timing;
+    CurrTvMode = HorVer.tv;
+    HorVer.DispSizeX = 640;
+    HorVer.DispSizeY = (u16)(CurrTiming->acv * 2);
+    HorVer.DispPosX = (u16)((720 - HorVer.DispSizeX) / 2);
+    HorVer.DispPosY = 0;
+    AdjustPosition(CurrTiming->acv);
+    HorVer.FBSizeX = 640;
+    HorVer.FBSizeY = (u16)(CurrTiming->acv * 2);
+    HorVer.PanPosX = 0;
+    HorVer.PanPosY = 0;
+    HorVer.PanSizeX = 640;
+    HorVer.PanSizeY = (u16)(CurrTiming->acv * 2);
+    HorVer.FBMode = 0;
+    HorVer.wordPerLine = 40;
+    HorVer.std = 40;
+    HorVer.wpl = 40;
+    HorVer.xof = 0;
+    HorVer.black = TRUE;
+    HorVer.threeD = FALSE;
+    OSInitThreadQueue(retraceQueue);
+    value = __VIRegs[24];
+    value = value & ~0x8000;
+    __VIRegs[24] = value;
+    value = __VIRegs[26];
+    value = value & ~0x8000;
+    __VIRegs[26] = value;
+    PreCB = NULL;
+    PostCB = NULL;
+    __OSSetInterruptHandler(0x18, __VIRetraceHandler);
+    __OSUnmaskInterrupts(0x80);
+}
 
 void VIWaitForRetrace(void) {
     extern u32 retraceCount;
