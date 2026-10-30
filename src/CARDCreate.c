@@ -21,7 +21,9 @@ typedef struct CARDDir {
 } CARDDir;
 
 typedef struct CARDControl {
-    u8 unk0[0xBC];
+    u8 unk0[0xC];
+    s32 sectorSize;              // 0x0C
+    u8 unk10[0xBC - 0x10];
     u16 freeNo;                  // 0xBC
     u16 startBlock;              // 0xBE
     CARDFileInfo *fileInfo;      // 0xC0
