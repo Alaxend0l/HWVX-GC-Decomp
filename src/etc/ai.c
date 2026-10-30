@@ -161,6 +161,46 @@ u8 AIGetStreamVolRight(void)
     return (u8) ((u32) *(u32 *)0xCC006C04 >> 8U);
 }
 
+u32 __OSBusClock : 0x800000F8;
+void AIInit(u8 *stack) {
+    extern s32 __AI_init_flag;
+    extern s64 bound_32KHz;
+    extern s64 bound_48KHz;
+    extern s64 min_wait;
+    extern s64 max_wait;
+    extern s64 buffer;
+    extern void (*__AIS_Callback)(u32);
+    extern void (*__AID_Callback)(void);
+    extern u8 *__CallbackStack;
+    void __OSSetInterruptHandler(s16 interrupt, void *handler);
+    u32 __OSUnmaskInterrupts(u32 mask);
+    void __AISHandler(s16 interrupt, void *context);
+    void __AIDHandler(s16 interrupt, void *context);
+
+    if (__AI_init_flag == 1) {
+        return;
+    }
+    bound_32KHz = ((31524) * ((__OSBusClock / 4) / 125000)) / 8000;
+    bound_48KHz = ((42024) * ((__OSBusClock / 4) / 125000)) / 8000;
+    min_wait = ((42000) * ((__OSBusClock / 4) / 125000)) / 8000;
+    max_wait = ((63000) * ((__OSBusClock / 4) / 125000)) / 8000;
+    buffer = ((3000) * ((__OSBusClock / 4) / 125000)) / 8000;
+    AISetStreamVolRight(0);
+    __AIRegs[0] = (__AIRegs[0] & ~0x20) | 0x20;
+    AISetStreamVolLeft(0);
+    __AIRegs[3] = 0;
+    __AI_set_stream_sample_rate(1);
+    AISetDSPSampleRate(0);
+    __AIS_Callback = NULL;
+    __AID_Callback = NULL;
+    __CallbackStack = stack;
+    __OSSetInterruptHandler(5, __AIDHandler);
+    __OSUnmaskInterrupts(0x04000000);
+    __OSSetInterruptHandler(8, __AISHandler);
+    __OSUnmaskInterrupts(0x00800000);
+    __AI_init_flag = 1;
+}
+
 void AIReset(void) {
     extern s32 __AI_init_flag;
     __AI_init_flag = 0;
