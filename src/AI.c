@@ -42,8 +42,9 @@ void AI_Reset(void *arg0) {
 }
 
 void AI_Init(void) {
-    M2C_UNK fn_800957D4();
-    fn_800957D4();
+    void Player_Init(void);
+
+    Player_Init();
 }
 
 void AI_AsyncProcess_80006C80(void) {
