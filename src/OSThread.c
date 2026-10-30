@@ -45,6 +45,14 @@ struct OSThread {
     s32 error;
 };
 
+typedef struct OSMutex {
+    OSThreadQueue queue;
+    OSThread *thread;
+    s32 count;
+    struct OSMutex *next;
+    struct OSMutex *prev;
+} OSMutex;
+
 #define OS_THREAD_ATTR_DETACH 1
 #define OS_THREAD_STATE_MORIBUND 8
 
