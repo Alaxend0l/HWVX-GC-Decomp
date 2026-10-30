@@ -16,13 +16,17 @@ void GameSettings_SetCodeVariable(s32 code, s32 arg, s32 value);
 s32 GameSettings_GetDifficulty(void);
 u32 RandomNumberGenerator_GetRandomInteger(u32 min, u32 max);
 void StateProgressionManager_SetProgressionID(s32 id, s32 subID);
-extern s32 g_gameDifficulty;
+void *g_mainMenuFile;
+void *g_pInterfaceScript;
+s8 g_bPlayingFMV;
+void *g_pTitleDataPack;
+s32 g_gameDifficulty;
+s32 g_mainMenuFileID;
+s8 g_clearTextureCache;
 
-void StateTitleScreen_SetMenuFile(s32 arg0, s32 arg1) {
-    extern s32 g_mainMenuFile;
-    extern s32 g_mainMenuFileID;
-    g_mainMenuFile = arg0;
-    g_mainMenuFileID = arg1;
+void StateTitleScreen_SetMenuFile(void *file, s32 fileID) {
+    g_mainMenuFile = file;
+    g_mainMenuFileID = fileID;
 }
 
 void TitleScreen_Interface(InterfaceMsg *msg);
