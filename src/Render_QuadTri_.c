@@ -131,6 +131,7 @@ typedef struct GfxWindow {
 GfxWindow *GetRenderWindow(void);
 void Render_StateZWriteEnable(s32 enable);
 void Set2DRectFlatVtxDesc(void);
+void Set2DRectVtxDesc(void);
 
 static inline void GXPosition2f32(f32 x, f32 y) {
     GXWGFifo.f32 = x;
