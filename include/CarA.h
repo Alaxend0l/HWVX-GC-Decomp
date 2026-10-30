@@ -246,7 +246,9 @@ typedef struct CarAInfo {
   u8 *slaves;               /* 0xE4 */
   u32 numSlaveWeapons;      /* 0xE8 */
   u8 *slaveWeapons;         /* 0xEC 12-byte entries, slave list at +4 */
-  u8 padF0[0x20];           /* 0xF0 */
+  u32 numPickupSlaves;      /* 0xF0 */
+  u8 *pickupSlaves;         /* 0xF4 12-byte entries, slave list at +4, indexed by item value */
+  u8 padF8[0x18];           /* 0xF8 */
   u32 numShiftSounds;       /* 0x110 */
   u32 *shiftSounds;         /* 0x114 */
   u32 numSoundSets;         /* 0x118 */
