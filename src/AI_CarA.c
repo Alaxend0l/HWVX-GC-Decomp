@@ -1057,7 +1057,7 @@ void AI_Car_AsyncScanDestructibles(u8 *car) {
     }
 }
 
-static s8 AI_Car_IsTargetValid(u8 *ai, u8 *target, f32 maxDist, f32 minDist, f32 center, f32 range) {
+static s8 AI_Car_IsTargetValid_800094EC(u8 *ai, u8 *target, f32 maxDist, f32 minDist, f32 center, f32 range) {
     extern u8 g_itemVTable[];
     s8 Player_IsHuman(void *player);
     f32 PSVECSquareDistance(void *a, void *b);
