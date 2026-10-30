@@ -303,6 +303,7 @@ s32 VISetPostRetraceCallback(s32 cb) {
     return old;
 }
 
+#pragma auto_inline off
 u8 *getTiming(u32 mode) {
     switch (mode) {
     case 0:
