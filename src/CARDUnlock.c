@@ -47,13 +47,13 @@ static s32 ReadArrayUnlock(s32 chan, u32 data, void *rbuf, s32 rlen, s32 mode) {
     memset(cmd, 0, 5);
     cmd[0] = 0x52;
     if (mode == 0) {
-        cmd[1] = (u8)((data & 0x60000000) >> 29);
-        cmd[2] = (u8)((data & 0x1FE00000) >> 21);
-        cmd[3] = (u8)((data & 0x00180000) >> 19);
-        cmd[4] = (u8)((data & 0x0007F000) >> 12);
+        cmd[1] = (u8)((data >> 29) & 3);
+        cmd[2] = (u8)(data >> 21);
+        cmd[3] = (u8)((data >> 19) & 3);
+        cmd[4] = (u8)((data >> 12) & 0x7F);
     } else {
         cmd[1] = (u8)(data >> 24);
-        cmd[2] = (u8)((data & 0x00FF0000) >> 16);
+        cmd[2] = (u8)(data >> 16);
     }
 
     err = FALSE;
