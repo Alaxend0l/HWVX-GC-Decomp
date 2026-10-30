@@ -400,7 +400,7 @@ config.libs = [
             Object(NonMatching, "THPPlayer.c"),
             Object(Matching, "THPRead.c"),
             Object(NonMatching, "THPAudioDecode.c"),
-            Object(NonMatching, "THPDec.c", mw_version="GC/1.2.5n"),
+            Object(NonMatching, "THPDec.c", mw_version="GC/1.2.5"),
             Object(Matching, "THPAudio.c", mw_version="GC/1.2.5n"),
             Object(NonMatching, "Voice_.c"),
             Object(NonMatching, "IT_.c"),
