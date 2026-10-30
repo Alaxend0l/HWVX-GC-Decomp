@@ -40,7 +40,7 @@ s32 gLinkFinished;
 
 static inline u8 GbaCalcCrc(u32 data)
 {
-    u32 crc;
+    s32 crc;
     u32 bit;
     s32 i;
 
