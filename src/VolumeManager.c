@@ -106,6 +106,24 @@ static inline s32 VolumeManager_GetCell(VolumeHolder *holder, Vector4 *point) {
     return holder->cellIndex[z * holder->numX + holder->numZ * (y * holder->numX) + x];
 }
 
+static inline VolumeShape *VolumeManager_FindVolumeAtPoint(Vector4 *point, s32 type) {
+    extern VolumeHolder *g_VolumeHolder;
+    VolumeShape *volume;
+    u32 count;
+    s32 i;
+    s32 cell;
+
+    cell = VolumeManager_GetCell(g_VolumeHolder, point);
+    count = g_VolumeHolder != NULL ? g_VolumeHolder->cells[cell].types[type].count : 0;
+    for (i = 0; i < count; i++) {
+        volume = g_VolumeHolder->cells[cell].types[type].volumes[i];
+        if (VolumeManager_IsPointInVolume(point, volume)) {
+            return volume;
+        }
+    }
+    return NULL;
+}
+
 s32 VolumeManager_GetVolumeCellIndex(Vector4 *point) {
     extern u8 *g_VolumeHolder;
     u8 *holder = g_VolumeHolder;
@@ -226,3 +244,25 @@ s8 IsPointWithinVolume(Vector4 *point, void *volume, f32 *distSq) {
     }
     return 0;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+VolumeShape *IsPointWithinForceBox(Vector4 *point) {
+    extern VolumeHolder *g_VolumeHolder;
+    VolumeShape *volume;
+    u32 count;
+    s32 i;
+    s32 cell;
+
+    cell = VolumeManager_GetCell(g_VolumeHolder, point);
+    count = g_VolumeHolder != NULL ? g_VolumeHolder->cells[cell].types[1].count : 0;
+    for (i = 0; i < count; i++) {
+        volume = (VolumeShape *)VolumeManager_GetVolumeTypeByIndexByCell(1, i, cell);
+        if (VolumeManager_IsPointInVolume(point, volume)) {
+            return volume;
+        }
+    }
+    return NULL;
+}
+#pragma pop
+
