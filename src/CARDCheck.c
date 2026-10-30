@@ -44,8 +44,24 @@ typedef struct CARDDirCheck {
 /* A macro in the SDK: an inline function adds a stack slot (GC/1.2.5n) */
 #define __CARDGetDirCheck(dir) ((CARDDirCheck *)((u8 *)(dir) + 0x1FC0))
 
+typedef void (*CARDCallback)(s32 chan, s32 result);
+
+typedef struct CARDDir {
+    u8 gameName[4];
+    u8 company[2];
+    u8 unk6[0x36 - 0x6];
+    u16 startBlock;
+    u16 length;
+    u8 unk3A[0x40 - 0x3A];
+} CARDDir;
+
 void *memcpy(void *dst, const void *src, u32 n);
-s32 CARDCheckExAsync(s32 chan, s32 *xferBytes, void *callback);
+void *memset(void *dst, int c, u32 n);
+s32 CARDCheckExAsync(s32 chan, s32 *xferBytes, CARDCallback callback);
+s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard);
+s32 __CARDPutControlBlock(CARDControl *card, s32 result);
+s32 __CARDUpdateDir(s32 chan, CARDCallback callback);
+s32 __CARDUpdateFatBlock(s32 chan, u16 *fat, CARDCallback callback);
 void __CARDSyncCallback(s32 chan, s32 result);
 s32 __CARDSync(s32 chan);
 s32 VerifyID(CARDControl *card);
