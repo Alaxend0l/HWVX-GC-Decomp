@@ -210,3 +210,42 @@ void OSSleepThread(OSThreadQueue *queue) {
     OSRestoreInterrupts(enabled);
 }
 
+extern OSThreadQueue RunQueue[32];
+extern volatile u32 RunQueueBits;
+void OSWakeupThread(OSThreadQueue *queue) {
+    BOOL enabled;
+    OSThread *thread;
+
+    enabled = OSDisableInterrupts();
+    while (queue->head) {
+        OSThread *next;
+        OSThread *prev;
+
+        thread = queue->head;
+        next = thread->link.next;
+        if (next == NULL) {
+            queue->tail = NULL;
+        } else {
+            next->link.prev = NULL;
+        }
+        queue->head = next;
+        thread->state = 1;
+        if (!(thread->suspend > 0)) {
+            thread->queue = &RunQueue[thread->priority];
+            prev = thread->queue->tail;
+            if (prev == NULL) {
+                thread->queue->head = thread;
+            } else {
+                prev->link.next = thread;
+            }
+            thread->link.prev = prev;
+            thread->link.next = NULL;
+            thread->queue->tail = thread;
+            RunQueueBits |= 1u << (31 - thread->priority);
+            RunQueueHint = TRUE;
+        }
+    }
+    __OSReschedule();
+    OSRestoreInterrupts(enabled);
+}
+
