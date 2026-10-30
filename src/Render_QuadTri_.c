@@ -66,7 +66,9 @@ typedef struct GDL {
     GDLTri tris[2000];
     u8 unk69A00[0x7EA00 - 0x69A00];
     GDLRect rects2D[1000];
-    u8 unk9EDA0[0xEDCC0 - 0x9EDA0];
+    u8 unk9EDA0[0x9FA00 - 0x9EDA0];
+    GDLRect rects[1000];
+    u8 unkBFDA0[0xEDCC0 - 0xBFDA0];
     GDLPointSprite pointSprites[1000];
     u8 unkF3A80[0x24CDF4 - 0xF3A80];
     u16 spriteHeads[0x1FF];
