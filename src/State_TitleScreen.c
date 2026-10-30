@@ -180,7 +180,7 @@ s32 StateTitleScreen_Heartbeat(void) {
     M2C_UNK TextureManager_ReleaseCache();
     M2C_UNK ViewManager_PrepForRender();
     M2C_UNK Wheel_PlayAllAirborne();
-    extern u8 g_clearTextureCache;
+    extern s8 g_clearTextureCache;
     ShowStats_StartFrame();
     ViewManager_PrepForRender();
     ProcessManager_Heartbeat(0);
