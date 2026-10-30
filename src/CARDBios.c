@@ -24,7 +24,7 @@ typedef struct CARDControl {
     OSThreadQueue threadQueue;
     u8 cmd[9];
     s32 cmdlen;
-    s32 mode;
+    u32 mode;
     s32 retry;
     u32 repeat;
     void *addr;
@@ -310,6 +310,56 @@ static void TimeoutHandler(void *alarm, void *context) {
         card->exiCallback = NULL;
         callback(chan, -5);
     }
+}
+
+s32 Retry(s32 chan)
+{
+    CARDControl *card;
+
+    card = &__CARDBlock[chan];
+    if (!EXISelect(chan, 0, 4)) {
+        EXIUnlock(chan);
+        return -3;
+    }
+
+    OSCancelAlarm(&card->alarm);
+    switch (card->cmd[0]) {
+    case 0xF2:
+        OSSetAlarm(&card->alarm, ((*(u32 *)0x800000F8 / 4) / 1000) * 100, TimeoutHandler);
+        break;
+    case 0xF3:
+        break;
+    case 0xF4:
+    case 0xF1:
+        OSSetAlarm(&card->alarm, (s64)2 * (*(u32 *)0x800000F8 / 4) * (card->sectorSize / 0x2000), TimeoutHandler);
+        break;
+    }
+
+    if (!EXIImmEx(chan, card->cmd, card->cmdlen, 1)) {
+        EXIDeselect(chan);
+        EXIUnlock(chan);
+        return -3;
+    }
+
+    if (card->cmd[0] == 0x52 && !EXIImmEx(chan, (u8 *)card->workArea + 0x200, card->latency, 1)) {
+        EXIDeselect(chan);
+        EXIUnlock(chan);
+        return -3;
+    }
+
+    if (card->mode == -1) {
+        EXIDeselect(chan);
+        EXIUnlock(chan);
+        return 0;
+    }
+
+    if (!EXIDma(chan, (void *)card->offset, (card->cmd[0] == 0x52) ? 512 : 128, card->mode, __CARDTxHandler)) {
+        EXIDeselect(chan);
+        EXIUnlock(chan);
+        return -3;
+    }
+
+    return 0;
 }
 
 int EXILock(s32 chan, u32 dev, void *unlockedCallback);
