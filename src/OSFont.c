@@ -35,6 +35,53 @@ u32 OSLoadFont(OSFontHeader *fontData, void *temp);
 void ExpandFontSheet(u8 *src, u8 *dst);
 
 
+static void Decode(u8 *s, u8 *d) {
+    int i;
+    int j;
+    int k;
+    int p;
+    int q;
+    int r7;
+    int r25;
+    int cnt;
+    int os;
+    unsigned int flag;
+    unsigned int r22;
+
+    os = *(int *)(s + 0x4);
+    r7 = *(int *)(s + 0x8);
+    r25 = *(int *)(s + 0xC);
+    q = 0;
+    flag = 0;
+    p = 16;
+    do {
+        if (flag == 0) {
+            r22 = *(unsigned int *)(s + p);
+            p += 4;
+            flag = 32;
+        }
+        if (r22 & 0x80000000) {
+            d[q++] = s[r25++];
+        } else {
+            j = s[r7] << 8;
+            j |= s[r7 + 1];
+            r7 += 2;
+            k = q - (j & 0xFFF);
+            cnt = j >> 12;
+            if (cnt == 0) {
+                cnt = s[r25++] + 0x12;
+            } else {
+                cnt += 2;
+            }
+            for (i = 0; i < cnt; i++, q++, k++) {
+                d[q] = d[k - 1];
+            }
+        }
+        r22 <<= 1;
+        flag--;
+    } while (q < os);
+}
+
 u16 OSGetFontEncode(void) {
     static u16 fontEncode = 0xFFFF;
 
