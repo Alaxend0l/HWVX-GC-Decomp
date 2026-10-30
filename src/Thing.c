@@ -35,7 +35,7 @@ static inline s8 Thing_ProcessItemPickup(u8 *thing, u8 *item) {
     case 0:
     case 1:
     case 2:
-        break;
+        return 0;
     case 3:
         rack = ThingManagerList_GetByType(thing + 0x88, 8);
         if (rack == NULL) {
@@ -797,6 +797,68 @@ void Thing_RotationalGridMove(void *thing) {
     if (M2C_FIELD(thing, u32 *, 0x84) != 0) {
         Thing_GetStaticRotationalMinMax(thing, &min, &max);
         Grid_MoveObject(M2C_FIELD(thing, s32 *, 0x84), &min, &max);
+    }
+}
+
+void Thing_CollideWithItems(u8 *thing) {
+    extern Vector4 g_zeroVector;
+    struct GridResult {
+        u32 data;
+        u32 id;
+    };
+    u32 Grid_GetObjects(Vector4 *min, Vector4 *max, u32 typeMask, struct GridResult *results, u32 maxResults);
+    f32 PSVECSquareDistance(f32 *a, f32 *b);
+    s8 Creature_ProcessItemPickup(void *creature, void *item);
+    s8 CarA_ProcessItemPickup(void *car, void *item);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    Vector4 min __attribute__((aligned(16)));
+    Vector4 max __attribute__((aligned(16)));
+    struct { Vector4 pos; Vector4 quat; Vector4 row; Vector4 vel; u32 id; u32 unk74; f32 unk78; f32 unk7C; } params __attribute__((aligned(16)));
+    struct GridResult results[64];
+    s32 count;
+    s32 i;
+    u8 *item;
+    s8 picked;
+
+    max = *(Vector4 *)(thing + 0x40);
+    min = max;
+    min.x -= *(f32 *)(thing + 0x70);
+    min.y -= *(f32 *)(thing + 0x70);
+    min.z -= *(f32 *)(thing + 0x70);
+    max.x += *(f32 *)(thing + 0x70);
+    max.y += *(f32 *)(thing + 0x70);
+    max.z += *(f32 *)(thing + 0x70);
+    count = Grid_GetObjects(&min, &max, 8, results, 0x40);
+    for (i = 0; i < count; i++) {
+        item = (u8 *)results[i].id;
+        if (*(s16 *)(item + 0xCC) <= 0 && PSVECSquareDistance((f32 *)(thing + 0x40), (f32 *)(item + 0x40)) < *(f32 *)(item + 0xE8)) {
+            picked = 0;
+            switch (*(s32 *)(thing + 0xA8)) {
+            case 7:
+                picked = Creature_ProcessItemPickup(thing, item);
+                break;
+            case 9:
+                picked = CarA_ProcessItemPickup(thing, item);
+                break;
+            case 11:
+                picked = Thing_ProcessItemPickup(thing, item);
+                break;
+            }
+            if (picked && *(u32 *)(*(u8 **)(item + 0xC0) + 0x24) != 0) {
+                params.id = *(u32 *)(*(u8 **)(item + 0xC0) + 0x24);
+                params.pos = *(Vector4 *)(thing + 0x40);
+                params.row.z = 0.0f;
+                params.row.y = 0.0f;
+                params.row.x = 0.0f;
+                params.quat = *(Vector4 *)(thing + 0x50);
+                params.unk78 = 0.0f;
+                params.unk7C = 0.0f;
+                params.unk74 = 0;
+                params.vel = g_zeroVector;
+                ThingManager_DARYL_CreateThing(1, &params);
+            }
+            return;
+        }
     }
 }
 
