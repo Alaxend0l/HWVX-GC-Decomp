@@ -53,6 +53,34 @@ static void __THPSetupBuffers(void) {
     }
 }
 
+u8 __THPReadScaneHeader(void) {
+    s32 i;
+    s32 compId;
+
+    __THPInfo->c += 2;
+    if (*(__THPInfo->c)++ != 3) {
+        return 12;
+    }
+    for (i = 0; (u8)i < 3; i++) {
+        __THPInfo->c++;
+        compId = *(__THPInfo->c)++;
+        __THPInfo->components[i].DCTableSelector = (u8)(compId >> 4);
+        __THPInfo->components[i].ACTableSelector = (u8)(compId & 15);
+        if ((__THPInfo->validHuffmanTabs & (1 << (compId >> 4))) == 0) {
+            return 15;
+        }
+        if ((__THPInfo->validHuffmanTabs & (1 << ((compId & 15) + 1))) == 0) {
+            return 15;
+        }
+    }
+    __THPInfo->c += 3;
+    __THPInfo->MCUsPerRow = (u16)((__THPInfo->xPixelSize + 15) / 16);
+    __THPInfo->components[0].predDC = 0;
+    __THPInfo->components[1].predDC = 0;
+    __THPInfo->components[2].predDC = 0;
+    return 0;
+}
+
 static void __THPHuffGenerateSizeTable(void) {
     s32 p, l, i;
 
