@@ -346,7 +346,7 @@ config.libs = [
             Object(Matching, "State_Movie.c"),
             Object(NonMatching, "State_RenderTest.c"),
             Object(Matching, "State_Shutdown.c"),
-            Object(NonMatching, "State_TitleScreen.c"),
+            Object(Matching, "State_TitleScreen.c"),
             Object(NonMatching, "StateManager.c"),
             Object(NonMatching, "Thing.c"),
             Object(NonMatching, "ThingManager.c"),
