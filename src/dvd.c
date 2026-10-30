@@ -33,7 +33,7 @@ OSAlarm ResetAlarm;
 DVDCommandBlock *executing;
 u32 currID;
 u32 bootInfo;
-s32 PauseFlag;
+volatile s32 PauseFlag;
 s32 PausingFlag;
 s32 AutoFinishing;
 s32 FatalErrorFlag;
@@ -963,5 +963,46 @@ BOOL DVDCheckDisk(void) {
 
     OSRestoreInterrupts(enabled);
     return retVal;
+}
+
+void __DVDPrepareResetAsync(void (*callback)(s32, DVDCommandBlock *)) {
+    BOOL enabled;
+    BOOL level;
+    BOOL level2;
+    DVDCommandBlock *p;
+
+    enabled = OSDisableInterrupts();
+    __DVDClearWaitingQueue();
+    if (Canceling) {
+        CancelCallback = callback;
+    } else {
+        if (executing) {
+            executing->callback = NULL;
+        }
+        level = OSDisableInterrupts();
+        level2 = OSDisableInterrupts();
+        PauseFlag = TRUE;
+        if (executing == (DVDCommandBlock *)NULL) {
+            PausingFlag = TRUE;
+        }
+        OSRestoreInterrupts(level2);
+        while ((p = __DVDPopWaitingQueue()) != NULL) {
+            DVDCancelAsync(p, NULL);
+        }
+        if (executing) {
+            DVDCancelAsync(executing, callback);
+        } else if (callback) {
+            (*callback)(0, NULL);
+        }
+        level2 = OSDisableInterrupts();
+        PauseFlag = FALSE;
+        if (PausingFlag) {
+            PausingFlag = FALSE;
+            stateReady();
+        }
+        OSRestoreInterrupts(level2);
+        OSRestoreInterrupts(level);
+    }
+    OSRestoreInterrupts(enabled);
 }
 
