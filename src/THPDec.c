@@ -141,6 +141,25 @@ static void __THPHuffGenerateCodeTable(void) {
     }
 }
 
+static void __THPHuffGenerateDecoderTables(u8 tabIndex) {
+    s32 p, l;
+    THPHuffmanTab *h;
+
+    p = 0;
+    h = &__THPInfo->huffmanTabs[tabIndex];
+    for (l = 1; l <= 16; l++) {
+        if (__THPHuffmanBits[l - 1]) {
+            h->valPtr[l] = p - __THPHuffmanCodeTab[p];
+            p += __THPHuffmanBits[l - 1];
+            h->maxCode[l] = __THPHuffmanCodeTab[p - 1];
+        } else {
+            h->maxCode[l] = -1;
+            h->valPtr[l] = -1;
+        }
+    }
+    h->maxCode[17] = 0xfffff;
+}
+
 static void __THPRestartDefinition(void) {
     __THPInfo->RST = TRUE;
     __THPInfo->c += 2;
