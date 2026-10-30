@@ -37,6 +37,7 @@ typedef struct GDLRect {
     GDLTriVtx v[4]; /* 0x00 */
     u16 tex;        /* 0x80 */
     u8 blendMode;   /* 0x82 */
+    u8 window;      /* 0x83 */
 } GDLRect;
 
 typedef struct GDLSprite {
