@@ -342,7 +342,7 @@ typedef struct CarA {
   s32 groundedTime;         /* 0x504 ms */
   f32 groundedScale;        /* 0x508 */
   f32 forwardAccel;         /* 0x50C velocity += forward * this * dt */
-  u8 pad510[0x10];          /* 0x510 */
+  Vector4 stuntAxisVec;     /* 0x510 world axis the stunt spins around */
   Vector4 bodyOffset;       /* 0x520 XformVec(worldMatrix, this) -> camera/reflection pos */
   Vector4 groundNormal;     /* 0x530 */
   f32 tiltX;                /* 0x540 */
