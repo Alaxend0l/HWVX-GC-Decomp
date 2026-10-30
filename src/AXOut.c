@@ -59,7 +59,7 @@ void __AXOutNewFrame(u32 lessDspCycles)
     u32 __AXGetNumVoices(void);
     AXPROFILE *__AXGetCurrentProfile(void);
     extern void (*__AXUserFrameCallback)(void);
-    extern u32 __AXOutFrame;
+    extern volatile u32 __AXOutFrame;
     u32 cl;
     AXPROFILE *profile;
     u8 *src;
