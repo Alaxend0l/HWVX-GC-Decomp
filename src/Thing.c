@@ -30,12 +30,13 @@ void Item_Release(void *item);
 static inline s8 Thing_ProcessItemPickup(u8 *thing, u8 *item) {
     void *rack;
     void *motion;
+    s8 picked = 0;
 
     switch (**(u8 **)(item + 0xC0)) {
     case 0:
     case 1:
     case 2:
-        return 0;
+        break;
     case 3:
         rack = ThingManagerList_GetByType(thing + 0x88, 8);
         if (rack == NULL) {
@@ -47,9 +48,10 @@ static inline s8 Thing_ProcessItemPickup(u8 *thing, u8 *item) {
         if (motion != NULL) {
             *(s32 *)((u8 *)motion + 0x18) = *(s32 *)((u8 *)motion + 0x14);
         }
-        return 1;
+        picked = 1;
+        break;
     }
-    return 0;
+    return picked;
 }
 
 s32 Thing_Init(Thing *thing, s32 arg1) {
