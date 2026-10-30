@@ -3,6 +3,8 @@
 
 #pragma use_lmw_stmw on
 
+extern f32 g_frictionTable[9][10];
+
 /* What a suspension ray hit is made of (RayHit.surface). */
 typedef struct SuspSurface {
     u8 type;                  /* 0x00 1: no skids, 2: own skid texture */
