@@ -97,6 +97,56 @@ void __DSP_exec_task(DSPTaskInfo *curr, DSPTaskInfo *next)
     }
 }
 
+u32 DSPCheckMailFromDSP(void);
+u32 DSPReadMailFromDSP(void);
+void __DSP_debug_printf(const char *fmt, ...);
+void __DSP_boot_task(DSPTaskInfo *task)
+{
+    volatile u32 mail;
+
+    while (!DSPCheckMailFromDSP())
+        ;
+    mail = DSPReadMailFromDSP();
+
+    DSPSendMailToDSP(0x80F3A001);
+    while (DSPCheckMailToDSP())
+        ;
+    DSPSendMailToDSP((u32)task->iram_mmem_addr);
+    while (DSPCheckMailToDSP())
+        ;
+    DSPSendMailToDSP(0x80F3C002);
+    while (DSPCheckMailToDSP())
+        ;
+    DSPSendMailToDSP(task->iram_addr & 0xFFFF);
+    while (DSPCheckMailToDSP())
+        ;
+    DSPSendMailToDSP(0x80F3A002);
+    while (DSPCheckMailToDSP())
+        ;
+    DSPSendMailToDSP(task->iram_length);
+    while (DSPCheckMailToDSP())
+        ;
+    DSPSendMailToDSP(0x80F3B002);
+    while (DSPCheckMailToDSP())
+        ;
+    DSPSendMailToDSP(0);
+    while (DSPCheckMailToDSP())
+        ;
+    DSPSendMailToDSP(0x80F3D001);
+    while (DSPCheckMailToDSP())
+        ;
+    DSPSendMailToDSP(task->dsp_init_vector);
+    while (DSPCheckMailToDSP())
+        ;
+
+    __DSP_debug_printf("DSP is booting task: 0x%08X\n", task);
+    __DSP_debug_printf("__DSP_boot_task()  : IRAM MMEM ADDR: 0x%08X\n", (u32)task->iram_mmem_addr);
+    __DSP_debug_printf("__DSP_boot_task()  : IRAM DSP ADDR : 0x%08X\n", task->iram_addr);
+    __DSP_debug_printf("__DSP_boot_task()  : IRAM LENGTH   : 0x%08X\n", task->iram_length);
+    __DSP_debug_printf("__DSP_boot_task()  : DRAM MMEM ADDR : 0x%08X\n", task->dram_length);
+    __DSP_debug_printf("__DSP_boot_task()  : Start Vector   : 0x%08X\n", task->dsp_init_vector);
+}
+
 void __DSP_insert_task(DSPTaskInfo *task)
 {
     DSPTaskInfo *temp;
