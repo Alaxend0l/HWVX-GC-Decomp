@@ -94,6 +94,51 @@ static BOOL IsCard(u32 id) {
     return TRUE;
 }
 
+static s32 DoMount(s32 chan);
+static void DoUnmount(s32 chan, s32 result);
+s32 __CARDVerify(CARDControl *card);
+int EXILock(s32 chan, u32 dev, void *unlockedCallback);
+s32 __CARDUnlockedHandler(s32 chan, void *context);
+s32 __CARDPutControlBlock(CARDControl *card, s32 result);
+
+void __CARDMountCallback(s32 chan, s32 result) {
+    CARDControl *card;
+    CARDCallback callback;
+
+    card = &__CARDBlock[chan];
+    switch (result) {
+    case 0:
+        if (++card->mountStep < 7) {
+            result = DoMount(chan);
+            if (0 <= result) {
+                return;
+            }
+        } else {
+            result = __CARDVerify(card);
+        }
+        break;
+    case 1:
+        card->unlockCallback = __CARDMountCallback;
+        if (!EXILock(chan, 0, __CARDUnlockedHandler)) {
+            return;
+        }
+        card->unlockCallback = 0;
+        result = DoMount(chan);
+        if (0 <= result) {
+            return;
+        }
+        break;
+    case -5:
+    case -3:
+        DoUnmount(chan, result);
+        break;
+    }
+    callback = card->apiCallback;
+    card->apiCallback = 0;
+    __CARDPutControlBlock(card, result);
+    callback(chan, result);
+}
+
 s32 CARDMount(s32 chan, s32 fileNo, u8 *stat)
 {
     s32 CARDMountAsync(s32 chan, s32 fileNo, u8 *stat, CARDCallback callback);
