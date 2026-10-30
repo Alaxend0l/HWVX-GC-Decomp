@@ -195,7 +195,7 @@ void AudioCallback(void) {
     void OSRestoreInterrupts(s32 level);
     void THPPlayerAudioOutput(void *buf, s32 samples, s32 vol);
     extern s32 SoundBufferNumber;
-    extern u8 SoundBuffer[][0x3C0];
+    extern u8 SoundBuffer[2][0x3C0];
     extern s32 m_movieVolume;
     s32 old;
 
