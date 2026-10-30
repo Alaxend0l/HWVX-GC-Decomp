@@ -179,15 +179,21 @@ static inline GXColor Render_MakeColor(u8 r, u8 g, u8 b) {
     return c;
 }
 
-static inline void Render_InitLightColor(void *lt_obj, u8 r, u8 g, u8 b) {
+static inline void Render_InitPointLight(void *lt_obj, Vector4 *pos, GXColor *rgb, u32 id) {
+    void GXInitLightPos(void *lt_obj, f32 x, f32 y, f32 z);
     void GXInitLightColor(void *lt_obj, GXColor color);
-    GXColor c;
+    void GXLoadLightObjImm(void *lt_obj, s32 light);
+    void GXInitLightDistAttn(void *lt_obj, f32 ref_dist, f32 ref_br, s32 dist_func);
+    void GXInitLightAttnK(void *lt_obj, f32 k0, f32 k1, f32 k2);
+    void *memset(void *dst, s32 c, u32 n);
+    GXColor color = Render_MakeColor(rgb->r, rgb->g, rgb->b);
 
-    c.r = r;
-    c.g = g;
-    c.b = b;
-    c.a = 0xFF;
-    GXInitLightColor(lt_obj, c);
+    memset(lt_obj, 0, 0x40);
+    GXInitLightPos(lt_obj, pos->x, pos->y, pos->z);
+    GXInitLightColor(lt_obj, color);
+    GXInitLightDistAttn(lt_obj, pos->w, 0.99999f, 1);
+    GXInitLightAttnK(lt_obj, 0.0f, 0.0f, 0.01f);
+    GXLoadLightObjImm(lt_obj, id);
 }
 
 typedef struct GDL {
