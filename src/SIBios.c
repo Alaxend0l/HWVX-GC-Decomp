@@ -248,6 +248,46 @@ static void AlarmHandler(OSAlarm *alarm, void *context) {
     }
 }
 
+void OSSetAlarm(OSAlarm *alarm, s64 tick, void (*handler)(OSAlarm *, void *));
+s64 __OSGetSystemTime(void);
+BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes, void *callback, s64 delay) {
+    BOOL enabled;
+    SIPacket *packet = &Packet[chan];
+    s64 now;
+    s64 fire;
+
+    enabled = OSDisableInterrupts();
+    if (packet->chan != -1 || Si.chan == chan) {
+        OSRestoreInterrupts(enabled);
+        return FALSE;
+    }
+
+    now = __OSGetSystemTime();
+    if (delay == 0) {
+        fire = now;
+    } else {
+        fire = XferTime[chan] + delay;
+    }
+    if (now < fire) {
+        delay = fire - now;
+        OSSetAlarm(&Alarm[chan], delay, AlarmHandler);
+    } else if (__SITransfer(chan, output, outputBytes, input, inputBytes, callback)) {
+        OSRestoreInterrupts(enabled);
+        return TRUE;
+    }
+
+    packet->chan = chan;
+    packet->output = output;
+    packet->outputBytes = outputBytes;
+    packet->input = input;
+    packet->inputBytes = inputBytes;
+    packet->callback = callback;
+    packet->fire = fire;
+
+    OSRestoreInterrupts(enabled);
+    return TRUE;
+}
+
 u32 SIGetTypeAsync(s32 chan, void (*callback)(s32, u32)) {
     BOOL enabled;
     u32 type;
