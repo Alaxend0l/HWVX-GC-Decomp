@@ -29,6 +29,16 @@ typedef struct GXData {
 
 extern GXData *gx;
 extern volatile u16 *__cpReg;
+extern volatile u32 *__piReg;
+extern void *CPUFifo;
+extern void *GPFifo;
+extern u8 CPGPLinked;
+
+s32 OSDisableInterrupts(void);
+s32 OSRestoreInterrupts(s32 level);
+void __GXFifoLink(u8 en);
+void __GXWriteFifoIntEnable(u8 hiWatermarkEn, u8 loWatermarkEn);
+void __GXWriteFifoIntReset(u8 hiWatermarkClr, u8 loWatermarkClr);
 
 void GXInitFifoPtrs(GXFifoObj *fifo, void *readPtr, void *writePtr);
 void GXInitFifoLimits(GXFifoObj *fifo, u32 hiWatermark, u32 loWatermark);
