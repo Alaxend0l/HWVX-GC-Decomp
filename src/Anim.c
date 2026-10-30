@@ -182,15 +182,17 @@ static inline s32 AnimTrack_FindKey(AnimTrack *track, f32 time) {
     s32 numKeys = track->numKeys;
     s32 key = 1;
     u32 step = numKeys;
+    f32 *t;
 
     do {
+        t = &track->times[key];
         step = (step + 1) >> 1;
-        if (time > track->times[key]) {
+        if (time > t[0]) {
             key += step;
             if (key >= numKeys) {
                 return numKeys - 1;
             }
-        } else if (time <= track->times[key - 1]) {
+        } else if (time <= t[-1]) {
             key -= step;
         } else {
             return key;
