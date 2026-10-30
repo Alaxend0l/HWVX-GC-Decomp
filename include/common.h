@@ -43,7 +43,8 @@ typedef struct GameInfo {
   const char *c;
   const char *d;
   const char *e;
-  u8 unk14[0xC];
+  s32 unk14;
+  s32 unk18;
 } GameInfo;
 
 typedef struct WorldData {
