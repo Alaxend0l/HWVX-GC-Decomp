@@ -123,6 +123,24 @@ static u8 timing[0x130] = {
     0x04, 0x0E, 0x04, 0x0E, 0x04, 0x1A, 0x01, 0xAD, 0x40, 0x47, 0x69, 0xA8, 0x01, 0x7B, 0x7A, 0x00, 0x01, 0x9C,
 };
 
+typedef struct OSContext {
+    u32 gpr[32];
+    u32 cr;
+    u32 lr;
+    u32 ctr;
+    u32 xer;
+    f64 fpr[32];
+    u32 fpscr_pad;
+    u32 fpscr;
+    u32 srr0;
+    u32 srr1;
+    u16 mode;
+    u16 state;
+    u32 gqr[8];
+    u32 psf_pad;
+    f64 psf[32];
+} OSContext;
+
 static u32 getCurrentFieldEvenOdd(void);
 
 static inline BOOL VISetRegs(void) {
@@ -144,6 +162,65 @@ static inline BOOL VISetRegs(void) {
         return TRUE;
     }
     return FALSE;
+}
+
+static void __VIRetraceHandler(s16 interrupt, void *context) {
+    extern u32 retraceCount;
+    extern volatile u32 flushFlag;
+    extern void (*PreCB)(u32 retraceCount);
+    extern void (*PostCB)(u32 retraceCount);
+    extern u8 retraceQueue[8];
+    void OSClearContext(void *context);
+    void OSSetCurrentContext(void *context);
+    void OSWakeupThread(void *queue);
+    void SIRefreshSamplingRate(void);
+    u8 exceptionContext[0x2C8];
+    u16 reg;
+    u32 inter = 0;
+
+    reg = __VIRegs[24];
+    if (reg & 0x8000) {
+        __VIRegs[24] = (u16)(reg & ~0x8000);
+        inter |= 1;
+    }
+    reg = __VIRegs[26];
+    if (reg & 0x8000) {
+        __VIRegs[26] = (u16)(reg & ~0x8000);
+        inter |= 2;
+    }
+    reg = __VIRegs[28];
+    if (reg & 0x8000) {
+        __VIRegs[28] = (u16)(reg & ~0x8000);
+        inter |= 4;
+    }
+    reg = __VIRegs[30];
+    if (reg & 0x8000) {
+        __VIRegs[30] = (u16)(reg & ~0x8000);
+        inter |= 8;
+    }
+    if ((inter & 4) || (inter & 8)) {
+        OSSetCurrentContext(context);
+        return;
+    }
+    retraceCount++;
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(exceptionContext);
+    if (PreCB) {
+        (*PreCB)(retraceCount);
+    }
+    if (flushFlag) {
+        if (VISetRegs()) {
+            flushFlag = 0;
+            SIRefreshSamplingRate();
+        }
+    }
+    if (PostCB) {
+        OSClearContext(exceptionContext);
+        (*PostCB)(retraceCount);
+    }
+    OSWakeupThread(retraceQueue);
+    OSClearContext(exceptionContext);
+    OSSetCurrentContext(context);
 }
 
 s32 VISetPostRetraceCallback(s32 cb) {
