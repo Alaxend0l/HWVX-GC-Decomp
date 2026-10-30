@@ -182,7 +182,9 @@ typedef struct GDL {
     GDLSphere spheres[200];
     u8 unkBE100[0xBE110 - 0xBE100];
     GDLBox boxes[100];
-    u8 unkC0050[0xDFCC0 - 0xC0050];
+    u8 unkC0050[0xC6EC0 - 0xC0050];
+    GDLLightState lightStates[0x80];
+    u8 unkC9EC0[0xDFCC0 - 0xC9EC0];
     GDLDrawEntry drawEntries[0x800];
     GDLLODEntry lodEntries[0x400];
     u8 unkEBCC0[0xF3A80 - 0xEBCC0];
