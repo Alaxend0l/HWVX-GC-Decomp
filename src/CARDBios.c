@@ -44,6 +44,27 @@ typedef struct CARDControl {
     u8 *diskID;
 } CARDControl;
 
+typedef struct CARDDir {
+    u8 gameName[4];
+    u8 company[2];
+    u8 _padding0;
+    u8 bannerFormat;
+    u8 fileName[32];
+    u32 time;
+    u32 iconAddr;
+    u16 iconFormat;
+    u16 iconSpeed;
+    u8 permission;
+    u8 copyTimes;
+    u16 startBlock;
+    u16 length;
+    u8 _padding1[2];
+    u32 commentAddr;
+} CARDDir;
+
+void *__CARDGetFatBlock(CARDControl *card);
+CARDDir *__CARDGetDirBlock(CARDControl *card);
+
 typedef struct CARDID {
     u8 serial[32];
     u16 deviceID;
