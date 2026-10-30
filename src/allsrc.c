@@ -440,7 +440,7 @@ void SteeringSamplingCallback(void)
     void SIReadSteering(s32 chan, SISteeringStatus *status);
     void HandlePedals(void *cur, SISteeringStatus *status, SISteeringStatus *calib);
     void HandleTriggers(void *cur, SISteeringStatus *status, SISteeringStatus *calib);
-    void SimThread_Step(VDevice *dev);
+    s32 SimThread_Step(VDevice *dev);
     s32 i;
     LGDevice *device;
     SISteeringStatus *status;
