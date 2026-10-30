@@ -52,12 +52,12 @@ s32 Mpeg_StartMovie(char *name, f32 volume) {
     void GXSetViewport(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz);
     void OSPanic(const char *file, int line, const char *msg, ...);
     extern u8 badMojo;
-    extern RenderMode *m_rendermode;
+    extern s32 m_rendermode;
     extern THPVideoInfo m_videoInfo;
-    extern u32 m_movie_x;
-    extern u32 m_movie_y;
+    extern s32 m_movie_x;
+    extern s32 m_movie_y;
     extern void *m_movie_buffer;
-    extern u32 m_movieVolume;
+    extern s32 m_movieVolume;
     extern s32 __OSCurrHeap;
     char *p = name;
     u32 size;
@@ -74,10 +74,10 @@ s32 Mpeg_StartMovie(char *name, f32 volume) {
     if (!THPPlayerOpen(name, FALSE)) {
         OSPanic("THPPlay.c", 93, "Fail to open the thp file\n");
     }
-    GXSetViewport(0.0f, 0.0f, m_rendermode->fbWidth, m_rendermode->efbHeight, 0.0f, 1.0f);
+    GXSetViewport(0.0f, 0.0f, ((RenderMode *)m_rendermode)->fbWidth, ((RenderMode *)m_rendermode)->efbHeight, 0.0f, 1.0f);
     THPPlayerGetVideoInfo(&m_videoInfo);
-    m_movie_x = (m_rendermode->fbWidth - m_videoInfo.xSize) / 2;
-    m_movie_y = (m_rendermode->efbHeight - m_videoInfo.ySize) / 2;
+    m_movie_x = (((RenderMode *)m_rendermode)->fbWidth - m_videoInfo.xSize) / 2;
+    m_movie_y = (((RenderMode *)m_rendermode)->efbHeight - m_videoInfo.ySize) / 2;
     size = THPPlayerCalcNeedMemory();
     m_movie_buffer = OSAllocFromHeap(__OSCurrHeap, size);
     if (m_movie_buffer == NULL) {
@@ -88,7 +88,7 @@ s32 Mpeg_StartMovie(char *name, f32 volume) {
         OSPanic("THPPlay.c", 122, "Fail to prepare\n");
     }
     THPPlayerPlay();
-    m_movieVolume = 46.0f * volume;
+    m_movieVolume = (u32)(46.0f * volume);
 }
 
 void Mpeg_StopMovie(void) {
