@@ -47,7 +47,7 @@ typedef struct Emitter {
     void *thingSlot;   /* 0x90 */
     u32 thingParam1;   /* 0x94 */
     u8 pad98[0x18];
-    ActionFX *fx;      /* 0xB0 */
+    EmitterData *fx;   /* 0xB0 */
     u32 fxId;          /* 0xB4 */
     u32 padB8;         /* 0xB8 */
     u32 timeToNextFx;  /* 0xBC */
