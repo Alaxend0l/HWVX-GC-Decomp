@@ -1,5 +1,22 @@
 #include "common.h"
 
+typedef struct FogSettings {
+    u8 type;
+    u8 pad1[3];
+    f32 nearDistance;
+    f32 farDistance;
+    GXColor color;
+} FogSettings;
+
+typedef struct WorldFog {
+    u8 type;
+    u8 pad1[0x14 - 0x1];
+    f32 nearDistance;
+    f32 farDistance;
+    u8 pad1C[0xC0 - 0x1C];
+    GXColor *color;
+} WorldFog;
+
 typedef struct VolumeShape {
     u8 pad0[0x8];
     s32 type;
@@ -8,6 +25,7 @@ typedef struct VolumeShape {
     f32 radius;
     f32 radiusSq;
     void *bsp;
+    FogSettings *fog;
 } VolumeShape;
 
 typedef struct VolumeList {
