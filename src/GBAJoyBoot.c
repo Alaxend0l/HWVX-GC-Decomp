@@ -96,7 +96,7 @@ s32 GBAReadAsync(s32 chan, u8 *dst, u8 *status, GBACallback callback);
 
 u32 __OSBusClock : 0x800000F8;
 u32 OSGetTick(void);
-void __GBASetDelay(s32 chan, u32 delay);
+void __GBASetDelay(s32 chan, s64 delay);
 
 static volatile u8 D54[] = {
 	0x18, 0xFC, 0xC0, 0x80, 0x7F, 0x40, 0x3F, 0x01, 0x00, 0x2F, 0x2F, 0x20, 0x43, 0x6F, 0x64, 0x65,
@@ -214,6 +214,38 @@ static void F29(s32 chan, s32 ret) {
     if (ret == 0) {
         __GBAX02(chan, bootInfo->readbuf);
     } else {
+        bootInfo->begin = 0;
+        if (bootInfo->callback) {
+            callback = bootInfo->callback;
+            bootInfo->callback = NULL;
+            callback(chan, ret);
+        }
+    }
+    gba->ret = ret;
+}
+
+static void F37(s32 chan, s32 ret);
+static void F35(s32 chan, s32 ret) {
+    GBAControl *gba;
+    GBABootInfo *bootInfo;
+    GBACallback callback;
+
+    gba = &__GBA[chan];
+    bootInfo = &gba->bootInfo;
+    if (ret == 0) {
+        if (OSGetTick() - bootInfo->start >= (__OSBusClock / 4) * 10) {
+            ret = 3;
+        } else if (*bootInfo->status & 0x32) {
+            ret = 3;
+        } else if (*bootInfo->status != 8) {
+            ret = GBAGetStatusAsync(chan, bootInfo->status, F35);
+        } else {
+            __GBASetDelay(chan, 8 * ((__OSBusClock / 4) / 1000));
+            ret = GBAReadAsync(chan, bootInfo->readbuf, bootInfo->status, F37);
+            __GBASetDelay(chan, (60 * ((__OSBusClock / 4) / 125000)) / 8);
+        }
+    }
+    if (ret != 0) {
         bootInfo->begin = 0;
         if (bootInfo->callback) {
             callback = bootInfo->callback;
