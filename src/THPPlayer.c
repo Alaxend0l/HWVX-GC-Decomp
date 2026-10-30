@@ -74,7 +74,7 @@ typedef struct THPPlayer {
 THPPlayer ActivePlayer;
 static u8 UsedTextureSetQueue_8036EC78[0x20];
 static void *UsedTextureSetMessage[3];
-static u8 WorkBuffer[0x40] __attribute__((aligned(32)));
+static s32 WorkBuffer[16] __attribute__((aligned(32)));
 static u8 PrepareReadyQueue[0x20];
 static void *PrepareReadyMessage;
 static s32 Initialized;
@@ -317,6 +317,105 @@ BOOL THPPlayerSetBuffer(u8 *buffer) {
 
 void PrepareReady(void *arg0) {
     OSSendMessage(PrepareReadyQueue, arg0, 1);
+}
+
+BOOL THPPlayerPrepare(s32 frameNum, u8 playFlag) {
+    void PlayControl(u32 retraceCount);
+    void CreateVideoDecodeThread(s32 priority, u8 *ptr);
+    void CreateAudioDecodeThread(s32 priority, u8 *ptr);
+    void CreateReadThread(s32 priority);
+    void PushFreeReadBuffer(void *buffer);
+    void PushFreeTextureSet(void *buffer);
+    void VideoDecodeThreadStart(void);
+    void AudioDecodeThreadStart(void);
+    void ReadThreadStart(void);
+    void OSInitMessageQueue(void *, void *, s32);
+    s32 OSReceiveMessage(void *messageQueue, void **message, s32 block);
+    void *VISetPostRetraceCallback(void *callback);
+    extern void *OldVIPostCallback;
+    s32 offset;
+    u8 *ptr;
+    s32 i;
+    void *msg;
+
+    if (ActivePlayer.open && ActivePlayer.state == 0) {
+        if (frameNum > 0) {
+            if (!ActivePlayer.frameOffsets) {
+                return FALSE;
+            }
+            if (ActivePlayer.numFrames > frameNum) {
+                offset = ActivePlayer.frameOffsets + (frameNum - 1) * 4;
+                if (DVDReadPrio(&ActivePlayer, WorkBuffer, 0x20, offset, 2) < 0) {
+                    return FALSE;
+                }
+                ActivePlayer.initOffset = ActivePlayer.unk64 + ((u32 *)WorkBuffer)[0];
+                ActivePlayer.initReadSize = ((u32 *)WorkBuffer)[1] - ((u32 *)WorkBuffer)[0];
+                ActivePlayer.initReadFrame = frameNum;
+            } else {
+                return FALSE;
+            }
+        } else {
+            ActivePlayer.initOffset = ActivePlayer.unk64;
+            ActivePlayer.initReadSize = ActivePlayer.unk54;
+            ActivePlayer.initReadFrame = frameNum;
+        }
+
+        ActivePlayer.playFlag = playFlag;
+        ActivePlayer.videoDecodeCount = 0;
+
+        if (ActivePlayer.onMemory) {
+            if (DVDReadPrio(&ActivePlayer, ActivePlayer.movieData, ActivePlayer.unk58, ActivePlayer.unk64, 2) < 0) {
+                return FALSE;
+            }
+            ptr = ActivePlayer.movieData + ActivePlayer.initOffset - ActivePlayer.unk64;
+            CreateVideoDecodeThread(20, ptr);
+            if (ActivePlayer.audioExist) {
+                CreateAudioDecodeThread(12, ptr);
+            }
+        } else {
+            CreateVideoDecodeThread(20, NULL);
+            if (ActivePlayer.audioExist) {
+                CreateAudioDecodeThread(12, NULL);
+            }
+            CreateReadThread(8);
+        }
+
+        if (!ActivePlayer.onMemory) {
+            for (i = 0; i < 10; i++) {
+                PushFreeReadBuffer(&ActivePlayer.readBuffer[i]);
+            }
+        }
+        for (i = 0; i < 3; i++) {
+            PushFreeTextureSet(&ActivePlayer.textureSet[i]);
+        }
+        if (ActivePlayer.audioExist) {
+            for (i = 0; i < 3; i++) {
+                PushFreeAudioBuffer(&ActivePlayer.audioBuffers[i]);
+            }
+        }
+
+        OSInitMessageQueue(PrepareReadyQueue, &PrepareReadyMessage, 1);
+        VideoDecodeThreadStart();
+        if (ActivePlayer.audioExist) {
+            AudioDecodeThreadStart();
+        }
+        if (!ActivePlayer.onMemory) {
+            ReadThreadStart();
+        }
+        OSReceiveMessage(PrepareReadyQueue, &msg, 1);
+        if ((BOOL)msg == FALSE) {
+            return FALSE;
+        }
+        ActivePlayer.state = 1;
+        ActivePlayer.unk9D = 0;
+        ActivePlayer.dispTextureSet = NULL;
+        ActivePlayer.audioBuffer = NULL;
+        ActivePlayer.curVideoNumber = 0;
+        ActivePlayer.audioFrameNumber = 0;
+        OldVIPostCallback = VISetPostRetraceCallback(PlayControl);
+        return TRUE;
+    }
+    return FALSE;
 }
 
 s32 THPPlayerPlay(void)
