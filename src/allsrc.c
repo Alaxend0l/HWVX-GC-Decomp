@@ -216,7 +216,7 @@ static inline s32 SimThread_AddDelta(SimThread *t, s32 dPos, s32 dt) {
 static inline u32 SimThread_Sample(SimThread *t) {
     u32 OSGetTick(void);
     u32 now;
-    s32 dt;
+    u32 dt;
     s32 oldPos;
     s32 n;
     s32 accel;
