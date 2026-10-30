@@ -93,6 +93,42 @@ void Action_ReleaseAllActions(void) {
     memset(m_Actions_800DBC80, 0, 0x140);
 }
 
+#pragma readonly_strings on
+void Dprintf(const char *fmt, ...);
+s32 Action_AddAction(void *arg0) {
+    typedef struct Action {
+        s32 type;
+        void *data;
+        s32 unk8;
+        s32 delayInit;
+        u32 count;
+        s32 delay;
+    } Action;
+    extern Action *m_Actions_800DBC80[80];
+    Action *action = arg0;
+    u32 i;
+
+    for (i = 0; i < 80; i++) {
+        if (m_Actions_800DBC80[i] == NULL) {
+            break;
+        }
+    }
+    if (i >= 80) {
+        Dprintf("The max number of actions has been exceeded for this point in the game.  There can only be %d simaltaneous actions\n", 80);
+        return 1;
+    }
+    if (action->count != 0xFFFFFFFF) {
+        action->count--;
+    }
+    m_Actions_800DBC80[i] = action;
+    m_Actions_800DBC80[i]->delay = m_Actions_800DBC80[i]->delayInit;
+    if (action->count != 0) {
+        return 1;
+    }
+    return 0;
+}
+#pragma readonly_strings reset
+
 s32 ActionPrintDebugString(u32 *action)
 {
     void InterfaceManager_SetPlayerMessage(void *message, u32 player);
