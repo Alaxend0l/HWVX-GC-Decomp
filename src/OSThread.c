@@ -141,7 +141,7 @@ void __OSReschedule(void) {
     }
 }
 
-void OSInitContext(void *context, u32 pc, u32 sp);
+void OSInitContext(OSContext *context, u32 pc, u32 sp);
 void OSExitThread(void *val);
 BOOL OSCreateThread(OSThread *thread, void *(*func)(void *), void *param, void *stack, u32 stackSize, s32 priority, u16 attr) {
     BOOL enabled;
@@ -167,8 +167,8 @@ BOOL OSCreateThread(OSThread *thread, void *(*func)(void *), void *param, void *
     ((u32 *)sp)[0] = 0;
     ((u32 *)sp)[1] = 0;
     OSInitContext(&thread->context, (u32)func, sp);
-    ((u32 *)&thread->context)[0x84 / 4] = (u32)OSExitThread;
-    ((u32 *)&thread->context)[3] = (u32)param;
+    thread->context.lr = (u32)OSExitThread;
+    thread->context.gpr[3] = (u32)param;
     thread->stackBase = stack;
     thread->stackEnd = (u32 *)((u32)stack - stackSize);
     *thread->stackEnd = 0xDEADBABE;
