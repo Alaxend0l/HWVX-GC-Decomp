@@ -1259,15 +1259,6 @@ s32 GameSettings_FormatMemoryCard(void)
 #pragma readonly_strings on
 #pragma use_lmw_stmw off
 s32 GameSettings_DeleteGameFile(void) {
-    typedef struct GameInfo {
-        const char *name;
-        const char *id;
-        const char *title;
-        const char *fileName;
-        const char *icon;
-        s32 unk14;
-        s32 unk18;
-    } GameInfo;
     u8 File_Delete(char *device, const char *fileName);
     extern GameInfo g_gameInfo[];
     static s8 bFirstTime = 1;
