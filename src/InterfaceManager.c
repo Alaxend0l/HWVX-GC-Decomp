@@ -584,7 +584,9 @@ void InterfaceManager_SetInfoCallBackRoutine(s32 index, void *callback) {
     *(void **)(g_interface[index] + 0x94) = callback;
 }
 
-void InterfaceManager_PauseInterface(u8 pause, s32 index) {
+#pragma push
+#pragma inline_depth(5)
+void InterfaceManager_PauseInterface(u32 pause, s32 index) {
     typedef struct InterfaceSlot {
         u8 pad0[0x243];
         u8 type;
@@ -611,6 +613,7 @@ void InterfaceManager_PauseInterface(u8 pause, s32 index) {
         InterfaceManager_PauseInterface(pause, g_interface[index].slots[i].child);
     }
 }
+#pragma pop
 
 s32 InterfaceManager_GetTotalActiveInterfaces(void) {
     extern u8 g_interface[][0x170];
