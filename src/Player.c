@@ -140,7 +140,7 @@ void Player_SetThing(void *player, void *thing) {
             *(u32 *)((u8 *)player + 0x3C) = *(u32 *)((u8 *)thing + 0xB8);
             Thing_SetSlavePlayers(thing);
         }
-        if (*(void **)((u8 *)player + 0x2C) == thing) {
+        if (thing != NULL) {
             Player_RefreshInterface(player);
         }
     }
@@ -219,9 +219,367 @@ void PlayerHuman_Heartbeat(void *player) {
     Player_Heartbeat(player);
 }
 
-void Player_Heartbeat()
-{}
+#pragma push
+#pragma use_lmw_stmw on
+void Player_Heartbeat(void *arg0) {
+    typedef struct NavPoint {
+        Vector4 pos;
+        u8 pad10[0x3C];
+        s32 next;
+        u8 pad50;
+        u8 type;
+    } NavPoint;
+    typedef struct NavPath {
+        u8 pad0[0x40];
+        f32 length;
+    } NavPath;
+    typedef struct HBVehicle HBVehicle;
+    typedef struct HBVehicleVTable {
+        u8 pad0[0x2C];
+        s32 (*getNearestNavPoint)(HBVehicle *thing);
+        u8 pad30[0x10];
+        void *(*getOrientedCollision)(HBVehicle *thing);
+    } HBVehicleVTable;
+    typedef struct HBItem {
+        u8 pad0[0x30];
+        struct {
+            u8 pad0[0x20];
+            s32 count;
+        } *info;
+    } HBItem;
+    typedef struct HBTileCar {
+        Vector4 pos;
+        f32 rotX;
+        f32 rotY;
+        f32 rotZ;
+        u8 pad1C[8];
+        void *aiScripts;
+        HBVehicle *creature;
+        u32 mode;
+        u8 pad30[0x24];
+        HBItem *item;
+        u8 pad58[4];
+        s8 respawn;
+    } HBTileCar;
+    struct HBVehicle {
+        u8 pad0[0x40];
+        Vector4 pos;
+        u8 pad50[0x24];
+        u32 flags;
+        u8 pad78[0x14];
+        HBVehicleVTable *vtable;
+        HBTileCar *tileData;
+        u8 pad94[0x344 - 0x94];
+        void *slaves;
+        u8 pad348[0x55C - 0x348];
+        s32 navTimer;
+        f32 pathLength;
+        f32 navDist;
+        NavPoint *navPath[7];
+    };
+    typedef struct HBPlayer {
+        u8 pad0[0xC];
+        u32 buttons;
+        u8 pad10[0xB];
+        u8 active;
+        u8 pad1C[0x10];
+        HBVehicle *vehicle;
+        u8 pad30;
+        u8 cameraIndex;
+        u8 pad32[2];
+        u32 deadTime;
+        u32 type;
+        void *aiScripts;
+        u8 pad40[0x2C];
+        u32 flags;
+        u8 pad70[0x38];
+        HBTileCar *tileCar;
+        s16 deathNavPoint;
+        s16 respawnNavPoint;
+    } HBPlayer;
+    typedef struct HBCreateParams {
+        Vector4 pos;
+        Vector4 quat;
+        Vector4 vel;
+        void *aiScripts;
+        f32 unk34;
+        u32 unk38;
+        HBPlayer *player;
+    } HBCreateParams;
+    extern s32 g_iDeltaTimeMS;
+    extern s32 g_TargetArrow[7];
+    extern s8 g_bWaitingForRoundReset;
+    extern Matrix4 g_identity;
+    u32 NavHolder_GetTotalNavPoints(void);
+    s32 InterfaceManager_GetTargetArrowNearestNavPoint(void);
+    void NavHolder_UseMainRouteOnly(void);
+    NavPath *NavHolder_FindPath(s32 from, s32 to);
+    void NavHolder_FillPointerArrayPath(NavPath *path, NavPoint **out, s32 count);
+    NavPoint *NavHolder_GetNavPoint(s32 index);
+    s32 NavHolder_GetFirstWayPoint(void);
+    s32 RandomAdd_s32(s32 base, s32 range);
+    f32 LinearPointTest(Vector4 *p, NavPoint *a, NavPoint *b);
+    f32 PSVECSquareDistance(void *a, void *b);
+    f32 Sqrt(f32 x);
+    void DistanceXYZ(Vector4 *a, void *b, f32 *out);
+    u32 GameSettings_GetCodeVariable(s32 var, s32 arg);
+    void PlayerManager_RemovePlayer(void *player);
+    void *memcpy(void *dst, const void *src, u32 n);
+    void PSVECSubtract(void *a, void *b, void *out);
+    f32 PSVECSquareMag(void *v);
+    void PSVECNormalize(void *v, void *out);
+    void PSVECCrossProduct(void *a, void *b, void *out);
+    void SubMatrixToQuaternion(void *mtx, Vector4 *quat);
+    void SetOrientation(void *mtx, f32 y, f32 x, f32 z);
+    void *ThingManager_DARYL_CreateThing(s32 type, void *params);
+    s8 OBoxHitsTerrainAndObjectsZeroTime(void *obox, void *thing, s32 arg);
+    u32 ThingManager_GetActiveCars(HBVehicle **cars, s32 max);
+    HBTileCar *World_GetTileCar(u32 index);
+    u32 World_GetTotalTiles_Car(void);
+    void *ThingManagerList_GetByType(void *list, s32 type);
+    void WildCardRack_JettisonAll(void *rack);
+    void WildCardRack_Add(void *rack, HBItem *item, s32 count);
+    HBPlayer *player = arg0;
+    HBTileCar *tile;
+    HBVehicle *thing;
+    NavPoint *b;
+    NavPath *path;
+    Vector4 *pos;
+    NavPoint *a;
+    s32 i;
+    f32 left;
+    f32 dist;
+    HBVehicle *cars[8];
+    HBCreateParams params __attribute__((aligned(16)));
+    Vector4 mtx[4] __attribute__((aligned(16)));
 
+    thing = player->vehicle;
+    if (player->buttons & 0x1000) {
+        player->cameraIndex++;
+    }
+    if (player->vehicle == NULL) {
+        player->deadTime += g_iDeltaTimeMS;
+    } else if (player->type == 9 && (void *)g_TargetArrow[0] != NULL) {
+        thing->navTimer -= g_iDeltaTimeMS;
+        if (thing->navTimer <= 0 && NavHolder_GetTotalNavPoints() != 0) {
+            s32 dest;
+            s32 cur;
+
+            dest = InterfaceManager_GetTargetArrowNearestNavPoint();
+            cur = thing->vtable->getNearestNavPoint(thing);
+            if (dest != -1 && cur != -1) {
+                NavHolder_UseMainRouteOnly();
+                path = NavHolder_FindPath(cur, dest);
+                NavHolder_FillPointerArrayPath(path, thing->navPath, 7);
+                if (path != NULL) {
+                    thing->pathLength = path->length;
+                    thing->navTimer = RandomAdd_s32(900, 100);
+                }
+            }
+        }
+        left = thing->pathLength;
+        pos = &thing->pos;
+        for (i = 0; i < 6; i++) {
+            a = thing->navPath[i];
+            b = thing->navPath[i + 1];
+            if (a == NULL || b == NULL) {
+                break;
+            }
+            if (LinearPointTest(pos, a, b) < 0.0f) {
+                break;
+            }
+            left -= Sqrt(PSVECSquareDistance(a, b));
+        }
+        if (a != NULL && b != NULL) {
+            DistanceXYZ(pos, a, &dist);
+            thing->navDist = dist + left;
+            if (Player_IsHuman(player)) {
+                while (dist < 300.0f) {
+                    a = thing->navPath[i];
+                    b = thing->navPath[i + 1];
+                    if (a == NULL || b == NULL) {
+                        if ((NavPoint *)g_TargetArrow[1] != NULL) {
+                            g_TargetArrow[2] = g_TargetArrow[1];
+                            g_TargetArrow[6] = 0;
+                            g_TargetArrow[1] = 0;
+                        }
+                        break;
+                    }
+                    dist += Sqrt(PSVECSquareDistance(a, b));
+                    if (++i >= 6) {
+                        break;
+                    }
+                }
+                if ((NavPoint *)g_TargetArrow[1] != b) {
+                    g_TargetArrow[2] = g_TargetArrow[1];
+                    g_TargetArrow[6] = 0;
+                    g_TargetArrow[1] = (s32)b;
+                }
+            }
+        } else {
+            DistanceXYZ(&thing->pos, (void *)g_TargetArrow[0], &thing->navDist);
+            if (Player_IsHuman(player)) {
+                if ((NavPoint *)g_TargetArrow[1] != NULL) {
+                    g_TargetArrow[2] = g_TargetArrow[1];
+                    g_TargetArrow[6] = 0;
+                    g_TargetArrow[1] = 0;
+                }
+            }
+        }
+    } else if (GameSettings_GetCodeVariable(0x12D, 0) >= 3) {
+        thing->navTimer -= g_iDeltaTimeMS;
+        if (thing->navTimer <= 0 && NavHolder_GetTotalNavPoints() != 0) {
+            s32 dest;
+            s32 cur;
+
+            cur = thing->vtable->getNearestNavPoint(thing);
+            dest = NavHolder_GetFirstWayPoint();
+            while (NavHolder_GetNavPoint(dest)->type == 1) {
+                dest = NavHolder_GetNavPoint(dest)->next;
+            }
+            if (dest != -1 && cur != -1) {
+                NavHolder_UseMainRouteOnly();
+                path = NavHolder_FindPath(cur, dest);
+                NavHolder_FillPointerArrayPath(path, thing->navPath, 7);
+                if (path != NULL) {
+                    thing->pathLength = path->length;
+                    thing->navTimer = RandomAdd_s32(900, 100);
+                }
+            }
+        }
+    }
+    if (player->vehicle == NULL && player->deadTime > 2000 && !(player->flags & 1) && !g_bWaitingForRoundReset &&
+        player->active && player->aiScripts != NULL && player->type == 9) {
+        tile = player->tileCar;
+        if (tile != NULL && !tile->respawn) {
+            PlayerManager_RemovePlayer(player);
+        } else if (tile != NULL) {
+            params.player = player;
+            params.aiScripts = tile->aiScripts;
+            params.unk34 = 0.0f;
+            if (GameSettings_GetCodeVariable(0x12D, 0) >= 3 && player->deathNavPoint != -1) {
+                u8 attempt = 0;
+
+                params.pos = NavHolder_GetNavPoint(player->deathNavPoint)->pos;
+                memcpy(mtx, &g_identity, sizeof(mtx));
+                if (player->respawnNavPoint != -1) {
+                    a = NavHolder_GetNavPoint(player->deathNavPoint);
+                    PSVECSubtract(NavHolder_GetNavPoint(player->respawnNavPoint), a, &mtx[2]);
+                    if (PSVECSquareMag(&mtx[2])) {
+                        PSVECNormalize(&mtx[2], &mtx[2]);
+                    }
+                    mtx[1].x = 0.0f;
+                    mtx[1].y = 1.0f;
+                    mtx[1].z = 0.0f;
+                    mtx[1].w = 0.0f;
+                    PSVECCrossProduct(&mtx[1], &mtx[2], &mtx[0]);
+                    PSVECCrossProduct(&mtx[2], &mtx[0], &mtx[1]);
+                    if (PSVECSquareMag(&mtx[0])) {
+                        PSVECNormalize(&mtx[0], &mtx[0]);
+                    }
+                    if (PSVECSquareMag(&mtx[1])) {
+                        PSVECNormalize(&mtx[1], &mtx[1]);
+                    }
+                }
+                player->respawnNavPoint = -1;
+                player->deathNavPoint = -1;
+                params.pos.y += 10.0f;
+                SubMatrixToQuaternion(mtx, &params.quat);
+                thing = ThingManager_DARYL_CreateThing(9, &params);
+                do {
+                    thing->pos = params.pos;
+                    thing->flags |= 0x80;
+                    if (OBoxHitsTerrainAndObjectsZeroTime(thing->vtable->getOrientedCollision(thing), thing, 0)) {
+                        switch (attempt++) {
+                        case 0:
+                            params.pos.z -= 10.0f;
+                            break;
+                        case 1:
+                            params.pos.x += 10.0f;
+                            break;
+                        case 2:
+                            params.pos.z += 10.0f;
+                            break;
+                        case 3:
+                            params.pos.z += 10.0f;
+                            break;
+                        case 4:
+                            params.pos.x -= 10.0f;
+                            break;
+                        case 5:
+                            params.pos.x -= 10.0f;
+                            break;
+                        case 6:
+                            params.pos.z -= 10.0f;
+                            break;
+                        case 7:
+                            params.pos.z -= 10.0f;
+                            break;
+                        default:
+                            attempt = 0;
+                            params.pos.x += 10.0f;
+                            params.pos.z += 10.0f;
+                            thing->pos = params.pos;
+                            thing->flags |= 0x80;
+                            break;
+                        }
+                    } else {
+                        attempt = 0;
+                    }
+                } while (attempt != 0);
+            } else if (GameSettings_GetCodeVariable(0x12D, 0) == 2) {
+                HBTileCar *car;
+                HBTileCar *bestTile = NULL;
+                u32 count;
+                u8 j;
+                u8 k;
+                f32 nearest;
+                f32 best;
+
+                count = ThingManager_GetActiveCars(cars, 8);
+                best = 0.0f;
+                for (j = 0; j < World_GetTotalTiles_Car(); j++) {
+                    car = World_GetTileCar(j);
+                    if (car->mode == 1) {
+                        nearest = 1e10f;
+                        for (k = 0; k < count; k++) {
+                            f32 d = PSVECSquareDistance(&cars[k]->pos, car);
+                            if (nearest > d) {
+                                nearest = d;
+                            }
+                        }
+                        if (best < nearest) {
+                            best = nearest;
+                            bestTile = car;
+                        }
+                    }
+                }
+                params.pos = bestTile->pos;
+                params.pos.y += 10.0f;
+                SetOrientation(mtx, bestTile->rotY, bestTile->rotX, bestTile->rotZ);
+                SubMatrixToQuaternion(mtx, &params.quat);
+                thing = ThingManager_DARYL_CreateThing(9, &params);
+            } else {
+                params.pos = tile->pos;
+                params.pos.y += 10.0f;
+                SetOrientation(mtx, tile->rotY, tile->rotX, tile->rotZ);
+                SubMatrixToQuaternion(mtx, &params.quat);
+                thing = ThingManager_DARYL_CreateThing(9, &params);
+            }
+            player->deadTime = 0;
+            tile->creature = thing;
+            Player_SetThing(player, thing);
+            thing->tileData = tile;
+            if (player->tileCar->item != NULL) {
+                void *rack = ThingManagerList_GetByType(&player->tileCar->creature->slaves, 8);
+
+                WildCardRack_JettisonAll(rack);
+                WildCardRack_Add(rack, player->tileCar->item, player->tileCar->item->info->count);
+            }
+        }
+    }
+}
+#pragma pop
 void PlayerHuman_SetDefaultControls(void *arg0, s32 index) {
     typedef struct { u8 unk0; u8 unk1; u8 keys[14]; } KeyBinding;
     typedef struct { u8 pad0[0xB8]; u8 keys[14]; u8 unkC6; u8 unkC7; } PlayerHuman;
