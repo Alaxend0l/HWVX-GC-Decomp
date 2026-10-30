@@ -53,14 +53,14 @@ typedef struct ThingPools {
     ThingSlotF0 items[96];              /* 0x3D740 type 4 */
     ThingSlot160 attaches[192];         /* 0x43140 type 5 */
     ThingSlot100 debris[128];           /* 0x53940 type 6 */
-    ThingSlot1D0 creature;              /* 0x5B940 type 7 */
+    ThingSlot1D0 creature[1];           /* 0x5B940 type 7 */
     ThingSlot480 wildCardRacks[16];     /* 0x5BB10 type 8 */
     ThingSlot5A0 cars[8];               /* 0x60310 type 9 */
     ThingSlot140 physicalObjects[100];  /* 0x63010 type 10 */
-    ThingSlotD0 looker;                 /* 0x6AD10 type 11 */
+    ThingSlotD0 looker[1];              /* 0x6AD10 type 11 */
     ThingSlot110 tracers[32];           /* 0x6ADE0 type 12 */
-    ThingSlot120 pod;                   /* 0x6CFE0 type 13 */
-    ThingSlot1F0 drone;                 /* 0x6D100 type 14 */
+    ThingSlot120 pod[1];                /* 0x6CFE0 type 13 */
+    ThingSlot1F0 drone[1];              /* 0x6D100 type 14 */
     ThingSlotF0 motions[56];            /* 0x6D2F0 type 15 */
     ThingSlotE0 soundSeqs[128];         /* 0x70770 type 16 */
     ThingSlotD0 radarBlips[64];         /* 0x77770 type 17 */
@@ -539,6 +539,19 @@ void ThingManagerList_InitAllSlavesNow(void *list, void *slaves, u8 player) {
     }
 }
 
+#define THINGPOOLS ((ThingPools *)&g_thingManager_DARYL)
+#define THINGPOOL_INIT(pool, count, vt, t)                                          \
+    for (i = 0; i < (count); i++) {                                                 \
+        THINGPOOLS->pool[i].thing.vtable = (vt);                                    \
+        thing = &THINGPOOLS->pool[i].thing;                                         \
+        THINGPOOLS->pool[i].thing.unk88 = 0;                                        \
+        THINGPOOLS->pool[i].thing.flags |= 0x1000;                                  \
+        THINGPOOLS->pool[i].thing.prev = NULL;                                      \
+        THINGPOOLS->pool[i].thing.next = NULL;                                      \
+        THINGPOOLS->pool[i].thing.type = (t);                                       \
+        ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing); \
+    }
+
 void ThingManager_DARYL_CreateMain(void) {
     extern u8 g_projectileVTable[];
     extern u8 g_eventSeqVTable[];
@@ -557,124 +570,45 @@ void ThingManager_DARYL_CreateMain(void) {
     extern u8 g_motionVTable[];
     extern u8 g_soundSeqVTable[];
     extern u8 g_radarBlipVTable[];
-    ThingPools *tm = (ThingPools *)&g_thingManager_DARYL;
     ThingHeader *thing;
     u32 i;
 
     for (i = 0; i < 18; i++) {
-        tm->freeList[i] = NULL;
+        THINGPOOLS->freeList[i] = NULL;
     }
-    tm->activeList = NULL;
+    THINGPOOLS->activeList = NULL;
     for (i = 0; i < 140; i++) {
-        ThingSlotProjectile *p = &tm->projectiles[i];
-
-        p->thing.vtable = g_projectileVTable;
-        p->unk130 = -1;
-        p->thing.unk88 = 0;
-        p->thing.flags |= 0x1000;
-        p->thing.prev = NULL;
-        p->thing.next = NULL;
-        p->thing.type = 0;
-        ThingManagerList_Append(&g_thingManager_DARYL.freeList[p->thing.type], &p->thing);
-    }
-    for (i = 0; i < 192; i++) {
-        tm->eventSeqs[i].thing.vtable = g_eventSeqVTable;
-        tm->eventSeqs[i].thing.unk88 = 0;
-        tm->eventSeqs[i].thing.flags |= 0x1000;
-        tm->eventSeqs[i].thing.prev = NULL;
-        tm->eventSeqs[i].thing.next = NULL;
-        tm->eventSeqs[i].thing.type = 1;
-        ThingManagerList_Append(&g_thingManager_DARYL.freeList[tm->eventSeqs[i].thing.type], &tm->eventSeqs[i]);
-    }
-    for (i = 0; i < 160; i++) {
-        ThingSlotD0 *p = &tm->emitters[i];
-        thing = &p->thing;
-
-        thing->vtable = g_emitterVTable;
-        thing->unk88 = 0;
-        thing->flags |= 0x1000;
-        thing->prev = NULL;
-        thing->next = NULL;
-        thing->type = 2;
+        THINGPOOLS->projectiles[i].thing.vtable = g_projectileVTable;
+        thing = &THINGPOOLS->projectiles[i].thing;
+        THINGPOOLS->projectiles[i].unk130 = -1;
+        THINGPOOLS->projectiles[i].thing.unk88 = 0;
+        THINGPOOLS->projectiles[i].thing.flags |= 0x1000;
+        THINGPOOLS->projectiles[i].thing.prev = NULL;
+        THINGPOOLS->projectiles[i].thing.next = NULL;
+        THINGPOOLS->projectiles[i].thing.type = 0;
         ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
     }
-    for (i = 0; i < 500; i++) {
-        thing = &tm->destructibles[i].thing;
-        ThingManager_InitFreeThing(thing, g_destructibleVTable, 3);
-    }
-    for (i = 0; i < 96; i++) {
-        thing = &tm->items[i].thing;
-        ThingManager_InitFreeThing(thing, g_itemVTable, 4);
-    }
-    for (i = 0; i < 192; i++) {
-        thing = &tm->attaches[i].thing;
-        ThingManager_InitFreeThing(thing, g_attachVTable, 5);
-    }
-    for (i = 0; i < 128; i++) {
-        thing = &tm->debris[i].thing;
-        ThingManager_InitFreeThing(thing, g_debrisVTable, 6);
-    }
-    thing = &tm->creature.thing;
-    thing->vtable = g_creatureVTable;
-    thing->unk88 = 0;
-    thing->flags |= 0x1000;
-    thing->prev = NULL;
-    thing->next = NULL;
-    thing->type = 7;
-    ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
-    for (i = 0; i < 16; i++) {
-        thing = &tm->wildCardRacks[i].thing;
-        ThingManager_InitFreeThing(thing, g_wildCardRackVTable, 8);
-    }
-    for (i = 0; i < 8; i++) {
-        thing = &tm->cars[i].thing;
-        ThingManager_InitFreeThing(thing, g_carAVTable, 9);
-    }
-    for (i = 0; i < 100; i++) {
-        thing = &tm->physicalObjects[i].thing;
-        ThingManager_InitFreeThing(thing, g_physicalObjectVTable, 10);
-    }
-    thing = &tm->looker.thing;
-    thing->vtable = g_lookerVTable;
-    thing->unk88 = 0;
-    thing->flags |= 0x1000;
-    thing->prev = NULL;
-    thing->next = NULL;
-    thing->type = 11;
-    ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
-    for (i = 0; i < 32; i++) {
-        thing = &tm->tracers[i].thing;
-        ThingManager_InitFreeThing(thing, g_tracerVTable, 12);
-    }
-    thing = &tm->pod.thing;
-    thing->vtable = g_podVTable;
-    thing->unk88 = 0;
-    thing->flags |= 0x1000;
-    thing->prev = NULL;
-    thing->next = NULL;
-    thing->type = 13;
-    ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
-    thing = &tm->drone.thing;
-    thing->vtable = g_droneVTable;
-    thing->unk88 = 0;
-    thing->flags |= 0x1000;
-    thing->prev = NULL;
-    thing->next = NULL;
-    thing->type = 14;
-    ThingManagerList_Append(&g_thingManager_DARYL.freeList[thing->type], thing);
-    for (i = 0; i < 56; i++) {
-        thing = &tm->motions[i].thing;
-        ThingManager_InitFreeThing(thing, g_motionVTable, 15);
-    }
-    for (i = 0; i < 128; i++) {
-        thing = &tm->soundSeqs[i].thing;
-        ThingManager_InitFreeThing(thing, g_soundSeqVTable, 16);
-    }
-    for (i = 0; i < 64; i++) {
-        thing = &tm->radarBlips[i].thing;
-        ThingManager_InitFreeThing(thing, g_radarBlipVTable, 17);
-    }
+    THINGPOOL_INIT(eventSeqs, 192, g_eventSeqVTable, 1);
+    THINGPOOL_INIT(emitters, 160, g_emitterVTable, 2);
+    THINGPOOL_INIT(destructibles, 500, g_destructibleVTable, 3);
+    THINGPOOL_INIT(items, 96, g_itemVTable, 4);
+    THINGPOOL_INIT(attaches, 192, g_attachVTable, 5);
+    THINGPOOL_INIT(debris, 128, g_debrisVTable, 6);
+    THINGPOOL_INIT(creature, 1, g_creatureVTable, 7);
+    THINGPOOL_INIT(wildCardRacks, 16, g_wildCardRackVTable, 8);
+    THINGPOOL_INIT(cars, 8, g_carAVTable, 9);
+    THINGPOOL_INIT(physicalObjects, 100, g_physicalObjectVTable, 10);
+    THINGPOOL_INIT(looker, 1, g_lookerVTable, 11);
+    THINGPOOL_INIT(tracers, 32, g_tracerVTable, 12);
+    THINGPOOL_INIT(pod, 1, g_podVTable, 13);
+    THINGPOOL_INIT(drone, 1, g_droneVTable, 14);
+    THINGPOOL_INIT(motions, 56, g_motionVTable, 15);
+    THINGPOOL_INIT(soundSeqs, 128, g_soundSeqVTable, 16);
+    THINGPOOL_INIT(radarBlips, 64, g_radarBlipVTable, 17);
 }
+
+#undef THINGPOOL_INIT
+#undef THINGPOOLS
 
 void OBoxHolder_Init(void);
 void OConvexHullHolder_Init(void);
