@@ -54,8 +54,24 @@ typedef struct GDLSprite {
     u8 unk2B[0x30 - 0x2B];
 } GDLSprite;
 
+typedef struct GDL2DSprite {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 unkC;
+    u8 unk10[0x1C - 0x10];
+    f32 unk1C;
+    u8 unk20[0x24 - 0x20];
+    GXColor color;
+    u16 tex;
+    u8 flag;
+    u8 window;
+    u8 unk2C[0x30 - 0x2C];
+} GDL2DSprite;
+
 typedef struct GDL {
-    u8 unk0[0x8];
+    u8 unk0[0x4];
+    u32 num2DSprites;
     u32 numSprites;
     u8 unkC[0x18 - 0xC];
     u32 numRects2D;
@@ -63,7 +79,8 @@ typedef struct GDL {
     u32 numRects;
     u8 unk24[0x68 - 0x24];
     u32 numPointSprites;
-    u8 unk6C[0x215C0 - 0x6C];
+    u8 unk6C[0x9EC0 - 0x6C];
+    GDL2DSprite sprites2D[2000];
     GDLSprite sprites[0x7CF];
     u8 unk38C90[0x38CC0 - 0x38C90];
     GDLTri tris[2000];
