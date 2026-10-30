@@ -11,7 +11,9 @@ typedef struct GXData {
     u32 vatA[8];
     u32 vatB[8];
     u32 vatC[8];
-    u8 unk7C[0x88 - 0x7C];
+    u8 unk7C[0x80 - 0x7C];
+    u32 matIdxA;
+    u32 matIdxB;
     u32 indexBase[4];
     u32 indexStride[4];
     u8 unkA8[0x204 - 0xA8];
