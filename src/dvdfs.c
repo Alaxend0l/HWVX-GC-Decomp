@@ -31,6 +31,8 @@ struct DVDFileInfo {
 extern u32 *FstStart;
 extern u32 currentDirectory;
 
+void OSPanic(const char *file, int line, const char *msg, ...);
+
 #pragma push
 #pragma peephole on
 #pragma scheduling off
