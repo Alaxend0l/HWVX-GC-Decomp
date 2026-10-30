@@ -227,6 +227,27 @@ u32 OSLoadFont(OSFontHeader *fontData, void *temp) {
     return size;
 }
 
+void ExpandFontSheet(u8 *src, u8 *dst) {
+    void DCStoreRange(void *addr, u32 nBytes);
+    int i;
+    u8 *colorIndex = &FontData->c0;
+
+    if (FontData->sheetFormat == 0) {
+        for (i = (int)FontData->sheetFullSize / 2 - 1; i >= 0; i--) {
+            dst[i * 2 + 0] = colorIndex[(src[i] >> 6) & 3] & 0xF0 | colorIndex[(src[i] >> 4) & 3] & 0x0F;
+            dst[i * 2 + 1] = colorIndex[(src[i] >> 2) & 3] & 0xF0 | colorIndex[(src[i] >> 0) & 3] & 0x0F;
+        }
+    } else if (FontData->sheetFormat == 2) {
+        for (i = (int)FontData->sheetFullSize / 4 - 1; i >= 0; i--) {
+            dst[i * 4 + 0] = colorIndex[(src[i] >> 6) & 3];
+            dst[i * 4 + 1] = colorIndex[(src[i] >> 4) & 3];
+            dst[i * 4 + 2] = colorIndex[(src[i] >> 2) & 3];
+            dst[i * 4 + 3] = colorIndex[(src[i] >> 0) & 3];
+        }
+    }
+    DCStoreRange(dst, FontData->sheetFullSize);
+}
+
 BOOL OSInitFont(OSFontHeader *fontData) {
     void *temp;
 
