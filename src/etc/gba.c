@@ -38,6 +38,19 @@ s32 HostId;
 s32 DiskId;
 s32 gLinkFinished;
 
+static inline void GbaSetHeaderChecksum(u8 *image)
+{
+    s32 i;
+    u8 sum;
+
+    sum = 0xE7;
+    for (i = 0xA0; i < 0xBD; i++)
+    {
+        sum -= image[i];
+    }
+    image[0xBD] = sum;
+}
+
 static inline u8 GbaCalcCrc(u32 data)
 {
     s32 crc;
