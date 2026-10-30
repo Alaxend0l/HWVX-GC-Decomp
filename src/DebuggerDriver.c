@@ -278,6 +278,38 @@ int DBGReadMailbox(unsigned long *mailbox) {
     total |= !DBGEXIDeselect();
     return !total;
 }
+
+#pragma push
+#pragma use_lmw_stmw on
+int DBGEXIImm(void *buffer, long bytecounter, unsigned long write) {
+    unsigned char *tempPointer;
+    unsigned long writeOutValue;
+    int i;
+
+    if (write) {
+        tempPointer = buffer;
+        writeOutValue = 0;
+        for (i = 0; i < bytecounter; i++) {
+            unsigned char *temp = ((unsigned char *)buffer) + i;
+            writeOutValue |= *temp << ((3 - i) << 3);
+        }
+        __EXIRegs[14] = writeOutValue;
+    }
+
+    __EXIRegs[13] = 1 | write << 2 | (bytecounter - 1) << 4;
+    DBGEXISync();
+
+    if (!write) {
+        writeOutValue = __EXIRegs[14];
+        tempPointer = buffer;
+        for (i = 0; i < bytecounter; i++) {
+            *tempPointer++ = writeOutValue >> ((3 - i) << 3);
+        }
+    }
+    return 1;
+}
+#pragma pop
+
 #pragma pop
 
 #pragma pop
