@@ -55,6 +55,10 @@ static inline void SetTimeoutAlarm(OSAlarmHandler handler, s64 timeout)
     OSSetAlarm(&AlarmForTimeout, timeout, handler);
 }
 
+static volatile s32 LastCommandWasRead;
+static s64 LastReadIssued;
+static u32 LastLength;
+
 extern s32 Read(s32, s32, s32, s32);
 extern s32 DVDLowSeek(s32, s32);
 
