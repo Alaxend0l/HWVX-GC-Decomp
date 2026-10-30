@@ -339,7 +339,8 @@ typedef struct CarA {
   u32 pickupId;             /* 0x498 last picked-up item's id */
   char **stuntScoreMessage; /* 0x49C */
   char **stuntMessage;      /* 0x4A0 */
-  u8 pad4A4[0xC];           /* 0x4A4 */
+  s32 pickupCount;          /* 0x4A4 type 9 items picked up */
+  u8 pad4A8[8];             /* 0x4A8 */
   Vector4 stuntSpin;        /* 0x4B0 zeroed when a stunt fails */
   f32 torquePolyCoeffs[4];  /* 0x4C0 Horner polynomial in rpm */
   u8 pad4D0[0x10];          /* 0x4D0 */
