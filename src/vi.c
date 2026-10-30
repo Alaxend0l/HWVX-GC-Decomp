@@ -123,6 +123,29 @@ static u8 timing[0x130] = {
     0x04, 0x0E, 0x04, 0x0E, 0x04, 0x1A, 0x01, 0xAD, 0x40, 0x47, 0x69, 0xA8, 0x01, 0x7B, 0x7A, 0x00, 0x01, 0x9C,
 };
 
+static u32 getCurrentFieldEvenOdd(void);
+
+static inline BOOL VISetRegs(void) {
+    extern volatile u32 shdwChangeMode;
+    extern volatile u64 shdwChanged;
+    extern VITiming *CurrTiming;
+    extern u32 CurrTvMode;
+    s32 regIndex;
+
+    if (!((shdwChangeMode == 1) && (getCurrentFieldEvenOdd() == 0))) {
+        while (shdwChanged) {
+            regIndex = cntlzd(shdwChanged);
+            __VIRegs[regIndex] = shdwRegs[regIndex];
+            shdwChanged &= ~((u64)1 << (63 - regIndex));
+        }
+        shdwChangeMode = 0;
+        CurrTiming = HorVer.timing;
+        CurrTvMode = HorVer.tv;
+        return TRUE;
+    }
+    return FALSE;
+}
+
 s32 VISetPostRetraceCallback(s32 cb) {
     extern s32 PostCB;
     s32 OSDisableInterrupts(void);
