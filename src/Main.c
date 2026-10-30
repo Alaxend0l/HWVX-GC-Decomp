@@ -73,7 +73,7 @@ s32 Main_Init(void) {
     Gfx_TextureManager_Init();
     InterfaceManager_Init();
     GameSettings_GetGameInfo(&info);
-    FileManager_SetAppInfo(((const char **)&info)[0], ((const char **)&info)[1], ((const char **)&info)[2], ((const char **)&info)[3], ((const char **)&info)[4]);
+    FileManager_SetAppInfo(info.name, info.id, info.title, info.fileName, info.icon);
     return StateManager_GotoState(12) != -1;
 }
 
