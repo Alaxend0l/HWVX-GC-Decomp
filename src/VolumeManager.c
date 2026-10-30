@@ -124,20 +124,9 @@ static inline s32 VolumeManager_GetCell(VolumeHolder *holder, Vector4 *point) {
     return holder->cellIndex[z * holder->numX + holder->numZ * (y * holder->numX) + x];
 }
 
-static inline VolumeShape *VolumeManager_FindVolume(Vector4 *point, s32 type) {
-    extern VolumeHolder *g_VolumeHolder;
-    VolumeShape *volume;
-    u32 count;
-    s32 i;
-    s32 cell;
-
-    cell = VolumeManager_GetCell(g_VolumeHolder, point);
-    count = g_VolumeHolder != NULL ? g_VolumeHolder->cells[cell].types[type].count : 0;
-    for (i = 0; i < count; i++) {
-        volume = g_VolumeHolder->cells[cell].types[type].volumes[i];
-        if (VolumeManager_IsPointInVolume(point, volume)) {
-            return volume;
-        }
+static inline VolumeShape *VolumeManager_CheckVolume(Vector4 *point, VolumeShape *volume) {
+    if (VolumeManager_IsPointInVolume(point, volume)) {
+        return volume;
     }
     return NULL;
 }
@@ -309,7 +298,8 @@ void VolumeManager_SetFogLevel(Vector4 *point) {
     settings = ((World *)g_worldData.world)->fog;
     cell = VolumeManager_GetCell(g_VolumeHolder, point);
     count = g_VolumeHolder != NULL ? g_VolumeHolder->cells[cell].types[4].count : 0;
-    for (i = 0; i < count; i++) {
+    i = 0;
+    while (i < count) {
         volume = g_VolumeHolder->cells[cell].types[4].volumes[i];
         if (VolumeManager_IsPointInVolume(point, volume)) {
             FogSettings *fog = volume->fog;
@@ -324,6 +314,7 @@ void VolumeManager_SetFogLevel(Vector4 *point) {
             }
             return;
         }
+        i++;
     }
     if (*(u32 *)settings->color != fogColor || fogType != settings->type || fogNearDistance != settings->nearDistance || fogFarDistance != settings->farDistance) {
         worldColor = *settings->color;
