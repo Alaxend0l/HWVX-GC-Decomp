@@ -92,6 +92,52 @@ static inline BOOL CheckCancel(u32 resume) {
     return FALSE;
 }
 
+static inline void DVDPause(void) {
+    BOOL level;
+
+    level = OSDisableInterrupts();
+    PauseFlag = TRUE;
+    if (executing == (DVDCommandBlock *)NULL) {
+        PausingFlag = TRUE;
+    }
+    OSRestoreInterrupts(level);
+}
+
+static inline void DVDResume(void) {
+    BOOL level;
+
+    level = OSDisableInterrupts();
+    PauseFlag = FALSE;
+    if (PausingFlag) {
+        PausingFlag = FALSE;
+        stateReady();
+    }
+    OSRestoreInterrupts(level);
+}
+
+static inline BOOL DVDCancelAllAsync(void (*callback)(s32, DVDCommandBlock *)) {
+    BOOL enabled;
+    DVDCommandBlock *p;
+    BOOL retVal;
+
+    enabled = OSDisableInterrupts();
+    DVDPause();
+    while ((p = __DVDPopWaitingQueue()) != NULL) {
+        DVDCancelAsync(p, NULL);
+    }
+    if (executing) {
+        retVal = DVDCancelAsync(executing, callback);
+    } else {
+        retVal = TRUE;
+        if (callback) {
+            (*callback)(0, NULL);
+        }
+    }
+    DVDResume();
+    OSRestoreInterrupts(enabled);
+    return retVal;
+}
+
 static inline BOOL issueCommand(s32 prio, DVDCommandBlock *block) {
     BOOL level;
     BOOL result;
@@ -966,9 +1012,9 @@ BOOL DVDCheckDisk(void) {
 }
 
 void __DVDPrepareResetAsync(void (*callback)(s32, DVDCommandBlock *)) {
-    BOOL enabled;
-    BOOL level;
     BOOL level2;
+    BOOL level;
+    BOOL enabled;
     DVDCommandBlock *p;
 
     enabled = OSDisableInterrupts();
