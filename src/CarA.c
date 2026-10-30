@@ -289,6 +289,90 @@ f32 CarA_Transmission_GetTorqueAtWheels(u8 *car)
            ((f32 *)(*(u8 **)(trans + 0xDC)))[*(u8 *)(car + 0x4E8) * 2];
 }
 
+void CarA_ExecuteCombo(CarA *car) {
+    extern Vector4 g_zeroVector;
+    extern char *g_stunt1localString;
+    void Thing_ProcessEndEvent(void *thing, void *event, void *collision, Vector4 *vel);
+    void CarA_StuntImpulse(CarA *car, Vector4 *a, Vector4 *b);
+
+    switch (car->player->combo) {
+    case 2:
+        car->speed = car->vehicleIface->collider->maxHealth;
+        car->partVisMask = 0;
+        break;
+    case 3:
+        car->player->combo = 0;
+        Thing_ProcessEndEvent(car, car->vehicleIface->collider, NULL, &car->localAxis);
+        CarA_Release((u8 *)car);
+        return;
+    case 4:
+        car->transmissionFlags ^= 1;
+        break;
+    case 5:
+        car->velocity = g_zeroVector;
+        car->gradeOrReverse = 0.0f;
+        car->rpm = 0.0f;
+        car->curveTableIdx = 1;
+        break;
+    case 6:
+        car->turboTime = 30000;
+        break;
+    }
+    if (car->unk460 == 0) {
+        switch (car->player->combo) {
+        case 9: {
+            Vector4 a __attribute__((aligned(16))) = {0.0f, 57.0f, 0.0f, 0.0f};
+            Vector4 b __attribute__((aligned(16))) = {5.8f, 0.0f, 0.0f, 0.0f};
+            CarA_StuntImpulse(car, &a, &b);
+            break;
+        }
+        case 10: {
+            Vector4 a __attribute__((aligned(16))) = {0.0f, 57.0f, 0.0f, 0.0f};
+            Vector4 b __attribute__((aligned(16))) = {-5.5f, 0.0f, 0.0f, 0.0f};
+            CarA_StuntImpulse(car, &a, &b);
+            break;
+        }
+        case 11: {
+            Vector4 a __attribute__((aligned(16))) = {0.0f, 85.0f, 0.0f, 0.0f};
+            Vector4 b __attribute__((aligned(16))) = {0.0f, 0.0f, 2.0f, 0.0f};
+            CarA_StuntImpulse(car, &a, &b);
+            break;
+        }
+        case 12: {
+            Vector4 a __attribute__((aligned(16))) = {0.0f, 85.0f, 0.0f, 0.0f};
+            Vector4 b __attribute__((aligned(16))) = {0.0f, 0.0f, -2.0f, 0.0f};
+            CarA_StuntImpulse(car, &a, &b);
+            break;
+        }
+        case 13: {
+            Vector4 a __attribute__((aligned(16))) = {0.0f, 67.0f, 0.0f, 0.0f};
+            Vector4 b __attribute__((aligned(16))) = {-5.056695f, 0.0f, -5.2875133f, 0.0f};
+            CarA_StuntImpulse(car, &a, &b);
+            break;
+        }
+        case 14: {
+            Vector4 a __attribute__((aligned(16))) = {0.0f, 65.0f, 0.0f, 0.0f};
+            Vector4 b __attribute__((aligned(16))) = {5.056695f, 0.0f, 5.2875133f, 0.0f};
+            CarA_StuntImpulse(car, &a, &b);
+            break;
+        }
+        case 15: {
+            Vector4 b __attribute__((aligned(16))) = {0.0f, -7.0f, 0.0f, 0.0f};
+            CarA_StuntImpulse(car, &g_zeroVector, &b);
+            car->stuntPopup = &g_stunt1localString;
+            break;
+        }
+        case 16: {
+            Vector4 b __attribute__((aligned(16))) = {0.0f, 7.0f, 0.0f, 0.0f};
+            CarA_StuntImpulse(car, &g_zeroVector, &b);
+            car->stuntPopup = &g_stunt1localString;
+            break;
+        }
+        }
+    }
+    car->player->combo = 0;
+}
+
 void CarA_ProcessForce(CarA *car, Vector4 *pos, Vector4 *dir, f32 scale)
 {
     void PSVECScale(Vector4 *src, Vector4 *dst, f32 scale);
