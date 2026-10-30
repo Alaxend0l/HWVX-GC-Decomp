@@ -328,6 +328,58 @@ static void __THPRestartDefinition(void) {
     __THPInfo->currMCU = __THPInfo->nMCU;
 }
 
+static void __THPPrepBitStream(void) {
+    u32 *ptr;
+    u32 offset;
+    u32 i;
+    u32 j;
+    u32 k;
+    s32 code;
+
+    ptr = (u32 *)((u32)__THPInfo->c & ~3);
+    offset = (u32)__THPInfo->c & 3;
+    if (__THPInfo->cnt != 33) {
+        __THPInfo->cnt -= (3 - offset) * 8;
+    } else {
+        __THPInfo->cnt = (offset * 8) + 1;
+    }
+    __THPInfo->c = (u8 *)ptr;
+    __THPInfo->currByte = *ptr;
+
+    for (i = 0; i < 4; i++) {
+        if (__THPInfo->validHuffmanTabs & (1 << i)) {
+            for (j = 0; j < 32; j++) {
+                __THPInfo->huffmanTabs[i].quick[j] = 0xFF;
+                for (k = 0; k < 5; k++) {
+                    code = (s32)(j >> (4 - k));
+                    if (code <= __THPInfo->huffmanTabs[i].maxCode[k + 1]) {
+                        __THPInfo->huffmanTabs[i].quick[j] = __THPInfo->huffmanTabs[i].Vij[(s32)(code + __THPInfo->huffmanTabs[i].valPtr[k + 1])];
+                        __THPInfo->huffmanTabs[i].increment[j] = (u8)(k + 1);
+                        k = 99;
+                    }
+                }
+            }
+        }
+    }
+
+    {
+        s32 YdcTab, UdcTab, VdcTab, YacTab, UacTab, VacTab;
+
+        YdcTab = __THPInfo->components[0].DCTableSelector << 1;
+        UdcTab = __THPInfo->components[1].DCTableSelector << 1;
+        VdcTab = __THPInfo->components[2].DCTableSelector << 1;
+        YacTab = (__THPInfo->components[0].ACTableSelector << 1) + 1;
+        UacTab = (__THPInfo->components[1].ACTableSelector << 1) + 1;
+        VacTab = (__THPInfo->components[2].ACTableSelector << 1) + 1;
+        Ydchuff = &__THPInfo->huffmanTabs[YdcTab];
+        Udchuff = &__THPInfo->huffmanTabs[UdcTab];
+        Vdchuff = &__THPInfo->huffmanTabs[VdcTab];
+        Yachuff = &__THPInfo->huffmanTabs[YacTab];
+        Uachuff = &__THPInfo->huffmanTabs[UacTab];
+        Vachuff = &__THPInfo->huffmanTabs[VacTab];
+    }
+}
+
 void LCQueueWait(u32 len);
 void __THPHuffDecodeDCTCompY(THPFileInfo *info, s16 *block);
 void __THPDecompressiMCURow512x448(u8 *lumY, u8 *chromaU, u8 *chromaV, THPFileInfo *info) {
