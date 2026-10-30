@@ -258,9 +258,11 @@ void EnvMap(Geometry *geometry, u32 group, void *matrix, s32 mode);
 void Render_DrawOpaqueGroup(Geometry *geometry, u32 group, void *matrix);
 
 static inline void RenderOpaqueGroup(Geometry *geometry, u32 group, void *matrix) {
-    Render_DrawOpaqueGroup(geometry, group, matrix);
+    u32 idx = group;
+
+    Render_DrawOpaqueGroup(geometry, idx, matrix);
     if ((geometry->groups[group].flags & 0x10) && g_CurrentViews == 1) {
-        EnvMap(geometry, group, matrix, 2);
+        EnvMap(geometry, idx, matrix, 2);
     }
 }
 #pragma use_lmw_stmw on
