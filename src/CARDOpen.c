@@ -72,6 +72,30 @@ s32 __CARDIsPublic(CARDDir *ent) {
     return -10;
 }
 
+s32 __CARDGetFileNo(CARDControl *card, const char *fileName, s32 *pfileNo) {
+    CARDDir *dir;
+    CARDDir *ent;
+    s32 fileNo;
+    s32 result;
+
+    if (!card->attached) {
+        return -3;
+    }
+    dir = __CARDGetDirBlock(card);
+    for (fileNo = 0; fileNo < 127; fileNo++) {
+        ent = &dir[fileNo];
+        result = __CARDAccess(card, ent);
+        if (result < 0) {
+            continue;
+        }
+        if (__CARDCompareFileName(ent, fileName)) {
+            *pfileNo = fileNo;
+            return 0;
+        }
+    }
+    return -4;
+}
+
 s32 __CARDGetControlBlock(s32 chan, void **pcard);
 s32 __CARDPutControlBlock(void *card, s32 result);
 s32 CARDClose(CARDFileInfo *fileInfo) {
