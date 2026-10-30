@@ -322,6 +322,23 @@ BOOL EXIProbe(s32 chan) {
     return rc;
 }
 
+static inline BOOL __EXIAttach(s32 chan, EXICallback extCallback) {
+    EXIControl *exi = &Ecb[chan];
+    BOOL enabled;
+
+    enabled = OSDisableInterrupts();
+    if ((exi->state & 8) || __EXIProbe(chan) == FALSE) {
+        OSRestoreInterrupts(enabled);
+        return FALSE;
+    }
+    EXIClearInterrupts(chan, TRUE, FALSE, FALSE);
+    exi->extCallback = extCallback;
+    __OSUnmaskInterrupts(0x100000u >> (3 * chan));
+    exi->state |= 8;
+    OSRestoreInterrupts(enabled);
+    return TRUE;
+}
+
 s32 EXIProbeEx(s32 chan) {
     if (EXIProbe(chan)) {
         return 1;
