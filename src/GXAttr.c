@@ -51,6 +51,30 @@ typedef struct GXVtxAttrFmtList {
 
 
 void __GXXfVtxSpecs(void);
+void __GXXfVtxSpecs(void) {
+    u32 nCols;
+    u32 nNrm;
+    u32 nTex;
+    u32 reg;
+
+    nCols = ((gx->vcdLo >> 13) & 3) ? 1 : 0;
+    nCols += ((gx->vcdLo >> 15) & 3) ? 1 : 0;
+    nNrm = gx->hasBiNrms ? 2 : gx->hasNrms ? 1 : 0;
+    nTex = (gx->vcdHi & 3) ? 1 : 0;
+    nTex += ((gx->vcdHi >> 2) & 3) ? 1 : 0;
+    nTex += ((gx->vcdHi >> 4) & 3) ? 1 : 0;
+    nTex += ((gx->vcdHi >> 6) & 3) ? 1 : 0;
+    nTex += ((gx->vcdHi >> 8) & 3) ? 1 : 0;
+    nTex += ((gx->vcdHi >> 10) & 3) ? 1 : 0;
+    nTex += ((gx->vcdHi >> 12) & 3) ? 1 : 0;
+    nTex += ((gx->vcdHi >> 14) & 3) ? 1 : 0;
+    reg = nCols | (nNrm << 2) | (nTex << 4);
+    GXWGFifo.u8 = 0x10;
+    GXWGFifo.u32 = 0x1008;
+    GXWGFifo.u32 = reg;
+    gx->bpSentNot = 1;
+}
+
 void __GXSetVCD(void) {
     GXWGFifo.u8 = 8;
     GXWGFifo.u8 = 0x50;
