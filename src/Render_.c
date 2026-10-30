@@ -251,6 +251,11 @@ static inline void GXPosition3s16(s16 x, s16 y, s16 z) {
     GXWGFifo.s16 = z;
 }
 
+static inline void GXTexCoord2f32(f32 s, f32 t) {
+    GXWGFifo.f32 = s;
+    GXWGFifo.f32 = t;
+}
+
 static inline void GXTexCoord2s16(s16 s, s16 t) {
     GXWGFifo.s16 = s;
     GXWGFifo.s16 = t;
