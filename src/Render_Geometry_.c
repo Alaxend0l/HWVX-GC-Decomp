@@ -254,6 +254,15 @@ void *Gfx_GetWorldMatrixState(u32 index);
 void Gfx_DrawGeometryLOD_Immediate(Geometry *geometry, f32 (*matrix)[4]);
 void Gfx_SetRenderWindow(u32 view);
 void Render_StateSetScissor(void);
+void EnvMap(Geometry *geometry, u32 group, void *matrix, s32 mode);
+void Render_DrawOpaqueGroup(Geometry *geometry, u32 group, void *matrix);
+
+static inline void RenderOpaqueGroup(Geometry *geometry, s32 group, void *matrix) {
+    Render_DrawOpaqueGroup(geometry, group, matrix);
+    if ((geometry->groups[group].flags & 0x10) && g_CurrentViews == 1) {
+        EnvMap(geometry, group, matrix, 2);
+    }
+}
 #pragma use_lmw_stmw on
 void Render_GeometryListSplitScreen(void) {
     u8 view;
@@ -411,6 +420,32 @@ void Gfx_DrawGeometryLOD_Immediate(Geometry *geometry, f32 (*matrix)[4]) {
             geometry->groups[i].flags |= m_fillMode;
             RenderGroup(geometry, i, matrix);
             geometry->groups[i].flags &= ~m_fillMode;
+        }
+    }
+}
+
+void DisplayList_AddAlphaGroup(s32 arg0, s32 arg1, u32 matrix, u8 arg3, GXColor *color);
+void DrawGroupWireframe(Geometry *geometry, u32 group, void *matrix);
+void EnvMap(Geometry *geometry, u32 group, void *matrix, s32 mode);
+void Render_DrawOpaqueGroup(Geometry *geometry, u32 group, void *matrix);
+void RenderGroup(Geometry *geometry, u32 group, f32 (*matrix)[4]) {
+    if (geometry->groups[group].flags & 0x4000) {
+        return;
+    }
+    if (geometry->groups[group].flags & 0x80) {
+        GXColor color = g_state.constColor;
+        DisplayList_AddAlphaGroup((s32)geometry, group, 0, (g_state.flags >> 4) & 1, &color);
+    } else if (geometry->groups[group].flags & 1) {
+        GXColor color = g_state.constColor;
+        DisplayList_AddAlphaGroup((s32)geometry, group, 0, (g_state.flags >> 4) & 1, &color);
+    } else if (geometry->groups[group].flags & 2) {
+        EnvMap(geometry, group, matrix, 1);
+    } else if (geometry->groups[group].flags & 0x100) {
+        DrawGroupWireframe(geometry, group, matrix);
+    } else {
+        Render_DrawOpaqueGroup(geometry, group, matrix);
+        if ((geometry->groups[group].flags & 0x10) && g_CurrentViews == 1) {
+            EnvMap(geometry, group, matrix, 2);
         }
     }
 }
