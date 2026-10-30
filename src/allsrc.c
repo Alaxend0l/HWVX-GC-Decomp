@@ -1287,6 +1287,13 @@ s32 Effect_PerformEnvelope(Effect *effect, EffectEnvelope *env, s32 magnitude) {
 
 #pragma push
 #pragma optimize_for_size on
+void Effect_PolarToRect(s32 magnitude, s32 angle, s32 *out)
+{
+}
+#pragma pop
+
+#pragma push
+#pragma optimize_for_size on
 s32 Effect_UpdateSpring(Effect *effect, EffectCondition *cond)
 {
     s32 force;
