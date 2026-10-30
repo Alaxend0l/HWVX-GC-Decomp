@@ -27,7 +27,7 @@ extern volatile u32 __OSLastInterruptSrr0;
 extern volatile s64 __OSLastInterruptTime;
 typedef void (*OSErrorHandler)(OSError error, OSContext *context, ...);
 
-extern OSErrorHandler __OSErrorTable[16];
+OSErrorHandler __OSErrorTable[16];
 
 typedef struct __va_list_struct {
     char gpr;
