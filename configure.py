@@ -313,7 +313,7 @@ config.libs = [
             Object(NonMatching, "Creature.c"),
             Object(NonMatching, "DataGamePackLoad.c"),
             Object(Matching, "Debris.c"),
-            Object(NonMatching, "Destructible.c"),
+            Object(Matching, "Destructible.c"),
             Object(NonMatching, "Emitter.c"),
             Object(NonMatching, "EventSequence.c"),
             Object(Matching, "ExtractKeys.c"),
