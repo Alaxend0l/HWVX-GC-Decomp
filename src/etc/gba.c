@@ -51,7 +51,7 @@ static inline void GbaSetHeaderChecksum(u8 *image)
     image[0xBD] = sum;
 }
 
-static inline u8 GbaCalcCrc(u16 data)
+static inline u8 GbaCalcCrc(u32 data)
 {
     u32 bit;
     s32 i;
