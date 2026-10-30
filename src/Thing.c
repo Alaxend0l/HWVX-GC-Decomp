@@ -39,7 +39,7 @@ static inline s8 Thing_ProcessItemPickup(u8 *thing, u8 *item) {
     case 3:
         rack = ThingManagerList_GetByType(thing + 0x88, 8);
         if (rack == NULL) {
-            return 0;
+            break;
         }
         WildCardRack_Add(rack, *(u8 **)(item + 0xC0), *(s16 *)(item + 0xCE));
         Item_Release(item);
