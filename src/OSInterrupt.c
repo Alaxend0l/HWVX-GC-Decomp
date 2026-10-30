@@ -98,11 +98,6 @@ s32 OSDisableScheduler(void);
 s32 OSEnableScheduler(void);
 void __OSReschedule(void);
 #pragma peephole off
-volatile u16 __MEMRegs[64] : 0xCC004000;
-volatile u16 __DSPRegs[32] : 0xCC005000;
-volatile u32 __AIRegs[8] : 0xCC006C00;
-volatile u32 __EXIRegs[16] : 0xCC006800;
-#pragma peephole off
 void __OSDispatchInterrupt(__OSInterrupt exception, void *context) {
     u32 intsr;
     u32 reg;
