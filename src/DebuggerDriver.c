@@ -7,6 +7,7 @@ static unsigned long SendMailData;
 static long RecvDataLeng;
 static unsigned char *pEXIInputFlag;
 static unsigned char EXIInputFlag;
+static unsigned char SendCount = 0x80;
 
 volatile unsigned long __EXIRegs[16] : 0xCC006800;
 
