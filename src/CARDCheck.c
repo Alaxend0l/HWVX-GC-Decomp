@@ -150,6 +150,63 @@ s32 VerifyDir(CARDControl *card, s32 *outCurrent) {
     return errors;
 }
 
+s32 VerifyFAT(CARDControl *card, s32 *outCurrent) {
+    u16 *fat[2];
+    u16 *fatp;
+    u16 nBlock;
+    u16 cFree;
+    s32 i;
+    u16 checkSum;
+    u16 checkSumInv;
+    s32 errors;
+    s32 current;
+
+    errors = 0;
+    current = 0;
+    for (i = 0; i < 2; i++) {
+        fatp = fat[i] = (u16 *)((u8 *)card->workArea + (3 + i) * 0x2000);
+
+        __CARDCheckSum(&fatp[2], 0x2000 - sizeof(u32), &checkSum, &checkSumInv);
+        if (fatp[0] != checkSum || fatp[1] != checkSumInv) {
+            card->currentFat = NULL;
+            current = i;
+            errors++;
+            continue;
+        }
+
+        cFree = 0;
+        for (nBlock = 5; nBlock < card->cBlock; nBlock++) {
+            if (fatp[nBlock] == 0) {
+                cFree++;
+            }
+        }
+        if (cFree != fatp[3]) {
+            card->currentFat = NULL;
+            current = i;
+            errors++;
+            continue;
+        }
+    }
+
+    if (errors == 0) {
+        if (card->currentFat == NULL) {
+            if (((s16)fat[0][2] - (s16)fat[1][2]) < 0) {
+                current = 0;
+            } else {
+                current = 1;
+            }
+            card->currentFat = fat[current];
+            memcpy(fat[current], fat[current ^ 1], 0x2000);
+        } else {
+            current = (card->currentFat == fat[0]) ? 0 : 1;
+        }
+    }
+    if (outCurrent) {
+        *outCurrent = current;
+    }
+    return errors;
+}
+
 s32 __CARDVerify(void *card) {
     s32 result;
     s32 errors;
