@@ -270,11 +270,10 @@ static inline s8 PointInsideBSP(void *bsp, void *point) {
         } else {
             node = *(u16 *)(*(u8 **)((u8 *)bsp + 0x30) + node * 0x20 + 0x16);
             if (node == 0xFFFF) {
-                break;
+                return 1;
             }
         }
     }
-    return 1;
 }
 
 s8 OBoxHitsBSPZeroTime(void *obox, void *bsp, void *arg2) {
