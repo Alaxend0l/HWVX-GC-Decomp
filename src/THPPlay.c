@@ -32,6 +32,65 @@ void Mpeg_Init(void) {
     m_rendermode = rmode;
 }
 
+s32 Mpeg_StartMovie(char *name, f32 volume) {
+    typedef struct {
+        u32 viTVmode;
+        u16 fbWidth;
+        u16 efbHeight;
+    } RenderMode;
+    typedef struct THPVideoInfo {
+        u32 xSize;
+        u32 ySize;
+    } THPVideoInfo;
+    BOOL THPPlayerOpen(char *fileName, BOOL onMemory);
+    BOOL THPPlayerSetBuffer(void *buffer);
+    BOOL THPPlayerPrepare(s32 frameNum, s32 playFlag);
+    BOOL THPPlayerGetVideoInfo(THPVideoInfo *info);
+    u32 THPPlayerCalcNeedMemory(void);
+    BOOL THPPlayerPlay(void);
+    void *OSAllocFromHeap(s32 heap, u32 size);
+    void GXSetViewport(f32 left, f32 top, f32 wd, f32 ht, f32 nearz, f32 farz);
+    void OSPanic(const char *file, int line, const char *msg, ...);
+    extern u8 badMojo;
+    extern RenderMode *m_rendermode;
+    extern THPVideoInfo m_videoInfo;
+    extern u32 m_movie_x;
+    extern u32 m_movie_y;
+    extern void *m_movie_buffer;
+    extern u32 m_movieVolume;
+    extern s32 __OSCurrHeap;
+    char *p = name;
+    u32 size;
+
+    if (badMojo) {
+        return 0;
+    }
+    for (; *p; p++) {
+        *p = tolower(*p);
+        if (*p == '\\') {
+            *p = '/';
+        }
+    }
+    if (!THPPlayerOpen(name, FALSE)) {
+        OSPanic("THPPlay.c", 93, "Fail to open the thp file\n");
+    }
+    GXSetViewport(0.0f, 0.0f, m_rendermode->fbWidth, m_rendermode->efbHeight, 0.0f, 1.0f);
+    THPPlayerGetVideoInfo(&m_videoInfo);
+    m_movie_x = (m_rendermode->fbWidth - m_videoInfo.xSize) / 2;
+    m_movie_y = (m_rendermode->efbHeight - m_videoInfo.ySize) / 2;
+    size = THPPlayerCalcNeedMemory();
+    m_movie_buffer = OSAllocFromHeap(__OSCurrHeap, size);
+    if (m_movie_buffer == NULL) {
+        OSPanic("THPPlay.c", 113, "Can't allocate the memory\n");
+    }
+    THPPlayerSetBuffer(m_movie_buffer);
+    if (!THPPlayerPrepare(0, 0)) {
+        OSPanic("THPPlay.c", 122, "Fail to prepare\n");
+    }
+    THPPlayerPlay();
+    m_movieVolume = 46.0f * volume;
+}
+
 void Mpeg_StopMovie(void) {
     void *AIRegisterDMACallback(void *callback);
     void GXSetDispCopyGamma(s32 gamma);
