@@ -476,6 +476,30 @@ void EXIIntrruptHandler(s16 interrupt, OSContext *context) {
     }
 }
 
+void TCIntrruptHandler(s16 interrupt, OSContext *context) {
+    s32 chan;
+    EXIControl *exi;
+    EXICallback callback;
+
+    chan = (interrupt - 10) / 3;
+    exi = &Ecb[chan];
+    __OSMaskInterrupts(0x80000000U >> interrupt);
+    __EXIClearInterrupts(chan, FALSE, TRUE, FALSE);
+    callback = exi->tcCallback;
+    if (callback) {
+        OSContext exceptionContext;
+
+        exi->tcCallback = 0;
+        CompleteTransfer(chan);
+
+        OSClearContext(&exceptionContext);
+        OSSetCurrentContext(&exceptionContext);
+        callback(chan, context);
+        OSClearContext(&exceptionContext);
+        OSSetCurrentContext(context);
+    }
+}
+
 void EXTIntrruptHandler(s16 interrupt, OSContext *context) {
     s32 chan;
     EXIControl *exi;
