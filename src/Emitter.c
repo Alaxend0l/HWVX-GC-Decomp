@@ -20,6 +20,22 @@ typedef struct ActionFXList {
 
 void *g_emitterVTable[17];
 
+/* emitter description (EMIX data) an emitter spawns effects from */
+typedef struct EmitterData {
+    u8 unk0;
+    u8 pickMode;       /* 0x01 */
+    u8 limited;        /* 0x02 */
+    u8 pad3;
+    s32 count;         /* 0x04 */
+    s32 delayBase;     /* 0x08 */
+    s32 delayRange;    /* 0x0C */
+    f32 range;         /* 0x10 */
+    f32 speedScale;    /* 0x14 */
+    u32 fxCount;       /* 0x18 */
+    u32 *fxIds;        /* 0x1C */
+    u32 seq;           /* 0x20 */
+} EmitterData;
+
 typedef struct Emitter {
     u8 pad0[0x40];     /* 0x00 world transform */
     Vector4 pos;       /* 0x40 */
