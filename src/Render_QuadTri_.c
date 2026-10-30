@@ -123,6 +123,37 @@ u32 FontManager_Print(char *str, f32 x, f32 y, s32 id);
 
 extern GXColor g_textcolor;
 
+typedef struct FontChar {
+    f32 unk0;
+    f32 unk4;
+    f32 unk8;
+    f32 unkC;
+    s8 spacingX;
+    s8 spacingY;
+    u8 unk12[0x14 - 0x12];
+} FontChar;
+
+typedef struct Font {
+    f32 height;
+    f32 width;
+    char *letters;
+    u16 texture;
+    u8 caseMode;
+    u8 unkF;
+    s8 inUse;
+    u8 unk11;
+    u16 refCount;
+    FontChar chars[128];
+} Font;
+
+typedef struct FontManager {
+    u32 numFonts;
+    Font fonts[16];
+} FontManager;
+
+extern FontManager g_fontManager;
+u32 strlen(const char *);
+
 typedef struct GfxWindow {
     u8 unk0[0x2B0];
     u32 unk2B0;
