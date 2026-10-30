@@ -55,6 +55,46 @@ void UpdateIconOffsets(CARDDir *ent, CARDStat *stat);
 
 
 typedef void (*CARDCallback)(s32 chan, s32 result);
+s32 CARDGetStatus(s32 chan, s32 fileNo, CARDStat *stat)
+{
+    CARDControl *card;
+    CARDDir *dir;
+    CARDDir *ent;
+    s32 result;
+
+    if (fileNo < 0 || 127 <= fileNo) {
+        return -128;
+    }
+    result = __CARDGetControlBlock(chan, &card);
+    if (result < 0) {
+        return result;
+    }
+
+    dir = __CARDGetDirBlock(card);
+    ent = &dir[fileNo];
+    result = __CARDAccess(card, ent);
+    if (result == -10) {
+        result = __CARDIsPublic(ent);
+    }
+
+    if (0 <= result) {
+        memcpy(stat->gameName, ent->gameName, sizeof(stat->gameName));
+        memcpy(stat->company, ent->company, sizeof(stat->company));
+        stat->length = (u32)ent->length * card->sectorSize;
+        memcpy(stat->fileName, ent->fileName, 32);
+        stat->time = ent->time;
+
+        stat->bannerFormat = ent->bannerFormat;
+        stat->iconAddr = ent->iconAddr;
+        stat->iconFormat = ent->iconFormat;
+        stat->iconSpeed = ent->iconSpeed;
+        stat->commentAddr = ent->commentAddr;
+
+        UpdateIconOffsets(ent, stat);
+    }
+    return __CARDPutControlBlock(card, result);
+}
+
 s32 CARDSetStatus(s32 chan, s32 fileNo, u8 *stat)
 {
     s32 CARDSetStatusAsync(s32 chan, s32 fileNo, u8 *stat, CARDCallback callback);
