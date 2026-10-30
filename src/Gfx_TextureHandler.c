@@ -41,20 +41,6 @@ typedef struct BTFHeader {
     s32 unkC;
 } BTFHeader;
 
-static inline u16 Gfx_FindFreeTexture(void) {
-    u16 i;
-
-    for (i = 1; i < m_totalTextures; i++) {
-        if (m_texture[i].data == NULL) {
-            break;
-        }
-    }
-    if (i >= m_totalTextures) {
-        i = m_totalTextures - 1;
-    }
-    return i;
-}
-
 s32 Gfx_TextureHandler_Create(void) {
     m_totalTextures = 0x1FF;
     m_texture = Allocate(0x7FC0, 0, "");
