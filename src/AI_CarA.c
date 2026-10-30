@@ -807,7 +807,7 @@ s32 AI_Car_PrepareNavPath(u8 *car, void *holder, s32 dest) {
 }
 
 #pragma use_lmw_stmw on
-static void AI_Car_Cheat(u8 *ai) {
+static void AI_Car_Cheat_80008A60(u8 *ai) {
     typedef struct WeaponParams {
         u8 pad0[0x28];
         u32 maxAmmo;
