@@ -42,7 +42,6 @@ BOOL OSRestoreInterrupts(BOOL level);
 void OSSetCurrentContext(OSContext *context);
 #pragma push
 #pragma use_lmw_stmw on
-#pragma peephole off
 void OSDumpContext(OSContext *context)
 {
     u32 i;
