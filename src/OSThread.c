@@ -550,6 +550,7 @@ void OSCancelThread(OSThread *thread) {
     OSRestoreInterrupts(enabled);
 }
 
+#pragma dont_inline off
 s32 OSResumeThread(OSThread *thread) {
     extern volatile u32 RunQueueBits;
     BOOL enabled;
