@@ -414,6 +414,33 @@ found:
     return (u8 *)ptr + 8;
 }
 
+static inline SubBlock *SubBlock_merge_prev(SubBlock *ths, SubBlock **start) {
+    u32 prevsz;
+    SubBlock *p;
+
+    if (!(ths->size_ & 4)) {
+        prevsz = *(u32 *)((u8 *)ths - sizeof(u32));
+        if (prevsz & 2) {
+            return ths;
+        }
+        p = (SubBlock *)((u8 *)ths - prevsz);
+        p->size_ &= ~0xFFFFFFF8;
+        p->size_ |= (prevsz + (ths->size_ & 0xFFFFFFF8)) & 0xFFFFFFF8;
+        if (!(p->size_ & 2)) {
+            *(u32 *)((u8 *)p + (p->size_ & 0xFFFFFFF8) - sizeof(u32)) = p->size_ & 0xFFFFFFF8;
+        }
+        if (*start == ths) {
+            *start = (*start)->next_;
+        }
+        ths->next_->prev_ = ths->prev_;
+        ths->next_->prev_->next_ = ths->next_;
+        return p;
+    }
+    return ths;
+}
+
+#pragma push
+#pragma auto_inline off
 void SubBlock_merge_next(SubBlock *ths, SubBlock **start) {
     u32 this_cur_size;
     SubBlock *next_sub_block;
