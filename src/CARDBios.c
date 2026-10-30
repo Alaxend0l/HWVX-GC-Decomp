@@ -289,6 +289,7 @@ s32 __CARDClearStatus(s32 chan) {
 }
 
 void EXISetExiCallback(s32 chan, void *callback);
+void OSSetAlarm(void *alarm, s64 tick, void *handler);
 static void TimeoutHandler(void *alarm, void *context) {
     s32 chan;
     CARDControl *card;
