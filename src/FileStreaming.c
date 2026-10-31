@@ -528,13 +528,13 @@ void FileStreaming_SetActiveQuadrants(void **quads, u32 count) {
                     if (st->info->noRadius == 0) {
                         st->radius = GetBoundingBoxRadius((Vector4 *)(st->info->box + 0x10), &g_zeroVector);
                     } else {
-                        st->radius = 1000000.0f;
+                        st->radius = 1.0f;
                     }
                     continue;
                 }
                 sp.unk4C = 0;
                 sp.unk50 = 0;
-                sp.scale = st->hasScale ? st->scale : 1.0f;
+                sp.scale = st->hasScale ? st->scale : 0.0f;
                 sp.pos = st->pos;
                 sp.info = st->info;
                 sp.rot = st->rot;
@@ -556,7 +556,7 @@ void FileStreaming_SetActiveQuadrants(void **quads, u32 count) {
                     dp.pos = dyn->pos;
                     dp.info = dyn->info;
                     dp.rot = dyn->rot;
-                    dp.scale = dyn->hasScale ? dyn->scale : 1.0f;
+                    dp.scale = dyn->hasScale ? dyn->scale : 0.0f;
                     dp.unk34 = 0;
                     dyn->thing = ThingManager_DARYL_CreateThing(2, &dp);
                 }

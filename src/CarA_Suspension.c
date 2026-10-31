@@ -686,9 +686,9 @@ void CarA_ComputeSuspensionForces(void *thing) {
                             color = *hit.surface->skidColor;
                         }
                         if (slipMag > 110.0f) {
-                            volume += 0.5f * skid;
+                            volume += 0.23f * skid;
                         } else {
-                            volume += 0.5f * skid * (slipMag / 110.0f);
+                            volume += 0.23f * skid * (slipMag / 110.0f);
                         }
                         color.a = 255.0f * skid;
                         if (color.a > maxAlpha) {
@@ -728,12 +728,12 @@ void CarA_ComputeSuspensionForces(void *thing) {
     if (car->player != NULL && Player_IsHuman(car->player)) {
         player = car->player;
         if (sideSum > 0.0f) {
-            force = 100.0f * (sideSum / 30.0f);
-            force = 100.0f <= force ? 100.0f : force;
+            force = 180.0f * (sideSum / 30.0f);
+            force = 180.0f <= force ? 180.0f : force;
             Wheel_PlayConstantForce(player->wheelChannel, force, 0x10E);
         } else {
-            force = 100.0f * (-sideSum / 30.0f);
-            force = 100.0f <= force ? 100.0f : force;
+            force = 180.0f * (-sideSum / 30.0f);
+            force = 180.0f <= force ? 180.0f : force;
             Wheel_PlayConstantForce(player->wheelChannel, force, 0x5A);
         }
         if (0.0f == sideSum) {
@@ -747,7 +747,7 @@ void CarA_ComputeSuspensionForces(void *thing) {
     player = car->player;
     if (player != NULL && !player->throttle && !player->brake && !player->button14 &&
         _fabs(car->gradeOrReverse) < 1.0f && numSlipping == car->vehicleIface->numWheels &&
-        PSVECDotProduct(&car->localAxis, &car->worldMatrix.v[1]) < 0.9f) {
+        PSVECDotProduct(&car->localAxis, &car->worldMatrix.v[1]) < 0.05f) {
         ProjectVectorToNormal(&car->worldMatrix.v[0], &car->velocity);
         spin = 0.5f * PSVECDotProduct(&car->angularMomentum, &car->worldMatrix.v[1]);
         car->angularMomentum.x = car->angularMomentum.x - spin * car->worldMatrix.v[1].x;

@@ -97,15 +97,15 @@ s32 Projectile_Init(u8 *proj, u8 *params) {
     *(f32 *)(proj + 0x148) = *(f32 *)(params + 0x20);
     *(u8 **)(proj + 0x94) = *(u8 **)(params + 0x38);
     if (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4) != NULL) {
-        euler.x = 0.0174533f * RandomDirVar((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[0], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[1]);
-        euler.y = 0.0174533f * RandomDirVar((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[2], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[3]);
-        euler.z = 0.0174533f * RandomDirVar((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[4], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[5]);
+        euler.x = 0.017453292f * RandomDirVar((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[0], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[1]);
+        euler.y = 0.017453292f * RandomDirVar((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[2], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[3]);
+        euler.z = 0.017453292f * RandomDirVar((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[4], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[5]);
         GenerateQuaternionXYZ(&euler, &q);
         QuaternionMult(&q, (Vector4 *)(proj + 0x50), &rot);
         *(Vector4 *)(proj + 0x50) = rot;
-        euler.x = 0.0174533f * RandomAdd((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[6], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[7]);
-        euler.y = 0.0174533f * RandomAdd((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[8], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[9]);
-        euler.z = 0.0174533f * RandomAdd((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[10], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[11]);
+        euler.x = 0.017453292f * RandomAdd((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[6], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[7]);
+        euler.y = 0.017453292f * RandomAdd((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[8], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[9]);
+        euler.z = 0.017453292f * RandomAdd((*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[10], (*(f32 **)(*(u8 **)(proj + 0x120) + 0xA4))[11]);
         GenerateQuaternionXYZ(&euler, &q);
         GenerateSpinAngleFromQuaternion(&q, proj + 0xB0, (f32 *)(proj + 0x13C));
         *(f32 *)(proj + 0x13C) *= 10.0f;
