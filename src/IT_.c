@@ -66,8 +66,23 @@ void DestroyIT_(void *data) {
 }
 
 #pragma optimization_level 1
-u32 GetITGVol_(ITTrack *trk, ITChannel *ch) {
-    return ((trk->vol * g_musicVol >> 7) * (ch->vol * ch->gvol >> 6)) >> 15;
+/* A track's volume through the music and channel volumes:
+ * ((trk->vol * g_musicVol >> 7) * (ch->vol * ch->gvol >> 6)) >> 15.
+ * Hand-written assembly in the original. */
+asm u32 GetITGVol_(ITTrack *trk, ITChannel *ch) {
+    fralloc
+    lwz r5, g_musicVol
+    lwz r3, 24(r3)
+    lwz r6, 40(r4)
+    lwz r4, 28(r4)
+    mullw r3, r3, r5
+    mullw r4, r4, r6
+    srwi r3, r3, 7
+    srwi r4, r4, 6
+    mullw r3, r3, r4
+    srwi r3, r3, 15
+    frfree
+    blr
 }
 #pragma optimization_level reset
 

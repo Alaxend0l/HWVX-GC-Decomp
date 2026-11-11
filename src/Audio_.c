@@ -241,9 +241,16 @@ u32 MemCpyA_(u32 dst, u32 src, u32 len) {
     return dst + len;
 }
 
-s32 Mul16_(u32 a, u32 b) {
-    u32 hi = __mulhwu(a, b);
-    u32 lo = a * b;
-    return (lo >> 16) | (hi << 16);
+/* 16.16 fixed-point multiply: the middle 32 bits of the 64-bit product.
+ * Hand-written assembly in the original (fralloc spills the arguments). */
+asm s32 Mul16_(u32 a, u32 b) {
+    fralloc
+    mulhwu r5, r3, r4
+    mullw r3, r3, r4
+    slwi r5, r5, 16
+    srwi r3, r3, 16
+    or r3, r3, r5
+    frfree
+    blr
 }
 

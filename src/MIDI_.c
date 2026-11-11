@@ -62,35 +62,51 @@ void DestroyMIDI_(void *data) {
     FreeA_(g_aheap);
 }
 
-u32 ReadVar_(u8 **pp) {
-    u8 *p = *pp;
-    u32 value = 0;
-    u32 c;
-    u32 b;
-
-    do {
-        c = *p++;
-        b = c & 0x7F;
-        value = (value << 7) | b;
-    } while (b != c);
-    *pp = p;
-    return value;
+/* A MIDI variable-length number at *pp (7 bits a byte, high bit: more),
+ * *pp moved past it. Hand-written assembly in the original. */
+asm u32 ReadVar_(u8 **pp) {
+    fralloc
+    lwz r7, 0(r3)
+    addi r7, r7, -1
+    li r4, 0
+@next:
+    lbzu r6, 1(r7)
+    slwi r4, r4, 7
+    andi. r5, r6, 127
+    or r4, r4, r5
+    cmplw r5, r6
+    bne @next
+    addi r7, r7, 1
+    stw r7, 0(r3)
+    mr r3, r4
+    frfree
+    blr
 }
 
-u32 GetPitchWheel_(u8 note, u8 count) {
-    extern const u32 g_pitchTab[];
-    u8 *pn = &note;
-    u8 *pc = &count;
-    u32 pitch = g_pitchTab[*pn];
-    u32 base;
-    s32 i = *pc - 1;
+extern const u32 g_pitchTab[];
 
-    if (i != 0) {
-        base = pitch;
-        do {
-            pitch = (u32)(((u64)pitch * base) >> 30);
-        } while (--i > 0);
-    }
-    return pitch >> 14;
+/* g_pitchTab[note] raised to the power count (2.30 fixed point), >> 14. With
+ * count 0 it still multiplies once. Hand-written assembly in the original. */
+asm u32 GetPitchWheel_(u8 note, u8 count) {
+    fralloc
+    lis r5, g_pitchTab@ha
+    slwi r3, r3, 2
+    addi r5, r5, g_pitchTab@l
+    addic. r4, r4, -1
+    lwzx r3, r3, r5
+    beq @done
+    mr r5, r3
+@loop:
+    mulhwu r6, r3, r5
+    mullw r3, r3, r5
+    slwi r6, r6, 2
+    srwi r3, r3, 30
+    addic. r4, r4, -1
+    or r3, r3, r6
+    bgt @loop
+@done:
+    srwi r3, r3, 14
+    frfree
+    blr
 }
 

@@ -510,6 +510,9 @@ void DataPack_RefreshTextures(DataPack *pack) {
     }
 }
 
+/* the original calls DataPack_RefreshTextures here, not inlined */
+#pragma push
+#pragma dont_inline on
 void DataPack_RefreshPtrs(DataPack *pack) {
     void *FileStreaming_InitializeDataPack(u32 index, s32 type, s8 refresh);
     u16 ShaderHolder_AddShader(s32 shader);
@@ -552,6 +555,7 @@ void DataPack_RefreshPtrs(DataPack *pack) {
         }
     }
 }
+#pragma pop
 
 void DataPack_ReleaseDataPack(DataPack *pack) {
     void DestroySFX(u16 id);
