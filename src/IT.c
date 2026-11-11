@@ -767,7 +767,10 @@ void ProcessIT(u32 ticks)
                         trk->flags &= ~0x10;
                     }
                     break;
-                case 5:
+                /* F (portamento up, flag 0x40) and E (down, 0x20): the original's
+                 * jump table (@708, 0x800DAF30) sends 6 here and 5 below; in this
+                 * order, as its code has them */
+                case 6:
                     if (trk->param)
                     {
                         trk->memPitchSlide = trk->param;
@@ -794,7 +797,7 @@ void ProcessIT(u32 ticks)
                         }
                     }
                     break;
-                case 6:
+                case 5:
                     if (trk->param)
                     {
                         trk->memPitchSlide = trk->param;

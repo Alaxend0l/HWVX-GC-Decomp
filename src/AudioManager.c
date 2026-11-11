@@ -113,31 +113,33 @@ void SoundSource_Set(u32 index, u32 type, void *data) {
     extern s32 g_sources;
     void *memcpy(void *, void *, u32);
 
+    /* the original's jump table wires the cases so (@353, 0x800CF700); the
+     * bodies stay in its order, only the labels were wrong */
     switch (type) {
-    case 0:
+    case 4:
         break;
-    case 1:
+    case 5:  /* position */
         memcpy((u8 *)g_sources + index * 0x50, data, 0x10);
         break;
-    case 2:
+    case 6:  /* velocity */
         memcpy((u8 *)g_sources + index * 0x50 + 0x10, data, 0x10);
         break;
-    case 3:
+    case 0:  /* volume */
         memcpy((u8 *)g_sources + index * 0x50 + 0x24, data, 4);
         break;
-    case 4:
+    case 1:  /* pitch */
         memcpy((u8 *)g_sources + index * 0x50 + 0x20, data, 4);
         break;
-    case 5:
+    case 8:  /* sample */
         memcpy((u8 *)g_sources + index * 0x50 + 0x28, data, 4);
         break;
-    case 6:
+    case 2:  /* full-volume distance */
         memcpy((u8 *)g_sources + index * 0x50 + 0x34, data, 4);
         break;
-    case 7:
+    case 3:  /* audible distance */
         memcpy((u8 *)g_sources + index * 0x50 + 0x38, data, 4);
         break;
-    case 8:
+    case 7:
         break;
     }
 }
