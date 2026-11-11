@@ -495,9 +495,9 @@ static inline void AI_Car_SteerAlongPath(u8 *ai, u32 i) {
     }
 }
 
-static void AI_Car_SeekPoint(u8 *ai) {
+static void AI_Car_SeekPoint_80007C7C(u8 *ai) {
     void AI_Car_DriveToTarget(u8 *ai, Vector4 *target, f32 speed);
-    Vector4 target;
+    Vector4 target __attribute__((aligned(16)));
     f32 speed;
     u32 i;
 
@@ -2016,6 +2016,9 @@ void AI_Car_Init(u8 *car, u8 *params) {
     M2C_FIELD(car, u8 *, 0xCC) = 1;
 }
 
+/* the original calls AI_Car_Reset and AI_Car_DetermineState here, not inlined */
+#pragma push
+#pragma dont_inline on
 void AI_Car_Heartbeat(u8 *ai) {
     typedef struct AICarTarget {
         u32 timer;
@@ -2029,7 +2032,7 @@ void AI_Car_Heartbeat(u8 *ai) {
     } AICarTargets;
     extern u32 g_iDeltaTimeMS;
     void Control_ClearControl(void *control);
-    s32 AI_Heartbeat(u8 *ai);
+    s8 AI_Heartbeat(u8 *ai);   /* s8 to its callers in the original (extsb.) */
     u32 AI_UpdateTimer(u32 *timer);
     void AI_AddEvent(void *arg0);
     f32 PSVECSquareDistance(void *a, void *b);
@@ -2110,8 +2113,8 @@ void AI_Car_Heartbeat(u8 *ai) {
                 *(u32 *)(ai + 0x5F0) = 0;
             }
         }
-        if (!AI_Car_CheckIfStuck(ai)) {
-            AI_Car_SeekPoint(ai);
+        if (!(s8)AI_Car_CheckIfStuck(ai)) {
+            AI_Car_SeekPoint_80007C7C(ai);
         }
         AI_UpdateTimer((u32 *)(ai + 0x658));
         if (*(u32 *)(ai + 0x654) != 0 && AI_UpdateTimer((u32 *)(ai + 0x654)) == 0) {
@@ -2119,3 +2122,4 @@ void AI_Car_Heartbeat(u8 *ai) {
         }
     }
 }
+#pragma pop
